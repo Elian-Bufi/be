@@ -8,10 +8,8 @@ import {
   type AlimentoConsultado,
   type AlimentoPropio,
   type ElementoDeCatalogo,
-  type GrupoDeAlimentoEnLaBase,
   type ListaDeAlimentosPropiosResponse,
   type Procedencia,
-  type RevisionDelAlimento,
 } from '@be/domain';
 import { Prisma, type TipoDeEventoDeNutricion } from '@prisma/client';
 import type { ContextoDeSolicitud } from '../http/contexto';
@@ -27,31 +25,14 @@ import { asignarGrupo, CatalogoService, compartir, VERSION_VIGENTE } from './cat
 import { EjecutorNutricional, esUuid } from './ejecutor';
 import { registrarEventoDeNutricion } from './eventos';
 import { exigirProfesionalDeNutricion } from './profesional-de-nutricion';
+import { mismaComposicion, revisionDelAlimento, type FilaDeAlimentoCargado } from './revision-del-alimento';
+
+export { revisionDelAlimento, type FilaDeAlimentoCargado } from './revision-del-alimento';
 
 type Tx = Prisma.TransactionClient;
 type Cliente = Tx | PrismaService;
 const CASO_DE_USO = 'UC-P10';
 export const RECURSO_ALIMENTO = 'ElementoDeCatalogoNutricional';
-
-/** Un alimento cargado a mano, en su versión vigente, con lo que hace falta para el profesional y para Administración. */
-export interface FilaDeAlimentoCargado {
-  elementoId: string;
-  versionId: string;
-  nombre: string;
-  composicion: ElementoDeCatalogo['composition'];
-  disponible: boolean;
-  cantidadDeVersiones: number;
-  grupoDeAlimento: GrupoDeAlimentoEnLaBase | null;
-  compartido: boolean;
-  creado: Date;
-  actualizado: Date;
-  resultado: 'CERTIFICADO' | 'EQUIVALENTE' | 'QUITADA' | null;
-  versionRevisadaId: string | null;
-  fuente: string | null;
-  equivalenteId: string | null;
-  equivalenteNombre: string | null;
-  decidido: Date | null;
-}
 
 /**
  * Las filas de los alimentos cargados a mano `e` (procedencia PROFESSIONAL_MANUAL), en su versión vigente `v`, que
@@ -82,20 +63,6 @@ export function leerAlimentosCargados(cliente: Cliente, donde: Prisma.Sql, orden
      LIMIT ${limite}`;
 }
 
-/**
- * Lo que decidió Administración, para la versión vigente (NUA-D07): una certificación vale para la versión que revisó; un
- * equivalente, para el alimento. Lo quitado, o una certificación de una versión anterior, es «sin revisar».
- */
-export function revisionDelAlimento(f: FilaDeAlimentoCargado): RevisionDelAlimento {
-  if (f.resultado === 'CERTIFICADO' && f.versionRevisadaId === f.versionId && f.fuente && f.decidido) {
-    return { state: 'CERTIFIED', certification: { source: f.fuente, certifiedAt: f.decidido.toISOString() }, equivalent: null };
-  }
-  if (f.resultado === 'EQUIVALENTE' && f.equivalenteId) {
-    return { state: 'EQUIVALENT', certification: null, equivalent: { catalogItemId: f.equivalenteId, name: f.equivalenteNombre ?? '' } };
-  }
-  return { state: 'PENDING', certification: null, equivalent: null };
-}
-
 function alimentoPropioApi(f: FilaDeAlimentoCargado): AlimentoPropio {
   return {
     catalogItemId: f.elementoId,
@@ -111,12 +78,6 @@ function alimentoPropioApi(f: FilaDeAlimentoCargado): AlimentoPropio {
     createdAt: f.creado.toISOString(),
     updatedAt: f.actualizado.toISOString(),
   };
-}
-
-/** Las claves de la composición que comparan dos versiones: si son iguales (y el nombre también), no hay versión nueva. */
-function mismaComposicion(a: ElementoDeCatalogo['composition'], b: ElementoDeCatalogo['composition']): boolean {
-  const claves = ['referenceAmount', 'energyKcal', 'proteinG', 'carbohydrateG', 'fatG', 'fiberG'] as const;
-  return claves.every((k) => (a[k] ?? null) === (b[k] ?? null));
 }
 
 /**
