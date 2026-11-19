@@ -41,3 +41,55 @@ test('la nota de origen de Nutrición sale de notaDeOrigenNutricional, con la ve
   assert.match(pieza, /setTexto\(notaDeOrigenNutricional\(origen, r\.ok \? r\.datos\.data : null\)\);/);
   assert.doesNotMatch(pieza, /COPY_PLANTILLAS\.creadaDesde\(r\.datos\.data\.name, r\.datos\.data\.versionNumber\)/, 'nunca el número de la vigente como el aplicado');
 });
+
+// ─── DL-108 D-3 · al guardar como plantilla, los nombres, los parámetros y la referencia del %RM ────────────────
+
+test('DL-108 D-3 · los diálogos de «Guardar como plantilla» muestran lo que viaja, además de las notas, para vaciarlo', () => {
+  const entrenamiento = fuente('../src/app/pro/advisees/training/plantillas.tsx');
+  assert.match(entrenamiento, /items=\{loQueViajaALaPlantilla\(estructura\)\}/);
+  assert.match(entrenamiento, /onVaciar=\{\(x\) => setEstructura\(\(e\) => vaciarLoQueViaja\(e, x\)\)\}/);
+  const nutricion = fuente('../src/app/pro/advisees/nutrition/plantillas.tsx');
+  assert.match(nutricion, /items=\{loQueViajaALaPlantillaNutricional\(estructura\)\}/);
+  // Lo que se guarda es la estructura revisada, no la de entrada.
+  assert.match(entrenamiento, /structure: estructura,/);
+  assert.match(nutricion, /structure: estructura,/);
+  const pieza = fuente('../src/app/pro/advisees/lo-que-viaja-a-la-plantilla.tsx');
+  assert.match(pieza, /aria-label=\{`\$\{accion\}: \$\{x\.rotulo\}`\}/, 'cada botón dice qué vacía');
+});
+
+// ─── «Sin indicar» en seguimiento y gráficos ────────────────────────────────────────────────────────────────────
+
+test('«Sin indicar»: en seguimiento y en gráficos, lo que el profesional no indicó no se dice «Sin objetivo»', async () => {
+  const { readdirSync, statSync } = await import('node:fs');
+  const { join } = await import('node:path');
+  const { fileURLToPath } = await import('node:url');
+  const raiz = fileURLToPath(new URL('../src/app/pro/advisees/', import.meta.url));
+  const archivos = (dir) => readdirSync(dir).flatMap((n) => (statSync(join(dir, n)).isDirectory() ? archivos(join(dir, n)) : /\.tsx?$/.test(n) ? [join(dir, n)] : []));
+  // Solo los textos (entre comillas), no los comentarios: un texto que empieza con «Sin objetivo».
+  for (const archivo of [...archivos(join(raiz, 'seguimiento')), ...archivos(join(raiz, 'graficos'))]) {
+    const texto = readFileSync(archivo, 'utf8');
+    assert.doesNotMatch(texto, /['"`][Ss]in objetivo/, archivo);
+  }
+  const C = await import('../src/app/pro/advisees/graficos/nutricion/copy.ts');
+  assert.equal(C.COPY_NUTRICION_EN_GRAFICOS.sinObjetivo, 'Sin indicar');
+  const d = await import('@be/domain');
+  assert.equal(d.objetivoParaExportar([], '2026-11-01', '2026-11-07'), 'sin indicar');
+  // El objetivo vigente que no se indicó, en «Información». («sin dato», lo que el catálogo no tiene, es otra cosa y se queda.)
+  assert.match(fuente('../src/app/pro/advisees/seguimiento/informacion.tsx'), /: 'Sin indicar'\}/);
+});
+
+// ─── El catálogo de ejercicios a 1280 × 800 ─────────────────────────────────────────────────────────────────────
+
+test('El catálogo a 1280 × 800: «Prescripción para todos» va plegada y el pie comparte su último renglón; la escena 11 exige 3 resultados', () => {
+  const catalogo = fuente('../src/app/pro/advisees/training/agregar-ejercicio.tsx');
+  assert.match(catalogo, /<details\n\s+className="agregar-ejercicio__para-todos-pliegue"\n\s+open=\{paraTodosAbierta \|\| linea\.trim\(\) !== ''\}/, 'plegada, salvo que tenga algo escrito');
+  assert.ok(catalogo.indexOf('<details') < catalogo.indexOf('<label className="agregar-ejercicio__para-todos" data-para-todos>'), 'el campo va adentro del pliegue');
+  assert.match(catalogo, /setParaTodosAbierta\(false\);\n\s+\}, \[abierto\]\);/, 'cada apertura empieza plegada');
+  const css = fuente('../src/app/globals.css');
+  assert.match(css, /\.agregar-ejercicio__para-todos-pliegue \{\n\s+flex: 0 1 auto;/);
+  assert.match(css, /\.agregar-ejercicio__para-todos-pliegue\[open\] \{\n\s+flex-basis: 100%;/);
+  assert.match(css, /\.agregar-item__antes\.agregar-ejercicio__aviso-del-catalogo \{\n\s+flex: 1 1 12rem;/, 'el aviso del catálogo ya no ocupa un renglón entero');
+  const capturas = fuente('../../../EVIDENCIA/ENTRENAMIENTO-PLANIFICACION/herramientas/capturas.mjs');
+  assert.match(capturas, /if \(window\.innerHeight <= 800 && enteras < 3\) problemas\.push/);
+  assert.match(capturas, /nombre: '11b-prescripcion-para-todos-abierta'/);
+});

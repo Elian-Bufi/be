@@ -155,6 +155,9 @@ export function AgregarEjercicio({
   const [marcados, setMarcados] = useState<readonly EjercicioDeCatalogo[]>([]);
   const [linea, setLinea] = useState('');
   const [falta, setFalta] = useState(false);
+  // Ratificación del 19/11 (a 1280 × 800 el pie tapaba los resultados): «Prescripción para todos» va plegada; se abre a
+  // pedido y queda abierta mientras tenga algo escrito.
+  const [paraTodosAbierta, setParaTodosAbierta] = useState(false);
   // El campo de búsqueda: al abrirse el cajón, el foco va ahí.
   const campo = useRef<HTMLInputElement>(null);
   // Cada vez que se abre, empieza por la búsqueda, sin nada marcado.
@@ -164,6 +167,7 @@ export function AgregarEjercicio({
     setMarcados([]);
     setLinea('');
     setFalta(false);
+    setParaTodosAbierta(false);
   }, [abierto]);
   const lectura = linea.trim() === '' ? null : leerPrescripcion(linea);
   const agregar = () => {
@@ -204,14 +208,28 @@ export function AgregarEjercicio({
                 </ul>
               ) : null}
             </div>
-            <label className="agregar-ejercicio__para-todos" data-para-todos>
-              <span className="agregar-ejercicio__para-todos-rotulo">{V.prescripcionParaTodos}</span>
-              <input type="text" value={linea} maxLength={80} placeholder={V.prescripcionEjemplo} onChange={(e) => setLinea(e.target.value)} aria-invalid={lectura && !lectura.ok ? true : undefined} aria-describedby="prescripcion-para-todos" autoComplete="off" spellCheck={false} />
-              <span id="prescripcion-para-todos" className={lectura && !lectura.ok ? 'campo__error' : 'nota'}>
-                {!lectura ? (prescripcionDeLaSesion ? `Vacía, cada uno entra con «${prescripcionDeLaSesion}», la de la sesión.` : V.prescripcionAyuda) : lectura.ok ? vistaPreviaDePrescripcion(lectura.leida) : lectura.noSeEntiende}
-              </span>
-            </label>
-            <p className="nota agregar-item__antes">{COPY_ENTRENAMIENTO.catalogoSintetico}</p>
+            {/* Ratificación del 19/11: a 1280 × 800 el pie (los elegidos, la prescripción para todos y el botón) tapaba la
+                lista: se veía el título del catálogo y no los ejercicios. La prescripción para todos va plegada, en el mismo
+                renglón que el aviso del catálogo y el botón; abierta (o con algo escrito), ocupa su renglón. */}
+            <details
+              className="agregar-ejercicio__para-todos-pliegue"
+              open={paraTodosAbierta || linea.trim() !== ''}
+              onToggle={(e) => setParaTodosAbierta(e.currentTarget.open)}
+              data-para-todos-pliegue
+            >
+              <summary>
+                {V.prescripcionParaTodos}
+                {lectura?.ok ? <span className="nota"> · {vistaPreviaDePrescripcion(lectura.leida)}</span> : null}
+              </summary>
+              <label className="agregar-ejercicio__para-todos" data-para-todos>
+                <span className="agregar-ejercicio__para-todos-rotulo visualmente-oculto">{V.prescripcionParaTodos}</span>
+                <input type="text" value={linea} maxLength={80} placeholder={V.prescripcionEjemplo} onChange={(e) => setLinea(e.target.value)} aria-invalid={lectura && !lectura.ok ? true : undefined} aria-describedby="prescripcion-para-todos" autoComplete="off" spellCheck={false} />
+                <span id="prescripcion-para-todos" className={lectura && !lectura.ok ? 'campo__error' : 'nota'}>
+                  {!lectura ? (prescripcionDeLaSesion ? `Vacía, cada uno entra con «${prescripcionDeLaSesion}», la de la sesión.` : V.prescripcionAyuda) : lectura.ok ? vistaPreviaDePrescripcion(lectura.leida) : lectura.noSeEntiende}
+                </span>
+              </label>
+            </details>
+            <p className="nota agregar-item__antes agregar-ejercicio__aviso-del-catalogo">{COPY_ENTRENAMIENTO.catalogoSintetico}</p>
             {falta && marcados.length === 0 ? (
               <p className="campo__error" role="alert">
                 {V.sinMarcados}
