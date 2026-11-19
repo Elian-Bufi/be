@@ -59,7 +59,7 @@ import { MenuDeAcciones } from '../../../../components/menu-de-acciones';
 import { Pista } from '../../../../components/pista';
 import { TextoAPedido } from '../../../../components/texto-a-pedido';
 import { numeroEnCampo } from '../../../../lib/formato';
-import { iconoDeLaFila, useDatosDelAlimento } from './alimentos-del-catalogo';
+import { conNumero, conUnidad, iconoDeLaFila, numeroDelCampo, opcionesDeUnidad, useDatosDelAlimento, valorDeLaUnidad } from './alimentos-del-catalogo';
 import { COPY_DE_LOS_EDITORES as E } from '../editar-la-estructura';
 import { COPY_DE_OTRA_COMIDA, MAXIMO_DE_OPCIONES } from './opcion-de-otra-comida';
 import { COPY_VERSION_NUEVA } from './version-nueva-de-la-receta';
@@ -591,8 +591,12 @@ export function FilaDeItem({
   onCambiar: (c: Partial<ItemEnEdicion>) => void;
   onQuitar: () => void;
 }) {
+  // DL-180: el ícono de su grupo (NUA-05) y, si se retiró del catálogo, la marca discreta (NUA-02): se sigue viendo, no
+  // se esconde; validar y activar piden cambiarlo.
+  const datos = useDatosDelAlimento(item.catalogItemId);
   const magnitud = item.quantity;
-  const externo = numeroEnCampo(magnitud?.value);
+  // NUA-08: con una medida casera, el campo es cuántas; la cantidad del ítem sigue en gramos.
+  const externo = numeroEnCampo(numeroDelCampo(item));
   const [escrito, setEscrito] = useState(externo);
   useEffect(() => {
     setEscrito((t) => (numeroEnCampo(leerNumero(t)) === externo ? t : externo));
@@ -602,9 +606,6 @@ export function FilaDeItem({
   const [notaAbierta, setNotaAbierta] = useState(false);
   const aporte = aporteDelItem({ catalogItemId: item.catalogItemId, quantity: magnitud, nombre }, composicion);
   const pista = composicionEnLaPista(composicion, origen);
-  // DL-180: el ícono de su grupo (NUA-05) y, si se retiró del catálogo, la marca discreta (NUA-02): se sigue viendo, no
-  // se esconde; validar y activar piden cambiarlo.
-  const datos = useDatosDelAlimento(item.catalogItemId);
   return (
     <>
     <tr className="item-del-editor" data-retirado={datos.retirado ? '' : undefined}>
@@ -646,7 +647,7 @@ export function FilaDeItem({
               if (e.target.value.trim() === '') return onCambiar({ quantity: null });
               // Lo que no se entiende viaja como NaN, igual que en entrenamiento: el guardado se niega y lo señala, en
               // vez de guardar en silencio el último número válido que había en el campo.
-              onCambiar({ quantity: { value: n ?? Number.NaN, unit: magnitud?.unit ?? 'g' } });
+              onCambiar(conNumero(item, n ?? Number.NaN));
             }}
           />
         </Pista>
@@ -658,13 +659,19 @@ export function FilaDeItem({
         ) : null}
       </td>
       <td data-etiqueta="Unidad">
-        <select id={`${id}-unidad`} aria-label={`Unidad de ${nombre}`} value={magnitud?.unit ?? 'g'} disabled={!magnitud} onChange={(e) => magnitud && onCambiar({ quantity: { ...magnitud, unit: e.target.value as Unidad } })}>
-          {(Object.keys(ETIQUETA_DE_UNIDAD) as Unidad[]).map((u) => (
-            <option key={u} value={u}>
-              {ETIQUETA_DE_UNIDAD[u]}
+        {/* NUA-08: las medidas caseras del alimento, con su equivalencia, junto a las unidades de siempre. */}
+        <select id={`${id}-unidad`} aria-label={`Unidad de ${nombre}`} value={valorDeLaUnidad(item)} disabled={!magnitud} onChange={(e) => magnitud && onCambiar(conUnidad(item, e.target.value, datos.medidas))}>
+          {opcionesDeUnidad(datos.medidas, ETIQUETA_DE_UNIDAD as Readonly<Record<Unidad, string>>).map((o) => (
+            <option key={o.valor} value={o.valor}>
+              {o.texto}
             </option>
           ))}
         </select>
+        {item.householdMeasure && magnitud && Number.isFinite(magnitud.value) ? (
+          <span className="nota item-del-editor__equivale" data-equivale-a>
+            {COPY_ALIMENTOS.equivaleA(formatearCantidad(magnitud.value, magnitud.unit === 'ml' ? 'ml' : 'g'))}
+          </span>
+        ) : null}
       </td>
       <td data-etiqueta={COPY_NUTRICION.estadoDePreparacion}>
         <select

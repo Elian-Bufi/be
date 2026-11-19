@@ -4,16 +4,15 @@
  *   borrador nuevo usa la vigente; va contra la versión que se vio (409) y dos correcciones a la vez se ordenan en la base;
  * - **NUA-02 · retirar** no borra nada: deja de aparecer en el buscador, se lee por su identidad con la marca, un borrador
  *   que lo cita se sigue guardando y validar y activar lo señalan;
- * - **NUA-03 · los tres niveles:** lo de otro profesional se ve como «De otro profesional», va después y no dice de quién
- *   es; lo cargado antes de DL-180 no se comparte hasta que su autor lo corrige;
- * - **NUA-04 · Administración** verifica con una fuente (para la versión que vio) o marca un equivalente de la tabla
- *   oficial, que el buscador sugiere; ve el nombre y los valores, nunca quién lo cargó;
+ * - **NUA-03 y NUA-D14 · lo propio es propio:** lo cargado a mano lo ve y lo cita solo quien lo cargó («Tuyo»); para los
+ *   demás es el mismo 404 que lo inexistente (decisión de Dirección del 2026-11-19);
+ * - **NUA-04, NUA-D15 y NUA-D16 · Administración** ve todas las cargas con el nombre de quien las cargó, las agrupa por
+ *   nombre parecido con cuántos profesionales cargaron algo así, verifica con una fuente, marca equivalentes y suma al
+ *   canon un alimento verificado de todos;
  * - **NUA-05 · el grupo** se elige al cargarlo, se cambia sin emitir una versión y está sembrado en la tabla oficial;
  * - lo ajeno y lo inexistente son el mismo 404, y la base sostiene las guardias aunque el código se equivoque;
- * - **segundo tramo (NUA-D14 a D17): compartir con control.** Compartir es un interruptor al cargar y una elección aparte
- *   al corregir; dejar de compartir es un hecho nuevo que lo saca de todos los caminos de los demás (el mismo 404 que lo
- *   inexistente) mientras lo que ya lo cita lo conserva; las versiones de antes de compartir no se citan; una cita y un
- *   «dejar de compartir» simultáneos se ordenan en la base. Y las bajas de la revisión adversaria que tocan lo retirado.
+ * - **segundo tramo:** las bajas de la revisión adversaria que tocan lo retirado (NUA-D17 y D18) y las medidas caseras
+ *   (NUA-08).
  */
 import type { INestApplication } from '@nestjs/common';
 import {
@@ -25,6 +24,8 @@ import {
   EstimacionDeLasOpcionesResponseSchema,
   ListaDeAlimentosParaRevisarResponseSchema,
   ListaDeAlimentosPropiosResponseSchema,
+  ListaDeParecidosResponseSchema,
+  AlimentoDelCanonResponseSchema,
   ListaDeVerificadosResponseSchema,
   type ElementoEncontrado,
 } from '@be/domain';
@@ -33,7 +34,7 @@ import { randomUUID } from 'node:crypto';
 import request from 'supertest';
 import { appDePrueba, claveDeIdempotencia, conSesion } from './soporte-api';
 import { adm, administradorListo, type Administrador } from './soporte-administracion';
-import { esperarQueEsperen, pidDeLaTransaccion } from './soporte-concurrencia';
+import { esperarQueEsperen } from './soporte-concurrencia';
 import { activar, circuitoListoParaPlanificar, crearBorrador, patchConSesion, type Circuito } from './soporte-nutricion';
 import { prepararProfesional, type Parte } from './soporte-vinculo';
 
@@ -77,10 +78,6 @@ function corregir(pro: Parte, id: string, cuerpo: Record<string, unknown>, clave
 
 function retirar(pro: Parte, id: string, version: string, clave = claveDeIdempotencia()) {
   return conSesion(app, pro.token).post(`${CATALOGO}/${id}/retirement`, clave).send({ expectedVersion: version });
-}
-
-function compartir(pro: Parte, id: string, compartido: boolean, clave = claveDeIdempotencia()) {
-  return conSesion(app, pro.token).post(`${CATALOGO}/${id}/sharing`, clave).send({ shared: compartido });
 }
 
 async function porIdentidad(pro: Parte, ids: string[]) {
@@ -139,7 +136,7 @@ describe('NUA-01 · corregir un alimento cargado a mano emite una versión nueva
     await activar(app, c.pro, b.planId, b.version).expect(200);
 
     const [antes] = (await propios(c.pro)).filter((a) => a.catalogItemId === creado.catalogItemId);
-    expect(antes).toMatchObject({ version: 'v1', versionNumber: 1, available: true, shared: true });
+    expect(antes).toMatchObject({ version: 'v1', versionNumber: 1, available: true });
     const r = await corregir(c.pro, creado.catalogItemId, { expectedVersion: 'v1', name: creado.name, composition: { ...COMPOSICION, energyKcal: 120, proteinG: 25 } }).expect(200);
     const corregido = AlimentoPropioResponseSchema.parse(r.body).data;
     expect(corregido).toMatchObject({ version: 'v2', versionNumber: 2 });
@@ -252,95 +249,92 @@ describe('NUA-02 · retirar no borra: lo que lo cita lo sigue mostrando', () => 
   });
 });
 
-// ─── NUA-03 · Los tres niveles ───────────────────────────────────────────────────────────────────
+// ─── NUA-03 y NUA-D14 · Lo propio es propio ──────────────────────────────────────────────────────
 
-describe('NUA-03 · lo de otro profesional se ve como «De otro profesional» y va después', () => {
-  it('el propio va antes que el ajeno, aunque el ajeno sea más nuevo; el ajeno no dice de quién es', async () => {
-    const yo = await nutricionista();
-    const otro = await nutricionista();
-    const marca = `Zzpru${unico()}`;
-    const mio = await cargarAMano(yo, `${marca} galleta propia`);
-    const ajeno = await cargarAMano(otro, `${marca} galleta ajena`);
-    // Solo estos dos: el buscador puede completar la página con parecidos de otras pruebas (los nombres comparten la fecha).
-    const filas = (await buscar(yo, marca)).filter((f) => f.catalogItemId === mio.catalogItemId || f.catalogItemId === ajeno.catalogItemId);
-    expect(filas.map((f) => f.catalogItemId)).toEqual([mio.catalogItemId, ajeno.catalogItemId]);
-    expect(filas[0]).toMatchObject({ originLevel: 'YOURS', origin: { loadedBy: 'YOU' } });
-    expect(filas[1]).toMatchObject({ originLevel: 'OTHER_PROFESSIONAL', origin: { loadedBy: 'ANOTHER_PROFESSIONAL' } });
-    expect(JSON.stringify(filas[1])).not.toContain(otro.id);
-    // Un USDA es «Verificado».
-    const [usda] = await buscar(yo, 'Arroz blanco de grano largo, cocido');
+describe('NUA-03 y NUA-D14 · lo cargado a mano lo ve y lo cita solo quien lo cargó', () => {
+  it('para otro profesional, el mismo 404 que lo inexistente: ni el buscador, ni la consulta por identidad, ni una receta, ni un plan', async () => {
+    const autor = await nutricionista();
+    const c = await circuitoListoParaPlanificar(app, `nua3-${unico()}`);
+    const marca = `Zzpropio${unico()}`;
+    const mio = await cargarAMano(autor, `${marca} galleta`);
+    // El autor lo ve, como «Tuyo».
+    expect((await buscar(autor, marca)).find((f) => f.catalogItemId === mio.catalogItemId)).toMatchObject({ originLevel: 'YOURS', origin: { loadedBy: 'YOU' } });
+    // El otro, nada: ni en el buscador ni por su identidad.
+    expect((await buscar(c.pro, marca)).some((f) => f.catalogItemId === mio.catalogItemId)).toBe(false);
+    expect(await porIdentidad(c.pro, [mio.catalogItemId])).toEqual([]);
+    // Ni en una receta ni en un plan: el mismo CATALOG_REFERENCE_INVALID que un identificador que no existe.
+    const ajena = await recetaCon(c.pro, mio.catalogItemId, mio.versionId);
+    const inexistente = await recetaCon(c.pro, randomUUID(), randomUUID());
+    expect(ajena.status).toBe(422);
+    expect(ajena.body.error.code).toBe(inexistente.body.error.code);
+    const plan = await conSesion(app, c.pro.token).post(`/api/v1/advisees/${c.ase.id}/nutrition/plans`).send({ objectiveVersionId: c.objectiveVersionId, initialStructure: estructuraCon(mio.catalogItemId, c.arroz) });
+    expect(plan.status).toBe(422);
+    expect(plan.body.error.code).toBe('CATALOG_REFERENCE_INVALID');
+    // Un USDA es «Verificado» para todos.
+    const [usda] = await buscar(c.pro, 'Arroz blanco de grano largo, cocido');
     expect(usda!.originLevel).toBe('VERIFIED');
   });
 
-  it('lo cargado antes de DL-180 no se comparte hasta que su autor lo corrige', async () => {
+  it('lo que se compartió en el primer tramo ya no se lee: lo cargado a mano no se comparte con nadie', async () => {
     const autor = await nutricionista();
+    const creado = await cargarAMano(autor, `Zzhist${unico()} licuado`);
+    // La tabla del primer tramo está cerrada: no admite filas nuevas, ni con el código equivocado.
+    await expect(
+      prisma.$executeRaw`INSERT INTO "alimento_compartido" ("elemento_id", "procedencia") VALUES (${creado.catalogItemId}::uuid, ${JSON.stringify({ fuente: 'PROPIA', casoDeUso: 'PRUEBA' })}::jsonb)`,
+    ).rejects.toThrow(/no se comparte/);
+    // Corregir no comparte nada, y no hay un campo para compartir.
     const otro = await nutricionista();
-    const nombre = `Zzviejo${unico()} licuado`;
-    // Como lo dejaba la carga a mano de antes: el elemento y su versión, sin la fila de compartido.
-    const elemento = await prisma.elementoDeCatalogoNutricional.create({ data: { procedencia: 'PROFESSIONAL_MANUAL', creadoPorId: autor.id } });
-    await prisma.versionDeElementoNutricional.create({
-      data: { elementoId: elemento.id, nombre, composicion: COMPOSICION, disponibilidad: 'DISPONIBLE', procedencia: { fuente: 'PROPIA', carga: 'MANUAL', casoDeUso: 'PRUEBA' } },
-    });
-    expect((await buscar(otro, nombre)).some((e) => e.catalogItemId === elemento.id)).toBe(false);
-    expect(await porIdentidad(otro, [elemento.id])).toEqual([]);
-    expect((await buscar(autor, nombre)).some((e) => e.catalogItemId === elemento.id)).toBe(true);
-    expect((await propios(autor)).find((a) => a.catalogItemId === elemento.id)).toMatchObject({ shared: false });
-    // Guardar la corrección sin cambiar nada no es corregir: responde la misma versión («no cambió») y sigue sin
-    // compartirse, como le dice «Mis alimentos» («Lo ves solo vos»).
-    const sinCambios = await corregir(autor, elemento.id, { expectedVersion: 'v1', name: nombre, composition: COMPOSICION }).expect(200);
-    expect(AlimentoPropioResponseSchema.parse(sinCambios.body).data).toMatchObject({ versionNumber: 1, shared: false });
-    expect((await buscar(otro, nombre)).some((e) => e.catalogItemId === elemento.id)).toBe(false);
-    expect(await porIdentidad(otro, [elemento.id])).toEqual([]);
-    // NUA-D14 (segundo tramo): una corrección de verdad tampoco lo comparte sola; compartir es una elección aparte.
-    await corregir(autor, elemento.id, { expectedVersion: 'v1', name: nombre, composition: { ...COMPOSICION, fatG: 7 } }).expect(200);
-    expect((await propios(autor)).find((a) => a.catalogItemId === elemento.id)).toMatchObject({ versionNumber: 2, shared: false, stoppedSharing: false });
-    expect((await buscar(otro, nombre)).some((e) => e.catalogItemId === elemento.id)).toBe(false);
-    await corregir(autor, elemento.id, { expectedVersion: 'v2', name: nombre, composition: { ...COMPOSICION, fatG: 7 }, share: true }).expect(200);
-    expect((await buscar(otro, nombre)).find((e) => e.catalogItemId === elemento.id)).toMatchObject({ originLevel: 'OTHER_PROFESSIONAL' });
+    await corregir(autor, creado.catalogItemId, { expectedVersion: 'v1', name: creado.name, composition: { ...COMPOSICION, fatG: 7 } }).expect(200);
+    expect(await porIdentidad(otro, [creado.catalogItemId])).toEqual([]);
+    const conCampo = await conSesion(app, autor.token).post(CATALOGO).send({ name: `Zzhist${unico()}`, itemType: 'FOOD', composition: COMPOSICION, share: true });
+    expect(conCampo.status).toBe(400);
   });
 });
 
-// ─── NUA-04 · Administración ─────────────────────────────────────────────────────────────────────
+// ─── NUA-04, NUA-D15 y NUA-D16 · Administración ──────────────────────────────────────────────────
 
-describe('NUA-04 · Administración verifica con una fuente o marca un equivalente', () => {
+describe('NUA-04, NUA-D15 y NUA-D16 · Administración ve quién lo cargó, agrupa los parecidos y suma al canon', () => {
   const lista = async (q: string, state?: string) => {
     const r = await adm(app, admin.token).post('/admin/foods/query').send({ q, ...(state ? { state } : {}) }).expect(200);
     return ListaDeAlimentosParaRevisarResponseSchema.parse(r.body).data;
   };
   const decidir = (id: string, cuerpo: Record<string, unknown>, clave = claveDeIdempotencia()) => adm(app, admin.token).post(`/admin/foods/${id}/decisions`).set('Idempotency-Key', clave).send(cuerpo);
+  const parecidos = async (q: string) => ListaDeParecidosResponseSchema.parse((await adm(app, admin.token).post('/admin/foods/similar/query').send({ q }).expect(200)).body).data;
+  const sumarAlCanon = (cuerpo: Record<string, unknown>, clave = claveDeIdempotencia()) => adm(app, admin.token).post('/admin/foods/canon').set('Idempotency-Key', clave).send(cuerpo);
+  const nombreDe = async (pro: Parte) => (await prisma.perfilProfesional.findUniqueOrThrow({ where: { identidadId: pro.id }, select: { nombreVisible: true } })).nombreVisible;
 
-  it('ve el nombre y los valores, nunca quién lo cargó; verificarlo vale para esa versión', async () => {
+  it('ve todas las cargas, con el nombre de quien la cargó y nunca su identidad ni sus personas; verificar vale para esa versión', async () => {
     const autor = await nutricionista();
-    const otro = await nutricionista();
     const creado = await cargarAMano(autor, `Zzcert${unico()} yogur`);
     const [fila] = await lista(creado.name);
-    expect(fila).toMatchObject({ catalogItemId: creado.catalogItemId, version: 'v1', review: { state: 'PENDING' } });
+    expect(fila).toMatchObject({ catalogItemId: creado.catalogItemId, version: 'v1', review: { state: 'PENDING' }, loadedBy: { displayName: await nombreDe(autor) } });
     expect(JSON.stringify(fila)).not.toContain(autor.id);
 
     const sinFuente = await decidir(creado.catalogItemId, { expectedVersion: 'v1', decision: 'CERTIFY' }).expect(422);
     expect(sinFuente.body.error.details.issues).toEqual([{ code: 'SOURCE_REQUIRED', path: 'source' }]);
     const r = await decidir(creado.catalogItemId, { expectedVersion: 'v1', decision: 'CERTIFY', source: 'Rótulo del envase, lote sintético 1' }).expect(200);
     expect(AlimentoParaRevisarResponseSchema.parse(r.body).data.review).toMatchObject({ state: 'CERTIFIED', certification: { source: 'Rótulo del envase, lote sintético 1' } });
-    expect((await buscar(otro, creado.name))[0]).toMatchObject({ originLevel: 'VERIFIED', certification: { source: 'Rótulo del envase, lote sintético 1' } });
+    // Para su autor, «Verificado» con la fuente.
+    expect((await buscar(autor, creado.name))[0]).toMatchObject({ originLevel: 'VERIFIED', certification: { source: 'Rótulo del envase, lote sintético 1' } });
     expect((await propios(autor)).find((a) => a.catalogItemId === creado.catalogItemId)?.review.state).toBe('CERTIFIED');
-
     // Corregido, la versión nueva vuelve a esperar revisión; una decisión sobre la vieja es 409.
     await corregir(autor, creado.catalogItemId, { expectedVersion: 'v1', name: creado.name, composition: { ...COMPOSICION, fatG: 12 } }).expect(200);
-    expect((await buscar(otro, creado.name))[0]).toMatchObject({ originLevel: 'OTHER_PROFESSIONAL', certification: null });
+    expect((await buscar(autor, creado.name))[0]).toMatchObject({ originLevel: 'YOURS', certification: null });
     expect((await decidir(creado.catalogItemId, { expectedVersion: 'v1', decision: 'CERTIFY', source: 'Otra' }).expect(409)).body.error.code).toBe('VERSION_CONFLICT');
   });
 
-  it('un equivalente de la tabla oficial: el buscador lo sugiere; quitarlo vuelve a «sin revisar»', async () => {
+  it('un equivalente de la tabla oficial: el buscador de su autor lo sugiere; quitarlo vuelve a «sin revisar»', async () => {
     const autor = await nutricionista();
     const creado = await cargarAMano(autor, `Zzequiv${unico()} arroz cocido casero`);
     const verificados = ListaDeVerificadosResponseSchema.parse((await adm(app, admin.token).post('/admin/foods/verified/query').send({ q: 'arroz blanco de grano largo cocido' }).expect(200)).body).data;
     const oficial = verificados.find((v) => v.name === 'Arroz blanco de grano largo, cocido')!;
     expect(oficial.foodGroup).toBe('GRAINS');
-
-    // Uno que no es de la tabla oficial no sirve de equivalente.
+    // Uno que no es verificado no sirve de equivalente.
     const otroManual = await cargarAMano(autor, `Zzequiv${unico()} otro`);
     const noOficial = await decidir(creado.catalogItemId, { expectedVersion: 'v1', decision: 'EQUIVALENT', equivalentCatalogItemId: otroManual.catalogItemId }).expect(422);
     expect(noOficial.body.error.details.issues).toEqual([{ code: 'EQUIVALENT_NOT_VERIFIED', path: 'equivalentCatalogItemId' }]);
+    const raro = await decidir(creado.catalogItemId, { expectedVersion: 'v1', decision: 'EQUIVALENT', equivalentCatalogItemId: 'no-es-un-id' }).expect(422);
+    expect(raro.body.error.details.issues).toEqual([{ code: 'EQUIVALENT_NOT_VERIFIED', path: 'equivalentCatalogItemId' }]);
 
     await decidir(creado.catalogItemId, { expectedVersion: 'v1', decision: 'EQUIVALENT', equivalentCatalogItemId: oficial.catalogItemId }).expect(200);
     const [fila] = (await buscar(autor, creado.name)).filter((e) => e.catalogItemId === creado.catalogItemId);
@@ -353,42 +347,72 @@ describe('NUA-04 · Administración verifica con una fuente o marca un equivalen
     expect(otraVez.body.error.code).toBe('INVALID_STATE_TRANSITION');
   });
 
-  it('un alimento de la tabla oficial o inexistente es 404; una sesión de profesional no entra', async () => {
+  it('un alimento de la tabla oficial o inexistente es 404; una sesión de profesional no entra a ninguna ruta', async () => {
     const pro = await nutricionista();
     const [usda] = await buscar(pro, 'Arroz blanco de grano largo, cocido');
     const sembrado = await decidir(usda!.catalogItemId, { expectedVersion: 'v1', decision: 'CERTIFY', source: 'x' }).expect(404);
     const inexistente = await decidir(randomUUID(), { expectedVersion: 'v1', decision: 'CERTIFY', source: 'x' }).expect(404);
     expect(sembrado.body.error).toEqual(inexistente.body.error);
     await adm(app, pro.token).post('/admin/foods/query').send({}).expect(403);
+    await adm(app, pro.token).post('/admin/foods/similar/query').send({}).expect(403);
+    await adm(app, pro.token).post('/admin/foods/canon').set('Idempotency-Key', claveDeIdempotencia()).send({ name: 'x', composition: COMPOSICION, source: 'x' }).expect(403);
   });
 
-  it('lo que su autor no compartió no lo ve ni lo decide Administración: el mismo 404 que lo inexistente', async () => {
-    const autor = await nutricionista();
-    const nombre = `Zzsolo${unico()} licuado`;
-    // Como lo dejaba la carga a mano de antes de DL-180: sin la fila de compartido. «Mis alimentos» le dice a su autor
-    // «Por ahora lo ves solo vos».
-    const elemento = await prisma.elementoDeCatalogoNutricional.create({ data: { procedencia: 'PROFESSIONAL_MANUAL', creadoPorId: autor.id } });
-    const version = await prisma.versionDeElementoNutricional.create({
-      data: { elementoId: elemento.id, nombre, composicion: COMPOSICION, disponibilidad: 'DISPONIBLE', procedencia: { fuente: 'PROPIA', carga: 'MANUAL', casoDeUso: 'PRUEBA' } },
+  it('los parecidos: cuántos profesionales distintos cargaron algo así, sin tildes, mayúsculas ni plurales simples', async () => {
+    const marca = `zzmila${unico()}`;
+    const [a, b, c] = [await nutricionista(), await nutricionista(), await nutricionista()];
+    await cargarAMano(a, `${marca} Milanesas de soja`);
+    await cargarAMano(a, `${marca} milanesa de soja`);
+    await cargarAMano(b, `${marca}   MILANESA de Soja`);
+    await cargarAMano(c, `${marca} milanesa de sója`);
+    await cargarAMano(c, `${marca} tarta de acelga`);
+    const grupos = await parecidos(marca);
+    const mila = grupos.find((g) => g.key === `${marca} milanesa de soja`)!;
+    expect(mila).toMatchObject({ professionals: 3 });
+    expect(mila.loads).toHaveLength(4);
+    expect(mila.names.length).toBeGreaterThanOrEqual(3);
+    // Lo más cargado primero; cada carga con quién la cargó.
+    expect(grupos[0]!.key).toBe(mila.key);
+    expect(grupos.find((g) => g.key === `${marca} tarta de acelga`)).toMatchObject({ professionals: 1 });
+    expect(mila.loads.map((l) => l.loadedBy.displayName).sort()).toEqual([await nombreDe(a), await nombreDe(a), await nombreDe(b), await nombreDe(c)].sort());
+    const minimo = ListaDeParecidosResponseSchema.parse((await adm(app, admin.token).post('/admin/foods/similar/query').send({ q: marca, minProfessionals: 2 }).expect(200)).body).data;
+    expect(minimo.map((g) => g.key)).toEqual([mila.key]);
+  });
+
+  it('sumar al canon: un verificado de todos, con su fuente obligatoria; las cargas del grupo quedan como equivalentes', async () => {
+    const marca = `zzcanon${unico()}`;
+    const [a, b] = [await nutricionista(), await nutricionista()];
+    const deA = await cargarAMano(a, `${marca} empanada de carne`);
+    const deB = await cargarAMano(b, `${marca} empanadas de carne`, { group: 'MEAT' });
+    const cuerpo = { name: `${marca} Empanada de carne`, composition: { ...COMPOSICION, energyKcal: 290, proteinG: 11 }, group: 'GRAINS', fromCatalogItemId: deA.catalogItemId, equivalentCatalogItemIds: [deA.catalogItemId, deB.catalogItemId] };
+    // Sin fuente no se suma (ni con una en blanco).
+    const sinFuente = await sumarAlCanon(cuerpo).expect(400);
+    expect(sinFuente.body.error.code).toBe('INVALID_REQUEST');
+    await sumarAlCanon({ ...cuerpo, source: '   ' }).expect(400);
+    // Una carga que no existe se señala con su ruta, y no se suma nada.
+    const conUnaRara = await sumarAlCanon({ ...cuerpo, source: 'Receta estándar', equivalentCatalogItemIds: [deA.catalogItemId, randomUUID()] }).expect(422);
+    expect(conUnaRara.body.error.details.issues).toEqual([{ code: 'LOAD_NOT_AVAILABLE', path: 'equivalentCatalogItemIds[1]' }]);
+
+    const r = await sumarAlCanon({ ...cuerpo, source: 'Receta estándar de la Escuela de Nutrición, edición sintética' }).expect(201);
+    const canon = AlimentoDelCanonResponseSchema.parse(r.body).data;
+    expect(canon).toMatchObject({ name: cuerpo.name, foodGroup: 'GRAINS', equivalentsMarked: 2 });
+    // Lo ve cualquier profesional, «Verificado», con la fuente.
+    const otro = await nutricionista();
+    expect((await buscar(otro, cuerpo.name)).find((e) => e.catalogItemId === canon.catalogItemId)).toMatchObject({
+      originLevel: 'VERIFIED',
+      provenance: 'CONTROLLED_IMPORT',
+      certification: { source: 'Receta estándar de la Escuela de Nutrición, edición sintética' },
+      foodGroup: 'GRAINS',
     });
-    expect(await lista(nombre)).toEqual([]);
-    const noCompartido = await decidir(elemento.id, { expectedVersion: 'v1', decision: 'CERTIFY', source: 'Rótulo sintético' }).expect(404);
-    const inexistente = await decidir(randomUUID(), { expectedVersion: 'v1', decision: 'CERTIFY', source: 'Rótulo sintético' }).expect(404);
-    expect(noCompartido.body.error).toEqual(inexistente.body.error);
-    // La base tampoco lo deja, ni con el administrador.
-    await expect(
-      prisma.$executeRaw`INSERT INTO "revision_administrativa_de_alimento" ("elemento_id", "numero", "resultado", "version_id", "fuente", "administrador_id", "procedencia")
-                         VALUES (${elemento.id}::uuid, 1, 'CERTIFICADO', ${version.id}::uuid, 'x', ${admin.id}::uuid, ${JSON.stringify({ fuente: 'PROPIA', casoDeUso: 'PRUEBA' })}::jsonb)`,
-    ).rejects.toThrow(/compartió/);
-
-    // Un equivalente que no es un identificador válido es el mismo 422 que uno que no es verificado, no un error de la base.
-    const compartido = await cargarAMano(autor, `Zzsolo${unico()} otro`);
-    const raro = await decidir(compartido.catalogItemId, { expectedVersion: 'v1', decision: 'EQUIVALENT', equivalentCatalogItemId: 'no-es-un-id' }).expect(422);
-    expect(raro.body.error.details.issues).toEqual([{ code: 'EQUIVALENT_NOT_VERIFIED', path: 'equivalentCatalogItemId' }]);
-
-    // Cuando su autor lo comparte (NUA-D14: con el interruptor, al corregirlo), entra en la revisión.
-    await corregir(autor, elemento.id, { expectedVersion: 'v1', name: nombre, composition: { ...COMPOSICION, fatG: 7 }, share: true }).expect(200);
-    expect((await lista(nombre)).map((f) => f.catalogItemId)).toEqual([elemento.id]);
+    // A cada autor, su buscador le sugiere el verificado; lo suyo no cambia.
+    const filaDeB = (await buscar(b, deB.name)).find((e) => e.catalogItemId === deB.catalogItemId)!;
+    expect(filaDeB.verifiedEquivalent).toMatchObject({ catalogItemId: canon.catalogItemId });
+    expect((await propios(b)).find((x) => x.catalogItemId === deB.catalogItemId)).toMatchObject({ versionNumber: 1, review: { state: 'EQUIVALENT' } });
+    // Se puede elegir como equivalente y como ingrediente de cualquiera.
+    expect(ListaDeVerificadosResponseSchema.parse((await adm(app, admin.token).post('/admin/foods/verified/query').send({ q: cuerpo.name }).expect(200)).body).data.map((v) => v.catalogItemId)).toContain(canon.catalogItemId);
+    await recetaCon(otro, canon.catalogItemId, canon.versionId).expect(201);
+    // La base: la fila del canon, con la fuente y su origen.
+    expect(await prisma.alimentoDelCanon.findUnique({ where: { elementoId: canon.catalogItemId } })).toMatchObject({ origenId: deA.catalogItemId, administradorId: admin.id });
   });
 });
 
@@ -413,7 +437,7 @@ describe('NUA-05 · el grupo de cada alimento', () => {
   });
 });
 
-// ─── Segundo tramo · compartir con control (NUA-D14 a D16) ───────────────────────────────────────
+// ─── Apoyo del segundo tramo ─────────────────────────────────────────────────────────────────────
 
 /** Una receta de un solo ingrediente: el alimento dado, en la versión dada. */
 function recetaCon(pro: Parte, alimentoId: string, versionId: string) {
@@ -427,147 +451,6 @@ function recetaCon(pro: Parte, alimentoId: string, versionId: string) {
       ingredients: [{ catalogItemId: alimentoId, catalogItemVersionId: versionId, quantity: { value: 50, unit: 'g' }, preparationState: 'RAW' }],
     });
 }
-
-describe('NUA-D14 a D16 · compartir con control', () => {
-  const lista = async (q: string) => ListaDeAlimentosParaRevisarResponseSchema.parse((await adm(app, admin.token).post('/admin/foods/query').send({ q }).expect(200)).body).data;
-  const decidir = (id: string) => adm(app, admin.token).post(`/admin/foods/${id}/decisions`).set('Idempotency-Key', claveDeIdempotencia()).send({ expectedVersion: 'v1', decision: 'CERTIFY', source: 'Rótulo sintético' });
-  type Borrador = { version: string; dayTypes: { meals: { options: { items: { catalogItemId: string; name: string }[] }[] }[] }[] };
-  const leerBorrador = async (pro: Parte, planId: string) => (await conSesion(app, pro.token).get(`/api/v1/nutrition/plans/${planId}`).expect(200)).body.data as Borrador;
-  const nombreEn = (b: Borrador, id: string) => b.dayTypes.flatMap((d) => d.meals.flatMap((m) => m.options.flatMap((o) => o.items))).find((it) => it.catalogItemId === id)?.name;
-
-  it('cargado con el interruptor apagado no se comparte; compartirlo y dejar de compartirlo son hechos nuevos', async () => {
-    const autor = await nutricionista();
-    const otro = await nutricionista();
-    const creado = await cargarAMano(autor, `Zzpriv${unico()} licuado`, { share: false });
-    expect((await propios(autor)).find((a) => a.catalogItemId === creado.catalogItemId)).toMatchObject({ shared: false, stoppedSharing: false });
-    expect((await buscar(otro, creado.name)).some((e) => e.catalogItemId === creado.catalogItemId)).toBe(false);
-    expect(await porIdentidad(otro, [creado.catalogItemId])).toEqual([]);
-    expect(await lista(creado.name)).toEqual([]);
-
-    const r = await compartir(autor, creado.catalogItemId, true).expect(200);
-    expect(AlimentoPropioResponseSchema.parse(r.body).data).toMatchObject({ shared: true, stoppedSharing: false, versionNumber: 1 });
-    // Compartirlo otra vez no agrega nada.
-    await compartir(autor, creado.catalogItemId, true).expect(200);
-    expect((await buscar(otro, creado.name)).find((e) => e.catalogItemId === creado.catalogItemId)).toMatchObject({ originLevel: 'OTHER_PROFESSIONAL' });
-    expect((await lista(creado.name)).map((a) => a.catalogItemId)).toEqual([creado.catalogItemId]);
-
-    const dejado = await compartir(autor, creado.catalogItemId, false).expect(200);
-    expect(AlimentoPropioResponseSchema.parse(dejado.body).data).toMatchObject({ shared: false, stoppedSharing: true });
-    const cambios = await prisma.cambioDeAlimentoCompartido.findMany({ where: { elementoId: creado.catalogItemId }, orderBy: { numero: 'asc' } });
-    expect(cambios.map((c) => [c.numero, c.compartido])).toEqual([
-      [1, true],
-      [2, false],
-    ]);
-    expect(cambios.every((c) => c.versionId === creado.versionId && c.autorId === autor.id)).toBe(true);
-  });
-
-  it('dejado de compartir: el mismo 404 que lo inexistente para los demás, y lo que ya lo cita lo conserva', async () => {
-    const autor = await nutricionista();
-    const c = await circuitoListoParaPlanificar(app, `nuac-${unico()}`);
-    const nombre = `Zzdejar${unico()} batido`;
-    const creado = await cargarAMano(autor, nombre);
-    // El otro profesional lo usa: un plan activado y, después, el borrador que sigue.
-    const b = await borradorCon(c, creado.catalogItemId);
-    await activar(app, c.pro, b.planId, b.version).expect(200);
-    const sucesora = await conSesion(app, c.pro.token).post(`/api/v1/advisees/${c.ase.id}/nutrition/plans`).send({ objectiveVersionId: c.objectiveVersionId, basedOnPlanId: b.planId }).expect(201);
-    const borradorId = sucesora.body.data.planId as string;
-
-    await compartir(autor, creado.catalogItemId, false).expect(200);
-    // El buscador, la consulta por identidad y Administración: como si no existiera.
-    expect((await buscar(c.pro, nombre)).some((e) => e.catalogItemId === creado.catalogItemId)).toBe(false);
-    expect(await porIdentidad(c.pro, [creado.catalogItemId])).toEqual([]);
-    expect(await lista(nombre)).toEqual([]);
-    const dejado = await decidir(creado.catalogItemId).expect(404);
-    const inexistente = await decidir(randomUUID()).expect(404);
-    expect(dejado.body.error).toEqual(inexistente.body.error);
-    // Una receta nueva del otro no lo cita.
-    const receta = await recetaCon(c.pro, creado.catalogItemId, creado.versionId);
-    expect(receta.status).toBe(422);
-    expect(receta.body.error.code).toBe('CATALOG_REFERENCE_INVALID');
-
-    // El plan activado lo conserva, con su versión.
-    expect(itemDe(await estimacion(c.pro, b.planId), creado.catalogItemId)).toMatchObject({ catalogItemVersionId: creado.versionId });
-    // Su autor lo corrige para él solo: el borrador del otro sigue mostrando el nombre que ya conocía.
-    await corregir(autor, creado.catalogItemId, { expectedVersion: 'v1', name: `${nombre} de una persona`, composition: COMPOSICION }).expect(200);
-    const leido = await leerBorrador(c.pro, borradorId);
-    expect(nombreEn(leido, creado.catalogItemId)).toBe(nombre);
-    expect(JSON.stringify(leido)).not.toContain('de una persona');
-    // El borrador que ya lo citaba se guarda; validar lo señala.
-    const guardado = await patchConSesion(app, c.pro.token, `/api/v1/nutrition/plans/${borradorId}`).send({ expectedVersion: leido.version, changes: estructuraCon(creado.catalogItemId, c.arroz) }).expect(200);
-    const validado = await conSesion(app, c.pro.token).post(`/api/v1/nutrition/plans/${borradorId}/validate`).send({ expectedVersion: guardado.body.data.version }).expect(200);
-    expect(validado.body.data.issues).toContainEqual(expect.objectContaining({ code: 'CATALOG_REFERENCE_INVALID' }));
-
-    // Volver a compartirlo es otro hecho: los demás ven la versión vigente.
-    await compartir(autor, creado.catalogItemId, true).expect(200);
-    expect((await buscar(c.pro, nombre)).find((e) => e.catalogItemId === creado.catalogItemId)?.name).toBe(`${nombre} de una persona`);
-    const cambios = await prisma.cambioDeAlimentoCompartido.findMany({ where: { elementoId: creado.catalogItemId }, orderBy: { numero: 'asc' } });
-    expect(cambios.map((k) => k.compartido)).toEqual([true, false, true]);
-  });
-
-  it('las versiones de antes de compartir no las cita nadie más, aunque se conozca su identificador', async () => {
-    const autor = await nutricionista();
-    const otro = await nutricionista();
-    const creado = await cargarAMano(autor, `Zzantes${unico()} de una persona`, { share: false });
-    const r = await corregir(autor, creado.catalogItemId, { expectedVersion: 'v1', name: `Zzantes${unico()} licuado`, composition: COMPOSICION, share: true }).expect(200);
-    const compartida = AlimentoPropioResponseSchema.parse(r.body).data;
-    const vieja = await recetaCon(otro, creado.catalogItemId, creado.versionId);
-    expect(vieja.status).toBe(422);
-    expect(vieja.body.error.details.issues).toEqual([{ code: 'CATALOG_REFERENCE_INVALID', path: 'ingredients[0].catalogItemVersionId' }]);
-    await recetaCon(otro, creado.catalogItemId, compartida.versionId).expect(201);
-    // Su autor sí cita la suya, la que sea.
-    await recetaCon(autor, creado.catalogItemId, creado.versionId).expect(201);
-  });
-
-  /**
-   * NUA-D16: una cita (guardar un borrador que lo suma) y el «dejar de compartir» de su autor, a la vez. La prueba retiene
-   * el alimento; los dos pedidos quedan esperándolo (la cita lo toma en modo compartido) y el primero que quedó esperando
-   * sigue primero. Sin ese bloqueo, la cita no esperaría y la barrera no se cumpliría.
-   */
-  async function aLaVez(primero: 'dejar' | 'citar') {
-    const autor = await nutricionista();
-    const c = await circuitoListoParaPlanificar(app, `nuar-${unico()}`);
-    const creado = await cargarAMano(autor, `Zzcarrera${unico()} galleta`);
-    const b = await crearBorrador(app, c);
-    const resultado: { dejar: request.Response | null; citar: request.Response | null } = { dejar: null, citar: null };
-    const pedidos = {
-      dejar: () => void compartir(autor, creado.catalogItemId, false).then((r) => (resultado.dejar = r)),
-      citar: () =>
-        void patchConSesion(app, c.pro.token, `/api/v1/nutrition/plans/${b.planId}`)
-          .send({ expectedVersion: b.version, changes: estructuraCon(creado.catalogItemId, c.arroz) })
-          .then((r) => (resultado.citar = r)),
-    };
-    const segundo = primero === 'dejar' ? 'citar' : 'dejar';
-    await prisma.$transaction(
-      async (tx) => {
-        await tx.$queryRaw`SELECT 1 FROM "elemento_de_catalogo_nutricional" WHERE "id" = ${creado.catalogItemId}::uuid FOR UPDATE`;
-        const pid = await pidDeLaTransaccion(tx);
-        pedidos[primero]();
-        await esperarQueEsperen(prisma, 1, { bloqueadoPor: pid, yaPaso: () => resultado[primero] !== null, que: `«${primero}» esperando el alimento` });
-        pedidos[segundo]();
-        await esperarQueEsperen(prisma, 2, { yaPaso: () => resultado[segundo] !== null, que: `«${segundo}» esperando el alimento` });
-        expect([resultado.dejar, resultado.citar]).toEqual([null, null]);
-      },
-      { timeout: 40_000, maxWait: 10_000 },
-    );
-    for (let i = 0; i < 400 && (resultado.dejar === null || resultado.citar === null); i++) await new Promise((r) => setTimeout(r, 25));
-    return { ...resultado, c, b };
-  }
-
-  it('una cita y un «dejar de compartir» a la vez: si se deja de compartir primero, la cita no entra', async () => {
-    const { dejar, citar } = await aLaVez('dejar');
-    expect(dejar!.status).toBe(200);
-    expect(citar!.status).toBe(422);
-    expect(citar!.body.error.code).toBe('CATALOG_REFERENCE_INVALID');
-  });
-
-  it('una cita y un «dejar de compartir» a la vez: si la cita va primero, el borrador lo conserva y validar lo señala', async () => {
-    const { dejar, citar, c, b } = await aLaVez('citar');
-    expect(citar!.status).toBe(200);
-    expect(dejar!.status).toBe(200);
-    const validado = await conSesion(app, c.pro.token).post(`/api/v1/nutrition/plans/${b.planId}/validate`).send({ expectedVersion: citar!.body.data.version }).expect(200);
-    expect(validado.body.data.issues).toContainEqual(expect.objectContaining({ code: 'CATALOG_REFERENCE_INVALID' }));
-  });
-});
 
 // ─── Segundo tramo · las bajas de la revisión adversaria que tocan lo retirado (NUA-D17 y D18) ───────
 
@@ -642,34 +525,105 @@ describe('NUA-D17 y D18 · lo retirado: el borrador acepta solo lo que ya citaba
   });
 });
 
+// ─── NUA-08 · Las medidas caseras ────────────────────────────────────────────────────────────────
+
+describe('NUA-08 · las medidas caseras: las define quien carga el alimento; el plan las usa y la cuenta sigue en gramos', () => {
+  const TAZA = { kind: 'CUP', amount: 240 };
+  const UNIDAD = { kind: 'UNIT', amount: 50 };
+
+  it('se cargan, se leen por todos los caminos del autor y se corrigen sin emitir una versión', async () => {
+    const pro = await nutricionista();
+    const creado = await cargarAMano(pro, `Zzmed${unico()} avena casera`, { householdMeasures: [TAZA, UNIDAD] });
+    const propio = (await propios(pro)).find((a) => a.catalogItemId === creado.catalogItemId)!;
+    expect(propio.householdMeasures).toEqual(expect.arrayContaining([TAZA, UNIDAD]));
+    expect((await buscar(pro, creado.name)).find((e) => e.catalogItemId === creado.catalogItemId)!.householdMeasures).toEqual(expect.arrayContaining([TAZA, UNIDAD]));
+    expect((await porIdentidad(pro, [creado.catalogItemId]))[0]!.householdMeasures).toHaveLength(2);
+    // Corregir solo las medidas: la misma versión; una lista vacía las quita.
+    const r = await corregir(pro, creado.catalogItemId, { expectedVersion: 'v1', name: creado.name, composition: COMPOSICION, householdMeasures: [{ kind: 'CUP', amount: 200 }] }).expect(200);
+    expect(AlimentoPropioResponseSchema.parse(r.body).data).toMatchObject({ versionNumber: 1, householdMeasures: [{ kind: 'CUP', amount: 200 }] });
+    const sinNada = await corregir(pro, creado.catalogItemId, { expectedVersion: 'v1', name: creado.name, composition: COMPOSICION, householdMeasures: [] }).expect(200);
+    expect(AlimentoPropioResponseSchema.parse(sinNada.body).data.householdMeasures).toEqual([]);
+    // Dos medidas del mismo tipo no entran.
+    await corregir(pro, creado.catalogItemId, { expectedVersion: 'v1', name: creado.name, composition: COMPOSICION, householdMeasures: [TAZA, { kind: 'CUP', amount: 1 }] }).expect(400);
+    // La tabla oficial no trae medidas inventadas.
+    const [usda] = await buscar(pro, 'Arroz blanco de grano largo, cocido');
+    expect(usda!.householdMeasures).toBeUndefined();
+  });
+
+  it('el ítem del plan guarda la medida elegida con su equivalencia; la persona recibe solo los gramos', async () => {
+    const c = await circuitoListoParaPlanificar(app, `nua8-${unico()}`);
+    const creado = await cargarAMano(c.pro, `Zzmed${unico()} arroz casero`, { householdMeasures: [TAZA] });
+    const conMedida = (cantidad: number, medida: Record<string, unknown>) => ({
+      dayTypes: [
+        {
+          label: 'Día habitual',
+          meals: [
+            {
+              label: 'Almuerzo',
+              prescriptionMode: 'DISH_OPTIONS',
+              options: [{ label: 'Con taza', items: [{ catalogItemId: creado.catalogItemId, quantity: { value: cantidad, unit: 'g' }, preparationState: 'COOKED', householdMeasure: medida }] }],
+            },
+          ],
+        },
+      ],
+    });
+    // Una cantidad que no es la de la medida no se guarda.
+    const mal = await conSesion(app, c.pro.token).post(`/api/v1/advisees/${c.ase.id}/nutrition/plans`).send({ objectiveVersionId: c.objectiveVersionId, initialStructure: conMedida(400, { kind: 'CUP', count: 2, amountPerUnit: 240 }) });
+    expect(mal.status).toBe(422);
+    expect(mal.body.error.details.issues).toEqual([{ code: 'HOUSEHOLD_MEASURE_INCONSISTENT', path: 'dayTypes[0].meals[0].options[0].items[0].householdMeasure' }]);
+    const r = await conSesion(app, c.pro.token).post(`/api/v1/advisees/${c.ase.id}/nutrition/plans`).send({ objectiveVersionId: c.objectiveVersionId, initialStructure: conMedida(360, { kind: 'CUP', count: 1.5, amountPerUnit: 240 }) }).expect(201);
+    const plan = r.body.data as { planId: string; version: string; dayTypes: { meals: { options: { items: Record<string, unknown>[] }[] }[] }[] };
+    expect(plan.dayTypes[0]!.meals[0]!.options[0]!.items[0]).toMatchObject({ quantity: { value: 360, unit: 'g' }, householdMeasure: { kind: 'CUP', count: 1.5, amountPerUnit: 240 } });
+    // La estimación cuenta en gramos: 360 g de 380 kcal cada 100 g.
+    const item = itemDe(await estimacion(c.pro, plan.planId), creado.catalogItemId);
+    expect(item.quantity).toEqual({ value: 360, unit: 'g' });
+    // Su autor cambia la taza después: el plan conserva la que eligió.
+    await corregir(c.pro, creado.catalogItemId, { expectedVersion: 'v1', name: creado.name, composition: COMPOSICION, householdMeasures: [{ kind: 'CUP', amount: 200 }] }).expect(200);
+    await activar(app, c.pro, plan.planId, plan.version).expect(200);
+    const leido = await conSesion(app, c.pro.token).get(`/api/v1/nutrition/plans/${plan.planId}`).expect(200);
+    expect(leido.body.data.dayTypes[0].meals[0].options[0].items[0]).toMatchObject({ householdMeasure: { kind: 'CUP', count: 1.5, amountPerUnit: 240 } });
+    // La persona: los gramos de siempre, sin la medida.
+    const hoy = await conSesion(app, c.ase.token).get('/api/v1/me/nutrition/today').expect(200);
+    expect(JSON.stringify(hoy.body)).not.toContain('householdMeasure');
+    expect(hoy.body.data.activePlan.dayTypes[0].meals[0].options[0].items[0].quantity).toEqual({ value: 360, unit: 'g' });
+  });
+});
+
 // ─── La base ─────────────────────────────────────────────────────────────────────────────────────
 
 describe('DL-180 · la base sostiene las guardias', () => {
   const PROCEDENCIA = { fuente: 'PROPIA', casoDeUso: 'PRUEBA', operacion: 'DL-180' };
 
-  it('el grupo lo elige solo quien lo cargó; lo compartido y las revisiones no se cambian ni se borran', async () => {
+  it('el grupo y las medidas los elige solo quien lo cargó; lo compartido está cerrado; el canon lo suma Administración', async () => {
     const autor = await nutricionista();
     const otro = await nutricionista();
     const creado = await cargarAMano(autor, `Zzbase${unico()}`);
     await expect(prisma.$executeRaw`INSERT INTO "grupo_de_alimento" ("elemento_id", "numero", "grupo", "autor_id", "procedencia") VALUES (${creado.catalogItemId}::uuid, 1, 'CARNES', ${otro.id}::uuid, ${JSON.stringify(PROCEDENCIA)}::jsonb)`).rejects.toThrow(/lo elige quien lo cargó/);
-    // Segundo tramo: lo compartido son cambios de solo agregar; la tabla del primer tramo ya no se escribe.
-    await expect(prisma.$executeRaw`UPDATE "cambio_de_alimento_compartido" SET "procedencia" = '{}'::jsonb WHERE "elemento_id" = ${creado.catalogItemId}::uuid`).rejects.toThrow();
-    await expect(prisma.$executeRaw`DELETE FROM "cambio_de_alimento_compartido" WHERE "elemento_id" = ${creado.catalogItemId}::uuid`).rejects.toThrow();
-    await expect(prisma.$executeRaw`INSERT INTO "alimento_compartido" ("elemento_id", "procedencia") VALUES (${creado.catalogItemId}::uuid, ${JSON.stringify(PROCEDENCIA)}::jsonb)`).rejects.toThrow(/cambio_de_alimento_compartido/);
-    // Lo deja de compartir solo quien lo cargó; cada cambio invierte el anterior y guarda la versión vigente.
+    // Segundo tramo: la tabla de lo compartido está cerrada (NUA-D14).
+    await expect(prisma.$executeRaw`INSERT INTO "alimento_compartido" ("elemento_id", "procedencia") VALUES (${creado.catalogItemId}::uuid, ${JSON.stringify(PROCEDENCIA)}::jsonb)`).rejects.toThrow(/no se comparte/);
+    // NUA-08: las medidas las define solo quien lo cargó, con una forma conocida, y no se cambian ni se borran.
     await expect(
-      prisma.$executeRaw`INSERT INTO "cambio_de_alimento_compartido" ("elemento_id", "numero", "compartido", "version_id", "autor_id", "procedencia")
-                         VALUES (${creado.catalogItemId}::uuid, 2, FALSE, ${creado.versionId}::uuid, ${otro.id}::uuid, ${JSON.stringify(PROCEDENCIA)}::jsonb)`,
+      prisma.$executeRaw`INSERT INTO "medidas_caseras_de_alimento" ("elemento_id", "numero", "medidas", "autor_id", "procedencia") VALUES (${creado.catalogItemId}::uuid, 1, '[{"kind":"CUP","amount":240}]'::jsonb, ${otro.id}::uuid, ${JSON.stringify(PROCEDENCIA)}::jsonb)`,
     ).rejects.toThrow(/quien lo cargó/);
     await expect(
-      prisma.$executeRaw`INSERT INTO "cambio_de_alimento_compartido" ("elemento_id", "numero", "compartido", "version_id", "autor_id", "procedencia")
-                         VALUES (${creado.catalogItemId}::uuid, 2, TRUE, ${creado.versionId}::uuid, ${autor.id}::uuid, ${JSON.stringify(PROCEDENCIA)}::jsonb)`,
-    ).rejects.toThrow(/alterna/);
-    await corregir(autor, creado.catalogItemId, { expectedVersion: 'v1', name: creado.name, composition: { ...COMPOSICION, fatG: 8 } }).expect(200);
+      prisma.$executeRaw`INSERT INTO "medidas_caseras_de_alimento" ("elemento_id", "numero", "medidas", "autor_id", "procedencia") VALUES (${creado.catalogItemId}::uuid, 1, '[{"kind":"BALDE","amount":240}]'::jsonb, ${autor.id}::uuid, ${JSON.stringify(PROCEDENCIA)}::jsonb)`,
+    ).rejects.toThrow(/medidas_caseras_de_alimento_forma/);
     await expect(
-      prisma.$executeRaw`INSERT INTO "cambio_de_alimento_compartido" ("elemento_id", "numero", "compartido", "version_id", "autor_id", "procedencia")
-                         VALUES (${creado.catalogItemId}::uuid, 2, FALSE, ${creado.versionId}::uuid, ${autor.id}::uuid, ${JSON.stringify(PROCEDENCIA)}::jsonb)`,
-    ).rejects.toThrow(/versión vigente/);
+      prisma.$executeRaw`INSERT INTO "medidas_caseras_de_alimento" ("elemento_id", "numero", "medidas", "autor_id", "procedencia") VALUES (${creado.catalogItemId}::uuid, 1, '[{"kind":"CUP","amount":0}]'::jsonb, ${autor.id}::uuid, ${JSON.stringify(PROCEDENCIA)}::jsonb)`,
+    ).rejects.toThrow(/medidas_caseras_de_alimento_forma/);
+    await prisma.$executeRaw`INSERT INTO "medidas_caseras_de_alimento" ("elemento_id", "numero", "medidas", "autor_id", "procedencia") VALUES (${creado.catalogItemId}::uuid, 1, '[{"kind":"CUP","amount":240}]'::jsonb, ${autor.id}::uuid, ${JSON.stringify(PROCEDENCIA)}::jsonb)`;
+    await expect(prisma.$executeRaw`UPDATE "medidas_caseras_de_alimento" SET "medidas" = '[]'::jsonb WHERE "elemento_id" = ${creado.catalogItemId}::uuid`).rejects.toThrow();
+    // NUA-D16: el canon lo suma solo un administrador, y solo un alimento de BE (no una carga a mano).
+    await expect(
+      prisma.$executeRaw`INSERT INTO "alimento_del_canon" ("elemento_id", "fuente", "administrador_id", "procedencia") VALUES (${creado.catalogItemId}::uuid, 'x', ${admin.id}::uuid, ${JSON.stringify(PROCEDENCIA)}::jsonb)`,
+    ).rejects.toThrow(/no cargas a mano/);
+    const deBe = await prisma.elementoDeCatalogoNutricional.create({ data: { procedencia: 'CONTROLLED_IMPORT' } });
+    await expect(
+      prisma.$executeRaw`INSERT INTO "alimento_del_canon" ("elemento_id", "fuente", "administrador_id", "procedencia") VALUES (${deBe.id}::uuid, 'x', ${otro.id}::uuid, ${JSON.stringify(PROCEDENCIA)}::jsonb)`,
+    ).rejects.toThrow(/rol vigente/);
+    await expect(
+      prisma.$executeRaw`INSERT INTO "alimento_del_canon" ("elemento_id", "fuente", "administrador_id", "procedencia") VALUES (${deBe.id}::uuid, '  ', ${admin.id}::uuid, ${JSON.stringify(PROCEDENCIA)}::jsonb)`,
+    ).rejects.toThrow(/alimento_del_canon_fuente/);
     // Una revisión la escribe solo un administrador con su rol vigente.
     await expect(
       prisma.$executeRaw`INSERT INTO "revision_administrativa_de_alimento" ("elemento_id", "numero", "resultado", "version_id", "fuente", "administrador_id", "procedencia")

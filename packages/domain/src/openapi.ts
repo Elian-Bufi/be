@@ -333,7 +333,10 @@ import {
   ListaDeAlimentosPropiosResponseSchema,
   ListaDeVerificadosResponseSchema,
   RetirarAlimentoRequestSchema,
-  CompartirAlimentoRequestSchema,
+  AlimentoDelCanonResponseSchema,
+  ConsultarParecidosRequestSchema,
+  ListaDeParecidosResponseSchema,
+  SumarAlCanonRequestSchema,
 } from './contratos-alimentos';
 import { CompartirLoElegidoRequestSchema, DejarDeCompartirUnaCosaRequestSchema, LoElegidoCompartidoResponseSchema, LoQueSePuedeCompartirResponseSchema, UnaCosaRetiradaResponseSchema } from './contratos-compartir';
 import {
@@ -1266,7 +1269,7 @@ const DEFINIDAS: readonly Operacion[] = [
     metodo: 'post',
     ruta: '/nutrition/catalog-items',
     resumen:
-      'Cargar manualmente un alimento al catálogo propio del profesional (fallback sin proveedor, RF-027). Desde DL-180: group, opcional, su grupo (el ícono); share, opcional, si lo ven los demás profesionales de Nutrición como «De otro profesional» (ausente: sí, como antes; false: lo ve solo quien lo carga, y se puede compartir después con API-ALI-08).',
+      'Cargar manualmente un alimento al catálogo propio del profesional (fallback sin proveedor, RF-027). Desde DL-180: group, opcional, su grupo (el ícono). Lo cargado a mano lo ve y lo cita solo quien lo cargó (segundo tramo, NUA-D14; decisión de Dirección del 2026-11-19); Administración lo ve con su nombre de profesional (API-ALI-05 y 08).',
     autenticacion: 'SESSION',
     idempotencia: true,
     request: CrearElementoDeCatalogoRequestSchema,
@@ -1280,7 +1283,7 @@ const DEFINIDAS: readonly Operacion[] = [
     metodo: 'get',
     ruta: '/nutrition/catalog-items/mine',
     resumen:
-      'Los alimentos que el profesional cargó a mano, también los retirados (available: false), el corregido más recientemente primero, cada uno en su versión vigente: el token para corregirlo o retirarlo (version, «v» y el número de versiones), su grupo, si lo ven los demás profesionales (shared) o su autor dejó de compartirlo (stoppedSharing) y lo que decidió Administración sobre la versión vigente (review). Solo profesionales de Nutrición.',
+      'Los alimentos que el profesional cargó a mano, también los retirados (available: false), el corregido más recientemente primero, cada uno en su versión vigente: el token para corregirlo o retirarlo (version, «v» y el número de versiones), su grupo, y lo que decidió Administración sobre la versión vigente (review). Solo profesionales de Nutrición.',
     autenticacion: 'SESSION',
     idempotencia: false,
     query: [LIMIT, CURSOR],
@@ -1293,7 +1296,7 @@ const DEFINIDAS: readonly Operacion[] = [
     metodo: 'patch',
     ruta: '/nutrition/catalog-items/{catalogItemId}',
     resumen:
-      'Corregir un alimento propio cargado a mano: si cambian el nombre o la composición, nace una versión nueva e inmutable, sucesora de la vigente. Las instantáneas de los planes activados, las recetas (que citan su versión) y los registros conservan la versión que citaban; un borrador usa la vigente. group, opcional, cambia el grupo (su ícono) sin emitir una versión. Guardar una corrección nunca comparte solo: share: true lo comparte si no se compartía (una elección aparte, apagada por defecto en el formulario); ausente o false no cambia lo compartido (dejar de compartir es API-ALI-08). Contra la versión que se vio (expectedVersion): si cambió, 409 VERSION_CONFLICT; uno retirado, 422 INVALID_STATE_TRANSITION. Uno ajeno, sembrado, importado o inexistente: el mismo 404.',
+      'Corregir un alimento propio cargado a mano: si cambian el nombre o la composición, nace una versión nueva e inmutable, sucesora de la vigente. Las instantáneas de los planes activados, las recetas (que citan su versión) y los registros conservan la versión que citaban; un borrador usa la vigente. group, opcional, cambia el grupo (su ícono) sin emitir una versión. Contra la versión que se vio (expectedVersion): si cambió, 409 VERSION_CONFLICT; uno retirado, 422 INVALID_STATE_TRANSITION. Uno ajeno, sembrado, importado o inexistente: el mismo 404.',
     autenticacion: 'SESSION',
     idempotencia: true,
     request: CorregirAlimentoRequestSchema,
@@ -1328,24 +1331,11 @@ const DEFINIDAS: readonly Operacion[] = [
     fuente: 'WP-NUTRICION-ALIMENTOS NUA-02 a NUA-05 · ID propio de BE (familia ALI) · DEUDA_LEGAJO DL-180',
   },
   {
-    id: 'API-ALI-08',
-    metodo: 'post',
-    ruta: '/nutrition/catalog-items/{catalogItemId}/sharing',
-    resumen:
-      'Compartir un alimento propio cargado a mano con los demás profesionales de Nutrición (shared: true) o dejar de compartirlo (shared: false). Cada vez es un hecho nuevo, de solo agregar, con la versión vigente; si ya está así, 200 sin agregar nada. Dejar de compartirlo lo saca del buscador de los demás, de su consulta por identidad (API-ALI-04) y de la revisión de Administración (API-ALI-05 y 06): para ellos es el mismo 404 que lo inexistente. Lo que ya lo cita (planes activados, recetas, registros) lo conserva, y un borrador que ya lo citaba se sigue guardando, pero validar y activar lo señalan. Al volver a compartirlo, los demás citan la versión vigente y las que siguen, nunca las de antes. Uno ajeno, sembrado, importado o inexistente: el mismo 404.',
-    autenticacion: 'SESSION',
-    idempotencia: true,
-    request: CompartirAlimentoRequestSchema,
-    exitos: [{ status: 200, schema: AlimentoPropioResponseSchema }],
-    errores: { ...SESION, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 403: ['ACTION_FORBIDDEN'], 404: ['RESOURCE_NOT_FOUND'], 409: ['IDEMPOTENCY_KEY_REUSED'] },
-    fuente: 'WP-NUTRICION-ALIMENTOS, segundo tramo (NUA-D14 a D16; pedido de Dirección del 2026-11-19) · ID propio de BE (familia ALI) · DEUDA_LEGAJO DL-180',
-  },
-  {
     id: 'API-ALI-05',
     metodo: 'post',
     ruta: '/admin/foods/query',
     resumen:
-      'Los alimentos que los profesionales cargaron a mano y comparten ahora, para que Administración los revise: el nombre, los valores cada 100 g, el grupo y lo decidido sobre la versión vigente; nunca quién lo cargó ni a quién se le indicó. Filtrados por texto (q) y por estado (PENDING, CERTIFIED o EQUIVALENT); sin estado, los que esperan revisión primero. Los retirados no se ofrecen. La consulta va en el cuerpo y queda auditada.',
+      'Los alimentos que los profesionales cargaron a mano, para que Administración los revise: el nombre, los valores cada 100 g, el grupo, lo decidido sobre la versión vigente y, desde el segundo tramo (NUA-D15), quién lo cargó, por su nombre de profesional (loadedBy); nunca a quién se le indicó ni sus planes. Filtrados por texto (q) y por estado (PENDING, CERTIFIED o EQUIVALENT); sin estado, los que esperan revisión primero. Los retirados no se ofrecen. La consulta va en el cuerpo y queda auditada.',
     autenticacion: 'SESSION_MFA',
     idempotencia: false,
     request: ConsultarAlimentosParaRevisarRequestSchema,
@@ -1358,7 +1348,7 @@ const DEFINIDAS: readonly Operacion[] = [
     metodo: 'post',
     ruta: '/admin/foods/{catalogItemId}/decisions',
     resumen:
-      'Lo que decide Administración sobre un alimento cargado a mano, contra la versión que vio (expectedVersion; si su autor lo corrigió mientras tanto, 409 VERSION_CONFLICT): CERTIFY, con la fuente citada (source, de 1 a 500; sin ella, 422 VALIDATION_FAILED con SOURCE_REQUIRED), que lo vuelve «Verificado» en el buscador para esa versión (si su autor lo corrige, la nueva vuelve a esperar revisión); EQUIVALENT, con un alimento de la tabla oficial disponible (equivalentCatalogItemId; si no lo es, EQUIVALENT_NOT_VERIFIED), que el buscador sugiere en su lugar sin tocar los planes que ya lo citan; o CLEAR, que quita lo decidido (sin nada decidido, 422 INVALID_STATE_TRANSITION). Cada decisión es una fila nueva: la historia no se pisa. Uno que no existe, que no es una carga a mano o que su autor no comparte ahora: el mismo 404. La auditoría no guarda los textos. Devuelve el alimento como lo lista API-ALI-05.',
+      'Lo que decide Administración sobre un alimento cargado a mano, contra la versión que vio (expectedVersion; si su autor lo corrigió mientras tanto, 409 VERSION_CONFLICT): CERTIFY, con la fuente citada (source, de 1 a 500; sin ella, 422 VALIDATION_FAILED con SOURCE_REQUIRED), que lo vuelve «Verificado» en el buscador para esa versión (si su autor lo corrige, la nueva vuelve a esperar revisión); EQUIVALENT, con un alimento de la tabla oficial disponible (equivalentCatalogItemId; si no lo es, EQUIVALENT_NOT_VERIFIED), que el buscador sugiere en su lugar sin tocar los planes que ya lo citan; o CLEAR, que quita lo decidido (sin nada decidido, 422 INVALID_STATE_TRANSITION). Cada decisión es una fila nueva: la historia no se pisa. Uno que no existe o que no es una carga a mano: el mismo 404. El equivalente es de la tabla oficial o del canon. La auditoría no guarda los textos. Devuelve el alimento como lo lista API-ALI-05.',
     autenticacion: 'SESSION_MFA',
     idempotencia: true,
     request: DecidirSobreAlimentoRequestSchema,
@@ -1370,13 +1360,39 @@ const DEFINIDAS: readonly Operacion[] = [
     id: 'API-ALI-07',
     metodo: 'post',
     ruta: '/admin/foods/verified/query',
-    resumen: `Los alimentos de la tabla oficial (USDA FoodData Central · SR Legacy) disponibles que coinciden con lo escrito (q, en el cuerpo), para elegir el equivalente de uno cargado a mano. ${COMO_BUSCA_EL_CATALOGO} Queda auditada.`,
+    resumen: `Los alimentos verificados (la tabla oficial, USDA FoodData Central · SR Legacy, y lo que Administración sumó al canon) disponibles que coinciden con lo escrito (q, en el cuerpo), para elegir el equivalente de uno cargado a mano. ${COMO_BUSCA_EL_CATALOGO} Queda auditada.`,
     autenticacion: 'SESSION_MFA',
     idempotencia: false,
     request: BuscarVerificadosRequestSchema,
     exitos: [{ status: 200, schema: ListaDeVerificadosResponseSchema }],
     errores: { ...{ 401: ['AUTHENTICATION_REQUIRED', 'SESSION_INVALID', 'SESSION_EXPIRED', 'SESSION_REVOKED'], 403: ['ACTION_FORBIDDEN', 'MFA_REQUIRED'], 503: ['ADMINISTRATION_NOT_AVAILABLE'] }, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'] },
     fuente: 'WP-NUTRICION-ALIMENTOS NUA-04 · ID propio de BE (familia ALI) · DEUDA_LEGAJO DL-180',
+  },
+  {
+    id: 'API-ALI-08',
+    metodo: 'post',
+    ruta: '/admin/foods/similar/query',
+    resumen:
+      'Las cargas a mano agrupadas por nombre parecido (sin tildes, sin mayúsculas, sin espacios de más y sin plurales simples), cada grupo con los nombres como se cargaron, cuántos profesionales distintos cargaron algo así y sus cargas, cada una con quién la cargó (su nombre de profesional; nunca a quién se le indicó). Lo que más profesionales cargaron va primero: es lo que conviene sumar al canon. Filtrados por texto (q) y por un mínimo de profesionales (minProfessionals). Los retirados no se ofrecen. La consulta va en el cuerpo y queda auditada.',
+    autenticacion: 'SESSION_MFA',
+    idempotencia: false,
+    request: ConsultarParecidosRequestSchema,
+    exitos: [{ status: 200, schema: ListaDeParecidosResponseSchema }],
+    errores: { ...{ 401: ['AUTHENTICATION_REQUIRED', 'SESSION_INVALID', 'SESSION_EXPIRED', 'SESSION_REVOKED'], 403: ['ACTION_FORBIDDEN', 'MFA_REQUIRED'], 503: ['ADMINISTRATION_NOT_AVAILABLE'] }, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'] },
+    fuente: 'WP-NUTRICION-ALIMENTOS, segundo tramo (NUA-D15; decisión de Dirección del 2026-11-19) · WP-ADMINISTRACION (DL-155) · ID propio de BE (familia ALI) · DEUDA_LEGAJO DL-180',
+  },
+  {
+    id: 'API-ALI-09',
+    metodo: 'post',
+    ruta: '/admin/foods/canon',
+    resumen:
+      'Sumar al canon: un alimento verificado de BE, que ven todos los profesionales de Nutrición («Verificado» en el buscador, con su fuente), con el nombre, la composición cada 100 g, el grupo (opcional) y la fuente citada (source, obligatoria, de 1 a 500). Puede partir de los valores de una carga a mano (fromCatalogItemId) y marcar cargas a mano como sus equivalentes (equivalentCatalogItemIds, hasta 50): el buscador de cada autor le sugiere el verificado justo antes del suyo, y lo suyo no cambia en sus planes ni en sus registros. Una carga que no existe, que no es a mano o que está retirada: 422 VALIDATION_FAILED con su ruta. Queda auditada, sin los textos.',
+    autenticacion: 'SESSION_MFA',
+    idempotencia: true,
+    request: SumarAlCanonRequestSchema,
+    exitos: [{ status: 201, schema: AlimentoDelCanonResponseSchema }],
+    errores: { ...{ 401: ['AUTHENTICATION_REQUIRED', 'SESSION_INVALID', 'SESSION_EXPIRED', 'SESSION_REVOKED'], 403: ['ACTION_FORBIDDEN', 'MFA_REQUIRED'], 503: ['ADMINISTRATION_NOT_AVAILABLE'] }, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 409: ['IDEMPOTENCY_KEY_REUSED'], 422: ['VALIDATION_FAILED'] },
+    fuente: 'WP-NUTRICION-ALIMENTOS, segundo tramo (NUA-D16; decisión de Dirección del 2026-11-19) · WP-ADMINISTRACION (DL-155) · ID propio de BE (familia ALI) · DEUDA_LEGAJO DL-180',
   },
   {
     id: 'API-INT-NUT-02',

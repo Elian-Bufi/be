@@ -105,6 +105,12 @@ export interface RecetasEnLaLectura {
 
 /** Jerarquía de salida desde la instantánea (activada) o desde el contenido y el catálogo actual (borrador). */
 export function diasTipoApi(contenido: ContenidoDePlan, instantanea: ContenidoDeInstantanea | null, catalogo: NombresDeCatalogo, recetas: RecetasEnLaLectura = { conReceta: false }): DiaTipoDelProfesional[] {
+  // NUA-08 (DL-180, segundo tramo): la medida casera con la que se escribió cada cantidad, solo para el profesional (`conReceta`).
+  // La instantánea no la guarda (lo que lee la persona no cambia); en una versión activada sale de su contenido, por ítem.
+  const medidas = new Map(
+    recetas.conReceta ? contenido.dayTypes.flatMap((d) => d.meals.flatMap((m) => m.options.flatMap((o) => o.items.flatMap((it) => (it.householdMeasure ? [[it.itemId, it.householdMeasure] as const] : []))))) : [],
+  );
+  const conMedida = (itemId: string) => (medidas.has(itemId) ? { householdMeasure: medidas.get(itemId)! } : {});
   if (instantanea) {
     return instantanea.dayTypes.map((d, i) => ({
       dayTypeId: d.dayTypeId,
@@ -128,6 +134,7 @@ export function diasTipoApi(contenido: ContenidoDePlan, instantanea: ContenidoDe
             quantity: it.quantity,
             preparationState: it.preparationState,
             note: it.note,
+            ...conMedida(it.itemId),
           })),
         })),
       })),
@@ -158,6 +165,7 @@ export function diasTipoApi(contenido: ContenidoDePlan, instantanea: ContenidoDe
             quantity: it.quantity,
             preparationState: it.preparationState,
             note: it.note,
+            ...conMedida(it.itemId),
           })),
         };
       }),
@@ -192,10 +200,9 @@ export function versionDePlanApi(v: VersionConPlan, nombreProfesional: string, c
 
 /**
  * Nombres actuales del catálogo para los ítems de un contenido (lectura de borradores de `profesionalId`).
- * DL-180, segundo tramo (NUA-D15): de un alimento cargado a mano por otro profesional que ya no lo comparte, el nombre de la
- * versión que regía cuando lo dejó de compartir (lo que este profesional ya vio y tiene citado), nunca una corrección
- * posterior, que su autor escribió para él solo. De uno de otro profesional que nunca se compartió, ninguno: la lectura
- * dice «Elemento no disponible».
+ * DL-180, segundo tramo (NUA-D14): lo cargado a mano es de quien lo cargó. De uno de otro profesional (lo que se pudo citar
+ * mientras se compartía, en el primer tramo) no se lee ningún nombre: su autor puede haberlo corregido para él solo, y la
+ * lectura dice «Elemento no disponible» (validar y activar lo señalan).
  */
 export async function nombresDeCatalogo(cliente: Cliente, contenido: ContenidoDePlan, profesionalId: string): Promise<NombresDeCatalogo> {
   const ids = [...new Set(contenido.dayTypes.flatMap((d) => d.meals.flatMap((m) => m.options.flatMap((o) => o.items.map((i) => i.catalogItemId)))))].filter((id) =>
@@ -203,16 +210,12 @@ export async function nombresDeCatalogo(cliente: Cliente, contenido: ContenidoDe
   );
   if (ids.length === 0) return new Map();
   const filas = await cliente.$queryRaw<{ elementoId: string; versionId: string; nombre: string }[]>`
-    SELECT e."id"::text AS "elementoId", v."id"::text AS "versionId", v."nombre"
-      FROM "elemento_de_catalogo_nutricional" e
-      JOIN "version_de_elemento_nutricional" v ON v."id" = (
-        CASE WHEN e."procedencia" = 'PROFESSIONAL_MANUAL' AND e."creado_por_id" IS DISTINCT FROM ${profesionalId}::uuid
-                  AND NOT COALESCE((SELECT k."compartido" FROM "cambio_de_alimento_compartido" k WHERE k."elemento_id" = e."id" ORDER BY k."numero" DESC LIMIT 1), FALSE)
-             THEN (SELECT k."version_id" FROM "cambio_de_alimento_compartido" k WHERE k."elemento_id" = e."id" AND NOT k."compartido" ORDER BY k."numero" DESC LIMIT 1)
-             ELSE (SELECT x."id" FROM "version_de_elemento_nutricional" x
-                    WHERE x."elemento_id" = e."id" AND NOT EXISTS (SELECT 1 FROM "version_de_elemento_nutricional" s WHERE s."predecesora_id" = x."id"))
-        END)
-     WHERE e."id" = ANY(${ids}::uuid[])`;
+    SELECT v."elemento_id"::text AS "elementoId", v."id"::text AS "versionId", v."nombre"
+      FROM "version_de_elemento_nutricional" v
+      JOIN "elemento_de_catalogo_nutricional" e ON e."id" = v."elemento_id"
+     WHERE v."elemento_id" = ANY(${ids}::uuid[])
+       AND NOT EXISTS (SELECT 1 FROM "version_de_elemento_nutricional" s WHERE s."predecesora_id" = v."id")
+       AND NOT (e."procedencia" = 'PROFESSIONAL_MANUAL' AND e."creado_por_id" IS DISTINCT FROM ${profesionalId}::uuid)`;
   return new Map(filas.map((f) => [f.elementoId, { versionId: f.versionId, nombre: f.nombre }]));
 }
 

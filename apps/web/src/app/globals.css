@@ -19168,42 +19168,6 @@ html:has(.estacion:not([data-en-el-asistente])) {
   display: block;
 }
 
-/* NUA-03: lo de otro profesional, mirado antes de sumarlo. */
-.buscador-de-la-opcion__mirar {
-  margin-top: 0.75rem;
-  padding: 1rem;
-  border: 1px solid var(--borde-control);
-  border-radius: 10px;
-  background: var(--fondo-suave);
-}
-
-.buscador-de-la-opcion__mirar h3 {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.5rem;
-  margin: 0 0 0.5rem;
-  font-size: 1.05rem;
-}
-
-.buscador-de-la-opcion__composicion {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(7.5rem, 1fr));
-  gap: 0.5rem 1rem;
-  margin: 0.75rem 0 0.25rem;
-}
-
-.buscador-de-la-opcion__composicion dt {
-  color: var(--tenue);
-  font-size: 0.9rem;
-}
-
-.buscador-de-la-opcion__composicion dd {
-  margin: 0;
-  font-variant-numeric: tabular-nums;
-  font-weight: 600;
-}
-
 /* NUA-02: la marca discreta de lo retirado, junto al nombre; la fila se ve igual. */
 .item-del-editor__retirado {
   margin-left: 0.4rem;
@@ -19222,28 +19186,26 @@ html:has(.estacion:not([data-en-el-asistente])) {
   min-width: 0;
 }
 
-/* NUA-D14: compartir es un interruptor a la vista, con el aviso al lado, sobre el fondo suave del formulario. */
-.formulario-del-alimento__compartir {
-  display: grid;
-  gap: 0.15rem;
-  padding: 0.5rem 0.75rem;
+/* NUA-08: las medidas caseras, en su grupo, con los mismos campos que los valores. */
+.formulario-del-alimento__medidas {
+  margin: 0;
+  padding: 0.5rem 0.75rem 0.25rem;
   border: 1px solid var(--borde);
   border-radius: 10px;
-  background: var(--fondo-suave);
 }
 
-.formulario-del-alimento__interruptor {
+.formulario-del-alimento__medidas legend {
+  padding: 0 0.25rem;
   font-weight: 600;
 }
 
-.formulario-del-alimento__aviso {
+.formulario-del-alimento__es-tuyo {
   display: flex;
   align-items: flex-start;
   gap: 0.4rem;
-  margin: 0;
 }
 
-.formulario-del-alimento__aviso .icono {
+.formulario-del-alimento__es-tuyo .icono {
   flex: none;
   margin-top: 0.15rem;
 }
@@ -19375,4 +19337,49 @@ html:has(.estacion:not([data-en-el-asistente])) {
   margin-bottom: 0.25rem;
   padding: 0;
   font-weight: 600;
+}
+
+/* DL-180, segundo tramo (NUA-D15 y D16): la consola de alimentos con sus dos vistas y los grupos de parecidos. */
+.vistas-de-alimentos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0 0 1rem;
+}
+
+.parecidos__grupo {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.parecidos__cabecera {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+}
+
+.parecidos__cargas {
+  display: grid;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.parecidos__carga {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  gap: 0.5rem;
+}
+
+.parecidos__icono {
+  color: var(--tenue);
+  margin-top: 0.1rem;
+}
+
+.parecidos__grupo > .decidir-sobre-alimento {
+  margin-top: 0.5rem;
 }

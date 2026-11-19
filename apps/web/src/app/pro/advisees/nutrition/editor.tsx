@@ -71,6 +71,7 @@ import {
 import { Enlace } from '../../../../components/enlace';
 import { useCallback, useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react';
 import { useRouter } from 'next/navigation';
+import { useAntesDeSalir } from '../../../../components/salida-segura';
 import { AvisoFlotante } from '../../../../components/ayuda';
 import { Cajon } from '../../../../components/cajon';
 import { CampoDeNombre } from '../../../../components/campo-de-nombre';
@@ -252,6 +253,7 @@ export function EditorDeBorrador({
 }) {
   const { token, sesionPerdida, accesoRetirado, parametros, ir } = useNutricion();
   const router = useRouter();
+  const antesDeSalir = useAntesDeSalir();
   // DL-169: el nombre de la persona, o la referencia neutral, para decir quién no ve la versión y quién la va a ver.
   const persona = usePersonaDelArea();
   // API-PLN-02 y 03: los rangos indicados, con su propia revisión (no esperan al autoguardado).
@@ -1030,7 +1032,7 @@ export function EditorDeBorrador({
     <ContextoDeLosAlimentos.Provider value={alimentos}>
     <section className="seccion editor-del-plan" aria-labelledby="titulo-borrador">
       {/* DL-180, segundo tramo: la sesión venció mientras se cargaba la imagen de una receta recién creada en el plan. */}
-      <AvisoDeLaImagenSinCargar alReintentar={(id) => router.push(`/pro/recipes?receta=${encodeURIComponent(id)}`)} />
+      <AvisoDeLaImagenSinCargar alReintentar={(id) => antesDeSalir(() => router.push(`/pro/recipes?receta=${encodeURIComponent(id)}`))} />
       <div className="editor-del-plan__cabecera">
         {/* DJ-6: la versión en preparación lleva número (el de las activadas más uno) y dice que la persona no la ve. */}
         <h2 id="titulo-borrador">

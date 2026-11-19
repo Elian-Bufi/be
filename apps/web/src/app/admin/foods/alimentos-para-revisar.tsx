@@ -3,8 +3,11 @@
 /**
  * DL-180 (WP-NUTRICION-ALIMENTOS, NUA-04) · Los alimentos que los profesionales cargaron a mano, para que Administración los
  * revise (API-ALI-05 a 07):
+ * - **Dos vistas** (segundo tramo, NUA-D15 y D16): «Parecidos», las cargas agrupadas por nombre parecido con cuántos
+ *   profesionales cargaron algo así y «Sumar al canon» (`parecidos.tsx`); y «Uno por uno», la lista de siempre.
  * - **La lista,** con el filtro de estado (por omisión, todos: los que esperan revisión primero) y el texto. De cada uno, el
- *   nombre, los valores cada 100 g, el grupo y lo decidido. Nunca quién lo cargó ni a quién se le indicó.
+ *   nombre, los valores cada 100 g, el grupo, lo decidido y, desde el segundo tramo, quién lo cargó (su nombre de
+ *   profesional). Nunca a quién se le indicó.
  * - **Revisar:** verificarlo con una fuente citada, marcarlo como equivalente de uno de la tabla oficial (que el buscador
  *   sugiere en su lugar) o quitar lo decidido. Contra la versión que se vio: si quien lo cargó lo corrigió mientras tanto,
  *   lo dice y vuelve a leer.
@@ -26,6 +29,7 @@ import { apiAdministrativa } from '../../../lib/api-administrativa';
 import { dia } from '../../../lib/formato';
 import { nuevaClaveAdministrativa, useAdministracion } from '../../../lib/sesion-administrativa';
 import { decididoEnPalabras, faltaParaDecidir } from './decision';
+import { Parecidos } from './parecidos';
 
 const FILTROS = ['TODOS', 'PENDING', 'CERTIFIED', 'EQUIVALENT'] as const;
 type Filtro = (typeof FILTROS)[number];
@@ -33,6 +37,29 @@ type Decision = DecidirSobreAlimentoRequest['decision'];
 
 /** Un valor cada 100 g: lo que no hay es «sin dato», nunca cero. */
 const valor = (v: number | null | undefined, unidad: string): string => (v === null || v === undefined ? 'sin dato' : formatearCantidad(v, unidad));
+
+/** NUA-D15: las dos vistas de la consola. «Parecidos» primero: es la que sirve para decidir qué sumar al canon. */
+export function ConsolaDeAlimentos() {
+  const [vista, setVista] = useState<'PARECIDOS' | 'TODOS'>('PARECIDOS');
+  const [aviso, setAviso] = useState<string | null>(null);
+  return (
+    <>
+      <div className="vistas-de-alimentos" role="group" aria-label="Vista">
+        {(['PARECIDOS', 'TODOS'] as const).map((v) => (
+          <button key={v} type="button" className={`boton ${vista === v ? 'boton--primario' : 'boton--secundario'}`} aria-pressed={vista === v} onClick={() => setVista(v)} data-vista={v}>
+            {C.vistas[v]}
+          </button>
+        ))}
+      </div>
+      {aviso ? (
+        <Aviso tipo="info" enfocar>
+          <p>{aviso}</p>
+        </Aviso>
+      ) : null}
+      {vista === 'PARECIDOS' ? <Parecidos alSumar={setAviso} /> : <AlimentosParaRevisar />}
+    </>
+  );
+}
 
 export function AlimentosParaRevisar() {
   const id = useId();
@@ -119,6 +146,9 @@ export function AlimentosParaRevisar() {
                   </p>
                   <p className="nota">
                     {a.foodGroup ? NOMBRE_DEL_GRUPO[a.foodGroup] : 'Sin grupo'} · versión {a.versionNumber} del {dia(a.updatedAt)}
+                  </p>
+                  <p className="nota" data-cargado-por>
+                    {C.cargadoPor(a.loadedBy.displayName)}
                   </p>
                   <p className="nota" data-decidido>
                     {decididoEnPalabras(a)}

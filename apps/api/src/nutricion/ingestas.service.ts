@@ -316,7 +316,6 @@ export class IngestasService {
           throw new ErrorDeApi(422, CodigoDeError.NUTRITION_FREE_DESCRIPTION_REQUIRED, 'Solo se estructura un registro libre de una comida fuera del plan.');
         }
         const conCatalogo = pedido.structuredEstimate.items.flatMap((it) => (it.catalogItemId ? [it.catalogItemId] : []));
-        await this.catalogo.tomarParaCitar(tx, actor.identidadId, conCatalogo);
         const disponibles = await this.catalogo.disponibles(tx, actor.identidadId, conCatalogo);
         const invalido = conCatalogo.findIndex((id) => !disponibles.has(id));
         if (invalido >= 0) {

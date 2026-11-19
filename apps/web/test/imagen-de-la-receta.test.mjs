@@ -135,7 +135,7 @@ test('DL-180, segundo tramo · si la sesión vence mientras se carga la imagen d
   assert.match(editor, /if \(conImagen\?\.tipo === 'sesion-perdida'\) return anotarLaImagenSinCargar\(creada\.name, conImagen\.pendiente\);/);
   const recetas = leer('app/pro/recipes/mis-recetas.tsx');
   assert.match(recetas, /<AvisoDeLaImagenSinCargar\n\s*key=\{recetaId \?\? 'lista'\}\n\s*alReintentar=\{\(id\) => \{\n\s*setImagenPendiente\(tomarLaImagenSinCargar\(id\)\);/);
-  assert.match(leer('app/pro/advisees/nutrition/editor.tsx'), /<AvisoDeLaImagenSinCargar alReintentar=\{\(id\) => router\.push\(/);
+  assert.match(leer('app/pro/advisees/nutrition/editor.tsx'), /<AvisoDeLaImagenSinCargar alReintentar=\{\(id\) => antesDeSalir\(\(\) => router\.push\(/);
 });
 
 test('NUA-06 · recién creada la receta, la falla dice que quedó guardada y que el reintento no la vuelve a crear', () => {

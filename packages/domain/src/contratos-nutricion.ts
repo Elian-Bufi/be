@@ -19,7 +19,7 @@
  */
 import { z } from 'zod';
 import { IdOpaco, Instante, ValidationIssueSchema } from './contratos';
-import { CertificacionDeAlimentoSchema, GrupoDeAlimentoSchema, NivelDeOrigenSchema } from './alimentos-del-catalogo';
+import { CertificacionDeAlimentoSchema, GrupoDeAlimentoSchema, MedidaElegidaSchema, MedidasCaserasSchema, NivelDeOrigenSchema } from './alimentos-del-catalogo';
 import { FuenteExternaDeAlimentoSchema, OrigenEnElBuscadorSchema } from './contratos-procedencia-externa';
 import { PaginaSchema, ResumenDeActorSchema, TokenDeVersionSchema } from './contratos-vinculo';
 
@@ -145,6 +145,12 @@ export const ItemPrescriptoEntradaSchema = z.strictObject({
   quantity: CantidadSchema.nullable(),
   preparationState: EstadoDePreparacionSchema.nullable(),
   note: TextoOpcional(300).optional(),
+  /**
+   * NUA-08 (DL-180, segundo tramo), opcional: la medida casera con la que se escribió la cantidad, y su equivalencia de
+   * ese momento. La cantidad sigue en gramos (o mililitros) y es la que cuenta; tiene que ser `count × amountPerUnit`
+   * (HOUSEHOLD_MEASURE_INCONSISTENT). Solo la ve el profesional: la persona recibe la cantidad en gramos, como siempre.
+   */
+  householdMeasure: MedidaElegidaSchema.nullable().optional(),
 });
 export const OpcionDeComidaEntradaSchema = z.strictObject({
   optionId: IdOpaco.optional(),
@@ -206,7 +212,9 @@ export type DiaTipo = z.infer<typeof DiaTipoSchema>;
  * que nació cada opción. «Hoy» (API-NUT-14) sigue con `DiaTipoSchema`: la APK instalada valida con un esquema estricto
  * que no conoce `recipe` (DL-121; la prueba de compatibilidad congela esa forma).
  */
-export const OpcionDeComidaDelProfesionalSchema = OpcionDeComidaSchema.extend({ recipe: RecetaDeOpcionSchema.optional() });
+/** NUA-08 (DL-180, segundo tramo): el ítem como lo lee el profesional, con la medida casera elegida si la tiene. */
+export const ItemPrescriptoDelProfesionalSchema = ItemPrescriptoSchema.extend({ householdMeasure: MedidaElegidaSchema.optional() });
+export const OpcionDeComidaDelProfesionalSchema = OpcionDeComidaSchema.extend({ recipe: RecetaDeOpcionSchema.optional(), items: z.array(ItemPrescriptoDelProfesionalSchema) });
 export const ComidaDelProfesionalSchema = ComidaSchema.extend({ options: z.array(OpcionDeComidaDelProfesionalSchema) });
 export const DiaTipoDelProfesionalSchema = DiaTipoSchema.extend({ meals: z.array(ComidaDelProfesionalSchema) });
 export type DiaTipoDelProfesional = z.infer<typeof DiaTipoDelProfesionalSchema>;
@@ -345,6 +353,8 @@ export const ElementoEncontradoSchema = ElementoDeCatalogoSchema.extend({
   originLevel: NivelDeOrigenSchema.optional(),
   certification: CertificacionDeAlimentoSchema.nullable().optional(),
   verifiedEquivalent: EquivalenteVerificadoSchema.nullable().optional(),
+  /** NUA-08 (segundo tramo), opcional: sus medidas caseras; ausente o vacía, ninguna. */
+  householdMeasures: MedidasCaserasSchema.optional(),
 });
 export type ElementoEncontrado = z.infer<typeof ElementoEncontradoSchema>;
 export const BusquedaEnCatalogoResponseSchema = z.strictObject({ data: z.array(ElementoEncontradoSchema), page: PaginaSchema });
@@ -361,16 +371,16 @@ export const BusquedaEnCatalogoRequestSchema = z.strictObject({
 });
 export type BusquedaEnCatalogoRequest = z.infer<typeof BusquedaEnCatalogoRequestSchema>;
 /**
- * DL-180 (NUA-05): `group`, opcional, el grupo del alimento (su ícono); sin él, queda sin grupo como antes.
- * DL-180, segundo tramo (NUA-D14): `share`, opcional, si lo ven los demás profesionales de Nutrición. El formulario lo
- * muestra como un interruptor encendido, con el aviso al lado; ausente vale `true`, lo de antes de este tramo.
+ * DL-180 (NUA-05): `group`, opcional, el grupo del alimento (su ícono); sin él, queda sin grupo como antes. Desde el segundo
+ * tramo (NUA-D14), lo cargado a mano es de quien lo carga: no se comparte con nadie.
  */
 export const CrearElementoDeCatalogoRequestSchema = z.strictObject({
   name: Texto(120),
   itemType: z.literal('FOOD'),
   composition: ComposicionSchema,
   group: GrupoDeAlimentoSchema.optional(),
-  share: z.boolean().optional(),
+  /** NUA-08 (segundo tramo), opcional: sus medidas caseras, con su equivalencia; ausente, ninguna. */
+  householdMeasures: MedidasCaserasSchema.optional(),
 });
 export type CrearElementoDeCatalogoRequest = z.infer<typeof CrearElementoDeCatalogoRequestSchema>;
 export const ElementoDeCatalogoResponseSchema = z.strictObject({ data: ElementoDeCatalogoSchema });

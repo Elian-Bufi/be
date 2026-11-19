@@ -8,9 +8,9 @@
  * - **API-ALI-03:** retirarlo: una versión RETIRADO. Deja de aparecer en el buscador y no se puede sumar de nuevo, pero no
  *   se borra: lo que ya lo cita sigue mostrándolo, con la marca «retirado».
  * - **API-ALI-04:** consultar alimentos por su identidad (el editor del plan, para los que ya cita), también los retirados.
- * - **API-ALI-08 (segundo tramo, NUA-D14 a D16):** compartirlo con los demás profesionales de Nutrición o dejar de
- *   compartirlo. Cada vez es un hecho nuevo, de solo agregar; lo que ya lo cita (planes activados, recetas, registros) lo
- *   conserva. Para los demás, lo que no se comparte es el mismo 404 que lo inexistente por todos los caminos.
+ * - **Segundo tramo (decisión de Dirección del 2026-11-19, NUA-D14 a D16):** lo cargado a mano es de quien lo cargó (no
+ *   se comparte con nadie); Administración ve todas las cargas, con el nombre de quien las cargó, agrupa los nombres
+ *   parecidos (API-ALI-08) y suma al canon lo que conviene (API-ALI-09): un alimento verificado, con su fuente.
  * - **API-ALI-05 a 07:** Administración: los alimentos cargados a mano para revisar (solo el nombre y los valores, nunca
  *   quién los cargó ni a quién se le indicaron), la decisión (certificar con una fuente, equivalente de uno verificado o
  *   quitar lo decidido) y la búsqueda de los verificados para elegir el equivalente.
@@ -19,7 +19,7 @@
  */
 import { z } from 'zod';
 import { IdOpaco, Instante } from './contratos';
-import { CertificacionDeAlimentoSchema, GrupoDeAlimentoSchema } from './alimentos-del-catalogo';
+import { CertificacionDeAlimentoSchema, GrupoDeAlimentoSchema, MedidasCaserasSchema } from './alimentos-del-catalogo';
 import { ComposicionSchema, ElementoEncontradoSchema } from './contratos-nutricion';
 import { PaginaSchema, TokenDeVersionSchema } from './contratos-vinculo';
 
@@ -50,13 +50,8 @@ export const AlimentoPropioSchema = z.strictObject({
   foodGroup: GrupoDeAlimentoSchema.nullable(),
   /** `false`: retirado. */
   available: z.boolean(),
-  /** Si lo ven los demás profesionales (NUA-D05). */
-  shared: z.boolean(),
-  /**
-   * Segundo tramo (NUA-D15), opcional: `true` si su autor lo compartió y después dejó de compartirlo. Ausente o `false`
-   * con `shared: false`: nunca se compartió (lo cargado antes de DL-180, o sin el interruptor).
-   */
-  stoppedSharing: z.boolean().optional(),
+  /** NUA-08 (segundo tramo), opcional: sus medidas caseras; ausente o vacía, ninguna. */
+  householdMeasures: MedidasCaserasSchema.optional(),
   review: RevisionDelAlimentoSchema,
   createdAt: Instante,
   updatedAt: Instante,
@@ -69,16 +64,18 @@ export type AlimentoPropioResponse = z.infer<typeof AlimentoPropioResponseSchema
 
 /**
  * API-ALI-02: el nombre y la composición de la versión nueva; `group`, opcional, cambia el grupo sin emitir una versión.
- * `share` (segundo tramo, NUA-D14), opcional: `true` lo comparte si no se compartía (es una elección aparte, apagada por
- * defecto en el formulario); ausente o `false` no cambia lo compartido. Guardar una corrección nunca comparte solo, y
- * dejar de compartir es API-ALI-08.
  */
 export const CorregirAlimentoRequestSchema = z.strictObject({
   expectedVersion: TokenDeVersionSchema,
   name: Texto(120),
   composition: ComposicionSchema,
   group: GrupoDeAlimentoSchema.optional(),
-  share: z.boolean().optional(),
+  /**
+   * NUA-08 (segundo tramo), opcional: las medidas caseras que quedan (una lista vacía las quita). Como el grupo, son un
+   * hecho aparte de las versiones: cambiarlas no emite una versión, y los planes conservan la medida que eligieron.
+   * Ausente, no cambian.
+   */
+  householdMeasures: MedidasCaserasSchema.optional(),
 });
 export type CorregirAlimentoRequest = z.infer<typeof CorregirAlimentoRequestSchema>;
 
@@ -86,12 +83,6 @@ export type CorregirAlimentoRequest = z.infer<typeof CorregirAlimentoRequestSche
 export const RetirarAlimentoRequestSchema = z.strictObject({ expectedVersion: TokenDeVersionSchema });
 export type RetirarAlimentoRequest = z.infer<typeof RetirarAlimentoRequestSchema>;
 
-/**
- * API-ALI-08 (segundo tramo, NUA-D14 a D16): compartirlo (`true`) o dejar de compartirlo (`false`). Si ya está así, no
- * agrega nada. No va contra la versión: compartir no cambia el alimento, y se decide sobre la vigente.
- */
-export const CompartirAlimentoRequestSchema = z.strictObject({ shared: z.boolean() });
-export type CompartirAlimentoRequest = z.infer<typeof CompartirAlimentoRequestSchema>;
 
 // ─── API-ALI-04 · por identidad ────────────────────────────────────────────────────────────────────
 
@@ -105,7 +96,10 @@ export type AlimentosConsultadosResponse = z.infer<typeof AlimentosConsultadosRe
 
 // ─── API-ALI-05 a 07 · Administración ──────────────────────────────────────────────────────────────
 
-/** Un alimento cargado a mano, como lo ve Administración: el nombre y los valores. Nada de quién lo cargó ni de personas. */
+/**
+ * Un alimento cargado a mano, como lo ve Administración: el nombre, los valores y, desde el segundo tramo (NUA-D15; decisión
+ * de Dirección del 2026-11-19), el profesional que lo cargó, por su nombre de profesional. Nunca sus personas ni sus planes.
+ */
 export const AlimentoParaRevisarSchema = z.strictObject({
   catalogItemId: IdOpaco,
   versionId: IdOpaco,
@@ -115,6 +109,8 @@ export const AlimentoParaRevisarSchema = z.strictObject({
   composition: ComposicionSchema,
   foodGroup: GrupoDeAlimentoSchema.nullable(),
   available: z.boolean(),
+  /** NUA-D15: quién lo cargó, por su nombre de profesional (un dato de un profesional, no de salud). */
+  loadedBy: z.strictObject({ displayName: z.string() }),
   review: RevisionDelAlimentoSchema.extend({ decidedAt: Instante.nullable() }),
   createdAt: Instante,
   updatedAt: Instante,
@@ -147,7 +143,63 @@ export const DecidirSobreAlimentoRequestSchema = z.strictObject({
 });
 export type DecidirSobreAlimentoRequest = z.infer<typeof DecidirSobreAlimentoRequestSchema>;
 
-/** API-ALI-07: los alimentos verificados de la tabla oficial, para elegir el equivalente. */
+// ─── API-ALI-08 y 09 · los parecidos y el canon (segundo tramo, NUA-D15 y D16) ──────────────────────
+
+/**
+ * API-ALI-08: las cargas a mano agrupadas por nombre parecido (`claveDeNombreParecido`: sin tildes, sin mayúsculas, sin
+ * espacios de más y sin plurales simples), con cuántos profesionales distintos cargaron algo así. Lo que más profesionales
+ * cargaron va primero: es lo que conviene sumar al canon.
+ */
+export const ConsultarParecidosRequestSchema = z.strictObject({
+  q: z.string().trim().max(80).optional(),
+  /** Solo los grupos con al menos estos profesionales distintos (por defecto, 1). */
+  minProfessionals: z.number().int().min(1).max(100).optional(),
+  limit: z.number().int().min(1).max(50).optional(),
+});
+export type ConsultarParecidosRequest = z.infer<typeof ConsultarParecidosRequestSchema>;
+export const GrupoDeParecidosSchema = z.strictObject({
+  /** El nombre normalizado que los agrupa. */
+  key: z.string(),
+  /** Los nombres como se cargaron, distintos (hasta 5). */
+  names: z.array(z.string()).max(5),
+  /** Cuántos profesionales distintos cargaron algo así. */
+  professionals: z.number().int().positive(),
+  /** Las cargas del grupo (hasta 50), cada una con quién la cargó. */
+  loads: z.array(AlimentoParaRevisarSchema).max(50),
+});
+export type GrupoDeParecidos = z.infer<typeof GrupoDeParecidosSchema>;
+export const ListaDeParecidosResponseSchema = z.strictObject({ data: z.array(GrupoDeParecidosSchema) });
+export type ListaDeParecidosResponse = z.infer<typeof ListaDeParecidosResponseSchema>;
+
+/**
+ * API-ALI-09: sumar al canon. Crea un alimento verificado de BE, de todos, con la fuente citada (obligatoria), partiendo de
+ * los valores de una de las cargas (`fromCatalogItemId`) o corrigiéndolos. Puede marcar cargas a mano como equivalentes del
+ * nuevo (`equivalentCatalogItemIds`): el buscador de cada autor le sugiere el verificado, y lo suyo no cambia.
+ */
+export const SumarAlCanonRequestSchema = z.strictObject({
+  name: Texto(120),
+  composition: ComposicionSchema,
+  group: GrupoDeAlimentoSchema.optional(),
+  source: Texto(500),
+  fromCatalogItemId: IdOpaco.optional(),
+  equivalentCatalogItemIds: z.array(IdOpaco).max(50).optional(),
+});
+export type SumarAlCanonRequest = z.infer<typeof SumarAlCanonRequestSchema>;
+export const AlimentoDelCanonResponseSchema = z.strictObject({
+  data: z.strictObject({
+    catalogItemId: IdOpaco,
+    versionId: IdOpaco,
+    name: z.string(),
+    composition: ComposicionSchema,
+    foodGroup: GrupoDeAlimentoSchema.nullable(),
+    source: z.string(),
+    /** Las cargas a mano que quedaron marcadas como sus equivalentes. */
+    equivalentsMarked: z.number().int().nonnegative(),
+  }),
+});
+export type AlimentoDelCanonResponse = z.infer<typeof AlimentoDelCanonResponseSchema>;
+
+/** API-ALI-07: los alimentos verificados de la tabla oficial y del canon, para elegir el equivalente. */
 export const BuscarVerificadosRequestSchema = z.strictObject({ q: z.string().trim().min(1).max(80), limit: z.number().int().min(1).max(20).optional() });
 export type BuscarVerificadosRequest = z.infer<typeof BuscarVerificadosRequestSchema>;
 export const AlimentoVerificadoSchema = z.strictObject({

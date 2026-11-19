@@ -11587,6 +11587,43 @@
                                                     "type": "null"
                                                   }
                                                 ]
+                                              },
+                                              "householdMeasure": {
+                                                "anyOf": [
+                                                  {
+                                                    "type": "object",
+                                                    "properties": {
+                                                      "kind": {
+                                                        "type": "string",
+                                                        "enum": [
+                                                          "UNIT",
+                                                          "TABLESPOON",
+                                                          "CUP",
+                                                          "PORTION"
+                                                        ]
+                                                      },
+                                                      "count": {
+                                                        "type": "number",
+                                                        "exclusiveMinimum": 0,
+                                                        "maximum": 100
+                                                      },
+                                                      "amountPerUnit": {
+                                                        "type": "number",
+                                                        "exclusiveMinimum": 0,
+                                                        "maximum": 5000
+                                                      }
+                                                    },
+                                                    "required": [
+                                                      "kind",
+                                                      "count",
+                                                      "amountPerUnit"
+                                                    ],
+                                                    "additionalProperties": false
+                                                  },
+                                                  {
+                                                    "type": "null"
+                                                  }
+                                                ]
                                               }
                                             },
                                             "required": [
@@ -11930,6 +11967,36 @@
                                                     "string",
                                                     "null"
                                                   ]
+                                                },
+                                                "householdMeasure": {
+                                                  "type": "object",
+                                                  "properties": {
+                                                    "kind": {
+                                                      "type": "string",
+                                                      "enum": [
+                                                        "UNIT",
+                                                        "TABLESPOON",
+                                                        "CUP",
+                                                        "PORTION"
+                                                      ]
+                                                    },
+                                                    "count": {
+                                                      "type": "number",
+                                                      "exclusiveMinimum": 0,
+                                                      "maximum": 100
+                                                    },
+                                                    "amountPerUnit": {
+                                                      "type": "number",
+                                                      "exclusiveMinimum": 0,
+                                                      "maximum": 5000
+                                                    }
+                                                  },
+                                                  "required": [
+                                                    "kind",
+                                                    "count",
+                                                    "amountPerUnit"
+                                                  ],
+                                                  "additionalProperties": false
                                                 }
                                               },
                                               "required": [
@@ -12750,6 +12817,36 @@
                                                     "string",
                                                     "null"
                                                   ]
+                                                },
+                                                "householdMeasure": {
+                                                  "type": "object",
+                                                  "properties": {
+                                                    "kind": {
+                                                      "type": "string",
+                                                      "enum": [
+                                                        "UNIT",
+                                                        "TABLESPOON",
+                                                        "CUP",
+                                                        "PORTION"
+                                                      ]
+                                                    },
+                                                    "count": {
+                                                      "type": "number",
+                                                      "exclusiveMinimum": 0,
+                                                      "maximum": 100
+                                                    },
+                                                    "amountPerUnit": {
+                                                      "type": "number",
+                                                      "exclusiveMinimum": 0,
+                                                      "maximum": 5000
+                                                    }
+                                                  },
+                                                  "required": [
+                                                    "kind",
+                                                    "count",
+                                                    "amountPerUnit"
+                                                  ],
+                                                  "additionalProperties": false
                                                 }
                                               },
                                               "required": [
@@ -13096,6 +13193,43 @@
                                                     "type": "null"
                                                   }
                                                 ]
+                                              },
+                                              "householdMeasure": {
+                                                "anyOf": [
+                                                  {
+                                                    "type": "object",
+                                                    "properties": {
+                                                      "kind": {
+                                                        "type": "string",
+                                                        "enum": [
+                                                          "UNIT",
+                                                          "TABLESPOON",
+                                                          "CUP",
+                                                          "PORTION"
+                                                        ]
+                                                      },
+                                                      "count": {
+                                                        "type": "number",
+                                                        "exclusiveMinimum": 0,
+                                                        "maximum": 100
+                                                      },
+                                                      "amountPerUnit": {
+                                                        "type": "number",
+                                                        "exclusiveMinimum": 0,
+                                                        "maximum": 5000
+                                                      }
+                                                    },
+                                                    "required": [
+                                                      "kind",
+                                                      "count",
+                                                      "amountPerUnit"
+                                                    ],
+                                                    "additionalProperties": false
+                                                  },
+                                                  {
+                                                    "type": "null"
+                                                  }
+                                                ]
                                               }
                                             },
                                             "required": [
@@ -13436,6 +13570,36 @@
                                                     "string",
                                                     "null"
                                                   ]
+                                                },
+                                                "householdMeasure": {
+                                                  "type": "object",
+                                                  "properties": {
+                                                    "kind": {
+                                                      "type": "string",
+                                                      "enum": [
+                                                        "UNIT",
+                                                        "TABLESPOON",
+                                                        "CUP",
+                                                        "PORTION"
+                                                      ]
+                                                    },
+                                                    "count": {
+                                                      "type": "number",
+                                                      "exclusiveMinimum": 0,
+                                                      "maximum": 100
+                                                    },
+                                                    "amountPerUnit": {
+                                                      "type": "number",
+                                                      "exclusiveMinimum": 0,
+                                                      "maximum": 5000
+                                                    }
+                                                  },
+                                                  "required": [
+                                                    "kind",
+                                                    "count",
+                                                    "amountPerUnit"
+                                                  ],
+                                                  "additionalProperties": false
                                                 }
                                               },
                                               "required": [
@@ -17111,7 +17275,7 @@
       },
       "post": {
         "operationId": "API-INT-NUT-01",
-        "summary": "Cargar manualmente un alimento al catálogo propio del profesional (fallback sin proveedor, RF-027). Desde DL-180: group, opcional, su grupo (el ícono); share, opcional, si lo ven los demás profesionales de Nutrición como «De otro profesional» (ausente: sí, como antes; false: lo ve solo quien lo carga, y se puede compartir después con API-ALI-08).",
+        "summary": "Cargar manualmente un alimento al catálogo propio del profesional (fallback sin proveedor, RF-027). Desde DL-180: group, opcional, su grupo (el ícono). Lo cargado a mano lo ve y lo cita solo quien lo cargó (segundo tramo, NUA-D14; decisión de Dirección del 2026-11-19); Administración lo ve con su nombre de profesional (API-ALI-05 y 08).",
         "description": "Fuente: 09v12:111-160 · RF-027. AuthN: SESSION.",
         "security": [
           {
@@ -17234,8 +17398,33 @@
                       "OTHER"
                     ]
                   },
-                  "share": {
-                    "type": "boolean"
+                  "householdMeasures": {
+                    "maxItems": 4,
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "kind": {
+                          "type": "string",
+                          "enum": [
+                            "UNIT",
+                            "TABLESPOON",
+                            "CUP",
+                            "PORTION"
+                          ]
+                        },
+                        "amount": {
+                          "type": "number",
+                          "exclusiveMinimum": 0,
+                          "maximum": 5000
+                        }
+                      },
+                      "required": [
+                        "kind",
+                        "amount"
+                      ],
+                      "additionalProperties": false
+                    }
                   }
                 },
                 "required": [
@@ -17847,7 +18036,6 @@
                             "enum": [
                               "VERIFIED",
                               "YOURS",
-                              "OTHER_PROFESSIONAL",
                               "UNVERIFIED"
                             ]
                           },
@@ -18100,6 +18288,34 @@
                                 "type": "null"
                               }
                             ]
+                          },
+                          "householdMeasures": {
+                            "maxItems": 4,
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "kind": {
+                                  "type": "string",
+                                  "enum": [
+                                    "UNIT",
+                                    "TABLESPOON",
+                                    "CUP",
+                                    "PORTION"
+                                  ]
+                                },
+                                "amount": {
+                                  "type": "number",
+                                  "exclusiveMinimum": 0,
+                                  "maximum": 5000
+                                }
+                              },
+                              "required": [
+                                "kind",
+                                "amount"
+                              ],
+                              "additionalProperties": false
+                            }
                           }
                         },
                         "required": [
@@ -18208,7 +18424,7 @@
     "/nutrition/catalog-items/mine": {
       "get": {
         "operationId": "API-ALI-01",
-        "summary": "Los alimentos que el profesional cargó a mano, también los retirados (available: false), el corregido más recientemente primero, cada uno en su versión vigente: el token para corregirlo o retirarlo (version, «v» y el número de versiones), su grupo, si lo ven los demás profesionales (shared) o su autor dejó de compartirlo (stoppedSharing) y lo que decidió Administración sobre la versión vigente (review). Solo profesionales de Nutrición.",
+        "summary": "Los alimentos que el profesional cargó a mano, también los retirados (available: false), el corregido más recientemente primero, cada uno en su versión vigente: el token para corregirlo o retirarlo (version, «v» y el número de versiones), su grupo, y lo que decidió Administración sobre la versión vigente (review). Solo profesionales de Nutrición.",
         "description": "Fuente: WP-NUTRICION-ALIMENTOS NUA-01 y NUA-02 (aprobado por Dirección el 2026-11-16) · REG-06-99 a 101 · ID propio de BE (familia ALI) · DEUDA_LEGAJO DL-180. AuthN: SESSION.",
         "security": [
           {
@@ -18369,11 +18585,33 @@
                           "available": {
                             "type": "boolean"
                           },
-                          "shared": {
-                            "type": "boolean"
-                          },
-                          "stoppedSharing": {
-                            "type": "boolean"
+                          "householdMeasures": {
+                            "maxItems": 4,
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "kind": {
+                                  "type": "string",
+                                  "enum": [
+                                    "UNIT",
+                                    "TABLESPOON",
+                                    "CUP",
+                                    "PORTION"
+                                  ]
+                                },
+                                "amount": {
+                                  "type": "number",
+                                  "exclusiveMinimum": 0,
+                                  "maximum": 5000
+                                }
+                              },
+                              "required": [
+                                "kind",
+                                "amount"
+                              ],
+                              "additionalProperties": false
+                            }
                           },
                           "review": {
                             "type": "object",
@@ -18465,7 +18703,6 @@
                           "composition",
                           "foodGroup",
                           "available",
-                          "shared",
                           "review",
                           "createdAt",
                           "updatedAt"
@@ -18564,7 +18801,7 @@
     "/nutrition/catalog-items/{catalogItemId}": {
       "patch": {
         "operationId": "API-ALI-02",
-        "summary": "Corregir un alimento propio cargado a mano: si cambian el nombre o la composición, nace una versión nueva e inmutable, sucesora de la vigente. Las instantáneas de los planes activados, las recetas (que citan su versión) y los registros conservan la versión que citaban; un borrador usa la vigente. group, opcional, cambia el grupo (su ícono) sin emitir una versión. Guardar una corrección nunca comparte solo: share: true lo comparte si no se compartía (una elección aparte, apagada por defecto en el formulario); ausente o false no cambia lo compartido (dejar de compartir es API-ALI-08). Contra la versión que se vio (expectedVersion): si cambió, 409 VERSION_CONFLICT; uno retirado, 422 INVALID_STATE_TRANSITION. Uno ajeno, sembrado, importado o inexistente: el mismo 404.",
+        "summary": "Corregir un alimento propio cargado a mano: si cambian el nombre o la composición, nace una versión nueva e inmutable, sucesora de la vigente. Las instantáneas de los planes activados, las recetas (que citan su versión) y los registros conservan la versión que citaban; un borrador usa la vigente. group, opcional, cambia el grupo (su ícono) sin emitir una versión. Contra la versión que se vio (expectedVersion): si cambió, 409 VERSION_CONFLICT; uno retirado, 422 INVALID_STATE_TRANSITION. Uno ajeno, sembrado, importado o inexistente: el mismo 404.",
         "description": "Fuente: WP-NUTRICION-ALIMENTOS NUA-01 · REG-06-99 a 101 · DL-120 (el patrón de las recetas) · ID propio de BE (familia ALI) · DEUDA_LEGAJO DL-180. AuthN: SESSION.",
         "security": [
           {
@@ -18695,8 +18932,33 @@
                       "OTHER"
                     ]
                   },
-                  "share": {
-                    "type": "boolean"
+                  "householdMeasures": {
+                    "maxItems": 4,
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "kind": {
+                          "type": "string",
+                          "enum": [
+                            "UNIT",
+                            "TABLESPOON",
+                            "CUP",
+                            "PORTION"
+                          ]
+                        },
+                        "amount": {
+                          "type": "number",
+                          "exclusiveMinimum": 0,
+                          "maximum": 5000
+                        }
+                      },
+                      "required": [
+                        "kind",
+                        "amount"
+                      ],
+                      "additionalProperties": false
+                    }
                   }
                 },
                 "required": [
@@ -18816,11 +19078,33 @@
                         "available": {
                           "type": "boolean"
                         },
-                        "shared": {
-                          "type": "boolean"
-                        },
-                        "stoppedSharing": {
-                          "type": "boolean"
+                        "householdMeasures": {
+                          "maxItems": 4,
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "kind": {
+                                "type": "string",
+                                "enum": [
+                                  "UNIT",
+                                  "TABLESPOON",
+                                  "CUP",
+                                  "PORTION"
+                                ]
+                              },
+                              "amount": {
+                                "type": "number",
+                                "exclusiveMinimum": 0,
+                                "maximum": 5000
+                              }
+                            },
+                            "required": [
+                              "kind",
+                              "amount"
+                            ],
+                            "additionalProperties": false
+                          }
                         },
                         "review": {
                           "type": "object",
@@ -18912,7 +19196,6 @@
                         "composition",
                         "foodGroup",
                         "available",
-                        "shared",
                         "review",
                         "createdAt",
                         "updatedAt"
@@ -19191,11 +19474,33 @@
                         "available": {
                           "type": "boolean"
                         },
-                        "shared": {
-                          "type": "boolean"
-                        },
-                        "stoppedSharing": {
-                          "type": "boolean"
+                        "householdMeasures": {
+                          "maxItems": 4,
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "kind": {
+                                "type": "string",
+                                "enum": [
+                                  "UNIT",
+                                  "TABLESPOON",
+                                  "CUP",
+                                  "PORTION"
+                                ]
+                              },
+                              "amount": {
+                                "type": "number",
+                                "exclusiveMinimum": 0,
+                                "maximum": 5000
+                              }
+                            },
+                            "required": [
+                              "kind",
+                              "amount"
+                            ],
+                            "additionalProperties": false
+                          }
                         },
                         "review": {
                           "type": "object",
@@ -19287,7 +19592,6 @@
                         "composition",
                         "foodGroup",
                         "available",
-                        "shared",
                         "review",
                         "createdAt",
                         "updatedAt"
@@ -19696,7 +20000,6 @@
                             "enum": [
                               "VERIFIED",
                               "YOURS",
-                              "OTHER_PROFESSIONAL",
                               "UNVERIFIED"
                             ]
                           },
@@ -19950,6 +20253,34 @@
                               }
                             ]
                           },
+                          "householdMeasures": {
+                            "maxItems": 4,
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "kind": {
+                                  "type": "string",
+                                  "enum": [
+                                    "UNIT",
+                                    "TABLESPOON",
+                                    "CUP",
+                                    "PORTION"
+                                  ]
+                                },
+                                "amount": {
+                                  "type": "number",
+                                  "exclusiveMinimum": 0,
+                                  "maximum": 5000
+                                }
+                              },
+                              "required": [
+                                "kind",
+                                "amount"
+                              ],
+                              "additionalProperties": false
+                            }
+                          },
                           "retired": {
                             "type": "boolean"
                           }
@@ -20032,374 +20363,10 @@
         }
       }
     },
-    "/nutrition/catalog-items/{catalogItemId}/sharing": {
-      "post": {
-        "operationId": "API-ALI-08",
-        "summary": "Compartir un alimento propio cargado a mano con los demás profesionales de Nutrición (shared: true) o dejar de compartirlo (shared: false). Cada vez es un hecho nuevo, de solo agregar, con la versión vigente; si ya está así, 200 sin agregar nada. Dejar de compartirlo lo saca del buscador de los demás, de su consulta por identidad (API-ALI-04) y de la revisión de Administración (API-ALI-05 y 06): para ellos es el mismo 404 que lo inexistente. Lo que ya lo cita (planes activados, recetas, registros) lo conserva, y un borrador que ya lo citaba se sigue guardando, pero validar y activar lo señalan. Al volver a compartirlo, los demás citan la versión vigente y las que siguen, nunca las de antes. Uno ajeno, sembrado, importado o inexistente: el mismo 404.",
-        "description": "Fuente: WP-NUTRICION-ALIMENTOS, segundo tramo (NUA-D14 a D16; pedido de Dirección del 2026-11-19) · ID propio de BE (familia ALI) · DEUDA_LEGAJO DL-180. AuthN: SESSION.",
-        "security": [
-          {
-            "sesion": []
-          }
-        ],
-        "parameters": [
-          {
-            "name": "catalogItemId",
-            "in": "path",
-            "required": true,
-            "schema": {
-              "type": "string"
-            }
-          },
-          {
-            "name": "Idempotency-Key",
-            "in": "header",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "pattern": "^[A-Za-z0-9._:-]{8,128}$"
-            }
-          },
-          {
-            "name": "X-BE-Surface",
-            "in": "header",
-            "required": false,
-            "description": "Superficie declarada (procedencia). Nunca autoriza (DEUDA_LEGAJO DL-022).",
-            "schema": {
-              "type": "string",
-              "enum": [
-                "WEB",
-                "APK"
-              ]
-            }
-          },
-          {
-            "name": "X-BE-Capabilities",
-            "in": "header",
-            "required": false,
-            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
-            "schema": {
-              "type": "string",
-              "maxLength": 256
-            }
-          }
-        ],
-        "requestBody": {
-          "required": true,
-          "content": {
-            "application/json": {
-              "schema": {
-                "$schema": "https://json-schema.org/draft/2020-12/schema",
-                "type": "object",
-                "properties": {
-                  "shared": {
-                    "type": "boolean"
-                  }
-                },
-                "required": [
-                  "shared"
-                ],
-                "additionalProperties": false
-              }
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "Éxito",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$schema": "https://json-schema.org/draft/2020-12/schema",
-                  "type": "object",
-                  "properties": {
-                    "data": {
-                      "type": "object",
-                      "properties": {
-                        "catalogItemId": {
-                          "type": "string",
-                          "minLength": 1
-                        },
-                        "versionId": {
-                          "type": "string",
-                          "minLength": 1
-                        },
-                        "version": {
-                          "type": "string",
-                          "pattern": "^v[1-9]\\d*$"
-                        },
-                        "versionNumber": {
-                          "type": "integer",
-                          "exclusiveMinimum": 0,
-                          "maximum": 9007199254740991
-                        },
-                        "name": {
-                          "type": "string"
-                        },
-                        "composition": {
-                          "type": "object",
-                          "properties": {
-                            "referenceAmount": {
-                              "type": "string",
-                              "enum": [
-                                "100g",
-                                "100ml"
-                              ]
-                            },
-                            "energyKcal": {
-                              "type": "number",
-                              "minimum": 0
-                            },
-                            "proteinG": {
-                              "type": "number",
-                              "minimum": 0
-                            },
-                            "carbohydrateG": {
-                              "type": "number",
-                              "minimum": 0
-                            },
-                            "fatG": {
-                              "type": "number",
-                              "minimum": 0
-                            },
-                            "fiberG": {
-                              "anyOf": [
-                                {
-                                  "type": "number",
-                                  "minimum": 0
-                                },
-                                {
-                                  "type": "null"
-                                }
-                              ]
-                            }
-                          },
-                          "required": [
-                            "referenceAmount",
-                            "energyKcal",
-                            "proteinG",
-                            "carbohydrateG",
-                            "fatG"
-                          ],
-                          "additionalProperties": false
-                        },
-                        "foodGroup": {
-                          "anyOf": [
-                            {
-                              "type": "string",
-                              "enum": [
-                                "MEAT",
-                                "FISH",
-                                "EGGS",
-                                "DAIRY",
-                                "GRAINS",
-                                "LEGUMES",
-                                "VEGETABLES",
-                                "FRUITS",
-                                "FATS",
-                                "NUTS",
-                                "SWEETS",
-                                "DRINKS",
-                                "OTHER"
-                              ]
-                            },
-                            {
-                              "type": "null"
-                            }
-                          ]
-                        },
-                        "available": {
-                          "type": "boolean"
-                        },
-                        "shared": {
-                          "type": "boolean"
-                        },
-                        "stoppedSharing": {
-                          "type": "boolean"
-                        },
-                        "review": {
-                          "type": "object",
-                          "properties": {
-                            "state": {
-                              "type": "string",
-                              "enum": [
-                                "PENDING",
-                                "CERTIFIED",
-                                "EQUIVALENT"
-                              ]
-                            },
-                            "certification": {
-                              "anyOf": [
-                                {
-                                  "type": "object",
-                                  "properties": {
-                                    "source": {
-                                      "type": "string",
-                                      "minLength": 1,
-                                      "maxLength": 500
-                                    },
-                                    "certifiedAt": {
-                                      "type": "string",
-                                      "format": "date-time",
-                                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
-                                    }
-                                  },
-                                  "required": [
-                                    "source",
-                                    "certifiedAt"
-                                  ],
-                                  "additionalProperties": false
-                                },
-                                {
-                                  "type": "null"
-                                }
-                              ]
-                            },
-                            "equivalent": {
-                              "anyOf": [
-                                {
-                                  "type": "object",
-                                  "properties": {
-                                    "catalogItemId": {
-                                      "type": "string",
-                                      "minLength": 1
-                                    },
-                                    "name": {
-                                      "type": "string"
-                                    }
-                                  },
-                                  "required": [
-                                    "catalogItemId",
-                                    "name"
-                                  ],
-                                  "additionalProperties": false
-                                },
-                                {
-                                  "type": "null"
-                                }
-                              ]
-                            }
-                          },
-                          "required": [
-                            "state",
-                            "certification",
-                            "equivalent"
-                          ],
-                          "additionalProperties": false
-                        },
-                        "createdAt": {
-                          "type": "string",
-                          "format": "date-time",
-                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
-                        },
-                        "updatedAt": {
-                          "type": "string",
-                          "format": "date-time",
-                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
-                        }
-                      },
-                      "required": [
-                        "catalogItemId",
-                        "versionId",
-                        "version",
-                        "versionNumber",
-                        "name",
-                        "composition",
-                        "foodGroup",
-                        "available",
-                        "shared",
-                        "review",
-                        "createdAt",
-                        "updatedAt"
-                      ],
-                      "additionalProperties": false
-                    }
-                  },
-                  "required": [
-                    "data"
-                  ],
-                  "additionalProperties": false
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "ErrorEnvelope: INVALID_REQUEST | UNKNOWN_FIELD",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "ErrorEnvelope: AUTHENTICATION_REQUIRED | SESSION_INVALID | SESSION_EXPIRED | SESSION_REVOKED",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            }
-          },
-          "403": {
-            "description": "ErrorEnvelope: ACTION_FORBIDDEN",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            }
-          },
-          "404": {
-            "description": "ErrorEnvelope: RESOURCE_NOT_FOUND",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            }
-          },
-          "409": {
-            "description": "ErrorEnvelope: IDEMPOTENCY_KEY_REUSED | RESOURCE_CONFLICT",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "ErrorEnvelope: INTERNAL_ERROR",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            }
-          },
-          "503": {
-            "description": "ErrorEnvelope: DB_UNAVAILABLE",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ErrorEnvelope"
-                }
-              }
-            }
-          }
-        }
-      }
-    },
     "/admin/foods/query": {
       "post": {
         "operationId": "API-ALI-05",
-        "summary": "Los alimentos que los profesionales cargaron a mano y comparten ahora, para que Administración los revise: el nombre, los valores cada 100 g, el grupo y lo decidido sobre la versión vigente; nunca quién lo cargó ni a quién se le indicó. Filtrados por texto (q) y por estado (PENDING, CERTIFIED o EQUIVALENT); sin estado, los que esperan revisión primero. Los retirados no se ofrecen. La consulta va en el cuerpo y queda auditada.",
+        "summary": "Los alimentos que los profesionales cargaron a mano, para que Administración los revise: el nombre, los valores cada 100 g, el grupo, lo decidido sobre la versión vigente y, desde el segundo tramo (NUA-D15), quién lo cargó, por su nombre de profesional (loadedBy); nunca a quién se le indicó ni sus planes. Filtrados por texto (q) y por estado (PENDING, CERTIFIED o EQUIVALENT); sin estado, los que esperan revisión primero. Los retirados no se ofrecen. La consulta va en el cuerpo y queda auditada.",
         "description": "Fuente: WP-NUTRICION-ALIMENTOS NUA-04 · WP-ADMINISTRACION (DL-155) · ID propio de BE (familia ALI) · DEUDA_LEGAJO DL-180. AuthN: SESSION_MFA.",
         "security": [
           {
@@ -20575,6 +20542,18 @@
                           "available": {
                             "type": "boolean"
                           },
+                          "loadedBy": {
+                            "type": "object",
+                            "properties": {
+                              "displayName": {
+                                "type": "string"
+                              }
+                            },
+                            "required": [
+                              "displayName"
+                            ],
+                            "additionalProperties": false
+                          },
                           "review": {
                             "type": "object",
                             "properties": {
@@ -20678,6 +20657,7 @@
                           "composition",
                           "foodGroup",
                           "available",
+                          "loadedBy",
                           "review",
                           "createdAt",
                           "updatedAt"
@@ -20776,7 +20756,7 @@
     "/admin/foods/{catalogItemId}/decisions": {
       "post": {
         "operationId": "API-ALI-06",
-        "summary": "Lo que decide Administración sobre un alimento cargado a mano, contra la versión que vio (expectedVersion; si su autor lo corrigió mientras tanto, 409 VERSION_CONFLICT): CERTIFY, con la fuente citada (source, de 1 a 500; sin ella, 422 VALIDATION_FAILED con SOURCE_REQUIRED), que lo vuelve «Verificado» en el buscador para esa versión (si su autor lo corrige, la nueva vuelve a esperar revisión); EQUIVALENT, con un alimento de la tabla oficial disponible (equivalentCatalogItemId; si no lo es, EQUIVALENT_NOT_VERIFIED), que el buscador sugiere en su lugar sin tocar los planes que ya lo citan; o CLEAR, que quita lo decidido (sin nada decidido, 422 INVALID_STATE_TRANSITION). Cada decisión es una fila nueva: la historia no se pisa. Uno que no existe, que no es una carga a mano o que su autor no comparte ahora: el mismo 404. La auditoría no guarda los textos. Devuelve el alimento como lo lista API-ALI-05.",
+        "summary": "Lo que decide Administración sobre un alimento cargado a mano, contra la versión que vio (expectedVersion; si su autor lo corrigió mientras tanto, 409 VERSION_CONFLICT): CERTIFY, con la fuente citada (source, de 1 a 500; sin ella, 422 VALIDATION_FAILED con SOURCE_REQUIRED), que lo vuelve «Verificado» en el buscador para esa versión (si su autor lo corrige, la nueva vuelve a esperar revisión); EQUIVALENT, con un alimento de la tabla oficial disponible (equivalentCatalogItemId; si no lo es, EQUIVALENT_NOT_VERIFIED), que el buscador sugiere en su lugar sin tocar los planes que ya lo citan; o CLEAR, que quita lo decidido (sin nada decidido, 422 INVALID_STATE_TRANSITION). Cada decisión es una fila nueva: la historia no se pisa. Uno que no existe o que no es una carga a mano: el mismo 404. El equivalente es de la tabla oficial o del canon. La auditoría no guarda los textos. Devuelve el alimento como lo lista API-ALI-05.",
         "description": "Fuente: WP-NUTRICION-ALIMENTOS NUA-04 · WP-ADMINISTRACION (DL-155) · ID propio de BE (familia ALI) · DEUDA_LEGAJO DL-180. AuthN: SESSION_MFA.",
         "security": [
           {
@@ -20970,6 +20950,18 @@
                         "available": {
                           "type": "boolean"
                         },
+                        "loadedBy": {
+                          "type": "object",
+                          "properties": {
+                            "displayName": {
+                              "type": "string"
+                            }
+                          },
+                          "required": [
+                            "displayName"
+                          ],
+                          "additionalProperties": false
+                        },
                         "review": {
                           "type": "object",
                           "properties": {
@@ -21073,6 +21065,7 @@
                         "composition",
                         "foodGroup",
                         "available",
+                        "loadedBy",
                         "review",
                         "createdAt",
                         "updatedAt"
@@ -21174,7 +21167,7 @@
     "/admin/foods/verified/query": {
       "post": {
         "operationId": "API-ALI-07",
-        "summary": "Los alimentos de la tabla oficial (USDA FoodData Central · SR Legacy) disponibles que coinciden con lo escrito (q, en el cuerpo), para elegir el equivalente de uno cargado a mano. Sin tildes ni mayúsculas, y cada palabra en cualquier orden, en singular o en plural; «de», «con», «y» y los demás conectores cortos no se exigen si hay otras palabras. Si así no aparece nada o casi nada (menos de 3), la primera página se completa con nombres parecidos (errores de tipeo), y esos no tienen página siguiente. Orden: el nombre igual a lo escrito, los que empiezan con la primera palabra, los que tienen todas y los parecidos; dentro de cada grupo, lo más nuevo primero, y los parecidos del más parecido al menos parecido, con el nombre entero más cercano a lo escrito primero cuando se parecen igual (DL-139). Busca también en los nombres alternativos vigentes de cada ítem («aguacate» encuentra «Palta», «bench press», «Press de banca»), con las mismas reglas: todas las palabras tienen que estar en un mismo nombre, y el grupo es el del nombre que mejor coincide (DL-141). En producción no ofrece lo sembrado como demostración (provenance BE_SYNTHETIC_SEED), y un plan, una plantilla, una receta o un habitual nuevos tampoco lo aceptan; en test y en desarrollo, sí (UF-09, DL-169). Queda auditada.",
+        "summary": "Los alimentos verificados (la tabla oficial, USDA FoodData Central · SR Legacy, y lo que Administración sumó al canon) disponibles que coinciden con lo escrito (q, en el cuerpo), para elegir el equivalente de uno cargado a mano. Sin tildes ni mayúsculas, y cada palabra en cualquier orden, en singular o en plural; «de», «con», «y» y los demás conectores cortos no se exigen si hay otras palabras. Si así no aparece nada o casi nada (menos de 3), la primera página se completa con nombres parecidos (errores de tipeo), y esos no tienen página siguiente. Orden: el nombre igual a lo escrito, los que empiezan con la primera palabra, los que tienen todas y los parecidos; dentro de cada grupo, lo más nuevo primero, y los parecidos del más parecido al menos parecido, con el nombre entero más cercano a lo escrito primero cuando se parecen igual (DL-139). Busca también en los nombres alternativos vigentes de cada ítem («aguacate» encuentra «Palta», «bench press», «Press de banca»), con las mismas reglas: todas las palabras tienen que estar en un mismo nombre, y el grupo es el del nombre que mejor coincide (DL-141). En producción no ofrece lo sembrado como demostración (provenance BE_SYNTHETIC_SEED), y un plan, una plantilla, una receta o un habitual nuevos tampoco lo aceptan; en test y en desarrollo, sí (UF-09, DL-169). Queda auditada.",
         "description": "Fuente: WP-NUTRICION-ALIMENTOS NUA-04 · ID propio de BE (familia ALI) · DEUDA_LEGAJO DL-180. AuthN: SESSION_MFA.",
         "security": [
           {
@@ -21372,6 +21365,741 @@
           },
           "403": {
             "description": "ErrorEnvelope: ACTION_FORBIDDEN | MFA_REQUIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "ErrorEnvelope: INTERNAL_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "ErrorEnvelope: ADMINISTRATION_NOT_AVAILABLE | DB_UNAVAILABLE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/foods/similar/query": {
+      "post": {
+        "operationId": "API-ALI-08",
+        "summary": "Las cargas a mano agrupadas por nombre parecido (sin tildes, sin mayúsculas, sin espacios de más y sin plurales simples), cada grupo con los nombres como se cargaron, cuántos profesionales distintos cargaron algo así y sus cargas, cada una con quién la cargó (su nombre de profesional; nunca a quién se le indicó). Lo que más profesionales cargaron va primero: es lo que conviene sumar al canon. Filtrados por texto (q) y por un mínimo de profesionales (minProfessionals). Los retirados no se ofrecen. La consulta va en el cuerpo y queda auditada.",
+        "description": "Fuente: WP-NUTRICION-ALIMENTOS, segundo tramo (NUA-D15; decisión de Dirección del 2026-11-19) · WP-ADMINISTRACION (DL-155) · ID propio de BE (familia ALI) · DEUDA_LEGAJO DL-180. AuthN: SESSION_MFA.",
+        "security": [
+          {
+            "sesion": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "X-BE-Surface",
+            "in": "header",
+            "required": false,
+            "description": "Superficie declarada (procedencia). Nunca autoriza (DEUDA_LEGAJO DL-022).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "WEB",
+                "APK"
+              ]
+            }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "type": "object",
+                "properties": {
+                  "q": {
+                    "type": "string",
+                    "maxLength": 80
+                  },
+                  "minProfessionals": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 100
+                  },
+                  "limit": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "maximum": 50
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Éxito",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$schema": "https://json-schema.org/draft/2020-12/schema",
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "key": {
+                            "type": "string"
+                          },
+                          "names": {
+                            "maxItems": 5,
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          "professionals": {
+                            "type": "integer",
+                            "exclusiveMinimum": 0,
+                            "maximum": 9007199254740991
+                          },
+                          "loads": {
+                            "maxItems": 50,
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "catalogItemId": {
+                                  "type": "string",
+                                  "minLength": 1
+                                },
+                                "versionId": {
+                                  "type": "string",
+                                  "minLength": 1
+                                },
+                                "version": {
+                                  "type": "string",
+                                  "pattern": "^v[1-9]\\d*$"
+                                },
+                                "versionNumber": {
+                                  "type": "integer",
+                                  "exclusiveMinimum": 0,
+                                  "maximum": 9007199254740991
+                                },
+                                "name": {
+                                  "type": "string"
+                                },
+                                "composition": {
+                                  "type": "object",
+                                  "properties": {
+                                    "referenceAmount": {
+                                      "type": "string",
+                                      "enum": [
+                                        "100g",
+                                        "100ml"
+                                      ]
+                                    },
+                                    "energyKcal": {
+                                      "type": "number",
+                                      "minimum": 0
+                                    },
+                                    "proteinG": {
+                                      "type": "number",
+                                      "minimum": 0
+                                    },
+                                    "carbohydrateG": {
+                                      "type": "number",
+                                      "minimum": 0
+                                    },
+                                    "fatG": {
+                                      "type": "number",
+                                      "minimum": 0
+                                    },
+                                    "fiberG": {
+                                      "anyOf": [
+                                        {
+                                          "type": "number",
+                                          "minimum": 0
+                                        },
+                                        {
+                                          "type": "null"
+                                        }
+                                      ]
+                                    }
+                                  },
+                                  "required": [
+                                    "referenceAmount",
+                                    "energyKcal",
+                                    "proteinG",
+                                    "carbohydrateG",
+                                    "fatG"
+                                  ],
+                                  "additionalProperties": false
+                                },
+                                "foodGroup": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string",
+                                      "enum": [
+                                        "MEAT",
+                                        "FISH",
+                                        "EGGS",
+                                        "DAIRY",
+                                        "GRAINS",
+                                        "LEGUMES",
+                                        "VEGETABLES",
+                                        "FRUITS",
+                                        "FATS",
+                                        "NUTS",
+                                        "SWEETS",
+                                        "DRINKS",
+                                        "OTHER"
+                                      ]
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "available": {
+                                  "type": "boolean"
+                                },
+                                "loadedBy": {
+                                  "type": "object",
+                                  "properties": {
+                                    "displayName": {
+                                      "type": "string"
+                                    }
+                                  },
+                                  "required": [
+                                    "displayName"
+                                  ],
+                                  "additionalProperties": false
+                                },
+                                "review": {
+                                  "type": "object",
+                                  "properties": {
+                                    "state": {
+                                      "type": "string",
+                                      "enum": [
+                                        "PENDING",
+                                        "CERTIFIED",
+                                        "EQUIVALENT"
+                                      ]
+                                    },
+                                    "certification": {
+                                      "anyOf": [
+                                        {
+                                          "type": "object",
+                                          "properties": {
+                                            "source": {
+                                              "type": "string",
+                                              "minLength": 1,
+                                              "maxLength": 500
+                                            },
+                                            "certifiedAt": {
+                                              "type": "string",
+                                              "format": "date-time",
+                                              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                                            }
+                                          },
+                                          "required": [
+                                            "source",
+                                            "certifiedAt"
+                                          ],
+                                          "additionalProperties": false
+                                        },
+                                        {
+                                          "type": "null"
+                                        }
+                                      ]
+                                    },
+                                    "equivalent": {
+                                      "anyOf": [
+                                        {
+                                          "type": "object",
+                                          "properties": {
+                                            "catalogItemId": {
+                                              "type": "string",
+                                              "minLength": 1
+                                            },
+                                            "name": {
+                                              "type": "string"
+                                            }
+                                          },
+                                          "required": [
+                                            "catalogItemId",
+                                            "name"
+                                          ],
+                                          "additionalProperties": false
+                                        },
+                                        {
+                                          "type": "null"
+                                        }
+                                      ]
+                                    },
+                                    "decidedAt": {
+                                      "anyOf": [
+                                        {
+                                          "type": "string",
+                                          "format": "date-time",
+                                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                                        },
+                                        {
+                                          "type": "null"
+                                        }
+                                      ]
+                                    }
+                                  },
+                                  "required": [
+                                    "state",
+                                    "certification",
+                                    "equivalent",
+                                    "decidedAt"
+                                  ],
+                                  "additionalProperties": false
+                                },
+                                "createdAt": {
+                                  "type": "string",
+                                  "format": "date-time",
+                                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                                },
+                                "updatedAt": {
+                                  "type": "string",
+                                  "format": "date-time",
+                                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                                }
+                              },
+                              "required": [
+                                "catalogItemId",
+                                "versionId",
+                                "version",
+                                "versionNumber",
+                                "name",
+                                "composition",
+                                "foodGroup",
+                                "available",
+                                "loadedBy",
+                                "review",
+                                "createdAt",
+                                "updatedAt"
+                              ],
+                              "additionalProperties": false
+                            }
+                          }
+                        },
+                        "required": [
+                          "key",
+                          "names",
+                          "professionals",
+                          "loads"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "ErrorEnvelope: INVALID_REQUEST | UNKNOWN_FIELD",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "ErrorEnvelope: AUTHENTICATION_REQUIRED | SESSION_INVALID | SESSION_EXPIRED | SESSION_REVOKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "ErrorEnvelope: ACTION_FORBIDDEN | MFA_REQUIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "ErrorEnvelope: INTERNAL_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "ErrorEnvelope: ADMINISTRATION_NOT_AVAILABLE | DB_UNAVAILABLE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/admin/foods/canon": {
+      "post": {
+        "operationId": "API-ALI-09",
+        "summary": "Sumar al canon: un alimento verificado de BE, que ven todos los profesionales de Nutrición («Verificado» en el buscador, con su fuente), con el nombre, la composición cada 100 g, el grupo (opcional) y la fuente citada (source, obligatoria, de 1 a 500). Puede partir de los valores de una carga a mano (fromCatalogItemId) y marcar cargas a mano como sus equivalentes (equivalentCatalogItemIds, hasta 50): el buscador de cada autor le sugiere el verificado justo antes del suyo, y lo suyo no cambia en sus planes ni en sus registros. Una carga que no existe, que no es a mano o que está retirada: 422 VALIDATION_FAILED con su ruta. Queda auditada, sin los textos.",
+        "description": "Fuente: WP-NUTRICION-ALIMENTOS, segundo tramo (NUA-D16; decisión de Dirección del 2026-11-19) · WP-ADMINISTRACION (DL-155) · ID propio de BE (familia ALI) · DEUDA_LEGAJO DL-180. AuthN: SESSION_MFA.",
+        "security": [
+          {
+            "sesion": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9._:-]{8,128}$"
+            }
+          },
+          {
+            "name": "X-BE-Surface",
+            "in": "header",
+            "required": false,
+            "description": "Superficie declarada (procedencia). Nunca autoriza (DEUDA_LEGAJO DL-022).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "WEB",
+                "APK"
+              ]
+            }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 120
+                  },
+                  "composition": {
+                    "type": "object",
+                    "properties": {
+                      "referenceAmount": {
+                        "type": "string",
+                        "enum": [
+                          "100g",
+                          "100ml"
+                        ]
+                      },
+                      "energyKcal": {
+                        "type": "number",
+                        "minimum": 0
+                      },
+                      "proteinG": {
+                        "type": "number",
+                        "minimum": 0
+                      },
+                      "carbohydrateG": {
+                        "type": "number",
+                        "minimum": 0
+                      },
+                      "fatG": {
+                        "type": "number",
+                        "minimum": 0
+                      },
+                      "fiberG": {
+                        "anyOf": [
+                          {
+                            "type": "number",
+                            "minimum": 0
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      }
+                    },
+                    "required": [
+                      "referenceAmount",
+                      "energyKcal",
+                      "proteinG",
+                      "carbohydrateG",
+                      "fatG"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "group": {
+                    "type": "string",
+                    "enum": [
+                      "MEAT",
+                      "FISH",
+                      "EGGS",
+                      "DAIRY",
+                      "GRAINS",
+                      "LEGUMES",
+                      "VEGETABLES",
+                      "FRUITS",
+                      "FATS",
+                      "NUTS",
+                      "SWEETS",
+                      "DRINKS",
+                      "OTHER"
+                    ]
+                  },
+                  "source": {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 500
+                  },
+                  "fromCatalogItemId": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "equivalentCatalogItemIds": {
+                    "maxItems": 50,
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "minLength": 1
+                    }
+                  }
+                },
+                "required": [
+                  "name",
+                  "composition",
+                  "source"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Éxito",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$schema": "https://json-schema.org/draft/2020-12/schema",
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "catalogItemId": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "versionId": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "composition": {
+                          "type": "object",
+                          "properties": {
+                            "referenceAmount": {
+                              "type": "string",
+                              "enum": [
+                                "100g",
+                                "100ml"
+                              ]
+                            },
+                            "energyKcal": {
+                              "type": "number",
+                              "minimum": 0
+                            },
+                            "proteinG": {
+                              "type": "number",
+                              "minimum": 0
+                            },
+                            "carbohydrateG": {
+                              "type": "number",
+                              "minimum": 0
+                            },
+                            "fatG": {
+                              "type": "number",
+                              "minimum": 0
+                            },
+                            "fiberG": {
+                              "anyOf": [
+                                {
+                                  "type": "number",
+                                  "minimum": 0
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            }
+                          },
+                          "required": [
+                            "referenceAmount",
+                            "energyKcal",
+                            "proteinG",
+                            "carbohydrateG",
+                            "fatG"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "foodGroup": {
+                          "anyOf": [
+                            {
+                              "type": "string",
+                              "enum": [
+                                "MEAT",
+                                "FISH",
+                                "EGGS",
+                                "DAIRY",
+                                "GRAINS",
+                                "LEGUMES",
+                                "VEGETABLES",
+                                "FRUITS",
+                                "FATS",
+                                "NUTS",
+                                "SWEETS",
+                                "DRINKS",
+                                "OTHER"
+                              ]
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "source": {
+                          "type": "string"
+                        },
+                        "equivalentsMarked": {
+                          "type": "integer",
+                          "minimum": 0,
+                          "maximum": 9007199254740991
+                        }
+                      },
+                      "required": [
+                        "catalogItemId",
+                        "versionId",
+                        "name",
+                        "composition",
+                        "foodGroup",
+                        "source",
+                        "equivalentsMarked"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "ErrorEnvelope: INVALID_REQUEST | UNKNOWN_FIELD",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "ErrorEnvelope: AUTHENTICATION_REQUIRED | SESSION_INVALID | SESSION_EXPIRED | SESSION_REVOKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "ErrorEnvelope: ACTION_FORBIDDEN | MFA_REQUIRED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "ErrorEnvelope: IDEMPOTENCY_KEY_REUSED | RESOURCE_CONFLICT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "ErrorEnvelope: VALIDATION_FAILED",
             "content": {
               "application/json": {
                 "schema": {
@@ -51084,6 +51812,43 @@
                                                     "type": "null"
                                                   }
                                                 ]
+                                              },
+                                              "householdMeasure": {
+                                                "anyOf": [
+                                                  {
+                                                    "type": "object",
+                                                    "properties": {
+                                                      "kind": {
+                                                        "type": "string",
+                                                        "enum": [
+                                                          "UNIT",
+                                                          "TABLESPOON",
+                                                          "CUP",
+                                                          "PORTION"
+                                                        ]
+                                                      },
+                                                      "count": {
+                                                        "type": "number",
+                                                        "exclusiveMinimum": 0,
+                                                        "maximum": 100
+                                                      },
+                                                      "amountPerUnit": {
+                                                        "type": "number",
+                                                        "exclusiveMinimum": 0,
+                                                        "maximum": 5000
+                                                      }
+                                                    },
+                                                    "required": [
+                                                      "kind",
+                                                      "count",
+                                                      "amountPerUnit"
+                                                    ],
+                                                    "additionalProperties": false
+                                                  },
+                                                  {
+                                                    "type": "null"
+                                                  }
+                                                ]
                                               }
                                             },
                                             "required": [
@@ -51356,6 +52121,43 @@
                                                         {
                                                           "type": "string",
                                                           "maxLength": 300
+                                                        },
+                                                        {
+                                                          "type": "null"
+                                                        }
+                                                      ]
+                                                    },
+                                                    "householdMeasure": {
+                                                      "anyOf": [
+                                                        {
+                                                          "type": "object",
+                                                          "properties": {
+                                                            "kind": {
+                                                              "type": "string",
+                                                              "enum": [
+                                                                "UNIT",
+                                                                "TABLESPOON",
+                                                                "CUP",
+                                                                "PORTION"
+                                                              ]
+                                                            },
+                                                            "count": {
+                                                              "type": "number",
+                                                              "exclusiveMinimum": 0,
+                                                              "maximum": 100
+                                                            },
+                                                            "amountPerUnit": {
+                                                              "type": "number",
+                                                              "exclusiveMinimum": 0,
+                                                              "maximum": 5000
+                                                            }
+                                                          },
+                                                          "required": [
+                                                            "kind",
+                                                            "count",
+                                                            "amountPerUnit"
+                                                          ],
+                                                          "additionalProperties": false
                                                         },
                                                         {
                                                           "type": "null"
@@ -52036,6 +52838,43 @@
                                                           "type": "null"
                                                         }
                                                       ]
+                                                    },
+                                                    "householdMeasure": {
+                                                      "anyOf": [
+                                                        {
+                                                          "type": "object",
+                                                          "properties": {
+                                                            "kind": {
+                                                              "type": "string",
+                                                              "enum": [
+                                                                "UNIT",
+                                                                "TABLESPOON",
+                                                                "CUP",
+                                                                "PORTION"
+                                                              ]
+                                                            },
+                                                            "count": {
+                                                              "type": "number",
+                                                              "exclusiveMinimum": 0,
+                                                              "maximum": 100
+                                                            },
+                                                            "amountPerUnit": {
+                                                              "type": "number",
+                                                              "exclusiveMinimum": 0,
+                                                              "maximum": 5000
+                                                            }
+                                                          },
+                                                          "required": [
+                                                            "kind",
+                                                            "count",
+                                                            "amountPerUnit"
+                                                          ],
+                                                          "additionalProperties": false
+                                                        },
+                                                        {
+                                                          "type": "null"
+                                                        }
+                                                      ]
                                                     }
                                                   },
                                                   "required": [
@@ -52486,6 +53325,43 @@
                                                           "type": "null"
                                                         }
                                                       ]
+                                                    },
+                                                    "householdMeasure": {
+                                                      "anyOf": [
+                                                        {
+                                                          "type": "object",
+                                                          "properties": {
+                                                            "kind": {
+                                                              "type": "string",
+                                                              "enum": [
+                                                                "UNIT",
+                                                                "TABLESPOON",
+                                                                "CUP",
+                                                                "PORTION"
+                                                              ]
+                                                            },
+                                                            "count": {
+                                                              "type": "number",
+                                                              "exclusiveMinimum": 0,
+                                                              "maximum": 100
+                                                            },
+                                                            "amountPerUnit": {
+                                                              "type": "number",
+                                                              "exclusiveMinimum": 0,
+                                                              "maximum": 5000
+                                                            }
+                                                          },
+                                                          "required": [
+                                                            "kind",
+                                                            "count",
+                                                            "amountPerUnit"
+                                                          ],
+                                                          "additionalProperties": false
+                                                        },
+                                                        {
+                                                          "type": "null"
+                                                        }
+                                                      ]
                                                     }
                                                   },
                                                   "required": [
@@ -52842,6 +53718,43 @@
                                                     "type": "null"
                                                   }
                                                 ]
+                                              },
+                                              "householdMeasure": {
+                                                "anyOf": [
+                                                  {
+                                                    "type": "object",
+                                                    "properties": {
+                                                      "kind": {
+                                                        "type": "string",
+                                                        "enum": [
+                                                          "UNIT",
+                                                          "TABLESPOON",
+                                                          "CUP",
+                                                          "PORTION"
+                                                        ]
+                                                      },
+                                                      "count": {
+                                                        "type": "number",
+                                                        "exclusiveMinimum": 0,
+                                                        "maximum": 100
+                                                      },
+                                                      "amountPerUnit": {
+                                                        "type": "number",
+                                                        "exclusiveMinimum": 0,
+                                                        "maximum": 5000
+                                                      }
+                                                    },
+                                                    "required": [
+                                                      "kind",
+                                                      "count",
+                                                      "amountPerUnit"
+                                                    ],
+                                                    "additionalProperties": false
+                                                  },
+                                                  {
+                                                    "type": "null"
+                                                  }
+                                                ]
                                               }
                                             },
                                             "required": [
@@ -53114,6 +54027,43 @@
                                                         {
                                                           "type": "string",
                                                           "maxLength": 300
+                                                        },
+                                                        {
+                                                          "type": "null"
+                                                        }
+                                                      ]
+                                                    },
+                                                    "householdMeasure": {
+                                                      "anyOf": [
+                                                        {
+                                                          "type": "object",
+                                                          "properties": {
+                                                            "kind": {
+                                                              "type": "string",
+                                                              "enum": [
+                                                                "UNIT",
+                                                                "TABLESPOON",
+                                                                "CUP",
+                                                                "PORTION"
+                                                              ]
+                                                            },
+                                                            "count": {
+                                                              "type": "number",
+                                                              "exclusiveMinimum": 0,
+                                                              "maximum": 100
+                                                            },
+                                                            "amountPerUnit": {
+                                                              "type": "number",
+                                                              "exclusiveMinimum": 0,
+                                                              "maximum": 5000
+                                                            }
+                                                          },
+                                                          "required": [
+                                                            "kind",
+                                                            "count",
+                                                            "amountPerUnit"
+                                                          ],
+                                                          "additionalProperties": false
                                                         },
                                                         {
                                                           "type": "null"
@@ -58367,6 +59317,43 @@
                                                 "type": "null"
                                               }
                                             ]
+                                          },
+                                          "householdMeasure": {
+                                            "anyOf": [
+                                              {
+                                                "type": "object",
+                                                "properties": {
+                                                  "kind": {
+                                                    "type": "string",
+                                                    "enum": [
+                                                      "UNIT",
+                                                      "TABLESPOON",
+                                                      "CUP",
+                                                      "PORTION"
+                                                    ]
+                                                  },
+                                                  "count": {
+                                                    "type": "number",
+                                                    "exclusiveMinimum": 0,
+                                                    "maximum": 100
+                                                  },
+                                                  "amountPerUnit": {
+                                                    "type": "number",
+                                                    "exclusiveMinimum": 0,
+                                                    "maximum": 5000
+                                                  }
+                                                },
+                                                "required": [
+                                                  "kind",
+                                                  "count",
+                                                  "amountPerUnit"
+                                                ],
+                                                "additionalProperties": false
+                                              },
+                                              {
+                                                "type": "null"
+                                              }
+                                            ]
                                           }
                                         },
                                         "required": [
@@ -58690,6 +59677,43 @@
                                         "type": "null"
                                       }
                                     ]
+                                  },
+                                  "householdMeasure": {
+                                    "anyOf": [
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "kind": {
+                                            "type": "string",
+                                            "enum": [
+                                              "UNIT",
+                                              "TABLESPOON",
+                                              "CUP",
+                                              "PORTION"
+                                            ]
+                                          },
+                                          "count": {
+                                            "type": "number",
+                                            "exclusiveMinimum": 0,
+                                            "maximum": 100
+                                          },
+                                          "amountPerUnit": {
+                                            "type": "number",
+                                            "exclusiveMinimum": 0,
+                                            "maximum": 5000
+                                          }
+                                        },
+                                        "required": [
+                                          "kind",
+                                          "count",
+                                          "amountPerUnit"
+                                        ],
+                                        "additionalProperties": false
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
                                   }
                                 },
                                 "required": [
@@ -58865,6 +59889,43 @@
                                             {
                                               "type": "string",
                                               "maxLength": 300
+                                            },
+                                            {
+                                              "type": "null"
+                                            }
+                                          ]
+                                        },
+                                        "householdMeasure": {
+                                          "anyOf": [
+                                            {
+                                              "type": "object",
+                                              "properties": {
+                                                "kind": {
+                                                  "type": "string",
+                                                  "enum": [
+                                                    "UNIT",
+                                                    "TABLESPOON",
+                                                    "CUP",
+                                                    "PORTION"
+                                                  ]
+                                                },
+                                                "count": {
+                                                  "type": "number",
+                                                  "exclusiveMinimum": 0,
+                                                  "maximum": 100
+                                                },
+                                                "amountPerUnit": {
+                                                  "type": "number",
+                                                  "exclusiveMinimum": 0,
+                                                  "maximum": 5000
+                                                }
+                                              },
+                                              "required": [
+                                                "kind",
+                                                "count",
+                                                "amountPerUnit"
+                                              ],
+                                              "additionalProperties": false
                                             },
                                             {
                                               "type": "null"
@@ -59242,6 +60303,43 @@
                                             {
                                               "type": "string",
                                               "maxLength": 300
+                                            },
+                                            {
+                                              "type": "null"
+                                            }
+                                          ]
+                                        },
+                                        "householdMeasure": {
+                                          "anyOf": [
+                                            {
+                                              "type": "object",
+                                              "properties": {
+                                                "kind": {
+                                                  "type": "string",
+                                                  "enum": [
+                                                    "UNIT",
+                                                    "TABLESPOON",
+                                                    "CUP",
+                                                    "PORTION"
+                                                  ]
+                                                },
+                                                "count": {
+                                                  "type": "number",
+                                                  "exclusiveMinimum": 0,
+                                                  "maximum": 100
+                                                },
+                                                "amountPerUnit": {
+                                                  "type": "number",
+                                                  "exclusiveMinimum": 0,
+                                                  "maximum": 5000
+                                                }
+                                              },
+                                              "required": [
+                                                "kind",
+                                                "count",
+                                                "amountPerUnit"
+                                              ],
+                                              "additionalProperties": false
                                             },
                                             {
                                               "type": "null"
@@ -102669,6 +103767,36 @@
                                                                 "string",
                                                                 "null"
                                                               ]
+                                                            },
+                                                            "householdMeasure": {
+                                                              "type": "object",
+                                                              "properties": {
+                                                                "kind": {
+                                                                  "type": "string",
+                                                                  "enum": [
+                                                                    "UNIT",
+                                                                    "TABLESPOON",
+                                                                    "CUP",
+                                                                    "PORTION"
+                                                                  ]
+                                                                },
+                                                                "count": {
+                                                                  "type": "number",
+                                                                  "exclusiveMinimum": 0,
+                                                                  "maximum": 100
+                                                                },
+                                                                "amountPerUnit": {
+                                                                  "type": "number",
+                                                                  "exclusiveMinimum": 0,
+                                                                  "maximum": 5000
+                                                                }
+                                                              },
+                                                              "required": [
+                                                                "kind",
+                                                                "count",
+                                                                "amountPerUnit"
+                                                              ],
+                                                              "additionalProperties": false
                                                             }
                                                           },
                                                           "required": [

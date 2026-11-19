@@ -31,7 +31,11 @@ import { DetalleDeIncidenciaResponseSchema, ListaAdministrativaDeIncidenciasResp
 import { SegundoFactorRestablecidoResponseSchema, type RestablecerSegundoFactorRequest } from './segundo-factor-del-profesional';
 import type { Alcance } from './alcance';
 import {
+  AlimentoDelCanonResponseSchema,
   AlimentoParaRevisarResponseSchema,
+  ListaDeParecidosResponseSchema,
+  type ConsultarParecidosRequest,
+  type SumarAlCanonRequest,
   ListaDeAlimentosParaRevisarResponseSchema,
   ListaDeVerificadosResponseSchema,
   type BuscarVerificadosRequest,
@@ -213,7 +217,15 @@ export function crearClienteAdministrativo(opciones: { readonly baseUrl: string;
     decidirSobreAlimento(token: string, alimentoId: string, pedido: DecidirSobreAlimentoRequest, claveDeIdempotencia: string) {
       return llamar('POST', `/admin/foods/${encodeURIComponent(alimentoId)}/decisions`, { token, cuerpo: pedido, claveDeIdempotencia, esquema: AlimentoParaRevisarResponseSchema });
     },
-    /** API-ALI-07 — los verificados de la tabla oficial, para elegir el equivalente. */
+    /** API-ALI-08 — las cargas a mano agrupadas por nombre parecido, con cuántos profesionales cargaron algo así. */
+    alimentosParecidos(token: string, consulta: ConsultarParecidosRequest) {
+      return llamar('POST', '/admin/foods/similar/query', { token, cuerpo: consulta, esquema: ListaDeParecidosResponseSchema });
+    },
+    /** API-ALI-09 — sumar al canon: un alimento verificado, con su fuente; con su clave de idempotencia. */
+    sumarAlCanon(token: string, pedido: SumarAlCanonRequest, claveDeIdempotencia: string) {
+      return llamar('POST', '/admin/foods/canon', { token, cuerpo: pedido, claveDeIdempotencia, esquema: AlimentoDelCanonResponseSchema });
+    },
+    /** API-ALI-07 — los verificados de la tabla oficial y del canon, para elegir el equivalente. */
     buscarVerificados(token: string, consulta: BuscarVerificadosRequest) {
       return llamar('POST', '/admin/foods/verified/query', { token, cuerpo: consulta, esquema: ListaDeVerificadosResponseSchema });
     },

@@ -10,6 +10,7 @@ import {
   type HistorialAdministrativoResponse,
   type ListaAdministrativaDeIncidenciasResponse,
   type ListaDeAlimentosParaRevisarResponse,
+  type ListaDeParecidosResponse,
   type ListaDeVerificadosResponse,
   type ListaAdministrativaDePedidosDeDerechoResponse,
   type ListaDeProfesionalesResponse,
@@ -36,7 +37,7 @@ type Solicitud = SolicitudAdministrativa & SolicitudConContexto;
  * WP-ADMINISTRACION (DL-155): la familia ADM, API-ADM-01 a 13; desde UF-04 de WP-USO-FINAL (DL-169), también API-ADM-14
  * (incorporar un profesional) y 15 (cambiar su nombre profesional); desde UF-06, 16 y 17 (los pedidos de derechos), y desde
  * UF-03, 18 (la recuperación asistida). Desde RF-068 (DL-172), las incidencias: API-INC-03 a 05. Desde DL-180, la revisión
- * de los alimentos cargados a mano: API-ALI-05 a 07. Prefijo global /api/v1.
+ * de los alimentos cargados a mano: API-ALI-05 a 09. Prefijo global /api/v1.
  * - Sin guard: abrir y reanudar la sesión (el primer factor y la cookie) y cerrarla (idempotente).
  * - `SesionAdministrativaGuard`: una sesión administrativa válida, con el rol vigente. Alcanza solo para el segundo factor
  *   y para el estado de la propia sesión.
@@ -332,6 +333,33 @@ export class AdministracionController {
   buscarVerificados(@Body() cuerpo: unknown, @Query() query: Record<string, unknown>, @Req() req: Solicitud): Promise<ListaDeVerificadosResponse> {
     sinParametrosDeQuery(query);
     return this.alimentos.buscarVerificados(actorAdministrativoDe(req), cuerpo, contextoDe(req));
+  }
+
+  /** API-ALI-08 — SESSION_MFA. Las cargas a mano agrupadas por nombre parecido (NUA-D15). */
+  @Post('foods/similar/query')
+  @HttpCode(200)
+  @OperacionAdministrativa('API-ALI-08')
+  @UseGuards(SesionAdministrativaGuard, SegundoFactorGuard)
+  consultarParecidos(@Body() cuerpo: unknown, @Query() query: Record<string, unknown>, @Req() req: Solicitud): Promise<ListaDeParecidosResponse> {
+    sinParametrosDeQuery(query);
+    return this.alimentos.parecidos(actorAdministrativoDe(req), cuerpo, contextoDe(req));
+  }
+
+  /** API-ALI-09 — SESSION_MFA, Idempotency-Key requerida. Sumar al canon (NUA-D16). */
+  @Post('foods/canon')
+  @OperacionAdministrativa('API-ALI-09')
+  @UseGuards(SesionAdministrativaGuard, SegundoFactorGuard)
+  async sumarAlCanon(
+    @Body() cuerpo: unknown,
+    @Headers(HEADER_IDEMPOTENCY_KEY) clave: string | undefined,
+    @Query() query: Record<string, unknown>,
+    @Req() req: Solicitud,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<unknown> {
+    sinParametrosDeQuery(query);
+    const r = await this.alimentos.sumarAlCanon(actorAdministrativoDe(req), cuerpo, clave, contextoDe(req));
+    res.status(r.estadoHttp);
+    return r.cuerpo;
   }
 
   /** API-ALI-06 — SESSION_MFA, Idempotency-Key requerida. */

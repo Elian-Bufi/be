@@ -6,6 +6,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
+  cantidadDeLaMedida,
+  claveDeNombreParecido,
+  equivalenciaEnPalabras,
   ETIQUETA_DEL_NIVEL,
   GRUPO_API,
   GRUPO_DE_LA_CURADURIA,
@@ -14,30 +17,80 @@ import {
   ICONO_DEL_GRUPO,
   iconoDelAlimento,
   NOMBRE_DEL_GRUPO,
+  MedidasCaserasSchema,
+  medidaElegidaEnPalabras,
   nivelDeOrigen,
-  ordenDelNivel,
 } from './alimentos-del-catalogo';
-import { CorregirAlimentoRequestSchema, DecidirSobreAlimentoRequestSchema } from './contratos-alimentos';
-import { CrearElementoDeCatalogoRequestSchema, ElementoEncontradoSchema } from './contratos-nutricion';
+import { CorregirAlimentoRequestSchema, DecidirSobreAlimentoRequestSchema, SumarAlCanonRequestSchema } from './contratos-alimentos';
+import { CrearElementoDeCatalogoRequestSchema, ElementoEncontradoSchema, ItemPrescriptoEntradaSchema } from './contratos-nutricion';
+import { CodigoDeProblemaDePlan, normalizarEstructura, problemasDeBorrador } from './nutricion';
 import { ItemDeLaEstimacionSchema } from './contratos-totales-del-plan';
 import { ICONOS, NOMBRES_DE_ICONO } from './iconos';
 
 const USDA = 'USDA_FDC_SR_LEGACY';
 
-test('NUA-03 · el nivel: la tabla oficial y lo certificado son «Verificado»; lo propio, «Tuyo»; lo ajeno, «De otro profesional»', () => {
+test('NUA-03 y NUA-D14 · el nivel: la tabla oficial, el canon y lo certificado son «Verificado»; lo propio, «Tuyo»; no hay «De otro profesional»', () => {
   assert.equal(nivelDeOrigen({ provenance: 'CONTROLLED_IMPORT', externalProvider: USDA, loadedBy: null, certified: false }), 'VERIFIED');
   assert.equal(nivelDeOrigen({ provenance: 'PROFESSIONAL_MANUAL', externalProvider: null, loadedBy: 'YOU', certified: false }), 'YOURS');
-  assert.equal(nivelDeOrigen({ provenance: 'PROFESSIONAL_MANUAL', externalProvider: null, loadedBy: 'ANOTHER_PROFESSIONAL', certified: false }), 'OTHER_PROFESSIONAL');
+  // Lo del canon llega como verificado por Administración (`certified`), sin proveedor externo.
+  assert.equal(nivelDeOrigen({ provenance: 'CONTROLLED_IMPORT', externalProvider: null, loadedBy: null, certified: true }), 'VERIFIED');
   // La certificación vale más que quién lo cargó.
-  assert.equal(nivelDeOrigen({ provenance: 'PROFESSIONAL_MANUAL', externalProvider: null, loadedBy: 'ANOTHER_PROFESSIONAL', certified: true }), 'VERIFIED');
   assert.equal(nivelDeOrigen({ provenance: 'PROFESSIONAL_MANUAL', externalProvider: null, loadedBy: 'YOU', certified: true }), 'VERIFIED');
   // Lo importado de Open Food Facts y lo de demostración conservan su origen, sin un nivel más.
   assert.equal(nivelDeOrigen({ provenance: 'CONTROLLED_IMPORT', externalProvider: 'OPEN_FOOD_FACTS', loadedBy: null, certified: false }), 'UNVERIFIED');
   assert.equal(nivelDeOrigen({ provenance: 'BE_SYNTHETIC_SEED', externalProvider: null, loadedBy: null, certified: false }), 'UNVERIFIED');
   assert.equal(ETIQUETA_DEL_NIVEL.UNVERIFIED, null);
-  assert.deepEqual([ETIQUETA_DEL_NIVEL.VERIFIED, ETIQUETA_DEL_NIVEL.YOURS, ETIQUETA_DEL_NIVEL.OTHER_PROFESSIONAL], ['Verificado', 'Tuyo', 'De otro profesional']);
-  // Solo lo de otro profesional va después.
-  assert.deepEqual((['VERIFIED', 'YOURS', 'OTHER_PROFESSIONAL', 'UNVERIFIED'] as const).map(ordenDelNivel), [0, 0, 1, 0]);
+  assert.deepEqual(ETIQUETA_DEL_NIVEL, { VERIFIED: 'Verificado', YOURS: 'Tuyo', UNVERIFIED: null });
+  assert.equal(ElementoEncontradoSchema.shape.originLevel.safeParse('OTHER_PROFESSIONAL').success, false);
+});
+
+test('NUA-D15 · los nombres parecidos: sin tildes, sin mayúsculas, sin espacios de más y sin plurales simples', () => {
+  assert.equal(claveDeNombreParecido('  Milanesas   de SOJA '), 'milanesa de soja');
+  assert.equal(claveDeNombreParecido('milanesa de soja'), 'milanesa de soja');
+  assert.equal(claveDeNombreParecido('Panes integrales'), 'pan integral');
+  assert.equal(claveDeNombreParecido('Limones'), 'limon');
+  assert.equal(claveDeNombreParecido('Tomates perita'), 'tomate perita');
+  assert.equal(claveDeNombreParecido('Huevos'), 'huevo');
+  assert.equal(claveDeNombreParecido('Té con leche'), 'te con leche');
+  // Las palabras cortas no se tocan («gas», «tos»).
+  assert.equal(claveDeNombreParecido('Agua con gas'), 'agua con gas');
+  assert.equal(claveDeNombreParecido('Proteína en polvo, sabor vainilla'), 'proteina en polvo sabor vainilla');
+});
+
+test('NUA-08 · las medidas caseras: una de cada tipo, su equivalencia a la vista y la cantidad siempre en gramos', () => {
+  assert.equal(MedidasCaserasSchema.safeParse([{ kind: 'CUP', amount: 240 }, { kind: 'UNIT', amount: 50 }]).success, true);
+  assert.equal(MedidasCaserasSchema.safeParse([{ kind: 'CUP', amount: 240 }, { kind: 'CUP', amount: 200 }]).success, false, 'una de cada tipo');
+  assert.equal(MedidasCaserasSchema.safeParse([{ kind: 'CUP', amount: 0 }]).success, false);
+  assert.equal(equivalenciaEnPalabras({ kind: 'CUP', amount: 240 }), '1 taza = 240 g');
+  assert.equal(equivalenciaEnPalabras({ kind: 'TABLESPOON', amount: 12.5 }, '100ml'), '1 cucharada = 12,5 ml');
+  assert.equal(cantidadDeLaMedida({ count: 1.5, amountPerUnit: 240 }), 360);
+  assert.equal(cantidadDeLaMedida({ count: 3, amountPerUnit: 33.33 }), 100);
+  assert.equal(medidaElegidaEnPalabras({ kind: 'CUP', count: 2, amountPerUnit: 240 }), '2 tazas (480 g)');
+  assert.equal(medidaElegidaEnPalabras({ kind: 'UNIT', count: 1, amountPerUnit: 50 }), '1 unidad (50 g)');
+  // En el plan: la medida viaja con su cantidad en gramos, y la cantidad tiene que ser la de la medida.
+  const item = (cantidad: number | null, medida: object | null) => ({
+    dayTypes: [{ label: 'D', meals: [{ label: 'C', prescriptionMode: 'DISH_OPTIONS' as const, options: [{ label: 'O', items: [{ catalogItemId: 'a', quantity: cantidad === null ? null : { value: cantidad, unit: 'g' as const }, preparationState: 'RAW' as const, ...(medida ? { householdMeasure: medida } : {}) }] }] }] }],
+  });
+  let n = 0;
+  const id = () => `00000000-0000-4000-8000-${String(++n).padStart(12, '0')}`;
+  const taza = { kind: 'CUP', count: 2, amountPerUnit: 240 };
+  assert.equal(ItemPrescriptoEntradaSchema.safeParse({ catalogItemId: id(), quantity: { value: 480, unit: 'g' }, preparationState: 'RAW', householdMeasure: taza }).success, true);
+  const bien = normalizarEstructura(item(480, taza) as never, id);
+  assert.deepEqual(bien.dayTypes[0]!.meals[0]!.options[0]!.items[0]!.householdMeasure, taza);
+  assert.deepEqual(problemasDeBorrador(bien, new Set(['a'])), []);
+  const mal = normalizarEstructura(item(400, taza) as never, id);
+  assert.deepEqual(problemasDeBorrador(mal, new Set(['a'])).map((p) => p.code), [CodigoDeProblemaDePlan.HOUSEHOLD_MEASURE_INCONSISTENT]);
+  // Sin cantidad, la medida no se guarda; sin medida, todo como siempre.
+  assert.equal('householdMeasure' in normalizarEstructura(item(null, taza) as never, id).dayTypes[0]!.meals[0]!.options[0]!.items[0]!, false);
+  assert.equal('householdMeasure' in normalizarEstructura(item(100, null) as never, id).dayTypes[0]!.meals[0]!.options[0]!.items[0]!, false);
+});
+
+test('NUA-D16 · sumar al canon pide la fuente; las cargas a marcar, hasta 50', () => {
+  const base = { name: 'Milanesa de soja', composition: { referenceAmount: '100g', energyKcal: 250, proteinG: 18, carbohydrateG: 20, fatG: 10 } };
+  assert.equal(SumarAlCanonRequestSchema.safeParse(base).success, false, 'sin fuente');
+  assert.equal(SumarAlCanonRequestSchema.safeParse({ ...base, source: '  ' }).success, false);
+  assert.equal(SumarAlCanonRequestSchema.safeParse({ ...base, source: 'Rótulo del envase' }).success, true);
+  assert.equal(SumarAlCanonRequestSchema.safeParse({ ...base, source: 'x', equivalentCatalogItemIds: Array.from({ length: 51 }, (_, i) => `00000000-0000-4000-8000-${String(i).padStart(12, '0')}`) }).success, false);
 });
 
 test('NUA-05 · cada grupo tiene su nombre, su ícono de la familia y su valor en la base, ida y vuelta', () => {
@@ -85,6 +138,9 @@ test('los contratos: lo nuevo es opcional, y la API anterior se sigue leyendo ig
   const carga = { name: 'Galleta', itemType: 'FOOD', composition: fila.composition };
   assert.equal(CrearElementoDeCatalogoRequestSchema.safeParse(carga).success, true);
   assert.equal(CrearElementoDeCatalogoRequestSchema.safeParse({ ...carga, group: 'SWEETS' }).success, true);
+  // NUA-D14: lo cargado a mano no se comparte: no hay un campo para compartirlo (objeto estricto).
+  assert.equal(CrearElementoDeCatalogoRequestSchema.safeParse({ ...carga, share: true }).success, false);
+  assert.equal(CrearElementoDeCatalogoRequestSchema.safeParse({ ...carga, householdMeasures: [{ kind: 'UNIT', amount: 30 }] }).success, true);
   assert.equal(CorregirAlimentoRequestSchema.safeParse({ name: 'Galleta', composition: fila.composition }).success, false);
   assert.equal(CorregirAlimentoRequestSchema.safeParse({ expectedVersion: 'v2', name: 'Galleta', composition: fila.composition }).success, true);
   // La decisión: un campo de más no entra (objeto estricto).

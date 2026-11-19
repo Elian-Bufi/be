@@ -184,7 +184,6 @@ export class PlanesService {
       // La plantilla se normaliza como cualquier estructura y se verifica con el catálogo disponible: el plan es de la persona.
       const plantilla = await this.plantillas.versionParaAplicar(tx, p.profesionalId, p.desdePlantilla);
       contenido = normalizarEstructura(plantilla.estructura, randomUUID);
-      await this.catalogo.tomarParaCitar(tx, p.profesionalId, idsDeCatalogo(contenido));
       const disponibles = await this.catalogo.disponibles(tx, p.profesionalId, idsDeCatalogo(contenido));
       const problemas = problemasDeBorrador(contenido, new Set(disponibles.keys()));
       if (problemas.length > 0) throw errorDeBorrador(problemas);
@@ -201,9 +200,6 @@ export class PlanesService {
     } else {
       // DL-119: una opción puede nacer de una versión de receta propia; sus ítems salen de una porción de esa versión.
       contenido = await conOpcionesDeReceta(tx, p.profesionalId, p.estructura ?? { dayTypes: [] }, normalizarEstructura(p.estructura ?? { dayTypes: [] }, randomUUID));
-      // DL-180, segundo tramo (NUA-D16): lo ajeno que se cita se toma antes de mirarlo (una cita y un «dejar de compartir»
-      // simultáneos se ordenan).
-      await this.catalogo.tomarParaCitar(tx, p.profesionalId, idsDeCatalogo(contenido));
       const disponibles = await this.catalogo.disponibles(tx, p.profesionalId, idsDeCatalogo(contenido));
       const problemas = problemasDeBorrador(contenido, new Set(disponibles.keys()));
       if (problemas.length > 0) throw errorDeBorrador(problemas);
@@ -370,13 +366,10 @@ export class PlanesService {
         // DL-119: las opciones de receta se arman en el servidor, con una porción de la versión citada.
         const contenido = await conOpcionesDeReceta(tx, v.profesionalId, pedido.changes, normalizarEstructura(pedido.changes, randomUUID));
         const ids = idsDeCatalogo(contenido);
-        // DL-180, segundo tramo (NUA-D16): lo ajeno que se cita se toma antes de mirarlo, así una cita y un «dejar de
-        // compartir» simultáneos se ordenan.
-        await this.catalogo.tomarParaCitar(tx, v.profesionalId, ids);
         const disponibles = await this.catalogo.disponibles(tx, v.profesionalId, ids);
-        // NUA-D03 (DL-180): un alimento que se retiró (o que su autor dejó de compartir) después de citarlo no impide
-        // guardar el borrador; validar y activar lo señalan, porque no se planifica nada nuevo con él (REG-06-99). Segundo
-        // tramo (NUA-D17): solo si este borrador **ya** lo citaba. Uno retirado que se suma ahora (una comida habitual,
+        // NUA-D03 (DL-180): un alimento que se retiró (o que ya no se ve) después de citarlo no impide guardar el borrador;
+        // validar y activar lo señalan, porque no se planifica nada nuevo con él (REG-06-99). Segundo tramo (NUA-D17):
+        // solo si este borrador **ya** lo citaba. Uno retirado que se suma ahora (una comida habitual,
         // «Copiar desde otra comida», una receta o un pedido armado a mano) es CATALOG_REFERENCE_INVALID, como en un plan
         // nuevo.
         const yaCitados = new Set(idsDeCatalogo(v.contenido));
@@ -468,9 +461,6 @@ export class PlanesService {
         if (otro) throw new ErrorDeApi(409, CodigoDeError.ACTIVE_PLAN_CONFLICT, 'El asesorado ya tiene un plan nutricional vigente con otro profesional.');
         // 5. Validar estructura (UC-I04).
         const ids = idsDeCatalogo(v.contenido);
-        // DL-180, segundo tramo (NUA-D16): lo ajeno se toma antes de mirarlo; un «dejar de compartir» simultáneo espera o
-        // ya se ve, y la persona nunca recibe algo que su autor dejó de compartir antes de la activación.
-        await this.catalogo.tomarParaCitar(tx, v.profesionalId, ids);
         const catalogo = await this.catalogo.disponibles(tx, v.profesionalId, ids);
         const issues = problemasParaActivar(v.contenido, new Set(catalogo.keys()));
         if (issues.length > 0) throw noLista(issues);
