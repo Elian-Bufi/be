@@ -217,7 +217,7 @@ export const COPY_MIS_ALIMENTOS = {
 export const COPY_REVISION_DE_ALIMENTOS = {
   titulo: 'Alimentos cargados a mano',
   queVe:
-    'El nombre, los valores cada 100 g y el grupo de lo que cargaron a mano los profesionales de Nutrición. No se ve quién lo cargó ni a quién se le indicó.',
+    'El nombre, los valores cada 100 g y el grupo de lo que los profesionales de Nutrición cargaron a mano y comparten con los demás. No se ve quién lo cargó ni a quién se le indicó.',
   filtros: { TODOS: 'Todos', PENDING: 'Sin revisar', CERTIFIED: 'Verificados', EQUIVALENT: 'Equivalentes' },
   buscar: 'Buscar por nombre',
   sinAlimentos: 'No hay alimentos cargados a mano con ese filtro.',

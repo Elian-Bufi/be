@@ -277,6 +277,12 @@ describe('NUA-03 · lo de otro profesional se ve como «De otro profesional» y 
     expect(await porIdentidad(otro, [elemento.id])).toEqual([]);
     expect((await buscar(autor, nombre)).some((e) => e.catalogItemId === elemento.id)).toBe(true);
     expect((await propios(autor)).find((a) => a.catalogItemId === elemento.id)).toMatchObject({ shared: false });
+    // Guardar la corrección sin cambiar nada no es corregir: responde la misma versión («no cambió») y sigue sin
+    // compartirse, como le dice «Mis alimentos» («Por ahora lo ves solo vos»).
+    const sinCambios = await corregir(autor, elemento.id, { expectedVersion: 'v1', name: nombre, composition: COMPOSICION }).expect(200);
+    expect(AlimentoPropioResponseSchema.parse(sinCambios.body).data).toMatchObject({ versionNumber: 1, shared: false });
+    expect((await buscar(otro, nombre)).some((e) => e.catalogItemId === elemento.id)).toBe(false);
+    expect(await porIdentidad(otro, [elemento.id])).toEqual([]);
     await corregir(autor, elemento.id, { expectedVersion: 'v1', name: nombre, composition: { ...COMPOSICION, fatG: 7 } }).expect(200);
     expect((await buscar(otro, nombre)).find((e) => e.catalogItemId === elemento.id)).toMatchObject({ originLevel: 'OTHER_PROFESSIONAL' });
   });
@@ -342,6 +348,35 @@ describe('NUA-04 · Administración verifica con una fuente o marca un equivalen
     const inexistente = await decidir(randomUUID(), { expectedVersion: 'v1', decision: 'CERTIFY', source: 'x' }).expect(404);
     expect(sembrado.body.error).toEqual(inexistente.body.error);
     await adm(app, pro.token).post('/admin/foods/query').send({}).expect(403);
+  });
+
+  it('lo que su autor no compartió no lo ve ni lo decide Administración: el mismo 404 que lo inexistente', async () => {
+    const autor = await nutricionista();
+    const nombre = `Zzsolo${unico()} licuado`;
+    // Como lo dejaba la carga a mano de antes de DL-180: sin la fila de compartido. «Mis alimentos» le dice a su autor
+    // «Por ahora lo ves solo vos».
+    const elemento = await prisma.elementoDeCatalogoNutricional.create({ data: { procedencia: 'PROFESSIONAL_MANUAL', creadoPorId: autor.id } });
+    const version = await prisma.versionDeElementoNutricional.create({
+      data: { elementoId: elemento.id, nombre, composicion: COMPOSICION, disponibilidad: 'DISPONIBLE', procedencia: { fuente: 'PROPIA', carga: 'MANUAL', casoDeUso: 'PRUEBA' } },
+    });
+    expect(await lista(nombre)).toEqual([]);
+    const noCompartido = await decidir(elemento.id, { expectedVersion: 'v1', decision: 'CERTIFY', source: 'Rótulo sintético' }).expect(404);
+    const inexistente = await decidir(randomUUID(), { expectedVersion: 'v1', decision: 'CERTIFY', source: 'Rótulo sintético' }).expect(404);
+    expect(noCompartido.body.error).toEqual(inexistente.body.error);
+    // La base tampoco lo deja, ni con el administrador.
+    await expect(
+      prisma.$executeRaw`INSERT INTO "revision_administrativa_de_alimento" ("elemento_id", "numero", "resultado", "version_id", "fuente", "administrador_id", "procedencia")
+                         VALUES (${elemento.id}::uuid, 1, 'CERTIFICADO', ${version.id}::uuid, 'x', ${admin.id}::uuid, ${JSON.stringify({ fuente: 'PROPIA', casoDeUso: 'PRUEBA' })}::jsonb)`,
+    ).rejects.toThrow(/compartió/);
+
+    // Un equivalente que no es un identificador válido es el mismo 422 que uno que no es verificado, no un error de la base.
+    const compartido = await cargarAMano(autor, `Zzsolo${unico()} otro`);
+    const raro = await decidir(compartido.catalogItemId, { expectedVersion: 'v1', decision: 'EQUIVALENT', equivalentCatalogItemId: 'no-es-un-id' }).expect(422);
+    expect(raro.body.error.details.issues).toEqual([{ code: 'EQUIVALENT_NOT_VERIFIED', path: 'equivalentCatalogItemId' }]);
+
+    // Cuando su autor lo corrige (y así lo comparte, NUA-D13), entra en la revisión.
+    await corregir(autor, elemento.id, { expectedVersion: 'v1', name: nombre, composition: { ...COMPOSICION, fatG: 7 } }).expect(200);
+    expect((await lista(nombre)).map((f) => f.catalogItemId)).toEqual([elemento.id]);
   });
 });
 

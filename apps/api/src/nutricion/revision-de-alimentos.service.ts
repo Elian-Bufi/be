@@ -24,7 +24,7 @@ import { momentoDeLaBase } from '../prisma/concurrencia';
 import { PrismaService } from '../prisma/prisma.service';
 import { esToken } from '../vinculo/lectura';
 import { leerAlimentosCargados, RECURSO_ALIMENTO, revisionDelAlimento, type FilaDeAlimentoCargado } from './alimentos.service';
-import { CatalogoService } from './catalogo.service';
+import { ALIMENTO_COMPARTIDO, CatalogoService } from './catalogo.service';
 
 type Tx = Prisma.TransactionClient;
 const CASO_DE_USO = 'UC-P10';
@@ -61,11 +61,13 @@ function alimentoParaRevisar(f: FilaDeAlimentoCargado): AlimentoParaRevisar {
  * (API-ALI-05 a 07), con la autorización de WP-ADMINISTRACION: la sesión administrativa con el segundo factor la exige el
  * controlador; acá no se decide nada de autorización con lo que manda el cliente.
  * - **Lo que ve:** el nombre, los valores cada 100 g, el grupo y lo decidido. Nunca quién lo cargó ni a quién se le indicó.
+ *   Solo lo compartido (NUA-D05): lo que su autor no compartió (lo cargado antes de DL-180 y sin corregir) lo ve solo él,
+ *   como le dice «Mis alimentos», y Administración tampoco lo ve ni decide sobre eso. La base lo sostiene (trigger).
  * - **Lo que decide:** certificarlo con una fuente citada (vale para la versión que vio; si su autor lo corrige, la nueva
  *   vuelve a esperar revisión), marcarlo como equivalente de un alimento de la tabla oficial (el buscador sugiere ese en su
  *   lugar, y los planes viejos no cambian) o quitar lo decidido. Cada decisión es una fila nueva: la historia no se pisa.
  * - Contra la versión que vio (`expectedVersion`): si el profesional lo corrigió mientras tanto, 409 VERSION_CONFLICT.
- * - Uno que no existe, o que no es una carga a mano, es el mismo 404.
+ * - Uno que no existe, que no es una carga a mano o que su autor no compartió es el mismo 404.
  * - La auditoría registra cada operación sin los textos (la fuente puede citar un rótulo con datos de un tercero).
  */
 @Injectable()
@@ -87,7 +89,7 @@ export class RevisionDeAlimentosService {
     const conTexto = texto ? Prisma.sql`lower(translate(v."nombre", ${CON_MARCA}, ${SIN_MARCA})) LIKE ${`%${texto.replace(/[\\%_]/g, (c) => `\\${c}`)}%`}` : Prisma.sql`TRUE`;
     const filas = await leerAlimentosCargados(
       this.prisma,
-      Prisma.sql`v."disponibilidad" = 'DISPONIBLE' AND ${pedido.state ? ESTADO[pedido.state] : Prisma.sql`TRUE`} AND ${conTexto}`,
+      Prisma.sql`v."disponibilidad" = 'DISPONIBLE' AND ${ALIMENTO_COMPARTIDO} AND ${pedido.state ? ESTADO[pedido.state] : Prisma.sql`TRUE`} AND ${conTexto}`,
       Prisma.sql`(CASE WHEN ${ESTADO.PENDING} THEN 0 ELSE 1 END), v."momento_de_registro" DESC, e."id" DESC OFFSET ${desde}`,
       limite + 1,
     );
@@ -117,10 +119,13 @@ export class RevisionDeAlimentosService {
     const procedencia = procedenciaDe(ctx, CASO_DE_USO, 'API-ALI-06');
     try {
       return await this.idempotencia.ejecutar({ operacion: 'API-ALI-06', ambito: actor.identidadId, clave: clave as string, huella: IdempotenciaService.huella({ id, pedido }) }, async (tx) => {
-        // El alimento se toma antes de decidir: una decisión y una corrección simultáneas se ordenan.
+        // El alimento se toma antes de decidir: una decisión y una corrección simultáneas se ordenan. Lo que su autor no
+        // compartió es el mismo 404 que lo inexistente (NUA-D05).
         const [tomado] = id
           ? await tx.$queryRaw<{ id: string }[]>`
-              SELECT "id"::text AS "id" FROM "elemento_de_catalogo_nutricional" WHERE "id" = ${id}::uuid AND "procedencia" = 'PROFESSIONAL_MANUAL' FOR NO KEY UPDATE`
+              SELECT "id"::text AS "id" FROM "elemento_de_catalogo_nutricional" WHERE "id" = ${id}::uuid AND "procedencia" = 'PROFESSIONAL_MANUAL'
+                 AND EXISTS (SELECT 1 FROM "alimento_compartido" c WHERE c."elemento_id" = ${id}::uuid)
+               FOR NO KEY UPDATE`
           : [];
         const [actual] = tomado ? await leerAlimentosCargados(tx, Prisma.sql`e."id" = ${tomado.id}::uuid`, Prisma.sql`e."id"`, 1) : [];
         if (!actual) throw new ErrorDeApi(404, CodigoDeError.RESOURCE_NOT_FOUND, 'Recurso no encontrado.', undefined, 'ALIMENTO_NO_ENCONTRADO');
@@ -131,11 +136,15 @@ export class RevisionDeAlimentosService {
           throw new ErrorDeApi(422, CodigoDeError.INVALID_STATE_TRANSITION, 'No hay nada decidido para quitar.', undefined, 'SIN_DECISION');
         }
         if (pedido.decision === 'EQUIVALENT') {
-          const [verificado] = await tx.$queryRaw<{ id: string }[]>`
+          // Un identificador que no es un UUID no es un verificado: el mismo 422, no un error de la base.
+          const equivalenteId = pedido.equivalentCatalogItemId;
+          const [verificado] = equivalenteId && esUuid(equivalenteId)
+            ? await tx.$queryRaw<{ id: string }[]>`
             SELECT v."elemento_id"::text AS "id" FROM "version_de_elemento_nutricional" v
-             WHERE v."elemento_id" = ${pedido.equivalentCatalogItemId}::uuid AND v."disponibilidad" = 'DISPONIBLE'
+             WHERE v."elemento_id" = ${equivalenteId}::uuid AND v."disponibilidad" = 'DISPONIBLE'
                AND v."procedencia" -> 'fuenteExterna' ->> 'provider' = 'USDA_FDC_SR_LEGACY'
-               AND NOT EXISTS (SELECT 1 FROM "version_de_elemento_nutricional" s WHERE s."predecesora_id" = v."id")`;
+               AND NOT EXISTS (SELECT 1 FROM "version_de_elemento_nutricional" s WHERE s."predecesora_id" = v."id")`
+            : [];
           if (!verificado) throw new ErrorDeApi(422, CodigoDeError.VALIDATION_FAILED, 'El equivalente tiene que ser un alimento verificado.', { issues: [{ code: 'EQUIVALENT_NOT_VERIFIED', path: 'equivalentCatalogItemId' }] });
         }
         const ultima = await tx.revisionAdministrativaDeAlimento.findFirst({ where: { elementoId: actual.elementoId }, orderBy: { numero: 'desc' }, select: { numero: true } });
