@@ -136,8 +136,8 @@ Sesión
   siendo Ctrl+D en cada celda, y «Quitar», el de cada serie: en la barra **no** están (§7).
 
 **D. El tramo 2** (rama `wp-entrenamiento-planificacion-2`, sobre esta)
-- **ENP-D17 · Una sesión nueva nace con su identificador.** «Agregar sesión» y el asistente le ponen a la sesión un
-  identificador de nodo (`crypto.randomUUID()`), como ya hacía «Duplicar el día»: el contrato lo admite
+- **ENP-D17 · Una sesión nueva nace con su identificador.** «Agregar sesión», el asistente y «Sesiones vacías» le ponen a
+  la sesión un identificador de nodo (`crypto.randomUUID()`), como ya hacía «Duplicar el día»: el contrato lo admite
   (`IdDeNodoSchema`) y el servidor lo conserva al normalizar. Sus días se eligen enseguida, sin esperar al guardado, y lo
   que la pantalla le ata la sigue aunque se mueva o se quite otra. Nada cambia en el contrato ni en lo que recibe la APK.
 - **ENP-D18 · El preset con la sesión vacía vive en la pantalla, atado a la sesión, y lo dice.** Se recuerda por el
@@ -199,6 +199,11 @@ Sesión
   lo mismo con el valor común al lado. Las opciones de la celda dicen «Sin indicar en esta serie» y «Usar el valor
   común», y la ayuda de la fila del RIR ya no dice «abajo» (el criterio va arriba desde ENP-D14). El dominio y la APK
   conservan «Sin objetivo».
+- **ENP-D29 · «Sesiones vacías»** (C11; `sesiones-vacias.ts`). En la fase (o el microciclo) sin sesiones, junto a «Agregar
+  sesión»: una cantidad (de 1 a 7, 3 por omisión, sin pasar el tope del lugar) y «Armar Sesión A, B y C». No pide nombre
+  ni propósito (no abre ningún campo): se llaman como las de «Agregar sesión», siguen a las que ya hay y nacen con su
+  identificador (ENP-D17), así que sus días se eligen enseguida. Están vacías: no eligen un enfoque de entrenamiento
+  («Tres sesiones» no es «Cuerpo entero»). Un plan nuevo ya nace con «Fase 1», que es la fase inicial donde se arman.
 
 ## 4. Las reglas, y dónde se prueban
 
@@ -224,16 +229,22 @@ Las capturas del editor en Claro y Azul noche, a 1280 × 800, 1536 × 730 (Windo
 Estados: implementado; verificado automáticamente; observado en captura (lo que diga el informe de la CI). Pendiente de
 prueba manual: el teclado y el lector de pantalla en el editor, y la APK con TalkBack.
 
-## 6. El tramo siguiente (C5 a C9 y C11, en este orden; nada de esto está a medias en el código)
+## 6. El tramo 2 (rama `wp-entrenamiento-planificacion-2`, sobre esta; hecho entero)
 
-5. **Los días en un solo lugar,** junto a cada sesión, con «Ver próximas fechas» a pedido (`agenda-del-plan.tsx`).
-6. **El catálogo:** la selección a la vista y un pie fijo («Agregar 3 ejercicios a Sesión A»); crear o importar, bajo «No
-   encuentro el ejercicio».
-7. **La escritura rápida** con su rótulo, su interpretación y «Aplicar»; lo escrito sin aplicar se resuelve antes de
-   salir; cambiar de RIR a % RM avisa y se puede deshacer.
-8. **De dónde sale cada valor:** común a todas las series, propio de esta serie o sin indicar.
-9. **Guardar y revisar encadenados,** con «Ir a…» al campo exacto y la vuelta a la revisión conservando el contexto.
-11. **«Sesiones vacías»:** con una cantidad, arma A, B y C dentro de una fase inicial, sin pedir nombre ni propósito.
+Se hizo en el orden de prioridad de Dirección (§7, C9, C7, C5, C6, C8, C11), un commit por punto, cada uno con sus
+pruebas en `apps/web/test/entrenamiento-planificacion-2.test.mjs` y al menos una mutación verificada en rojo.
+
+| Punto | Qué | Decisión |
+| --- | --- | --- |
+| §7 | El preset con la sesión vacía, atado a la sesión y dicho como es; «Agregar bloque» con su tope; la versión activa y lo compartido agrupan bajo su bloque | ENP-D17 a ENP-D20 |
+| C9 | «Ir a…» al campo exacto; «Volver a la revisión» con la fecha elegida; «Revisar ahora» dice que la revisión sigue sola | ENP-D21 y ENP-D22 |
+| C7 | La escritura rápida con su rótulo y «Aplicar»; lo escrito sin aplicar se pregunta; el cambio de criterio con «Deshacer» | ENP-D23 a ENP-D25 |
+| C5 | Los días en un solo lugar, con «Ver próximas fechas» a pedido | ENP-D26 |
+| C6 | El catálogo con los elegidos a la vista y crear o importar bajo «No encuentro el ejercicio» | ENP-D27 |
+| C8 | Cada valor dice si es común, propio o sin indicar | ENP-D28 |
+| C11 | «Sesiones vacías» | ENP-D29 |
+
+Las capturas de la CI suman una escena por cada punto que cambia la pantalla (§5).
 
 ## 7. La revisión adversaria (2026-11-19)
 

@@ -163,6 +163,7 @@ import {
 } from './bloques-del-editor';
 import { COPY_REVISION_DEL_PLAN, COPY_VOLVER_A_LA_REVISION, destinoDelLugar, RevisionDelPlan, type EstadoDeLaRevision, type Impedimento } from './revision-del-plan';
 import { campoParaEnfocar, camposDelProblema, SIN_APLICAR } from './ir-al-campo';
+import { cantidadesDeSesionesVacias, COPY_SESIONES_VACIAS as SV, sesionesVacias } from './sesiones-vacias';
 import { claveDeLaLinea, conLaLinea, COPY_ESCRITURA_RAPIDA, lineasConLosIdentificadores, lineasPendientes, type LineasSinAplicar } from './escritura-rapida';
 import { NoDisponible, useEntrenamiento } from './entrenamiento';
 import { SelectorDeNivel } from './estructura-del-plan';
@@ -390,6 +391,8 @@ export function EditorDePlan({
   // ED-24: «Duplicar el día», con el día de origen y el de destino elegido en su cuadro.
   const [duplicandoElDia, setDuplicandoElDia] = useState<{ readonly desde: DiaDeLaSemana; readonly hacia: DiaDeLaSemana | null } | null>(null);
   const [insertandoHabitual, setInsertandoHabitual] = useState(false);
+  // C11: cuántas «Sesiones vacías» se arman de una vez (3, como A, B y C).
+  const [cuantasVacias, setCuantasVacias] = useState(3);
   // «Agregar ejercicio»: el cajón suma a la sesión que se mira.
   const [agregando, setAgregando] = useState(false);
   // El texto que se está cambiando, y el campo que hay que enfocar después de ir a un problema.
@@ -1033,6 +1036,18 @@ export function EditorDePlan({
     cambiar((x) => (lasSesiones(x).push(sesionVacia(n + 1)), x));
     elegirSesion(n);
     setTexto({ de: 'nombre-de-la-sesion', i, j, k: n });
+  };
+  /**
+   * C11: «Sesiones vacías»: `cuantas` sesiones de una vez en la fase (o el microciclo) que se mira, sin pedir nombre ni
+   * propósito (no se abre ningún campo); se mira la primera.
+   */
+  const topeDeSesiones = j !== null ? TOPES_DE_ENTRENAMIENTO.sesionesDelMicrociclo : TOPES_DE_ENTRENAMIENTO.sesionesDelBloque;
+  const armarSesionesVacias = (cuantas: number) => {
+    const n = sesiones.length;
+    if (cuantas < 1 || n + cuantas > topeDeSesiones) return;
+    cambiar((x) => (lasSesiones(x).push(...sesionesVacias(cuantas, n, () => crypto.randomUUID())), x));
+    elegirSesion(n);
+    setMensaje({ tipo: 'exito', texto: SV.armadas(cuantas, n) });
   };
   const quitarSesion = () => {
     cambiar((x) => (lasSesiones(x).splice(k, 1), x));
@@ -2224,6 +2239,29 @@ export function EditorDePlan({
                 <span className="nivel-del-plan__rotulo">{C.sesion}</span>
                 <span className="nota">{C.sinSesiones}</span>
                 {agregarUnaSesion}
+                {/* C11: «Sesiones vacías»: con una cantidad, A, B y C de una vez, sin pedir nombre ni propósito. */}
+                {cantidadesDeSesionesVacias(sesiones.length, topeDeSesiones).length > 0 ? (
+                  <div className="estacion__sesiones-vacias" role="group" aria-labelledby="titulo-sesiones-vacias" data-sesiones-vacias>
+                    <span id="titulo-sesiones-vacias" className="nivel-del-plan__rotulo">
+                      {SV.titulo}
+                    </span>
+                    <label>
+                      <span className="visualmente-oculto">{SV.cuantas}</span>
+                      <select value={cuantasVacias} onChange={(e) => setCuantasVacias(Number(e.target.value))} data-cuantas-sesiones-vacias>
+                        {cantidadesDeSesionesVacias(sesiones.length, topeDeSesiones).map((n) => (
+                          <option key={n} value={n}>
+                            {n}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <button type="button" className="boton boton--secundario boton--compacto" data-armar-sesiones-vacias onClick={() => armarSesionesVacias(cuantasVacias)}>
+                      <Icono nombre="mas" tamano={15} />
+                      {SV.armar(cuantasVacias, sesiones.length)}
+                    </button>
+                    <p className="nota">{SV.ayuda}</p>
+                  </div>
+                ) : null}
               </div>
             ) : null}
             {sesion && (seCambia('nombre-de-la-sesion', deLaSesion) || sesion.label.trim() === '') ? (

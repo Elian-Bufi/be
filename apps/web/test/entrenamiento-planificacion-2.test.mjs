@@ -330,3 +330,36 @@ test('C8 · la fila «Común» a todas las series; las opciones de la celda y la
   // Los tres estados de DL-122 no cambian: «Usar el valor común» quita la clave; «Sin indicar» es null.
   assert.deepEqual(PL.volverALoGeneral([{ rir: 1, restSeconds: null }], new Set([0])), [{}]);
 });
+
+// ─── C11 · «Sesiones vacías»: A, B y C de una vez, sin pedir nombre ni propósito ─────────────────────────────────
+
+const SVM = await import('../src/app/pro/advisees/training/sesiones-vacias.ts');
+
+test('C11 · con una cantidad, arma Sesión A, B y C en la fase, cada una con su identificador y vacía', () => {
+  let n = 0;
+  const id = () => `s-${++n}`;
+  assert.deepEqual(SVM.sesionesVacias(3, 0, id), [
+    { sessionId: 's-1', label: 'Sesión A', instructions: null, prescriptions: [] },
+    { sessionId: 's-2', label: 'Sesión B', instructions: null, prescriptions: [] },
+    { sessionId: 's-3', label: 'Sesión C', instructions: null, prescriptions: [] },
+  ]);
+  // Siguen a las que ya hay.
+  assert.deepEqual(SVM.sesionesVacias(2, 3, id).map((s) => s.label), ['Sesión D', 'Sesión E']);
+  assert.equal(SVM.COPY_SESIONES_VACIAS.armar(3, 0), 'Armar Sesión A, B y C');
+  assert.equal(SVM.COPY_SESIONES_VACIAS.armar(5, 0), 'Armar Sesión A a E');
+  assert.equal(SVM.COPY_SESIONES_VACIAS.armar(1, 0), 'Armar Sesión A');
+  assert.equal(SVM.COPY_SESIONES_VACIAS.armar(2, 1), 'Armar Sesión B y C');
+  // De 1 a 7, sin pasar el tope del lugar (30 en una fase, 14 en un microciclo).
+  assert.deepEqual(SVM.cantidadesDeSesionesVacias(0, 30), [1, 2, 3, 4, 5, 6, 7]);
+  assert.deepEqual(SVM.cantidadesDeSesionesVacias(12, 14), [1, 2]);
+  assert.deepEqual(SVM.cantidadesDeSesionesVacias(14, 14), []);
+});
+
+test('C11 · «Sesiones vacías» no pide nombre ni propósito: no abre ningún campo, y está en la fase sin sesiones', () => {
+  const armar = EDITOR.slice(EDITOR.indexOf('const armarSesionesVacias = '), EDITOR.indexOf('const quitarSesion = '));
+  assert.match(armar, /lasSesiones\(x\)\.push\(\.\.\.sesionesVacias\(cuantas, n, \(\) => crypto\.randomUUID\(\)\)\)/);
+  assert.doesNotMatch(armar, /setTexto/, 'ningún campo de nombre ni de propósito');
+  assert.match(EDITOR, /data-armar-sesiones-vacias onClick=\{\(\) => armarSesionesVacias\(cuantasVacias\)\}/);
+  assert.match(EDITOR, /const \[cuantasVacias, setCuantasVacias\] = useState\(3\);/);
+  for (const t of [SVM.COPY_SESIONES_VACIAS.ayuda, SVM.COPY_SESIONES_VACIAS.armadas(3, 0)]) assert.doesNotMatch(t, /cuerpo entero|recomend|ideal/i, 'no elige un enfoque de entrenamiento');
+});

@@ -19711,3 +19711,31 @@ html:has(.estacion:not([data-en-el-asistente])) {
   display: block;
   font-weight: 400;
 }
+
+/* C11: «Sesiones vacías», en la sesión vacía de la fase: la cantidad y «Armar Sesión A, B y C». */
+.estacion__sesiones-vacias {
+  display: flex;
+  flex-wrap: wrap;
+  flex-basis: 100%;
+  align-items: center;
+  gap: 0.4rem 0.6rem;
+  margin-top: 0.4rem;
+  padding: 0.6rem 0.75rem;
+  border: 1px dashed var(--borde-control);
+  border-radius: 10px;
+}
+
+.estacion__sesiones-vacias select {
+  min-height: 40px;
+  padding: 0.3rem 0.5rem;
+  border: 1px solid var(--borde-control);
+  border-radius: 8px;
+  background: var(--superficie);
+  color: var(--texto);
+  font: inherit;
+}
+
+.estacion__sesiones-vacias > .nota {
+  flex-basis: 100%;
+  margin: 0;
+}
