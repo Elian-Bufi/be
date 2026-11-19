@@ -63,13 +63,25 @@ export function AlimentosParaRevisar() {
 
   return (
     <>
-      <form
-        className="formulario filtros"
-        onSubmit={(e) => {
-          e.preventDefault();
-          setBuscado(texto.trim());
-        }}
-      >
+      {/* Los filtros en un renglón, como en la lista de profesionales de `/admin`: el buscador y el estado. */}
+      <div className="filtros-de-administracion">
+        <form
+          role="search"
+          className="buscador-administrativo"
+          onSubmit={(e) => {
+            e.preventDefault();
+            setBuscado(texto.trim());
+          }}
+        >
+          <label htmlFor={`${id}-texto`}>{C.buscar}</label>
+          <div className="buscador-administrativo__fila">
+            <input id={`${id}-texto`} type="search" value={texto} maxLength={80} autoComplete="off" onChange={(ev) => setTexto(ev.target.value)} />
+            <button type="submit" className="boton boton--secundario">
+              <Icono nombre="buscar" />
+              Buscar
+            </button>
+          </div>
+        </form>
         <div className="campo">
           <label htmlFor={`${id}-estado`}>Estado</label>
           <select id={`${id}-estado`} value={filtro} onChange={(ev) => setFiltro(ev.target.value as Filtro)}>
@@ -80,16 +92,7 @@ export function AlimentosParaRevisar() {
             ))}
           </select>
         </div>
-        <div className="campo">
-          <label htmlFor={`${id}-texto`}>{C.buscar}</label>
-          <input id={`${id}-texto`} type="search" value={texto} maxLength={80} onChange={(ev) => setTexto(ev.target.value)} />
-        </div>
-        <div className="acciones">
-          <button type="submit" className="boton boton--secundario">
-            Buscar
-          </button>
-        </div>
-      </form>
+      </div>
       {aviso ? (
         <Aviso tipo="info" enfocar>
           <p>{aviso}</p>
@@ -99,23 +102,29 @@ export function AlimentosParaRevisar() {
       {lista === null ? <p aria-busy="true">Cargando…</p> : null}
       {lista && lista !== 'falla' && lista.filas.length === 0 ? <p>{C.sinAlimentos}</p> : null}
       {lista && lista !== 'falla' && lista.filas.length > 0 ? (
-        <ul className="lista-simple alimentos-para-revisar">
+        // Cada alimento en su tarjeta, como en «Mis alimentos»: el ícono de su grupo, lo que es y «Revisar».
+        <ul className="lista alimentos-para-revisar">
           {lista.filas.map((a) => {
             const c = a.composition;
             return (
-              <li key={a.catalogItemId} data-alimento-para-revisar={a.catalogItemId}>
-                <p>
-                  <Icono nombre={iconoDelAlimento(a.foodGroup)} tamano={20} /> <strong>{a.name}</strong> · {a.foodGroup ? NOMBRE_DEL_GRUPO[a.foodGroup] : 'Sin grupo'} · versión{' '}
-                  {a.versionNumber} del {dia(a.updatedAt)}
-                </p>
-                <p className="nota">
-                  Cada {c.referenceAmount === '100ml' ? '100 ml' : '100 g'}: {valor(c.energyKcal, 'kcal')} · carbohidratos {valor(c.carbohydrateG, 'g')} · grasas {valor(c.fatG, 'g')} · proteínas{' '}
-                  {valor(c.proteinG, 'g')} · fibra {valor(c.fiberG, 'g')}
-                </p>
-                <p className="nota" data-decidido>
-                  {decididoEnPalabras(a)}
-                </p>
-                <div className="acciones">
+              <li key={a.catalogItemId} className="lista__item alimentos-para-revisar__item" data-alimento-para-revisar={a.catalogItemId}>
+                <span className="alimentos-para-revisar__icono" aria-hidden="true">
+                  <Icono nombre={iconoDelAlimento(a.foodGroup)} tamano={24} />
+                </span>
+                <div className="alimentos-para-revisar__cuerpo">
+                  <p className="lista__titulo">{a.name}</p>
+                  <p className="nota">
+                    Cada {c.referenceAmount === '100ml' ? '100 ml' : '100 g'}: {valor(c.energyKcal, 'kcal')} · carbohidratos {valor(c.carbohydrateG, 'g')} · grasas {valor(c.fatG, 'g')} · proteínas{' '}
+                    {valor(c.proteinG, 'g')} · fibra {valor(c.fiberG, 'g')}
+                  </p>
+                  <p className="nota">
+                    {a.foodGroup ? NOMBRE_DEL_GRUPO[a.foodGroup] : 'Sin grupo'} · versión {a.versionNumber} del {dia(a.updatedAt)}
+                  </p>
+                  <p className="nota" data-decidido>
+                    {decididoEnPalabras(a)}
+                  </p>
+                </div>
+                <div className="alimentos-para-revisar__acciones">
                   <button type="button" className="boton boton--secundario" aria-expanded={abierto === a.catalogItemId} onClick={() => setAbierto(abierto === a.catalogItemId ? null : a.catalogItemId)} data-revisar>
                     {C.revisar}
                     <span className="visualmente-oculto"> {a.name}</span>
@@ -233,7 +242,7 @@ function Decidir({ token, alimento, alDecidir, alDesactualizarse }: { token: str
           {verificados === 'falla' ? <p role="alert">{COPY.noDisponible}</p> : null}
           {Array.isArray(verificados) && verificados.length === 0 ? <p className="nota">{C.ningunVerificado}</p> : null}
           {Array.isArray(verificados) && verificados.length > 0 ? (
-            <ul className="lista-simple decidir-sobre-alimento__verificados">
+            <ul className="decidir-sobre-alimento__verificados">
               {verificados.map((v) => (
                 <li key={v.catalogItemId}>
                   <label className="opcion-en-linea">

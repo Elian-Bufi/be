@@ -19270,12 +19270,67 @@ html:has(.estacion:not([data-en-el-asistente])) {
   }
 }
 
-/* La revisión de Administración (NUA-04). */
+/* La revisión de Administración (NUA-04): cada alimento en su tarjeta, como en «Mis alimentos» (el ícono, lo que es y
+   «Revisar»); lo que se decide se abre debajo, a todo el ancho de la tarjeta. */
+.alimentos-para-revisar__item {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 0.5rem 1rem;
+}
+
+.alimentos-para-revisar__icono {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  color: var(--tenue);
+}
+
+.alimentos-para-revisar__cuerpo p {
+  margin: 0.15rem 0;
+}
+
+.alimentos-para-revisar__acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: flex-end;
+}
+
+.alimentos-para-revisar__item > .decidir-sobre-alimento {
+  grid-column: 1 / -1;
+  margin-top: 0.25rem;
+}
+
+@media (max-width: 40rem) {
+  .alimentos-para-revisar__item {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .alimentos-para-revisar__acciones {
+    grid-column: 1 / -1;
+    justify-content: flex-start;
+  }
+}
+
 .decidir-sobre-alimento {
   margin-top: 0.75rem;
   padding: 1rem;
   border: 1px solid var(--borde-control);
   border-radius: 10px;
+  background: var(--fondo-suave);
+}
+
+.decidir-sobre-alimento h3 {
+  margin-top: 0;
+}
+
+.decidir-sobre-alimento__verificados {
+  display: grid;
+  gap: 0.25rem;
+  margin: 0.5rem 0;
+  padding: 0;
+  list-style: none;
 }
 
 .decidir-sobre-alimento__buscar {
