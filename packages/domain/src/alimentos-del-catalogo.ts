@@ -206,6 +206,10 @@ export const COPY_MIS_ALIMENTOS = {
   sinCambios: (nombre: string) => `«${nombre}» no cambió: el nombre y los valores son los mismos.`,
   retiradoAviso: (nombre: string) => `«${nombre}» se retiró del catálogo.`,
   cambioMientras: 'Este alimento cambió desde que lo abriste. Volvé a abrirlo para ver la versión de ahora.',
+  dondeSeCorrigen: 'Los que cargaste a mano se corrigen o se retiran en',
+  irAMisAlimentos: 'Mis alimentos',
+  enElCuadro: '¿Uno tuyo tiene un error? Corregilo en',
+  enOtraPestana: 'Mis alimentos (en otra pestaña)',
 } as const;
 
 /** La revisión de Administración (`/admin/foods`, NUA-04): el nombre y los valores, nunca a quién se le indicó. */

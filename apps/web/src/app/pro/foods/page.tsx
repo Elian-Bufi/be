@@ -13,7 +13,7 @@ export default function PaginaDeAlimentos() {
     <>
       <Encabezado navegacion={<NavegacionProfesional />} />
       <main id="contenido" className="contenido contenido--ancho">
-        <Migas pasos={[{ texto: 'Espacio profesional', href: '/pro' }, { texto: 'Mis alimentos' }]} />
+        <Migas pasos={[{ texto: 'Espacio profesional', href: '/pro' }, { texto: 'Plantillas y habituales', href: '/pro/templates' }, { texto: 'Mis alimentos' }]} />
         <h1>Mis alimentos</h1>
         <Suspense fallback={null}>
           <MisAlimentos />

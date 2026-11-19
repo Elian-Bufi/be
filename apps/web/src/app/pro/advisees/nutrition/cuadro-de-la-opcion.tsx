@@ -26,6 +26,7 @@ import {
   cantidad as formatearCantidad,
   COPY_ALIMENTOS,
   COPY_HABITUALES,
+  COPY_MIS_ALIMENTOS,
   habitualesQueCoinciden,
   iconoDelAlimento,
   origenEnElCatalogo,
@@ -38,6 +39,7 @@ import {
 import { useContext, useEffect, useId, useRef, useState, type RefObject } from 'react';
 import { conSugeridos, ContextoDeLosAlimentos, datosDelAlimento, etiquetaDelNivel, pideMirarAntesDeSumar, type DatosDelAlimento } from './alimentos-del-catalogo';
 import { CuadroEnfocado } from '../../../../components/cuadro-enfocado';
+import { Enlace } from '../../../../components/enlace';
 import { Aviso } from '../../../../components/formulario';
 import { Icono } from '../../../../components/icono';
 import { api } from '../../../../lib/api';
@@ -299,6 +301,13 @@ export function CuadroDeLaOpcion({
               <button type="button" className="boton boton--enlace" onClick={() => setModo('importar')}>
                 {C.importar}
               </button>
+            </p>
+            {/* DL-180 (NUA-01): un alimento propio con un error se corrige en «Mis alimentos», sin dejar el plan. */}
+            <p className="nota">
+              {COPY_MIS_ALIMENTOS.enElCuadro}{' '}
+              <Enlace href="/pro/foods" target="_blank" rel="noopener" data-ir-a-mis-alimentos>
+                {COPY_MIS_ALIMENTOS.enOtraPestana}
+              </Enlace>
             </p>
           </div>
           <aside className="cuadro-de-la-opcion__costado" aria-label="Totales de la opción">

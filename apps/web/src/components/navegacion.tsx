@@ -23,8 +23,6 @@ const PROFESIONAL = [
   { href: '/pro', texto: 'Espacio profesional' },
   { href: '/pro/templates', texto: 'Plantillas y habituales' },
   { href: '/pro/recipes', texto: 'Mis recetas' },
-  // DL-180 (NUA-01 y NUA-02): los alimentos cargados a mano, para corregirlos o retirarlos.
-  { href: '/pro/foods', texto: 'Mis alimentos' },
   { href: '/pro/exercises', texto: 'Mis ejercicios' },
 ] as const;
 

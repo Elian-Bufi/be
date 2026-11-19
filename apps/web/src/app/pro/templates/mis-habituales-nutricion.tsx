@@ -8,9 +8,10 @@
  * - **Alimentos habituales**: la lista de los marcados en el buscador, con «Quitar».
  * Un profesional sin Nutrición recibe 403: la sección no es para él y se omite (mostrar u ocultar no autoriza nada).
  */
-import { cantidad, COPY_HABITUALES, ETIQUETA_DE_PREPARACION, type ComidaHabitual, type ElementoDeCatalogo } from '@be/domain';
+import { cantidad, COPY_HABITUALES, COPY_MIS_ALIMENTOS, ETIQUETA_DE_PREPARACION, type ComidaHabitual, type ElementoDeCatalogo } from '@be/domain';
 import { useEffect, useMemo, useState } from 'react';
 import { AvisoFlotante } from '../../../components/ayuda';
+import { Enlace } from '../../../components/enlace';
 import { useAvisarALaLista, useCambiosParaSalir, useDetalleConGuardia } from '../../../components/salida-segura';
 import { Cargando, ErrorConReintento, VerMas } from '../../../components/estados';
 import { Aviso, Campo } from '../../../components/formulario';
@@ -117,6 +118,13 @@ export function MisHabitualesDeNutricion({ token, sesionPerdida = NUNCA_PERDIDA 
       <VerMas estado={comidas.estado} onVerMas={comidas.verMas} />
 
       <h3 id="titulo-alimentos-habituales">{COPY_HABITUALES.alimentosHabituales}</h3>
+      {/* DL-180 (NUA-01 y NUA-02): los alimentos cargados a mano se corrigen o se retiran en «Mis alimentos». */}
+      <p className="nota">
+        {COPY_MIS_ALIMENTOS.dondeSeCorrigen}{' '}
+        <Enlace href="/pro/foods" data-ir-a-mis-alimentos>
+          {COPY_MIS_ALIMENTOS.irAMisAlimentos}
+        </Enlace>
+      </p>
       {alimentos === null ? <Cargando /> : null}
       {alimentos && !alimentos.ok ? <ErrorConReintento onReintentar={() => setAlimentosGeneracion((g) => g + 1)} /> : null}
       {alimentos && alimentos.ok ? (
