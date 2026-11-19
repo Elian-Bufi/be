@@ -8848,32 +8848,6 @@ el interruptor (D-2).
 - Lo declarado como siguiente (arriba) y, fuera del paquete, el mismo error de la nota de origen en Nutrición.
 - La prueba manual con el teclado y un lector de pantalla. Detalle completo: `docs/paquetes/WP-PLANTILLAS-DE-ENTRENAMIENTO.md`.
 
-<<<<<<< HEAD
-## DL-184 — El entorno del tutor: la muestra de demostración, generada, verificada y cargada a pedido
-
-**Prioridad:** alta (es lo que recorre el tutor) · **Documento:** «Requisitos del entorno del tutor» (REQ-TUT-01 a 79) ·
-DL-036 · DL-171 · DL-178 · DL-181 · B05 · la cohorte de #161 · **Estado:** DECIDIDA por Dirección el 2026-11-19 (cinco
-personas en profundidad y diez livianas, la Lic. Julieta Arce, nombres con la inicial del apellido, a pedido y sin tarea
-programada, la marca solo en la guía, los casos reales intactos, sin Administración para el tutor) · PROGRAMADA en
-`wp-entorno-del-tutor` (PR en borrador, sin integrar) · TUT-D01 a TUT-D14, **a ratificar**. Si al integrar el número
-choca con otro paquete, se renumera.
-
-**Qué decidió Dirección.** Lo de arriba, sobre el documento de requisitos: la profesional, la cartera, los nombres, que se
-rehaga cuando Elián diga (de cero con semilla fija, o poniéndose al día sin duplicar), que nada toque lo que el
-generador no creó y que el tutor no reciba Administración.
-
-**Qué dice el legajo.** Nada propio: es una muestra sintética (08 §33), que sigue las reglas de la cohorte de #161 (la
-API para lo de hoy; el pasado por SQL con los disparadores activos y cada transición con su hecho).
-
-**Lo programado.** El generador puro (la historia como datos, con semilla fija y fechas relativas), el verificador de
-verosimilitud y de la matriz de los gráficos (que bloquea la carga con una sola falla), la carga idempotente con «armar»,
-«al-dia» y «comprobar», sus pruebas y la CI contra un PostgreSQL efímero con capturas.
-
-**Lo que queda.**
-- Ratificar TUT-D01 a TUT-D14; cargar en test con Elián (el comando está en el paquete).
-- Lo escrito que todavía no se carga (formularios, coordinación, recetas, medidas caseras, habituales, vistas) y las
-  fotos. Detalle completo: `docs/paquetes/WP-ENTORNO-DEL-TUTOR.md`.
-=======
 ## DL-183 — «Patrones» y los enfoques: los gráficos de la persona en el mismo tiempo, en la ficha y en el editor
 
 **Prioridad:** alta (es el corazón de la visión de BE: el seguimiento en el tiempo y los patrones entre áreas) ·
@@ -8909,4 +8883,28 @@ profesional.
   después de su maqueta (GR-VE06).
 - Recontar las cifras de la entrega el día que se congela (322 operaciones, 156 modelos y 99 migraciones con esta rama).
 - La prueba con un lector de pantalla. Detalle completo: `docs/paquetes/WP-GRAFICOS.md` §13.6.
->>>>>>> origin/main
+
+## DL-184 — El entorno del tutor: la muestra de demostración, generada, verificada y cargada a pedido
+
+**Prioridad:** alta (es lo que recorre el tutor) · **Documento:** «Requisitos del entorno del tutor» (REQ-TUT-01 a 79) ·
+DL-036 · DL-171 · DL-178 · DL-181 · B05 · la cohorte de #161 · **Estado:** DECIDIDA por Dirección el 2026-11-19 (cinco
+personas en profundidad y diez livianas, la Lic. Julieta Arce, nombres con la inicial del apellido, a pedido y sin tarea
+programada, la marca solo en la guía, los casos reales intactos, sin Administración para el tutor) · PROGRAMADA en
+`wp-entorno-del-tutor` (PR en borrador, sin integrar) · TUT-D01 a TUT-D14, **a ratificar**. Si al integrar el número
+choca con otro paquete, se renumera.
+
+**Qué decidió Dirección.** Lo de arriba, sobre el documento de requisitos: la profesional, la cartera, los nombres, que se
+rehaga cuando Elián diga (de cero con semilla fija, o poniéndose al día sin duplicar), que nada toque lo que el
+generador no creó y que el tutor no reciba Administración.
+
+**Qué dice el legajo.** Nada propio: es una muestra sintética (08 §33), que sigue las reglas de la cohorte de #161 (la
+API para lo de hoy; el pasado por SQL con los disparadores activos y cada transición con su hecho).
+
+**Lo programado.** El generador puro (la historia como datos, con semilla fija y fechas relativas), el verificador de
+verosimilitud y de la matriz de los gráficos (que bloquea la carga con una sola falla), la carga idempotente con «armar»,
+«al-dia» y «comprobar», sus pruebas y la CI contra un PostgreSQL efímero con capturas.
+
+**Lo que queda.**
+- Ratificar TUT-D01 a TUT-D14; cargar en test con Elián (el comando está en el paquete).
+- Lo escrito que todavía no se carga (formularios, coordinación, recetas, medidas caseras, habituales, vistas) y las
+  fotos. Detalle completo: `docs/paquetes/WP-ENTORNO-DEL-TUTOR.md`.
