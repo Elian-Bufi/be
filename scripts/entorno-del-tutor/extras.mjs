@@ -117,8 +117,14 @@ export function extras(c) {
     const aseId = c.ids.silvia;
     const pedidos = await lista(`/advisees/${aseId}/form-requests?limit=50`, token);
     if (pedidos.some((x) => (x.state ?? x.status) === 'PENDING')) return 'ya';
-    const { t, campos } = await plantillaDelArea(token, 'ANTROPOMETRIA', pedidos.map(plantillaDe));
-    await c.pedir('POST', `/advisees/${aseId}/form-requests`, { token, cuerpo: { templateVersionId: t.latestVersionId, purpose: 'Para preparar el plan 2.', scope: ['ENTRENAMIENTO', 'ANTROPOMETRIA'].includes(t.domain) ? t.domain : 'ENTRENAMIENTO', requestedFieldCodes: campos.map((x) => x.fieldCode).slice(0, 60), requiredFieldCodes: [] } });
+    // Una plantilla de un área que Julieta acompaña con Silvia, y que no le haya pedido todavía (o, si no hay otra, la de
+    // Entrenamiento de nuevo); el alcance del pedido es el de la plantilla.
+    plantillas ??= await lista('/form-templates?limit=50', token);
+    const usadas = pedidos.map(plantillaDe);
+    const deSusAreas = plantillas.filter((x) => ['ENTRENAMIENTO', 'ANTROPOMETRIA', null].includes(x.domain));
+    const t = deSusAreas.find((x) => !usadas.includes(x.templateId)) ?? deSusAreas.find((x) => x.domain === 'ENTRENAMIENTO');
+    const campos = (await c.pedir('GET', `/form-templates/${t.templateId}/versions/${t.latestVersionId}/definition`, { token, capacidades: FORMATO_3 })).data.sections.flatMap((s) => s.fields);
+    await c.pedir('POST', `/advisees/${aseId}/form-requests`, { token, cuerpo: { templateVersionId: t.latestVersionId, purpose: 'Para preparar el plan 2.', scope: t.domain ?? 'ENTRENAMIENTO', requestedFieldCodes: campos.map((x) => x.fieldCode).slice(0, 60), requiredFieldCodes: [] } });
     return 'hecho';
   }
 
