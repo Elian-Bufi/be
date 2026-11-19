@@ -406,6 +406,14 @@ test('Revisión · escena 11: las fichas de los elegidos bajan de renglón y nin
   assert.match(fichas, /max-height: calc\(2 \* 32px/, 'dos renglones a la vista');
   assert.match(fichas, /overflow-x: hidden;\n\s*overflow-y: auto;/, 'con más, se desplaza hacia abajo, con su barra');
   assert.doesNotMatch(fichas, /nowrap/);
+  // Debajo de su título, con todo el ancho del pie: al lado del título, la tercera quedaba escondida en un tercer renglón.
+  assert.match(fichas, /flex: 1 1 100%;/);
+  assert.match(regla('.agregar-ejercicio__elegidos-titulo'), /flex: 1 1 100%;/);
+  assert.match(escena('11-catalogo-con-elegidos'), /queda escondida debajo de los otros/);
+  // El ejemplo va adentro del campo, como en la escritura rápida (C7), y la ayuda entra en un renglón.
+  assert.equal(V.prescripcionEjemplo, 'Ej.: 4×8-12 RIR 2 · 90 s');
+  assert.equal(V.prescripcionAyuda, 'Vacía, cada uno entra con una serie para completar.');
+  assert.match(CATALOGO, /maxLength=\{80\} placeholder=\{V\.prescripcionEjemplo\}/);
   // Un nombre largo se recorta adentro de su ficha, entero en `title` y para el lector.
   assert.match(regla('.agregar-ejercicio__nombre-elegido'), /text-overflow: ellipsis;/);
   assert.match(CATALOGO, /aria-label=\{V\.quitarDeLosElegidos\(m\.name\)\} title=\{m\.name\}/);
@@ -421,6 +429,14 @@ test('Revisión · escena 11: las fichas de los elegidos bajan de renglón y nin
   assert.match(e11, /if \(alto < 36\) problemas\.push/);
   assert.match(e11, /queda cortada a lo ancho/);
   assert.match(CAPTURAS, /if \(problemas\.length > 0\) throw new Error\(`no cumple lo que tiene que verse/);
+});
+
+test('Revisión · escena 10: el selector de la sesión en forma de lista tiene el borde y el fondo de los campos', () => {
+  // Con muchas sesiones pasa a ser una lista desplegable, que se veía gris de sistema, también en Azul noche.
+  const lista = regla('.nivel-del-plan__lista select');
+  assert.match(lista, /border: 1px solid var\(--borde-control\);/);
+  assert.match(lista, /background: var\(--superficie\);/);
+  assert.match(lista, /color: var\(--texto\);/);
 });
 
 test('Revisión · escena 09: «Común» entra en su columna y no se pisa con «en cada serie»', () => {

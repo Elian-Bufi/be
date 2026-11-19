@@ -530,6 +530,8 @@ function pantallas(ids, lugar) {
             const r = b.getBoundingClientRect();
             if (r.left < l.left - 1 || r.right > l.right + 1) problemas.push(`«${b.textContent.trim()}» queda cortada a lo ancho`);
             if (r.top < l.bottom - 1 && r.bottom > l.bottom + 1) problemas.push(`«${b.textContent.trim()}» queda cortada a lo alto`);
+            // Con tres elegidos (los de la escena) entran todos: ninguno escondido debajo, aunque esté entero.
+            else if (r.top >= l.bottom - 1) problemas.push(`«${b.textContent.trim()}» queda escondida debajo de los otros`);
           }
           const pie = document.querySelector('.cajon__pie')?.getBoundingClientRect();
           if (pie && pie.height > window.innerHeight * 0.45) problemas.push(`el pie ocupa ${Math.round(pie.height)} px de ${window.innerHeight}`);

@@ -200,7 +200,7 @@ export function AgregarEjercicio({
             </div>
             <label className="agregar-ejercicio__para-todos" data-para-todos>
               <span className="agregar-ejercicio__para-todos-rotulo">{V.prescripcionParaTodos}</span>
-              <input type="text" value={linea} maxLength={80} onChange={(e) => setLinea(e.target.value)} aria-invalid={lectura && !lectura.ok ? true : undefined} aria-describedby="prescripcion-para-todos" autoComplete="off" spellCheck={false} />
+              <input type="text" value={linea} maxLength={80} placeholder={V.prescripcionEjemplo} onChange={(e) => setLinea(e.target.value)} aria-invalid={lectura && !lectura.ok ? true : undefined} aria-describedby="prescripcion-para-todos" autoComplete="off" spellCheck={false} />
               <span id="prescripcion-para-todos" className={lectura && !lectura.ok ? 'campo__error' : 'nota'}>
                 {!lectura ? (prescripcionDeLaSesion ? `Vacía, cada uno entra con «${prescripcionDeLaSesion}», la de la sesión.` : V.prescripcionAyuda) : lectura.ok ? vistaPreviaDePrescripcion(lectura.leida) : lectura.noSeEntiende}
               </span>
