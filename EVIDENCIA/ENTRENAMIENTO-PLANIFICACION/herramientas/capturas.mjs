@@ -698,7 +698,11 @@ function pantallas(ids, lugar) {
         await clic(page, '.bloque-del-editor [id^="abrir-ejercicio-"]');
         await page.waitForSelector('[data-estado-de-la-revision="lista"], [data-estado-de-la-revision="fallo"]', { timeout: 30_000 }).catch(() => {});
         await asentar(page);
-        await page.evaluate(() => document.querySelector('.bloque-del-editor')?.scrollIntoView({ block: 'start' }));
+        // El bloque, arriba del centro (que se desplaza solo); la página, arriba: la cabecera de la plantilla a la vista.
+        await page.evaluate(() => {
+          document.querySelector('.bloque-del-editor')?.scrollIntoView({ block: 'start' });
+          window.scrollTo(0, 0);
+        });
         await pausa(300);
       },
       verificar: async (page) => [...(await sinPersonaEnPantalla(page)), ...((await page.$('[data-sin-dias-en-la-plantilla]')) ? [] : ['no dice que una plantilla no tiene días'])],

@@ -167,6 +167,7 @@ import {
 } from './bloques-del-editor';
 import { COPY_REVISION_DE_LA_PLANTILLA, COPY_REVISION_DEL_PLAN, COPY_VOLVER_A_LA_REVISION, destinoDelLugar, RevisionDelPlan, type EstadoDeLaRevision, type Impedimento } from './revision-del-plan';
 import {
+  PRIMER_USO_DE_LA_PLANTILLA,
   AntesDeGuardarLaPlantilla,
   bloquesDeLaPreparacion,
   CabeceraDeLaPlantilla,
@@ -2578,7 +2579,8 @@ export function EditorDePlan({
           ) : null}
           {/* ED-17: lo que antes se repetía en un párrafo fijo va en una ayuda de primer uso que se cierra. Va arriba del
               centro y no encima de las zonas: así las tres entran en la pantalla (revisión visual del 2026-11-13). */}
-          <PrimerUso {...PRIMER_USO_DE_LA_ESTACION} />
+          {/* PLT (DL-182): en una plantilla, lo mismo sin días ni activar. */}
+          {plantilla ? <PrimerUso {...PRIMER_USO_DE_LA_PLANTILLA} /> : <PrimerUso {...PRIMER_USO_DE_LA_ESTACION} />}
           {/* C5: los días se eligen en un solo lugar, junto a cada sesión. «Ver próximas fechas» (desde la lista de
               sesiones) abre acá lo que sale de ellos: el inicio, la semana con «Duplicar el día» (ED-24) y las dos semanas
               que siguen. Antes, la tira de la semana y «Días de entrenamiento» repetían los días arriba de la sesión. */}
@@ -2664,7 +2666,7 @@ export function EditorDePlan({
                       <Icono nombre="mas" tamano={15} />
                       {SV.armar(cuantasVacias, sesiones.length)}
                     </button>
-                    <p className="nota">{SV.ayuda}</p>
+                    <p className="nota">{plantilla ? SV.ayudaEnLaPlantilla : SV.ayuda}</p>
                   </div>
                 ) : null}
               </div>

@@ -8,6 +8,19 @@ import { COPY_PREPARACION_DE_PLANTILLA as P, type ImagenDeEjercicio, type PlanCo
 import type { CuerpoDelGuardado } from '../es-lo-que-mande';
 import type { Bloques } from './ejercicio-del-editor';
 
+/** PLT: «Cómo se usa el editor» en una plantilla: lo mismo que en el plan, sin días ni activar (otra clave: se cierra aparte). */
+export const PRIMER_USO_DE_LA_PLANTILLA = {
+  clave: 'be.primer-uso.plantilla.v1',
+  titulo: 'Cómo se usa el editor',
+  renglones: [
+    'A la izquierda, la estructura: la fase, las semanas y las sesiones.',
+    'Al centro, la sesión elegida; arriba de cada ejercicio, la prescripción en una línea.',
+    'A la derecha, lo que impide guardar la plantilla, en vivo. Lo preparado se guarda solo: la plantilla, con «Revisar y guardar…».',
+  ],
+  cerrar: 'Entendido',
+  dondeEsta: 'Lo que depende de una persona (sus días, su objetivo) se completa en su plan, al usarla.',
+} as const;
+
 /** Qué edita el editor cuando edita una plantilla, y qué hace la página cuando se guarda o se descarta. */
 export interface EdicionDePlantilla {
   readonly preparacionId: string;

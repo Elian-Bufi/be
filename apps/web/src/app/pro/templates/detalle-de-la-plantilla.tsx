@@ -116,7 +116,7 @@ export function VersionesDeLaPlantilla({ token, templateId, sesionPerdida }: { t
       {lectura.tipo === 'falla' ? <p className="nota">{P.noSeLeyeronLasVersiones}</p> : null}
       {lectura.tipo === 'listo' ? (
         <>
-          <ol className="lista-compacta versiones-de-la-plantilla__lista" reversed>
+          <ul className="lista-compacta versiones-de-la-plantilla__lista">
             {lectura.versiones.map((v, n) => (
               <li key={v.versionId} data-version-de-la-plantilla={v.versionNumber}>
                 <strong>{P.version(v.versionNumber)}</strong>
@@ -127,7 +127,7 @@ export function VersionesDeLaPlantilla({ token, templateId, sesionPerdida }: { t
                 </span>
               </li>
             ))}
-          </ol>
+          </ul>
           <p className="nota">{P.planesCreadosAyuda}</p>
         </>
       ) : null}

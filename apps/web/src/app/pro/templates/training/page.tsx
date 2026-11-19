@@ -15,7 +15,7 @@ export default function PaginaDeLaPlantilla() {
   return (
     <>
       <Encabezado navegacion={<NavegacionProfesional />} />
-      <main id="contenido" className="contenido contenido--ficha">
+      <main id="contenido" className="contenido contenido--ancho">
         <Migas pasos={[{ texto: 'Espacio profesional', href: '/pro' }, { texto: 'Plantillas y habituales', href: '/pro/templates' }, { texto: 'Plantilla de entrenamiento' }]} />
         <Suspense fallback={null}>
           <EditorDeLaPlantillaEnSuPagina />

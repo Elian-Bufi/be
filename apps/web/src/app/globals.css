@@ -19975,3 +19975,24 @@ html:has(.estacion:not([data-en-el-asistente])) {
 .versiones-de-la-plantilla__lista li {
   margin-block: 0.2rem;
 }
+
+.editor-de-la-plantilla__cargas label {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  font-weight: 600;
+}
+
+.editor-de-la-plantilla__cargas input[type='checkbox'] {
+  flex: none;
+  margin-top: 0.2rem;
+}
+
+.versiones-de-la-plantilla__lista {
+  padding-inline-start: 0;
+  list-style: none;
+}
+
+.versiones-de-la-plantilla__lista .insignia {
+  margin-inline-start: 0.35rem;
+}
