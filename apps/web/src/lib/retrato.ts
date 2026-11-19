@@ -109,8 +109,8 @@ export const referenciaDeProfesional = (identityId: string): string => `Profesio
 
 /**
  * ED-06 (WP-EDITORES-PROFESIONAL): la referencia de una persona con los nombres ocultos, «Persona · d21da6». La del
- * dominio (`referenciaNeutral`, «Asesorado · d21da6») la usa también la API para quien no tiene nombre: cambia en la
- * ventana de la API. Una referencia que ya viene de la API se sigue reconociendo (`ES_REFERENCIA`).
+ * dominio (`referenciaNeutral`) la usa también la API para quien no tiene nombre, y desde WP-SIN-ASESORADO-EN-FINALIZADOS
+ * dice lo mismo. Una referencia vieja («Asesorado · …») se sigue reconociendo (`ES_REFERENCIA`).
  */
 export const referenciaDePersona = (identityId: string): string => `Persona · ${referenciaCorta(identityId)}`;
 

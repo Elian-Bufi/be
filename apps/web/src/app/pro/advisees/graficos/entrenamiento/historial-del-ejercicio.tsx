@@ -66,7 +66,7 @@ function CintaDelEjercicio({ lectura, periodo, vigencias, exerciseKey }: { lectu
  * serie de mayor carga), y `deLaSerie`, con lo indicado en la serie elegida (GR-03 y GR-05 son de una serie: su línea no
  * dice un cambio que fue de otra).
  */
-function useBandasDelHistorial(lectura: Omit<ParametrosDeLectura, 'periodo'>, periodo: PeriodoDelGrafico, vigencias: readonly VigenciaDePlan[], exerciseKey: string, serie: number) {
+export function useBandasDelHistorial(lectura: Omit<ParametrosDeLectura, 'periodo'>, periodo: PeriodoDelGrafico, vigencias: readonly VigenciaDePlan[], exerciseKey: string, serie: number) {
   const { comparador } = useComparador(lectura, periodo);
   return useMemo(() => {
     if (comparador.tipo !== 'lista') {

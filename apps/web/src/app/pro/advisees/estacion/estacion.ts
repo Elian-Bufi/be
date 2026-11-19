@@ -77,6 +77,8 @@ export const COPY_ESTACION = {
   pestanaAntes: 'Antes de activar',
   pestanaSemana: 'Lo que trabaja la semana',
   pestanaOtras: 'Otras áreas',
+  /** WP-GRAFICOS rama E (GR-T12): los gráficos de la persona en el mismo tiempo, con el enfoque de este plan. */
+  pestanaPatrones: 'Patrones',
   impide: 'Impide activar',
   nadaImpide: 'Nada impide activar.',
   quedaSinCompletar: 'Queda sin completar',

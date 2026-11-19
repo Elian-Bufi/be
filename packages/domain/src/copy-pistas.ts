@@ -15,6 +15,7 @@ export const COPY_PISTAS = {
   /** Las vistas de la ficha. */
   vistas: {
     resumen: 'Lo pendiente con esta persona y los indicadores del período.',
+    patrones: 'Los gráficos de esta persona en el mismo tiempo, con lo que pasó en cada momento.',
     linea: 'Qué pasó y cuándo, día por día.',
     analizar: 'Gráficos de hasta tres métricas en el mismo tiempo.',
   },

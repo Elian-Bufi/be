@@ -42,7 +42,9 @@ test('se puede guardar de 1 a 60 caracteres, sin caracteres de control ni invisi
 test('la referencia neutral son los últimos seis caracteres del identificador, sin guiones', () => {
   const id = '83fcf0fb-e06e-4d1f-8201-78a72ab67857';
   assert.equal(referenciaCorta(id), 'b67857');
-  assert.equal(referenciaNeutral(id), 'Asesorado · b67857');
+  assert.equal(referenciaNeutral(id), 'Persona · b67857');
+  // B05 (REQ-TUT-41): la referencia neutral nunca dice «asesorado», tampoco la de una persona con el vínculo finalizado.
+  assert.doesNotMatch(referenciaNeutral(id), /asesorad/i);
 });
 
 test('el contrato: solo el nombre en los cambios, y la versión «vN»', () => {

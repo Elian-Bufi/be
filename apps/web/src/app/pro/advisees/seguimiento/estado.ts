@@ -21,6 +21,8 @@ import {
 
 export const VISTAS_DEL_SEGUIMIENTO = [
   { clave: 'resumen', texto: 'Resumen', icono: 'resumen', pista: COPY_PISTAS.vistas.resumen },
+  // WP-GRAFICOS rama E (GR-T12): «Patrones» es la segunda vista, entre «Resumen» y «Línea de tiempo».
+  { clave: 'patrones', texto: 'Patrones', icono: 'separadas', pista: COPY_PISTAS.vistas.patrones },
   { clave: 'linea', texto: 'Línea de tiempo', icono: 'linea-de-tiempo', pista: COPY_PISTAS.vistas.linea },
   { clave: 'analizar', texto: 'Analizar', icono: 'analizar', pista: COPY_PISTAS.vistas.analizar },
 ] as const;
