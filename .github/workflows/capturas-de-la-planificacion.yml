@@ -1,4 +1,5 @@
 # NUP-15 (WP-NUTRICION-PLANIFICACION): las capturas del editor del plan de Nutrición con los números donde se planifica.
+# WP-NUTRICION-ALIMENTOS (DL-180) suma las de los alimentos del catálogo, la imagen de la receta y la consola.
 # La cohorte sintética en un PostgreSQL efímero, la API y el website compilados, y las capturas en Claro y Azul noche, a
 # 1280 × 800, a 1536 × 760 (Windows al 125 %) y a 1920 × 950. Esta PC no levanta los tres juntos: lo hace la CI.
 # No es un check de la integración: no bloquea nada y no despliega nada. Corre en la rama del paquete cuando cambian la
@@ -7,11 +8,14 @@ name: capturas-de-la-planificacion
 
 on:
   push:
-    branches: ["wp-nutricion-planificacion"]
+    branches: ["wp-nutricion-planificacion", "wp-nutricion-alimentos"]
     paths:
       - "EVIDENCIA/NUTRICION-PLANIFICACION/herramientas/**"
       - ".github/workflows/capturas-de-la-planificacion.yml"
       - "apps/web/src/app/pro/advisees/nutrition/**"
+      - "apps/web/src/app/pro/foods/**"
+      - "apps/web/src/app/pro/recipes/**"
+      - "apps/web/src/app/admin/foods/**"
       - "apps/web/src/components/**"
       - "apps/web/src/app/globals.css"
   workflow_dispatch:
