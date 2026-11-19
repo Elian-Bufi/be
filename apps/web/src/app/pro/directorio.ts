@@ -30,7 +30,7 @@ export interface VinculoDelDirectorio {
 
 export interface PersonaDelDirectorio {
   readonly identityId: string;
-  /** Como lo da la API: el nombre visible o, sin él, la referencia neutral («Asesorado · a9be23»). */
+  /** Como lo da la API: el nombre visible o, sin él, la referencia neutral («Persona · a9be23»). */
   readonly nombre: string;
   /** La referencia corta («a9be23»): va al lado de un nombre, para distinguir a dos personas que se llaman igual. */
   readonly referencia: string;
