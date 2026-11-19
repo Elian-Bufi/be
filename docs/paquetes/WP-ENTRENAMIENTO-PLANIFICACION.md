@@ -91,7 +91,9 @@ Sesión
 - **ENP-D05 · Las vueltas y las series.** En un bloque «En vueltas», cada vuelta es una serie efectiva de cada ejercicio
   (el calentamiento de DL-178 va antes y no es una vuelta). Al cambiar las vueltas, el editor iguala las series efectivas
   de cada ejercicio (copia la última o quita las de abajo, con «Deshacer»); al agregar un ejercicio al bloque, nace con una
-  serie por vuelta. Que no coincidan no impide activar: se dice en «Queda sin completar», con su lugar.
+  serie por vuelta. Que no coincidan no impide activar: se dice en «Queda sin completar», con su lugar. Varios cambios de
+  vueltas seguidos en el mismo bloque (con las flechas, la lista pasa por cada número) se deshacen juntos: «Deshacer»
+  vuelve a como estaba antes del primero.
 - **ENP-D06 · La APK instalada recibe lo de antes y no se le retiene nada.** A diferencia de DL-178, nada se registra ni se
   cuenta distinto: el registro sigue siendo por ejercicio. Sin la capacidad, la persona ve los mismos ejercicios en orden,
   sin el bloque; el editor lo dice en la ayuda del bloque. No hay migración de capacidades: no se registra ni se exige.
@@ -119,14 +121,18 @@ Sesión
 - **ENP-D13 · La revisión tiene cuatro estados, y dice cuál.** «Revisión pendiente» (no se pidió, o el borrador cambió
   después: la anterior deja de valer), «Revisando esta versión…», la lista de lo que falta con «Ir a…» y «Revisión
   terminada: no se encontraron impedimentos para activar». El panel pide la revisión sola cuando lo guardado no cambia
-  por un momento; nunca afirma algo que el servidor no dijo.
+  por un momento; nunca afirma algo que el servidor no dijo. El título de la parte, «Revisión para activar», no afirma
+  nada (lo dice el estado). «Revisar ahora» no guarda mientras otro guardado está en curso: queda apagado con su motivo,
+  como «Guardar ahora». El cuadro «Antes de activar», sin la revisión de esta versión, está «revisando» y no deja activar.
 - **ENP-D14 · El criterio arriba de las series:** el criterio (RIR o % RM, con su objetivo), la carga sugerida, la base de
   la carga y la de las repeticiones van en una franja arriba de la tabla de series, y la tabla no tiene desplazamiento
   propio en el trabajo principal.
 - **ENP-D15 · Cada «Agregar» dice qué agrega:** «Agregar fase», «Agregar sesión», «Agregar bloque», «Agregar ejercicios».
-- **ENP-D16 · Copiar y editar varias series, a la vista.** «Copiar…» va al lado de «Duplicar» en cada ejercicio abierto (el
-  ejercicio, su prescripción o sus series). «Seleccionar series» marca varias y abre una barra con lo que se escribe en
-  todas: repeticiones (un número o un rango), carga, RIR y descanso, más «Copiar hacia abajo» y «Quitar».
+- **ENP-D16 · Copiar y editar varias series, a la vista.** «Copiar» va a la vista en cada ejercicio abierto, junto a
+  «Subir» y «Bajar» (el ejercicio, su prescripción o sus series); «Duplicar» sigue en «Más». «Seleccionar series» marca
+  varias y abre una barra con lo que se escribe en todas: repeticiones (un número o un rango que el contrato admite: de 1
+  a 1000, y que no termina antes de empezar), carga, RIR y descanso, y «Volver a lo general». «Copiar hacia abajo» sigue
+  siendo Ctrl+D en cada celda, y «Quitar», el de cada serie: en la barra **no** están (§7).
 
 ## 4. Las reglas, y dónde se prueban
 
@@ -141,6 +147,8 @@ Sesión
 | Las plantillas y las sesiones habituales conservan los bloques | integración |
 | Las partes de la sesión y la indicación «En vueltas» | dominio y `apps/mobile/src/bloques-en-la-sesion.test.ts` |
 | Los textos del editor (fase, bloque, revisión, acciones) | `apps/web/test/entrenamiento-planificacion.test.mjs` |
+| Lo que corrigió la revisión adversaria en el editor (§7) | `apps/web/test/entrenamiento-planificacion.test.mjs` («Revisión · …») |
+| La sesión de respaldo de la APK conserva el tipo de serie y los bloques | `apps/mobile/src/sesion-de-respaldo.test.ts` |
 
 ## 5. Cómo se ve
 
@@ -159,3 +167,50 @@ prueba manual: el teclado y el lector de pantalla en el editor, y la APK con Tal
 8. **De dónde sale cada valor:** común a todas las series, propio de esta serie o sin indicar.
 9. **Guardar y revisar encadenados,** con «Ir a…» al campo exacto y la vuelta a la revisión conservando el contexto.
 11. **«Sesiones vacías»:** con una cantidad, arma A, B y C dentro de una fase inicial, sin pedir nombre ni propósito.
+
+## 7. La revisión adversaria (2026-11-19)
+
+Se revisó solo lo propio de esta rama (sin #288 ni #289, salvo lo que esta rama hereda de #288 en la APK).
+
+**Lo corregido** (cada corrección con una prueba que queda en rojo sin ella):
+
+| Severidad | Qué pasaba | Dónde quedó |
+| --- | --- | --- |
+| Media | La sesión de respaldo de la APK (API-SER-02 sin respuesta) perdía el tipo de serie (DL-178): un calentamiento se veía como «Serie 1», se numeraba entre las efectivas y se registraba sin su tipo | `apps/mobile/src/series-de-la-sesion.ts`, `sesion-de-respaldo.test.ts` |
+| Media | El panel «Antes de activar» y el paso del asistente titulaban «⚠ Impide activar» arriba de «✓ … no se encontraron impedimentos» | `revision-del-plan.tsx` («Revisión para activar») |
+| Media | «Revisar ahora» guardaba con el autoguardado en curso: dos guardados con la misma versión de base, un conflicto falso (409) | `editor.tsx` (`motivoSinRevisar`) |
+| Media | El cuadro «Antes de activar», recién abierto y sin la revisión de esta versión, decía «Nada impide activar» y dejaba «Activar» encendido hasta que llegaba la revisión | `editor.tsx` (`revisando`) |
+| Media | «Ir a…» un bloque sin nombre abría el nombre de la sesión | `bloques-del-editor.ts` (`destinoDelProblemaDelBloque`) |
+| Media | Cambiar las vueltas con las flechas pasa por cada número y «Deshacer» volvía solo al paso anterior: las series que quitó el primero se perdían | `bloques-del-editor.ts` (`deshacerTrasCambiarLasVueltas`) |
+| Media | «Lo que cambia frente a la vigente» no miraba los bloques: cambiar solo el descanso de las vueltas, o pasar de «En vueltas» a «Seguido», decía «No cambia nada frente a la vigente» | `comparar-versiones.ts` |
+| Media | La edición conjunta (y la celda) leían «12-8» o «0-10» como un rango bueno: se escribía en todas las elegidas y el guardado automático fallaba en el servidor sin nombrar el lugar | `planilla-de-series.ts` (`leerRepeticiones`) |
+| Baja | El bloque de las capturas se llamaba «Torso» dentro de «Piernas A» | `EVIDENCIA/ENTRENAMIENTO-PLANIFICACION/herramientas/capturas.mjs` |
+
+**Lo que se miró y está bien:** el interceptor está en los cinco controladores que entregan sesiones (los mismos de DL-178:
+Entrenamiento —«Hoy», el plan, la instantánea aceptada, las plantillas—, por serie —lo que lee «Ya la hice»—, Analizar,
+la historia anterior y lo compartido); las sesiones habituales (API-HAB) solo las lee el website, que declara la
+capacidad. La huella de la instantánea es del servidor y no cambia al sacar las claves en el borde. Quitar el bloque no
+deja `exerciseGroupId` colgando; subir, bajar, «Pasar a…», duplicar y quitar un ejercicio dejan los bloques seguidos. Los
+`groupId` son de la sesión (las reglas miran solo la sesión), así que copiar una sesión o una plantilla con los mismos
+identificadores no choca. Igualar las vueltas no toca el calentamiento. En la APK, un `exerciseGroupId` que la sesión no
+tiene se muestra suelto, y el registro sigue por ejercicio. Los textos nuevos de pantalla ubican y no califican: ninguno
+usa el vocabulario que B05 excluye.
+
+**Lo que queda abierto (baja):**
+- **El preset con la sesión vacía (ENP-D10) se recuerda por la posición de la sesión** (`${prefijo}-s${k}`): si se quita o
+  se mueve una sesión anterior, la etiqueta pasa a la que quedó en ese lugar (se ve, no es silencioso). Y al recargar se
+  pierde sin aviso: el texto «queda como su prescripción» puede leerse como guardado. Propuesta: recordarlo por
+  `sessionId` y decir «mientras tengas abierto el editor».
+- **La barra de «Seleccionar series» no tiene «Copiar hacia abajo» ni «Quitar»** (el documento los prometía): hoy son
+  Ctrl+D en cada celda y el «Quitar» de cada serie. Decidir si van.
+- **Una sesión admite hasta 20 bloques** (el contrato) y «Agregar bloque» no tiene tope: el bloque 21 lo rechaza el
+  servidor en el guardado automático. Propuesta: apagarlo con su motivo, como los otros topes.
+- **Quitar un ejercicio no reordena los bloques** (un bloque que queda vacío no pasa al final, como lo guarda el servidor):
+  solo pesa si se pierde la respuesta de un guardado (ED-61), que entonces puede leer un conflicto donde no lo hay.
+- **La selección de series guarda posiciones:** si las series cambian desde afuera (las vueltas del bloque, la línea de
+  prescripción), «Escribir en 3 series» puede contar posiciones que ya no están (escribe solo en las que existen).
+- **Los menús fijos a la ventana** siguen a su botón aunque un panel interior lo haya desplazado fuera de la vista.
+- **La revisión se anuncia en cada autoguardado** (`role="status"`: «Revisando esta versión…» y su resultado): verificar
+  con un lector de pantalla si molesta y, si es así, anunciar solo el resultado.
+- **La lectura de la versión activa** (`estructura-del-plan.tsx`) **y el plan compartido** no agrupan los ejercicios
+  bajo su bloque: el profesional no ve ahí lo que la persona ve en la APK nueva.

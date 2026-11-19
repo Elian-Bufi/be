@@ -8739,4 +8739,7 @@ dentro de la sesión: la sesión es una lista ordenada de prescripciones (REG-06
 - Congelar la lectura nueva de la APK con la próxima candidata (DL-152): la que declara `training-session-groups-1` lee
   `exerciseGroups` y `exerciseGroupId` en API-SER-02, API-TRN-09, 14, 14-PERIODO, 15 a 20 y 19-LISTA.
 - Probar en el teléfono una sesión con un bloque «En vueltas», también con TalkBack.
+- Lo que dejó abierto la revisión adversaria del 2026-11-19 (todo de severidad baja: el preset con la sesión vacía
+  recordado por posición, el tope de 20 bloques en el editor, la lectura de la versión activa sin los bloques, entre
+  otros), en §7 del documento del paquete.
 - El tramo siguiente del paquete (C5 a C11). Detalle completo: `docs/paquetes/WP-ENTRENAMIENTO-PLANIFICACION.md`.
