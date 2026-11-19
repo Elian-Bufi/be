@@ -34,7 +34,7 @@ import { textoDeLosContadores, type CambiosFrenteALaVigente } from '../comparar-
 import { RenglonDeAviso, type CosaParaRevisar } from '../renglon-de-aviso';
 
 export * from './lo-que-se-edita';
-import type { MetadatosDeLaPlantilla } from './lo-que-se-edita';
+import { motivoParaNoGuardar, type MetadatosDeLaPlantilla } from './lo-que-se-edita';
 // ─── La cabecera ──────────────────────────────────────────────────────────────────────────────────────────────────
 
 export function CabeceraDeLaPlantilla({
