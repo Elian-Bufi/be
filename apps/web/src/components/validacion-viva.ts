@@ -69,6 +69,20 @@ export function siguienteQueFalta(actual: number, faltan: readonly number[]): nu
   return otros.find((p) => p > actual) ?? otros[0]!;
 }
 
+/** Lo que puede recibir el foco adentro de un lugar que falta (un grupo con su aviso, como un `fieldset`). */
+const ENFOCABLES = 'input, select, textarea, button, [tabindex]';
+
+/**
+ * NUP-09 · Enter, cuando hay a dónde ir: lleva el foco al lugar que falta (el campo, o el primero de adentro si es un
+ * grupo) y dice si llegó. Un campo apagado o escondido no lo recibe: entonces Enter no se frena y envía como siempre (y
+ * el envío muestra lo que falta), en vez de no hacer nada. Recibe el elemento: la prueba lo recorre sin navegador.
+ */
+export function enfocarLoQueFalta(lugar: HTMLElement): boolean {
+  const destino = (lugar.matches(ENFOCABLES) ? lugar : lugar.querySelector<HTMLElement>(ENFOCABLES)) ?? lugar;
+  destino.focus();
+  return destino.ownerDocument.activeElement === destino;
+}
+
 /** Lo que oye el lector cuando ya no queda nada por corregir, después de haber mostrado avisos; si no, nada. */
 export function anuncioDeLosAvisos(a: AvisosDelFormulario, listo: string): string {
   return a.huboAvisos && a.mostrados.length === 0 ? listo : '';

@@ -106,7 +106,9 @@ test('NUP-02 · la comida plegada dice lo que aporta de la opción que menos a l
   assert.equal(P.loQueAportaLaComida(una.comidas[0].rango, 1), '89 kcal · P 1,1 g · C 22,8 g · G 0,3 g');
   // Un hueco: «Sin dato», nunca cero.
   const hueco = R.rangosDelDia({ label: 'X', meals: [comida('Merienda', [opcion('Fruta', [itemDelPlan('banana', null)])])] }, 0, COMPOSICIONES, NOMBRES, sinReceta);
-  assert.equal(P.loQueAportaLaComida(hueco.comidas[0].rango, 1), 'kcal sin dato · P Sin dato · C Sin dato · G Sin dato');
+  // «Sin dato» se escribe igual en las cuatro partes, como en la fila del alimento y en el renglón de la opción (baja de la
+  // revisión adversaria: decía «kcal sin dato · P Sin dato»).
+  assert.equal(P.loQueAportaLaComida(hueco.comidas[0].rango, 1), 'kcal Sin dato · P Sin dato · C Sin dato · G Sin dato');
 });
 
 // ─── NUP-04 · Ubicar frente al rango ─────────────────────────────────────────────────────────────────────────────
@@ -137,7 +139,11 @@ test('NUP-04 · la opción frente al rango de su comida, con el ejemplo de Direc
   // Sin rango no hay línea; sin dato, se dice y no se ubica.
   assert.deepEqual(P.opcionFrenteAlRango(total, null, 'Almuerzo'), []);
   const sinDato = P.opcionFrenteAlRango(R.totalDeLaOpcion([item('pollo', null)], COMPOSICIONES), rangoIndicado([30, 40]), 'Almuerzo');
-  assert.equal(sinDato[0].texto, 'Proteínas: sin dato · no se puede ubicar frente del rango de Almuerzo (30 a 40 g)');
+  assert.equal(sinDato[0].texto, 'Proteínas: sin dato · no se puede ubicar frente al rango de Almuerzo (30 a 40 g)');
+  // El día sin dato, igual: «frente al rango del día» (decía «frente del rango»).
+  const [diaSinDato] = P.diaFrenteAlRango(R.rangoDelDia([R.rangoDeLaComida([{ nombre: 'A', total: R.totalDeLaOpcion([item('pollo', null)], COMPOSICIONES) }], 'Almuerzo')], ''), rangoIndicado([90, 120]));
+  assert.equal(diaSinDato.texto, 'Proteínas del día: sin dato · no se puede ubicar frente al rango del día (90 a 120 g)');
+  assert.doesNotMatch(leer('app/pro/advisees/nutrition/planificacion.ts'), /frente del/);
 });
 
 test('NUP-04 · el día frente a su rango: se ubican las dos puntas de lo que puede elegir', () => {
@@ -312,7 +318,7 @@ test('NUP-09 (NUP-D09) · Enter, mientras falten datos, pasa al siguiente que fa
   const formulario = leer('components/formulario.tsx');
   assert.match(formulario, /alEnter: \(evento: KeyboardEvent<HTMLElement>\): void => enterAlQueFalta\(evento, ultimo\.current\(\)\.map\(\(e\) => e\.id\)\)/);
   assert.match(formulario, /if \(!\(campo instanceof HTMLInputElement\) \|\| SIN_ENTER\.has\(campo\.type\)\) return;/, 'las áreas de texto, las listas y los botones no se tocan');
-  assert.match(formulario, /if \(destino === null\) return;\n\s*evento\.preventDefault\(\);/, 'solo se frena el envío cuando hay a dónde ir');
+  assert.match(formulario, /if \(destino === null\) return;\n\s*\/\/[^\n]*\n\s*if \(enfocarLoQueFalta\(enOrden\[destino\]!\)\) evento\.preventDefault\(\);\n\}/, 'solo se frena el envío cuando hay a dónde ir y el foco llegó');
   for (const ruta of ['app/pro/advisees/nutrition/formularios.tsx', 'app/pro/advisees/nutrition/revisiones.tsx', 'app/pro/advisees/training/revisiones.tsx', 'app/pro/recipes/editor-de-receta.tsx', 'app/pro/solicitar-vinculo.tsx']) {
     const fuente = leer(ruta);
     const formularios = fuente.split('\n').filter((l) => l.includes('<form ') && l.includes('onBlur={avisos.alSalir}'));
@@ -388,7 +394,7 @@ test('NUP-02 y NUP-03 · la comida plegada dice lo que aporta y su rango; cada o
 
 test('NUP-04 y NUP-05 · la línea frente a los rangos, en la opción y en el cuadro; el rango se indica donde se arma', () => {
   assert.match(COMIDA, /\{frente\.length > 0 \? <FrenteALosRangos lineas=\{frente\} \/> : null\}/);
-  assert.match(CUADRO, /<FrenteALosRangos lineas=\{frente\} \/>/);
+  assert.match(CUADRO, /<FrenteALosRangos lineas=\{frente\} sinAlimentos=\{sinAlimentos\} \/>/);
   // Ubica, no califica: la pieza no usa los colores de error ni de éxito.
   const pieza = COMIDA.slice(COMIDA.indexOf('export function FrenteALosRangos'), COMIDA.indexOf('export function FilaDeItem'));
   assert.doesNotMatch(pieza, /error|exito|peligro/);
@@ -419,7 +425,7 @@ test('NUP-07 y NUP-10 · el objetivo: las kcal de los gramos al escribir y en lo
   // En el editor, en dos renglones: las comidas siguen a la vista.
   assert.match(EDITOR, /<KcalDelObjetivo kcal=\{objetivo\.estimatedEnergyRequirement\.value\} gramos=\{gramosDelObjetivo\(objetivo\)\} compacto \/>/);
   assert.equal(P.porcentajeEnUnaParte('protein', 79, 1750), 'Proteínas 79 g · 18 % de las 1.750 kcal');
-  assert.match(PASOS, /<KcalDelObjetivo kcal=\{objetivo\.estimatedEnergyRequirement\.value\} gramos=\{gramosDelObjetivo\(objetivo\)\} \/>/);
+  assert.match(PASOS, /<KcalDelObjetivo kcal=\{objetivo\.estimatedEnergyRequirement\.value\} gramos=\{gramosDelObjetivo\(objetivo\)\} enProporcion=\{macrosEnProporcion\(objetivo\)\} \/>/);
   // El aviso no bloquea: el formulario no lo cuenta como error.
   assert.doesNotMatch(FORMULARIOS.slice(FORMULARIOS.indexOf('export function erroresDeObjetivo'), FORMULARIOS.indexOf('export function aObjetivo')), /kcalDeLosGramos|noCoinciden/);
 });
@@ -432,7 +438,8 @@ test('NUP-12, NUP-13 y NUP-14 · la comida vacía dice por dónde empezar; el pa
   assert.match(COMIDA, /\{vacia \? \(\n\s*<p className="comida-del-editor__empeza" data-empeza-con>/);
   for (const t of ['unaHabitual', 'copiarDeOtra', 'unaReceta', 'alimentos']) assert.match(COMIDA, new RegExp(`texto=\\{CP\\.${t}\\}`), t);
   // Lo que se suma a una comida recién creada ocupa el lugar de su «Opción 1» sin tocar.
-  assert.match(EDITOR, /if \(m\.options\.length === 1 && esLaOpcionSinTocar\(m\.options\[0\]!\)\) m\.options\.splice\(0, 1\);/);
+  assert.match(EDITOR, /const k = opcionesQueSiguen\(estructura\[di\]\?\.meals\[j\]\?\.options \?\? \[\]\);/);
+  assert.match(EDITOR, /m\.options\.splice\(opcionesQueSiguen\(m\.options\)\);/);
   // El paso 5: «+ Opción de receta», «Copiar desde otra comida» y «Usar una comida habitual», con las operaciones de siempre.
   assert.match(PASOS, /data-asistente-opcion-de-receta.*onClick=\{\(\) => onAgregarReceta\(i, j\)\}/);
   assert.match(PASOS, /<BotonConMotivo texto=\{COPY_DE_OTRA_COMIDA\.copiar\}/);
@@ -458,4 +465,134 @@ test('NUP-11 (NUP-D10) · en el cuadro de la opción, lo escrito en «Crearlo a 
   // Al volver a la opción o al abrir de nuevo, lo de aquel formulario ya quedó atrás.
   assert.match(CUADRO, /useEffect\(\(\) => setEscritoAparte\(false\), \[modo, abierto\]\);/);
   assert.match(leer('app/pro/advisees/nutrition/agregar-item.tsx'), /<form className="agregar-item__otro" [^\n]*onInput=\{alEscribir\}/);
+});
+
+// ─── Las bajas de la revisión adversaria del primer tramo (19/11) ───────────────────────────────────────────────
+
+const RP = await import('../src/app/pro/advisees/nutrition/receta-en-el-plan.ts');
+const X = await import('../src/app/pro/advisees/editar-la-estructura.ts');
+const O = await import('../src/app/pro/advisees/nutrition/opcion-de-otra-comida.ts');
+const ENFOCADO = leer('components/cuadro-enfocado.tsx');
+const DIALOGO = leer('components/dialogo.tsx');
+
+test('NUP-04 · en el cuadro, una opción nueva todavía vacía no muestra una línea «sin dato» por macro: una sola indicación', () => {
+  assert.match(CUADRO, /const sinAlimentos = copia !== null && copia\.items\.length === 0 && !copia\.recipeVersionId;/);
+  assert.match(CUADRO, /<FrenteALosRangos lineas=\{frente\} sinAlimentos=\{sinAlimentos\} \/>/);
+  const pieza = COMIDA.slice(COMIDA.indexOf('export function FrenteALosRangos'), COMIDA.indexOf('export function FilaDeItem'));
+  assert.match(pieza, /\{sinAlimentos \? \(\n\s*<p className="nota" data-frente-sin-alimentos>\n\s*\{CP\.frenteSinAlimentos\}/);
+  assert.equal(P.COPY_PLANIFICACION.frenteSinAlimentos, 'Todavía no tiene alimentos: se ubica cuando sumes el primero.');
+  // La comida del editor ya esperaba a que la opción tuviera algo.
+  assert.match(COMIDA, /const conAlgo = !!opcion && \(opcion\.items\.length > 0 \|\| !!opcion\.recipeVersionId\);/);
+});
+
+test('NUP-12 · en una comida recién creada, la «Opción 1» sin tocar deja su lugar también en el número de la copia y en los lugares libres', () => {
+  const sinTocar = { label: RP.OPCION_INICIAL, items: [] };
+  const conAlgo = { label: 'Arroz', items: [itemDelPlan('arroz', 100)] };
+  assert.equal(RP.opcionesQueSiguen([sinTocar]), 0, 'lo que se suma queda como opción 1');
+  assert.equal(RP.opcionesQueSiguen([conAlgo]), 1);
+  assert.equal(RP.opcionesQueSiguen([sinTocar, conAlgo]), 2, 'con otra opción, la «Opción 1» vacía no se toca');
+  assert.equal(RP.opcionesQueSiguen([{ ...sinTocar, label: 'Desayuno liviano' }]), 1, 'con otro nombre, ya la tocaron');
+  assert.equal(RP.opcionesQueSiguen([]), 0);
+  // «Copiar a Almuerzo como opción N» dice el número que va a tener (decía 2 y quedaba como opción 1).
+  assert.equal(O.COPY_DE_OTRA_COMIDA.principalCopiar('Almuerzo', RP.opcionesQueSiguen([sinTocar]) + 1), 'Copiar a Almuerzo como opción 1');
+  assert.match(EDITOR, /numeroDeLaNueva=\{opcionesQueSiguen\(\(otraComida \? estructura\[otraComida\.i\]\?\.meals\[otraComida\.j\]\?\.options : undefined\) \?\? \[\]\) \+ 1\}/);
+  // Una habitual de doce opciones entra entera en una comida recién creada (antes quedaba una afuera).
+  const doce = { name: 'Doce', structure: { options: Array.from({ length: 12 }, (_, k) => ({ label: `O${k + 1}`, items: [] })) } };
+  assert.equal(O.opcionesDeLaHabitual(doce, O.MAXIMO_DE_OPCIONES - RP.opcionesQueSiguen([sinTocar])).quedanAfuera, 0);
+  assert.match(EDITOR, /opcionesDeLaHabitual\(h, MAXIMO_DE_OPCIONES - opcionesQueSiguen\(m\.options\)\)/);
+  // La receta, con la misma cuenta.
+  assert.deepEqual(RP.opcionesConLaReceta([sinTocar], { recipeVersionId: 'rv1', name: 'Budín' }), { opciones: [{ label: 'Budín', items: [], recipeVersionId: 'rv1' }], k: 0 });
+  assert.equal(RP.opcionesConLaReceta([conAlgo], { recipeVersionId: 'rv1', name: 'Budín' }).k, 1);
+});
+
+test('NUP-D04 · al subir o bajar una comida, cada una conserva su opción abierta, y la que estaba plegada sigue plegada', () => {
+  // Día 0: la comida 1 tiene abierta su opción 3 (k = 2); la 2, de varias opciones, nunca se eligió (plegada). Se baja la 1.
+  assert.deepEqual(X.elegidasTrasMover({ '0-1': 2 }, 0, 1, 2), { '0-2': 2 });
+  // Se sube la plegada: sigue sin elegida (antes quedaba con la primera abierta), y la otra lleva la suya.
+  assert.deepEqual(X.elegidasTrasMover({ '0-1': 2 }, 0, 2, 1), { '0-2': 2 });
+  // Una plegada a propósito (-1) y una abierta se intercambian.
+  assert.deepEqual(X.elegidasTrasMover({ '0-0': -1, '0-1': 0 }, 0, 0, 1), { '0-1': -1, '0-0': 0 });
+  // Los otros días no cambian, y no toca lo que recibe.
+  const antes = { '0-1': 2, '1-1': 3, '1-2': 0 };
+  assert.deepEqual(X.elegidasTrasMover(antes, 0, 1, 0), { '0-0': 2, '1-1': 3, '1-2': 0 });
+  assert.deepEqual(antes, { '0-1': 2, '1-1': 3, '1-2': 0 });
+  assert.match(EDITOR, /setPestanas\(\(p\) => elegidasTrasMover\(p, i, j, hacia\)\);/);
+  assert.doesNotMatch(EDITOR, /\?\? 0, \[`\$\{i\}-\$\{j\}`\]/, 'mover no elige la primera opción');
+});
+
+test('NUP-09 · Enter: si el campo que falta no puede recibir el foco, envía como siempre en vez de no hacer nada', () => {
+  const documento = { activeElement: null };
+  const campo = (recibe) => {
+    const e = { ownerDocument: documento, matches: () => true, querySelector: () => null, focus: () => void (recibe && (documento.activeElement = e)) };
+    return e;
+  };
+  const grupo = (adentro) => ({ ownerDocument: documento, matches: () => false, querySelector: () => adentro, focus: () => undefined });
+  assert.equal(V.enfocarLoQueFalta(campo(true)), true, 'el foco llega: Enter no envía');
+  documento.activeElement = null;
+  assert.equal(V.enfocarLoQueFalta(campo(false)), false, 'apagado o escondido: Enter envía como siempre');
+  const adentro = campo(true);
+  assert.equal(V.enfocarLoQueFalta(grupo(adentro)), true);
+  assert.equal(documento.activeElement, adentro, 'en un grupo, al primero de adentro');
+  documento.activeElement = null;
+  assert.equal(V.enfocarLoQueFalta(grupo(null)), false, 'un grupo sin nada que reciba el foco');
+});
+
+test('NUP-11 · «Seguir editando» devuelve el foco adonde se estaba, en el diálogo de confirmación y en el cuadro enfocado', () => {
+  const adentro = new Set();
+  const cuadro = { contains: (e) => adentro.has(e) };
+  const campo = { isConnected: true };
+  const titulo = { isConnected: true };
+  adentro.add(campo).add(titulo);
+  assert.equal(T.dondeSigueElFoco(cuadro, campo, titulo), campo, 'al campo donde se estaba');
+  assert.equal(T.dondeSigueElFoco(cuadro, { isConnected: false }, titulo), titulo, 'si ya no está, al título');
+  assert.equal(T.dondeSigueElFoco(cuadro, { isConnected: true }, titulo), titulo, 'si quedó fuera del cuadro, al título');
+  assert.equal(T.dondeSigueElFoco(cuadro, null, titulo), titulo);
+  // La pieza común anota dónde se estaba (no la pregunta ni lo que pide cerrar) y vuelve ahí cuando la pregunta se va.
+  const pieza = leer('components/tocar-afuera.ts');
+  assert.match(pieza, /if \(t !== e\.currentTarget && t instanceof HTMLElement && !t\.closest\(NO_ES_DONDE_SE_ESTABA\)\) ultimo\.current = t;/);
+  assert.match(pieza, /if \(preguntando \|\| !volver\.current\) return;\n\s*volver\.current = false;\n\s*dondeSigueElFoco<HTMLElement>\(cuadro\.current, ultimo\.current, siNo\(\)\)\?\.focus\(\);/);
+  assert.equal(T.NO_ES_DONDE_SE_ESTABA, '[data-pregunta-al-cerrar], [data-pide-cerrar]');
+  for (const [nombre, fuente, uso, boton] of [
+    ['el diálogo', DIALOGO, 'seguirEditando', 'seguir'],
+    ['el cuadro enfocado', ENFOCADO, 'seguir', 'seguirRef'],
+  ]) {
+    assert.match(fuente, new RegExp(`onFocus=\\{${uso}\\.alEnfocar\\}`), nombre);
+    assert.match(fuente, new RegExp(`<button ref=\\{${boton}\\} type="button" className="boton boton--secundario" onClick=\\{\\(\\) => ${uso}\\.seguir\\(\\(\\) => setPreguntando\\(false\\)\\)\\}>`), nombre);
+    assert.doesNotMatch(fuente, /onClick=\{\(\) => setPreguntando\(false\)\}/, `${nombre}: sin volver, el foco quedaba en el documento`);
+  }
+  assert.match(ENFOCADO, /useSeguirEditando\(ref, \(\) => tituloRef\.current, preguntando\)/);
+  assert.match(DIALOGO, /useSeguirEditando\(ref, \(\) => ref\.current\?\.querySelector<HTMLElement>\(PRIMER_CONTROL\) \?\? null, preguntando\)/);
+  // «Cerrar» y «Cancelar» piden cerrar: no son «donde se estaba»; la pregunta, tampoco.
+  assert.equal(ENFOCADO.match(/ data-pide-cerrar>/g)?.length, 2);
+  assert.match(ENFOCADO, /role="alertdialog" [^\n]*data-pregunta-al-cerrar>/);
+  assert.match(DIALOGO, /role="alertdialog" [^\n]*data-pregunta-al-cerrar>/);
+});
+
+test('NUP-07 · un objetivo viejo con macros en proporción de las kcal: el paso 2 no dice «con los tres macros escritos»', () => {
+  const viejo = { estimatedEnergyRequirement: { value: 2300 }, macronutrientDistribution: { protein: { value: 0.25, unit: 'energy_share' }, carbohydrate: { value: 240, unit: 'g/day' }, fat: { value: 0.3, unit: 'energy_share' } } };
+  assert.deepEqual(P.macrosEnProporcion(viejo), ['protein', 'fat']);
+  assert.equal(P.kcalDeLosGramos(P.gramosDelObjetivo(viejo), 2300), null, 'no hay gramos que sumar');
+  assert.equal(P.sinLasKcalDeLosGramos(P.macrosEnProporcion(viejo)), 'El objetivo tiene Proteínas y Grasas en proporción de las kcal, no en gramos: no hay gramos que sumar.');
+  assert.equal(P.sinLasKcalDeLosGramos(['carbohydrate']), 'El objetivo tiene Carbohidratos en proporción de las kcal, no en gramos: no hay gramos que sumar.');
+  assert.equal(P.sinLasKcalDeLosGramos(['protein', 'carbohydrate', 'fat']), 'El objetivo tiene Proteínas, Carbohidratos y Grasas en proporción de las kcal, no en gramos: no hay gramos que sumar.');
+  // En gramos (lo que se escribe hoy), mientras falte un macro, sigue diciendo qué se va a ver.
+  const enGramos = { ...viejo, macronutrientDistribution: { protein: { value: 112, unit: 'g/day' }, carbohydrate: { value: 80, unit: 'g/day' }, fat: { value: 335, unit: 'g/day' } } };
+  assert.deepEqual(P.macrosEnProporcion(enGramos), []);
+  assert.equal(P.sinLasKcalDeLosGramos([]), 'Con los tres macros escritos se ve cuántas kcal suman, con 4, 4 y 9 kcal por gramo.');
+  assert.match(PIEZAS, /<p className="nota kcal-del-objetivo" data-kcal-del-objetivo>\n\s*\{sinLasKcalDeLosGramos\(enProporcion\)\}/);
+  for (const t of [P.sinLasKcalDeLosGramos(['protein', 'fat']), P.sinLasKcalDeLosGramos([])]) {
+    assert.deepEqual(d.terminosProhibidosEn(t), [], t);
+    assert.equal(porcentajeSinSuBase(t), false, t);
+  }
+});
+
+test('La suma de los rangos: el número no se separa de su unidad; y los comentarios del «%», al día', () => {
+  // «desde 1.026 kcal» se partía en dos renglones con la columna principal angosta: la suma y el objetivo no se cortan,
+  // y la ubicación (texto) es la que se acomoda.
+  assert.match(PIEZAS, /<td className="suma-de-los-rangos__cifra">\{f\.suma\}<\/td>/);
+  assert.match(PIEZAS, /<td className="suma-de-los-rangos__cifra">\{f\.objetivoCifra \?\? '—'\}<\/td>/);
+  assert.match(ESTILOS, /\.suma-de-los-rangos__cifra \{\n\s*white-space: nowrap;\n\}/);
+  // Nutrición ya muestra el «%» con su base (NUP-D11): los comentarios que decían lo contrario se actualizaron.
+  assert.doesNotMatch(leer('app/pro/advisees/nutrition/asistente-de-nutricion.ts'), /ningún texto de Nutrición dice «%»/);
+  assert.doesNotMatch(leer('app/pro/advisees/nutrition/rangos.ts'), /Sin «%»/);
 });

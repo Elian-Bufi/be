@@ -13,14 +13,14 @@
  *   misma salida que Escape). Mientras está `ocupado` (un envío en curso) no se cierra, porque su resultado tiene que
  *   poder leerse;
  * - **con cambios (`conCambios`), cerrar pregunta,** en el mismo cuadro: un cuadro no abre otro encima. «Seguir
- *   editando» tiene el foco;
+ *   editando» tiene el foco y, al tocarlo, el foco vuelve adonde se estaba (no queda en el documento);
  * - el paso siguiente reemplaza al anterior en el mismo cuadro: lo decide quien lo abre, con su contenido.
  *
  * Dibuja su contenido solo mientras está abierto: lo que tiene que sobrevivir al cierre vive en quien lo abre.
  */
 import { useEffect, useId, useRef, useState, type ReactNode, type RefObject } from 'react';
 import { Icono } from './icono';
-import { useTocarAfuera } from './tocar-afuera';
+import { useSeguirEditando, useTocarAfuera } from './tocar-afuera';
 
 export const COPY_CUADRO_ENFOCADO = {
   cerrar: 'Cerrar',
@@ -109,6 +109,8 @@ export function CuadroEnfocado({
   useEffect(() => {
     if (preguntando) seguirRef.current?.focus();
   }, [preguntando]);
+  // «Seguir editando»: la pregunta se va con su botón, y el foco vuelve adonde se estaba (o al título), no al documento.
+  const seguir = useSeguirEditando(ref, () => tituloRef.current, preguntando);
 
   // El paso siguiente reemplaza al anterior en el mismo cuadro: el foco va a su título, como al abrir.
   const pasoAnterior = useRef(paso);
@@ -141,6 +143,7 @@ export function CuadroEnfocado({
       onClose={() => {
         if (abierto) onCerrar();
       }}
+      onFocus={seguir.alEnfocar}
       {...afuera}
     >
       <div className="cajon__cabecera">
@@ -156,14 +159,14 @@ export function CuadroEnfocado({
             {titulo}
           </h2>
         </div>
-        <button type="button" className="boton boton--enlace cajon__cerrar" onClick={pedirCerrar} disabled={ocupado}>
+        <button type="button" className="boton boton--enlace cajon__cerrar" onClick={pedirCerrar} disabled={ocupado} data-pide-cerrar>
           <Icono nombre="cerrar" tamano={18} />
           {COPY_CUADRO_ENFOCADO.cerrar}
         </button>
       </div>
       <div className="cajon__cuerpo">{abierto ? children : null}</div>
       {abierto && preguntando ? (
-        <div className="cajon__pie cuadro-enfocado__pregunta" role="alertdialog" aria-labelledby={`${id}-pregunta`} aria-describedby={`${id}-explicacion`}>
+        <div className="cajon__pie cuadro-enfocado__pregunta" role="alertdialog" aria-labelledby={`${id}-pregunta`} aria-describedby={`${id}-explicacion`} data-pregunta-al-cerrar>
           <p id={`${id}-pregunta`}>
             <strong>{COPY_CUADRO_ENFOCADO.preguntaAlCerrar}</strong>
           </p>
@@ -171,7 +174,7 @@ export function CuadroEnfocado({
             {COPY_CUADRO_ENFOCADO.explicacionAlCerrar}
           </p>
           <div className="acciones">
-            <button ref={seguirRef} type="button" className="boton boton--secundario" onClick={() => setPreguntando(false)}>
+            <button ref={seguirRef} type="button" className="boton boton--secundario" onClick={() => seguir.seguir(() => setPreguntando(false))}>
               {COPY_CUADRO_ENFOCADO.seguirEditando}
             </button>
             <button type="button" className="boton boton--quieto" data-cerrar-sin-guardar onClick={pedirCerrar}>
@@ -185,7 +188,7 @@ export function CuadroEnfocado({
           {pie}
           {principal ? (
             <div className="acciones">
-              <button ref={cancelarRef} type="button" className="boton boton--enlace" onClick={pedirCerrar} disabled={ocupado} data-cancelar-del-cuadro>
+              <button ref={cancelarRef} type="button" className="boton boton--enlace" onClick={pedirCerrar} disabled={ocupado} data-cancelar-del-cuadro data-pide-cerrar>
                 {COPY_CUADRO_ENFOCADO.cancelar}
               </button>
               {principal.apagado ? (

@@ -135,7 +135,8 @@ export function loQueAportaLaComida(rango: RangoPorNutriente, opciones: number):
   if (opciones === 0) return null;
   return NUTRIENTES_DEL_RANGO.map((n) => {
     const v = deCuantoACuanto(rango[n], n);
-    if (n === 'energyKcal') return v === null ? `kcal ${COPY_RANGOS.sinDato.toLowerCase()}` : `${v} kcal`;
+    // Lo que falta dice «Sin dato», como en la fila de cada alimento y en el renglón de cada opción.
+    if (n === 'energyKcal') return v === null ? `kcal ${COPY_RANGOS.sinDato}` : `${v} kcal`;
     return `${INICIAL[n]} ${v === null ? COPY_RANGOS.sinDato : `${v} g`}`;
   }).join(' · ');
 }
@@ -201,9 +202,10 @@ export function opcionFrenteAlRango(total: TotalDeLaOpcion, rango: RangoIndicado
   return MACROS_DEL_RANGO.flatMap((m) => {
     const limites = limitesDe(rango[m]);
     if (!limites) return [];
-    const deQue = `del rango de ${comida} (${limitesEnPalabras(limites.min, limites.max, 'g')})`;
+    const elRango = `rango de ${comida} (${limitesEnPalabras(limites.min, limites.max, 'g')})`;
+    const deQue = `del ${elRango}`;
     const exacto = total[NUTRIENTE_DEL_MACRO[m]].exacto;
-    if (exacto === null) return [{ macro: m, texto: `${NOMBRE_DEL_MACRO[m]}: sin dato · no se puede ubicar frente ${deQue}`, afuera: false }];
+    if (exacto === null) return [{ macro: m, texto: `${NOMBRE_DEL_MACRO[m]}: sin dato · no se puede ubicar frente al ${elRango}`, afuera: false }];
     const valor = Number(exacto);
     const u = ubicar(valor, limites);
     const queda = u.tipo === 'dentro' ? `dentro ${deQue}` : `${gramos(u.diferencia)} por ${u.tipo === 'encima' ? 'encima' : 'debajo'} ${deQue}`;
@@ -221,9 +223,10 @@ export function diaFrenteAlRango(dia: RangoPorNutriente, rango: RangoIndicado | 
   return MACROS_DEL_RANGO.flatMap((m) => {
     const limites = limitesDe(rango[m]);
     if (!limites) return [];
-    const deQue = `del rango del día (${limitesEnPalabras(limites.min, limites.max, 'g')})`;
+    const elRango = `rango del día (${limitesEnPalabras(limites.min, limites.max, 'g')})`;
+    const deQue = `del ${elRango}`;
     const r = dia[NUTRIENTE_DEL_MACRO[m]];
-    if (r.tipo === 'sin-dato') return [{ macro: m, texto: `${NOMBRE_DEL_MACRO[m]} del día: sin dato · no se puede ubicar frente ${deQue}`, afuera: false }];
+    if (r.tipo === 'sin-dato') return [{ macro: m, texto: `${NOMBRE_DEL_MACRO[m]} del día: sin dato · no se puede ubicar frente al ${elRango}`, afuera: false }];
     const min = aUnDecimal(Number(r.min));
     const max = aUnDecimal(Number(r.max));
     const va = min === max ? gramos(min) : `de ${numero(min, 1)} a ${gramos(max)} según lo que elija`;
@@ -316,6 +319,9 @@ export function objetivoDelDia(o: { readonly estimatedEnergyRequirement: { reado
 
 /** NUP-07: los gramos del objetivo vigente (un macro en proporción de las kcal no tiene gramos: `null`). */
 export const gramosDelObjetivo = (o: Parameters<typeof objetivoDelDia>[0]): GramosDelObjetivo => objetivoDelDia(o).macros;
+
+/** NUP-07: los macros del objetivo vigente que no están en gramos (objetivos viejos, en proporción de las kcal: `energy_share`). */
+export const macrosEnProporcion = (o: Parameters<typeof objetivoDelDia>[0]): MacroDelRango[] => MACROS_DEL_RANGO.filter((m) => o.macronutrientDistribution[m].unit !== 'g/day');
 
 /** Una fila de la tabla de la suma, lista para mostrar. */
 export interface FilaFrenteAlObjetivo {
@@ -440,6 +446,18 @@ export function kcalDeLosGramos(g: GramosDelObjetivo, kcalIndicadas: number | nu
 }
 
 /**
+ * NUP-07: lo que se dice cuando los gramos del objetivo no se pueden sumar. Mientras se escribe y falta un macro, qué se
+ * va a ver. Si el objetivo tiene macros en proporción de las kcal (objetivos viejos), ya están escritos y no tienen
+ * gramos: decir «con los tres macros escritos» sería falso.
+ */
+export function sinLasKcalDeLosGramos(enProporcion: readonly MacroDelRango[]): string {
+  if (enProporcion.length === 0) return COPY_PLANIFICACION.conLosTres;
+  const nombres = enProporcion.map((m) => NOMBRE_DEL_MACRO[m]);
+  const lista = nombres.length === 1 ? nombres[0]! : `${nombres.slice(0, -1).join(', ')} y ${nombres[nombres.length - 1]!}`;
+  return COPY_PLANIFICACION.enProporcion(lista);
+}
+
+/**
  * NUP-D08: el porcentaje de las kcal de un macro, con su base y sus gramos: «18 % de las 2.500 kcal · 112 g · 448 kcal».
  * `null` sin kcal indicadas o sin gramos.
  */
@@ -465,6 +483,8 @@ export const COPY_PLANIFICACION = {
   // NUP-04
   frenteAlRango: 'Frente a los rangos indicados',
   frenteAlRangoAyuda: 'Ubica, no corrige: podés dejarla así.',
+  /** En el cuadro, una opción todavía sin alimentos: una sola indicación, en vez de una línea «sin dato» por macro. */
+  frenteSinAlimentos: 'Todavía no tiene alimentos: se ubica cuando sumes el primero.',
   // NUP-05
   rangoDeLaComida: (comida: string) => `Rango indicado de ${comida}`,
   // NUP-06
@@ -482,6 +502,9 @@ export const COPY_PLANIFICACION = {
   coinciden: (indicadas: number) => `Coinciden con las ${numero(indicadas, 0)} kcal indicadas.`,
   /** En un renglón (el objetivo vigente, en el editor): «Los gramos suman 1.750 kcal (proteínas 79 g × 4 + …)». */
   kcalEnUnRenglon: (k: KcalDeLosGramos) => `Los gramos suman ${numero(k.kcal, 0)} kcal (${k.cuenta})`,
+  conLosTres: 'Con los tres macros escritos se ve cuántas kcal suman, con 4, 4 y 9 kcal por gramo.',
+  /** «El objetivo tiene Proteínas y Grasas en proporción de las kcal, no en gramos: no hay gramos que sumar.» */
+  enProporcion: (macros: string) => `El objetivo tiene ${macros} en proporción de las kcal, no en gramos: no hay gramos que sumar.`,
   // NUP-12
   empezaCon: 'Empezá con:',
   unaHabitual: 'una comida habitual',

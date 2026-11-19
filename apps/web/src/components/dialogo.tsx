@@ -3,8 +3,9 @@
 /**
  * Confirmación contextual con CTA explícito (10-B04 §26: sin «Escribí FINALIZAR»). `<dialog>` nativo en modo modal:
  * retiene el foco y lo devuelve al disparador al cerrar; Esc y tocar afuera (NUP-11) equivalen a «Volver» salvo mientras se
- * envía, y si se escribió algo adentro, primero preguntan en el mismo diálogo. El foco
- * inicial cae en el primer control (el motivo, si hay, o «Volver»): la acción de efecto nunca es la opción por defecto.
+ * envía, y si se escribió algo adentro, primero preguntan en el mismo diálogo («Seguir editando» devuelve el foco adonde
+ * se estaba). El foco inicial cae en el primer control (el motivo, si hay, o «Volver»): la acción de efecto nunca es la
+ * opción por defecto.
  *
  * Se abre y se cierra en un efecto de diseño (`useLayoutEffect`), antes de los efectos comunes de la página. Cerrar un
  * diálogo modal devuelve el foco a quien lo abrió: si eso pasara después, le sacaría el foco a lo que la página enfoca al
@@ -15,7 +16,10 @@ import { COPY_VINCULO } from '@be/domain';
 import { useId, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
 import { COPY_CUADRO_ENFOCADO } from './cuadro-enfocado';
 import { Aviso } from './formulario';
-import { useTocarAfuera } from './tocar-afuera';
+import { useSeguirEditando, useTocarAfuera } from './tocar-afuera';
+
+/** El primer control del diálogo, donde cae el foco al abrirlo. */
+const PRIMER_CONTROL = 'input:not([disabled]), select:not([disabled]), textarea:not([disabled]), button:not([disabled])';
 
 interface PropsDeDialogo {
   readonly abierto: boolean;
@@ -78,6 +82,9 @@ export function DialogoDeConfirmacion({
   useLayoutEffect(() => {
     if (preguntando) seguir.current?.focus();
   }, [preguntando]);
+  // «Seguir editando»: la pregunta se va con su botón, y el foco vuelve adonde se estaba (o al primer control, como al
+  // abrir), no al documento.
+  const seguirEditando = useSeguirEditando(ref, () => ref.current?.querySelector<HTMLElement>(PRIMER_CONTROL) ?? null, preguntando);
 
   /** Escape y tocar afuera: nunca mientras se envía; con algo escrito, preguntan. «Volver» es explícito y no pregunta. */
   const pedirVolver = () => {
@@ -100,6 +107,7 @@ export function DialogoDeConfirmacion({
       onInput={() => {
         escrito.current = true;
       }}
+      onFocus={seguirEditando.alEnfocar}
       {...afuera}
     >
       <h2 id={`${id}-titulo`}>{titulo}</h2>
@@ -119,7 +127,7 @@ export function DialogoDeConfirmacion({
             {COPY_CUADRO_ENFOCADO.explicacionAlCerrar}
           </p>
           <p className="dialogo__acciones-de-la-pregunta">
-            <button ref={seguir} type="button" className="boton boton--secundario" onClick={() => setPreguntando(false)}>
+            <button ref={seguir} type="button" className="boton boton--secundario" onClick={() => seguirEditando.seguir(() => setPreguntando(false))}>
               {COPY_CUADRO_ENFOCADO.seguirEditando}
             </button>
             <button type="button" className="boton boton--quieto" onClick={pedirVolver}>

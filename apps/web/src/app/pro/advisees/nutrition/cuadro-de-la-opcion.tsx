@@ -179,6 +179,8 @@ export function CuadroDeLaOpcion({
   const impide = copia ? loQueNoDejaGuardarLaOpcion(copia, todosLosNombres) : null;
   // NUP-04: la opción como queda frente al rango de su comida, y el día (con esta opción en su comida) frente al suyo.
   const frente = total && rango ? [...opcionFrenteAlRango(total, rangoIndicadoDeLaComida, comida), ...diaFrenteAlRango(rangoDelDia([...otrasComidasDelDia, rango], ''), rangoIndicadoDelDia)] : [];
+  // Una opción nueva todavía vacía no tiene nada que ubicar: una sola indicación, no una línea «sin dato» por macro.
+  const sinAlimentos = copia !== null && copia.items.length === 0 && !copia.recipeVersionId;
 
   return (
     <CuadroEnfocado
@@ -298,7 +300,7 @@ export function CuadroDeLaOpcion({
             ) : null}
             {frente.length > 0 ? (
               <section className="cuadro-de-la-opcion__tarjeta" aria-label="Frente a los rangos indicados" data-frente-en-el-cuadro>
-                <FrenteALosRangos lineas={frente} />
+                <FrenteALosRangos lineas={frente} sinAlimentos={sinAlimentos} />
               </section>
             ) : null}
             <section className="cuadro-de-la-opcion__tarjeta" aria-labelledby="opcion-objetivo-general">

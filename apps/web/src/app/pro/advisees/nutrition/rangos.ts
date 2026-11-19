@@ -13,7 +13,8 @@
  *   (TEST-EDP-032).
  * - **Es una estimación del editor** (§8.2): hasta API-PLN-01, los totales se calculan solo en el website, con la
  *   composición de la versión disponible de cada alimento. Al guardar no viaja nada de esto, y la persona no lo ve.
- * - Sin «%» y sin semáforo: se describe, no se califica (B05; `copy-nutricion.ts`).
+ * - Sin semáforo: se describe, no se califica (B05; `copy-nutricion.ts`). Estos totales van en kcal y gramos; el «%» del
+ *   website del profesional va solo con su base y su número (NUP-D11), y nunca como cumplimiento.
  */
 import { calcularNutrientes, decimalExacto, nutrienteParaMostrar, pestanaDeLaOpcion, sumaExacta, type ComposicionParaCalcular, type EstructuraDePlanEntrada, type NutrienteCalculado } from '@be/domain';
 

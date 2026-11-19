@@ -532,23 +532,31 @@ function AccionDeInicio({ texto, noSePuede, alTocar, comida }: { texto: string; 
 
 /**
  * NUP-04: la opción frente al rango de su comida y el día frente al suyo, una línea por macro. Neutro: sin color de
- * juicio; lo que queda afuera lleva un ícono que ubica (no una alarma) y el lector lo oye en el texto.
+ * juicio; lo que queda afuera lleva un ícono que ubica (no una alarma) y el lector lo oye en el texto. Una opción todavía
+ * sin alimentos (`sinAlimentos`, en el cuadro de la opción) no tiene nada que ubicar: una sola indicación neutra en vez de
+ * una línea «sin dato» por macro.
  */
-export function FrenteALosRangos({ lineas }: { lineas: readonly LineaFrenteAlRango[] }) {
+export function FrenteALosRangos({ lineas, sinAlimentos = false }: { lineas: readonly LineaFrenteAlRango[]; sinAlimentos?: boolean }) {
   return (
     <div className="frente-a-los-rangos" data-frente-a-los-rangos>
       <p className="frente-a-los-rangos__titulo">
         <Icono nombre="objetivo" tamano={18} />
         {CP.frenteAlRango}
-        <span className="nota"> · {CP.frenteAlRangoAyuda}</span>
+        {sinAlimentos ? null : <span className="nota"> · {CP.frenteAlRangoAyuda}</span>}
       </p>
-      <ul className="lista-compacta">
-        {lineas.map((l) => (
-          <li key={l.texto} data-afuera={l.afuera ? '' : undefined}>
-            {l.texto}
-          </li>
-        ))}
-      </ul>
+      {sinAlimentos ? (
+        <p className="nota" data-frente-sin-alimentos>
+          {CP.frenteSinAlimentos}
+        </p>
+      ) : (
+        <ul className="lista-compacta">
+          {lineas.map((l) => (
+            <li key={l.texto} data-afuera={l.afuera ? '' : undefined}>
+              {l.texto}
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
   );
 }

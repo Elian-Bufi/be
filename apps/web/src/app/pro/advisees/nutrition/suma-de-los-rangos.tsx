@@ -10,11 +10,11 @@
  *   vista; si no coinciden con las kcal indicadas, un aviso neutro que no bloquea; y el porcentaje de cada macro con su
  *   base y sus gramos (decisión de Dirección del 18/11: en el website del profesional, el «%» va con su número real).
  */
-import { MACROS_DEL_RANGO, type Rango, type VersionDeObjetivo } from '@be/domain';
+import { MACROS_DEL_RANGO, type MacroDelRango, type Rango, type VersionDeObjetivo } from '@be/domain';
 import { useId, type CSSProperties } from 'react';
 import { EnPartes } from '../../../../components/en-partes';
 import { Icono } from '../../../../components/icono';
-import { COPY_PLANIFICACION as C, kcalDeLosGramos, objetivoDelDia, porcentajeDeLasKcal, porcentajeEnUnaParte, sumaDeLosRangos, sumaFrenteAlObjetivo, type GramosDelObjetivo } from './planificacion';
+import { COPY_PLANIFICACION as C, kcalDeLosGramos, objetivoDelDia, porcentajeDeLasKcal, porcentajeEnUnaParte, sinLasKcalDeLosGramos, sumaDeLosRangos, sumaFrenteAlObjetivo, type GramosDelObjetivo } from './planificacion';
 import { COPY_RANGOS_INDICADOS, NOMBRE_DEL_MACRO, rangoEnPalabras, rangoEnUnaLinea } from './rangos-indicados';
 
 /** NUP-06: la tabla de la suma. `comidas`: cada comida del día tipo con su rango indicado (o `null`). */
@@ -60,7 +60,7 @@ export function SumaDeLosRangosIndicados({ comidas, objetivo }: { comidas: reado
                 {filas.map((f) => (
                   <tr key={f.clave} data-fila-de-la-suma={f.clave}>
                     <th scope="row">{f.nombre}</th>
-                    <td>{f.suma}</td>
+                    <td className="suma-de-los-rangos__cifra">{f.suma}</td>
                     {/* La franja: la suma como una banda y el objetivo como una marca, en la misma escala. Sin color de juicio:
                         el texto de al lado es el que dice dónde queda. */}
                     <td className="suma-de-los-rangos__celda-de-la-franja">
@@ -76,7 +76,7 @@ export function SumaDeLosRangosIndicados({ comidas, objetivo }: { comidas: reado
                         </span>
                       ) : null}
                     </td>
-                    <td>{f.objetivoCifra ?? '—'}</td>
+                    <td className="suma-de-los-rangos__cifra">{f.objetivoCifra ?? '—'}</td>
                     <td>{f.ubicacion ?? '—'}</td>
                   </tr>
                 ))}
@@ -97,15 +97,16 @@ export function SumaDeLosRangosIndicados({ comidas, objetivo }: { comidas: reado
 
 /**
  * NUP-07: las kcal que suman los gramos del objetivo, frente a las indicadas, y el porcentaje de cada macro con su base.
- * Mientras falte un macro, dice qué se va a ver; nunca suma a medias.
+ * Mientras falte un macro, dice qué se va a ver; nunca suma a medias. Un objetivo viejo con macros en proporción de las
+ * kcal (`enProporcion`) ya los tiene escritos: dice que no hay gramos que sumar.
  */
-export function KcalDelObjetivo({ kcal, gramos, compacto = false }: { kcal: number | null; gramos: GramosDelObjetivo; compacto?: boolean }) {
+export function KcalDelObjetivo({ kcal, gramos, enProporcion = [], compacto = false }: { kcal: number | null; gramos: GramosDelObjetivo; enProporcion?: readonly MacroDelRango[]; compacto?: boolean }) {
   const k = kcalDeLosGramos(gramos, kcal);
   if (!k && compacto) return null;
   if (!k) {
     return (
       <p className="nota kcal-del-objetivo" data-kcal-del-objetivo>
-        {COPY_KCAL.conLosTres}
+        {sinLasKcalDeLosGramos(enProporcion)}
       </p>
     );
   }
@@ -209,7 +210,3 @@ export function RangoEnUnRenglon({ de, rango, soloElBoton = false }: { de: strin
     </p>
   );
 }
-
-export const COPY_KCAL = {
-  conLosTres: 'Con los tres macros escritos se ve cuántas kcal suman, con 4, 4 y 9 kcal por gramo.',
-} as const;

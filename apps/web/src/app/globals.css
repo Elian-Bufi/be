@@ -16593,6 +16593,12 @@ p.cifra-del-espacio__desglose {
   width: 11rem;
 }
 
+/* La suma y el objetivo, en un renglón: el número no se separa de su unidad («desde 1.026 kcal»). La que se acomoda es
+   la columna de la ubicación, que es texto. */
+.suma-de-los-rangos__cifra {
+  white-space: nowrap;
+}
+
 .suma-de-los-rangos__notas {
   margin: 0;
   font-size: 0.85rem;

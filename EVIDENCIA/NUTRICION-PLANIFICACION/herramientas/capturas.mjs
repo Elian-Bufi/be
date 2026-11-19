@@ -313,6 +313,8 @@ function pantallas(norma) {
     },
     {
       nombre: '06-editor-suma-y-comidas-plegadas',
+      // Entera: a 1280 la tabla de la suma queda debajo del objetivo, y es la que se mira (el número pegado a su unidad).
+      entera: true,
       llegar: async (page) => {
         await ir(page, nutricion());
         await visible(page, '[data-suma-de-los-rangos]');
@@ -324,8 +326,17 @@ function pantallas(norma) {
       llegar: async (page) => {
         // El almuerzo de Norma tiene tres opciones: plegadas, cada una con sus números.
         await abrirComida(page, 2);
+        // Subirlo y bajarlo no le abre ninguna opción: vuelve a su lugar con las tres plegadas (NUP-D04; baja de la
+        // revisión adversaria: quedaba abierta la primera).
+        await clic(page, `${comida(2)} .comida-del-editor__acciones button`, 'Subir');
+        await clic(page, `${comida(1)} .comida-del-editor__acciones [data-bajar]`);
+        await page.waitForSelector(`${comida(2)}[data-abierta]`, { timeout: 15_000 });
         await page.$eval(comida(2), (e) => e.scrollIntoView({ block: 'start' }));
         await pausa(400);
+        return {
+          nombreDeLaComida2: await page.$eval(`${comida(2)} .comida-del-plan__nombre`, (e) => e.textContent),
+          opcionesAbiertasTrasMoverla: await page.$$eval(`${comida(2)} .opcion-plegable__boton[aria-expanded="true"]`, (xs) => xs.length),
+        };
       },
     },
     {
@@ -392,6 +403,22 @@ function pantallas(norma) {
         await pausa(400);
       },
     },
+    {
+      nombre: '14-cuadro-de-una-opcion-vacia',
+      llegar: async (page) => {
+        // «alimentos» abre la opción 1, vacía, de la comida nueva en su cuadro: frente a los rangos va una sola indicación
+        // neutra, no una línea «sin dato» por macro (baja de la revisión adversaria).
+        await clic(page, '[data-empeza-con] button', 'alimentos');
+        await visible(page, 'dialog[open] .cuadro-de-la-opcion__cuerpo');
+        await asentar(page);
+        return { frenteEnElCuadro: await page.$eval('dialog[open] [data-frente-en-el-cuadro]', (x) => x.innerText).catch(() => null) };
+      },
+      reponer: async (page) => {
+        await page.$eval('dialog[open] [data-frente-en-el-cuadro]', (x) => x.scrollIntoView({ block: 'center' })).catch(() => {});
+        await pausa(300);
+      },
+      despues: cerrarCuadros,
+    },
   ];
 }
 
@@ -410,6 +437,17 @@ const medir = (page) =>
       desbordan,
       alto: Math.max(document.documentElement.scrollHeight, document.body.scrollHeight),
       suma: [...document.querySelectorAll('[data-fila-de-la-suma]')].map((f) => f.innerText.replace(/\s+/g, ' ').trim()),
+      // La tabla de la suma no se corre de costado dentro de su caja (la suma y el objetivo no se cortan: la ubicación se
+      // acomoda), y cada cifra queda en un renglón.
+      sumaDesbordaSuCaja: [...document.querySelectorAll('[data-suma-de-los-rangos] .desplazable-x')].map((d) => d.scrollWidth - d.clientWidth),
+      cifrasEnMasDeUnRenglon: [...document.querySelectorAll('.suma-de-los-rangos__cifra')]
+        .filter((c) => {
+          if (c.offsetParent === null) return false;
+          const r = document.createRange();
+          r.selectNodeContents(c);
+          return new Set([...r.getClientRects()].map((x) => Math.round(x.top))).size > 1;
+        })
+        .map((c) => c.innerText),
       kcalDelObjetivo: document.querySelector('[data-kcal-del-objetivo]')?.innerText ?? null,
       pista: [...document.querySelectorAll('.pista__globo:not([hidden])')].map((p) => p.innerText),
     };

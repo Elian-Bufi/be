@@ -5,8 +5,9 @@
  * - **Es el mismo borrador que la estación:** el asistente no guarda en qué paso quedó; el paso pedido vive en la
  *   dirección (\`asistente=N\`) y el sugerido se deduce de la estructura, como en Entrenamiento (EDT-13).
  * - **Paso 2, el objetivo (DJ-7):** el vigente se llama «Objetivo general», con su versión y su fecha; o se escribe una
- *   versión nueva, como hoy (REG-06-123). El reparto se escribe en gramos y ningún texto de Nutrición dice «%». Sin
- *   objetivo, el asistente no ofrece el paso 2: empieza por la evaluación (B10-06; DL-145).
+ *   versión nueva, como hoy (REG-06-123). El reparto se escribe en gramos; el «%» de las kcal se ve solo con su base y
+ *   su número al lado (NUP-D08 y NUP-D11), nunca como cumplimiento. Sin objetivo, el asistente no ofrece el paso 2:
+ *   empieza por la evaluación (B10-06; DL-145).
  * - **Paso 4, las comidas:** la estructura del día o una comida habitual. **Paso 5, las opciones:** cada una se arma en el
  *   cuadro de la opción (ED-31).
  */

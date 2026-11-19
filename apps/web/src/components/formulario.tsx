@@ -5,7 +5,7 @@
  * campo con texto (no solo color), resumen de errores que recibe el foco.
  */
 import { forwardRef, useEffect, useRef, useState, type FocusEvent, type InputHTMLAttributes, type KeyboardEvent, type ReactNode } from 'react';
-import { alEnviar, alSalirDelCampo, anuncioDeLosAvisos, idsDelCampo, siguienteQueFalta, SIN_AVISOS, type AvisosDelFormulario, type ErrorDeCampo } from './validacion-viva';
+import { alEnviar, alSalirDelCampo, anuncioDeLosAvisos, enfocarLoQueFalta, idsDelCampo, siguienteQueFalta, SIN_AVISOS, type AvisosDelFormulario, type ErrorDeCampo } from './validacion-viva';
 
 interface PropsDeCampo extends InputHTMLAttributes<HTMLInputElement> {
   readonly id: string;
@@ -123,8 +123,9 @@ const SIN_ENTER = new Set(['button', 'submit', 'reset', 'checkbox', 'radio', 'fi
 /**
  * NUP-09 (WP-NUTRICION-PLANIFICACION; NUP-D09) · Enter en un campo de una línea: si falta algo en otro campo del
  * formulario (`faltan`, sus `id`), lleva el foco al siguiente que falta (o al primero) en vez de enviar. Si no falta nada
- * en otro, Enter envía como siempre, y el envío muestra lo que falte. No toca las áreas de texto (Enter es un renglón
- * nuevo), las listas ni los botones. Lo usa `useAvisosVivos`; un formulario sin ella lo llama con su propia lista.
+ * en otro, o si el que falta no puede recibir el foco (apagado o escondido), Enter envía como siempre, y el envío muestra
+ * lo que falte. No toca las áreas de texto (Enter es un renglón nuevo), las listas ni los botones. Lo usa
+ * `useAvisosVivos`; un formulario sin ella lo llama con su propia lista.
  */
 export function enterAlQueFalta(evento: KeyboardEvent<HTMLElement>, faltan: readonly string[]): void {
   if (evento.key !== 'Enter' || evento.defaultPrevented || evento.shiftKey || evento.altKey || evento.ctrlKey || evento.metaKey || evento.nativeEvent.isComposing) return;
@@ -141,10 +142,8 @@ export function enterAlQueFalta(evento: KeyboardEvent<HTMLElement>, faltan: read
   const posiciones = lugares.map((e) => (e === campo || e.contains(campo) ? actual : enOrden.indexOf(e)));
   const destino = siguienteQueFalta(actual, posiciones);
   if (destino === null) return;
-  evento.preventDefault();
-  const lugar = enOrden[destino]!;
-  const enfocable = lugar.matches('input, select, textarea, button, [tabindex]') ? lugar : lugar.querySelector<HTMLElement>('input, select, textarea, button, [tabindex]');
-  (enfocable ?? lugar).focus();
+  // Se frena el envío solo si el foco llegó: un campo apagado o escondido no lo recibe, y Enter envía como siempre.
+  if (enfocarLoQueFalta(enOrden[destino]!)) evento.preventDefault();
 }
 
 /** ED-04: la región que lee el lector de pantalla cuando ya no queda nada por corregir («Listo para registrar»). */

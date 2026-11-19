@@ -92,7 +92,7 @@ import { CuadroEnfocado } from '../../../../components/cuadro-enfocado';
 import { COPY_ESTACION as CE } from '../estacion/estacion';
 import { alimentosSinComposicion, COPY_RANGOS, itemsParaElTotal, nombreDeLaComida, nombreDelDiaTipo, NUTRIENTES_DEL_RANGO, queFaltaEnPalabras, rangoDelDiaEnPalabras, rangoEnUnaCelda, rangosDelDia, type ComposicionConocida } from './rangos';
 import { alQuitarElDia, alQuitarLaComida, alQuitarLaOpcion, COPY_QUITAR } from './quitar-con-contenido';
-import { agregarLaReceta, COPY_RECETA_NUEVA, esLaOpcionSinTocar, OPCION_INICIAL, opcionesConLaReceta, type LugarDeLaReceta } from './receta-en-el-plan';
+import { agregarLaReceta, COPY_RECETA_NUEVA, OPCION_INICIAL, opcionesConLaReceta, opcionesQueSiguen, type LugarDeLaReceta } from './receta-en-el-plan';
 import { EditorDeReceta } from '../../recipes/editor-de-receta';
 import { ImagenDeReceta } from '../../recipes/imagen-de-receta';
 import {
@@ -112,7 +112,7 @@ import { COPY_RESULTADO_DE_ACTIVAR, hayQueReleer, loQuePasoAlActivar, type Versi
 import { useCambiosSinGuardar, usePersonaDelArea } from '../marco-del-area';
 import { AVISO_DE_LOS_TOPES, esUnTope, TEXTO_DE_LOS_TOPES, topesPasadosDeNutricion } from '../topes-del-plan';
 import { loQueQuedaSinCompletarEnNutricion, TEXTO_DE_LO_INCOMPLETO } from '../revisar-el-plan';
-import { COPY_DE_LOS_EDITORES as E, copiaDeLaComida, copiaDeLaOpcion, copiaDelDiaTipo, duplicarEn, mover, posicionesTrasInsertar, posicionesTrasMover, posicionesTrasQuitar } from '../editar-la-estructura';
+import { COPY_DE_LOS_EDITORES as E, copiaDeLaComida, copiaDeLaOpcion, copiaDelDiaTipo, duplicarEn, elegidasTrasMover, mover, posicionesTrasInsertar, posicionesTrasMover, posicionesTrasQuitar } from '../editar-la-estructura';
 import { hoyEn } from '../seguimiento/estado';
 import { TiraDelObjetivo } from '../seguimiento/tira-del-objetivo';
 import { CuadroDeLaOpcion } from './cuadro-de-la-opcion';
@@ -839,11 +839,10 @@ export function EditorDeBorrador({
   /** ED-33: suma opciones a la comida `j` del día que se mira, elige la primera nueva y lo dice. */
   const sumarOpciones = (di: number, j: number, opciones: ComidaEnEdicion['options'], texto: string) => {
     // NUP-12: en una comida recién creada, la «Opción 1» sin tocar deja su lugar a lo que se suma (como con una receta).
-    const actuales = estructura[di]?.meals[j]?.options ?? [];
-    const k = actuales.length === 1 && esLaOpcionSinTocar(actuales[0]!) ? 0 : actuales.length;
+    const k = opcionesQueSiguen(estructura[di]?.meals[j]?.options ?? []);
     cambiar((x) => {
       const m = x[di]!.meals[j]!;
-      if (m.options.length === 1 && esLaOpcionSinTocar(m.options[0]!)) m.options.splice(0, 1);
+      m.options.splice(opcionesQueSiguen(m.options));
       return x;
     });
     cambiar((x) => (x[di]!.meals[j]!.options.push(...opciones), x));
@@ -909,11 +908,14 @@ export function EditorDeBorrador({
     elegirDia(i + 1);
     setNombreQueSeCambia({ de: 'dia', i: i + 1 });
   };
-  /** Sube o baja una comida (TB-48 suma «Bajar»): lo abierto y la opción elegida acompañan a su comida. */
+  /**
+   * Sube o baja una comida (TB-48 suma «Bajar»): lo abierto y la opción elegida acompañan a su comida. Una comida de
+   * varias opciones que estaba plegada sigue plegada (NUP-D04): no se le elige ninguna.
+   */
   const moverComida = (j: number, hacia: number) => {
     cambiar((x) => (mover(x[i]!.meals, j, hacia), x));
     dejarAbiertas(posicionesTrasMover(abiertas, j, hacia));
-    setPestanas((p) => ({ ...p, [`${i}-${hacia}`]: p[`${i}-${j}`] ?? 0, [`${i}-${j}`]: p[`${i}-${hacia}`] ?? 0 }));
+    setPestanas((p) => elegidasTrasMover(p, i, j, hacia));
   };
   /** TB-48: la copia de la comida va justo después, abierta y con su nombre a la vista para cambiarlo. */
   const duplicarComida = (j: number) => {
@@ -1525,7 +1527,7 @@ export function EditorDeBorrador({
       <CuadroCopiarDesdeOtraComida
         abierto={otraComida?.que === 'copiar'}
         comida={otraComida ? nombreDeLaComida(estructura[otraComida.i]?.meals[otraComida.j] ?? { label: '' }, otraComida.j) : ''}
-        numeroDeLaNueva={(otraComida ? (estructura[otraComida.i]?.meals[otraComida.j]?.options.length ?? 0) : 0) + 1}
+        numeroDeLaNueva={opcionesQueSiguen((otraComida ? estructura[otraComida.i]?.meals[otraComida.j]?.options : undefined) ?? []) + 1}
         origenes={otraComida?.que === 'copiar' ? origenesDeLaCopia(estructura, otraComida.i, otraComida.j) : []}
         alCopiar={(o) => {
           const fuente = estructura[o.i]?.meals[o.j]?.options[o.k];
@@ -1543,7 +1545,8 @@ export function EditorDeBorrador({
           const m = otraComida ? estructura[otraComida.i]?.meals[otraComida.j] : undefined;
           if (!otraComida || !m) return;
           const comida = nombreDeLaComida(m, otraComida.j);
-          const { opciones, quedanAfuera } = opcionesDeLaHabitual(h, MAXIMO_DE_OPCIONES - m.options.length);
+          // Los lugares libres no cuentan la «Opción 1» sin tocar, que deja su lugar (NUP-12).
+          const { opciones, quedanAfuera } = opcionesDeLaHabitual(h, MAXIMO_DE_OPCIONES - opcionesQueSiguen(m.options));
           setNombres((n) => ({ ...n, ...Object.fromEntries(Object.entries(h.items).map(([id, it]) => [id, it.name])) }));
           sumarOpciones(otraComida.i, otraComida.j, opciones, `${COPY_DE_OTRA_COMIDA.usada(h.name, comida, opciones.length)}${quedanAfuera > 0 ? ` ${COPY_DE_OTRA_COMIDA.quedanAfuera(quedanAfuera)}` : ''}`);
         }}

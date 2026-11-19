@@ -30,7 +30,7 @@ import { useNutricion } from './nutricion';
 import { nombreDeLaComida, nombreDelDiaTipo, totalEnUnaLinea, type RangosDelDia } from './rangos';
 import { COPY_DE_OTRA_COMIDA, MAXIMO_DE_OPCIONES } from './opcion-de-otra-comida';
 import { COPY_OPCIONES } from './comida-del-editor';
-import { gramosDelObjetivo } from './planificacion';
+import { gramosDelObjetivo, macrosEnProporcion } from './planificacion';
 import { KcalDelObjetivo, RangoEnUnRenglon, SumaDeLosRangosIndicados, type RangoParaIndicar } from './suma-de-los-rangos';
 import { OPCION_INICIAL } from './receta-en-el-plan';
 
@@ -392,8 +392,9 @@ function PasoDelObjetivo({ objetivo, onObjetivoNuevo }: { objetivo: VersionDeObj
         <section className="asistente__objetivo" aria-labelledby="asistente-objetivo-general" data-objetivo-general>
           <h4 id="asistente-objetivo-general">{C.objetivoGeneral}</h4>
           <TiraDelObjetivo calorias={objetivo.estimatedEnergyRequirement.value} macros={{ estado: 'listos', valor: objetivo.macronutrientDistribution }} onReintentar={() => undefined} />
-          {/* NUP-07: las kcal que suman los gramos, a la vista, y si no coinciden con las indicadas. */}
-          <KcalDelObjetivo kcal={objetivo.estimatedEnergyRequirement.value} gramos={gramosDelObjetivo(objetivo)} />
+          {/* NUP-07: las kcal que suman los gramos, a la vista, y si no coinciden con las indicadas. Un objetivo viejo con
+              macros en proporción de las kcal lo dice: no hay gramos que sumar. */}
+          <KcalDelObjetivo kcal={objetivo.estimatedEnergyRequirement.value} gramos={gramosDelObjetivo(objetivo)} enProporcion={macrosEnProporcion(objetivo)} />
           <p className="nota">{C.versionYFecha(numero, fechaDelDia(objetivo.effectiveFrom))}</p>
         </section>
       ) : null}
