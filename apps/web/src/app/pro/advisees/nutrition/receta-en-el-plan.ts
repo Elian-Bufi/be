@@ -103,4 +103,6 @@ export const COPY_RECETA_NUEVA = {
     motivo === 'TOPE' ? `No se pudo agregar a ${comida}: ya tiene 12 opciones, el máximo. Quitá una y volvé a intentar.` : `No se pudo agregar a ${comida}: esa comida ya no está en la versión en preparación.`,
   agregarla: (comida: string) => `Agregarla a ${comida}`,
   cerrar: 'Cerrar sin agregarla',
+  /** NUA-06: la imagen elegida al crearla tampoco se pudo cargar; se reintenta en el paso que sigue. */
+  imagenSinCargar: 'La imagen elegida tampoco se pudo cargar: al agregarla, vas a poder reintentarla.',
 } as const;

@@ -94,6 +94,7 @@ import { alimentosSinComposicion, COPY_RANGOS, itemsParaElTotal, nombreDeLaComid
 import { alQuitarElDia, alQuitarLaComida, alQuitarLaOpcion, COPY_QUITAR } from './quitar-con-contenido';
 import { agregarLaReceta, COPY_RECETA_NUEVA, OPCION_INICIAL, opcionesConLaReceta, opcionesQueSiguen, type LugarDeLaReceta } from './receta-en-el-plan';
 import { EditorDeReceta } from '../../recipes/editor-de-receta';
+import { pasoDeLaFotoTrasCrear, type ImagenAlCrear, type ImagenPendiente } from '../../recipes/cargar-la-imagen';
 import { ImagenDeReceta } from '../../recipes/imagen-de-receta';
 import {
   cambiosEnUnaPorcion,
@@ -334,9 +335,10 @@ export function EditorDeBorrador({
   // recuperar si se guardó pero no se pudo agregar.
   const [recetaNueva, setRecetaNueva] = useState<LugarDeLaReceta | null>(null);
   const [recetaSucia, setRecetaSucia] = useState(false);
-  const [recuperar, setRecuperar] = useState<{ readonly receta: Receta; readonly motivo: 'YA_NO_ESTA' | 'TOPE' } | null>(null);
+  const [recuperar, setRecuperar] = useState<{ readonly receta: Receta; readonly motivo: 'YA_NO_ESTA' | 'TOPE'; readonly imagen: ImagenAlCrear } | null>(null);
   // ED-32: guardada la receta nueva, el paso de la foto en el mismo cuadro (opcional), con lo que se dirá al cerrar.
-  const [fotoDeLaReceta, setFotoDeLaReceta] = useState<{ readonly receta: Receta; readonly texto: string; readonly aviso: string | null } | null>(null);
+  // NUA-06: `pendiente`, la imagen elegida al crearla que no se pudo cargar, para reintentarla ahí.
+  const [fotoDeLaReceta, setFotoDeLaReceta] = useState<{ readonly receta: Receta; readonly texto: string; readonly aviso: string | null; readonly pendiente: ImagenPendiente | null } | null>(null);
   // ED-32: cada receta de las opciones del día tipo que se mira, como está hoy, para ofrecer su versión nueva.
   const [recetasVigentes, setRecetasVigentes] = useState<ReadonlyMap<string, RecetaVigente | 'leyendo' | 'falla'>>(() => new Map());
   // API-PLN-01 en la vista previa de la versión nueva (§8.7): la estimación del servidor de las opciones guardadas, de una
@@ -805,21 +807,32 @@ export function EditorDeBorrador({
     if (fotoDeLaReceta) setMensaje({ tipo: 'exito', texto: fotoDeLaReceta.aviso ? `${fotoDeLaReceta.texto} ${fotoDeLaReceta.aviso}` : fotoDeLaReceta.texto });
     setFotoDeLaReceta(null);
   };
-  /** ED-32: la receta quedó guardada (y agregada, si se pidió): el cuadro pasa al paso de la foto, que es opcional. */
-  const pasarALaFoto = (r: Receta, texto: string) => {
+  /**
+   * ED-32: la receta quedó guardada (y agregada, si se pidió): el cuadro pasa al paso de la foto, que es opcional.
+   * NUA-06 (`pasoDeLaFotoTrasCrear`): la imagen ya se pudo elegir al crearla, y ese paso no la vuelve a pedir. Si quedó
+   * cargada, el cuadro se cierra y el plan dice lo hecho, con la imagen: quien planifica vuelve al plan sin un paso que
+   * solo confirma. Si no se pudo cargar, el paso la muestra con su falla y «Reintentar la imagen». Sin imagen elegida,
+   * el paso la ofrece, como antes.
+   */
+  const pasarALaFoto = (r: Receta, texto: string, imagen: ImagenAlCrear) => {
     setRecuperar(null);
     setRecetaSucia(false);
-    setFotoDeLaReceta({ receta: r, texto, aviso: null });
+    if (pasoDeLaFotoTrasCrear(imagen) === 'cerrar') {
+      setRecetaNueva(null);
+      setFotoDeLaReceta(null);
+      return setMensaje({ tipo: 'exito', texto: `${texto} ${COPY_RECETAS.imagenCargada}` });
+    }
+    setFotoDeLaReceta({ receta: r, texto, aviso: null, pendiente: imagen.tipo === 'pendiente' ? imagen.pendiente : null });
   };
   /**
    * ED-32: la receta ya está en Mis recetas; se suma como opción de su comida y se la deja elegida, en el mismo día. Si no
    * se puede, el cuadro lo dice y ofrece reintentarlo con la misma versión, sin crear otra receta.
    */
-  const agregarLaRecetaNueva = (r: Receta) => {
+  const agregarLaRecetaNueva = (r: Receta, imagen: ImagenAlCrear) => {
     if (!recetaNueva) return;
     const lugar = recetaNueva;
     const res = agregarLaReceta(estructuraDeAhora.current, lugar, r);
-    if (res.tipo === 'no-se-pudo') return setRecuperar({ receta: r, motivo: res.motivo });
+    if (res.tipo === 'no-se-pudo') return setRecuperar({ receta: r, motivo: res.motivo, imagen });
     // Se aplica sobre la estructura vigente: si mientras tanto llegó un guardado, sus identificadores no se pierden.
     if (res.tipo === 'agregada') {
       cambiar((e) => {
@@ -829,12 +842,12 @@ export function EditorDeBorrador({
     }
     ir({ dia: pedidoDeLaPosicion(res.i), comidas: pedidoDeComidasDelEditor(new Set([...(res.i === i ? abiertas : []), res.j])) });
     setPestanas((p) => ({ ...p, [`${res.i}-${res.j}`]: res.k }));
-    pasarALaFoto(r, COPY_RECETA_NUEVA.agregada(r.name, res.k, recetaNueva.nombre));
+    pasarALaFoto(r, COPY_RECETA_NUEVA.agregada(r.name, res.k, recetaNueva.nombre), imagen);
   };
-  const alGuardarLaRecetaNueva = (r: Receta, agregar: boolean) => {
+  const alGuardarLaRecetaNueva = (r: Receta, agregar: boolean, imagen: ImagenAlCrear) => {
     setRecetas((x) => ({ ...x, [r.recipeVersionId]: { recipeId: r.recipeId, recipeVersionId: r.recipeVersionId, versionNumber: r.versionNumber, name: r.name, servings: r.servings } }));
-    if (agregar) return agregarLaRecetaNueva(r);
-    pasarALaFoto(r, COPY_RECETA_NUEVA.soloGuardada(r.name));
+    if (agregar) return agregarLaRecetaNueva(r, imagen);
+    pasarALaFoto(r, COPY_RECETA_NUEVA.soloGuardada(r.name), imagen);
   };
   /** ED-33: suma opciones a la comida `j` del día que se mira, elige la primera nueva y lo dice. */
   const sumarOpciones = (di: number, j: number, opciones: ComidaEnEdicion['options'], texto: string) => {
@@ -1646,6 +1659,7 @@ export function EditorDeBorrador({
               token={token}
               receta={fotoDeLaReceta.receta}
               sesionPerdida={sesionPerdida}
+              pendiente={fotoDeLaReceta.pendiente}
               onCambio={(r, aviso) => setFotoDeLaReceta((f) => (f ? { ...f, receta: { ...f.receta, ...r }, aviso } : f))}
             />
           </div>
@@ -1654,9 +1668,10 @@ export function EditorDeBorrador({
             <Aviso tipo="error" enfocar>
               <p>{COPY_RECETA_NUEVA.quedoGuardada(recuperar.receta.name, recuperar.receta.versionNumber)}</p>
               <p>{COPY_RECETA_NUEVA.noSeAgrego(recetaNueva.nombre, recuperar.motivo)}</p>
+              {recuperar.imagen.tipo === 'pendiente' ? <p>{COPY_RECETA_NUEVA.imagenSinCargar}</p> : null}
             </Aviso>
             <div className="acciones">
-              <button type="button" className="boton boton--primario" onClick={() => agregarLaRecetaNueva(recuperar.receta)}>
+              <button type="button" className="boton boton--primario" onClick={() => agregarLaRecetaNueva(recuperar.receta, recuperar.imagen)}>
                 {COPY_RECETA_NUEVA.agregarla(recetaNueva.nombre)}
               </button>
               <button type="button" className="boton boton--secundario" onClick={cerrarLaRecetaNueva}>
@@ -1671,7 +1686,7 @@ export function EditorDeBorrador({
             recetaId={null}
             enElPlan={{ destino: recetaNueva.nombre }}
             alCambiarLoEscrito={setRecetaSucia}
-            onGuardada={(r, _aviso, agregar) => alGuardarLaRecetaNueva(r, agregar)}
+            onGuardada={(r, _aviso, agregar, imagen) => alGuardarLaRecetaNueva(r, agregar, imagen)}
             onVolver={cerrarLaRecetaNueva}
           />
         ) : null}

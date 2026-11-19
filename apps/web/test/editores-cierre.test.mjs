@@ -281,8 +281,9 @@ test('ED-32 · usarla cambia solo la versión citada, y el nombre si era el de l
 
 test('ED-32 · guardada la receta, el cuadro pasa a la foto (opcional) y vuelve al plan con lo que pasó', () => {
   const editor = leer('nutrition/editor.tsx');
-  assert.match(editor, /pasarALaFoto\(r, COPY_RECETA_NUEVA\.agregada\(r\.name, res\.k, recetaNueva\.nombre\)\);/);
-  assert.match(editor, /pasarALaFoto\(r, COPY_RECETA_NUEVA\.soloGuardada\(r\.name\)\);/);
+  // NUA-06: con lo que pasó con la imagen elegida al crearla (`imagen-de-la-receta.test.mjs`).
+  assert.match(editor, /pasarALaFoto\(r, COPY_RECETA_NUEVA\.agregada\(r\.name, res\.k, recetaNueva\.nombre\), imagen\);/);
+  assert.match(editor, /pasarALaFoto\(r, COPY_RECETA_NUEVA\.soloGuardada\(r\.name\), imagen\);/);
   assert.match(editor, /principal=\{fotoDeLaReceta \? \{ texto: COPY_FOTO_DE_LA_RECETA\.listo, alTocar: cerrarLaRecetaNueva \} : null\}/);
   assert.match(editor, /<ImagenDeReceta\n\s+token=\{token\}\n\s+receta=\{fotoDeLaReceta\.receta\}/);
 });
