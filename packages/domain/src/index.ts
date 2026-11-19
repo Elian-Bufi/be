@@ -95,6 +95,7 @@ export * from './relacion-con-el-objetivo';
 export * from './objetivos-por-serie';
 export * from './compatibilidad-de-clientes';
 export * from './tipos-de-serie';
+export * from './bloques-de-la-sesion';
 export * from './contratos-entrenamiento-por-serie';
 export * from './sesion-de-entrenamiento';
 export * from './copy-entrenamiento-por-serie';

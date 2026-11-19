@@ -185,6 +185,46 @@ export const TipoDeSerieSchema = z.enum(['WORKING', 'WARM_UP']);
 export type TipoDeSerie = z.infer<typeof TipoDeSerieSchema>;
 
 /**
+ * DL-181 (WP-ENTRENAMIENTO-PLANIFICACION, decisión de Dirección del 2026-11-18) · el bloque dentro de la sesión. Es una
+ * marca sobre la lista de ejercicios (`bloques-de-la-sesion.ts`): qué ejercicios van juntos y cómo. En pantalla, «Bloque»;
+ * la etapa de varias semanas (`blocks`) se lee «Fase» (ENP-D01).
+ * - `SEQUENTIAL` («Seguido», el que viene por defecto): un título; los ejercicios se hacen de a uno, como siempre;
+ * - `ROUNDS` («En vueltas»): dos o más ejercicios alternados, con las vueltas y el descanso al terminar cada vuelta.
+ * Es un enum, como `setKind`, para sumar otros tipos después.
+ */
+export const TipoDeBloqueSchema = z.enum(['SEQUENTIAL', 'ROUNDS']);
+export type TipoDeBloque = z.infer<typeof TipoDeBloqueSchema>;
+/** DL-181: las vueltas de un bloque «En vueltas». Cada vuelta es una serie efectiva de cada ejercicio (ENP-D05). */
+export const VueltasSchema = z.number().int().min(1).max(20);
+/**
+ * DL-181: un bloque de la sesión, como entra. El identificador lo pone el editor (ENP-D09): el ejercicio nuevo nombra su
+ * bloque antes de tener identificador propio. Las vueltas y el descanso son solo de `ROUNDS`, y ahí las vueltas van.
+ */
+export const BloqueDeLaSesionEntradaSchema = z
+  .strictObject({
+    groupId: IdDeNodoSchema,
+    label: Texto(120),
+    kind: TipoDeBloqueSchema,
+    rounds: VueltasSchema.nullable().optional(),
+    restAfterRoundSeconds: DescansoRecomendadoSchema.nullable().optional(),
+  })
+  .refine((g) => (g.kind === 'ROUNDS' ? typeof g.rounds === 'number' : (g.rounds ?? null) === null && (g.restAfterRoundSeconds ?? null) === null), {
+    message: 'Las vueltas van solo en un bloque «En vueltas», y ahí son obligatorias',
+    path: ['rounds'],
+  });
+export type BloqueDeLaSesionEntrada = z.infer<typeof BloqueDeLaSesionEntradaSchema>;
+/** DL-181: el bloque como sale, con su orden en la sesión (el de su primer ejercicio). */
+export const BloqueDeLaSesionSchema = z.strictObject({
+  groupId: IdDeNodoSchema,
+  label: z.string(),
+  order: z.number().int().positive(),
+  kind: TipoDeBloqueSchema,
+  rounds: z.number().int().positive().nullable(),
+  restAfterRoundSeconds: z.number().int().min(0).nullable(),
+});
+export type BloqueDeLaSesion = z.infer<typeof BloqueDeLaSesionSchema>;
+
+/**
  * Una serie planificada. Los tres campos de DL-122 tienen tres estados: ausente hereda de la prescripción, `null` quita
  * el objetivo en esta serie y un valor lo sobrescribe (`objetivosEfectivos`, en `objetivos-por-serie.ts`). El RIR
  * viaja como número sin rango para que uno fuera de 0 a 10, o sin criterio RIR, sea el 422 específico y no un 400.
@@ -235,12 +275,16 @@ export const PrescripcionEntradaSchema = z.strictObject({
   /** DL-122: cómo se cuenta la carga y qué cuentan las repeticiones. `null` o ausente: no se declaró. */
   loadBasis: BaseDeCargaSchema.nullable().optional(),
   repetitionBasis: BaseDeRepeticionesSchema.nullable().optional(),
+  /** DL-181: el bloque de la sesión al que pertenece. Ausente o `null`: va suelto, como todos los de antes. */
+  exerciseGroupId: IdDeNodoSchema.nullable().optional(),
 });
 export const SesionEntradaSchema = z.strictObject({
   sessionId: IdDeNodoSchema.optional(),
   label: Texto(120),
   instructions: TextoOpcional(2000).optional(),
   prescriptions: z.array(PrescripcionEntradaSchema).max(40),
+  /** DL-181: los bloques de la sesión. Ausente o vacío: la sesión es una lista, como hoy. */
+  exerciseGroups: z.array(BloqueDeLaSesionEntradaSchema).max(20).optional(),
 });
 export type SesionEntrada = z.infer<typeof SesionEntradaSchema>;
 /** Opcional (REG-06-126). Su propósito es texto libre: sin taxonomía (REG-06-127). */
@@ -288,6 +332,8 @@ export const PrescripcionSchema = z.strictObject({
   suggestedLoad: CargaSchema.nullable(),
   professionalParameters: z.array(ParametroProfesionalSchema),
   note: z.string().nullable(),
+  /** DL-181: explícito (`null`: suelto) para el cliente que declara `training-session-groups-1`; ausente para el que no. */
+  exerciseGroupId: IdDeNodoSchema.nullable().optional(),
 });
 export type Prescripcion = z.infer<typeof PrescripcionSchema>;
 export const SesionPlanificadaSchema = z.strictObject({
@@ -296,6 +342,8 @@ export const SesionPlanificadaSchema = z.strictObject({
   order: z.number().int().positive(),
   instructions: z.string().nullable(),
   prescriptions: z.array(PrescripcionSchema),
+  /** DL-181: explícito (vacío si no tiene) para el cliente que declara `training-session-groups-1`; ausente para el que no. */
+  exerciseGroups: z.array(BloqueDeLaSesionSchema).optional(),
 });
 export type SesionPlanificada = z.infer<typeof SesionPlanificadaSchema>;
 export const MicrocicloSchema = z.strictObject({

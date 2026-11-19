@@ -53,7 +53,17 @@ export const CAPACIDAD_TEXTOS_VIGENTES = 'pending-steps-texts-1';
  */
 export const CAPACIDAD_TIPOS_DE_SERIE = 'training-set-kinds-1';
 
-export const CAPACIDADES_CONOCIDAS = [CAPACIDAD_OBJETIVOS_POR_SERIE, CAPACIDAD_FORMULARIOS_FORMATO_3, CAPACIDAD_TEXTOS_VIGENTES, CAPACIDAD_TIPOS_DE_SERIE] as const;
+/**
+ * DL-181 (WP-ENTRENAMIENTO-PLANIFICACION, ENP-D06) · el cliente sabe mostrar los bloques de la sesión: lee `exerciseGroups`
+ * de cada sesión y `exerciseGroupId` de cada ejercicio y agrupa los ejercicios bajo su bloque. Solo a quien la declara le
+ * salen las dos claves; a quien no, `SinBloquesDeLaSesionInterceptor` se las saca en el borde (su esquema estricto las
+ * rechazaría) y recibe lo de antes: los mismos ejercicios en el mismo orden. A diferencia de DL-178, nada se retiene ni se
+ * bloquea: el registro sigue siendo por ejercicio y nada se cuenta distinto. Por eso no se registra. La declaran el
+ * website, que se despliega con la API, y la APK nueva.
+ */
+export const CAPACIDAD_BLOQUES_DE_LA_SESION = 'training-session-groups-1';
+
+export const CAPACIDADES_CONOCIDAS = [CAPACIDAD_OBJETIVOS_POR_SERIE, CAPACIDAD_FORMULARIOS_FORMATO_3, CAPACIDAD_TEXTOS_VIGENTES, CAPACIDAD_TIPOS_DE_SERIE, CAPACIDAD_BLOQUES_DE_LA_SESION] as const;
 export type CapacidadDeCliente = (typeof CAPACIDADES_CONOCIDAS)[number];
 
 /** Un valor de cabecera más largo que esto no se lee: ninguna lista válida lo necesita. */

@@ -23,6 +23,7 @@ import { IdOpaco, Instante } from './contratos';
 import {
   AgendaDeEntrenamientoSchema,
   BaseDeCargaSchema,
+  BloqueDeLaSesionSchema,
   BaseDeRepeticionesSchema,
   CargaSchema,
   IdDeNodoSchema,
@@ -154,6 +155,8 @@ export const PrescripcionConObjetivosSchema = z.strictObject({
   repetitionBasis: BaseDeRepeticionesSchema.nullable(),
   professionalParameters: z.array(ParametroProfesionalSchema),
   note: z.string().nullable(),
+  /** DL-181: explícito (`null`: suelto) para el cliente que declara `training-session-groups-1`; ausente para el que no. */
+  exerciseGroupId: IdDeNodoSchema.nullable().optional(),
 });
 export type PrescripcionConObjetivos = z.infer<typeof PrescripcionConObjetivosSchema>;
 
@@ -163,6 +166,8 @@ export const SesionConObjetivosSchema = z.strictObject({
   order: z.number().int().positive(),
   instructions: z.string().nullable(),
   prescriptions: z.array(PrescripcionConObjetivosSchema),
+  /** DL-181: explícito (vacío si no tiene) para el cliente que declara `training-session-groups-1`; ausente para el que no. */
+  exerciseGroups: z.array(BloqueDeLaSesionSchema).optional(),
 });
 export type SesionConObjetivos = z.infer<typeof SesionConObjetivosSchema>;
 const MicrocicloConObjetivosSchema = z.strictObject({
