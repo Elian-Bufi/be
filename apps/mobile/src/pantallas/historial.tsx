@@ -23,6 +23,7 @@ import {
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
 import { api } from '../api';
+import { ejerciciosConSusBloques } from '../bloques-en-pantalla';
 import { Cargando, ErrorConReintento } from '../estados';
 import { useDiaDeLaApi } from '../dia-de-la-api';
 import { dia, ultimosDiasEnZona, ultimosDiasHasta } from '../formato';
@@ -231,7 +232,8 @@ export function PantallaDePlanDeEntrenamiento({ token, id, salir }: { token: str
         <Seccion key={s.sessionId} titulo={s.label}>
           {s.instructions ? <Parrafo tenue>{s.instructions}</Parrafo> : null}
           {s.prescriptions.length === 0 ? <Parrafo tenue>{COPY_ENTRENAMIENTO.sinPrescripciones}</Parrafo> : null}
-          {s.prescriptions.map((p) => (
+          {/* DL-181: los ejercicios, bajo su bloque si la sesión tiene; sin bloques, la lista de siempre. */}
+          {ejerciciosConSusBloques(s, (p) => (
             <Dato key={p.prescriptionId} etiqueta={p.exerciseName} valor={textoDePrescripcion(p)} apilado />
           ))}
         </Seccion>

@@ -51,6 +51,7 @@ import {
 import { useEffect, useState, type ReactNode } from 'react';
 import { Modal, Pressable, ScrollView, Text, TextInput, useWindowDimensions, View, type KeyboardTypeOptions } from 'react-native';
 import type { EstadoDelGuardado, EstadoDeSincronizacion, ProblemaDeSincronizacion } from '../almacen-de-entrenamiento';
+import { ejerciciosConSusBloques } from '../bloques-en-pantalla';
 import { useMovimientoReducido } from '../estados';
 import { BotonDeIcono, Icono } from '../icono';
 import { llenadoDeLaBarra, type AjustesDelDescanso, type PermisoDeAvisos } from '../descanso-automatico';
@@ -1149,7 +1150,10 @@ function Dialogo({ visible, titulo, onCerrar, ocupado = false, children }: { vis
   );
 }
 
-/** «Ver rutina»: los ejercicios de la sesión. Ver la técnica de otro no cambia el activo; «Pasar a este ejercicio», sí. */
+/**
+ * «Ver rutina»: los ejercicios de la sesión, bajo su bloque si tiene (DL-181). Ver la técnica de otro no cambia el activo;
+ * «Pasar a este ejercicio», sí.
+ */
 export function RutinaDeLaSesion({
   visible,
   sesion,
@@ -1174,7 +1178,8 @@ export function RutinaDeLaSesion({
   const e = COPY_ENTRENAMIENTO_POR_SERIE;
   return (
     <Dialogo visible={visible} titulo={sesion.label} onCerrar={onCerrar}>
-      {sesion.prescriptions.map((p, i) => {
+      {/* DL-181: los ejercicios, bajo su bloque si la sesión tiene, con el número de siempre (su lugar en la sesión). */}
+      {ejerciciosConSusBloques(sesion, (p, i) => {
         const r = resumen.find((x) => x.prescriptionId === p.prescriptionId);
         const esActivo = p.prescriptionId === activo;
         return (

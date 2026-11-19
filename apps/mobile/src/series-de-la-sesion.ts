@@ -216,6 +216,7 @@ export const AVISO_SIN_PLAN_POR_SERIE =
  * por eso no se muestran como objetivo de ninguna serie, ni como dato del ejercicio. Quedan las repeticiones de cada
  * serie, que sí son de esa serie, el ejercicio, sus series y las notas. Sin imágenes ni descanso estructurado. La
  * pantalla lo avisa y deja registrar igual: lo que se registra nunca sale de un objetivo.
+ * Los bloques (DL-181) pasan como vienen, solo si vienen: son lo que agrupa la lista, no un objetivo.
  */
 export function sesionDesdeLaOcurrencia(s: SesionDeOcurrencia): SesionConObjetivos {
   return {
@@ -243,7 +244,9 @@ export function sesionDesdeLaOcurrencia(s: SesionDeOcurrencia): SesionConObjetiv
       repetitionBasis: null,
       professionalParameters: p.professionalParameters,
       note: p.note,
+      ...(p.exerciseGroupId !== undefined ? { exerciseGroupId: p.exerciseGroupId } : {}),
     })),
+    ...(s.exerciseGroups !== undefined ? { exerciseGroups: s.exerciseGroups } : {}),
   };
 }
 

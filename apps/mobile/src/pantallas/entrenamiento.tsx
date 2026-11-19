@@ -72,6 +72,7 @@ import { usePublicarFilaFija } from '../fila-fija';
 import { TEXTOS_DEL_DESCANSO } from '../textos-del-descanso';
 import { estadoDeSincronizacion, type SesionLocal } from '../almacen-de-entrenamiento';
 import { api } from '../api';
+import { ejerciciosConSusBloques } from '../bloques-en-pantalla';
 import { useCambiosSinGuardar } from '../cambios-sin-guardar';
 import { corridaAbierta, enVivoDeLaCorrida, estadoLocal, eventosDeLaCorrida, type AccionDeTiempo, type MotivoDeRechazoLocal } from '../corrida-de-entrenamiento';
 import { useDiaDeLaApi } from '../dia-de-la-api';
@@ -955,7 +956,8 @@ function TarjetaDeOcurrencia({
           </AlLado>
         </>
       )}
-      {o.plannedSession.prescriptions.map((p) => (
+      {/* DL-181: los ejercicios, bajo su bloque si la sesión tiene; sin bloques, la lista de siempre. */}
+      {ejerciciosConSusBloques(o.plannedSession, (p) => (
         <Text key={p.prescriptionId} style={estilos.ejercicioDeLaSesion}>
           {`${p.exerciseName} · ${cuentaDeSeries(p.sets)}`}
         </Text>

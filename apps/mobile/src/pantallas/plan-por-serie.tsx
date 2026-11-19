@@ -5,11 +5,13 @@
  * No hay calendario ni días de descanso: BE no asigna sesiones a días (DL-077), y la referencia 03 vale solo para la
  * composición (excepción 3 de `REFERENCIAS_VISUALES.md`). Cada sesión se lee al abrirla, no todas de entrada. Si API-SER-02
  * no responde, se muestran los objetivos generales de cada ejercicio, y se dice.
+ * Si la sesión tiene bloques (DL-181), los ejercicios van bajo el suyo, con su nombre y, en uno «En vueltas», la indicación.
  */
 import { COPY_ENTRENAMIENTO, COPY_ENTRENAMIENTO_POR_SERIE, rotulosDeLasSeries, type HoyDeEntrenamientoResponse, type Ocurrencia, type PrescripcionConObjetivos, type Resultado } from '@be/domain';
 import { useCallback, useState } from 'react';
 import { Text, View } from 'react-native';
 import { api } from '../api';
+import { ejerciciosConSusBloques } from '../bloques-en-pantalla';
 import { Cargando } from '../estados';
 import { ImagenDeMedio } from '../imagen-de-medio';
 import { useLecturaRecordada } from '../lecturas';
@@ -51,7 +53,8 @@ function DetalleDeLaSesion({ ocurrencia, token, sesionPerdida }: { ocurrencia: O
         </Aviso>
       )}
       {sesion.instructions ? <Dato etiqueta={COPY_ENTRENAMIENTO.indicacionesDeLaSesion} valor={sesion.instructions} apilado /> : null}
-      {sesion.prescriptions.map((p) => (
+      {/* DL-181: los ejercicios, bajo su bloque si la sesión tiene; sin bloques, la lista de siempre. */}
+      {ejerciciosConSusBloques(sesion, (p) => (
         <PrescripcionDelPlan key={p.prescriptionId} prescripcion={p} token={token} sesionPerdida={sesionPerdida} onVerTecnica={() => setTecnica(p.prescriptionId)} />
       ))}
       {sesion.prescriptions.length === 0 ? <Parrafo tenue>{COPY_ENTRENAMIENTO.sinPrescripciones}</Parrafo> : null}

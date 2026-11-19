@@ -229,9 +229,12 @@ export interface Respuestas {
   readonly hora: number | null;
 }
 
-/** Lo que el recorrido sabe de la sesión: el plan de cada serie (API-SER-02), su fecha y el día de la API. */
+/**
+ * Lo que el recorrido sabe de la sesión: el plan de cada serie (API-SER-02), su fecha y el día de la API. Los bloques
+ * (DL-181) solo agrupan lo que se ve: el registro sigue siendo por ejercicio.
+ */
 export interface Contexto {
-  readonly sesion: Pick<SesionConObjetivos, 'prescriptions'>;
+  readonly sesion: Pick<SesionConObjetivos, 'prescriptions' | 'exerciseGroups'>;
   /** La fecha de la ocurrencia desde la que se entró. */
   readonly fecha: string;
   /** Hoy, para la API. */
