@@ -114,6 +114,13 @@ test('TEST-GRF-095 · el ejercicio de un gráfico guardado: «el más registrado
   // Sin sesiones en el período, no es «el más registrado».
   assert.equal(P.ejercicioResuelto({ kind: 'MOST_RECORDED', rank: 1 }, [ejercicio(REMO_A_MANO, 0, 'Remo')], false), 'NO_APLICA');
   assert.equal(P.ejercicioResuelto(null, lista, false), null);
+  // GR-VE13: para la carga, «el más registrado» es el más registrado con carga (unas dominadas sin lastre, no).
+  const conDominadas = { ...ENTRENADOR, ejercicios: [ejercicio('22222222-2222-4333-8444-555555555555', 30, 'Dominadas', []), ...ENTRENADOR.ejercicios] };
+  const deLaCarga = P.tarjetasDelEnfoque([sug('entrenamiento.carga-repeticiones-y-rir', { kind: 'MOST_RECORDED', rank: 1 }), sug('entrenamiento.rir-indicado-y-registrado', { kind: 'MOST_RECORDED', rank: 1 })], conDominadas, REGISTRO_DE_GRAFICOS);
+  assert.deepEqual(
+    deLaCarga.enElTiempo.map((x) => x.ejercicio.nombre),
+    ['Remo con mancuerna', 'Dominadas'],
+  );
   // Lo que no aplica con esta persona, en un área que se ve, no se dibuja pero se cuenta en «lo que falta».
   const t = P.tarjetasDelEnfoque(
     [sug('entrenamiento.carga-repeticiones-y-rir', { kind: 'MOST_RECORDED', rank: 3 }), sug('entrenamiento.fuerza-estimada', { kind: 'MOST_RECORDED', rank: 1 })],

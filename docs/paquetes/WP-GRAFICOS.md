@@ -2068,7 +2068,7 @@ máquina (la lógica pura, con Node) y en la CI.
 > Dirección decidió terminar la rama e integrarla, porque «Patrones» es el corazón de la visión de BE (el seguimiento en
 > el tiempo y los patrones entre áreas, sin afirmar causas). Sin dependencias nuevas; la APK no lee nada de esto y no se
 > congela ninguna lectura (DL-152). La migración de los enfoques pasó a `20261120150000_enfoques_de_graficos`, después de
-> las de `main` (§7: la fecha se fija al integrar). Las decisiones GR-T60 a GR-T64 (la API) y GR-VE01 a GR-VE12 (las
+> las de `main` (§7: la fecha se fija al integrar). Las decisiones GR-T60 a GR-T64 (la API) y GR-VE01 a GR-VE13 (las
 > pantallas) están **a ratificar**; mientras tanto, rigen. Registro: DL-183.
 
 | Parte | Qué quedó | Dónde | Oráculo |
@@ -2083,7 +2083,7 @@ máquina (la lógica pura, con Node) y en la CI.
 | **Las capturas** | 06 (la pestaña del editor), 10 (con el entrenador), 10b (guardar «Foco en fuerza» y editarlo), 10c («Mis enfoques»), 18 (con la nutricionista), 18b («Ver la relación» con SP-02) y 19 («Armá tu gráfico»), en Claro y Azul noche, a 1280 × 800, 1536 × 864 y 1920 × 950 | `EVIDENCIA/GRAFICOS/herramientas/capturas.mjs` | El trabajo `capturas-de-los-graficos` |
 
 **Los oráculos y sus mutaciones.** Las del website y del dominio se corrieron en esta máquina, una por una, con su
-prueba (18 de 18 mueren); las de la API, con la base de la CI.
+prueba (19 de 19 mueren); las de la API, con la base de la CI.
 
 | Oráculo | Mutación que lo pone en rojo |
 |---|---|
@@ -2092,7 +2092,7 @@ prueba (18 de 18 mueren); las de la API, con la base de la CI.
 | TEST-GRF-092 | Contar el lugar de la pantalla entre los otros lugares |
 | TEST-GRF-093 | Sugerir un gráfico de un área sin acceso |
 | TEST-GRF-094 | Contar lo de un área sin acceso en «Lo que falta»; dibujar una serie armada de un área sin acceso |
-| TEST-GRF-095 | Tomar el más registrado de todos para el 1RM estimado; dibujar un ejercicio fijo sin sesiones |
+| TEST-GRF-095 | Tomar el más registrado de todos para el 1RM estimado; dibujar un ejercicio fijo sin sesiones; dibujar la carga con un ejercicio sin carga |
 | TEST-GRF-096 | Ofrecer un cruce fuera del caso 1; sugerir en «Agregar un gráfico» lo que ya está |
 | TEST-GRF-097 | Perder la serie en «Abrir en Analizar» |
 | TEST-GRF-098 | Guardar en `localStorage`; llamar a otra operación que las de los enfoques (API-RES) |
@@ -2148,6 +2148,9 @@ De las pantallas (el 19/11):
   como uno nuevo»): es lo que se estaba mirando.
 - **GR-VE12 · La migración de los enfoques se fecha al traer `main`** (`20261120150000`), como pide §7. Nunca se aplicó en
   una base compartida.
+- **GR-VE13 · Para la carga, «el más registrado» es el más registrado con carga** (GR-03 y GR-06): con la cohorte, el más
+  registrado de Diego eran unas dominadas sin lastre y el panel de la carga quedaba vacío (lo mostró la captura 10). Un
+  ejercicio fijo se respeta, y GR-05 (el RIR) sigue con el más registrado de todos.
 
 #### Lo que difiere de lo que dicen los documentos de la entrega
 

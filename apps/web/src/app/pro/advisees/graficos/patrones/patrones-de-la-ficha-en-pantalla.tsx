@@ -73,7 +73,7 @@ export function PatronesDeLaFicha() {
   const disponibles = useDisponibles();
   const acceso = useMemo(() => accesoDeLosDisponibles(disponibles), [disponibles]);
   const enfoques = useEnfoques(token, sesionPerdida);
-  const elecciones = useElecciones(token, asesoradoId, sesionPerdida, versionDeAcceso);
+  const elecciones = useElecciones(token, asesoradoId, sesionPerdida, versionDeAcceso, enfoques.recargar);
   const lectura = useMemo(() => ({ token, asesoradoId, sesionPerdida }), [token, asesoradoId, sesionPerdida]);
   const periodoDelGrafico: PeriodoDelGrafico = useMemo(
     () => ({ desde: periodo.desde, hasta: periodo.hasta, hoy: hoyEn(), desdeElVinculo: acompanamiento.inicio }),
@@ -306,8 +306,9 @@ export function PatronesDeLaFicha() {
       />
       <DialogoDelNombre key={nombrando ? 'nombrando' : 'cerrado'} contenido={nombrando} ocupado={ocupado} onGuardar={(n) => void guardarLoQueSeVe(n)} onCerrar={() => setNombrando(null)} />
       {aviso ? (
-        <AvisoFlotante onCerrar={() => setAviso(null)} seQueda={aviso.deshacer !== null}>
-          <p role="status">
+        // Un aviso nuevo es otro aviso (su reloj empieza de nuevo); el aviso flotante ya se anuncia como estado.
+        <AvisoFlotante key={aviso.texto} onCerrar={() => setAviso(null)} seQueda={aviso.deshacer !== null}>
+          <p>
             {aviso.texto}{' '}
             {aviso.deshacer ? (
               <button type="button" className="boton boton--enlace" disabled={ocupado} onClick={() => void aviso.deshacer?.()} data-deshacer-el-enfoque>

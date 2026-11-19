@@ -48,7 +48,7 @@ export function PatronesDelPlan({ token, asesoradoId, sesionPerdida, area, planI
   const lectura = useMemo(() => ({ token, asesoradoId, sesionPerdida }), [token, asesoradoId, sesionPerdida]);
   const { estado, recargar } = useDisponiblesDelPeriodo(lectura, periodo);
   const enfoques = useEnfoques(token, sesionPerdida);
-  const elecciones = useElecciones(token, asesoradoId, sesionPerdida, 0);
+  const elecciones = useElecciones(token, asesoradoId, sesionPerdida, 0, enfoques.recargar);
   const lugar: LugarDelEnfoque | null = planId ? { tipo: 'PLAN', ambito: area === 'ENTRENAMIENTO' ? 'TRAINING_PLAN' : 'NUTRITION_PLAN', planId } : null;
   const lista = elecciones.lectura.tipo === 'lista' ? elecciones.lectura.elecciones : [];
   const mios = enfoques.lectura.tipo === 'lista' ? enfoques.lectura.enfoques : [];

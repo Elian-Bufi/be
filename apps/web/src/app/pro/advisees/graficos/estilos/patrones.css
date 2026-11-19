@@ -1,5 +1,29 @@
 /* WP-GRAFICOS fase 2 (DL-174): los estilos de «Patrones» y los enfoques. Los escribe solo la rama E. */
 
+/* Cada grilla de «Patrones» tiene una sola columna que puede achicarse: sin esto, el primer dibujo de un gráfico (720 px
+   antes de medir) ensancha la columna y el panel angosto del editor queda con el contenido cortado a la derecha. */
+.patrones-de-la-ficha,
+.patrones,
+.patrones__seccion,
+.patrones__lista,
+.patrones__tarjeta,
+.patrones-del-plan,
+.patrones-del-plan__arriba {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.patrones__cinta,
+.patrones__grafico,
+.patrones-del-plan > * {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.patrones__pregunta h4,
+.patrones-del-plan__enfoque {
+  overflow-wrap: anywhere;
+}
+
 /* ─── La vista y su enfoque ─────────────────────────────────────────────────────────────────────────── */
 
 .patrones-de-la-ficha {

@@ -77,7 +77,10 @@ export function useEnfoques(token: string, sesionPerdida: SesionPerdida) {
 }
 
 /** Las elecciones de la persona (API-GRF-05) y elegir o quitar en un lugar (API-GRF-06 y 07). */
-export function useElecciones(token: string, asesoradoId: string, sesionPerdida: SesionPerdida, version: number) {
+export function useElecciones(token: string, asesoradoId: string, sesionPerdida: SesionPerdida, version: number, alEscribir: () => void = () => undefined) {
+  // Elegir o quitar cambia en cuántos lugares está elegido cada enfoque (`choices`): quien lista los enfoques los relee.
+  const alEscribirRef = useRef(alEscribir);
+  alEscribirRef.current = alEscribir;
   const [lectura, setLectura] = useState<LecturaDeElecciones>({ tipo: 'cargando' });
   const generacion = useRef(0);
   const recargar = useCallback(async () => {
@@ -104,6 +107,7 @@ export function useElecciones(token: string, asesoradoId: string, sesionPerdida:
             : { scope: 'NUTRITION_PLAN' as const, nutritionPlanId: lugar.planId, setId, expectedVersion };
       const r = await api.elegirEnfoque(token, asesoradoId, cuerpo);
       void recargar();
+      if (r.ok) alEscribirRef.current();
       return r;
     },
     [token, asesoradoId, recargar],
@@ -112,6 +116,7 @@ export function useElecciones(token: string, asesoradoId: string, sesionPerdida:
     async (eleccion: EleccionDeEnfoque) => {
       const r = await api.quitarEleccionDeEnfoque(token, asesoradoId, eleccion.choiceId, nuevaClaveDeIdempotencia());
       void recargar();
+      if (r.ok) alEscribirRef.current();
       return r;
     },
     [token, asesoradoId, recargar],

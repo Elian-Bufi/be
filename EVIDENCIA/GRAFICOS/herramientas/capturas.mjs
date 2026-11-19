@@ -777,7 +777,7 @@ function pantallas({ diego, versiones }) {
           } else nota('Diego ya tenía un enfoque elegido');
           await delMenuDelEnfoque(page, 'Editar este enfoque');
           await visible(page, '[data-editando-el-enfoque]', null, 10_000);
-          const tarjetas = await page.$eval('[data-tarjeta]', (xs) => xs.length);
+          const tarjetas = await page.$$eval('[data-tarjeta]', (xs) => xs.length);
           nota(`${tarjetas} tarjetas con sus controles de edición`);
         },
         ...patrones,
@@ -794,7 +794,7 @@ function pantallas({ diego, versiones }) {
           await delMenuDelEnfoque(page, 'Mis enfoques');
           await visible(page, 'dialog[open] [data-mis-enfoques]', null, 10_000);
           await esperarQueCargue(page, nota, 'dialog[open]');
-          nota(`${await page.$eval('dialog[open] [data-enfoque]', (xs) => xs.length)} enfoques en la lista`);
+          nota(`${await page.$$eval('dialog[open] [data-enfoque]', (xs) => xs.length)} enfoques en la lista`);
         },
         paneles: [{ nombre: 'mis-enfoques', selector: 'dialog[open]' }],
         graficos: 'body',

@@ -108,9 +108,15 @@ const unidadDe = (e: Pick<EjercicioDelPeriodo, 'loadUnits'>): 'kg' | 'lb' | null
  * Para un gráfico que pide la lista de la v1 (el 1RM estimado), «el más registrado» se cuenta entre los de esa lista
  * (GR-VE03): así un enfoque «Foco en fuerza» sirve con cualquier persona que haga alguno.
  */
-export function ejercicioResuelto(e: EjercicioDelGrafico | null, ejercicios: readonly EjercicioDelPeriodo[] | null, soloListaV1: boolean): EjercicioResuelto {
+export function ejercicioResuelto(e: EjercicioDelGrafico | null, ejercicios: readonly EjercicioDelPeriodo[] | null, soloListaV1: boolean, soloConCarga = false): EjercicioResuelto {
   if (e === null) return null;
   const candidatos = soloListaV1 ? ejerciciosDeLaListaV1(ejercicios) : [...(ejercicios ?? [])].filter((x) => x.sessions > 0).sort((a, b) => b.sessions - a.sessions);
+  if (e.kind === 'MOST_RECORDED' && soloConCarga) {
+    // GR-VE13: para un gráfico de la carga, «el más registrado» es el más registrado con carga (unas dominadas sin lastre
+    // dejarían el panel de la carga vacío). Uno fijo se respeta: lo eligió el profesional.
+    const x = candidatos.filter((c) => c.loadUnits.length > 0)[e.rank - 1];
+    return x ? { exerciseKey: x.exerciseKey, nombre: x.name, unidad: unidadDe(x), serie: null } : 'NO_APLICA';
+  }
   if (e.kind === 'FIXED') {
     const x = candidatos.find((c) => c.exerciseKey.toLowerCase() === e.exerciseKey.toLowerCase());
     if (!x) return 'NO_APLICA';
@@ -119,6 +125,10 @@ export function ejercicioResuelto(e: EjercicioDelGrafico | null, ejercicios: rea
   const x = candidatos[e.rank - 1];
   return x ? { exerciseKey: x.exerciseKey, nombre: x.name, unidad: unidadDe(x), serie: null } : 'NO_APLICA';
 }
+
+/** Los gráficos que dibujan la carga: su «más registrado» se busca entre los ejercicios con carga registrada. */
+const GRAFICOS_DE_LA_CARGA: readonly string[] = ['entrenamiento.carga-repeticiones-y-rir', 'entrenamiento.perfil-carga-repeticiones'];
+export const conCarga = (chartId: string): boolean => GRAFICOS_DE_LA_CARGA.includes(chartId);
 
 // ─── Las tarjetas ────────────────────────────────────────────────────────────────────────────────────────────
 
@@ -197,7 +207,7 @@ export function tarjetasDelEnfoque(charts: readonly GraficoDelEnfoque[], c: Cont
       noAplican++;
       return;
     }
-    const ejercicio = ejercicioResuelto(ref.exercise, c.ejercicios, grafico.requiere.listaV1);
+    const ejercicio = ejercicioResuelto(ref.exercise, c.ejercicios, grafico.requiere.listaV1, conCarga(grafico.id));
     if (ejercicio === 'NO_APLICA' || (ejercicio === null && grafico.requiere.ejercicio)) {
       noAplican++;
       return;
@@ -230,7 +240,7 @@ export function crucesDeLaRelacion(enElEnfoque: readonly TarjetaSugerida[], c: C
     .filter((g) => !enElEnfoque.some((t) => t.grafico.id === g.id))
     .flatMap((g): TarjetaSugerida[] => {
       const referencia: GraficoDelEnfoque = { kind: 'SUGGESTED', chartId: g.id, exercise: g.requiere.ejercicio ? { kind: 'MOST_RECORDED', rank: 1 } : null, bodyMetric: null };
-      const ejercicio = ejercicioResuelto(referencia.kind === 'SUGGESTED' ? referencia.exercise : null, c.ejercicios, g.requiere.listaV1);
+      const ejercicio = ejercicioResuelto(referencia.kind === 'SUGGESTED' ? referencia.exercise : null, c.ejercicios, g.requiere.listaV1, conCarga(g.id));
       if (ejercicio === 'NO_APLICA') return [];
       return [{ tipo: 'SUGERIDO', indice: -1, clave: `relacion-${g.id}`, titulo: g.titulo, referencia, grafico: g, ejercicio, medida: null }];
     });
@@ -248,7 +258,7 @@ export function sugeridosQueFaltan(charts: readonly GraficoDelEnfoque[], c: Cont
     .filter((g) => !charts.some((x) => x.kind === 'SUGGESTED' && x.chartId === g.id))
     .flatMap((g) => {
       const referencia: GraficoDelEnfoque = { kind: 'SUGGESTED', chartId: g.id, exercise: g.requiere.ejercicio || g.requiere.listaV1 ? { kind: 'MOST_RECORDED', rank: 1 } : null, bodyMetric: null };
-      const ejercicio = ejercicioResuelto(referencia.kind === 'SUGGESTED' ? referencia.exercise : null, c.ejercicios, g.requiere.listaV1);
+      const ejercicio = ejercicioResuelto(referencia.kind === 'SUGGESTED' ? referencia.exercise : null, c.ejercicios, g.requiere.listaV1, conCarga(g.id));
       return ejercicio === 'NO_APLICA' ? [] : [{ grafico: g, referencia }];
     });
 }
