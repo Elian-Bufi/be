@@ -138,7 +138,7 @@ export function DialogoGuardarPlantillaNutricional({
 
 /**
  * «Creada desde la plantilla X, versión N» en un borrador de Nutrición que salió de una plantilla. Como en Entrenamiento
- * (#294; ratificación del 19/11): N es la versión que se aplicó (`templateVersionId`), no la vigente. La regla está en
+ * (ratificación del 19/11): N es la versión que se aplicó (`templateVersionId`), no la vigente. La regla está en
  * `notaDeOrigenNutricional`.
  */
 export function NotaDeOrigenNutricional({ token, origen }: { token: string; origen: OrigenDePlanEnPlantilla }) {

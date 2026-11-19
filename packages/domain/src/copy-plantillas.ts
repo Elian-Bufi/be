@@ -188,7 +188,7 @@ export const COPY_PREPARACION_DE_PLANTILLA = {
 } as const;
 
 /**
- * La nota de origen de un plan de Nutrición (ratificación de Dirección del 19/11, como Entrenamiento en #294): dice la
+ * La nota de origen de un plan de Nutrición (ratificación de Dirección del 19/11, como en Entrenamiento): dice la
  * versión de la plantilla **que se aplicó**, no la vigente. La lectura de la plantilla nutricional trae solo la vigente:
  * si es la aplicada, se dice su número; si no, que salió de una versión anterior, con el número de la vigente para
  * ubicarla. Nunca el número de la vigente como si fuera el de la aplicada. Sin la plantilla, que ya no está disponible.

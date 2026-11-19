@@ -1,6 +1,6 @@
 /**
  * Ratificación de Dirección del 19/11 · la nota de origen de un plan de Nutrición dice la versión de la plantilla que se
- * aplicó, no la vigente (como Entrenamiento en #294). Mutación: volver a decir el número de la vigente pone en rojo el
+ * aplicó, no la vigente (como en Entrenamiento). Mutación: volver a decir el número de la vigente pone en rojo el
  * caso de la versión anterior.
  *
  * Uso: npm run test -w @be/domain (después de construirlo).
