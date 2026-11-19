@@ -297,3 +297,36 @@ test('C6 · crear o importar, bajo «No encuentro el ejercicio», al final de la
   assert.match(CATALOGO, /const sinResultados = busqueda\.tipo === 'lista' && ejercicios\.length === 0;\n\s*const noEncuentroAbierto = noEncuentro \|\| sinResultados;/);
   assert.match(CATALOGO, /Podés crearlo o importarlo, en «\{V\.noEncuentro\}»\./);
 });
+
+// ─── C8 · de dónde sale cada valor: común a todas las series, propio de esta serie o sin indicar ─────────────────
+
+const PL = await import('../src/app/pro/advisees/training/planilla-de-series.ts');
+
+test('C8 · cada valor dice de dónde sale, en la celda: «común», «propio» o «Sin indicar»', () => {
+  // Toma el común: se ve el valor común, marcado «común».
+  assert.deepEqual(PL.origenDeLaCelda('de-lo-general', '62,5'), { placeholder: '62,5', marca: 'común', descripcion: 'Común a todas las series: 62,5.' });
+  // Sin común que tomar: «Sin indicar», sin marca (lo dice el texto).
+  assert.deepEqual(PL.origenDeLaCelda('de-lo-general', null), { placeholder: 'Sin indicar', marca: null, descripcion: 'Sin indicar: no hay un valor común.' });
+  // Propio: marcado «propio»; el lector oye también el común.
+  assert.deepEqual(PL.origenDeLaCelda('propio', '02:30'), { placeholder: '02:30', marca: 'propio', descripcion: 'Propio de esta serie; el valor común es 02:30.' });
+  // «Sin indicar» elegido en la serie, aunque haya común: no se muestra el común como si valiera.
+  assert.deepEqual(PL.origenDeLaCelda('sin-objetivo', '02:30'), { placeholder: 'Sin indicar', marca: null, descripcion: 'Sin indicar en esta serie; el valor común es 02:30.' });
+  assert.equal(PL.origenDeLaCelda('no-se-entiende', '2').marca, null);
+  // La celda lo usa: la marca a la vista, el texto vacío y lo que oye el lector.
+  assert.match(EJERCICIO, /const origen = origenDeLaCelda\(celda\.estado, deLoGeneral\);/);
+  assert.match(EJERCICIO, /<div className="celda-de-objetivo" data-estado=\{celda\.estado\} data-origen=\{marca \?\? undefined\}>/);
+  assert.match(EJERCICIO, /placeholder=\{origen\.placeholder\}/);
+  assert.match(EJERCICIO, /<span className="celda-de-objetivo__origen" aria-hidden="true" data-origen-de-la-celda>/);
+  assert.match(EJERCICIO, /\{origen\.descripcion\}/);
+});
+
+test('C8 · la fila «Común» a todas las series; las opciones de la celda y la ayuda usan las mismas palabras', () => {
+  assert.equal(PL.COPY_PLANILLA.general, 'Común');
+  assert.equal(PL.COPY_PLANILLA.generalDetalle, 'a todas las series');
+  assert.match(PL.COPY_PLANILLA.rirDeLaIntensidad, /arriba/, 'el criterio está arriba de la tabla desde ENP-D14');
+  assert.match(EJERCICIO, /\{ 'sin-objetivo': PL\.sinIndicarEnEstaSerie, 'de-lo-general': PL\.usarElComun \}/);
+  assert.match(EJERCICIO, /data-como-se-lee-cada-valor>\{PL\.comoSeLee\}/);
+  assert.doesNotMatch(EJERCICIO, /En gris, lo que la serie toma de lo general/);
+  // Los tres estados de DL-122 no cambian: «Usar el valor común» quita la clave; «Sin indicar» es null.
+  assert.deepEqual(PL.volverALoGeneral([{ rir: 1, restSeconds: null }], new Set([0])), [{}]);
+});

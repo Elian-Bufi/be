@@ -19676,3 +19676,38 @@ html:has(.estacion:not([data-en-el-asistente])) {
 .agregar-ejercicio__crear-o-importar > .nota {
   margin: 0 0 0.5rem;
 }
+
+/* C8: de dónde sale cada valor de una serie, dicho en la celda: «común» (tenue) o «propio» (en el color de los enlaces),
+   a la izquierda del valor, que va a la derecha. Reemplaza el punto de lo propio: ahora lo dice una palabra. */
+.celda-de-objetivo {
+  position: relative;
+}
+
+.celda-de-objetivo[data-origen]::before {
+  content: none;
+}
+
+.celda-de-objetivo__origen {
+  position: absolute;
+  inset-inline-start: 0.5rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--tenue);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  pointer-events: none;
+}
+
+.celda-de-objetivo[data-origen='propio'] .celda-de-objetivo__origen {
+  color: var(--enlace);
+}
+
+.celda-de-objetivo[data-origen] > input {
+  padding-inline-start: 3.2rem;
+}
+
+.series-del-editor__detalle-de-la-fila {
+  display: block;
+  font-weight: 400;
+}

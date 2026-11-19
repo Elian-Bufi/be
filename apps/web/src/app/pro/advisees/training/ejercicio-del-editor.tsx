@@ -64,7 +64,7 @@ import { COPY_CARGA_DESDE_LA_ESTIMACION } from '../fuerza/carga-desde-la-estimac
 import type { PrescripcionParaLaCarga } from '../fuerza/fuerza';
 import { COPY_COPIAR } from './copiar-a';
 import { COPY_LA_VEZ_PASADA_EN_EL_EDITOR, CuadroDeLaVezPasada } from './la-vez-pasada';
-import { celdaDeLaPlanilla, copiarHaciaAbajo, COPY_PLANILLA as PL, escribirEnLasSeries, leerRepeticiones, loQueSePierdeAlQuitarLaSerie, volverALoGeneral, type ObjetivoDeLaSerie } from './planilla-de-series';
+import { celdaDeLaPlanilla, copiarHaciaAbajo, COPY_PLANILLA as PL, escribirEnLasSeries, leerRepeticiones, loQueSePierdeAlQuitarLaSerie, origenDeLaCelda, volverALoGeneral, type ObjetivoDeLaSerie } from './planilla-de-series';
 import { NotasAlLado, useNotasPropias } from '../notas-propias';
 
 export type Bloques = EstructuraDePlanDeEntrenamientoEntrada['blocks'];
@@ -404,7 +404,8 @@ export function EjercicioDelEditor({
   );
 }
 
-const OPCION_DE_LA_CELDA: Readonly<Record<OpcionDeLaCelda, string>> = { 'sin-objetivo': 'Sin objetivo en esta serie', 'de-lo-general': 'Tomar de lo general' };
+// C8: «común» y «sin indicar», las mismas palabras que dice cada celda.
+const OPCION_DE_LA_CELDA: Readonly<Record<OpcionDeLaCelda, string>> = { 'sin-objetivo': PL.sinIndicarEnEstaSerie, 'de-lo-general': PL.usarElComun };
 
 /**
  * La celda de un objetivo de una serie: un campo y, al lado, el botón que deja quitarle ese objetivo a la serie o
@@ -436,6 +437,8 @@ function CeldaDeObjetivo({
   onCambiar: (v: number | null | undefined) => void;
 }) {
   const celda = celdaDeObjetivoDelEditor(valor, deLoGeneral);
+  // C8: de dónde sale el valor, dicho en la celda («común», «propio» o «Sin indicar») y para el lector.
+  const origen = origenDeLaCelda(celda.estado, deLoGeneral);
   const { texto, alEscribir, alSalir } = useTextoInterpretado<number | null | undefined, number | undefined>(valor, {
     clave: valor === undefined ? 'nada' : String(valor),
     formatear: (v) => (typeof v === 'number' && !Number.isNaN(v) ? escribir(v) : ''),
@@ -444,8 +447,10 @@ function CeldaDeObjetivo({
     alCambiar: onCambiar,
     normalizarAlSalir: true,
   });
+  // Lo escrito viaja al valor en cada tecla (`alEscribir`): la marca sigue a lo que hay en la celda.
+  const marca = origen.marca;
   return (
-    <div className="celda-de-objetivo" data-estado={celda.estado}>
+    <div className="celda-de-objetivo" data-estado={celda.estado} data-origen={marca ?? undefined}>
       <input
         id={id}
         aria-label={rotulo}
@@ -454,15 +459,20 @@ function CeldaDeObjetivo({
         inputMode={entero ? 'numeric' : 'decimal'}
         autoComplete="off"
         value={texto}
-        placeholder={celda.sinValor}
+        placeholder={origen.placeholder}
         data-en-gris={celda.enGris ? '' : undefined}
-        // «Sin objetivo» es un texto: se acomoda distinto que un número.
-        data-texto={texto === '' && celda.sinValor === COPY_ENTRENAMIENTO_POR_SERIE.sinObjetivo ? '' : undefined}
+        // «Sin indicar» es un texto: se acomoda distinto que un número.
+        data-texto={texto === '' && origen.placeholder === PL.sinIndicar ? '' : undefined}
         onChange={(e) => alEscribir(e.target.value)}
         onBlur={alSalir}
       />
+      {marca ? (
+        <span className="celda-de-objetivo__origen" aria-hidden="true" data-origen-de-la-celda>
+          {marca}
+        </span>
+      ) : null}
       <span id={`${id}-estado`} className="visualmente-oculto">
-        {celda.descripcion}
+        {origen.descripcion}
       </span>
       <MenuDeAcciones rotulo={`Opciones para ${queEs}`} icono="abajo" acciones={celda.opciones.map((o) => ({ clave: o, texto: OPCION_DE_LA_CELDA[o], alElegir: () => onCambiar(objetivoElegidoEnLaCelda(o)) }))} />
     </div>
@@ -721,11 +731,12 @@ function SeriesDelEjercicio({
             </tr>
           </thead>
           <tbody>
-            {/* ED-23: la fila «General», dentro de la tabla. Lo que tiene es lo que toman las series sin valor propio. */}
+            {/* ED-23 y C8: la fila «Común», dentro de la tabla. Lo que tiene es lo que toman las series sin valor propio. */}
             <tr className="series-del-editor__general" data-fila-general>
               {seleccionando ? <td className="series-del-editor__elegir" /> : null}
               <th scope="row" data-etiqueta={COPY_ENTRENAMIENTO_POR_SERIE.columnaSerie}>
                 {PL.general}
+                <span className="nota series-del-editor__detalle-de-la-fila">{PL.generalDetalle}</span>
               </th>
               <td data-etiqueta="Repeticiones">
                 <span className="nota">{PL.repeticionesPorSerie}</span>
@@ -743,7 +754,7 @@ function SeriesDelEjercicio({
               </td>
               {conRir ? (
                 <td data-etiqueta={COPY_ENTRENAMIENTO_POR_SERIE.columnaRir}>
-                  {/* El RIR general es el objetivo de la intensidad: se escribe en lo general, con su criterio. */}
+                  {/* El RIR común es el objetivo del criterio, que se escribe arriba de la tabla (ENP-D14). */}
                   <span data-rir-general>{rirGeneral ?? '—'}</span> <span className="nota">{PL.rirDeLaIntensidad}</span>
                 </td>
               ) : null}
@@ -872,7 +883,8 @@ function SeriesDelEjercicio({
         </button>
         {p.sets.length > 0 ? <p className="nota">{PL.atajo}</p> : null}
         {p.sets.length > 0 ? <p className="nota" data-ayuda-del-calentamiento>{COPY_TIPOS_DE_SERIE.ayudaDelEditor}</p> : null}
-        {p.sets.length > 0 ? <p className="nota">En gris, lo que la serie toma de lo general. Escribí un valor para que tenga el suyo, o elegí «{COPY_ENTRENAMIENTO_POR_SERIE.sinObjetivo}» con la flecha de la celda. Es lo que recibe la persona.</p> : null}
+        {/* C8: cómo se lee cada valor; la celda lo dice sola («común», «propio» o «Sin indicar»). */}
+        {p.sets.length > 0 ? <p className="nota" data-como-se-lee-cada-valor>{PL.comoSeLee}</p> : null}
       </div>
     </div>
   );

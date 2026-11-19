@@ -191,6 +191,14 @@ Sesión
   la lista se desplaza sola) y «Agregar 3 ejercicios a Sesión A» (o al bloque desde cuyo pie se abrió). «Crear un
   ejercicio propio» e «Importar desde wger» van en «No encuentro el ejercicio», al final de la búsqueda, plegado; sin
   resultados, abierto. Lo creado o importado queda elegido, como antes.
+- **ENP-D28 · Cada valor dice de dónde sale, en la celda** (C8; `origenDeLaCelda` en `planilla-de-series.ts`). Los tres
+  estados de DL-122 no cambian (`celdaDeObjetivoDelEditor`, del dominio); cambia cómo se leen, sin agregar filas ni
+  columnas: la fila «General» pasa a «Común · a todas las series»; una celda que toma el común muestra su valor tenue con
+  la marca «común»; una con valor propio, la marca «propio» (reemplaza el punto, que no decía nada con palabras); y una
+  sin indicar dice «Sin indicar» (también si no hay común que tomar: no se muestra un valor que no rige). El lector oye
+  lo mismo con el valor común al lado. Las opciones de la celda dicen «Sin indicar en esta serie» y «Usar el valor
+  común», y la ayuda de la fila del RIR ya no dice «abajo» (el criterio va arriba desde ENP-D14). El dominio y la APK
+  conservan «Sin objetivo».
 
 ## 4. Las reglas, y dónde se prueban
 
