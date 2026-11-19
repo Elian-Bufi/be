@@ -92,7 +92,7 @@ import { CuadroEnfocado } from '../../../../components/cuadro-enfocado';
 import { COPY_ESTACION as CE } from '../estacion/estacion';
 import { alimentosSinComposicion, COPY_RANGOS, itemsParaElTotal, nombreDeLaComida, nombreDelDiaTipo, NUTRIENTES_DEL_RANGO, queFaltaEnPalabras, rangoDelDiaEnPalabras, rangoEnUnaCelda, rangosDelDia, type ComposicionConocida } from './rangos';
 import { alQuitarElDia, alQuitarLaComida, alQuitarLaOpcion, COPY_QUITAR } from './quitar-con-contenido';
-import { agregarLaReceta, COPY_RECETA_NUEVA, OPCION_INICIAL, opcionesConLaReceta, type LugarDeLaReceta } from './receta-en-el-plan';
+import { agregarLaReceta, COPY_RECETA_NUEVA, esLaOpcionSinTocar, OPCION_INICIAL, opcionesConLaReceta, type LugarDeLaReceta } from './receta-en-el-plan';
 import { EditorDeReceta } from '../../recipes/editor-de-receta';
 import { ImagenDeReceta } from '../../recipes/imagen-de-receta';
 import {
@@ -117,7 +117,10 @@ import { hoyEn } from '../seguimiento/estado';
 import { TiraDelObjetivo } from '../seguimiento/tira-del-objetivo';
 import { CuadroDeLaOpcion } from './cuadro-de-la-opcion';
 import { PasosDeNutricion } from './pasos-del-asistente';
-import { RangosIndicados, useRangosIndicados, type DiaParaLosRangos } from './rangos-indicados-del-plan';
+import { gramosDelObjetivo, origenBreve } from './planificacion';
+import { COPY_RANGOS_INDICADOS } from './rangos-indicados';
+import { CuadroDelRangoIndicado, rangoIndicadoDe, RangosIndicados, sePuedeIndicar, useRangosIndicados, type DiaParaLosRangos } from './rangos-indicados-del-plan';
+import { KcalDelObjetivo, SumaDeLosRangosIndicados } from './suma-de-los-rangos';
 import { pasoQueSigueEnNutricion } from './asistente-de-nutricion';
 import { pasoPedido } from '../asistente/paso-que-sigue';
 import { opcionAlGuardar, opcionNueva, subtituloDelCuadro, tituloDelCuadro } from './opcion-en-un-cuadro';
@@ -319,6 +322,8 @@ export function EditorDeBorrador({
   const [paraEnfocar, setParaEnfocar] = useState<string | null>(null);
   // ED-31 y ED-34: la composición de cada alimento, por su identidad, para estimar los totales en el editor.
   const [composiciones, setComposiciones] = useState<ReadonlyMap<string, ComposicionConocida>>(() => new Map());
+  // NUP-01: de dónde sale cada alimento («USDA», «Demostración»…), por su identidad, para la pista de su composición.
+  const [origenes, setOrigenes] = useState<ReadonlyMap<string, string>>(() => new Map());
   // ED-33: lo que se quita con contenido espera la confirmación, con lo que se va.
   const [porQuitar, setPorQuitar] = useState<{ readonly texto: string; readonly hacer: () => void } | null>(null);
   // ED-33: el cuadro del «⋯» de la comida que está abierto («Copiar desde otra comida» o «Usar una comida habitual»).
@@ -371,6 +376,7 @@ export function EditorDeBorrador({
       for (const h of alimentosHabituales.habituales) if (typeof n.get(h.catalogItemId) !== 'object') n.set(h.catalogItemId, h.composition);
       return n;
     });
+    setOrigenes((m) => new Map([...m, ...alimentosHabituales.habituales.filter((h) => !m.has(h.catalogItemId)).map((h) => [h.catalogItemId, origenBreve(h)] as const)]));
   }, [alimentosHabituales.habituales]);
 
   // ED-34: lo que ya estaba en el día tipo que se mira y todavía no tiene composición conocida se lee del buscador, por su
@@ -406,6 +412,7 @@ export function EditorDeBorrador({
         if (sesionPerdida(r)) return;
         const encontrado = r.ok ? r.datos.data.find((e) => e.catalogItemId === catalogItemId) : undefined;
         setComposiciones((m) => new Map(m).set(catalogItemId, encontrado ? encontrado.composition : 'sin-composicion'));
+        if (encontrado) setOrigenes((m) => new Map(m).set(catalogItemId, origenBreve(encontrado)));
       }
     };
     void Promise.all([leer(), leer(), leer()]);
@@ -771,7 +778,9 @@ export function EditorDeBorrador({
     ir({ comidas: pedidoDeComidasDelEditor(s) });
   };
   const cambiandoElNombreDelDia = nombreQueSeCambia?.de === 'dia' && nombreQueSeCambia.i === i;
-  const pestana = (j: number) => pestanas[`${i}-${j}`] ?? 0;
+  // NUP-D04: la opción abierta de cada comida, o ninguna (`-1`). Sin elegir, una comida de una sola opción la muestra
+  // abierta; con varias, quedan plegadas, cada una con sus números.
+  const pestana = (j: number) => pestanas[`${i}-${j}`] ?? ((dia?.meals[j]?.options.length ?? 0) === 1 ? 0 : -1);
   const elegirPestana = (j: number, k: number) => setPestanas((p) => ({ ...p, [`${i}-${j}`]: k }));
 
   const agregarDia = () => {
@@ -829,11 +838,54 @@ export function EditorDeBorrador({
   };
   /** ED-33: suma opciones a la comida `j` del día que se mira, elige la primera nueva y lo dice. */
   const sumarOpciones = (di: number, j: number, opciones: ComidaEnEdicion['options'], texto: string) => {
-    const k = estructura[di]?.meals[j]?.options.length ?? 0;
+    // NUP-12: en una comida recién creada, la «Opción 1» sin tocar deja su lugar a lo que se suma (como con una receta).
+    const actuales = estructura[di]?.meals[j]?.options ?? [];
+    const k = actuales.length === 1 && esLaOpcionSinTocar(actuales[0]!) ? 0 : actuales.length;
+    cambiar((x) => {
+      const m = x[di]!.meals[j]!;
+      if (m.options.length === 1 && esLaOpcionSinTocar(m.options[0]!)) m.options.splice(0, 1);
+      return x;
+    });
     cambiar((x) => (x[di]!.meals[j]!.options.push(...opciones), x));
     setPestanas((p) => ({ ...p, [`${di}-${j}`]: k }));
     setOtraComida(null);
     setMensaje({ tipo: 'exito', texto });
+  };
+  /** ED-33: por qué no se puede copiar desde otra comida o usar una habitual en la comida `j` del día `di` (`null`: se puede). */
+  const noSePuedeCopiarEn = (di: number, j: number): string | null => {
+    const m = estructura[di]?.meals[j];
+    if (!m) return null;
+    return m.options.length >= MAXIMO_DE_OPCIONES ? COPY_DE_OTRA_COMIDA.tope(MAXIMO_DE_OPCIONES) : origenesDeLaCopia(estructura, di, j).length === 0 ? COPY_DE_OTRA_COMIDA.sinOtras : null;
+  };
+  const noSePuedeUsarHabitualEn = (di: number, j: number): string | null => {
+    const m = estructura[di]?.meals[j];
+    if (!m) return null;
+    return m.options.length >= MAXIMO_DE_OPCIONES
+      ? COPY_DE_OTRA_COMIDA.tope(MAXIMO_DE_OPCIONES)
+      : comidasHabituales.lista === null
+        ? 'Leyendo tus comidas habituales…'
+        : comidasHabituales.falla
+          ? COPY_HABITUALES.comidasNoSeLeyeron
+          : comidasHabituales.lista.length === 0
+            ? COPY_HABITUALES.sinComidas
+            : null;
+  };
+  /**
+   * NUP-05: el rango indicado del día tipo `di` (`j` en `null`) o de su comida `j`, y cómo indicarlo desde donde se
+   * arma. Lo que todavía no se guardó no tiene identidad: se dice que se indica al guardarse (el autoguardado no tarda).
+   */
+  const rangoParaIndicar = (di: number, j: number | null) => {
+    const d = estructura[di];
+    const m = j === null ? undefined : d?.meals[j];
+    const mealId = j === null ? null : m?.mealId;
+    const nombre = j === null ? (d ? nombreDelDiaTipo(d, di) : '') : m ? nombreDeLaComida(m, j) : '';
+    const estado = rangosIndicados.estado;
+    const editable = estado.estado === 'listo' && estado.datos.state !== 'ACTIVATED';
+    return {
+      indicado: rangoIndicadoDe(estado, d?.dayTypeId, mealId),
+      alIndicar: sePuedeIndicar(estado, d?.dayTypeId, mealId) ? () => rangosIndicados.abrir({ dayTypeId: d!.dayTypeId!, mealId: mealId ?? null, nombre: j === null ? COPY_RANGOS_INDICADOS.elDia : nombre }) : null,
+      porQueNo: editable && (!d?.dayTypeId || mealId === undefined) ? COPY_RANGOS_INDICADOS.guardaPrimero : null,
+    };
   };
   const agregarComida = () => {
     const j = dia?.meals.length ?? 0;
@@ -901,10 +953,10 @@ export function EditorDeBorrador({
   const opcionDondeSeAgrega = agregando?.nueva ? (comidaDondeSeAgrega ? opcionNueva(agregando.k) : undefined) : agregando ? comidaDondeSeAgrega?.options[agregando.k] : undefined;
   // Las demás opciones de la comida del cuadro, con su total, en el día tipo de esa opción (no en el que se mira).
   const diaDeLaOpcion = agregando ? estructura[agregando.i] : undefined;
-  const otrasOpcionesDelCuadro =
-    agregando && diaDeLaOpcion
-      ? (rangosDelDia(diaDeLaOpcion, agregando.i, composiciones, nombres, (id, rv) => itemsGuardados(version, id, rv), (rv) => recetas[rv]?.name ?? null).comidas[agregando.j]?.opciones.filter((_, k) => k !== agregando.k) ?? [])
-      : [];
+  const rangosDelDiaDelCuadro = agregando && diaDeLaOpcion ? rangosDelDia(diaDeLaOpcion, agregando.i, composiciones, nombres, (id, rv) => itemsGuardados(version, id, rv), (rv) => recetas[rv]?.name ?? null) : null;
+  const otrasOpcionesDelCuadro = agregando && rangosDelDiaDelCuadro ? (rangosDelDiaDelCuadro.comidas[agregando.j]?.opciones.filter((_, k) => k !== agregando.k) ?? []) : [];
+  // NUP-04: las demás comidas del día de la opción, para ubicar el día con la opción como queda en el cuadro.
+  const otrasComidasDelCuadro = agregando && rangosDelDiaDelCuadro ? rangosDelDiaDelCuadro.comidas.filter((_, j) => j !== agregando.j).map((c) => c.rango) : [];
   const comidaDeLaReceta = eligiendoReceta ? estructura[eligiendoReceta.i]?.meals[eligiendoReceta.j] : undefined;
   // ── ED-07: lo que dice «Antes de activar» ─────────────────────────────────────────────────────────────────────
   /** Cerrar el cuadro y llevar a una cosa por corregir: a su lugar, con el foco ahí. */
@@ -1127,7 +1179,13 @@ export function EditorDeBorrador({
             return onObjetivoNuevo();
           }}
           onRevisarYActivar={abrirAntesDeActivar}
-          rangosIndicados={<RangosIndicados token={token} planId={planId} rangos={rangosIndicados} dias={estructura.map(paraLosRangos)} titulo={false} />}
+          rangosIndicados={<RangosIndicados rangos={rangosIndicados} dias={estructura.map(paraLosRangos)} titulo={false} />}
+          rangoDe={rangoParaIndicar}
+          onAgregarReceta={(di, j) => setEligiendoReceta({ i: di, j })}
+          onCopiarDesdeOtra={(di, j) => setOtraComida({ que: 'copiar', i: di, j })}
+          onUsarHabitual={(di, j) => setOtraComida({ que: 'habitual', i: di, j })}
+          noSePuedeCopiar={noSePuedeCopiarEn}
+          noSePuedeUsarHabitual={noSePuedeUsarHabitualEn}
         />
       ) : null}
       <div className="editor-de-nutricion__zonas" hidden={enElAsistente}>
@@ -1176,12 +1234,17 @@ export function EditorDeBorrador({
             </p>
             {/* Los macros ya llegaron con el objetivo: acá no hay una lectura que reintentar. */}
             <TiraDelObjetivo calorias={objetivo.estimatedEnergyRequirement.value} macros={{ estado: 'listos', valor: objetivo.macronutrientDistribution }} onReintentar={() => undefined} />
+            {/* NUP-07: las kcal que suman sus gramos, a la vista, y si no coinciden con las indicadas. */}
+            <KcalDelObjetivo kcal={objetivo.estimatedEnergyRequirement.value} gramos={gramosDelObjetivo(objetivo)} />
           </div>
         ) : null}
       </div>
 
       {dia ? (
         <div className="comidas-del-plan comidas-del-editor" data-dia={i + 1}>
+          {/* NUP-06: la suma de los rangos indicados de las comidas, frente al objetivo del día. Otra cuenta que la de las
+              opciones («Rangos y totales»): la tabla lo dice. */}
+          <SumaDeLosRangosIndicados comidas={dia.meals.map((m, j) => ({ nombre: nombreDeLaComida(m, j), rango: rangoIndicadoDe(rangosIndicados.estado, dia.dayTypeId, m.mealId) }))} objetivo={objetivo} />
           {cambiandoElNombreDelDia || dia.label.trim() === '' ? (
             <CampoDeNombre
               id={`dia-${i}`}
@@ -1216,6 +1279,11 @@ export function EditorDeBorrador({
               }
               nombres={nombres}
               recetas={recetas}
+              composiciones={composiciones}
+              origenes={origenes}
+              rangoDeOpciones={rangos?.comidas[j]?.rango ?? null}
+              rangosDelDia={rangos?.dia ?? null}
+              rango={{ ...rangoParaIndicar(i, j), delDia: rangoIndicadoDe(rangosIndicados.estado, dia.dayTypeId, null) }}
               itemsDeLaReceta={(optionId, rv) => itemsGuardados(version, optionId, rv)}
               versionNueva={(k) => {
                 const o = m.options[k];
@@ -1259,18 +1327,8 @@ export function EditorDeBorrador({
               }
               totalDeLaOpcion={(k) => rangos?.comidas[j]?.opciones[k]?.total ?? null}
               alGuardarComoHabitual={() => setGuardarHabitual({ i, j })}
-              noSePuedeCopiar={m.options.length >= MAXIMO_DE_OPCIONES ? COPY_DE_OTRA_COMIDA.tope(MAXIMO_DE_OPCIONES) : origenesDeLaCopia(estructura, i, j).length === 0 ? COPY_DE_OTRA_COMIDA.sinOtras : null}
-              noSePuedeUsarHabitual={
-                m.options.length >= MAXIMO_DE_OPCIONES
-                  ? COPY_DE_OTRA_COMIDA.tope(MAXIMO_DE_OPCIONES)
-                  : comidasHabituales.lista === null
-                    ? 'Leyendo tus comidas habituales…'
-                    : comidasHabituales.falla
-                      ? COPY_HABITUALES.comidasNoSeLeyeron
-                      : comidasHabituales.lista.length === 0
-                        ? COPY_HABITUALES.sinComidas
-                        : null
-              }
+              noSePuedeCopiar={noSePuedeCopiarEn(i, j)}
+              noSePuedeUsarHabitual={noSePuedeUsarHabitualEn(i, j)}
               alCopiarDesdeOtra={() => setOtraComida({ que: 'copiar', i, j })}
               alUsarHabitual={() => setOtraComida({ que: 'habitual', i, j })}
               alAgregarItem={(k) => setAgregando({ i, j, k })}
@@ -1408,7 +1466,7 @@ export function EditorDeBorrador({
               ) : null}
               <p className="nota">{COPY_RANGOS.comoSeLee}</p>
               <p className="nota">{COPY_RANGOS.estimacion}</p>
-              <RangosIndicados token={token} planId={planId} rangos={rangosIndicados} dias={[paraLosRangos(dia!, i)]} />
+              <RangosIndicados rangos={rangosIndicados} dias={[paraLosRangos(dia!, i)]} />
             </>
           ) : (
             <p className="nota">{COPY_RANGOS.sinDiaTipo}</p>
@@ -1416,6 +1474,9 @@ export function EditorDeBorrador({
         }
       />
       </div>
+
+      {/* NUP-05: el cuadro del rango indicado, uno solo: lo abren la lista del panel, cada comida y los pasos del asistente. */}
+      <CuadroDelRangoIndicado token={token} planId={planId} rangos={rangosIndicados} />
 
       {/* ED-33: lo que se quita con contenido se confirma, con lo que se va; «Cancelar» tiene el foco y no toca nada. */}
       <CuadroEnfocado
@@ -1498,12 +1559,17 @@ export function EditorDeBorrador({
         otrasOpciones={otrasOpcionesDelCuadro}
         nombres={nombres}
         composiciones={composiciones}
+        origenes={origenes}
+        rangoIndicadoDeLaComida={agregando && diaDeLaOpcion ? rangoIndicadoDe(rangosIndicados.estado, diaDeLaOpcion.dayTypeId, comidaDondeSeAgrega?.mealId) : null}
+        rangoIndicadoDelDia={agregando && diaDeLaOpcion ? rangoIndicadoDe(rangosIndicados.estado, diaDeLaOpcion.dayTypeId, null) : null}
+        otrasComidasDelDia={otrasComidasDelCuadro}
         objetivo={objetivo}
         habituales={alimentosHabituales}
         alGuardar={(copia, nuevos) => {
           if (!agregando) return;
           const { i: di, j, k, nueva } = agregando;
           setNombres((n) => ({ ...n, ...nuevos.nombres }));
+          setOrigenes((m) => new Map([...m, ...nuevos.origenes]));
           // El buscador ya trajo su composición: los totales de la estación siguen al instante.
           setComposiciones((m) => new Map([...m, ...nuevos.composiciones]));
           // Sobre la estructura de ahora: si un guardado le dio identidad a la opción con el cuadro abierto, la conserva.

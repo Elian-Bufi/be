@@ -29,6 +29,7 @@ import { mensajeDeFallo, useClaveDeIntento } from '../../../../lib/intento';
 import { useNutricion } from './nutricion';
 import { ConceptosFrecuentes, lugarDelConcepto } from '../conceptos-frecuentes';
 import { RepartosHabituales } from './repartos-habituales';
+import { KcalDelObjetivo } from './suma-de-los-rangos';
 import { evaluacionMasReciente } from '../evaluacion-reciente';
 
 type Fuente = 'REPORTED' | 'OBSERVED' | 'CALCULATED';
@@ -237,6 +238,16 @@ export function aObjetivo(v: ValoresDeObjetivo): CrearObjetivoRequest {
   };
 }
 
+/** NUP-07: lo escrito como número para la cuenta de las kcal, o `null` si todavía no es un número que sirva. */
+const numeroPositivo = (s: string): number | null => {
+  const n = leerNumero(s);
+  return n !== null && n > 0 ? n : null;
+};
+const numeroNoNegativo = (s: string): number | null => {
+  const n = leerNumero(s);
+  return n !== null && n >= 0 ? n : null;
+};
+
 export function CamposDeObjetivo({
   valores,
   onCambiar,
@@ -291,7 +302,8 @@ export function CamposDeObjetivo({
       />
       <fieldset className="grupo">
         <legend>Distribución de macronutrientes (g por día)</legend>
-        <div className="fila-de-dato">
+        {/* NUP-10: los rótulos alineados arriba y el error debajo de su campo, sin mover la fila. */}
+        <div className="fila-de-dato fila-de-dato--arriba">
           <Campo id={`${prefijo}-proteina`} etiqueta="Proteínas (g)" inputMode="decimal" value={valores.proteina} onChange={(e) => c({ proteina: e.target.value })} error={err('proteina')} />
           <Campo
             id={`${prefijo}-carbohidratos`}
@@ -303,6 +315,9 @@ export function CamposDeObjetivo({
           />
           <Campo id={`${prefijo}-grasas`} etiqueta="Grasas (g)" inputMode="decimal" value={valores.grasas} onChange={(e) => c({ grasas: e.target.value })} error={err('grasas')} />
         </div>
+        {/* NUP-07: las kcal que suman los gramos (4, 4 y 9, a la vista), frente a las escritas, y el porcentaje con su base.
+            Avisa sin bloquear: se guarda igual. */}
+        <KcalDelObjetivo kcal={numeroPositivo(valores.kcal)} gramos={{ protein: numeroNoNegativo(valores.proteina), carbohydrate: numeroNoNegativo(valores.carbohidratos), fat: numeroNoNegativo(valores.grasas) }} />
         {/* ED-13: usar un reparto habitual escribe sus gramos; el que se escribió se puede guardar como habitual. */}
         <RepartosHabituales gramos={valores} onUsar={(g) => c(g)} />
       </fieldset>

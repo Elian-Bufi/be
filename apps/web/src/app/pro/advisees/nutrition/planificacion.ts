@@ -14,7 +14,7 @@
  */
 import { numero, nutrienteParaMostrar, origenEnElCatalogo, MACROS_DEL_RANGO, type ComposicionParaCalcular, type MacroDelRango, type Rango as RangoIndicado, type RangoDeMacro } from '@be/domain';
 import { limitesEnPalabras, NOMBRE_DEL_MACRO } from './rangos-indicados';
-import { COPY_RANGOS, NUTRIENTES_DEL_RANGO, totalDeLaOpcion, totalEnPalabras, totalEnUnaLinea, type ComposicionConocida, type ItemParaElTotal, type NutrienteDelRango, type PorQueFalta, type Rango, type RangoPorNutriente, type TotalDeLaOpcion } from './rangos';
+import { COPY_RANGOS, faltantesDeLaOpcion, NUTRIENTES_DEL_RANGO, sinDatoEnPalabras, totalDeLaOpcion, totalEnPalabras, totalEnUnaLinea, type ComposicionConocida, type ItemParaElTotal, type NutrienteDelRango, type PorQueFalta, type Rango, type RangoPorNutriente, type TotalDeLaOpcion } from './rangos';
 
 // ─── NUP-01 · Lo que aporta un alimento ────────────────────────────────────────────────────────────────────────
 
@@ -94,6 +94,21 @@ export function origenBreve(a: AlimentoConOrigen): string {
   if (a.provenance === 'BE_SYNTHETIC_SEED') return 'Demostración';
   if (a.provenance === 'PROFESSIONAL_MANUAL') return 'Cargado a mano';
   return 'Importado';
+}
+
+/**
+ * NUP-03: los números del renglón de una opción plegada: sus totales («703 kcal · P 45 g · …») o, si no hay ninguno, por
+ * qué («Sin alimentos», «Se calcula cuando se guarda el plan»).
+ */
+export function numerosDeLaOpcion(total: TotalDeLaOpcion): { readonly linea: string; readonly palabras: string } {
+  if (NUTRIENTES_DEL_RANGO.every((n) => total[n].exacto === null)) {
+    const faltan = faltantesDeLaOpcion(total);
+    const motivo = faltan[0]?.motivo;
+    // Sin alimentos o una receta sin guardar: eso. Si no, qué lo impide: «Sin dato: Arroz sin cantidad».
+    const texto = motivo === 'SIN_ALIMENTOS' || motivo === 'RECETA_SIN_GUARDAR' ? POR_QUE_NO_APORTA[motivo] : sinDatoEnPalabras(faltan);
+    return { linea: texto, palabras: texto };
+  }
+  return { linea: totalEnUnaLinea(total), palabras: totalEnPalabras(total) };
 }
 
 // ─── NUP-02 · Lo que aporta una comida, de la opción que menos a la que más ──────────────────────────────────────
@@ -285,6 +300,9 @@ export function objetivoDelDia(o: { readonly estimatedEnergyRequirement: { reado
   return { kcal: o.estimatedEnergyRequirement.value, macros: { protein: g('protein'), carbohydrate: g('carbohydrate'), fat: g('fat') } };
 }
 
+/** NUP-07: los gramos del objetivo vigente (un macro en proporción de las kcal no tiene gramos: `null`). */
+export const gramosDelObjetivo = (o: Parameters<typeof objetivoDelDia>[0]): GramosDelObjetivo => objetivoDelDia(o).macros;
+
 /** Una fila de la tabla de la suma, lista para mostrar. */
 export interface FilaFrenteAlObjetivo {
   readonly clave: 'kcal' | MacroDelRango;
@@ -399,14 +417,10 @@ export const COPY_PLANIFICACION = {
   noCoinciden: (k: KcalDeLosGramos, indicadas: number) =>
     `No coinciden con las ${numero(indicadas, 0)} kcal indicadas: los gramos suman ${numero(Math.abs(k.frente!.diferencia), 0)} kcal ${k.frente!.diferencia > 0 ? 'más' : 'menos'}. Revisá los gramos o las kcal; se puede guardar igual.`,
   coinciden: (indicadas: number) => `Coinciden con las ${numero(indicadas, 0)} kcal indicadas.`,
-  factores: 'Proteínas y carbohidratos, 4 kcal por gramo; grasas, 9.',
   // NUP-12
   empezaCon: 'Empezá con:',
   unaHabitual: 'una comida habitual',
   copiarDeOtra: 'copiar de otra comida',
   unaReceta: 'una receta',
   alimentos: 'alimentos',
-  // NUP-03
-  abrirOpcion: (opcion: string) => `Abrir ${opcion}`,
-  cerrarOpcion: (opcion: string) => `Plegar ${opcion}`,
 } as const;

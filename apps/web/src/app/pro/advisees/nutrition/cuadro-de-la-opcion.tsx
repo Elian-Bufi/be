@@ -14,8 +14,11 @@
  * - «Crearlo a mano» e «Importarlo de Open Food Facts» reemplazan el contenido del cuadro, con «Volver a la opción»: no
  *   se abre un cuadro encima de otro (§2.3). Lo buscado se conserva, «Crearlo a mano» arranca con ese nombre, y al volver
  *   el foco vuelve al buscador y se anuncia lo agregado.
+ * - **WP-NUTRICION-PLANIFICACION:** cada alimento dice lo que aporta con su cantidad y, en la pista, su composición cada
+ *   100 g y de dónde sale (NUP-01); al costado, la opción como queda frente al rango indicado de su comida y el día frente
+ *   al suyo, en vivo y sin calificar (NUP-04).
  */
-import { cantidad as formatearCantidad, COPY_HABITUALES, habitualesQueCoinciden, origenEnElCatalogo, type ElementoDeCatalogo, type ElementoEncontrado, type VersionDeObjetivo } from '@be/domain';
+import { cantidad as formatearCantidad, COPY_HABITUALES, habitualesQueCoinciden, origenEnElCatalogo, type ElementoDeCatalogo, type ElementoEncontrado, type Rango as RangoIndicado, type VersionDeObjetivo } from '@be/domain';
 import { useEffect, useId, useRef, useState, type RefObject } from 'react';
 import { CuadroEnfocado } from '../../../../components/cuadro-enfocado';
 import { Aviso } from '../../../../components/formulario';
@@ -44,7 +47,9 @@ import {
   resultadosDelBuscador,
 } from './opcion-en-un-cuadro';
 import { useNumeroDelObjetivo } from './pasos-del-asistente';
-import { COPY_RANGOS, faltantesDeLaOpcion, fibraDeLaOpcion, itemsParaElTotal, NUTRIENTES_DEL_RANGO, queFaltaEnPalabras, rangoDeLaComida, rangoEnUnaCelda, totalDeLaOpcion, type Composiciones, type TotalDeLaOpcion } from './rangos';
+import { FrenteALosRangos } from './comida-del-editor';
+import { diaFrenteAlRango, opcionFrenteAlRango, origenBreve } from './planificacion';
+import { COPY_RANGOS, faltantesDeLaOpcion, fibraDeLaOpcion, itemsParaElTotal, NUTRIENTES_DEL_RANGO, queFaltaEnPalabras, rangoDeLaComida, rangoDelDia, rangoEnUnaCelda, totalDeLaOpcion, type Composiciones, type RangoPorNutriente, type TotalDeLaOpcion } from './rangos';
 
 type Busqueda =
   | { readonly tipo: 'quieta' }
@@ -68,6 +73,10 @@ export function CuadroDeLaOpcion({
   otrasOpciones,
   nombres,
   composiciones,
+  origenes,
+  rangoIndicadoDeLaComida,
+  rangoIndicadoDelDia,
+  otrasComidasDelDia,
   objetivo,
   habituales,
   alGuardar,
@@ -86,16 +95,27 @@ export function CuadroDeLaOpcion({
   otrasOpciones: readonly { readonly nombre: string; readonly total: TotalDeLaOpcion }[];
   nombres: Readonly<Record<string, string>>;
   composiciones: Composiciones;
+  /** NUP-01: de dónde sale cada alimento, por su identidad. */
+  origenes: ReadonlyMap<string, string>;
+  /** NUP-04: el rango indicado de la comida y el del día, si hay. */
+  rangoIndicadoDeLaComida: RangoIndicado | null;
+  rangoIndicadoDelDia: RangoIndicado | null;
+  /** NUP-04: lo que aportan las demás comidas del día (de la opción que menos a la que más), para ubicar el día. */
+  otrasComidasDelDia: readonly RangoPorNutriente[];
   objetivo: VersionDeObjetivo | null;
   habituales: AlimentosHabituales;
-  /** «Guardar la opción»: la copia, con los nombres y las composiciones de lo que se sumó. */
-  alGuardar: (opcion: OpcionEnEdicion, nuevos: { readonly nombres: Readonly<Record<string, string>>; readonly composiciones: ReadonlyMap<string, ElementoDeCatalogo['composition']> }) => void;
+  /** «Guardar la opción»: la copia, con los nombres, las composiciones y los orígenes de lo que se sumó. */
+  alGuardar: (
+    opcion: OpcionEnEdicion,
+    nuevos: { readonly nombres: Readonly<Record<string, string>>; readonly composiciones: ReadonlyMap<string, ElementoDeCatalogo['composition']>; readonly origenes: ReadonlyMap<string, string> },
+  ) => void;
   onCerrar: () => void;
 }) {
   const [copia, setCopia] = useState<OpcionEnEdicion | null>(opcion);
   const [modo, setModo] = useState<'opcion' | 'manual' | 'importar'>('opcion');
   const [nombresNuevos, setNombresNuevos] = useState<Record<string, string>>({});
   const [composicionesNuevas, setComposicionesNuevas] = useState<ReadonlyMap<string, ElementoDeCatalogo['composition']>>(() => new Map());
+  const [origenesNuevos, setOrigenesNuevos] = useState<ReadonlyMap<string, string>>(() => new Map());
   // Lo buscado y lo último agregado viven acá: sobreviven a «Crearlo a mano» y a «Importarlo…».
   const [texto, setTexto] = useState('');
   const [agregado, setAgregado] = useState<Agregado>(null);
@@ -108,6 +128,7 @@ export function CuadroDeLaOpcion({
     setModo('opcion');
     setNombresNuevos({});
     setComposicionesNuevas(new Map());
+    setOrigenesNuevos(new Map());
     setTexto('');
     setAgregado(null);
     // Solo al abrir: la opción del borrador no cambia con el cuadro abierto (es modal).
@@ -122,9 +143,11 @@ export function CuadroDeLaOpcion({
 
   const todosLosNombres = { ...nombres, ...nombresNuevos };
   const todasLasComposiciones: Composiciones = new Map([...composiciones, ...composicionesNuevas]);
-  const sumar = (e: ElementoDeCatalogo) => {
+  const todosLosOrigenes: ReadonlyMap<string, string> = new Map([...origenes, ...origenesNuevos]);
+  const sumar = (e: ElementoDeCatalogo | ElementoEncontrado) => {
     setNombresNuevos((n) => ({ ...n, [e.catalogItemId]: e.name }));
     setComposicionesNuevas((m) => new Map(m).set(e.catalogItemId, e.composition));
+    setOrigenesNuevos((m) => new Map(m).set(e.catalogItemId, origenBreve(e)));
     setCopia((o) => (o ? { ...o, items: [...o.items, itemNuevo(e.catalogItemId)] } : o));
     setAgregado((a) => ({ nombre: e.name, veces: (a?.veces ?? 0) + 1 }));
   };
@@ -149,6 +172,8 @@ export function CuadroDeLaOpcion({
   const rango = total ? rangoDeLaComida([...otrasOpciones, { nombre: copia?.label || titulo, total }], comida) : null;
   const sinNombre = copia !== null && copia.label.trim() === '';
   const impide = copia ? loQueNoDejaGuardarLaOpcion(copia, todosLosNombres) : null;
+  // NUP-04: la opción como queda frente al rango de su comida, y el día (con esta opción en su comida) frente al suyo.
+  const frente = total && rango ? [...opcionFrenteAlRango(total, rangoIndicadoDeLaComida, comida), ...diaFrenteAlRango(rangoDelDia([...otrasComidasDelDia, rango], ''), rangoIndicadoDelDia)] : [];
 
   return (
     <CuadroEnfocado
@@ -167,7 +192,7 @@ export function CuadroDeLaOpcion({
               apagado: impide?.motivo ?? null,
               // Apagado, lleva al campo que lo impide: el nombre o la cantidad que no se entiende.
               alTocarApagado: () => document.getElementById(impide && impide.fila !== null ? `cuadro-item-${impide.fila}-cantidad` : 'opcion-en-un-cuadro-nombre')?.focus(),
-              alTocar: () => copia && alGuardar(copia, { nombres: nombresNuevos, composiciones: composicionesNuevas }),
+              alTocar: () => copia && alGuardar(copia, { nombres: nombresNuevos, composiciones: composicionesNuevas, origenes: origenesNuevos }),
             }
           : null
       }
@@ -216,6 +241,8 @@ export function CuadroDeLaOpcion({
                         id={`cuadro-item-${l}`}
                         item={it}
                         nombre={todosLosNombres[it.catalogItemId] ?? 'Elemento'}
+                        composicion={todasLasComposiciones.get(it.catalogItemId)}
+                        origen={todosLosOrigenes.get(it.catalogItemId) ?? null}
                         onCambiar={(c) => cambiar((o) => void (o.items[l] = { ...o.items[l]!, ...c }))}
                         onQuitar={() => cambiar((o) => void o.items.splice(l, 1))}
                       />
@@ -262,6 +289,11 @@ export function CuadroDeLaOpcion({
                 <h3 id="opcion-rango-de-la-comida">{C.rangoDe(comida)}</h3>
                 <p>{NUTRIENTES_DEL_RANGO.map((n) => `${COPY_RANGOS.nutriente[n]}: ${rangoEnUnaCelda(rango[n], n)}`).join(' · ')}</p>
                 <p className="nota">{C.conEstaOpcion}</p>
+              </section>
+            ) : null}
+            {frente.length > 0 ? (
+              <section className="cuadro-de-la-opcion__tarjeta" aria-label="Frente a los rangos indicados" data-frente-en-el-cuadro>
+                <FrenteALosRangos lineas={frente} />
               </section>
             ) : null}
             <section className="cuadro-de-la-opcion__tarjeta" aria-labelledby="opcion-objetivo-general">

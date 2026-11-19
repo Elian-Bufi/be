@@ -68,14 +68,28 @@ const VUELTA_2 = [
   ...['inicio.tsx', 'inicio-entrenamiento.tsx', 'inicio-nutricion.tsx', 'inicio-mediciones.tsx', 'inicio-informacion.tsx', 'tarjeta-de-inicio.tsx', 'tira-de-la-semana.tsx'].map(inicio),
 ];
 
+/**
+ * NUP-08 (WP-NUTRICION-PLANIFICACION; decisión de Dirección del 18/11): en el website del profesional, el «%» de Nutrición
+ * va con su base dicha («18 % de las 2.500 kcal») y su número al lado. Un «%» sin «de la(s)/lo(s)» después sigue siendo
+ * el que no dice de qué es. En la app de la persona, la regla no cambia: cualquier «%» es un hallazgo.
+ */
+const porcentajeSinSuBase = (t) => /%(?!\s*de\s+l[ao]s?\b)/.test(t);
+const prohibidosDelProfesionalEnNutricion = (texto) => terminosProhibidosEn(texto).filter((p) => p !== '%' || porcentajeSinSuBase(texto));
+
 /** Las pantallas de cada dominio, con la lista de términos que le corresponde. */
 const DOMINIOS = [
   {
+    // NUP-08: las pantallas de Nutrición del website del profesional, con el «%» con su base.
+    nombre: 'nutrición en el website del profesional',
+    archivos: [...tsx(join(RAIZ, 'apps/web/src/app/pro/advisees/nutrition')), ...tsx(join(RAIZ, 'apps/web/src/app/pro/recipes'))],
+    prohibidos: prohibidosDelProfesionalEnNutricion,
+    minimo: 8,
+  },
+  {
     nombre: 'nutrición',
-    // WP-NUTRICION-RECETAS: «Mis recetas» del website y las pantallas nuevas de la APK (carrusel, detalle, comida diferente).
+    // WP-NUTRICION-RECETAS: las pantallas nuevas de la APK (carrusel, detalle, comida diferente). Las del website del
+    // profesional pasaron arriba (NUP-08).
     archivos: [
-      ...tsx(join(RAIZ, 'apps/web/src/app/pro/advisees/nutrition')),
-      ...tsx(join(RAIZ, 'apps/web/src/app/pro/recipes')),
       ...['nutricion.tsx', 'nutricion-hoy.tsx', 'opcion-de-comida.tsx', 'comida-diferente.tsx'].map(inicio),
       ...['piezas-de-nutricion.tsx', 'imagen-de-medio.tsx', 'registro-de-comidas.tsx', 'franja-de-macros.ts', 'consumo-de-la-opcion.ts', 'borrador-de-comida-diferente.ts'].map(movil),
       inicio('inicio-nutricion.tsx'),
@@ -384,6 +398,17 @@ test('TEST-AV2-026 · ningún texto de la vuelta 2 dice «cumplimiento», «adhe
   assert.deepEqual(hallazgos, []);
   // La prueba de la prueba: el extractor encuentra la palabra en un texto.
   assert.ok(textosDe('fixture.tsx', "export const X = () => <p>Tu racha de 3 días</p>;").some(({ texto }) => /\brachas?\b/i.test(texto)));
+});
+
+test('NUP-08 · en Nutrición del profesional, un «%» sin su base se detecta; en la app de la persona, cualquiera (prueba de la prueba)', () => {
+  assert.deepEqual(prohibidosDelProfesionalEnNutricion('18 % de las 2.500 kcal · 112 g'), []);
+  assert.deepEqual(prohibidosDelProfesionalEnNutricion('Registró el 82 % del plan'), ['%']);
+  assert.deepEqual(prohibidosDelProfesionalEnNutricion('El 90 % de cumplimiento'), ['cumplimiento', '%']);
+  // La app de la persona sigue con la lista entera: el mismo texto con base es un hallazgo.
+  assert.deepEqual(terminosProhibidosEn('18 % de las 2.500 kcal'), ['%']);
+  const persona = DOMINIOS.find((d) => d.nombre === 'nutrición');
+  assert.equal(persona.prohibidos, terminosProhibidosEn);
+  assert.ok(persona.archivos.every((a) => !a.includes(join('advisees', 'nutrition')) && !a.includes(join('pro', 'recipes'))), 'la app de la persona no mezcla las pantallas de Nutrición del website');
 });
 
 test('T13 · el extractor encuentra un término prohibido en el copy e ignora los estilos', () => {

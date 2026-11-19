@@ -11,6 +11,13 @@ import { readdirSync, readFileSync } from 'node:fs';
 import test from 'node:test';
 
 const R = await import('../src/app/pro/advisees/nutrition/rangos.ts');
+/**
+ * NUP-08 (WP-NUTRICION-PLANIFICACION; decisión de Dirección del 18/11): en el website del profesional, el «%» de
+ * Nutrición va con su base dicha («18 % de las 2.500 kcal»). Un «%» sin «de la(s)/lo(s)» después es el que no dice de qué
+ * es, y sigue prohibido; también el de cumplimiento o adherencia. En la app de la persona, la regla no cambia.
+ */
+const porcentajeSinSuBase = (t) => /%(?!\s*de\s+l[ao]s?\b)/.test(t);
+
 const Q = await import('../src/app/pro/advisees/nutrition/quitar-con-contenido.ts');
 const { calcularNutrientes } = await import('@be/domain');
 
@@ -128,11 +135,14 @@ test('ED-34 · una opción de receta guardada suma con los ítems que armó la A
   assert.deepEqual(kcal(r.comidas[0].rango), ['44.5', '89']);
 });
 
-test('ED-34 · los textos de Nutrición no dicen «%» (DJ-7) ni califican', () => {
+test('ED-34 · los textos de Nutrición no califican, y un «%» dice su base (NUP-08)', () => {
   const fuente = readFileSync(new URL('../src/app/pro/advisees/nutrition/rangos.ts', import.meta.url), 'utf8');
   const textos = [...fuente.matchAll(/'[^'\n]*'|`[^`\n]*`/g)].map((m) => m[0]);
   assert.ok(textos.length > 20);
-  for (const t of textos) assert.doesNotMatch(t, /%|cumplimiento|adherencia|racha/i, t);
+  for (const t of textos) {
+    assert.doesNotMatch(t, /cumplimiento|adherencia|racha/i, t);
+    assert.equal(porcentajeSinSuBase(t), false, t);
+  }
 });
 
 test('TEST-EDP-057 · quitar con contenido nombra lo que se va; sin contenido, no pregunta; nunca cambia la estructura', () => {
@@ -151,15 +161,27 @@ test('TEST-EDP-057 · quitar con contenido nombra lo que se va; sin contenido, n
   assert.equal(Q.alQuitarLaOpcion(opcion('Opción 2', []), 1), null);
 });
 
-test('ED-30 (DJ-7) · ningún texto de las pantallas de Nutrición dice «%»', () => {
+test('ED-30 (DJ-7, cambiada por NUP-08) · en las pantallas de Nutrición del profesional, cada «%» dice su base', () => {
   const carpeta = new URL('../src/app/pro/advisees/nutrition/', import.meta.url);
+  let conBase = 0;
   for (const archivo of readdirSync(carpeta)) {
     const fuente = readFileSync(new URL(archivo, carpeta), 'utf8');
     // Lo que se ve: el texto entre etiquetas de JSX y las cadenas. Los comentarios no se leen en pantalla.
     const sinComentarios = fuente.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '').replace(/\{\/\*[\s\S]*?\*\/\}/g, '');
     const textos = [...sinComentarios.matchAll(/'[^'\n]*'|`[^`\n]*`|>[^<>{}\n]+</g)].map((m) => m[0]);
-    for (const t of textos) assert.doesNotMatch(t, /\d\s?%|%\s|\bpor ciento\b/, `${archivo}: ${t}`);
+    for (const t of textos) {
+      assert.doesNotMatch(t, /\bpor ciento\b|% de (cumplimiento|adherencia)/i, `${archivo}: ${t}`);
+      if (/\d\s?%|%\s/.test(t)) {
+        assert.equal(porcentajeSinSuBase(t), false, `${archivo}: ${t}`);
+        conBase += 1;
+      }
+    }
   }
+  // El de la planificación (NUP-07) existe y dice su base: si se va, esta prueba lo nota.
+  assert.ok(conBase >= 1, 'el porcentaje del objetivo, con su base');
+  // La prueba de la prueba: un «%» sin base se detecta.
+  assert.equal(porcentajeSinSuBase('Registró el 82 % del plan'), true);
+  assert.equal(porcentajeSinSuBase('Cubre el 90 %'), true);
 });
 
 test('ED-31 · el total de la opción, con los nombres completos para el lector de pantalla (maqueta 08)', () => {

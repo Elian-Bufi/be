@@ -115,6 +115,8 @@ export const COPY_ASISTENTE_DE_NUTRICION = {
   opcionesAyuda: 'La persona elige una opción en cada comida. Cada opción se arma en su cuadro, con el buscador adentro.',
   editarLaOpcion: (opcion: string) => `Armar ${opcion}`,
   agregarOpcion: (comida: string) => `Agregar una opción de alimentos a ${comida}`,
+  // NUP-13: al lado, la opción de receta (las otras dos usan los textos de la comida del editor).
+  opcionDeReceta: '+ Opción de receta',
   receta: 'Receta',
   sinAlimentos: 'sin alimentos',
   // Paso 6 y 7
@@ -124,7 +126,8 @@ export const COPY_ASISTENTE_DE_NUTRICION = {
   nadaSinCompletar: 'No queda nada sin completar.',
   impiden: 'Lo que impide activar',
   sinCompletar: 'Lo que queda sin completar',
-  irEnLaEstacion: 'Ir a corregirlo en la estación',
+  // NUP-14: «estación» es jerga del código; para el profesional, es el plan.
+  irEnLaEstacion: 'Corregirlo en el plan',
   rangosIndicados: 'Rangos de macronutrientes (opcional)',
   rangosIndicadosAyuda: 'Si querés, indicá un rango para el día o para cada comida, en gramos o en gramos por kilo. No impide activar.',
   activar: 'Activar la versión',

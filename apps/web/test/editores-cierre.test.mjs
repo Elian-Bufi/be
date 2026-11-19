@@ -11,6 +11,13 @@ import test from 'node:test';
 
 const leer = (r) => readFileSync(new URL(`../src/app/pro/advisees/${r}`, import.meta.url), 'utf8').replace(/\r\n/g, '\n');
 const O = await import('../src/app/pro/advisees/nutrition/opcion-de-otra-comida.ts');
+/**
+ * NUP-08 (WP-NUTRICION-PLANIFICACION; decisión de Dirección del 18/11): en el website del profesional, el «%» de
+ * Nutrición va con su base dicha («18 % de las 2.500 kcal»). Un «%» sin «de la(s)/lo(s)» después es el que no dice de qué
+ * es, y sigue prohibido; también el de cumplimiento o adherencia. En la app de la persona, la regla no cambia.
+ */
+const porcentajeSinSuBase = (t) => /%(?!\s*de\s+l[ao]s?\b)/.test(t);
+
 
 const item = (itemId, catalogItemId) => ({ itemId, catalogItemId, quantity: { value: 100, unit: 'g' }, preparationState: 'COOKED', note: 'sin sal' });
 const dias = [
@@ -103,8 +110,8 @@ test('ED-31 · cada resultado dice qué le falta y si es de demostración; lo qu
   assert.equal(Q.completitudEnPalabras({ energyKcal: 1, carbohydrateG: 1, proteinG: 1 }), 'Sin dato de grasas y fibra');
   assert.equal(Q.esDeDemostracion(alimento('x', 'BE_SYNTHETIC_SEED')), true);
   assert.equal(Q.esDeDemostracion(alimento('x')), false);
-  // Ningún texto de Nutrición dice «%» (DJ-7).
-  assert.doesNotMatch(JSON.stringify(Q.COPY_OPCION_EN_UN_CUADRO, (_, v) => (typeof v === 'function' ? v('x', 1) : v)), /%/);
+  // Un «%» de Nutrición dice su base (DJ-7, cambiada por NUP-08).
+  assert.equal(porcentajeSinSuBase(JSON.stringify(Q.COPY_OPCION_EN_UN_CUADRO, (_, v) => (typeof v === 'function' ? v('x', 1) : v))), false);
 });
 
 test('ED-31 · «Guardar la opción» conserva la identidad que un guardado le dio con el cuadro abierto', () => {
@@ -336,7 +343,7 @@ test('ED-30 · «Lo que llevás armado», en pocas líneas', () => {
   );
 });
 
-test('TEST-EDP-027 · el objetivo general con su versión; sin «%» en el asistente; sin objetivo no hay paso 2', () => {
+test('TEST-EDP-027 · el objetivo general con su versión; un «%» del asistente dice su base (NUP-08); sin objetivo no hay paso 2', () => {
   const versiones = [
     { objectiveId: 'o1', versionId: 'v2', createdAt: '2026-11-10T10:00:00Z' },
     { objectiveId: 'o1', versionId: 'v1', createdAt: '2026-10-01T10:00:00Z' },
@@ -348,8 +355,8 @@ test('TEST-EDP-027 · el objetivo general con su versión; sin «%» en el asist
   assert.equal(N.numeroDeLaVersionDelObjetivo(versiones, 'nada'), null);
   assert.equal(N.COPY_ASISTENTE_DE_NUTRICION.versionYFecha(3, 'martes 10 de noviembre'), 'Versión 3, vigente desde el martes 10 de noviembre.');
   const textos = JSON.stringify(N.COPY_ASISTENTE_DE_NUTRICION, (_, v) => (typeof v === 'function' ? v(1, 'x') : v));
-  assert.doesNotMatch(textos, /%/);
-  assert.doesNotMatch(leer('nutrition/pasos-del-asistente.tsx'), /%/);
+  assert.equal(porcentajeSinSuBase(textos), false);
+  assert.equal(porcentajeSinSuBase(leer('nutrition/pasos-del-asistente.tsx')), false);
   // El paso 1 solo se ofrece con un objetivo del que nacer; sin él, empieza por la evaluación.
   const plan = leer('nutrition/plan.tsx');
   assert.match(plan, /const conElAsistente = sePuedeCrear && pasoPedido\(parametros\.get\('asistente'\)\) !== null;/);

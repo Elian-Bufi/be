@@ -9885,91 +9885,120 @@ button.comida-del-dia__fila > .icono:last-child {
   margin: 0;
 }
 
-/* Las opciones, en pestañas; «Agregar opción», al final del renglón. */
+/* NUP-03 (WP-NUTRICION-PLANIFICACION): las opciones, cada una en su renglón plegable, con sus números a la vista; debajo,
+   por dónde empezar una comida vacía (NUP-12) y las dos clases de opción. */
 .comida-del-editor__opciones {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-end;
-  justify-content: space-between;
-  gap: 0.5rem 1rem;
-  border-bottom: 1px solid var(--borde);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.6rem;
 }
 
 .comida-del-editor__opciones > .nota {
-  margin: 0 0 0.6rem;
+  margin: 0;
 }
 
-/* Sin opciones no hay pestañas que subrayar. */
-.comida-del-editor__opciones:not(:has(.pestanas-de-opcion)) {
-  border-bottom: 0;
-}
-
-.comida-del-editor__opciones > .menu-de-acciones {
-  margin-bottom: 0.5rem;
-}
-
-.pestanas-de-opcion {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0 0.35rem;
-  min-width: 0;
+.opciones-plegables {
+  display: grid;
+  gap: 0.4rem;
   margin: 0;
   padding: 0;
-  border: 0;
+  list-style: none;
 }
 
-/* Una pestaña es una opción de un grupo: la nativa la cubre entera, invisible, y el teclado es el de siempre. */
-.pestana-de-opcion {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  min-height: 44px;
-  max-width: 22rem;
-  padding: 0 0.85rem;
-  border-bottom: 3px solid transparent;
-  margin-bottom: -1px;
-  color: var(--tenue);
-  font-weight: 600;
-  cursor: pointer;
+.opcion-plegable {
+  border: 1px solid var(--borde);
+  border-radius: 12px;
+  background: var(--superficie);
 }
 
-.pestana-de-opcion > span {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+/* La abierta se distingue por su borde y su fondo, no por un color que califique. */
+.opcion-plegable[data-abierta] {
+  border-color: var(--borde-control);
+  box-shadow: inset 4px 0 0 var(--azul);
 }
 
-.pestana-de-opcion input {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
+.opcion-plegable__titulo {
   margin: 0;
-  opacity: 0;
+  font-size: 1rem;
+}
+
+.opcion-plegable__boton {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 0.6rem;
+  width: 100%;
+  min-height: 48px;
+  padding: 0.45rem 0.85rem;
+  border: 0;
+  border-radius: 12px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-weight: 600;
+  text-align: left;
   cursor: pointer;
 }
 
-.pestana-de-opcion:has(input:checked) {
-  border-bottom-color: var(--azul);
-  color: var(--texto);
+.opcion-plegable__boton:hover {
+  background: var(--fondo-suave);
 }
 
-/* La pestaña elegida muestra su nombre entero, en los renglones que haga falta: las demás lo cortan. */
-.pestana-de-opcion:has(input:checked) {
-  max-width: none;
-  padding-block: 0.35rem;
-}
-
-.pestana-de-opcion:has(input:checked) > span {
-  overflow: visible;
-  white-space: normal;
-}
-
-.pestana-de-opcion:has(input:focus-visible) {
+.opcion-plegable__boton:focus-visible {
   outline: 3px solid var(--foco);
   outline-offset: -3px;
-  border-radius: 8px 8px 0 0;
+}
+
+.opcion-plegable__nombre {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+/* Los números de la opción: a la derecha del nombre, en cifras del mismo ancho, sin negrita (no compiten con el nombre). */
+.opcion-plegable__numeros {
+  color: var(--tenue);
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.opcion-plegable__cuerpo:not([hidden]) {
+  padding: 0.25rem 0.85rem 0.85rem;
+}
+
+/* NUP-02: lo que aporta la comida plegada y su rango indicado, en su propio renglón del encabezado. */
+.comida-del-editor__aporta,
+.comida-del-editor__indicado {
+  flex-basis: 100%;
+  color: var(--tenue);
+  font-size: 0.95rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.comida-del-editor__indicado {
+  flex-basis: auto;
+}
+
+/* NUP-05: el rango de una comida o de un día, en un renglón, con su botón. */
+.rango-en-un-renglon {
+  margin: 0;
+}
+
+.rango-en-un-renglon .boton--enlace {
+  min-height: 2.25rem;
+}
+
+/* NUP-12: por dónde empezar la comida vacía. */
+.comida-del-editor__empeza {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 0.6rem;
+  margin: 0;
+}
+
+.comida-del-editor__empeza > span:first-child {
+  font-weight: 600;
 }
 
 .opcion-del-editor {
@@ -16474,6 +16503,176 @@ p.cifra-del-espacio__desglose {
   flex-wrap: wrap;
   align-items: center;
   gap: 0.5rem;
+}
+
+/* NUP-01: lo que aporta cada alimento, debajo de su nombre, en cifras del mismo ancho para que no salte al escribir. */
+.item-del-editor__aporte {
+  display: block;
+  margin-top: 0.15rem;
+  color: var(--tenue);
+  font-size: 0.9rem;
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
+  cursor: help;
+}
+
+/* NUP-04: dónde queda la opción frente a los rangos indicados. Neutro: sin rojo ni verde; lo que queda afuera lleva una
+   marca de texto (la palabra «por encima» o «por debajo»), no un color. */
+.frente-a-los-rangos {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--borde);
+  border-radius: 10px;
+  background: var(--fondo-suave);
+}
+
+.frente-a-los-rangos__titulo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+  margin: 0 0 0.25rem;
+  font-weight: 600;
+}
+
+.frente-a-los-rangos .lista-compacta {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+.frente-a-los-rangos li[data-afuera] {
+  font-weight: 600;
+}
+
+/* NUP-06: la suma de los rangos indicados frente al objetivo, arriba de las comidas. */
+.suma-de-los-rangos {
+  display: grid;
+  gap: 0.35rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--borde);
+  border-radius: 12px;
+  background: var(--superficie);
+}
+
+.suma-de-los-rangos__titulo {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0;
+  font-size: 1rem;
+}
+
+.suma-de-los-rangos > .nota {
+  margin: 0;
+}
+
+.suma-de-los-rangos__tabla {
+  width: 100%;
+  font-variant-numeric: tabular-nums;
+}
+
+.suma-de-los-rangos__tabla td,
+.suma-de-los-rangos__tabla th {
+  vertical-align: top;
+}
+
+.suma-de-los-rangos__nota {
+  display: block;
+  font-size: 0.85rem;
+}
+
+/* La franja: la escala va de 0 a un poco más que el mayor de los números; la banda es la suma y la marca, el objetivo. */
+.suma-de-los-rangos__franja {
+  position: relative;
+  display: block;
+  width: 100%;
+  max-width: 14rem;
+  height: 0.6rem;
+  margin: 0.35rem 0 0.15rem;
+  border-radius: 999px;
+  background: var(--fondo-suave);
+  outline: 1px solid var(--borde);
+}
+
+.suma-de-los-rangos__banda {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: calc(var(--desde) * 1%);
+  width: calc((var(--hasta) - var(--desde)) * 1%);
+  min-width: 3px;
+  border-radius: 999px;
+  background: var(--azul);
+  opacity: 0.55;
+}
+
+/* Sin tope, la banda se desvanece hacia la derecha: no tiene un final. */
+.suma-de-los-rangos__franja[data-abierta] .suma-de-los-rangos__banda {
+  -webkit-mask-image: linear-gradient(to right, #000 60%, transparent);
+  mask-image: linear-gradient(to right, #000 60%, transparent);
+}
+
+.suma-de-los-rangos__marca {
+  position: absolute;
+  top: -0.25rem;
+  bottom: -0.25rem;
+  left: calc(var(--objetivo) * 1%);
+  width: 3px;
+  margin-left: -1px;
+  border-radius: 2px;
+  background: var(--texto);
+}
+
+/* NUP-07: las kcal de los gramos del objetivo, el aviso si no coinciden (neutro) y el porcentaje con su base. */
+.kcal-del-objetivo {
+  margin: 0.35rem 0 0;
+}
+
+.kcal-del-objetivo p {
+  margin: 0.15rem 0;
+}
+
+.kcal-del-objetivo__aviso {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.35rem;
+  font-weight: 600;
+}
+
+.kcal-del-objetivo__aviso .icono {
+  flex: none;
+  margin-top: 0.15rem;
+}
+
+.kcal-del-objetivo__porcentajes {
+  margin: 0.25rem 0 0;
+  font-variant-numeric: tabular-nums;
+}
+
+/* NUP-10: Proteínas, Carbohidratos y Grasas con los rótulos arriba: un error debajo de un campo no mueve a los otros. */
+.fila-de-dato--arriba {
+  align-items: flex-start;
+}
+
+/* NUP-11: la pregunta antes de cerrar un diálogo con algo escrito, en el lugar de sus acciones. */
+.dialogo__pregunta p {
+  margin: 0.25rem 0;
+}
+
+.dialogo__acciones-de-la-pregunta {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+}
+
+/* NUP-13: en el paso 5 del asistente, las cuatro formas de sumar una opción, en un renglón que baja si no entra. */
+.asistente__formas-de-sumar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 1rem;
+  margin: 0.25rem 0 0;
 }
 
 /* Dos renglones reservados: el total y lo que falta. Cuando llega la composición y «leyendo» se va, lo de abajo no salta. */
