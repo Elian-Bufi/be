@@ -14,7 +14,7 @@
 import type { ValidationIssue } from './contratos';
 import type { EstructuraDePlanDeEntrenamientoEntrada } from './contratos-entrenamiento';
 import { sesionesDeLaEstructura } from './contratos-plantillas';
-import { CodigoDeProblemaDePlanDeEntrenamiento, problemasDeCompletitud, type ContenidoDePlanDeEntrenamiento } from './plan-de-entrenamiento';
+import { CodigoDeProblemaDePlanDeEntrenamiento, normalizarEstructuraDeEntrenamiento, problemasDeCompletitud, type ContenidoDePlanDeEntrenamiento } from './plan-de-entrenamiento';
 import { serializacionCanonica } from './versionado';
 
 type Estructura = EstructuraDePlanDeEntrenamientoEntrada;
@@ -64,14 +64,43 @@ export function ejerciciosConCargaEscrita(estructura: Estructura): number {
 
 /**
  * PLT-D10: si guardar los cambios de una plantilla existente daría una versión igual a la de base: la misma estructura (con
- * las cargas que irían a la versión) y el mismo interruptor de las cargas. Se compara la forma canónica, sin el orden de
- * las claves. `estructuraQueIria` ya viene sin cargas si el interruptor está apagado.
+ * las cargas que irían a la versión) y el mismo interruptor de las cargas. `estructuraQueIria` ya viene sin cargas si el
+ * interruptor está apagado.
+ *
+ * Las dos se comparan **en la misma forma** (`formaParaComparar`): normalizadas como las guarda la preparación, sin los
+ * identificadores de nodo y en su forma canónica (sin el orden de las claves). La versión de base puede venir de
+ * API-TPL-01 o 04, que guardan la estructura tal como llegó (sin los campos que se omitieron y quizás sin
+ * identificadores), y la preparación la guarda normalizada, con los identificadores que le pone el servidor al abrirla:
+ * comparadas tal cual, una plantilla guardada con «Guardar como plantilla» podía no quedar nunca «sin cambios» (revisión
+ * adversaria del 2026-11-19). Los identificadores de nodo los pone el servidor: no son contenido de la plantilla.
  */
 export function sinCambiosFrenteALaBase(
   base: { readonly estructura: unknown; readonly conCargas: boolean },
   preparada: { readonly estructuraQueIria: unknown; readonly conCargas: boolean },
 ): boolean {
-  return base.conCargas === preparada.conCargas && serializacionCanonica(base.estructura) === serializacionCanonica(preparada.estructuraQueIria);
+  return base.conCargas === preparada.conCargas && formaParaComparar(base.estructura) === formaParaComparar(preparada.estructuraQueIria);
+}
+
+/** Los identificadores de nodo que pone el servidor (REG-06-111). Los de los bloques de la sesión los pone el editor. */
+const IDENTIFICADORES_DE_NODO: ReadonlySet<string> = new Set(['blockId', 'microcycleId', 'sessionId', 'prescriptionId']);
+
+/** La estructura normalizada (con identificadores provisorios), sin los identificadores de nodo, en su forma canónica. */
+function formaParaComparar(estructura: unknown): string {
+  let n = 0;
+  const r = normalizarEstructuraDeEntrenamiento(estructura as Estructura, () => `provisorio-${(n += 1)}`);
+  // Lo que no se normaliza no se iguala con lo normalizado: se compara tal cual (con lo ya guardado no pasa).
+  if (!r.ok) return serializacionCanonica(estructura);
+  return serializacionCanonica(sinIdentificadoresDeNodo(r.contenido));
+}
+
+function sinIdentificadoresDeNodo(valor: unknown): unknown {
+  if (Array.isArray(valor)) return valor.map(sinIdentificadoresDeNodo);
+  if (valor === null || typeof valor !== 'object') return valor;
+  return Object.fromEntries(
+    Object.entries(valor as Record<string, unknown>)
+      .filter(([clave, v]) => !IDENTIFICADORES_DE_NODO.has(clave) && v !== undefined)
+      .map(([clave, v]) => [clave, sinIdentificadoresDeNodo(v)]),
+  );
 }
 
 /** La estructura en blanco de una plantilla nueva: una fase, sin sesiones, como un plan nuevo (`plan.tsx`). */

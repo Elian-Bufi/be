@@ -97,6 +97,42 @@ test('PLT-D10 · sin cambios frente a la versión de base: la misma estructura y
   assert.equal(CodigoDeProblemaDeLaPlantilla.TEMPLATE_UNCHANGED, 'TEMPLATE_UNCHANGED');
 });
 
+test('PLT-D10 · la base guardada tal como llegó (API-TPL-01, sin identificadores ni campos omitidos) frente a su preparación sin tocar: sin cambios', () => {
+  // Lo que guardó «Guardar como plantilla»: la entrada, sin cargas (D-2), con campos omitidos y un ejercicio sin identificador.
+  const base = con({
+    blocks: [
+      {
+        blockId: 'b1',
+        label: 'Fase 1',
+        sessions: [{ sessionId: 's1', label: 'A', prescriptions: [prescripcion({ sets: [{ repetitions: { value: 8 }, setKind: 'WARM_UP' }, { repetitions: { value: 6 } }] }), prescripcion()] }],
+      },
+    ],
+  });
+  // Lo que guarda la preparación al abrirla (API-TPL-07): la misma, normalizada y con los identificadores que faltaban.
+  const abierta = { blocks: normalizado(base).blocks };
+  assert.equal(sinCambiosFrenteALaBase({ estructura: base, conCargas: false }, { estructuraQueIria: abierta, conCargas: false }), true);
+  // Un cambio real sigue siendo un cambio: las repeticiones, el calentamiento, un ejercicio menos, una fase más.
+  type Editable = { blocks: { label: string; sessions: { prescriptions: { sets: Record<string, unknown>[] }[] }[] }[] };
+  const cambiar = (f: (e: Editable) => void): boolean => {
+    const e = structuredClone(abierta) as unknown as Editable;
+    f(e);
+    return sinCambiosFrenteALaBase({ estructura: base, conCargas: false }, { estructuraQueIria: e, conCargas: false });
+  };
+  assert.equal(cambiar((e) => void (e.blocks[0]!.sessions[0]!.prescriptions[0]!.sets[1]!.repetitions = { value: 7 })), false);
+  assert.equal(cambiar((e) => void delete e.blocks[0]!.sessions[0]!.prescriptions[0]!.sets[0]!.setKind), false);
+  assert.equal(cambiar((e) => void e.blocks[0]!.sessions[0]!.prescriptions.pop()), false);
+  assert.equal(cambiar((e) => void e.blocks.push({ label: 'Fase 2', sessions: [] })), false);
+  // Los bloques de la sesión (DL-181) son contenido: agruparlos «En vueltas» es un cambio.
+  assert.equal(
+    cambiar((e) => {
+      const s = e.blocks[0]!.sessions[0]! as unknown as { exerciseGroups?: unknown[]; prescriptions: Record<string, unknown>[] };
+      s.exerciseGroups = [{ groupId: 'g1', label: 'Pierna', kind: 'ROUNDS', rounds: 3 }];
+      for (const p of s.prescriptions) p.exerciseGroupId = 'g1';
+    }),
+    false,
+  );
+});
+
 test('lo que se guarda en la preparación (la estructura normalizada, con identificadores) es una estructura de entrada válida', () => {
   const contenido = normalizado(
     con({

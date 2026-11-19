@@ -254,6 +254,22 @@ describe('API-TPL-07, 13 y 14 · editar una plantilla existente sin tocar lo ya 
     expect(despues.map((v) => v.plansCreated)).toEqual([0, 0]);
   });
 
+  it('PLT-D10 con una plantilla guardada como llegó (API-TPL-01, sin identificadores de fase ni campos omitidos): sin cambios no hay versión', async () => {
+    const c = await circuitoListoParaPlanificarEntrenamiento(app, etiqueta());
+    // Lo que guarda «Guardar como plantilla»: la estructura tal cual, sin el identificador de la fase ni las notas omitidas.
+    const t = PlantillaDeEntrenamientoResponseSchema.parse(
+      (await conSesion(app, c.pro.token).post(PLANTILLAS, claveDeIdempotencia()).send({ name: 'Desde un plan', structure: estructuraDeEntrenamiento() }).expect(201)).body,
+    ).data;
+    const p = leida((await conSesion(app, c.pro.token).put(`${PLANTILLAS}/${t.templateId}/draft`).send({}).expect(201)).body);
+    // La preparación tiene lo que faltaba (el identificador de la fase), y no por eso hay un cambio.
+    expect(p.structure.blocks[0]!.blockId).toEqual(expect.any(String));
+    expect(RevisionDePreparacionResponseSchema.parse((await revisar(c, p).expect(200)).body).data.issues).toEqual([{ code: 'TEMPLATE_UNCHANGED', path: 'blocks' }]);
+    // Un autoguardado de lo mismo (lo que hace el editor al abrir y tocar nada) tampoco es un cambio.
+    const g = leida((await guardar(c, p, { structure: p.structure }).expect(200)).body);
+    expect((await publicar(c, g).expect(422)).body.error.details.issues).toEqual([{ code: 'TEMPLATE_UNCHANGED', path: 'blocks' }]);
+    expect(await prisma.versionDePlantillaDePlanDeEntrenamiento.count({ where: { plantillaId: t.templateId } })).toBe(1);
+  });
+
   it('descartar deja las versiones como estaban; «desde una existente» es otra plantilla, con su nombre de copia', async () => {
     const c = await circuitoListoParaPlanificarEntrenamiento(app, etiqueta());
     const t = await plantillaGuardada(c, 'Original');
