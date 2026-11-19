@@ -276,6 +276,9 @@ function pantallas(ids, lugar) {
         // La revisión se pide sola cuando lo guardado se queda quieto: se espera su respuesta.
         await page.waitForSelector('[data-estado-de-la-revision="lista"], [data-estado-de-la-revision="fallo"]', { timeout: 30_000 }).catch(() => {});
         await asentar(page);
+        // El bloque a la vista, arriba del centro (que se desplaza solo).
+        await page.evaluate(() => document.querySelector('.bloque-del-editor')?.scrollIntoView({ block: 'start' }));
+        await pausa(300);
       },
     },
     {
@@ -312,7 +315,8 @@ function pantallas(ids, lugar) {
         const casillas = await page.$$('.series-del-editor__elegir input[type="checkbox"]');
         for (const c of casillas.slice(0, 2)) await c.click();
         await asentar(page);
-        await page.evaluate(() => document.querySelector('[data-series-elegidas]')?.scrollIntoView({ block: 'start' }));
+        // El ejercicio abierto desde su título: el criterio arriba, la barra y las series.
+        await page.evaluate(() => document.querySelector('.bloque-del-editor [data-abierta]')?.scrollIntoView({ block: 'start' }));
         await pausa(300);
       },
     },

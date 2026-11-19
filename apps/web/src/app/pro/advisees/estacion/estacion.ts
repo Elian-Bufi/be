@@ -62,7 +62,8 @@ export const COPY_ESTACION = {
   abrirPanel: 'Panel',
   cerrarPanel: 'Cerrar el panel',
   sesiones: 'Sesiones',
-  masSesion: 'Sesión',
+  /** ENP-D15: la acción dice qué agrega. */
+  masSesion: 'Agregar sesión',
   sinDia: 'Sin día',
   diasDe: (sesion: string) => `Días de ${sesion}`,
   confirmarDelPreset: (dias: string) => `Confirmar ${dias} · del preset`,

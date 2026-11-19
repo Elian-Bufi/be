@@ -19422,3 +19422,50 @@ html:has(.estacion:not([data-en-el-asistente])) {
   margin: 0;
   white-space: normal;
 }
+
+/* ENP-D16: los controles de la barra de lo elegido, con el aspecto de los campos (en los dos temas). */
+.series-del-editor__elegidas {
+  background: var(--superficie);
+}
+
+.series-del-editor__elegidas select,
+.series-del-editor__elegidas input {
+  min-height: 40px;
+  padding: 0.35rem 0.6rem;
+  border: 1px solid var(--borde-control);
+  border-radius: 8px;
+  background: var(--superficie);
+  color: var(--texto);
+  font: inherit;
+}
+
+.series-del-editor__elegidas input {
+  width: 9rem;
+}
+
+.series-del-editor__elegidas input::placeholder {
+  color: var(--tenue);
+  opacity: 1;
+}
+
+/* DL-181: las vueltas y el descanso del bloque, con el aspecto de los campos (en los dos temas). */
+.bloque-del-editor__campo select,
+.bloque-del-editor__campo input {
+  min-height: 40px;
+  padding: 0.35rem 0.6rem;
+  border: 1px solid var(--borde-control);
+  border-radius: 8px;
+  background: var(--superficie);
+  color: var(--texto);
+  font: inherit;
+  font-weight: 400;
+}
+
+.bloque-del-editor__campo input::placeholder {
+  color: var(--tenue);
+  opacity: 1;
+}
+
+.bloque-del-editor__campo input[aria-invalid='true'] {
+  border-color: var(--error, var(--borde-control));
+}
