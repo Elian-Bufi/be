@@ -58,7 +58,7 @@ export const COPY_ASISTENTE = {
   desdeUnPreset: 'Desde un preset',
   desdeUnPresetDetalle: 'Una estructura de BE: nombres de sesiones y días sugeridos, sin ejercicios.',
   enBlanco: 'En blanco',
-  enBlancoDetalle: 'Un bloque vacío: vos armás todo.',
+  enBlancoDetalle: 'Una fase vacía: vos armás todo.',
   yaHayBorrador: 'Este borrador ya tiene su punto de partida. Para empezar de otro, descartá la versión en preparación con el botón de abajo: lo armado se borra, y la versión activa no cambia.',
   salirDelAsistente: 'Salir del asistente',
   // Pasos 2 a 7
@@ -106,7 +106,7 @@ export function loQueLlevasArmado(bloques: Bloques, agenda: AgendaDeEntrenamient
   const sesiones = todasLasSesiones(bloques);
   const microciclos = bloques.reduce((n, b) => n + (b.microcycles?.length ?? 0), 0);
   const estructura = [
-    bloques.length === 1 ? '1 bloque' : `${bloques.length} bloques`,
+    bloques.length === 1 ? '1 fase' : `${bloques.length} fases`,
     ...(microciclos > 0 ? [microciclos === 1 ? '1 semana' : `${microciclos} semanas`] : []),
     sesiones.length === 1 ? '1 sesión' : `${sesiones.length} sesiones`,
   ].join(' · ');

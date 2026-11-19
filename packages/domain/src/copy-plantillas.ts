@@ -40,7 +40,7 @@ export const COPY_PLANTILLAS = {
   dondeSeArman: 'Se guardan desde una versión de plan, con «Guardar como plantilla». En «Plantillas y habituales» se ven y se cambian.',
   plantillasActivas: 'Plantillas activas',
   creandoElBorrador: 'Creando el borrador…',
-  queCopia: 'La plantilla copia la estructura (bloques, sesiones, ejercicios, series, intensidad y parámetros), no a la persona: no lleva objetivo ni próxima revisión.',
+  queCopia: 'La plantilla copia la estructura (fases, sesiones, bloques, ejercicios, series, intensidad y parámetros), no a la persona: no lleva objetivo ni próxima revisión.',
   cargas: 'Conservar las cargas sugeridas como referencia de la plantilla',
   cargasAyuda: 'Apagado, las cargas no se copian: son de cada persona. Encendido, quedan en la plantilla como referencia y las revisás al aplicarla.',
   notasTitulo: 'Notas que se van a copiar',

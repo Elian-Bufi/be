@@ -205,7 +205,7 @@ export function VistaDePlan() {
     const res = await api.crearPlanDeEntrenamiento(
       token,
       asesoradoId,
-      basadaEn ? { objectiveVersionId: objetivo, basedOnPlanId: basadaEn } : { objectiveVersionId: objetivo, initialStructure: { blocks: [{ label: 'Bloque 1', sessions: [] }] } },
+      basadaEn ? { objectiveVersionId: objetivo, basedOnPlanId: basadaEn } : { objectiveVersionId: objetivo, initialStructure: { blocks: [{ label: 'Fase 1', sessions: [] }] } },
       intentoDeCrear.actual(),
     );
     intentoDeCrear.registrar(res);
@@ -335,13 +335,14 @@ export function VistaDePlan() {
                 {borrador ? (
                   // Queda montada aunque se mire la activa: lo escrito sin guardar sigue ahí al volver.
                   <div className="plan__preparacion" hidden={mostrada !== 'preparacion'}>
-                    {!activa ? <p className="nota">{COPY_ENTRENAMIENTO.sinPlanActivo}</p> : null}
                     {/* PG-16 (DL-173): las notas propias del profesional, al lado de cada ejercicio y en su menú. */}
                     <ProveedorDeNotasPropias token={token} asesoradoId={asesoradoId} sesionPerdida={sesionPerdida}>
                       <EditorDePlan
                         key={borrador.planId}
                         planId={borrador.planId}
                         numero={numeroDelBorrador(historial)}
+                        // ENP-D12: «Todavía no hay un plan activo», compacto, en la cabecera de la versión.
+                        sinPlanActivo={!activa}
                         objetivoVigente={objetivo}
                         vigente={activa && activa.activatedAt ? { numero: numeroDeLaActiva ?? 1, desde: activa.activatedAt, plan: activa } : null}
                         // ED-07: el mismo texto en las dos áreas, con el número y el nombre, y «Ver lo que recibe».

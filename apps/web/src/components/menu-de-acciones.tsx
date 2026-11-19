@@ -14,9 +14,13 @@
  * - Una acción puede llevar, debajo del nombre, una línea que dice qué hace (`detalle`): en una lista no hay un «pasar el
  *   mouse» que sirva, así que la pista va a la vista. El nombre accesible sigue siendo el de la acción; la línea es su
  *   descripción.
+ * - **Sale entero, por encima de los paneles** (ENP-D11, la prueba de Elián del 18/11: el «⋯» de la fase quedaba cortado por
+ *   el panel izquierdo, que desplaza su contenido y recorta lo que sobresale). El panel del menú se ubica respecto de la
+ *   ventana, no del panel que lo contiene: debajo del botón, o arriba si abajo no entra, y sin salirse por los costados.
+ *   Sigue al botón si la página o un panel se desplazan. En el DOM queda donde estaba: el orden del foco no cambia.
  */
 import type { NombreDeIcono } from '@be/domain';
-import { useEffect, useId, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useId, useLayoutEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react';
 import { Icono } from './icono';
 
 export interface AccionDelMenu {
@@ -55,7 +59,45 @@ export function MenuDeAcciones({
   const id = useId();
   const raiz = useRef<HTMLDivElement>(null);
   const boton = useRef<HTMLButtonElement>(null);
+  const panel = useRef<HTMLDivElement>(null);
   const [abierto, setAbierto] = useState(false);
+  const [lugar, setLugar] = useState<CSSProperties | null>(null);
+
+  // ENP-D11: el lugar del panel, respecto de la ventana. Si algún contenedor arma su propio marco para lo fijo (un
+  // `backdrop-filter`, como el vidrio de la barra), se corrige con lo que se midió: el panel queda donde se pidió.
+  useLayoutEffect(() => {
+    if (!abierto) {
+      setLugar(null);
+      return;
+    }
+    const ubicar = () => {
+      const b = boton.current?.getBoundingClientRect();
+      const p = panel.current;
+      if (!b || !p) return;
+      const margen = 8;
+      const ancho = p.offsetWidth;
+      const alto = p.offsetHeight;
+      const abajo = window.innerHeight - b.bottom - margen;
+      const arriba = b.top - margen;
+      const haciaArriba = alto > abajo && arriba > abajo;
+      const top = haciaArriba ? Math.max(margen, b.top - 6 - alto) : b.bottom + 6;
+      const deseadaIzquierda = alineado === 'izquierda' ? b.left : b.right - ancho;
+      const left = Math.min(Math.max(margen, deseadaIzquierda), Math.max(margen, window.innerWidth - margen - ancho));
+      const maxHeight = Math.max(160, (haciaArriba ? arriba : abajo) - 6);
+      // Primero se pide el lugar y después se mide: si un contenedor corre lo fijo, se compensa la diferencia.
+      p.style.top = `${top}px`;
+      p.style.left = `${left}px`;
+      const medido = p.getBoundingClientRect();
+      setLugar({ top: top + (top - medido.top), left: left + (left - medido.left), maxHeight });
+    };
+    ubicar();
+    window.addEventListener('resize', ubicar);
+    window.addEventListener('scroll', ubicar, true);
+    return () => {
+      window.removeEventListener('resize', ubicar);
+      window.removeEventListener('scroll', ubicar, true);
+    };
+  }, [abierto, alineado]);
 
   useEffect(() => {
     if (!abierto) return;
@@ -93,7 +135,14 @@ export function MenuDeAcciones({
         {texto ? <span className="visualmente-oculto">: {rotulo}</span> : null}
         {conFlecha ? <Icono nombre={abierto ? 'arriba' : 'abajo'} tamano={18} /> : null}
       </button>
-      <div id={`${id}-panel`} className={`menu-de-acciones__panel menu-de-acciones__panel--${alineado}`} hidden={!abierto}>
+      <div
+        ref={panel}
+        id={`${id}-panel`}
+        className={`menu-de-acciones__panel menu-de-acciones__panel--${alineado}`}
+        data-ubicado={lugar ? '' : undefined}
+        style={lugar ?? undefined}
+        hidden={!abierto}
+      >
         {abierto ? (
           <ul className="menu-de-acciones__lista">
             {acciones.map((a) => (

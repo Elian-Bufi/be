@@ -48,7 +48,7 @@ test('DL-178 · el plan activo y la hoja muestran «C»; el editor avisa antes d
   assert.match(EDITOR, /COPY_CALENTAMIENTO_Y_LA_APP\.activacionBloqueada/);
   assert.match(EDITOR, /WARM_UP_AFTER_WORKING_SET: '/);
   // El website declara la capacidad: las lecturas de Entrenamiento le llegan con el tipo de cada serie.
-  assert.match(API, /CAPACIDAD_TIPOS_DE_SERIE\]/);
+  assert.match(API, /capacidades: \[[^\]]*CAPACIDAD_TIPOS_DE_SERIE[,\]]/);
   // Los textos describen, no califican.
   for (const texto of [...Object.values(d.COPY_TIPOS_DE_SERIE).filter((t) => typeof t === 'string'), ...Object.values(d.COPY_CALENTAMIENTO_Y_LA_APP)]) {
     assert.doesNotMatch(texto, /cumplimiento|adherencia|racha|puntaje|asesorado/i, texto);

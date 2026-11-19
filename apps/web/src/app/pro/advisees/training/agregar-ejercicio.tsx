@@ -133,7 +133,10 @@ export function AgregarEjercicio({
   habituales,
   onAgregar,
   onCerrar,
+  prescripcionDeLaSesion = null,
 }: {
+  /** ENP-D10: el preset elegido con la sesión vacía; sin una prescripción escrita acá, los ejercicios entran con él. */
+  prescripcionDeLaSesion?: string | null;
   abierto: boolean;
   /** A qué sesión se le suma: «Fuerza: progresión · A · Tren inferior». */
   deDonde: string | null;
@@ -180,7 +183,7 @@ export function AgregarEjercicio({
               <span>{V.prescripcionParaTodos}</span>
               <input type="text" value={linea} maxLength={80} onChange={(e) => setLinea(e.target.value)} aria-invalid={lectura && !lectura.ok ? true : undefined} aria-describedby="prescripcion-para-todos" autoComplete="off" spellCheck={false} />
               <span id="prescripcion-para-todos" className={lectura && !lectura.ok ? 'campo__error' : 'nota'}>
-                {!lectura ? V.prescripcionAyuda : lectura.ok ? vistaPreviaDePrescripcion(lectura.leida) : lectura.noSeEntiende}
+                {!lectura ? (prescripcionDeLaSesion ? `Vacía, cada uno entra con «${prescripcionDeLaSesion}», la de la sesión.` : V.prescripcionAyuda) : lectura.ok ? vistaPreviaDePrescripcion(lectura.leida) : lectura.noSeEntiende}
               </span>
             </label>
             <p className="nota agregar-item__antes">{COPY_ENTRENAMIENTO.catalogoSintetico}</p>

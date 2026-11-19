@@ -9623,9 +9623,13 @@ button.comida-del-dia__fila > .icono:last-child {
 }
 
 .menu-de-acciones__panel {
-  position: absolute;
-  top: calc(100% + 0.35rem);
-  z-index: 6;
+  /* ENP-D11: fijo respecto de la ventana (el componente calcula el lugar): sale entero por encima de los paneles que
+     desplazan su contenido. Hasta medir, invisible, para no parpadear en otro lugar. */
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 40;
+  overflow-y: auto;
   width: max-content;
   min-width: 14rem;
   max-width: min(22rem, calc(100vw - 2rem));
@@ -9637,12 +9641,8 @@ button.comida-del-dia__fila > .icono:last-child {
   box-shadow: var(--sombra);
 }
 
-.menu-de-acciones__panel--derecha {
-  right: 0;
-}
-
-.menu-de-acciones__panel--izquierda {
-  left: 0;
+.menu-de-acciones__panel:not([data-ubicado]) {
+  visibility: hidden;
 }
 
 .menu-de-acciones__lista {
@@ -19233,4 +19233,192 @@ html:has(.estacion:not([data-en-el-asistente])) {
   gap: 0.5rem;
   padding: 0.35rem 0;
   border-top: 1px solid var(--borde);
+}
+
+/* ═══ WP-ENTRENAMIENTO-PLANIFICACION (DL-181) · el bloque de la sesión, la revisión honesta, el criterio arriba y la
+   edición conjunta de series. Los colores son los tokens de los dos temas; nada se anima. ═══════════════════════════ */
+
+/* ENP-D14 (C2): un ejercicio abierto es una sola columna: el criterio arriba, las series a todo el ancho, y abajo las notas
+   y los parámetros. La tabla no se desplaza adentro: tiene todo el ancho del centro. */
+.ejercicio-del-editor__cuerpo:not([hidden]) {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.ejercicio-del-editor__general {
+  padding: 1rem 0 0;
+  border-top: 1px solid var(--borde);
+  border-left: 0;
+}
+
+.ejercicio-del-editor__general .lo-general-del-editor {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.6rem 1.5rem;
+}
+
+.criterio-del-ejercicio {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 0.6rem 1rem;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--borde);
+  border-radius: 12px;
+  background: var(--fondo-suave);
+}
+
+.criterio-del-ejercicio .lo-general-del-editor__par,
+.criterio-del-ejercicio .lo-general-del-editor__carga,
+.criterio-del-ejercicio__bases {
+  display: contents;
+}
+
+.criterio-del-ejercicio .campo {
+  flex: 0 1 12rem;
+  min-width: 9rem;
+  margin: 0;
+}
+
+.criterio-del-ejercicio .campo select,
+.criterio-del-ejercicio .campo input {
+  width: 100%;
+}
+
+/* La referencia del % RM es un texto: ocupa su renglón. */
+.criterio-del-ejercicio > .campo:has(textarea),
+.criterio-del-ejercicio > .campo:has(input[id$='-referencia']) {
+  flex: 1 1 100%;
+}
+
+/* ENP-D16 (C4): «Seleccionar series» y la barra de lo elegido. */
+.series-del-editor__seleccionar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 0.4rem;
+}
+
+.ejercicio-del-editor__series[data-seleccionando] .series-del-editor__elegidas {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+
+/* DL-181: el bloque de la sesión. Una raya al costado agrupa sus ejercicios; la cabecera dice cómo se hacen. */
+.bloque-del-editor {
+  display: grid;
+  gap: 0.5rem;
+  padding: 0.6rem 0.75rem 0.75rem 0.9rem;
+  border: 1px solid var(--borde);
+  border-left: 4px solid var(--borde-control);
+  border-radius: 12px;
+  background: var(--superficie);
+}
+
+.bloque-del-editor[data-tipo='ROUNDS'] {
+  border-left-color: var(--enlace);
+}
+
+.bloque-del-editor__cabecera {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 0.5rem 1rem;
+}
+
+.bloque-del-editor__titulo {
+  flex: 1 1 12rem;
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.bloque-del-editor__rotulo {
+  margin-right: 0.3rem;
+  color: var(--tenue);
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.bloque-del-editor__tipo {
+  margin: 0;
+}
+
+.bloque-del-editor__campo {
+  display: grid;
+  gap: 0.2rem;
+  font-size: 0.86rem;
+  font-weight: 600;
+}
+
+.bloque-del-editor__campo select {
+  width: 5rem;
+}
+
+.bloque-del-editor__campo input {
+  width: 7rem;
+}
+
+.bloque-del-editor__indicacion {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0;
+  font-weight: 600;
+}
+
+.bloque-del-editor > .nota {
+  margin: 0;
+}
+
+.bloque-del-editor__ejercicios {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.bloque-del-editor__pie {
+  display: flex;
+}
+
+/* ENP-D13: la revisión honesta, con su estado arriba. */
+.revision-del-plan {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.revision-del-plan__estado {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.4rem;
+  margin: 0;
+  font-weight: 600;
+}
+
+.revision-del-plan__estado > svg {
+  flex: none;
+  margin-top: 0.15rem;
+}
+
+.revision-del-plan > .nota {
+  margin: 0;
+}
+
+.revision-del-plan > .boton {
+  width: fit-content;
+}
+
+.revision-del-plan__lista .boton--enlace {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+}
+
+/* ENP-D10: la prescripción de la sesión vacía, al lado de «Presets». */
+.estacion__acciones-de-la-sesion {
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.estacion__prescripcion-de-la-sesion {
+  margin: 0;
+  white-space: normal;
 }

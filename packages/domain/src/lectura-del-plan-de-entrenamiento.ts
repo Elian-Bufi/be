@@ -206,7 +206,7 @@ export const COPY_DEL_PLAN_DE_ENTRENAMIENTO = {
   abrirTodos: 'Abrir todos los ejercicios',
   plegarTodos: 'Plegar todos',
   sinSeries: 'Sin series',
-  sinBloques: 'Esta versión no tiene bloques.',
+  sinBloques: 'Esta versión no tiene fases.',
   sinSesiones: 'Acá no hay sesiones.',
   sinEjercicios: 'Esta sesión no tiene ejercicios.',
   /** Con cinco o más para elegir, una lista, que dice cuántas hay. */

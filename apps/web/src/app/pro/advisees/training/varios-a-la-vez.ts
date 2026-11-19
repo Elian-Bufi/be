@@ -26,7 +26,7 @@ export const sesionDeDonde = (deDonde: string | null): string | null => deDonde?
 
 export const COPY_VARIOS_A_LA_VEZ = {
   marcar: (nombre: string) => `Marcar ${nombre}`,
-  agregar: (n: number, sesion: string | null) => (n === 0 ? 'Agregar' : `Agregar ${n} a ${sesion ?? 'la sesión'}`),
+  agregar: (n: number, sesion: string | null) => (n === 0 ? 'Agregar ejercicios' : `Agregar ${n === 1 ? '1 ejercicio' : `${n} ejercicios`} a ${sesion ?? 'la sesión'}`),
   sinMarcados: 'Marcá uno o más ejercicios: entran juntos, en el orden en que los marcaste.',
   marcados: (n: number) => (n === 1 ? '1 marcado' : `${n} marcados`),
   prescripcionParaTodos: 'Prescripción para todos (opcional)',

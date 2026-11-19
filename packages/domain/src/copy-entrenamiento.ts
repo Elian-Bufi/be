@@ -122,12 +122,16 @@ export const COPY_ENTRENAMIENTO = {
   borrador: 'Borrador',
   activo: 'Activo',
   anterior: 'Anterior',
-  bloque: 'Bloque',
+  /** ENP-D01 (DL-181): la etapa de varias semanas se lee «Fase»; en el contrato sigue siendo `blocks`. */
+  bloque: 'Fase',
+  /** ENP-D01: la ayuda de la fase, como la pidió Dirección. */
+  queEsLaFase: 'Una fase es un período de varias semanas con un objetivo.',
   microciclo: 'Microciclo',
-  agregarBloque: 'Agregar bloque',
+  /** ENP-D15: cada «Agregar» dice qué agrega. */
+  agregarBloque: 'Agregar fase',
   agregarMicrociclo: 'Agregar microciclo',
   agregarSesion: 'Agregar sesión',
-  agregarEjercicio: 'Agregar ejercicio',
+  agregarEjercicio: 'Agregar ejercicios',
   proposito: 'Propósito profesional',
   indicaciones: 'Indicaciones',
   series: 'Series',

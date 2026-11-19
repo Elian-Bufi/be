@@ -80,7 +80,7 @@ export const COPY_DUPLICAR_EL_DIA = {
   vistaPrevia: (sesiones: readonly string[], hacia: DiaDeLaSemana) =>
     `${sesiones.length === 1 ? `Se copia «${sesiones[0]}»` : `Se copian ${sesiones.map((s) => `«${s}»`).join(', ')}`}, con sus ejercicios y sus series, a ${DIA[hacia]}, con «(copia)» en el nombre. Las de ahora siguen en su día.`,
   hecho: (n: number, hacia: DiaDeLaSemana) => `${n === 1 ? 'Se copió 1 sesión' : `Se copiaron ${n} sesiones`} a ${DIA[hacia]}. Se guarda sola.`,
-  motivo: { MISMO_DIA: 'Elegí otro día.', SIN_SESIONES: 'Ese día no tiene sesiones.', TOPE: `No entran: una semana admite hasta ${TOPE_DEL_MICROCICLO} sesiones, un bloque ${TOPE_DEL_BLOQUE} y la agenda ${TOPE_DE_LA_AGENDA}.` },
+  motivo: { MISMO_DIA: 'Elegí otro día.', SIN_SESIONES: 'Ese día no tiene sesiones.', TOPE: `No entran: una semana admite hasta ${TOPE_DEL_MICROCICLO} sesiones, una fase ${TOPE_DEL_BLOQUE} y la agenda ${TOPE_DE_LA_AGENDA}.` },
 } as const;
 
 /** Los días a los que se puede copiar: todos menos el de origen, en el orden de la semana. */

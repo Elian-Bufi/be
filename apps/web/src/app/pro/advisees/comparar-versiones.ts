@@ -136,16 +136,16 @@ export function compararEntrenamiento<P extends PrescripcionParaComparar>(
 ): CambiosFrenteALaVigente {
   const c = cambios();
   const nombreDeSesion = (s: SesionParaComparar<P>) => s.label.trim() || 'Sesión sin nombre';
-  const nombreDeBloque = (b: BloqueParaComparar<P>) => b.label.trim() || 'Bloque sin nombre';
+  const nombreDeBloque = (b: BloqueParaComparar<P>) => b.label.trim() || 'Fase sin nombre';
   compararListas(vigente, borrador, (b) => b.blockId, {
-    agregado: (b) => c.agregado(`bloque ${nombreDeBloque(b)}`),
-    quitado: (b) => c.quitado(`bloque ${nombreDeBloque(b)}`),
+    agregado: (b) => c.agregado(`fase ${nombreDeBloque(b)}`),
+    quitado: (b) => c.quitado(`fase ${nombreDeBloque(b)}`),
     comparar: (antes, ahora) => {
-      if (antes.label.trim() !== ahora.label.trim()) c.modificado(`Bloque: ${nombreDeBloque(antes)} → ${nombreDeBloque(ahora)}`);
-      if ((antes.purpose ?? '') !== (ahora.purpose ?? '')) c.modificado(`Bloque ${nombreDeBloque(ahora)}: cambió el propósito`);
+      if (antes.label.trim() !== ahora.label.trim()) c.modificado(`Fase: ${nombreDeBloque(antes)} → ${nombreDeBloque(ahora)}`);
+      if ((antes.purpose ?? '') !== (ahora.purpose ?? '')) c.modificado(`Fase ${nombreDeBloque(ahora)}: cambió el propósito`);
       const semanasAntes = antes.microcycles?.length ?? 0;
       const semanasAhora = ahora.microcycles?.length ?? 0;
-      if (semanasAntes !== semanasAhora) c.modificado(`Bloque ${nombreDeBloque(ahora)}: de ${uno(semanasAntes, 'semana', 'semanas')} a ${semanasAhora}`);
+      if (semanasAntes !== semanasAhora) c.modificado(`Fase ${nombreDeBloque(ahora)}: de ${uno(semanasAntes, 'semana', 'semanas')} a ${semanasAhora}`);
     },
   });
   compararListas(sesionesDe(vigente), sesionesDe(borrador), (s) => s.sessionId, {

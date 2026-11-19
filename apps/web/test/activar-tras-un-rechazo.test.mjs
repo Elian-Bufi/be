@@ -96,7 +96,8 @@ test('TEST-EDP-049 · los editores: la clave del pedido, la relectura y «Volver
     assert.match(fuente, new RegExp(`if \\(hayQueReleer\\(r\\)\\) \\{\\n\\s*const actual = await api\\.${releer}\\(token, planId\\);`), ruta);
     assert.match(fuente, /const que = loQuePasoAlActivar\(r, releida, v\.version\);/, ruta);
     // Un 422 de la validación queda en el mismo cuadro, con su lugar.
-    assert.match(fuente, /case 'IMPIDE':\n[^\n]*\n\s*setRevision\(\{ estado: 'lista', problemas: que\.problemas \}\);/, ruta);
+    // ENP-D13: con la versión revisada, para que la revisión deje de valer si el borrador cambia.
+    assert.match(fuente, /case 'IMPIDE':\n[^\n]*\n\s*setRevision\(\{ estado: 'lista', problemas: que\.problemas(, version: v\.version)? \}\);/, ruta);
     // «Volver» no tira la clave de un intento incierto.
     assert.match(fuente, /if \(!intentoDeActivar\.quedoIncierto\(\)\) intentoDeActivar\.descartar\(\);/, ruta);
     assert.doesNotMatch(fuente, /\n\s*intentoDeActivar\.descartar\(\);\n/, ruta);

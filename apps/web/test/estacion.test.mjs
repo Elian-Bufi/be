@@ -111,7 +111,9 @@ test('TEST-EDP-020 · la ayuda se dice una vez: el párrafo fijo se fue a la ayu
 test('TEST-EDP-026 · el panel dice en vivo lo mismo que el cuadro, sin esperar a «Revisar»', () => {
   // PG-10 (WP-PULIDO-GRANDES): lo mismo, con los iguales del mismo ejercicio en un renglón.
   assert.match(EDITOR, /const sinCompletarEnVivo = enGrupos\(loQueQuedaSinCompletarEnEntrenamiento\(bloques\), enElPanel\)/);
-  assert.match(EDITOR, /\.\.\.impideGuardar\.map\(\(p\) => enElPanel\(/);
+  // ENP-D13: lo que el editor ve solo, en el panel y en el cuadro, con su lugar y su «Ir a…».
+  assert.match(EDITOR, /\.\.\.impideGuardar\.map\(impedimento\)/);
+  assert.match(EDITOR, /\.\.\.impideGuardar\.map\(\(p\) => conSuLugar\(/);
   // La validación final sigue siendo la de la API: el panel no activa.
   const panel = EDITOR.slice(EDITOR.indexOf('id="zona-panel"'), EDITOR.indexOf('</aside>'));
   assert.doesNotMatch(panel, /activar\(\)|api\./);

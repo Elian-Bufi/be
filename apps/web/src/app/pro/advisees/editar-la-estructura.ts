@@ -115,7 +115,7 @@ export function organizadoEnMicrociclos<B extends { sessions?: SesionEntrada[]; 
 /** Lo que dice «Organizar por microciclos» de las sesiones que ya tiene el bloque. */
 export function loQuePasaConLasSesiones(n: number): string | null {
   if (n === 0) return null;
-  return n === 1 ? `La sesión del bloque pasa a «${PRIMER_MICROCICLO}».` : `Las ${n} sesiones del bloque pasan a «${PRIMER_MICROCICLO}».`;
+  return n === 1 ? `La sesión de la fase pasa a «${PRIMER_MICROCICLO}».` : `Las ${n} sesiones de la fase pasan a «${PRIMER_MICROCICLO}».`;
 }
 
 // ─── Los textos ──────────────────────────────────────────────────────────────────────────────────────────────────
@@ -136,5 +136,5 @@ export const COPY_DE_LOS_EDITORES = {
   quitarLaSerie: (n: number): string => `Quitar la serie ${n + 1}`,
   duplicado: 'Se duplicó. La copia está justo después.',
   topeDeDiasTipo: (n: number): string => `Un plan lleva hasta ${n} días tipo.`,
-  topeDelMicrociclo: (tope: number, n: number): string => `Un microciclo lleva hasta ${tope} sesiones, y este bloque tiene ${n}.`,
+  topeDelMicrociclo: (tope: number, n: number): string => `Un microciclo lleva hasta ${tope} sesiones, y esta fase tiene ${n}.`,
 } as const;

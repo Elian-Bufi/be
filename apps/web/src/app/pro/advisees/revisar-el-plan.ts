@@ -9,12 +9,15 @@
  *   dicen sin rutas técnicas, y el editor lleva al campo.
  * Vive en el website hasta TB-20 (§8.2 del paquete), como `topes-del-plan.ts`. Sin React, para las pruebas.
  */
+import { seriesQueNoSonLasVueltas, type BloqueParaLeer } from '@be/domain';
 
 /** El código de cada cosa sin completar: no es un problema de la API, y no impide guardar ni activar. */
 export const INCOMPLETO = {
   sinCantidad: 'INCOMPLETO_SIN_CANTIDAD',
   sinRepeticiones: 'INCOMPLETO_SIN_REPETICIONES',
   sinSeries: 'INCOMPLETO_SIN_SERIES',
+  /** DL-181 (ENP-D05): en un bloque «En vueltas», un ejercicio con más o menos series efectivas que vueltas. */
+  seriesYVueltas: 'INCOMPLETO_SERIES_Y_VUELTAS',
 } as const;
 
 /** Lo que dice cada una en la lista, después de su lugar: qué falta y, si cambia algo para la persona, qué ve. */
@@ -22,6 +25,7 @@ export const TEXTO_DE_LO_INCOMPLETO: Readonly<Record<string, string>> = {
   [INCOMPLETO.sinCantidad]: 'sin cantidad: en la app dice «Sin dato»',
   [INCOMPLETO.sinRepeticiones]: 'sin repeticiones fijadas',
   [INCOMPLETO.sinSeries]: 'sin series',
+  [INCOMPLETO.seriesYVueltas]: 'sus series efectivas no son tantas como las vueltas de su bloque',
 };
 
 /** Los textos de «Revisar el plan» que viven en el website. El nombre del botón está en el dominio (`validarPlan`). */
@@ -57,20 +61,26 @@ export function loQueQuedaSinCompletarEnNutricion(dias: readonly DiaDeLaRevision
   return r;
 }
 
-type SesionDeLaRevision = { readonly prescriptions: readonly { readonly sets: readonly { readonly repetitions: unknown }[] }[] };
+type SesionDeLaRevision = {
+  readonly prescriptions: readonly { readonly sets: readonly { readonly repetitions: unknown; readonly setKind?: 'WORKING' | 'WARM_UP' | null }[]; readonly exerciseGroupId?: string | null }[];
+  readonly exerciseGroups?: readonly BloqueParaLeer[] | null;
+};
 type BloqueDeLaRevision = { readonly sessions?: readonly SesionDeLaRevision[]; readonly microcycles?: readonly { readonly sessions: readonly SesionDeLaRevision[] }[] };
 
 /** Entrenamiento: cada ejercicio sin series y cada serie sin repeticiones fijadas, en el orden de la estructura. */
 export function loQueQuedaSinCompletarEnEntrenamiento(bloques: readonly BloqueDeLaRevision[]): Lugar[] {
   const r: Lugar[] = [];
-  const sesion = (s: SesionDeLaRevision, ruta: string) =>
+  const sesion = (s: SesionDeLaRevision, ruta: string) => {
+    const vueltas = new Set(seriesQueNoSonLasVueltas(s).map((x) => x.posicion));
     s.prescriptions.forEach((p, l) => {
       const rp = `${ruta}.prescriptions[${l}]`;
       if (p.sets.length === 0) return void r.push({ code: INCOMPLETO.sinSeries, path: rp });
       p.sets.forEach((x, n) => {
         if (x.repetitions === null || x.repetitions === undefined) r.push({ code: INCOMPLETO.sinRepeticiones, path: `${rp}.sets[${n}].repetitions` });
       });
+      if (vueltas.has(l)) r.push({ code: INCOMPLETO.seriesYVueltas, path: rp });
     });
+  };
   bloques.forEach((b, i) => {
     (b.sessions ?? []).forEach((s, k) => sesion(s, `blocks[${i}].sessions[${k}]`));
     (b.microcycles ?? []).forEach((m, j) => m.sessions.forEach((s, k) => sesion(s, `blocks[${i}].microcycles[${j}].sessions[${k}]`)));

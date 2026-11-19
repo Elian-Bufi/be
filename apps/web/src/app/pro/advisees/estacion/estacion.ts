@@ -101,7 +101,7 @@ export const PRIMER_USO_DE_LA_ESTACION = {
   clave: 'be.primer-uso.estacion.v1',
   titulo: 'Cómo se usa la estación',
   renglones: [
-    'A la izquierda, la estructura: el bloque, las semanas y las sesiones con sus días.',
+    'A la izquierda, la estructura: la fase, las semanas y las sesiones con sus días.',
     'Al centro, la sesión elegida; arriba de cada ejercicio, la prescripción en una línea.',
     'A la derecha, lo que impide activar, en vivo. Se guarda sola: guardar no activa.',
   ],
