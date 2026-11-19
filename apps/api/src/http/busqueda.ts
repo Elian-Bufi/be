@@ -32,6 +32,10 @@ import { errores } from './errores';
  *
  * **El origen (DL-141, D-6).** Las búsquedas del website suman a cada fila quién cargó el ítem, si es una carga a mano, y
  * si su correspondencia con la fuente es aproximada (`origenEnElBuscador`).
+ *
+ * **El nivel del origen (DL-180, NUA-03).** Un catálogo puede declarar un `nivel` (0 o 1) que ordena dentro de cada grupo
+ * de coincidencia: en los alimentos, lo que cargó otro profesional y Administración no certificó va después de lo
+ * verificado y de lo propio. No cambia qué se encuentra, solo el orden; los ejercicios no lo declaran y siguen igual.
  */
 export const CON_MARCA = 'ÁÀÄÂÃÉÈËÊÍÌÏÎÓÒÖÔÕÚÙÜÛÑÇáàäâãéèëêíìïîóòöôõúùüûñç';
 export const SIN_MARCA = 'AAAAAEEEEIIIIOOOOOUUUUNCaaaaaeeeeiiiiooooouuuunc';
@@ -126,20 +130,22 @@ export function admiteParecido(palabra: string): boolean {
 // ─── El cursor ───────────────────────────────────────────────────────────────────────────────────
 
 /**
- * El cursor del buscador: el último servido y su grupo (0 igual, 1 empieza con la primera palabra, 2 tiene todas las
- * palabras). Sigue siendo opaco: base64url de [momento, id, grupo]. Los parecidos no tienen cursor: van solo en la
- * primera página.
+ * El cursor del buscador: el último servido, su grupo (0 igual, 1 empieza con la primera palabra, 2 tiene todas las
+ * palabras) y, en un catálogo con nivel (DL-180), su nivel (0 o 1). Sigue siendo opaco: base64url de [momento, id, grupo]
+ * o [momento, id, grupo, nivel]. Los parecidos no tienen cursor: van solo en la primera página.
  */
 export interface CursorDeBusqueda {
   readonly grupo: number;
   readonly momento: Date;
   readonly id: string;
+  /** DL-180: 0 si el cursor no lo trae (uno de antes, o de un catálogo sin nivel). */
+  readonly nivel: number;
 }
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
-export function escribirCursorDeBusqueda(grupo: number, momento: Date, id: string): string {
-  return Buffer.from(JSON.stringify([momento.toISOString(), id, grupo]), 'utf8').toString('base64url');
+export function escribirCursorDeBusqueda(grupo: number, momento: Date, id: string, nivel: number | null = null): string {
+  return Buffer.from(JSON.stringify(nivel === null ? [momento.toISOString(), id, grupo] : [momento.toISOString(), id, grupo, nivel]), 'utf8').toString('base64url');
 }
 
 /**
@@ -151,10 +157,11 @@ export function leerCursorDeBusqueda(valor: unknown): CursorDeBusqueda | null {
   if (typeof valor !== 'string') throw errores.cursorInvalido();
   try {
     const leido: unknown = JSON.parse(Buffer.from(valor, 'base64url').toString('utf8'));
-    if (Array.isArray(leido) && (leido.length === 2 || leido.length === 3) && typeof leido[0] === 'string' && typeof leido[1] === 'string') {
-      const grupo: unknown = leido.length === 3 ? leido[2] : 2;
+    if (Array.isArray(leido) && leido.length >= 2 && leido.length <= 4 && typeof leido[0] === 'string' && typeof leido[1] === 'string') {
+      const grupo: unknown = leido.length >= 3 ? leido[2] : 2;
+      const nivel: unknown = leido.length === 4 ? leido[3] : 0;
       const momento = new Date(leido[0]);
-      if ((grupo === 0 || grupo === 1 || grupo === 2) && !Number.isNaN(momento.getTime()) && UUID.test(leido[1])) return { grupo, momento, id: leido[1] };
+      if ((grupo === 0 || grupo === 1 || grupo === 2) && (nivel === 0 || nivel === 1) && !Number.isNaN(momento.getTime()) && UUID.test(leido[1])) return { grupo, momento, id: leido[1], nivel };
     }
   } catch {
     // cae al error neutral
@@ -180,6 +187,11 @@ export interface CatalogoBuscable {
    * `"nombre"` y puede usar los alias de `tablas`. Sin esto, se busca solo en el nombre principal.
    */
   readonly nombresAlternativos?: Prisma.Sql;
+  /**
+   * DL-180 (NUA-03): una expresión entera (0 o 1) que ordena dentro de cada grupo de coincidencia; puede usar los alias de
+   * `tablas`. Sin esto, todo es 0 y el cursor no lo lleva.
+   */
+  readonly nivel?: Prisma.Sql;
 }
 
 /** Lo que el buscador suma a cada fila: el nombre alternativo que coincidió, o `null` si fue el principal (DL-141). */
@@ -280,10 +292,13 @@ export async function buscarEnCatalogo<F extends { readonly versionId: string; r
   limite: number,
   cursor: CursorDeBusqueda | null,
 ): Promise<ResultadoDeBusqueda<F & ConNombreAlternativo>> {
+  const nivel = catalogo.nivel ?? Prisma.sql`0`;
+  // En el ORDER BY, una constante sería el número de una columna: sin nivel, no va.
+  const primeroElNivel = catalogo.nivel ? Prisma.sql`${catalogo.nivel}, ` : Prisma.empty;
   const despuesDelCursor =
     cursor === null
       ? Prisma.sql`TRUE`
-      : Prisma.sql`(grp."grupo" > ${cursor.grupo}::int OR (grp."grupo" = ${cursor.grupo}::int AND (v."momento_de_registro", v."id") < (${cursor.momento}, ${cursor.id}::uuid)))`;
+      : Prisma.sql`(grp."grupo" > ${cursor.grupo}::int OR (grp."grupo" = ${cursor.grupo}::int AND (${nivel} > ${cursor.nivel}::int OR (${nivel} = ${cursor.nivel}::int AND (v."momento_de_registro", v."id") < (${cursor.momento}, ${cursor.id}::uuid)))))`;
   const nombres = nombresDeLaFila(catalogo);
   // El nombre de la fila que mejor coincide: el de menor grupo y, a igual grupo, el principal. Sin texto, todo en el último
   // grupo y sin alternativo.
@@ -295,13 +310,13 @@ export async function buscarEnCatalogo<F extends { readonly versionId: string; r
           WHERE ${todasLasPalabras(busqueda)}
           ORDER BY 1, cmp."orden", cmp."alternativo"
           LIMIT 1)`;
-  const exactas = await cliente.$queryRaw<(F & ConNombreAlternativo & { grupo: number })[]>`
-    SELECT ${catalogo.columnas}, grp."grupo", grp."alternativo" AS "nombreAlternativo"
+  const exactas = await cliente.$queryRaw<(F & ConNombreAlternativo & { grupo: number; nivelEnElOrden: number })[]>`
+    SELECT ${catalogo.columnas}, grp."grupo", grp."alternativo" AS "nombreAlternativo", (${nivel})::int AS "nivelEnElOrden"
       FROM ${catalogo.tablas}
      CROSS JOIN LATERAL ${mejorNombre} grp
      WHERE ${catalogo.visibles}
        AND ${despuesDelCursor}
-     ORDER BY grp."grupo", v."momento_de_registro" DESC, v."id" DESC
+     ORDER BY grp."grupo", ${primeroElNivel}v."momento_de_registro" DESC, v."id" DESC
      LIMIT ${limite + 1}`;
   const hayMas = exactas.length > limite;
   const pagina = exactas.slice(0, limite);
@@ -325,12 +340,16 @@ export async function buscarEnCatalogo<F extends { readonly versionId: string; r
           LIMIT 1) par
        WHERE ${catalogo.visibles}
          AND NOT EXISTS (SELECT 1 FROM ${nombres} cmp WHERE ${todasLasPalabras(busqueda)})
-       ORDER BY par."suma" DESC, par."cercania" DESC, v."momento_de_registro" DESC, v."id" DESC
+       ORDER BY ${primeroElNivel}par."suma" DESC, par."cercania" DESC, v."momento_de_registro" DESC, v."id" DESC
        LIMIT ${limite - pagina.length}`;
   }
 
   return {
     filas: [...pagina, ...parecidas],
-    page: { limit: limite, nextCursor: hayMas && ultima ? escribirCursorDeBusqueda(ultima.grupo, ultima.momentoDeRegistro, ultima.versionId) : null, hasMore: hayMas },
+    page: {
+      limit: limite,
+      nextCursor: hayMas && ultima ? escribirCursorDeBusqueda(ultima.grupo, ultima.momentoDeRegistro, ultima.versionId, catalogo.nivel ? ultima.nivelEnElOrden : null) : null,
+      hasMore: hayMas,
+    },
   };
 }

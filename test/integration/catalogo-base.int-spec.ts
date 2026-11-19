@@ -324,9 +324,10 @@ describe('Encargo de Dirección del 2026-10-19, bloque 4 · la correspondencia c
     expect(enVacio.find((e) => e.name === 'Bife de vacío, magro y grasa, crudo')).toMatchObject({ origin: { loadedBy: null, approximateCorrespondence: null } });
     expect(enVacio.map((e) => e.name)).not.toContain('Vacío, magro y grasa, crudo');
 
-    // Lo cargado a mano dice que es de quien busca.
-    await s.post('/api/v1/nutrition/catalog-items').send({ name: 'Cuadril trilimbo de la casa', itemType: 'FOOD', composition: { referenceAmount: '100g', energyKcal: 150, proteinG: 21, carbohydrateG: 0, fatG: 7 } }).expect(201);
-    expect((await buscar('cuadril trilimbo'))[0]).toMatchObject({ provenance: 'PROFESSIONAL_MANUAL', origin: { loadedBy: 'YOU', approximateCorrespondence: null } });
+    // Lo cargado a mano dice que es de quien busca. Desde DL-180 lo ven los demás profesionales: el nombre no lleva
+    // «trilimbo», la palabra inventada con la que el buscador tolerante mide su orden (`busqueda-tolerante.int-spec.ts`).
+    await s.post('/api/v1/nutrition/catalog-items').send({ name: 'Cuadril zarandeado de la casa', itemType: 'FOOD', composition: { referenceAmount: '100g', energyKcal: 150, proteinG: 21, carbohydrateG: 0, fatG: 7 } }).expect(201);
+    expect((await buscar('cuadril zarandeado'))[0]).toMatchObject({ provenance: 'PROFESSIONAL_MANUAL', origin: { loadedBy: 'YOU', approximateCorrespondence: null } });
 
     // API-NUT-13 trae la misma versión vigente, en su forma de siempre: sin el origen.
     const legado = ListaDeCatalogoResponseSchema.parse((await s.get(`/api/v1/nutrition/catalog-items?q=${encodeURIComponent('cuadril')}`).expect(200)).body);

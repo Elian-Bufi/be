@@ -100,9 +100,11 @@ test('TEST-EDP-002 · el cuadro: «Cancelar» con el foco y un solo botón de ef
   assert.match(cuadro, /\n\s*focoEnVolver\n/);
   // Lo que no se deshace, con ícono y en negrita: nunca solo color.
   assert.match(cuadro, /<Icono nombre="aviso" tamano=\{18\} \/>\n\s*<span>\n\s*<strong>\{D\.noSeDeshace\}<\/strong>/);
-  // El diálogo tiene dos botones: «Cancelar» y el que descarta.
+  // El diálogo tiene dos botones: «Cancelar» y el que descarta. (NUP-11: la pregunta antes de cerrar con algo escrito
+  // reemplaza a esas acciones en el mismo lugar; no suma botones a las acciones.)
   const dialogo = leer('components/dialogo.tsx');
-  assert.equal((dialogo.match(/<button/g) ?? []).length, 2);
+  const acciones = dialogo.slice(dialogo.indexOf('<div className="acciones">'), dialogo.indexOf('</dialog>'));
+  assert.equal((acciones.match(/<button/g) ?? []).length, 2);
 });
 
 test('DJ-6 · la versión en preparación lleva su número en el título, en el selector y en los cuadros', () => {

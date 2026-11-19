@@ -114,13 +114,24 @@ describe('DL-139 · el cursor del buscador', () => {
   it('lleva el grupo del último servido, y sigue siendo opaco', () => {
     const cursor = escribirCursorDeBusqueda(1, momento, id);
     expect(cursor).toMatch(/^[A-Za-z0-9_-]+$/);
-    expect(leerCursorDeBusqueda(cursor)).toEqual({ grupo: 1, momento, id });
+    expect(leerCursorDeBusqueda(cursor)).toEqual({ grupo: 1, momento, id, nivel: 0 });
     expect(leerCursorDeBusqueda(undefined)).toBeNull();
   });
 
   it('uno de antes de DL-139 ([momento, id]) se lee como del último grupo, la lista por fecha', () => {
     const viejo = Buffer.from(JSON.stringify([momento.toISOString(), id]), 'utf8').toString('base64url');
-    expect(leerCursorDeBusqueda(viejo)).toEqual({ grupo: 2, momento, id });
+    expect(leerCursorDeBusqueda(viejo)).toEqual({ grupo: 2, momento, id, nivel: 0 });
+  });
+
+  it('DL-180 · en un catálogo con nivel lleva también el nivel; uno de antes (sin él) se lee con nivel 0', () => {
+    const conNivel = escribirCursorDeBusqueda(2, momento, id, 1);
+    expect(leerCursorDeBusqueda(conNivel)).toEqual({ grupo: 2, momento, id, nivel: 1 });
+    // Sin nivel, el cursor es el de siempre: [momento, id, grupo].
+    expect(JSON.parse(Buffer.from(escribirCursorDeBusqueda(2, momento, id), 'base64url').toString('utf8'))).toHaveLength(3);
+    const con = (valor: unknown) => Buffer.from(JSON.stringify(valor), 'utf8').toString('base64url');
+    for (const malo of [con([momento.toISOString(), id, 1, 2]), con([momento.toISOString(), id, 1, '1']), con([momento.toISOString(), id, 1, 0, 0])]) {
+      expect(() => leerCursorDeBusqueda(malo)).toThrow('INVALID_CURSOR');
+    }
   });
 
   it('uno inválido es 400 INVALID_CURSOR', () => {
@@ -137,6 +148,8 @@ describe('DL-139 · las dos consultas del buscador, sin base', () => {
     readonly versionId: string;
     readonly momentoDeRegistro: Date;
     readonly grupo?: number;
+    /** DL-180: el nivel de la fila, en un catálogo que lo declara. */
+    readonly nivelEnElOrden?: number;
   }
   const CATALOGO = { columnas: Prisma.sql`v."id"::text AS "versionId"`, tablas: Prisma.sql`"version" v`, visibles: Prisma.sql`TRUE` };
   const fila = (n: number, grupo = 2): Fila => ({ versionId: `00000000-0000-4000-8000-${String(n).padStart(12, '0')}`, momentoDeRegistro: new Date(Date.UTC(2026, 9, 16, 0, 0, n)), grupo });
@@ -205,13 +218,38 @@ describe('DL-139 · las dos consultas del buscador, sin base', () => {
     const { cliente } = clienteFalso([fila(1, 0), fila(2, 1), fila(3, 2)]);
     const r = await buscarEnCatalogo<Fila>(cliente, CATALOGO, leerBusqueda('pollo'), 2, null);
     expect(r.page.hasMore).toBe(true);
-    expect(leerCursorDeBusqueda(r.page.nextCursor)).toEqual({ grupo: 1, momento: fila(2).momentoDeRegistro, id: fila(2).versionId });
+    expect(leerCursorDeBusqueda(r.page.nextCursor)).toEqual({ grupo: 1, momento: fila(2).momentoDeRegistro, id: fila(2).versionId, nivel: 0 });
 
     const siguiente = clienteFalso([]);
     const cursor = leerCursorDeBusqueda(r.page.nextCursor);
     const r2 = await buscarEnCatalogo<Fila>(siguiente.cliente, CATALOGO, leerBusqueda('pollo'), 2, cursor);
     expect(r2.filas).toEqual([]);
     expect(siguiente.consultas).toHaveLength(1);
+  });
+
+  it('DL-180 · con nivel: dentro de cada grupo, primero el nivel 0; el cursor lo lleva y la página siguiente lo respeta', async () => {
+    const NIVEL = Prisma.sql`(CASE WHEN v."ajeno" THEN 1 ELSE 0 END)`;
+    const conNivel = { ...CATALOGO, nivel: NIVEL };
+    const { cliente, consultas } = clienteFalso([fila(1, 1), { ...fila(2, 1), nivelEnElOrden: 1 } as Fila, fila(3, 2)]);
+    const r = await buscarEnCatalogo<Fila>(cliente, conNivel, leerBusqueda('galleta'), 2, null);
+    expect(consultas[0]!.sql).toContain('ORDER BY grp."grupo", (CASE WHEN v."ajeno" THEN 1 ELSE 0 END), v."momento_de_registro" DESC, v."id" DESC');
+    expect(leerCursorDeBusqueda(r.page.nextCursor)).toEqual({ grupo: 1, momento: fila(2).momentoDeRegistro, id: fila(2).versionId, nivel: 1 });
+    const siguiente = clienteFalso([]);
+    await buscarEnCatalogo<Fila>(siguiente.cliente, conNivel, leerBusqueda('galleta'), 2, leerCursorDeBusqueda(r.page.nextCursor));
+    expect(siguiente.consultas[0]!.sql).toContain('(CASE WHEN v."ajeno" THEN 1 ELSE 0 END) > ');
+    // Los parecidos también van por nivel.
+    const parecidos = clienteFalso([], []);
+    await buscarEnCatalogo<Fila>(parecidos.cliente, conNivel, leerBusqueda('galeta'), 20, null);
+    expect(parecidos.consultas[1]!.sql).toContain('ORDER BY (CASE WHEN v."ajeno" THEN 1 ELSE 0 END), par."suma" DESC');
+  });
+
+  it('DL-180 · sin nivel, ninguna constante entra al ORDER BY (sería el número de una columna)', async () => {
+    const { cliente, consultas } = clienteFalso([], []);
+    await buscarEnCatalogo<Fila>(cliente, CATALOGO, leerBusqueda('manzna'), 20, null);
+    const ordenes = consultas.flatMap((c) => c.sql.split(/\r?\n/).filter((l) => l.includes('ORDER BY')));
+    expect(ordenes.length).toBeGreaterThan(0);
+    for (const l of ordenes) expect(l).not.toMatch(/ORDER BY 0\b|, 0,/);
+    expect(consultas[1]!.sql).toContain('ORDER BY par."suma" DESC');
   });
 
   it('sin texto, una sola consulta, todo en el último grupo y lo más nuevo primero', async () => {

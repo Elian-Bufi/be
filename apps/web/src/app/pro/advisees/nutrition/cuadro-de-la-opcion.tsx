@@ -14,10 +14,32 @@
  * - «Crearlo a mano» e «Importarlo de Open Food Facts» reemplazan el contenido del cuadro, con «Volver a la opción»: no
  *   se abre un cuadro encima de otro (§2.3). Lo buscado se conserva, «Crearlo a mano» arranca con ese nombre, y al volver
  *   el foco vuelve al buscador y se anuncia lo agregado.
+ * - **WP-NUTRICION-PLANIFICACION:** cada alimento dice lo que aporta con su cantidad y, en la pista, su composición cada
+ *   100 g y de dónde sale (NUP-01); al costado, la opción como queda frente al rango indicado de su comida y el día frente
+ *   al suyo, en vivo y sin calificar (NUP-04).
+ * - **WP-NUTRICION-ALIMENTOS (DL-180):** cada resultado lleva el ícono de su grupo (NUA-05) y el nivel de su origen a la
+ *   vista: «Verificado», «Tuyo» o «De otro profesional» (NUA-03). Lo de otro profesional va después y, al elegirlo, se
+ *   mira primero: el aviso y su composición cada 100 g, con «Sumarlo» o «Volver a buscar». Un alimento con un equivalente
+ *   verificado (NUA-04) lleva ese verificado justo antes, como sugerencia.
  */
-import { cantidad as formatearCantidad, COPY_HABITUALES, habitualesQueCoinciden, origenEnElCatalogo, type ElementoDeCatalogo, type ElementoEncontrado, type VersionDeObjetivo } from '@be/domain';
-import { useEffect, useId, useRef, useState, type RefObject } from 'react';
+import {
+  cantidad as formatearCantidad,
+  COPY_ALIMENTOS,
+  COPY_HABITUALES,
+  COPY_MIS_ALIMENTOS,
+  habitualesQueCoinciden,
+  iconoDelAlimento,
+  origenEnElCatalogo,
+  type ElementoDeCatalogo,
+  type ElementoEncontrado,
+  type EquivalenteVerificado,
+  type Rango as RangoIndicado,
+  type VersionDeObjetivo,
+} from '@be/domain';
+import { useContext, useEffect, useId, useRef, useState, type RefObject } from 'react';
+import { avisoDeEquivalente, conSugeridos, ContextoDeLosAlimentos, datosDelAlimento, etiquetaDelNivel, type DatosDelAlimento } from './alimentos-del-catalogo';
 import { CuadroEnfocado } from '../../../../components/cuadro-enfocado';
+import { Enlace } from '../../../../components/enlace';
 import { Aviso } from '../../../../components/formulario';
 import { Icono } from '../../../../components/icono';
 import { api } from '../../../../lib/api';
@@ -44,7 +66,9 @@ import {
   resultadosDelBuscador,
 } from './opcion-en-un-cuadro';
 import { useNumeroDelObjetivo } from './pasos-del-asistente';
-import { COPY_RANGOS, faltantesDeLaOpcion, fibraDeLaOpcion, itemsParaElTotal, NUTRIENTES_DEL_RANGO, queFaltaEnPalabras, rangoDeLaComida, rangoEnUnaCelda, totalDeLaOpcion, type Composiciones, type TotalDeLaOpcion } from './rangos';
+import { FrenteALosRangos } from './comida-del-editor';
+import { diaFrenteAlRango, opcionFrenteAlRango, origenBreve } from './planificacion';
+import { COPY_RANGOS, faltantesDeLaOpcion, fibraDeLaOpcion, itemsParaElTotal, NUTRIENTES_DEL_RANGO, queFaltaEnPalabras, rangoDeLaComida, rangoDelDia, rangoEnUnaCelda, totalDeLaOpcion, type Composiciones, type RangoPorNutriente, type TotalDeLaOpcion } from './rangos';
 
 type Busqueda =
   | { readonly tipo: 'quieta' }
@@ -68,6 +92,10 @@ export function CuadroDeLaOpcion({
   otrasOpciones,
   nombres,
   composiciones,
+  origenes,
+  rangoIndicadoDeLaComida,
+  rangoIndicadoDelDia,
+  otrasComidasDelDia,
   objetivo,
   habituales,
   alGuardar,
@@ -86,16 +114,36 @@ export function CuadroDeLaOpcion({
   otrasOpciones: readonly { readonly nombre: string; readonly total: TotalDeLaOpcion }[];
   nombres: Readonly<Record<string, string>>;
   composiciones: Composiciones;
+  /** NUP-01: de dónde sale cada alimento, por su identidad. */
+  origenes: ReadonlyMap<string, string>;
+  /** NUP-04: el rango indicado de la comida y el del día, si hay. */
+  rangoIndicadoDeLaComida: RangoIndicado | null;
+  rangoIndicadoDelDia: RangoIndicado | null;
+  /** NUP-04: lo que aportan las demás comidas del día (de la opción que menos a la que más), para ubicar el día. */
+  otrasComidasDelDia: readonly RangoPorNutriente[];
   objetivo: VersionDeObjetivo | null;
   habituales: AlimentosHabituales;
-  /** «Guardar la opción»: la copia, con los nombres y las composiciones de lo que se sumó. */
-  alGuardar: (opcion: OpcionEnEdicion, nuevos: { readonly nombres: Readonly<Record<string, string>>; readonly composiciones: ReadonlyMap<string, ElementoDeCatalogo['composition']> }) => void;
+  /** «Guardar la opción»: la copia, con los nombres, las composiciones y los orígenes de lo que se sumó. */
+  alGuardar: (
+    opcion: OpcionEnEdicion,
+    nuevos: {
+      readonly nombres: Readonly<Record<string, string>>;
+      readonly composiciones: ReadonlyMap<string, ElementoDeCatalogo['composition']>;
+      readonly origenes: ReadonlyMap<string, string>;
+      /** NUA-05: el grupo de cada alimento sumado (su ícono). */
+      readonly alimentos: ReadonlyMap<string, DatosDelAlimento>;
+    },
+  ) => void;
   onCerrar: () => void;
 }) {
   const [copia, setCopia] = useState<OpcionEnEdicion | null>(opcion);
   const [modo, setModo] = useState<'opcion' | 'manual' | 'importar'>('opcion');
   const [nombresNuevos, setNombresNuevos] = useState<Record<string, string>>({});
   const [composicionesNuevas, setComposicionesNuevas] = useState<ReadonlyMap<string, ElementoDeCatalogo['composition']>>(() => new Map());
+  const [origenesNuevos, setOrigenesNuevos] = useState<ReadonlyMap<string, string>>(() => new Map());
+  // NUA-05: el grupo de lo que se suma, para el ícono de su fila (los demás vienen del editor).
+  const alimentosDelEditor = useContext(ContextoDeLosAlimentos);
+  const [alimentosNuevos, setAlimentosNuevos] = useState<ReadonlyMap<string, DatosDelAlimento>>(() => new Map());
   // Lo buscado y lo último agregado viven acá: sobreviven a «Crearlo a mano» y a «Importarlo…».
   const [texto, setTexto] = useState('');
   const [agregado, setAgregado] = useState<Agregado>(null);
@@ -108,11 +156,18 @@ export function CuadroDeLaOpcion({
     setModo('opcion');
     setNombresNuevos({});
     setComposicionesNuevas(new Map());
+    setOrigenesNuevos(new Map());
+    setAlimentosNuevos(new Map());
     setTexto('');
     setAgregado(null);
     // Solo al abrir: la opción del borrador no cambia con el cuadro abierto (es modal).
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [abierto]);
+  // NUP-11 (NUP-D10): lo escrito en «Crearlo a mano» o en «Importarlo…» todavía no está en la opción. Cerrar (tocar afuera,
+  // Escape o «Cerrar») primero pregunta, como con la opción cambiada; «Volver a la opción» lo deja atrás a propósito.
+  const [escritoAparte, setEscritoAparte] = useState(false);
+  useEffect(() => setEscritoAparte(false), [modo, abierto]);
+  const anotarLoEscrito = () => setEscritoAparte(true);
   // Al volver de «Crearlo a mano» o de «Importarlo…», el foco vuelve al buscador (WCAG 2.4.3); al abrir lo pone el cuadro.
   const modoAnterior = useRef(modo);
   useEffect(() => {
@@ -122,9 +177,13 @@ export function CuadroDeLaOpcion({
 
   const todosLosNombres = { ...nombres, ...nombresNuevos };
   const todasLasComposiciones: Composiciones = new Map([...composiciones, ...composicionesNuevas]);
-  const sumar = (e: ElementoDeCatalogo) => {
+  const todosLosOrigenes: ReadonlyMap<string, string> = new Map([...origenes, ...origenesNuevos]);
+  const todosLosAlimentos: ReadonlyMap<string, DatosDelAlimento> = new Map([...alimentosDelEditor, ...alimentosNuevos]);
+  const sumar = (e: ElementoDeCatalogo | ElementoEncontrado) => {
     setNombresNuevos((n) => ({ ...n, [e.catalogItemId]: e.name }));
+    setAlimentosNuevos((m) => new Map(m).set(e.catalogItemId, datosDelAlimento('foodGroup' in e ? e : undefined)));
     setComposicionesNuevas((m) => new Map(m).set(e.catalogItemId, e.composition));
+    setOrigenesNuevos((m) => new Map(m).set(e.catalogItemId, origenBreve(e)));
     setCopia((o) => (o ? { ...o, items: [...o.items, itemNuevo(e.catalogItemId)] } : o));
     setAgregado((a) => ({ nombre: e.name, veces: (a?.veces ?? 0) + 1 }));
   };
@@ -149,6 +208,10 @@ export function CuadroDeLaOpcion({
   const rango = total ? rangoDeLaComida([...otrasOpciones, { nombre: copia?.label || titulo, total }], comida) : null;
   const sinNombre = copia !== null && copia.label.trim() === '';
   const impide = copia ? loQueNoDejaGuardarLaOpcion(copia, todosLosNombres) : null;
+  // NUP-04: la opción como queda frente al rango de su comida, y el día (con esta opción en su comida) frente al suyo.
+  const frente = total && rango ? [...opcionFrenteAlRango(total, rangoIndicadoDeLaComida, comida), ...diaFrenteAlRango(rangoDelDia([...otrasComidasDelDia, rango], ''), rangoIndicadoDelDia)] : [];
+  // Una opción nueva todavía vacía no tiene nada que ubicar: una sola indicación, no una línea «sin dato» por macro.
+  const sinAlimentos = copia !== null && copia.items.length === 0 && !copia.recipeVersionId;
 
   return (
     <CuadroEnfocado
@@ -157,7 +220,7 @@ export function CuadroDeLaOpcion({
       ancho
       titulo={titulo}
       sobretitulo={subtitulo}
-      conCambios={Boolean(opcion && copia && cambioLaOpcion(opcion, copia))}
+      conCambios={Boolean(opcion && copia && cambioLaOpcion(opcion, copia)) || (modo !== 'opcion' && escritoAparte)}
       focoInicial={buscador}
       className="cuadro-de-la-opcion"
       principal={
@@ -167,17 +230,17 @@ export function CuadroDeLaOpcion({
               apagado: impide?.motivo ?? null,
               // Apagado, lleva al campo que lo impide: el nombre o la cantidad que no se entiende.
               alTocarApagado: () => document.getElementById(impide && impide.fila !== null ? `cuadro-item-${impide.fila}-cantidad` : 'opcion-en-un-cuadro-nombre')?.focus(),
-              alTocar: () => copia && alGuardar(copia, { nombres: nombresNuevos, composiciones: composicionesNuevas }),
+              alTocar: () => copia && alGuardar(copia, { nombres: nombresNuevos, composiciones: composicionesNuevas, origenes: origenesNuevos, alimentos: alimentosNuevos }),
             }
           : null
       }
       onCerrar={onCerrar}
     >
       {copia && modo === 'manual' ? (
-        <CrearManualmente id="opcion-crear-a-mano" nombreInicial={texto.trim()} onCreado={sumarDeAfuera} onVolver={() => setModo('opcion')} />
+        <CrearManualmente id="opcion-crear-a-mano" nombreInicial={texto.trim()} onCreado={sumarDeAfuera} onVolver={() => setModo('opcion')} alEscribir={anotarLoEscrito} />
       ) : null}
       {copia && modo === 'importar' ? (
-        <div className="agregar-item__otro">
+        <div className="agregar-item__otro" onInput={anotarLoEscrito}>
           <button type="button" className="boton boton--enlace agregar-item__volver" onClick={() => setModo('opcion')}>
             <Icono nombre="izquierda" tamano={18} />
             {C.volver}
@@ -196,6 +259,7 @@ export function CuadroDeLaOpcion({
               <p className="nota">{C.sinItems}</p>
             ) : (
               <div className="desplazable-x">
+                <ContextoDeLosAlimentos.Provider value={todosLosAlimentos}>
                 <table className="tabla items-del-editor">
                   <caption className="visualmente-oculto">Los alimentos de {titulo}</caption>
                   <thead>
@@ -216,12 +280,15 @@ export function CuadroDeLaOpcion({
                         id={`cuadro-item-${l}`}
                         item={it}
                         nombre={todosLosNombres[it.catalogItemId] ?? 'Elemento'}
+                        composicion={todasLasComposiciones.get(it.catalogItemId)}
+                        origen={todosLosOrigenes.get(it.catalogItemId) ?? null}
                         onCambiar={(c) => cambiar((o) => void (o.items[l] = { ...o.items[l]!, ...c }))}
                         onQuitar={() => cambiar((o) => void o.items.splice(l, 1))}
                       />
                     ))}
                   </tbody>
                 </table>
+                </ContextoDeLosAlimentos.Provider>
               </div>
             )}
             <BuscadorDeLaOpcion campo={buscador} texto={texto} alEscribir={setTexto} agregado={agregado} habituales={habituales} alSumar={sumar} />
@@ -234,6 +301,13 @@ export function CuadroDeLaOpcion({
               <button type="button" className="boton boton--enlace" onClick={() => setModo('importar')}>
                 {C.importar}
               </button>
+            </p>
+            {/* DL-180 (NUA-01): un alimento propio con un error se corrige en «Mis alimentos», sin dejar el plan. */}
+            <p className="nota">
+              {COPY_MIS_ALIMENTOS.enElCuadro}{' '}
+              <Enlace href="/pro/foods" target="_blank" rel="noopener" data-ir-a-mis-alimentos>
+                {COPY_MIS_ALIMENTOS.enOtraPestana}
+              </Enlace>
             </p>
           </div>
           <aside className="cuadro-de-la-opcion__costado" aria-label="Totales de la opción">
@@ -262,6 +336,11 @@ export function CuadroDeLaOpcion({
                 <h3 id="opcion-rango-de-la-comida">{C.rangoDe(comida)}</h3>
                 <p>{NUTRIENTES_DEL_RANGO.map((n) => `${COPY_RANGOS.nutriente[n]}: ${rangoEnUnaCelda(rango[n], n)}`).join(' · ')}</p>
                 <p className="nota">{C.conEstaOpcion}</p>
+              </section>
+            ) : null}
+            {frente.length > 0 ? (
+              <section className="cuadro-de-la-opcion__tarjeta" aria-label="Frente a los rangos indicados" data-frente-en-el-cuadro>
+                <FrenteALosRangos lineas={frente} sinAlimentos={sinAlimentos} />
               </section>
             ) : null}
             <section className="cuadro-de-la-opcion__tarjeta" aria-labelledby="opcion-objetivo-general">
@@ -330,7 +409,10 @@ function BuscadorDeLaOpcion({
 
   const q = texto.trim();
   const deHabituales = q ? habitualesQueCoinciden(habituales.habituales, q) : [];
-  const resultados = q ? resultadosDelBuscador<ElementoDeCatalogo | ElementoEncontrado>(deHabituales, busqueda.tipo === 'lista' && busqueda.texto === q ? busqueda.alimentos : []) : [];
+  // NUA-04: el verificado equivalente de un alimento va justo antes de él, como sugerencia.
+  const resultados = q
+    ? conSugeridos(resultadosDelBuscador<ElementoDeCatalogo | ElementoEncontrado>(deHabituales, busqueda.tipo === 'lista' && busqueda.texto === q ? busqueda.alimentos : []), (e) => comoEncontrado(e as EquivalenteVerificado))
+    : [];
   const actual = resultados.length > 0 ? Math.min(marcado, resultados.length - 1) : -1;
   const abierta = q.length > 0;
   const celda = (n: number, c: 0 | 1) => (c === 0 ? `${id}-r-${n}` : `${id}-r-${n}-habitual`);
@@ -339,12 +421,15 @@ function BuscadorDeLaOpcion({
     setMarcado(0);
     setColumna(0);
   };
+  const sumar = (a: ElementoDeCatalogo) => {
+    alSumar(a);
+    escribir('');
+    campo.current?.focus();
+  };
   const elegir = (n: number) => {
     const r = resultados[n];
     if (!r) return;
-    alSumar(r.alimento);
-    escribir('');
-    campo.current?.focus();
+    sumar(r.alimento);
   };
   const alternar = (n: number) => {
     const r = resultados[n];
@@ -441,9 +526,23 @@ function BuscadorDeLaOpcion({
                 onClick={() => elegir(n)}
               >
                 <span className="buscador-de-la-opcion__nombre">
+                  {/* NUA-05: el ícono de su grupo; el nombre ya dice qué es, así que el lector no lo repite. */}
+                  <span className="buscador-de-la-opcion__grupo" data-grupo={('foodGroup' in r.alimento ? r.alimento.foodGroup : null) ?? 'sin-grupo'}>
+                    <Icono nombre={iconoDelAlimento('foodGroup' in r.alimento ? r.alimento.foodGroup : null)} tamano={20} />
+                  </span>
                   <strong>{r.alimento.name}</strong>
                   {r.habitual ? <span className="etiqueta-de-dato">{C.habitual}</span> : null}
+                  {etiquetaDelNivel(r.alimento) ? (
+                    <span className="etiqueta-de-dato buscador-de-la-opcion__nivel" data-nivel={'originLevel' in r.alimento ? r.alimento.originLevel : undefined}>
+                      {etiquetaDelNivel(r.alimento)}
+                    </span>
+                  ) : null}
                 </span>
+                {r.sugeridoPor ? (
+                  <span className="nota buscador-de-la-opcion__sugerido" data-sugerido-por={r.sugeridoPor}>
+                    {COPY_ALIMENTOS.equivalenteSugerido(r.sugeridoPor)}
+                  </span>
+                ) : null}
                 <span className="buscador-de-la-opcion__valores">
                   {valorDe(c.energyKcal, 'kcal')} · carbohidratos {valorDe(c.carbohydrateG, 'g')} · proteínas {valorDe(c.proteinG, 'g')} · grasas {valorDe(c.fatG, 'g')}
                 </span>
@@ -452,6 +551,9 @@ function BuscadorDeLaOpcion({
                   {/* El origen, breve y como texto: una celda de la grilla no lleva un enlace adentro. */}
                   {'origin' in r.alimento ? `${origenEnElCatalogo(r.alimento, fechaDelDia).breve} · ` : ''}
                   {C.cadaCien(c.referenceAmount === '100ml')} · {completitudEnPalabras(c)}
+                  {'certification' in r.alimento && r.alimento.certification ? ` · ${COPY_ALIMENTOS.certificadoCon(r.alimento.certification.source)}` : ''}
+                  {/* NUA-04: si su verificado equivalente no quedó justo arriba (ya estaba antes en la lista), lo nombra. */}
+                  {avisoDeEquivalente(r.alimento) && resultados[n - 1]?.sugeridoPor !== r.alimento.name ? <span data-tiene-equivalente>{` · ${avisoDeEquivalente(r.alimento)}`}</span> : null}
                 </span>
               </div>
               <div id={celda(n, 1)} role="gridcell" aria-selected={n === actual && columna === 1} className="buscador-de-la-opcion__estrella" data-celda-marcada={n === actual && columna === 1 ? '' : undefined}>
@@ -477,3 +579,9 @@ function BuscadorDeLaOpcion({
     </div>
   );
 }
+
+/** NUA-04: un verificado sugerido, como una fila más del buscador. */
+function comoEncontrado(e: EquivalenteVerificado): ElementoEncontrado {
+  return { ...e, matchedAlternativeName: null, origin: { loadedBy: null, approximateCorrespondence: null }, originLevel: 'VERIFIED', certification: null, verifiedEquivalent: null };
+}
+

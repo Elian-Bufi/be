@@ -182,6 +182,7 @@
 | DL-176 | Decisión de Dirección · 2026-11-15 («casi por default»; WP-COMPARTIR) | Ley 25.326 art. 5 y art. 7 · 08 §12.2, §12.3, C-12 y §14.1 · 10-B04 §7-§9 («Aceptar y compartir datos», CAND-10-CON-A) · INV-06-53 · 10-B02 §7 · RNF-PRI-002 · DL-115 · DL-137 D-7 · DL-152 · DL-163 D-13 · DL-165 D-9 y D-25 · DL-175 (HA-T01 y HA-T16) | Compartir entre áreas no tenía pantalla (la API lo permitía, nadie lo escribía), la historia anterior se pedía como opt-in y aceptar a un profesional eran varios actos separados (el vínculo, el B2, el A3 y los hábitos aparte); Dirección pide que lo único con rozamiento sea conectar y que lo demás sea «casi como aceptar todo» | **PROGRAMADA en `wp-compartir` (PR abierto, sin integrar) · CMP-D1 a CMP-D16 a ratificar**: después de aceptar el vínculo (que sigue siendo aparte, 10-B04), una sola pantalla de consentimiento con todo preseleccionado (su área, el A3 si falta, el resumen y el plan de las otras áreas para ese profesional y lo de su área para los demás, la historia anterior y los hábitos si corresponde), «Aceptar y compartir» y «Elegir qué compartir»; un toque escribe todos los actos en una transacción, cada uno con su texto, su versión y su auditoría. «Quién ve qué» suma un interruptor por cosa y los pedidos para responder; quien ya tiene vínculos ve una tarjeta única en Inicio. Familia propia CMP (API-CMP-01 a 03), sin migración (`docs/paquetes/WP-COMPARTIR.md`). Actualiza HA-T01 de DL-175 |
 | DL-177 | Decisión de Dirección · 2026-11-18 (el profesional sin el autenticador) | 08 §25 · 08 §42 (condición 6) · Ley 25.326 art. 9 · RNF-PRI-002 · DL-155 · DL-169 (UF-11, UF-D12 y UF-T56) · DL-172 | Para actuar como profesional había que configurar el autenticador y escribir el código de 6 dígitos en cada sesión; Dirección quiere que el profesional entre con su contraseña (o con Google) y, más adelante, con un código por correo | **DECIDIDA por Dirección el 2026-11-18 · PROGRAMADA en `wp-sin-autenticador-profesional` (PR abierto, sin integrar)**: «solo contraseña hasta tener correo», con una constante del dominio (`SEGUNDO_FACTOR_DEL_PROFESIONAL_EXIGIDO = false`). Administración sigue con contraseña y autenticador; API-ADM-19 queda en el contrato y fuera de la consola; sin migraciones. A ratificar: la transición, la suspensión de 08 §25 y de la condición 6 de 08 §42, y el riesgo (una sola llave para datos de salud) |
 | DL-178 | Decisión de Dirección · 2026-11-18 (las series de calentamiento) | 06 REG-06-105 · 09v10 (comparación serie por serie) · DL-122 · DL-152 · DL-161 · DL-171 (BE-E1RM, Epley v1) | El plan y el registro no tenían un tipo de serie: un calentamiento entraba en la cuenta de series, en la barra de la sesión, en «La vez pasada», en el historial, en Analizar y en el 1RM estimado | **DECIDIDA por Dirección el 2026-11-18 · PROGRAMADA en `wp-series-de-calentamiento` (PR abierto, sin integrar), a ratificar D-1 a D-6**: `setKind` (`WORKING` por omisión, `WARM_UP`) en la serie indicada y en la registrada, sin reescribir nada (la ausencia es efectiva); explícito solo para el cliente que declara `training-set-kinds-1`; el calentamiento arriba, con «C», fuera de todo cálculo; las lecturas nuevas de la APK se congelan con la próxima candidata (DL-152) |
+| DL-180 | Decisión de Dirección · 2026-11-16 (el segundo tramo de la planificación de Nutrición: los alimentos del catálogo) | REG-06-99 a 101 · REG-06-135 · RF-027 · RF-060 · DL-119 y DL-120 (el patrón de las recetas) · DL-141 (D-1, D-6) · DL-155 (WP-ADMINISTRACION) · DL-169 (UF-09) | Un alimento cargado a mano con un error no se podía corregir ni retirar; el buscador no distinguía lo verificado de lo cargado por cualquiera; Administración no tenía cómo revisar lo cargado a mano; los alimentos no tenían ícono por grupo; la imagen de la receta recién se ofrecía después del primer guardado | **PROGRAMADA en `wp-nutricion-alimentos` (PR en borrador contra `wp-nutricion-planificacion`, sin integrar) · NUA-D01 a NUA-D23 a ratificar** (NUA-D05 y D13, sin efecto por la decisión de Dirección del 2026-11-19): corregir emite una versión nueva y retirar una versión RETIRADO, en la cadena de siempre; **lo cargado a mano es de quien lo cargó** (segundo tramo, `wp-nutricion-alimentos-2`, PR en borrador contra `wp-nutricion-alimentos`); «Verificado» (la tabla oficial, el canon o lo certificado) y «Tuyo» en el buscador; Administración ve todas las cargas con el nombre de quien las cargó, las agrupa por nombre parecido, certifica con una fuente, marca equivalentes y **suma al canon**; un ícono por grupo; la imagen de la receta al crearla; los campos del asistente; las **medidas caseras** (NUA-08, en el website). Familia propia ALI (API-ALI-01 a 09), cinco migraciones aditivas. Micronutrientes y platos argentinos (NUA-09 y 10), declarados como el tramo siguiente (`docs/paquetes/WP-NUTRICION-ALIMENTOS.md`) |
 
 ---
 
@@ -8698,6 +8699,70 @@ del editor», en el editor del plan de Entrenamiento y de Nutrición, en la eval
 **Lo que no cambia.** Ninguna operación de siempre pierde un campo. El texto de «resumen» aceptado por la persona no se
 amplía: el cuerpo compartido es lo que ese texto ya promete («de Antropometría, el peso y la composición en kilos, con su
 método»). Administración no lee nada de esto. Detalle completo: `docs/paquetes/WP-CONTEXTO-DE-LA-PERSONA.md`.
+
+---
+
+## DL-180 — Los alimentos del catálogo: corregirlos, retirarlos, revisarlos y su grupo
+
+**Decisión de Dirección del 2026-11-16** (el alcance del segundo tramo de la planificación de Nutrición). Paquete:
+`docs/paquetes/WP-NUTRICION-ALIMENTOS.md`. Reservada para Nutrición; si al integrar choca con otra, se renumera.
+
+**El hueco.** El legajo prevé que un elemento del catálogo tenga versiones inmutables y una disponibilidad (REG-06-99 a
+101), pero no había forma de corregir ni de retirar lo cargado a mano: un error de carga («Proteína en polvo» en test)
+quedaba para siempre en el buscador. El buscador tampoco distinguía una tabla oficial de lo que cargó cualquiera, y
+Administración no tenía cómo revisarlo.
+
+**Lo programado (NUA-01 a NUA-07).**
+- Corregir: una versión nueva, contra la versión vista, con el bloqueo y el conflicto de las recetas. Lo activado, las
+  recetas y los registros conservan la versión que citaban (REG-06-101).
+- Retirar: una versión RETIRADO. Sale del buscador y de todo lo nuevo; lo que lo cita lo sigue mostrando, marcado.
+- Tres niveles de origen: «Verificado», «Tuyo» y «De otro profesional». Lo cargado a mano desde DL-180 se comparte con los
+  demás profesionales de Nutrición (con el aviso a la vista); lo de antes, solo cuando su autor lo corrige.
+- Administración certifica con una fuente (vale para esa versión) o marca un equivalente de la tabla oficial, viendo solo
+  el nombre y los valores, y solo de lo compartido (lo que su autor no compartió lo ve solo él).
+- Un ícono por grupo (doce dibujos nuevos de la familia y «Otros» con el genérico), sembrado para la tabla oficial.
+- La imagen de la receta al crearla, y los campos de los pasos 3 y 4 del asistente con el estilo de BE.
+
+**Lo que no cambia.** La APK instalada recibe exactamente lo de antes. Nada se borra ni se reescribe: tres migraciones que
+solo agregan (tres tablas de solo agregar, sus guardias y la siembra de los grupos).
+
+**Decisiones a ratificar:** NUA-D01 a NUA-D13 (§4 del paquete). Las que más pesan: qué se comparte (NUA-D05), que un
+borrador con un alimento retirado se siga guardando (NUA-D03) y que la certificación sea de una versión (NUA-D07).
+
+**Lo que queda.** Medidas caseras, micronutrientes y platos argentinos (NUA-08 a 10, §5 del paquete); validar los íconos;
+retirar «Proteína en polvo» en test con la operación nueva, después de integrar (§6 del paquete).
+
+### DL-180, segundo tramo (rama `wp-nutricion-alimentos-2`, 2026-11-19)
+
+**Cambio de dirección de Dirección (Elián, 2026-11-19):** «si carga algo, que sea propio; Administración debe poder ver
+quién lo cargó y tener control; si hay x profesionales pidiendo eso, lo puede meter al canon; es un problema si cargan todos
+y son compartidos». Reemplaza el «compartir con control» que se había pedido esa misma mañana y deja **sin efecto NUA-D05
+y NUA-D13**.
+
+**Lo programado.**
+- **Lo propio es propio (NUA-D14):** lo cargado a mano lo ve y lo cita solo quien lo cargó; para los demás, el mismo 404 que
+  lo inexistente. No hay nivel «De otro profesional». `alimento_compartido` queda como historia y se cierra.
+- **Administración ve y controla (NUA-D15):** todas las cargas, con el nombre de profesional de quien las cargó (nunca sus
+  personas ni sus planes), agrupadas por nombre parecido con cuántos profesionales cargaron algo así (API-ALI-08).
+- **Sumar al canon (NUA-D16, API-ALI-09):** un alimento verificado de BE, de todos, con la fuente obligatoria; puede partir
+  de una carga y marcar las del grupo como equivalentes. El buscador de cada autor sugiere el verificado antes del suyo, y
+  crear uno con el nombre de un verificado se avisa antes de guardar, sin impedirlo.
+- **Las bajas de la revisión adversaria sobre lo retirado (NUA-D17 a D19):** el borrador acepta solo lo retirado que ya
+  citaba; una receta no cita ninguna versión de un alimento retirado; la imagen de una receta recién creada que no quedó
+  porque venció la sesión se avisa al volver, con su reintento; «Revisar» lleva el foco al formulario.
+- **Medidas caseras (NUA-08, NUA-D20 y D21):** la unidad, la cucharada, la taza y la porción, con su equivalencia; las
+  define quien carga el alimento; en la fila del plan se elige la cantidad con ellas; la cuenta va en gramos y la persona
+  recibe solo los gramos. La tabla oficial no trae medidas (no se inventan).
+
+**Lo que no cambia.** La APK instalada recibe exactamente lo de antes. Dos migraciones nuevas que solo agregan:
+`20261120120000_lo_propio_es_propio` y `20261120130000_medidas_caseras`.
+
+**Lo que queda.** Los micronutrientes clave (NUA-09) y los platos argentinos como recetas de ejemplo (NUA-10), declarados
+en el §5 del paquete; mostrar la medida casera en la APK (sin capacidad de cliente: Dirección dijo el 19/11 que nadie tiene
+APK viejas); ratificar NUA-D14 a D23. **Dirección ratificó el 19/11 NUA-D01 a D13** con dos ajustes: NUA-D03 (una
+receta nueva o corregida no suma un alimento retirado: NUA-D18) y NUA-D07 (Administración ve el nombre de quien lo cargó,
+nunca a quién se le indicó; lo del canon nace como un alimento nuevo, con su fuente y sin el nombre de quien lo cargó; el
+aviso de no escribir datos de personas en el nombre se mantiene).
 
 ---
 

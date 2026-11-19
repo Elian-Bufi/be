@@ -106,7 +106,8 @@ export function estructuraNutricionalComoEntrada(v: VersionDePlan): EstructuraDe
         options: m.options.map((o) => ({
           optionId: o.optionId,
           label: o.label,
-          items: o.items.map((i) => ({ itemId: i.itemId, catalogItemId: i.catalogItemId, quantity: i.quantity, preparationState: i.preparationState, note: i.note })),
+          // NUA-08 (DL-180, segundo tramo): la medida casera elegida viaja con su cantidad.
+          items: o.items.map((i) => ({ itemId: i.itemId, catalogItemId: i.catalogItemId, quantity: i.quantity, preparationState: i.preparationState, note: i.note, ...(i.householdMeasure ? { householdMeasure: i.householdMeasure } : {}) })),
         })),
       })),
     })),

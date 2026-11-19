@@ -11,6 +11,15 @@ import test from 'node:test';
 
 const leer = (r) => readFileSync(new URL(`../src/app/pro/advisees/${r}`, import.meta.url), 'utf8').replace(/\r\n/g, '\n');
 const O = await import('../src/app/pro/advisees/nutrition/opcion-de-otra-comida.ts');
+/**
+ * NUP-08 (WP-NUTRICION-PLANIFICACION; decisión de Dirección del 18/11): en el website del profesional, el «%» de
+ * Nutrición va con su base dicha («18 % de las 2.500 kcal»). Un «%» sin «de la(s)/lo(s)» después es el que no dice de qué
+ * es, y sigue prohibido; también el de cumplimiento o adherencia. En la app de la persona, la regla no cambia.
+ */
+// La base va con su número («de las 2.500 kcal», o la expresión que lo escribe): «de las kcal» no dice de cuáles cuando
+// los gramos no suman las kcal indicadas (revisión adversaria del primer tramo de WP-NUTRICION-PLANIFICACION).
+const porcentajeSinSuBase = (t) => /%(?!\s*de\s+l[ao]s?(?:\s+\d|\s*\$\{|\s*$))/.test(t);
+
 
 const item = (itemId, catalogItemId) => ({ itemId, catalogItemId, quantity: { value: 100, unit: 'g' }, preparationState: 'COOKED', note: 'sin sal' });
 const dias = [
@@ -103,8 +112,8 @@ test('ED-31 · cada resultado dice qué le falta y si es de demostración; lo qu
   assert.equal(Q.completitudEnPalabras({ energyKcal: 1, carbohydrateG: 1, proteinG: 1 }), 'Sin dato de grasas y fibra');
   assert.equal(Q.esDeDemostracion(alimento('x', 'BE_SYNTHETIC_SEED')), true);
   assert.equal(Q.esDeDemostracion(alimento('x')), false);
-  // Ningún texto de Nutrición dice «%» (DJ-7).
-  assert.doesNotMatch(JSON.stringify(Q.COPY_OPCION_EN_UN_CUADRO, (_, v) => (typeof v === 'function' ? v('x', 1) : v)), /%/);
+  // Un «%» de Nutrición dice su base (DJ-7, cambiada por NUP-08).
+  assert.equal(porcentajeSinSuBase(JSON.stringify(Q.COPY_OPCION_EN_UN_CUADRO, (_, v) => (typeof v === 'function' ? v('x', 1) : v))), false);
 });
 
 test('ED-31 · «Guardar la opción» conserva la identidad que un guardado le dio con el cuadro abierto', () => {
@@ -124,7 +133,9 @@ test('ED-31 · Enter suma el marcado y el cuadro sigue abierto; el borrador camb
   assert.match(cuadro, /role="combobox"/);
   assert.match(cuadro, /else if \(e\.key === 'Enter'\) \{\n\s+e\.preventDefault\(\);\n\s+if \(actual >= 0 && columna === 1\) alternar\(actual\);\n\s+else if \(actual >= 0\) elegir\(actual\);/);
   // Elegir vacía el campo y deja el foco adentro: no cierra nada.
-  assert.match(cuadro, /alSumar\(r\.alimento\);\n\s+escribir\(''\);\n\s+campo\.current\?\.focus\(\);/);
+  // DL-180 (NUA-03): sumar es una pieza; elegir la usa, salvo lo de otro profesional, que primero se mira.
+  assert.match(cuadro, /alSumar\(a\);\n\s+escribir\(''\);\n\s+campo\.current\?\.focus\(\);/);
+  assert.match(cuadro, /\n\s+sumar\(r\.alimento\);\n\s+\};/);
   const editor = leer('nutrition/editor.tsx');
   assert.match(editor, /m\.options\[k\] = opcionAlGuardar\(m\.options\[k\], copia\);/);
   assert.doesNotMatch(editor, /<AgregarItem/);
@@ -272,8 +283,9 @@ test('ED-32 · usarla cambia solo la versión citada, y el nombre si era el de l
 
 test('ED-32 · guardada la receta, el cuadro pasa a la foto (opcional) y vuelve al plan con lo que pasó', () => {
   const editor = leer('nutrition/editor.tsx');
-  assert.match(editor, /pasarALaFoto\(r, COPY_RECETA_NUEVA\.agregada\(r\.name, res\.k, recetaNueva\.nombre\)\);/);
-  assert.match(editor, /pasarALaFoto\(r, COPY_RECETA_NUEVA\.soloGuardada\(r\.name\)\);/);
+  // NUA-06: con lo que pasó con la imagen elegida al crearla (`imagen-de-la-receta.test.mjs`).
+  assert.match(editor, /pasarALaFoto\(r, COPY_RECETA_NUEVA\.agregada\(r\.name, res\.k, recetaNueva\.nombre\), imagen\);/);
+  assert.match(editor, /pasarALaFoto\(r, COPY_RECETA_NUEVA\.soloGuardada\(r\.name\), imagen\);/);
   assert.match(editor, /principal=\{fotoDeLaReceta \? \{ texto: COPY_FOTO_DE_LA_RECETA\.listo, alTocar: cerrarLaRecetaNueva \} : null\}/);
   assert.match(editor, /<ImagenDeReceta\n\s+token=\{token\}\n\s+receta=\{fotoDeLaReceta\.receta\}/);
 });
@@ -336,7 +348,7 @@ test('ED-30 · «Lo que llevás armado», en pocas líneas', () => {
   );
 });
 
-test('TEST-EDP-027 · el objetivo general con su versión; sin «%» en el asistente; sin objetivo no hay paso 2', () => {
+test('TEST-EDP-027 · el objetivo general con su versión; un «%» del asistente dice su base (NUP-08); sin objetivo no hay paso 2', () => {
   const versiones = [
     { objectiveId: 'o1', versionId: 'v2', createdAt: '2026-11-10T10:00:00Z' },
     { objectiveId: 'o1', versionId: 'v1', createdAt: '2026-10-01T10:00:00Z' },
@@ -348,8 +360,8 @@ test('TEST-EDP-027 · el objetivo general con su versión; sin «%» en el asist
   assert.equal(N.numeroDeLaVersionDelObjetivo(versiones, 'nada'), null);
   assert.equal(N.COPY_ASISTENTE_DE_NUTRICION.versionYFecha(3, 'martes 10 de noviembre'), 'Versión 3, vigente desde el martes 10 de noviembre.');
   const textos = JSON.stringify(N.COPY_ASISTENTE_DE_NUTRICION, (_, v) => (typeof v === 'function' ? v(1, 'x') : v));
-  assert.doesNotMatch(textos, /%/);
-  assert.doesNotMatch(leer('nutrition/pasos-del-asistente.tsx'), /%/);
+  assert.equal(porcentajeSinSuBase(textos), false);
+  assert.equal(porcentajeSinSuBase(leer('nutrition/pasos-del-asistente.tsx')), false);
   // El paso 1 solo se ofrece con un objetivo del que nacer; sin él, empieza por la evaluación.
   const plan = leer('nutrition/plan.tsx');
   assert.match(plan, /const conElAsistente = sePuedeCrear && pasoPedido\(parametros\.get\('asistente'\)\) !== null;/);

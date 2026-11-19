@@ -270,6 +270,13 @@ import {
   type EditarRecetaRequest,
 } from './contratos-recetas';
 import {
+  AlimentoPropioResponseSchema,
+  AlimentosConsultadosResponseSchema,
+  ListaDeAlimentosPropiosResponseSchema,
+  type CorregirAlimentoRequest,
+  type RetirarAlimentoRequest,
+} from './contratos-alimentos';
+import {
   HoyConOpcionesResponseSchema,
   ListaDeRegistrosDeComidaResponseSchema,
   RegistroDeComidaResponseSchema,
@@ -1225,6 +1232,22 @@ export function crearClienteBe(opciones: OpcionesDeCliente) {
     /** API-INT-NUT-01. */
     crearElementoDeCatalogo(token: string, cuerpo: CrearElementoDeCatalogoRequest, claveDeIdempotencia: string) {
       return llamar('POST', '/nutrition/catalog-items', { token, claveDeIdempotencia, esquema: ElementoDeCatalogoResponseSchema, cuerpo });
+    },
+    /** API-ALI-01 (DL-180): los alimentos propios cargados a mano, también los retirados. */
+    alimentosPropios(token: string, cursor?: string) {
+      return llamar('GET', `/nutrition/catalog-items/mine${query({ limit: '50', cursor })}`, { token, esquema: ListaDeAlimentosPropiosResponseSchema });
+    },
+    /** API-ALI-02 (NUA-01): corregir uno propio; nace una versión nueva. */
+    corregirAlimento(token: string, alimentoId: string, cuerpo: CorregirAlimentoRequest, claveDeIdempotencia: string) {
+      return llamar('PATCH', `/nutrition/catalog-items/${encodeURIComponent(alimentoId)}`, { token, claveDeIdempotencia, esquema: AlimentoPropioResponseSchema, cuerpo });
+    },
+    /** API-ALI-03 (NUA-02): retirarlo; no se borra. */
+    retirarAlimento(token: string, alimentoId: string, cuerpo: RetirarAlimentoRequest, claveDeIdempotencia: string) {
+      return llamar('POST', `/nutrition/catalog-items/${encodeURIComponent(alimentoId)}/retirement`, { token, claveDeIdempotencia, esquema: AlimentoPropioResponseSchema, cuerpo });
+    },
+    /** API-ALI-04: los que se ven, por su identidad (también los retirados), para lo que ya está citado. */
+    consultarAlimentos(token: string, ids: readonly string[]) {
+      return llamar('POST', '/nutrition/catalog-items/lookup', { token, esquema: AlimentosConsultadosResponseSchema, cuerpo: { catalogItemIds: [...ids] } });
     },
     /** API-INT-NUT-02: consulta Open Food Facts y crea un candidato. Todavía no es un elemento del catálogo. */
     crearCandidatoDeAlimento(token: string, codigoDeBarras: string, claveDeIdempotencia: string) {

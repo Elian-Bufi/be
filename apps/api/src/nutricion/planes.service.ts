@@ -45,7 +45,7 @@ import { EvaluacionesService } from './evaluaciones.service';
 import { registrarEventoDeNutricion } from './eventos';
 import { INCLUIR_PLAN, nombreVisibleDe, nombresDeCatalogo, versionDePlanApi, type VersionConPlan } from './lectura-nutricion';
 import { conOpcionesDeReceta, instantaneaConRecetas, recetasDelBorrador } from './opciones-de-receta';
-import { estimacionDeLaInstantanea, estimacionDelBorrador } from './totales-del-plan';
+import { conGruposYRetiros, estimacionDeLaInstantanea, estimacionDelBorrador } from './totales-del-plan';
 
 type Tx = Prisma.TransactionClient;
 
@@ -334,9 +334,12 @@ export class PlanesService {
         await this.decidir(tx, 'API-PLN-01', actor, actor.identidadId, titular, recurso, ctx);
         if (v.plan.profesionalId !== actor.identidadId) throw this.ejecutor.noRevelable({ operacion: 'API-PLN-01', actorId: actor.identidadId, recurso, sujetoId: titular }, ctx);
         const activada = v.estado === 'ACTIVADA' && v.instantanea;
-        const dayTypes = activada
+        const estimados = activada
           ? estimacionDeLaInstantanea(v.instantanea!.contenido as unknown as ContenidoDeInstantanea)
           : await estimacionDelBorrador(tx, this.catalogo, v.plan.profesionalId, v.contenido as unknown as ContenidoDePlan);
+        // DL-180: cada alimento con su grupo (el ícono, NUA-05) y si se retiró del catálogo (la marca, NUA-02).
+        const citados = estimados.flatMap((d) => d.meals.flatMap((m) => m.options.flatMap((o) => o.items.map((it) => it.catalogItemId))));
+        const dayTypes = conGruposYRetiros(estimados, await this.catalogo.gruposYRetiros(tx, citados));
         return { data: { planId: v.id, version: `v${v.version}`, state: activada ? 'ACTIVATED' : 'DRAFT', method: METODO_DE_CALCULO_NUTRICIONAL, dayTypes } };
       },
     });
@@ -362,8 +365,15 @@ export class PlanesService {
         if (pedido.objectiveVersionId) await this.exigirObjetivoEfectivo(tx, v.profesionalId, v.asesoradoId, objetivo);
         // DL-119: las opciones de receta se arman en el servidor, con una porción de la versión citada.
         const contenido = await conOpcionesDeReceta(tx, v.profesionalId, pedido.changes, normalizarEstructura(pedido.changes, randomUUID));
-        const disponibles = await this.catalogo.disponibles(tx, v.profesionalId, idsDeCatalogo(contenido));
-        const problemas = problemasDeBorrador(contenido, new Set(disponibles.keys()));
+        const ids = idsDeCatalogo(contenido);
+        const disponibles = await this.catalogo.disponibles(tx, v.profesionalId, ids);
+        // NUA-D03 (DL-180): un alimento que se retiró (o que ya no se ve) después de citarlo no impide guardar el borrador;
+        // validar y activar lo señalan, porque no se planifica nada nuevo con él (REG-06-99). Segundo tramo (NUA-D17):
+        // solo si este borrador **ya** lo citaba. Uno retirado que se suma ahora (una comida habitual,
+        // «Copiar desde otra comida», una receta o un pedido armado a mano) es CATALOG_REFERENCE_INVALID, como en un plan
+        // nuevo.
+        const yaCitados = new Set(idsDeCatalogo(v.contenido));
+        const problemas = problemasDeBorrador(contenido, new Set([...disponibles.keys(), ...ids.filter((id) => yaCitados.has(id))]));
         if (problemas.length > 0) throw errorDeBorrador(problemas);
         const evaluacion = evaluarTransicionDePlan(v.estado, { transicion: 'GuardarBorrador', cambiosValidosComoBorrador: true });
         if (!evaluacion.permitida) throw noEditable();
@@ -585,7 +595,7 @@ export class PlanesService {
 
   async leerVersion(tx: Tx, id: string, profesionalId: string, incluirOrigen = false): Promise<VersionDePlan> {
     const v = (await tx.versionDePlanNutricional.findUniqueOrThrow({ where: { id }, include: INCLUIR_PLAN })) as VersionConPlan;
-    const catalogo = v.estado === 'BORRADOR' ? await nombresDeCatalogo(tx, v.contenido as unknown as ContenidoDePlan) : new Map();
+    const catalogo = v.estado === 'BORRADOR' ? await nombresDeCatalogo(tx, v.contenido as unknown as ContenidoDePlan, v.plan.profesionalId) : new Map();
     // La receta de cada opción y el origen de plantilla solo los ve el profesional: la APK instalada valida con esquemas
     // estrictos que no los conocen (DL-108, DL-119).
     const recetas = incluirOrigen

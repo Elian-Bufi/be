@@ -134,7 +134,8 @@ export function gramosQueResultan(c: CampoDeMacro, kg: number | null): string | 
   return limitesEnPalabras(min === 'nada' ? null : min, max === 'nada' ? null : max, 'g');
 }
 
-function limitesEnPalabras(min: number | null, max: number | null, unidad: string): string {
+/** «30 a 40 g», «desde 30 g», «hasta 40 g»: los límites de un rango, como se dicen en toda la pantalla. */
+export function limitesEnPalabras(min: number | null, max: number | null, unidad: string): string {
   if (min !== null && max !== null) return min === max ? `${numero(min)} ${unidad}` : `${numero(min)} a ${numero(max)} ${unidad}`;
   if (min !== null) return `desde ${numero(min)} ${unidad}`;
   return `hasta ${numero(max as number)} ${unidad}`;

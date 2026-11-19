@@ -322,6 +322,14 @@ model Identidad {
   // profesional, las que lo nombran.
   autorizacionesDeHistoriaAnterior     AutorizacionDeHistoriaAnterior[] @relation("AutorizacionDeHistoriaAnteriorDeLaPersona")
   autorizacionesDeHistoriaAnteriorRecibidas AutorizacionDeHistoriaAnterior[] @relation("AutorizacionDeHistoriaAnteriorDelProfesional")
+  // WP-NUTRICION-ALIMENTOS (DL-180): los grupos que asignó a sus alimentos y, como administradora, las revisiones de
+  // alimentos cargados a mano que registró.
+  gruposDeAlimentoAsignados GrupoDeAlimentoAsignado[]          @relation("GrupoDeAlimentoDelAutor")
+  revisionesDeAlimentos     RevisionAdministrativaDeAlimento[] @relation("RevisionDeAlimentoDelAdministrador")
+  // DL-180, segundo tramo (NUA-D16): como administradora, los alimentos que sumó al catálogo verificado.
+  alimentosSumadosAlCanon   AlimentoDelCanon[]                 @relation("AlimentoDelCanonDelAdministrador")
+  // DL-180, segundo tramo (NUA-08): las medidas caseras que definió para sus alimentos cargados a mano.
+  medidasCaserasDefinidas   MedidasCaserasDeAlimento[]         @relation("MedidasCaserasDelAutor")
 
   @@map("identidad")
 }
@@ -1360,6 +1368,9 @@ enum TipoDeEventoDeNutricion {
   CantidadesDeIngestaRectificadas
   /// WP-TABLERO-ALTA-GAMA (DL-163 D-21; TB-47): un borrador de plan que nunca se activó, descartado.
   BorradorDePlanDescartado
+  /// WP-NUTRICION-ALIMENTOS (DL-180, NUA-01 y NUA-02): un alimento cargado a mano, corregido (una versión nueva) o retirado.
+  ElementoDeCatalogoVersionado
+  ElementoDeCatalogoRetirado
 }
 
 /// T-06-31 — Elemento de catálogo: identificador BE estable (REG-06-99). Inmutable; el contenido vive en sus versiones.
@@ -1377,6 +1388,20 @@ model ElementoDeCatalogoNutricional {
   itemExterno         ItemExternoDeCatalogo?
   /// DL-141 D-2: los otros nombres con los que se lo encuentra.
   nombresAlternativos NombreAlternativoDeAlimento[]
+  /// DL-180 (NUA-05): su grupo, para el ícono; un hecho aparte de sus versiones.
+  grupos              GrupoDeAlimentoAsignado[]
+  /// DL-180 (NUA-03): desde cuándo lo veían los demás profesionales (primer tramo). Desde el segundo tramo, historia: lo
+  /// cargado a mano es de quien lo cargó (NUA-D14), y esta tabla ya no se lee ni se escribe.
+  compartido          AlimentoCompartido?
+  /// DL-180, segundo tramo (NUA-D16): si Administración lo sumó al catálogo verificado, con su fuente.
+  delCanon            AlimentoDelCanon?                  @relation("AlimentoDelCanon")
+  /// Las cargas a mano de las que partió un alimento del canon.
+  canonQueParte       AlimentoDelCanon[]                 @relation("AlimentoDelCanonOrigen")
+  /// DL-180, segundo tramo (NUA-08): sus medidas caseras, un hecho aparte de sus versiones.
+  medidasCaseras      MedidasCaserasDeAlimento[]
+  /// DL-180 (NUA-04): lo que decidió Administración sobre él, y los alimentos de los que es el equivalente verificado.
+  revisiones          RevisionAdministrativaDeAlimento[] @relation("RevisionDelAlimento")
+  equivalenteDe       RevisionAdministrativaDeAlimento[] @relation("EquivalenteVerificado")
 
   @@map("elemento_de_catalogo_nutricional")
 }
@@ -1396,6 +1421,8 @@ model VersionDeElementoNutricional {
   elemento    ElementoDeCatalogoNutricional @relation(fields: [elementoId], references: [id], onDelete: Restrict, onUpdate: Restrict)
   predecesora VersionDeElementoNutricional? @relation("CadenaDeElemento", fields: [predecesoraId], references: [id], onDelete: Restrict, onUpdate: Restrict)
   sucesora    VersionDeElementoNutricional? @relation("CadenaDeElemento")
+  /// DL-180 (NUA-04): las decisiones de Administración que la revisaron.
+  revisiones  RevisionAdministrativaDeAlimento[]
 
   @@index([elementoId])
   @@map("version_de_elemento_nutricional")
@@ -3067,6 +3094,141 @@ model RetiroDeNombreAlternativoDeAlimento {
   profesional Identidad?                  @relation("RetiroDeNombreAlternativoDeAlimentoDelProfesional", fields: [profesionalId], references: [id], onDelete: Restrict, onUpdate: Restrict)
 
   @@map("retiro_de_nombre_alternativo_de_alimento")
+}
+
+// ─── WP-NUTRICION-ALIMENTOS (DL-180) · los alimentos del catálogo: grupo, compartir y revisión ─────────────
+
+/// DL-180 (NUA-05): el grupo de un alimento, para su ícono en el buscador y en las opciones.
+enum GrupoDeAlimento {
+  CARNES
+  PESCADOS
+  HUEVOS
+  LACTEOS
+  CEREALES
+  LEGUMBRES
+  VERDURAS
+  FRUTAS
+  ACEITES
+  FRUTOS_SECOS
+  DULCES
+  BEBIDAS
+  OTROS
+}
+
+/// DL-180 (NUA-05) · el grupo de un alimento es un hecho aparte de sus versiones, como sus nombres alternativos: cambiarlo
+/// no emite una versión ni toca planes, recetas ni registros. El vigente es el de mayor `numero`. Lo siembra BE (sin
+/// autor) o lo elige quien cargó el alimento a mano. Append-only.
+model GrupoDeAlimentoAsignado {
+  id                String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  elementoId        String          @map("elemento_id") @db.Uuid
+  numero            Int
+  grupo             GrupoDeAlimento
+  /// Quién lo eligió; NULL si lo sembró BE con una migración.
+  autorId           String?         @map("autor_id") @db.Uuid
+  procedencia       Json
+  momentoDeRegistro DateTime        @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+
+  elemento ElementoDeCatalogoNutricional @relation(fields: [elementoId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  autor    Identidad?                    @relation("GrupoDeAlimentoDelAutor", fields: [autorId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([elementoId, numero])
+  @@map("grupo_de_alimento")
+}
+
+/// DL-180 (NUA-03, NUA-D05) · un alimento cargado a mano que ven los demás profesionales de Nutrición, desde que su autor
+/// lo cargó o lo corrigió con el aviso a la vista. Lo cargado antes de DL-180 no se comparte solo. Una fila por alimento;
+/// append-only. **Segundo tramo (decisión de Dirección del 2026-11-19, NUA-D14):** lo cargado a mano no se comparte; la
+/// tabla queda como historia, ya no se lee ni se escribe (la migración `20261120120000_lo_propio_es_propio` la cierra).
+model AlimentoCompartido {
+  elementoId        String   @id @map("elemento_id") @db.Uuid
+  procedencia       Json
+  momentoDeRegistro DateTime @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+
+  elemento ElementoDeCatalogoNutricional @relation(fields: [elementoId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@map("alimento_compartido")
+}
+
+/// DL-180, segundo tramo (NUA-D16; decisión de Dirección del 2026-11-19) · un alimento que Administración sumó al catálogo
+/// verificado («Sumar al canon»): un alimento de BE (sin profesional que lo cargue, de todos), «Verificado» en el buscador,
+/// con la fuente citada (obligatoria) y, si partió de los valores de una carga a mano, cuál. Lo escribe solo un
+/// administrador con su rol vigente (trigger). Append-only: una fila por alimento.
+model AlimentoDelCanon {
+  elementoId        String   @id @map("elemento_id") @db.Uuid
+  /// La tabla, la publicación o el rótulo de donde salen sus valores.
+  fuente            String
+  /// La carga a mano de cuyos valores partió, si partió de una.
+  origenId          String?  @map("origen_id") @db.Uuid
+  administradorId   String   @map("administrador_id") @db.Uuid
+  procedencia       Json
+  momentoDeRegistro DateTime @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+
+  elemento      ElementoDeCatalogoNutricional  @relation("AlimentoDelCanon", fields: [elementoId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  origen        ElementoDeCatalogoNutricional? @relation("AlimentoDelCanonOrigen", fields: [origenId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  administrador Identidad                      @relation("AlimentoDelCanonDelAdministrador", fields: [administradorId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@map("alimento_del_canon")
+}
+
+/// DL-180, segundo tramo (NUA-08; aprobado por Dirección el 2026-11-16) · las medidas caseras de un alimento (la unidad, la
+/// cucharada, la taza y la porción), cada una con su equivalencia en la unidad de su composición: un hecho aparte de sus
+/// versiones, como el grupo. La vigente es la de mayor `numero` (`medidas`, un arreglo de {kind, amount}; vacío, ninguna).
+/// Las define quien cargó el alimento a mano; sin autor, las siembra BE de la fuente que las documente. Cambiarlas no toca
+/// los planes: cada ítem guarda la medida que eligió y su equivalencia. Append-only.
+model MedidasCaserasDeAlimento {
+  id                String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  elementoId        String   @map("elemento_id") @db.Uuid
+  numero            Int
+  medidas           Json
+  /// Quién las definió; NULL si las sembró BE con una migración.
+  autorId           String?  @map("autor_id") @db.Uuid
+  procedencia       Json
+  momentoDeRegistro DateTime @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+
+  elemento ElementoDeCatalogoNutricional @relation(fields: [elementoId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  autor    Identidad?                    @relation("MedidasCaserasDelAutor", fields: [autorId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([elementoId, numero])
+  @@map("medidas_caseras_de_alimento")
+}
+
+/// DL-180 (NUA-04): lo que decide Administración sobre un alimento cargado a mano.
+enum ResultadoDeRevisionDeAlimento {
+  /// Certificado con una fuente citada, para la versión revisada.
+  CERTIFICADO
+  /// Equivalente de uno verificado: el buscador sugiere ese.
+  EQUIVALENTE
+  /// Lo decidido antes deja de valer.
+  QUITADA
+}
+
+/// DL-180 (NUA-04) · cada decisión de Administración sobre un alimento cargado a mano es una fila nueva; la vigente es la
+/// de mayor `numero`. Una certificación vale para la versión revisada: si su autor lo corrige, la versión nueva no está
+/// certificada. Administración ve el nombre y los valores, nunca a quién se le indicó ni quién lo cargó. Append-only; la
+/// escribe solo un administrador con su rol vigente (trigger).
+model RevisionAdministrativaDeAlimento {
+  id                String                        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  elementoId        String                        @map("elemento_id") @db.Uuid
+  numero            Int
+  resultado         ResultadoDeRevisionDeAlimento
+  /// La versión que vio y revisó.
+  versionId         String                        @map("version_id") @db.Uuid
+  /// La fuente citada: solo y siempre en CERTIFICADO.
+  fuente            String?
+  /// El alimento verificado equivalente: solo y siempre en EQUIVALENTE.
+  equivalenteId     String?                       @map("equivalente_id") @db.Uuid
+  administradorId   String                        @map("administrador_id") @db.Uuid
+  procedencia       Json
+  momentoDeRegistro DateTime                      @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+
+  elemento      ElementoDeCatalogoNutricional  @relation("RevisionDelAlimento", fields: [elementoId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  version       VersionDeElementoNutricional   @relation(fields: [versionId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  equivalente   ElementoDeCatalogoNutricional? @relation("EquivalenteVerificado", fields: [equivalenteId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  administrador Identidad                      @relation("RevisionDeAlimentoDelAdministrador", fields: [administradorId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([elementoId, numero])
+  @@index([equivalenteId])
+  @@map("revision_administrativa_de_alimento")
 }
 
 // ─── PF-09 · Plantillas de plan de entrenamiento del profesional (DL-108) ─────────────────────────────
