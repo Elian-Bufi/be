@@ -3,7 +3,8 @@
 // conjunta y el preset con la sesión vacía. En la CI: esta PC no levanta la API, el website y PostgreSQL juntos. Corre en
 // el trabajo `capturas-de-la-planificacion` (.github/workflows/capturas-de-la-planificacion.yml) y deja las imágenes como
 // artefacto. Solo datos sintéticos: la cohorte (08 §33) y, encima, una versión en preparación del plan de Diego Sosa con
-// dos bloques en una sesión («Torso», en vueltas, y «Core», seguido), que arma Prof. Martín Acosta por la API.
+// un bloque en vueltas en una sesión, con el nombre de lo que trabaja («Pierna» en «Piernas A»), que arma Prof. Martín
+// Acosta por la API.
 //
 // Uso:  BE_E2E_DATABASE_URL=postgresql://be_test:be_test@localhost:5432/be_test_cohorte node capturas.mjs <salida>
 //   Requiere compilados la API (`npm run build:api`) y el website contra la API local
@@ -210,8 +211,9 @@ const DEL_WEBSITE = dominio.valorDeCapacidades([dominio.CAPACIDAD_TIPOS_DE_SERIE
 
 /**
  * Prof. Martín Acosta prepara una versión nueva del plan de Diego Sosa (o sigue la que ya tiene en preparación) y le arma
- * dos bloques en la primera sesión con dos ejercicios o más: «Torso», en vueltas (3, con 90 s al terminar cada vuelta), y
- * «Core», seguido. Devuelve dónde quedó esa sesión, para pedirla en la dirección.
+ * en la primera sesión con dos ejercicios o más un bloque en vueltas (3, con 90 s al terminar cada vuelta) con el nombre
+ * de lo que trabaja la sesión («Pierna» en «Piernas A»), y con un tercer ejercicio, «Complementarios», seguido. Devuelve
+ * dónde quedó esa sesión, para pedirla en la dirección.
  */
 async function prepararLosBloques(ids, nota) {
   const c = cuentas();
@@ -238,9 +240,12 @@ async function prepararLosBloques(ids, nota) {
   const s = lugar.sesion;
   const vueltas = 3;
   const vacia = { repetitions: { value: 10 } };
+  // El nombre del bloque, coherente con su sesión: las capturas las ve el tutor («Torso» dentro de «Piernas A», con
+  // sentadilla y zancadas, confundía).
+  const nombreDelBloque = /pierna/i.test(s.label) ? 'Pierna' : /torso/i.test(s.label) ? 'Torso' : 'Principal';
   s.exerciseGroups = [
-    { groupId: 'g-1', label: 'Torso', kind: 'ROUNDS', rounds: vueltas, restAfterRoundSeconds: 90 },
-    ...(s.prescriptions.length >= 3 ? [{ groupId: 'g-2', label: 'Core', kind: 'SEQUENTIAL' }] : []),
+    { groupId: 'g-1', label: nombreDelBloque, kind: 'ROUNDS', rounds: vueltas, restAfterRoundSeconds: 90 },
+    ...(s.prescriptions.length >= 3 ? [{ groupId: 'g-2', label: 'Complementarios', kind: 'SEQUENTIAL' }] : []),
   ];
   s.prescriptions.forEach((p, n) => {
     if (n < 2) {
