@@ -281,3 +281,23 @@
   display: grid;
   gap: 0.5rem;
 }
+
+/* La pestaña «Patrones» del panel del editor: su ancho es el del panel, nunca el de su contenido. Es un hijo de la
+   grilla del panel y, sin esto, el primer dibujo de la cinta (720 px antes de medir) la ensanchaba y quedaba cortada. */
+[data-panel-patrones] {
+  contain: inline-size;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+}
+
+/* Adentro de «Patrones», los gráficos de la base también tienen una sola columna que se achica: su raíz es una grilla con
+   una columna automática, y el dibujo antes de medir (720 px) la ensanchaba en el panel angosto. */
+.patrones .grafico-base,
+.patrones .grafico-base > * {
+  min-width: 0;
+}
+
+.patrones .grafico-base {
+  grid-template-columns: minmax(0, 1fr);
+}
