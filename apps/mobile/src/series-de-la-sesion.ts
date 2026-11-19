@@ -216,7 +216,9 @@ export const AVISO_SIN_PLAN_POR_SERIE =
  * por eso no se muestran como objetivo de ninguna serie, ni como dato del ejercicio. Quedan las repeticiones de cada
  * serie, que sí son de esa serie, el ejercicio, sus series y las notas. Sin imágenes ni descanso estructurado. La
  * pantalla lo avisa y deja registrar igual: lo que se registra nunca sale de un objetivo.
- * Los bloques (DL-181) pasan como vienen, solo si vienen: son lo que agrupa la lista, no un objetivo.
+ * Los bloques (DL-181) pasan como vienen, solo si vienen: son lo que agrupa la lista, no un objetivo. El tipo de cada
+ * serie (DL-178) también: «Hoy» lo trae a esta APK, y sin él un calentamiento se vería, se numeraría y se registraría
+ * como una serie efectiva.
  */
 export function sesionDesdeLaOcurrencia(s: SesionDeOcurrencia): SesionConObjetivos {
   return {
@@ -236,6 +238,7 @@ export function sesionDesdeLaOcurrencia(s: SesionDeOcurrencia): SesionConObjetiv
         note: x.note,
         target: { repetitions: x.repetitions, rir: null, suggestedLoad: null, restSeconds: null },
         targetOrigin: { rir: 'NONE', suggestedLoad: 'NONE', restSeconds: 'NONE' },
+        ...(x.setKind !== undefined ? { setKind: x.setKind } : {}),
       })),
       intensity: null,
       suggestedLoad: null,
