@@ -1416,9 +1416,34 @@ model EvaluacionNutricional {
   profesional Identidad                      @relation("EvaluacionDelProfesional", fields: [profesionalId], references: [id], onDelete: Restrict, onUpdate: Restrict)
   asesorado   Identidad                      @relation("EvaluacionDelAsesorado", fields: [asesoradoId], references: [id], onDelete: Restrict, onUpdate: Restrict)
   objetivos   VersionDeObjetivoNutricional[]
+  /// DL-179: las respuestas de formulario que cita (como DL-102 en Entrenamiento).
+  citas       CitaDeRespuestaEnEvaluacionNutricional[]
 
   @@index([asesoradoId, profesionalId, momentoDeRegistro])
   @@map("evaluacion_nutricional")
+}
+
+/// DL-179 (WP-CONTEXTO-DE-LA-PERSONA): una respuesta de formulario citada como evidencia de una evaluación de Nutrición,
+/// con las mismas reglas que la de Entrenamiento (DL-102): referencia, no copia; fija la versión vigente al citar; solo
+/// agregado; la base repite la pertenencia (una Solicitud propia, de alcance NUTRICION, de la misma persona).
+model CitaDeRespuestaEnEvaluacionNutricional {
+  id                String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  evaluacionId      String   @map("evaluacion_id") @db.Uuid
+  respuestaId       String   @map("respuesta_id") @db.Uuid
+  /// La rectificación vigente al citar; `null` si lo vigente era la respuesta original.
+  rectificacionId   String?  @map("rectificacion_id") @db.Uuid
+  codigoDeCampo     String   @map("codigo_de_campo")
+  orden             Int
+  momentoDeRegistro DateTime @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+
+  evaluacion    EvaluacionNutricional                 @relation(fields: [evaluacionId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  respuesta     RespuestaDeFormulario                 @relation(fields: [respuestaId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  rectificacion RectificacionDeRespuestaDeFormulario? @relation(fields: [rectificacionId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([evaluacionId, orden])
+  @@unique([evaluacionId, respuestaId, codigoDeCampo], map: "cita_nutricional_respuesta_y_campo_unicos")
+  @@index([respuestaId])
+  @@map("cita_de_respuesta_en_evaluacion_nutricional")
 }
 
 /// T-06-27 — Objetivo: uno por (profesional, asesorado); sus versiones forman una sucesión lineal y la efectiva es la
@@ -2540,6 +2565,7 @@ model RespuestaDeFormulario {
   templateVersion VersionDePlantillaDeFormulario               @relation(fields: [templateVersionId], references: [id], onDelete: Restrict, onUpdate: Restrict)
   rectificaciones RectificacionDeRespuestaDeFormulario[]
   citas           CitaDeRespuestaEnEvaluacionDeEntrenamiento[]
+  citasNutricionales CitaDeRespuestaEnEvaluacionNutricional[]
   /// DL-165 D-9: la versión de los hábitos que agregó esta Respuesta, si su versión traía la parte «Tus hábitos».
   habitos         HabitosDeLaPersona[]
 
@@ -2563,6 +2589,7 @@ model RectificacionDeRespuestaDeFormulario {
   correccionPrevia RectificacionDeRespuestaDeFormulario?        @relation("SucesionDeRectificacionDeFormulario", fields: [correccionPreviaId], references: [id], onDelete: Restrict, onUpdate: Restrict)
   siguiente        RectificacionDeRespuestaDeFormulario?        @relation("SucesionDeRectificacionDeFormulario")
   citas            CitaDeRespuestaEnEvaluacionDeEntrenamiento[]
+  citasNutricionales CitaDeRespuestaEnEvaluacionNutricional[]
 
   @@index([respuestaId])
   @@map("rectificacion_de_respuesta_de_formulario")

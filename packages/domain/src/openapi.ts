@@ -345,6 +345,7 @@ import {
   VistaDeAnalisisResponseSchema,
 } from './contratos-analisis';
 import { EvidenciaDeRevisionResponseSchema } from './contratos-evidencia-de-revision';
+import { CuerpoDelContextoResponseSchema, RespuestasDelContextoResponseSchema } from './contratos-contexto-de-la-persona';
 import { AccesoAMedioResponseSchema, IntencionDeSubidaRequestSchema, IntencionDeSubidaResponseSchema, LIMITES_DE_MEDIO, MedioResponseSchema, TipoDeImagenSchema } from './contratos-medios';
 import {
   AsociarImagenDeRecetaRequestSchema,
@@ -1001,13 +1002,14 @@ const DEFINIDAS: readonly Operacion[] = [
     id: 'API-NUT-01',
     metodo: 'post',
     ruta: '/advisees/{adviseeId}/nutrition/evaluations',
-    resumen: 'Registrar una evaluación nutricional. Cada dato declara su fuente (informado, observado o calculado). No sobrescribe evaluaciones anteriores.',
+    resumen:
+      'Registrar una evaluación nutricional. Cada dato declara su fuente (informado, observado o calculado). No sobrescribe evaluaciones anteriores. DL-179: puede citar hasta 20 respuestas de formulario (formResponseReferences, opcional) de la persona, a Solicitudes propias de alcance NUTRICION, en su versión vigente; una cita inválida es el 422 neutral (FORM_RESPONSE_REFERENCE_INVALID) y una versión que cambió desde que se vio, 409 VERSION_CONFLICT (como DL-102 en Entrenamiento).',
     autenticacion: 'SESSION',
     idempotencia: true,
     request: CrearEvaluacionRequestSchema,
     exitos: [{ status: 201, schema: CrearEvaluacionResponseSchema }],
-    errores: { ...ESCRITURA_REVELABLE, 409: ['IDEMPOTENCY_KEY_REUSED'], 422: ['NUTRITION_EVALUATION_INVALID'] },
-    fuente: '09v9:325-377 · DEUDA_LEGAJO DL-048, DL-055',
+    errores: { ...ESCRITURA_REVELABLE, 409: ['IDEMPOTENCY_KEY_REUSED', 'VERSION_CONFLICT'], 422: ['NUTRITION_EVALUATION_INVALID'] },
+    fuente: '09v9:325-377 · DEUDA_LEGAJO DL-048, DL-055 · DL-179 (las citas, aditivas)',
   },
   {
     id: 'API-NUT-02',
@@ -4628,6 +4630,31 @@ const DEFINIDAS: readonly Operacion[] = [
     errores: { ...ESCRITURA_REVELABLE, 409: ['IDEMPOTENCY_KEY_REUSED'] },
     fuente: 'WP-PULIDO-GRANDES PG-16 y PG-D11 · ID propio de BE (familia NPP) · DEUDA_LEGAJO DL-173',
   },
+  // ─── WP-CONTEXTO-DE-LA-PERSONA (DL-179): el contexto de la persona en el editor ───────────────
+  {
+    id: 'API-CTX-01',
+    metodo: 'get',
+    ruta: '/advisees/{adviseeId}/person-context/form-answers',
+    resumen:
+      'Para el panel «Contexto de <nombre>»: lo que la persona respondió a las Solicitudes de quien consulta, de las áreas en que hoy la acompaña con el PDP permitido, en su versión vigente (la vista efectiva, como API-FRI-03), del más nuevo al más viejo. Cada formulario trae su versión (para citar, DL-102) y cada pregunta su rótulo, su categoría, el valor estructurado y en palabras. Lo que la persona le contó a otro profesional no sale nunca. Sin ninguna área permitida, el 404 de lo inexistente.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    exitos: [{ status: 200, schema: RespuestasDelContextoResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST'], 404: ['RESOURCE_NOT_FOUND'] },
+    fuente: 'WP-CONTEXTO-DE-LA-PERSONA (decisión de Dirección del 2026-11-18) · ID propio de BE (familia CTX) · DEUDA_LEGAJO DL-179',
+  },
+  {
+    id: 'API-CTX-02',
+    metodo: 'get',
+    ruta: '/advisees/{adviseeId}/person-context/body',
+    resumen:
+      'Para el panel «Contexto de <nombre>»: la última toma registrada y la anterior, por métrica, con el cambio (y el % con su base) solo si son comparables (mismo protocolo, método y unidad). Quien lleva Antropometría con la persona ve sus tomas enteras (access OWN_AREA). Quien recibe el resumen compartido de Antropometría ve el peso y la composición en kilos, con su método, de las tomas de quien lleva el área hoy, sin el contexto escrito (SHARED_SUMMARY), y la lectura queda en «Quién miró» (API-RES-01). Si no, el 404 de lo inexistente.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    exitos: [{ status: 200, schema: CuerpoDelContextoResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST'], 404: ['RESOURCE_NOT_FOUND'] },
+    fuente: 'WP-CONTEXTO-DE-LA-PERSONA · ID propio de BE (familia CTX) · el texto de «resumen» aceptado (DL-163 D-13) · DEUDA_LEGAJO DL-179',
+  },
 ];
 
 /**
@@ -4715,6 +4742,9 @@ const LECTURAS_PROTEGIDAS: ReadonlySet<string> = new Set([
   'API-TRN-25-LISTA',
   'API-TRN-25-PROPIA',
   'API-NPP-02',
+  // WP-CONTEXTO-DE-LA-PERSONA (DL-179).
+  'API-CTX-01',
+  'API-CTX-02',
 ]);
 // API-MED-02 escribe sin Idempotency-Key: la ruta firmada identifica la subida, y repetirla responde el mismo medio.
 // API-TIE-01 tampoco: cada evento trae su identificador, y repetirlo responde lo mismo sin sumar.

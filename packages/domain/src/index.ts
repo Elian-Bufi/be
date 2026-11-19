@@ -162,6 +162,9 @@ export * from './copy-notas-de-coordinacion';
 export * from './contratos-notas-de-la-sesion';
 export * from './copy-notas-de-la-sesion';
 export * from './contratos-notas-propias';
+// WP-CONTEXTO-DE-LA-PERSONA (DL-179): la familia CTX, la cita en Nutrición y la lógica del panel.
+export * from './contratos-contexto-de-la-persona';
+export * from './contexto-de-la-persona';
 export * from './notas-propias';
 export * from './administracion';
 export * from './contratos-administracion';

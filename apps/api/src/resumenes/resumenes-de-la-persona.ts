@@ -293,21 +293,30 @@ export const LECTURAS_EN_QUIEN_VE_QUE = 50;
 
 /** El tipo de recurso con que API-RES-06 registra cada lectura, por área: así la persona sabe qué plan se leyó. */
 export const RECURSO_DEL_PLAN_COMPARTIDO: Readonly<Record<AreaConPlan, string>> = { NUTRICION: 'PlanCompartidoDeNutricion', ENTRENAMIENTO: 'PlanCompartidoDeEntrenamiento' };
-const AREA_DEL_RECURSO = new Map<string, AreaConPlan>(Object.entries(RECURSO_DEL_PLAN_COMPARTIDO).map(([a, t]) => [t, a as AreaConPlan]));
+/**
+ * DL-179 (WP-CONTEXTO-DE-LA-PERSONA): API-CTX-02 registra cada lectura del cuerpo compartido (el resumen de Antropometría)
+ * con este tipo de recurso. Es el mismo que exporta el servicio del contexto; está repetido acá para no importar ese módulo.
+ */
+const RECURSO_DEL_CUERPO_COMPARTIDO = 'ResumenCompartidoDeAntropometria';
+const AREA_DEL_RECURSO = new Map<string, Alcance>([
+  ...Object.entries(RECURSO_DEL_PLAN_COMPARTIDO).map(([a, t]) => [t, a as Alcance] as const),
+  [RECURSO_DEL_CUERPO_COMPARTIDO, 'ANTROPOMETRIA'],
+]);
 
 /**
- * Las lecturas de lo compartido: las decisiones permitidas de API-RES-06 sobre la persona. Una lectura registra una decisión
+ * Las lecturas de lo compartido: las decisiones permitidas de API-RES-06 (el plan) y, desde DL-179, las de API-CTX-02 por el
+ * resumen compartido de Antropometría (el cuerpo), sobre la persona. Una lectura registra una decisión
  * por cada área permitida de quien lee: se cuentan una vez, por su request.
  */
 export async function lecturasDeLoCompartido(tx: Tx, personaId: string): Promise<AccesoALoCompartido[]> {
   const filas = await tx.decisionDeAcceso.findMany({
-    where: { sujetoId: personaId, operacion: 'API-RES-06', resultado: 'PERMITIDA' },
+    where: { sujetoId: personaId, operacion: { in: ['API-RES-06', 'API-CTX-02'] }, resultado: 'PERMITIDA' },
     orderBy: { secuencia: 'desc' },
     take: LECTURAS_EN_QUIEN_VE_QUE * 3,
     select: { id: true, actorId: true, recursoTipo: true, requestId: true, momentoDeOcurrencia: true },
   });
   const vistas = new Set<string>();
-  const lecturas: { actorId: string; area: AreaConPlan; momento: Date }[] = [];
+  const lecturas: { actorId: string; area: Alcance; momento: Date }[] = [];
   for (const f of filas) {
     const area = f.recursoTipo ? AREA_DEL_RECURSO.get(f.recursoTipo) : undefined;
     const clave = f.requestId ?? f.id;
