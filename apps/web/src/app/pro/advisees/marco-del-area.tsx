@@ -21,6 +21,10 @@
  *   que no se deduce mirando. La ayuda entera está en la Guía del espacio profesional.
  * Los estados (sin sesión, cargando, falla, sin espacio profesional, «no disponible») conservan el título y el camino de
  * vuelta.
+ * - **«Contexto de <nombre>»** (WP-CONTEXTO-DE-LA-PERSONA, DL-179): el botón y el panel del contexto de la persona, en las
+ *   tres áreas y en todas sus secciones (CTX-D01). Se abre con el botón o con Alt + C; al costado desde 1680 px, como cajón
+ *   debajo (CTX-D03). Al cerrarse, el foco vuelve al botón. El marco pone el proveedor de citas: lo que se escribe en la
+ *   sección (la evaluación, el objetivo) recibe lo que se cita desde el panel (CTX-D12).
  */
 import { COPY_PISTAS, COPY, COPY_VINCULO, todasLasPaginas, type DashboardResponse, type NombreDeIcono, type Vinculo } from '@be/domain';
 import { Enlace } from '../../../components/enlace';
@@ -43,6 +47,10 @@ import { AccesoPorArea, CLAVE_DEL_DOMINIO, type LecturaPorArea } from './acceso-
 import { hoyEn, periodoEnInstantes, restarDias } from './seguimiento/estado';
 import { Pista } from '../../../components/pista';
 import { EsperandoSesion } from '../../../lib/sesion';
+import { COPY_CONTEXTO } from '@be/domain';
+import { ProveedorDeCitas } from './contexto/citas';
+import { PanelDeContexto } from './contexto/panel';
+import { esAtajoDelPanel, guardarPreferencia, leerPreferencia, modoDelPanel, type ModoDelPanel, type Pestana } from './contexto/panel-de-contexto';
 
 /** El alcance de los vínculos de un área (`scope.code`). */
 export type AlcanceDelArea = 'NUTRICION' | 'ENTRENAMIENTO' | 'ANTROPOMETRIA';
@@ -266,6 +274,58 @@ export function MarcoDelArea<C extends string>({
     [leer],
   );
   const { delAsesorado } = useNombres();
+  // ─── El panel del contexto (DL-179) ───────────────────────────────────────────────────────────
+  const areaDelPanel = alcance ?? 'NUTRICION';
+  const [panel, setPanel] = useState<{ abierto: boolean; pestana: Pestana }>({ abierto: false, pestana: 'importante' });
+  const [modo, setModo] = useState<ModoDelPanel>('cajon');
+  const botonDelPanel = useRef<HTMLButtonElement>(null);
+  useEffect(() => {
+    // CTX-D18: lo que se recuerda es solo si estaba abierto y la pestaña, por área. Se lee después de montar.
+    let almacen: Storage | null = null;
+    try {
+      almacen = window.localStorage;
+    } catch {
+      almacen = null;
+    }
+    setPanel(leerPreferencia(almacen, areaDelPanel));
+    const medir = () => setModo(modoDelPanel(window.innerWidth));
+    medir();
+    window.addEventListener('resize', medir);
+    return () => window.removeEventListener('resize', medir);
+  }, [areaDelPanel]);
+  const cambiarPanel = useCallback(
+    (cambio: Partial<{ abierto: boolean; pestana: Pestana }>) => {
+      setPanel((p) => {
+        const nuevo = { ...p, ...cambio };
+        let almacen: Storage | null = null;
+        try {
+          almacen = window.localStorage;
+        } catch {
+          almacen = null;
+        }
+        guardarPreferencia(almacen, areaDelPanel, nuevo);
+        return nuevo;
+      });
+    },
+    [areaDelPanel],
+  );
+  const cerrarPanel = useCallback(() => {
+    cambiarPanel({ abierto: false });
+    // El foco vuelve al botón que lo abrió.
+    window.setTimeout(() => botonDelPanel.current?.focus(), 0);
+  }, [cambiarPanel]);
+  const panelAbierto = panel.abierto;
+  useEffect(() => {
+    // CTX-D04: Alt + C abre y cierra, también desde un campo.
+    const alTeclear = (e: globalThis.KeyboardEvent) => {
+      if (!esAtajoDelPanel(e)) return;
+      e.preventDefault();
+      if (panelAbierto) cerrarPanel();
+      else cambiarPanel({ abierto: true });
+    };
+    window.addEventListener('keydown', alTeclear);
+    return () => window.removeEventListener('keydown', alTeclear);
+  }, [panelAbierto, cerrarPanel, cambiarPanel]);
   // ED-02: «Volver a la ficha» pasa por la guardia de la salida.
   // TB-07: se llegó desde el Espacio (una ficha de «Tu semana», un verbo de «Te toca a vos» o el cajón).
   const desdeElEspacio = useSearchParams().get('origen') === 'espacio';
@@ -284,8 +344,11 @@ export function MarcoDelArea<C extends string>({
         ? { href: '/pro', texto: COPY_LUGAR.volver }
         : { href: `/pro/advisees?id=${encodeURIComponent(id)}`, texto: 'Volver a la ficha' });
 
+  const conPanel = listo && !!token && panel.abierto;
   return (
-    <div className="ficha">
+    <ProveedorDeCitas>
+    <div className={conPanel && modo === 'costado' ? 'ficha ficha--con-contexto' : 'ficha'}>
+      <div className="ficha__principal">
       <header className="marco-de-la-ficha marco-del-area" aria-labelledby="titulo-del-area">
         <div className="marco-de-la-ficha__ancho">
           <div className="marco-de-la-ficha__persona">
@@ -311,6 +374,21 @@ export function MarcoDelArea<C extends string>({
                   </button>
                 </Pista>
                 {consultadoEn ? <span className="nota">Consultado a las {horaDelDia(consultadoEn)}</span> : null}
+                <button
+                  ref={botonDelPanel}
+                  type="button"
+                  className={panel.abierto ? 'boton boton--compacto boton-del-contexto boton-del-contexto--abierto' : 'boton boton--compacto boton-del-contexto'}
+                  aria-expanded={panel.abierto}
+                  aria-keyshortcuts="Alt+C"
+                  title={`${COPY_CONTEXTO.boton(nombre)} (${COPY_CONTEXTO.atajo})`}
+                  onClick={() => (panel.abierto ? cerrarPanel() : cambiarPanel({ abierto: true }))}
+                >
+                  <Icono nombre="persona" tamano={18} />
+                  {COPY_CONTEXTO.boton(nombre)}
+                  <kbd className="boton-del-contexto__atajo" aria-hidden="true">
+                    {COPY_CONTEXTO.atajo}
+                  </kbd>
+                </button>
               </div>
             ) : null}
           </div>
@@ -360,6 +438,21 @@ export function MarcoDelArea<C extends string>({
           </Contexto.Provider>
         </div>
       </div>
+      </div>
+      {conPanel ? (
+        <PanelDeContexto
+          area={areaDelPanel}
+          asesoradoId={id}
+          token={token}
+          nombre={nombre}
+          modo={modo}
+          pestana={panel.pestana}
+          onPestana={(p) => cambiarPanel({ pestana: p })}
+          onCerrar={cerrarPanel}
+          sesionPerdida={sesionPerdida}
+          actualizacion={version}
+        />
+      ) : null}
       <DialogoDeConfirmacion
         abierto={porConfirmar !== null}
         titulo="Tenés cambios sin guardar"
@@ -376,6 +469,7 @@ export function MarcoDelArea<C extends string>({
         </p>
       </DialogoDeConfirmacion>
     </div>
+    </ProveedorDeCitas>
   );
 }
 

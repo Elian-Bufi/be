@@ -8577,7 +8577,7 @@ del editor», en el editor del plan de Entrenamiento y de Nutrición, en la eval
 (Lo importante, Formularios, Cuerpo, Otras áreas y Notas) y «Citar» al lado de cada respuesta.
 
 **Lo que se declara.**
-- **Familia propia de BE, CTX** (el 09 no la tiene; DL-137 D-7): **API-CTX-01** `GET /advisees/{adviseeId}/person-context/form-answers`
+- **Familia propia de BE, CTX** (el 09 no la tiene; DL-137 D-7): **API-CTX-01** `GET /advisees/{adviseeId}/person-context/answers`
   (las respuestas vigentes a las Solicitudes propias, de las áreas con el PDP permitido) y **API-CTX-02**
   `GET /advisees/{adviseeId}/person-context/body` (la última toma y la anterior: enteras para quien lleva Antropometría; el
   peso y la composición en kilos, con su método, para quien recibe el resumen compartido, con la lectura registrada).

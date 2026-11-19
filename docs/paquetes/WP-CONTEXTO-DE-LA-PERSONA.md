@@ -154,7 +154,7 @@ Al cerrarse, el foco vuelve al botón que lo abrió. Es un `aside` con nombre (�
 
 | ID | Método y ruta | AuthN | Qué hace |
 |---|---|---|---|
-| API-CTX-01 | `GET /advisees/{adviseeId}/person-context/form-answers` | SESSION | Las respuestas vigentes de la persona a las Solicitudes **de quien consulta**, de las áreas en que hoy la acompaña con el PDP permitido, con cada pregunta en palabras, su valor estructurado y su versión para citar. Sin ninguna área permitida, el 404 de lo inexistente |
+| API-CTX-01 | `GET /advisees/{adviseeId}/person-context/answers` | SESSION | Las respuestas vigentes de la persona a las Solicitudes **de quien consulta**, de las áreas en que hoy la acompaña con el PDP permitido, con cada pregunta en palabras, su valor estructurado y su versión para citar. Sin ninguna área permitida, el 404 de lo inexistente |
 | API-CTX-02 | `GET /advisees/{adviseeId}/person-context/body` | SESSION | La última toma registrada y la anterior, por métrica, con el cambio solo si son comparables. Quien lleva Antropometría ve sus tomas enteras; a quien la persona le comparte el resumen de Antropometría (DL-163 D-13), el peso y la composición en kilos, con su método, de las tomas de quien la lleva hoy, y la lectura queda registrada para la persona (08 §19.7). Si no, el 404 de lo inexistente |
 | API-NUT-01 (cambia, aditiva) | `POST /advisees/{adviseeId}/nutrition/evaluations` | — | Acepta `formResponseReferences` opcional, con el mismo contrato y las mismas reglas que la de Entrenamiento (DL-102). Ausente es `[]` |
 | API-NUT-02 y 03 (cambian, aditivas) | las lecturas de la evaluación | — | Devuelven `formResponseReferences`, las respuestas citadas, como Entrenamiento |

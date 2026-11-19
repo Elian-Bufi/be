@@ -2,7 +2,7 @@
  * WP-CONTEXTO-DE-LA-PERSONA (DEUDA_LEGAJO DL-179; decisión de Dirección del 2026-11-18): el contexto de la persona a mano
  * mientras el profesional planifica. Familia propia de BE, **CTX**, que la guardia de trazabilidad declara con DL-179 (el
  * 09 no la tiene; lo nuevo va en operaciones nuevas, DL-137 D-7).
- * - **API-CTX-01** `GET /advisees/{adviseeId}/person-context/form-answers`: lo que la persona respondió a las Solicitudes
+ * - **API-CTX-01** `GET /advisees/{adviseeId}/person-context/answers`: lo que la persona respondió a las Solicitudes
  *   **de quien consulta**, en su versión vigente, de las áreas en que hoy la acompaña con el PDP permitido (la regla de
  *   FRM-05 y de la cita, DL-102). Cada pregunta, con su rótulo, su categoría, el valor estructurado y en palabras.
  * - **API-CTX-02** `GET /advisees/{adviseeId}/person-context/body`: la última toma registrada y la anterior, por métrica,

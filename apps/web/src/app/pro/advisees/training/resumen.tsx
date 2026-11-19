@@ -56,6 +56,8 @@ import { useEntrenamiento } from './entrenamiento';
 import { pedidoDesde } from '../forms/formulario-de-inicio';
 import { ConceptosFrecuentes, lugarDelConcepto } from '../conceptos-frecuentes';
 import { evaluacionMasReciente } from '../evaluacion-reciente';
+import { useReceptorDeCitas, type ReceptorDeCitas } from '../contexto/citas';
+import { fundamentoConCita, lineaParaElFundamento } from '../contexto/panel-de-contexto';
 
 interface Lecturas {
   readonly evaluaciones: Lectura<readonly EvaluacionDeEntrenamiento[]>;
@@ -342,8 +344,11 @@ function Estado({ lecturas, onIrA }: { lecturas: Lecturas; onIrA: (v: 'plan' | '
   );
 }
 
-/** Lo citado en una evaluación (DL-102): declarado por la persona, con fecha, y el aviso si lo actualizó después. */
-function ContextoCitado({ citas }: { citas: readonly RespuestaCitada[] }) {
+/**
+ * Lo citado en una evaluación (DL-102): declarado por la persona, con fecha, y el aviso si lo actualizó después. Desde DL-179
+ * también lo usa la evaluación de Nutrición, que cita igual.
+ */
+export function ContextoCitado({ citas }: { citas: readonly RespuestaCitada[] }) {
   return (
     <div>
       <p className="lista__titulo">{COPY_ENTRENAMIENTO.contextoCitado}</p>
@@ -469,6 +474,35 @@ export function FormularioDeEvaluacion({ onRegistrada, onCancelar, conTitulo = t
     setConflicto(false);
     setCargaDeContexto('listo');
   }
+
+  // DL-179 (CTX-D12): «Citar» desde el panel del contexto suma la respuesta a las citadas de este formulario, con la
+  // versión que se vio en el panel, y respeta el mismo tope de 20. Si no estaba entre las citables cargadas, se suma.
+  const receptor = useMemo<ReceptorDeCitas>(
+    () => ({
+      area: 'ENTRENAMIENTO',
+      destino: 'evaluacion',
+      citadas: new Set(citadas),
+      maximo: MAXIMO_DE_CITAS,
+      citar: (c) => {
+        if (c.area !== 'ENTRENAMIENTO') return 'otra-area';
+        const clave = claveDe(c);
+        if (citadas.includes(clave)) return 'ya';
+        if (citadas.length >= MAXIMO_DE_CITAS) {
+          setTopeAvisado(true);
+          return 'tope';
+        }
+        setCitables((cs) => {
+          const otras = cs.filter((x) => claveDe(x) !== clave);
+          return [...otras, { formResponseId: c.formResponseId, fieldCode: c.fieldCode, expectedVersion: c.expectedVersion, etiqueta: c.pregunta, valor: c.respuesta, fecha: c.fuente.fecha }];
+        });
+        setCitadas((xs) => (xs.includes(clave) ? xs : [...xs, clave]));
+        setCambiadas((xs) => xs.filter((x) => x !== clave));
+        return 'citada';
+      },
+    }),
+    [citadas],
+  );
+  useReceptorDeCitas(receptor);
 
   function alternar(c: Citable) {
     const r = alternarSeleccion(citadas, claveDe(c));
@@ -668,6 +702,23 @@ export function FormularioDeObjetivo({ evaluaciones, onEmitido, onCancelar }: { 
   }, [evaluaciones]);
   const [enunciado, setEnunciado] = useState('');
   const [fundamento, setFundamento] = useState('');
+  // DL-179 (CTX-D12): «Citar» desde el panel suma un renglón con la cita y su fuente al fundamento (el objetivo no tiene
+  // citas en su contrato: CTX-P07).
+  const receptorDelObjetivo = useMemo<ReceptorDeCitas>(
+    () => ({
+      area: 'ENTRENAMIENTO',
+      destino: 'objetivo',
+      citadas: new Set<string>(),
+      maximo: null,
+      citar: (c) => {
+        const r = fundamentoConCita(fundamento, lineaParaElFundamento(c, (iso) => dia(iso)));
+        if (r.resultado === 'citada') setFundamento(r.texto);
+        return r.resultado;
+      },
+    }),
+    [fundamento],
+  );
+  useReceptorDeCitas(receptorDelObjetivo);
   const [desde, setDesde] = useState(ahoraLocal());
   const [errores, setErrores] = useState<{ id: string; texto: string }[]>([]);
   const [envios, setEnvios] = useState(0);

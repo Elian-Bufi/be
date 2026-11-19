@@ -4634,7 +4634,7 @@ const DEFINIDAS: readonly Operacion[] = [
   {
     id: 'API-CTX-01',
     metodo: 'get',
-    ruta: '/advisees/{adviseeId}/person-context/form-answers',
+    ruta: '/advisees/{adviseeId}/person-context/answers',
     resumen:
       'Para el panel «Contexto de <nombre>»: lo que la persona respondió a las Solicitudes de quien consulta, de las áreas en que hoy la acompaña con el PDP permitido, en su versión vigente (la vista efectiva, como API-FRI-03), del más nuevo al más viejo. Cada formulario trae su versión (para citar, DL-102) y cada pregunta su rótulo, su categoría, el valor estructurado y en palabras. Lo que la persona le contó a otro profesional no sale nunca. Sin ninguna área permitida, el 404 de lo inexistente.',
     autenticacion: 'SESSION',
