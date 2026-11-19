@@ -40,10 +40,13 @@ export const COPY_CONTEXTO = {
   citarEnLaEvaluacion: 'Citar en la evaluación',
   citarEnElObjetivo: 'Citar en el fundamento del objetivo',
   sinDondeCitar: 'Para citar, abrí «Nueva evaluación» o «Nueva versión de objetivo» en el Resumen.',
+  ayudaDeCitarEnLaEvaluacion: 'Citar en la evaluación: tocá «Citar» al lado de cada respuesta.',
+  ayudaDeCitarEnElObjetivo: 'Citar en el fundamento del objetivo: tocá «Citar» al lado de cada respuesta. Lo de salud se cita solo en la evaluación, porque el objetivo lo ve también quien vea su plan.',
   topeDeCitas: (n: number) => `Ya hay ${n} citas: es el máximo por evaluación.`,
   citadaEnLaEvaluacion: 'Quedó citada en la evaluación.',
   citadaEnElObjetivo: 'Quedó en el fundamento del objetivo.',
   datoSensible: 'Lo contó en un formulario. Mostralo solo si hace falta.',
+  conductaAlimentaria: 'Conducta alimentaria',
   // Formularios
   buscar: 'Buscar en las respuestas',
   buscarAyuda: 'Busca en las preguntas y en las respuestas, sin importar las tildes.',
@@ -93,6 +96,12 @@ export interface CitaPosible {
   readonly expectedVersion: string;
   /** El área en la que se pidió: una evaluación solo cita las de su área. */
   readonly area: Alcance;
+  /**
+   * Si es de salud (la categoría `SALUD_Y_SEGURIDAD` de la plantilla). Revisión del PR: lo de salud se cita solo en la
+   * evaluación, nunca en el fundamento del objetivo, porque el objetivo viaja con el plan que la persona comparte (API-RES-06)
+   * y el texto que aceptó promete que lo compartido nunca incluye «lo de salud de tus formularios» (CTX-D12).
+   */
+  readonly deSalud: boolean;
   /** La pregunta y la respuesta, para el renglón de la cita y para el fundamento del objetivo. */
   readonly pregunta: string;
   readonly respuesta: string;
@@ -295,6 +304,13 @@ const GRUPOS: Readonly<Record<Alcance, readonly Grupo[]>> = {
   ANTROPOMETRIA: [],
 };
 
+/**
+ * CTX-D09: lo que no se cita nunca, ni en la evaluación ni en el objetivo, y se muestra con cuidado: la conducta alimentaria.
+ * La API lo repite (`validarCitas` responde el 422 neutral), así no depende de la pantalla.
+ */
+export const CAMPOS_QUE_NO_SE_CITAN: ReadonlySet<string> = new Set(['nut_tca']);
+export const seCita = (fieldCode: string): boolean => !CAMPOS_QUE_NO_SE_CITAN.has(fieldCode);
+
 /** Lo que el formulario prometió cuando la persona contó un antecedente de conducta alimentaria (FRM-NUTRICION-INICIO). */
 const TCA_EN_PALABRAS: Readonly<Record<string, string>> = {
   si: 'Contó un antecedente. Lo que le prometimos: armar el plan sin números a la vista y junto con un profesional de la salud.',
@@ -357,12 +373,13 @@ function buscador(area: Alcance, formularios: readonly FormularioEnElContexto[],
 }
 
 function citaDe(h: Hallada, pregunta: string): CitaPosible | null {
-  if (!h.formulario) return null;
+  if (!h.formulario || !seCita(h.respuesta.fieldCode)) return null;
   return {
     formResponseId: h.formulario.formResponseId,
     fieldCode: h.respuesta.fieldCode,
     expectedVersion: h.formulario.version,
     area: h.formulario.scope,
+    deSalud: h.respuesta.category === 'SALUD_Y_SEGURIDAD',
     pregunta,
     respuesta: h.respuesta.text,
     fuente: h.fuente,
@@ -377,11 +394,26 @@ function primera(buscar: (c: string) => Hallada | null, codigos: readonly string
   return null;
 }
 
+/**
+ * El detalle de una respuesta sale del mismo formulario que ella. Revisión del PR: si se buscaba en todos, un «No» nuevo
+ * quedaba pegado al «¿Cuál?» de un formulario viejo («No · maní»). Una respuesta de «Mis hábitos» no tiene detalle.
+ */
+function detalleDe(h: Hallada, codigos: readonly string[] | undefined): Hallada | null {
+  if (!h.formulario) return null;
+  for (const c of codigos ?? []) {
+    for (const s of h.formulario.sections) {
+      const r = s.answers.find((x) => x.fieldCode === c);
+      if (r) return { respuesta: r, formulario: h.formulario, fuente: h.fuente };
+    }
+  }
+  return null;
+}
+
 function datoDe(p: Pregunta, buscar: (c: string) => Hallada | null): DatoImportante | null {
   const h = primera(buscar, p.codigos);
   if (!h) return null;
   if (p.soloSiAporta && !aporta(h.respuesta.answer)) return null;
-  const detalle = primera(buscar, p.detalle);
+  const detalle = detalleDe(h, p.detalle);
   if (p.sensible) {
     // CTX-D09: en palabras propias, sin el nombre del trastorno y sin citar.
     const opcion = h.respuesta.answer.type === 'CHOICE' ? h.respuesta.answer.option : '';
@@ -415,14 +447,14 @@ const ORIGEN_EN_PALABRAS: Readonly<Record<TomaEnElContexto['origins'][number], s
 };
 
 /** Las condiciones de la última toma (Antropometría, §1.3): lo que BE registra hoy. */
-function datosDeLaToma(toma: TomaEnElContexto, fecha: (iso: string) => string, hora: (iso: string) => string): GrupoImportante {
+function datosDeLaToma(toma: TomaEnElContexto, fecha: (iso: string) => string, hora: (iso: string) => string, nombre: (actor: TomaEnElContexto['author']) => string): GrupoImportante {
   const fuente: FuenteDelDato = { tipo: 'TOMA', nombre: 'Última toma', fecha: toma.occurredAt, corregida: false, cargadaConElProfesional: false };
   const dato = (clave: string, pregunta: string, respuesta: string, nota: string | null = null): DatoImportante => ({ clave, pregunta, respuesta, fuente, citas: [], sensible: false, nota });
   const datos = [
     dato('toma-fecha', 'Fecha y hora', `${fecha(toma.occurredAt)}, ${hora(toma.occurredAt)}`, 'Para comparar la próxima, repetí la hora del día, el ayuno, la hidratación y el ejercicio previo.'),
     dato('toma-protocolo', 'Protocolo', toma.protocols.join(', ') || '—'),
     dato('toma-origen', 'Procedencia', toma.origins.map((o) => ORIGEN_EN_PALABRAS[o]).join(', ') || '—'),
-    dato('toma-quien', 'La tomó', toma.author.displayName),
+    dato('toma-quien', 'La tomó', nombre(toma.author)),
     ...(toma.context ? [dato('toma-contexto', 'Contexto', toma.context)] : []),
   ];
   return { clave: 'toma', titulo: 'Condiciones de la última toma', datos };
@@ -435,10 +467,11 @@ function otrosDeSalud(formularios: readonly FormularioEnElContexto[], usados: Re
   for (const f of [...formularios].sort((a, b) => b.answeredAt.localeCompare(a.answeredAt))) {
     for (const s of f.sections) {
       for (const r of s.answers) {
-        if (r.category !== 'SALUD_Y_SEGURIDAD' || usados.has(r.fieldCode) || vistos.has(r.fieldCode) || r.fieldCode === 'nut_tca') continue;
+        if (r.category !== 'SALUD_Y_SEGURIDAD' || usados.has(r.fieldCode) || vistos.has(r.fieldCode) || !seCita(r.fieldCode)) continue;
         vistos.add(r.fieldCode);
         const h: Hallada = { respuesta: r, formulario: f, fuente: fuenteDeFormulario(f) };
-        datos.push({ clave: r.fieldCode, pregunta: r.label, respuesta: r.text, fuente: h.fuente, citas: [citaDe(h, r.label)!], sensible: false, nota: null });
+        const cita = citaDe(h, r.label);
+        datos.push({ clave: r.fieldCode, pregunta: r.label, respuesta: r.text, fuente: h.fuente, citas: cita ? [cita] : [], sensible: false, nota: null });
       }
     }
   }
@@ -447,17 +480,18 @@ function otrosDeSalud(formularios: readonly FormularioEnElContexto[], usados: Re
 
 /**
  * «Lo importante» del área: los grupos en orden de seguridad (CTX-D05), cada uno solo con lo respondido. Un grupo sin
- * respuestas no aparece. `fecha` y `hora` escriben un instante como lo escribe la pantalla.
+ * respuestas no aparece. `fecha` y `hora` escriben un instante como lo escribe la pantalla, y `nombre` a un profesional (con
+ * «Ocultar nombres», su referencia; sin `nombre`, el que trae la API).
  */
 export function loImportante(
   area: Alcance,
   entradas: { readonly formularios: readonly FormularioEnElContexto[]; readonly habitos?: HabitosCompartidos | null; readonly cuerpo?: CuerpoDelContexto | null },
-  formato: { readonly fecha: (iso: string) => string; readonly hora: (iso: string) => string },
+  formato: { readonly fecha: (iso: string) => string; readonly hora: (iso: string) => string; readonly nombre?: (actor: TomaEnElContexto['author']) => string },
 ): GrupoImportante[] {
   const buscar = buscador(area, entradas.formularios, entradas.habitos ?? null);
   const grupos: GrupoImportante[] = [];
   const usados = new Set<string>();
-  if (area === 'ANTROPOMETRIA' && entradas.cuerpo?.latest) grupos.push(datosDeLaToma(entradas.cuerpo.latest, formato.fecha, formato.hora));
+  if (area === 'ANTROPOMETRIA' && entradas.cuerpo?.latest) grupos.push(datosDeLaToma(entradas.cuerpo.latest, formato.fecha, formato.hora, formato.nombre ?? ((a) => a.displayName)));
   for (const g of GRUPOS[area]) {
     const datos: DatoImportante[] = [];
     if (g.parq) {
@@ -490,7 +524,10 @@ export interface RenglonDeFormulario {
   readonly sensible: boolean;
 }
 
-/** Las respuestas de un formulario, sección por sección, para la pestaña «Formularios». La conducta alimentaria no se cita. */
+/**
+ * Las respuestas de un formulario, sección por sección, para la pestaña «Formularios». La conducta alimentaria no se cita y
+ * se rotula «Conducta alimentaria», sin los nombres de trastornos que trae la pregunta (CTX-D09).
+ */
 export function renglonesDelFormulario(f: FormularioEnElContexto): { readonly titulo: string; readonly renglones: readonly RenglonDeFormulario[] }[] {
   const fuente = fuenteDeFormulario(f);
   return f.sections
@@ -498,10 +535,10 @@ export function renglonesDelFormulario(f: FormularioEnElContexto): { readonly ti
     .map((s) => ({
       titulo: s.title,
       renglones: s.answers.map((r) => {
-        const sensible = r.fieldCode === 'nut_tca';
+        const sensible = !seCita(r.fieldCode);
         return {
           clave: `${f.formResponseId}#${r.fieldCode}`,
-          pregunta: r.label,
+          pregunta: sensible ? COPY_CONTEXTO.conductaAlimentaria : r.label,
           respuesta: sensible && r.answer.type === 'CHOICE' ? (TCA_EN_PALABRAS[r.answer.option] ?? r.text) : r.text,
           cita: sensible ? null : citaDe({ respuesta: r, formulario: f, fuente }, r.label),
           sensible,
@@ -524,7 +561,10 @@ export function buscarEnFormularios(formularios: readonly FormularioEnElContexto
   return formularios
     .map((f) => ({
       ...f,
-      sections: f.sections.map((s) => ({ ...s, answers: s.answers.filter((r) => coincide(r.label, r.text, s.title, f.templateName)) })).filter((s) => s.answers.length > 0),
+      // Lo sensible se busca por lo que muestra la pantalla («Conducta alimentaria»), no por la pregunta ni por la respuesta.
+      sections: f.sections
+        .map((s) => ({ ...s, answers: s.answers.filter((r) => (seCita(r.fieldCode) ? coincide(r.label, r.text, s.title, f.templateName) : coincide(COPY_CONTEXTO.conductaAlimentaria, s.title, f.templateName))) }))
+        .filter((s) => s.answers.length > 0),
     }))
     .filter((f) => f.sections.length > 0);
 }

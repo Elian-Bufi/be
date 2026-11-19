@@ -11,7 +11,7 @@
  */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { buscarEnFormularios, cambioDelCuerpoEnPalabras, cantidadDeRespuestas, COPY_CONTEXTO, loImportante, metricasDelCuerpo, renglonesDelFormulario, type ValorComparable } from './contexto-de-la-persona';
+import { buscarEnFormularios, CAMPOS_QUE_NO_SE_CITAN, cambioDelCuerpoEnPalabras, cantidadDeRespuestas, COPY_CONTEXTO, loImportante, metricasDelCuerpo, renglonesDelFormulario, seCita, type ValorComparable } from './contexto-de-la-persona';
 import { CuerpoDelContextoResponseSchema, entraEnElCuerpoCompartido, RespuestasDelContextoResponseSchema, type FormularioEnElContexto, type RespuestaEnElContexto } from './contratos-contexto-de-la-persona';
 import { CrearEvaluacionRequestSchema, EvaluacionNutricionalSchema } from './contratos-nutricion';
 import type { ValorDeRespuestaV2 } from './contratos-formularios-v2';
@@ -203,4 +203,52 @@ test('TEST-CTX-009 · los contratos son estrictos, la cita de Nutrición es opci
   assert.ok('formResponseReferences' in EvaluacionNutricionalSchema.shape);
   const textos = JSON.stringify(COPY_CONTEXTO, (_k, v) => (typeof v === 'function' ? v('X') : v)).toLowerCase();
   for (const prohibida of ['asesorad', 'cumplimiento', 'adherencia', 'racha', 'puntaje', 'riesgo']) assert.ok(!textos.includes(prohibida), `COPY_CONTEXTO dice «${prohibida}»`);
+});
+
+// ─── Revisión del PR (adversaria) ───────────────────────────────────────────────────────────────
+
+test('TEST-CTX-011 · el detalle sale del mismo formulario que la respuesta: un «No» nuevo no se pega al «¿Cuál?» de uno viejo', () => {
+  // Mutación verificada: buscar el detalle en todos los formularios (como antes) da «No · Maní: urticaria».
+  const viejo = formulario('NUTRICION', [si('nut_alergias'), texto('nut_alergias_cuales', 'Maní: urticaria')], { formResponseId: '00000000-0000-4000-8000-0000000000a1', answeredAt: '2026-10-01T10:00:00.000Z' });
+  const nuevo = formulario('NUTRICION', [no('nut_alergias')], { formResponseId: '00000000-0000-4000-8000-0000000000a2', answeredAt: '2026-11-10T10:00:00.000Z' });
+  const alergia = loImportante('NUTRICION', { formularios: [viejo, nuevo] }, formato)[0]!.datos[0]!;
+  assert.equal(alergia.respuesta, 'No');
+  assert.deepEqual(alergia.citas.map((c) => c.formResponseId), ['00000000-0000-4000-8000-0000000000a2']);
+  // Con el «Sí» y su detalle en el mismo formulario, van juntos, y se citan los dos de ese formulario.
+  const conDetalle = loImportante('NUTRICION', { formularios: [nuevo, { ...viejo, answeredAt: '2026-11-12T10:00:00.000Z' }] }, formato)[0]!.datos[0]!;
+  assert.equal(conDetalle.respuesta, 'Sí · Maní: urticaria');
+  assert.deepEqual([...new Set(conDetalle.citas.map((c) => c.formResponseId))], ['00000000-0000-4000-8000-0000000000a1']);
+});
+
+test('TEST-CTX-012 · cada cita dice si es de salud; la conducta alimentaria no se cita en ningún lado y se rotula sin nombres de trastornos', () => {
+  // Lo de salud se cita solo en la evaluación: el objetivo viaja con el plan compartido (API-RES-06).
+  const f = formulario('ENTRENAMIENTO', [...PARQ_NO, opcion('trn_dias_por_semana', 'tres', '3 días', 'HABITOS_Y_CONTEXTO')]);
+  const datos = loImportante('ENTRENAMIENTO', { formularios: [f] }, formato).flatMap((g) => g.datos);
+  assert.ok(datos.find((d) => d.clave === 'parq')!.citas.every((c) => c.deSalud));
+  assert.deepEqual(datos.find((d) => d.clave === 'trn_dias_por_semana')!.citas.map((c) => c.deSalud), [false]);
+  // La conducta alimentaria: en «Formularios», con su rótulo neutro, sin cita, y el buscador no la encuentra por la pregunta.
+  const tca: RespuestaEnElContexto = { ...opcion('nut_tca', 'si', 'Sí'), label: '¿Tuviste o tenés algún trastorno de la conducta alimentaria (por ejemplo, anorexia, bulimia o atracones)?' };
+  const nut = formulario('NUTRICION', [tca, si('nut_alergias')]);
+  const renglon = renglonesDelFormulario(nut)[0]!.renglones.find((x) => x.sensible)!;
+  assert.equal(renglon.pregunta, 'Conducta alimentaria');
+  assert.equal(renglon.cita, null);
+  assert.equal(cantidadDeRespuestas(buscarEnFormularios([nut], 'bulimia')), 0);
+  assert.equal(cantidadDeRespuestas(buscarEnFormularios([nut], 'conducta')), 1);
+  // Ni por «Otros datos de salud»: nunca aparece una cita suya.
+  const todas = loImportante('NUTRICION', { formularios: [nut] }, formato).flatMap((g) => g.datos.flatMap((d) => d.citas));
+  assert.ok(!todas.some((c) => c.fieldCode === 'nut_tca'));
+  assert.equal(seCita('nut_tca'), false);
+  assert.ok(CAMPOS_QUE_NO_SE_CITAN.has('nut_tca'));
+});
+
+test('TEST-CTX-013 · «La tomó» pasa por el nombre de la pantalla («Ocultar nombres»)', () => {
+  const cuerpo = {
+    access: 'OWN_AREA' as const,
+    latest: { evaluationId: 'e1', occurredAt: '2026-11-10T08:30:00.000Z', registeredAt: '2026-11-10T09:00:00.000Z', author: { identityId: 'a', displayName: 'Lic. Ana Ríos' }, protocols: ['ISAK'], origins: ['DIRECT_CAPTURE' as const], context: null },
+    previous: null,
+    metrics: [],
+  };
+  const grupos = loImportante('ANTROPOMETRIA', { formularios: [], cuerpo }, { ...formato, nombre: () => 'Profesional 7Q2' });
+  assert.equal(grupos[0]!.datos.find((d) => d.clave === 'toma-quien')!.respuesta, 'Profesional 7Q2');
+  assert.ok(!JSON.stringify(grupos).includes('Ana Ríos'));
 });
