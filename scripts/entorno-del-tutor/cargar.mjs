@@ -36,6 +36,7 @@ import { verificarMatriz } from './matriz.mjs';
 import { CASO_DE_USO, COLEGAS, DOMINIO_DE_CORREO, OPERACION, PERSONAS, PROFESIONAL } from './personas.mjs';
 import { COORDINACION } from './textos.mjs';
 import { HERRAMIENTAS } from './herramientas.mjs';
+import { extras } from './extras.mjs';
 import { METODOS } from '../../EVIDENCIA/DASHBOARD-PROFESIONAL/herramientas/datos/cohorte/personas.mjs';
 import { masMinutos, instante } from '../../EVIDENCIA/DASHBOARD-PROFESIONAL/herramientas/datos/cohorte/herramientas.mjs';
 
@@ -397,13 +398,23 @@ async function evaluacion(area, p, proClave, aseId) {
   return r.data.evaluationId;
 }
 
-async function planes(area, p, proClave, aseId, evaluacionId, plantillas) {
+async function planes(area, p, proClave, aseId, evaluacionId, plantillas, recetaDelPlan = null) {
   const proId = ids[proClave];
   const token = await sesion(proClave);
   const t = T[area];
   const versiones = area === 'NUTRICION' ? p.nut.versiones : p.trn.versiones;
   const revisiones = p.revisiones.filter((r) => r.area === area);
-  const estructura = (v) => (area === 'NUTRICION' ? estructuraNutricional(v.plan) : v.estructura);
+  const estructura = (v) => {
+    if (area !== 'NUTRICION') return v.estructura;
+    const e = estructuraNutricional(v.plan);
+    // La receta como opción del plan (REQ-TUT-34): en el día tipo principal de la última versión, la opción nace de la
+    // receta; los ítems los arma el servidor con una porción, los mismos alimentos y cantidades de la historia.
+    if (recetaDelPlan && v === versiones[versiones.length - 1]) {
+      const comida = e.dayTypes[0].meals.find((m) => m.label === recetaDelPlan.comida);
+      comida.options[recetaDelPlan.opcion] = { label: comida.options[recetaDelPlan.opcion].label, items: [], recipeVersionId: recetaDelPlan.recipeVersionId };
+    }
+    return e;
+  };
   const existentes = await versionesExistentes(area, proId, aseId);
   const creadas = existentes.map((x) => x.id);
   const inicio = instante(p.inicio, '09:10');
@@ -676,7 +687,8 @@ async function herramientas(h) {
   const comp = (x) => ({ referenceAmount: '100g', energyKcal: x.kcal, proteinG: x.p, carbohydrateG: x.c, fatG: x.g, fiberG: x.f });
   for (const a of HERRAMIENTAS.alimentosPropios) {
     if (yaEstan.some((x) => x.name === a.nombre)) continue;
-    const r = await pedir('POST', '/nutrition/catalog-items', { token, cuerpo: { name: a.nombre, itemType: 'FOOD', composition: comp(a) } });
+    const medidas = (HERRAMIENTAS.medidasCaseras[a.clave] ?? []).map(([kind, amount]) => ({ kind, amount }));
+    const r = await pedir('POST', '/nutrition/catalog-items', { token, cuerpo: { name: a.nombre, itemType: 'FOOD', composition: comp(a), ...(medidas.length ? { householdMeasures: medidas } : {}) } });
     resultado.alimentos++;
     const item = (await mios()).find((x) => x.catalogItemId === r.data.catalogItemId);
     if (a.corregido) await pedir('PATCH', `/nutrition/catalog-items/${item.catalogItemId}`, { token, cuerpo: { expectedVersion: item.version, name: a.nombre, composition: comp(a.corregido) } });
@@ -689,6 +701,31 @@ async function herramientas(h) {
   }
   return resultado;
 }
+
+// ─── Lo que se crea por la API además de la historia (extras.mjs) ──────────────────────────────────────────────
+
+const fallasDeLosExtras = [];
+/** Corre una parte; si falla, la anota y sigue: al final, con alguna falla, la carga sale con 5 y la lista entera. */
+async function intentar(nombre, fn) {
+  try {
+    const r = await fn();
+    log(`${nombre}: ${r === null || r === undefined || typeof r === 'object' ? 'hecho' : r}`);
+    return r;
+  } catch (e) {
+    fallasDeLosExtras.push(`${nombre}: ${String(e?.message ?? e).slice(0, 500)}`);
+    return null;
+  }
+}
+const X = extras({
+  pedir: (...a) => pedir(...a),
+  sesion: (...a) => sesion(...a),
+  ids,
+  dominio,
+  versionesDeAlimentos: async (claves) => {
+    const porId = await en((tx) => catalogoNutricional(tx, ids.julieta, claves.map((k) => ALIMENTO[k].id)));
+    return (k) => ({ catalogItemId: ALIMENTO[k].id, catalogItemVersionId: porId.get(ALIMENTO[k].id).versionId });
+  },
+});
 
 // ─── Compartir, historia anterior y coordinación ──────────────────────────────────────────────────────────────
 
@@ -768,6 +805,9 @@ async function profesionales() {
 async function cargar(h) {
   await profesionales();
   const herr = await herramientas(h);
+  await intentar('las recetas', X.recetas);
+  await intentar('las comidas y sesiones habituales', X.habituales);
+  await intentar('las vistas de «Analizar»', X.vistas);
   log(`herramientas: ${Object.keys(herr.plantillas).length} plantillas de Entrenamiento, ${herr.alimentos} alimentos propios nuevos, ${herr.favoritos} ejercicios habituales`);
   for (const p of h.personas) {
     const t0 = Date.now();
@@ -811,7 +851,8 @@ async function cargar(h) {
           continue;
         }
         const evalId = await evaluacion(area, p, 'julieta', aseId);
-        versiones[area] = await planes(area, p, 'julieta', aseId, evalId, herr.plantillas);
+        const receta = area === 'NUTRICION' ? await intentar(`la receta en el plan de ${p.nombre}`, () => X.recetaParaElPlan(p)) : null;
+        versiones[area] = await planes(area, p, 'julieta', aseId, evalId, herr.plantillas, receta ?? null);
       }
     }
     // La colega de Nutrición de Silvia: su objetivo y su plan vigente, para compartir (REQ-TUT-26).
@@ -839,6 +880,15 @@ async function cargar(h) {
   log(`compartir de Silvia: ${await compartirDeSilvia(ids.silvia)}`);
   log(`historia anterior de Valeria: ${await historiaAnterior(ids.valeria)}`);
   log(`notas de coordinación de Silvia: ${await coordinacion(ids.silvia)}`);
+  // Los formularios de inicio de las cinco en profundidad, respondidos; el pedido de información a Silvia, sin responder;
+  // y una invitación a una persona nueva (REQ-TUT-14 y 17).
+  for (const p of h.personas.filter((x) => !x.liviana)) await intentar(`los formularios de ${p.nombre}`, () => X.formularios(p));
+  await intentar('el pedido de información a Silvia', X.pedidoDeInformacion);
+  await intentar('la invitación a una persona nueva', X.invitacion);
+  if (fallasDeLosExtras.length) {
+    for (const f of fallasDeLosExtras) console.error(`FALLA ${f}`);
+    process.exit(5);
+  }
 }
 
 /** El origen de la muestra que ya está en la base: sale de la fecha del primer vínculo de Tomás. */
@@ -924,7 +974,33 @@ async function main() {
       const token = await sesion('julieta');
       const cartera = await pedir('GET', '/me/portfolio', { token });
       const cola = await pedir('GET', '/me/review-queue', { token });
-      log(`La cartera de la profesional por la API: ${JSON.stringify(cartera.data ?? cartera).length} bytes; la cola: ${JSON.stringify(cola.data ?? cola).slice(0, 300)}`);
+      log(`La cartera de la profesional por la API: ${(cartera.data ?? []).length} renglones.`);
+      // «Te toca a vos», renglón por renglón (REQ-TUT-14 y 74): cada revisión vencida o de hoy de la historia tiene su
+      // renglón con la misma fecha acordada, y cada renglón de revisión de la cola sale de la historia.
+      const hoy = hoyEnBuenosAires();
+      const esperado = [];
+      for (const p of h.personas.filter((x) => !x.fin)) {
+        for (const area of ['ENTRENAMIENTO', 'NUTRICION']) {
+          const ultima = p.revisiones.filter((r) => r.area === area).at(-1);
+          if (ultima?.proxima) esperado.push({ persona: p.nombre, area, fecha: ultima.proxima });
+        }
+      }
+      const renglones = (cola.data ?? []).filter((x) => x.reason?.code === 'REVIEW_DUE').map((x) => ({ persona: x.advisee?.displayName, fecha: x.agreedReviewDate, area: x.scope?.code ?? x.area ?? null }));
+      for (const r of renglones) {
+        log(`Te toca a vos · ${r.persona} · ${r.area ?? '—'} · ${r.fecha}`);
+        if (!esperado.some((e) => e.persona === r.persona && e.fecha === r.fecha && (!r.area || r.area === e.area))) {
+          diferencias++;
+          console.error(`DIFERENCIA «Te toca a vos»: ${r.persona} ${r.fecha} no sale de la historia`);
+        }
+      }
+      for (const e of esperado.filter((x) => x.fecha <= hoy)) {
+        if (!renglones.some((r) => r.persona === e.persona && r.fecha === e.fecha && (!r.area || r.area === e.area))) {
+          diferencias++;
+          console.error(`DIFERENCIA «Te toca a vos»: falta ${e.persona} (${e.area}, ${e.fecha})`);
+        }
+      }
+      const otros = (cola.data ?? []).filter((x) => x.reason?.code !== 'REVIEW_DUE');
+      for (const x of otros) log(`Te toca a vos · ${x.advisee?.displayName} · ${x.reason?.code}`);
       if (diferencias) process.exit(4);
       log('Comprobación: sin diferencias.');
     }
@@ -939,4 +1015,3 @@ try {
   if (prisma) await prisma.$disconnect();
 }
 void diasEntre;
-void ALIMENTO;

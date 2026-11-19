@@ -121,6 +121,9 @@ try {
   paso('comprobar: la base contra la historia y la API de la profesional', r6.status === 0, `salida ${r6.status}`);
   fs.writeFileSync(path.join(salida, 'conteos.json'), `${JSON.stringify({ antesDeAlDia: a, despues: d }, null, 2)}\n`);
 
+  // ─── 8: los permisos (REQ-TUT-76) y el tutor travieso (REQ-TUT-77) ─────────────────────────────────────────
+  await permisosYTutorTravieso(d);
+
   // ─── 7: las capturas ────────────────────────────────────────────────────────────────────────────────────────
   web = spawn(process.execPath, [path.join(REPO, 'EVIDENCIA/DASHBOARD-PROFESIONAL/herramientas/servir-web.mjs'), path.join(REPO, 'apps/web/out'), '3000', API], { stdio: 'inherit' });
   await pausa(1500);
@@ -132,6 +135,99 @@ try {
   await parar(api);
 }
 if (resultado.pasos.some((p) => !p.ok)) process.exitCode = 1;
+
+// Lo que se pide a la API como un cliente: con la cuenta de quien sea, devuelve el estado y el cuerpo.
+async function llamar(metodo, ruta, { token = null, cuerpo, superficie = 'WEB' } = {}) {
+  const headers = { 'Content-Type': 'application/json', 'X-BE-Surface': superficie, 'Idempotency-Key': `ci-${randomBytes(12).toString('hex')}` };
+  if (token) headers.Authorization = `Bearer ${token}`;
+  const r = await fetch(`${API}/api/v1${ruta}`, { method: metodo, headers, body: cuerpo === undefined ? undefined : JSON.stringify(cuerpo) });
+  const texto = await r.text();
+  return { status: r.status, cuerpo: texto ? JSON.parse(texto) : null };
+}
+async function entrarComo(correo, clave, superficie = 'WEB') {
+  const r = await llamar('POST', '/auth/sessions', { cuerpo: { method: 'LOCAL', identifier: correo, credential: clave }, superficie });
+  return r.cuerpo.data.session.accessToken;
+}
+async function claveDeLaMuestra(clavePersona) {
+  const { createHmac } = await import('node:crypto');
+  const c = `tutor-g1.${clavePersona}@example.invalid`;
+  return [c, `Be-${createHmac('sha256', CLAVE).update(c).digest('base64url').slice(0, 26)}`];
+}
+async function registrar(correo, clave, intencion, nombre) {
+  const { createRequire } = await import('node:module');
+  const dominio = createRequire(path.join(REPO, 'packages/domain/'))(path.join(REPO, 'packages/domain/dist/index.js'));
+  const superficie = intencion === 'PROFESSIONAL' ? 'WEB' : 'APK';
+  await llamar('POST', '/registrations', {
+    superficie,
+    cuerpo: {
+      registrationIntent: intencion,
+      identity: { localIdentifier: correo, localCredential: clave },
+      profile: { displayName: nombre },
+      termsAcceptance: { versionId: dominio.VERSION_VIGENTE.TERMINOS.id },
+      privacyAcknowledgement: { versionId: dominio.VERSION_VIGENTE.PRIVACIDAD_INFO.id },
+      adultDeclaration: { versionId: dominio.VERSION_VIGENTE.MAYORIA_DE_EDAD.id, declared: true },
+    },
+  });
+  const token = await entrarComo(correo, clave, superficie);
+  const yo = await llamar('GET', '/me', { token, superficie });
+  return { token, id: yo.cuerpo.data.identityId };
+}
+
+/**
+ * REQ-TUT-76: la cuenta de la profesional recibe «no existe» (o «sin permiso») al pedir lo de una persona que no es de la
+ * muestra, y no entra a Administración. REQ-TUT-77: el tutor crea un borrador, escribe y archiva una nota, retira un
+ * alimento propio e invita; después `al-dia` corre igual, sin tocar lo del tutor ni la cuenta ajena.
+ */
+async function permisosYTutorTravieso(conteosAntes) {
+  const ajena = await registrar(`ajena.${randomBytes(4).toString('hex')}@example.invalid`, `Be-${randomBytes(16).toString('base64url')}`, 'ADVISEE', 'Cuenta ajena a la muestra');
+  const [correo, clave] = await claveDeLaMuestra('julieta');
+  const token = await entrarComo(correo, clave);
+  const pedidos = [
+    ['GET', `/advisees/${ajena.id}/dashboard`],
+    ['GET', `/advisees/${ajena.id}/training/evaluations`],
+    ['GET', `/advisees/${ajena.id}/professional-notes`],
+    ['POST', `/advisees/${ajena.id}/professional-notes`, { text: 'Esta nota no puede existir.' }],
+    ['GET', `/advisees/${ajena.id}/nutrition/plans`],
+  ];
+  const rechazos = [];
+  for (const [m, ruta, cuerpo] of pedidos) {
+    const r = await llamar(m, ruta, { token, cuerpo });
+    rechazos.push(`${m} ${ruta.replace(ajena.id, '<ajena>')} → ${r.status}`);
+    if (![403, 404].includes(r.status)) paso(`permisos: ${m} sobre una cuenta ajena se rechaza`, false, `${r.status}`);
+  }
+  const admin = await llamar('POST', '/admin/professionals/query', { token, cuerpo: {} });
+  rechazos.push(`POST /admin/professionals/query → ${admin.status}`);
+  paso('permisos: lo de una cuenta ajena es «no existe» y Administración no entra', rechazos.every((x) => /→ 40[134]$/.test(x)), rechazos.join(' · '));
+
+  // El tutor travieso, con la cuenta de la profesional.
+  const [ct, kt] = await claveDeLaMuestra('tomas');
+  const tomas = await entrarComo(ct, kt, 'APK');
+  const tomasId = (await llamar('GET', '/me', { token: tomas, superficie: 'APK' })).cuerpo.data.identityId;
+  const hechos = [];
+  const planes = await llamar('GET', `/advisees/${tomasId}/training/plans`, { token });
+  const vigente = (planes.cuerpo?.data ?? []).filter((x) => x.state === 'ACTIVATED').at(-1);
+  const objetivoId = vigente?.objectiveVersionId;
+  const borrador = await llamar('POST', `/advisees/${tomasId}/training/plans`, { token, cuerpo: { objectiveVersionId: objetivoId, basedOnPlanId: vigente?.planId } });
+  hechos.push(`borrador del plan de Tomás → ${borrador.status}`);
+  const nota = await llamar('POST', `/advisees/${tomasId}/professional-notes`, { token, cuerpo: { text: 'Nota del tutor, de prueba.' } });
+  hechos.push(`nota propia → ${nota.status}`);
+  const notaId = nota.cuerpo?.data?.noteId ?? nota.cuerpo?.data?.id;
+  if (notaId) hechos.push(`archivar la nota → ${(await llamar('POST', `/professional-notes/${notaId}/archive`, { token, cuerpo: {} })).status}`);
+  const mios = (await llamar('GET', '/nutrition/catalog-items/mine?limit=50', { token })).cuerpo?.data ?? [];
+  const alimento = mios.find((x) => x.available !== false);
+  if (alimento) hechos.push(`retirar «${alimento.name}» → ${(await llamar('POST', `/nutrition/catalog-items/${alimento.catalogItemId}/retirement`, { token, cuerpo: { expectedVersion: alimento.version } })).status}`);
+  hechos.push(`invitar → ${(await llamar('POST', '/relationship-invitations', { token, cuerpo: { scope: { code: 'ENTRENAMIENTO' }, purpose: (await import('node:module')).createRequire(path.join(REPO, 'packages/domain/'))(path.join(REPO, 'packages/domain/dist/index.js')).FINALIDAD_DE_ALCANCE.ENTRENAMIENTO } })).status}`);
+  paso('el tutor travieso: crea, escribe, archiva, retira e invita', [borrador, nota].every((x) => x.status < 300), hechos.join(' · '));
+
+  // Y la muestra se pone al día igual, sin duplicar ni tocar lo ajeno.
+  const r = cargar('al-dia');
+  const despues = conteos(cargar('resumen'));
+  // Lo único nuevo es la nota que escribió el tutor: al-dia no duplica nada ni borra lo suyo.
+  const delTutor = nota.status < 300 ? 1 : 0;
+  paso('al-dia después del tutor travieso', r.status === 0 && total(despues) === total(conteosAntes) + delTutor, `salida ${r.status}; ${total(conteosAntes)} → ${total(despues)} filas (${delTutor} del tutor)`);
+  const vinculosAjenos = await llamar('GET', '/me/relationships', { token: ajena.token, superficie: 'APK' });
+  paso('la cuenta ajena sigue sin vínculos con la muestra', (vinculosAjenos.cuerpo?.data ?? []).length === 0, `${(vinculosAjenos.cuerpo?.data ?? []).length} vínculos`);
+}
 
 async function capturas() {
   const puppeteer = require('puppeteer-core');
@@ -173,11 +269,25 @@ async function capturas() {
     const yo = await fetch(`${API}/api/v1/me`, { headers: { ...cab, Authorization: `Bearer ${s.data.session.accessToken}` } }).then((r) => r.json());
     return yo.data?.identityId ?? null;
   };
-  const indice = ['# Capturas de la muestra del tutor (WP-ENTORNO-DEL-TUTOR, DL-184)', '', `Origen ${origen}, hoy ${hoy}. ${PROFESIONAL.nombre}, tema Claro, 1920 × 1080. Datos sintéticos: ninguna persona es real.`, '', '| Archivo | Pantalla | Persona |', '|---|---|---|'];
+  const indice = ['# Capturas de la muestra del tutor (WP-ENTORNO-DEL-TUTOR, DL-184)', '', `Origen ${origen}, hoy ${hoy}. ${PROFESIONAL.nombre}, en Claro y Azul noche, a 1920 × 1080 y a 1440 × 900. Datos sintéticos: ninguna persona es real.`, '', '| Archivo | Pantalla | Persona |', '|---|---|---|'];
+  const VARIANTES = [['claro', 1920, 1080], ['azul-noche', 1920, 1080], ['claro', 1440, 900], ['azul-noche', 1440, 900]];
   const foto = async (archivo, que, quien = '—') => {
-    await page.screenshot({ path: path.join(salida, archivo) });
-    indice.push(`| \`${archivo}\` | ${que} | ${quien} |`);
-    console.log(`captura ${archivo}`);
+    const base = archivo.replace(/\.png$/, '');
+    for (const [tema, ancho, alto] of VARIANTES) {
+      await page.evaluate((t) => {
+        document.documentElement.dataset.tema = t;
+        try {
+          localStorage.setItem('be-apariencia', t);
+        } catch {}
+      }, tema);
+      await page.setViewport({ width: ancho, height: alto, deviceScaleFactor: 1 });
+      await pausa(500);
+      const nombre = `${base}__${tema}__${ancho}.png`;
+      await page.screenshot({ path: path.join(salida, nombre) });
+      indice.push(`| \`${nombre}\` | ${que} | ${quien} |`);
+    }
+    await page.setViewport({ width: 1920, height: 1080, deviceScaleFactor: 1 });
+    console.log(`captura ${base} (4)`);
   };
   await asentar();
   await foto('00-inicio.png', 'Inicio de la profesional: «Te toca a vos», «Esperan respuesta» y «Tu semana»');

@@ -609,7 +609,7 @@ reglaDeLaMuestra('R-TXT-01', 'Ubicar, nunca calificar, también en lo escrito: l
     for (const v of p.nut.versiones) textos.push([`${p.nombre} · objetivo`, `${v.nombre} ${v.razon}`]);
   }
   const he = h.herramientas;
-  for (const x of [...he.recetas, ...he.comidasHabituales, ...he.vistasDeAnalizar, ...he.enfoques, ...he.alimentosPropios.map((a) => a.nombre)]) textos.push(['herramienta', x]);
+  for (const x of [...he.recetas.flatMap(([n, , , pasos]) => [n, ...pasos]), ...he.comidasHabituales.map(([n]) => n), ...he.sesionesHabituales.map((x) => x.nombre), ...he.vistasDeAnalizar, ...he.enfoques, ...he.alimentosPropios.map((a) => a.nombre)]) textos.push(['herramienta', x]);
   const guardias = ['terminosProhibidosEn', 'terminosProhibidosDeEntrenamientoEn', 'terminosProhibidosDeAntropometriaEn', 'terminosProhibidosDeFuerzaEn'].map((f) => dominio[f]).filter(Boolean);
   for (const [donde, texto] of textos) {
     const prohibidos = [...new Set([...guardias.flatMap((g) => g(texto)), ...dominio.terminosProhibidosEnUnGrafico(texto, ['NUTRICION', 'ENTRENAMIENTO', 'ANTROPOMETRIA'])])];
