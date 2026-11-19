@@ -5,7 +5,7 @@
  * API vea la IP real (08 §12.2). Fuera del build de Render (next dev, CI, build local) puede quedar vacía: en `next dev`
  * /api/* se reescribe a la API local.
  */
-import { CAPACIDAD_FORMULARIOS_FORMATO_3, CAPACIDAD_TEXTOS_VIGENTES, CAPACIDAD_TIPOS_DE_SERIE, crearClienteBe } from '@be/domain';
+import { CAPACIDAD_BLOQUES_DE_LA_SESION, CAPACIDAD_FORMULARIOS_FORMATO_3, CAPACIDAD_TEXTOS_VIGENTES, CAPACIDAD_TIPOS_DE_SERIE, crearClienteBe } from '@be/domain';
 
 export type { Resultado } from '@be/domain';
 
@@ -15,7 +15,7 @@ export type { Resultado } from '@be/domain';
 export const api = crearClienteBe({
   baseUrl: `${process.env.BE_API_BASE_URL ?? ''}/api/v1`,
   superficie: 'WEB',
-  capacidades: [CAPACIDAD_FORMULARIOS_FORMATO_3, CAPACIDAD_TEXTOS_VIGENTES, CAPACIDAD_TIPOS_DE_SERIE],
+  capacidades: [CAPACIDAD_FORMULARIOS_FORMATO_3, CAPACIDAD_TEXTOS_VIGENTES, CAPACIDAD_TIPOS_DE_SERIE, CAPACIDAD_BLOQUES_DE_LA_SESION],
 });
 
 /** Una key por intento lógico; los reintentos del mismo intento la reusan (10-B10:430-438). */

@@ -4,6 +4,7 @@ import type { Response } from 'express';
 import { contextoDe, type SolicitudConContexto } from '../http/contexto';
 import { comoConsultaDeLista } from '../http/paginacion';
 import { SinTipoDeSerieInterceptor } from '../http/sin-tipo-de-serie.interceptor';
+import { SinBloquesDeLaSesionInterceptor } from '../http/sin-bloques-de-la-sesion.interceptor';
 import { sinParametrosDeQuery, validarCuerpo } from '../http/validacion';
 import type { ResultadoIdempotente } from '../plataforma/idempotencia.service';
 import { LimitadorService } from '../plataforma/limitador.service';
@@ -25,7 +26,7 @@ type Solicitud = SolicitudAutenticada & SolicitudConContexto;
  */
 @Controller()
 @UseGuards(SesionGuard)
-@UseInterceptors(SinTipoDeSerieInterceptor)
+@UseInterceptors(SinTipoDeSerieInterceptor, SinBloquesDeLaSesionInterceptor)
 export class EntrenamientoController {
   constructor(
     private readonly evaluaciones: EvaluacionesDeEntrenamientoService,

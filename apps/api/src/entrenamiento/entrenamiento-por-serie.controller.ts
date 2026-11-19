@@ -3,6 +3,7 @@ import { HEADER_IDEMPOTENCY_KEY } from '@be/domain';
 import type { Response } from 'express';
 import { contextoDe, type SolicitudConContexto } from '../http/contexto';
 import { SinTipoDeSerieInterceptor } from '../http/sin-tipo-de-serie.interceptor';
+import { SinBloquesDeLaSesionInterceptor } from '../http/sin-bloques-de-la-sesion.interceptor';
 import { sinParametrosDeQuery } from '../http/validacion';
 import type { ResultadoIdempotente } from '../plataforma/idempotencia.service';
 import { LimitadorService } from '../plataforma/limitador.service';
@@ -21,7 +22,7 @@ type Solicitud = SolicitudAutenticada & SolicitudConContexto;
  */
 @Controller()
 @UseGuards(SesionGuard)
-@UseInterceptors(SinTipoDeSerieInterceptor)
+@UseInterceptors(SinTipoDeSerieInterceptor, SinBloquesDeLaSesionInterceptor)
 export class EntrenamientoPorSerieController {
   constructor(
     private readonly objetivos: ObjetivosPorSerieService,

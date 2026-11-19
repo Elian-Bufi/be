@@ -15,7 +15,7 @@
  * se guardan idénticos a los de antes, con su huella. Este módulo es la única regla de cómo se arman las partes de una
  * sesión, qué no se puede guardar y qué falta para activar; lo usan la API, el website y la APK.
  */
-import type { BloqueDeLaSesionEntrada, TipoDeBloque } from './contratos-entrenamiento';
+import type { BloqueDeLaSesion, BloqueDeLaSesionEntrada, TipoDeBloque } from './contratos-entrenamiento';
 import type { ValidationIssue } from './contratos';
 import { numero } from './formato-numeros';
 import { seriesEfectivas } from './tipos-de-serie';
@@ -66,8 +66,8 @@ export function bloqueGuardado(g: BloqueParaLeer): BloqueDeLaSesionGuardado {
 }
 
 /** Lo que se guarda de los bloques de una sesión: nada, si no tiene (la sesión queda idéntica a las de antes). */
-export const bloquesGuardados = (grupos: readonly BloqueParaLeer[] | null | undefined): { readonly exerciseGroups?: BloqueDeLaSesionGuardado[] } =>
-  grupos && grupos.length > 0 ? { exerciseGroups: grupos.map(bloqueGuardado) } : {};
+export const bloquesGuardados = (s: SesionConBloques<ConBloque, BloqueParaLeer>): { readonly exerciseGroups?: BloqueDeLaSesionGuardado[] } =>
+  s.exerciseGroups && s.exerciseGroups.length > 0 ? { exerciseGroups: bloquesEnOrden(s).map(bloqueGuardado) } : {};
 
 /** Lo que se guarda del bloque de un ejercicio: nada, si va suelto. */
 export const bloqueDelEjercicioGuardado = (p: ConBloque): { readonly exerciseGroupId?: string } => (p.exerciseGroupId ? { exerciseGroupId: p.exerciseGroupId } : {});
@@ -113,6 +113,32 @@ export function partesDeLaSesion<P extends ConBloque, B extends BloqueParaLeer>(
     if (!emitidos.has(g.groupId)) partes.push({ tipo: 'bloque', bloque: g, posicionDelBloque: n, ejercicios: [] });
   });
   return partes;
+}
+
+/**
+ * Los bloques de una sesión en el orden en que se ven: el de su primer ejercicio, y los vacíos al final. Es el orden en
+ * que se guardan y en que salen, así el arreglo y la pantalla dicen lo mismo.
+ */
+export function bloquesEnOrden<B extends BloqueParaLeer>(s: SesionConBloques<ConBloque, B>): B[] {
+  return partesDeLaSesion(s).flatMap((p) => (p.tipo === 'bloque' ? [p.bloque] : []));
+}
+
+/** La sesión con sus bloques en el orden en que se ven (el editor la deja así después de cada cambio). */
+export function conLosBloquesEnOrden<S extends SesionConBloques<ConBloque, BloqueParaLeer>>(s: S): S {
+  if (!s.exerciseGroups || s.exerciseGroups.length < 2) return s;
+  return { ...s, exerciseGroups: bloquesEnOrden(s) };
+}
+
+/** Los bloques como salen (API-TRN-09 y las demás lecturas, API-SER-01 y 02): explícitos, con su orden desde uno. */
+export function bloquesComoSalen(s: SesionConBloques<ConBloque, BloqueParaLeer>): BloqueDeLaSesion[] {
+  return bloquesEnOrden(s).map((g, n) => ({
+    groupId: g.groupId,
+    label: g.label,
+    order: n + 1,
+    kind: g.kind,
+    rounds: g.kind === 'ROUNDS' ? (g.rounds ?? null) : null,
+    restAfterRoundSeconds: g.kind === 'ROUNDS' ? (g.restAfterRoundSeconds ?? null) : null,
+  }));
 }
 
 /** Si una sesión tiene algún bloque. */

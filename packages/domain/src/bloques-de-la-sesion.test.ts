@@ -157,9 +157,14 @@ test('DL-181 · para activar: ningún bloque vacío, y los «En vueltas» con do
     ],
   });
   assert.ok(r.ok);
+  // Se guardan en el orden en que se ven: el de su primer ejercicio, y el vacío al final.
+  assert.deepEqual(
+    r.contenido.blocks[0]!.sessions[0]!.exerciseGroups!.map((g) => g.label),
+    ['Torso', 'Pierna', 'Core'],
+  );
   assert.deepEqual(problemasDeCompletitud(r.contenido), [
     { code: 'ROUNDS_GROUP_NEEDS_TWO_EXERCISES', path: 'blocks[0].sessions[0].exerciseGroups[0]' },
-    { code: 'EXERCISE_GROUP_EMPTY', path: 'blocks[0].sessions[0].exerciseGroups[1]' },
+    { code: 'EXERCISE_GROUP_EMPTY', path: 'blocks[0].sessions[0].exerciseGroups[2]' },
   ]);
 });
 

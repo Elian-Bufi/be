@@ -37286,12 +37286,78 @@
                                                     "type": "null"
                                                   }
                                                 ]
+                                              },
+                                              "exerciseGroupId": {
+                                                "anyOf": [
+                                                  {
+                                                    "type": "string",
+                                                    "pattern": "^[A-Za-z0-9_-]{1,64}$"
+                                                  },
+                                                  {
+                                                    "type": "null"
+                                                  }
+                                                ]
                                               }
                                             },
                                             "required": [
                                               "exerciseVersionId",
                                               "sets",
                                               "intensity"
+                                            ],
+                                            "additionalProperties": false
+                                          }
+                                        },
+                                        "exerciseGroups": {
+                                          "maxItems": 20,
+                                          "type": "array",
+                                          "items": {
+                                            "type": "object",
+                                            "properties": {
+                                              "groupId": {
+                                                "type": "string",
+                                                "pattern": "^[A-Za-z0-9_-]{1,64}$"
+                                              },
+                                              "label": {
+                                                "type": "string",
+                                                "minLength": 1,
+                                                "maxLength": 120
+                                              },
+                                              "kind": {
+                                                "type": "string",
+                                                "enum": [
+                                                  "SEQUENTIAL",
+                                                  "ROUNDS"
+                                                ]
+                                              },
+                                              "rounds": {
+                                                "anyOf": [
+                                                  {
+                                                    "type": "integer",
+                                                    "minimum": 1,
+                                                    "maximum": 20
+                                                  },
+                                                  {
+                                                    "type": "null"
+                                                  }
+                                                ]
+                                              },
+                                              "restAfterRoundSeconds": {
+                                                "anyOf": [
+                                                  {
+                                                    "type": "integer",
+                                                    "minimum": 0,
+                                                    "maximum": 3600
+                                                  },
+                                                  {
+                                                    "type": "null"
+                                                  }
+                                                ]
+                                              }
+                                            },
+                                            "required": [
+                                              "groupId",
+                                              "label",
+                                              "kind"
                                             ],
                                             "additionalProperties": false
                                           }
@@ -37649,12 +37715,78 @@
                                               "type": "null"
                                             }
                                           ]
+                                        },
+                                        "exerciseGroupId": {
+                                          "anyOf": [
+                                            {
+                                              "type": "string",
+                                              "pattern": "^[A-Za-z0-9_-]{1,64}$"
+                                            },
+                                            {
+                                              "type": "null"
+                                            }
+                                          ]
                                         }
                                       },
                                       "required": [
                                         "exerciseVersionId",
                                         "sets",
                                         "intensity"
+                                      ],
+                                      "additionalProperties": false
+                                    }
+                                  },
+                                  "exerciseGroups": {
+                                    "maxItems": 20,
+                                    "type": "array",
+                                    "items": {
+                                      "type": "object",
+                                      "properties": {
+                                        "groupId": {
+                                          "type": "string",
+                                          "pattern": "^[A-Za-z0-9_-]{1,64}$"
+                                        },
+                                        "label": {
+                                          "type": "string",
+                                          "minLength": 1,
+                                          "maxLength": 120
+                                        },
+                                        "kind": {
+                                          "type": "string",
+                                          "enum": [
+                                            "SEQUENTIAL",
+                                            "ROUNDS"
+                                          ]
+                                        },
+                                        "rounds": {
+                                          "anyOf": [
+                                            {
+                                              "type": "integer",
+                                              "minimum": 1,
+                                              "maximum": 20
+                                            },
+                                            {
+                                              "type": "null"
+                                            }
+                                          ]
+                                        },
+                                        "restAfterRoundSeconds": {
+                                          "anyOf": [
+                                            {
+                                              "type": "integer",
+                                              "minimum": 0,
+                                              "maximum": 3600
+                                            },
+                                            {
+                                              "type": "null"
+                                            }
+                                          ]
+                                        }
+                                      },
+                                      "required": [
+                                        "groupId",
+                                        "label",
+                                        "kind"
                                       ],
                                       "additionalProperties": false
                                     }
@@ -38145,6 +38277,17 @@
                                                     "string",
                                                     "null"
                                                   ]
+                                                },
+                                                "exerciseGroupId": {
+                                                  "anyOf": [
+                                                    {
+                                                      "type": "string",
+                                                      "pattern": "^[A-Za-z0-9_-]{1,64}$"
+                                                    },
+                                                    {
+                                                      "type": "null"
+                                                    }
+                                                  ]
                                                 }
                                               },
                                               "required": [
@@ -38158,6 +38301,66 @@
                                                 "suggestedLoad",
                                                 "professionalParameters",
                                                 "note"
+                                              ],
+                                              "additionalProperties": false
+                                            }
+                                          },
+                                          "exerciseGroups": {
+                                            "type": "array",
+                                            "items": {
+                                              "type": "object",
+                                              "properties": {
+                                                "groupId": {
+                                                  "type": "string",
+                                                  "pattern": "^[A-Za-z0-9_-]{1,64}$"
+                                                },
+                                                "label": {
+                                                  "type": "string"
+                                                },
+                                                "order": {
+                                                  "type": "integer",
+                                                  "exclusiveMinimum": 0,
+                                                  "maximum": 9007199254740991
+                                                },
+                                                "kind": {
+                                                  "type": "string",
+                                                  "enum": [
+                                                    "SEQUENTIAL",
+                                                    "ROUNDS"
+                                                  ]
+                                                },
+                                                "rounds": {
+                                                  "anyOf": [
+                                                    {
+                                                      "type": "integer",
+                                                      "exclusiveMinimum": 0,
+                                                      "maximum": 9007199254740991
+                                                    },
+                                                    {
+                                                      "type": "null"
+                                                    }
+                                                  ]
+                                                },
+                                                "restAfterRoundSeconds": {
+                                                  "anyOf": [
+                                                    {
+                                                      "type": "integer",
+                                                      "minimum": 0,
+                                                      "maximum": 9007199254740991
+                                                    },
+                                                    {
+                                                      "type": "null"
+                                                    }
+                                                  ]
+                                                }
+                                              },
+                                              "required": [
+                                                "groupId",
+                                                "label",
+                                                "order",
+                                                "kind",
+                                                "rounds",
+                                                "restAfterRoundSeconds"
                                               ],
                                               "additionalProperties": false
                                             }
@@ -38439,6 +38642,17 @@
                                               "string",
                                               "null"
                                             ]
+                                          },
+                                          "exerciseGroupId": {
+                                            "anyOf": [
+                                              {
+                                                "type": "string",
+                                                "pattern": "^[A-Za-z0-9_-]{1,64}$"
+                                              },
+                                              {
+                                                "type": "null"
+                                              }
+                                            ]
                                           }
                                         },
                                         "required": [
@@ -38452,6 +38666,66 @@
                                           "suggestedLoad",
                                           "professionalParameters",
                                           "note"
+                                        ],
+                                        "additionalProperties": false
+                                      }
+                                    },
+                                    "exerciseGroups": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "object",
+                                        "properties": {
+                                          "groupId": {
+                                            "type": "string",
+                                            "pattern": "^[A-Za-z0-9_-]{1,64}$"
+                                          },
+                                          "label": {
+                                            "type": "string"
+                                          },
+                                          "order": {
+                                            "type": "integer",
+                                            "exclusiveMinimum": 0,
+                                            "maximum": 9007199254740991
+                                          },
+                                          "kind": {
+                                            "type": "string",
+                                            "enum": [
+                                              "SEQUENTIAL",
+                                              "ROUNDS"
+                                            ]
+                                          },
+                                          "rounds": {
+                                            "anyOf": [
+                                              {
+                                                "type": "integer",
+                                                "exclusiveMinimum": 0,
+                                                "maximum": 9007199254740991
+                                              },
+                                              {
+                                                "type": "null"
+                                              }
+                                            ]
+                                          },
+                                          "restAfterRoundSeconds": {
+                                            "anyOf": [
+                                              {
+                                                "type": "integer",
+                                                "minimum": 0,
+                                                "maximum": 9007199254740991
+                                              },
+                                              {
+                                                "type": "null"
+                                              }
+                                            ]
+                                          }
+                                        },
+                                        "required": [
+                                          "groupId",
+                                          "label",
+                                          "order",
+                                          "kind",
+                                          "rounds",
+                                          "restAfterRoundSeconds"
                                         ],
                                         "additionalProperties": false
                                       }
@@ -39397,6 +39671,17 @@
                                                     "string",
                                                     "null"
                                                   ]
+                                                },
+                                                "exerciseGroupId": {
+                                                  "anyOf": [
+                                                    {
+                                                      "type": "string",
+                                                      "pattern": "^[A-Za-z0-9_-]{1,64}$"
+                                                    },
+                                                    {
+                                                      "type": "null"
+                                                    }
+                                                  ]
                                                 }
                                               },
                                               "required": [
@@ -39410,6 +39695,66 @@
                                                 "suggestedLoad",
                                                 "professionalParameters",
                                                 "note"
+                                              ],
+                                              "additionalProperties": false
+                                            }
+                                          },
+                                          "exerciseGroups": {
+                                            "type": "array",
+                                            "items": {
+                                              "type": "object",
+                                              "properties": {
+                                                "groupId": {
+                                                  "type": "string",
+                                                  "pattern": "^[A-Za-z0-9_-]{1,64}$"
+                                                },
+                                                "label": {
+                                                  "type": "string"
+                                                },
+                                                "order": {
+                                                  "type": "integer",
+                                                  "exclusiveMinimum": 0,
+                                                  "maximum": 9007199254740991
+                                                },
+                                                "kind": {
+                                                  "type": "string",
+                                                  "enum": [
+                                                    "SEQUENTIAL",
+                                                    "ROUNDS"
+                                                  ]
+                                                },
+                                                "rounds": {
+                                                  "anyOf": [
+                                                    {
+                                                      "type": "integer",
+                                                      "exclusiveMinimum": 0,
+                                                      "maximum": 9007199254740991
+                                                    },
+                                                    {
+                                                      "type": "null"
+                                                    }
+                                                  ]
+                                                },
+                                                "restAfterRoundSeconds": {
+                                                  "anyOf": [
+                                                    {
+                                                      "type": "integer",
+                                                      "minimum": 0,
+                                                      "maximum": 9007199254740991
+                                                    },
+                                                    {
+                                                      "type": "null"
+                                                    }
+                                                  ]
+                                                }
+                                              },
+                                              "required": [
+                                                "groupId",
+                                                "label",
+                                                "order",
+                                                "kind",
+                                                "rounds",
+                                                "restAfterRoundSeconds"
                                               ],
                                               "additionalProperties": false
                                             }
@@ -39691,6 +40036,17 @@
                                               "string",
                                               "null"
                                             ]
+                                          },
+                                          "exerciseGroupId": {
+                                            "anyOf": [
+                                              {
+                                                "type": "string",
+                                                "pattern": "^[A-Za-z0-9_-]{1,64}$"
+                                              },
+                                              {
+                                                "type": "null"
+                                              }
+                                            ]
                                           }
                                         },
                                         "required": [
@@ -39704,6 +40060,66 @@
                                           "suggestedLoad",
                                           "professionalParameters",
                                           "note"
+                                        ],
+                                        "additionalProperties": false
+                                      }
+                                    },
+                                    "exerciseGroups": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "object",
+                                        "properties": {
+                                          "groupId": {
+                                            "type": "string",
+                                            "pattern": "^[A-Za-z0-9_-]{1,64}$"
+                                          },
+                                          "label": {
+                                            "type": "string"
+                                          },
+                                          "order": {
+                                            "type": "integer",
+                                            "exclusiveMinimum": 0,
+                                            "maximum": 9007199254740991
+                                          },
+                                          "kind": {
+                                            "type": "string",
+                                            "enum": [
+                                              "SEQUENTIAL",
+                                              "ROUNDS"
+                                            ]
+                                          },
+                                          "rounds": {
+                                            "anyOf": [
+                                              {
+                                                "type": "integer",
+                                                "exclusiveMinimum": 0,
+                                                "maximum": 9007199254740991
+                                              },
+                                              {
+                                                "type": "null"
+                                              }
+                                            ]
+                                          },
+                                          "restAfterRoundSeconds": {
+                                            "anyOf": [
+                                              {
+                                                "type": "integer",
+                                                "minimum": 0,
+                                                "maximum": 9007199254740991
+                                              },
+                                              {
+                                                "type": "null"
+                                              }
+                                            ]
+                                          }
+                                        },
+                                        "required": [
+                                          "groupId",
+                                          "label",
+                                          "order",
+                                          "kind",
+                                          "rounds",
+                                          "restAfterRoundSeconds"
                                         ],
                                         "additionalProperties": false
                                       }
@@ -40277,12 +40693,78 @@
                                                     "type": "null"
                                                   }
                                                 ]
+                                              },
+                                              "exerciseGroupId": {
+                                                "anyOf": [
+                                                  {
+                                                    "type": "string",
+                                                    "pattern": "^[A-Za-z0-9_-]{1,64}$"
+                                                  },
+                                                  {
+                                                    "type": "null"
+                                                  }
+                                                ]
                                               }
                                             },
                                             "required": [
                                               "exerciseVersionId",
                                               "sets",
                                               "intensity"
+                                            ],
+                                            "additionalProperties": false
+                                          }
+                                        },
+                                        "exerciseGroups": {
+                                          "maxItems": 20,
+                                          "type": "array",
+                                          "items": {
+                                            "type": "object",
+                                            "properties": {
+                                              "groupId": {
+                                                "type": "string",
+                                                "pattern": "^[A-Za-z0-9_-]{1,64}$"
+                                              },
+                                              "label": {
+                                                "type": "string",
+                                                "minLength": 1,
+                                                "maxLength": 120
+                                              },
+                                              "kind": {
+                                                "type": "string",
+                                                "enum": [
+                                                  "SEQUENTIAL",
+                                                  "ROUNDS"
+                                                ]
+                                              },
+                                              "rounds": {
+                                                "anyOf": [
+                                                  {
+                                                    "type": "integer",
+                                                    "minimum": 1,
+                                                    "maximum": 20
+                                                  },
+                                                  {
+                                                    "type": "null"
+                                                  }
+                                                ]
+                                              },
+                                              "restAfterRoundSeconds": {
+                                                "anyOf": [
+                                                  {
+                                                    "type": "integer",
+                                                    "minimum": 0,
+                                                    "maximum": 3600
+                                                  },
+                                                  {
+                                                    "type": "null"
+                                                  }
+                                                ]
+                                              }
+                                            },
+                                            "required": [
+                                              "groupId",
+                                              "label",
+                                              "kind"
                                             ],
                                             "additionalProperties": false
                                           }
@@ -40640,12 +41122,78 @@
                                               "type": "null"
                                             }
                                           ]
+                                        },
+                                        "exerciseGroupId": {
+                                          "anyOf": [
+                                            {
+                                              "type": "string",
+                                              "pattern": "^[A-Za-z0-9_-]{1,64}$"
+                                            },
+                                            {
+                                              "type": "null"
+                                            }
+                                          ]
                                         }
                                       },
                                       "required": [
                                         "exerciseVersionId",
                                         "sets",
                                         "intensity"
+                                      ],
+                                      "additionalProperties": false
+                                    }
+                                  },
+                                  "exerciseGroups": {
+                                    "maxItems": 20,
+                                    "type": "array",
+                                    "items": {
+                                      "type": "object",
+                                      "properties": {
+                                        "groupId": {
+                                          "type": "string",
+                                          "pattern": "^[A-Za-z0-9_-]{1,64}$"
+                                        },
+                                        "label": {
+                                          "type": "string",
+                                          "minLength": 1,
+                                          "maxLength": 120
+                                        },
+                                        "kind": {
+                                          "type": "string",
+                                          "enum": [
+                                            "SEQUENTIAL",
+                                            "ROUNDS"
+                                          ]
+                                        },
+                                        "rounds": {
+                                          "anyOf": [
+                                            {
+                                              "type": "integer",
+                                              "minimum": 1,
+                                              "maximum": 20
+                                            },
+                                            {
+                                              "type": "null"
+                                            }
+                                          ]
+                                        },
+                                        "restAfterRoundSeconds": {
+                                          "anyOf": [
+                                            {
+                                              "type": "integer",
+                                              "minimum": 0,
+                                              "maximum": 3600
+                                            },
+                                            {
+                                              "type": "null"
+                                            }
+                                          ]
+                                        }
+                                      },
+                                      "required": [
+                                        "groupId",
+                                        "label",
+                                        "kind"
                                       ],
                                       "additionalProperties": false
                                     }
@@ -41220,6 +41768,17 @@
                                                     "string",
                                                     "null"
                                                   ]
+                                                },
+                                                "exerciseGroupId": {
+                                                  "anyOf": [
+                                                    {
+                                                      "type": "string",
+                                                      "pattern": "^[A-Za-z0-9_-]{1,64}$"
+                                                    },
+                                                    {
+                                                      "type": "null"
+                                                    }
+                                                  ]
                                                 }
                                               },
                                               "required": [
@@ -41233,6 +41792,66 @@
                                                 "suggestedLoad",
                                                 "professionalParameters",
                                                 "note"
+                                              ],
+                                              "additionalProperties": false
+                                            }
+                                          },
+                                          "exerciseGroups": {
+                                            "type": "array",
+                                            "items": {
+                                              "type": "object",
+                                              "properties": {
+                                                "groupId": {
+                                                  "type": "string",
+                                                  "pattern": "^[A-Za-z0-9_-]{1,64}$"
+                                                },
+                                                "label": {
+                                                  "type": "string"
+                                                },
+                                                "order": {
+                                                  "type": "integer",
+                                                  "exclusiveMinimum": 0,
+                                                  "maximum": 9007199254740991
+                                                },
+                                                "kind": {
+                                                  "type": "string",
+                                                  "enum": [
+                                                    "SEQUENTIAL",
+                                                    "ROUNDS"
+                                                  ]
+                                                },
+                                                "rounds": {
+                                                  "anyOf": [
+                                                    {
+                                                      "type": "integer",
+                                                      "exclusiveMinimum": 0,
+                                                      "maximum": 9007199254740991
+                                                    },
+                                                    {
+                                                      "type": "null"
+                                                    }
+                                                  ]
+                                                },
+                                                "restAfterRoundSeconds": {
+                                                  "anyOf": [
+                                                    {
+                                                      "type": "integer",
+                                                      "minimum": 0,
+                                                      "maximum": 9007199254740991
+                                                    },
+                                                    {
+                                                      "type": "null"
+                                                    }
+                                                  ]
+                                                }
+                                              },
+                                              "required": [
+                                                "groupId",
+                                                "label",
+                                                "order",
+                                                "kind",
+                                                "rounds",
+                                                "restAfterRoundSeconds"
                                               ],
                                               "additionalProperties": false
                                             }
@@ -41514,6 +42133,17 @@
                                               "string",
                                               "null"
                                             ]
+                                          },
+                                          "exerciseGroupId": {
+                                            "anyOf": [
+                                              {
+                                                "type": "string",
+                                                "pattern": "^[A-Za-z0-9_-]{1,64}$"
+                                              },
+                                              {
+                                                "type": "null"
+                                              }
+                                            ]
                                           }
                                         },
                                         "required": [
@@ -41527,6 +42157,66 @@
                                           "suggestedLoad",
                                           "professionalParameters",
                                           "note"
+                                        ],
+                                        "additionalProperties": false
+                                      }
+                                    },
+                                    "exerciseGroups": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "object",
+                                        "properties": {
+                                          "groupId": {
+                                            "type": "string",
+                                            "pattern": "^[A-Za-z0-9_-]{1,64}$"
+                                          },
+                                          "label": {
+                                            "type": "string"
+                                          },
+                                          "order": {
+                                            "type": "integer",
+                                            "exclusiveMinimum": 0,
+                                            "maximum": 9007199254740991
+                                          },
+                                          "kind": {
+                                            "type": "string",
+                                            "enum": [
+                                              "SEQUENTIAL",
+                                              "ROUNDS"
+                                            ]
+                                          },
+                                          "rounds": {
+                                            "anyOf": [
+                                              {
+                                                "type": "integer",
+                                                "exclusiveMinimum": 0,
+                                                "maximum": 9007199254740991
+                                              },
+                                              {
+                                                "type": "null"
+                                              }
+                                            ]
+                                          },
+                                          "restAfterRoundSeconds": {
+                                            "anyOf": [
+                                              {
+                                                "type": "integer",
+                                                "minimum": 0,
+                                                "maximum": 9007199254740991
+                                              },
+                                              {
+                                                "type": "null"
+                                              }
+                                            ]
+                                          }
+                                        },
+                                        "required": [
+                                          "groupId",
+                                          "label",
+                                          "order",
+                                          "kind",
+                                          "rounds",
+                                          "restAfterRoundSeconds"
                                         ],
                                         "additionalProperties": false
                                       }
@@ -43855,12 +44545,78 @@
                                                     "type": "null"
                                                   }
                                                 ]
+                                              },
+                                              "exerciseGroupId": {
+                                                "anyOf": [
+                                                  {
+                                                    "type": "string",
+                                                    "pattern": "^[A-Za-z0-9_-]{1,64}$"
+                                                  },
+                                                  {
+                                                    "type": "null"
+                                                  }
+                                                ]
                                               }
                                             },
                                             "required": [
                                               "exerciseVersionId",
                                               "sets",
                                               "intensity"
+                                            ],
+                                            "additionalProperties": false
+                                          }
+                                        },
+                                        "exerciseGroups": {
+                                          "maxItems": 20,
+                                          "type": "array",
+                                          "items": {
+                                            "type": "object",
+                                            "properties": {
+                                              "groupId": {
+                                                "type": "string",
+                                                "pattern": "^[A-Za-z0-9_-]{1,64}$"
+                                              },
+                                              "label": {
+                                                "type": "string",
+                                                "minLength": 1,
+                                                "maxLength": 120
+                                              },
+                                              "kind": {
+                                                "type": "string",
+                                                "enum": [
+                                                  "SEQUENTIAL",
+                                                  "ROUNDS"
+                                                ]
+                                              },
+                                              "rounds": {
+                                                "anyOf": [
+                                                  {
+                                                    "type": "integer",
+                                                    "minimum": 1,
+                                                    "maximum": 20
+                                                  },
+                                                  {
+                                                    "type": "null"
+                                                  }
+                                                ]
+                                              },
+                                              "restAfterRoundSeconds": {
+                                                "anyOf": [
+                                                  {
+                                                    "type": "integer",
+                                                    "minimum": 0,
+                                                    "maximum": 3600
+                                                  },
+                                                  {
+                                                    "type": "null"
+                                                  }
+                                                ]
+                                              }
+                                            },
+                                            "required": [
+                                              "groupId",
+                                              "label",
+                                              "kind"
                                             ],
                                             "additionalProperties": false
                                           }
@@ -44218,12 +44974,78 @@
                                               "type": "null"
                                             }
                                           ]
+                                        },
+                                        "exerciseGroupId": {
+                                          "anyOf": [
+                                            {
+                                              "type": "string",
+                                              "pattern": "^[A-Za-z0-9_-]{1,64}$"
+                                            },
+                                            {
+                                              "type": "null"
+                                            }
+                                          ]
                                         }
                                       },
                                       "required": [
                                         "exerciseVersionId",
                                         "sets",
                                         "intensity"
+                                      ],
+                                      "additionalProperties": false
+                                    }
+                                  },
+                                  "exerciseGroups": {
+                                    "maxItems": 20,
+                                    "type": "array",
+                                    "items": {
+                                      "type": "object",
+                                      "properties": {
+                                        "groupId": {
+                                          "type": "string",
+                                          "pattern": "^[A-Za-z0-9_-]{1,64}$"
+                                        },
+                                        "label": {
+                                          "type": "string",
+                                          "minLength": 1,
+                                          "maxLength": 120
+                                        },
+                                        "kind": {
+                                          "type": "string",
+                                          "enum": [
+                                            "SEQUENTIAL",
+                                            "ROUNDS"
+                                          ]
+                                        },
+                                        "rounds": {
+                                          "anyOf": [
+                                            {
+                                              "type": "integer",
+                                              "minimum": 1,
+                                              "maximum": 20
+                                            },
+                                            {
+                                              "type": "null"
+                                            }
+                                          ]
+                                        },
+                                        "restAfterRoundSeconds": {
+                                          "anyOf": [
+                                            {
+                                              "type": "integer",
+                                              "minimum": 0,
+                                              "maximum": 3600
+                                            },
+                                            {
+                                              "type": "null"
+                                            }
+                                          ]
+                                        }
+                                      },
+                                      "required": [
+                                        "groupId",
+                                        "label",
+                                        "kind"
                                       ],
                                       "additionalProperties": false
                                     }
@@ -44750,12 +45572,78 @@
                                                           "type": "null"
                                                         }
                                                       ]
+                                                    },
+                                                    "exerciseGroupId": {
+                                                      "anyOf": [
+                                                        {
+                                                          "type": "string",
+                                                          "pattern": "^[A-Za-z0-9_-]{1,64}$"
+                                                        },
+                                                        {
+                                                          "type": "null"
+                                                        }
+                                                      ]
                                                     }
                                                   },
                                                   "required": [
                                                     "exerciseVersionId",
                                                     "sets",
                                                     "intensity"
+                                                  ],
+                                                  "additionalProperties": false
+                                                }
+                                              },
+                                              "exerciseGroups": {
+                                                "maxItems": 20,
+                                                "type": "array",
+                                                "items": {
+                                                  "type": "object",
+                                                  "properties": {
+                                                    "groupId": {
+                                                      "type": "string",
+                                                      "pattern": "^[A-Za-z0-9_-]{1,64}$"
+                                                    },
+                                                    "label": {
+                                                      "type": "string",
+                                                      "minLength": 1,
+                                                      "maxLength": 120
+                                                    },
+                                                    "kind": {
+                                                      "type": "string",
+                                                      "enum": [
+                                                        "SEQUENTIAL",
+                                                        "ROUNDS"
+                                                      ]
+                                                    },
+                                                    "rounds": {
+                                                      "anyOf": [
+                                                        {
+                                                          "type": "integer",
+                                                          "minimum": 1,
+                                                          "maximum": 20
+                                                        },
+                                                        {
+                                                          "type": "null"
+                                                        }
+                                                      ]
+                                                    },
+                                                    "restAfterRoundSeconds": {
+                                                      "anyOf": [
+                                                        {
+                                                          "type": "integer",
+                                                          "minimum": 0,
+                                                          "maximum": 3600
+                                                        },
+                                                        {
+                                                          "type": "null"
+                                                        }
+                                                      ]
+                                                    }
+                                                  },
+                                                  "required": [
+                                                    "groupId",
+                                                    "label",
+                                                    "kind"
                                                   ],
                                                   "additionalProperties": false
                                                 }
@@ -45113,12 +46001,78 @@
                                                     "type": "null"
                                                   }
                                                 ]
+                                              },
+                                              "exerciseGroupId": {
+                                                "anyOf": [
+                                                  {
+                                                    "type": "string",
+                                                    "pattern": "^[A-Za-z0-9_-]{1,64}$"
+                                                  },
+                                                  {
+                                                    "type": "null"
+                                                  }
+                                                ]
                                               }
                                             },
                                             "required": [
                                               "exerciseVersionId",
                                               "sets",
                                               "intensity"
+                                            ],
+                                            "additionalProperties": false
+                                          }
+                                        },
+                                        "exerciseGroups": {
+                                          "maxItems": 20,
+                                          "type": "array",
+                                          "items": {
+                                            "type": "object",
+                                            "properties": {
+                                              "groupId": {
+                                                "type": "string",
+                                                "pattern": "^[A-Za-z0-9_-]{1,64}$"
+                                              },
+                                              "label": {
+                                                "type": "string",
+                                                "minLength": 1,
+                                                "maxLength": 120
+                                              },
+                                              "kind": {
+                                                "type": "string",
+                                                "enum": [
+                                                  "SEQUENTIAL",
+                                                  "ROUNDS"
+                                                ]
+                                              },
+                                              "rounds": {
+                                                "anyOf": [
+                                                  {
+                                                    "type": "integer",
+                                                    "minimum": 1,
+                                                    "maximum": 20
+                                                  },
+                                                  {
+                                                    "type": "null"
+                                                  }
+                                                ]
+                                              },
+                                              "restAfterRoundSeconds": {
+                                                "anyOf": [
+                                                  {
+                                                    "type": "integer",
+                                                    "minimum": 0,
+                                                    "maximum": 3600
+                                                  },
+                                                  {
+                                                    "type": "null"
+                                                  }
+                                                ]
+                                              }
+                                            },
+                                            "required": [
+                                              "groupId",
+                                              "label",
+                                              "kind"
                                             ],
                                             "additionalProperties": false
                                           }
@@ -46048,12 +47002,78 @@
                                                           "type": "null"
                                                         }
                                                       ]
+                                                    },
+                                                    "exerciseGroupId": {
+                                                      "anyOf": [
+                                                        {
+                                                          "type": "string",
+                                                          "pattern": "^[A-Za-z0-9_-]{1,64}$"
+                                                        },
+                                                        {
+                                                          "type": "null"
+                                                        }
+                                                      ]
                                                     }
                                                   },
                                                   "required": [
                                                     "exerciseVersionId",
                                                     "sets",
                                                     "intensity"
+                                                  ],
+                                                  "additionalProperties": false
+                                                }
+                                              },
+                                              "exerciseGroups": {
+                                                "maxItems": 20,
+                                                "type": "array",
+                                                "items": {
+                                                  "type": "object",
+                                                  "properties": {
+                                                    "groupId": {
+                                                      "type": "string",
+                                                      "pattern": "^[A-Za-z0-9_-]{1,64}$"
+                                                    },
+                                                    "label": {
+                                                      "type": "string",
+                                                      "minLength": 1,
+                                                      "maxLength": 120
+                                                    },
+                                                    "kind": {
+                                                      "type": "string",
+                                                      "enum": [
+                                                        "SEQUENTIAL",
+                                                        "ROUNDS"
+                                                      ]
+                                                    },
+                                                    "rounds": {
+                                                      "anyOf": [
+                                                        {
+                                                          "type": "integer",
+                                                          "minimum": 1,
+                                                          "maximum": 20
+                                                        },
+                                                        {
+                                                          "type": "null"
+                                                        }
+                                                      ]
+                                                    },
+                                                    "restAfterRoundSeconds": {
+                                                      "anyOf": [
+                                                        {
+                                                          "type": "integer",
+                                                          "minimum": 0,
+                                                          "maximum": 3600
+                                                        },
+                                                        {
+                                                          "type": "null"
+                                                        }
+                                                      ]
+                                                    }
+                                                  },
+                                                  "required": [
+                                                    "groupId",
+                                                    "label",
+                                                    "kind"
                                                   ],
                                                   "additionalProperties": false
                                                 }
@@ -46411,12 +47431,78 @@
                                                     "type": "null"
                                                   }
                                                 ]
+                                              },
+                                              "exerciseGroupId": {
+                                                "anyOf": [
+                                                  {
+                                                    "type": "string",
+                                                    "pattern": "^[A-Za-z0-9_-]{1,64}$"
+                                                  },
+                                                  {
+                                                    "type": "null"
+                                                  }
+                                                ]
                                               }
                                             },
                                             "required": [
                                               "exerciseVersionId",
                                               "sets",
                                               "intensity"
+                                            ],
+                                            "additionalProperties": false
+                                          }
+                                        },
+                                        "exerciseGroups": {
+                                          "maxItems": 20,
+                                          "type": "array",
+                                          "items": {
+                                            "type": "object",
+                                            "properties": {
+                                              "groupId": {
+                                                "type": "string",
+                                                "pattern": "^[A-Za-z0-9_-]{1,64}$"
+                                              },
+                                              "label": {
+                                                "type": "string",
+                                                "minLength": 1,
+                                                "maxLength": 120
+                                              },
+                                              "kind": {
+                                                "type": "string",
+                                                "enum": [
+                                                  "SEQUENTIAL",
+                                                  "ROUNDS"
+                                                ]
+                                              },
+                                              "rounds": {
+                                                "anyOf": [
+                                                  {
+                                                    "type": "integer",
+                                                    "minimum": 1,
+                                                    "maximum": 20
+                                                  },
+                                                  {
+                                                    "type": "null"
+                                                  }
+                                                ]
+                                              },
+                                              "restAfterRoundSeconds": {
+                                                "anyOf": [
+                                                  {
+                                                    "type": "integer",
+                                                    "minimum": 0,
+                                                    "maximum": 3600
+                                                  },
+                                                  {
+                                                    "type": "null"
+                                                  }
+                                                ]
+                                              }
+                                            },
+                                            "required": [
+                                              "groupId",
+                                              "label",
+                                              "kind"
                                             ],
                                             "additionalProperties": false
                                           }
@@ -47121,12 +48207,78 @@
                                                           "type": "null"
                                                         }
                                                       ]
+                                                    },
+                                                    "exerciseGroupId": {
+                                                      "anyOf": [
+                                                        {
+                                                          "type": "string",
+                                                          "pattern": "^[A-Za-z0-9_-]{1,64}$"
+                                                        },
+                                                        {
+                                                          "type": "null"
+                                                        }
+                                                      ]
                                                     }
                                                   },
                                                   "required": [
                                                     "exerciseVersionId",
                                                     "sets",
                                                     "intensity"
+                                                  ],
+                                                  "additionalProperties": false
+                                                }
+                                              },
+                                              "exerciseGroups": {
+                                                "maxItems": 20,
+                                                "type": "array",
+                                                "items": {
+                                                  "type": "object",
+                                                  "properties": {
+                                                    "groupId": {
+                                                      "type": "string",
+                                                      "pattern": "^[A-Za-z0-9_-]{1,64}$"
+                                                    },
+                                                    "label": {
+                                                      "type": "string",
+                                                      "minLength": 1,
+                                                      "maxLength": 120
+                                                    },
+                                                    "kind": {
+                                                      "type": "string",
+                                                      "enum": [
+                                                        "SEQUENTIAL",
+                                                        "ROUNDS"
+                                                      ]
+                                                    },
+                                                    "rounds": {
+                                                      "anyOf": [
+                                                        {
+                                                          "type": "integer",
+                                                          "minimum": 1,
+                                                          "maximum": 20
+                                                        },
+                                                        {
+                                                          "type": "null"
+                                                        }
+                                                      ]
+                                                    },
+                                                    "restAfterRoundSeconds": {
+                                                      "anyOf": [
+                                                        {
+                                                          "type": "integer",
+                                                          "minimum": 0,
+                                                          "maximum": 3600
+                                                        },
+                                                        {
+                                                          "type": "null"
+                                                        }
+                                                      ]
+                                                    }
+                                                  },
+                                                  "required": [
+                                                    "groupId",
+                                                    "label",
+                                                    "kind"
                                                   ],
                                                   "additionalProperties": false
                                                 }
@@ -47484,12 +48636,78 @@
                                                     "type": "null"
                                                   }
                                                 ]
+                                              },
+                                              "exerciseGroupId": {
+                                                "anyOf": [
+                                                  {
+                                                    "type": "string",
+                                                    "pattern": "^[A-Za-z0-9_-]{1,64}$"
+                                                  },
+                                                  {
+                                                    "type": "null"
+                                                  }
+                                                ]
                                               }
                                             },
                                             "required": [
                                               "exerciseVersionId",
                                               "sets",
                                               "intensity"
+                                            ],
+                                            "additionalProperties": false
+                                          }
+                                        },
+                                        "exerciseGroups": {
+                                          "maxItems": 20,
+                                          "type": "array",
+                                          "items": {
+                                            "type": "object",
+                                            "properties": {
+                                              "groupId": {
+                                                "type": "string",
+                                                "pattern": "^[A-Za-z0-9_-]{1,64}$"
+                                              },
+                                              "label": {
+                                                "type": "string",
+                                                "minLength": 1,
+                                                "maxLength": 120
+                                              },
+                                              "kind": {
+                                                "type": "string",
+                                                "enum": [
+                                                  "SEQUENTIAL",
+                                                  "ROUNDS"
+                                                ]
+                                              },
+                                              "rounds": {
+                                                "anyOf": [
+                                                  {
+                                                    "type": "integer",
+                                                    "minimum": 1,
+                                                    "maximum": 20
+                                                  },
+                                                  {
+                                                    "type": "null"
+                                                  }
+                                                ]
+                                              },
+                                              "restAfterRoundSeconds": {
+                                                "anyOf": [
+                                                  {
+                                                    "type": "integer",
+                                                    "minimum": 0,
+                                                    "maximum": 3600
+                                                  },
+                                                  {
+                                                    "type": "null"
+                                                  }
+                                                ]
+                                              }
+                                            },
+                                            "required": [
+                                              "groupId",
+                                              "label",
+                                              "kind"
                                             ],
                                             "additionalProperties": false
                                           }
@@ -50505,12 +51723,78 @@
                                                     "type": "null"
                                                   }
                                                 ]
+                                              },
+                                              "exerciseGroupId": {
+                                                "anyOf": [
+                                                  {
+                                                    "type": "string",
+                                                    "pattern": "^[A-Za-z0-9_-]{1,64}$"
+                                                  },
+                                                  {
+                                                    "type": "null"
+                                                  }
+                                                ]
                                               }
                                             },
                                             "required": [
                                               "exerciseVersionId",
                                               "sets",
                                               "intensity"
+                                            ],
+                                            "additionalProperties": false
+                                          }
+                                        },
+                                        "exerciseGroups": {
+                                          "maxItems": 20,
+                                          "type": "array",
+                                          "items": {
+                                            "type": "object",
+                                            "properties": {
+                                              "groupId": {
+                                                "type": "string",
+                                                "pattern": "^[A-Za-z0-9_-]{1,64}$"
+                                              },
+                                              "label": {
+                                                "type": "string",
+                                                "minLength": 1,
+                                                "maxLength": 120
+                                              },
+                                              "kind": {
+                                                "type": "string",
+                                                "enum": [
+                                                  "SEQUENTIAL",
+                                                  "ROUNDS"
+                                                ]
+                                              },
+                                              "rounds": {
+                                                "anyOf": [
+                                                  {
+                                                    "type": "integer",
+                                                    "minimum": 1,
+                                                    "maximum": 20
+                                                  },
+                                                  {
+                                                    "type": "null"
+                                                  }
+                                                ]
+                                              },
+                                              "restAfterRoundSeconds": {
+                                                "anyOf": [
+                                                  {
+                                                    "type": "integer",
+                                                    "minimum": 0,
+                                                    "maximum": 3600
+                                                  },
+                                                  {
+                                                    "type": "null"
+                                                  }
+                                                ]
+                                              }
+                                            },
+                                            "required": [
+                                              "groupId",
+                                              "label",
+                                              "kind"
                                             ],
                                             "additionalProperties": false
                                           }
@@ -50868,12 +52152,78 @@
                                               "type": "null"
                                             }
                                           ]
+                                        },
+                                        "exerciseGroupId": {
+                                          "anyOf": [
+                                            {
+                                              "type": "string",
+                                              "pattern": "^[A-Za-z0-9_-]{1,64}$"
+                                            },
+                                            {
+                                              "type": "null"
+                                            }
+                                          ]
                                         }
                                       },
                                       "required": [
                                         "exerciseVersionId",
                                         "sets",
                                         "intensity"
+                                      ],
+                                      "additionalProperties": false
+                                    }
+                                  },
+                                  "exerciseGroups": {
+                                    "maxItems": 20,
+                                    "type": "array",
+                                    "items": {
+                                      "type": "object",
+                                      "properties": {
+                                        "groupId": {
+                                          "type": "string",
+                                          "pattern": "^[A-Za-z0-9_-]{1,64}$"
+                                        },
+                                        "label": {
+                                          "type": "string",
+                                          "minLength": 1,
+                                          "maxLength": 120
+                                        },
+                                        "kind": {
+                                          "type": "string",
+                                          "enum": [
+                                            "SEQUENTIAL",
+                                            "ROUNDS"
+                                          ]
+                                        },
+                                        "rounds": {
+                                          "anyOf": [
+                                            {
+                                              "type": "integer",
+                                              "minimum": 1,
+                                              "maximum": 20
+                                            },
+                                            {
+                                              "type": "null"
+                                            }
+                                          ]
+                                        },
+                                        "restAfterRoundSeconds": {
+                                          "anyOf": [
+                                            {
+                                              "type": "integer",
+                                              "minimum": 0,
+                                              "maximum": 3600
+                                            },
+                                            {
+                                              "type": "null"
+                                            }
+                                          ]
+                                        }
+                                      },
+                                      "required": [
+                                        "groupId",
+                                        "label",
+                                        "kind"
                                       ],
                                       "additionalProperties": false
                                     }
@@ -51400,12 +52750,78 @@
                                                           "type": "null"
                                                         }
                                                       ]
+                                                    },
+                                                    "exerciseGroupId": {
+                                                      "anyOf": [
+                                                        {
+                                                          "type": "string",
+                                                          "pattern": "^[A-Za-z0-9_-]{1,64}$"
+                                                        },
+                                                        {
+                                                          "type": "null"
+                                                        }
+                                                      ]
                                                     }
                                                   },
                                                   "required": [
                                                     "exerciseVersionId",
                                                     "sets",
                                                     "intensity"
+                                                  ],
+                                                  "additionalProperties": false
+                                                }
+                                              },
+                                              "exerciseGroups": {
+                                                "maxItems": 20,
+                                                "type": "array",
+                                                "items": {
+                                                  "type": "object",
+                                                  "properties": {
+                                                    "groupId": {
+                                                      "type": "string",
+                                                      "pattern": "^[A-Za-z0-9_-]{1,64}$"
+                                                    },
+                                                    "label": {
+                                                      "type": "string",
+                                                      "minLength": 1,
+                                                      "maxLength": 120
+                                                    },
+                                                    "kind": {
+                                                      "type": "string",
+                                                      "enum": [
+                                                        "SEQUENTIAL",
+                                                        "ROUNDS"
+                                                      ]
+                                                    },
+                                                    "rounds": {
+                                                      "anyOf": [
+                                                        {
+                                                          "type": "integer",
+                                                          "minimum": 1,
+                                                          "maximum": 20
+                                                        },
+                                                        {
+                                                          "type": "null"
+                                                        }
+                                                      ]
+                                                    },
+                                                    "restAfterRoundSeconds": {
+                                                      "anyOf": [
+                                                        {
+                                                          "type": "integer",
+                                                          "minimum": 0,
+                                                          "maximum": 3600
+                                                        },
+                                                        {
+                                                          "type": "null"
+                                                        }
+                                                      ]
+                                                    }
+                                                  },
+                                                  "required": [
+                                                    "groupId",
+                                                    "label",
+                                                    "kind"
                                                   ],
                                                   "additionalProperties": false
                                                 }
@@ -51763,12 +53179,78 @@
                                                     "type": "null"
                                                   }
                                                 ]
+                                              },
+                                              "exerciseGroupId": {
+                                                "anyOf": [
+                                                  {
+                                                    "type": "string",
+                                                    "pattern": "^[A-Za-z0-9_-]{1,64}$"
+                                                  },
+                                                  {
+                                                    "type": "null"
+                                                  }
+                                                ]
                                               }
                                             },
                                             "required": [
                                               "exerciseVersionId",
                                               "sets",
                                               "intensity"
+                                            ],
+                                            "additionalProperties": false
+                                          }
+                                        },
+                                        "exerciseGroups": {
+                                          "maxItems": 20,
+                                          "type": "array",
+                                          "items": {
+                                            "type": "object",
+                                            "properties": {
+                                              "groupId": {
+                                                "type": "string",
+                                                "pattern": "^[A-Za-z0-9_-]{1,64}$"
+                                              },
+                                              "label": {
+                                                "type": "string",
+                                                "minLength": 1,
+                                                "maxLength": 120
+                                              },
+                                              "kind": {
+                                                "type": "string",
+                                                "enum": [
+                                                  "SEQUENTIAL",
+                                                  "ROUNDS"
+                                                ]
+                                              },
+                                              "rounds": {
+                                                "anyOf": [
+                                                  {
+                                                    "type": "integer",
+                                                    "minimum": 1,
+                                                    "maximum": 20
+                                                  },
+                                                  {
+                                                    "type": "null"
+                                                  }
+                                                ]
+                                              },
+                                              "restAfterRoundSeconds": {
+                                                "anyOf": [
+                                                  {
+                                                    "type": "integer",
+                                                    "minimum": 0,
+                                                    "maximum": 3600
+                                                  },
+                                                  {
+                                                    "type": "null"
+                                                  }
+                                                ]
+                                              }
+                                            },
+                                            "required": [
+                                              "groupId",
+                                              "label",
+                                              "kind"
                                             ],
                                             "additionalProperties": false
                                           }
@@ -52818,12 +54300,78 @@
                                           "type": "null"
                                         }
                                       ]
+                                    },
+                                    "exerciseGroupId": {
+                                      "anyOf": [
+                                        {
+                                          "type": "string",
+                                          "pattern": "^[A-Za-z0-9_-]{1,64}$"
+                                        },
+                                        {
+                                          "type": "null"
+                                        }
+                                      ]
                                     }
                                   },
                                   "required": [
                                     "exerciseVersionId",
                                     "sets",
                                     "intensity"
+                                  ],
+                                  "additionalProperties": false
+                                }
+                              },
+                              "exerciseGroups": {
+                                "maxItems": 20,
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "groupId": {
+                                      "type": "string",
+                                      "pattern": "^[A-Za-z0-9_-]{1,64}$"
+                                    },
+                                    "label": {
+                                      "type": "string",
+                                      "minLength": 1,
+                                      "maxLength": 120
+                                    },
+                                    "kind": {
+                                      "type": "string",
+                                      "enum": [
+                                        "SEQUENTIAL",
+                                        "ROUNDS"
+                                      ]
+                                    },
+                                    "rounds": {
+                                      "anyOf": [
+                                        {
+                                          "type": "integer",
+                                          "minimum": 1,
+                                          "maximum": 20
+                                        },
+                                        {
+                                          "type": "null"
+                                        }
+                                      ]
+                                    },
+                                    "restAfterRoundSeconds": {
+                                      "anyOf": [
+                                        {
+                                          "type": "integer",
+                                          "minimum": 0,
+                                          "maximum": 3600
+                                        },
+                                        {
+                                          "type": "null"
+                                        }
+                                      ]
+                                    }
+                                  },
+                                  "required": [
+                                    "groupId",
+                                    "label",
+                                    "kind"
                                   ],
                                   "additionalProperties": false
                                 }
@@ -53365,12 +54913,78 @@
                                   "type": "null"
                                 }
                               ]
+                            },
+                            "exerciseGroupId": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "pattern": "^[A-Za-z0-9_-]{1,64}$"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
                             }
                           },
                           "required": [
                             "exerciseVersionId",
                             "sets",
                             "intensity"
+                          ],
+                          "additionalProperties": false
+                        }
+                      },
+                      "exerciseGroups": {
+                        "maxItems": 20,
+                        "type": "array",
+                        "items": {
+                          "type": "object",
+                          "properties": {
+                            "groupId": {
+                              "type": "string",
+                              "pattern": "^[A-Za-z0-9_-]{1,64}$"
+                            },
+                            "label": {
+                              "type": "string",
+                              "minLength": 1,
+                              "maxLength": 120
+                            },
+                            "kind": {
+                              "type": "string",
+                              "enum": [
+                                "SEQUENTIAL",
+                                "ROUNDS"
+                              ]
+                            },
+                            "rounds": {
+                              "anyOf": [
+                                {
+                                  "type": "integer",
+                                  "minimum": 1,
+                                  "maximum": 20
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "restAfterRoundSeconds": {
+                              "anyOf": [
+                                {
+                                  "type": "integer",
+                                  "minimum": 0,
+                                  "maximum": 3600
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            }
+                          },
+                          "required": [
+                            "groupId",
+                            "label",
+                            "kind"
                           ],
                           "additionalProperties": false
                         }
@@ -53764,12 +55378,78 @@
                                         "type": "null"
                                       }
                                     ]
+                                  },
+                                  "exerciseGroupId": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "pattern": "^[A-Za-z0-9_-]{1,64}$"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
                                   }
                                 },
                                 "required": [
                                   "exerciseVersionId",
                                   "sets",
                                   "intensity"
+                                ],
+                                "additionalProperties": false
+                              }
+                            },
+                            "exerciseGroups": {
+                              "maxItems": 20,
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "groupId": {
+                                    "type": "string",
+                                    "pattern": "^[A-Za-z0-9_-]{1,64}$"
+                                  },
+                                  "label": {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 120
+                                  },
+                                  "kind": {
+                                    "type": "string",
+                                    "enum": [
+                                      "SEQUENTIAL",
+                                      "ROUNDS"
+                                    ]
+                                  },
+                                  "rounds": {
+                                    "anyOf": [
+                                      {
+                                        "type": "integer",
+                                        "minimum": 1,
+                                        "maximum": 20
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "restAfterRoundSeconds": {
+                                    "anyOf": [
+                                      {
+                                        "type": "integer",
+                                        "minimum": 0,
+                                        "maximum": 3600
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  }
+                                },
+                                "required": [
+                                  "groupId",
+                                  "label",
+                                  "kind"
                                 ],
                                 "additionalProperties": false
                               }
@@ -54365,12 +56045,78 @@
                                         "type": "null"
                                       }
                                     ]
+                                  },
+                                  "exerciseGroupId": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "pattern": "^[A-Za-z0-9_-]{1,64}$"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
                                   }
                                 },
                                 "required": [
                                   "exerciseVersionId",
                                   "sets",
                                   "intensity"
+                                ],
+                                "additionalProperties": false
+                              }
+                            },
+                            "exerciseGroups": {
+                              "maxItems": 20,
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "groupId": {
+                                    "type": "string",
+                                    "pattern": "^[A-Za-z0-9_-]{1,64}$"
+                                  },
+                                  "label": {
+                                    "type": "string",
+                                    "minLength": 1,
+                                    "maxLength": 120
+                                  },
+                                  "kind": {
+                                    "type": "string",
+                                    "enum": [
+                                      "SEQUENTIAL",
+                                      "ROUNDS"
+                                    ]
+                                  },
+                                  "rounds": {
+                                    "anyOf": [
+                                      {
+                                        "type": "integer",
+                                        "minimum": 1,
+                                        "maximum": 20
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "restAfterRoundSeconds": {
+                                    "anyOf": [
+                                      {
+                                        "type": "integer",
+                                        "minimum": 0,
+                                        "maximum": 3600
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  }
+                                },
+                                "required": [
+                                  "groupId",
+                                  "label",
+                                  "kind"
                                 ],
                                 "additionalProperties": false
                               }
@@ -61163,6 +62909,17 @@
                                             "string",
                                             "null"
                                           ]
+                                        },
+                                        "exerciseGroupId": {
+                                          "anyOf": [
+                                            {
+                                              "type": "string",
+                                              "pattern": "^[A-Za-z0-9_-]{1,64}$"
+                                            },
+                                            {
+                                              "type": "null"
+                                            }
+                                          ]
                                         }
                                       },
                                       "required": [
@@ -61176,6 +62933,66 @@
                                         "suggestedLoad",
                                         "professionalParameters",
                                         "note"
+                                      ],
+                                      "additionalProperties": false
+                                    }
+                                  },
+                                  "exerciseGroups": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "object",
+                                      "properties": {
+                                        "groupId": {
+                                          "type": "string",
+                                          "pattern": "^[A-Za-z0-9_-]{1,64}$"
+                                        },
+                                        "label": {
+                                          "type": "string"
+                                        },
+                                        "order": {
+                                          "type": "integer",
+                                          "exclusiveMinimum": 0,
+                                          "maximum": 9007199254740991
+                                        },
+                                        "kind": {
+                                          "type": "string",
+                                          "enum": [
+                                            "SEQUENTIAL",
+                                            "ROUNDS"
+                                          ]
+                                        },
+                                        "rounds": {
+                                          "anyOf": [
+                                            {
+                                              "type": "integer",
+                                              "exclusiveMinimum": 0,
+                                              "maximum": 9007199254740991
+                                            },
+                                            {
+                                              "type": "null"
+                                            }
+                                          ]
+                                        },
+                                        "restAfterRoundSeconds": {
+                                          "anyOf": [
+                                            {
+                                              "type": "integer",
+                                              "minimum": 0,
+                                              "maximum": 9007199254740991
+                                            },
+                                            {
+                                              "type": "null"
+                                            }
+                                          ]
+                                        }
+                                      },
+                                      "required": [
+                                        "groupId",
+                                        "label",
+                                        "order",
+                                        "kind",
+                                        "rounds",
+                                        "restAfterRoundSeconds"
                                       ],
                                       "additionalProperties": false
                                     }
@@ -61719,6 +63536,17 @@
                                             "string",
                                             "null"
                                           ]
+                                        },
+                                        "exerciseGroupId": {
+                                          "anyOf": [
+                                            {
+                                              "type": "string",
+                                              "pattern": "^[A-Za-z0-9_-]{1,64}$"
+                                            },
+                                            {
+                                              "type": "null"
+                                            }
+                                          ]
                                         }
                                       },
                                       "required": [
@@ -61732,6 +63560,66 @@
                                         "suggestedLoad",
                                         "professionalParameters",
                                         "note"
+                                      ],
+                                      "additionalProperties": false
+                                    }
+                                  },
+                                  "exerciseGroups": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "object",
+                                      "properties": {
+                                        "groupId": {
+                                          "type": "string",
+                                          "pattern": "^[A-Za-z0-9_-]{1,64}$"
+                                        },
+                                        "label": {
+                                          "type": "string"
+                                        },
+                                        "order": {
+                                          "type": "integer",
+                                          "exclusiveMinimum": 0,
+                                          "maximum": 9007199254740991
+                                        },
+                                        "kind": {
+                                          "type": "string",
+                                          "enum": [
+                                            "SEQUENTIAL",
+                                            "ROUNDS"
+                                          ]
+                                        },
+                                        "rounds": {
+                                          "anyOf": [
+                                            {
+                                              "type": "integer",
+                                              "exclusiveMinimum": 0,
+                                              "maximum": 9007199254740991
+                                            },
+                                            {
+                                              "type": "null"
+                                            }
+                                          ]
+                                        },
+                                        "restAfterRoundSeconds": {
+                                          "anyOf": [
+                                            {
+                                              "type": "integer",
+                                              "minimum": 0,
+                                              "maximum": 9007199254740991
+                                            },
+                                            {
+                                              "type": "null"
+                                            }
+                                          ]
+                                        }
+                                      },
+                                      "required": [
+                                        "groupId",
+                                        "label",
+                                        "order",
+                                        "kind",
+                                        "rounds",
+                                        "restAfterRoundSeconds"
                                       ],
                                       "additionalProperties": false
                                     }
@@ -62285,6 +64173,17 @@
                                             "string",
                                             "null"
                                           ]
+                                        },
+                                        "exerciseGroupId": {
+                                          "anyOf": [
+                                            {
+                                              "type": "string",
+                                              "pattern": "^[A-Za-z0-9_-]{1,64}$"
+                                            },
+                                            {
+                                              "type": "null"
+                                            }
+                                          ]
                                         }
                                       },
                                       "required": [
@@ -62298,6 +64197,66 @@
                                         "suggestedLoad",
                                         "professionalParameters",
                                         "note"
+                                      ],
+                                      "additionalProperties": false
+                                    }
+                                  },
+                                  "exerciseGroups": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "object",
+                                      "properties": {
+                                        "groupId": {
+                                          "type": "string",
+                                          "pattern": "^[A-Za-z0-9_-]{1,64}$"
+                                        },
+                                        "label": {
+                                          "type": "string"
+                                        },
+                                        "order": {
+                                          "type": "integer",
+                                          "exclusiveMinimum": 0,
+                                          "maximum": 9007199254740991
+                                        },
+                                        "kind": {
+                                          "type": "string",
+                                          "enum": [
+                                            "SEQUENTIAL",
+                                            "ROUNDS"
+                                          ]
+                                        },
+                                        "rounds": {
+                                          "anyOf": [
+                                            {
+                                              "type": "integer",
+                                              "exclusiveMinimum": 0,
+                                              "maximum": 9007199254740991
+                                            },
+                                            {
+                                              "type": "null"
+                                            }
+                                          ]
+                                        },
+                                        "restAfterRoundSeconds": {
+                                          "anyOf": [
+                                            {
+                                              "type": "integer",
+                                              "minimum": 0,
+                                              "maximum": 9007199254740991
+                                            },
+                                            {
+                                              "type": "null"
+                                            }
+                                          ]
+                                        }
+                                      },
+                                      "required": [
+                                        "groupId",
+                                        "label",
+                                        "order",
+                                        "kind",
+                                        "rounds",
+                                        "restAfterRoundSeconds"
                                       ],
                                       "additionalProperties": false
                                     }
@@ -65750,6 +67709,17 @@
                                       "string",
                                       "null"
                                     ]
+                                  },
+                                  "exerciseGroupId": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "pattern": "^[A-Za-z0-9_-]{1,64}$"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
                                   }
                                 },
                                 "required": [
@@ -65763,6 +67733,66 @@
                                   "suggestedLoad",
                                   "professionalParameters",
                                   "note"
+                                ],
+                                "additionalProperties": false
+                              }
+                            },
+                            "exerciseGroups": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "groupId": {
+                                    "type": "string",
+                                    "pattern": "^[A-Za-z0-9_-]{1,64}$"
+                                  },
+                                  "label": {
+                                    "type": "string"
+                                  },
+                                  "order": {
+                                    "type": "integer",
+                                    "exclusiveMinimum": 0,
+                                    "maximum": 9007199254740991
+                                  },
+                                  "kind": {
+                                    "type": "string",
+                                    "enum": [
+                                      "SEQUENTIAL",
+                                      "ROUNDS"
+                                    ]
+                                  },
+                                  "rounds": {
+                                    "anyOf": [
+                                      {
+                                        "type": "integer",
+                                        "exclusiveMinimum": 0,
+                                        "maximum": 9007199254740991
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "restAfterRoundSeconds": {
+                                    "anyOf": [
+                                      {
+                                        "type": "integer",
+                                        "minimum": 0,
+                                        "maximum": 9007199254740991
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  }
+                                },
+                                "required": [
+                                  "groupId",
+                                  "label",
+                                  "order",
+                                  "kind",
+                                  "rounds",
+                                  "restAfterRoundSeconds"
                                 ],
                                 "additionalProperties": false
                               }
@@ -67197,6 +69227,17 @@
                                       "string",
                                       "null"
                                     ]
+                                  },
+                                  "exerciseGroupId": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "pattern": "^[A-Za-z0-9_-]{1,64}$"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
                                   }
                                 },
                                 "required": [
@@ -67210,6 +69251,66 @@
                                   "suggestedLoad",
                                   "professionalParameters",
                                   "note"
+                                ],
+                                "additionalProperties": false
+                              }
+                            },
+                            "exerciseGroups": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "groupId": {
+                                    "type": "string",
+                                    "pattern": "^[A-Za-z0-9_-]{1,64}$"
+                                  },
+                                  "label": {
+                                    "type": "string"
+                                  },
+                                  "order": {
+                                    "type": "integer",
+                                    "exclusiveMinimum": 0,
+                                    "maximum": 9007199254740991
+                                  },
+                                  "kind": {
+                                    "type": "string",
+                                    "enum": [
+                                      "SEQUENTIAL",
+                                      "ROUNDS"
+                                    ]
+                                  },
+                                  "rounds": {
+                                    "anyOf": [
+                                      {
+                                        "type": "integer",
+                                        "exclusiveMinimum": 0,
+                                        "maximum": 9007199254740991
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "restAfterRoundSeconds": {
+                                    "anyOf": [
+                                      {
+                                        "type": "integer",
+                                        "minimum": 0,
+                                        "maximum": 9007199254740991
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  }
+                                },
+                                "required": [
+                                  "groupId",
+                                  "label",
+                                  "order",
+                                  "kind",
+                                  "rounds",
+                                  "restAfterRoundSeconds"
                                 ],
                                 "additionalProperties": false
                               }
@@ -68663,6 +70764,17 @@
                                             "string",
                                             "null"
                                           ]
+                                        },
+                                        "exerciseGroupId": {
+                                          "anyOf": [
+                                            {
+                                              "type": "string",
+                                              "pattern": "^[A-Za-z0-9_-]{1,64}$"
+                                            },
+                                            {
+                                              "type": "null"
+                                            }
+                                          ]
                                         }
                                       },
                                       "required": [
@@ -68676,6 +70788,66 @@
                                         "suggestedLoad",
                                         "professionalParameters",
                                         "note"
+                                      ],
+                                      "additionalProperties": false
+                                    }
+                                  },
+                                  "exerciseGroups": {
+                                    "type": "array",
+                                    "items": {
+                                      "type": "object",
+                                      "properties": {
+                                        "groupId": {
+                                          "type": "string",
+                                          "pattern": "^[A-Za-z0-9_-]{1,64}$"
+                                        },
+                                        "label": {
+                                          "type": "string"
+                                        },
+                                        "order": {
+                                          "type": "integer",
+                                          "exclusiveMinimum": 0,
+                                          "maximum": 9007199254740991
+                                        },
+                                        "kind": {
+                                          "type": "string",
+                                          "enum": [
+                                            "SEQUENTIAL",
+                                            "ROUNDS"
+                                          ]
+                                        },
+                                        "rounds": {
+                                          "anyOf": [
+                                            {
+                                              "type": "integer",
+                                              "exclusiveMinimum": 0,
+                                              "maximum": 9007199254740991
+                                            },
+                                            {
+                                              "type": "null"
+                                            }
+                                          ]
+                                        },
+                                        "restAfterRoundSeconds": {
+                                          "anyOf": [
+                                            {
+                                              "type": "integer",
+                                              "minimum": 0,
+                                              "maximum": 9007199254740991
+                                            },
+                                            {
+                                              "type": "null"
+                                            }
+                                          ]
+                                        }
+                                      },
+                                      "required": [
+                                        "groupId",
+                                        "label",
+                                        "order",
+                                        "kind",
+                                        "rounds",
+                                        "restAfterRoundSeconds"
                                       ],
                                       "additionalProperties": false
                                     }
@@ -72595,6 +74767,17 @@
                                                     "string",
                                                     "null"
                                                   ]
+                                                },
+                                                "exerciseGroupId": {
+                                                  "anyOf": [
+                                                    {
+                                                      "type": "string",
+                                                      "pattern": "^[A-Za-z0-9_-]{1,64}$"
+                                                    },
+                                                    {
+                                                      "type": "null"
+                                                    }
+                                                  ]
                                                 }
                                               },
                                               "required": [
@@ -72612,6 +74795,66 @@
                                                 "repetitionBasis",
                                                 "professionalParameters",
                                                 "note"
+                                              ],
+                                              "additionalProperties": false
+                                            }
+                                          },
+                                          "exerciseGroups": {
+                                            "type": "array",
+                                            "items": {
+                                              "type": "object",
+                                              "properties": {
+                                                "groupId": {
+                                                  "type": "string",
+                                                  "pattern": "^[A-Za-z0-9_-]{1,64}$"
+                                                },
+                                                "label": {
+                                                  "type": "string"
+                                                },
+                                                "order": {
+                                                  "type": "integer",
+                                                  "exclusiveMinimum": 0,
+                                                  "maximum": 9007199254740991
+                                                },
+                                                "kind": {
+                                                  "type": "string",
+                                                  "enum": [
+                                                    "SEQUENTIAL",
+                                                    "ROUNDS"
+                                                  ]
+                                                },
+                                                "rounds": {
+                                                  "anyOf": [
+                                                    {
+                                                      "type": "integer",
+                                                      "exclusiveMinimum": 0,
+                                                      "maximum": 9007199254740991
+                                                    },
+                                                    {
+                                                      "type": "null"
+                                                    }
+                                                  ]
+                                                },
+                                                "restAfterRoundSeconds": {
+                                                  "anyOf": [
+                                                    {
+                                                      "type": "integer",
+                                                      "minimum": 0,
+                                                      "maximum": 9007199254740991
+                                                    },
+                                                    {
+                                                      "type": "null"
+                                                    }
+                                                  ]
+                                                }
+                                              },
+                                              "required": [
+                                                "groupId",
+                                                "label",
+                                                "order",
+                                                "kind",
+                                                "rounds",
+                                                "restAfterRoundSeconds"
                                               ],
                                               "additionalProperties": false
                                             }
@@ -73197,6 +75440,17 @@
                                               "string",
                                               "null"
                                             ]
+                                          },
+                                          "exerciseGroupId": {
+                                            "anyOf": [
+                                              {
+                                                "type": "string",
+                                                "pattern": "^[A-Za-z0-9_-]{1,64}$"
+                                              },
+                                              {
+                                                "type": "null"
+                                              }
+                                            ]
                                           }
                                         },
                                         "required": [
@@ -73214,6 +75468,66 @@
                                           "repetitionBasis",
                                           "professionalParameters",
                                           "note"
+                                        ],
+                                        "additionalProperties": false
+                                      }
+                                    },
+                                    "exerciseGroups": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "object",
+                                        "properties": {
+                                          "groupId": {
+                                            "type": "string",
+                                            "pattern": "^[A-Za-z0-9_-]{1,64}$"
+                                          },
+                                          "label": {
+                                            "type": "string"
+                                          },
+                                          "order": {
+                                            "type": "integer",
+                                            "exclusiveMinimum": 0,
+                                            "maximum": 9007199254740991
+                                          },
+                                          "kind": {
+                                            "type": "string",
+                                            "enum": [
+                                              "SEQUENTIAL",
+                                              "ROUNDS"
+                                            ]
+                                          },
+                                          "rounds": {
+                                            "anyOf": [
+                                              {
+                                                "type": "integer",
+                                                "exclusiveMinimum": 0,
+                                                "maximum": 9007199254740991
+                                              },
+                                              {
+                                                "type": "null"
+                                              }
+                                            ]
+                                          },
+                                          "restAfterRoundSeconds": {
+                                            "anyOf": [
+                                              {
+                                                "type": "integer",
+                                                "minimum": 0,
+                                                "maximum": 9007199254740991
+                                              },
+                                              {
+                                                "type": "null"
+                                              }
+                                            ]
+                                          }
+                                        },
+                                        "required": [
+                                          "groupId",
+                                          "label",
+                                          "order",
+                                          "kind",
+                                          "rounds",
+                                          "restAfterRoundSeconds"
                                         ],
                                         "additionalProperties": false
                                       }
@@ -74092,6 +76406,17 @@
                                       "string",
                                       "null"
                                     ]
+                                  },
+                                  "exerciseGroupId": {
+                                    "anyOf": [
+                                      {
+                                        "type": "string",
+                                        "pattern": "^[A-Za-z0-9_-]{1,64}$"
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
                                   }
                                 },
                                 "required": [
@@ -74109,6 +76434,66 @@
                                   "repetitionBasis",
                                   "professionalParameters",
                                   "note"
+                                ],
+                                "additionalProperties": false
+                              }
+                            },
+                            "exerciseGroups": {
+                              "type": "array",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "groupId": {
+                                    "type": "string",
+                                    "pattern": "^[A-Za-z0-9_-]{1,64}$"
+                                  },
+                                  "label": {
+                                    "type": "string"
+                                  },
+                                  "order": {
+                                    "type": "integer",
+                                    "exclusiveMinimum": 0,
+                                    "maximum": 9007199254740991
+                                  },
+                                  "kind": {
+                                    "type": "string",
+                                    "enum": [
+                                      "SEQUENTIAL",
+                                      "ROUNDS"
+                                    ]
+                                  },
+                                  "rounds": {
+                                    "anyOf": [
+                                      {
+                                        "type": "integer",
+                                        "exclusiveMinimum": 0,
+                                        "maximum": 9007199254740991
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  },
+                                  "restAfterRoundSeconds": {
+                                    "anyOf": [
+                                      {
+                                        "type": "integer",
+                                        "minimum": 0,
+                                        "maximum": 9007199254740991
+                                      },
+                                      {
+                                        "type": "null"
+                                      }
+                                    ]
+                                  }
+                                },
+                                "required": [
+                                  "groupId",
+                                  "label",
+                                  "order",
+                                  "kind",
+                                  "rounds",
+                                  "restAfterRoundSeconds"
                                 ],
                                 "additionalProperties": false
                               }
@@ -100537,6 +102922,17 @@
                                                                 "string",
                                                                 "null"
                                                               ]
+                                                            },
+                                                            "exerciseGroupId": {
+                                                              "anyOf": [
+                                                                {
+                                                                  "type": "string",
+                                                                  "pattern": "^[A-Za-z0-9_-]{1,64}$"
+                                                                },
+                                                                {
+                                                                  "type": "null"
+                                                                }
+                                                              ]
                                                             }
                                                           },
                                                           "required": [
@@ -100550,6 +102946,66 @@
                                                             "suggestedLoad",
                                                             "professionalParameters",
                                                             "note"
+                                                          ],
+                                                          "additionalProperties": false
+                                                        }
+                                                      },
+                                                      "exerciseGroups": {
+                                                        "type": "array",
+                                                        "items": {
+                                                          "type": "object",
+                                                          "properties": {
+                                                            "groupId": {
+                                                              "type": "string",
+                                                              "pattern": "^[A-Za-z0-9_-]{1,64}$"
+                                                            },
+                                                            "label": {
+                                                              "type": "string"
+                                                            },
+                                                            "order": {
+                                                              "type": "integer",
+                                                              "exclusiveMinimum": 0,
+                                                              "maximum": 9007199254740991
+                                                            },
+                                                            "kind": {
+                                                              "type": "string",
+                                                              "enum": [
+                                                                "SEQUENTIAL",
+                                                                "ROUNDS"
+                                                              ]
+                                                            },
+                                                            "rounds": {
+                                                              "anyOf": [
+                                                                {
+                                                                  "type": "integer",
+                                                                  "exclusiveMinimum": 0,
+                                                                  "maximum": 9007199254740991
+                                                                },
+                                                                {
+                                                                  "type": "null"
+                                                                }
+                                                              ]
+                                                            },
+                                                            "restAfterRoundSeconds": {
+                                                              "anyOf": [
+                                                                {
+                                                                  "type": "integer",
+                                                                  "minimum": 0,
+                                                                  "maximum": 9007199254740991
+                                                                },
+                                                                {
+                                                                  "type": "null"
+                                                                }
+                                                              ]
+                                                            }
+                                                          },
+                                                          "required": [
+                                                            "groupId",
+                                                            "label",
+                                                            "order",
+                                                            "kind",
+                                                            "rounds",
+                                                            "restAfterRoundSeconds"
                                                           ],
                                                           "additionalProperties": false
                                                         }
@@ -100831,6 +103287,17 @@
                                                           "string",
                                                           "null"
                                                         ]
+                                                      },
+                                                      "exerciseGroupId": {
+                                                        "anyOf": [
+                                                          {
+                                                            "type": "string",
+                                                            "pattern": "^[A-Za-z0-9_-]{1,64}$"
+                                                          },
+                                                          {
+                                                            "type": "null"
+                                                          }
+                                                        ]
                                                       }
                                                     },
                                                     "required": [
@@ -100844,6 +103311,66 @@
                                                       "suggestedLoad",
                                                       "professionalParameters",
                                                       "note"
+                                                    ],
+                                                    "additionalProperties": false
+                                                  }
+                                                },
+                                                "exerciseGroups": {
+                                                  "type": "array",
+                                                  "items": {
+                                                    "type": "object",
+                                                    "properties": {
+                                                      "groupId": {
+                                                        "type": "string",
+                                                        "pattern": "^[A-Za-z0-9_-]{1,64}$"
+                                                      },
+                                                      "label": {
+                                                        "type": "string"
+                                                      },
+                                                      "order": {
+                                                        "type": "integer",
+                                                        "exclusiveMinimum": 0,
+                                                        "maximum": 9007199254740991
+                                                      },
+                                                      "kind": {
+                                                        "type": "string",
+                                                        "enum": [
+                                                          "SEQUENTIAL",
+                                                          "ROUNDS"
+                                                        ]
+                                                      },
+                                                      "rounds": {
+                                                        "anyOf": [
+                                                          {
+                                                            "type": "integer",
+                                                            "exclusiveMinimum": 0,
+                                                            "maximum": 9007199254740991
+                                                          },
+                                                          {
+                                                            "type": "null"
+                                                          }
+                                                        ]
+                                                      },
+                                                      "restAfterRoundSeconds": {
+                                                        "anyOf": [
+                                                          {
+                                                            "type": "integer",
+                                                            "minimum": 0,
+                                                            "maximum": 9007199254740991
+                                                          },
+                                                          {
+                                                            "type": "null"
+                                                          }
+                                                        ]
+                                                      }
+                                                    },
+                                                    "required": [
+                                                      "groupId",
+                                                      "label",
+                                                      "order",
+                                                      "kind",
+                                                      "rounds",
+                                                      "restAfterRoundSeconds"
                                                     ],
                                                     "additionalProperties": false
                                                   }
@@ -103621,6 +106148,17 @@
                                                                   "string",
                                                                   "null"
                                                                 ]
+                                                              },
+                                                              "exerciseGroupId": {
+                                                                "anyOf": [
+                                                                  {
+                                                                    "type": "string",
+                                                                    "pattern": "^[A-Za-z0-9_-]{1,64}$"
+                                                                  },
+                                                                  {
+                                                                    "type": "null"
+                                                                  }
+                                                                ]
                                                               }
                                                             },
                                                             "required": [
@@ -103634,6 +106172,66 @@
                                                               "suggestedLoad",
                                                               "professionalParameters",
                                                               "note"
+                                                            ],
+                                                            "additionalProperties": false
+                                                          }
+                                                        },
+                                                        "exerciseGroups": {
+                                                          "type": "array",
+                                                          "items": {
+                                                            "type": "object",
+                                                            "properties": {
+                                                              "groupId": {
+                                                                "type": "string",
+                                                                "pattern": "^[A-Za-z0-9_-]{1,64}$"
+                                                              },
+                                                              "label": {
+                                                                "type": "string"
+                                                              },
+                                                              "order": {
+                                                                "type": "integer",
+                                                                "exclusiveMinimum": 0,
+                                                                "maximum": 9007199254740991
+                                                              },
+                                                              "kind": {
+                                                                "type": "string",
+                                                                "enum": [
+                                                                  "SEQUENTIAL",
+                                                                  "ROUNDS"
+                                                                ]
+                                                              },
+                                                              "rounds": {
+                                                                "anyOf": [
+                                                                  {
+                                                                    "type": "integer",
+                                                                    "exclusiveMinimum": 0,
+                                                                    "maximum": 9007199254740991
+                                                                  },
+                                                                  {
+                                                                    "type": "null"
+                                                                  }
+                                                                ]
+                                                              },
+                                                              "restAfterRoundSeconds": {
+                                                                "anyOf": [
+                                                                  {
+                                                                    "type": "integer",
+                                                                    "minimum": 0,
+                                                                    "maximum": 9007199254740991
+                                                                  },
+                                                                  {
+                                                                    "type": "null"
+                                                                  }
+                                                                ]
+                                                              }
+                                                            },
+                                                            "required": [
+                                                              "groupId",
+                                                              "label",
+                                                              "order",
+                                                              "kind",
+                                                              "rounds",
+                                                              "restAfterRoundSeconds"
                                                             ],
                                                             "additionalProperties": false
                                                           }
@@ -103915,6 +106513,17 @@
                                                             "string",
                                                             "null"
                                                           ]
+                                                        },
+                                                        "exerciseGroupId": {
+                                                          "anyOf": [
+                                                            {
+                                                              "type": "string",
+                                                              "pattern": "^[A-Za-z0-9_-]{1,64}$"
+                                                            },
+                                                            {
+                                                              "type": "null"
+                                                            }
+                                                          ]
                                                         }
                                                       },
                                                       "required": [
@@ -103928,6 +106537,66 @@
                                                         "suggestedLoad",
                                                         "professionalParameters",
                                                         "note"
+                                                      ],
+                                                      "additionalProperties": false
+                                                    }
+                                                  },
+                                                  "exerciseGroups": {
+                                                    "type": "array",
+                                                    "items": {
+                                                      "type": "object",
+                                                      "properties": {
+                                                        "groupId": {
+                                                          "type": "string",
+                                                          "pattern": "^[A-Za-z0-9_-]{1,64}$"
+                                                        },
+                                                        "label": {
+                                                          "type": "string"
+                                                        },
+                                                        "order": {
+                                                          "type": "integer",
+                                                          "exclusiveMinimum": 0,
+                                                          "maximum": 9007199254740991
+                                                        },
+                                                        "kind": {
+                                                          "type": "string",
+                                                          "enum": [
+                                                            "SEQUENTIAL",
+                                                            "ROUNDS"
+                                                          ]
+                                                        },
+                                                        "rounds": {
+                                                          "anyOf": [
+                                                            {
+                                                              "type": "integer",
+                                                              "exclusiveMinimum": 0,
+                                                              "maximum": 9007199254740991
+                                                            },
+                                                            {
+                                                              "type": "null"
+                                                            }
+                                                          ]
+                                                        },
+                                                        "restAfterRoundSeconds": {
+                                                          "anyOf": [
+                                                            {
+                                                              "type": "integer",
+                                                              "minimum": 0,
+                                                              "maximum": 9007199254740991
+                                                            },
+                                                            {
+                                                              "type": "null"
+                                                            }
+                                                          ]
+                                                        }
+                                                      },
+                                                      "required": [
+                                                        "groupId",
+                                                        "label",
+                                                        "order",
+                                                        "kind",
+                                                        "rounds",
+                                                        "restAfterRoundSeconds"
                                                       ],
                                                       "additionalProperties": false
                                                     }

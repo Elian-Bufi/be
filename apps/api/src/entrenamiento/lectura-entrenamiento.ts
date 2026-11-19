@@ -1,4 +1,4 @@
-import { CONDICION_DE_SESION_API, estadoDeVersionDePlanApi, GRANULARIDAD_API, serieConTipo, sesionesDelPlan, tipoDeSerie, type FuenteExterna } from '@be/domain';
+import { bloquesComoSalen, CONDICION_DE_SESION_API, estadoDeVersionDePlanApi, GRANULARIDAD_API, serieConTipo, sesionesDelPlan, tipoDeSerie, type FuenteExterna } from '@be/domain';
 import type {
   Bloque,
   CondicionDeSesion,
@@ -158,6 +158,8 @@ export function prescripcionApi(p: PrescripcionGuardada, orden: number, resolver
     suggestedLoad: p.suggestedLoad,
     professionalParameters: p.professionalParameters.map((q) => ({ label: q.label, value: q.value, unit: q.unit })),
     note: p.note,
+    // DL-181: explícito; a un cliente sin `training-session-groups-1` se lo saca `SinBloquesDeLaSesionInterceptor`.
+    exerciseGroupId: p.exerciseGroupId ?? null,
   };
 }
 
@@ -168,6 +170,8 @@ export function sesionApi(s: SesionGuardada, orden: number, resolver: ResolverDe
     order: orden,
     instructions: s.instructions,
     prescriptions: s.prescriptions.map((p, i) => prescripcionApi(p, i + 1, resolver)),
+    // DL-181: explícito (vacío si no tiene); a un cliente sin la capacidad se lo saca `SinBloquesDeLaSesionInterceptor`.
+    exerciseGroups: bloquesComoSalen(s),
   };
 }
 

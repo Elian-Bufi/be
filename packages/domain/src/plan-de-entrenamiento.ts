@@ -250,7 +250,7 @@ export function normalizarEstructuraDeEntrenamiento(entrada: EstructuraDePlanDeE
       };
     }),
     // DL-181: solo si tiene bloques; una sesión sin ellos queda idéntica a las de antes.
-    ...bloquesGuardados(s.exerciseGroups),
+    ...bloquesGuardados(s),
     };
   };
 
@@ -573,7 +573,7 @@ export function estructuraComoEntrada(v: VersionDePlanDeEntrenamiento): Estructu
       note: p.note,
       ...bloqueDelEjercicioGuardado(p),
     })),
-    ...bloquesGuardados(s.exerciseGroups),
+    ...bloquesGuardados(s),
   });
   return v.blocks.map((b) => ({
     blockId: b.blockId,
@@ -615,7 +615,7 @@ export function estructuraConObjetivosComoEntrada(v: PlanConObjetivos): Estructu
       ...(p.repetitionBasis !== null ? { repetitionBasis: p.repetitionBasis } : {}),
       ...bloqueDelEjercicioGuardado(p),
     })),
-    ...bloquesGuardados(s.exerciseGroups),
+    ...bloquesGuardados(s),
   });
   return v.blocks.map((b) => ({
     blockId: b.blockId,
