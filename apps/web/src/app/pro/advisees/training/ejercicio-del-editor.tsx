@@ -56,6 +56,8 @@ import { COPY_DE_LOS_EDITORES as EDICION, sinLaSerie } from '../editar-la-estruc
 import { ImagenGuardadaDeEjercicio } from '../../exercises/imagen-de-ejercicio';
 import { useEntrenamiento } from './entrenamiento';
 import { LineaDePrescripcion } from './linea-de-prescripcion';
+import { COPY_ESCRITURA_RAPIDA } from './escritura-rapida';
+import { cambioDeCriterio, conElCriterio, COPY_CAMBIO_DE_CRITERIO, deshacerElCambioDeCriterio, sigueElCambio, type CambioDeCriterio } from './cambio-de-criterio';
 import { CuadroEnfocado } from '../../../../components/cuadro-enfocado';
 import { COPY_DETALLE_DEL_EJERCICIO, DetalleDelEjercicio } from '../fuerza/detalle-del-ejercicio';
 import { COPY_CARGA_DESDE_LA_ESTIMACION } from '../fuerza/carga-desde-la-estimacion';
@@ -185,7 +187,12 @@ export function EjercicioDelEditor({
   exerciseId = null,
   nivel = 'h3',
   accionesDelBloque = [],
+  lineaSinAplicar = '',
+  onLineaSinAplicar,
 }: {
+  /** C7: lo escrito en la escritura rápida y todavía sin aplicar; vive en el editor (`escritura-rapida.ts`). */
+  lineaSinAplicar?: string;
+  onLineaSinAplicar?: (texto: string) => void;
   /** DL-181: el nivel del título; dentro de un bloque de la sesión, uno más (`h4`). */
   nivel?: 'h3' | 'h4';
   /** DL-181: «Pasar a Torso» o «Sacar del bloque», en su «Más». */
@@ -249,6 +256,13 @@ export function EjercicioDelEditor({
                 <span className="etiqueta-de-dato ejercicio-del-editor__revisar" data-carga-a-revisar>
                   <Icono nombre="aviso" tamano={15} />
                   {revisar}
+                </span>
+              ) : null}
+              {/* C7: plegado, lo escrito sin aplicar se dice: no quedó en las series. */}
+              {!abierto && lineaSinAplicar.trim() !== '' ? (
+                <span className="etiqueta-de-dato ejercicio-del-editor__sin-aplicar" data-linea-sin-aplicar>
+                  <Icono nombre="aviso" tamano={15} />
+                  {COPY_ESCRITURA_RAPIDA.sinAplicar}: «{lineaSinAplicar.trim()}»
                 </span>
               ) : null}
               {plegado.avisos.length > 0 ? (
@@ -328,7 +342,7 @@ export function EjercicioDelEditor({
                 dependen de ellos; la tabla de series ocupa todo el ancho, sin desplazamiento propio. */}
             <CriterioDelEjercicio id={id} prescripcion={p} onCambiar={onCambiar} />
             {/* ED-22: la prescripción en una línea, arriba de las series que escribe. */}
-            <LineaDePrescripcion id={id} nombre={nombre} prescripcion={p} onAplicar={(nueva, revisar) => onAplicarLinea(nueva, revisar)} />
+            <LineaDePrescripcion id={id} nombre={nombre} prescripcion={p} texto={onLineaSinAplicar ? lineaSinAplicar : undefined} onTexto={onLineaSinAplicar} onAplicar={(nueva, revisar) => onAplicarLinea(nueva, revisar)} />
             <SeriesDelEjercicio
               id={id}
               nombre={nombre}
@@ -890,6 +904,9 @@ const COPY_CRITERIO_ARRIBA = {
 function CriterioDelEjercicio({ id, prescripcion: p, onCambiar }: { id: string; prescripcion: PrescripcionE; onCambiar: (c: Partial<PrescripcionE>) => void }) {
   const criterio = (p.intensity?.criterion as Criterio | undefined) ?? '';
   const unidad = unidadDe(p);
+  // C7: lo que se quitó al cambiar de criterio, con «Deshacer», mientras siga el criterio elegido.
+  const [cambio, setCambio] = useState<CambioDeCriterio<PrescripcionE['intensity']> | null>(null);
+  const avisoDelCambio = cambio && sigueElCambio(p, cambio) ? cambio : null;
   return (
     <div className="criterio-del-ejercicio" role="group" aria-label={COPY_CRITERIO_ARRIBA.titulo} data-criterio-del-ejercicio>
         <div className="lo-general-del-editor__par">
@@ -902,11 +919,9 @@ function CriterioDelEjercicio({ id, prescripcion: p, onCambiar }: { id: string; 
                 const c = e.target.value as Criterio | '';
                 // Elegir el criterio no trae un objetivo: el número lo escribe el profesional (09v10:339-340). Sin el
                 // criterio RIR, el RIR de cada serie no tiene sentido: se quita, porque sería un segundo criterio
-                // (REG-06-128).
-                onCambiar({
-                  intensity: c ? { criterion: c, target: { value: Number.NaN, reference: null } } : null,
-                  ...(c === 'RIR' ? {} : { sets: p.sets.map(({ rir: _sinRir, ...x }) => x) }),
-                });
+                // (REG-06-128). C7: lo que se quita se dice, con «Deshacer»; sin nada que perder, no se dice nada.
+                setCambio(cambioDeCriterio(p, c));
+                onCambiar(conElCriterio(p, c));
               }}
             >
               <option value="">{COPY_ENTRENAMIENTO.sinCriterio}</option>
@@ -934,6 +949,24 @@ function CriterioDelEjercicio({ id, prescripcion: p, onCambiar }: { id: string; 
             />
           ) : null}
         </div>
+        {/* C7: qué se quitó al cambiar de criterio, con «Deshacer», que devuelve el criterio y los valores de antes. */}
+        {avisoDelCambio ? (
+          <p className="nota criterio-del-ejercicio__aviso" role="status" data-cambio-de-criterio>
+            <span>{avisoDelCambio.texto}</span>
+            <button
+              type="button"
+              className="boton boton--enlace"
+              data-deshacer-el-criterio
+              onClick={() => {
+                onCambiar(deshacerElCambioDeCriterio(p, avisoDelCambio));
+                setCambio(null);
+              }}
+            >
+              <Icono nombre="deshacer" tamano={15} />
+              {COPY_CAMBIO_DE_CRITERIO.deshacer}
+            </button>
+          </p>
+        ) : null}
         {p.intensity && criterio === 'PERCENT_RM' ? (
           <Campo
             id={`${id}-referencia`}

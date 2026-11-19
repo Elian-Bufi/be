@@ -166,3 +166,77 @@ test('C9 · «Revisar ahora» sigue apagado con el autoguardado en curso (§7) y
   assert.doesNotMatch(REVISION, /<span id=\{motivoId\} className="visualmente-oculto">/, 'el motivo no queda solo para el lector');
   assert.match(EDITOR, /guardando=\{guardando\} onRevisar=\{\(\) => void revisarAhora\(\)\}/);
 });
+
+// ─── C7 · la escritura rápida: su rótulo, «Aplicar», lo escrito sin aplicar y el cambio de criterio ────────────
+
+const ER = await import('../src/app/pro/advisees/training/escritura-rapida.ts');
+const CC = await import('../src/app/pro/advisees/training/cambio-de-criterio.ts');
+const LINEA = fuente('../src/app/pro/advisees/training/linea-de-prescripcion.tsx');
+
+test('C7 · la escritura rápida lleva su rótulo, su lectura en vivo y «Aplicar» a la vista; Enter sigue aplicando', () => {
+  assert.equal(ER.COPY_ESCRITURA_RAPIDA.rotulo, 'Escritura rápida');
+  assert.match(LINEA, /<label htmlFor=\{`\$\{id\}-linea`\} className="linea-de-prescripcion__rotulo">\n\s*\{E\.rotulo\}/);
+  assert.doesNotMatch(LINEA, /className="visualmente-oculto">\n\s*\{C\.rotulo\}/, 'el rótulo ya no queda solo para el lector');
+  assert.match(LINEA, /data-aplicar-la-linea\n\s*aria-disabled=\{sinAplicar \? true : undefined\}/);
+  assert.match(LINEA, /if \(e\.key !== 'Enter'\) return;\n\s*e\.preventDefault\(\);\n\s*aplicar\(\);/);
+  assert.match(LINEA, /data-lectura-de-la-linea/);
+  assert.match(LINEA, /placeholder="Ej\.: 4×8-12 RIR 2 · 60 kg · 90 s"/, 'el ejemplo no se lee como algo ya cargado');
+});
+
+test('C7 · lo escrito sin aplicar vive por ejercicio: sobrevive al plegar, a otra sesión y al guardado que da el identificador', () => {
+  assert.equal(ER.claveDeLaLinea('b0-s1', 2, null), 'pos:b0-s1-p2');
+  assert.equal(ER.claveDeLaLinea('b0-s1', 2, 'abc'), 'id:abc');
+  assert.deepEqual(ER.conLaLinea({ 'pos:b0-s0-p0': '4×8' }, 'pos:b0-s0-p0', '  '), {}, 'vacío es nada');
+  const enviados = [{ sessions: [{ prescriptions: [{ prescriptionId: 'x' }, {}] }] }, { microcycles: [{ sessions: [{ prescriptions: [{}] }] }] }];
+  const guardados = [{ sessions: [{ prescriptions: [{ prescriptionId: 'x' }, { prescriptionId: 'nuevo' }] }] }, { microcycles: [{ sessions: [{ prescriptions: [{ prescriptionId: 'otro' }] }] }] }];
+  const lineas = { 'id:x': '3×5', 'pos:b0-s0-p1': '4×8-12 RIR 2', 'pos:b1-m0-s0-p0': '2×10', 'id:quitado': 'ya no está' };
+  assert.deepEqual(ER.lineasConLosIdentificadores(lineas, enviados, guardados), { 'id:x': '3×5', 'id:nuevo': '4×8-12 RIR 2', 'id:otro': '2×10', 'id:quitado': 'ya no está' });
+  // Lo pendiente: con su lugar, en el orden del plan; lo de un ejercicio que ya no está no se lista.
+  assert.deepEqual(ER.lineasPendientes(ER.lineasConLosIdentificadores(lineas, enviados, guardados), guardados), [
+    { clave: 'id:x', texto: '3×5', ruta: 'blocks[0].sessions[0].prescriptions[0]' },
+    { clave: 'id:nuevo', texto: '4×8-12 RIR 2', ruta: 'blocks[0].sessions[0].prescriptions[1]' },
+    { clave: 'id:otro', texto: '2×10', ruta: 'blocks[1].microcycles[0].sessions[0].prescriptions[0]' },
+  ]);
+  // El editor la lleva por ejercicio, en la estación y en el paso 4, y la migra en los dos caminos del guardado.
+  assert.match(EDITOR, /lineaSinAplicar=\{lineas\[claveDeSuLinea\] \?\? ''\}/);
+  assert.equal((EDITOR.match(/setLineas\(\(m\) => lineasConLosIdentificadores\(m, bloquesEnviados, aEntrada\(/g) ?? []).length, 2);
+  assert.match(EJERCICIO, /\{!abierto && lineaSinAplicar\.trim\(\) !== '' \? \(\n\s*<span className="etiqueta-de-dato ejercicio-del-editor__sin-aplicar" data-linea-sin-aplicar>/, 'plegado, se dice');
+});
+
+test('C7 · lo escrito sin aplicar se resuelve antes de salir: se pregunta, no se pierde', () => {
+  assert.match(EDITOR, /useCambiosSinGuardar\(lineasSinAplicar\.length > 0, COPY_ESCRITURA_RAPIDA\.alSalir\);/, 'salir o recargar pregunta');
+  assert.match(EDITOR, /\.\.\.sinAplicar\.map\(\(x\) => conSuLugar\(x\.issue, x\.texto\)\),/, '«Antes de activar» no deja activar sin resolverlo');
+  assert.match(EDITOR, /\.\.\.sinAplicar\.map\(\(x\) => \(\{ \.\.\.impedimento\(x\.issue\), texto: x\.texto \}\)\),/, 'el panel lo dice con «Ir a…»');
+  assert.deepEqual(I.camposDelProblema({ code: I.SIN_APLICAR, path: 'blocks[0].sessions[0].prescriptions[1]' }, 'b0-s0-p1', null), ['b0-s0-p1-linea', 'abrir-ejercicio-b0-s0-p1']);
+  assert.equal(ER.COPY_ESCRITURA_RAPIDA.pendiente(' 4×8 '), 'tiene escritura rápida sin aplicar («4×8»): aplicala o borrala');
+  // No es parte del plan: no impide guardar.
+  assert.doesNotMatch(EDITOR, /const loQueNoDejaGuardar = \(bloques: Bloques\) => \[[^\n]*lineas/);
+});
+
+test('C7 · cambiar de RIR a % RM dice qué se quita y se puede deshacer; sin nada que perder, no dice nada', () => {
+  const conRir = { intensity: { criterion: 'RIR', target: { value: 2, reference: null } }, sets: [{ rir: 1 }, { rir: null }, {}, { rir: 3 }] };
+  assert.equal(CC.loQueSeQuitaAlCambiarElCriterio(conRir, 'PERCENT_RM'), 'Al pasar a % RM se quitaron el objetivo RIR 2 y el RIR propio de 3 series. Falta escribir el objetivo de % RM.');
+  assert.equal(CC.loQueSeQuitaAlCambiarElCriterio(conRir, ''), 'Al dejarlo sin criterio se quitaron el objetivo RIR 2 y el RIR propio de 3 series.');
+  assert.equal(CC.loQueSeQuitaAlCambiarElCriterio(conRir, 'RIR'), null, 'el mismo criterio no cambia nada');
+  const conRm = { intensity: { criterion: 'PERCENT_RM', target: { value: 75, reference: { description: '1RM de octubre' } } }, sets: [{}] };
+  assert.equal(CC.loQueSeQuitaAlCambiarElCriterio(conRm, 'RIR'), 'Al pasar a RIR se quitaron el objetivo 75 % RM y la referencia del % RM. Falta escribir el objetivo de RIR.');
+  assert.equal(CC.loQueSeQuitaAlCambiarElCriterio({ intensity: { criterion: 'RIR', target: { value: Number.NaN } }, sets: [{}] }, 'PERCENT_RM'), null, 'nada que perder: sin aviso');
+  assert.equal(CC.loQueSeQuitaAlCambiarElCriterio({ intensity: null, sets: [{}] }, 'RIR'), null);
+  // «Deshacer» devuelve el criterio, el objetivo y el RIR de cada serie (también «Sin objetivo»), también después de un
+  // guardado que rehízo la prescripción, y no toca las series que se sumaron.
+  const cambio = CC.cambioDeCriterio(conRir, 'PERCENT_RM');
+  const despues = { ...conRir, ...CC.conElCriterio(conRir, 'PERCENT_RM') };
+  assert.deepEqual(despues.sets, [{}, {}, {}, {}]);
+  assert.equal(CC.sigueElCambio(structuredClone(despues), cambio), true);
+  const deshecho = CC.deshacerElCambioDeCriterio({ ...despues, sets: [...despues.sets, { repetitions: { value: 8 } }] }, cambio);
+  assert.deepEqual(deshecho, { intensity: conRir.intensity, sets: [{ rir: 1 }, { rir: null }, {}, { rir: 3 }, { repetitions: { value: 8 } }] });
+  assert.equal(CC.sigueElCambio({ ...despues, intensity: { criterion: 'RIR', target: { value: 1 } } }, cambio), false, 'otro criterio lo retira');
+  // De % RM a RIR, con un RIR escrito después en una serie: deshacer vuelve a % RM y ninguna serie queda con RIR (sería un
+  // segundo criterio, REG-06-128).
+  const aRir = CC.cambioDeCriterio(conRm, 'RIR');
+  const conUnRir = { ...conRm, ...CC.conElCriterio(conRm, 'RIR'), sets: [{ rir: 2 }] };
+  assert.deepEqual(CC.deshacerElCambioDeCriterio(conUnRir, aRir), { intensity: conRm.intensity, sets: [{}] });
+  assert.match(EJERCICIO, /setCambio\(cambioDeCriterio\(p, c\)\);\n\s*onCambiar\(conElCriterio\(p, c\)\);/);
+  assert.match(EJERCICIO, /onCambiar\(deshacerElCambioDeCriterio\(p, avisoDelCambio\)\);/);
+  assert.match(EJERCICIO, /data-cambio-de-criterio/);
+});

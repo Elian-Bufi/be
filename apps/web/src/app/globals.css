@@ -19572,3 +19572,49 @@ html:has(.estacion:not([data-en-el-asistente])) {
 .revision-del-plan > [data-motivo-sin-revisar] {
   margin: 0;
 }
+
+/* C7: la escritura rápida, con su rótulo a la vista y «Aplicar» al lado del campo. */
+.linea-de-prescripcion {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.linea-de-prescripcion__rotulo {
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.linea-de-prescripcion__fila {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  max-width: 36rem;
+}
+
+.linea-de-prescripcion__fila > .linea-de-prescripcion__campo {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.linea-de-prescripcion__fila > .boton {
+  flex: none;
+}
+
+/* Lo escrito sin aplicar se marca: el borde del campo, como un cambio que todavía no entró. */
+.linea-de-prescripcion[data-sin-aplicar] .linea-de-prescripcion__campo {
+  border-style: dashed;
+  border-color: var(--enlace);
+}
+
+.ejercicio-del-editor__sin-aplicar {
+  border-style: dashed;
+}
+
+/* C7: el aviso del criterio que cambió, con «Deshacer». */
+.criterio-del-ejercicio__aviso {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.3rem 0.6rem;
+  grid-column: 1 / -1;
+  margin: 0;
+}

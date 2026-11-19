@@ -71,7 +71,7 @@ export function AyudaDelPlanDeEntrenamiento() {
           <strong>La estación tiene tres zonas.</strong> {PRIMER_USO_DE_LA_ESTACION.renglones.join(' ')} En una pantalla más angosta, la de la derecha se abre con «Panel».
         </Renglon>
         <Renglon muestra={<Icono nombre="texto" tamano={20} />}>
-          <strong>La prescripción en una línea</strong> se escribe arriba de cada ejercicio, y Enter la aplica. Antes de aplicarla dice cómo la lee y lo que se pierde.
+          <strong>La escritura rápida</strong> se escribe arriba de las series de cada ejercicio, y «Aplicar» (o Enter) la escribe en ellas. Mientras se escribe dice cómo la lee y lo que se pierde; lo escrito sin aplicar no se pierde al plegar ni al salir: el editor lo pregunta.
           <ul>
             {COPY_PRESCRIPCION_RAPIDA.gramatica.map((g) => (
               <li key={g}>{g}</li>

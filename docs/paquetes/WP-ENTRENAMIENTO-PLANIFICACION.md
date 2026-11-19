@@ -167,6 +167,19 @@ Sesión
   a…» lo cierra y volver lo abre en «Antes de activar». «Revisar ahora» sigue apagado con el autoguardado en curso (§7),
   y ahora lo dice a la vista: «la revisión se pide sola apenas termine» (guardar y revisar quedan encadenados: el
   autoguardado termina y la revisión se pide sola).
+- **ENP-D23 · La escritura rápida tiene rótulo, lectura en vivo y «Aplicar»** (C7; `linea-de-prescripcion.tsx`): «Escritura
+  rápida» a la vista, el ejemplo como «Ej.: …» (antes se leía como algo cargado), «Se lee: …» mientras se escribe y
+  «Aplicar» al lado, apagado con su motivo mientras no haya qué aplicar o no se entienda; Enter sigue aplicando.
+- **ENP-D24 · Lo escrito sin aplicar se pregunta, no se pierde** (C7; `escritura-rapida.ts`). Vive en el editor, por
+  ejercicio (su identificador o su lugar, y pasa al identificador cuando un guardado se lo da; antes, ese guardado volvía
+  a armar el ejercicio y lo borraba): plegar, ir a otra sesión o al paso 4 del asistente no lo borra, y plegado se dice
+  («Escritura rápida sin aplicar: «…»»). No es parte del plan: no se guarda ni impide guardar. Pero el panel y «Antes de
+  activar» lo listan con «Ir a…» a su línea, y no se activa sin resolverlo (aplicarlo o borrarlo); salir del editor o
+  recargar pregunta.
+- **ENP-D25 · Cambiar de criterio dice qué se quita y se puede deshacer** (C7; `cambio-de-criterio.ts`): «Al pasar a % RM
+  se quitaron el objetivo RIR 2 y el RIR propio de 3 series. Falta escribir el objetivo de % RM.», con «Deshacer», que
+  devuelve el criterio, el objetivo y el RIR de cada serie («Sin objetivo» incluido) y se ofrece mientras siga el criterio
+  elegido (un guardado en el medio no lo retira). Sin nada que perder no se dice nada: no se suma una confirmación.
 
 ## 4. Las reglas, y dónde se prueban
 

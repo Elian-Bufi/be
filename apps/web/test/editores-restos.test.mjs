@@ -178,8 +178,10 @@ test('ED-14 · el panel es uno por pestaña, y lo escrito sin aplicar queda en s
   const editor = leer('training/editor.tsx');
   // Sin la key, React reusa la línea del ejercicio 1 de A en el ejercicio 1 de B, y un Enter aplica ahí lo escrito en A.
   assert.match(editor, /<div key=\{claveElegida\} role="tabpanel" id="paso-4-panel"/);
-  assert.match(editor, /const pendiente = `\$\{claveElegida\}·p\$\{l\}`;/);
-  assert.match(editor, /texto=\{lineasDelPaso4\[pendiente\] \?\? ''\}\n\s+onTexto=\{\(t\) => setLineasDelPaso4\(\(m\) => \(\{ \.\.\.m, \[pendiente\]: t \}\)\)\}/);
+  // C7 (WP-ENTRENAMIENTO-PLANIFICACION, tramo 2): la clave es la del ejercicio (su identificador o su lugar en su sesión),
+  // la misma que en la estación; sigue siendo de su sesión y de su ejercicio.
+  assert.match(editor, /const pendiente = claveDeLaLinea\(clave, l, x\.prescriptionId\);/);
+  assert.match(editor, /texto=\{lineas\[pendiente\] \?\? ''\}\n\s+onTexto=\{\(t\) => setLineas\(\(m\) => conLaLinea\(m, pendiente, t\)\)\}/);
   const linea = leer('training/linea-de-prescripcion.tsx');
   assert.match(linea, /const texto = deAfuera \?\? propioTexto;\n\s+const setTexto = onTexto \?\? setPropioTexto;/);
 });

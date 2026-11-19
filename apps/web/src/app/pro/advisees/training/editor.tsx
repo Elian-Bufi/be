@@ -162,7 +162,8 @@ import {
   type SesionReordenada,
 } from './bloques-del-editor';
 import { COPY_REVISION_DEL_PLAN, COPY_VOLVER_A_LA_REVISION, destinoDelLugar, RevisionDelPlan, type EstadoDeLaRevision, type Impedimento } from './revision-del-plan';
-import { campoParaEnfocar, camposDelProblema } from './ir-al-campo';
+import { campoParaEnfocar, camposDelProblema, SIN_APLICAR } from './ir-al-campo';
+import { claveDeLaLinea, conLaLinea, COPY_ESCRITURA_RAPIDA, lineasConLosIdentificadores, lineasPendientes, type LineasSinAplicar } from './escritura-rapida';
 import { NoDisponible, useEntrenamiento } from './entrenamiento';
 import { SelectorDeNivel } from './estructura-del-plan';
 import { DialogoGuardarSesionHabitual, InsertarSesionHabitual, nombresDeHabitual, useEjerciciosHabituales, useSesionesHabituales } from './habituales';
@@ -421,9 +422,10 @@ export function EditorDePlan({
   const [avanzarA, setAvanzarA] = useState<PasoDelAsistente | null>(null);
   // ED-14 (maqueta 03): la sesión que se mira en el paso 4, una pestaña por sesión de todo el plan.
   const [pestanaDelPaso4, setPestanaDelPaso4] = useState(0);
-  // ED-14: lo escrito en la línea de cada ejercicio y todavía sin aplicar, por pestaña y ejercicio. La pestaña desmonta la
-  // línea, y así no se pierde al ir a otra sesión ni aparece en el ejercicio de otra.
-  const [lineasDelPaso4, setLineasDelPaso4] = useState<Readonly<Record<string, string>>>({});
+  // ED-14 y C7: lo escrito en la escritura rápida de cada ejercicio y todavía sin aplicar, por ejercicio (su identificador
+  // o su lugar: `escritura-rapida.ts`), en la estación y en el paso 4 del asistente. Plegar, ir a otra sesión o a otra
+  // pestaña no lo borra; salir o activar lo pregunta.
+  const [lineas, setLineas] = useState<LineasSinAplicar>({});
   const siguienteRef = useRef<((n: PasoDelAsistente) => Promise<void>) | null>(null);
   // ED-20: «Desde un preset» (paso 1) llega al paso 2 con la galería de estructuras abierta, una vez.
   // TEST-EDP-017: «Siguiente» pedido mientras viajaba un autoguardado decide cuando ese guardado termina.
@@ -570,6 +572,8 @@ export function EditorDePlan({
           autoguardado.informar('GUARDADO');
           if (ediciones.current === edicionesAlEnviar) {
             setBloques(aEntrada(guardada));
+            // C7: lo escrito sin aplicar en un ejercicio que recién recibió su identificador pasa a él.
+            setLineas((m) => lineasConLosIdentificadores(m, bloquesEnviados, aEntrada(guardada)));
             setAgenda(guardada.agenda);
             setSucio(false);
           }
@@ -620,6 +624,8 @@ export function EditorDePlan({
     if (detalle.ok) {
       if (sinCambiosDespues) {
         setBloques(aEntrada(detalle.datos.data));
+        // C7: lo escrito sin aplicar en un ejercicio que recién recibió su identificador pasa a él.
+        setLineas((m) => lineasConLosIdentificadores(m, bloquesEnviados, aEntrada(detalle.datos.data)));
         setAgenda(detalle.datos.data.agenda);
       }
       setNombres((n) => ({ ...n, ...nombresDe(detalle.datos.data) }));
@@ -643,6 +649,9 @@ export function EditorDePlan({
   // ED-02: un enlace interno con cambios guarda antes de salir (si se puede: nada a medio escribir ni un conflicto) o
   // pregunta; recargar o cerrar la pestaña, también pregunta.
   useCambiosSinGuardar(sucio, 'el plan en preparación', { sePuede: puedeGuardar && !conflicto, ocupado: guardando, guardar: async () => (await guardar()) !== null });
+  // C7: lo escrito en la escritura rápida y sin aplicar no es parte del plan (no se guarda): salir o recargar pregunta.
+  const lineasSinAplicar = lineasPendientes(lineas, bloques);
+  useCambiosSinGuardar(lineasSinAplicar.length > 0, COPY_ESCRITURA_RAPIDA.alSalir);
 
   /**
    * ED-07: la revisión de la API de la versión guardada (API-TRN-11). Lo que dice entra en «Lo que impide activar»; la
@@ -930,8 +939,11 @@ export function EditorDePlan({
   const conSuLugar = (p: ValidationIssue, texto: string) => ({ texto: `${dondeEsta(p, bloques)}: ${texto}`, ir: lugarDelProblemaDeEntrenamiento(p.path).bloque === null ? null : irDesdeElCuadro(p) });
   // Lo que impide activar: lo que el editor ve solo (al instante), lo que dijo la API de lo guardado y, hasta ED-08, la
   // app de la persona (la API todavía la espera).
+  // C7: la escritura rápida sin aplicar no se activa ni se pierde: se resuelve antes, con «Ir a…» a su línea.
+  const sinAplicar = lineasSinAplicar.map((x) => ({ issue: { code: SIN_APLICAR, path: x.ruta } as ValidationIssue, texto: COPY_ESCRITURA_RAPIDA.pendiente(x.texto) }));
   const impidenActivar = [
     ...impideGuardar.map((p) => conSuLugar(p, PROBLEMA[p.code] ?? 'revisá este elemento')),
+    ...sinAplicar.map((x) => conSuLugar(x.issue, x.texto)),
     ...(revision?.estado === 'lista' && revision.version === version.version ? revision.problemas.map((p) => conSuLugar(p, PROBLEMA[p.code] ?? 'revisá este elemento')) : []),
     ...(bloqueadoPorLaApp ? [{ texto: COPY_COMPATIBILIDAD_DE_CLIENTES.activacionBloqueada, ir: null }] : []),
     ...(calentamientoBloqueado ? [{ texto: COPY_CALENTAMIENTO_Y_LA_APP.activacionBloqueada, ir: null }] : []),
@@ -1054,6 +1066,9 @@ export function EditorDePlan({
       return x;
     });
   const quitarEjercicio = (l: number) => {
+    // C7: lo escrito sin aplicar en el ejercicio que se quita se va con él.
+    const p = sesion?.prescriptions[l];
+    if (p) setLineas((m) => conLaLinea(m, claveDeLaLinea(`${prefijo}-s${k}`, l, p.prescriptionId), ''));
     cambiar((x) => (lasSesiones(x)[k]!.prescriptions.splice(l, 1), x));
     // Lo abierto acompaña a su ejercicio: los de más abajo suben un lugar.
     dejarAbiertos(posicionesTrasQuitar(abiertos, l));
@@ -1116,11 +1131,15 @@ export function EditorDePlan({
     const p = sesion.prescriptions[l]!;
     const nombre = nombres[p.exerciseVersionId] ?? 'Ejercicio';
     const suyo = p.exerciseGroupId ? (sesion.exerciseGroups ?? []).findIndex((g) => g.groupId === p.exerciseGroupId) : -1;
+    const claveDeSuLinea = claveDeLaLinea(`${prefijo}-s${k}`, l, p.prescriptionId);
     return (
       <EjercicioDelEditor
         key={p.prescriptionId ?? `nuevo-${l}`}
         id={`${prefijo}-s${k}-p${l}`}
         posicion={l}
+        // C7: lo escrito sin aplicar vive acá, por ejercicio: plegarlo o ir a otra sesión no lo borra.
+        lineaSinAplicar={lineas[claveDeSuLinea] ?? ''}
+        onLineaSinAplicar={(t) => setLineas((m) => conLaLinea(m, claveDeSuLinea, t))}
         nivel={enBloque ? 'h4' : 'h3'}
         prescripcion={p}
         nombre={nombre}
@@ -1354,6 +1373,8 @@ export function EditorDePlan({
   };
   const delEditor: Impedimento[] = [
     ...impideGuardar.map(impedimento),
+    // C7: la escritura rápida sin aplicar, con «Ir a…» a su línea.
+    ...sinAplicar.map((x) => ({ ...impedimento(x.issue), texto: x.texto })),
     ...(bloqueadoPorLaApp ? [{ lugar: 'Plan', texto: COPY_COMPATIBILIDAD_DE_CLIENTES.activacionBloqueada, destino: null, ir: null }] : []),
     ...(calentamientoBloqueado ? [{ lugar: 'Plan', texto: COPY_CALENTAMIENTO_Y_LA_APP.activacionBloqueada, destino: null, ir: null }] : []),
   ];
@@ -1624,8 +1645,8 @@ export function EditorDePlan({
                   const clave = claveDeLaSesion(g, n);
                   const nombre = nombres[x.exerciseVersionId] ?? 'Ejercicio';
                   const revisar = cargaARevisar(clave, x);
-                  // Por posición: en el paso 4 no se agregan ni se quitan ejercicios, y el identificador llega recién con el guardado.
-                  const pendiente = `${claveElegida}·p${l}`;
+                  // C7: la misma clave que en la estación (el identificador o el lugar): lo escrito acá se ve allá, y al revés.
+                  const pendiente = claveDeLaLinea(clave, l, x.prescriptionId);
                   return (
                     <div key={x.prescriptionId ?? `nuevo-${l}`} className="asistente__ejercicio" data-ejercicio-del-asistente={l + 1}>
                       <p className="asistente__ejercicio-actual">
@@ -1640,8 +1661,8 @@ export function EditorDePlan({
                         id={`asistente-${clave}-p${l}`}
                         nombre={nombre}
                         prescripcion={x}
-                        texto={lineasDelPaso4[pendiente] ?? ''}
-                        onTexto={(t) => setLineasDelPaso4((m) => ({ ...m, [pendiente]: t }))}
+                        texto={lineas[pendiente] ?? ''}
+                        onTexto={(t) => setLineas((m) => conLaLinea(m, pendiente, t))}
                         onAplicar={(nueva, texto) => {
                           cambiar((b) => ((sesionesDelGrupo(b, g)[n]!.prescriptions[l] = nueva), b));
                           marcarCargas(clave, [{ p: nueva, texto }]);
