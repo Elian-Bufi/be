@@ -107,12 +107,12 @@ test('la ruta de un problema da las posiciones de su bloque, su microciclo, su s
 test('la ubicación de un problema se dice con los nombres, sin rutas técnicas; lo que no tiene nombre, por lo que es y su número', () => {
   assert.equal(ubicacionDelProblemaDeEntrenamiento('blocks[0].sessions[0].prescriptions[1].sets[1]', BLOQUES), 'Fuerza: progresión → A · Tren inferior → Ejercicio 2 → Serie 2');
   assert.equal(ubicacionDelProblemaDeEntrenamiento('blocks[0].sessions[1]', BLOQUES), 'Fuerza: progresión → Sesión 2');
-  assert.equal(ubicacionDelProblemaDeEntrenamiento('blocks[1].microcycles[1].sessions[1]', BLOQUES), 'Bloque 2 → Microciclo 2 → E');
-  assert.equal(ubicacionDelProblemaDeEntrenamiento('blocks[1].microcycles[0]', BLOQUES), 'Bloque 2 → Semana 1');
+  assert.equal(ubicacionDelProblemaDeEntrenamiento('blocks[1].microcycles[1].sessions[1]', BLOQUES), 'Fase 2 → Microciclo 2 → E');
+  assert.equal(ubicacionDelProblemaDeEntrenamiento('blocks[1].microcycles[0]', BLOQUES), 'Fase 2 → Semana 1');
   assert.equal(ubicacionDelProblemaDeEntrenamiento('changes.blocks.0.label', BLOQUES), 'Fuerza: progresión');
   assert.equal(ubicacionDelProblemaDeEntrenamiento('objectiveVersionId', BLOQUES), 'Plan');
   // Una ruta a algo que ya no está (se quitó después de validar) no rompe.
-  assert.equal(ubicacionDelProblemaDeEntrenamiento('blocks[7].sessions[2]', BLOQUES), 'Bloque 8 → Sesión 3');
+  assert.equal(ubicacionDelProblemaDeEntrenamiento('blocks[7].sessions[2]', BLOQUES), 'Fase 8 → Sesión 3');
 });
 
 test('los problemas de un ejercicio son los que están en él o en una de sus series, no los de otro ejercicio, otra sesión ni otro bloque', () => {
@@ -318,10 +318,10 @@ test('lo escrito en la celda es lo que la serie tiene: vacía vale por nada y po
 // ─── Activar ───────────────────────────────────────────────────────────────────────────────────────────────────
 
 test('lo que entra al activar se cuenta de la estructura, con las sesiones de los microciclos, en singular y en plural', () => {
-  assert.equal(loQueEntraAlActivarElEntrenamiento(BLOQUES), '2 bloques y 5 sesiones');
-  assert.equal(loQueEntraAlActivarElEntrenamiento([{ label: 'Bloque 1', sessions: [{ label: 'A', prescriptions: [] }] }]), '1 bloque y 1 sesión');
-  assert.equal(loQueEntraAlActivarElEntrenamiento([{ label: 'Bloque 1', sessions: [] }]), '1 bloque y 0 sesiones');
-  assert.equal(loQueEntraAlActivarElEntrenamiento([]), '0 bloques y 0 sesiones');
+  assert.equal(loQueEntraAlActivarElEntrenamiento(BLOQUES), '2 fases y 5 sesiones');
+  assert.equal(loQueEntraAlActivarElEntrenamiento([{ label: 'Bloque 1', sessions: [{ label: 'A', prescriptions: [] }] }]), '1 fase y 1 sesión');
+  assert.equal(loQueEntraAlActivarElEntrenamiento([{ label: 'Bloque 1', sessions: [] }]), '1 fase y 0 sesiones');
+  assert.equal(loQueEntraAlActivarElEntrenamiento([]), '0 fases y 0 sesiones');
 });
 
 test('los textos que arma el editor describen: no usan una palabra de la lista de Entrenamiento', () => {

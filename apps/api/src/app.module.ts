@@ -29,10 +29,14 @@ import { EntrenamientoModule } from './entrenamiento/entrenamiento.module';
 import { FormulariosModule } from './formularios/formularios.module';
 import { NovedadesModule } from './novedades/novedades.module';
 import { CoordinacionModule } from './coordinacion/coordinacion.module';
+import { NotasPropiasModule } from './notas-propias/notas-propias.module';
+import { ContextoDeLaPersonaModule } from './contexto-de-la-persona/contexto-de-la-persona.module';
 import { MediosModule } from './medios/medios.module';
 import { NutricionModule } from './nutricion/nutricion.module';
 import { ProcesoModule } from './proceso/proceso.module';
 import { ResumenesModule } from './resumenes/resumenes.module';
+import { HistoriaAnteriorModule } from './historia-anterior/historia-anterior.module';
+import { CompartirModule } from './compartir/compartir.module';
 
 export interface OpcionesApp {
   readonly entorno: Entorno;
@@ -96,6 +100,9 @@ export class AppModule {
         NovedadesModule,
         // DL-140: las notas de coordinación entre los profesionales de una persona.
         CoordinacionModule,
+        // PG-16 de WP-PULIDO-GRANDES (DL-173): las notas propias del profesional, que solo lee su autor.
+        NotasPropiasModule,
+        ContextoDeLaPersonaModule,
         // WP-ADMINISTRACION (DL-155): la administración de profesionales por área, con segundo factor.
         AdministracionModule,
         // UF-06 de WP-USO-FINAL (DL-169): los derechos de la persona.
@@ -106,6 +113,10 @@ export class AppModule {
         ContactoModule,
         // DL-163 D-13, ampliada (WP-TABLERO-ALTA-GAMA TB-52 a TB-56): lo que la persona comparte de otras áreas.
         ResumenesModule,
+        // WP-HISTORIA-ANTERIOR (DL-175): la historia anterior de un área, para el profesional nuevo, con el permiso de la persona.
+        HistoriaAnteriorModule,
+        // WP-COMPARTIR (DL-176): compartir casi por omisión, con una sola pantalla de consentimiento al aceptar el vínculo.
+        CompartirModule,
         // RF-068 (DL-172): las incidencias administrativas mínimas.
         IncidenciasModule,
       ],

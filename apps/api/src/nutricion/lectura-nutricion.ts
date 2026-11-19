@@ -46,7 +46,8 @@ export async function nombreVisibleDe(cliente: Cliente, identidadId: string): Pr
 
 // ─── Evaluación ──────────────────────────────────────────────────────────────────────────────────
 
-export function evaluacionApi(e: FilaDeEvaluacion, nombreProfesional: string): EvaluacionNutricional {
+/** DL-179: `citas`, las respuestas citadas ya resueltas (`citasResueltasDeNutricion`); `[]` si no cita ninguna. */
+export function evaluacionApi(e: FilaDeEvaluacion, nombreProfesional: string, citas: EvaluacionNutricional['formResponseReferences'] = []): EvaluacionNutricional {
   return {
     evaluationId: e.id,
     version: token(1),
@@ -58,6 +59,7 @@ export function evaluacionApi(e: FilaDeEvaluacion, nombreProfesional: string): E
     assessment: e.valoracion as EvaluacionNutricional['assessment'],
     evidenceReferences: e.referencias as string[],
     professionalNotes: e.notas,
+    formResponseReferences: citas,
   };
 }
 
@@ -105,6 +107,12 @@ export interface RecetasEnLaLectura {
 
 /** Jerarquía de salida desde la instantánea (activada) o desde el contenido y el catálogo actual (borrador). */
 export function diasTipoApi(contenido: ContenidoDePlan, instantanea: ContenidoDeInstantanea | null, catalogo: NombresDeCatalogo, recetas: RecetasEnLaLectura = { conReceta: false }): DiaTipoDelProfesional[] {
+  // NUA-08 (DL-180, segundo tramo): la medida casera con la que se escribió cada cantidad, solo para el profesional (`conReceta`).
+  // La instantánea no la guarda (lo que lee la persona no cambia); en una versión activada sale de su contenido, por ítem.
+  const medidas = new Map(
+    recetas.conReceta ? contenido.dayTypes.flatMap((d) => d.meals.flatMap((m) => m.options.flatMap((o) => o.items.flatMap((it) => (it.householdMeasure ? [[it.itemId, it.householdMeasure] as const] : []))))) : [],
+  );
+  const conMedida = (itemId: string) => (medidas.has(itemId) ? { householdMeasure: medidas.get(itemId)! } : {});
   if (instantanea) {
     return instantanea.dayTypes.map((d, i) => ({
       dayTypeId: d.dayTypeId,
@@ -128,6 +136,7 @@ export function diasTipoApi(contenido: ContenidoDePlan, instantanea: ContenidoDe
             quantity: it.quantity,
             preparationState: it.preparationState,
             note: it.note,
+            ...conMedida(it.itemId),
           })),
         })),
       })),
@@ -158,6 +167,7 @@ export function diasTipoApi(contenido: ContenidoDePlan, instantanea: ContenidoDe
             quantity: it.quantity,
             preparationState: it.preparationState,
             note: it.note,
+            ...conMedida(it.itemId),
           })),
         };
       }),
@@ -190,15 +200,24 @@ export function versionDePlanApi(v: VersionConPlan, nombreProfesional: string, c
   };
 }
 
-/** Nombres actuales del catálogo para los ítems de un contenido (lectura de borradores). */
-export async function nombresDeCatalogo(cliente: Cliente, contenido: ContenidoDePlan): Promise<NombresDeCatalogo> {
-  const ids = [...new Set(contenido.dayTypes.flatMap((d) => d.meals.flatMap((m) => m.options.flatMap((o) => o.items.map((i) => i.catalogItemId)))))];
+/**
+ * Nombres actuales del catálogo para los ítems de un contenido (lectura de borradores de `profesionalId`).
+ * DL-180, segundo tramo (NUA-D14): lo cargado a mano es de quien lo cargó. De uno de otro profesional (lo que se pudo citar
+ * mientras se compartía, en el primer tramo) no se lee ningún nombre: su autor puede haberlo corregido para él solo, y la
+ * lectura dice «Elemento no disponible» (validar y activar lo señalan).
+ */
+export async function nombresDeCatalogo(cliente: Cliente, contenido: ContenidoDePlan, profesionalId: string): Promise<NombresDeCatalogo> {
+  const ids = [...new Set(contenido.dayTypes.flatMap((d) => d.meals.flatMap((m) => m.options.flatMap((o) => o.items.map((i) => i.catalogItemId)))))].filter((id) =>
+    /^[0-9a-f-]{36}$/i.test(id),
+  );
   if (ids.length === 0) return new Map();
   const filas = await cliente.$queryRaw<{ elementoId: string; versionId: string; nombre: string }[]>`
     SELECT v."elemento_id"::text AS "elementoId", v."id"::text AS "versionId", v."nombre"
       FROM "version_de_elemento_nutricional" v
+      JOIN "elemento_de_catalogo_nutricional" e ON e."id" = v."elemento_id"
      WHERE v."elemento_id" = ANY(${ids}::uuid[])
-       AND NOT EXISTS (SELECT 1 FROM "version_de_elemento_nutricional" s WHERE s."predecesora_id" = v."id")`;
+       AND NOT EXISTS (SELECT 1 FROM "version_de_elemento_nutricional" s WHERE s."predecesora_id" = v."id")
+       AND NOT (e."procedencia" = 'PROFESSIONAL_MANUAL' AND e."creado_por_id" IS DISTINCT FROM ${profesionalId}::uuid)`;
   return new Map(filas.map((f) => [f.elementoId, { versionId: f.versionId, nombre: f.nombre }]));
 }
 

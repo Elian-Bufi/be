@@ -10,6 +10,15 @@ import { readFileSync } from 'node:fs';
 import test from 'node:test';
 
 const R = await import('../src/app/pro/advisees/nutrition/rangos-indicados.ts');
+/**
+ * NUP-08 (WP-NUTRICION-PLANIFICACION; decisión de Dirección del 18/11): en el website del profesional, el «%» de
+ * Nutrición va con su base dicha («18 % de las 2.500 kcal»). Un «%» sin «de la(s)/lo(s)» después es el que no dice de qué
+ * es, y sigue prohibido; también el de cumplimiento o adherencia. En la app de la persona, la regla no cambia.
+ */
+// La base va con su número («de las 2.500 kcal», o la expresión que lo escribe): «de las kcal» no dice de cuáles cuando
+// los gramos no suman las kcal indicadas (revisión adversaria del primer tramo de WP-NUTRICION-PLANIFICACION).
+const porcentajeSinSuBase = (t) => /%(?!\s*de\s+l[ao]s?(?:\s+\d|\s*\$\{|\s*$))/.test(t);
+
 
 const P78 = { source: 'RECORDED', valueKg: 78, measuredOn: '2026-11-10', measurementId: 'med-78' };
 const ULTIMO_80 = { measurementId: 'med-80', valueKg: 80, measuredOn: '2026-11-12' };
@@ -209,9 +218,12 @@ test('un rango en una línea y en palabras, con los g/kg cuando se pueden ver', 
   assert.deepEqual(R.formularioDesde(r).protein, campo('g_per_kg', '1,6', '2'));
 });
 
-test('los textos de los rangos indicados no califican ni usan el signo de proporción, tampoco en un comentario', () => {
+test('los textos de los rangos indicados no califican, tampoco en un comentario, y un «%» dice su base (NUP-08)', () => {
   for (const archivo of ['rangos-indicados.ts', 'rangos-indicados-del-plan.tsx']) {
     const fuente = readFileSync(new URL(`../src/app/pro/advisees/nutrition/${archivo}`, import.meta.url), 'utf8');
-    fuente.split('\n').forEach((linea, i) => assert.doesNotMatch(linea, /%|cumplimiento|adherencia|racha|asesorad|puntaje|óptim|mejor|peor/i, `${archivo}:${i + 1}: ${linea.trim()}`));
+    fuente.split('\n').forEach((linea, i) => {
+      assert.doesNotMatch(linea, /cumplimiento|adherencia|racha|asesorad|puntaje|óptim|mejor|peor/i, `${archivo}:${i + 1}: ${linea.trim()}`);
+      assert.equal(porcentajeSinSuBase(linea), false, `${archivo}:${i + 1}: ${linea.trim()}`);
+    });
   }
 });

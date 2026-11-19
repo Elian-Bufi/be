@@ -9,8 +9,11 @@
  * lectura suya tenga escenario.
  *
  * UF-00 de WP-USO-FINAL (2026-11-11, enmienda de DL-152): mientras Dirección no establezca una estable, la congelada es
- * solo la última distribuida, hoy la 0.27.0-candidata.1 (desde el 2026-11-13; reemplazó a la 0.24.0-candidata.1, que el
- * 2026-11-12 había reemplazado a la 0.23.0-candidata.2 sumando API-ACC-07). La 0.27 suma nueve lecturas, cada una con su
+ * solo la última distribuida, hoy la 0.29.0-candidata.1 (desde el 2026-11-14; reemplazó a la 0.28.0-candidata.1, que leía
+ * lo mismo que la 0.27.0-candidata.1, que el 2026-11-13 reemplazó a la 0.24.0-candidata.1, que el 2026-11-12 había
+ * reemplazado a la 0.23.0-candidata.2 sumando API-ACC-07). La 0.29 suma tres lecturas, con su escenario: quién miró lo
+ * compartido (RES-01, PG-12), en el de las novedades, y la nota para tu profe (TRN-25 y TRN-25-PROPIA, PG-15), en el del
+ * entrenamiento. La 0.27 sumó nueve lecturas, cada una con su
  * escenario: los textos (ACC-08 y 09), la ayuda (SOP-01), los derechos y la exportación (RGT-01 y 03, EXP-01 y 02) y la
  * recuperación del acceso (ACC-P1-01 y 02). Salieron la 0.13.2 y las candidatas 0.20 a 0.23.0-candidata.1
  * (antes, el 2026-11-05, la 0.17.0-candidata.3 y la 0.18.0-candidata.1). Los escenarios de lo que solo leían ellas (FRM,
@@ -472,6 +475,19 @@ describe.each(VERSIONES)('DL-152 · la APK %s, contra la API de hoy', (version) 
       status: 201,
     });
     await apk.pide('API-TRN-19', { token, params: { executionId: ejecucionId } });
+    if (apk.lee('API-TRN-25')) {
+      // La nota para tu profe (PG-15, desde la 0.29): aparte de confirmar, sobre la sesión ya registrada, con su
+      // Idempotency-Key; el reintento con la misma clave da la misma nota. Después, las notas de esa sesión, debajo.
+      const clave = `apk-${randomUUID()}`;
+      const nota = await apk.pide('API-TRN-25', { token, params: { executionId: ejecucionId }, cuerpo: { text: 'Me molestó un poco el hombro.' }, clave, status: 201 });
+      const reintento = await apk.pide('API-TRN-25', { token, params: { executionId: ejecucionId }, cuerpo: { text: 'Me molestó un poco el hombro.' }, clave, status: 201 });
+      expect(reintento.body.data.noteId).toBe(nota.body.data.noteId);
+      await apk.pide('API-TRN-25', { token, params: { executionId: ejecucionId }, cuerpo: { text: 'Y tuve poco tiempo.' }, status: 201 });
+      if (apk.lee('API-TRN-25-PROPIA')) {
+        const notas = (await apk.pide('API-TRN-25-PROPIA', { token, params: { executionId: ejecucionId } })).body.data as { noteId: string; text: string }[];
+        expect(notas.map((n) => n.text)).toEqual(['Me molestó un poco el hombro.', 'Y tuve poco tiempo.']);
+      }
+    }
     await apk.pide('API-TRN-14', { token });
     if (apk.lee('API-SER-02')) await apk.pide('API-SER-02', { token, params: { occurrenceId: ocurrencia } });
 
@@ -942,7 +958,8 @@ describe.each(VERSIONES)('DL-152 · la APK %s, contra la API de hoy', (version) 
     await conSesion(app, ent.token).post(`/api/v1/advisees/${c.ase.id}/habits/access-requests`).send({ scope: 'ENTRENAMIENTO' }).expect(201);
     // DL-163 D-13, ampliada (TB-53): la persona le comparte al entrenador su plan de Nutrición, y él deja una nota que lo cita
     // desde Entrenamiento. TB-56: el antropometrista pide ver ese plan; la novedad es de un tipo que la APK no conoce.
-    const compartido = (await conSesion(app, token).get('/api/v1/me/summary-sharing').expect(200)).body.data as { sharing: { version: string | null } };
+    // Quién ve qué (PG-12, desde la 0.29): lo compartido antes de compartir nada, con su esquema.
+    const compartido = (apk.lee('API-RES-01') ? (await apk.pide('API-RES-01', { token })).body.data : (await conSesion(app, token).get('/api/v1/me/summary-sharing').expect(200)).body.data) as { sharing: { version: string | null } };
     await conSesion(app, token)
       .put('/api/v1/me/summary-sharing')
       .send({ expectedVersion: compartido.sharing.version, acceptedTexts: { summary: VERSION_VIGENTE.RESUMENES_COMPARTIDOS.id, summaryAndPlan: VERSION_VIGENTE.RESUMENES_Y_PLAN_COMPARTIDOS.id }, grants: [{ professionalId: ent.id, area: 'NUTRICION', level: 'SUMMARY_AND_PLAN' }] })
@@ -971,6 +988,19 @@ describe.each(VERSIONES)('DL-152 · la APK %s, contra la API de hoy', (version) 
     const notas = (await apk.pide('API-CRD-01-PROPIA', { token })).body.data as { originScope: { code: string }; references: { type: string; id: string }[] }[];
     // Las dos notas citan la misma versión: la de la nutricionista, desde Nutrición, y la del entrenador, desde Entrenamiento.
     expect(notas.filter((n) => n.references.some((r) => r.type === 'NUTRITION_PLAN_VERSION' && r.id === c.planId)).map((n) => n.originScope.code).sort()).toEqual(['ENTRENAMIENTO', 'NUTRICION']);
+    if (apk.lee('API-RES-01')) {
+      // Quién miró (PG-12): el entrenador abre el plan de Nutrición que la persona le comparte (API-RES-06), y «Quién ve
+      // qué» lo lee con su esquema: lo compartido, con el nivel y desde cuándo, y la lectura, con quién, qué área y cuándo.
+      await conSesion(app, ent.token).get(`/api/v1/advisees/${c.ase.id}/shared-summaries/NUTRICION/plan`).expect(200);
+      const quienVe = (await apk.pide('API-RES-01', { token })).body.data as {
+        sharing: { status: string };
+        professionals: { professional: { identityId: string }; shares: { area: string; level: string }[] }[];
+        accesses: { professional: { identityId: string }; area: string }[];
+      };
+      expect(quienVe.sharing.status).toBe('ACTIVE');
+      expect(quienVe.professionals.find((p) => p.professional.identityId === ent.id)?.shares).toEqual([expect.objectContaining({ area: 'NUTRICION', level: 'SUMMARY_AND_PLAN' })]);
+      expect(quienVe.accesses).toEqual([expect.objectContaining({ professional: expect.objectContaining({ identityId: ent.id }), area: 'NUTRICION' })]);
+    }
     expect(apk.rechazos()).toEqual([]);
   });
 

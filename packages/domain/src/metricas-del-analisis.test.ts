@@ -24,6 +24,6 @@ test('TEST-EDP-050 · la métrica del RIR se llama «RIR registrado en la serie�
 });
 
 test('TEST-EDP-050 · sube la versión de los textos; la de las derivaciones, que devuelve API-PRJ-01, no cambia (EDT-01)', () => {
-  assert.equal(VERSION_DE_LOS_TEXTOS_DEL_DICCIONARIO, 'BE-METRICAS-TEXTOS-2026-11-v2');
+  assert.equal(VERSION_DE_LOS_TEXTOS_DEL_DICCIONARIO, 'BE-METRICAS-TEXTOS-2026-11-v3');
   assert.equal(VERSION_DEL_DICCIONARIO, 'BE-METRICAS-2026-10-v1');
 });

@@ -118,7 +118,7 @@
 | DL-111 | Pedido de Dirección · 2026-09-30 | DL-110 · DL-073 · 06 REG-06-156/157/162/203/204/205 · RF-048/049 · TEST-PRJ-009 | El catálogo antropométrico real (perfil completo y 40 fórmulas con fuente), la lámina del compositor en el website y la figura con los resultados en la APK | **IMPLEMENTADA, A RATIFICAR** 2026-10-01 · decisiones del ejecutor: sitios de la ficha, métodos por sexo, edad como dato de la toma, una métrica por familia, resultados en la evolución sin cambiar su forma |
 | DL-112 | Pedido de Dirección · 2026-10-01 | DL-111 · 06 REG-06-205 · RF-048 · DL-072 (especificaciones de solo agregar) | El catálogo ofrece demasiados métodos para elegir: 40 métodos, 28 resultados | **DECIDIDA** 2026-10-01 (la purga) · la lista la armó el ejecutor, A RATIFICAR · 21 vigentes, 23 retirados y 4 nuevos; lo calculado sigue en la historia |
 | DL-113 | Pedido de Dirección · 2026-10-01 | B10-10 · RNF-ACC-001 · TEST-PRJ-009 · 06 REG-06-156/158 · DL-111 | Mucho texto a la vista, avisos fuera de la vista en el teléfono, la APK sin navegación fija y pliegues del catálogo fuera de la figura | **IMPLEMENTADA, A RATIFICAR** 2026-10-01 · pulido y corrección de los puntos anatómicos 2026-10-02 · guía `docs/ux/GUIA-UX-UI.md` · falta la prueba de Dirección en el teléfono |
-| DL-114 | CI del PR #128 · 2026-10-01 | WP-01 §2 (auditoría de dependencias: falla con altos o críticos) | Un aviso alto sin versión corregida (node-forge, GHSA-86w9-cpqp-85rv) en la CLI de Expo bloquea toda integración, también `main` | **RENOVADA** por Dirección el 2026-10-24 hasta el 2026-11-30 (#208, `82da4d9`) · braces (GHSA-vfj7-8cjw-p6xm) retirada: GitHub retiró el aviso · el zod 3 de la CLI de Expo (GHSA-mrhx-c7xc-m3w5) y node-forge (GHSA-86w9-cpqp-85rv), solo en `@be/mobile`, con la procedencia comprobada en cada auditoría y fuera del bundle de Android · vencían el 2026-12-01 00:00 UTC (21:00 ART del 30/11) · **RETIRADAS LAS DOS** el 2026-11-11 con UF-12 de WP-USO-FINAL (UF-D13, ratificada por Dirección ese día), en el PR #253 sin integrar: node-forge pasa a la 1.4.3, fuera del aviso, y la CLI de Expo 57.0.33 (SDK 57) ya no pide zod; sin excepciones, la auditoría no vence |
+| DL-114 | CI del PR #128 · 2026-10-01 | WP-01 §2 (auditoría de dependencias: falla con altos o críticos) | Un aviso alto sin versión corregida (node-forge, GHSA-86w9-cpqp-85rv) en la CLI de Expo bloquea toda integración, también `main` | **RENOVADA** por Dirección el 2026-10-24 hasta el 2026-11-30 (#208, `82da4d9`) · braces (GHSA-vfj7-8cjw-p6xm) retirada: GitHub retiró el aviso · el zod 3 de la CLI de Expo (GHSA-mrhx-c7xc-m3w5) y node-forge (GHSA-86w9-cpqp-85rv), solo en `@be/mobile`, con la procedencia comprobada en cada auditoría y fuera del bundle de Android · vencían el 2026-12-01 00:00 UTC (21:00 ART del 30/11) · **RETIRADAS LAS DOS** el 2026-11-11 con UF-12 de WP-USO-FINAL (UF-D13, ratificada por Dirección ese día), en el PR #253 sin integrar: node-forge pasa a la 1.4.3, fuera del aviso, y la CLI de Expo 57.0.33 (SDK 57) ya no pide zod; sin excepciones, la auditoría no vence · **DECLARADA** por Dirección el 2026-11-18: picomatch (GHSA-fc5q-39xc-vjpf, ReDoS, sin versión corregida), en `@be/api` y `@be/mobile`, **vence el 2026-12-15** |
 | DL-115 | Matriz de DV-05 · 2026-10-02 | 08:406 (08 §13) · DL-089 · TEST-AUTH-003 · TEST-AUTH-004 | Revocado el A3, el titular sigue leyendo su evolución antropométrica (API-ANT-06-PROPIA) y el detalle de sus formularios con la respuesta (API-FRM-05). Nutrición y entrenamiento sí lo cortan | **DECIDIDA** 2026-10-02 · opción A · implementada en la rama `fix/a3-titular-antropometria-formularios` (#133), integrada en `main` el 2026-10-03 con la candidata 0.13.2 (#140, `2f0c140`) y publicada en la APK 0.13.2 |
 | DL-116 | Fichas de perfil y administración · 2026-10-02 | 09 v0.11 §16 (API-DSH-04, línea temporal) · DL-107 | `openapi.ts` usa API-DSH-04 para «Pendientes» (`GET /me/portfolio`), y en el 09 ese ID es la línea temporal, que no está implementada | **ABIERTA** 2026-10-02 · severidad media (trazabilidad) · espera la decisión de Dirección · la solución preparada (opción A, API-CAR-01) está en `main` desde el 2026-10-03 (#135, con la candidata 0.13.2, `2f0c140`) |
 | DL-117 | Decisión de Dirección · 2026-10-04 | B10-10 §9 · 08 §33 · DL-113 · DL-049 · DL-077 · DL-115 | La APK no tiene un Inicio que reúna lo disponible de los módulos, y Cuenta ocupa un lugar de la barra | **DECIDIDA** 2026-10-04 · Inicio personal y barra Inicio, Nutrición, Entrenamiento, Evolución, Información; Cuenta en el avatar. Implementación integrada en `main` el 2026-10-06 (#146, `d727226`) |
@@ -155,7 +155,7 @@
 | DL-149 | Encargo de consolidación de Dirección · 2026-10-19 (bloque 5) | Maqueta 01 · B10-01 · DL-145 · DL-146 · DL-109 · DL-140 · WCAG 2.2 1.4.13 y 2.4.11 | El encabezado de la ficha tenía acciones de igual peso; los habituales estaban lejos de donde se agrega; vacíos, fallas parciales y «Reintentar» repetidos; dos puntos del bloque 3 (cambiar de asesorado, dirección sin conexión) | **IMPLEMENTADO** 2026-10-19: la acción del momento y «Más», habituales donde se agrega, pistas sin tacto, área sugerida, un solo «Reintentar» por lectura y fallas que no se dicen como ausencia; a ratificar |
 | DL-150 | Encargo de consolidación de Dirección · 2026-10-19 (bloque 6) | 07 §35 · DL-036 · DL-146 · DL-147 · DL-148 · DL-149 | No había recorridos de navegador en la CI: lo que protege el trabajo diario se probaba a mano o con herramientas locales | **IMPLEMENTADO** 2026-10-19: once recorridos con cuentas propias, en un trabajo de la CI, con capturas; protocolo de la prueba con profesionales (sin hacer); a ratificar |
 | DL-151 | Pedido de Dirección · 2026-10-19 | 09v10:1116-1121 · REG-06-130 · B10-06:762-778 · DL-085 · DL-122 a DL-124 · DL-130 · DL-141 | La APK 0.13.2 deja sustituir un ejercicio durante la sesión; las candidatas 0.15 a 0.17 no, porque se quitó al rehacer la sesión enfocada (e6bd769) sin una decisión | **RATIFICADO** por Dirección el 2026-10-25 (R-1 a R-6) e **INTEGRADO** en main (#195, `0be86b3`): la sustitución alcanza a todas las series de ese ejercicio en la sesión y no modifica el plan; la traen las APK candidatas 0.18.0-candidata.1 (2026-10-26) y 0.19.0-candidata.1 (2026-11-03); falta la prueba en el teléfono |
-| DL-152 | Pedido de Dirección · 2026-10-20 (antes de promover una candidata) | 09v7 T19 · C01 · D10 · DL-122 · DL-138 D-10 · DL-151 | La prueba de compatibilidad congelaba 16 lecturas de la 0.13.2; la estable lee 44 operaciones y la 0.17.0-candidata.3, 80, todas con esquemas estrictos | **INTEGRADA** el 2026-10-24 (#198, `2811991`) y desplegada en test: lo que lee cada APK, congelado por versión desde su tag y leído contra las respuestas reales de la API de hoy; regla: no se promueve una candidata con la regresión de la sustitución (#195), sin las pruebas del teléfono o con esta prueba en rojo · **ENMENDADA** el 2026-11-11 (DL-169, UF-00 de WP-USO-FINAL, PR #253 sin integrar): mientras no haya una estable, `VIGENTES` tiene solo la última distribuida (la 0.23.0-candidata.2; desde el 2026-11-12, la 0.24.0-candidata.1; desde el 2026-11-13, la 0.27.0-candidata.1), y C01 y D10 se retiran |
+| DL-152 | Pedido de Dirección · 2026-10-20 (antes de promover una candidata) | 09v7 T19 · C01 · D10 · DL-122 · DL-138 D-10 · DL-151 | La prueba de compatibilidad congelaba 16 lecturas de la 0.13.2; la estable lee 44 operaciones y la 0.17.0-candidata.3, 80, todas con esquemas estrictos | **INTEGRADA** el 2026-10-24 (#198, `2811991`) y desplegada en test: lo que lee cada APK, congelado por versión desde su tag y leído contra las respuestas reales de la API de hoy; regla: no se promueve una candidata con la regresión de la sustitución (#195), sin las pruebas del teléfono o con esta prueba en rojo · **ENMENDADA** el 2026-11-11 (DL-169, UF-00 de WP-USO-FINAL, PR #253 sin integrar): mientras no haya una estable, `VIGENTES` tiene solo la última distribuida (la 0.23.0-candidata.2; desde el 2026-11-12, la 0.24.0-candidata.1; desde el 2026-11-13, la 0.27.0-candidata.1; desde el 2026-11-14, la 0.28.0-candidata.1, que lee las mismas 98 operaciones, y ese mismo día la 0.29.0-candidata.1, que lee esas 98 y tres más: API-RES-01, API-TRN-25 y API-TRN-25-PROPIA), y C01 y D10 se retiran |
 | DL-153 | Encargo de consolidación de Dirección · 2026-10-23 (punto 3; UX-01 de la auditoría) | 09 v0.11 §11 y §22 · REG-06-125 · INV-06-135 · DL-121 · DL-126 · GUIA-UX-UI II.4 | Un día con una comida del plan sin registrar salía «sin faltantes» si sus registros tenían cantidades, y el Resumen no lo contaba como subtotal | **RATIFICADA** por Dirección el 2026-10-24 (D-1 a D-4, con criterios) e **INTEGRADA** (#200, `cddd005`), desplegada en test: las comidas del plan se cuentan por la cobertura del registro (la opción del plan o una comida diferente, con el desglose), el subtotal dice cuál falta y «sin determinar» cuando no se puede saber; la media no cambia; falta la prueba con profesionales y con un lector de pantalla |
 | DL-154 | Encargo de consolidación de Dirección · 2026-10-23 (punto 4; UX-02 de la auditoría) | UC-P13 · UC-P18 · REG-06-141 · 09v9:904-910 · 09v10:1375-1381 · DL-134 · DL-152 | La evidencia de una revisión se guardaba y la API la devolvía, pero el website no mostraba ni el período, ni el autor, ni en qué se apoyó la revisión | **RATIFICADA** por Dirección el 2026-10-24 (D-1 a D-3, con criterios) e **INTEGRADA** (#203, `8aaec16`), desplegada en test: API-NUT-19-EVIDENCIA y API-TRN-23-EVIDENCIA, solo del website, resuelven lo guardado con el permiso de hoy y dicen lo que cambió después; al abrir, el panel avisa que es el estado de hoy o, si solo se activó otra versión, que es la misma que se revisó; la forma de la revisión, que lee la APK, no cambia; falta la prueba con profesionales y con un lector de pantalla |
 | DL-155 | Encargo de Dirección · 2026-10-25 (WP-ADMINISTRACION, D-1 a D-7) | 09v8 PRO-09 a 13 · B10-03 §14, §21 y ADV-10-PRO-11 · 08 §25, §28, §29 · DL-036 · DL-020 | La administración de profesionales por área no tenía operación viable: PRO-09 a 13 resuelven «presentaciones» que no existen sin el alta (PRO-01 a 08), y B10-03 no permitía una lista de profesionales que el 09 no expone | **INTEGRADO** el 2026-10-25 (#210, `ea70404`) y desplegado en test, con el alcance que ratificó Dirección ese día: familia ADM (API-ADM-01 a 13), con TOTP, identidad administrativa separada y comando interno, sobre los perfiles profesionales que ya existen; el alta completa de profesionales nuevos sigue pendiente; falta incorporar al primer administrador y la prueba con personas |
@@ -176,7 +176,13 @@
 | DL-170 | Decisión de Dirección · 2026-11-11 (WP-APP-VUELTA-2) | TEST-PRJ-009 · RNF-ACC-001 y B10-10 (WCAG 2.2 AA) · 08 §33 · REG-06-158 · DL-166 (PV-2, PV-5, PV-11 y AVD-2) · DL-117 · DL-152 · DL-169 (UF-00, UF-01 y UF-08) · DL-167 · WP-ENTRENAMIENTO-SERIES §7.7 · GUIA-UX-UI I.6, I.8, III.3 y III.4 · F-143 | La APK se siente plana: el fondo es liso, las tarjetas son mates y opacas y el botón principal es casi blanco. Además, el Inicio de la 0.23 tiene seis errores de lógica: «Empezar» con una sesión en curso, «la que sigue» sin mirar lo hecho hoy, la figura cortada en Evolución, «Cómo se lee» desalineado, ceros en Tu historial y una actividad que se lee de dos maneras | **DECIDIDA por Dirección el 2026-11-11 · etapa A programada, sin integrar (#255)**: «Sí, Inicio + glassy en toda la app», en la misma APK que UF-01 y antes del congelamiento del 25/11; primero, el Inicio real en el teléfono de Dirección. Aprobadas la etapa A (AV2-01 a AV2-18), AV2-D1 (paso 1), AV2-D2 y AV2-D11; la etapa B espera el visto bueno a la muestra (`docs/paquetes/WP-APP-VUELTA-2.md` §10) |
 | DL-171 | Decisión de Dirección · 2026-11-11 (WP-EDITORES-PROFESIONAL; DJ-1 y DJ-2 del juicio del paquete V3) | 09v10:356 · 06:5431 · REG-06-182 · INV-06-192 · REG-06-202 a 207 · B10-06:426-431 · B10-08 · INV-06-152 · DL-126 · DL-161 · DL-167 | El legajo dice que BE no fija una fórmula de repetición máxima, y un RIR registrado puede ser el del plan sin marca; Dirección pide seguir la fuerza desde lo que se hizo, no desde lo indicado | **DECIDIDA por Dirección el 2026-11-11 y APROBADA el 2026-11-12 · el método, en programación (etapa 1)**: Epley v1 (n/30, bandas sobre las repeticiones equivalentes, RIR de 0 a 2), solo para el profesional y en el website, desde una serie que observa el profesional o que escribió la persona, con la procedencia por campo en la APK de esta actualización; el profesional elige un % y BE sugiere los kilos, que él confirma. Enmienda 09v10:356 sin tocar el legajo. ED-70 a ED-76; ED-D17 a ED-D21, decididas el 2026-11-12 como se recomendaban; el website le explica al profesional la regla del RIR de 0 a 2 (R3) |
 | DL-172 | Pedido de Dirección · 2026-11-13 («ve adelantando las cosas según prioridad»; WP-RF068-RF004) | 04 RF-068 y RF-004 · 05 UC-P28 y UC-E06 · 06 T-06-06, REG-06-21 y 22 · 09 v0.16.1 §4 · 09 v0.12 §12 y §16 · 08 §24.5, §24.6 y §25 · DL-017 · DL-138 · DL-155 · DL-169 | El 09 vigente (v0.16.1 §4) les da familia (`ACC-P2` y `ADM-P1`) sin IDs ni contratos; el v0.12 bosqueja las rutas. RF-068 estaba fuera de WP-USO-FINAL y RF-004 en parte | **PROGRAMADA en `wp-rf068-rf004` (PR en borrador) · D-1 a D-12 a ratificar**: familias propias INC (API-INC-01 a 05) y MET (API-MET-01 a 03) con las rutas del bosquejo; dos migraciones que solo agregan |
-| DL-173 | Pedido de Dirección · 2026-11-13 («Armá el paquete con sus IDs y decime cuándo sale cada cosa»; WP-PULIDO-GRANDES) | TEST-PRJ-009 · RNF-ACC-001 y B10-10 · B10-06 (feedback háptico opcional) · B10-01 §36 · 02 §14 · REG-06-131 · DL-049 · DL-077 · DL-096 · DL-117 · DL-136 · DL-137 D-7 · DL-140 · DL-152 · DL-166 · DL-167 · DL-169 · DL-170 | De la página «Pulido como las grandes», Dirección eligió quince ideas, y al probar la 0.27 dejó cuatro de Inicio, la carga y la cabecera; ninguna tenía ID ni fecha de salida | **DECLARADA el 2026-11-13, sin programar** (`docs/paquetes/WP-PULIDO-GRANDES.md`, PR en borrador): 19 partes (PG-01 a PG-04, las de Inicio; PG-05 a PG-19, las quince elegidas). Tanda A, APK 0.28, objetivo martes 17/11 (PG-01 a PG-10 y PG-14); tanda B, APK 0.29, objetivo viernes 20/11 (PG-11 a PG-13 y PG-15 a PG-17); después del 25/11, PG-18 y PG-19. Desde el 23/11, solo arreglos; lo de la B que no esté estable el 20/11 pasa a después del 25/11. PG-D1 a PG-D15, a ratificar |
+| DL-173 | Pedido de Dirección · 2026-11-13 («Armá el paquete con sus IDs y decime cuándo sale cada cosa»; WP-PULIDO-GRANDES) | TEST-PRJ-009 · RNF-ACC-001 y B10-10 · B10-06 (feedback háptico opcional) · B10-01 §36 · 02 §14 · REG-06-131 · DL-049 · DL-077 · DL-096 · DL-117 · DL-136 · DL-137 D-7 · DL-140 · DL-152 · DL-166 · DL-167 · DL-169 · DL-170 | De la página «Pulido como las grandes», Dirección eligió quince ideas, y al probar la 0.27 dejó cuatro de Inicio, la carga y la cabecera; ninguna tenía ID ni fecha de salida | **DECLARADA el 2026-11-13, sin programar** (`docs/paquetes/WP-PULIDO-GRANDES.md`, PR en borrador): 19 partes (PG-01 a PG-04, las de Inicio; PG-05 a PG-19, las quince elegidas). Tanda A, APK 0.28, objetivo martes 17/11 (PG-01 a PG-10 y PG-14); tanda B, APK 0.29, objetivo viernes 20/11 (PG-11 a PG-13 y PG-15 a PG-17); después del 25/11, PG-18 y PG-19. Desde el 23/11, solo arreglos; lo de la B que no esté estable el 20/11 pasa a después del 25/11. PG-D1 a PG-D15, a ratificar, salvo PG-D1 (decidida por Dirección el 2026-11-13) y PG-D10 y PG-D11 (aprobadas el 2026-11-14: «Tienes mi sí para las notas») |
+| DL-174 | Pedido de Dirección · 2026-11-14 («Aprobadas las 25 sugerencias de gráficos»; WP-GRAFICOS) | TEST-PRJ-009 · RNF-ACC-001 y B10-10 · RF-025 · REG-06-105 · REG-06-162 · REG-06-165 y 166 · B10-07 · B10-08 §21-§23 · B10-09 §15-§28 · 09 v0.11 §18-§23 · INV-06-153 · INV-06-192 · M-11 · DL-126 · DL-128 · DL-137 D-7 · DL-152 · DL-153 · DL-158 · DL-161 · DL-163 · DL-165 · DL-167 · DL-169 · DL-171 · DL-173 | La propuesta de gráficos (25 gráficos y ocho cruces) no tenía IDs ni fases fechadas en el repo. Dirección sumó ver los gráficos alineados o superpuestos si comparten la x (DL-126 solo deja superponer con la misma familia y unidad) y un conjunto de gráficos favoritos por persona o por plan, que no tiene operación | **DECLARADA el 2026-11-14** (`docs/paquetes/WP-GRAFICOS.md`, sin integrar): GR-01 a GR-27 y SP-01 a SP-08. Fase 1 (GR-01, GR-04 y GR-16) en `wp-graficos-fase-1`, antes del 23/11; fase 2 adelantada, programada desde el 14/11 en cinco ramas: antes del 23/11 entra solo lo sólido, y lo demás, desde el 26/11; fases 3 a 5, en 2027. Familia propia GRF (API-GRF-01 a 07, los enfoques), con una migración que solo agrega. Amplía DL-126 (dos unidades en «Superpuestas», GR-T04). GR-D0 a GR-D10, tomadas por la delegación de Dirección según la recomendación; GR-T01 a GR-T19, a ratificar |
+| DL-175 | Decisión de Dirección · 2026-11-15 («Programarlo»; WP-HISTORIA-ANTERIOR) | 08 §14.1 («Cambio de profesional») · REG-06-55 · RF-025 · 05 §5.8.2.1.4 (escenario 4) · 08 §12.2 · 08 §19.7 · RNF-PRI-002 · PG-12 · PG-16 · DL-034 · DL-115 · DL-137 D-7 · DL-152 · DL-163 D-13 · DL-167 (DJ-14) · DL-174 (GR-D6) | El 08 prevé que el profesional nuevo vea la historia previa de la persona solo si ella lo consiente; no estaba programado: cada lectura del profesional se acota a sus propios planes y `hayRegistrosDeOtros` solo avisa. DJ-14 y GR-D6 lo habían dejado para después del piloto | **INTEGRADA en `main` (#284), con la revisión adversaria arreglada · HA-T01 a HA-T16 a ratificar · HA-T01 actualizada por DL-176** (la historia anterior va preseleccionada en la pantalla única de consentimiento; la tarjeta opcional al aceptar se retiró): la persona autoriza desde la app, por profesional y por área, que el profesional de hoy vea su historia anterior de esa área (planes activados, lo registrado, las tomas con su método y las decisiones de las revisiones), en solo lectura, marcada como de otro profesional y sin las notas privadas; la retira cuando quiere y ve cuándo la miró. Familia propia HIA (API-HIA-01 a 04), con una migración que solo agrega (`docs/paquetes/WP-HISTORIA-ANTERIOR.md`). Amplía DJ-14 y GR-D6: los gráficos siguen desde el inicio del acompañamiento hasta la segunda etapa |
+| DL-176 | Decisión de Dirección · 2026-11-15 («casi por default»; WP-COMPARTIR) | Ley 25.326 art. 5 y art. 7 · 08 §12.2, §12.3, C-12 y §14.1 · 10-B04 §7-§9 («Aceptar y compartir datos», CAND-10-CON-A) · INV-06-53 · 10-B02 §7 · RNF-PRI-002 · DL-115 · DL-137 D-7 · DL-152 · DL-163 D-13 · DL-165 D-9 y D-25 · DL-175 (HA-T01 y HA-T16) | Compartir entre áreas no tenía pantalla (la API lo permitía, nadie lo escribía), la historia anterior se pedía como opt-in y aceptar a un profesional eran varios actos separados (el vínculo, el B2, el A3 y los hábitos aparte); Dirección pide que lo único con rozamiento sea conectar y que lo demás sea «casi como aceptar todo» | **PROGRAMADA en `wp-compartir` (PR abierto, sin integrar) · CMP-D1 a CMP-D16 a ratificar**: después de aceptar el vínculo (que sigue siendo aparte, 10-B04), una sola pantalla de consentimiento con todo preseleccionado (su área, el A3 si falta, el resumen y el plan de las otras áreas para ese profesional y lo de su área para los demás, la historia anterior y los hábitos si corresponde), «Aceptar y compartir» y «Elegir qué compartir»; un toque escribe todos los actos en una transacción, cada uno con su texto, su versión y su auditoría. «Quién ve qué» suma un interruptor por cosa y los pedidos para responder; quien ya tiene vínculos ve una tarjeta única en Inicio. Familia propia CMP (API-CMP-01 a 03), sin migración (`docs/paquetes/WP-COMPARTIR.md`). Actualiza HA-T01 de DL-175 |
+| DL-177 | Decisión de Dirección · 2026-11-18 (el profesional sin el autenticador) | 08 §25 · 08 §42 (condición 6) · Ley 25.326 art. 9 · RNF-PRI-002 · DL-155 · DL-169 (UF-11, UF-D12 y UF-T56) · DL-172 | Para actuar como profesional había que configurar el autenticador y escribir el código de 6 dígitos en cada sesión; Dirección quiere que el profesional entre con su contraseña (o con Google) y, más adelante, con un código por correo | **DECIDIDA por Dirección el 2026-11-18 · PROGRAMADA en `wp-sin-autenticador-profesional` (PR abierto, sin integrar)**: «solo contraseña hasta tener correo», con una constante del dominio (`SEGUNDO_FACTOR_DEL_PROFESIONAL_EXIGIDO = false`). Administración sigue con contraseña y autenticador; API-ADM-19 queda en el contrato y fuera de la consola; sin migraciones. A ratificar: la transición, la suspensión de 08 §25 y de la condición 6 de 08 §42, y el riesgo (una sola llave para datos de salud) |
+| DL-178 | Decisión de Dirección · 2026-11-18 (las series de calentamiento) | 06 REG-06-105 · 09v10 (comparación serie por serie) · DL-122 · DL-152 · DL-161 · DL-171 (BE-E1RM, Epley v1) | El plan y el registro no tenían un tipo de serie: un calentamiento entraba en la cuenta de series, en la barra de la sesión, en «La vez pasada», en el historial, en Analizar y en el 1RM estimado | **DECIDIDA por Dirección el 2026-11-18 · PROGRAMADA en `wp-series-de-calentamiento` (PR abierto, sin integrar), a ratificar D-1 a D-6**: `setKind` (`WORKING` por omisión, `WARM_UP`) en la serie indicada y en la registrada, sin reescribir nada (la ausencia es efectiva); explícito solo para el cliente que declara `training-set-kinds-1`; el calentamiento arriba, con «C», fuera de todo cálculo; las lecturas nuevas de la APK se congelan con la próxima candidata (DL-152) |
+| DL-180 | Decisión de Dirección · 2026-11-16 (el segundo tramo de la planificación de Nutrición: los alimentos del catálogo) | REG-06-99 a 101 · REG-06-135 · RF-027 · RF-060 · DL-119 y DL-120 (el patrón de las recetas) · DL-141 (D-1, D-6) · DL-155 (WP-ADMINISTRACION) · DL-169 (UF-09) | Un alimento cargado a mano con un error no se podía corregir ni retirar; el buscador no distinguía lo verificado de lo cargado por cualquiera; Administración no tenía cómo revisar lo cargado a mano; los alimentos no tenían ícono por grupo; la imagen de la receta recién se ofrecía después del primer guardado | **PROGRAMADA en `wp-nutricion-alimentos` (PR en borrador contra `wp-nutricion-planificacion`, sin integrar) · NUA-D01 a NUA-D23 a ratificar** (NUA-D05 y D13, sin efecto por la decisión de Dirección del 2026-11-19): corregir emite una versión nueva y retirar una versión RETIRADO, en la cadena de siempre; **lo cargado a mano es de quien lo cargó** (segundo tramo, `wp-nutricion-alimentos-2`, PR en borrador contra `wp-nutricion-alimentos`); «Verificado» (la tabla oficial, el canon o lo certificado) y «Tuyo» en el buscador; Administración ve todas las cargas con el nombre de quien las cargó, las agrupa por nombre parecido, certifica con una fuente, marca equivalentes y **suma al canon**; un ícono por grupo; la imagen de la receta al crearla; los campos del asistente; las **medidas caseras** (NUA-08, en el website). Familia propia ALI (API-ALI-01 a 09), cinco migraciones aditivas. Micronutrientes y platos argentinos (NUA-09 y 10), declarados como el tramo siguiente (`docs/paquetes/WP-NUTRICION-ALIMENTOS.md`) |
 
 ---
 
@@ -2753,7 +2759,7 @@ implementación concreta, empezando por dos pantallas representativas. Evidencia
 
 ## DL-114 — Excepción declarada en la auditoría de dependencias: node-forge sin versión corregida
 
-**Prioridad:** alta · **Documento:** WP-01 §2 (la auditoría de dependencias de producción falla con avisos altos o críticos) · CI del PR #128 · **Estado:** RATIFICADA por Dirección el 2026-10-03 (node-forge y braces) y el 2026-10-24 (el zod 3 de la CLI de Expo, con procedencia comprobada en cada auditoría). **Desde la decisión del 2026-10-24 a la noche**, braces está retirada (GitHub retiró el aviso), y zod y node-forge están renovadas hasta el **2026-11-30** (UTC; el 30/11 a las 20:59:59 en Argentina), las dos con procedencia comprobada y solo en la APK. Detalle al final de esta entrada
+**Prioridad:** alta · **Documento:** WP-01 §2 (la auditoría de dependencias de producción falla con avisos altos o críticos) · CI del PR #128 · **Estado:** RATIFICADA por Dirección el 2026-10-03 (node-forge y braces) y el 2026-10-24 (el zod 3 de la CLI de Expo, con procedencia comprobada en cada auditoría). **Desde la decisión del 2026-10-24 a la noche**, braces está retirada (GitHub retiró el aviso), y zod y node-forge están renovadas hasta el **2026-11-30** (UTC; el 30/11 a las 20:59:59 en Argentina), las dos con procedencia comprobada y solo en la APK; **retiradas las dos el 2026-11-11** (UF-12). **Desde el 2026-11-18**, declarada por Dirección la de picomatch (GHSA-fc5q-39xc-vjpf) en la API y la APK, hasta el **2026-12-15**. Detalle al final de esta entrada
 
 **Qué pasó.**
 - El 2026-10-01 a las 21:09 UTC, GitHub actualizó el aviso GHSA-86w9-cpqp-85rv de node-forge: la verificación de firmas RSA PKCS#1 v1.5 acepta elementos DigestAlgorithm anidados de más.
@@ -3044,6 +3050,46 @@ Las fuentes, revisadas el 2026-11-11 con `gh api advisories/<GHSA>` y `npm view`
   Que la app no se rompió se comprueba al construir la próxima candidata (0.24.0-candidata.1) y probarla en el
   teléfono. Si esa construcción fallara por la CLI, la salida es volver este cambio del lockfile y que Dirección decida
   si renueva la de zod hasta el SDK siguiente: la excepción no vuelve sola.
+
+**Declarada el 2026-11-18: picomatch, hasta el 2026-12-15 (decisión de Dirección).** Desde el 2026-11-15 la auditoría de
+dependencias fallaba en todas las ramas de BE, también en `main`, por un aviso alto nuevo.
+- **El aviso.** GHSA-fc5q-39xc-vjpf, «picomatch vulnerable to ReDoS through single-branch repeated extglobs»: un patrón
+  glob armado a propósito (un extglob de una sola rama repetido) hace que la expresión regular que picomatch genera tarde
+  muchísimo. GitHub lo publicó el 2026-10-19 y npm empezó a informarlo después. Revisado el 2026-11-18 con
+  `gh api advisories/GHSA-fc5q-39xc-vjpf` y `npm view picomatch`: abarca `<= 4.0.7`, la 4.0.7 es la última publicada
+  (2026-08-24) y **no hay versión corregida**; las líneas 2 y 3 (2.3.2 y 3.0.2) también quedan adentro.
+- **Por dónde entra** (`npm audit --omit=dev --json -w <espacio>` y el lockfile, el 2026-11-18):
+  - **APK:** tres copias, todas en la cadena de construcción. La 4.0.7 de la raíz la piden la CLI de Expo
+    (`expo/node_modules/@expo/cli` 57.0.33), `@expo/metro-config` y tinyglobby (con fdir), que a su vez piden
+    `react-native` y `@react-native/codegen` para la generación de código. La 2.3.2 anidada en micromatch viene de
+    Metro (`metro-file-map`), y la 2.3.2 anidada en `jest-worker` viene de los procesos de Metro (`jest-util` 29).
+  - **API:** la 4.0.7 de la raíz, por fdir. Es un artefacto de `npm audit -w`: a fdir solo lo usa `jest-haste-map`, de
+    Jest, que es de desarrollo, pero como la APK usa fdir en producción el paquete no queda marcado de desarrollo. Ninguna
+    dependencia de producción de la API llega a picomatch.
+  - **Website:** limpio.
+- **Por qué no un `overrides` ni una actualización.** No hay a qué versión llevarlo: todas las publicadas están en el
+  rango. Actualizar Expo, Metro o React Native no cambia nada, porque cualquier versión de picomatch que pidan está
+  abarcada.
+- **Por qué el riesgo no es alcanzable con datos de afuera.** BE no recibe patrones glob de las personas. Ningún código
+  de BE (`apps/api/src`, `apps/web/src`, `apps/mobile` y `packages/domain/src`) importa picomatch, micromatch,
+  minimatch, anymatch, tinyglobby, fdir, fast-glob, glob ni globby, y ningún espacio los declara como dependencia. Los
+  patrones que llegan a picomatch son los que escriben en su configuración Metro, la CLI de Expo, la generación de código
+  de React Native y Jest, al construir la APK o al correr las pruebas. Una prueba lo vigila: si BE empieza a usar globs,
+  falla y hay que revisar esta excepción.
+- **Lo que se exceptúa, y nada más:** el aviso GHSA-fc5q-39xc-vjpf, en el paquete picomatch, en las auditorías de
+  `@be/api` y `@be/mobile`. En el website, otro aviso de picomatch o el mismo aviso en otro paquete bloquean como
+  cualquier otro.
+- **Sin `procedencia`.** El mecanismo exige una sola copia y una sola cadena, y aquí son tres copias y varios caminos.
+  La excepción la acotan el aviso, el paquete, los dos espacios y el vencimiento; la auditoría no construye el bundle de
+  Android para ella. Que picomatch no viaja en la APK se sostiene por quién lo pide (todo es de construcción o de
+  generación de código), no por una medición del bundle: a prestar atención si se renueva.
+- **El vencimiento.** El **2026-12-15**, inclusive (hasta las 23:59:59 UTC; las 20:59:59 en Argentina). Desde el
+  2026-12-16 la auditoría vuelve a fallar. No hay renovación automática: renovarla es otra decisión de Dirección y un
+  cambio en el script.
+- **Cuándo se retira:** apenas salga la versión corregida (con `overrides` si quien lo pide no la toma solo) o GitHub
+  retire el aviso. Revisar las fuentes antes del 2026-12-15.
+- **Dónde quedó:** este registro, `EXCEPCIONES` en `scripts/auditoria-de-dependencias.cjs` y sus pruebas en
+  `scripts/auditoria-de-dependencias.test.cjs`.
 
 ---
 
@@ -8134,7 +8180,8 @@ ni contratos.
 **Prioridad:** media (pulido de uso; ninguna parte cambia una garantía del legajo) · **Documento:** TEST-PRJ-009 ·
 RNF-ACC-001 y B10-10 · B10-06 · B10-01 §36 · 02 §14 · REG-06-131 · DL-049 · DL-077 · DL-096 · DL-117 · DL-136 · DL-137
 D-7 · DL-140 · DL-152 · DL-166 · DL-167 · DL-169 · DL-170 · **Estado:** DECLARADA el 2026-11-13, sin programar
-(`docs/paquetes/WP-PULIDO-GRANDES.md`, PR en borrador). PG-D1 a PG-D15, a ratificar.
+(`docs/paquetes/WP-PULIDO-GRANDES.md`, PR en borrador). PG-D1 a PG-D15, a ratificar, salvo PG-D1 (decidida por
+Dirección el 2026-11-13) y PG-D10 y PG-D11 (aprobadas el 2026-11-14: «Tienes mi sí para las notas»).
 
 **El pedido.** El 2026-11-13, Dirección eligió quince ideas de la página «Pulido como las grandes» y pidió: «Armá el
 paquete con sus IDs y decime cuándo sale cada cosa». Ese mismo día, al probar la 0.27, dejó cuatro ideas de Inicio, la
@@ -8171,3 +8218,631 @@ en #266 y queda como antecedente, no como parte.
 - **A (recomendada):** ratificar PG-D1 a PG-D15 como se recomiendan y programar por tandas, con el calendario de arriba.
 - **B:** lo mismo, con PG-D1 en su alternativa (el desplegable, sin destacar ninguna sesión), y PG-15 y PG-16 después
   del 25/11, para que la tanda B no toque la API.
+
+---
+
+## DL-174 — Los gráficos de BE: la historia de la persona en el tiempo, alineada o superpuesta, y los enfoques del profesional
+
+**Prioridad:** alta (la visión longitudinal de BE; amplía una regla de «Analizar» y suma una familia de operaciones, sin
+cambiar una garantía del legajo) · **Documento:** TEST-PRJ-009 · RNF-ACC-001 y B10-10 · RF-025 · REG-06-105 ·
+REG-06-162 · REG-06-165 y 166 · B10-07 · B10-08 §21-§23 · B10-09 §15-§28 · 09 v0.11 §18-§23 · INV-06-153 · INV-06-192 ·
+M-11 · DL-126 · DL-128 · DL-137 D-7 · DL-152 · DL-153 · DL-158 · DL-161 · DL-163 · DL-165 · DL-167 · DL-169 · DL-171 ·
+DL-173 · **Estado:** DECLARADA el 2026-11-14 (`docs/paquetes/WP-GRAFICOS.md`, sin integrar). GR-D0 a GR-D10, tomadas
+por la delegación de Dirección según la recomendación; GR-T01 a GR-T19, a ratificar.
+
+**El pedido.** El 2026-11-14, Dirección aprobó la propuesta de gráficos («Aprobadas las 25 sugerencias de gráficos») y
+sumó dos ideas: que los profesionales puedan ver los gráficos «uno arriba del otro, superpuestos en el mismo gráfico si
+comparten la x o alineados uno arriba del otro […] además de los sugeridos», y «su stand de gráficos favoritos para
+elegir ver en ese plan o persona hasta que lo vayan cambiando». Pidió, además, empezar ya («ya tienes que ponerte a
+trabajar en eso»). Las decisiones de la propuesta se toman por la delegación vigente: «a menos que sea una decisión
+crítica con criterio haz lo que me recomiendes».
+
+**Las partes.**
+- **GR-01 a GR-25**, los 25 gráficos de la propuesta: diez de Entrenamiento (GR-01 a GR-10), cinco de Nutrición (GR-11
+  a GR-15), siete de Antropometría (GR-16 a GR-22) y tres que cruzan áreas (GR-23 a GR-25: la cinta del tiempo, dos
+  etapas y lo de sus semanas anteriores).
+- **SP-01 a SP-08**, los ocho cruces entre áreas, cada uno con su ventana de lectura fijada antes de mirar, lo que
+  también cambió, la frase «Coinciden en el tiempo; esto no prueba que una cosa cause la otra.» y su prueba del caso
+  negado.
+- **GR-26, «Armá tu gráfico»:** «Alineadas» (por defecto) y «Superpuestas» (si comparten el eje X), en «Analizar» y en
+  «Patrones».
+- **GR-27, los enfoques:** conjuntos de hasta seis gráficos, propios del profesional, que se eligen para una persona o
+  para uno de sus planes y quedan hasta que se cambien.
+- **«Patrones»:** una vista nueva de la ficha, entre «Resumen» y «Línea de tiempo», y una pestaña del panel de la
+  estación en los dos editores.
+
+**El calendario.**
+- **Sin congelamiento (Dirección, 2026-11-14):** «Todo se integra lo antes posible una vez que esté aprobado, no
+  retrasamos las cosas por la planificación, si adelantamos la producción se adelanta todo». Aprobado = la revisión
+  adversaria sin altas ni medias pendientes y la CI en verde.
+- **Fase 1:** GR-01 (reducida), GR-04 (la marca) y GR-16, en `wp-graficos-fase-1`, programada el 14/11.
+- **Fase 2, adelantada:** se programa desde el 14/11 en cinco ramas (la base; Entrenamiento; Nutrición y Antropometría;
+  los cruces y «Analizar»; «Patrones» y los enfoques), y cada una entra apenas queda aprobada: la base primero; la API
+  de los enfoques, después de la base y de la rama de los cruces.
+- **Fases 3 y 4, a continuación:** lo ratificado que espera programación y el caso 2 (fase 3), y lo que pide una DL o un
+  desafío del legajo (fase 4). **Fase 5, después del piloto** (una condición de producto ratificada, que Dirección puede
+  adelantar): el peso en casa, los hábitos y otras áreas.
+
+**Lo que toca el legajo o una DL.**
+- **DL-126 (se amplía, no se cambia; GR-T04):** dos series comparten un eje solo si comparten familia y unidad, como
+  hoy. Por el pedido de Dirección, «Superpuestas» admite además dos unidades, una a cada lado, con hasta tres series del
+  mismo eje X, la escala de «Alineadas» y la frase. En la URL y en API-VAN siguen `PANELS` y `OVERLAY`, y las vistas
+  guardadas de antes se ven igual. La regla de la propuesta de no usar doble eje sigue en los sugeridos y en los cruces
+  preparados.
+- **DL-137 D-7:** GR-27 suma una familia propia de BE, **GRF** (API-GRF-01 a 07), que la guardia de trazabilidad declara
+  con esta DL al programarse, y dos tablas con una migración que solo agrega. La APK no la lee (DL-152).
+- **ED-75 (DL-171):** el cuadro del ejercicio se abre para todos los ejercicios («La vez pasada» en la fase 1; el
+  historial de GR-03, GR-05 y GR-06 en la fase 2). La tarjeta de fuerza sigue solo en la lista de la v1 (RM-16).
+- **RF-025 y DJ-14 (GR-D6):** los gráficos arrancan en el inicio del acompañamiento y lo dicen. Abrir la historia de un
+  profesional anterior sería un desafío, después del piloto.
+- **INV-06-153 y M-11:** la palabra prohibida sigue prohibida; GR-09 espera su término (GR-D2, con su DL en la fase 3) y
+  GR-08 entra solo como desafío de M-11.
+- **DL-163 D-13:** el caso 2 de los cruces llega por API-RES, después de TB-29 y de la revisión legal (fase 3).
+- **Las DL que se abren después, cada una en su fase:** GR-D2 (el término de TB-34), GR-D4 (el error técnico de
+  medición), GR-D8 (lo de sus semanas anteriores), GR-D9 (el perímetro corregido) y GR-D10 (las versiones anteriores de
+  los hábitos).
+
+**Opciones para Dirección.**
+- **A (vigente, por la delegación):** las decisiones como se recomiendan, y todo se integra apenas queda aprobado.
+- **B:** lo mismo, pero «Superpuestas» solo con una unidad (la regla de hoy de DL-126, sin doble eje).
+
+---
+
+## DL-175 — Tu historia anterior: el profesional nuevo ve lo que pasó antes en su área, si la persona lo autoriza
+
+**Prioridad:** alta (es un pilar con que Dirección presenta BE; cumple una previsión del 08 que no estaba programada, sin
+cambiar una garantía del legajo) · **Documento:** 08 §14.1 (la fila «Cambio de profesional») · REG-06-55 · RF-025 ·
+05 §5.8.2.1.4 (escenario 4) · 08 §12.2 · 08 §19.7 · RNF-PRI-002 · PG-12 · PG-16 · DL-034 · DL-115 · DL-137 D-7 · DL-152 ·
+DL-163 D-13 · DL-167 (DJ-14) · DL-174 (GR-D6) · **Estado:** PROGRAMADA el 2026-11-15 en `wp-historia-anterior` (PR
+abierto, sin integrar), con la revisión adversaria del mismo día arreglada. HA-T01 a HA-T16, a ratificar.
+
+**Qué dice el legajo.**
+- **08 §14.1, la fila «Cambio de profesional»:** «El nuevo profesional NO hereda acceso: nuevo Vínculo + nuevo
+  consentimiento; ve la historia previa **solo si el titular lo consiente** en el alcance del nuevo consentimiento»
+  (REG-06-55; RF-025).
+- **REG-06-55:** «La Identidad BE del asesorado permanece; autoría/procedencia históricas no cambian; el nuevo profesional
+  requiere Solicitud, aceptación, Consentimiento y Autorización propias».
+- **RF-025:** BE conserva la identidad longitudinal y la procedencia «sin transferir acceso automáticamente a otro
+  profesional»; «cada profesional solo consulta lo autorizado». El escenario 4 del 05 (§5.8.2.1.4): «el nuevo profesional
+  solo accede a lo autorizado específicamente».
+
+**Qué había.** Nada que lo permitiera: cada lectura del profesional se acota a sus propios planes
+(`apps/api/src/analisis/fuentes.ts` filtra con `versionDePlan: { plan: { profesionalId } }`), y `hayRegistrosDeOtros` solo
+avisa que hay registros con otro profesional. DJ-14 (WP-EDITORES-PROFESIONAL) respondió «No: RF-025, desde el inicio del
+acompañamiento», y GR-D6 (WP-GRAFICOS, DL-174) lo dejó como un desafío para después del piloto.
+
+**El pedido.** Dirección presenta BE con este pilar: «si la persona cambia de profesional, con BE no tiene que empezar de
+cero; el nuevo puede ver su historial y en qué contexto ocurrió, para ver qué le funcionó mejor y decidir con más
+información». El 2026-11-15 eligió «Programarlo», con estas reglas, que no se discuten:
+- **quién y cuándo:** la persona autoriza, desde la app, a un profesional nuevo de un área a ver su historia anterior **de
+  esa área** (lo que pasó con otros profesionales en esa misma área);
+- **cómo lo ve:** en solo lectura y marcado como de otro profesional;
+- **qué entra:** los planes que tuvo (las versiones activadas, nunca los borradores), lo que registró bajo esos planes, las
+  tomas antropométricas (con su método) y las decisiones de las revisiones (resultado, fundamento y próxima acción);
+- **qué no entra nunca:** las notas privadas del profesional anterior (PG-16), sus borradores ni sus notas internas;
+- **cómo se controla:** se puede retirar en cualquier momento, queda auditada y la persona ve cuándo la miró (como «quién
+  miró» de PG-12).
+
+**Qué se hizo** (`docs/paquetes/WP-HISTORIA-ANTERIOR.md`).
+- **Una autorización propia, no un campo del B2** (HA-T04 y HA-T05): `autorizacion_de_historia_anterior`, de la persona,
+  por componente de vínculo (un profesional en un área, DL-034), versionada y de solo agregar, con el texto aceptado y su
+  hash. Es el patrón de lo que la persona comparte con un profesional (los hábitos y lo de otras áreas, DL-163 D-13): se da
+  y se retira sola, sin tocar el consentimiento del vínculo.
+- **La familia HIA** (DL-137 D-7: lo nuevo va en operaciones nuevas): API-HIA-01 a 03, de la persona (ver, autorizar y
+  retirar, con Idempotency-Key), y API-HIA-04, del profesional (la historia anterior de un área, por tramos). La lectura
+  pasa por el PDP del área y por la autorización vigente; si falta algo, el 404 de lo inexistente. Cada lectura queda
+  registrada y la persona la ve. Migración `20261115120000_historia_anterior`, que solo agrega.
+- **La APK:** «Tu historia anterior de …» en «Quién ve qué», debajo del profesional de cada área, con el interruptor y
+  «Miró tu historia anterior el …»; y la tarjeta opcional al aceptar a un profesional nuevo de un área en la que ya hubo
+  otro (por omisión, no se comparte).
+- **El website, lo mínimo:** la ruta `/pro/advisees/previous-history`, desde «Más» en la ficha, con el aviso fijo, las
+  versiones de los planes con sus fechas, lo registrado por semana, las tomas con su método y las decisiones. Sin la
+  autorización, cómo pedírsela, sin insinuar datos. No toca los gráficos, «Analizar» ni la cinta.
+
+**La tensión con el legajo.** El 08 dice «en el alcance del nuevo consentimiento»: leído al pie de la letra, la historia
+previa sería un alcance más del B2 del vínculo nuevo. Se programó como una autorización aparte, con su texto propio, por
+tres razones: el B2 es un texto legal que las personas ya aceptaron (cambiarlo pide una revisión legal y una versión nueva
+que todas tendrían que volver a aceptar); una autorización aparte se da y se retira sin tocar el acceso del vínculo
+(RNF-PRI-002); y es el patrón que BE ya usa para lo que la persona comparte con un profesional. El consentimiento del
+vínculo sigue siendo condición: sin el B2 vigente, el profesional no la ve (HA-T09). Y desde la revisión adversaria, la
+autorización vive dentro del B2 de su componente: revocarlo la retira, y otorgarlo de nuevo no la devuelve (HA-T14).
+
+**La revisión adversaria (2026-11-15).** Veinticuatro hallazgos (privacidad, datos y experiencia), nueve medios. Se
+arreglaron todos los medios y los bajos con su prueba, salvo dos: el tope de filas (el website pide hasta 90 días y la
+medición del tramo de 366 queda para la cohorte) y el objetivo nuevo de «Cambiar objetivo» (declarado en HA-T07). Lo
+principal: la última lectura es por componente de vínculo; revocar el B2 retira la historia (HA-T14); API-HIA-01 dice si
+hoy hay acceso, y la APK no dice «La ve» sin él (HA-T15); compartir abre el texto entero (HA-T16); lo de antes se ve como
+estaba en el corte (HA-T03); la tarjeta también al aceptar por invitación; el origen de cada medición en el website; un
+índice parcial para las lecturas que ve la persona; y las carreras, probadas contra la base. El texto que se acepta
+cambió antes de integrar, con su hash nuevo. La tabla, en el §6 del paquete.
+
+**Lo que amplía.** DJ-14 (DL-167) y GR-D6 (DL-174) quedan ampliadas, no reemplazadas: el profesional nuevo ve la historia
+anterior **solo con la autorización de la persona y en su página propia**; los gráficos, «Analizar» y la cinta siguen
+arrancando en el inicio del acompañamiento hasta la segunda etapa, cuando entren las ramas de WP-GRAFICOS.
+
+**Lo que queda.**
+- La segunda etapa: la historia anterior en los gráficos (un tramo marcado «de otro profesional», antes del inicio del
+  acompañamiento), con su desafío de GR-D6.
+- Las lecturas nuevas de la APK se congelan con su próxima candidata (DL-152); los fixtures no se tocaron.
+- La validación jurídica del texto (es una propuesta, HA-T05), TalkBack en el teléfono y la evidencia de pantalla.
+
+**Lo que cambió después (DL-176, WP-COMPARTIR, 2026-11-15).** Dirección pidió que compartir sea casi por omisión: al
+aceptar a un profesional nuevo, la historia anterior es una cosa más de la pantalla única de consentimiento, **marcada** si
+antes hubo otro profesional en esa área, y se desmarca con «Elegir qué compartir». HA-T01 quedó actualizada en el paquete;
+la tarjeta opcional (HA-07) se retiró. La autorización, su texto, su retiro y la lectura del profesional no cambian.
+
+**Opciones para Dirección.**
+- **A (programada):** la autorización aparte, como está, con HA-T01 a HA-T16 como se recomiendan.
+- **B:** sumar la historia previa como un alcance del B2 (otra versión del texto del vínculo, que las personas vuelven a
+  aceptar); la autorización aparte quedaría como el interruptor dentro de ese consentimiento.
+- **Sobre HA-T14:** como está (revocar el B2 la retira; el A3 y la pausa, no, y la APK dice que no la ve), o más estricta
+  (también el A3 la retira, distinto de los hábitos y de lo de otras áreas), o como antes de la revisión (ninguna la
+  retira, y la APK solo avisa que vuelve sola).
+
+## DL-176 — Compartir casi por omisión: una sola pantalla de consentimiento al aceptar el vínculo
+
+**Prioridad:** alta (Dirección lo pone en el centro de la app: «que se pueda ver el historial para planificar con
+conciencia de otras áreas») · **Documento:** Ley 25.326 art. 5 y art. 7 · 08 §12.2, §12.3, C-12 y §14.1 · 10-B04 §7-§9
+(«Aceptar y compartir datos»; CAND-10-CON-A) · INV-06-53 · 10-B02 §7 · RNF-PRI-002 · DL-115 · DL-137 D-7 · DL-152 · DL-163
+D-13 · DL-165 D-9 y D-25 · DL-175 (HA-T01 y HA-T16) · **Estado:** PROGRAMADA el 2026-11-15 en `wp-compartir` (PR abierto,
+sin integrar). CMP-D1 a CMP-D16, a ratificar.
+
+**La decisión de Dirección (2026-11-15, textual).** «tiene que ser algo casi por default, o que la opción sea súper
+sencilla, lo único que tiene que generar rozamiento debería ser el conectar con el profesional, sea por QR, link, o lo que
+sea, pero después los permisos para que vean los datos y que puedan compartir los datos de otras áreas etc… sea casi como
+aceptar todo, pero es el centro de la app casi, que se pueda ver el historial para planificar con conciencia de otras
+áreas… simplemente el permiso es por el área legal y su consentimiento de datos de salud».
+
+**Qué había.**
+- **Compartir entre áreas no tenía pantalla.** API-RES-02 y 03 y API-RES-09 y 10 existían, la APK solo leía API-RES-01
+  («quién miró», PG-12) y ni la APK ni el website escribían: solo las cuentas de la cohorte, cargadas así.
+- **La historia anterior era opt-in** (DL-175, HA-T01: la tarjeta al aceptar, con «Ahora no» por omisión).
+- **Aceptar a un profesional eran varios actos:** aceptar el vínculo, autorizar su área (B2) en otra pantalla, el A3 si
+  faltaba (el «último paso»), y los hábitos en «Mis hábitos».
+
+**Qué dice el legajo, y dónde tensiona.**
+- **10-B04 §7-§9:** el botón para aceptar el vínculo es «Aceptar vínculo», y «Aceptar y compartir datos» está prohibido
+  «porque fusiona vínculo + B2»; el siguiente paso es revisar el consentimiento. **INV-06-53:** aceptar no crea el B2.
+  Se respetan: el vínculo se sigue aceptando aparte, y «Aceptar y compartir» es el botón de la pantalla de consentimiento,
+  que aparece enseguida (CMP-D1).
+- **CAND-10-CON-A (10-B04):** el B2 es un acto explícito, «sin casilla premarcada». **10-B02 §7:** el A3 es un acto aparte.
+  Se tensionan: la pantalla única trae todo marcado y un toque lo acepta. El acto sigue siendo explícito (nada se escribe
+  sin tocar «Aceptar y compartir», que dice qué acepta) y cada cosa queda como un acto separado, con su texto, su versión y
+  su auditoría; pero van juntos y preseleccionados. Es la duda legal principal (abajo).
+- **Ley 25.326, art. 5:** libre, expreso e informado. La pantalla dice en pocas líneas qué ve el profesional y para qué,
+  cada cosa en una línea (qué, de quién, para quién y para qué) y los textos completos de lo marcado en la misma pantalla,
+  plegados con su versión y su huella; «Elegir qué compartir» deja desmarcar cada cosa y «Ahora no» no escribe nada.
+- **08 §12.2 (la mostrada es la aceptada) y C-12 (ampliar es una aceptación nueva):** el toque manda los ids de los textos
+  mostrados y la API los exige vigentes; cada ampliación es una versión nueva de su autorización.
+
+**Qué se hizo** (`docs/paquetes/WP-COMPARTIR.md`).
+- **La familia CMP** (DL-137 D-7), sin migración: API-CMP-01 (lo que la persona puede compartir y lo que ya comparte, con la
+  versión de lo que vio y los textos), API-CMP-02 (un toque: todos los actos elegidos en una sola transacción, todo o nada,
+  cada uno con su texto, su versión, su hecho y su fila de auditoría) y API-CMP-03 (dejar de compartir una cosa, desde
+  ahora, sin el A3). El B2 y el A3 se otorgan con la misma lógica de API-CON-02 y 06, ahora dentro de otra transacción.
+- **La APK:** la pantalla única al aceptar (en Vínculos y por el enlace, el QR o el código), con «Aceptar y compartir»,
+  «Elegir qué compartir» y «Ahora no»; la tarjeta única de Inicio para quien ya tiene vínculos («Compartir todo con tus
+  profesionales», una vez); y en «Quién ve qué», un interruptor por cosa debajo de cada profesional y los pedidos para
+  responder («Sí, compartir» / «Ahora no»).
+- **Las reglas que no cambian:** retirar siempre se puede y corta hacia adelante; lo ajeno o no autorizado responde igual
+  que lo inexistente; las notas privadas del profesional nunca se comparten; Administración no ve datos de salud; el
+  vocabulario (ubicar, nunca calificar; sin «asesorado», «cumplimiento», «adherencia», «racha» ni «puntaje»; en Nutrición,
+  sin «%»); TalkBack, la letra grande y los dos temas.
+
+**Decisiones a ratificar** (CMP-D1 a CMP-D16, con el detalle en el §3 del paquete): el vínculo aparte y la pantalla
+enseguida (D1); qué trae marcado, con lo recíproco (D2); lo retirado antes no vuelve marcado (D3); el A3 en la misma
+pantalla y como condición de lo demás (D4); los hábitos «si corresponde» (D5); la versión de lo que se vio (D6); solo lo
+elegido, sin extender en silencio (D7); los textos en capas (D8, distinto de HA-T16 en esta pantalla); retirar una cosa con
+CMP-03 (D9); lo ajeno igual que lo inexistente (D10); la auditoría por acto (D11); la tarjeta marcada en el teléfono (D12);
+«Quién ve qué» deja de ser solo de lectura (D13); los pedidos (D14); una familia propia, congelada con la próxima
+candidata (D15); y HA-T01 actualizada (D16).
+
+**Las dudas legales** (para la validación jurídica): lo preseleccionado con un solo botón frente al art. 5 y el art. 7 (y
+frente a CAND-10-CON-A); varios consentimientos en un toque (¿es granular?); el A3 junto al B2 y a lo demás (10-B02 lo
+trata como un acto aparte); los textos en capas (¿alcanza para «informado» y 08 §12.2?); lo recíproco (la persona comparte
+un plan que escribió otro profesional); que los textos siguen siendo propuestas o de demostración (ninguno nuevo); y, lo
+sumó la revisión del PR, que los botones no pesan lo mismo («Aceptar y compartir» es el principal y «Ahora no» un enlace).
+
+**Lo que corrigió la revisión del PR (2026-11-15).** Lo retirado de a una cosa en «Quién ve qué», con otras todavía
+compartidas, volvía marcado en «Compartir todo» y en lo recíproco al aceptar a otro profesional (la versión vigente no lo
+dice): ahora la propuesta lee lo que la persona ya decidió (cada renglón que tuvo alguna versión y el último pedido de cada
+profesional), y CMP-D3 lo detalla. «Quién ve qué» dice el nivel en que se ve hoy, no el que se ofrece.
+
+**Opciones para Dirección.**
+- **A (programada):** el vínculo aparte, y después una pantalla única con todo preseleccionado y un toque.
+- **B:** un solo toque que acepte el vínculo y comparta (cambia 10-B04 e INV-06-53; los mismos toques que A).
+- **C (más conservadora):** la misma pantalla, sin nada preseleccionado más que su área (el B2), y «Compartir todo» como
+  segundo botón (menos «casi por omisión», más cerca de CAND-10-CON-A).
+
+**Lo que queda.** Congelar las lecturas nuevas de la APK con la próxima candidata (DL-152); verlo en el teléfono (TalkBack,
+la letra grande, los dos temas) con la evidencia de pantalla; la validación jurídica de las dudas; y, si Dirección lo
+quiere, la marca de la tarjeta en la base (CMP-D12).
+
+---
+
+## DL-177 — El profesional entra solo con su contraseña: sin el autenticador hasta tener un código por correo
+
+**Prioridad:** alta (toca el acceso a datos de salud de terceros) · **Documento:** 08 §25 (el segundo factor del
+profesional «antes de operar con datos reales») · 08 §42, condición 6 del gate · Ley 25.326 art. 2, 7 y 9 (datos
+sensibles y medidas de seguridad) · RNF-PRI-002 · DL-155 (Administración) · DL-169 (UF-11, UF-D12, UF-T19 y UF-T56) ·
+DL-172 (RF-004, la familia MET) · **Estado:** DECIDIDA por Dirección el 2026-11-18 · PROGRAMADA en
+`wp-sin-autenticador-profesional` (PR abierto, sin integrar) · la transición y lo demás, **a ratificar**.
+
+**La decisión de Dirección (2026-11-18).** El profesional ya no usa el autenticador (TOTP) para entrar: se loguea solo con
+su contraseña, o con Google, y nunca se le pide el código de 6 dígitos. Más adelante habrá una verificación por correo, que
+hoy está apagada y no se programa. Administración sigue igual: contraseña y autenticador, con su vencimiento de 15 minutos
+sin actividad. La persona no cambia: nunca tuvo segundo factor.
+
+**Qué había (UF-11, DL-169).** Una sesión común de una identidad con perfil profesional actuaba como profesional solo con
+el segundo factor verificado en esa sesión. Sin él, no respondían el PDP, las áreas, las listas donde es el profesional,
+las invitaciones, sus novedades como profesional ni vincular o desvincular Google. La primera vez lo configuraba dentro de
+los 10 minutos de entrar (el QR, la clave y diez códigos de recuperación), y en cada sesión nueva escribía el código
+(«Confirmá que sos vos»). Administración podía restablecerlo (API-ADM-19, UF-T56).
+
+**La transición elegida: «solo contraseña hasta tener correo».**
+- **Una sola llave de política, en el dominio:** `SEGUNDO_FACTOR_DEL_PROFESIONAL_EXIGIDO`, hoy en `false`. Así,
+  `SesionGuard` decide NO_REQUERIDO para toda sesión común, con perfil profesional o sin él, y lo profesional responde con
+  la contraseña o con Google. No es una variable de entorno: cambiarla es un cambio de código revisado, no un interruptor
+  del servidor.
+- **API-MFA-01** responde NOT_REQUIRED, y **API-MFA-02 a 06**, 422 INVALID_STATE_TRANSITION sin crear filas. La auditoría
+  registra el motivo `SEGUNDO_FACTOR_NO_EXIGIDO`; la persona sigue con `SIN_PERFIL_PROFESIONAL`. El contrato conserva su
+  forma y solo cambia su descripción.
+- **Los datos no se tocan:** las tablas del autenticador, los autenticadores ya configurados, los códigos y los
+  restablecimientos quedan como están, sin uso para el profesional. No hay migraciones.
+- **En el website,** la compuerta de `/pro` sigue puesta y deja pasar, porque la API dice NOT_REQUIRED. «Seguridad de tu
+  acceso» sale del menú. Si alguien entra por la dirección, la pantalla dice cómo entra hoy, que vendrá un código por correo
+  y cómo cuidar la contraseña. También avisa que una aplicación de códigos ya configurada para BE se puede borrar. La APK
+  no tenía nada del segundo factor, así que no cambia.
+- **API-ADM-19 sigue en el contrato y funciona, pero la consola no la ofrece** mientras la política no lo exija. Las
+  razones:
+  - Ofrecer «restablecer el segundo factor» de algo que el profesional no usa confunde a quien administra.
+  - Borrar la operación obligaría a reescribirla y volver a probarla cuando vuelva una verificación.
+  - Por la API, todavía sirve para dar de baja un autenticador que configuró otra persona antes de que vuelva la política.
+
+  Para un profesional que no puede entrar, el camino es la recuperación asistida (API-ADM-18), que ya estaba en la misma
+  pantalla y cierra sus sesiones.
+- **Administración no se debilita:** no lee esta política, porque su guard y su segundo factor son los de DL-155. Las
+  pruebas fijan cuatro cosas:
+  - la contraseña sola no lee ni decide nada (403 MFA_REQUIRED);
+  - el código vence a los 15 minutos sin actividad;
+  - la sesión común de un profesional no sirve en la consola;
+  - su contraseña no abre la consola.
+
+**El riesgo, dicho con honestidad.**
+- **Una sola llave para datos de salud de terceros.** Hasta que exista el código por correo, alcanza con la contraseña de un
+  profesional para ver y decidir sobre los datos de salud de todas las personas que acompaña. Alguien puede conseguirla por
+  phishing, porque el profesional la reutilizó en otro sitio que se filtró o mirándola por encima del hombro. Con el
+  autenticador, la contraseña sola no alcanzaba.
+- **Ley 25.326:** el art. 9 obliga al responsable a adoptar medidas técnicas y organizativas que garanticen la seguridad y
+  la confidencialidad de los datos, y los de salud son sensibles (art. 2 y art. 7).
+  - Bajar a un factor no incumple la ley por sí solo, pero debilita una medida que el propio 08 §25 declaraba necesaria
+    «antes de operar con datos reales» y que 08 §42 ponía como condición 6 del gate.
+  - **Esta DL contradice esas dos líneas del legajo, por decisión de Dirección.** El gate queda con la condición 6
+    suspendida hasta la etapa siguiente, y conviene que la validación jurídica lo sepa.
+- **Lo que sigue protegiendo:**
+  - la contraseña, con su política y el límite de intentos de la API;
+  - las sesiones con vencimiento, y la revocación que vale desde el pedido siguiente;
+  - el aviso por correo al cambiar cómo se entra (DL-172 D-11);
+  - la auditoría de cada lectura profesional;
+  - el PDP, con el consentimiento de la persona;
+  - la recuperación asistida, que cierra todas las sesiones;
+  - si el profesional entra con Google, el segundo factor de su cuenta de Google.
+- **Mitigaciones sin código, recomendadas mientras tanto:**
+  - pedir a los profesionales reales una contraseña que no usen en otro lado, o que entren con Google con la verificación
+    en dos pasos activa;
+  - no usar BE en computadoras compartidas.
+
+  La pantalla «Seguridad de tu acceso» ya lo dice.
+
+**La etapa siguiente (no programada; a declarar con sus IDs).** Un código de un solo uso por correo, que se pide **solo al
+entrar desde un dispositivo nuevo** (o desde uno que no se usó en un tiempo), no en cada sesión. Es lo que hacen las apps
+líderes para que el profesional no sienta fricción todos los días. Necesita:
+- un envío de correo confiable en producción (hoy el correo es de mejor esfuerzo);
+- una marca de dispositivo conocido que no sea un dato de seguimiento;
+- el límite de intentos y la auditoría;
+- el texto de la pantalla.
+
+Cuando esté, la política vuelve a exigir un segundo factor, con el correo como método. El autenticador puede quedar como
+opción para quien lo quiera.
+
+**Opciones para Dirección.**
+- **A (programada):** solo contraseña hasta tener el correo, y la consola no ofrece API-ADM-19.
+- **B:** lo mismo, con el autenticador como opción para el profesional que lo quiera. Es más seguro para quien lo elige,
+  pero vuelve a mostrar la pantalla de configuración y suma un caso que probar.
+- **C (la más cuidadosa):** solo contraseña para los profesionales de prueba, y el autenticador obligatorio para los que
+  operan con datos reales hasta tener el correo. Respeta la condición 6 de 08 §42, con la fricción que Dirección quiso
+  sacar.
+
+**Decisiones a ratificar.**
+- La transición «solo contraseña hasta tener correo» (opción A).
+- Que la política sea una constante del dominio y no una variable de entorno.
+- Que API-ADM-19 quede en el contrato y fuera de la consola.
+- Que lo configurado no se borre.
+- La suspensión de 08 §25 y de la condición 6 de 08 §42 hasta la etapa siguiente.
+
+**Lo que queda.**
+- Integrar el PR.
+- Declarar la etapa del correo con sus IDs.
+- Avisar a los profesionales que ya habían configurado el autenticador que no lo van a necesitar.
+- Llevar el riesgo a la validación jurídica.
+
+---
+
+## DL-178 — Las series de calentamiento: se indican y se registran, pero no cuentan
+
+**Qué decidió Dirección (2026-11-18).** Dentro de un mismo ejercicio, el profesional indica series de calentamiento,
+escalonadas en carga, antes de las efectivas. Las de calentamiento se registran, pero no cuentan.
+
+**Qué dice el legajo.** El 06 y el 09 no tienen un tipo de serie: toda serie planificada o registrada es una serie del
+ejercicio, y todo lo que compara, cuenta o estima las toma a todas (REG-06-105, la comparación serie por serie, DL-122,
+DL-161, la estimación BE-E1RM de DL-171). Un calentamiento cargado como serie entraba en:
+- la cuenta de series y la barra de la sesión;
+- «La vez pasada», el historial del ejercicio y Analizar;
+- el 1RM estimado: 140 kg × 5 de una aproximación pesaba como la serie efectiva más cargada del día.
+
+**Lo programado (`wp-series-de-calentamiento`, PR abierto, sin integrar).**
+- **El dato.**
+  - Cada serie, la indicada en el plan y la registrada por la persona, lleva `setKind`: `WORKING` (efectiva, el valor por
+    omisión) o `WARM_UP` (calentamiento).
+  - Es un enum y no un booleano, para sumar otros tipos después (`TipoDeSerieSchema`).
+  - Las reglas viven en un solo módulo del dominio, `packages/domain/src/tipos-de-serie.ts`, que usan la API, el website y
+    la APK.
+- **La migración.** Las series no son filas: viven dentro del JSONB de la versión de plan, de su instantánea, del borrador
+  y de la ejecución, como todo lo de cada serie (DL-122, DL-161). Por eso el «default `WORKING`» es la ausencia de la clave:
+  - no se reescribe ninguna fila ni ninguna huella de instantánea;
+  - todo lo indicado y registrado antes queda con todas sus series efectivas y responde igual;
+  - solo se guarda `WARM_UP` (`tipoGuardado`): una serie efectiva queda idéntica a las de antes;
+  - lo único que cambia en la base es la lista de capacidades que acepta `capacidad_de_cliente_declarada`, que suma
+    `training-set-kinds-1` (migración aditiva `20261118120000_capacidad_tipos_de_serie`).
+- **El contrato.** El campo es opcional en lo que entra (si falta, vale `WORKING`) y explícito en lo que sale. DL-152 pone
+  una condición: las APK instaladas validan con esquemas estrictos y rechazarían un campo que no conocen.
+  - La API arma cada serie con su tipo, `WORKING` incluido.
+  - Un interceptor de Entrenamiento (`SinTipoDeSerieInterceptor`) lo saca solo para el cliente que no declara
+    `training-set-kinds-1`. La 0.29.0-candidata.1 recibe exactamente lo de antes, y su prueba de lecturas no cambia.
+  - Un plan con calentamiento no se le entrega a un cliente sin la capacidad, que lo vería todo efectivo y lo registraría
+    así. «Hoy» lo informa como no disponible y el detalle es el 404 no revelador, como en DL-122.
+  - Un plan así no se activa mientras el titular no haya usado una APK que declare la capacidad (409
+    `CLIENT_CAPABILITY_REQUIRED`, con su texto). API-SER-01 se lo informa al profesional en `setKindsDelivery`, y el
+    editor lo dice antes de activar.
+  - La APK vieja no se rompe: sin el campo, todo es efectivo.
+- **El orden.** En el plan, las de calentamiento van arriba. La API rechaza una de calentamiento después de una efectiva
+  (`WARM_UP_AFTER_WORKING_SET`, dentro de `TRAINING_PLAN_STRUCTURE_INVALID`): no reordena en silencio.
+- **La numeración.**
+  - `setIndex` sigue siendo la posición real de la serie, contando el calentamiento. Es la identidad con la que se
+    registra, se corrige y se mide el tiempo.
+  - Lo que se muestra y lo que se compara entre sesiones es el **número efectivo**: las efectivas se numeran 1, 2, 3, como
+    hoy, y el calentamiento lleva «C».
+  - La serie 1 de hoy (la tercera que hizo) se compara con la serie 1 de una sesión sin calentamiento.
+  - Sin calentamiento, el número efectivo es el `setIndex`.
+- **Lo que no usa las de calentamiento.**
+  - La comparación serie por serie (`compararEjecucion`): saca el calentamiento de las filas y lo deja aparte. De ahí
+    salen la tira de cada sesión, «La vez pasada», el historial del ejercicio, la evolución por serie, Analizar
+    (`SETS_RECORDED` y las métricas por serie), las comparaciones de etapas y los cruces.
+  - El 1RM estimado (Epley v1): «la de mayor carga por sesión» se elige solo entre las efectivas (`seriesDeLasSesiones`).
+  - Las cuentas de series: la de la línea de tiempo («Series efectivas con datos»), la de «Registros» y la del plan.
+  - En la APK, la barra de la sesión y la cuenta del registro.
+  - Una serie es de calentamiento si lo dice el registro **o** el plan para ese `setIndex`: así tampoco entra un registro
+    hecho sin el campo.
+- **Los textos.** Cuando un texto cuenta las series de un ejercicio o de una sesión con calentamiento, dice «series
+  efectivas» y nombra el calentamiento aparte: «3 series efectivas + 2 de calentamiento». Sin calentamiento, el texto queda
+  como siempre («4 series»), así lo de antes responde igual.
+- **El website.**
+  - En la planilla del editor, cada serie tiene la marca «C». Al marcarla, la serie sube arriba del ejercicio, las
+    efectivas se numeran 1, 2, 3 y la ayuda dice que el calentamiento se registra y no entra en los cálculos.
+  - El plan, la hoja para descargar, las ejecuciones y los tiempos lo muestran como «C» o «Calentamiento».
+  - La prescripción rápida («4×8») describe las efectivas y deja el calentamiento como estaba.
+- **La APK.** Declara `training-set-kinds-1`.
+  - La fila de un calentamiento lleva «C» y se nombra «Calentamiento». El lector de pantalla dice además que no cuenta.
+  - Su banda dice «Plan del calentamiento», y la acción, «Empezar», «Terminar» o «Registrar calentamiento».
+  - Se registra con `setKind: WARM_UP`: en la sesión, en el registro rápido y en la corrección.
+  - La barra de la sesión, «Serie N de M» y la cuenta del registro son de las efectivas.
+
+**Por qué así y no de otra forma.**
+- **Una columna por serie** obligaba a sacar las series del JSONB. Era una migración de datos grande, con riesgo sobre las
+  huellas de las instantáneas, para un dato que el JSONB ya guarda con el mismo «default».
+- **Mandar `WORKING` también a la APK instalada** la rompía, porque valida con esquemas estrictos (DL-152).
+- **Renumerar `setIndex`** (que el calentamiento fuera 0, −1…) cambiaba la identidad de lo registrado, de las correcciones
+  y de los tiempos.
+
+**Opciones para Dirección.**
+- **A (programada):** lo de arriba. El calentamiento se ve en todas las pantallas, se registra y no entra en ningún cálculo.
+  Los textos dicen «series efectivas» solo donde hay calentamiento.
+- **B:** decir «series efectivas» en todos los textos que cuentan series, también sin calentamiento. Es más uniforme, pero
+  cambia textos que hoy leen las personas y las capturas de evidencia, sin que haya nada distinto que distinguir.
+- **C:** además, un tercer tipo (por ejemplo, «aproximación» o «vuelta a la calma»). El enum lo admite, pero cada tipo nuevo
+  pide decidir si cuenta.
+
+**Decisiones a ratificar.**
+- D-1: el «default `WORKING`» como ausencia de la clave en el JSONB, sin una columna nueva.
+- D-2: `setKind` explícito solo para el cliente que declara `training-set-kinds-1`, y el plan con calentamiento retenido
+  para el que no.
+- D-3: el calentamiento arriba como regla del contrato (422), no como reorden silencioso.
+- D-4: el número efectivo para mostrar y comparar, con `setIndex` como identidad.
+- D-5: una serie es de calentamiento si lo dice el registro o el plan.
+- D-6: «series efectivas» solo donde hay calentamiento (opción A).
+
+**Lo que queda.**
+- Integrar el PR.
+- **Congelar las lecturas nuevas de la APK con la próxima candidata (DL-152).** La APK que declara `training-set-kinds-1`
+  lee `setKind` en API-SER-02, API-TRN-09, 14, 14-PERIODO, 15 a 20 y 19-LISTA. Al publicarla, se congela con
+  `scripts/congelar-lo-que-lee-la-apk.mjs` y reemplaza a la 0.29.0-candidata.1 en `VIGENTES`.
+- Probar en el teléfono una sesión con calentamiento, también con TalkBack:
+  - la fila «C» y «Terminar calentamiento»;
+  - la barra que no avanza con el calentamiento;
+  - el registro con su tipo.
+- Revisar con un profesional si la marca «C» se entiende sin la ayuda.
+
+---
+
+## DL-179 — El contexto de la persona en el editor: el panel, la familia CTX y la cita en la evaluación de Nutrición
+
+**Prioridad:** alta (planificar con el contexto a la vista es el centro del trabajo del profesional) · **Documento:** 04
+RF-036, RF-057 y RF-071 · 06 §20.4, REG-06-109, CA-FOR-04 · 08 §11-bis, §19.7 y §27.3 · 10-B10:407 · B05 · DL-102 ·
+DL-137 D-7 · DL-163 D-13 · DL-164 y DL-165 · DL-173 · DL-176 · **Estado:** DECIDIDA por Dirección el 2026-11-18 (el panel y
+su alcance) · PROGRAMADA en `wp-contexto-de-la-persona` (PR abierto, sin integrar) · CTX-D01 a CTX-D18 y CTX-P01 a
+CTX-P09, **a ratificar**. Si al integrar el número choca con otro paquete de la misma planificación, se renumera.
+
+**La decisión de Dirección.** «El profesional tiene que tener el contexto de la persona a mano mientras planifica, sin salir
+del editor», en el editor del plan de Entrenamiento y de Nutrición, en la evaluación y en el objetivo, con cinco pestañas
+(Lo importante, Formularios, Cuerpo, Otras áreas y Notas) y «Citar» al lado de cada respuesta.
+
+**Lo que se declara.**
+- **Familia propia de BE, CTX** (el 09 no la tiene; DL-137 D-7): **API-CTX-01** `GET /advisees/{adviseeId}/person-context/answers`
+  (las respuestas vigentes a las Solicitudes propias, de las áreas con el PDP permitido) y **API-CTX-02**
+  `GET /advisees/{adviseeId}/person-context/body` (la última toma y la anterior: enteras para quien lleva Antropometría; el
+  peso y la composición en kilos, con su método, para quien recibe el resumen compartido, con la lectura registrada).
+- **API-NUT-01, 02 y 03, aditivas:** `formResponseReferences` en la evaluación de Nutrición, como DL-102 en Entrenamiento,
+  con la migración `20261118120000_citas_en_evaluacion_nutricional` (solo agrega una tabla y sus guardias).
+- **El criterio de «Lo importante»** por área (el §1 del paquete), con sus fuentes, aplicado solo a lo que los formularios
+  de BE preguntan. Lo que las guías piden y BE no pregunta queda propuesto (CTX-P01 a CTX-P05), sin campos nuevos.
+
+**Lo que no cambia.** Ninguna operación de siempre pierde un campo. El texto de «resumen» aceptado por la persona no se
+amplía: el cuerpo compartido es lo que ese texto ya promete («de Antropometría, el peso y la composición en kilos, con su
+método»). Administración no lee nada de esto. Detalle completo: `docs/paquetes/WP-CONTEXTO-DE-LA-PERSONA.md`.
+
+---
+
+## DL-180 — Los alimentos del catálogo: corregirlos, retirarlos, revisarlos y su grupo
+
+**Decisión de Dirección del 2026-11-16** (el alcance del segundo tramo de la planificación de Nutrición). Paquete:
+`docs/paquetes/WP-NUTRICION-ALIMENTOS.md`. Reservada para Nutrición; si al integrar choca con otra, se renumera.
+
+**El hueco.** El legajo prevé que un elemento del catálogo tenga versiones inmutables y una disponibilidad (REG-06-99 a
+101), pero no había forma de corregir ni de retirar lo cargado a mano: un error de carga («Proteína en polvo» en test)
+quedaba para siempre en el buscador. El buscador tampoco distinguía una tabla oficial de lo que cargó cualquiera, y
+Administración no tenía cómo revisarlo.
+
+**Lo programado (NUA-01 a NUA-07).**
+- Corregir: una versión nueva, contra la versión vista, con el bloqueo y el conflicto de las recetas. Lo activado, las
+  recetas y los registros conservan la versión que citaban (REG-06-101).
+- Retirar: una versión RETIRADO. Sale del buscador y de todo lo nuevo; lo que lo cita lo sigue mostrando, marcado.
+- Tres niveles de origen: «Verificado», «Tuyo» y «De otro profesional». Lo cargado a mano desde DL-180 se comparte con los
+  demás profesionales de Nutrición (con el aviso a la vista); lo de antes, solo cuando su autor lo corrige.
+- Administración certifica con una fuente (vale para esa versión) o marca un equivalente de la tabla oficial, viendo solo
+  el nombre y los valores, y solo de lo compartido (lo que su autor no compartió lo ve solo él).
+- Un ícono por grupo (doce dibujos nuevos de la familia y «Otros» con el genérico), sembrado para la tabla oficial.
+- La imagen de la receta al crearla, y los campos de los pasos 3 y 4 del asistente con el estilo de BE.
+
+**Lo que no cambia.** La APK instalada recibe exactamente lo de antes. Nada se borra ni se reescribe: tres migraciones que
+solo agregan (tres tablas de solo agregar, sus guardias y la siembra de los grupos).
+
+**Decisiones a ratificar:** NUA-D01 a NUA-D13 (§4 del paquete). Las que más pesan: qué se comparte (NUA-D05), que un
+borrador con un alimento retirado se siga guardando (NUA-D03) y que la certificación sea de una versión (NUA-D07).
+
+**Lo que queda.** Medidas caseras, micronutrientes y platos argentinos (NUA-08 a 10, §5 del paquete); validar los íconos;
+retirar «Proteína en polvo» en test con la operación nueva, después de integrar (§6 del paquete).
+
+### DL-180, segundo tramo (rama `wp-nutricion-alimentos-2`, 2026-11-19)
+
+**Cambio de dirección de Dirección (Elián, 2026-11-19):** «si carga algo, que sea propio; Administración debe poder ver
+quién lo cargó y tener control; si hay x profesionales pidiendo eso, lo puede meter al canon; es un problema si cargan todos
+y son compartidos». Reemplaza el «compartir con control» que se había pedido esa misma mañana y deja **sin efecto NUA-D05
+y NUA-D13**.
+
+**Lo programado.**
+- **Lo propio es propio (NUA-D14):** lo cargado a mano lo ve y lo cita solo quien lo cargó; para los demás, el mismo 404 que
+  lo inexistente. No hay nivel «De otro profesional». `alimento_compartido` queda como historia y se cierra.
+- **Administración ve y controla (NUA-D15):** todas las cargas, con el nombre de profesional de quien las cargó (nunca sus
+  personas ni sus planes), agrupadas por nombre parecido con cuántos profesionales cargaron algo así (API-ALI-08).
+- **Sumar al canon (NUA-D16, API-ALI-09):** un alimento verificado de BE, de todos, con la fuente obligatoria; puede partir
+  de una carga y marcar las del grupo como equivalentes. El buscador de cada autor sugiere el verificado antes del suyo, y
+  crear uno con el nombre de un verificado se avisa antes de guardar, sin impedirlo.
+- **Las bajas de la revisión adversaria sobre lo retirado (NUA-D17 a D19):** el borrador acepta solo lo retirado que ya
+  citaba; una receta no cita ninguna versión de un alimento retirado; la imagen de una receta recién creada que no quedó
+  porque venció la sesión se avisa al volver, con su reintento; «Revisar» lleva el foco al formulario.
+- **Medidas caseras (NUA-08, NUA-D20 y D21):** la unidad, la cucharada, la taza y la porción, con su equivalencia; las
+  define quien carga el alimento; en la fila del plan se elige la cantidad con ellas; la cuenta va en gramos y la persona
+  recibe solo los gramos. La tabla oficial no trae medidas (no se inventan).
+
+**Lo que no cambia.** La APK instalada recibe exactamente lo de antes. Dos migraciones nuevas que solo agregan:
+`20261120120000_lo_propio_es_propio` y `20261120130000_medidas_caseras`.
+
+**Lo que queda.** Los micronutrientes clave (NUA-09) y los platos argentinos como recetas de ejemplo (NUA-10), declarados
+en el §5 del paquete; mostrar la medida casera en la APK (sin capacidad de cliente: Dirección dijo el 19/11 que nadie tiene
+APK viejas); ratificar NUA-D14 a D23. **Dirección ratificó el 19/11 NUA-D01 a D13** con dos ajustes: NUA-D03 (una
+receta nueva o corregida no suma un alimento retirado: NUA-D18) y NUA-D07 (Administración ve el nombre de quien lo cargó,
+nunca a quién se le indicó; lo del canon nace como un alimento nuevo, con su fuente y sin el nombre de quien lo cargó; el
+aviso de no escribir datos de personas en el nombre se mantiene).
+
+---
+
+## DL-181 — La planificación de Entrenamiento: «Fase» para la etapa de varias semanas y el bloque dentro de la sesión
+
+**Prioridad:** alta (es la forma en que el profesional arma cada sesión) · **Documento:** 09v10 §5-§6 (la jerarquía),
+B10-06 §8-§23 (el editor), REG-06-104, 105, 111 y 112 (la instantánea y su huella) · DL-122 · DL-152 · DL-178 · B05 ·
+**Estado:** DECIDIDA por Dirección el 2026-11-18 (la fase, el bloque y sus dos tipos) · PROGRAMADA en
+`wp-entrenamiento-planificacion` (PR abierto, sin integrar, con #288 y #289 adentro) · ENP-D01 a ENP-D16, **a ratificar**.
+La 180 queda para `wp-nutricion-planificacion`; si al integrar el número choca, se renumera.
+
+**Qué decidió Dirección.** Lo que se llamaba «Bloque» (la etapa de varias semanas, el mesociclo) se llama «Fase» en todas
+las pantallas, y la sesión suma un nivel opcional, el «Bloque» (Torso, Pierna, Core…), que agrupa ejercicios: «Seguido»
+(un título; los ejercicios de a uno) o «En vueltas» (dos o más alternados, con las vueltas y el descanso al terminar cada
+vuelta). Se guarda como dato aditivo: los planes existentes quedan iguales, con sus huellas e instantáneas.
+
+**Qué dice el legajo.** El 09 nombra «bloque» al mesociclo (`blocks`, `blockId`) y no tiene una agrupación de ejercicios
+dentro de la sesión: la sesión es una lista ordenada de prescripciones (REG-06-111).
+
+**Lo programado.**
+- **En pantalla, «Fase»; en el contrato, `blocks` sigue igual** (ENP-D01): renombrarlo tocaría el JSONB de cada versión y
+  de cada instantánea, la APK instalada y lo congelado de sus lecturas, sin ganancia para la persona.
+- **El bloque de la sesión es una marca sobre la lista** (ENP-D02): la sesión puede llevar `exerciseGroups` (`groupId`,
+  `label`, `kind` `SEQUENTIAL` o `ROUNDS`, y en `ROUNDS`, `rounds` y `restAfterRoundSeconds`) y cada prescripción, su
+  `exerciseGroupId`. Los ejercicios siguen en una sola lista, en orden: nada de lo que la recorre cambia. Lo que no tiene
+  bloques no lleva las claves, así que su huella no cambia, y no hay migración de base.
+- **Las reglas** (`packages/domain/src/bloques-de-la-sesion.ts`): al guardar, el bloque existe en la sesión, sus ejercicios
+  van seguidos y su identificador no se repite (422); para activar, ningún bloque vacío y ninguno «En vueltas» con menos de
+  dos ejercicios (API-TRN-11 y 12).
+- **La APK instalada recibe lo de antes** (ENP-D06, DL-152): la capacidad `training-session-groups-1` decide si salen las
+  dos claves; sin ella, `SinBloquesDeLaSesionInterceptor` las saca en el borde. A diferencia de DL-178 no se retiene ni se
+  bloquea nada: el registro sigue siendo por ejercicio y nada se cuenta distinto.
+- **La APK nueva** muestra los ejercicios bajo su bloque y, en uno «En vueltas», «Alterná estos 2 ejercicios · 3 vueltas ·
+  descansá 90 s al terminar cada vuelta». Sin guía alternada paso a paso.
+- **Las plantillas y las sesiones habituales** guardan la estructura tal como entra: conservan los bloques.
+
+**Lo que queda.**
+- Ratificar ENP-D01 a ENP-D16.
+- Congelar la lectura nueva de la APK con la próxima candidata (DL-152): la que declara `training-session-groups-1` lee
+  `exerciseGroups` y `exerciseGroupId` en API-SER-02, API-TRN-09, 14, 14-PERIODO, 15 a 20 y 19-LISTA.
+- Probar en el teléfono una sesión con un bloque «En vueltas», también con TalkBack.
+- Lo que dejó abierto la revisión adversaria del 2026-11-19 (todo de severidad baja: el preset con la sesión vacía
+  recordado por posición, el tope de 20 bloques en el editor, la lectura de la versión activa sin los bloques, entre
+  otros), en §7 del documento del paquete.
+- El tramo siguiente del paquete (C5 a C11). Detalle completo: `docs/paquetes/WP-ENTRENAMIENTO-PLANIFICACION.md`.
+
+---
+
+## DL-182 — Las plantillas de entrenamiento independientes: crearlas y editarlas sin una persona
+
+**Prioridad:** alta (preparar los planes base es trabajo diario del profesional) · **Documento:** RF-037 · DL-108 (PF-09)
+· DL-122 · DL-178 · DL-181 · B05 · **Estado:** DECIDIDA por Dirección el 2026-11-19 (crear y editar sin persona, con el
+mismo editor, y el recorte de la v1) · PROGRAMADA en `wp-plantillas-de-entrenamiento` (PR en borrador, sin integrar, sobre
+`wp-entrenamiento-planificacion-2`) · PLT-D01 a PLT-D18, **a ratificar**. Si al integrar el número choca con otro paquete,
+se renumera.
+
+**Qué decidió Dirección.** Que un profesional pueda crear y editar una plantilla de Entrenamiento desde «Mis plantillas»,
+sin elegir a nadie (en blanco o desde una existente), con el mismo núcleo del editor del plan, autoguardado, «Guardar
+plantilla» la primera vez y «Guardar nueva versión» después, con una revisión antes; que editarla no toque los planes ya
+creados y que el plan diga el número de la versión que se aplicó. Afuera, como lo siguiente: el historial con
+diferencias, el conflicto con un diff y «usar una versión vieja como base».
+
+**Qué dice el legajo.** El 09 no tiene plantillas: son una familia propia de BE (TPL, DL-108), que solo se creaba desde el
+plan de una persona. DL-108 fija que la plantilla no lleva nada de una persona (D-5) y que las cargas se copian solo con
+el interruptor (D-2).
+
+**Lo programado.**
+- **La preparación de una plantilla** (tabla nueva, migración aditiva escrita con `prisma migrate diff`): el trabajo en
+  curso, privado, que se autoguarda sin tocar ninguna versión; guardarla crea la plantilla o la versión siguiente (con
+  las escrituras de API-TPL-01 y 04) y la borra. Una por plantilla.
+- **Nueve operaciones aditivas, API-TPL-06 a 14:** crear (en blanco o copia), abrir la de una existente, listar, leer,
+  autoguardar, revisar, guardar, descartar y las versiones de una plantilla con cuántos planes salieron de cada una. Lo
+  ajeno es 404; las escrituras simultáneas, 409. Ninguna operación de antes cambia de forma, y la APK no recibe nada
+  nuevo.
+- **El website:** el editor del plan recibe qué edita y, con una plantilla, guarda, revisa y guarda como versión con sus
+  operaciones; lo de la persona no aparece. «Mis plantillas» suma «Nueva plantilla», lo que está en preparación,
+  «Editar» y «Crear otra desde esta», y el detalle agrupado por bloque con sus versiones. La nota de origen del plan dice
+  la versión aplicada (antes, la vigente).
+
+**Lo que queda.**
+- Ratificar PLT-D01 a PLT-D18.
+- Lo declarado como siguiente (arriba) y, fuera del paquete, el mismo error de la nota de origen en Nutrición.
+- La prueba manual con el teclado y un lector de pantalla. Detalle completo: `docs/paquetes/WP-PLANTILLAS-DE-ENTRENAMIENTO.md`.

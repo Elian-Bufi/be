@@ -1,0 +1,76 @@
+# Capturas de los gráficos de WP-GRAFICOS (DL-174), para mirarlos en pantalla: la cohorte sintética en un PostgreSQL
+# efímero, con los ejercicios del catálogo que entran en la estimación de la fuerza, la API y el website compilados, y las
+# capturas en Claro y Azul noche, a 1024 × 768, 1280 × 800, 1440 × 900 y 1920 × 950. Esta PC no levanta los tres juntos:
+# lo hace la CI. La herramienta sirve en cada rama del paquete: lo que la rama todavía no tiene se anota y se saltea.
+# No es un check de la integración: no bloquea nada y no despliega nada. Corre en las ramas del paquete cuando cambian el
+# website, el dominio, la herramienta o este archivo, y a pedido.
+name: capturas-de-los-graficos
+
+on:
+  push:
+    branches: ["wp-graficos-*"]
+    paths:
+      - "apps/web/**"
+      - "packages/domain/src/**"
+      - "EVIDENCIA/GRAFICOS/herramientas/**"
+      - ".github/workflows/capturas-de-los-graficos.yml"
+  workflow_dispatch:
+    inputs:
+      solo:
+        description: "Prefijos de las pantallas a capturar, separados por comas (por ejemplo 01,07); vacío, todas"
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+
+concurrency:
+  group: capturas-de-los-graficos-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  capturas:
+    name: capturas · gráficos (website + API + PostgreSQL)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 50
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: be_test
+          POSTGRES_PASSWORD: be_test
+          POSTGRES_DB: be_test_cohorte
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U be_test -d be_test_cohorte"
+          --health-interval 5s --health-timeout 5s --health-retries 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npx prisma generate
+      - name: Build de la API
+        run: npm run build:api
+      - name: Build del website contra la API local
+        run: npm run build:web
+        env:
+          BE_API_BASE_URL: http://localhost:3001
+      - name: La cohorte y las capturas
+        run: node EVIDENCIA/GRAFICOS/herramientas/capturas.mjs capturas-de-los-graficos
+        env:
+          BE_E2E_DATABASE_URL: postgresql://be_test:be_test@localhost:5432/be_test_cohorte
+          BE_COHORTE_CON_LA_ESTIMACION: si
+          BE_CAPTURAS_SOLO: ${{ github.event.inputs.solo }}
+          CHROME: /usr/bin/google-chrome
+          TZ: America/Argentina/Buenos_Aires
+      - name: Capturas, índice y registro de la API (datos sintéticos)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: capturas-de-los-graficos
+          path: capturas-de-los-graficos
+          if-no-files-found: warn
+          retention-days: 30

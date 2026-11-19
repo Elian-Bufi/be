@@ -27,6 +27,15 @@ import type {
 import { CAMPOS_CON_ORIGEN } from './contratos-entrenamiento';
 import type { PlanConObjetivos } from './contratos-entrenamiento-por-serie';
 import { problemasDeObjetivosPorSerie } from './objetivos-por-serie';
+import { calentamientoFueraDeLugar, tipoGuardado } from './tipos-de-serie';
+import {
+  bloqueDelEjercicioGuardado,
+  bloquesGuardados,
+  CodigoDeProblemaDeBloque,
+  problemasDeLosBloquesAlGuardar,
+  problemasDeLosBloquesParaActivar,
+  type BloqueDeLaSesionGuardado,
+} from './bloques-de-la-sesion';
 import type { ValidationIssue } from './contratos';
 import type { CondicionDeSesion, GranularidadDeRegistro, MotivoDeIntensidadInvalida } from './entrenamiento';
 
@@ -46,6 +55,8 @@ export interface SeriePrescriptaGuardada {
   readonly rir?: number | null;
   readonly suggestedLoad?: { readonly value: number; readonly unit: 'kg' | 'lb' } | null;
   readonly restSeconds?: number | null;
+  /** DL-178: solo `WARM_UP` se guarda; ausente es efectiva, como todas las series de antes (`tipos-de-serie.ts`). */
+  readonly setKind?: 'WARM_UP';
 }
 export interface ParametroGuardado {
   readonly label: string;
@@ -64,12 +75,16 @@ export interface PrescripcionGuardada {
   readonly restSeconds?: number | null;
   readonly loadBasis?: BaseDeCarga | null;
   readonly repetitionBasis?: BaseDeRepeticiones | null;
+  /** DL-181: el bloque de la sesión al que pertenece; ausente si va suelto, como todos los de antes. */
+  readonly exerciseGroupId?: string;
 }
 export interface SesionGuardada {
   readonly sessionId: string;
   readonly label: string;
   readonly instructions: string | null;
   readonly prescriptions: readonly PrescripcionGuardada[];
+  /** DL-181: los bloques de la sesión; ausente si no tiene, como todas las de antes (`bloques-de-la-sesion.ts`). */
+  readonly exerciseGroups?: readonly BloqueDeLaSesionGuardado[];
 }
 export interface MicrocicloGuardado {
   readonly microcycleId: string;
@@ -120,6 +135,8 @@ export const CodigoDeProblemaDePlanDeEntrenamiento = {
   // Al guardar: estructura mal formada (TRAINING_PLAN_STRUCTURE_INVALID).
   DUPLICATE_NODE_ID: 'DUPLICATE_NODE_ID',
   SESSIONS_AND_MICROCYCLES_IN_BLOCK: 'SESSIONS_AND_MICROCYCLES_IN_BLOCK',
+  // DL-178: una serie de calentamiento después de una efectiva. El calentamiento va arriba.
+  WARM_UP_AFTER_WORKING_SET: 'WARM_UP_AFTER_WORKING_SET',
   // Al guardar: intensidad (INTENSITY_CRITERION_INVALID).
   INTENSITY_CRITERION_UNKNOWN: 'INTENSITY_CRITERION_UNKNOWN',
   INTENSITY_CRITERIA_COMBINED: 'INTENSITY_CRITERIA_COMBINED',
@@ -135,6 +152,8 @@ export const CodigoDeProblemaDePlanDeEntrenamiento = {
   BLOCK_REQUIRED: 'BLOCK_REQUIRED',
   SESSION_REQUIRED: 'SESSION_REQUIRED',
   PRESCRIPTION_REQUIRED: 'PRESCRIPTION_REQUIRED',
+  // DL-181: los bloques de la sesión (`bloques-de-la-sesion.ts`). Los dos primeros, al guardar; los otros, al validar.
+  ...CodigoDeProblemaDeBloque,
 } as const;
 const P = CodigoDeProblemaDePlanDeEntrenamiento;
 
@@ -185,7 +204,10 @@ export function normalizarEstructuraDeEntrenamiento(entrada: EstructuraDePlanDeE
     return valor;
   };
 
-  const sesion = (s: SesionEntrada, ruta: string): SesionGuardada => ({
+  const sesion = (s: SesionEntrada, ruta: string): SesionGuardada => {
+    // DL-181: los bloques de la sesión. Su identificador es de la sesión (ENP-D09), no del plan.
+    estructura.push(...problemasDeLosBloquesAlGuardar(s, ruta));
+    return {
     sessionId: id(s.sessionId, `${ruta}.sessionId`),
     label: s.label,
     instructions: s.instructions ?? null,
@@ -202,6 +224,9 @@ export function normalizarEstructuraDeEntrenamiento(entrada: EstructuraDePlanDeE
       if (!p.intensity || intensity) {
         for (const problema of problemasDeObjetivosPorSerie({ intensity, sets: p.sets })) intensidad.push({ code: P[problema.motivo], path: `${rp}.sets[${problema.setIndex - 1}].rir` });
       }
+      // DL-178: las de calentamiento, arriba. No se reordena en silencio: el profesional ve dónde está la que no va.
+      const fueraDeLugar = calentamientoFueraDeLugar(p.sets);
+      if (fueraDeLugar !== null) estructura.push({ code: P.WARM_UP_AFTER_WORKING_SET, path: `${rp}.sets[${fueraDeLugar}].setKind` });
       return {
         prescriptionId: id(p.prescriptionId, `${rp}.prescriptionId`),
         exerciseVersionId: p.exerciseVersionId,
@@ -212,6 +237,7 @@ export function normalizarEstructuraDeEntrenamiento(entrada: EstructuraDePlanDeE
           ...(x.rir !== undefined ? { rir: x.rir } : {}),
           ...(x.suggestedLoad !== undefined ? { suggestedLoad: x.suggestedLoad } : {}),
           ...(x.restSeconds !== undefined ? { restSeconds: x.restSeconds } : {}),
+          ...tipoGuardado(x),
         })),
         intensity,
         suggestedLoad: p.suggestedLoad ?? null,
@@ -220,9 +246,13 @@ export function normalizarEstructuraDeEntrenamiento(entrada: EstructuraDePlanDeE
         ...(p.restSeconds !== undefined ? { restSeconds: p.restSeconds } : {}),
         ...(p.loadBasis !== undefined ? { loadBasis: p.loadBasis } : {}),
         ...(p.repetitionBasis !== undefined ? { repetitionBasis: p.repetitionBasis } : {}),
+        ...bloqueDelEjercicioGuardado(p),
       };
     }),
-  });
+    // DL-181: solo si tiene bloques; una sesión sin ellos queda idéntica a las de antes.
+    ...bloquesGuardados(s),
+    };
+  };
 
   const blocks = entrada.blocks.map((b, i): BloqueGuardado => {
     const rb = `blocks[${i}]`;
@@ -285,7 +315,11 @@ export function problemasDeCompletitud(contenido: ContenidoDePlanDeEntrenamiento
       if (m.sessions.length === 0) issues.push({ code: P.SESSION_REQUIRED, path: `blocks[${i}].microcycles[${j}].sessions` });
     });
   });
-  for (const s of sesionesDelPlan(contenido)) if (s.sesion.prescriptions.length === 0) issues.push({ code: P.PRESCRIPTION_REQUIRED, path: `${s.ruta}.prescriptions` });
+  for (const s of sesionesDelPlan(contenido)) {
+    if (s.sesion.prescriptions.length === 0) issues.push({ code: P.PRESCRIPTION_REQUIRED, path: `${s.ruta}.prescriptions` });
+    // DL-181: ningún bloque vacío, y los «En vueltas» con dos ejercicios o más.
+    issues.push(...problemasDeLosBloquesParaActivar(s.sesion, s.ruta));
+  }
   return issues;
 }
 
@@ -345,6 +379,8 @@ export const CodigoDeProblemaDeRegistro = {
   DUPLICATE_PRESCRIPTION: 'DUPLICATE_PRESCRIPTION',
   DUPLICATE_SET_INDEX: 'DUPLICATE_SET_INDEX',
   PRESCRIPTION_NOT_IN_SESSION: 'PRESCRIPTION_NOT_IN_SESSION',
+  // DL-178: una serie registrada de calentamiento después de una efectiva (lo diga el registro o el plan).
+  WARM_UP_AFTER_WORKING_SET: 'WARM_UP_AFTER_WORKING_SET',
   PERFORMED_EXERCISE_INVALID: 'PERFORMED_EXERCISE_INVALID',
   OCCURRED_AT_OUTSIDE_OCCURRENCE_DATE: 'OCCURRED_AT_OUTSIDE_OCCURRENCE_DATE',
   OCCURRED_AT_IN_FUTURE: 'OCCURRED_AT_IN_FUTURE',
@@ -530,12 +566,14 @@ export function estructuraComoEntrada(v: VersionDePlanDeEntrenamiento): Estructu
     prescriptions: s.prescriptions.map((p) => ({
       prescriptionId: p.prescriptionId,
       exerciseVersionId: p.exerciseVersionId,
-      sets: p.sets.map((x) => ({ repetitions: x.repetitions, note: x.note })),
+      sets: p.sets.map((x) => ({ repetitions: x.repetitions, note: x.note, ...tipoGuardado(x) })),
       intensity: p.intensity ? { criterion: p.intensity.criterion, target: { value: p.intensity.target.value, reference: p.intensity.target.reference } } : null,
       suggestedLoad: p.suggestedLoad,
       professionalParameters: p.professionalParameters.map((q) => ({ label: q.label, value: q.value, unit: q.unit })),
       note: p.note,
+      ...bloqueDelEjercicioGuardado(p),
     })),
+    ...bloquesGuardados(s),
   });
   return v.blocks.map((b) => ({
     blockId: b.blockId,
@@ -566,6 +604,7 @@ export function estructuraConObjetivosComoEntrada(v: PlanConObjetivos): Estructu
         ...(x.rir !== undefined ? { rir: x.rir } : {}),
         ...(x.suggestedLoad !== undefined ? { suggestedLoad: x.suggestedLoad } : {}),
         ...(x.restSeconds !== undefined ? { restSeconds: x.restSeconds } : {}),
+        ...tipoGuardado(x),
       })),
       intensity: p.intensity ? { criterion: p.intensity.criterion, target: { value: p.intensity.target.value, reference: p.intensity.target.reference } } : null,
       suggestedLoad: p.suggestedLoad,
@@ -574,7 +613,9 @@ export function estructuraConObjetivosComoEntrada(v: PlanConObjetivos): Estructu
       ...(p.restSeconds !== null ? { restSeconds: p.restSeconds } : {}),
       ...(p.loadBasis !== null ? { loadBasis: p.loadBasis } : {}),
       ...(p.repetitionBasis !== null ? { repetitionBasis: p.repetitionBasis } : {}),
+      ...bloqueDelEjercicioGuardado(p),
     })),
+    ...bloquesGuardados(s),
   });
   return v.blocks.map((b) => ({
     blockId: b.blockId,

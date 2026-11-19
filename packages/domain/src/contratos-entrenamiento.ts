@@ -42,6 +42,7 @@ import {
 } from './contratos-nutricion';
 import { FuenteExternaSchema, OrigenEnElBuscadorSchema } from './contratos-procedencia-externa';
 import { PaginaSchema, ResumenDeActorSchema, TokenDeVersionSchema } from './contratos-vinculo';
+import { CitaDeRespuestaDeFormularioSchema, RespuestaCitadaSchema } from './contratos-citas-de-respuestas';
 
 const Texto = (max: number) => z.string().trim().min(1).max(max);
 const TextoOpcional = (max: number) => z.string().trim().max(max).nullable();
@@ -67,49 +68,9 @@ export const UnidadDeCargaSchema = z.enum(['kg', 'lb']);
 export const CargaSchema = z.strictObject({ value: z.number().nonnegative().finite(), unit: UnidadDeCargaSchema });
 
 // ─── Evaluación (API-TRN-01 a 03) ───────────────────────────────────────────────────────────────
-/**
- * DL-102 (PF-02): una respuesta de formulario citada como evidencia de la evaluación. Es una **referencia**, no una
- * copia: la declaración de la persona no se convierte en observación del profesional (CA-FOR-04 del Plan Funcional).
- * El servidor la valida al crear la evaluación: tiene que ser una respuesta del mismo asesorado, a una Solicitud de
- * ENTRENAMIENTO del mismo profesional, con el campo respondido en la versión vigente, que es la que queda citada.
- *
- * `expectedVersion` (auditoría del #102): la versión de la respuesta **que el profesional vio** al elegirla (el `version`
- * de FRM-05). Si la persona rectificó en el medio, la API responde 409 `VERSION_CONFLICT` y no registra nada, en vez
- * de citar en silencio un valor distinto del elegido. Es opcional para los clientes anteriores; el website lo envía
- * siempre que cita.
- */
-export const CitaDeRespuestaDeFormularioSchema = z.strictObject({
-  formResponseId: IdOpaco,
-  fieldCode: z.string().regex(/^[a-z][a-z0-9_]{0,63}$/),
-  expectedVersion: TokenDeVersionSchema.optional(),
-});
-export type CitaDeRespuestaDeFormulario = z.infer<typeof CitaDeRespuestaDeFormularioSchema>;
-
-/**
- * Lo citado, resuelto al leer la evaluación.
- * - `value` y `unit` son los de la versión de la respuesta **vigente al citar** (`citedVersion`). `unit` es la que declaró
- *   la persona o, si no declaró ninguna, la del campo de la plantilla. `label` sale de la versión de plantilla de la
- *   Solicitud, que no cambia.
- * - `answeredAt`: cuándo se registró la versión citada. Es el envío original si `citedVersion` es la primera, o la
- *   rectificación citada.
- * - `laterVersionExists`: la persona rectificó después; el valor citado no cambia, porque la evaluación se fundó en lo
- *   que había.
- * Se lee exactamente cuando se lee la evaluación: si se revoca el acceso, la evaluación entera da 404 (no hay aviso por
- * cita).
- */
-export const RespuestaCitadaSchema = z.strictObject({
-  formResponseId: IdOpaco,
-  formRequestId: IdOpaco,
-  fieldCode: z.string(),
-  label: z.string(),
-  value: z.union([z.string(), z.number(), z.boolean()]),
-  unit: z.string().nullable(),
-  provenance: z.literal('SELF_REPORTED'),
-  citedVersion: TokenDeVersionSchema,
-  answeredAt: Instante,
-  laterVersionExists: z.boolean(),
-});
-export type RespuestaCitada = z.infer<typeof RespuestaCitadaSchema>;
+// DL-102: la cita y lo citado viven en `contratos-citas-de-respuestas.ts` desde DL-179 (la usa también Nutrición, que
+// este archivo importa: definirlas acá armaba un ciclo). Se vuelven a exportar para quien las tomaba de acá.
+export { CitaDeRespuestaDeFormularioSchema, RespuestaCitadaSchema, type CitaDeRespuestaDeFormulario, type RespuestaCitada } from './contratos-citas-de-respuestas';
 
 /**
  * La valoración es la misma lista de datos con fuente de nutrición (DL-048): «cada dato debe conservar origen»
@@ -213,6 +174,57 @@ export type BaseDeRepeticiones = z.infer<typeof BaseDeRepeticionesSchema>;
 export const DescansoRecomendadoSchema = z.number().int().min(0).max(3600);
 
 /**
+ * DL-178 (decisión de Dirección del 2026-11-18) · el tipo de una serie, la planificada y la registrada:
+ * - `WORKING`: efectiva. Es el valor por omisión: una serie sin el campo es efectiva, y así queda todo lo anterior;
+ * - `WARM_UP`: de calentamiento. Se indica y se registra, pero no entra en ningún cálculo (`tipos-de-serie.ts`).
+ * Es un enum y no un booleano para poder sumar otros tipos después. En lo que entra es opcional (ausente = `WORKING`); en
+ * lo que sale va explícito para el cliente que declara `training-set-kinds-1` (`compatibilidad-de-clientes.ts`), y no va
+ * para el que no la declara, que lo leería como un campo desconocido.
+ */
+export const TipoDeSerieSchema = z.enum(['WORKING', 'WARM_UP']);
+export type TipoDeSerie = z.infer<typeof TipoDeSerieSchema>;
+
+/**
+ * DL-181 (WP-ENTRENAMIENTO-PLANIFICACION, decisión de Dirección del 2026-11-18) · el bloque dentro de la sesión. Es una
+ * marca sobre la lista de ejercicios (`bloques-de-la-sesion.ts`): qué ejercicios van juntos y cómo. En pantalla, «Bloque»;
+ * la etapa de varias semanas (`blocks`) se lee «Fase» (ENP-D01).
+ * - `SEQUENTIAL` («Seguido», el que viene por defecto): un título; los ejercicios se hacen de a uno, como siempre;
+ * - `ROUNDS` («En vueltas»): dos o más ejercicios alternados, con las vueltas y el descanso al terminar cada vuelta.
+ * Es un enum, como `setKind`, para sumar otros tipos después.
+ */
+export const TipoDeBloqueSchema = z.enum(['SEQUENTIAL', 'ROUNDS']);
+export type TipoDeBloque = z.infer<typeof TipoDeBloqueSchema>;
+/** DL-181: las vueltas de un bloque «En vueltas». Cada vuelta es una serie efectiva de cada ejercicio (ENP-D05). */
+export const VueltasSchema = z.number().int().min(1).max(20);
+/**
+ * DL-181: un bloque de la sesión, como entra. El identificador lo pone el editor (ENP-D09): el ejercicio nuevo nombra su
+ * bloque antes de tener identificador propio. Las vueltas y el descanso son solo de `ROUNDS`, y ahí las vueltas van.
+ */
+export const BloqueDeLaSesionEntradaSchema = z
+  .strictObject({
+    groupId: IdDeNodoSchema,
+    label: Texto(120),
+    kind: TipoDeBloqueSchema,
+    rounds: VueltasSchema.nullable().optional(),
+    restAfterRoundSeconds: DescansoRecomendadoSchema.nullable().optional(),
+  })
+  .refine((g) => (g.kind === 'ROUNDS' ? typeof g.rounds === 'number' : (g.rounds ?? null) === null && (g.restAfterRoundSeconds ?? null) === null), {
+    message: 'Las vueltas van solo en un bloque «En vueltas», y ahí son obligatorias',
+    path: ['rounds'],
+  });
+export type BloqueDeLaSesionEntrada = z.infer<typeof BloqueDeLaSesionEntradaSchema>;
+/** DL-181: el bloque como sale, con su orden en la sesión (el de su primer ejercicio). */
+export const BloqueDeLaSesionSchema = z.strictObject({
+  groupId: IdDeNodoSchema,
+  label: z.string(),
+  order: z.number().int().positive(),
+  kind: TipoDeBloqueSchema,
+  rounds: z.number().int().positive().nullable(),
+  restAfterRoundSeconds: z.number().int().min(0).nullable(),
+});
+export type BloqueDeLaSesion = z.infer<typeof BloqueDeLaSesionSchema>;
+
+/**
  * Una serie planificada. Los tres campos de DL-122 tienen tres estados: ausente hereda de la prescripción, `null` quita
  * el objetivo en esta serie y un valor lo sobrescribe (`objetivosEfectivos`, en `objetivos-por-serie.ts`). El RIR
  * viaja como número sin rango para que uno fuera de 0 a 10, o sin criterio RIR, sea el 422 específico y no un 400.
@@ -223,6 +235,8 @@ export const SeriePrescriptaEntradaSchema = z.strictObject({
   rir: z.number().finite().nullable().optional(),
   suggestedLoad: CargaSchema.nullable().optional(),
   restSeconds: DescansoRecomendadoSchema.nullable().optional(),
+  /** DL-178: ausente es `WORKING`. Las de calentamiento van antes que las efectivas (`WARM_UP_AFTER_WORKING_SET`). */
+  setKind: TipoDeSerieSchema.optional(),
 });
 
 /**
@@ -261,12 +275,16 @@ export const PrescripcionEntradaSchema = z.strictObject({
   /** DL-122: cómo se cuenta la carga y qué cuentan las repeticiones. `null` o ausente: no se declaró. */
   loadBasis: BaseDeCargaSchema.nullable().optional(),
   repetitionBasis: BaseDeRepeticionesSchema.nullable().optional(),
+  /** DL-181: el bloque de la sesión al que pertenece. Ausente o `null`: va suelto, como todos los de antes. */
+  exerciseGroupId: IdDeNodoSchema.nullable().optional(),
 });
 export const SesionEntradaSchema = z.strictObject({
   sessionId: IdDeNodoSchema.optional(),
   label: Texto(120),
   instructions: TextoOpcional(2000).optional(),
   prescriptions: z.array(PrescripcionEntradaSchema).max(40),
+  /** DL-181: los bloques de la sesión. Ausente o vacío: la sesión es una lista, como hoy. */
+  exerciseGroups: z.array(BloqueDeLaSesionEntradaSchema).max(20).optional(),
 });
 export type SesionEntrada = z.infer<typeof SesionEntradaSchema>;
 /** Opcional (REG-06-126). Su propósito es texto libre: sin taxonomía (REG-06-127). */
@@ -295,7 +313,13 @@ export const IntensidadSchema = z.strictObject({
   criterion: CriterioDeIntensidadApiSchema,
   target: z.strictObject({ value: z.number().finite(), reference: z.strictObject({ description: z.string() }).nullable() }),
 });
-export const SeriePrescriptaSchema = z.strictObject({ setIndex: z.number().int().positive(), repetitions: RepeticionesPrescriptasSchema.nullable(), note: z.string().nullable() });
+export const SeriePrescriptaSchema = z.strictObject({
+  setIndex: z.number().int().positive(),
+  repetitions: RepeticionesPrescriptasSchema.nullable(),
+  note: z.string().nullable(),
+  /** DL-178: explícito para el cliente que declara `training-set-kinds-1`; ausente para el que no (y entonces es efectiva). */
+  setKind: TipoDeSerieSchema.optional(),
+});
 export const PrescripcionSchema = z.strictObject({
   prescriptionId: IdDeNodoSchema,
   order: z.number().int().positive(),
@@ -308,6 +332,8 @@ export const PrescripcionSchema = z.strictObject({
   suggestedLoad: CargaSchema.nullable(),
   professionalParameters: z.array(ParametroProfesionalSchema),
   note: z.string().nullable(),
+  /** DL-181: explícito (`null`: suelto) para el cliente que declara `training-session-groups-1`; ausente para el que no. */
+  exerciseGroupId: IdDeNodoSchema.nullable().optional(),
 });
 export type Prescripcion = z.infer<typeof PrescripcionSchema>;
 export const SesionPlanificadaSchema = z.strictObject({
@@ -316,6 +342,8 @@ export const SesionPlanificadaSchema = z.strictObject({
   order: z.number().int().positive(),
   instructions: z.string().nullable(),
   prescriptions: z.array(PrescripcionSchema),
+  /** DL-181: explícito (vacío si no tiene) para el cliente que declara `training-session-groups-1`; ausente para el que no. */
+  exerciseGroups: z.array(BloqueDeLaSesionSchema).optional(),
 });
 export type SesionPlanificada = z.infer<typeof SesionPlanificadaSchema>;
 export const MicrocicloSchema = z.strictObject({
@@ -637,6 +665,12 @@ export const SerieEjecutadaSchema = z.strictObject({
   fieldOrigins: z
     .strictObject({ load: OrigenDelValorSchema.optional(), completedRepetitions: OrigenDelValorSchema.optional(), rir: OrigenDelValorSchema.optional() })
     .optional(),
+  /**
+   * DL-178: si la serie fue de calentamiento. Ausente = `WORKING`: así quedó todo lo registrado antes y lo que registra
+   * una APK que no conoce el campo. Se guarda solo `WARM_UP` (`serieEnSuForma`); sale explícito para el cliente que
+   * declara `training-set-kinds-1`.
+   */
+  setKind: TipoDeSerieSchema.optional(),
 });
 export type SerieEjecutadaApi = z.infer<typeof SerieEjecutadaSchema>;
 /** Cómo se cargó una serie; ausente se lee como `TYPED` (DL-161). */

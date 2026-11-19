@@ -40,6 +40,7 @@ import { api, type Resultado } from '../../../../lib/api';
 import { diaSinElAnioEnCurso, fecha } from '../../../../lib/formato';
 import { mensajeDeFallo, useClaveDeIntento } from '../../../../lib/intento';
 import { numeroDelBorrador } from '../descartar-el-borrador';
+import { DescargarElPlan } from '../descargar-el-plan';
 import { COPY_RESULTADO_DE_ACTIVAR } from '../resultado-de-activar';
 import { DialogoEmpezarDesdePlantilla, type PlantillaParaEmpezar } from '../empezar-desde-plantilla';
 import { AvisoDeLoQueFalta, seRetiro } from '../lecturas-parciales';
@@ -52,6 +53,7 @@ import { COPY_ASISTENTE_DE_NUTRICION as CAN } from './asistente-de-nutricion';
 import { PuntoDePartidaDeNutricion } from './pasos-del-asistente';
 import { FormularioDeEvaluacion, FormularioDeObjetivo } from './formularios';
 import { ComidasDelPlan, SelectorDeDiaTipo } from './estructura-del-plan';
+import { ProveedorDeNotasPropias } from '../notas-propias';
 import { EstadoDeLectura, useNutricion } from './nutricion';
 import { DialogoGuardarPlantillaNutricional } from './plantillas';
 import { Pista } from '../../../../components/pista';
@@ -317,31 +319,34 @@ export function VistaDePlan() {
                   // Queda montada aunque se mire la activa: lo escrito sin guardar sigue ahí al volver.
                   <div className="plan__preparacion" hidden={mostrada !== 'preparacion'}>
                     {!activa ? <p className="nota">{COPY_NUTRICION.sinPlanActivo}</p> : null}
-                    <EditorDeBorrador
-                      key={borrador.planId}
-                      planId={borrador.planId}
-                      numero={numeroDelBorrador(historial)}
-                      objetivo={objetivo ?? null}
-                      vigente={activa && activa.activatedAt ? { numero: numeroDeLaActiva ?? 1, desde: activa.activatedAt, plan: activa } : null}
-                      // ED-30: el asistente escribió una versión nueva del objetivo: se vuelve a leer, con el plan a la vista.
-                      onObjetivoNuevo={() => cargar(false)}
-                      // ED-07: el mismo texto en las dos áreas, con el número y el nombre, y «Ver lo que recibe».
-                      onActivado={(texto) => {
-                        setAviso({ tipo: 'exito', texto, verLoQueRecibe: true });
-                        // Activada desde el paso 7 del asistente, se sale de él: lo que sigue es ver el plan activo, no el paso 1 de otra versión.
-                        ir({ version: null, dia: null, comidas: null, asistente: null });
-                        void cargar();
-                      }}
-                      // ED-01: sin borrador, vuelven «Crear una nueva versión» y «Empezar desde una plantilla»; la vigente no cambió.
-                      onDescartado={(porOtraPestana) => {
-                        // Descartada, el foco espera a «Crear…»; si no se hizo, se queda en el aviso del error, que lo toma.
-                        focoTrasDescartar.current = !porOtraPestana;
-                        setAviso(porOtraPestana ? { tipo: 'error', texto: porOtraPestana } : { tipo: 'exito', texto: COPY_DESCARTAR_LA_VERSION.descartada(activa ? (numeroDeLaActiva ?? 1) : null) });
-                        // Como en Entrenamiento: descartada desde el asistente, vuelve a su paso 1 (desde dónde arrancar otra).
-                        ir({ version: null, dia: null, comidas: null, asistente: parametros.get('asistente') ? '1' : null });
-                        void cargar();
-                      }}
-                    />
+                    {/* PG-16 (DL-173): las notas propias del profesional, al lado de cada comida y en su menú. */}
+                    <ProveedorDeNotasPropias token={token} asesoradoId={asesoradoId} sesionPerdida={sesionPerdida}>
+                      <EditorDeBorrador
+                        key={borrador.planId}
+                        planId={borrador.planId}
+                        numero={numeroDelBorrador(historial)}
+                        objetivo={objetivo ?? null}
+                        vigente={activa && activa.activatedAt ? { numero: numeroDeLaActiva ?? 1, desde: activa.activatedAt, plan: activa } : null}
+                        // ED-30: el asistente escribió una versión nueva del objetivo: se vuelve a leer, con el plan a la vista.
+                        onObjetivoNuevo={() => cargar(false)}
+                        // ED-07: el mismo texto en las dos áreas, con el número y el nombre, y «Ver lo que recibe».
+                        onActivado={(texto) => {
+                          setAviso({ tipo: 'exito', texto, verLoQueRecibe: true });
+                          // Activada desde el paso 7 del asistente, se sale de él: lo que sigue es ver el plan activo, no el paso 1 de otra versión.
+                          ir({ version: null, dia: null, comidas: null, asistente: null });
+                          void cargar();
+                        }}
+                        // ED-01: sin borrador, vuelven «Crear una nueva versión» y «Empezar desde una plantilla»; la vigente no cambió.
+                        onDescartado={(porOtraPestana) => {
+                          // Descartada, el foco espera a «Crear…»; si no se hizo, se queda en el aviso del error, que lo toma.
+                          focoTrasDescartar.current = !porOtraPestana;
+                          setAviso(porOtraPestana ? { tipo: 'error', texto: porOtraPestana } : { tipo: 'exito', texto: COPY_DESCARTAR_LA_VERSION.descartada(activa ? (numeroDeLaActiva ?? 1) : null) });
+                          // Como en Entrenamiento: descartada desde el asistente, vuelve a su paso 1 (desde dónde arrancar otra).
+                          ir({ version: null, dia: null, comidas: null, asistente: parametros.get('asistente') ? '1' : null });
+                          void cargar();
+                        }}
+                      />
+                    </ProveedorDeNotasPropias>
                     {!activa && historial.length > 0 ? <HistorialDelPlan historial={historial} huella={null} /> : null}
                   </div>
                 ) : null}
@@ -453,7 +458,7 @@ function PlanActivo({
   acciones: ReactNode;
   aviso: ReactNode;
 }) {
-  const { parametros, ir } = useNutricion();
+  const { token, asesoradoId, sesionPerdida, parametros, ir } = useNutricion();
   const { lectura: objetivo, reintentar } = useObjetivoDeLaVersion(version, objetivoVigente);
   const dia = diaTipoElegido(version.dayTypes, parametros.get('dia'));
   const primero = diaTipoElegido(version.dayTypes, null);
@@ -469,7 +474,11 @@ function PlanActivo({
         <p className="plan__version">
           <EnPartes texto={[COPY_DEL_PLAN.versionActivada(numero, activadaEl), ...(version.isEffective ? [COPY_DEL_PLAN.esLoQueVe] : [])].join(' · ')} />
         </p>
-        <div className="plan__acciones">{acciones}</div>
+        <div className="plan__acciones">
+          {/* PG-17 (WP-PULIDO-GRANDES): la hoja para la consulta, con el QR para bajar la app. */}
+          <DescargarElPlan plan={{ area: 'NUTRICION', version }} numero={numero} token={token} asesoradoId={asesoradoId} sesionPerdida={sesionPerdida} />
+          {acciones}
+        </div>
       </div>
       {aviso}
 

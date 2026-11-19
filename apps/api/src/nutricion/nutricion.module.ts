@@ -2,6 +2,8 @@ import { Module } from '@nestjs/common';
 import { IntegracionesModule } from '../integraciones/integraciones.module';
 import { MediosModule } from '../medios/medios.module';
 import { SesionModule } from '../sesion/sesion.module';
+import { AlimentosController } from './alimentos.controller';
+import { AlimentosService } from './alimentos.service';
 import { CatalogoService } from './catalogo.service';
 import { EjecutorNutricional } from './ejecutor';
 import { EvaluacionesService } from './evaluaciones.service';
@@ -17,6 +19,7 @@ import { RecetasController } from './recetas.controller';
 import { RecetasService } from './recetas.service';
 import { RegistroDeComidasController } from './registro-de-comidas.controller';
 import { RegistroDeComidasService } from './registro-de-comidas.service';
+import { RevisionDeAlimentosService } from './revision-de-alimentos.service';
 import { RevisionesService } from './revisiones.service';
 
 /**
@@ -26,7 +29,7 @@ import { RevisionesService } from './revisiones.service';
  */
 @Module({
   imports: [SesionModule, IntegracionesModule, MediosModule],
-  controllers: [NutricionController, HabitualesNutricionalesController, RecetasController, RegistroDeComidasController],
+  controllers: [NutricionController, HabitualesNutricionalesController, RecetasController, RegistroDeComidasController, AlimentosController],
   providers: [
     EjecutorNutricional,
     CatalogoService,
@@ -40,8 +43,11 @@ import { RevisionesService } from './revisiones.service';
     ImportacionNutricionalService,
     RecetasService,
     RegistroDeComidasService,
+    AlimentosService,
+    RevisionDeAlimentosService,
   ],
   // DL-163 D-13, ampliada (TB-52): el plan compartido (API-RES-06) se lee con la misma lectura que usa la persona.
-  exports: [PlanesService, EvaluacionesService],
+  // DL-180 (NUA-04): Administración revisa los alimentos cargados a mano desde su controlador, como las incidencias.
+  exports: [PlanesService, EvaluacionesService, RevisionDeAlimentosService],
 })
 export class NutricionModule {}

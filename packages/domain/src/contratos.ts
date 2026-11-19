@@ -218,6 +218,11 @@ export const CodigoDeError = {
    * cuál (`acceptedTexts.summary` o `acceptedTexts.summaryAndPlan`). Quien lo recibe es la persona: no revela nada.
    */
   SHARING_TEXT_REQUIRED: 'SHARING_TEXT_REQUIRED',
+  /**
+   * API-CMP-02 (WP-COMPARTIR, DL-176): algo elegido no está entre lo que hoy se puede dar: ya está dado, no existe o es
+   * ajeno (lo mismo, sin distinguir). `details.issues` dice cuál (`choices[i]`). Quien lo recibe es la persona.
+   */
+  SHARING_CHOICE_NOT_AVAILABLE: 'SHARING_CHOICE_NOT_AVAILABLE',
   /** API-RES-08: el profesional ya ve el plan de esa área; no hay nada que pedir. Lo sabe por API-RES-04. */
   PLAN_ALREADY_SHARED: 'PLAN_ALREADY_SHARED',
   /**

@@ -77,6 +77,28 @@ describe('DL-102 · validarCitas', () => {
   });
 });
 
+describe('DL-179 · revisión del PR: la conducta alimentaria no se cita nunca (CTX-D09)', () => {
+  it('el mismo 422 neutral que una respuesta inexistente, sin leer la base, en Nutrición y en Entrenamiento', async () => {
+    // Mutación verificada: sin la guardia, la cita de una respuesta propia con `nut_tca` pasa.
+    let lecturas = 0;
+    const propia = {
+      respuestaDeFormulario: {
+        findUnique: async () => {
+          lecturas++;
+          return { ...respuesta([]), contenido: { answers: [{ fieldCode: 'nut_tca', answer: { type: 'CHOICE', option: 'si', otherText: null } }] }, solicitud: { profesionalId: PRO, alcance: 'NUTRICION' } };
+        },
+      },
+    } as never;
+    const nula = { respuestaDeFormulario: { findUnique: async () => null } } as never;
+    const tca = await validarCitas(propia, [{ formResponseId: R, fieldCode: 'nut_tca' }], { profesionalId: PRO, asesoradoId: ASE }, 'NUTRICION').catch((e: unknown) => e);
+    const inexistente = await validarCitas(nula, [{ formResponseId: R, fieldCode: 'nut_tca' }], { profesionalId: PRO, asesoradoId: ASE }, 'NUTRICION').catch((e: unknown) => e);
+    expect(tca).toMatchObject({ status: 422, code: 'NUTRITION_EVALUATION_INVALID', details: { issues: [{ code: 'FORM_RESPONSE_REFERENCE_INVALID', path: 'formResponseReferences[0]' }] } });
+    expect(JSON.stringify(tca)).toEqual(JSON.stringify(inexistente));
+    expect(lecturas).toBe(0);
+    await expect(validarCitas(propia, [{ formResponseId: R, fieldCode: 'nut_tca' }], { profesionalId: PRO, asesoradoId: ASE })).rejects.toMatchObject({ status: 422, code: 'TRAINING_EVALUATION_INVALID' });
+  });
+});
+
 describe('DL-164 · una respuesta V2 se cita igual que una de P0', () => {
   const EVALUACION = '66666666-6666-4666-8666-666666666666';
   const SOLICITUD = '77777777-7777-4777-8777-777777777777';

@@ -94,7 +94,7 @@ const demasiadosEnfoques = (): ErrorDeApi =>
 
 /**
  * WP-GRAFICOS GR-27 (DL-174; pedido de Dirección del 2026-11-14) · Los enfoques: API-GRF-01 a 07, familia propia de BE.
- * Lo que garantiza este servicio, con la base detrás (migración 20261114200000):
+ * Lo que garantiza este servicio, con la base detrás (migración 20261120150000):
  * - **Solo referencias.** El cuerpo se valida con el esquema estricto del dominio: identificadores de gráficos y de series,
  *   ejercicios del catálogo, medidas y modos. No hay campo donde guardar un valor, una nota clínica ni el nombre de una
  *   persona, y el enfoque no concede nada: cada lectura de datos vuelve a pasar por el PDP.

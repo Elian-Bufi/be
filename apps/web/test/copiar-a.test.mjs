@@ -26,8 +26,8 @@ const plan = () => [
 ];
 
 test('ED-24 · los lugares del plan y los destinos de una sesión', () => {
-  assert.deepEqual(C.gruposDelPlan(plan()).map((g) => g.nombre), ['Fuerza · Semana 1', 'Fuerza · Semana 2', 'Bloque 2']);
-  assert.deepEqual(C.destinosDeLaSesion(plan(), { i: 0, j: 0 }).map((g) => g.nombre), ['Fuerza · Semana 2', 'Bloque 2']);
+  assert.deepEqual(C.gruposDelPlan(plan()).map((g) => g.nombre), ['Fuerza · Semana 1', 'Fuerza · Semana 2', 'Fase 2']);
+  assert.deepEqual(C.destinosDeLaSesion(plan(), { i: 0, j: 0 }).map((g) => g.nombre), ['Fuerza · Semana 2', 'Fase 2']);
   assert.deepEqual(C.destinosDeLaSesion(plan(), { i: 0, j: 0 }, true).map((g) => g.nombre), ['Fuerza · Semana 2']);
   assert.deepEqual(C.destinosDeLaSesion(plan(), { i: 1, j: null }, true), []);
 });

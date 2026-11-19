@@ -15,16 +15,21 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { RAIZ } from './soporte';
 import { appDePrueba, conSesion } from './soporte-api';
+import { PrismaClient } from '@prisma/client';
+import { alimentoSinCompartir } from './soporte-nutricion';
 import { prepararProfesional } from './soporte-vinculo';
 
 let app: INestApplication;
 let contador = 0;
+const prisma = new PrismaClient();
+let orden = 0;
 
 beforeAll(async () => {
   app = await appDePrueba();
 });
 afterAll(async () => {
   await app.close();
+  await prisma.$disconnect();
 });
 
 const composicion = { referenceAmount: '100g', energyKcal: 30, proteinG: 0.6, carbohydrateG: 7.6, fatG: 0.2 };
@@ -47,13 +52,19 @@ async function todasLasPaginas(pedir: (cursor: string | undefined) => Promise<Pa
   throw new Error('la búsqueda no terminó en 40 páginas');
 }
 
-/** Un profesional de Nutrición nuevo, con su catálogo propio y el buscador del website (API-NUT-13-BUSQUEDA). */
+/**
+ * Un profesional de Nutrición nuevo, con su catálogo propio y el buscador del website (API-NUT-13-BUSQUEDA). Sus alimentos
+ * se cargan sin compartir (DL-180, NUA-D05), como antes: estas pruebas miden el buscador sobre el catálogo de cada uno, y
+ * lo compartido de las demás pruebas (los mismos nombres) no se mezcla. Lo compartido y su orden se prueban en
+ * `alimentos-del-catalogo.int-spec.ts`.
+ */
 async function deNutricion() {
   const pro = await prepararProfesional(app, `busq-nut-${++contador}`, ['NUTRICION']);
   const s = conSesion(app, pro.token);
   return {
     cargar: async (...nombres: string[]) => {
-      for (const name of nombres) await s.post('/api/v1/nutrition/catalog-items').send({ name, itemType: 'FOOD', composition: composicion }).expect(201);
+      // Cada uno un milisegundo después del anterior, como cuando se cargaban de a uno por la API.
+      for (const name of nombres) await alimentoSinCompartir(prisma, pro.id, name, composicion, new Date(Date.now() + ++orden));
     },
     buscar: async (q: string, extra: Record<string, unknown> = {}): Promise<Pagina> => (await s.post('/api/v1/nutrition/catalog-items/search').send({ q, limit: 50, ...extra }).expect(200)).body,
     nombres: (q: string): Promise<string[]> =>
@@ -181,7 +192,7 @@ describe('DL-139 · alimentos: el orden de las palabras, los plurales y los erro
     expect(await nut.nombres('trilinbo')).toEqual(['Trilinbo dulce', 'Trilimbo', 'Trilimbo tostado', 'Galleta de trilimbo']);
   });
 
-  it('un parecido nunca muestra lo que no se ve: el alimento propio de otro profesional no aparece ni con un error de tipeo', async () => {
+  it('un parecido nunca muestra lo que no se ve: el alimento de otro profesional que no se compartió no aparece ni con un error de tipeo', async () => {
     const duena = await deNutricion();
     await duena.cargar('Trilimbo ajeno');
     const otra = await deNutricion();

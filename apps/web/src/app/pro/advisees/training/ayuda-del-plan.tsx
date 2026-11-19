@@ -55,8 +55,8 @@ export function AyudaDelPlanDeEntrenamiento() {
           <strong>Con una versión en preparación,</strong> arriba se elige cuál mirar. La persona no ve la que está en preparación, y guardar no la activa. Pasar a la activa no pierde lo que escribiste sin guardar.
         </Renglon>
         <Renglon esencial muestra={<Icono nombre="series" tamano={20} />}>
-          <strong>En la versión en preparación, cada serie se escribe en una fila.</strong> En gris, lo que la serie toma de lo general del ejercicio; un valor escrito es el suyo; «{COPY_ENTRENAMIENTO_POR_SERIE.sinObjetivo}», que se elige con la flecha de la celda, quiere decir que esa
-          serie no tiene ese objetivo aunque lo general lo tenga. Lo que ves en la tabla es lo que recibe la persona.
+          <strong>En la versión en preparación, cada serie se escribe en una fila.</strong> Cada valor dice de dónde sale: «común», el de la fila Común, que toman las series sin uno propio; «propio», el
+          escrito en esa serie; «Sin indicar», que se elige con la flecha de la celda, quiere decir que esa serie no tiene ese objetivo aunque haya uno común. Lo que ves en la tabla es lo que recibe la persona.
         </Renglon>
         <Renglon muestra={<Icono nombre="descanso" tamano={20} />}>
           <strong>El descanso se lee «02:30»,</strong> minutos y segundos; se escribe así o en segundos («150»), y 0 es sin pausa. <strong>RIR</strong> quiere decir repeticiones en reserva: cada serie puede tener el suyo, si el criterio
@@ -68,10 +68,10 @@ export function AyudaDelPlanDeEntrenamiento() {
         </Renglon>
         {/* ED-17: lo que dice la ayuda de primer uso de la estación, para encontrarlo después de cerrarla. */}
         <Renglon esencial muestra={<Icono nombre="plan" tamano={20} />}>
-          <strong>La estación tiene tres zonas.</strong> {PRIMER_USO_DE_LA_ESTACION.renglones.join(' ')} En una pantalla más angosta, la de la derecha se abre con «Panel».
+          <strong>El editor tiene tres zonas.</strong> {PRIMER_USO_DE_LA_ESTACION.renglones.join(' ')} En una pantalla más angosta, la de la derecha se abre con «Panel».
         </Renglon>
         <Renglon muestra={<Icono nombre="texto" tamano={20} />}>
-          <strong>La prescripción en una línea</strong> se escribe arriba de cada ejercicio, y Enter la aplica. Antes de aplicarla dice cómo la lee y lo que se pierde.
+          <strong>La escritura rápida</strong> se escribe arriba de las series de cada ejercicio, y «Aplicar» (o Enter) la escribe en ellas. Mientras se escribe dice cómo la lee y lo que se pierde; lo escrito sin aplicar no se pierde al plegar ni al salir: el editor lo pregunta.
           <ul>
             {COPY_PRESCRIPCION_RAPIDA.gramatica.map((g) => (
               <li key={g}>{g}</li>

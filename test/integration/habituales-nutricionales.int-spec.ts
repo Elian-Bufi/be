@@ -10,7 +10,7 @@ import { PrismaClient } from '@prisma/client';
 import { randomUUID } from 'node:crypto';
 import { appDePrueba, claveDeIdempotencia, conSesion, resumenDeRespuestas, simultaneos } from './soporte-api';
 import { circuitoListoParaPlanificarEntrenamiento } from './soporte-entrenamiento';
-import { circuitoListoParaPlanificar, crearBorrador, type Circuito } from './soporte-nutricion';
+import { alimentoSinCompartir, circuitoListoParaPlanificar, crearBorrador, type Circuito } from './soporte-nutricion';
 
 const prisma = new PrismaClient();
 let app: INestApplication;
@@ -55,13 +55,8 @@ const comidasDe = async (c: Circuito) => ListaDeComidasHabitualesResponseSchema.
 const alimentosDe = async (c: Circuito) => ListaDeAlimentosHabitualesResponseSchema.parse((await conSesion(app, c.pro.token).get(ALIMENTOS).expect(200)).body).data;
 const cantidadesDe = (s: unknown) => JSON.stringify(s).match(/"quantity":(\{[^}]*\}|null)/g) ?? [];
 const conIdentificadores = (s: unknown) => /"(mealId|optionId|itemId)"/.test(JSON.stringify(s));
-const alimentoAjeno = async (otro: Circuito): Promise<string> =>
-  (
-    await conSesion(app, otro.pro.token)
-      .post('/api/v1/nutrition/catalog-items', claveDeIdempotencia())
-      .send({ name: `Quinoa ajena ${randomUUID().slice(0, 6)}`, itemType: 'FOOD', composition: { referenceAmount: '100g', energyKcal: 368, proteinG: 14, carbohydrateG: 64, fatG: 6 } })
-      .expect(201)
-  ).body.data.catalogItemId as string;
+/** Un alimento de otro profesional que no se compartió (DL-180, NUA-D05): no está disponible para este. */
+const alimentoAjeno = async (otro: Circuito): Promise<string> => (await alimentoSinCompartir(prisma, otro.pro.id, `Quinoa ajena ${randomUUID().slice(0, 6)}`)).catalogItemId;
 
 describe('API-HAN · alimentos habituales', () => {
   it('marca y lista con la forma del buscador (la más reciente primero); quita y vuelve a marcar sin duplicar; lo no disponible es 422; ajeno, asesorado y entrenador', async () => {

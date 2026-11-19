@@ -16,8 +16,9 @@
  * - API-RES-09 · `GET /me/summary-sharing/access-requests` — la persona: los pedidos que esperan su respuesta.
  * - API-RES-10 · `POST /me/summary-sharing/access-requests/{accessRequestId}/answer` — la persona responde: sí o no, por ahora.
  *
- * API-RES-05 (las series de un resumen para «Analizar», TB-29) no está en este tramo. Ninguna APK instalada lee estas
- * operaciones: lo que leen no cambia (DL-152). Objetos estrictos, como el resto de los contratos (09v7 T12).
+ * API-RES-05 (las series de un resumen para «Analizar», TB-29) no está en este tramo. Desde la 0.29.0-candidata.1, la APK
+ * lee API-RES-01 (quién miró lo que compartiste, PG-12), congelada con ella (DL-152): su forma no cambia sin una APK que
+ * la lea; las demás no las lee ninguna APK. Objetos estrictos, como el resto de los contratos (09v7 T12).
  */
 import { z } from 'zod';
 import { IdOpaco, Instante } from './contratos';
@@ -111,7 +112,11 @@ export const TextoDeCompartirResumenesSchema = z.strictObject({
 });
 export type TextoDeCompartirResumenes = z.infer<typeof TextoDeCompartirResumenesSchema>;
 
-/** Una lectura de lo compartido: quién la hizo, de qué área y cuándo. La persona ve todas (08 §19.7). */
+/**
+ * Una lectura de lo compartido: quién la hizo, de qué área y cuándo. La persona ve todas (08 §19.7). Es la del plan de
+ * Nutrición o Entrenamiento (API-RES-06) o, desde DL-179, la del resumen de Antropometría, que no tiene plan (API-CTX-02):
+ * quien la muestra dice «tu resumen de Antropometría».
+ */
 export const AccesoALoCompartidoSchema = z.strictObject({
   professional: ResumenDeActorSchema,
   area: AlcanceSchema,

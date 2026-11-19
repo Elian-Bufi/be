@@ -15,6 +15,7 @@
  */
 import { z } from 'zod';
 import { IdOpaco } from './contratos';
+import { GrupoDeAlimentoSchema } from './alimentos-del-catalogo';
 import { METODO_DE_CALCULO_NUTRICIONAL } from './calculo-nutricional';
 import { CantidadSchema, ComposicionSchema } from './contratos-nutricion';
 import { NutrientesSchema } from './contratos-recetas';
@@ -29,6 +30,12 @@ export const ItemDeLaEstimacionSchema = z.strictObject({
   name: z.string().nullable(),
   quantity: CantidadSchema.nullable(),
   composition: ComposicionSchema.nullable(),
+  /**
+   * DL-180, opcionales (una API anterior no los manda): el grupo del alimento, para su ícono (NUA-05), y si se retiró del
+   * catálogo (NUA-02). Un alimento retirado sigue en la opción que lo cita, con su composición: se marca, no se esconde.
+   */
+  foodGroup: GrupoDeAlimentoSchema.nullable().optional(),
+  retired: z.boolean().optional(),
 });
 export type ItemDeLaEstimacion = z.infer<typeof ItemDeLaEstimacionSchema>;
 

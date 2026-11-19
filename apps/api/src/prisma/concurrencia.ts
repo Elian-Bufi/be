@@ -24,6 +24,9 @@ import { errores } from '../http/errores';
  * Lo que la persona comparte de otras áreas (DL-163 D-13, ampliada; `resumenes/resumenes-de-la-persona.ts`) hace lo mismo
  * con su autorización y sus pedidos de ver un plan: dos cerrojos de transacción por persona, al final, en ese orden. Una
  * nota que cita el plan de otra área (TB-53) toma el de la autorización, compartido, después de decidir a sus destinatarios.
+ * La historia anterior de un área (DL-175, `historia-anterior/autorizaciones.ts`) hace lo mismo con su autorización: un
+ * cerrojo de transacción por persona, al final (después del A3 y del PDP), compartido para leer la historia (API-HIA-04) y
+ * exclusivo para darla, retirarla o cerrar la cuenta.
  */
 
 /**

@@ -3,13 +3,16 @@
 /**
  * «Ver la tabla» (WP-GRAFICOS fase 2, DL-174): la tabla equivalente de un gráfico, con su título, encabezados con
  * alcance y los tramos sin registros dichos como texto. Es la misma información que el dibujo (`tablaEquivalente`).
+ *
+ * Pasada visual (15/11; DISENO-VISUAL §1, principio 8): una fila por renglón, con cifras de ancho fijo y ningún valor
+ * partido en dos renglones (cada celda va sin cortes; si la tabla no entra, se desplaza ella, no el número).
  */
 import { useId, useState } from 'react';
 import { COPY_DE_LOS_GRAFICOS } from './copy';
-import { textoDeLaMarca } from './eje-de-fechas';
+import { fechaCorta, textoDeLaMarca } from './eje-de-fechas';
 import type { FilasDeLaTabla } from './tabla-equivalente';
 
-export function TablaEquivalente({ titulo, tabla, abiertaDeEntrada = false }: { titulo: string; tabla: FilasDeLaTabla; abiertaDeEntrada?: boolean }) {
+export function TablaEquivalente({ titulo, tabla, abiertaDeEntrada = false, hoy = null }: { titulo: string; tabla: FilasDeLaTabla; abiertaDeEntrada?: boolean; hoy?: string | null }) {
   const [abierta, setAbierta] = useState(abiertaDeEntrada);
   const id = useId();
   return (
@@ -36,7 +39,7 @@ export function TablaEquivalente({ titulo, tabla, abiertaDeEntrada = false }: { 
                 <tbody>
                   {tabla.filas.map((f) => (
                     <tr key={f.fecha}>
-                      <th scope="row">{textoDeLaMarca(f.fecha)}</th>
+                      <th scope="row">{hoy ? fechaCorta(f.fecha, hoy) : textoDeLaMarca(f.fecha)}</th>
                       {f.celdas.map((c, i) => (
                         <td key={tabla.columnas[i].id} data-marca={c?.marca ?? undefined}>
                           {c ? c.texto : COPY_DE_LOS_GRAFICOS.sinDato}

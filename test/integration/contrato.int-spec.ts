@@ -20,12 +20,14 @@
  *   Y la familia RES, lo que la persona comparte de otras áreas, el plan del otro y el pedido (DL-163 D-13, ampliada;
  *   TB-52 a TB-56).
  * - WP-GRAFICOS (GR-27): la familia GRF, los enfoques del profesional y dónde los elige (DL-174).
- * - WP-USO-FINAL (UF-11): la familia MFA, el segundo factor del profesional sobre su sesión común (DL-169).
+ * - WP-USO-FINAL (UF-11): la familia MFA, el segundo factor del profesional sobre su sesión común (DL-169); desde DL-177, sin exigencia.
  * - WP-USO-FINAL (UF-04): API-ADM-14 y 15, la entrada de los profesionales reales y su nombre profesional (DL-169).
  * - WP-USO-FINAL (UF-03): API-ACC-P1-01 y 02 y API-ADM-18, recuperar el acceso y la recuperación asistida (DL-169).
  * - WP-USO-FINAL (UF-07): API-SOP-01, el canal de ayuda y contacto (DL-169).
  * - WP-USO-FINAL (UF-05): API-ACC-08, aceptar la versión vigente de los términos o de la privacidad (DL-169).
  * - RF-068 y RF-004: las familias INC y MET, las incidencias y los métodos de acceso de la cuenta propia (DL-172).
+ * - WP-PULIDO-GRANDES (DL-173): API-TRN-25 y sus variantes LISTA y PROPIA (PG-15) y la familia NPP (PG-16).
+ * - WP-PLANTILLAS-DE-ENTRENAMIENTO (DL-182): API-TPL-06 a 14, la preparación de una plantilla sin persona.
  * Un observador registra cada respuesta real (método, ruta, status, código). Después se exige que todo par
  * (status, código) esté declarado para esa operación en `OPERACIONES`, la misma fuente que genera
  * `docs/api/openapi.json` (09v7 T21).
@@ -41,7 +43,6 @@ import { TokensService } from '../../apps/api/src/sesion/tokens.service';
 import { PrismaService } from '../../apps/api/src/prisma/prisma.service';
 import { VerificacionService } from '../../apps/api/src/profesional/verificacion.service';
 import { adm, administradorListo, codigoQueNoVale, codigoTotp, primerFactor, profesionalPendiente } from './soporte-administracion';
-import { codigoDelPaso } from './soporte-segundo-factor';
 import {
   appDePrueba,
   claveDeIdempotencia,
@@ -989,6 +990,45 @@ it('TEST-CT (WP-06, tramo 1): se ejercitan éxitos y errores de la evaluación, 
   await pro.patch(`/api/v1/training/plan-templates/${plantillaId}`).send({ expectedVersion: segunda.body.data.version }).expect(400);
   await pro.patch(`/api/v1/training/plan-templates/${plantillaId}`).send({ expectedVersion: segunda.body.data.version, state: 'ARCHIVED' }).expect(200);
   await request(app.getHttpServer()).get('/api/v1/training/plan-templates').expect(401);
+
+  // TPL-06..14 (la preparación de una plantilla, sin persona; DL-182): crear en blanco y como copia, listar, leer,
+  // autoguardar, revisar, guardar como plantilla y como versión, descartar, editar una existente y sus versiones.
+  const preparaciones = '/api/v1/training/plan-template-drafts';
+  const enBlanco = (await pro.post(preparaciones).send({}).expect(201)).body.data as { draftId: string; version: string };
+  await pro.post(preparaciones).send({ fromTemplateVersionId: randomUUID() }).expect(404);
+  await pro.post(preparaciones).send({ adviseeId: randomUUID() }).expect(400);
+  await ase.post(preparaciones).send({}).expect(403);
+  await pro.get(preparaciones).expect(200);
+  await pro.get(`${preparaciones}?cursor=basura`).expect(400);
+  await pro.get(`${preparaciones}/${enBlanco.draftId}`).expect(200);
+  await pro.get(`${preparaciones}/${randomUUID()}`).expect(404);
+  await pro.patch(`${preparaciones}/${enBlanco.draftId}`).send({ expectedVersion: 'v99', structure: estructuraDeEntrenamiento() }).expect(409);
+  const conOtroEjercicio = { blocks: [{ label: 'F', sessions: [{ label: 'A', prescriptions: [{ exerciseVersionId: randomUUID(), sets: [{ repetitions: { value: 8 } }], intensity: null }] }] }] };
+  await pro.patch(`${preparaciones}/${enBlanco.draftId}`).send({ expectedVersion: enBlanco.version, structure: conOtroEjercicio }).expect(422);
+  await pro.patch(`${preparaciones}/${enBlanco.draftId}`).send({ expectedVersion: enBlanco.version, structure: estructuraDeEntrenamiento(), extra: 1 }).expect(400);
+  const preparada = (await pro.patch(`${preparaciones}/${enBlanco.draftId}`).send({ expectedVersion: enBlanco.version, structure: estructuraDeEntrenamiento(), name: 'Molde preparado' }).expect(200)).body.data as { draftId: string; version: string };
+  await pro.post(`${preparaciones}/${enBlanco.draftId}/review`).send({ expectedVersion: preparada.version }).expect(200);
+  await pro.post(`${preparaciones}/${enBlanco.draftId}/review`).send({ expectedVersion: 'v99' }).expect(409);
+  // Sin nombre ni sesiones: 422 OPERATION_NOT_READY. Con el nombre de otra: 409 TEMPLATE_NAME_TAKEN.
+  const sinNombre = (await pro.post(preparaciones).send({}).expect(201)).body.data as { draftId: string; version: string };
+  await pro.post(`${preparaciones}/${sinNombre.draftId}/publish`).send({ expectedVersion: sinNombre.version }).expect(422);
+  const tomado = (await pro.patch(`${preparaciones}/${sinNombre.draftId}`).send({ expectedVersion: sinNombre.version, structure: estructuraDeEntrenamiento(), name: 'molde de contrato' }).expect(200)).body.data as { version: string };
+  await pro.post(`${preparaciones}/${sinNombre.draftId}/publish`).send({ expectedVersion: tomado.version }).expect(409);
+  await pro.post(`${preparaciones}/${sinNombre.draftId}/discard`).send({ expectedVersion: 'v99' }).expect(409);
+  await pro.post(`${preparaciones}/${sinNombre.draftId}/discard`).send({ expectedVersion: tomado.version }).expect(200);
+  const guardadaComoPlantilla = (await pro.post(`${preparaciones}/${enBlanco.draftId}/publish`).send({ expectedVersion: preparada.version }).expect(201)).body.data as { templateId: string; versionId: string };
+  await pro.post(`${preparaciones}/${enBlanco.draftId}/publish`).send({ expectedVersion: preparada.version }).expect(404);
+  // Editar la existente (201 y, otra vez, 200), una archivada (422) y una que no existe (404).
+  const deLaExistente = (await pro.put(`/api/v1/training/plan-templates/${guardadaComoPlantilla.templateId}/draft`).send({}).expect(201)).body.data as { draftId: string; version: string };
+  await pro.put(`/api/v1/training/plan-templates/${guardadaComoPlantilla.templateId}/draft`).send({}).expect(200);
+  await pro.put(`/api/v1/training/plan-templates/${plantillaId}/draft`).send({}).expect(422);
+  await pro.put(`/api/v1/training/plan-templates/${randomUUID()}/draft`).send({}).expect(404);
+  // Sin cambios frente a la versión de base: no se guarda una versión igual (PLT-D10).
+  await pro.post(`${preparaciones}/${deLaExistente.draftId}/publish`).send({ expectedVersion: deLaExistente.version }).expect(422);
+  await pro.post(preparaciones).send({ fromTemplateVersionId: guardadaComoPlantilla.versionId }).expect(201);
+  await pro.get(`/api/v1/training/plan-templates/${guardadaComoPlantilla.templateId}/versions`).expect(200);
+  await pro.get(`/api/v1/training/plan-templates/${randomUUID()}/versions`).expect(404);
+  await ase.get(`/api/v1/training/plan-templates/${guardadaComoPlantilla.templateId}/versions`).expect(403);
 
   // TPN-01..05 (plantillas de comidas, DL-108): con un circuito de nutrición.
   const nut = await circuitoListoParaPlanificar(app, 'contrato-tpn');
@@ -2202,42 +2242,32 @@ it('TEST-CT (WP-ADMINISTRACION): ADM-01 a 13, con éxitos y errores declarados (
   await adm(app).delete('/admin/auth/sessions/current').expect(401); // AUTHENTICATION_REQUIRED
 });
 
-it('TEST-CT (WP-USO-FINAL, UF-11): MFA-01 a 06 — el segundo factor del profesional, con éxitos y errores declarados (DL-169)', async () => {
+it('TEST-CT (WP-USO-FINAL, UF-11; DL-177): MFA-01 a 06 — sin la exigencia, el profesional no tiene segundo factor que verificar ni configurar', async () => {
   const ruta = '/api/v1/me/second-factor';
-  // Un profesional sin autenticador, recién entrado (como uno que incorpora Administración), y una persona.
+  // DL-177 (2026-11-18): el profesional entra solo con su contraseña. Un profesional recién incorporado y una persona.
   const correo = correoSintetico('ct-mfa');
   const id = await registrarOk(app, correo, 'WEB');
   await app.get(PrismaService).$transaction((tx) => app.get(VerificacionService).prepararProfesional(tx, id, { alcance: 'NUTRICION', tipo: 'SANITARIO', nombreVisible: 'Lic. Contrato MFA' }, new Date()));
   const t = await tokenDe(app, correo, 'WEB');
   const persona = await prepararAsesorado(app, 'ct-mfa');
   // MFA-01.
-  expect((await conSesion(app, t).get(ruta).expect(200)).body.data.secondFactor.state).toBe('ENROLLMENT_REQUIRED');
+  expect((await conSesion(app, t).get(ruta).expect(200)).body.data.secondFactor.state).toBe('NOT_REQUIRED');
   await conSesion(app, t).get(`${ruta}?x=1`).expect(400); // INVALID_REQUEST
   await request(app.getHttpServer()).get(ruta).expect(401); // AUTHENTICATION_REQUIRED
-  // MFA-04 y 05: configurar.
-  await conSesion(app, persona.token).post(`${ruta}/enrollment`).send({}).expect(422); // INVALID_STATE_TRANSITION: sin perfil profesional
-  await conSesion(app, t).post(`${ruta}/enrollment`).send({ extra: 1 }).expect(400); // UNKNOWN_FIELD
-  const secreto = (await conSesion(app, t).post(`${ruta}/enrollment`).send({}).expect(200)).body.data.secret as string;
-  await conSesion(app, t).post(`${ruta}/enrollment/confirm`).send({ code: codigoQueNoVale(secreto) }).expect(422); // SECOND_FACTOR_INVALID
-  await conSesion(app, t).post(`${ruta}/enrollment/confirm`).send({ code: '123456', extra: 1 }).expect(400); // UNKNOWN_FIELD
-  const paso = Math.floor(Date.now() / 30_000);
-  const codigos = (await conSesion(app, t).post(`${ruta}/enrollment/confirm`).send({ code: codigoDelPaso(secreto, paso) }).expect(200)).body.data.recoveryCodes as string[];
-  // MFA-02: otra sesión, con el código del paso siguiente.
-  const otra = await tokenDe(app, correo, 'WEB');
-  await conSesion(app, otra).post(`${ruta}/verification`).send({ code: codigoQueNoVale(secreto) }).expect(422); // SECOND_FACTOR_INVALID
-  await conSesion(app, otra).post(`${ruta}/verification`).send({ code: '123456', extra: 1 }).expect(400); // UNKNOWN_FIELD
-  await conSesion(app, persona.token).post(`${ruta}/verification`).send({ code: '123456' }).expect(422); // INVALID_STATE_TRANSITION
-  await conSesion(app, otra).post(`${ruta}/verification`).send({ code: codigoDelPaso(secreto, paso + 1) }).expect(200);
-  // MFA-03: una tercera, con un código de recuperación.
-  const tercera = await tokenDe(app, correo, 'WEB');
-  await conSesion(app, tercera).post(`${ruta}/recovery-code`).send({ recoveryCode: 'AAAA-AAAA-AAAA' }).expect(422); // SECOND_FACTOR_INVALID
-  await conSesion(app, tercera).post(`${ruta}/recovery-code`).send({ recoveryCode: codigos[0], extra: 1 }).expect(400); // UNKNOWN_FIELD
-  await conSesion(app, tercera).post(`${ruta}/recovery-code`).send({ recoveryCode: codigos[0] }).expect(200);
-  // MFA-06: desde la sesión reciente y verificada; sin verificar, no.
-  const sinVerificar = await tokenDe(app, correo, 'WEB');
-  await conSesion(app, sinVerificar).post(`${ruta}/recovery-codes`).send({}).expect(422); // INVALID_STATE_TRANSITION
-  await conSesion(app, t).post(`${ruta}/recovery-codes`).send({ extra: 1 }).expect(400); // UNKNOWN_FIELD
-  expect((await conSesion(app, t).post(`${ruta}/recovery-codes`).send({}).expect(200)).body.data.recoveryCodes).toHaveLength(10);
+  // MFA-02 a 06: nada que verificar ni configurar, para el profesional y para la persona.
+  const pasos: readonly [string, Record<string, unknown>][] = [
+    ['verification', { code: '123456' }],
+    ['recovery-code', { recoveryCode: 'AAAA-AAAA-AAAA' }],
+    ['enrollment', {}],
+    ['enrollment/confirm', { code: '123456' }],
+    ['recovery-codes', {}],
+  ];
+  for (const [paso, cuerpo] of pasos) {
+    await conSesion(app, t).post(`${ruta}/${paso}`).send(cuerpo).expect(422); // INVALID_STATE_TRANSITION
+    await conSesion(app, persona.token).post(`${ruta}/${paso}`).send(cuerpo).expect(422); // INVALID_STATE_TRANSITION
+    await conSesion(app, t).post(`${ruta}/${paso}`).send({ ...cuerpo, extra: 1 }).expect(400); // UNKNOWN_FIELD
+    await request(app.getHttpServer()).post(`${ruta}/${paso}`).send(cuerpo).expect(401); // AUTHENTICATION_REQUIRED
+  }
 });
 
 it('TEST-CT (WP-USO-FINAL, UF-04): ADM-14 y ADM-15 — incorporar a un profesional y cambiar su nombre profesional, con éxitos y errores declarados (DL-169)', async () => {
@@ -2413,7 +2443,8 @@ it('TEST-CT (RF-004): MET-01 a 03 — los métodos de acceso de la cuenta propia
   await vincular({ idToken: tokenGoogle(sub, correo) }).expect(200);
   await vincular({ idToken: tokenGoogle(subSintetico(), correo) }).expect(409); // GOOGLE_ACCOUNT_ALREADY_LINKED
   const pro = await prepararProfesional(app, 'ct-met-pro', ['NUTRICION']);
-  await conSesion(app, await tokenDe(app, pro.correo, 'WEB')).post('/api/v1/me/access-methods').send({ type: 'GOOGLE', idToken: tokenGoogle(subSintetico(), pro.correo), credential: CREDENCIAL_SINTETICA }).expect(403); // MFA_REQUIRED
+  // DL-177: el profesional, con una sesión nueva y solo su contraseña, vincula como cualquiera (antes, 403 MFA_REQUIRED).
+  await conSesion(app, await tokenDe(app, pro.correo, 'WEB')).post('/api/v1/me/access-methods').send({ type: 'GOOGLE', idToken: tokenGoogle(subSintetico(), pro.correo), credential: CREDENCIAL_SINTETICA }).expect(201);
   // MET-03.
   const deGoogle = metodos.find((m) => m.type === 'GOOGLE')!.methodId;
   const contrasena = metodos.find((m) => m.type === 'PASSWORD')!.methodId;
@@ -2723,6 +2754,276 @@ it('TEST-CT (WP-EDITORES-PROFESIONAL): FZA-01 a 03, HAB-06 a 08, HAN-06 a 08 y P
   await pn.put(rangos(b.planId)).send({ ...conRangos, extra: 1 }).expect(400);
   await pn.put(rangos(ajeno)).send(conRangos).expect(404);
   await request(servidor).put(rangos(b.planId)).send(conRangos).expect(401);
+});
+
+it('TEST-CT (WP-PULIDO-GRANDES, DL-173): la nota para tu profe (TRN-25, LISTA y PROPIA) y las notas propias del profesional (NPP-01 a 03)', async () => {
+  const servidor = app.getHttpServer();
+  const ajeno = randomUUID();
+  // PG-15: una sesión registrada por la persona.
+  const c = await circuitoConPlanDeEntrenamientoActivo(app, 'contrato-notas');
+  const ase = conSesion(app, c.ase.token);
+  const pro = conSesion(app, c.pro.token);
+  const hoy = (await ase.get('/api/v1/me/training/today').expect(200)).body.data;
+  const borrador = (await ase.put(`/api/v1/training/occurrences/${hoy.occurrences[0].occurrenceId}/execution-draft`).send({}).expect(201)).body.data;
+  const serie = { setIndex: 1, load: { value: 60, unit: 'kg' }, completedRepetitions: 8, rir: 2, perceivedExertion: null };
+  const guardado = (
+    await ase
+      .patch(`/api/v1/training/execution-drafts/${borrador.draftId}`)
+      .send({ expectedVersion: borrador.version, changes: { granularity: 'SET', exercises: [{ prescriptionId: 'rx-banca', performedExerciseVersionId: CATALOGO_DE_EJERCICIOS.pressDeBanca, sets: [serie] }], sessionCondition: 'COMPLETED' } })
+      .expect(200)
+  ).body.data;
+  const executionId = (await ase.post(`/api/v1/training/execution-drafts/${borrador.draftId}/confirm`).send({ expectedVersion: guardado.version }).expect(201)).body.data.executionId as string;
+  // TRN-25
+  const notas = `/api/v1/training/executions/${executionId}/notes`;
+  const clave = claveDeIdempotencia();
+  await ase.post(notas, clave).send({ text: 'Algo me molestó.' }).expect(201);
+  await ase.post(notas, clave).send({ text: 'Otra cosa' }).expect(409);
+  await ase.post(notas).send({ text: 'x'.repeat(281) }).expect(400);
+  await ase.post(notas).send({ text: 'ok', extra: 1 }).expect(400);
+  await pro.post(notas).send({ text: 'Por ella' }).expect(404);
+  await ase.post(`/api/v1/training/executions/${ajeno}/notes`).send({ text: 'Nada' }).expect(404);
+  await request(servidor).post(notas).set('Idempotency-Key', claveDeIdempotencia()).send({ text: 'Sin sesión' }).expect(401);
+  for (let i = 0; i < 19; i++) await ase.post(notas).send({ text: `Nota ${i}` }).expect(201);
+  await ase.post(notas).send({ text: 'La 21' }).expect(422);
+  // TRN-25-PROPIA
+  await ase.get(`/api/v1/me/training/executions/${executionId}/notes`).expect(200);
+  await ase.get(`/api/v1/me/training/executions/${executionId}/notes?x=1`).expect(400);
+  await ase.get(`/api/v1/me/training/executions/${ajeno}/notes`).expect(404);
+  await request(servidor).get(`/api/v1/me/training/executions/${executionId}/notes`).expect(401);
+  // TRN-25-LISTA
+  const delPeriodo = `/api/v1/advisees/${c.ase.id}/training/execution-notes`;
+  await pro.get(`${delPeriodo}?periodStart=${hoy.date}&periodEnd=${hoy.date}`).expect(200);
+  await pro.get(delPeriodo).expect(400);
+  await pro.get(`/api/v1/advisees/${ajeno}/training/execution-notes?periodStart=${hoy.date}&periodEnd=${hoy.date}`).expect(404);
+  await request(servidor).get(`${delPeriodo}?periodStart=${hoy.date}&periodEnd=${hoy.date}`).expect(401);
+  // PG-16: NPP-01
+  const propias = `/api/v1/advisees/${c.ase.id}/professional-notes`;
+  const claveDeLaNota = claveDeIdempotencia();
+  const nota = (await pro.post(propias, claveDeLaNota).send({ text: 'Le molesta la rodilla' }).expect(201)).body.data;
+  await pro.post(propias, claveDeLaNota).send({ text: 'Otra' }).expect(409);
+  await pro.post(propias).send({ text: 'x'.repeat(1001) }).expect(400);
+  await pro.post(propias).send({ text: 'x', anchor: { type: 'EXERCISE', exerciseId: ajeno } }).expect(422);
+  await pro.post(`/api/v1/advisees/${ajeno}/professional-notes`).send({ text: 'x' }).expect(404);
+  await request(servidor).post(propias).set('Idempotency-Key', claveDeIdempotencia()).send({ text: 'x' }).expect(401);
+  // NPP-02
+  await pro.get(propias).expect(200);
+  await pro.get(`${propias}?x=1`).expect(400);
+  await ase.get(propias).expect(404);
+  await request(servidor).get(propias).expect(401);
+  // NPP-03
+  const archivo = `/api/v1/professional-notes/${nota.noteId}/archive`;
+  const claveDelArchivo = claveDeIdempotencia();
+  await pro.post(archivo, claveDelArchivo).send({}).expect(200);
+  await pro.post(archivo, claveDelArchivo).send({ extra: 1 }).expect(400);
+  await pro.post(archivo).send({}).expect(200);
+  await ase.post(archivo).send({}).expect(404);
+  await pro.post(`/api/v1/professional-notes/${ajeno}/archive`).send({}).expect(404);
+  await request(servidor).post(archivo).set('Idempotency-Key', claveDeIdempotencia()).send({}).expect(401);
+});
+
+it('TEST-CT (WP-CONTEXTO-DE-LA-PERSONA, DL-179): CTX-01 y CTX-02 — el contexto de la persona, con éxitos y errores declarados', async () => {
+  const c = await circuitoV2(app, prisma, 'ct-ctx', 'NUTRICION');
+  await fri(app, c.ase.token).responder(c.formRequestId, { answers: RESPUESTAS_V2, fromProposal: null }).expect(201);
+  const pro = conSesion(app, c.pro.token);
+  const ase = conSesion(app, c.ase.token);
+  const ajeno = randomUUID();
+  const servidor = app.getHttpServer();
+  // CTX-01
+  const respuestas = `/api/v1/advisees/${c.ase.id}/person-context/answers`;
+  await pro.get(respuestas).expect(200);
+  await pro.get(`${respuestas}?x=1`).expect(400);
+  await ase.get(respuestas).expect(404);
+  await pro.get(`/api/v1/advisees/${ajeno}/person-context/answers`).expect(404);
+  await request(servidor).get(respuestas).expect(401);
+  // CTX-02: quien lleva Antropometría (200); quien no la lleva y no la recibe compartida (404).
+  const ant = await circuitoAntropometrico(app, prisma, 'ct-ctx-cuerpo');
+  const cuerpo = `/api/v1/advisees/${ant.ase.id}/person-context/body`;
+  await conSesion(app, ant.pro.token).get(cuerpo).expect(200);
+  await conSesion(app, ant.pro.token).get(`${cuerpo}?x=1`).expect(400);
+  await pro.get(`/api/v1/advisees/${c.ase.id}/person-context/body`).expect(404);
+  await request(servidor).get(cuerpo).expect(401);
+});
+
+it('TEST-CT (WP-HISTORIA-ANTERIOR, DL-175): HIA-01 a 04 — la historia anterior de un área, para el profesional nuevo, con éxitos y errores declarados', async () => {
+  const c = await circuitoConPlanActivo(app, 'ct-hia');
+  await finalizar(app, c.ase.token, c.vinculoId, await versionDeVinculo(app, c.ase.token, c.vinculoId)).expect(200);
+  const nuevo = await prepararProfesional(app, 'ct-hia-nuevo', ['NUTRICION']);
+  const ajeno = await prepararProfesional(app, 'ct-hia-ajeno', ['NUTRICION']);
+  const { vinculoId } = await vinculoCompleto(app, nuevo, c.ase, 'NUTRICION');
+  const yo = conSesion(app, c.ase.token);
+  const delNuevo = conSesion(app, nuevo.token);
+  const servidor = app.getHttpServer();
+  const LEER = `/api/v1/advisees/${c.ase.id}/previous-history/NUTRICION`;
+  const AUTORIZAR = `/api/v1/me/previous-history/${vinculoId}`;
+  const RETIRAR = `${AUTORIZAR}/withdrawal`;
+
+  // HIA-01 — lo que decidí
+  const texto = (await yo.get('/api/v1/me/previous-history').expect(200)).body.data.text.id as string;
+  await yo.get('/api/v1/me/previous-history?x=1').expect(400); // INVALID_REQUEST
+  await request(servidor).get('/api/v1/me/previous-history').expect(401);
+
+  // HIA-04 sin la autorización de la persona: el 404 de lo inexistente
+  await delNuevo.get(LEER).expect(404);
+
+  // HIA-02 — autorizar
+  const clave = claveDeIdempotencia();
+  await yo.put(AUTORIZAR, clave).send({ expectedVersion: null, textVersionId: texto }).expect(200);
+  await yo.put(AUTORIZAR, clave).send({ expectedVersion: null, textVersionId: texto }).expect(200); // replay
+  await yo.put(AUTORIZAR, clave).send({ expectedVersion: 'v1', textVersionId: texto }).expect(409); // IDEMPOTENCY_KEY_REUSED
+  await yo.put(AUTORIZAR).send({ expectedVersion: null, textVersionId: texto }).expect(409); // VERSION_CONFLICT
+  await yo.put(AUTORIZAR).send({ expectedVersion: 'v1', textVersionId: 'otro-texto' }).expect(409); // CONSENT_VERSION_STALE
+  await yo.put(AUTORIZAR).send({ expectedVersion: 'v1', textVersionId: texto, extra: 1 }).expect(400); // UNKNOWN_FIELD
+  await yo.put(AUTORIZAR).send({ expectedVersion: 'v1' }).expect(400); // INVALID_REQUEST
+  await yo.put(`/api/v1/me/previous-history/${c.vinculoId}`).send({ expectedVersion: null, textVersionId: texto }).expect(404); // terminado
+  await request(servidor).put(AUTORIZAR).set('Idempotency-Key', claveDeIdempotencia()).send({ expectedVersion: null, textVersionId: texto }).expect(401);
+
+  // HIA-04 — la historia anterior, para el profesional
+  await delNuevo.get(LEER).expect(200);
+  await delNuevo.get(`${LEER}?periodStart=2026-01-01`).expect(400); // INVALID_REQUEST
+  await delNuevo.get(`${LEER}?x=1`).expect(400); // INVALID_REQUEST
+  await conSesion(app, ajeno.token).get(LEER).expect(404);
+  await request(servidor).get(LEER).expect(401);
+
+  // HIA-03 — retirar
+  const claveDelRetiro = claveDeIdempotencia();
+  await yo.post(RETIRAR, claveDelRetiro).send({ expectedVersion: 'v1' }).expect(200);
+  await yo.post(RETIRAR, claveDelRetiro).send({ expectedVersion: 'v1' }).expect(200); // replay
+  await yo.post(RETIRAR, claveDelRetiro).send({ expectedVersion: 'v2' }).expect(409); // IDEMPOTENCY_KEY_REUSED
+  await yo.post(RETIRAR).send({ expectedVersion: 'v2' }).expect(409); // VERSION_CONFLICT: ya está retirada
+  await yo.post(RETIRAR).send({ expectedVersion: null }).expect(400); // INVALID_REQUEST
+  await yo.post(RETIRAR).send({ expectedVersion: 'v2', extra: 1 }).expect(400); // UNKNOWN_FIELD
+  await yo.post(`/api/v1/me/previous-history/${randomUUID()}/withdrawal`).send({ expectedVersion: 'v1' }).expect(404);
+  await request(servidor).post(RETIRAR).set('Idempotency-Key', claveDeIdempotencia()).send({ expectedVersion: 'v2' }).expect(401);
+
+  // HIA-02 sin el A3: 403
+  await yo.post(`/api/v1/me/health-data-consents/${await a3Vigente(app, c.ase.token)}/revoke`).send({}).expect(200);
+  await yo.put(AUTORIZAR).send({ expectedVersion: 'v2', textVersionId: texto }).expect(403); // ACTION_FORBIDDEN
+});
+
+it('TEST-CT (WP-COMPARTIR, DL-176): CMP-01 a 03 — la pantalla única de consentimiento, con éxitos y errores declarados', async () => {
+  const ase = await prepararAsesorado(app, 'ct-cmp');
+  const otra = await prepararAsesorado(app, 'ct-cmp-otra');
+  const ruiz = await prepararProfesional(app, 'ct-cmp-ruiz', ['ENTRENAMIENTO']);
+  const paz = await prepararProfesional(app, 'ct-cmp-paz', ['NUTRICION']);
+  const ajeno = await prepararProfesional(app, 'ct-cmp-ajeno', ['NUTRICION']);
+  await vinculoCompleto(app, ruiz, ase, 'ENTRENAMIENTO');
+  const { vinculoId } = await vinculoCompleto(app, paz, ase, 'NUTRICION', { b2: false });
+  const deOtra = await vinculoCompleto(app, ajeno, otra, 'NUTRICION', { b2: false });
+  const yo = conSesion(app, ase.token);
+  const servidor = app.getHttpServer();
+  const PROPUESTA = '/api/v1/me/sharing-proposal';
+  const ELEGIR = '/api/v1/me/sharing-choices';
+  const RETIRAR = '/api/v1/me/sharing-choices/withdrawal';
+
+  // CMP-01 — lo que puedo compartir
+  const p = (await yo.get(`${PROPUESTA}?relationshipId=${vinculoId}`).expect(200)).body.data as { version: string; items: { key: string; kind: string; textId: string; offered: boolean }[] };
+  await yo.get(PROPUESTA).expect(200);
+  await yo.get(`${PROPUESTA}?x=1`).expect(400); // INVALID_REQUEST
+  await yo.get(`${PROPUESTA}?relationshipId=${deOtra.vinculoId}`).expect(404); // ajeno
+  await yo.get(`${PROPUESTA}?relationshipId=${randomUUID()}`).expect(404); // inexistente
+  await request(servidor).get(PROPUESTA).expect(401);
+
+  // CMP-02 — un toque
+  const resumen = p.items.find((i) => i.kind === 'SUMMARY')!;
+  const area = p.items.find((i) => i.kind === 'AREA_CONSENT')!;
+  const a3 = p.items.find((i) => i.kind === 'HEALTH_DATA')!;
+  const cuerpo = (choices: string[], extra: Record<string, unknown> = {}) => ({ relationshipId: vinculoId, expectedVersion: p.version, acceptedTextIds: [...new Set(p.items.filter((i) => choices.includes(i.key)).map((i) => i.textId))], choices, ...extra });
+  await yo.post(ELEGIR).send(cuerpo([resumen.key])).expect(403); // ACTION_FORBIDDEN: sin el A3
+  await yo.post(ELEGIR).send(cuerpo([`HABITS:${ajeno.id}`])).expect(422); // SHARING_CHOICE_NOT_AVAILABLE
+  await yo.post(ELEGIR).send({ ...cuerpo([a3.key, resumen.key]), acceptedTextIds: [a3.textId] }).expect(422); // SHARING_TEXT_REQUIRED
+  await yo.post(ELEGIR).send({ ...cuerpo([a3.key]), acceptedTextIds: ['otro-texto'] }).expect(409); // CONSENT_VERSION_STALE
+  await yo.post(ELEGIR).send({ ...cuerpo([a3.key]), expectedVersion: 'p0' }).expect(409); // VERSION_CONFLICT
+  await yo.post(ELEGIR).send(cuerpo([a3.key], { extra: 1 })).expect(400); // UNKNOWN_FIELD
+  await yo.post(ELEGIR).send(cuerpo([])).expect(400); // INVALID_REQUEST
+  await yo.post(ELEGIR).send({ ...cuerpo([a3.key]), relationshipId: deOtra.vinculoId }).expect(404); // ajeno
+  const clave = claveDeIdempotencia();
+  const todo = cuerpo([a3.key, area.key, resumen.key]);
+  await yo.post(ELEGIR, clave).send(todo).expect(200);
+  await yo.post(ELEGIR, clave).send(todo).expect(200); // replay
+  await yo.post(ELEGIR, clave).send(cuerpo([a3.key])).expect(409); // IDEMPOTENCY_KEY_REUSED
+  await request(servidor).post(ELEGIR).set('Idempotency-Key', claveDeIdempotencia()).send(todo).expect(401);
+
+  // CMP-03 — dejar de compartir una cosa
+  const claveDelRetiro = claveDeIdempotencia();
+  await yo.post(RETIRAR, claveDelRetiro).send({ key: resumen.key }).expect(200);
+  await yo.post(RETIRAR, claveDelRetiro).send({ key: resumen.key }).expect(200); // replay
+  await yo.post(RETIRAR, claveDelRetiro).send({ key: `HABITS:${ruiz.id}` }).expect(409); // IDEMPOTENCY_KEY_REUSED
+  await yo.post(RETIRAR).send({ key: resumen.key }).expect(200); // ya no se compartía: withdrawn false
+  await yo.post(RETIRAR).send({ key: 'HEALTH_DATA' }).expect(400); // INVALID_REQUEST: el A3 se retira en Privacidad
+  await yo.post(RETIRAR).send({ key: resumen.key, extra: 1 }).expect(400); // UNKNOWN_FIELD
+  await yo.post(RETIRAR).send({ key: `HABITS:${ajeno.id}` }).expect(404); // un profesional que nunca la acompañó
+  await request(servidor).post(RETIRAR).set('Idempotency-Key', claveDeIdempotencia()).send({ key: resumen.key }).expect(401);
+});
+
+it('TEST-CT (DL-180): ALI-01 a 09 — los alimentos cargados a mano y su revisión por Administración, con éxitos y errores declarados', async () => {
+  const servidor = app.getHttpServer();
+  const pro = await prepararProfesional(app, `ct-ali-${randomUUID().slice(0, 6)}`, ['NUTRICION']);
+  const otro = await prepararProfesional(app, `ct-ali-otro-${randomUUID().slice(0, 6)}`, ['NUTRICION']);
+  const persona = await prepararAsesorado(app, 'ct-ali');
+  const yo = conSesion(app, pro.token);
+  const composicion = { referenceAmount: '100g', energyKcal: 380, proteinG: 75, carbohydrateG: 8, fatG: 5 };
+  const cargar = async (nombre: string) => (await yo.post('/api/v1/nutrition/catalog-items').send({ name: nombre, itemType: 'FOOD', composition: composicion, group: 'DAIRY' }).expect(201)).body.data as { catalogItemId: string; versionId: string };
+  const uno = await cargar('Proteína en polvo del contrato');
+  const dos = await cargar('Galleta del contrato');
+  // ALI-01.
+  await yo.get('/api/v1/nutrition/catalog-items/mine').expect(200);
+  await yo.get('/api/v1/nutrition/catalog-items/mine?x=1').expect(400); // INVALID_REQUEST
+  await yo.get('/api/v1/nutrition/catalog-items/mine?cursor=no-es-un-cursor').expect(400); // INVALID_CURSOR
+  await conSesion(app, persona.token).get('/api/v1/nutrition/catalog-items/mine').expect(403); // ACTION_FORBIDDEN
+  await request(servidor).get('/api/v1/nutrition/catalog-items/mine').expect(401); // AUTHENTICATION_REQUIRED
+  // ALI-02.
+  const corregir = (token: string, id: string, cuerpo: Record<string, unknown>, clave = claveDeIdempotencia()) =>
+    request(servidor).patch(`/api/v1/nutrition/catalog-items/${id}`).set('Authorization', `Bearer ${token}`).set('Idempotency-Key', clave).send(cuerpo);
+  const correccion = { expectedVersion: 'v1', name: 'Proteína en polvo del contrato', composition: { ...composicion, energyKcal: 120 } };
+  const clave = claveDeIdempotencia();
+  await corregir(pro.token, uno.catalogItemId, correccion, clave).expect(200);
+  await corregir(pro.token, uno.catalogItemId, { ...correccion, name: 'Otro' }, clave).expect(409); // IDEMPOTENCY_KEY_REUSED
+  await corregir(pro.token, uno.catalogItemId, correccion).expect(409); // VERSION_CONFLICT
+  await corregir(pro.token, uno.catalogItemId, { ...correccion, extra: 1 }).expect(400); // UNKNOWN_FIELD
+  await request(servidor).patch(`/api/v1/nutrition/catalog-items/${uno.catalogItemId}`).set('Authorization', `Bearer ${pro.token}`).send(correccion).expect(400); // INVALID_REQUEST: sin Idempotency-Key
+  await corregir(otro.token, uno.catalogItemId, correccion).expect(404); // RESOURCE_NOT_FOUND: ajeno
+  await corregir(persona.token, uno.catalogItemId, correccion).expect(403); // ACTION_FORBIDDEN
+  // ALI-03.
+  const retirar = (token: string, id: string, cuerpo: Record<string, unknown>) => conSesion(app, token).post(`/api/v1/nutrition/catalog-items/${id}/retirement`).send(cuerpo);
+  await retirar(pro.token, dos.catalogItemId, { expectedVersion: 'v1', extra: 1 }).expect(400); // UNKNOWN_FIELD
+  await retirar(pro.token, dos.catalogItemId, { expectedVersion: 'v9' }).expect(409); // VERSION_CONFLICT
+  await retirar(otro.token, dos.catalogItemId, { expectedVersion: 'v1' }).expect(404); // RESOURCE_NOT_FOUND
+  await retirar(persona.token, dos.catalogItemId, { expectedVersion: 'v1' }).expect(403); // ACTION_FORBIDDEN
+  await retirar(pro.token, dos.catalogItemId, { expectedVersion: 'v1' }).expect(200);
+  await corregir(pro.token, dos.catalogItemId, { ...correccion, expectedVersion: 'v2', name: 'Galleta del contrato' }).expect(422); // INVALID_STATE_TRANSITION: retirado
+  // ALI-04.
+  const consultar = (token: string, cuerpo: Record<string, unknown>) => request(servidor).post('/api/v1/nutrition/catalog-items/lookup').set('Authorization', `Bearer ${token}`).send(cuerpo);
+  await consultar(pro.token, { catalogItemIds: [uno.catalogItemId, dos.catalogItemId] }).expect(200);
+  await consultar(pro.token, { catalogItemIds: [uno.catalogItemId], extra: 1 }).expect(400); // UNKNOWN_FIELD
+  await consultar(persona.token, { catalogItemIds: [uno.catalogItemId] }).expect(403); // ACTION_FORBIDDEN
+  // ALI-05 a 07.
+  const a = await administradorListo(app, prisma, `ct-ali-${randomUUID().slice(0, 6)}`);
+  await adm(app, a.token).post('/admin/foods/query').send({ q: 'contrato' }).expect(200);
+  await adm(app, a.token).post('/admin/foods/query').send({ extra: 1 }).expect(400); // UNKNOWN_FIELD
+  await adm(app, a.token).post('/admin/foods/query').send({ cursor: '###' }).expect(400); // INVALID_CURSOR
+  await adm(app, pro.token).post('/admin/foods/query').send({}).expect(403); // ACTION_FORBIDDEN
+  const verificados = (await adm(app, a.token).post('/admin/foods/verified/query').send({ q: 'arroz blanco de grano largo cocido' }).expect(200)).body.data as { catalogItemId: string }[];
+  await adm(app, a.token).post('/admin/foods/verified/query').send({ q: 'arroz', extra: 1 }).expect(400); // UNKNOWN_FIELD
+  const decidir = (id: string, cuerpo: Record<string, unknown>) => adm(app, a.token).post(`/admin/foods/${id}/decisions`).set('Idempotency-Key', claveDeIdempotencia()).send(cuerpo);
+  await decidir(uno.catalogItemId, { expectedVersion: 'v2', decision: 'CERTIFY' }).expect(422); // VALIDATION_FAILED: sin fuente
+  await decidir(uno.catalogItemId, { expectedVersion: 'v2', decision: 'CLEAR' }).expect(422); // INVALID_STATE_TRANSITION: nada decidido
+  await decidir(uno.catalogItemId, { expectedVersion: 'v1', decision: 'CERTIFY', source: 'Rótulo' }).expect(409); // VERSION_CONFLICT
+  await decidir(randomUUID(), { expectedVersion: 'v1', decision: 'CERTIFY', source: 'Rótulo' }).expect(404); // RESOURCE_NOT_FOUND
+  await decidir(uno.catalogItemId, { expectedVersion: 'v2', decision: 'CERTIFY', source: 'Rótulo', extra: 1 }).expect(400); // UNKNOWN_FIELD
+  await decidir(uno.catalogItemId, { expectedVersion: 'v2', decision: 'EQUIVALENT', equivalentCatalogItemId: verificados[0]!.catalogItemId }).expect(200);
+  // ALI-08 y 09 (segundo tramo): los parecidos y sumar al canon.
+  await adm(app, a.token).post('/admin/foods/similar/query').send({ q: 'contrato' }).expect(200);
+  await adm(app, a.token).post('/admin/foods/similar/query').send({ extra: 1 }).expect(400); // UNKNOWN_FIELD
+  await adm(app, a.token).post('/admin/foods/similar/query').send({ minProfessionals: 0 }).expect(400); // INVALID_REQUEST
+  await adm(app, pro.token).post('/admin/foods/similar/query').send({}).expect(403); // ACTION_FORBIDDEN
+  const canon = { name: 'Galleta verificada del contrato', composition: composicion, source: 'Rótulo sintético del contrato' };
+  const claveDeCanon = claveDeIdempotencia();
+  await adm(app, a.token).post('/admin/foods/canon').set('Idempotency-Key', claveDeCanon).send(canon).expect(201);
+  await adm(app, a.token).post('/admin/foods/canon').set('Idempotency-Key', claveDeCanon).send({ ...canon, name: 'Otra' }).expect(409); // IDEMPOTENCY_KEY_REUSED
+  await adm(app, a.token).post('/admin/foods/canon').set('Idempotency-Key', claveDeIdempotencia()).send({ ...canon, extra: 1 }).expect(400); // UNKNOWN_FIELD
+  await adm(app, a.token).post('/admin/foods/canon').set('Idempotency-Key', claveDeIdempotencia()).send({ ...canon, source: undefined }).expect(400); // INVALID_REQUEST: sin fuente
+  await adm(app, a.token).post('/admin/foods/canon').set('Idempotency-Key', claveDeIdempotencia()).send({ ...canon, fromCatalogItemId: randomUUID() }).expect(422); // VALIDATION_FAILED
+  await adm(app, pro.token).post('/admin/foods/canon').set('Idempotency-Key', claveDeIdempotencia()).send(canon).expect(403); // ACTION_FORBIDDEN
 });
 
 it('TEST-CT: todo (status, código) observado está declarado para su operación; los éxitos coinciden con el contrato', () => {

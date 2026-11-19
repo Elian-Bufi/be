@@ -1,4 +1,6 @@
-import { Controller, Get, HttpCode, Param, Post, Req, UseGuards } from '@nestjs/common';
+import { Controller, Get, HttpCode, Param, Post, Req, UseGuards, UseInterceptors } from '@nestjs/common';
+import { SinTipoDeSerieInterceptor } from '../http/sin-tipo-de-serie.interceptor';
+import { SinBloquesDeLaSesionInterceptor } from '../http/sin-bloques-de-la-sesion.interceptor';
 import type { Prisma } from '@prisma/client';
 import {
   conteosDelPeriodo,
@@ -70,6 +72,8 @@ const DOMINIO: Readonly<Record<Alcance, DominioDeAnalisis>> = { NUTRICION: 'NUTR
  * - `partialView` es un aviso único (B10-08 §8.4).
  */
 @Controller()
+// DL-178: el tipo de cada serie sale explícito solo para el cliente que declara `training-set-kinds-1`.
+@UseInterceptors(SinTipoDeSerieInterceptor, SinBloquesDeLaSesionInterceptor)
 export class AnalisisController {
   constructor(
     private readonly prisma: PrismaService,

@@ -29,6 +29,8 @@ export * from './contratos-medios';
 export * from './contratos-evidencia-visual';
 export * from './copy-evidencia-visual';
 export * from './contratos-recetas';
+export * from './alimentos-del-catalogo';
+export * from './contratos-alimentos';
 export * from './contratos-registro-de-comidas';
 export * from './copy-recetas';
 export * from './contratos-antropometria';
@@ -58,6 +60,13 @@ export * from './habitos-de-la-persona';
 export * from './contratos-habitos-de-la-persona';
 export * from './contratos-resumenes-compartidos';
 export * from './resumenes-compartidos';
+// WP-HISTORIA-ANTERIOR (DL-175): la historia anterior de un área, para el profesional nuevo, con el permiso de la persona.
+export * from './historia-anterior';
+export * from './contratos-historia-anterior';
+// WP-COMPARTIR (DL-176): la pantalla única de consentimiento y la familia CMP.
+export * from './compartir';
+export * from './contratos-compartir';
+export * from './copy-compartir';
 export * from './copy-habitos-de-la-persona';
 export * from './errores-de-formulario';
 export * from './recuperacion-de-formulario';
@@ -73,6 +82,8 @@ export * from './lamina';
 export * from './contratos-plantillas';
 export * from './copy-plantillas';
 export * from './plantillas-de-plan';
+// PLT (DL-182): la preparación de una plantilla de entrenamiento, sin persona.
+export * from './preparacion-de-plantilla';
 export * from './contratos-habituales';
 export * from './copy-habituales';
 export * from './habituales';
@@ -87,6 +98,8 @@ export * from './tiempos-de-entrenamiento';
 export * from './relacion-con-el-objetivo';
 export * from './objetivos-por-serie';
 export * from './compatibilidad-de-clientes';
+export * from './tipos-de-serie';
+export * from './bloques-de-la-sesion';
 export * from './contratos-entrenamiento-por-serie';
 export * from './sesion-de-entrenamiento';
 export * from './copy-entrenamiento-por-serie';
@@ -153,6 +166,14 @@ export * from './copy-acceso-google';
 export * from './pasos-de-acceso-google';
 export * from './contratos-notas-de-coordinacion';
 export * from './copy-notas-de-coordinacion';
+// WP-PULIDO-GRANDES PG-15 y PG-16 (DL-173): la nota para el profe y las notas propias del profesional.
+export * from './contratos-notas-de-la-sesion';
+export * from './copy-notas-de-la-sesion';
+export * from './contratos-notas-propias';
+// WP-CONTEXTO-DE-LA-PERSONA (DL-179): la familia CTX, la cita en Nutrición y la lógica del panel.
+export * from './contratos-contexto-de-la-persona';
+export * from './contexto-de-la-persona';
+export * from './notas-propias';
 export * from './administracion';
 export * from './contratos-administracion';
 export * from './copy-administracion';
@@ -177,3 +198,8 @@ export * from './carga-desde-la-estimacion';
 export * from './descripciones-de-plantillas';
 export * from './prescripcion-rapida';
 export * from './presets-de-be';
+// WP-GRAFICOS (DL-174), fase 1: «La vez pasada» (GR-01, la misma pieza que PG-11), la marca «Con historial» del buscador
+// (GR-04) y la tabla «Desde el inicio y desde la anterior» de cada toma (GR-16).
+export * from './la-vez-pasada';
+export * from './historial-del-buscador';
+export * from './desde-el-inicio';

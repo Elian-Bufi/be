@@ -9,12 +9,18 @@
  *   otra pestaña, tus plantillas de plan (Dirección, 2026-11-12): una plantilla reemplaza el borrador entero, que se
  *   descarta y nace de nuevo desde ella, y el borrador nuevo anota de qué plantilla salió (`templateOrigin`).
  *
+ * ENP-D10 (la prueba de Elián del 18/11): con la sesión vacía, «Usar» ya no queda apagado. ENP-D18: el preset de
+ * prescripción vive en la pantalla, atado a la sesión, y se escribe en cada ejercicio que se agregue
+ * (`onElegirParaLaSesionVacia`); no se guarda solo en el plan.
+ *
  * Nada viene elegido al abrir (TEST-EDP-014). Elegir una tarjeta muestra su vista previa al costado. «Usar» aplica con
  * un clic si solo llena lo vacío; si pisa algo, el mismo cuadro pasa a la vista previa del alcance («antes → después»,
  * lo que se pierde) y el principal dice a cuántos ejercicios se aplica. Un cuadro no abre otro: el paso reemplaza al
  * anterior, con «Atrás».
  */
 import {
+  aplicarPrescripcion,
+  aplicarPrescripcionHabitual,
   COPY_PRESETS as C,
   ejercicioPlegadoDelEditor,
   PRESETS_DE_ESTRUCTURA,
@@ -26,7 +32,7 @@ import {
   type PresetDePrescripcion,
   type SesionHabitual,
 } from '@be/domain';
-import { COPY_PLANTILLAS } from '@be/domain';
+import { COPY_PLANTILLAS, COPY_PREPARACION_DE_PLANTILLA } from '@be/domain';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { CuadroEnfocado } from '../../../components/cuadro-enfocado';
 import { BloqueDeEstado, Cargando } from '../../../components/estados';
@@ -72,6 +78,14 @@ export const COPY_PLANTILLAS_EN_LA_GALERIA = {
     `Se descarta la ${borrador} con todo lo que tiene, y se crea una nueva desde «${nombre}», que anota de qué plantilla salió. La versión activa no cambia.`,
 } as const;
 
+/**
+ * ENP-D10 y ENP-D18: lo que hace «Usar» con la sesión vacía, dicho antes de usarlo. El texto anterior se leía como algo
+ * guardado en el plan: el preset vive en la pantalla hasta que se agregan ejercicios.
+ */
+export const COPY_PRESET_CON_LA_SESION_VACIA = {
+  queHace: 'La sesión todavía no tiene ejercicios: «Usar» lo deja en esta pantalla y se escribe en cada ejercicio que agregues. No queda guardado en el plan hasta entonces.',
+} as const;
+
 /** «4 × 5 · RIR 1 · 3:00»: una prescripción habitual en una línea, como se lee un ejercicio plegado. */
 const enUnaLinea = (h: PrescripcionHabitual): string => ejercicioPlegadoDelEditor({ exerciseVersionId: '', ...structuredClone(h.prescription) } as PrescripcionE, 0).resumen;
 
@@ -88,6 +102,7 @@ export function GaleriaDePresets({
   prescripcionesHabituales = [],
   plantillas = null,
   onAplicarPrescripcion,
+  onElegirParaLaSesionVacia,
   onAplicarEstructura,
   onInsertarHabitual,
   onCerrar,
@@ -110,6 +125,8 @@ export function GaleriaDePresets({
   /** ED-11: las plantillas de plan, en su pestaña; solo en la galería de estructura y si hay un borrador que reemplazar. */
   plantillas?: PlantillasEnLaGaleria | null;
   onAplicarPrescripcion: (a: AlcanceDelPreset, nombre: string) => void;
+  /** ENP-D10: con la sesión vacía, el preset queda para los ejercicios que se agreguen (cómo se aplica a cada uno). */
+  onElegirParaLaSesionVacia?: (nombre: string, aplicar: (p: PrescripcionE) => PrescripcionE) => void;
   onAplicarEstructura: (p: PresetDeEstructura) => void;
   onInsertarHabitual: (h: SesionHabitual) => void;
   onCerrar: () => void;
@@ -170,6 +187,17 @@ export function GaleriaDePresets({
       onAplicarEstructura(elegido.preset);
       return cerrar();
     }
+    // ENP-D10: con la sesión vacía, el preset queda para los ejercicios que se agreguen.
+    if (sinEjercicios && onElegirParaLaSesionVacia && (elegido.tipo === 'PRESCRIPCION' || (elegido.tipo === 'BE' && elegido.preset.tipo === 'PRESCRIPCION'))) {
+      if (elegido.tipo === 'PRESCRIPCION') {
+        const h = elegido.habitual.prescription as Parameters<typeof aplicarPrescripcionHabitual>[1];
+        onElegirParaLaSesionVacia(elegido.habitual.name, (x) => aplicarPrescripcionHabitual(x, h).prescripcion as PrescripcionE);
+      } else if (elegido.preset.tipo === 'PRESCRIPCION') {
+        const leida = prescripcionDelPreset(elegido.preset);
+        onElegirParaLaSesionVacia(elegido.preset.nombre, (x) => aplicarPrescripcion(x, leida).prescripcion as PrescripcionE);
+      }
+      return cerrar();
+    }
     if (!alcance || alcance.filas.length === 0) return;
     // DJ-8: con un clic si solo llena lo vacío; si pisa algo, primero la vista previa del alcance.
     if (paso === 'elegir' && !alcance.soloLlenaLoVacio) return setPaso('alcance');
@@ -190,7 +218,7 @@ export function GaleriaDePresets({
       ? { texto: COPY_PLANTILLAS_EN_LA_GALERIA.reemplazar(elegido.plantilla.nombre), alTocar: usar, apagado: plantillas?.noSePuede ?? null, enviando: plantillas?.reemplazando ?? false, textoEnviando: COPY_PLANTILLAS_EN_LA_GALERIA.reemplazando }
       : paso === 'alcance' && alcance
       ? { texto: C.aplicarAEjercicios(alcance.filas.length), alTocar: usar }
-      : { texto: C.usar, alTocar: usar, apagado: !elegido ? C.nadaElegido : sinEjercicios && (elegido.tipo === 'PRESCRIPCION' || (elegido.tipo === 'BE' && elegido.preset.tipo === 'PRESCRIPCION')) ? C.sinEjercicios : null };
+      : { texto: C.usar, alTocar: usar, apagado: !elegido ? C.nadaElegido : sinEjercicios && !onElegirParaLaSesionVacia && (elegido.tipo === 'PRESCRIPCION' || (elegido.tipo === 'BE' && elegido.preset.tipo === 'PRESCRIPCION')) ? C.sinEjercicios : null };
 
   return (
     <CuadroEnfocado
@@ -238,7 +266,7 @@ export function GaleriaDePresets({
               ) : lecturaDePlantillas.datos.length === 0 ? (
                 <>
                   <p>{COPY_PLANTILLAS.sinPlantillasActivas}</p>
-                  <p className="nota">{COPY_PLANTILLAS.dondeSeArman}</p>
+                  <p className="nota">{COPY_PREPARACION_DE_PLANTILLA.dondeSeArmanEntrenamiento}</p>
                 </>
               ) : (
                 <ul className="galeria__tarjetas" role="list">
@@ -367,7 +395,7 @@ export function GaleriaDePresets({
                     </label>
                   </fieldset>
                 ) : null}
-                {alcance && alcance.filas.length > 0 ? <p className="nota">{alcance.resumen}</p> : <p className="nota">{C.sinEjercicios}</p>}
+                {alcance && alcance.filas.length > 0 ? <p className="nota">{alcance.resumen}</p> : <p className="nota" data-para-los-que-agregues>{onElegirParaLaSesionVacia ? COPY_PRESET_CON_LA_SESION_VACIA.queHace : C.sinEjercicios}</p>}
               </>
             )}
           </aside>

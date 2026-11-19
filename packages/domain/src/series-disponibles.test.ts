@@ -74,12 +74,17 @@ test('TEST-GRF-002 · seriesOfrecidas no ofrece nada de un área sin acceso, y l
   const todo = seriesOfrecidas(acceso(['NUTRICION', 'ENTRENAMIENTO', 'ANTROPOMETRIA'], { NUTRICION: true, ENTRENAMIENTO: true, ANTROPOMETRIA: true }));
   assert.ok(todo.every((s) => s.estado === 'OFRECIDA'));
   assert.ok(!todo.some((s) => s.id === 'entrenamiento.volumen-carga-externa' || s.id === 'nutricion.energia-prevista-del-dia'));
-  // Una serie de dos áreas, si se ofreciera, pide lo propio en las dos.
+  // Una serie de dos áreas, ya ofrecida, pide los dos alcances y lo propio en las dos. Se prueba la función real con un
+  // catálogo de prueba, que deja la regla a la vista aunque cambie el catálogo de BE (la rama C ya ofrece los g/kg:
+  // TEST-GRF-051 lo prueba con el catálogo de BE).
   const porKilo = { ...serie('nutricion.proteinas-por-kilo'), estado: 'OFRECIDA' as const };
-  const ofrecida = (a: AccesoDeLaPersona) => a.alcances.length > 0 && porKilo.acceso.alcances.every((x) => a.alcances.includes(x)) && porKilo.acceso.alcances.every((x) => a.propios[x]);
-  assert.equal(ofrecida(acceso(['NUTRICION'], { NUTRICION: true })), false);
-  assert.equal(ofrecida(acceso(['NUTRICION', 'ANTROPOMETRIA'], { NUTRICION: true })), false);
-  assert.equal(ofrecida(acceso(['NUTRICION', 'ANTROPOMETRIA'], { NUTRICION: true, ANTROPOMETRIA: true })), true);
+  const conPorKilo = [porKilo, serie('nutricion.proteinas')];
+  const ids = (a: AccesoDeLaPersona) => seriesOfrecidas(a, conPorKilo).map((s) => s.id);
+  assert.deepEqual(ids(acceso(['NUTRICION'], { NUTRICION: true })), ['nutricion.proteinas']);
+  assert.deepEqual(ids(acceso(['NUTRICION', 'ANTROPOMETRIA'], { NUTRICION: true })), ['nutricion.proteinas']);
+  assert.deepEqual(ids(acceso(['NUTRICION', 'ANTROPOMETRIA'], { ANTROPOMETRIA: true })), ['nutricion.proteinas']);
+  assert.deepEqual(ids(acceso(['NUTRICION', 'ANTROPOMETRIA'], { NUTRICION: true, ANTROPOMETRIA: true })), ['nutricion.proteinas-por-kilo', 'nutricion.proteinas']);
+  assert.deepEqual(ids(acceso(['ANTROPOMETRIA'], { NUTRICION: true, ANTROPOMETRIA: true })), []);
   assert.deepEqual(porKilo.acceso.alcances, ['NUTRICION', 'ANTROPOMETRIA']);
 });
 
@@ -93,6 +98,11 @@ test('TEST-GRF-003 · composicionPermitida: tres unidades, semana con sesión y 
   assert.equal(tres.motivo, 'MAS_DE_DOS_UNIDADES');
   const semanal = { serie: { ...serie('entrenamiento.series-registradas'), ejeX: 'SEMANA' as const }, unidad: 'series' };
   assert.equal(composicionPermitida([semanal, kg], 'OVERLAY').motivo, 'EJE_X_DISTINTO');
+  // Una serie de día vista por semana es semanal: no se superpone con una de sesión, sí con otra semanal (mutación: mirar
+  // solo el eje X del catálogo y no el grano elegido).
+  assert.equal(composicionPermitida([{ ...energia, grano: 'WEEK' }, kg], 'OVERLAY').motivo, 'EJE_X_DISTINTO');
+  assert.equal(composicionPermitida([{ ...energia, grano: 'WEEK' }, semanal], 'OVERLAY').permitida, true);
+  assert.equal(composicionPermitida([{ ...energia, grano: 'DAY' }, kg], 'OVERLAY').permitida, true);
   assert.equal(ejesCompatibles('FECHA', 'SESION'), true);
   assert.equal(ejesCompatibles('SEMANA', 'SEMANA'), true);
   assert.equal(ejesCompatibles('SEMANA', 'FECHA'), false);
@@ -232,7 +242,7 @@ test('TEST-GRF-008 · el ruido de la estimación: con menos de cuatro sesiones d
   assert.equal(cuatro.diferenciaEntreSesiones, 3.5);
   // Lo orientativo no entra en la diferencia.
   assert.equal(lecturaPorVersion([...puntos.slice(0, 3), fuerza('2026-10-13', 70, { banda: 'ORIENTATIVE' })], bandas)[0].diferenciaEntreSesiones, null);
-  assert.equal(cambioDeLoIndicado({ rir: { desde: 2, hasta: 2 }, repeticiones: null }, { rir: { desde: 1, hasta: 1 }, repeticiones: null }), 'el RIR indicado pasó de 2 a 1: la estimación cambia aunque la fuerza no');
+  assert.equal(cambioDeLoIndicado({ rir: { desde: 2, hasta: 2 }, repeticiones: null }, { rir: { desde: 1, hasta: 1 }, repeticiones: null }), 'el RIR indicado pasó de 2 a 1: la estimación puede cambiar aunque la fuerza no cambie');
   assert.equal(cambioDeLoIndicado({ rir: { desde: 1, hasta: 2 }, repeticiones: { desde: 8, hasta: 8 } }, { rir: { desde: 1, hasta: 2 }, repeticiones: { desde: 8, hasta: 8 } }), null);
   for (const t of [cambioDeLoIndicado({ rir: null, repeticiones: { desde: 8, hasta: 10 } }, { rir: { desde: 1, hasta: 1 }, repeticiones: { desde: 6, hasta: 6 } }) ?? '']) {
     assert.deepEqual(terminosProhibidosEnUnGrafico(t, ['ENTRENAMIENTO']), [], t);

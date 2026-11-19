@@ -17,6 +17,15 @@ const leer = (r) => readFileSync(new URL(`../src/app/pro/advisees/${r}`, import.
 const F = await import('../src/app/pro/advisees/fuerza/fuerza.ts');
 const O = await import('../src/app/pro/advisees/asistente/operaciones-del-asistente.ts');
 const V = await import('../src/app/pro/advisees/nutrition/version-nueva-de-la-receta.ts');
+/**
+ * NUP-08 (WP-NUTRICION-PLANIFICACION; decisión de Dirección del 18/11): en el website del profesional, el «%» de
+ * Nutrición va con su base dicha («18 % de las 2.500 kcal»). Un «%» sin «de la(s)/lo(s)» después es el que no dice de qué
+ * es, y sigue prohibido; también el de cumplimiento o adherencia. En la app de la persona, la regla no cambia.
+ */
+// La base va con su número («de las 2.500 kcal», o la expresión que lo escribe): «de las kcal» no dice de cuáles cuando
+// los gramos no suman las kcal indicadas (revisión adversaria del primer tramo de WP-NUTRICION-PLANIFICACION).
+const porcentajeSinSuBase = (t) => /%(?!\s*de\s+l[ao]s?(?:\s+\d|\s*\$\{|\s*$))/.test(t);
+
 
 const PRESS = 'b5a3ddca-2d35-5d67-833b-cedfe0f6b1d7';
 const MARTIN = '22222222-2222-4222-8222-222222222222';
@@ -178,8 +187,10 @@ test('ED-14 · el panel es uno por pestaña, y lo escrito sin aplicar queda en s
   const editor = leer('training/editor.tsx');
   // Sin la key, React reusa la línea del ejercicio 1 de A en el ejercicio 1 de B, y un Enter aplica ahí lo escrito en A.
   assert.match(editor, /<div key=\{claveElegida\} role="tabpanel" id="paso-4-panel"/);
-  assert.match(editor, /const pendiente = `\$\{claveElegida\}·p\$\{l\}`;/);
-  assert.match(editor, /texto=\{lineasDelPaso4\[pendiente\] \?\? ''\}\n\s+onTexto=\{\(t\) => setLineasDelPaso4\(\(m\) => \(\{ \.\.\.m, \[pendiente\]: t \}\)\)\}/);
+  // C7 (WP-ENTRENAMIENTO-PLANIFICACION, tramo 2): la clave es la del ejercicio (su identificador o su lugar en su sesión),
+  // la misma que en la estación; sigue siendo de su sesión y de su ejercicio.
+  assert.match(editor, /const pendiente = claveDeLaLinea\(clave, l, x\.prescriptionId\);/);
+  assert.match(editor, /texto=\{lineas\[pendiente\] \?\? ''\}\n\s+onTexto=\{\(t\) => setLineas\(\(m\) => conLaLinea\(m, pendiente, t\)\)\}/);
   const linea = leer('training/linea-de-prescripcion.tsx');
   assert.match(linea, /const texto = deAfuera \?\? propioTexto;\n\s+const setTexto = onTexto \?\? setPropioTexto;/);
 });
@@ -217,7 +228,7 @@ test('API-PLN-01 · la porción de ahora la estima el servidor y la nueva sale d
   assert.match(lineas[3], /^Grasas: de 12,0 g a sin dato$/);
   assert.deepEqual(V.nutrientesDeLaPorcion(null, nutr('465', '20', '61', '9')).slice(0, 1), ['Calorías: 465 kcal']);
   assert.deepEqual(V.nutrientesDeLaPorcion(nutr('1', '1', '1', '1'), null), []);
-  for (const l of lineas) assert.doesNotMatch(l, /%/);
+  for (const l of lineas) assert.equal(porcentajeSinSuBase(l), false, l);
 });
 
 test('API-PLN-01 · la estimación vale solo para la versión del plan que se mira y la versión de la receta que cita la opción', () => {

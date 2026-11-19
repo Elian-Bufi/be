@@ -1,4 +1,4 @@
-import { CONDICION_DE_SESION_API, estadoDeVersionDePlanApi, GRANULARIDAD_API, serieEnSuForma, sesionesDelPlan, type FuenteExterna } from '@be/domain';
+import { bloquesComoSalen, CONDICION_DE_SESION_API, estadoDeVersionDePlanApi, GRANULARIDAD_API, serieConTipo, sesionesDelPlan, tipoDeSerie, type FuenteExterna } from '@be/domain';
 import type {
   Bloque,
   CondicionDeSesion,
@@ -152,11 +152,14 @@ export function prescripcionApi(p: PrescripcionGuardada, orden: number, resolver
     exerciseId: e.exerciseId,
     exerciseVersionId: p.exerciseVersionId,
     exerciseName: e.exerciseName,
-    sets: p.sets.map((s, i) => ({ setIndex: i + 1, repetitions: s.repetitions, note: s.note })),
+    // DL-178: el tipo sale siempre explícito; a un cliente sin `training-set-kinds-1` se lo saca `SinTipoDeSerieInterceptor`.
+    sets: p.sets.map((s, i) => ({ setIndex: i + 1, repetitions: s.repetitions, note: s.note, setKind: tipoDeSerie(s) })),
     intensity: p.intensity,
     suggestedLoad: p.suggestedLoad,
     professionalParameters: p.professionalParameters.map((q) => ({ label: q.label, value: q.value, unit: q.unit })),
     note: p.note,
+    // DL-181: explícito; a un cliente sin `training-session-groups-1` se lo saca `SinBloquesDeLaSesionInterceptor`.
+    exerciseGroupId: p.exerciseGroupId ?? null,
   };
 }
 
@@ -167,6 +170,8 @@ export function sesionApi(s: SesionGuardada, orden: number, resolver: ResolverDe
     order: orden,
     instructions: s.instructions,
     prescriptions: s.prescriptions.map((p, i) => prescripcionApi(p, i + 1, resolver)),
+    // DL-181: explícito (vacío si no tiene); a un cliente sin la capacidad se lo saca `SinBloquesDeLaSesionInterceptor`.
+    exerciseGroups: bloquesComoSalen(s),
   };
 }
 
@@ -285,7 +290,8 @@ export function ejerciciosRegistradosApi(
       performedExerciseName: nombres.get(e.performedExerciseVersionId) ?? 'Ejercicio no disponible',
       substituted: e.performedExerciseVersionId !== prescribedExerciseVersionId,
       // Campo por campo (DL-161): lo de la serie que no existe no se devuelve, y lo registrado antes llega idéntico.
-      sets: 'sets' in e ? e.sets.map(serieEnSuForma) : null,
+      // DL-178: con su tipo explícito, `WORKING` incluido (`serieConTipo`); a un cliente sin la capacidad se lo saca el interceptor.
+      sets: 'sets' in e ? e.sets.map(serieConTipo) : null,
       executionSummary: 'executionSummary' in e ? { description: e.executionSummary.description } : null,
     };
   });

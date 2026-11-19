@@ -3,16 +3,23 @@
 /**
  * Analizar («¿Cómo evolucionaron estas variables?»; encargo §8; ESPECIFICACION.md §4). Hasta tres métricas, cada una
  * vista de una proyección de API-PRJ-01 con el cálculo del dominio:
- * - tres modos: «Separadas» (por defecto, un gráfico por métrica), «Juntas» (en valores reales; misma familia y unidad)
- *   y «Cambio relativo» (contra una referencia explícita y positiva). Un modo que no corresponde se deshabilita y dice
- *   por qué. En la URL y en las vistas guardadas siguen siendo `PANELS`, `OVERLAY` y `RELATIVE`;
+ * - tres modos: «Alineadas» (por defecto, un gráfico por métrica, una arriba de la otra), «Superpuestas» (en valores
+ *   reales, en el mismo gráfico) y «Cambio relativo» (contra una referencia explícita y positiva). Un modo que no
+ *   corresponde se deshabilita y dice por qué. En la URL y en las vistas guardadas siguen siendo `PANELS`, `OVERLAY` y
+ *   `RELATIVE`;
+ * - **GR-26 (WP-GRAFICOS fase 2, DL-174):** los modos se llaman con las palabras de Dirección (GR-T05). «Superpuestas»
+ *   sigue la regla del catálogo (`composicionPermitida`): el mismo eje de fechas (una serie agrupada por semana va solo
+ *   con otras semanales), hasta tres series y dos unidades, un eje a cada lado; dos series comparten eje si comparten
+ *   familia y unidad (la regla de DL-126, ampliada: GR-T04). Una vista guardada con `OVERLAY` era de una sola unidad y
+ *   se ve igual. El selector ofrece el catálogo (el 1RM estimado, con un ejercicio de la lista de la v1), y la frase de
+ *   la coincidencia reemplaza la de antes (GR-T06);
  * - la referencia del cambio relativo es un rango del período (los primeros N días o un rango fijo), separado del
  *   intervalo que se ve: acercar, alejar o restablecer el gráfico no la mueve; cambia solo con «Aplicar» (DL-126);
  * - los resúmenes, la comparación y la referencia usan las observaciones (días, sesiones o tomas) del rango exacto, aunque
  *   el gráfico esté agrupado por semana;
  * - un panel de lectura persistente para la fecha elegida: el valor exacto nunca depende de pasar el puntero;
  * - «Cómo se calcula», la tabla de datos, el resumen textual y la comparación de dos períodos (sin conclusiones
- *   causales: «coincidencia temporal; no indica causa»);
+ *   causales: «Coinciden en el tiempo; esto no prueba que una cosa cause la otra.»);
  * - todo el estado en la URL; un punto abre su registro de origen y al cerrarlo la vista sigue igual.
  *
  * WP-DASHBOARD-COMPRENSION (encargo del 2026-10-09):
@@ -73,7 +80,6 @@ import {
   referenciaElegida,
   resumenTextual,
   resumirPeriodo,
-  superposicionPermitida,
   TIPOS_DE_HITO_DE_PLANIFICACION,
   valorConUnidad,
   type DefinicionDeMetrica,
@@ -83,9 +89,11 @@ import {
   type PuntoAnalitico,
   type Referencia,
   type ReferenciaDelCambio,
+  type SerieElegida,
 } from '@be/domain';
 import dynamic from 'next/dynamic';
 import { useEffect, useId, useMemo, useRef, useState } from 'react';
+import { ComoLeerlo, FraseDeLaCoincidencia } from '../graficos/como-leerlo';
 import { CampoDeFecha } from '../../../../components/campo-de-fecha';
 import { BloqueDeEstado, Cargando } from '../../../../components/estados';
 import { Icono } from '../../../../components/icono';
@@ -102,8 +110,11 @@ import { ElegirMetricasDeEntrada } from './entrada';
 import { contextoDeLaPregunta, ElegirParametros, ListaDePreguntas, ParametrosDelEjercicio, useEtapasDelAno } from './preguntas';
 import { ComposicionEnAnalizar, PREGUNTA_DE_LA_COMPOSICION } from './composicion-en-analizar';
 import { FuerzaEnAnalizar, PREGUNTA_DE_LA_FUERZA } from '../fuerza/fuerza-en-analizar';
-import { nombreDeLaReferencia, SelectorDeMetricas } from './selector';
-import { leerSerie, useDisponibles, useSeriesDelAnalisis, type SerieDelAnalisis } from './series';
+import { contextoDelRegistro, esPreguntaConGraficos, graficosDeLaPregunta, PREGUNTA_DE_LA_RELACION, PREGUNTA_DE_NUTRICION_POR_DIA } from '../graficos/cruces/preguntas-con-graficos';
+import { accesoDeLosDisponibles, nombreDeLaReferencia, SelectorDeMetricas } from './selector';
+import { leerSerieDelAnalisis, useDisponibles, useSeriesDelAnalisis, type SerieDelAnalisis } from './series';
+import { COMO_LEER_DOS_EJES, enumerar, esLoIndicadoDe, motivoDeSuperpuestas, NOMBRE_DEL_MODO, rangoMinimoDelCatalogo, serieElegidaDe, superposicionDeLasElegidas, unirLaSerieDe } from '../graficos/arma-tu-grafico/compositor';
+import { ProveedorDelCursor } from '../graficos/cursor-de-fechas';
 import { valorParaMostrar } from './valores';
 import { VistasGuardadas, vistaRecienAbierta } from './vistas-guardadas';
 
@@ -113,7 +124,11 @@ const OrigenDelDato = dynamic(() => import('./origen-del-dato').then((m) => m.Or
 const ComparacionDeEtapas = dynamic(() => import('./etapas').then((m) => m.ComparacionDeEtapas), { ssr: false, loading: () => <Cargando /> });
 const EtapasDelPeriodo = dynamic(() => import('./etapas').then((m) => m.EtapasDelPeriodo), { ssr: false });
 const ContrasteConLoIndicado = dynamic(() => import('./contraste').then((m) => m.ContrasteConLoIndicado), { ssr: false, loading: () => <Cargando /> });
+// GR-12 y GR-13, y «Ver la relación» (rama D): se cargan cuando se abre su pregunta.
+const GraficosEnAnalizar = dynamic(() => import('./graficos-en-analizar').then((m) => m.GraficosEnAnalizar), { ssr: false, loading: () => <Cargando /> });
 const InformacionParaRevisar = dynamic(() => import('./informacion').then((m) => m.InformacionParaRevisar), { ssr: false, loading: () => <Cargando /> });
+// GR-23 (DL-174): la cinta del tiempo arriba de los gráficos. Tiene su propio «Cargando» con alto fijo.
+const CintaDelTiempoLeida = dynamic(() => import('../graficos/cinta-del-tiempo-en-pantalla').then((m) => m.CintaDelTiempoLeida), { ssr: false });
 
 /** El máximo que lee el análisis en la web (un año, con el día de hoy): el de la comparación de etapas. */
 const DIAS_MAXIMOS_DEL_ANALISIS = 366;
@@ -128,13 +143,6 @@ const MOTIVO_SIN_REFERENCIA: Readonly<Record<string, string>> = {
   SOLO_CARGA_RAPIDA: 'solo tiene series de carga rápida en los días de referencia (tildadas sin escribir: no se usan de referencia)',
   NO_POSITIVA: 'tiene una referencia de cero o negativa',
   FUERA_DEL_PERIODO: 'tiene el rango de referencia fuera del período leído',
-};
-/** Por qué «Juntas» no está disponible: la frase completa, que va al costado de los modos. */
-const MOTIVO_SIN_SUPERPOSICION: Readonly<Record<string, string>> = {
-  UNA_SOLA_METRICA: '«Juntas» pide más de una métrica.',
-  UNIDADES_DISTINTAS: '«Juntas» pide métricas con la misma unidad.',
-  FAMILIAS_DISTINTAS: '«Juntas» pide medidas de la misma clase: no alcanza con que compartan la unidad.',
-  SIN_FAMILIA: '«Juntas» no admite alguna de estas métricas.',
 };
 /** Un balde incompleto: el día de hoy, que sigue en curso, o una semana que el período corta. */
 const textoDeIncompleto = (p: PuntoAnalitico): string => (p.dateEnd ? 'semana sin completar en el período' : 'día en curso: el valor todavía puede cambiar');
@@ -162,15 +170,29 @@ export function Analizar() {
   const id = useId();
   // ED-74: la fuerza estimada, como la composición, con su propia pieza (TA-25: no se guarda como vista).
   if (parametros.get('pregunta') === PREGUNTA_DE_LA_FUERZA) return <FuerzaEnAnalizar tituloId={`${id}-titulo`} />;
+  // WP-GRAFICOS (rama D, GR-VD01 y GR-VD02): GR-12 y GR-13, y «Ver la relación» (SP-01 y SP-02), con los gráficos del
+  // registro; tampoco se guardan como vista.
+  const preguntaConGraficos = parametros.get('pregunta');
+  if (esPreguntaConGraficos(preguntaConGraficos)) return <GraficosEnAnalizar tituloId={`${id}-titulo`} pregunta={preguntaConGraficos} />;
   return parametros.get('pregunta') === PREGUNTA_DE_LA_COMPOSICION ? <ComposicionEnAnalizar tituloId={`${id}-titulo`} /> : <AnalizarConSusPreguntas />;
 }
 
 function AnalizarConSusPreguntas() {
-  const { token, asesoradoId, periodo, parametros, ir, panel, recargarPanel } = useSeguimiento();
+  const { token, asesoradoId, periodo, parametros, ir, panel, recargarPanel, sesionPerdida } = useSeguimiento();
   const id = useId();
   const estado = useMemo(() => leerAnalisis(parametros), [parametros]);
   const cambiar = (c: Partial<EstadoDeAnalisis>) => ir(parametrosDeAnalisis({ ...estado, ...c }));
   const disponibles = useDisponibles();
+  // La cinta del tiempo (GR-23) lee con lo que el PDP deja hoy con esta persona y dibuja las versiones de los planes propios.
+  const alcancesDeLaCinta = useMemo(() => accesoDeLosDisponibles(disponibles).alcances, [disponibles]);
+  const vigenciasDeLaCinta = useMemo(() => [...disponibles.vigencias.nutricion, ...disponibles.vigencias.entrenamiento], [disponibles.vigencias]);
+  // Las preguntas que responden con gráficos del registro (GR-VD01 y GR-VD02): solo las que tienen algún gráfico que se
+  // ofrece con esta persona hoy. Una que no, no aparece: ni en gris ni con candado.
+  const preguntasConGraficos = useMemo(() => {
+    if (disponibles.cargando) return [];
+    const c = contextoDelRegistro(accesoDeLosDisponibles(disponibles), disponibles);
+    return ([PREGUNTA_DE_NUTRICION_POR_DIA, PREGUNTA_DE_LA_RELACION] as const).filter((p) => graficosDeLaPregunta(p, c).length > 0);
+  }, [disponibles]);
 
   // La pregunta (eje 2): se resuelve con el dominio y con lo que hay de este asesorado.
   const pregunta = useMemo(() => leerPregunta(parametros), [parametros]);
@@ -281,10 +303,16 @@ function AnalizarConSusPreguntas() {
   const referencias = new Map<string, Referencia>(listas.map((s) => [s.clave, referenciaElegida(s.estado.observaciones, s.definicion, estado.referencia, periodo)]));
   const referenciaFueraDeLoVisible = rangoDeReferencia.hasta < desde || rangoDeReferencia.desde > hasta;
   const clases = new Set(listas.flatMap((s) => s.estado.serie.points.filter((p) => p.value !== null).map((p) => p.dataClass)));
-  const superposicion = superposicionPermitida(listas.map((s) => ({ definicion: s.definicion, unidad: s.estado.serie.unit })));
+  // GR-26: «Superpuestas» con la regla del catálogo. Cada serie con su eje X según cómo se dibuja (agrupada por semana va
+  // sobre semanas) y con la unidad de sus datos; el lado de su eje, por su clave.
+  const elegidasParaSuperponer = listas.map((s) => serieElegidaDe(s.ref.metricId, s.estado.serie.unit, s.grano));
+  const superposicion = elegidasParaSuperponer.length > 0 && elegidasParaSuperponer.every((e): e is SerieElegida => e !== null) ? superposicionDeLasElegidas(elegidasParaSuperponer) : null;
+  const superpuestasPosible = superposicion?.permitida ?? false;
+  const ladoDe = new Map(listas.map((s, i) => [s.clave, superposicion?.lados[i] ?? 'IZQUIERDA'] as const));
   const sinReferencia = listas.filter((s) => referencias.get(s.clave)?.tipo !== 'valida');
   const relativoPosible = listas.length > 0 && sinReferencia.length === 0;
-  const modo: Modo = estado.modo === 'OVERLAY' && !superposicion.permitida ? 'PANELS' : estado.modo === 'RELATIVE' && !relativoPosible ? 'PANELS' : estado.modo;
+  const modo: Modo = estado.modo === 'OVERLAY' && !superpuestasPosible ? 'PANELS' : estado.modo === 'RELATIVE' && !relativoPosible ? 'PANELS' : estado.modo;
+  const dosEjes = modo === 'OVERLAY' && [...ladoDe.values()].includes('DERECHA');
 
   // Las etapas de los planes que acompañan a cada panel (WP-ESCRITORIO-AMABLE): cada métrica de un área con plan lleva
   // las de su área. Una medida corporal no ejecuta un plan: lleva las de las otras métricas si son todas de una misma
@@ -332,6 +360,14 @@ function AnalizarConSusPreguntas() {
       // cuántos días no tienen registros (lo gris). Los subtotales y el día en curso se ven como puntos huecos, con su
       // leyenda; la cobertura entera está en «Resumen en texto» y en las comparaciones.
       cobertura: partesDeLaCobertura(resumirPeriodo(s.estado.observaciones, s.definicion, desde, hasta, hoy)).filter((parte, i) => i === 0 || /sin registros$/.test(parte)),
+      // GR-T59: lo indicado en el plan elegido como serie (el RIR indicado) va en rombos huecos sueltos, no como registrado.
+      indicada: esLoIndicadoDe(s.ref.metricId),
+      // GR-D5: las tomas de Antropometría van en puntos sueltos en todos los modos, también superpuestas (§4.5).
+      unir: unirLaSerieDe(s.ref.metricId, s.estado.serie.unit),
+      // GR-T15: el rango mínimo del eje que fija el catálogo (el 1RM estimado abarca 10 kg o 22 lb), en los dos modos.
+      rangoMinimo: rangoMinimoDelCatalogo(s.ref.metricId, s.estado.serie.unit),
+      // GR-26: en «Superpuestas», de qué lado va su eje.
+      ...(modo === 'OVERLAY' ? { lado: ladoDe.get(s.clave) ?? 'IZQUIERDA' } : {}),
     };
   });
   const fechasConDato = useMemo(
@@ -431,7 +467,12 @@ function AnalizarConSusPreguntas() {
   const volverALaEntrada = () => {
     ir({ ...parametrosDeAnalisis({ ...estado, metricas: [], fecha: null, comparacion: null }), ...parametrosDePregunta(null) }, { agregarAlHistorial: true });
   };
-  const motivoDeJuntas = superposicion.permitida ? null : (MOTIVO_SIN_SUPERPOSICION[superposicion.motivo ?? ''] ?? null);
+  // Por qué «Superpuestas» está apagada, con lo que hay que cambiar para usarla (GR-26).
+  const motivoSinSuperponer = superpuestasPosible
+    ? null
+    : superposicion?.motivo
+      ? motivoDeSuperpuestas(superposicion.motivo, superposicion.grupos, listas.map((s) => nombresALaVista[series.indexOf(s)] ?? s.definicion.nombreCorto))
+      : motivoDeSuperpuestas('UNA_SOLA', [], []);
   const motivoDeRelativo = relativoPosible
     ? null
     : listas.length === 0
@@ -444,14 +485,18 @@ function AnalizarConSusPreguntas() {
   // hay «Ver como» ni «Agrupar por». Donde las métricas se pueden cambiar, los controles siguen: un modo apagado, con su
   // motivo al lado, dice qué métrica hay que cambiar para usarlo. Y si el enlace pide un modo o una agrupación que acá no
   // corre, el control queda, apagado y con su motivo: no se cambia en silencio lo que alguien pidió.
-  const hayOtroModo = !delEjercicio || superposicion.permitida || relativoPosible || estado.modo !== 'PANELS';
+  const hayOtroModo = !delEjercicio || superpuestasPosible || relativoPosible || estado.modo !== 'PANELS';
   const hayOtraAgrupacion = !delEjercicio || estado.grano !== 'DAY' || series.some((s) => (['ORIGINAL', 'DAY', 'WEEK'] as const).filter((g) => agregacionPara(s.definicion, g) !== null).length > 1);
-  const hayAvisoDeModo = (hayOtroModo && (motivoDeJuntas !== null || motivoDeRelativo !== null)) || sinAgrupar.length > 0;
+  const hayAvisoDeModo = (hayOtroModo && (motivoSinSuperponer !== null || motivoDeRelativo !== null)) || sinAgrupar.length > 0;
   // La leyenda dice solo lo que hay dibujado: un estado que no aparece no ocupa lugar.
   const puntosDibujados = dibujables.flatMap((d) => d.serie.points.filter((p) => p.value !== null && p.date >= desde && p.date <= hasta));
   const hayHuecos = puntosDibujados.some((p) => p.quality === 'PARTIAL' || p.partialBucket);
   // DL-161: las series de carga rápida también van huecas, con su propia leyenda.
   const hayCargaRapida = puntosDibujados.some(esPuntoDeCargaRapida);
+  // GR-26: en el 1RM estimado, una serie observada por el profesional va en rombo, con su leyenda.
+  const hayObservadas = puntosDibujados.some((p) => p.segment.startsWith('observada:'));
+  // GR-T59: lo indicado en el plan elegido como serie va en rombos sueltos; la leyenda dice cuáles son, por su nombre.
+  const indicadasALaVista = dibujables.filter((d) => d.indicada === true).map((d) => `«${d.nombreCorto ?? d.nombre}»`);
   // Varios cortes en un gráfico llevan un número (el motivo escrito se pisaba): acá, cuál es cada uno. Con uno solo, el
   // gráfico ya lo dice.
   const cortesNumerados =
@@ -539,8 +584,8 @@ function AnalizarConSusPreguntas() {
               <fieldset className="segmentos">
                 <legend>Ver como</legend>
                 <div className="segmentos__fila">
-                  <ModoElegible modo="PANELS" actual={modo} cambiar={(m) => cambiar({ modo: m })} icono="separadas" texto="Separadas" motivo={null} idDelAviso={`${id}-aviso`} />
-                  <ModoElegible modo="OVERLAY" actual={modo} cambiar={(m) => cambiar({ modo: m })} icono="juntas" texto="Juntas" motivo={motivoDeJuntas} idDelAviso={`${id}-aviso`} />
+                  <ModoElegible modo="PANELS" actual={modo} cambiar={(m) => cambiar({ modo: m })} icono="separadas" texto={NOMBRE_DEL_MODO.PANELS} motivo={null} idDelAviso={`${id}-aviso`} />
+                  <ModoElegible modo="OVERLAY" actual={modo} cambiar={(m) => cambiar({ modo: m })} icono="juntas" texto={NOMBRE_DEL_MODO.OVERLAY} motivo={motivoSinSuperponer} idDelAviso={`${id}-aviso`} />
                   <ModoElegible modo="RELATIVE" actual={modo} cambiar={(m) => cambiar({ modo: m })} icono="cambio-relativo" texto="Cambio relativo" motivo={motivoDeRelativo} idDelAviso={`${id}-aviso`} />
                 </div>
               </fieldset>
@@ -561,7 +606,7 @@ function AnalizarConSusPreguntas() {
               {/* Por qué un modo no está disponible, o qué métrica no admite la agrupación elegida: dicho al lado. */}
               {hayAvisoDeModo ? (
                 <ul id={`${id}-aviso`} className="modos-de-analizar__aviso">
-                  {hayOtroModo && motivoDeJuntas !== null ? <li className="modo-no-disponible">{motivoDeJuntas}</li> : null}
+                  {hayOtroModo && motivoSinSuperponer !== null ? <li className="modo-no-disponible">{motivoSinSuperponer}</li> : null}
                   {hayOtroModo && motivoDeRelativo !== null ? <li className="modo-no-disponible">{motivoDeRelativo}</li> : null}
                   {sinAgrupar.map((s) => (
                     <li key={s.clave} className="agrupar-por__motivo">
@@ -613,7 +658,7 @@ function AnalizarConSusPreguntas() {
                 </p>
               ) : null}
               {estado.metricas.length === 0 ? <p>Elegí una métrica o una pregunta para empezar.</p> : null}
-              {/* En «Separadas», cada bloque va entre los gráficos, en su lugar (lo acomoda el lienzo). Con las métricas en
+              {/* En «Alineadas», cada bloque va entre los gráficos, en su lugar (lo acomoda el lienzo). Con las métricas en
                   un solo gráfico, o sin ninguno todavía, van acá arriba. */}
               {modo === 'PANELS' && dibujables.length > 0
                 ? null
@@ -623,6 +668,16 @@ function AnalizarConSusPreguntas() {
                     </div>
                   ))}
               {listas.some((s) => s.estado.parcial) ? <p className="nota">Vista parcial: hay datos de esta área que no ves (los de otro profesional).</p> : null}
+              {/* GR-23: la cinta del tiempo arriba de los gráficos, sobre el intervalo que se ve (DL-174). Espera a saber qué
+                  áreas hay, para no leer dos veces; sin acceso, no deja nada. Comparte la fecha elegida con los gráficos
+                  (§3.8): elegir en la cinta la elige en los gráficos y en la lectura, y al revés, la cinta dice lo que regía
+                  en la fecha que se lee. Lo que cae antes o después del intervalo se lleva a su borde (`limites`), y la cinta
+                  sigue viendo elegido el evento que empieza antes: si no, la flecha volvía siempre al primero. */}
+              {dibujables.length > 0 && !disponibles.cargando ? (
+                <ProveedorDelCursor fecha={fecha} limites={{ desde, hasta }} alElegirFecha={(f) => cambiar({ fecha: f })}>
+                  <CintaDelTiempoLeida lectura={{ token, asesoradoId, sesionPerdida }} alcances={alcancesDeLaCinta} vigencias={vigenciasDeLaCinta} periodo={{ desde, hasta, hoy, desdeElVinculo: null }} />
+                </ProveedorDelCursor>
+              ) : null}
               {dibujables.length > 0 ? (
                 <>
                   <Lienzo
@@ -659,12 +714,24 @@ function AnalizarConSusPreguntas() {
                       })}
                     </ul>
                   ) : null}
+                  {/* GR-26: con dos ejes, «Cómo leerlo» lo dice debajo del gráfico (Few 2008). */}
+                  {dosEjes ? <p className="nota analizar__dos-ejes">{COMO_LEER_DOS_EJES}</p> : null}
                   {/* Cómo se lee una marca: solo lo que está dibujado. La métrica no va acá: la nombran su gráfico y su línea. */}
-                  {hayHuecos || hayCargaRapida || clases.has('REPORTED') || clases.has('DERIVED') || cortesNumerados.length > 0 ? (
+                  {hayHuecos || hayCargaRapida || hayObservadas || indicadasALaVista.length > 0 || clases.has('REPORTED') || clases.has('DERIVED') || cortesNumerados.length > 0 ? (
                     <ul className="leyenda" aria-label="Cómo se lee cada marca">
+                      {hayObservadas ? (
+                        <li data-leyenda="observada">
+                          <Marca indice={0} indicado /> Rombo: una serie observada por el profesional, no escrita por la persona
+                        </li>
+                      ) : null}
+                      {indicadasALaVista.length > 0 ? (
+                        <li data-leyenda="indicado">
+                          <Marca indice={0} indicado /> Rombo suelto en {enumerar(indicadasALaVista)}: lo indicado en el plan para cada sesión, en la versión que la rigió; no es lo registrado
+                        </li>
+                      ) : null}
                       {hayHuecos ? (
                         <li>
-                          <Marca indice={0} hueco /> Hueco: subtotal (falta algún dato), o día o semana sin completar
+                          <Marca indice={0} hueco /> Hueco: subtotal (falta algún dato), día o semana sin completar, o semana con días afuera de la media
                         </li>
                       ) : null}
                       {hayCargaRapida ? (
@@ -697,9 +764,16 @@ function AnalizarConSusPreguntas() {
                     {estado.bandas && bandas.length > 0 && !conEtapas ? <BotonDelPie que="etapas" abierto={abierto} alternar={alternar} controla={`${id}-abajo`} icono="comparar" texto="Comparar etapas" /> : null}
                     <BotonDelPie que="calculo" abierto={abierto} alternar={alternar} controla={`${id}-abajo`} icono="info" texto="Cómo se calcula" />
                   </div>
-                  <p className="pie-de-graficos__limite">
-                    {enCurso && laPregunta ? `${laPregunta.limite} ` : ''}Coincidencia temporal: no indica causa.
-                  </p>
+                  {/* La pasada visual (GR-T50 y GR-V08, como el pie de «Comparar dos etapas»): la frase fija siempre a la vista,
+                      tenue; el límite de la pregunta, en «Cómo leerlo», último, para que al abrirse no cambie de lugar. */}
+                  <div className="analizar__pie-de-la-frase">
+                    <FraseDeLaCoincidencia />
+                    {enCurso && laPregunta ? (
+                      <ComoLeerlo className="analizar__como-leerlo" de="los gráficos de la pregunta">
+                        <p>{laPregunta.limite}</p>
+                      </ComoLeerlo>
+                    ) : null}
+                  </div>
                 </>
               ) : null}
             </div>
@@ -850,7 +924,7 @@ function AnalizarConSusPreguntas() {
       {sinEntrada ? (
         <div className="entrada-de-analizar">
           <div className="entrada-de-analizar__columna">
-            <ListaDePreguntas />
+            <ListaDePreguntas conGraficos={preguntasConGraficos} />
             {/* Retomar una vista guardada también desde el comienzo: antes había que armar un análisis cualquiera para verlas. */}
             <VistasGuardadas estado={estado} pregunta={null} soloAbrir />
           </div>
@@ -900,6 +974,8 @@ function AnalizarConSusPreguntas() {
             b={destino.b}
             metricas={destino.metricas}
             etapas={etapasDelAno.etapas[destino.area === 'NUTRICION' ? 'NUTRITION' : 'TRAINING']}
+            // GR-24: lo que también cambió entre A y B sale de las etapas del año de la otra área (sus planes propios).
+            etapasDeLaOtraArea={etapasDelAno.fallaDe[destino.area === 'NUTRICION' ? 'TRAINING' : 'NUTRITION'] ? null : etapasDelAno.etapas[destino.area === 'NUTRICION' ? 'TRAINING' : 'NUTRITION']}
             disponibles={disponibles}
             enGrande={enGrande}
             onEnGrande={setEnGrande}
@@ -909,7 +985,15 @@ function AnalizarConSusPreguntas() {
                   <BotonDelPie que="tabla" abierto={abierto} alternar={alternar} controla={`${id}-tabla-de-etapas`} icono="tabla" texto={`Tabla de datos (${numero(fechasDeLaTabla)} ${fechasDeLaTabla === 1 ? 'fecha' : 'fechas'})`} />
                 ) : null}
                 {/* Lo que la comparación no dice, una sola vez: con los gráficos grandes abiertos lo dice su pie. */}
-                <p className="pie-de-etapas__limite">{laPregunta ? `${laPregunta.limite} ` : ''}Coincidencia temporal: no indica causa.</p>
+                {/* WP-GRAFICOS, pasada visual (15/11): la frase fija de los cruces, siempre a la vista y tenue; lo que la
+                    comparación no resta, en «Cómo leerlo». */}
+                <FraseDeLaCoincidencia />
+                {/* Al final del pie: al abrirse ocupa el renglón de abajo sin cambiar de lugar en el orden del foco. */}
+                {laPregunta ? (
+                  <ComoLeerlo className="pie-de-etapas__como-leerlo">
+                    <p>{laPregunta.limite}</p>
+                  </ComoLeerlo>
+                ) : null}
               </div>
             }
             debajo={
@@ -1497,7 +1581,7 @@ function ExportarCsv({
   const descargar = async () => {
     setOcupado(true);
     setAviso(null);
-    const leidas = await Promise.all(series.map((s) => leerSerie(token, asesoradoId, s, periodo)));
+    const leidas = await Promise.all(series.map((s) => leerSerieDelAnalisis(token, asesoradoId, s, periodo, sesionPerdida)));
     setOcupado(false);
     if (leidas.some((l) => l.respuestas.some((r) => sesionPerdida(r)))) return;
     const incluidas = series.flatMap((s, i) => {
@@ -1584,7 +1668,7 @@ function ComparacionDePeriodos({
   };
   const contenido = (
     <>
-      {/* «Coincidencia temporal: no indica causa» ya está, una vez, en el encabezado de Analizar. */}
+      {/* La frase de la coincidencia ya está, una vez, al pie de los gráficos de Analizar. */}
       <p className="nota">El mismo criterio de resumen en los dos, con la cobertura de cada uno.</p>
       <ContenidoDeLaComparacion id={id} series={series} nombres={nombres} todas={todas} c={c} cambiar={cambiar} poner={poner} minimo={minimo} maximo={maximo} />
     </>

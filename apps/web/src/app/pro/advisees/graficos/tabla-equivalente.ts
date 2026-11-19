@@ -7,7 +7,7 @@
  * Es puro: lo prueba `apps/web/test/graficos-base.test.mjs`.
  */
 import type { MarcaSemantica } from '@be/domain';
-import type { Carril, CarrilDePuntos } from './carriles';
+import type { Carril, CarrilDePuntos, PuntoDelCarril } from './carriles';
 import { textoDeLaMarca } from './eje-de-fechas';
 
 export interface CeldaDeLaTabla {
@@ -15,6 +15,8 @@ export interface CeldaDeLaTabla {
   readonly texto: string;
   readonly marca: MarcaSemantica | null;
   readonly tarde: boolean;
+  /** La celda tiene algo registrado (no solo lo indicado): cuenta para «Lo último» de su carril. */
+  readonly registrada: boolean;
 }
 
 export interface FilaDeLaTabla {
@@ -32,16 +34,34 @@ export interface FilasDeLaTabla {
 
 export const TEXTO_SIN_DATO = 'sin dato';
 
+/**
+ * Lo que la forma de la marca dice y la tabla también tiene que decir con palabras (la forma no llega al lector de
+ * pantalla): lo precargado del plan, lo observado por el profesional, lo reportado y lo calculado. Si la lectura del punto
+ * ya lo dice, no se repite. Lo hueco (el subtotal, lo orientativo) lo dice la lectura de cada gráfico, que sabe por qué.
+ */
+const LO_QUE_DICE_LA_MARCA: Readonly<Partial<Record<MarcaSemantica, { readonly texto: string; readonly yaDicho: RegExp }>>> = {
+  HUECA_GRIS: { texto: 'tildado sin escribir: los números del plan', yaDicho: /tildad/i },
+  ROMBO: { texto: 'observado por el profesional', yaDicho: /observad/i },
+  CONTORNO_CORTADO: { texto: 'reportado', yaDicho: /reportad/i },
+  PUNTO_ADENTRO: { texto: 'calculado', yaDicho: /calculad/i },
+};
+
+function lecturaConSuMarca(p: PuntoDelCarril): string {
+  const marca = LO_QUE_DICE_LA_MARCA[p.marca];
+  const conMarca = marca && !marca.yaDicho.test(p.lectura) ? `${p.lectura} (${marca.texto})` : p.lectura;
+  return p.tarde ? `${conMarca} (cargado después)` : conMarca;
+}
+
 function celdaDe(c: CarrilDePuntos, fecha: string): CeldaDeLaTabla | null {
   const registrados = c.puntos.filter((p) => p.fecha === fecha && p.valor !== null);
   const indicados = c.indicado.filter((p) => p.fecha === fecha && (p.valor !== null || p.rango !== null));
   if (registrados.length === 0 && indicados.length === 0) return null;
   const partes = [
-    ...registrados.map((p) => (p.tarde ? `${p.lectura} (cargado después)` : p.lectura)),
+    ...registrados.map(lecturaConSuMarca),
     ...indicados.map((p) => `indicado: ${p.lectura}`),
   ];
   const primera = registrados[0] ?? indicados[0];
-  return { texto: partes.join(' · '), marca: primera.marca, tarde: registrados.some((p) => p.tarde) };
+  return { texto: partes.join(' · '), marca: primera.marca, tarde: registrados.some((p) => p.tarde), registrada: registrados.length > 0 };
 }
 
 /** Los días seguidos sin registros en todos los carriles de puntos, dichos como texto. */
@@ -74,14 +94,16 @@ export function tablaEquivalente(carriles: readonly Carril[]): FilasDeLaTabla {
   const fechas = new Set<string>();
   for (const c of columnas) {
     if (c.tipo === 'PUNTOS') for (const p of [...c.puntos, ...c.indicado]) if (p.valor !== null || p.rango !== null) fechas.add(p.fecha);
-    if (c.tipo === 'BARRAS_SEMANALES') for (const s of c.semanas) if (s.valor !== null) fechas.add(s.lunes);
+    if (c.tipo === 'BARRAS_SEMANALES') for (const s of c.semanas) if (s.valor !== null || s.conDias === true) fechas.add(s.lunes);
   }
   const filas = [...fechas].sort().map((fecha) => ({
     fecha,
     celdas: columnas.map((c): CeldaDeLaTabla | null => {
       if (c.tipo === 'PUNTOS') return celdaDe(c, fecha);
-      const s = c.semanas.find((x) => x.lunes === fecha && x.valor !== null);
-      return s ? { texto: s.lectura, marca: 'LLENA', tarde: false } : null;
+      const s = c.semanas.find((x) => x.lunes === fecha && (x.valor !== null || x.conDias === true));
+      // Una semana sin media (GR-VC12) dice por qué en su celda; no cuenta como lo último registrado.
+      if (s && s.valor === null) return { texto: s.lectura, marca: 'HUECA', tarde: false, registrada: false };
+      return s ? { texto: s.lectura, marca: s.entera === false ? 'HUECA' : 'LLENA', tarde: false, registrada: true } : null;
     }),
   }));
   return {
@@ -89,6 +111,22 @@ export function tablaEquivalente(carriles: readonly Carril[]): FilasDeLaTabla {
     filas,
     sinRegistros: tramosSinRegistros(columnas.filter((c): c is CarrilDePuntos => c.tipo === 'PUNTOS')),
   };
+}
+
+/**
+ * Lo último de cada carril, con su fecha (revisión del 15/11; GR-V12): la última celda con algo registrado de cada columna,
+ * no la fila de la fecha más nueva de todas. Con Peso del 10 nov y Calorías del 14 nov, el peso dice el suyo, no «sin
+ * dato». Un carril sin nada registrado dice «sin dato».
+ */
+export function loUltimoDeCadaCarril(tabla: FilasDeLaTabla): readonly { readonly nombre: string; readonly texto: string; readonly fecha: string | null }[] {
+  return tabla.columnas.map((c, i) => {
+    for (let k = tabla.filas.length - 1; k >= 0; k--) {
+      const fila = tabla.filas[k] as FilaDeLaTabla;
+      const celda = fila.celdas[i];
+      if (celda && celda.registrada) return { nombre: c.nombre, texto: celda.texto, fecha: fila.fecha };
+    }
+    return { nombre: c.nombre, texto: TEXTO_SIN_DATO, fecha: null };
+  });
 }
 
 /** La lectura de una fecha, carril por carril: «Carga: 80 kg · RIR 1», o «sin dato». La comparten la lectura y la tabla. */

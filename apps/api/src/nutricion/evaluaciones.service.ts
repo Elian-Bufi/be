@@ -19,6 +19,7 @@ import type { ResultadoIdempotente } from '../plataforma/idempotencia.service';
 import { momentoDeLaBase } from '../prisma/concurrencia';
 import type { ActorAutenticado } from '../sesion/sesion.guard';
 import { EjecutorNutricional, esUuid } from './ejecutor';
+import { citasResueltasDeNutricion, validarCitas } from '../entrenamiento/citas-de-respuestas';
 import { evaluacionApi, nombreVisibleDe, versionDeObjetivoApi } from './lectura-nutricion';
 import { registrarEventoDeNutricion } from './eventos';
 
@@ -59,6 +60,8 @@ export class EvaluacionesService {
             issues: [{ code: 'OCCURRED_AT_IN_FUTURE', path: 'occurredAt' }],
           });
         }
+        // DL-179: las citas se validan antes de escribir, con el PDP ya decidido (el 422 neutral; el 409 si cambió la versión).
+        const citas = await validarCitas(tx, pedido.formResponseReferences ?? [], { profesionalId: actor.identidadId, asesoradoId: d }, 'NUTRICION');
         const e = await tx.evaluacionNutricional.create({
           data: {
             profesionalId: actor.identidadId,
@@ -71,6 +74,9 @@ export class EvaluacionesService {
             momentoDeOcurrencia: ocurrencia,
           },
         });
+        if (citas.length > 0) {
+          await tx.citaDeRespuestaEnEvaluacionNutricional.createMany({ data: citas.map((c, orden) => ({ evaluacionId: e.id, orden, ...c })) });
+        }
         await registrarEventoDeNutricion(tx, {
           tipo: 'EvaluacionNutricionalRegistrada',
           profesionalId: actor.identidadId,
@@ -110,7 +116,8 @@ export class EvaluacionesService {
         });
         const { pagina, page } = paginar(filas, consulta.limit);
         const nombre = await nombreVisibleDe(tx, actor.identidadId);
-        return { data: pagina.map((e) => evaluacionApi(e, nombre)), page };
+        const citas = await citasResueltasDeNutricion(tx, pagina.map((e) => e.id));
+        return { data: pagina.map((e) => evaluacionApi(e, nombre, citas.get(e.id) ?? [])), page };
       },
     });
   }
@@ -130,7 +137,8 @@ export class EvaluacionesService {
         if (!e) throw this.ejecutor.noRevelable({ operacion: 'API-NUT-03', actorId: actor.identidadId, recurso }, ctx);
         await this.decidir(tx, 'API-NUT-03', actor, e.asesoradoId, recurso, ctx);
         if (e.profesionalId !== actor.identidadId) throw this.ejecutor.noRevelable({ operacion: 'API-NUT-03', actorId: actor.identidadId, recurso, sujetoId: e.asesoradoId }, ctx);
-        return { data: evaluacionApi(e, await nombreVisibleDe(tx, actor.identidadId)) };
+        const citas = await citasResueltasDeNutricion(tx, [e.id]);
+        return { data: evaluacionApi(e, await nombreVisibleDe(tx, actor.identidadId), citas.get(e.id) ?? []) };
       },
     });
   }

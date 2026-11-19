@@ -9,7 +9,7 @@
 import { MARCA_SEGUN_EL_DATO, type MarcaSemantica, type SentidoDeLaMarca } from '@be/domain';
 import { medidaDeMarca, type EstadoDeMarca } from '../seguimiento/geometria';
 import { ESTILOS, Punto, Rombo } from '../seguimiento/marca';
-import { SENTIDO_EN_LA_LEYENDA } from './copy';
+import { SENTIDO_CORTO, SENTIDO_EN_LA_LEYENDA } from './copy';
 
 const ESTADO_DE_LA_MARCA: Readonly<Record<Exclude<MarcaSemantica, 'ROMBO'>, EstadoDeMarca>> = {
   LLENA: 'lleno',
@@ -36,26 +36,91 @@ export function MarcaDelCarril({ marca, cx, cy, porDia, color, tarde = false, yH
   );
 }
 
-/** El glifo de la leyenda de un sentido, con su texto al lado. */
+/**
+ * El glifo de la leyenda de un sentido, con su texto corto al lado (la pasada visual del 15/11: fichas cortas en una
+ * línea). El lector de pantalla oye el sentido entero («Registrado: lleno»), que dice también la forma.
+ */
 export function GlifoDeLaLeyenda({ sentido, indice = 0 }: { sentido: SentidoDeLaMarca; indice?: number }) {
   const marca = MARCA_SEGUN_EL_DATO[sentido];
   return (
     <span className="grafico-base__glifo">
-      <svg width={18} height={18} viewBox="0 0 18 18" aria-hidden="true">
+      <svg width={14} height={14} viewBox="0 0 18 18" aria-hidden="true">
         <MarcaDelCarril marca={marca} cx={9} cy={9} porDia={10} color={colorDelCarril(indice)} />
       </svg>
-      {SENTIDO_EN_LA_LEYENDA[sentido]}
+      <span aria-hidden="true">{SENTIDO_CORTO[sentido]}</span>
+      <span className="visualmente-oculto">{SENTIDO_EN_LA_LEYENDA[sentido]}</span>
     </span>
   );
 }
 
-export function Leyenda({ sentidos, indice = 0 }: { sentidos: readonly SentidoDeLaMarca[]; indice?: number }) {
-  if (sentidos.length === 0) return null;
+/**
+ * Una ficha más de la leyenda, para una marca del dibujo que no es un punto (rama B, con la pasada visual): la tira de
+ * cobertura de abajo de cada carril y la línea cortada de lo indicado por versión. Va solo si se ve en el dibujo: quien
+ * la pide lo sabe. `corto` se ve; `largo`, el lector de pantalla.
+ */
+export interface FichaDeLaLeyenda {
+  /**
+   * Las de la barra semanal (rama D, GR-VC13; un cambio que solo agrega): la semana con los siete días en la media, la que
+   * tiene algún día afuera, la que tiene días pero no media y la que no tiene ningún día con valor.
+   */
+  readonly glifo: 'TIRA' | 'LINEA_CORTADA' | 'SEMANA_ENTERA' | 'SEMANA_HUECA' | 'SEMANA_SIN_MEDIA' | 'SEMANA_SIN_DIAS';
+  readonly corto: string;
+  readonly largo: string;
+  /** El color del carril de la marca (la línea cortada va en el color de su carril). */
+  readonly indice?: number;
+}
+
+/** El glifo de una barra semanal en la leyenda: el mismo dibujo y el mismo tono que el carril (`paneles-alineados.tsx`). */
+function GlifoDeLaSemana({ glifo, color }: { glifo: 'SEMANA_ENTERA' | 'SEMANA_HUECA' | 'SEMANA_SIN_MEDIA' | 'SEMANA_SIN_DIAS'; color: string }) {
+  return (
+    <svg width={14} height={14} viewBox="0 0 14 14" aria-hidden="true">
+      {glifo === 'SEMANA_ENTERA' ? <rect x={2.5} y={3.5} width={9} height={9.5} rx={1.5} fill={color} fillOpacity={0.35} stroke={color} strokeWidth={1} /> : null}
+      {glifo === 'SEMANA_HUECA' ? <path d="M 2.5 13 V 3.5 H 11.5 V 13" fill="none" stroke={color} strokeWidth={1} /> : null}
+      {glifo === 'SEMANA_SIN_MEDIA' ? <line x1={1} x2={13} y1={12} y2={12} stroke="var(--grafico-hueco)" strokeWidth={2} strokeDasharray="3 2" /> : null}
+      {glifo === 'SEMANA_SIN_DIAS' ? <rect x={2} y={1} width={10} height={12} fill="var(--grafico-hueco)" fillOpacity={0.3} /> : null}
+    </svg>
+  );
+}
+
+/** El glifo de una ficha que no es un punto: la tira (entera, a media altura y una raya baja), la línea cortada o una semana. */
+function GlifoDeLaFicha({ ficha, indice }: { ficha: FichaDeLaLeyenda; indice: number }) {
+  return (
+    <span className="grafico-base__glifo">
+      {ficha.glifo === 'SEMANA_ENTERA' || ficha.glifo === 'SEMANA_HUECA' || ficha.glifo === 'SEMANA_SIN_MEDIA' || ficha.glifo === 'SEMANA_SIN_DIAS' ? (
+        <GlifoDeLaSemana glifo={ficha.glifo} color="var(--grafico-hueco)" />
+      ) : ficha.glifo === 'TIRA' ? (
+        <svg width={22} height={14} viewBox="0 0 22 14" aria-hidden="true">
+          <rect x={1} y={5} width={5} height={6} fill="var(--tenue)" />
+          <rect x={8} y={8} width={5} height={3} fill="var(--tenue)" />
+          <rect x={15} y={9.5} width={5} height={1.5} fill="var(--grafico-hueco)" />
+        </svg>
+      ) : (
+        <svg width={22} height={14} viewBox="0 0 22 14" aria-hidden="true">
+          <line x1={1} x2={21} y1={7} y2={7} stroke={colorDelCarril(ficha.indice ?? indice)} strokeWidth={1.5} strokeDasharray="6 4" />
+        </svg>
+      )}
+      <span aria-hidden="true">{ficha.corto}</span>
+      <span className="visualmente-oculto">{ficha.largo}</span>
+    </span>
+  );
+}
+
+/**
+ * La leyenda: fichas cortas en una línea, arriba del gráfico, solo con las marcas que se ven (`sentidosQueSeVen`) y, al
+ * final, las fichas de lo que no es un punto (la tira, la línea cortada), si se ven.
+ */
+export function Leyenda({ sentidos, indice = 0, fichas = [] }: { sentidos: readonly SentidoDeLaMarca[]; indice?: number; fichas?: readonly FichaDeLaLeyenda[] }) {
+  if (sentidos.length === 0 && fichas.length === 0) return null;
   return (
     <ul className="grafico-base__leyenda" aria-label="Cómo se leen las marcas">
       {sentidos.map((s) => (
         <li key={s}>
           <GlifoDeLaLeyenda sentido={s} indice={indice} />
+        </li>
+      ))}
+      {fichas.map((f) => (
+        <li key={`${f.glifo}-${f.corto}`} data-ficha={f.glifo}>
+          <GlifoDeLaFicha ficha={f} indice={indice} />
         </li>
       ))}
     </ul>

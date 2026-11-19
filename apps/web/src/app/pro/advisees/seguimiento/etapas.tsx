@@ -18,6 +18,31 @@
  *   clic («Abrir estos gráficos en grande»): no se quitó nada.
  * Las etapas se leen con su propio período (las dos completas, hasta un año): cambiar el período de la ficha no mueve
  * la referencia. La planificación de cada etapa se abre al costado, en solo lectura, y al cerrarla se vuelve acá.
+ *
+ * GR-24 (WP-GRAFICOS fase 2, DL-174): debajo de la tabla, **«Lado a lado, con todas las observaciones»**: cada métrica en
+ * las dos etapas, con todos sus días, sesiones o tomas, la mediana como una raya y la cantidad escrita; con menos de 5 de
+ * un lado no se dibuja y se dice cuánto hay. Con el 1RM estimado, la mediana del RIR y el rango de repeticiones de cada
+ * etapa. Y lo que también cambió entre una etapa y otra (las versiones de la otra área que se activaron en el medio, si se
+ * leen) y lo que BE no registra.
+ *
+ * La pasada visual (WP-GRAFICOS, 15/11; DISENO-VISUAL §2, GR-24):
+ * - **Lo que cambió en lo indicado, dicho:** en una métrica registrada de Entrenamiento (las repeticiones, la carga o el
+ *   RIR de una serie), si lo indicado por el plan cambió de A a B, la diferencia lo dice debajo («el plan indica 1
+ *   repetición menos»): un «−1 rep» suelto se lee como un retroceso. Sale del comparador
+ *   (`lectura-de-lo-indicado.ts`), con la versión que ejecutó cada sesión.
+ * - **Nutrición, por semana:** una barra por semana con la media de los días con dato y los días como puntos tenues
+ *   detrás (`MinigraficoPorSemana`), sin el peine de los días sin registros. «Día por día», a un toque.
+ * - **Revisión del 15/11:** cada gráfico por semana dice a la vista con cuántos días se hizo cada media, cuántos son
+ *   subtotales y cuántos quedaron afuera (§5.13), con el teclado y para el lector de pantalla; las semanas no cruzan el
+ *   cambio de etapa; las marcas tienen su leyenda una vez, arriba. La descripción de cada gráfico chico ya no dice «la
+ *   primera…; la última…» (§5.12). Si cambian las etapas, el modo vuelve al que conviene para el período nuevo.
+ *
+ * **Una sola media semanal (GR-VC13, rama D):** por semana, cada barra es la media de la semana de GR-12
+ * (`semanasDeNutricion`, que llama a `mediasDeLasSemanas`): los días con cantidades en todos sus registros, si son 4 o
+ * más; un subtotal no entra y se cuenta. Las semanas se siguen partiendo en el cambio de etapa. Una semana con días pero
+ * sin media va con su contorno cortado y sus días se ven igual; de entrada va por semana solo si alguna semana tiene media
+ * (GR-VC12, como GR-12). Los g/kg y la cantidad de registros van día por día. La tabla de arriba sigue con su criterio
+ * de siempre (el de cada métrica): resume la etapa entera, no estas semanas.
  */
 import {
   compararEtapas,
@@ -25,16 +50,22 @@ import {
   LENTE_DEL_AREA,
   numero,
   periodoDeLasEtapas,
-  resumenTextual,
+  serieDisponible,
   TEXTO_SIN_DIFERENCIA_DE_ETAPAS,
   valorConUnidad,
   type EtapaDePlanificacion,
+  type Medida,
   type OrigenDeDato,
   type ReferenciaDeMetrica,
   type ResumenDeEtapa,
 } from '@be/domain';
+import { escalaDeLaSerie, lecturaDelPunto } from '../graficos/arma-tu-grafico/compositor';
+import { COPY_DE_LOS_CRUCES } from '../graficos/cruces/copy';
+import { dosEtapasLadoALado, etapaDeLaPlanificacion, marcasDeDosEtapas } from '../graficos/cruces/dos-etapas';
+import { DosEtapasEnPantalla, LeyendaDeDosEtapas } from '../graficos/cruces/dos-etapas-en-pantalla';
+import { cambioDeLoIndicadoEntreLasEtapas, LO_QUE_BE_NO_REGISTRA, versionesEntreLasEtapas } from '../graficos/cruces/lo-que-tambien-cambio';
 import dynamic from 'next/dynamic';
-import { useId, useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useId, useMemo, useState, type ReactNode } from 'react';
 import { Ayuda } from '../../../../components/ayuda';
 import { BloqueDeEstado } from '../../../../components/estados';
 import { Icono } from '../../../../components/icono';
@@ -45,7 +76,13 @@ import { coberturaDeLaEtapa, enumerar, etapasElegibles, finDeLaEtapa, partesDeLa
 import { iconoDeLaReferencia } from './iconos-de-metrica';
 import { Marca } from './marca';
 import { Minigrafico } from './minigrafico';
+import { useLoIndicadoDelEjercicio } from '../graficos/lectura-de-lo-indicado';
+import { cambioCortoDeLoIndicado, diferenciaDeLoIndicado, loIndicadoEnElTramo } from '../graficos/lo-indicado-en-el-tiempo';
+import { LeyendaPorSemana, MarcaDeBarra, MinigraficoPorSemana } from '../graficos/minigrafico-por-semana';
+import { diasDeLaSerieDeNutricion, metricaConMediaDeLaSemana, porSemanaDeEntrada, semanasDeNutricion } from '../graficos/cruces/semanas-de-nutricion';
+import { marcasPorSemanaQueSeVen, type SemanaDeLaSerie } from '../graficos/semanas';
 import { etapaEnPalabras } from './preguntas';
+import { resumenSinPrimeroNiUltimo } from './resumen-del-grafico-chico';
 import { nombreDeLaReferencia, tituloDeLaReferencia } from './selector';
 import { useSeriesDelAnalisis, type Disponibles, type SerieDelAnalisis } from './series';
 import { valorParaMostrar } from './valores';
@@ -61,6 +98,16 @@ const CRITERIO: Readonly<Record<string, string>> = {
 
 /** Qué es cada punto de un gráfico chico: va después del nombre de la métrica, con su unidad. */
 const CADA_PUNTO: Readonly<Record<string, string>> = { NUTRICION: 'por día', ENTRENAMIENTO: 'cada sesión', ANTROPOMETRIA: 'cada toma' };
+/** Lo mismo, cuando una serie diaria va por semana (Nutrición): la barra es la media de la semana de GR-12 (GR-VC13). */
+const POR_SEMANA = 'media de la semana (v1)';
+
+/** La medida del comparador de una métrica registrada de Entrenamiento por serie, o `null` si no tiene lo indicado. */
+function medidaDeLaMetrica(ref: ReferenciaDeMetrica): Medida | null {
+  if (ref.metricId === 'entrenamiento.repeticiones') return { variable: 'repeticiones' };
+  if (ref.metricId === 'entrenamiento.rir') return { variable: 'rir' };
+  if (ref.metricId === 'entrenamiento.carga') return { variable: 'carga', unidad: ref.unit ?? 'kg' };
+  return null;
+}
 
 /** El alto de un gráfico chico de la comparación: el dibujo y el renglón de las fechas. */
 const ALTO_DEL_GRAFICO = 132;
@@ -75,6 +122,7 @@ export function ComparacionDeEtapas({
   b,
   metricas,
   etapas,
+  etapasDeLaOtraArea,
   disponibles,
   enGrande,
   onEnGrande,
@@ -88,6 +136,11 @@ export function ComparacionDeEtapas({
   metricas: readonly ReferenciaDeMetrica[];
   /** Todas las etapas del área en el último año: las que cada tarjeta puede ofrecer. */
   etapas: readonly EtapaDePlanificacion[];
+  /**
+   * GR-24: las etapas del último año de la otra área (sus planes propios), para decir qué más se activó entre A y B.
+   * Vacías sin acceso o sin plan propio; `null` si no se pudieron leer (se dice que no se sabe, no que no cambió).
+   */
+  etapasDeLaOtraArea: readonly EtapaDePlanificacion[] | null;
   disponibles: Disponibles;
   /** Los gráficos grandes están abiertos debajo: los chicos no se repiten. */
   enGrande: boolean;
@@ -99,12 +152,27 @@ export function ComparacionDeEtapas({
   /** Los gráficos grandes, con su barra y su lectura: van en el lugar de los chicos cuando se abren. */
   grandes?: ReactNode;
 }) {
-  const { ir } = useSeguimiento();
+  const { ir, token, asesoradoId, sesionPerdida } = useSeguimiento();
   const id = useId();
   const hoy = hoyEn();
   const leido = useMemo(() => periodoDeLasEtapas(a, b, hoy, 366), [a, b, hoy]);
   const periodo = useMemo(() => ({ preset: null, desde: leido.desde, hasta: leido.hasta }), [leido.desde, leido.hasta]);
   const { series, reintentarFallidas } = useSeriesDelAnalisis(metricas, 'DAY', periodo);
+  // Lo indicado del ejercicio de las métricas, para decir qué cambió de A a B (solo en Entrenamiento): en la diferencia de
+  // una métrica por serie y en «Lo que también cambió». También con el 1RM estimado solo, que no tiene medida por serie
+  // pero sí lo indicado que lo mueve (antes no se leía, y la lista decía que no había otro cambio).
+  const exerciseKey = area === 'ENTRENAMIENTO' ? (metricas.find((m) => m.exerciseKey !== null && medidaDeLaMetrica(m) !== null)?.exerciseKey ?? metricas.find((m) => m.exerciseKey !== null)?.exerciseKey ?? null) : null;
+  const indicado = useLoIndicadoDelEjercicio({ token, asesoradoId, sesionPerdida }, exerciseKey, leido.desde, leido.hasta);
+  const loIndicadoEnLaDiferencia = (ref: ReferenciaDeMetrica): string | null => {
+    const medida = medidaDeLaMetrica(ref);
+    if (indicado.tipo !== 'lista' || medida === null || ref.exerciseKey !== exerciseKey) return null;
+    const enLaEtapa = (e: EtapaDePlanificacion) => loIndicadoEnElTramo(indicado.observaciones, (o) => o.comparacion.planId === e.planVersionId, { serie: ref.setIndex, unidad: ref.unit ?? undefined });
+    return diferenciaDeLoIndicado(enLaEtapa(a), enLaEtapa(b), medida);
+  };
+  // Nutrición va por semana de entrada (DISENO-VISUAL §1, principio 6) si alguna semana tiene media (GR-VC12); «Día por
+  // día», a un toque. Lo elegido a mano manda hasta que cambien las etapas: entonces vuelve al que conviene.
+  const [porSemanaElegido, setPorSemana] = useState<boolean | null>(null);
+  useEffect(() => setPorSemana(null), [leido.desde, leido.hasta]);
   // Las que no se pudieron leer: cada fila lo dice, y se reintentan juntas, con un solo botón debajo de la tabla.
   const fallidas = series.filter((s) => s.estado.tipo === 'error').length;
   const [plan, setPlan] = useState<{ origen: OrigenDeDato; titulo: string; numero: number } | null>(null);
@@ -131,6 +199,46 @@ export function ComparacionDeEtapas({
   // y el final de lo leído).
   const bandas = useMemo(() => [a, b].flatMap((e, i) => (e.ultimoDia ? [{ desde: e.desde, hasta: e.ultimoDia, rotulo: i === 0 ? 'A' : 'B' }] : [])), [a, b]);
   const fechasDelPie = useMemo(() => [leido.desde, b.desde, leido.hasta], [leido.desde, leido.hasta, b.desde]);
+  // GR-VC13: las semanas de cada métrica de Nutrición con la media de GR-12, partidas en el cambio de etapa.
+  const semanasDe = new Map<string, SemanaDeLaSerie[]>(
+    dibujables.flatMap(({ s }) => {
+      const metrica = metricaConMediaDeLaSemana(s.definicion);
+      return metrica !== null && s.estado.observaciones.grain === 'DAY' ? [[s.clave, semanasDeNutricion(s.estado.observaciones.points, metrica, leido.desde, leido.hasta, hoy, bandas)] as const] : [];
+    }),
+  );
+  const porSemana = porSemanaElegido ?? porSemanaDeEntrada(leido.desde, leido.hasta, [...semanasDe.values()]);
+  const conPorSemana = !enGrande && area === 'NUTRICION' && semanasDe.size > 0;
+  // GR-24: cada métrica lado a lado, con todas sus observaciones (5 por lado como mínimo para dibujarse).
+  const ladoALado = dibujables.map(({ s, indice }) => {
+    const unidad = s.estado.serie.unit;
+    const delCatalogo = serieDisponible(s.ref.metricId, unidad);
+    return {
+      s,
+      indice,
+      d: dosEtapasLadoALado({
+        serie: s.estado.observaciones,
+        definicion: s.definicion,
+        a: etapaDeLaPlanificacion(a, 'A'),
+        b: etapaDeLaPlanificacion(b, 'B'),
+        leido,
+        escala: delCatalogo ? escalaDeLaSerie(delCatalogo, unidad) : { enteros: false },
+        lectura: (p) => lecturaDelPunto(p, s.definicion, unidad),
+        fuerza: s.estado.fuerza ?? null,
+      }),
+    };
+  });
+  // Lo que también cambió entre una etapa y otra: las versiones de los planes propios (de esta área, entre A y B, y de la
+  // otra) que se activaron en el medio. Salen de las etapas del último año, no de las versiones del período de la ficha:
+  // con dos etapas de hace meses, lo de entonces no estaba ahí y se decía que no había cambiado nada.
+  const [primera, segunda]: readonly [EtapaDePlanificacion, EtapaDePlanificacion] = a.desde <= b.desde ? [a, b] : [b, a];
+  const tambienCambio = etapasDeLaOtraArea === null ? null : versionesEntreLasEtapas([...etapas, ...etapasDeLaOtraArea], primera, segunda, segunda.ultimoDia ?? leido.hasta);
+  // Y primero, lo que cambió en lo indicado para el ejercicio de una versión a la otra (DISENO-VISUAL §2 «D»: el cambio de
+  // 4 a 3 repeticiones no aparecía), con lo indicado de las sesiones que ejecutaron cada versión. Si no se pudo leer, se dice.
+  const nombreDelEjercicio = exerciseKey === null ? null : (disponibles.ejercicios?.find((x) => x.exerciseKey === exerciseKey)?.name ?? 'el ejercicio');
+  const loIndicadoDeLaEtapa = (e: EtapaDePlanificacion) => (indicado.tipo === 'lista' ? loIndicadoEnElTramo(indicado.observaciones, (o) => o.comparacion.planId === e.planVersionId) : null);
+  const cambioDeLoIndicado = nombreDelEjercicio === null ? null : cambioDeLoIndicadoEntreLasEtapas(cambioCortoDeLoIndicado(loIndicadoDeLaEtapa(primera), loIndicadoDeLaEtapa(segunda)), nombreDelEjercicio, primera, segunda);
+  const sinLoIndicado = exerciseKey !== null && indicado.tipo === 'sin-dato';
+  const marcasDelLadoALado = marcasDeDosEtapas(ladoALado.map((x) => x.d));
 
   const tarjeta = (e: EtapaDePlanificacion, lado: 'A' | 'B') => {
     const otra = lado === 'A' ? b : a;
@@ -273,7 +381,14 @@ export function ComparacionDeEtapas({
                           '—'
                         )
                       ) : (
-                        <strong>{`${c.diferencia > 0 ? '+' : ''}${valorConUnidad(c.diferencia, unidad, s.definicion.decimales)}`}</strong>
+                        <>
+                          <strong>{`${c.diferencia > 0 ? '+' : ''}${valorConUnidad(c.diferencia, unidad, s.definicion.decimales)}`}</strong>
+                          {loIndicadoEnLaDiferencia(s.ref) ? (
+                            <span className="celda__detalle tabla-de-etapas__lo-indicado" data-cambio-de-lo-indicado>
+                              {loIndicadoEnLaDiferencia(s.ref)}
+                            </span>
+                          ) : null}
+                        </>
                       )}
                     </td>
                   </tr>
@@ -288,10 +403,61 @@ export function ComparacionDeEtapas({
           </BloqueDeEstado>
         ) : null}
       </div>
+      {/* GR-24: las mismas métricas, lado a lado, con todas sus observaciones y la cantidad de cada etapa. */}
+      {ladoALado.length > 0 ? (
+        <section className="tarjeta-de-etapas etapas-lado-a-lado" aria-labelledby={`${id}-lado-a-lado`}>
+          <h4 id={`${id}-lado-a-lado`}>Lado a lado, con todas las observaciones</h4>
+          {/* La leyenda, una vez para todas las métricas y solo con las marcas que se ven (DISENO-VISUAL §1, principio 7). */}
+          <LeyendaDeDosEtapas marcas={marcasDelLadoALado} />
+          {ladoALado.map(({ s, indice, d }) => (
+            <DosEtapasEnPantalla
+              key={s.clave}
+              titulo={tituloDeLaReferencia(s.ref, s.definicion, disponibles.ejercicios)}
+              detalle={`${s.estado.serie.unit} · ${CADA_PUNTO[s.definicion.area]}`}
+              d={d}
+              decimales={s.definicion.decimales}
+              indice={indice}
+              densidad="COMPACTA"
+              nivel={4}
+              conLeyenda={false}
+            />
+          ))}
+          <div className="cruce__tambien" data-tambien-cambio>
+            <h4>{COPY_DE_LOS_CRUCES.tambienCambio}</h4>
+            {cambioDeLoIndicado !== null || (tambienCambio?.length ?? 0) > 0 ? (
+              <ul>
+                {cambioDeLoIndicado !== null ? (
+                  <li key="lo-indicado" data-cambio-de-lo-indicado>
+                    {cambioDeLoIndicado}.
+                  </li>
+                ) : null}
+                {(tambienCambio ?? []).map((t) => (
+                  <li key={t}>{t}.</li>
+                ))}
+              </ul>
+            ) : null}
+            {sinLoIndicado ? <p className="nota">{COPY_DE_LOS_CRUCES.sinLoIndicadoDeLasEtapas}</p> : null}
+            {tambienCambio === null ? <p className="nota">{COPY_DE_LOS_CRUCES.sinLasVersiones}</p> : tambienCambio.length === 0 ? <p className="nota">{COPY_DE_LOS_CRUCES.sinCambiosQueSeSepan}</p> : null}
+            <p className="nota">
+              {COPY_DE_LOS_CRUCES.noRegistra}: {LO_QUE_BE_NO_REGISTRA['GR-24'].join('; ')}.
+            </p>
+          </div>
+        </section>
+      ) : null}
       <div className="graficos-de-etapas">
         <div className="graficos-de-etapas__cabecera">
           <h4>Las mismas métricas, en el tiempo</h4>
           {enGrande ? null : <p className="graficos-de-etapas__nota">A y B son las dos etapas.</p>}
+          {conPorSemana ? (
+            <div className="graficos-de-etapas__grano" role="group" aria-label="Cómo se ven los días">
+              <button type="button" className="chip-de-zona" aria-pressed={porSemana} onClick={() => setPorSemana(true)} data-por-semana>
+                Por semana
+              </button>
+              <button type="button" className="chip-de-zona" aria-pressed={!porSemana} onClick={() => setPorSemana(false)} data-dia-por-dia>
+                Día por día
+              </button>
+            </div>
+          ) : null}
           {dibujables.length > 0 ? (
             <button type="button" className="boton boton--enlace graficos-de-etapas__abrir" onClick={() => onEnGrande(!enGrande)}>
               <Icono nombre={enGrande ? 'arriba' : 'analizar'} tamano={18} />
@@ -299,18 +465,22 @@ export function ComparacionDeEtapas({
             </button>
           ) : null}
         </div>
+        {/* Las marcas del dibujo por semana, una vez para los tres gráficos, con cómo se arma cada barra. */}
+        {conPorSemana && porSemana ? <LeyendaPorSemana que={marcasPorSemanaQueSeVen([...semanasDe.values()].flat())} comoSeArma={COPY_DE_LOS_CRUCES.porSemana.comoSeArma} /> : null}
         {enGrande ? null : dibujables.length > 0 ? (
           <ul className="graficos-de-etapas__lista">
             {dibujables.map(({ s, indice }) => {
               const titulo = tituloDeLaReferencia(s.ref, s.definicion, disponibles.ejercicios);
               const conObjetivo = s.estado.objetivo.length > 0;
+              const semanas = semanasDe.get(s.clave) ?? null;
+              const semanal = porSemana && semanas !== null;
               return (
                 <li key={s.clave} className="grafico-chico" data-metrica={s.clave}>
                   <p className="grafico-chico__titulo">
-                    <Marca indice={indice} />
+                    {semanal ? <MarcaDeBarra indice={indice} /> : <Marca indice={indice} />}
                     <strong>{titulo}</strong>
                     <span className="grafico-chico__detalle">
-                      {s.estado.serie.unit} · {CADA_PUNTO[s.definicion.area]}
+                      {s.estado.serie.unit} · {semanal ? POR_SEMANA : CADA_PUNTO[s.definicion.area]}
                     </span>
                     {conObjetivo ? (
                       <span className="grafico-chico__muestra">
@@ -318,6 +488,22 @@ export function ComparacionDeEtapas({
                       </span>
                     ) : null}
                   </p>
+                  {semanal ? (
+                    <MinigraficoPorSemana
+                      dias={diasDeLaSerieDeNutricion(s.estado.observaciones.points)}
+                      semanas={semanas ?? undefined}
+                      unidad={s.estado.serie.unit}
+                      desde={leido.desde}
+                      hasta={leido.hasta}
+                      hoy={hoy}
+                      alto={ALTO_DEL_GRAFICO}
+                      indice={indice}
+                      bandas={bandas}
+                      fechas={fechasDelPie}
+                      plan={s.estado.objetivo}
+                      titulo={titulo}
+                    />
+                  ) : (
                   <Minigrafico
                     serie={s.estado.observaciones}
                     desde={leido.desde}
@@ -330,8 +516,9 @@ export function ComparacionDeEtapas({
                     fechas={fechasDelPie}
                     plan={s.estado.objetivo}
                     ejeFino
-                    descripcion={`Gráfico de ${titulo}, con las etapas A y B. ${resumenTextual(s.estado.observaciones, s.definicion, leido.desde, leido.hasta)}`}
+                    descripcion={`Gráfico de ${titulo}, con las etapas A y B. ${resumenSinPrimeroNiUltimo(s.estado.observaciones, s.definicion, leido.desde, leido.hasta)}`}
                   />
+                  )}
                 </li>
               );
             })}

@@ -2,6 +2,10 @@
  * La base de los gráficos (WP-GRAFICOS fase 2, DL-174): los paneles alineados, la lectura, la leyenda, la tabla y los
  * estados. Cada rama escribe solo en su hoja (entrenamiento.css, nutricion-y-cuerpo.css, cruces.css y patrones.css);
  * nadie toca globals.css. La letra mínima de un gráfico es de 12,5 px; las marcas, 3:1 contra el fondo.
+ *
+ * La pasada visual (15/11; DISENO-VISUAL §1): el título en 16 px y su línea tenue en 13 px; la leyenda como fichas
+ * cortas en una línea, arriba; una sola línea de lectura debajo; la frase fija tenue y siempre a la vista; «Cómo
+ * leerlo» cerrado, al pie, al lado de «Ver la tabla»; las tablas con cifras de ancho fijo y sin partir un valor.
  */
 .grafico-base {
   display: grid;
@@ -9,9 +13,22 @@
   min-width: 0;
 }
 
+.grafico-base__cabecera {
+  display: grid;
+  gap: 0.125rem;
+}
+
 .grafico-base__titulo {
   margin: 0;
   font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.grafico-base__detalle {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: var(--tenue);
 }
 
 .grafico-base__area {
@@ -32,7 +49,7 @@
 
 .grafico-base__carril-nombre {
   margin: 0;
-  font-size: 0.875rem;
+  font-size: 0.8125rem;
   font-weight: 600;
 }
 
@@ -47,53 +64,138 @@
   overflow: visible;
 }
 
+.grafico-base__svg text {
+  font-variant-numeric: tabular-nums;
+}
+
+/* La grilla, muy tenue: ubica sin competir con los datos. */
+.grafico-base__grilla line {
+  opacity: 0.7;
+}
+
 .grafico-base--compacta .grafico-base__carril-nombre {
   font-size: 0.8125rem;
 }
 
+/* Una sola línea de lectura debajo del gráfico: la fecha y el valor de cada carril. */
 .grafico-base__lectura {
-  min-height: 2.75rem;
+  min-height: 1.5rem;
   font-size: 0.875rem;
 }
 
-.grafico-base__lectura-fecha {
-  margin: 0 0 0.25rem;
-  font-weight: 600;
-}
-
-.grafico-base__lectura-valores {
+.grafico-base__lectura-linea {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.25rem 1rem;
+  align-items: baseline;
+  gap: 0.125rem 1rem;
   margin: 0;
+  font-variant-numeric: tabular-nums;
 }
 
-.grafico-base__lectura-valores dt {
+.grafico-base__lectura-fecha {
   font-weight: 600;
 }
 
-.grafico-base__lectura-valores dd {
-  margin: 0;
+.grafico-base__lectura-nombre {
+  color: var(--tenue);
 }
 
+/* La leyenda: fichas cortas en una sola línea, arriba del gráfico. */
 .grafico-base__leyenda {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.25rem 1rem;
+  gap: 0.25rem 0.875rem;
   margin: 0;
   padding: 0;
   list-style: none;
   font-size: 0.8125rem;
+  color: var(--tenue);
 }
 
 .grafico-base__glifo {
   display: inline-flex;
   align-items: center;
-  gap: 0.375rem;
+  gap: 0.3rem;
+  white-space: nowrap;
 }
 
 .grafico-base__nota {
   margin: 0;
+}
+
+/* La frase fija de los cruces: tenue, en una línea, siempre a la vista. */
+.grafico-base__frase {
+  margin: 0;
+  font-size: 0.8125rem;
+  color: var(--tenue);
+}
+
+/* El pie: «Ver la tabla» y «Cómo leerlo», uno al lado del otro. */
+.grafico-base__pie {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 0.25rem 1.25rem;
+}
+
+.grafico-base__pie > .grafico-base__tabla,
+.grafico-base__pie > .grafico-base__como-leerlo[open] {
+  flex: 1 1 100%;
+}
+
+/* «Cómo leerlo»: cerrado de entrada, con su «i»; se abre con Enter o Espacio. */
+.grafico-base__como-leerlo {
+  font-size: 0.875rem;
+}
+
+.grafico-base__como-leerlo > summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-height: 2rem;
+  color: var(--enlace, var(--acento));
+  font-weight: 600;
+  cursor: pointer;
+  list-style: none;
+  border-radius: 6px;
+}
+
+/* Solo la «i» (el buscador): un toque chico, con su nombre al pasar el mouse y para el lector de pantalla. */
+.grafico-base__como-leerlo--icono > summary {
+  min-height: 1.5rem;
+  min-width: 1.5rem;
+  justify-content: center;
+}
+
+.grafico-base__como-leerlo > summary::-webkit-details-marker {
+  display: none;
+}
+
+.grafico-base__como-leerlo > summary:focus-visible {
+  outline: 3px solid var(--foco);
+  outline-offset: 2px;
+}
+
+.grafico-base__como-leerlo-cuerpo {
+  display: grid;
+  gap: 0.5rem;
+  max-width: 46rem;
+  margin-top: 0.25rem;
+  padding: 0.75rem 1rem;
+  border: 1px solid var(--borde);
+  border-radius: 10px;
+  background: var(--fondo-suave);
+  color: var(--texto);
+}
+
+.grafico-base__como-leerlo-cuerpo p,
+.grafico-base__como-leerlo-cuerpo ul {
+  margin: 0;
+}
+
+.grafico-base__como-leerlo-cuerpo h4 {
+  margin: 0.25rem 0 0;
+  font-size: 0.875rem;
 }
 
 .grafico-base__tabla-desplazable {
@@ -104,6 +206,7 @@
 .grafico-base__tabla table {
   border-collapse: collapse;
   font-size: 0.875rem;
+  font-variant-numeric: tabular-nums;
 }
 
 .grafico-base__tabla caption {
@@ -118,6 +221,7 @@
   text-align: start;
   border-bottom: 1px solid var(--borde);
   vertical-align: top;
+  white-space: nowrap;
 }
 
 .grafico-base__sin-registros {
@@ -130,4 +234,41 @@
 .grafico-base__cargando {
   display: grid;
   align-content: center;
+}
+
+/*
+ * La cinta del tiempo (GR-23). Fija arriba al desplazar en «Patrones» (`fija`), con fondo para que lo que pasa por
+ * debajo no se mezcle; quien la monta puede ajustar dónde se pega y su fondo con --cinta-arriba y --cinta-fondo.
+ */
+.grafico-cinta--fija {
+  position: sticky;
+  top: var(--cinta-arriba, 0);
+  z-index: 2;
+  background: var(--cinta-fondo, var(--superficie));
+  padding-block: 0.25rem;
+}
+
+.grafico-cinta__area {
+  cursor: pointer;
+}
+
+/* Con el foco del teclado en la cinta, el aro de lo elegido pasa al color del foco. */
+.grafico-base__area:focus-visible .grafico-cinta__aro {
+  stroke: var(--foco);
+}
+
+.grafico-cinta__lista {
+  margin: 0.25rem 0 0;
+  padding-inline-start: 1.25rem;
+  font-size: 0.875rem;
+}
+
+.grafico-cinta__lista[hidden] {
+  display: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .grafico-cinta__aro {
+    transition: stroke 120ms ease-out;
+  }
 }

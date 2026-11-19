@@ -7,12 +7,14 @@
  *   invitación (API-INV-05, que crea la solicitud del profesional) y la acepta (REL-03), en ese orden. Aceptar no
  *   autoriza el acceso: el paso siguiente es revisar el consentimiento, como en Vínculos (TEST-AUTH-006).
  * - Si ya había una solicitud igual pendiente, se acepta en Vínculos, donde está.
+ * - WP-COMPARTIR (DL-176): aceptada, la pantalla única de consentimiento, enseguida, como en Vínculos (`consentimiento.tsx`):
+ *   conectar por el enlace, el QR o el código es el único paso aparte; lo demás va preseleccionado.
  */
 import { COPY, COPY_INVITACION, COPY_VINCULO, normalizarCodigo, type Resultado, type SecretoDeInvitacionRequest, type VistaPreviaDeInvitacionResponse } from '@be/domain';
 import { useCallback, useEffect, useState } from 'react';
 import { api } from '../api';
 import { useClaveDeIntento } from '../intento';
-import { useSesionPerdida, type Ruta, type Salida } from '../navegacion';
+import { useSesionPerdida, type Ir, type Salida } from '../navegacion';
 import { Aviso, Boton, Campo, Parrafo, Titulo } from '../ui';
 
 type Vista = VistaPreviaDeInvitacionResponse['data'];
@@ -66,7 +68,7 @@ export function PantallaDeInvitacion({
   /** El secreto que trajo el enlace; sin él, la persona escribe el código. */
   secreto?: SecretoDeInvitacionRequest;
   salir: (motivo: Salida) => void;
-  ir: (r: Ruta) => void;
+  ir: Ir;
 }) {
   const sesionPerdida = useSesionPerdida(salir);
   const usar = useClaveDeIntento();
@@ -115,7 +117,8 @@ export function PantallaDeInvitacion({
     // 2) Aceptarla: la misma decisión explícita de 10-B04 que en Vínculos.
     const r = await api.aceptarSolicitud(token, solicitud.relationshipRequestId, solicitud.version, aceptar.actual());
     aceptar.registrar(r);
-    if (r.ok) return setEstado({ tipo: 'aceptada', vinculoId: r.datos.data.relationshipId });
+    // DL-176: aceptada, la pantalla única de consentimiento, enseguida (reemplaza a esta).
+    if (r.ok) return ir({ nombre: 'consentimiento', vinculoId: r.datos.data.relationshipId, recienAceptado: true }, 'reemplazar');
     if (sesionPerdida(r)) return;
     // La solicitud ya existe: si aceptarla falló, queda en Vínculos para decidir ahí.
     setEstado({ tipo: 'sin-salida', texto: `${motivoDe(r)} La solicitud quedó en Vínculos.` });
@@ -164,12 +167,6 @@ export function PantallaDeInvitacion({
         </>
       ) : null}
 
-      {estado.tipo === 'aceptada' ? (
-        <Aviso tipo="exito" titulo={COPY_VINCULO.vinculoAceptado}>
-          <Parrafo>{COPY_VINCULO.vinculoAceptadoDetalle}</Parrafo>
-          <Boton texto={COPY_VINCULO.revisarConsentimiento} onPress={() => ir({ nombre: 'consentimiento', vinculoId: estado.vinculoId })} />
-        </Aviso>
-      ) : null}
 
       {estado.tipo === 'sin-salida' ? (
         <>

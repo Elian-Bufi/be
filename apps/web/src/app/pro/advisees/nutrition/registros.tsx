@@ -56,6 +56,7 @@ import {
   type RasgoDeUnHecho,
   type RegistroDeUnaFila,
 } from '@be/domain';
+import dynamic from 'next/dynamic';
 import { useCallback, useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react';
 import { BloqueDeEstado, Cargando, EstadoVacio } from '../../../../components/estados';
 import { Aviso, Campo } from '../../../../components/formulario';
@@ -76,6 +77,9 @@ import { ICONO_DEL_RASGO } from '../seguimiento/hecho-en-un-renglon';
 import { DetalleDeRegistroDeComida } from './detalle-de-registro';
 import { EstadoDeLectura, useNutricion } from './nutricion';
 import { useNombres } from '../../../../lib/nombres-ocultos';
+
+// WP-GRAFICOS GR-14 (DL-174): «Día por día», arriba de la lista. Su código se carga recién al dibujarse.
+const DiaPorDia = dynamic(() => import('../graficos/nutricion/dia-por-dia-en-registros').then((m) => m.DiaPorDiaEnRegistros), { ssr: false, loading: () => <Cargando /> });
 
 type Contexto = ContextoDeRevisionResponse['data'];
 
@@ -158,6 +162,7 @@ export function VistaDeRegistros() {
         {periodo ? <ControlDePeriodo periodo={periodo} atajos={ATAJOS_DE_UN_AREA} maximoDeDias={MAXIMO_DE_DIAS_DE_UN_AREA} onElegir={elegirPeriodo} /> : null}
       </div>
       <EstadoDeLectura r={r} onReintentar={() => void cargar()}>
+        {contexto ? <DiaPorDia lectura={{ token, asesoradoId, sesionPerdida }} desde={contexto.period.start} hasta={contexto.period.end} hoy={hoy} contraste={contexto.descriptiveContrast.days} /> : null}
         {contexto ? linea.tipo === 'cargando' ? <Cargando /> : <Contraste contexto={contexto} linea={linea} hoy={hoy} onReintentarLaLinea={reintentarLaLinea} onCambio={() => void cargar(true)} /> : null}
       </EstadoDeLectura>
     </section>

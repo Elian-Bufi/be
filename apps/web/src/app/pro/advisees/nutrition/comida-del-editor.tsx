@@ -2,12 +2,12 @@
 
 /**
  * Una comida de la versión en preparación (WP-ESCRITORIO-AREAS, parte 7; maqueta 17): plegada, un renglón con su nombre,
- * cuántas opciones tiene y lo que adentro pide atención; abierta, sus opciones en pestañas y los ítems de la opción
- * elegida en una tabla. Es otra composición de lo que el editor ya hacía: no agrega ni quita ninguna operación.
+ * cuántas opciones tiene y lo que adentro pide atención; abierta, sus opciones, cada una en su renglón, y los ítems de la
+ * opción abierta en una tabla. Es otra composición de lo que el editor ya hacía: no agrega ni quita ninguna operación.
  * - **Plegar no esconde lo que falta:** una comida sin nombre, una cantidad que no se entiende o un problema de «Validar»
  *   se dicen en el renglón plegado.
- * - **Las opciones no son equivalencias** (B05): se elige cuál se edita, y todas pesan lo mismo. Una opción que nació de
- *   una receta va en lectura (DL-119).
+ * - **Las opciones no son equivalencias** (B05): todas pesan lo mismo. Una opción que nació de una receta va en lectura
+ *   (DL-119).
  * - **Cada campo de la tabla dice de qué alimento es** en su nombre accesible; el título de la columna lo dice a la vista.
  * - **El nombre se cambia a pedido** («Cambiar el nombre»): el campo aparece en el lugar, con el foco adentro, y Enter o
  *   salir de él lo cierra (`components/campo-de-nombre.tsx`). Lo que se acaba de agregar nace con el campo abierto.
@@ -15,12 +15,23 @@
  *   ingrediente, pero el editor no la dejaba escribir. Va en un renglón debajo del ítem, a pedido («Agregar una nota
  *   sobre …», `components/texto-a-pedido.tsx`), hasta 300 caracteres. No cambia lo que lee la app: el campo ya
  *   existía.
- * - **ED-31 y ED-33 (WP-EDITORES-PROFESIONAL):** la opción elegida dice su total al instante («703 kcal · P 45 g · …»),
- *   como estimación del editor, y lo que falta dice «Sin dato» y qué lo impide; «+ Opción de alimentos» y «+ Opción de
+ * - **ED-31 y ED-33 (WP-EDITORES-PROFESIONAL):** la opción dice su total al instante («703 kcal · P 45 g · …»), como
+ *   estimación del editor, y lo que falta dice «Sin dato» y qué lo impide; «+ Opción de alimentos» y «+ Opción de
  *   receta» van por separado (una opción es de alimentos o de receta, nunca las dos); quitar una opción con contenido
  *   lo decide el editor, que pregunta con lo que se va.
  * - **Duplicar y reordenar** (TB-48): «Duplicar comida» en «Más», «Subir» y «Bajar» al lado, y «Duplicar opción N» junto
  *   a cambiar su nombre. La copia va justo después y nace con su nombre a la vista (`advisees/editar-la-estructura.ts`).
+ *
+ * **WP-NUTRICION-PLANIFICACION (primer tramo).** Los números, donde se decide (la lógica, en `planificacion.ts`):
+ * - **NUP-01:** cada alimento dice lo que aporta con su cantidad, debajo de su nombre, y cambia mientras se escriben los
+ *   gramos; al pasar el mouse por esa línea, o con el foco en su cantidad, su composición cada 100 g y de dónde sale.
+ * - **NUP-02:** la comida plegada dice, además de cuántas opciones tiene, lo que aporta de la que menos a la que más y su
+ *   rango indicado, si lo tiene.
+ * - **NUP-03 (NUP-D04):** cada opción es un renglón plegable con su nombre y sus números; desplegada, la tabla y las
+ *   acciones de siempre. Una abierta por comida, o ninguna.
+ * - **NUP-04 y NUP-05:** la opción abierta se ubica frente al rango de su comida y el día frente al suyo, en una línea
+ *   neutra; y el rango de la comida se ve y se indica acá mismo.
+ * - **NUP-12:** la comida vacía dice por dónde empezar: una comida habitual, copiar de otra comida, una receta o alimentos.
  */
 import {
   cantidad as formatearCantidad,
@@ -34,20 +45,30 @@ import {
   motivoDeNumeroIlegible,
   pestanaDeLaOpcion,
   type EstructuraDePlanEntrada,
+  type Rango as RangoIndicado,
   type RecetaDeOpcion,
   type VersionDePlan,
+  COPY_NOTAS_PROPIAS,
+  COPY_ALIMENTOS,
+  equivalenciaEnPalabras,
 } from '@be/domain';
 import { useEffect, useId, useState } from 'react';
 import { CampoDeNombre } from '../../../../components/campo-de-nombre';
 import { EnPartes } from '../../../../components/en-partes';
 import { Icono } from '../../../../components/icono';
 import { MenuDeAcciones } from '../../../../components/menu-de-acciones';
+import { Pista } from '../../../../components/pista';
 import { TextoAPedido } from '../../../../components/texto-a-pedido';
 import { numeroEnCampo } from '../../../../lib/formato';
+import { conNumero, conUnidad, iconoDeLaFila, numeroDelCampo, opcionesDeUnidad, useDatosDelAlimento, valorDeLaUnidad } from './alimentos-del-catalogo';
 import { COPY_DE_LOS_EDITORES as E } from '../editar-la-estructura';
 import { COPY_DE_OTRA_COMIDA, MAXIMO_DE_OPCIONES } from './opcion-de-otra-comida';
 import { COPY_VERSION_NUEVA } from './version-nueva-de-la-receta';
-import { faltantesDeLaOpcion, queFaltaEnPalabras, totalEnPalabras, totalEnUnaLinea, type TotalDeLaOpcion } from './rangos';
+import { aporteDelItem, aporteEnPalabras, aporteEnUnaLinea, comidaVacia, composicionEnLaPista, COPY_PLANIFICACION as CP, diaFrenteAlRango, loQueAportaLaComida, loQueAportaLaComidaEnPalabras, numerosDeLaOpcion, opcionFrenteAlRango, type LineaFrenteAlRango } from './planificacion';
+import { faltantesDeLaOpcion, queFaltaEnPalabras, totalEnPalabras, totalEnUnaLinea, type ComposicionConocida, type RangoPorNutriente, type TotalDeLaOpcion } from './rangos';
+import { rangoEnPalabras, rangoEnUnaLinea } from './rangos-indicados';
+import { RangoEnUnRenglon, type RangoParaIndicar } from './suma-de-los-rangos';
+import { NotasAlLado, useNotasPropias } from '../notas-propias';
 
 export type Estructura = EstructuraDePlanEntrada['dayTypes'];
 export type ComidaEnEdicion = Estructura[number]['meals'][number];
@@ -59,6 +80,12 @@ type Unidad = 'g' | 'ml' | 'unit';
 
 /** Qué nombre se está cambiando dentro de una comida: el de la comida o el de una de sus opciones. */
 export type NombreEnEdicion = { readonly de: 'comida' } | { readonly de: 'opcion'; readonly opcion: number } | null;
+
+/** NUP-05: el rango indicado de la comida, y cómo se indica o se cambia desde acá. */
+export interface RangoDeLaComida extends RangoParaIndicar {
+  /** El del día tipo, para ubicar el día (NUP-04). */
+  readonly delDia: RangoIndicado | null;
+}
 
 export function ComidaDelEditor({
   id,
@@ -72,6 +99,11 @@ export function ComidaDelEditor({
   nombreEnEdicion,
   nombres,
   recetas,
+  composiciones,
+  origenes,
+  rangoDeOpciones,
+  rangosDelDia,
+  rango,
   itemsDeLaReceta,
   versionNueva,
   alUsarLaVersionNueva,
@@ -103,10 +135,20 @@ export function ComidaDelEditor({
   problemas: number;
   esLaPrimera: boolean;
   esLaUltima: boolean;
+  /** La opción abierta; `-1`: ninguna (NUP-D04). */
   opcionElegida: number;
   nombreEnEdicion: NombreEnEdicion;
   nombres: Readonly<Record<string, string>>;
   recetas: Readonly<Record<string, RecetaDeOpcion>>;
+  /** NUP-01: la composición de cada alimento y de dónde sale, por su identidad en el catálogo. */
+  composiciones: ReadonlyMap<string, ComposicionConocida>;
+  origenes: ReadonlyMap<string, string>;
+  /** NUP-02: lo que aporta la comida, de la opción que menos a la que más; `null` si no se calculó. */
+  rangoDeOpciones: RangoPorNutriente | null;
+  /** NUP-04: lo que va del día tipo según lo que se elija, para ubicarlo frente a su rango. */
+  rangosDelDia: RangoPorNutriente | null;
+  /** NUP-05: el rango indicado de esta comida y del día, y cómo indicarlo. */
+  rango: RangoDeLaComida;
   /** Con la versión que cita la opción: la porción guardada de otra versión no vale (después de «Usar la versión N»). */
   itemsDeLaReceta: (optionId: string | undefined, recipeVersionId: string) => ItemsGuardados | null;
   /** ED-32: si la receta de la opción `k` tiene una versión más nueva, su número y lo que cambia en una porción. */
@@ -115,6 +157,7 @@ export function ComidaDelEditor({
   ) => { readonly numero: number; readonly cambios: readonly string[]; readonly conLaPorcionDeAhora: boolean; readonly nutrientes: readonly string[]; readonly conLaEstimacion: boolean } | null;
   alUsarLaVersionNueva: (k: number) => void;
   alAlternar: () => void;
+  /** Abre la opción `k`; `-1` las pliega a todas. */
   alElegirOpcion: (k: number) => void;
   alEditarNombre: (que: NombreEnEdicion) => void;
   /** Cambia la comida: recibe una copia que se puede modificar. */
@@ -140,8 +183,10 @@ export function ComidaDelEditor({
   totalDeLaOpcion: (k: number) => TotalDeLaOpcion | null;
 }) {
   const propio = useId();
+  // PG-16 (DL-173): «Anotar sobre esta comida», si el editor tiene las notas propias.
+  const notasPropias = useNotasPropias();
   const plegada = comidaPlegadaDelEditor(comida, posicion, problemas);
-  const k = Math.min(opcionElegida, comida.options.length - 1);
+  const k = opcionElegida >= 0 && opcionElegida < comida.options.length ? opcionElegida : -1;
   const opcion = k >= 0 ? comida.options[k] : undefined;
   const conRecetas = comida.options.some((o) => o.recipeVersionId);
   const cambiandoElNombre = nombreEnEdicion?.de === 'comida';
@@ -149,6 +194,21 @@ export function ComidaDelEditor({
   const total = opcion ? totalDeLaOpcion(k) : null;
   const nueva = opcion?.recipeVersionId ? versionNueva(k) : null;
   const faltan = total ? faltantesDeLaOpcion(total) : [];
+  // NUP-02: lo que aporta la comida y su rango indicado, también plegada.
+  const aporta = rangoDeOpciones ? loQueAportaLaComida(rangoDeOpciones, comida.options.length) : null;
+  const aportaEnPalabras = rangoDeOpciones ? loQueAportaLaComidaEnPalabras(rangoDeOpciones, comida.options.length) : null;
+  // NUP-04: la opción abierta frente al rango de su comida, y el día frente al suyo.
+  const conAlgo = !!opcion && (opcion.items.length > 0 || !!opcion.recipeVersionId);
+  const frente: readonly LineaFrenteAlRango[] = total && conAlgo ? [...opcionFrenteAlRango(total, rango.indicado, plegada.titulo), ...(rangosDelDia ? diaFrenteAlRango(rangosDelDia, rango.delDia) : [])] : [];
+  const vacia = comidaVacia(comida);
+  /** NUP-12: «alimentos» abre la primera opción vacía en su cuadro; sin opciones, nace la 1 y se abre. */
+  const empezarConAlimentos = () => {
+    if (comida.options.length === 0) {
+      alCambiar((m) => void m.options.push({ label: 'Opción 1', items: [] }));
+      alElegirOpcion(0);
+    }
+    alAgregarItem(Math.max(0, comida.options.findIndex((o) => o.items.length === 0 && !o.recipeVersionId)));
+  };
   return (
     <section className="comida-del-plan comida-del-editor" data-comida={posicion + 1} data-abierta={abierta ? '' : undefined}>
       <div className="comida-del-editor__cabecera">
@@ -160,6 +220,23 @@ export function ComidaDelEditor({
               <span className="comida-del-plan__cuenta" data-resumen>
                 <EnPartes texto={plegada.opciones} />
               </span>
+              {/* NUP-02: de la opción que menos aporta a la que más; las iniciales a la vista, los nombres para el lector. */}
+              {aporta ? (
+                <span className="comida-del-editor__aporta" data-aporta-la-comida>
+                  <span aria-hidden="true">
+                    <EnPartes texto={aporta} />
+                  </span>
+                  <span className="visualmente-oculto">{aportaEnPalabras}</span>
+                </span>
+              ) : null}
+              {rango.indicado ? (
+                <span className="comida-del-editor__indicado" data-rango-indicado-de-la-comida>
+                  <span aria-hidden="true">
+                    {CP.indicado}: {rangoEnUnaLinea(rango.indicado)}
+                  </span>
+                  <span className="visualmente-oculto">Rango indicado: {rangoEnPalabras(rango.indicado)}</span>
+                </span>
+              ) : null}
               {plegada.avisos.length > 0 ? (
                 <span className="comida-del-editor__avisos" data-avisos>
                   <Icono nombre="aviso" tamano={18} />
@@ -187,6 +264,9 @@ export function ComidaDelEditor({
               texto="Más"
               acciones={[
                 { clave: 'nombre', texto: 'Cambiar el nombre', alElegir: () => alEditarNombre({ de: 'comida' }) },
+                ...(notasPropias
+                  ? [{ clave: 'anotar', texto: COPY_NOTAS_PROPIAS.anotarSobreLaComida, alElegir: () => notasPropias.anotar({ tipo: 'MEAL', nombre: comida.label.trim() }), noSePuede: comida.label.trim() === '' ? 'Ponele un nombre a la comida para anotar sobre ella.' : null }]
+                  : []),
                 { clave: 'duplicar', texto: E.duplicarComida, alElegir: alDuplicar },
                 // ED-33: una opción más, desde otra comida del plan o desde una comida habitual.
                 { clave: 'copiar-desde-otra', texto: COPY_DE_OTRA_COMIDA.copiar, alElegir: alCopiarDesdeOtra, noSePuede: noSePuedeCopiar },
@@ -198,6 +278,8 @@ export function ComidaDelEditor({
           </div>
         ) : null}
       </div>
+      {/* PG-16: las notas propias atadas a esta comida (por su nombre), a la vista aunque esté plegada. */}
+      <NotasAlLado comida={comida.label} />
       <div id={`${propio}-cuerpo`} className="comida-del-plan__cuerpo comida-del-editor__cuerpo" hidden={!abierta}>
         {abierta ? (
           <>
@@ -214,18 +296,186 @@ export function ComidaDelEditor({
                 alTerminar={() => alEditarNombre(null)}
               />
             ) : null}
+            {/* NUP-05: el rango de la comida se ve y se indica mientras se arma, no recién en «Revisar». */}
+            <RangoEnUnRenglon de={plegada.titulo} rango={rango} soloElBoton />
+            {/* NUP-12: la comida vacía dice por dónde empezar, con lo que ya existía, antes que nada. */}
+            {vacia ? (
+              <p className="comida-del-editor__empeza" data-empeza-con>
+                <span>{CP.empezaCon}</span>
+                <AccionDeInicio texto={CP.unaHabitual} noSePuede={noSePuedeUsarHabitual} alTocar={alUsarHabitual} comida={plegada.titulo} />
+                <span aria-hidden="true">·</span>
+                <AccionDeInicio texto={CP.copiarDeOtra} noSePuede={noSePuedeCopiar} alTocar={alCopiarDesdeOtra} comida={plegada.titulo} />
+                <span aria-hidden="true">·</span>
+                <AccionDeInicio texto={CP.unaReceta} noSePuede={null} alTocar={alAgregarReceta} comida={plegada.titulo} />
+                <span aria-hidden="true">·</span>
+                <AccionDeInicio texto={CP.alimentos} noSePuede={null} alTocar={empezarConAlimentos} comida={plegada.titulo} />
+              </p>
+            ) : null}
             <div className="comida-del-editor__opciones">
               {comida.options.length > 0 ? (
-                <fieldset className="pestanas-de-opcion">
-                  <legend className="visualmente-oculto">Opción de {plegada.titulo} que se edita</legend>
-                  {comida.options.map((o, n) => (
-                    <label key={o.optionId ?? `nueva-${n}`} className="pestana-de-opcion" data-receta={o.recipeVersionId ? '' : undefined}>
-                      <input type="radio" id={`pestana-${id}-${n}`} name={`${propio}-opcion`} checked={n === k} onChange={() => alElegirOpcion(n)} />
-                      {o.recipeVersionId ? <Icono nombre="receta" tamano={18} /> : null}
-                      <span>{pestanaDeLaOpcion(o, n)}</span>
-                    </label>
-                  ))}
-                </fieldset>
+                <ul className="opciones-plegables" aria-label={`Opciones de ${plegada.titulo}`}>
+                  {comida.options.map((o, n) => {
+                    const abiertaLaOpcion = n === k;
+                    const totalDeEsta = totalDeLaOpcion(n);
+                    const numeros = totalDeEsta ? numerosDeLaOpcion(totalDeEsta) : null;
+                    return (
+                      <li key={o.optionId ?? `nueva-${n}`} className="opcion-plegable" data-opcion-plegable={n + 1} data-abierta={abiertaLaOpcion ? '' : undefined} data-receta={o.recipeVersionId ? '' : undefined}>
+                        <h4 className="opcion-plegable__titulo">
+                          <button
+                            type="button"
+                            id={`pestana-${id}-${n}`}
+                            className="opcion-plegable__boton"
+                            aria-expanded={abiertaLaOpcion}
+                            aria-controls={`${propio}-opcion-${n}`}
+                            onClick={() => alElegirOpcion(abiertaLaOpcion ? -1 : n)}
+                          >
+                            {o.recipeVersionId ? <Icono nombre="receta" tamano={18} /> : <Icono nombre="alimento" tamano={18} />}
+                            <span className="opcion-plegable__nombre">{pestanaDeLaOpcion(o, n)}</span>
+                            {numeros ? (
+                              <span className="opcion-plegable__numeros" data-numeros-de-la-opcion>
+                                <span aria-hidden="true">
+                                  <EnPartes texto={numeros.linea} />
+                                </span>
+                                <span className="visualmente-oculto">{numeros.palabras}</span>
+                              </span>
+                            ) : null}
+                            <Icono nombre={abiertaLaOpcion ? 'arriba' : 'abajo'} tamano={18} />
+                          </button>
+                        </h4>
+                        <div id={`${propio}-opcion-${n}`} className="opcion-plegable__cuerpo" hidden={!abiertaLaOpcion}>
+                          {abiertaLaOpcion && opcion ? (
+                            <div className="opcion-del-editor" data-opcion={k + 1}>
+                              {cambiandoElDeLaOpcion || opcion.label.trim() === '' ? (
+                                <CampoDeNombre
+                                  id={`opcion-${id}-${k}`}
+                                  etiqueta="Nombre de la opción"
+                                  valor={opcion.label}
+                                  maximo={120}
+                                  enfocar={cambiandoElDeLaOpcion}
+                                  despues={`pestana-${id}-${k}`}
+                                  alEmpezar={() => alEditarNombre({ de: 'opcion', opcion: k })}
+                                  alCambiar={(v) => alCambiar((m) => void (m.options[k]!.label = v))}
+                                  alTerminar={() => alEditarNombre(null)}
+                                />
+                              ) : null}
+                              {opcion.recipeVersionId ? (
+                                <>
+                                  <OpcionDeReceta receta={recetas[opcion.recipeVersionId] ?? null} items={itemsDeLaReceta(opcion.optionId, opcion.recipeVersionId)} nombres={nombres} />
+                                  {/* ED-32: «Hay una versión 3 de esta receta», con lo que cambia, y pasarla solo a pedido. */}
+                                  {nueva ? (
+                                    <div className="version-nueva-de-la-receta" data-version-nueva={nueva.numero}>
+                                      <p>
+                                        <Icono nombre="aviso" tamano={18} />
+                                        <strong>{COPY_VERSION_NUEVA.hay(nueva.numero)}</strong>
+                                      </p>
+                                      <p className="nota">{nueva.conLaPorcionDeAhora ? COPY_VERSION_NUEVA.loQueCambia : COPY_VERSION_NUEVA.ingredientesDeLaNueva}:</p>
+                                      <ul className="lista-compacta">
+                                        {nueva.cambios.slice(0, 6).map((c) => (
+                                          <li key={c}>{c}</li>
+                                        ))}
+                                        {nueva.cambios.length > 6 ? <li>y {nueva.cambios.length - 6} más</li> : null}
+                                      </ul>
+                                      {/* API-PLN-01 (§8.7): la porción de ahora la estima el servidor; la nueva, el cálculo guardado de la receta. */}
+                                      {nueva.nutrientes.length > 0 ? (
+                                        <>
+                                          <p className="nota">{nueva.conLaEstimacion ? COPY_VERSION_NUEVA.nutrientesDeLaPorcion : COPY_VERSION_NUEVA.nutrientesDeLaNueva}:</p>
+                                          <ul className="lista-compacta" data-nutrientes-de-la-porcion>
+                                            {nueva.nutrientes.map((c) => (
+                                              <li key={c}>{c}</li>
+                                            ))}
+                                          </ul>
+                                        </>
+                                      ) : null}
+                                      <button type="button" className="boton boton--secundario boton--compacto" onClick={() => alUsarLaVersionNueva(k)}>
+                                        {COPY_VERSION_NUEVA.usarla(nueva.numero)}
+                                      </button>
+                                      <p className="nota">{COPY_VERSION_NUEVA.queHace}</p>
+                                    </div>
+                                  ) : null}
+                                </>
+                              ) : opcion.items.length === 0 ? (
+                                <p className="nota">Esta opción todavía no tiene ítems.</p>
+                              ) : (
+                                <div className="desplazable-x">
+                                  <table className="tabla items-del-editor">
+                                    <caption className="visualmente-oculto">Los ítems de {pestanaDeLaOpcion(opcion, k)}</caption>
+                                    <thead>
+                                      <tr>
+                                        <th scope="col">Alimento</th>
+                                        <th scope="col">Cantidad</th>
+                                        <th scope="col">Unidad</th>
+                                        <th scope="col">{COPY_NUTRICION.estadoDePreparacion}</th>
+                                        <th scope="col">
+                                          <span className="visualmente-oculto">Quitar</span>
+                                        </th>
+                                      </tr>
+                                    </thead>
+                                    <tbody>
+                                      {opcion.items.map((it, l) => (
+                                        <FilaDeItem
+                                          key={it.itemId ?? `nuevo-${l}`}
+                                          id={`item-${id}-${k}-${l}`}
+                                          item={it}
+                                          nombre={nombres[it.catalogItemId] ?? 'Elemento'}
+                                          composicion={composiciones.get(it.catalogItemId)}
+                                          origen={origenes.get(it.catalogItemId) ?? null}
+                                          onCambiar={(cambio) => alCambiar((m) => void (m.options[k]!.items[l] = { ...it, ...cambio }))}
+                                          onQuitar={() => alCambiar((m) => void m.options[k]!.items.splice(l, 1))}
+                                        />
+                                      ))}
+                                    </tbody>
+                                  </table>
+                                </div>
+                              )}
+                              {/* ED-31: el total de la opción, al instante; lo que falta, «Sin dato» y por qué. */}
+                              {total && conAlgo ? (
+                                <div className="opcion-del-editor__total" data-total-de-la-opcion>
+                                  <p>
+                                    <strong>
+                                      {/* Las iniciales a la vista; el lector de pantalla lee los nombres completos. */}
+                                      <span aria-hidden="true">{totalEnUnaLinea(total)}</span>
+                                      <span className="visualmente-oculto">{totalEnPalabras(total)}</span>
+                                    </strong>{' '}
+                                    <span className="nota">· {COPY_OPCIONES.estimacion}</span>
+                                  </p>
+                                  {faltan.length > 0 ? <p className="nota">{faltan.slice(0, 3).map(queFaltaEnPalabras).join('; ')}{faltan.length > 3 ? `; y ${faltan.length - 3} más` : ''}</p> : null}
+                                </div>
+                              ) : null}
+                              {/* NUP-04: dónde queda frente a los rangos indicados. Ubica, no califica: sin color, y no bloquea. */}
+                              {frente.length > 0 ? <FrenteALosRangos lineas={frente} /> : null}
+                              <div className="opcion-del-editor__pie">
+                                {opcion.recipeVersionId ? null : (
+                                  <>
+                                    <button type="button" className="boton boton--secundario" data-agregar-item aria-haspopup="dialog" onClick={() => alAgregarItem(k)}>
+                                      <Icono nombre="mas" tamano={18} />
+                                      Agregar ítem
+                                    </button>
+                                    <span className="nota">Del catálogo BE, de tus habituales o creado a mano.</span>
+                                  </>
+                                )}
+                                <span className="opcion-del-editor__del-nombre">
+                                  <button type="button" className="boton boton--enlace" onClick={() => alEditarNombre({ de: 'opcion', opcion: k })}>
+                                    Cambiar el nombre
+                                  </button>
+                                  <button type="button" className="boton boton--enlace" data-duplicar-opcion onClick={() => alDuplicarOpcion(k)}>
+                                    {E.duplicarOpcion(k)}
+                                  </button>
+                                  <button
+                                    type="button"
+                                    className="boton boton--enlace"
+                                    onClick={() => alQuitarOpcion(k)}
+                                  >
+                                    Quitar opción {k + 1}
+                                  </button>
+                                </span>
+                              </div>
+                            </div>
+                          ) : null}
+                        </div>
+                      </li>
+                    );
+                  })}
+                </ul>
               ) : (
                 <p className="nota">Esta comida todavía no tiene opciones.</p>
               )}
@@ -256,130 +506,6 @@ export function ComidaDelEditor({
               </span>
             </div>
             {conRecetas ? <p className="nota">{COPY_RECETAS.avisoDeOpciones}</p> : null}
-            {opcion ? (
-              <div className="opcion-del-editor" data-opcion={k + 1}>
-                {cambiandoElDeLaOpcion || opcion.label.trim() === '' ? (
-                  <CampoDeNombre
-                    id={`opcion-${id}-${k}`}
-                    etiqueta="Nombre de la opción"
-                    valor={opcion.label}
-                    maximo={120}
-                    enfocar={cambiandoElDeLaOpcion}
-                    despues={`pestana-${id}-${k}`}
-                    alEmpezar={() => alEditarNombre({ de: 'opcion', opcion: k })}
-                    alCambiar={(v) => alCambiar((m) => void (m.options[k]!.label = v))}
-                    alTerminar={() => alEditarNombre(null)}
-                  />
-                ) : null}
-                {opcion.recipeVersionId ? (
-                  <>
-                    <OpcionDeReceta receta={recetas[opcion.recipeVersionId] ?? null} items={itemsDeLaReceta(opcion.optionId, opcion.recipeVersionId)} nombres={nombres} />
-                    {/* ED-32: «Hay una versión 3 de esta receta», con lo que cambia, y pasarla solo a pedido. */}
-                    {nueva ? (
-                      <div className="version-nueva-de-la-receta" data-version-nueva={nueva.numero}>
-                        <p>
-                          <Icono nombre="aviso" tamano={18} />
-                          <strong>{COPY_VERSION_NUEVA.hay(nueva.numero)}</strong>
-                        </p>
-                        <p className="nota">{nueva.conLaPorcionDeAhora ? COPY_VERSION_NUEVA.loQueCambia : COPY_VERSION_NUEVA.ingredientesDeLaNueva}:</p>
-                        <ul className="lista-compacta">
-                          {nueva.cambios.slice(0, 6).map((c) => (
-                            <li key={c}>{c}</li>
-                          ))}
-                          {nueva.cambios.length > 6 ? <li>y {nueva.cambios.length - 6} más</li> : null}
-                        </ul>
-                        {/* API-PLN-01 (§8.7): la porción de ahora la estima el servidor; la nueva, el cálculo guardado de la receta. */}
-                        {nueva.nutrientes.length > 0 ? (
-                          <>
-                            <p className="nota">{nueva.conLaEstimacion ? COPY_VERSION_NUEVA.nutrientesDeLaPorcion : COPY_VERSION_NUEVA.nutrientesDeLaNueva}:</p>
-                            <ul className="lista-compacta" data-nutrientes-de-la-porcion>
-                              {nueva.nutrientes.map((c) => (
-                                <li key={c}>{c}</li>
-                              ))}
-                            </ul>
-                          </>
-                        ) : null}
-                        <button type="button" className="boton boton--secundario boton--compacto" onClick={() => alUsarLaVersionNueva(k)}>
-                          {COPY_VERSION_NUEVA.usarla(nueva.numero)}
-                        </button>
-                        <p className="nota">{COPY_VERSION_NUEVA.queHace}</p>
-                      </div>
-                    ) : null}
-                  </>
-                ) : opcion.items.length === 0 ? (
-                  <p className="nota">Esta opción todavía no tiene ítems.</p>
-                ) : (
-                  <div className="desplazable-x">
-                    <table className="tabla items-del-editor">
-                      <caption className="visualmente-oculto">Los ítems de {pestanaDeLaOpcion(opcion, k)}</caption>
-                      <thead>
-                        <tr>
-                          <th scope="col">Alimento</th>
-                          <th scope="col">Cantidad</th>
-                          <th scope="col">Unidad</th>
-                          <th scope="col">{COPY_NUTRICION.estadoDePreparacion}</th>
-                          <th scope="col">
-                            <span className="visualmente-oculto">Quitar</span>
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {opcion.items.map((it, l) => (
-                          <FilaDeItem
-                            key={it.itemId ?? `nuevo-${l}`}
-                            id={`item-${id}-${k}-${l}`}
-                            item={it}
-                            nombre={nombres[it.catalogItemId] ?? 'Elemento'}
-                            onCambiar={(cambio) => alCambiar((m) => void (m.options[k]!.items[l] = { ...it, ...cambio }))}
-                            onQuitar={() => alCambiar((m) => void m.options[k]!.items.splice(l, 1))}
-                          />
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-                {/* ED-31: el total de la opción, al instante; lo que falta, «Sin dato» y por qué. */}
-                {total ? (
-                  <div className="opcion-del-editor__total" data-total-de-la-opcion>
-                    <p>
-                      <strong>
-                        {/* Las iniciales a la vista; el lector de pantalla lee los nombres completos. */}
-                        <span aria-hidden="true">{totalEnUnaLinea(total)}</span>
-                        <span className="visualmente-oculto">{totalEnPalabras(total)}</span>
-                      </strong>{' '}
-                      <span className="nota">· {COPY_OPCIONES.estimacion}</span>
-                    </p>
-                    {faltan.length > 0 ? <p className="nota">{faltan.slice(0, 3).map(queFaltaEnPalabras).join('; ')}{faltan.length > 3 ? `; y ${faltan.length - 3} más` : ''}</p> : null}
-                  </div>
-                ) : null}
-                <div className="opcion-del-editor__pie">
-                  {opcion.recipeVersionId ? null : (
-                    <>
-                      <button type="button" className="boton boton--secundario" data-agregar-item aria-haspopup="dialog" onClick={() => alAgregarItem(k)}>
-                        <Icono nombre="mas" tamano={18} />
-                        Agregar ítem
-                      </button>
-                      <span className="nota">Del catálogo BE, de tus habituales o creado a mano.</span>
-                    </>
-                  )}
-                  <span className="opcion-del-editor__del-nombre">
-                    <button type="button" className="boton boton--enlace" onClick={() => alEditarNombre({ de: 'opcion', opcion: k })}>
-                      Cambiar el nombre
-                    </button>
-                    <button type="button" className="boton boton--enlace" data-duplicar-opcion onClick={() => alDuplicarOpcion(k)}>
-                      {E.duplicarOpcion(k)}
-                    </button>
-                    <button
-                      type="button"
-                      className="boton boton--enlace"
-                      onClick={() => alQuitarOpcion(k)}
-                    >
-                      Quitar opción {k + 1}
-                    </button>
-                  </span>
-                </div>
-              </div>
-            ) : null}
           </>
         ) : null}
       </div>
@@ -387,14 +513,93 @@ export function ComidaDelEditor({
   );
 }
 
+/** NUP-12: una forma de empezar la comida vacía. Si no se puede, queda apagada y dice por qué (a la vista y al lector). */
+function AccionDeInicio({ texto, noSePuede, alTocar, comida }: { texto: string; noSePuede: string | null; alTocar: () => void; comida: string }) {
+  if (noSePuede) {
+    return (
+      <Pista texto={noSePuede}>
+        <button type="button" className="boton boton--enlace" aria-disabled onClick={() => undefined}>
+          {texto}
+          <span className="visualmente-oculto"> en {comida}</span>
+        </button>
+      </Pista>
+    );
+  }
+  return (
+    <button type="button" className="boton boton--enlace" aria-haspopup="dialog" onClick={alTocar}>
+      {texto}
+      <span className="visualmente-oculto"> en {comida}</span>
+    </button>
+  );
+}
+
+/**
+ * NUP-04: la opción frente al rango de su comida y el día frente al suyo, una línea por macro. Neutro: sin color de
+ * juicio; lo que queda afuera lleva un ícono que ubica (no una alarma) y el lector lo oye en el texto. Una opción todavía
+ * sin alimentos (`sinAlimentos`, en el cuadro de la opción) no tiene nada que ubicar: una sola indicación neutra en vez de
+ * una línea «sin dato» por macro.
+ */
+export function FrenteALosRangos({ lineas, sinAlimentos = false }: { lineas: readonly LineaFrenteAlRango[]; sinAlimentos?: boolean }) {
+  return (
+    <div className="frente-a-los-rangos" data-frente-a-los-rangos>
+      <p className="frente-a-los-rangos__titulo">
+        <Icono nombre="objetivo" tamano={18} />
+        {CP.frenteAlRango}
+        {sinAlimentos ? null : <span className="nota"> · {CP.frenteAlRangoAyuda}</span>}
+      </p>
+      {sinAlimentos ? (
+        <p className="nota" data-frente-sin-alimentos>
+          {CP.frenteSinAlimentos}
+        </p>
+      ) : (
+        <ul className="lista-compacta">
+          {lineas.map((l) => (
+            <li key={l.texto} data-afuera={l.afuera ? '' : undefined}>
+              {l.texto}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
 /**
  * Un ítem, en su fila: el alimento y sus tres datos. El campo de la cantidad guarda el texto tal como se escribe y
  * propaga lo interpretado: si mostrara siempre el número interpretado, «72,» se borraría a mitad de camino y no se
  * podría escribir un decimal. Se resincroniza cuando el valor cambia desde afuera (al guardar, al quitar un ítem).
+ *
+ * NUP-01: debajo del nombre, lo que aporta con su cantidad, en vivo (la cantidad se propaga con cada tecla); la pista con
+ * su composición cada 100 g aparece al pasar el mouse por esa línea y con el foco en la cantidad (que la lee como
+ * descripción).
  */
-export function FilaDeItem({ id, item, nombre, onCambiar, onQuitar }: { id: string; item: ItemEnEdicion; nombre: string; onCambiar: (c: Partial<ItemEnEdicion>) => void; onQuitar: () => void }) {
+export function FilaDeItem({
+  id,
+  item,
+  nombre,
+  composicion,
+  origen = null,
+  onCambiar,
+  onQuitar,
+}: {
+  id: string;
+  item: ItemEnEdicion;
+  nombre: string;
+  /** NUP-01: la composición del alimento, si se conoce (o «leyendo»). */
+  composicion: ComposicionConocida | undefined;
+  /** NUP-01: de dónde sale («USDA», «Demostración»…), si se sabe. */
+  origen?: string | null;
+  onCambiar: (c: Partial<ItemEnEdicion>) => void;
+  onQuitar: () => void;
+}) {
+  // DL-180: el ícono de su grupo (NUA-05) y, si se retiró del catálogo, la marca discreta (NUA-02): se sigue viendo, no
+  // se esconde; validar y activar piden cambiarlo.
+  const datos = useDatosDelAlimento(item.catalogItemId);
+  // NUA-08: un alimento que se compone cada 100 ml mide sus medidas en mililitros.
+  const ml = typeof composicion === 'object' && composicion.referenceAmount === '100ml';
   const magnitud = item.quantity;
-  const externo = numeroEnCampo(magnitud?.value);
+  // NUA-08: con una medida casera, el campo es cuántas; la cantidad del ítem sigue en gramos.
+  const externo = numeroEnCampo(numeroDelCampo(item));
   const [escrito, setEscrito] = useState(externo);
   useEffect(() => {
     setEscrito((t) => (numeroEnCampo(leerNumero(t)) === externo ? t : externo));
@@ -402,31 +607,53 @@ export function FilaDeItem({ id, item, nombre, onCambiar, onQuitar }: { id: stri
   // Lo que no es un número se señala en el campo, en vez de guardarse como cero en silencio (B10-10:164-165).
   const error = escrito.trim() !== '' && leerNumero(escrito) === null ? motivoDeNumeroIlegible(escrito) : null;
   const [notaAbierta, setNotaAbierta] = useState(false);
+  const aporte = aporteDelItem({ catalogItemId: item.catalogItemId, quantity: magnitud, nombre }, composicion);
+  const pista = composicionEnLaPista(composicion, origen);
   return (
     <>
-    <tr className="item-del-editor">
+    <tr className="item-del-editor" data-retirado={datos.retirado ? '' : undefined}>
       <th scope="row" className="item-del-editor__nombre">
+        <span className="item-del-editor__grupo" data-grupo={datos.grupo ?? 'sin-grupo'}>
+          <Icono nombre={iconoDeLaFila(datos)} tamano={20} />
+        </span>
         {nombre}
+        {datos.retirado ? (
+          <span className="etiqueta-de-dato item-del-editor__retirado" data-marca-retirado>
+            {COPY_ALIMENTOS.retirado}
+            <span className="visualmente-oculto">. {COPY_ALIMENTOS.retiradoParaActivar}</span>
+          </span>
+        ) : null}
+        {/* NUP-01: lo que aporta con su cantidad; la pista, al pasar el mouse. */}
+        <Pista texto={pista}>
+          <span className="item-del-editor__aporte" data-aporte-del-item>
+            <span aria-hidden="true">
+              <EnPartes texto={aporteEnUnaLinea(aporte)} />
+            </span>
+            <span className="visualmente-oculto">{aporteEnPalabras(aporte)}</span>
+          </span>
+        </Pista>
       </th>
       <td data-etiqueta="Cantidad" className={error ? 'campo--error' : undefined}>
-        <input
-          id={`${id}-cantidad`}
-          className="item-del-editor__cantidad"
-          inputMode="decimal"
-          autoComplete="off"
-          aria-label={`Cantidad de ${nombre}`}
-          aria-invalid={error ? true : undefined}
-          aria-describedby={error ? `${id}-cantidad-error` : undefined}
-          value={escrito}
-          onChange={(e) => {
-            setEscrito(e.target.value);
-            const n = leerNumero(e.target.value);
-            if (e.target.value.trim() === '') return onCambiar({ quantity: null });
-            // Lo que no se entiende viaja como NaN, igual que en entrenamiento: el guardado se niega y lo señala, en
-            // vez de guardar en silencio el último número válido que había en el campo.
-            onCambiar({ quantity: { value: n ?? Number.NaN, unit: magnitud?.unit ?? 'g' } });
-          }}
-        />
+        <Pista texto={pista}>
+          <input
+            id={`${id}-cantidad`}
+            className="item-del-editor__cantidad"
+            inputMode="decimal"
+            autoComplete="off"
+            aria-label={`Cantidad de ${nombre}`}
+            aria-invalid={error ? true : undefined}
+            aria-describedby={error ? `${id}-cantidad-error` : undefined}
+            value={escrito}
+            onChange={(e) => {
+              setEscrito(e.target.value);
+              const n = leerNumero(e.target.value);
+              if (e.target.value.trim() === '') return onCambiar({ quantity: null });
+              // Lo que no se entiende viaja como NaN, igual que en entrenamiento: el guardado se niega y lo señala, en
+              // vez de guardar en silencio el último número válido que había en el campo.
+              onCambiar(conNumero(item, n ?? Number.NaN, ml));
+            }}
+          />
+        </Pista>
         {error ? (
           <p id={`${id}-cantidad-error`} className="campo__error">
             <span aria-hidden="true">⚠ </span>
@@ -435,13 +662,23 @@ export function FilaDeItem({ id, item, nombre, onCambiar, onQuitar }: { id: stri
         ) : null}
       </td>
       <td data-etiqueta="Unidad">
-        <select id={`${id}-unidad`} aria-label={`Unidad de ${nombre}`} value={magnitud?.unit ?? 'g'} disabled={!magnitud} onChange={(e) => magnitud && onCambiar({ quantity: { ...magnitud, unit: e.target.value as Unidad } })}>
-          {(Object.keys(ETIQUETA_DE_UNIDAD) as Unidad[]).map((u) => (
-            <option key={u} value={u}>
-              {ETIQUETA_DE_UNIDAD[u]}
+        {/* NUA-08: las medidas caseras del alimento, con su equivalencia, junto a las unidades de siempre. Con medidas, se
+            puede elegir una antes de escribir la cantidad: empieza con 1. */}
+        <select id={`${id}-unidad`} aria-label={`Unidad de ${nombre}`} value={valorDeLaUnidad(item)} disabled={!magnitud && datos.medidas.length === 0} onChange={(e) => onCambiar(conUnidad(item, e.target.value, datos.medidas, ml))}>
+          {opcionesDeUnidad(datos.medidas, ETIQUETA_DE_UNIDAD as Readonly<Record<Unidad, string>>, ml, item.householdMeasure).map((o) => (
+            <option key={o.valor} value={o.valor}>
+              {o.texto}
             </option>
           ))}
         </select>
+        {item.householdMeasure && magnitud && Number.isFinite(magnitud.value) ? (
+          <span className="nota item-del-editor__equivale" data-equivale-a>
+            {COPY_ALIMENTOS.equivaleA(
+              formatearCantidad(magnitud.value, magnitud.unit === 'ml' ? 'ml' : 'g'),
+              equivalenciaEnPalabras({ kind: item.householdMeasure.kind, amount: item.householdMeasure.amountPerUnit }, magnitud.unit === 'ml' ? '100ml' : '100g'),
+            )}
+          </span>
+        ) : null}
       </td>
       <td data-etiqueta={COPY_NUTRICION.estadoDePreparacion}>
         <select

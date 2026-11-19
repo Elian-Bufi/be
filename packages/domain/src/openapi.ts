@@ -9,6 +9,7 @@
  * - las de WP-06: la familia TRN, la carga manual de ejercicios y la lectura por período (docs/paquetes/WP-06.md §4).
  * - las de WP-07: la familia FRM, transversal a los tres dominios (docs/paquetes/WP-07.md §4).
  * - las de WP-NUTRICION-RECETAS: las familias REC, MED e ING (docs/paquetes/WP-NUTRICION-RECETAS.md §4).
+ * - las de WP-COMPARTIR: la familia CMP, la pantalla única de consentimiento (docs/paquetes/WP-COMPARTIR.md §2; DL-176).
  * - las de WP-NOTAS-DE-COORDINACION: API-CRD-01 y sus dos variantes (docs/paquetes/WP-NOTAS-DE-COORDINACION.md; DL-140).
  * - las de WP-FORMULARIOS-DE-INICIO: la familia FRI, los formularios V2 y la propuesta que la persona confirma (DL-164).
  * - las de WP-TABLERO-ALTA-GAMA: API-DSH-02 y las familias PLN y PLE, como descartar un borrador (DL-163 D-6 y D-21), y la
@@ -120,6 +121,8 @@ import { DescarteDeBorradorResponseSchema } from './contratos-descarte-de-borrad
 import { EstimacionDeLasOpcionesResponseSchema } from './contratos-totales-del-plan';
 import { EscribirRangosRequestSchema, RangosDelPlanResponseSchema } from './contratos-rangos-de-nutricion';
 import { ListaDeSeriesObservadasResponseSchema, RegistrarSerieObservadaRequestSchema, SerieObservadaResponseSchema, SucederSerieObservadaRequestSchema, SucesionDeSerieObservadaResponseSchema } from './contratos-fuerza';
+import { AgregarNotaDeLaSesionRequestSchema, NotaDeLaSesionResponseSchema, NotasDeLasSesionesResponseSchema, NotasDeUnaSesionResponseSchema } from './contratos-notas-de-la-sesion';
+import { AgregarNotaPropiaRequestSchema, ListaDeNotasPropiasDelProfesionalResponseSchema, NotaPropiaResponseSchema } from './contratos-notas-propias';
 import {
   DetalleDeEvidenciaVisualRequeridaSchema,
   EvidenciaVisualOtorgadaResponseSchema,
@@ -137,6 +140,15 @@ import {
   ListaDePlantillasNutricionalesResponseSchema,
   NuevaVersionDePlantillaNutricionalRequestSchema,
   PlantillaNutricionalResponseSchema,
+  AbrirPreparacionDePlantillaRequestSchema,
+  CrearPreparacionDePlantillaRequestSchema,
+  DescarteDePreparacionResponseSchema,
+  GuardarPreparacionDePlantillaRequestSchema,
+  ListaDePreparacionesDePlantillaResponseSchema,
+  PreparacionDePlantillaResponseSchema,
+  RevisionDePreparacionResponseSchema,
+  VersionDeLaPreparacionRequestSchema,
+  VersionesDePlantillaDeEntrenamientoResponseSchema,
 } from './contratos-plantillas';
 import {
   EditarHabitualRequestSchema,
@@ -311,6 +323,32 @@ import {
   ResumenesParaElProfesionalResponseSchema,
 } from './contratos-resumenes-compartidos';
 import {
+  AutorizarHistoriaAnteriorRequestSchema,
+  HistoriaAnteriorDeUnAreaResponseSchema,
+  HistoriaAnteriorResponseSchema,
+  MiHistoriaAnteriorResponseSchema,
+  RetirarHistoriaAnteriorRequestSchema,
+} from './contratos-historia-anterior';
+import {
+  AlimentoParaRevisarResponseSchema,
+  AlimentoPropioResponseSchema,
+  AlimentosConsultadosResponseSchema,
+  BuscarVerificadosRequestSchema,
+  ConsultarAlimentosParaRevisarRequestSchema,
+  ConsultarAlimentosRequestSchema,
+  CorregirAlimentoRequestSchema,
+  DecidirSobreAlimentoRequestSchema,
+  ListaDeAlimentosParaRevisarResponseSchema,
+  ListaDeAlimentosPropiosResponseSchema,
+  ListaDeVerificadosResponseSchema,
+  RetirarAlimentoRequestSchema,
+  AlimentoDelCanonResponseSchema,
+  ConsultarParecidosRequestSchema,
+  ListaDeParecidosResponseSchema,
+  SumarAlCanonRequestSchema,
+} from './contratos-alimentos';
+import { CompartirLoElegidoRequestSchema, DejarDeCompartirUnaCosaRequestSchema, LoElegidoCompartidoResponseSchema, LoQueSePuedeCompartirResponseSchema, UnaCosaRetiradaResponseSchema } from './contratos-compartir';
+import {
   AsociarImagenDeEjercicioRequestSchema,
   EjercicioPropioResponseSchema,
   ListaDeEjerciciosPropiosResponseSchema,
@@ -343,6 +381,7 @@ import {
   ReemplazarEnfoqueRequestSchema,
 } from './contratos-enfoques';
 import { EvidenciaDeRevisionResponseSchema } from './contratos-evidencia-de-revision';
+import { CuerpoDelContextoResponseSchema, RespuestasDelContextoResponseSchema } from './contratos-contexto-de-la-persona';
 import { AccesoAMedioResponseSchema, IntencionDeSubidaRequestSchema, IntencionDeSubidaResponseSchema, LIMITES_DE_MEDIO, MedioResponseSchema, TipoDeImagenSchema } from './contratos-medios';
 import {
   AsociarImagenDeRecetaRequestSchema,
@@ -827,7 +866,8 @@ const DEFINIDAS: readonly Operacion[] = [
     id: 'API-CON-04',
     metodo: 'post',
     ruta: '/me/consents/{consentId}/revoke',
-    resumen: 'Revocar B2. Idempotente por semántica (sin Idempotency-Key). Corta el acceso futuro; no finaliza el vínculo.',
+    resumen:
+      'Revocar B2. Idempotente por semántica (sin Idempotency-Key). Corta el acceso futuro; no finaliza el vínculo. En la misma transacción retira la autorización de la historia anterior de ese componente, si estaba dada (DL-175, HA-T14): otorgar el B2 de nuevo no la devuelve.',
     autenticacion: 'SESSION',
     idempotencia: false,
     exitos: [{ status: 200, schema: ConsentimientoRevocadoResponseSchema }],
@@ -998,13 +1038,14 @@ const DEFINIDAS: readonly Operacion[] = [
     id: 'API-NUT-01',
     metodo: 'post',
     ruta: '/advisees/{adviseeId}/nutrition/evaluations',
-    resumen: 'Registrar una evaluación nutricional. Cada dato declara su fuente (informado, observado o calculado). No sobrescribe evaluaciones anteriores.',
+    resumen:
+      'Registrar una evaluación nutricional. Cada dato declara su fuente (informado, observado o calculado). No sobrescribe evaluaciones anteriores. DL-179: puede citar hasta 20 respuestas de formulario (formResponseReferences, opcional) de la persona, a Solicitudes propias de alcance NUTRICION, en su versión vigente; una cita inválida es el 422 neutral (FORM_RESPONSE_REFERENCE_INVALID) y una versión que cambió desde que se vio, 409 VERSION_CONFLICT (como DL-102 en Entrenamiento).',
     autenticacion: 'SESSION',
     idempotencia: true,
     request: CrearEvaluacionRequestSchema,
     exitos: [{ status: 201, schema: CrearEvaluacionResponseSchema }],
-    errores: { ...ESCRITURA_REVELABLE, 409: ['IDEMPOTENCY_KEY_REUSED'], 422: ['NUTRITION_EVALUATION_INVALID'] },
-    fuente: '09v9:325-377 · DEUDA_LEGAJO DL-048, DL-055',
+    errores: { ...ESCRITURA_REVELABLE, 409: ['IDEMPOTENCY_KEY_REUSED', 'VERSION_CONFLICT'], 422: ['NUTRITION_EVALUATION_INVALID'] },
+    fuente: '09v9:325-377 · DEUDA_LEGAJO DL-048, DL-055 · DL-179 (las citas, aditivas)',
   },
   {
     id: 'API-NUT-02',
@@ -1247,13 +1288,131 @@ const DEFINIDAS: readonly Operacion[] = [
     id: 'API-INT-NUT-01',
     metodo: 'post',
     ruta: '/nutrition/catalog-items',
-    resumen: 'Cargar manualmente un alimento al catálogo propio del profesional (fallback sin proveedor, RF-027).',
+    resumen:
+      'Cargar manualmente un alimento al catálogo propio del profesional (fallback sin proveedor, RF-027). Desde DL-180: group, opcional, su grupo (el ícono). Lo cargado a mano lo ve y lo cita solo quien lo cargó (segundo tramo, NUA-D14; decisión de Dirección del 2026-11-19); Administración lo ve con su nombre de profesional (API-ALI-05 y 08).',
     autenticacion: 'SESSION',
     idempotencia: true,
     request: CrearElementoDeCatalogoRequestSchema,
     exitos: [{ status: 201, schema: ElementoDeCatalogoResponseSchema }],
     errores: { ...SESION, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 403: ['ACTION_FORBIDDEN'], 409: ['IDEMPOTENCY_KEY_REUSED'] },
     fuente: '09v12:111-160 · RF-027',
+  },
+  // ─── WP-NUTRICION-ALIMENTOS · ALI: los alimentos cargados a mano y su revisión (DL-180) ─────────────────────────────
+  {
+    id: 'API-ALI-01',
+    metodo: 'get',
+    ruta: '/nutrition/catalog-items/mine',
+    resumen:
+      'Los alimentos que el profesional cargó a mano, también los retirados (available: false), el corregido más recientemente primero, cada uno en su versión vigente: el token para corregirlo o retirarlo (version, «v» y el número de versiones), su grupo, y lo que decidió Administración sobre la versión vigente (review). Solo profesionales de Nutrición.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    query: [LIMIT, CURSOR],
+    exitos: [{ status: 200, schema: ListaDeAlimentosPropiosResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST', 'INVALID_CURSOR'], 403: ['ACTION_FORBIDDEN'] },
+    fuente: 'WP-NUTRICION-ALIMENTOS NUA-01 y NUA-02 (aprobado por Dirección el 2026-11-16) · REG-06-99 a 101 · ID propio de BE (familia ALI) · DEUDA_LEGAJO DL-180',
+  },
+  {
+    id: 'API-ALI-02',
+    metodo: 'patch',
+    ruta: '/nutrition/catalog-items/{catalogItemId}',
+    resumen:
+      'Corregir un alimento propio cargado a mano: si cambian el nombre o la composición, nace una versión nueva e inmutable, sucesora de la vigente. Las instantáneas de los planes activados, las recetas (que citan su versión) y los registros conservan la versión que citaban; un borrador usa la vigente. group, opcional, cambia el grupo (su ícono) sin emitir una versión. Contra la versión que se vio (expectedVersion): si cambió, 409 VERSION_CONFLICT; uno retirado, 422 INVALID_STATE_TRANSITION. Uno ajeno, sembrado, importado o inexistente: el mismo 404.',
+    autenticacion: 'SESSION',
+    idempotencia: true,
+    request: CorregirAlimentoRequestSchema,
+    exitos: [{ status: 200, schema: AlimentoPropioResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 403: ['ACTION_FORBIDDEN'], 404: ['RESOURCE_NOT_FOUND'], 409: ['IDEMPOTENCY_KEY_REUSED', 'VERSION_CONFLICT'], 422: ['INVALID_STATE_TRANSITION'] },
+    fuente: 'WP-NUTRICION-ALIMENTOS NUA-01 · REG-06-99 a 101 · DL-120 (el patrón de las recetas) · ID propio de BE (familia ALI) · DEUDA_LEGAJO DL-180',
+  },
+  {
+    id: 'API-ALI-03',
+    metodo: 'post',
+    ruta: '/nutrition/catalog-items/{catalogItemId}/retirement',
+    resumen:
+      'Retirar un alimento propio cargado a mano: una versión RETIRADO con el mismo nombre y la misma composición. Deja de aparecer en el buscador y no se puede sumar a nada nuevo (validar y activar un plan que lo cita lo señalan con CATALOG_REFERENCE_INVALID), pero no se borra: los planes, las recetas y los registros que lo citan lo siguen mostrando, con la marca «retirado», y un borrador que ya lo cita se sigue guardando. Retirar uno ya retirado responde 200 sin cambiar nada. Contra la versión que se vio (expectedVersion): si cambió, 409 VERSION_CONFLICT. Uno ajeno, sembrado, importado o inexistente: el mismo 404.',
+    autenticacion: 'SESSION',
+    idempotencia: true,
+    request: RetirarAlimentoRequestSchema,
+    exitos: [{ status: 200, schema: AlimentoPropioResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 403: ['ACTION_FORBIDDEN'], 404: ['RESOURCE_NOT_FOUND'], 409: ['IDEMPOTENCY_KEY_REUSED', 'VERSION_CONFLICT'] },
+    fuente: 'WP-NUTRICION-ALIMENTOS NUA-02 · REG-06-99 (la disponibilidad) · ID propio de BE (familia ALI) · DEUDA_LEGAJO DL-180',
+  },
+  {
+    id: 'API-ALI-04',
+    metodo: 'post',
+    ruta: '/nutrition/catalog-items/lookup',
+    resumen:
+      'Los alimentos que el profesional ve, por su identidad (de 1 a 200, en el cuerpo), en su versión vigente y en el orden pedido: como una fila del buscador (con su grupo, el nivel de su origen, la certificación y el verificado equivalente) y si se retiró (retired). También los retirados: el editor del plan los marca donde ya se citan. Los que no ve no vuelven, sin revelar que existen. Es una lectura: 200, sin Idempotency-Key. Solo profesionales de Nutrición.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    request: ConsultarAlimentosRequestSchema,
+    exitos: [{ status: 200, schema: AlimentosConsultadosResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 403: ['ACTION_FORBIDDEN'] },
+    fuente: 'WP-NUTRICION-ALIMENTOS NUA-02 a NUA-05 · ID propio de BE (familia ALI) · DEUDA_LEGAJO DL-180',
+  },
+  {
+    id: 'API-ALI-05',
+    metodo: 'post',
+    ruta: '/admin/foods/query',
+    resumen:
+      'Los alimentos que los profesionales cargaron a mano, para que Administración los revise: el nombre, los valores cada 100 g, el grupo, lo decidido sobre la versión vigente y, desde el segundo tramo (NUA-D15), quién lo cargó, por su nombre de profesional (loadedBy); nunca a quién se le indicó ni sus planes. Filtrados por texto (q) y por estado (PENDING, CERTIFIED o EQUIVALENT); sin estado, los que esperan revisión primero. Los retirados no se ofrecen. La consulta va en el cuerpo y queda auditada.',
+    autenticacion: 'SESSION_MFA',
+    idempotencia: false,
+    request: ConsultarAlimentosParaRevisarRequestSchema,
+    exitos: [{ status: 200, schema: ListaDeAlimentosParaRevisarResponseSchema }],
+    errores: { ...{ 401: ['AUTHENTICATION_REQUIRED', 'SESSION_INVALID', 'SESSION_EXPIRED', 'SESSION_REVOKED'], 403: ['ACTION_FORBIDDEN', 'MFA_REQUIRED'], 503: ['ADMINISTRATION_NOT_AVAILABLE'] }, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD', 'INVALID_CURSOR'] },
+    fuente: 'WP-NUTRICION-ALIMENTOS NUA-04 · WP-ADMINISTRACION (DL-155) · ID propio de BE (familia ALI) · DEUDA_LEGAJO DL-180',
+  },
+  {
+    id: 'API-ALI-06',
+    metodo: 'post',
+    ruta: '/admin/foods/{catalogItemId}/decisions',
+    resumen:
+      'Lo que decide Administración sobre un alimento cargado a mano, contra la versión que vio (expectedVersion; si su autor lo corrigió mientras tanto, 409 VERSION_CONFLICT): CERTIFY, con la fuente citada (source, de 1 a 500; sin ella, 422 VALIDATION_FAILED con SOURCE_REQUIRED), que lo vuelve «Verificado» en el buscador para esa versión (si su autor lo corrige, la nueva vuelve a esperar revisión); EQUIVALENT, con un alimento de la tabla oficial disponible (equivalentCatalogItemId; si no lo es, EQUIVALENT_NOT_VERIFIED), que el buscador sugiere en su lugar sin tocar los planes que ya lo citan; o CLEAR, que quita lo decidido (sin nada decidido, 422 INVALID_STATE_TRANSITION). Cada decisión es una fila nueva: la historia no se pisa. Uno que no existe o que no es una carga a mano: el mismo 404. El equivalente es de la tabla oficial o del canon. La auditoría no guarda los textos. Devuelve el alimento como lo lista API-ALI-05.',
+    autenticacion: 'SESSION_MFA',
+    idempotencia: true,
+    request: DecidirSobreAlimentoRequestSchema,
+    exitos: [{ status: 200, schema: AlimentoParaRevisarResponseSchema }],
+    errores: { ...{ 401: ['AUTHENTICATION_REQUIRED', 'SESSION_INVALID', 'SESSION_EXPIRED', 'SESSION_REVOKED'], 403: ['ACTION_FORBIDDEN', 'MFA_REQUIRED'], 503: ['ADMINISTRATION_NOT_AVAILABLE'] }, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 404: ['RESOURCE_NOT_FOUND'], 409: ['VERSION_CONFLICT', 'IDEMPOTENCY_KEY_REUSED'], 422: ['VALIDATION_FAILED', 'INVALID_STATE_TRANSITION'] },
+    fuente: 'WP-NUTRICION-ALIMENTOS NUA-04 · WP-ADMINISTRACION (DL-155) · ID propio de BE (familia ALI) · DEUDA_LEGAJO DL-180',
+  },
+  {
+    id: 'API-ALI-07',
+    metodo: 'post',
+    ruta: '/admin/foods/verified/query',
+    resumen: `Los alimentos verificados (la tabla oficial, USDA FoodData Central · SR Legacy, y lo que Administración sumó al canon) disponibles que coinciden con lo escrito (q, en el cuerpo), para elegir el equivalente de uno cargado a mano. ${COMO_BUSCA_EL_CATALOGO} Queda auditada.`,
+    autenticacion: 'SESSION_MFA',
+    idempotencia: false,
+    request: BuscarVerificadosRequestSchema,
+    exitos: [{ status: 200, schema: ListaDeVerificadosResponseSchema }],
+    errores: { ...{ 401: ['AUTHENTICATION_REQUIRED', 'SESSION_INVALID', 'SESSION_EXPIRED', 'SESSION_REVOKED'], 403: ['ACTION_FORBIDDEN', 'MFA_REQUIRED'], 503: ['ADMINISTRATION_NOT_AVAILABLE'] }, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'] },
+    fuente: 'WP-NUTRICION-ALIMENTOS NUA-04 · ID propio de BE (familia ALI) · DEUDA_LEGAJO DL-180',
+  },
+  {
+    id: 'API-ALI-08',
+    metodo: 'post',
+    ruta: '/admin/foods/similar/query',
+    resumen:
+      'Las cargas a mano agrupadas por nombre parecido (sin tildes, sin mayúsculas, sin espacios de más y sin plurales simples), cada grupo con los nombres como se cargaron, cuántos profesionales distintos cargaron algo así y sus cargas, cada una con quién la cargó (su nombre de profesional; nunca a quién se le indicó). Lo que más profesionales cargaron va primero: es lo que conviene sumar al canon. Filtrados por texto (q) y por un mínimo de profesionales (minProfessionals). Los retirados no se ofrecen. La consulta va en el cuerpo y queda auditada.',
+    autenticacion: 'SESSION_MFA',
+    idempotencia: false,
+    request: ConsultarParecidosRequestSchema,
+    exitos: [{ status: 200, schema: ListaDeParecidosResponseSchema }],
+    errores: { ...{ 401: ['AUTHENTICATION_REQUIRED', 'SESSION_INVALID', 'SESSION_EXPIRED', 'SESSION_REVOKED'], 403: ['ACTION_FORBIDDEN', 'MFA_REQUIRED'], 503: ['ADMINISTRATION_NOT_AVAILABLE'] }, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'] },
+    fuente: 'WP-NUTRICION-ALIMENTOS, segundo tramo (NUA-D15; decisión de Dirección del 2026-11-19) · WP-ADMINISTRACION (DL-155) · ID propio de BE (familia ALI) · DEUDA_LEGAJO DL-180',
+  },
+  {
+    id: 'API-ALI-09',
+    metodo: 'post',
+    ruta: '/admin/foods/canon',
+    resumen:
+      'Sumar al canon: un alimento verificado de BE, que ven todos los profesionales de Nutrición («Verificado» en el buscador, con su fuente), con el nombre, la composición cada 100 g, el grupo (opcional) y la fuente citada (source, obligatoria, de 1 a 500). Puede partir de los valores de una carga a mano (fromCatalogItemId) y marcar cargas a mano como sus equivalentes (equivalentCatalogItemIds, hasta 50): el buscador de cada autor le sugiere el verificado justo antes del suyo, y lo suyo no cambia en sus planes ni en sus registros. Una carga que no existe, que no es a mano o que está retirada: 422 VALIDATION_FAILED con su ruta. Queda auditada, sin los textos.',
+    autenticacion: 'SESSION_MFA',
+    idempotencia: true,
+    request: SumarAlCanonRequestSchema,
+    exitos: [{ status: 201, schema: AlimentoDelCanonResponseSchema }],
+    errores: { ...{ 401: ['AUTHENTICATION_REQUIRED', 'SESSION_INVALID', 'SESSION_EXPIRED', 'SESSION_REVOKED'], 403: ['ACTION_FORBIDDEN', 'MFA_REQUIRED'], 503: ['ADMINISTRATION_NOT_AVAILABLE'] }, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 409: ['IDEMPOTENCY_KEY_REUSED'], 422: ['VALIDATION_FAILED'] },
+    fuente: 'WP-NUTRICION-ALIMENTOS, segundo tramo (NUA-D16; decisión de Dirección del 2026-11-19) · WP-ADMINISTRACION (DL-155) · ID propio de BE (familia ALI) · DEUDA_LEGAJO DL-180',
   },
   {
     id: 'API-INT-NUT-02',
@@ -2046,6 +2205,136 @@ const DEFINIDAS: readonly Operacion[] = [
     exitos: [{ status: 200, schema: PlantillaDeEntrenamientoResponseSchema }],
     errores: { ...SESION, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 403: ['ACTION_FORBIDDEN'], 404: ['RESOURCE_NOT_FOUND'], 409: ['VERSION_CONFLICT', 'TEMPLATE_NAME_TAKEN'] },
     fuente: 'docs/propuestas/PLANTILLAS-DEL-PROFESIONAL_ficha.md · DEUDA_LEGAJO DL-108',
+  },
+  // ─── PLT (DL-182) · la preparación de una plantilla de entrenamiento: crearla y editarla sin una persona ──────────
+  {
+    id: 'API-TPL-06',
+    metodo: 'post',
+    ruta: '/training/plan-template-drafts',
+    resumen:
+      'Empezar una plantilla nueva, sin persona: una preparación en blanco (una fase, sin sesiones) o, con fromTemplateVersionId, la copia de una versión propia (que puede estar archivada). La preparación es privada y no tiene plantilla hasta guardarse (API-TPL-12). Solo un profesional de Entrenamiento verificado y habilitado; una versión ajena o inexistente es 404, sin distinguir.',
+    autenticacion: 'SESSION',
+    idempotencia: true,
+    request: CrearPreparacionDePlantillaRequestSchema,
+    exitos: [{ status: 201, schema: PreparacionDePlantillaResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 403: ['ACTION_FORBIDDEN'], 404: ['RESOURCE_NOT_FOUND'], 409: ['IDEMPOTENCY_KEY_REUSED'] },
+    fuente: 'docs/paquetes/WP-PLANTILLAS-DE-ENTRENAMIENTO.md · DEUDA_LEGAJO DL-182 · DL-108',
+  },
+  {
+    id: 'API-TPL-07',
+    metodo: 'put',
+    ruta: '/training/plan-templates/{templateId}/draft',
+    resumen:
+      'Editar una plantilla propia: abre su preparación desde la versión vigente (201) o devuelve la que ya tiene (200): una por plantilla, y tocar «Editar» dos veces da la misma. Una archivada no se edita: 422 TEMPLATE_ARCHIVED (se reactiva antes). Ajena o inexistente: 404, sin distinguir.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    request: AbrirPreparacionDePlantillaRequestSchema,
+    requestOpcional: true,
+    exitos: [
+      { status: 201, schema: PreparacionDePlantillaResponseSchema },
+      { status: 200, schema: PreparacionDePlantillaResponseSchema },
+    ],
+    errores: { ...SESION, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 403: ['ACTION_FORBIDDEN'], 404: ['RESOURCE_NOT_FOUND'], 422: ['TEMPLATE_ARCHIVED'] },
+    fuente: 'docs/paquetes/WP-PLANTILLAS-DE-ENTRENAMIENTO.md · DEUDA_LEGAJO DL-182 · DL-108',
+  },
+  {
+    id: 'API-TPL-08',
+    metodo: 'get',
+    ruta: '/training/plan-template-drafts',
+    resumen: 'Mis plantillas en preparación (solo las propias): las nuevas, todavía sin plantilla, y los cambios de una existente, con la versión de la que partieron. Sin la estructura.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    query: [LIMIT, CURSOR],
+    exitos: [{ status: 200, schema: ListaDePreparacionesDePlantillaResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST', 'INVALID_CURSOR'], 403: ['ACTION_FORBIDDEN'] },
+    fuente: 'docs/paquetes/WP-PLANTILLAS-DE-ENTRENAMIENTO.md · DEUDA_LEGAJO DL-182 · DL-108',
+  },
+  {
+    id: 'API-TPL-09',
+    metodo: 'get',
+    ruta: '/training/plan-template-drafts/{draftId}',
+    resumen: 'Una preparación propia, con su estructura y el nombre vigente, la disponibilidad y la imagen de cada ejercicio. Ajena, inexistente, ya guardada o descartada: 404, sin distinguir.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    exitos: [{ status: 200, schema: PreparacionDePlantillaResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST'], 403: ['ACTION_FORBIDDEN'], 404: ['RESOURCE_NOT_FOUND'] },
+    fuente: 'docs/paquetes/WP-PLANTILLAS-DE-ENTRENAMIENTO.md · DEUDA_LEGAJO DL-182 · DL-108',
+  },
+  {
+    id: 'API-TPL-10',
+    metodo: 'patch',
+    ruta: '/training/plan-template-drafts/{draftId}',
+    resumen:
+      'El autoguardado de una preparación: reemplaza la estructura entera, con expectedVersion (409 si cambió en otra pestaña), y la valida como el borrador de un plan (forma, criterios de intensidad y ejercicios que este profesional puede citar; uno que dejó de estar disponible se conserva y lo dice la revisión). El nombre y la descripción, solo en una plantilla nueva (en una existente, 422 VALIDATION_FAILED: se cambian con API-TPL-05). No cambia ninguna versión de la plantilla.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    request: GuardarPreparacionDePlantillaRequestSchema,
+    exitos: [{ status: 200, schema: PreparacionDePlantillaResponseSchema }],
+    errores: {
+      ...SESION,
+      400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'],
+      403: ['ACTION_FORBIDDEN'],
+      404: ['RESOURCE_NOT_FOUND'],
+      409: ['VERSION_CONFLICT'],
+      422: ['VALIDATION_FAILED', 'TRAINING_PLAN_STRUCTURE_INVALID', 'INTENSITY_CRITERION_INVALID', 'EXERCISE_REFERENCE_INVALID'],
+    },
+    fuente: 'docs/paquetes/WP-PLANTILLAS-DE-ENTRENAMIENTO.md · DEUDA_LEGAJO DL-182 · DL-108',
+  },
+  {
+    id: 'API-TPL-11',
+    metodo: 'post',
+    ruta: '/training/plan-template-drafts/{draftId}/review',
+    resumen:
+      'Revisar una preparación antes de guardarla. 200 aunque valid sea falso. issues impide guardar (el nombre de una plantilla nueva, el nombre tomado, ninguna sesión, un ejercicio que ya no está disponible, una plantilla archivada); toComplete queda para completar al adaptarla a una persona y no impide nada. Sin las reglas que dependen de una persona: ni objetivo ni días.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    request: VersionDeLaPreparacionRequestSchema,
+    exitos: [{ status: 200, schema: RevisionDePreparacionResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 403: ['ACTION_FORBIDDEN'], 404: ['RESOURCE_NOT_FOUND'], 409: ['VERSION_CONFLICT'] },
+    fuente: 'docs/paquetes/WP-PLANTILLAS-DE-ENTRENAMIENTO.md · DEUDA_LEGAJO DL-182 · DL-108',
+  },
+  {
+    id: 'API-TPL-12',
+    metodo: 'post',
+    ruta: '/training/plan-template-drafts/{draftId}/publish',
+    resumen:
+      'Guardar la preparación: en una plantilla nueva, crea la plantilla con su versión 1 («Guardar plantilla»); en una existente, crea la versión siguiente («Guardar nueva versión»). Las versiones anteriores y los planes ya creados no cambian. Exige la versión de la preparación y que la plantilla siga en la versión de la que partió; sin cargas sugeridas salvo el interruptor (D-2 de DL-108). Lo que impide guardar es 422 OPERATION_NOT_READY con su lugar (lo mismo que dice API-TPL-11). Guardada, la preparación deja de existir.',
+    autenticacion: 'SESSION',
+    idempotencia: true,
+    request: VersionDeLaPreparacionRequestSchema,
+    exitos: [{ status: 201, schema: PlantillaDeEntrenamientoResponseSchema }],
+    errores: {
+      ...SESION,
+      400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'],
+      403: ['ACTION_FORBIDDEN'],
+      404: ['RESOURCE_NOT_FOUND'],
+      409: ['IDEMPOTENCY_KEY_REUSED', 'VERSION_CONFLICT', 'TEMPLATE_NAME_TAKEN'],
+      422: ['OPERATION_NOT_READY', 'TEMPLATE_ARCHIVED'],
+    },
+    fuente: 'docs/paquetes/WP-PLANTILLAS-DE-ENTRENAMIENTO.md · DEUDA_LEGAJO DL-182 · DL-108',
+  },
+  {
+    id: 'API-TPL-13',
+    metodo: 'post',
+    ruta: '/training/plan-template-drafts/{draftId}/discard',
+    resumen: 'Descartar una preparación: lo preparado se pierde y las versiones de la plantilla quedan como estaban. Exige la versión de la preparación.',
+    autenticacion: 'SESSION',
+    idempotencia: true,
+    request: VersionDeLaPreparacionRequestSchema,
+    exitos: [{ status: 200, schema: DescarteDePreparacionResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 403: ['ACTION_FORBIDDEN'], 404: ['RESOURCE_NOT_FOUND'], 409: ['IDEMPOTENCY_KEY_REUSED', 'VERSION_CONFLICT'] },
+    fuente: 'docs/paquetes/WP-PLANTILLAS-DE-ENTRENAMIENTO.md · DEUDA_LEGAJO DL-182 · DL-108',
+  },
+  {
+    id: 'API-TPL-14',
+    metodo: 'get',
+    ruta: '/training/plan-templates/{templateId}/versions',
+    resumen: 'Las versiones de una plantilla propia, de la más nueva a la primera, con su fecha, sus sesiones, si conserva las cargas y cuántos planes (en preparación o activados) salieron de cada una, sin nombrar a nadie. Ajena o inexistente: 404.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    exitos: [{ status: 200, schema: VersionesDePlantillaDeEntrenamientoResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST'], 403: ['ACTION_FORBIDDEN'], 404: ['RESOURCE_NOT_FOUND'] },
+    fuente: 'docs/paquetes/WP-PLANTILLAS-DE-ENTRENAMIENTO.md · DEUDA_LEGAJO DL-182 · DL-108',
   },
   // ─── PF-09 bis · «Mis habituales» del profesional (DL-109, decidido el 2026-09-30) ──────────────────────
   {
@@ -3061,8 +3350,9 @@ const DEFINIDAS: readonly Operacion[] = [
     fuente: 'DL-165 D-17 (nueva, 2026-11-06) y D-25 · WP-FORMULARIOS-RONDA-2 §8 (FR-14) · 08 §12.2, C-12 · RNF-PRI-002',
   },
   // ─── WP-TABLERO-ALTA-GAMA · RES: lo que la persona comparte de otras áreas (DL-163 D-13, ampliada por Dirección el
-  // 2026-11-07; TB-52 a TB-56). Familia propia de BE. Ninguna APK instalada la lee (DL-152). API-RES-05 (las series de un
-  // resumen, TB-29) no está en este tramo. ─────────────────────────────────────────────────────────────────────────────
+  // 2026-11-07; TB-52 a TB-56). Familia propia de BE. Desde la 0.29.0-candidata.1, la APK lee API-RES-01 (PG-12), congelada
+  // con ella (DL-152); las demás no las lee ninguna APK. API-RES-05 (las series de un resumen, TB-29) no está en este
+  // tramo. ──────────────────────────────────────────────────────────────────────────────────────────────────────────────
   {
     id: 'API-RES-01',
     metodo: 'get',
@@ -3191,6 +3481,117 @@ const DEFINIDAS: readonly Operacion[] = [
         'details.issues trae un issue por permiso que no se puede dar: SUMMARY_RECIPIENT_NOT_AVAILABLE (el profesional no la acompaña hoy: sin vínculo o con el vínculo terminado), SUMMARY_AREA_NOT_SHAREABLE (nadie más lleva hoy esa área, o la lleva él) o SUMMARY_PLAN_NOT_ALLOWED (la matriz del plan completo no tiene la fila), con path (grants[i]; en API-RES-10, accessRequestId).',
     },
     fuente: 'DL-163 D-13, ampliada · TA-95 · WP-TABLERO-ALTA-GAMA §4.3 (TB-56) · el mecanismo de DL-165 D-25 · 08 §12.2, C-12 · RNF-PRI-002',
+  },
+  // ─── WP-HISTORIA-ANTERIOR · HIA: la historia anterior de un área, para el profesional nuevo (DL-175; 08 §14.1, «Cambio de
+  // profesional»; REG-06-55; RF-025). Familia propia de BE: el 09 no la tiene. La APK la empieza a leer con su próxima
+  // candidata, y se congela con ella (DL-152). ─────────────────────────────────────────────────────────────────────────
+  {
+    id: 'API-HIA-01',
+    metodo: 'get',
+    ruta: '/me/previous-history',
+    resumen:
+      'Lo que la persona decidió de su historia anterior: por cada profesional que la acompaña hoy en un área (vínculo aceptado o en pausa) y por cada vínculo terminado con el que la miraron, si antes hubo otro profesional en esa área (sin decir si dejó datos), qué vería (las partes de esa área), la última versión de su autorización (GRANTED o WITHDRAWN, con desde cuándo; null si nunca decidió), si hoy ese profesional tiene acceso a esa área (accessInEffect: el PDP de ese componente, sin registrar; compartida y sin acceso, no la ve) y la última vez que la miró con ese componente; el texto que se acepta al autorizar (una propuesta, PENDING_APPROVAL) y las últimas 50 lecturas, con quién, qué área y cuándo (08 §19.7). No pide el A3: retirar tiene que poder hacerse siempre.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    exitos: [{ status: 200, schema: MiHistoriaAnteriorResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST'] },
+    fuente: 'DL-175 · WP-HISTORIA-ANTERIOR (HA-T01, HA-T06, HA-T08, HA-T15) · 08 §14.1 y §19.7 · REG-06-55 · RF-025',
+  },
+  {
+    id: 'API-HIA-02',
+    metodo: 'put',
+    ruta: '/me/previous-history/{relationshipId}',
+    resumen:
+      'La persona autoriza al profesional de ese componente de vínculo (aceptado o en pausa) a ver su historia anterior de esa área, con la última versión que vio (null si nunca decidió; si no es la última, 409 VERSION_CONFLICT) y el texto mostrado, que tiene que ser el vigente (si no, 409 CONSENT_VERSION_STALE). Pide el A3 (403). Si ya está autorizada, responde lo mismo sin agregar otra versión. Un componente ajeno, terminado o inexistente, 404.',
+    autenticacion: 'SESSION',
+    idempotencia: true,
+    request: AutorizarHistoriaAnteriorRequestSchema,
+    exitos: [{ status: 200, schema: HistoriaAnteriorDeUnAreaResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 403: ['ACTION_FORBIDDEN'], 404: ['RESOURCE_NOT_FOUND'], 409: ['IDEMPOTENCY_KEY_REUSED', 'VERSION_CONFLICT', 'CONSENT_VERSION_STALE'] },
+    fuente: 'DL-175 · WP-HISTORIA-ANTERIOR (HA-T01, HA-T04, HA-T05) · 08 §12.2 y §14.1 · REG-06-55',
+  },
+  {
+    id: 'API-HIA-03',
+    metodo: 'post',
+    ruta: '/me/previous-history/{relationshipId}/withdrawal',
+    resumen:
+      'La persona deja de compartir su historia anterior con ese profesional, desde ese momento (RNF-PRI-002): una versión nueva WITHDRAWN, con la vigente que vio (si no es la vigente, 409 VERSION_CONFLICT). No pide el A3 ni borra nada; vale también con el vínculo terminado. Un componente ajeno o inexistente, 404. Revocar el B2 de ese componente (API-CON-04) y cerrar la cuenta también la retiran.',
+    autenticacion: 'SESSION',
+    idempotencia: true,
+    request: RetirarHistoriaAnteriorRequestSchema,
+    exitos: [{ status: 200, schema: HistoriaAnteriorDeUnAreaResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 404: ['RESOURCE_NOT_FOUND'], 409: ['IDEMPOTENCY_KEY_REUSED', 'VERSION_CONFLICT'] },
+    fuente: 'DL-175 · WP-HISTORIA-ANTERIOR (HA-T04) · RNF-PRI-002 · 08 §13',
+  },
+  {
+    id: 'API-HIA-04',
+    metodo: 'get',
+    ruta: '/advisees/{adviseeId}/previous-history/{area}',
+    resumen:
+      'Para el profesional: la historia anterior de un área de la persona, en solo lectura, por tramos de fechas (sin fechas, los últimos 90 días de esa historia; hasta 366). Es lo de otros profesionales en esa misma área, de antes del comienzo de su acompañamiento y como estaba en ese momento (las correcciones, anulaciones, rectificaciones y recálculos posteriores no entran): las versiones ACTIVADAS de sus planes con su contenido como lo vio la persona (nunca un borrador), lo que la persona registró bajo esos planes (sin fotos), las tomas registradas con su protocolo, el origen de cada medición y lo calculado con su método para el soporte antropométrico, y las decisiones de las revisiones (resultado, fundamento y próxima acción; ni la interpretación ni las evidencias). Cada cosa va marcada como de otro profesional (author.kind OTHER_PROFESSIONAL, con su orden) y sin nombrarlo. Nunca las notas propias, otra área ni lo propio de quien lee. Autoriza con el PDP de esa área (vínculo aceptado, B2 vigente, cuentas y el A3 de la persona) y la autorización vigente de la persona para ese componente: si falta cualquiera, el 404 de lo inexistente. Cada lectura queda registrada y la persona la ve en API-HIA-01.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    query: [
+      { nombre: 'periodStart', descripcion: 'Primer día del tramo (fecha civil, inclusive). Va con periodEnd.', schema: { type: 'string', format: 'date' } },
+      { nombre: 'periodEnd', descripcion: 'Último día del tramo (fecha civil, inclusive), hasta 366 días después del primero. Va con periodStart.', schema: { type: 'string', format: 'date' } },
+    ],
+    exitos: [{ status: 200, schema: HistoriaAnteriorResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST'], 404: ['RESOURCE_NOT_FOUND'] },
+    fuente: 'DL-175 · WP-HISTORIA-ANTERIOR (HA-T02, HA-T03, HA-T07) · 08 §14.1 y §19.7 · REG-06-55 · RF-025 · PG-16',
+  },
+  // ─── WP-COMPARTIR · CMP: compartir casi por omisión, con una sola pantalla de consentimiento al aceptar el vínculo (DL-176;
+  // decisión de Dirección del 2026-11-15). Familia propia de BE: el 09 no la tiene. La APK la empieza a leer con su próxima
+  // candidata, y se congela con ella (DL-152). ─────────────────────────────────────────────────────────────────────────
+  {
+    id: 'API-CMP-01',
+    metodo: 'get',
+    ruta: '/me/sharing-proposal',
+    resumen:
+      'Lo que la persona puede compartir y lo que ya comparte, cada cosa con su clave, si está dada (y desde cuándo), si se puede dar ahora, si la pantalla única la trae marcada y el texto que se acepta: el tratamiento de sus datos de salud (A3), la autorización de acceso a cada área (B2, con el aviso del perfil del profesional), el resumen y el plan vigente de cada área para cada uno de sus otros profesionales (el resumen solo, en Antropometría), la historia anterior de un área (solo si antes hubo otro profesional en ella) y los hábitos (si ya los comparte o tiene hábitos). Lo que nunca decidió va marcado; lo que retiró antes, no. Con relationshipId, solo lo que toca a ese componente de vínculo (la pantalla al aceptarlo): lo de las otras áreas para ese profesional y lo de su área para los demás; uno terminado no tiene nada para dar. La versión (version) va en API-CMP-02. Los textos son los vigentes, con su hash; algunos son propuestas (PENDING_APPROVAL). No pide el A3: retirar tiene que poder hacerse siempre. Un componente ajeno o inexistente, 404.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    query: [{ nombre: 'relationshipId', descripcion: 'El componente de vínculo de la pantalla al aceptarlo (o al revisarlo desde el vínculo). Sin él, todo.', schema: { type: 'string', format: 'uuid' } }],
+    exitos: [{ status: 200, schema: LoQueSePuedeCompartirResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST'], 404: ['RESOURCE_NOT_FOUND'] },
+    fuente: 'DL-176 · WP-COMPARTIR (CMP-D1 a CMP-D5) · Ley 25.326 art. 5 · 08 §12.2 y §12.3 · DL-163 D-13 · DL-165 D-9 · DL-175',
+  },
+  {
+    id: 'API-CMP-02',
+    metodo: 'post',
+    ruta: '/me/sharing-choices',
+    resumen:
+      'Un toque escribe todo lo elegido, en una sola transacción (todo o nada): el A3, el B2 de cada área, lo de otras áreas, los hábitos y la historia anterior, cada acto con su texto, su versión, su hecho y su fila de auditoría, como lo dejaría su operación de siempre, y solo lo elegido (no extiende en silencio lo que ya se compartía). Lleva la versión que se vio (si algo cambió, 409 VERSION_CONFLICT), los textos mostrados (uno que no es el vigente, 409 CONSENT_VERSION_STALE; si falta el de algo elegido, 422 SHARING_TEXT_REQUIRED) y las claves de API-CMP-01 (una que hoy no se puede dar —ya dada, ajena o inexistente, lo mismo—, 422 SHARING_CHOICE_NOT_AVAILABLE con un issue por cada una). Lo de otras áreas, la historia anterior y los hábitos piden el A3 vigente o elegido en el mismo toque (si no, 403). Acepta los pedidos pendientes de quienes pasan a ver lo pedido. Un componente ajeno o inexistente en relationshipId, 404.',
+    autenticacion: 'SESSION',
+    idempotencia: true,
+    request: CompartirLoElegidoRequestSchema,
+    exitos: [{ status: 200, schema: LoElegidoCompartidoResponseSchema }],
+    errores: {
+      ...SESION,
+      400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'],
+      403: ['ACTION_FORBIDDEN'],
+      404: ['RESOURCE_NOT_FOUND'],
+      409: ['IDEMPOTENCY_KEY_REUSED', 'VERSION_CONFLICT', 'CONSENT_VERSION_STALE'],
+      422: ['SHARING_CHOICE_NOT_AVAILABLE', 'SHARING_TEXT_REQUIRED'],
+    },
+    detalleDe422: {
+      codigo: 'SHARING_CHOICE_NOT_AVAILABLE',
+      schema: z.object({ issues: z.array(z.object({ code: z.literal('SHARING_CHOICE_NOT_AVAILABLE'), path: z.string() })).min(1) }),
+      descripcion: 'details.issues trae un issue por cada cosa elegida que hoy no se puede dar (ya está dada, no existe o es ajena: lo mismo), con path choices[i]. SHARING_TEXT_REQUIRED trae el issue con path acceptedTextIds.',
+    },
+    fuente: 'DL-176 · WP-COMPARTIR (CMP-D1 a CMP-D8) · Ley 25.326 art. 5 · 08 §12.2 y C-12 · 09v7 T18 · DL-115 · DL-163 D-13 · DL-165 D-9 y D-25 · DL-175 · TB-56',
+  },
+  {
+    id: 'API-CMP-03',
+    metodo: 'post',
+    ruta: '/me/sharing-choices/withdrawal',
+    resumen:
+      'La persona deja de compartir una cosa desde ese momento (RNF-PRI-002): lo de un área con un profesional (SUMMARY:…) o sus hábitos con uno (HABITS:…). Es una versión nueva de esa autorización que ya no lo nombra (si no queda nadie, retirada), con la hora de la base tomado el cerrojo; nunca se borra nada. No pide el A3 ni la versión vista. Si ya no se compartía, responde 200 con withdrawn: false, sin escribir. El A3, el B2 y la historia anterior se retiran con su operación de siempre (API-CON-08, API-CON-04 y API-HIA-03). Un profesional que nunca acompañó a la persona (ajeno o inexistente), 404.',
+    autenticacion: 'SESSION',
+    idempotencia: true,
+    request: DejarDeCompartirUnaCosaRequestSchema,
+    exitos: [{ status: 200, schema: UnaCosaRetiradaResponseSchema }],
+    errores: { ...ESCRITURA_REVELABLE, 409: ['IDEMPOTENCY_KEY_REUSED'] },
+    fuente: 'DL-176 · WP-COMPARTIR (CMP-D9) · RNF-PRI-002 · 08 §13 · DL-163 D-13 · DL-165 D-9',
   },
   // ─── WP-NUTRICION-RECETAS · REC: recetas del profesional (DL-119) ────────────────────────────────
   {
@@ -4164,12 +4565,12 @@ const DEFINIDAS: readonly Operacion[] = [
     metodo: 'get',
     ruta: '/me/second-factor',
     resumen:
-      'El segundo factor de la sesión, como lo decide el servidor en este pedido. Una identidad con perfil profesional actúa como profesional solo con el segundo factor verificado en esa sesión: sin él, el PDP, las áreas y las listas donde es el profesional no responden nada de lo profesional, y lo de la persona sigue igual (la app de la persona no lo pide). Estados: NOT_REQUIRED (sin perfil profesional), VERIFIED (vale lo que dura la sesión), REQUIRED (tiene autenticador: falta el código en esta sesión), ENROLLMENT_REQUIRED (sin autenticador: se configura hasta deadline, 10 minutos después de entrar) y RECENT_SIGN_IN_REQUIRED (sin autenticador y el plazo pasó: volver a entrar). recentSignInUntil dice hasta cuándo se puede reemplazar el autenticador o generar códigos sin volver a entrar.',
+      'El segundo factor de la sesión, como lo decide el servidor en este pedido. Desde DL-177 (Dirección, 2026-11-18), la política no se lo exige al profesional: toda sesión común responde NOT_REQUIRED, el profesional actúa como profesional con su contraseña (o Google) y API-MFA-02 a 06 responden INVALID_STATE_TRANSITION; lo ya configurado queda guardado, sin uso. Cuando la política lo exige (UF-11, como era hasta DL-177): una identidad con perfil profesional actúa como profesional solo con el segundo factor verificado en esa sesión: sin él, el PDP, las áreas y las listas donde es el profesional no responden nada de lo profesional, y lo de la persona sigue igual (la app de la persona no lo pide). Estados: NOT_REQUIRED (sin perfil profesional), VERIFIED (vale lo que dura la sesión), REQUIRED (tiene autenticador: falta el código en esta sesión), ENROLLMENT_REQUIRED (sin autenticador: se configura hasta deadline, 10 minutos después de entrar) y RECENT_SIGN_IN_REQUIRED (sin autenticador y el plazo pasó: volver a entrar). recentSignInUntil dice hasta cuándo se puede reemplazar el autenticador o generar códigos sin volver a entrar.',
     autenticacion: 'SESSION',
     idempotencia: false,
     exitos: [{ status: 200, schema: SegundoFactorDeLaSesionResponseSchema }],
     errores: { ...SESION, 400: ['INVALID_REQUEST'] },
-    fuente: '08 §25 · 08 §42, condición 6 · UF-11 y UF-D12 de WP-USO-FINAL · ID propio de BE (familia MFA) · DEUDA_LEGAJO DL-169',
+    fuente: '08 §25 · 08 §42, condición 6 · UF-11 y UF-D12 de WP-USO-FINAL · ID propio de BE (familia MFA) · DEUDA_LEGAJO DL-169 y DL-177',
   },
   {
     id: 'API-MFA-02',
@@ -4183,7 +4584,7 @@ const DEFINIDAS: readonly Operacion[] = [
     exitos: [{ status: 200, schema: SegundoFactorDeLaSesionVerificadoResponseSchema }],
     errores: { ...SESION, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 422: ['SECOND_FACTOR_INVALID', 'SECOND_FACTOR_LOCKED', 'INVALID_STATE_TRANSITION'], 429: ['RATE_LIMITED'], 503: ['SECOND_FACTOR_NOT_AVAILABLE'] },
     detalleDe422: { codigo: 'SECOND_FACTOR_INVALID', schema: DetalleDeCodigoInvalidoSchema, descripcion: 'details.attemptsRemaining: cuántos intentos le quedan a la sesión antes de revocarse.' },
-    fuente: '08 §25 (TOTP como línea base) · UF-11 de WP-USO-FINAL · el de Administración (API-ADM-05, DL-155) · ID propio de BE (familia MFA) · DEUDA_LEGAJO DL-169',
+    fuente: '08 §25 (TOTP como línea base) · UF-11 de WP-USO-FINAL · el de Administración (API-ADM-05, DL-155) · ID propio de BE (familia MFA) · DEUDA_LEGAJO DL-169 y DL-177',
   },
   {
     id: 'API-MFA-03',
@@ -4197,7 +4598,7 @@ const DEFINIDAS: readonly Operacion[] = [
     exitos: [{ status: 200, schema: SegundoFactorDeLaSesionVerificadoResponseSchema }],
     errores: { ...SESION, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 422: ['SECOND_FACTOR_INVALID', 'INVALID_STATE_TRANSITION'], 429: ['RATE_LIMITED'], 503: ['SECOND_FACTOR_NOT_AVAILABLE'] },
     detalleDe422: { codigo: 'SECOND_FACTOR_INVALID', schema: DetalleDeCodigoInvalidoSchema, descripcion: 'details.attemptsRemaining: cuántos intentos le quedan a la sesión antes de revocarse.' },
-    fuente: '08 §25 (códigos de recuperación de un solo uso) · UF-11 de WP-USO-FINAL · el de Administración (API-ADM-06, DL-155) · ID propio de BE (familia MFA) · DEUDA_LEGAJO DL-169',
+    fuente: '08 §25 (códigos de recuperación de un solo uso) · UF-11 de WP-USO-FINAL · el de Administración (API-ADM-06, DL-155) · ID propio de BE (familia MFA) · DEUDA_LEGAJO DL-169 y DL-177',
   },
   {
     id: 'API-MFA-04',
@@ -4211,7 +4612,7 @@ const DEFINIDAS: readonly Operacion[] = [
     requestOpcional: true,
     exitos: [{ status: 200, schema: ConfiguracionDelAutenticadorResponseSchema }],
     errores: { ...SESION, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 422: ['INVALID_STATE_TRANSITION'], 429: ['RATE_LIMITED'], 503: ['SECOND_FACTOR_NOT_AVAILABLE'] },
-    fuente: '08 §25 (re-autenticación para cambiar el factor) · UF-11 de WP-USO-FINAL · el de Administración (API-ADM-07, DL-155) · ID propio de BE (familia MFA) · DEUDA_LEGAJO DL-169',
+    fuente: '08 §25 (re-autenticación para cambiar el factor) · UF-11 de WP-USO-FINAL · el de Administración (API-ADM-07, DL-155) · ID propio de BE (familia MFA) · DEUDA_LEGAJO DL-169 y DL-177',
   },
   {
     id: 'API-MFA-05',
@@ -4225,7 +4626,7 @@ const DEFINIDAS: readonly Operacion[] = [
     exitos: [{ status: 200, schema: ConfiguracionDeLaSesionConfirmadaResponseSchema }],
     errores: { ...SESION, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 422: ['SECOND_FACTOR_INVALID', 'INVALID_STATE_TRANSITION'], 429: ['RATE_LIMITED'], 503: ['SECOND_FACTOR_NOT_AVAILABLE'] },
     detalleDe422: { codigo: 'SECOND_FACTOR_INVALID', schema: DetalleDeCodigoInvalidoSchema, descripcion: 'details.attemptsRemaining: cuántos intentos le quedan a la sesión antes de revocarse.' },
-    fuente: '08 §25 · UF-11 de WP-USO-FINAL · el de Administración (API-ADM-08, DL-155) · ID propio de BE (familia MFA) · DEUDA_LEGAJO DL-169',
+    fuente: '08 §25 · UF-11 de WP-USO-FINAL · el de Administración (API-ADM-08, DL-155) · ID propio de BE (familia MFA) · DEUDA_LEGAJO DL-169 y DL-177',
   },
   {
     id: 'API-MFA-06',
@@ -4239,7 +4640,7 @@ const DEFINIDAS: readonly Operacion[] = [
     requestOpcional: true,
     exitos: [{ status: 200, schema: CodigosDeRecuperacionResponseSchema }],
     errores: { ...SESION, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 422: ['INVALID_STATE_TRANSITION'], 429: ['RATE_LIMITED'], 503: ['SECOND_FACTOR_NOT_AVAILABLE'] },
-    fuente: '08 §25 · UF-11 de WP-USO-FINAL · el de Administración (API-ADM-09, DL-155) · ID propio de BE (familia MFA) · DEUDA_LEGAJO DL-169',
+    fuente: '08 §25 · UF-11 de WP-USO-FINAL · el de Administración (API-ADM-09, DL-155) · ID propio de BE (familia MFA) · DEUDA_LEGAJO DL-169 y DL-177',
   },
   // ─── UF-04 de WP-USO-FINAL (DL-169; UF-D6 a UF-D8): la entrada de los profesionales reales ────────────────────────────
   {
@@ -4388,13 +4789,13 @@ const DEFINIDAS: readonly Operacion[] = [
     metodo: 'post',
     ruta: '/admin/professional-second-factor-resets',
     resumen:
-      'Restablecer el segundo factor de un profesional que perdió el autenticador y los códigos de recuperación, o al que otro le configuró uno: Administración lo verificó por el canal de ayuda y, para la cuenta de ese correo de acceso, con el fundamento (cómo lo verificó), en una transacción revoca el autenticador activo, descarta uno pendiente, invalida los códigos de recuperación y cierra todas las sesiones de la cuenta. Queda el hecho con el fundamento y el administrador, y la auditoría sin el fundamento. Al volver a entrar, el profesional lo configura de nuevo (API-MFA-04 y 05, dentro de los 10 minutos de la entrada). Sin idempotencia: repetirlo no cambia más de lo que ya cambió. Un correo sin cuenta, 404; una cuenta administrativa (la restablece el operador), que no es de un profesional o que no opera, 422 VALIDATION_FAILED.',
+      'Desde DL-177 (Dirección, 2026-11-18), el profesional no usa el autenticador: la operación sigue en el contrato y funciona igual (deja de valer lo configurado y cierra todas las sesiones de la cuenta), pero la consola no la ofrece mientras la política no lo exija. Restablecer el segundo factor de un profesional que perdió el autenticador y los códigos de recuperación, o al que otro le configuró uno: Administración lo verificó por el canal de ayuda y, para la cuenta de ese correo de acceso, con el fundamento (cómo lo verificó), en una transacción revoca el autenticador activo, descarta uno pendiente, invalida los códigos de recuperación y cierra todas las sesiones de la cuenta. Queda el hecho con el fundamento y el administrador, y la auditoría sin el fundamento. Al volver a entrar, el profesional lo configura de nuevo (API-MFA-04 y 05, dentro de los 10 minutos de la entrada). Sin idempotencia: repetirlo no cambia más de lo que ya cambió. Un correo sin cuenta, 404; una cuenta administrativa (la restablece el operador), que no es de un profesional o que no opera, 422 VALIDATION_FAILED.',
     autenticacion: 'SESSION_MFA',
     idempotencia: false,
     request: RestablecerSegundoFactorRequestSchema,
     exitos: [{ status: 200, schema: SegundoFactorRestablecidoResponseSchema }],
     errores: { ...{ 401: ['AUTHENTICATION_REQUIRED', 'SESSION_INVALID', 'SESSION_EXPIRED', 'SESSION_REVOKED'], 403: ['ACTION_FORBIDDEN', 'MFA_REQUIRED'], 503: ['ADMINISTRATION_NOT_AVAILABLE'] }, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 404: ['RESOURCE_NOT_FOUND'], 422: ['VALIDATION_FAILED'] },
-    fuente: 'UF-11 de WP-USO-FINAL (UF-T56, revisión adversarial de la etapa 2: sin esto, un profesional sin su autenticador quedaba sin poder actuar como profesional) · 08 §25 · ID propio de BE (familia ADM) · DEUDA_LEGAJO DL-169 y DL-155',
+    fuente: 'UF-11 de WP-USO-FINAL (UF-T56, revisión adversarial de la etapa 2: sin esto, un profesional sin su autenticador quedaba sin poder actuar como profesional) · 08 §25 · ID propio de BE (familia ADM) · DEUDA_LEGAJO DL-169, DL-155 y DL-177',
   },
   // ─── UF-07 de WP-USO-FINAL (DL-169): el canal de ayuda y contacto ─────────────────────────────────────────────────────
   {
@@ -4524,6 +4925,112 @@ const DEFINIDAS: readonly Operacion[] = [
     errores: { ...SESION, 400: ['INVALID_REQUEST'], 403: ['STEP_UP_REQUIRED', 'MFA_REQUIRED'], 404: ['RESOURCE_NOT_FOUND'], 409: ['LAST_ACCESS_METHOD'], 422: ['VALIDATION_FAILED'] },
     fuente: '09 v0.12 §12 («DELETE /me/access-methods/{methodId}», P2: «no permitir eliminar el último método de acceso utilizable»; «la remoción puede exigir step-up») · 04 RF-004 · 05 UC-E06 · 06 REG-06-22 · ID propio de BE (familia MET) · DEUDA_LEGAJO DL-172',
   },
+  // ─── WP-PULIDO-GRANDES (DL-173): PG-15, la nota para tu profe (PG-D10), y PG-16, las notas propias del profesional ──
+  // (PG-D11), las dos aprobadas por Dirección el 2026-11-14. Operaciones nuevas (DL-137 D-7): API-TRN-18 no cambia.
+  {
+    id: 'API-TRN-25',
+    metodo: 'post',
+    ruta: '/training/executions/{executionId}/notes',
+    resumen:
+      'Agregar una nota a una sesión propia ya registrada, para su profesional («¿Algo para contarle a tu profe?»). Hasta 280 caracteres, sin los espacios de los bordes. Solo agrega: una nota no se edita ni se borra, y una nueva queda debajo, con su hora; hasta 20 por sesión (después, 422 VALIDATION_FAILED con NOTE_LIMIT_REACHED). La escribe solo la persona de la sesión, con el permiso con que corrige la sesión (API-TRN-20): mientras su profesional la acompaña. Una sesión ajena, inexistente o sin ese permiso: el mismo 404. No cambia la sesión, no dispara avisos y no depende de su condición ni de su motivo (REG-06-131). API-TRN-18 no cambia: la nota viaja aparte, después de confirmar.',
+    autenticacion: 'SESSION',
+    idempotencia: true,
+    request: AgregarNotaDeLaSesionRequestSchema,
+    exitos: [{ status: 201, schema: NotaDeLaSesionResponseSchema }],
+    errores: { ...ESCRITURA_REVELABLE, 409: ['IDEMPOTENCY_KEY_REUSED'], 422: ['VALIDATION_FAILED'] },
+    fuente: 'WP-PULIDO-GRANDES PG-15 y PG-D10 (aprobada por Dirección el 2026-11-14) · ID nuevo en la familia TRN del 09, que el 09 no usa · DEUDA_LEGAJO DL-173 · DL-137 D-7',
+  },
+  {
+    id: 'API-TRN-25-LISTA',
+    metodo: 'get',
+    ruta: '/advisees/{adviseeId}/training/execution-notes',
+    resumen:
+      'Para el profesional de Entrenamiento: las notas que la persona dejó en las sesiones que él ya puede ver (las registradas en sus planes con ella, como API-TRN-19 y API-TRN-21), de las sesiones con fecha en el período (obligatorio, hasta 92 días). De la sesión más nueva a la más vieja y, dentro de una sesión, de la nota más vieja a la más nueva. El PDP de Entrenamiento; sin acceso, el 404 de lo inexistente. Sin contadores ni interpretación del texto.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    query: [
+      { nombre: 'periodStart', descripcion: 'Fecha local YYYY-MM-DD.', schema: { type: 'string', format: 'date' }, obligatorio: true },
+      { nombre: 'periodEnd', descripcion: 'Fecha local YYYY-MM-DD.', schema: { type: 'string', format: 'date' }, obligatorio: true },
+    ],
+    exitos: [{ status: 200, schema: NotasDeLasSesionesResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST'], 404: ['RESOURCE_NOT_FOUND'] },
+    fuente: 'variante de API-TRN-25 · WP-PULIDO-GRANDES PG-15 · ID propio de BE (sufijo LISTA) · DEUDA_LEGAJO DL-173',
+  },
+  {
+    id: 'API-TRN-25-PROPIA',
+    metodo: 'get',
+    ruta: '/me/training/executions/{executionId}/notes',
+    resumen:
+      'Las notas que la persona dejó en una sesión suya, de la más vieja a la más nueva. Es su historia: exige solo su A3 vigente (403 sin él), como «Tu historial» (DL-089 opción A). Una sesión ajena o inexistente: 404.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    exitos: [{ status: 200, schema: NotasDeUnaSesionResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST'], 403: ['ACTION_FORBIDDEN'], 404: ['RESOURCE_NOT_FOUND'] },
+    fuente: 'variante del titular de API-TRN-25 · WP-PULIDO-GRANDES PG-15 (decisión del continuador PG-T64, a ratificar) · ID propio de BE (sufijo PROPIA) · DEUDA_LEGAJO DL-173',
+  },
+  {
+    id: 'API-NPP-01',
+    metodo: 'post',
+    ruta: '/advisees/{adviseeId}/professional-notes',
+    resumen:
+      'Agregar una nota propia del profesional sobre una persona que hoy acompaña en algún área (el PDP de alguna): hasta 1000 caracteres, sin los espacios de los bordes, opcionalmente atada a un ejercicio del catálogo que él puede citar (pide Entrenamiento con la persona) o a una comida del plan por su nombre (pide Nutrición). Un ejercicio que no existe o que no puede citar: 422 VALIDATION_FAILED con ANCHOR_NOT_AVAILABLE. Solo agrega. Solo la lee su autor; no se manda a nadie ni dispara avisos. Sin acceso a la persona: el 404 de lo inexistente.',
+    autenticacion: 'SESSION',
+    idempotencia: true,
+    request: AgregarNotaPropiaRequestSchema,
+    exitos: [{ status: 201, schema: NotaPropiaResponseSchema }],
+    errores: { ...ESCRITURA_REVELABLE, 409: ['IDEMPOTENCY_KEY_REUSED'], 422: ['VALIDATION_FAILED'] },
+    fuente: 'WP-PULIDO-GRANDES PG-16 y PG-D11 (aprobada por Dirección el 2026-11-14) · ID propio de BE (familia NPP) · DEUDA_LEGAJO DL-173',
+  },
+  {
+    id: 'API-NPP-02',
+    metodo: 'get',
+    ruta: '/advisees/{adviseeId}/professional-notes',
+    resumen:
+      'Las notas propias de quien consulta sobre esa persona, las activas y las archivadas (con archivedAt), de la más nueva a la más vieja, hasta 200 (page.hasMore dice si quedaron más viejas afuera). Las de otro profesional no aparecen nunca, aunque sea del mismo equipo o área. Cada ancla dice si hoy está en la última versión del plan del autor con esa persona en su área (inPlan; null sin plan). El PDP de alguna área; sin acceso, el 404 de lo inexistente.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    exitos: [{ status: 200, schema: ListaDeNotasPropiasDelProfesionalResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST'], 404: ['RESOURCE_NOT_FOUND'] },
+    fuente: 'WP-PULIDO-GRANDES PG-16 y PG-D11 · ID propio de BE (familia NPP) · DEUDA_LEGAJO DL-173',
+  },
+  {
+    id: 'API-NPP-03',
+    metodo: 'post',
+    ruta: '/professional-notes/{noteId}/archive',
+    resumen:
+      'Archivar una nota propia: deja de verse entre las activas y queda en la historia, con la fecha en que se archivó; nunca se borra. Archivar una ya archivada responde 200 con la misma nota, sin cambiar nada. Solo su autor, mientras acompaña a la persona en algún área; una nota de otro profesional o inexistente: el mismo 404.',
+    autenticacion: 'SESSION',
+    idempotencia: true,
+    request: CuerpoVacioSchema,
+    exitos: [{ status: 200, schema: NotaPropiaResponseSchema }],
+    errores: { ...ESCRITURA_REVELABLE, 409: ['IDEMPOTENCY_KEY_REUSED'] },
+    fuente: 'WP-PULIDO-GRANDES PG-16 y PG-D11 · ID propio de BE (familia NPP) · DEUDA_LEGAJO DL-173',
+  },
+  // ─── WP-CONTEXTO-DE-LA-PERSONA (DL-179): el contexto de la persona en el editor ───────────────
+  {
+    id: 'API-CTX-01',
+    metodo: 'get',
+    ruta: '/advisees/{adviseeId}/person-context/answers',
+    resumen:
+      'Para el panel «Contexto de <nombre>»: lo que la persona respondió a las Solicitudes de quien consulta, de las áreas en que hoy la acompaña con el PDP permitido, en su versión vigente (la vista efectiva, como API-FRI-03), del más nuevo al más viejo. Cada formulario trae su versión (para citar, DL-102) y cada pregunta su rótulo, su categoría, el valor estructurado y en palabras. Lo que la persona le contó a otro profesional no sale nunca. Sin ninguna área permitida, el 404 de lo inexistente.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    exitos: [{ status: 200, schema: RespuestasDelContextoResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST'], 404: ['RESOURCE_NOT_FOUND'] },
+    fuente: 'WP-CONTEXTO-DE-LA-PERSONA (decisión de Dirección del 2026-11-18) · ID propio de BE (familia CTX) · DEUDA_LEGAJO DL-179',
+  },
+  {
+    id: 'API-CTX-02',
+    metodo: 'get',
+    ruta: '/advisees/{adviseeId}/person-context/body',
+    resumen:
+      'Para el panel «Contexto de <nombre>»: la última toma registrada y la anterior, por métrica, con el cambio (y el % con su base) solo si son comparables (mismo protocolo, método y unidad). Quien lleva Antropometría con la persona ve sus tomas enteras (access OWN_AREA). Quien recibe el resumen compartido de Antropometría ve el peso y la composición en kilos, con su método, de las tomas de quien lleva el área hoy, sin el contexto escrito (SHARED_SUMMARY), y la lectura queda en «Quién miró» (API-RES-01). Si no, el 404 de lo inexistente.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    exitos: [{ status: 200, schema: CuerpoDelContextoResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST'], 404: ['RESOURCE_NOT_FOUND'] },
+    fuente: 'WP-CONTEXTO-DE-LA-PERSONA · ID propio de BE (familia CTX) · el texto de «resumen» aceptado (DL-163 D-13) · DEUDA_LEGAJO DL-179',
+  },
 ];
 
 /**
@@ -4592,6 +5099,11 @@ const LECTURAS_PROTEGIDAS: ReadonlySet<string> = new Set([
   'API-RES-06',
   'API-RES-07',
   'API-RES-09',
+  // WP-HISTORIA-ANTERIOR (DL-175).
+  'API-HIA-01',
+  'API-HIA-04',
+  // WP-COMPARTIR (DL-176).
+  'API-CMP-01',
   'API-MED-03',
   'API-ING-03',
   'API-NOV-01',
@@ -4604,11 +5116,18 @@ const LECTURAS_PROTEGIDAS: ReadonlySet<string> = new Set([
   'API-TRN-23-EVIDENCIA',
   'API-CRD-01-LISTA',
   'API-CRD-01-PROPIA',
+  // WP-PULIDO-GRANDES (DL-173): la nota para el profe y las notas propias del profesional.
+  'API-TRN-25-LISTA',
+  'API-TRN-25-PROPIA',
+  'API-NPP-02',
+  // WP-CONTEXTO-DE-LA-PERSONA (DL-179).
+  'API-CTX-01',
+  'API-CTX-02',
 ]);
 // API-MED-02 escribe sin Idempotency-Key: la ruta firmada identifica la subida, y repetirla responde el mismo medio.
 // API-TIE-01 tampoco: cada evento trae su identificador, y repetirlo responde lo mismo sin sumar.
 // API-GOO-02 y 03 (DL-138) tampoco: vincular y crear con Google son idempotentes por la cuenta de Google.
-const ESCRITURAS_SIN_CLAVE: ReadonlySet<string> = new Set(['API-TIE-01', 'API-PLN-03', 'API-CON-04', 'API-CON-08', 'API-EVI-04', 'API-NUT-10', 'API-NUT-11', 'API-ANT-10', 'API-TRN-10', 'API-TRN-11', 'API-TRN-15', 'API-TRN-17', 'API-TPL-05', 'API-TPN-05', 'API-HAB-02', 'API-HAB-05', 'API-HAB-08', 'API-HAN-02', 'API-HAN-05', 'API-HAN-08', 'API-MED-02', 'API-NOV-03', 'API-NOV-04', 'API-NOV-06', 'API-GOO-02', 'API-GOO-03', 'API-MET-02', 'API-MET-03', 'API-ADM-05', 'API-ADM-06', 'API-ADM-07', 'API-ADM-08', 'API-ADM-09']);
+const ESCRITURAS_SIN_CLAVE: ReadonlySet<string> = new Set(['API-TIE-01', 'API-PLN-03', 'API-CON-04', 'API-CON-08', 'API-EVI-04', 'API-NUT-10', 'API-NUT-11', 'API-ANT-10', 'API-TRN-10', 'API-TRN-11', 'API-TRN-15', 'API-TRN-17', 'API-TPL-05', 'API-TPL-07', 'API-TPL-10', 'API-TPL-11', 'API-TPN-05', 'API-HAB-02', 'API-HAB-05', 'API-HAB-08', 'API-HAN-02', 'API-HAN-05', 'API-HAN-08', 'API-MED-02', 'API-NOV-03', 'API-NOV-04', 'API-NOV-06', 'API-GOO-02', 'API-GOO-03', 'API-MET-02', 'API-MET-03', 'API-ADM-05', 'API-ADM-06', 'API-ADM-07', 'API-ADM-08', 'API-ADM-09']);
 
 function conCodigosComunes(op: Operacion): Operacion {
   const errores: { -readonly [S in keyof Errores]: Errores[S] } = { ...op.errores };

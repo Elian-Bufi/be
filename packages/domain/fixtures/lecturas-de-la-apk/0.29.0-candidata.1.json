@@ -1,11 +1,11 @@
 {
  "apk": {
-  "version": "0.27.0-candidata.1",
-  "versionCode": 41,
-  "tag": "be-apk-0.27.0-candidata.1",
-  "commit": "e145af9ee4734c36134c14fbff9574410e3cd96d"
+  "version": "0.29.0-candidata.1",
+  "versionCode": 43,
+  "tag": "be-apk-0.29.0-candidata.1",
+  "commit": "2b5ba831aa5a0f3cc69690a18ac8beef7c059be5"
  },
- "origen": "Generado con «node scripts/congelar-lo-que-lee-la-apk.mjs be-apk-0.27.0-candidata.1» desde las fuentes del commit e145af9 (dominio, cliente y APK), con zod 4.6.6. No editar a mano.",
+ "origen": "Generado con «node scripts/congelar-lo-que-lee-la-apk.mjs be-apk-0.29.0-candidata.1» desde las fuentes del commit 2b5ba83 (dominio, cliente y APK), con zod 4.6.6. No editar a mano.",
  "cabeceras": {
   "X-BE-Surface": "APK",
   "X-BE-Capabilities": "training-set-targets-1,forms-format-3,pending-steps-texts-1"
@@ -61,6 +61,23 @@
   "noRepresentado": [],
   "detalles": {
    "GOOGLE_ACCOUNT_NOT_FOUND": {
+    "esquema": "DetalleDeCuentaDeGoogleSchema",
+    "respuesta": {
+     "$schema": "https://json-schema.org/draft/2020-12/schema",
+     "type": "object",
+     "properties": {
+      "email": {
+       "type": "string",
+       "minLength": 1
+      }
+     },
+     "required": [
+      "email"
+     ],
+     "additionalProperties": false
+    }
+   },
+   "GOOGLE_EMAIL_MISMATCH": {
     "esquema": "DetalleDeCuentaDeGoogleSchema",
     "respuesta": {
      "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -23003,6 +23020,378 @@
     "additionalProperties": false
    }
   },
+  "API-RES-01": {
+   "metodo": "get",
+   "ruta": "/me/summary-sharing",
+   "llamadas": [
+    "misResumenesCompartidos"
+   ],
+   "conSesion": true,
+   "conClave": false,
+   "esquema": "MisResumenesCompartidosResponseSchema",
+   "comoElContrato": true,
+   "respuesta": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+     "data": {
+      "type": "object",
+      "properties": {
+       "sharing": {
+        "type": "object",
+        "properties": {
+         "status": {
+          "type": "string",
+          "enum": [
+           "NOT_GIVEN",
+           "ACTIVE",
+           "WITHDRAWN"
+          ]
+         },
+         "version": {
+          "anyOf": [
+           {
+            "type": "string",
+            "pattern": "^v[1-9]\\d*$"
+           },
+           {
+            "type": "null"
+           }
+          ]
+         },
+         "activeSince": {
+          "anyOf": [
+           {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+           },
+           {
+            "type": "null"
+           }
+          ]
+         },
+         "withdrawnAt": {
+          "anyOf": [
+           {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+           },
+           {
+            "type": "null"
+           }
+          ]
+         },
+         "acceptedTexts": {
+          "anyOf": [
+           {
+            "type": "object",
+            "properties": {
+             "summary": {
+              "anyOf": [
+               {
+                "type": "string",
+                "minLength": 1
+               },
+               {
+                "type": "null"
+               }
+              ]
+             },
+             "summaryAndPlan": {
+              "anyOf": [
+               {
+                "type": "string",
+                "minLength": 1
+               },
+               {
+                "type": "null"
+               }
+              ]
+             }
+            },
+            "required": [
+             "summary",
+             "summaryAndPlan"
+            ],
+            "additionalProperties": false
+           },
+           {
+            "type": "null"
+           }
+          ]
+         }
+        },
+        "required": [
+         "status",
+         "version",
+         "activeSince",
+         "withdrawnAt",
+         "acceptedTexts"
+        ],
+        "additionalProperties": false
+       },
+       "professionals": {
+        "type": "array",
+        "items": {
+         "type": "object",
+         "properties": {
+          "professional": {
+           "type": "object",
+           "properties": {
+            "identityId": {
+             "type": "string",
+             "minLength": 1
+            },
+            "displayName": {
+             "type": "string"
+            }
+           },
+           "required": [
+            "identityId",
+            "displayName"
+           ],
+           "additionalProperties": false
+          },
+          "scopes": {
+           "minItems": 1,
+           "type": "array",
+           "items": {
+            "type": "object",
+            "properties": {
+             "code": {
+              "type": "string",
+              "enum": [
+               "NUTRICION",
+               "ENTRENAMIENTO",
+               "ANTROPOMETRIA"
+              ]
+             },
+             "label": {
+              "type": "string"
+             }
+            },
+            "required": [
+             "code",
+             "label"
+            ],
+            "additionalProperties": false
+           }
+          },
+          "link": {
+           "type": "string",
+           "enum": [
+            "ACTIVE",
+            "PAUSED"
+           ]
+          },
+          "shareableAreas": {
+           "type": "array",
+           "items": {
+            "type": "string",
+            "enum": [
+             "NUTRICION",
+             "ENTRENAMIENTO",
+             "ANTROPOMETRIA"
+            ]
+           }
+          },
+          "shares": {
+           "type": "array",
+           "items": {
+            "type": "object",
+            "properties": {
+             "area": {
+              "type": "string",
+              "enum": [
+               "NUTRICION",
+               "ENTRENAMIENTO",
+               "ANTROPOMETRIA"
+              ]
+             },
+             "level": {
+              "type": "string",
+              "enum": [
+               "SUMMARY",
+               "SUMMARY_AND_PLAN"
+              ]
+             },
+             "since": {
+              "type": "string",
+              "format": "date-time",
+              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+             }
+            },
+            "required": [
+             "area",
+             "level",
+             "since"
+            ],
+            "additionalProperties": false
+           }
+          }
+         },
+         "required": [
+          "professional",
+          "scopes",
+          "link",
+          "shareableAreas",
+          "shares"
+         ],
+         "additionalProperties": false
+        }
+       },
+       "texts": {
+        "type": "object",
+        "properties": {
+         "summary": {
+          "type": "object",
+          "properties": {
+           "id": {
+            "type": "string",
+            "minLength": 1
+           },
+           "title": {
+            "type": "string"
+           },
+           "text": {
+            "type": "string"
+           },
+           "textHash": {
+            "type": "string"
+           },
+           "effectiveFrom": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+           },
+           "approval": {
+            "type": "string",
+            "enum": [
+             "PENDING_APPROVAL",
+             "APPROVED"
+            ]
+           }
+          },
+          "required": [
+           "id",
+           "title",
+           "text",
+           "textHash",
+           "effectiveFrom",
+           "approval"
+          ],
+          "additionalProperties": false
+         },
+         "summaryAndPlan": {
+          "type": "object",
+          "properties": {
+           "id": {
+            "type": "string",
+            "minLength": 1
+           },
+           "title": {
+            "type": "string"
+           },
+           "text": {
+            "type": "string"
+           },
+           "textHash": {
+            "type": "string"
+           },
+           "effectiveFrom": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+           },
+           "approval": {
+            "type": "string",
+            "enum": [
+             "PENDING_APPROVAL",
+             "APPROVED"
+            ]
+           }
+          },
+          "required": [
+           "id",
+           "title",
+           "text",
+           "textHash",
+           "effectiveFrom",
+           "approval"
+          ],
+          "additionalProperties": false
+         }
+        },
+        "required": [
+         "summary",
+         "summaryAndPlan"
+        ],
+        "additionalProperties": false
+       },
+       "accesses": {
+        "type": "array",
+        "items": {
+         "type": "object",
+         "properties": {
+          "professional": {
+           "type": "object",
+           "properties": {
+            "identityId": {
+             "type": "string",
+             "minLength": 1
+            },
+            "displayName": {
+             "type": "string"
+            }
+           },
+           "required": [
+            "identityId",
+            "displayName"
+           ],
+           "additionalProperties": false
+          },
+          "area": {
+           "type": "string",
+           "enum": [
+            "NUTRICION",
+            "ENTRENAMIENTO",
+            "ANTROPOMETRIA"
+           ]
+          },
+          "readAt": {
+           "type": "string",
+           "format": "date-time",
+           "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+          }
+         },
+         "required": [
+          "professional",
+          "area",
+          "readAt"
+         ],
+         "additionalProperties": false
+        }
+       }
+      },
+      "required": [
+       "sharing",
+       "professionals",
+       "texts",
+       "accesses"
+      ],
+      "additionalProperties": false
+     }
+    },
+    "required": [
+     "data"
+    ],
+    "additionalProperties": false
+   },
+   "noRepresentado": [],
+   "pedido": null
+  },
   "API-RGT-01": {
    "metodo": "post",
    "ruta": "/me/data-rights-requests",
@@ -37745,6 +38134,129 @@
    "noRepresentado": [
     "data.nextAction.objective: refine"
    ],
+   "pedido": null
+  },
+  "API-TRN-25": {
+   "metodo": "post",
+   "ruta": "/training/executions/{executionId}/notes",
+   "llamadas": [
+    "agregarNotaDeLaSesion"
+   ],
+   "conSesion": true,
+   "conClave": true,
+   "esquema": "NotaDeLaSesionResponseSchema",
+   "comoElContrato": true,
+   "respuesta": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+     "data": {
+      "type": "object",
+      "properties": {
+       "noteId": {
+        "type": "string",
+        "minLength": 1
+       },
+       "executionId": {
+        "type": "string",
+        "minLength": 1
+       },
+       "text": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 280
+       },
+       "recordedAt": {
+        "type": "string",
+        "format": "date-time",
+        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+       }
+      },
+      "required": [
+       "noteId",
+       "executionId",
+       "text",
+       "recordedAt"
+      ],
+      "additionalProperties": false
+     }
+    },
+    "required": [
+     "data"
+    ],
+    "additionalProperties": false
+   },
+   "noRepresentado": [],
+   "pedido": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+     "text": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 280
+     }
+    },
+    "required": [
+     "text"
+    ],
+    "additionalProperties": false
+   }
+  },
+  "API-TRN-25-PROPIA": {
+   "metodo": "get",
+   "ruta": "/me/training/executions/{executionId}/notes",
+   "llamadas": [
+    "notasDeMiSesion"
+   ],
+   "conSesion": true,
+   "conClave": false,
+   "esquema": "NotasDeUnaSesionResponseSchema",
+   "comoElContrato": true,
+   "respuesta": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+     "data": {
+      "type": "array",
+      "items": {
+       "type": "object",
+       "properties": {
+        "noteId": {
+         "type": "string",
+         "minLength": 1
+        },
+        "executionId": {
+         "type": "string",
+         "minLength": 1
+        },
+        "text": {
+         "type": "string",
+         "minLength": 1,
+         "maxLength": 280
+        },
+        "recordedAt": {
+         "type": "string",
+         "format": "date-time",
+         "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+        }
+       },
+       "required": [
+        "noteId",
+        "executionId",
+        "text",
+        "recordedAt"
+       ],
+       "additionalProperties": false
+      }
+     }
+    },
+    "required": [
+     "data"
+    ],
+    "additionalProperties": false
+   },
+   "noRepresentado": [],
    "pedido": null
   }
  }

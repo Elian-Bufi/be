@@ -41,6 +41,8 @@ import {
   type RegistroDeEjecucion,
   type SerieEjecutadaApi,
   type SesionConObjetivos,
+  tipoDeSerie,
+  type TipoDeSerie,
 } from '@be/domain';
 import { ANCHO_DE_LA_CASILLA, FILA_VACIA, hayAlgoEscrito, leerFila, MAXIMO_DE_SERIES, origenesDeLaSerie, serieAlTildar, unidadDelEjercicio, type ErroresDeFila, type FilaEscrita, type Unidad } from './series-de-la-sesion';
 
@@ -62,6 +64,8 @@ export interface FilaEnCorreccion {
   readonly antes: SerieEjecutadaApi | null;
   /** El objetivo de esa serie, que se muestra en gris; `null` en una serie de más o sin plan por serie. */
   readonly objetivo: ObjetivoDeSerie | null;
+  /** DL-178: si es de calentamiento (por el plan o por lo registrado). Ausente: efectiva. */
+  readonly tipo?: TipoDeSerie;
 }
 
 export interface EjercicioEnCorreccion {
@@ -242,11 +246,13 @@ export function estadoInicial(x: Pick<EjecucionDeEntrenamiento, 'original' | 'co
     const filas: FilaEnCorreccion[] = [];
     if (forma === 'SET') {
       for (const s of e.sets ?? []) {
-        filas.push({ setIndex: s.setIndex, origen: 'registrada', escrita: filaDeLaSerie(s), unidad: unidadDe(s.load?.unit, porDefecto), quitada: false, tildada: false, antes: s, objetivo: p?.sets.find((x) => x.setIndex === s.setIndex)?.target ?? null });
+        const planificada = p?.sets.find((x) => x.setIndex === s.setIndex);
+        const tipo: TipoDeSerie = s.setKind === 'WARM_UP' || planificada?.setKind === 'WARM_UP' ? 'WARM_UP' : 'WORKING';
+        filas.push({ setIndex: s.setIndex, origen: 'registrada', escrita: filaDeLaSerie(s), unidad: unidadDe(s.load?.unit, porDefecto), quitada: false, tildada: false, antes: s, objetivo: planificada?.target ?? null, tipo });
       }
       for (const ps of p?.sets ?? []) {
         if (filas.some((f) => f.setIndex === ps.setIndex)) continue;
-        filas.push({ setIndex: ps.setIndex, origen: 'planificada', escrita: FILA_VACIA, unidad: porDefecto, quitada: false, tildada: false, antes: null, objetivo: ps.target });
+        filas.push({ setIndex: ps.setIndex, origen: 'planificada', escrita: FILA_VACIA, unidad: porDefecto, quitada: false, tildada: false, antes: null, objetivo: ps.target, tipo: tipoDeSerie(ps) });
       }
       filas.sort((a, b) => a.setIndex - b.setIndex);
     }
@@ -270,7 +276,7 @@ export function estadoInicial(x: Pick<EjecucionDeEntrenamiento, 'original' | 'co
       ejecutado: null,
       performedExerciseVersionId: p.exerciseVersionId,
       estaba: false,
-      filas: forma === 'SET' ? p.sets.map((s) => ({ setIndex: s.setIndex, origen: 'planificada' as const, escrita: FILA_VACIA, unidad, quitada: false, tildada: false, antes: null, objetivo: s.target })) : [],
+      filas: forma === 'SET' ? p.sets.map((s) => ({ setIndex: s.setIndex, origen: 'planificada' as const, escrita: FILA_VACIA, unidad, quitada: false, tildada: false, antes: null, objetivo: s.target, tipo: tipoDeSerie(s) })) : [],
       resumen: forma === 'EXERCISE_OR_SESSION' ? '' : null,
     });
   }
@@ -361,8 +367,10 @@ export const sePuedeAgregar = (ej: Pick<EjercicioEnCorreccion, 'filas'>): boolea
 /** «2 de 3 series registradas» o «Sin registrar», según lo que rige: lo que se escribe todavía no cuenta. */
 export function estadoDelEjercicio(ej: EjercicioEnCorreccion): string {
   if (ej.resumen !== null) return ej.estaba ? T.conResumen : T.sinRegistrar;
-  const registradas = ej.filas.filter((f) => f.origen === 'registrada').length;
-  const planificadas = ej.filas.filter((f) => f.origen !== 'nueva').length;
+  // DL-178: la cuenta es de las series efectivas; el calentamiento se corrige igual, pero no cuenta.
+  const efectivas = ej.filas.filter((f) => f.tipo !== 'WARM_UP');
+  const registradas = efectivas.filter((f) => f.origen === 'registrada').length;
+  const planificadas = efectivas.filter((f) => f.origen !== 'nueva').length;
   return registradas === 0 ? T.sinRegistrar : T.registradas(registradas, Math.max(planificadas, registradas));
 }
 
@@ -411,7 +419,7 @@ function serieDeLaFila(f: FilaEnCorreccion): { readonly serie: SerieEjecutadaApi
   if (f.quitada) return { serie: null, errores: null };
   if (f.origen !== 'registrada') {
     if (!hayAlgoEscrito(f.escrita) && !f.tildada) return { serie: null, errores: null };
-    const alTildar = serieAlTildar(f.escrita, f.objetivo, f.setIndex, f.unidad);
+    const alTildar = serieAlTildar(f.escrita, f.objetivo, f.setIndex, f.unidad, f.tipo);
     return alTildar.ok ? { serie: alTildar.serie, errores: null } : { serie: null, errores: alTildar.errores };
   }
   const lectura = leerFila(f.escrita, f.setIndex, f.unidad);
@@ -429,6 +437,8 @@ function serieDeLaFila(f: FilaEnCorreccion): { readonly serie: SerieEjecutadaApi
     recordedAs: 'TYPED',
     ...(f.antes?.durationSeconds !== undefined ? { durationSeconds: f.antes.durationSeconds } : {}),
     ...(fieldOrigins ? { fieldOrigins } : {}),
+    // DL-178: corregir los valores no cambia el tipo: el calentamiento sigue siéndolo.
+    ...(f.tipo === 'WARM_UP' ? { setKind: 'WARM_UP' as const } : {}),
   };
   return { serie, errores: null };
 }

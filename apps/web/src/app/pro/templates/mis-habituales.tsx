@@ -9,7 +9,7 @@
  * - **Ejercicios habituales**: la lista por nombre, con «Quitar».
  * Un profesional sin Entrenamiento recibe 403: la sección no es para él y no se muestra (mostrar u ocultar no autoriza nada).
  */
-import { COPY_HABITUALES, type EjercicioDeCatalogo, type SesionHabitual } from '@be/domain';
+import { COPY_HABITUALES, cuentaDeSeries, type EjercicioDeCatalogo, type SesionHabitual } from '@be/domain';
 import { useEffect, useMemo, useState } from 'react';
 import { AvisoFlotante } from '../../../components/ayuda';
 import { useAvisarALaLista, useCambiosParaSalir, useDetalleConGuardia } from '../../../components/salida-segura';
@@ -170,7 +170,7 @@ function DetalleDeSesionHabitual({
                 {e && !e.available ? <span className="insignia"> no disponible</span> : null}
                 <ul className="lista-compacta">
                   <li>
-                    {p.sets.length} {p.sets.length === 1 ? 'serie' : 'series'}
+                    {cuentaDeSeries(p.sets)}
                     {p.sets.length > 0 ? `: ${p.sets.map((x) => (x.repetitions === null ? '—' : 'value' in x.repetitions ? String(x.repetitions.value) : `${x.repetitions.min}-${x.repetitions.max}`)).join(' · ')} repeticiones` : ''}
                   </li>
                   {p.intensity ? <li>Intensidad: {p.intensity.criterion} {p.intensity.target.value}</li> : null}

@@ -4,6 +4,7 @@
  * NUT. Los alimentos salen del catálogo sintético sembrado por la migración.
  */
 import type { INestApplication } from '@nestjs/common';
+import type { Prisma, PrismaClient } from '@prisma/client';
 import { haceUnRatoHoy } from './soporte-tiempo';
 import request from 'supertest';
 import { conSesion, claveDeIdempotencia } from './soporte-api';
@@ -20,6 +21,26 @@ export async function alimento(app: INestApplication, pro: Parte, nombre: string
   const item = (r.body.data as { catalogItemId: string; name: string }[]).find((i) => i.name === nombre);
   if (!item) throw new Error(`alimento no sembrado: ${nombre}`);
   return item.catalogItemId;
+}
+
+/**
+ * DL-180 (NUA-D05): un alimento cargado a mano por `profesionalId` que no se compartió, como lo dejaba la carga a mano
+ * antes de DL-180 (el elemento y su versión, sin la fila de `alimento_compartido`): solo lo ve su autor. Desde DL-180, lo
+ * que se carga por la API lo ven los demás profesionales de Nutrición; las pruebas de «lo ajeno no se ve» usan este.
+ */
+export async function alimentoSinCompartir(
+  prisma: Pick<PrismaClient, 'elementoDeCatalogoNutricional' | 'versionDeElementoNutricional'>,
+  profesionalId: string,
+  nombre: string,
+  composicion: Prisma.InputJsonObject = { referenceAmount: '100g', energyKcal: 368, proteinG: 14, carbohydrateG: 64, fatG: 6 },
+  /** El momento de registro, para las pruebas que miden el orden (lo más nuevo primero). */
+  momento: Date = new Date(),
+): Promise<{ catalogItemId: string; versionId: string }> {
+  const elemento = await prisma.elementoDeCatalogoNutricional.create({ data: { procedencia: 'PROFESSIONAL_MANUAL', creadoPorId: profesionalId, momentoDeRegistro: momento } });
+  const version = await prisma.versionDeElementoNutricional.create({
+    data: { elementoId: elemento.id, nombre, composicion, disponibilidad: 'DISPONIBLE', momentoDeRegistro: momento, procedencia: { fuente: 'PROPIA', carga: 'MANUAL', casoDeUso: 'PRUEBA', nota: 'Carga a mano de antes de DL-180: sin compartir' } },
+  });
+  return { catalogItemId: elemento.id, versionId: version.id };
 }
 
 export function cuerpoDeEvaluacion(): Record<string, unknown> {

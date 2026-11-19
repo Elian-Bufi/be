@@ -36,6 +36,20 @@ export function posicionTrasMover(p: number, desde: number, hacia: number): numb
 /** Las posiciones abiertas después de mover una: cada una sigue a su elemento. */
 export const posicionesTrasMover = (abiertas: ReadonlySet<number>, desde: number, hacia: number): Set<number> => new Set([...abiertas].map((p) => posicionTrasMover(p, desde, hacia)));
 
+/**
+ * La opción abierta de cada comida del día `dia` (`{ 'dia-comida': opción }`) después de mover la comida `desde` a
+ * `hacia`: cada una sigue a su comida, y la que no tenía ninguna elegida (plegada como nació, NUP-D04) sigue sin elegir.
+ * Las de los otros días no cambian. No toca `elegidas`.
+ */
+export function elegidasTrasMover(elegidas: Readonly<Record<string, number>>, dia: number, desde: number, hacia: number): Record<string, number> {
+  return Object.fromEntries(
+    Object.entries(elegidas).map(([clave, k]) => {
+      const [d, c] = clave.split('-').map(Number);
+      return [d === dia ? `${d}-${posicionTrasMover(c!, desde, hacia)}` : clave, k];
+    }),
+  );
+}
+
 /** Las posiciones abiertas después de insertar en `en`: las de `en` en adelante bajan un lugar. */
 export const posicionesTrasInsertar = (abiertas: ReadonlySet<number>, en: number): Set<number> => new Set([...abiertas].map((p) => (p >= en ? p + 1 : p)));
 
@@ -115,7 +129,7 @@ export function organizadoEnMicrociclos<B extends { sessions?: SesionEntrada[]; 
 /** Lo que dice «Organizar por microciclos» de las sesiones que ya tiene el bloque. */
 export function loQuePasaConLasSesiones(n: number): string | null {
   if (n === 0) return null;
-  return n === 1 ? `La sesión del bloque pasa a «${PRIMER_MICROCICLO}».` : `Las ${n} sesiones del bloque pasan a «${PRIMER_MICROCICLO}».`;
+  return n === 1 ? `La sesión de la fase pasa a «${PRIMER_MICROCICLO}».` : `Las ${n} sesiones de la fase pasan a «${PRIMER_MICROCICLO}».`;
 }
 
 // ─── Los textos ──────────────────────────────────────────────────────────────────────────────────────────────────
@@ -136,5 +150,5 @@ export const COPY_DE_LOS_EDITORES = {
   quitarLaSerie: (n: number): string => `Quitar la serie ${n + 1}`,
   duplicado: 'Se duplicó. La copia está justo después.',
   topeDeDiasTipo: (n: number): string => `Un plan lleva hasta ${n} días tipo.`,
-  topeDelMicrociclo: (tope: number, n: number): string => `Un microciclo lleva hasta ${tope} sesiones, y este bloque tiene ${n}.`,
+  topeDelMicrociclo: (tope: number, n: number): string => `Un microciclo lleva hasta ${tope} sesiones, y esta fase tiene ${n}.`,
 } as const;

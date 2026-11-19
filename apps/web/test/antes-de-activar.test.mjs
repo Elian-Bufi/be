@@ -54,7 +54,8 @@ test('TEST-EDP-008 · los editores: una sola entrada fija, la revisión de la AP
     // «Revisar el plan» y «Activar plan» como acciones sueltas ya no están.
     assert.doesNotMatch(fuente, /async function validar\(|abrirLaActivacion|COPY_(ENTRENAMIENTO|NUTRICION)\.(validarPlan|activarPlan)/, ruta);
     // Con todo guardado, el cuadro pide la revisión a la API; la activación la decide la API.
-    assert.match(fuente, /if \(confirmar && version && !sucio && !guardando && revision === null\) void revisar\(version\);/, ruta);
+    // ENP-D13 (Entrenamiento): la pide también si la revisión que hay es de otra versión guardada.
+    assert.match(fuente, /if \(confirmar && version && !sucio && !guardando && (?:revision === null|\(revision === null \|\| revision\.version !== version\.version\))\) void revisar\(version\);/, ruta);
     assert.match(fuente, /const r = await api\.validarPlan(DeEntrenamiento)?\(token, planId, v\.version\);/, ruta);
     assert.match(fuente, /await api\.activarPlan(DeEntrenamiento)?\(token, planId, v\.version, intentoDeActivar\.actual\(/, ruta);
     // «¿Cuándo la revisás?» con «Sin fecha por ahora», y el principal espera una elección.

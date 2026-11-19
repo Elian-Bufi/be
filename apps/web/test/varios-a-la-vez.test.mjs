@@ -38,7 +38,7 @@ test('TEST-EDP-022 · el orden marcado se respeta y nada entra sin «Agregar»',
     assert.equal(p.intensity.criterion, 'RIR');
     assert.equal(p.intensity.target.value, 2);
   }
-  assert.equal(V.COPY_VARIOS_A_LA_VEZ.agregar(3, V.sesionDeDonde('Fuerza · Semana 1 · Piernas A')), 'Agregar 3 a Piernas A');
+  assert.equal(V.COPY_VARIOS_A_LA_VEZ.agregar(3, V.sesionDeDonde('Fuerza · Semana 1 · Piernas A')), 'Agregar 3 ejercicios a Piernas A');
   // En el buscador, marcar no le avisa nada al editor: solo «Agregar» llama a \`onAgregar\`.
   assert.equal((BUSCADOR.match(/onAgregar\(/g) ?? []).length, 1);
   assert.match(BUSCADOR, /const agregar = \(\) => \{\n\s*if \(marcados\.length === 0\) return setFalta\(true\);/);

@@ -23,9 +23,10 @@ export const TEXTOS_DEL_DESCANSO = {
     return partes.length === 0 ? 'Últimos 30 días: sin sesiones registradas.' : `Últimos 30 días: ${enumerar(partes)}.`;
   },
   // ─── La sesión: el descanso, el engranaje y la fila fija (AV-10 a AV-14) ───────────────────
-  descansoTrasLaSerie: (n: number) => `Descanso · tras la serie ${numero(n)}`,
+  // DL-178: `null` es una serie de calentamiento.
+  descansoTrasLaSerie: (n: number | null) => (n === null ? 'Descanso · tras el calentamiento' : `Descanso · tras la serie ${numero(n)}`),
   deRecomendado: (recomendado: string) => `de ${recomendado} recomendado`,
-  alTerminarSeguisCon: (n: number) => `Al terminar, seguís con la serie ${numero(n)}`,
+  alTerminarSeguisCon: (n: number | null) => (n === null ? 'Al terminar, seguís con el calentamiento' : `Al terminar, seguís con la serie ${numero(n)}`),
   descansoIniciado: (recomendado: string | null) => (recomendado ? `Descanso iniciado, recomendado ${recomendado}` : 'Descanso iniciado'),
   llegasteA: (recomendado: string) => `Llegaste a ${recomendado}`,
   barraParaLeer: (segundos: number, recomendado: number) => `${numero(segundos)} segundos de ${numero(recomendado)}`,

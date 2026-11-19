@@ -2,8 +2,10 @@
  * UF-11 de WP-USO-FINAL (DL-169; UF-T17 y UF-T22) · la sesión del pedido falla cerrada (revisión adversarial de la etapa 2):
  * `SesionGuard` sin el contexto del pedido no deja pasar, en vez de dejar que un profesional sin el segundo factor actúe
  * como profesional (`puedeActuarComoProfesional` responde «sin condición» cuando no hay sesión anotada).
+ * DL-177 (2026-11-18): hoy la política no exige el segundo factor al profesional; el guard anota NO_REQUERIDO.
  */
 import type { ExecutionContext } from '@nestjs/common';
+import { SEGUNDO_FACTOR_DEL_PROFESIONAL_EXIGIDO } from '@be/domain';
 import type { PrismaService } from '../prisma/prisma.service';
 import { anotarLaSesionDelPedido, dentroDeUnPedido, puedeActuarComoProfesional } from './sesion-de-la-solicitud';
 import { SesionGuard } from './sesion.guard';
@@ -44,11 +46,21 @@ describe('la sesión del pedido (UF-11)', () => {
     await expect(guardDeUnProfesionalSinElCodigo().canActivate(contextoHttp(pedido()))).rejects.toThrow(/contexto/);
   });
 
-  it('dentro de un pedido, el profesional sin el código no actúa como profesional; como persona ajena, sin condición', async () => {
-    await dentroDeUnPedido(async () => {
-      expect(await guardDeUnProfesionalSinElCodigo().canActivate(contextoHttp(pedido()))).toBe(true);
+  it('dentro de un pedido, una sesión anotada sin el código no actúa como profesional; como persona ajena, sin condición', () => {
+    dentroDeUnPedido(() => {
+      anotarLaSesionDelPedido({ identidadId: PROFESIONAL, sesionId: SESION, segundoFactor: { estado: 'REQUERIDO' } });
       expect(puedeActuarComoProfesional(PROFESIONAL)).toBe(false);
       expect(puedeActuarComoProfesional('00000000-0000-4000-8000-0000000000c1')).toBe(true);
+    });
+  });
+
+  it('DL-177: con la política de hoy, el profesional con un autenticador sin usar actúa como profesional solo con su contraseña', async () => {
+    expect(SEGUNDO_FACTOR_DEL_PROFESIONAL_EXIGIDO).toBe(false);
+    await dentroDeUnPedido(async () => {
+      const req: Record<string, unknown> = pedido();
+      expect(await guardDeUnProfesionalSinElCodigo().canActivate(contextoHttp(req))).toBe(true);
+      expect((req.actor as { segundoFactor: unknown }).segundoFactor).toEqual({ estado: 'NO_REQUERIDO' });
+      expect(puedeActuarComoProfesional(PROFESIONAL)).toBe(true);
     });
   });
 });

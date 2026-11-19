@@ -5,13 +5,18 @@
  * API vea la IP real (08 §12.2). Fuera del build de Render (next dev, CI, build local) puede quedar vacía: en `next dev`
  * /api/* se reescribe a la API local.
  */
-import { CAPACIDAD_FORMULARIOS_FORMATO_3, CAPACIDAD_TEXTOS_VIGENTES, crearClienteBe } from '@be/domain';
+import { CAPACIDAD_BLOQUES_DE_LA_SESION, CAPACIDAD_FORMULARIOS_FORMATO_3, CAPACIDAD_TEXTOS_VIGENTES, CAPACIDAD_TIPOS_DE_SERIE, crearClienteBe } from '@be/domain';
 
 export type { Resultado } from '@be/domain';
 
 // DL-165 (FR-08): el website lee y dibuja las versiones de formulario de formato 3; se despliega con la API. UF-05 (DL-169):
-// muestra en «Antes de seguir» la versión nueva de los términos y de la privacidad.
-export const api = crearClienteBe({ baseUrl: `${process.env.BE_API_BASE_URL ?? ''}/api/v1`, superficie: 'WEB', capacidades: [CAPACIDAD_FORMULARIOS_FORMATO_3, CAPACIDAD_TEXTOS_VIGENTES] });
+// muestra en «Antes de seguir» la versión nueva de los términos y de la privacidad. DL-178: distingue las series de
+// calentamiento, así que las lecturas de Entrenamiento le llegan con el tipo de cada serie explícito.
+export const api = crearClienteBe({
+  baseUrl: `${process.env.BE_API_BASE_URL ?? ''}/api/v1`,
+  superficie: 'WEB',
+  capacidades: [CAPACIDAD_FORMULARIOS_FORMATO_3, CAPACIDAD_TEXTOS_VIGENTES, CAPACIDAD_TIPOS_DE_SERIE, CAPACIDAD_BLOQUES_DE_LA_SESION],
+});
 
 /** Una key por intento lógico; los reintentos del mismo intento la reusan (10-B10:430-438). */
 export function nuevaClaveDeIdempotencia(): string {

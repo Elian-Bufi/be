@@ -16,6 +16,10 @@
  *
  * Las reglas —el orden, los tramos, las cuentas, las marcas, la historia y lo que cambió con una corrección— están en
  * `tomas-de-antropometria.ts`, con sus pruebas.
+ *
+ * WP-GRAFICOS GR-16 (DL-174, fase 1): al final de la toma abierta, «Desde el inicio y desde la anterior», la tabla de cada
+ * medida contra la primera toma y la anterior del mismo protocolo, método y unidad, con la línea del error de medición
+ * (`desde-el-inicio.tsx`). Usa las fechas de la lista para saber qué leer.
  */
 import {
   COPY,
@@ -47,6 +51,7 @@ import { api, type Resultado } from '../../../../lib/api';
 import { dia, fecha, horaDelDia } from '../../../../lib/formato';
 import { EstadoDeLectura, useAntropometria } from './antropometria';
 import { DetalleDeResultado, NuevoCalculo, ResultadosDeLaToma, useCalculosDelAsesorado, type Calculos } from './calculos';
+import { SeccionDesdeElInicio, type TomaParaComparar } from './desde-el-inicio';
 import { Marca } from './marca';
 import { DetalleDeMedicion } from './medicion';
 import { useNombres } from '../../../../lib/nombres-ocultos';
@@ -173,6 +178,8 @@ export function VistaDeEvaluaciones() {
     return m;
   }, [detalles]);
   const tramos = useMemo(() => tramosDeProtocolo(tomas ?? [], (t) => resumenes.get(t.evaluationId)?.protocolo), [tomas, resumenes]);
+  // GR-16: cuándo se tomó cada toma de la lista, para leer lo que hace falta para compararlas.
+  const paraComparar = useMemo((): readonly TomaParaComparar[] => (tomas ?? []).map((t) => ({ id: t.evaluationId, ocurrio: t.occurredAt })), [tomas]);
 
   /** Después de corregir, anular, calcular o dejar una referencia: se vuelven a leer esa toma y los cálculos. */
   const recargarCalculos = calculos.recargar;
@@ -296,7 +303,9 @@ export function VistaDeEvaluaciones() {
                     </p>
                   </Aviso>
                 ) : null}
-                {abierta?.tipo === 'listo' ? <TomaAbierta key={abierta.toma.evaluationId} toma={abierta.toma} calculos={calculos.estado} onReintentarLosCalculos={() => void recargarCalculos()} volverALeer={volverALeer} /> : null}
+                {abierta?.tipo === 'listo' ? (
+                  <TomaAbierta key={abierta.toma.evaluationId} toma={abierta.toma} tomas={paraComparar} calculos={calculos.estado} onReintentarLosCalculos={() => void recargarCalculos()} volverALeer={volverALeer} />
+                ) : null}
               </div>
             </div>
           )
@@ -354,11 +363,14 @@ const ICONO_DE_FAMILIA: Readonly<Partial<Record<FamiliaDeMedicion, NombreDeIcono
  */
 function TomaAbierta({
   toma,
+  tomas,
   calculos,
   onReintentarLosCalculos,
   volverALeer,
 }: {
   toma: EvaluacionAntropometricaApi;
+  /** GR-16: las tomas registradas de la lista, con cuándo se tomó cada una. */
+  tomas: readonly TomaParaComparar[];
   calculos: Calculos;
   onReintentarLosCalculos: () => void;
   volverALeer: (id: string) => Promise<void>;
@@ -452,6 +464,8 @@ function TomaAbierta({
           ))}
         </div>
       </section>
+
+      <SeccionDesdeElInicio evaluacionId={toma.evaluationId} ocurrio={toma.occurredAt} tomas={tomas} />
 
       <Panel abierto={panel !== null} titulo={panel?.tipo === 'calcular' ? C.nuevoCalculo : panel?.tipo === 'resultado' ? C.detalleDelResultado : medicion ? nombreDeMetrica(medicion.metric) : ''} onCerrar={cerrar}>
         {panel?.tipo === 'medicion' && medicion ? <DetalleDeMedicion key={medicion.measurementId} medicion={medicion} toma={toma} protocoloDeLaToma={resumen.protocolo} corridas={corridas} hecho={hecho} onHecho={despuesDeEscribir} /> : null}

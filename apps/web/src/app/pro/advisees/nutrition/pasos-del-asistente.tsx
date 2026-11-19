@@ -5,10 +5,16 @@
  * plan) y los pasos 2 a 7 (sobre el borrador, en el editor). Usa el armazón común (`asistente/asistente.tsx`) con los
  * pasos de Nutrición, y las mismas operaciones que la estación: lo que escribe un paso es un cambio del borrador que
  * lleva el autoguardado, y «Siguiente» guarda y espera (TEST-EDP-017). La lógica está en `asistente-de-nutricion.ts`.
+ *
+ * **WP-NUTRICION-PLANIFICACION (primer tramo):** los rangos se ven y se indican mientras se arman los días tipo (paso 3) y
+ * las comidas (pasos 4 y 5), y la suma de los rangos de las comidas se compara con el objetivo del día (NUP-05 y NUP-06);
+ * el paso 5 ofrece también «+ Opción de receta», «Copiar desde otra comida» y «Usar una comida habitual» (NUP-13), con
+ * las mismas operaciones que la comida del editor. El rediseño completo del asistente no entra en este tramo.
  */
 import { todasLasPaginas, type ComidaHabitual, type EvaluacionNutricional, type VersionDeObjetivo } from '@be/domain';
 import { useEffect, useId, useState, type ReactNode } from 'react';
 import { Icono } from '../../../../components/icono';
+import { Pista } from '../../../../components/pista';
 import { api } from '../../../../lib/api';
 import { dia as fechaDelDia } from '../../../../lib/formato';
 import { COPY_ANTES_DE_ACTIVAR } from '../antes-de-activar';
@@ -22,7 +28,10 @@ import { FormularioDeObjetivo } from './formularios';
 import { InsertarComidaHabitual } from './habituales';
 import { useNutricion } from './nutricion';
 import { nombreDeLaComida, nombreDelDiaTipo, totalEnUnaLinea, type RangosDelDia } from './rangos';
-import { MAXIMO_DE_OPCIONES } from './opcion-de-otra-comida';
+import { COPY_DE_OTRA_COMIDA, MAXIMO_DE_OPCIONES } from './opcion-de-otra-comida';
+import { COPY_OPCIONES } from './comida-del-editor';
+import { gramosDelObjetivo, macrosEnProporcion } from './planificacion';
+import { KcalDelObjetivo, RangoEnUnRenglon, SumaDeLosRangosIndicados, type RangoParaIndicar } from './suma-de-los-rangos';
 import { OPCION_INICIAL } from './receta-en-el-plan';
 
 const siguiente = (n: PasoDeNutricion) => `Siguiente: ${PASOS_DE_NUTRICION[n - 1]}`;
@@ -96,6 +105,12 @@ export function PasosDeNutricion({
   onObjetivoNuevo,
   onRevisarYActivar,
   rangosIndicados = null,
+  rangoDe = null,
+  onAgregarReceta,
+  onCopiarDesdeOtra,
+  onUsarHabitual,
+  noSePuedeCopiar,
+  noSePuedeUsarHabitual,
 }: {
   paso: Exclude<PasoDeNutricion, 1>;
   estructura: Estructura;
@@ -123,6 +138,14 @@ export function PasosDeNutricion({
   onRevisarYActivar: () => void;
   /** Paso 6: los rangos indicados de cada día tipo (API-PLN-02 y 03), con el mismo cuadro que la estación. */
   rangosIndicados?: ReactNode;
+  /** NUP-05: el rango indicado de un día tipo (`j` en `null`) o de una comida, y cómo indicarlo, mientras se arma. */
+  rangoDe?: ((i: number, j: number | null) => RangoParaIndicar) | null;
+  /** NUP-13: las demás formas de sumar una opción, las mismas que la comida del editor. */
+  onAgregarReceta: (i: number, j: number) => void;
+  onCopiarDesdeOtra: (i: number, j: number) => void;
+  onUsarHabitual: (i: number, j: number) => void;
+  noSePuedeCopiar: (i: number, j: number) => string | null;
+  noSePuedeUsarHabitual: (i: number, j: number) => string | null;
 }) {
   const id = useId();
   const [noAvanzo, setNoAvanzo] = useState(false);
@@ -184,11 +207,16 @@ export function PasosDeNutricion({
           <ol className="asistente__sesiones">
             {estructura.map((d, i) => (
               <li key={d.dayTypeId ?? `nuevo-${i}`} className="asistente__sesion" data-dia-del-asistente={i + 1}>
-                <label className="asistente__campo">
-                  <span className="visualmente-oculto">{C.nombreDelDia(i + 1)}</span>
-                  <input value={d.label} maxLength={80} placeholder={`Día tipo ${i + 1}`} onChange={(e) => cambiar((x) => ((x[i]!.label = e.target.value), x))} />
-                </label>
+                {/* NUA-07: el mismo campo común que el nombre de cada comida en el paso 4 (tenía el mismo borde suelto). */}
+                <div className="campo asistente__nombre">
+                  <label htmlFor={`${id}-dia-${i}`} className="visualmente-oculto">
+                    {C.nombreDelDia(i + 1)}
+                  </label>
+                  <input id={`${id}-dia-${i}`} type="text" value={d.label} maxLength={80} placeholder={`Día tipo ${i + 1}`} onChange={(e) => cambiar((x) => ((x[i]!.label = e.target.value), x))} />
+                </div>
                 <span className="nota">{d.meals.length === 0 ? 'Sin comidas' : d.meals.length === 1 ? '1 comida incluida' : `${d.meals.length} comidas incluidas`}</span>
+                {/* NUP-05: el rango del día, a la vista y a mano mientras se arman los días tipo. */}
+                {rangoDe ? <RangoEnUnRenglon de={nombreDelDiaTipo(d, i)} rango={rangoDe(i, null)} /> : null}
                 <span className="asistente__acciones">
                   <button type="button" className="boton boton--enlace" disabled={estructura.length >= MAXIMO_DE_DIAS_TIPO} onClick={() => cambiar((x) => (duplicarEn(x, i, copiaDelDiaTipo(x[i]!, i)), x))}>
                     {C.duplicarDia(nombreDelDiaTipo(d, i))}
@@ -218,7 +246,18 @@ export function PasosDeNutricion({
 
       {paso === 4
         ? estructura.map((d, i) => (
-            <PasoDeLasComidas key={d.dayTypeId ?? `nuevo-${i}`} id={`${id}-dia-${i}`} dia={d} i={i} cambiar={cambiar} habituales={comidasHabituales} onInsertarHabitual={onInsertarHabitual} variosDias={estructura.length > 1} />
+            <PasoDeLasComidas
+              key={d.dayTypeId ?? `nuevo-${i}`}
+              id={`${id}-dia-${i}`}
+              dia={d}
+              i={i}
+              cambiar={cambiar}
+              habituales={comidasHabituales}
+              onInsertarHabitual={onInsertarHabitual}
+              variosDias={estructura.length > 1}
+              rangoDe={rangoDe}
+              objetivo={objetivo}
+            />
           ))
         : null}
 
@@ -236,6 +275,7 @@ export function PasosDeNutricion({
                     <p className="asistente__ejercicio-actual">
                       <strong>{nombreDeLaComida(m, j)}</strong>
                     </p>
+                    {rangoDe ? <RangoEnUnRenglon de={nombreDeLaComida(m, j)} rango={rangoDe(i, j)} /> : null}
                     <ul className="asistente__opciones">
                       {m.options.map((o, k) => {
                         const nombre = o.label.trim() || `Opción ${k + 1}`;
@@ -259,17 +299,27 @@ export function PasosDeNutricion({
                         );
                       })}
                     </ul>
-                    <button
-                      type="button"
-                      className="boton boton--enlace"
-                      aria-haspopup="dialog"
-                      data-asistente-agregar-opcion
-                      disabled={m.options.length >= MAXIMO_DE_OPCIONES}
-                      onClick={() => onAgregarOpcion(i, j)}
-                    >
-                      <Icono nombre="mas" tamano={18} />
-                      {C.agregarOpcion(nombreDeLaComida(m, j))}
-                    </button>
+                    {/* NUP-13: las cuatro formas de sumar una opción, al lado, con las operaciones de la comida del editor. */}
+                    <p className="asistente__formas-de-sumar" data-asistente-formas-de-sumar>
+                      <button
+                        type="button"
+                        className="boton boton--enlace"
+                        aria-haspopup="dialog"
+                        data-asistente-agregar-opcion
+                        disabled={m.options.length >= MAXIMO_DE_OPCIONES}
+                        onClick={() => onAgregarOpcion(i, j)}
+                      >
+                        <Icono nombre="mas" tamano={18} />
+                        {C.agregarOpcion(nombreDeLaComida(m, j))}
+                      </button>
+                      <button type="button" className="boton boton--enlace" aria-haspopup="dialog" data-asistente-opcion-de-receta disabled={m.options.length >= MAXIMO_DE_OPCIONES} onClick={() => onAgregarReceta(i, j)}>
+                        <Icono nombre="receta" tamano={18} />
+                        {C.opcionDeReceta}
+                        <span className="visualmente-oculto"> {COPY_OPCIONES.en(nombreDeLaComida(m, j))}</span>
+                      </button>
+                      <BotonConMotivo texto={COPY_DE_OTRA_COMIDA.copiar} comida={nombreDeLaComida(m, j)} noSePuede={noSePuedeCopiar(i, j)} alTocar={() => onCopiarDesdeOtra(i, j)} />
+                      <BotonConMotivo texto={COPY_DE_OTRA_COMIDA.usarHabitual} comida={nombreDeLaComida(m, j)} noSePuede={noSePuedeUsarHabitual(i, j)} alTocar={() => onUsarHabitual(i, j)} />
+                    </p>
                   </div>
                 ))}
               </div>
@@ -345,6 +395,9 @@ function PasoDelObjetivo({ objetivo, onObjetivoNuevo }: { objetivo: VersionDeObj
         <section className="asistente__objetivo" aria-labelledby="asistente-objetivo-general" data-objetivo-general>
           <h4 id="asistente-objetivo-general">{C.objetivoGeneral}</h4>
           <TiraDelObjetivo calorias={objetivo.estimatedEnergyRequirement.value} macros={{ estado: 'listos', valor: objetivo.macronutrientDistribution }} onReintentar={() => undefined} />
+          {/* NUP-07: las kcal que suman los gramos, a la vista, y si no coinciden con las indicadas. Un objetivo viejo con
+              macros en proporción de las kcal lo dice: no hay gramos que sumar. */}
+          <KcalDelObjetivo kcal={objetivo.estimatedEnergyRequirement.value} gramos={gramosDelObjetivo(objetivo)} enProporcion={macrosEnProporcion(objetivo)} />
           <p className="nota">{C.versionYFecha(numero, fechaDelDia(objetivo.effectiveFrom))}</p>
         </section>
       ) : null}
@@ -388,6 +441,8 @@ function PasoDeLasComidas({
   habituales,
   onInsertarHabitual,
   variosDias,
+  rangoDe,
+  objetivo,
 }: {
   id: string;
   dia: Estructura[number];
@@ -396,6 +451,9 @@ function PasoDeLasComidas({
   habituales: readonly ComidaHabitual[] | null;
   onInsertarHabitual: (i: number, comida: ComidaHabitual['structure'], nombresNuevos: Readonly<Record<string, string>>) => void;
   variosDias: boolean;
+  /** NUP-05 y NUP-06: el rango de cada comida, y la suma frente al objetivo. */
+  rangoDe: ((i: number, j: number | null) => RangoParaIndicar) | null;
+  objetivo: VersionDeObjetivo | null;
 }) {
   const [conHabitual, setConHabitual] = useState(false);
   const nombreDelDia = nombreDelDiaTipo(dia, i);
@@ -406,11 +464,16 @@ function PasoDeLasComidas({
       <ol className="asistente__sesiones">
         {dia.meals.map((m, j) => (
           <li key={m.mealId ?? `nueva-${j}`} className="asistente__sesion">
-            <label className="asistente__campo">
-              <span className="visualmente-oculto">{C.nombreDeLaComida(nombreDelDia, j + 1)}</span>
-              <input id={`${id}-comida-${j}`} value={m.label} maxLength={80} placeholder={`Comida ${j + 1}`} onChange={(e) => cambiar((x) => ((x[i]!.meals[j]!.label = e.target.value), x))} />
-            </label>
+            {/* NUA-07: el campo común del website (`campo`), como el resto: la letra, el borde y el alto de BE, en Claro y
+                en Azul noche. La etiqueta sigue oculta a la vista: el nombre escrito ya dice qué es. */}
+            <div className="campo asistente__nombre">
+              <label htmlFor={`${id}-comida-${j}`} className="visualmente-oculto">
+                {C.nombreDeLaComida(nombreDelDia, j + 1)}
+              </label>
+              <input id={`${id}-comida-${j}`} type="text" value={m.label} maxLength={80} placeholder={`Comida ${j + 1}`} onChange={(e) => cambiar((x) => ((x[i]!.meals[j]!.label = e.target.value), x))} />
+            </div>
             <span className="nota">{m.options.length === 1 ? '1 opción' : `${m.options.length} opciones`}</span>
+            {rangoDe ? <RangoEnUnRenglon de={nombreDeLaComida(m, j)} rango={rangoDe(i, j)} /> : null}
           </li>
         ))}
       </ol>
@@ -431,6 +494,7 @@ function PasoDeLasComidas({
           </button>
         ) : null}
       </div>
+      {rangoDe && dia.meals.length > 0 ? <SumaDeLosRangosIndicados comidas={dia.meals.map((m, j) => ({ nombre: nombreDeLaComida(m, j), rango: rangoDe(i, j).indicado }))} objetivo={objetivo} /> : null}
       {conHabitual && habituales ? (
         <InsertarComidaHabitual
           comidas={habituales}
@@ -444,7 +508,19 @@ function PasoDeLasComidas({
   );
 }
 
-/** Paso 6: una lista de cosas con su lugar; cada una lleva a corregirla en la estación. */
+/** NUP-13: una forma de sumar una opción; si no se puede, queda apagada (sin perder el foco) y dice por qué al lado. */
+function BotonConMotivo({ texto, comida, noSePuede, alTocar }: { texto: string; comida: string; noSePuede: string | null; alTocar: () => void }) {
+  const boton = (
+    <button type="button" className="boton boton--enlace" aria-haspopup="dialog" aria-disabled={noSePuede ? true : undefined} onClick={() => (noSePuede ? undefined : alTocar())}>
+      {texto}
+      <span className="visualmente-oculto"> en {comida}</span>
+    </button>
+  );
+  // La pista lo dice al pasar el mouse o al llegar con el teclado, y el lector la oye como descripción del botón.
+  return noSePuede ? <Pista texto={noSePuede}>{boton}</Pista> : boton;
+}
+
+/** Paso 6: una lista de cosas con su lugar; cada una lleva a corregirla en el plan (NUP-14). */
 function ListaDeLugares({ titulo, vacia, lugares }: { titulo: string; vacia: string; lugares: readonly Lugar[] }) {
   return (
     <section className="asistente__revisar">

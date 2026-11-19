@@ -23,6 +23,8 @@ import {
   type CalidadDeTiempoApi,
   type EjecucionDeEntrenamiento,
   type TiemposDeSesion,
+  COPY_TIPOS_DE_SERIE,
+  numerosEfectivos,
 } from '@be/domain';
 import { useCallback, useEffect, useState } from 'react';
 import { Cargando } from '../../../../components/estados';
@@ -122,6 +124,8 @@ export function DescansosYDuracion({ ejecucion: x, tiempos }: { ejecucion: Ejecu
             const numeros = [...new Set([...p.sets.map((s) => s.setIndex), ...(registrado?.sets ?? []).map((s) => s.setIndex)])].sort((a, b) => a - b);
             if (numeros.length === 0) return null;
             const delEjercicio = t.exercises.find((e) => e.prescriptionId === p.prescriptionId) ?? null;
+            // DL-178: el tiempo del calentamiento se muestra (es tiempo de la sesión), rotulado «C»; las efectivas, con su número.
+            const efectivos = numerosEfectivos([...p.sets, ...(registrado?.sets ?? [])]);
             return (
               <tbody key={p.prescriptionId}>
                 <tr className="tabla-de-series__ejercicio">
@@ -135,8 +139,8 @@ export function DescansosYDuracion({ ejecucion: x, tiempos }: { ejecucion: Ejecu
                   const descanso = t.rests.find((r) => r.prescriptionId === p.prescriptionId && r.setIndex === n) ?? null;
                   const cronometrada = t.timedSets.find((s) => s.prescriptionId === p.prescriptionId && s.setIndex === n) ?? null;
                   return (
-                    <tr key={n}>
-                      <th scope="row">{numero(n)}</th>
+                    <tr key={n} data-calentamiento={efectivos.get(n) === null ? '' : undefined}>
+                      <th scope="row">{efectivos.get(n) === null ? <abbr title={COPY_TIPOS_DE_SERIE.calentamiento}>{COPY_TIPOS_DE_SERIE.marca}</abbr> : numero(efectivos.get(n) ?? n)}</th>
                       <td>{descanso ? textoDeDescanso(descanso) : 'Sin descanso marcado'}</td>
                       <td>{cronometrada ? textoDeLaSerie(cronometrada.duration) : serie ? COPY_ENTRENAMIENTO_POR_SERIE.duracionDesconocida : COPY_ENTRENAMIENTO_POR_SERIE.sinRegistrar}</td>
                     </tr>

@@ -1,0 +1,2182 @@
+# WP-GRAFICOS — la historia de la persona en el tiempo, a mano mientras se planifica
+
+> **Estado:** DECLARADO el 2026-11-14. Los gráficos GR-01 a GR-25 y los cruces SP-01 a SP-08 son la propuesta de
+> gráficos, que Dirección aprobó ese día; GR-26 («Armá tu gráfico») y GR-27 (los enfoques) son las dos ideas que sumó
+> en el mismo mensaje. Las decisiones GR-D0 a GR-D10 (§6.1) quedaron tomadas por la delegación vigente de Dirección,
+> según la recomendación de la propuesta. Las del continuador en el diseño técnico (GR-T01 a GR-T19, §6.2) están **a
+> ratificar**: mientras no haya respuesta, rigen. La fase 1 se programa en `wp-graficos-fase-1`; la fase 2, adelantada,
+> en cinco ramas desde el 2026-11-14 (§11). DL-174.
+>
+> **Encargo** (Dirección, 2026-11-14, con sus palabras):
+> - «Aprobadas las 25 sugerencias de gráficos y podríamos agregar también la opción de que puedan ver uno arriba del
+>   otro, superpuestos en el mismo gráfico si comparten la x o alineados uno arriba del otro para que los entrenadores
+>   vean los gráficos que necesiten además de los sugeridos…» (GR-26);
+> - «…podrían tener también su stand de gráficos favoritos para elegir ver en ese plan o persona hasta que lo vayan
+>   cambiando, no sé, pensaba que capaz si se estaban enfocando en fuerza o algo en específico ya sabían qué trackear
+>   principalmente» (GR-27);
+> - «Ya veo lo de los gráficos… ya tienes que ponerte a trabajar en eso»: la fase 2 se adelanta (§3);
+> - la delegación vigente: «a menos que sea una decisión crítica con criterio haz lo que me recomiendes».
+>
+> **Fuente:**
+> - la propuesta de gráficos, publicada en <https://claude.ai/artifact/79KSspo5cFQyBLVAivqHFL>: la visión y sus doce
+>   principios, diecisiete referentes (§12), los 25 gráficos, los ocho cruces, la planificación, catorce reglas de
+>   honestidad (§5), cinco fases, diez riesgos y las decisiones GR-D. No está en el repo: este paquete la cuenta en
+>   palabras, para ser autocontenido;
+> - el diseño técnico de la fase 2, de «Armá tu gráfico» y de los enfoques, hecho sobre `main` `1089fc24` sin cambiar
+>   nada (§4.2 a §4.6, §7 y §11 lo resumen);
+> - el código de `main` `7cb79d3a`, releído para los módulos que nombra este paquete.
+>
+> **Antecedentes, no son partes:** «Analizar» con hasta tres métricas y las vistas guardadas (DL-126 y DL-128), la
+> fuerza estimada en «Analizar» y en el cuadro del ejercicio (DL-171, ED-74 y ED-75), «Comparar dos etapas» (C-12), la
+> línea de tiempo (API-DSH-04) y la evolución de las últimas tomas (TB-50). Este paquete se apoya en ellos y no los
+> rehace.
+>
+> **Datos:** solo sintéticos, en local y en `test`. **Esta declaración:** rama `docs-wp-graficos`, desde `main`
+> `7cb79d3a`. Es solo documentación: no tiene código ni migraciones.
+
+## 0. Legajo y decisiones que cita
+
+- **El legajo:**
+  - TEST-PRJ-009: no calificar. Ningún texto nuevo usa las palabras que prohíbe, ni en negación;
+  - RNF-ACC-001 y B10-10: WCAG 2.2 AA (4,5:1 para el texto; 3:1 para las marcas y los bordes que comunican). Cada
+    gráfico tiene su tabla o su texto equivalente, y se maneja con teclado;
+  - 09 v0.11 §18-§23 y B10-09 §15-§28: API-PRJ-01 y «Analizar»;
+  - RF-025: la historia de la persona empieza en el inicio del acompañamiento;
+  - REG-06-105: cada registro se lee contra la versión del plan que regía ese día;
+  - REG-06-162: los grupos de comparabilidad (protocolo, método y unidad); REG-06-165 y 166 y B10-07: en Antropometría,
+    nada se imputa ni se suaviza, y se dibujan solo puntos;
+  - B10-08 §21 y §22: la proyección de las series cerca del fallo frente al total y el umbral del profesional (GR-08);
+    §23: la progresión de carga, repeticiones y RIR en paneles chicos (CAND-10-PRJ-07, GR-03);
+  - INV-06-153: Entrenamiento captura y no calcula la carga acumulada ni las marcas (GR-09 espera su DL, GR-D2);
+    INV-06-192: una marca personal es la observada con un criterio explícito, y una estimación no se presenta como marca
+    medida;
+  - M-11 (06): las proyecciones longitudinales. La de las series cerca del fallo frente al total sigue sin
+    especificación (responde `SPECIFICATION_PENDING`): GR-08 solo entra como desafío, con su DL.
+- **Las DL:**
+  - DL-126: el diccionario de métricas de «Analizar»; dos métricas se superponen solo si comparten familia y unidad.
+    GR-26 lo amplía (GR-T04);
+  - DL-128: las vistas guardadas (API-VAN), el precedente de los enfoques;
+  - DL-137 D-7: **lo nuevo va en operaciones nuevas**;
+  - DL-152: lo que lee cada APK, congelado por versión. Nada de este paquete cambia esas lecturas;
+  - DL-153: COMPLETE no quiere decir que el día esté completo;
+  - DL-158: lo indicado de Nutrición por día, en el mismo gráfico que lo registrado;
+  - DL-161: la carga rápida (procedencia PLAN), que no es dato de la persona;
+  - DL-163: la matriz de lo que viaja entre profesionales (D-13, §3.1 de WP-TABLERO-ALTA-GAMA), la capa Trabajo y las
+    series por zona (D-14, D-15 y D-20), el esfuerzo de la sesión y el peso en casa (D-16) y los rangos de Nutrición
+    (D-17);
+  - DL-165 D-9: los hábitos que declara la persona, versionados (API-HBT-05);
+  - DL-167: los editores del profesional (la estación, el cuadro del ejercicio y el buscador);
+  - DL-169 (UF-11): un profesional opera un área solo verificado, habilitado y con su segundo factor (`puedeOperarArea`);
+  - DL-171: el 1RM estimado (Epley v1), solo para el profesional (ED-70 y ED-72 a ED-76; RM-16 y RM-22; DJ-2 y DJ-14);
+  - DL-173 (WP-PULIDO-GRANDES): PG-11 («La vez pasada» en la APK) es la misma pieza que GR-01; PG-18 usa las marcas de
+    este paquete; las notas de PG-15 y PG-16 entran en la cinta del tiempo (GR-23); PG-14 da el campo de fecha del
+    website del profesional (`CampoDeFecha`).
+- **Otras decisiones de Dirección:** 2026-11-13, la visión longitudinal: BE es para el seguimiento en el tiempo y los
+  patrones entre áreas, con gráficos mientras se planifica y superposiciones que no afirman causas.
+
+## 1. Objetivo
+
+Que el profesional vea la historia de la persona **donde decide** (al elegir un ejercicio, al escribir una carga, al
+tocar un macro del objetivo) y que esa historia se lea entera: las tres áreas sobre un solo eje del tiempo, con las
+versiones del plan de fondo, lo indicado separado de lo registrado y los huecos como huecos.
+
+Cada serie, cada comida y cada toma es un punto en la historia de una persona, y el valor aparece cuando esos puntos se
+leen juntos a lo largo de meses. Con pocas semanas, BE lo dice y no dibuja lo que todavía no existe; con meses, aparecen
+las etapas comparables y los cruces con datos suficientes de cada lado. La personalización no sale de un algoritmo
+opaco ni de promedios de otras personas: cada persona se compara solo con su propia historia. Y todo pasa por el permiso
+de la persona: un cruce existe completo solo para el profesional que lleva las dos áreas con planes propios (el
+**caso 1**, porque cada lectura del profesional ya está acotada a sus planes y sus tomas:
+`apps/api/src/analisis/fuentes.ts`); entre profesionales distintos viaja solo lo que deja la matriz de DL-163 D-13 (el
+**caso 2**, en la fase 3).
+
+**Cómo se mide**, al cerrar la fase 2:
+
+| Qué | Hoy (`main` `7cb79d3a`) | Al cerrar la fase 2 |
+|---|---|---|
+| La historia del ejercicio al planificar | La tarjeta de fuerza, solo en los seis ejercicios de la lista de la v1 (ED-75) | «La vez pasada» (fase 1) y el historial en paneles alineados en el cuadro de cualquier ejercicio (GR-02, GR-03, GR-05 y GR-06) |
+| Los gráficos de una persona, juntos | «Analizar» con hasta tres métricas y los minigráficos del Resumen, cada uno con su eje | «Patrones»: la cinta del tiempo arriba y un cursor para toda la columna, sobre el mismo eje de fechas |
+| Un gráfico arriba del otro, o superpuestos | «Separadas»; «Juntas» solo con la misma familia y unidad | «Alineadas» (por defecto) y «Superpuestas» si comparten la x, con hasta dos unidades (GR-26) |
+| Los gráficos que cada profesional mira primero | Las vistas guardadas de «Analizar» (API-VAN), de a una | Enfoques de hasta seis gráficos, elegidos para una persona o un plan hasta que se cambien (GR-27) |
+| Los cruces entre áreas | Ninguno preparado | SP-01 y SP-02 en el caso 1, con su ventana, lo que también cambió y la frase |
+| Las temporadas del plan | Bandas en «Analizar» | Las de su área detrás de cada gráfico, con la etiqueta de la versión (GR-11); las de otra área, a pedido |
+| Las pruebas | — | Un oráculo por parte, cada uno con su mutación (§9) |
+
+### 1.1 Lo que pidió Dirección, y cómo se lee
+
+| Lo que dijo | Cómo queda | ID |
+|---|---|---|
+| «ver uno arriba del otro … alineados uno arriba del otro» | **«Alineadas»:** paneles apilados con un solo eje de fechas y un cursor común. Es el modo por defecto | GR-26 |
+| «superpuestos en el mismo gráfico si comparten la x» | **«Superpuestas»:** en el mismo gráfico, solo si las series comparten el eje X (GR-T03), hasta tres series y dos unidades, una a cada lado (GR-T02) | GR-26 |
+| «los gráficos que necesiten además de los sugeridos» | **«Armá tu gráfico»:** el catálogo de series de las áreas permitidas, con los sugeridos primero | GR-26 |
+| «su stand de gráficos favoritos para elegir ver en ese plan o persona hasta que lo vayan cambiando» | **Los enfoques:** conjuntos de hasta seis gráficos, propios del profesional, que se eligen para una persona o para uno de sus planes y quedan hasta que se cambien | GR-27 |
+| «si se estaban enfocando en fuerza o algo en específico ya sabían qué trackear» | El nombre: «Enfoque: Foco en fuerza», «Mis enfoques» (GR-T01) | GR-27 |
+| «los entrenadores» | Vale para los tres tipos de profesional, cada uno con las áreas que lleva | GR-26 y GR-27 |
+
+### 1.2 Los doce principios de la propuesta
+
+1. **Un solo eje del tiempo.** Fechas reales y la misma ventana. De fondo, las bandas de las versiones de su área; las de
+   otra área, solo a pedido («Mostrar las temporadas de Nutrición») y en el caso 1.
+2. **El contexto va donde está la decisión.** Tres escalas: una marca en el buscador, el historial en el cuadro del
+   ejercicio y «Patrones» en la planificación. Nada obliga a salir del editor ni escribe en el plan.
+3. **Ubicar, nunca calificar.** Sin verde ni rojo para lo indicado frente a lo registrado y sin comparar con otras
+   personas. Las diferencias, en las unidades de cada cosa (kg, g/día, mm).
+4. **Paneles alineados.** Dos magnitudes distintas van apiladas, con el mismo eje de fechas y una regla vertical común.
+   El doble eje existe solo en «Superpuestas», a pedido del profesional (GR-26 y §5).
+5. **Lo indicado y lo registrado, separados.** Lo indicado, en marcas huecas o rayadas; lo registrado, llenas. Lo
+   precargado del plan («carga rápida») nunca se dibuja como dato de la persona.
+6. **Un hueco es un hueco.** Un día sin registro no es cero, un RIR sin escribir no es 0 y un sitio sin medir no es cero.
+   Las líneas se cortan y cada promedio dice con cuántos datos se hizo.
+7. **Cada cálculo, con método y versión.** «1RM estimado (Epley v1)», con «Cómo se calculó» a un clic. Sin método
+   aprobado, no se muestra.
+8. **Coincidir no es causar.** Cada cruce tiene una sola ventana de lectura, fijada antes de mirar los datos; la lista de
+   lo que también cambió; y la frase fija. La explicación fisiológica va en «Cómo leerlo», con su fuente. BE responde a
+   la pregunta del profesional: no sale a buscar correlaciones.
+9. **Más uso, mejor lectura, dicho en voz alta.** Lo que necesita historia declara su mínimo y cuánto falta («se arma
+   con 8 semanas de datos; hay 2»). La personalización se ve crecer; no se promete.
+10. **El permiso de la persona manda.** Caso 1 y caso 2. Un área sin acceso no aparece, ni en gris ni con candado, y cada
+    cruce tiene su prueba del caso negado.
+11. **El ruido, dicho antes que el cambio.** Con Epley v1, cada unidad de RIR mueve la estimación en carga/30 (con 80 kg,
+    unos 2,7 kg). Al lado del 1RM estimado van la mediana del RIR y el rango de repeticiones de cada tramo, y el ruido
+    propio de la persona en texto, sin «±» (RM-22). Nunca «primero → último» ni una flecha.
+12. **Cada dato con su calidad y su momento.** COMPLETE quiere decir «con cantidades en todos sus registros y sin
+    comidas del plan sin registro» (DL-153), y sin plan vigente no se sabe si faltan comidas. Lo cargado tarde es un
+    recuerdo y se marca (`late`, API-DSH-04).
+
+## 2. Alcance y lo que queda fuera
+
+**Entra:** los 25 gráficos de la propuesta (GR-01 a GR-25), sus ocho cruces (SP-01 a SP-08), «Armá tu gráfico»
+(GR-26), los enfoques (GR-27) y la sección «Patrones», cada uno con su fase (§3), sus pruebas y sus oráculos.
+
+**Se programa ahora:** la fase 1 y la fase 2. **Queda declarado, sin programar:** las fases 3 a 5, con lo que espera
+cada una (§4.8).
+
+**La persona.** Este paquete es del website del profesional. Del lado de la persona, la APK no tiene hoy ningún gráfico
+de Nutrición ni de Entrenamiento y la persona no ve el 1RM estimado (DL-171). Lo que ve sale del mismo diseño, con lo
+que ella puede ver:
+- «La vez pasada» es una sola pieza para las dos superficies: GR-01 en el editor y PG-11 en la sesión en curso;
+- «Tu ejercicio en el tiempo» (PG-18 de WP-PULIDO-GRANDES) usa las marcas y la función de comparabilidad de este paquete;
+- la exportación de su propia historia (registros, tomas y versiones de sus planes) es un derecho propio y pide su DL
+  (GR-D6).
+
+**Queda fuera:**
+- el caso 2 de los cruces (profesionales distintos, por API-RES, después de TB-29 y de la revisión legal): fase 3;
+- sueño, ciclo menstrual y otras áreas de salud: cada una con su DL, su revisión legal, su revisión de evidencia y su
+  habilitación explícita (fase 5, después del piloto);
+- buscar correlaciones por su cuenta, un coeficiente de correlación como titular, cualquier comparación con otras
+  personas y los rangos poblacionales;
+- la línea del peso que filtra el ruido (GR-D5) y la historia de un profesional anterior (GR-D6);
+- un enlace nuevo en la navegación del espacio profesional: «Patrones» vive en la ficha y en la estación.
+
+## 3. El calendario: las fases
+
+Hoy es el sábado 14/11 y la entrega es el miércoles 25/11. **La regla de Dirección del 2026-11-14:** «Todo se integra lo antes posible una vez que esté aprobado, no retrasamos las cosas por la planificación, si adelantamos la producción se adelanta todo».
+«Aprobado» quiere decir: la revisión adversaria sin hallazgos altos ni medios pendientes y la CI en verde. No hay
+congelamiento ni ventanas: cada rama entra apenas queda aprobada, y la APK sale apenas `main` tiene algo que la
+justifique (la 0.28 salió el mismo 14/11, no el 19/11). Las fases ordenan el trabajo; no lo hacen esperar.
+
+| Fase | Cuándo | IDs | Rama | Qué lleva |
+|---|---|---|---|---|
+| **1** | Programada el 14/11; entra apenas queda aprobada | GR-01 (reducida), GR-04 (solo la marca) y GR-16 | `wp-graficos-fase-1` | Tres piezas de solo lectura, con datos que ya existen y sin tocar el lienzo de «Analizar» |
+| **2 · adelantada** | Programada desde el 14/11; cada rama entra apenas queda aprobada | GR-02, GR-03, GR-05, GR-06, GR-11 a GR-14, GR-18, GR-20, GR-23, GR-24, GR-26, GR-27, SP-01 y SP-02 (caso 1) y «Patrones» | Las cinco de §11 | El historial en el cuadro del ejercicio, Nutrición y Antropometría en el tiempo, los cruces del caso 1, «Armá tu gráfico», los enfoques y «Patrones» |
+| **3** | A continuación de la fase 2 (su diseño se hace desde el 14/11) | GR-07, GR-09, GR-10, GR-15, GR-22, SP-03, SP-05, SP-07 y el caso 2 de SP-01 y SP-02 | — | Lo ratificado que espera programación (D-14, D-15, D-16 y D-20; TB-31, TB-34, TB-35 y TB-38) y los cruces entre profesionales distintos, por API-RES, después de TB-29 y de la revisión legal |
+| **4** | A continuación de la fase 3; cada una abre su DL al programarse | GR-08, GR-17, GR-19, GR-25 y SP-04 | — | Lo que pide una DL o un desafío del legajo |
+| **5** | Después del piloto, área por área: es una condición de producto ratificada, no de calendario, y Dirección puede adelantarla | GR-21, SP-06 y SP-08 | — | El peso en casa (D-16, TB-37, API-PCA), los hábitos versionados (DL-165 D-9) y otras áreas |
+
+De la fase 2 de la propuesta quedan sin rama en este reparto GR-01 completa y la vista previa de GR-04: las dos piden
+una lectura nueva (§4.7).
+
+**Las reglas del calendario:**
+- **«Aprobado»:** la revisión adversaria sin altas ni medias pendientes y la CI en verde. Con eso, la rama se integra en
+  el momento, sin esperar una fecha. La prueba en el website de `test` se hace después de integrar, y lo que aparezca
+  se arregla en una rama nueva.
+- **GR-D1 rige para la fase 1, y los pedidos del 14/11 adelantan todo lo demás:** se programa ya y se integra apenas
+  queda aprobado.
+- **La rama base (A) entra primero.** B, C, D y E salen de su primer commit y entran después de ella.
+- **«Analizar» lo toca una sola rama (D).**
+- **La API de los enfoques (rama E)** entra después de la base y de la rama D, con su migración que solo agrega. Si la
+  tanda B de WP-PULIDO-GRANDES (PG-15 y PG-16) ya entró, trae `main` antes, y la carpeta de su migración lleva una
+  fecha posterior a todas (GR-T18).
+- **SP-01 en la defensa:** con la cuenta de Dirección, que lleva las dos áreas (caso 1). En vivo si la rama D ya entró;
+  si no, como maqueta y visión (GR-D1).
+- **La APK:** del lado de la persona, la misma pieza de GR-01 es PG-11, que sale según el calendario de
+  WP-PULIDO-GRANDES y lee lo que la APK ya leía (API-TRN-19-LISTA). Este paquete no suma lecturas a la APK.
+
+**El orden dentro de la fase 2** (§11.3): el sábado 14, la rama A publica su primer commit y la E empieza la API; del
+domingo 15 al martes 17 programan B, C, D y E, y A suma la cinta y el ruido; el miércoles 18, cada rama con su PR, la
+CI en verde y su evidencia; del jueves 19 al domingo 22, la revisión y la integración de lo sólido.
+
+## 4. Las partes
+
+Cada parte dice qué ve el profesional, dónde va, de qué datos sale, si necesita la API y lo que no hace. «API: no»
+quiere decir que usa solo lecturas que ya existen, con el mismo permiso que en su módulo. Si al programar una lectura no
+trae lo que hace falta, la parte se detiene y se declara: no se inventa el dato ni se abre una operación sin decisión.
+
+**Las operaciones nuevas van como operaciones nuevas** (DL-137 D-7): la única familia nueva es GRF (§7), para GR-27.
+Nada de este paquete cambia una respuesta que leen las APK instaladas (DL-152).
+
+**Las pruebas nuevas** van en los archivos que la rama A deja listados en `npm test` (§11.1), sin tocar el
+`package.json` de la raíz. Cada prueba se verifica con una mutación: se rompe la regla a propósito, la prueba se pone en
+rojo y se vuelve atrás.
+
+La prioridad es la de la propuesta: 1, lo que hace falta primero; 3, lo que puede esperar. Los cruces no tienen
+prioridad propia: van por su fase.
+
+| ID | Qué (en criollo) | Área | Dónde va | Prioridad | Fase · rama | API | Decisión | Prueba |
+|---|---|---|---|---|---|---|---|---|
+| GR-01 | «La vez pasada»: las últimas sesiones del ejercicio, serie por serie | Entrenamiento | El cuadro del ejercicio en el editor; en la APK, al lado de cada serie (PG-11) | 1 | 1 (reducida); completa, sin rama (§4.7) | Fase 1: no. Completa: una lectura nueva | — | TEST-GR-001 |
+| GR-02 | 1RM estimado (Epley v1), sesión a sesión, con las versiones del plan de fondo | Entrenamiento | El cuadro del ejercicio y «Analizar» | 1 | 2 · B | No | GR-T15 y GR-T16 | TEST-GRF-020 a 039 |
+| GR-03 | Carga, repeticiones y RIR de la misma serie, en tres paneles alineados | Entrenamiento | El cuadro del ejercicio y «Analizar» | 1 | 2 · B | No | GR-T14 | TEST-GRF-020 a 039 |
+| GR-04 | «Con historial» en el buscador «Agregar ejercicio» | Entrenamiento | El buscador | 2 | 1 (la marca); la vista previa, sin rama (§4.7) | La marca: no. La vista previa: una lectura por lote | — | TEST-GR-004 |
+| GR-05 | RIR indicado y RIR registrado a lo largo del bloque | Entrenamiento | El cuadro del ejercicio y «Patrones» | 2 | 2 · B | No | GR-T14 | TEST-GRF-020 a 039 |
+| GR-06 | Perfil carga-repeticiones de la persona en el ejercicio | Entrenamiento | El cuadro del ejercicio (segundo paso) | 2 | 2 · B | No | — | TEST-GRF-020 a 039 |
+| GR-07 | «Lo que trabaja la semana»: series por zona del borrador | Entrenamiento | La estación («Lo que trabaja la semana», hoy vacía) | 2 | 3 | Sí (TB-31 y TB-38) | GR-D0 | Al programar |
+| GR-08 | Series según un umbral de RIR del profesional (desafío de M-11) | Entrenamiento | «Patrones» | 3 | 4 | Sí | — | Al programar |
+| GR-09 | kg × repeticiones del ejercicio por semana | Entrenamiento | El cuadro del ejercicio y «Analizar» | 3 | 3 | Sí (TB-34) | GR-D2 | Al programar |
+| GR-10 | La carga de la semana con el esfuerzo de la sesión | Entrenamiento | «Patrones» | 3 | 3 | Sí (TB-35, API-ESF) | GR-D0 | Al programar |
+| GR-11 | Temporadas del objetivo y del plan | Nutrición | «Analizar», «Patrones» y la ficha; en otras áreas, a pedido | 1 | 2 · C | No | — | TEST-GRF-040 a 059 |
+| GR-12 | Energía registrada por día, con lo que se sabe de cada día | Nutrición | «Analizar», la ficha y «Patrones» | 2 | 2 · C | No | — | TEST-GRF-040 a 059 |
+| GR-13 | Proteína, carbohidratos, grasa y fibra, cada uno en su panel | Nutrición | «Analizar» y «Patrones» | 2 | 2 · C | No: los g/kg se derivan en el website | GR-T13 | TEST-GRF-040 a 059 |
+| GR-14 | Lo indicado y lo registrado, día por día, en gramos | Nutrición | La ficha y «Patrones» | 2 | 2 · C | No | — | TEST-GRF-040 a 059 |
+| GR-15 | El reparto de la proteína por comida | Nutrición | «Patrones» | 3 | 3 | No (TB-34) | — | Al programar |
+| GR-16 | Desde el inicio y desde la anterior: la tabla de cada toma | Antropometría | La ficha y «Patrones» | 1 | 1 | No | GR-D4 | TEST-GR-016 |
+| GR-17 | Suma de pliegues con la franja del error de medición | Antropometría | La ficha, «Analizar» y «Patrones» | 2 | 4 | Sí (el error técnico de quien mide) | GR-D4 | Al programar |
+| GR-18 | Perfil por sitio entre dos tomas | Antropometría | La ficha y «Analizar» | 2 | 2 · C | No | — | TEST-GRF-040 a 059 |
+| GR-19 | Perímetro bruto y perímetro corregido por pliegue | Antropometría | «Patrones» y «Analizar» | 3 | 4 | Sí | GR-D9 | Al programar |
+| GR-20 | Masa grasa según cada método, en un eje común | Antropometría | «Analizar» y la ficha | 2 | 2 · C | No | — | TEST-GRF-040 a 059 |
+| GR-21 | Masa corporal con las condiciones de la toma | Antropometría | La ficha y «Patrones» | 3 | 5 | Sí (las condiciones; el peso en casa, API-PCA) | GR-D5 | Al programar |
+| GR-22 | Somatocarta con el recorrido de la persona | Antropometría | La ficha | 3 | 3 | No (TB-34) | — | Al programar |
+| GR-23 | La cinta del tiempo de la persona | Cruce | Arriba de «Analizar», de «Patrones» y de la ficha | 1 | 2 · A | No | GR-D10 (el lugar de los hábitos) | TEST-GRF-001 a 019 |
+| GR-24 | Dos etapas lado a lado, con todas las observaciones | Cruce | «Analizar» y «Patrones» | 1 | 2 · D | No | — | TEST-GRF-060 a 079 |
+| GR-25 | Lo de sus semanas anteriores | Cruce | «Patrones» y «Analizar» | 3 | 4 | Sí (una DL con el método) | GR-D8 | Al programar |
+| GR-26 | «Armá tu gráfico»: alineadas o superpuestas | Todas | «Analizar» y «Patrones» | Dirección | 2 · D | No | GR-T02 a GR-T06 | TEST-GRF-060 a 079 |
+| GR-27 | Los enfoques: los gráficos favoritos para una persona o un plan | Todas | «Patrones» (la ficha y la estación) | Dirección | 2 · E | **Sí: API-GRF-01 a 07** | GR-T01, GR-T07 a GR-T11 y GR-T17 | TEST-GRF-080 a 099 |
+| — | La sección «Patrones» | Todas | La ficha (vista) y la estación (pestaña) | — | 2 · E | No (lee lo de las otras partes) | GR-T12 | TEST-GRF-080 a 099 |
+| SP-01 | Carbohidratos registrados × 1RM estimado (Epley v1) | Nutrición y Entrenamiento | «Ver la relación», en «Patrones» | — | 2 · D (caso 1); caso 2, fase 3 | No | — | TEST-GRF-060 a 079 |
+| SP-02 | Energía registrada × peso de toma a toma | Nutrición y Antropometría | «Ver la relación», en «Patrones» | — | 2 · D (caso 1); caso 2, fase 3 | No | — | TEST-GRF-060 a 079 |
+| SP-03 | Energía y peso × 1RM estimado, en una etapa de déficit | Las tres | «Ver la relación» | — | 3 | No en el caso 1; API-RES en el caso 2 | — | Al programar |
+| SP-04 | Series por zona y por semana × perímetro de esa zona | Entrenamiento y Antropometría | «Ver la relación» | — | 4 | Sí (la capa Trabajo y el corregido) | GR-D9 | Al programar |
+| SP-05 | Proteína (g/kg/día) × masa muscular de Lee con perímetros | Nutrición y Antropometría | «Ver la relación» | — | 3 | No en el caso 1; API-RES en el caso 2 | — | Al programar |
+| SP-06 | Carbohidratos por día × pesajes en casa | Nutrición y Antropometría | «Ver la relación» | — | 5 | Sí (API-PCA) | GR-D0 | Al programar |
+| SP-07 | Series por semana × RIR registrado a igual carga | Entrenamiento | «Ver la relación» | — | 3 | Sí (la capa Trabajo, para las zonas) | GR-D0 | Al programar |
+| SP-08 | Hábitos declarados × carga y RIR registrados | Entrenamiento y hábitos | La cinta y «Ver la relación» | — | 5 | Sí (las versiones anteriores de API-HBT-05) | GR-D10 | Al programar |
+| — | Ningún texto nuevo usa las palabras prohibidas; con Nutrición, sin el signo de porcentaje | Todas | — | — | Todas | — | — | La guardia unida (A) en las pruebas de cada rama |
+
+### 4.1 Fase 1 · rama `wp-graficos-fase-1` (programada el 14/11)
+
+**GR-01 · «La vez pasada»: las últimas sesiones del ejercicio, serie por serie**
+- *Qué ve el profesional:* en el cuadro del ejercicio del editor, debajo de «Lo que indica el plan» y nunca mezclado con
+  eso, lo que la persona registró las últimas tres veces que hizo el ejercicio, serie por serie: carga con su unidad ×
+  repeticiones · RIR. Lo precargado del plan, hueco y en gris, con «carga rápida»; lo cargado otro día, marcado.
+- *Dónde:* el editor de Entrenamiento. En los ejercicios de la lista de la v1 va dentro de «Detalle y fuerza estimada»
+  (ED-75); en los demás, en el mismo cuadro lateral, sin la fuerza estimada. Del lado de la persona, la misma pieza es
+  PG-11: una línea gris debajo del ejercicio, en la sesión en curso.
+- *API:* no, en la fase 1. Las últimas tres dentro de los 92 días que lee API-TRN-21, armadas en el cliente, leídas al
+  abrir el cuadro y sin caché. Completa (todos los ejercicios, más allá de 92 días, hasta cinco sesiones y la línea de
+  12 semanas) pide una lectura nueva (§4.7).
+- *Criterios de aceptación:*
+  - solo lo registrado (el registro vigente de cada sesión): nunca un borrador ni lo planificado;
+  - una serie tildada sin escribir no se ve como escrita (DL-161, ED-70);
+  - una vez hecha con otro ejercicio lo dice («Se hizo con Press con mancuernas») y no cuenta como el mismo. La función
+    que lo decide es la misma de PG-11 y de PG-18;
+  - una serie que falta queda sin dato, nunca en cero; una sesión registrada resumida dice que no tiene series;
+  - la tabla dice desde cuándo leyó.
+- *Lo que NO hace:* no sugiere una carga (eso es ED-76, que confirma el profesional); no mezcla kg con lb ni barra con
+  máquina; no dice «récord» ni «mejor marca»; no compara una vez con otra.
+- *Evidencia:* HubFit (Exercise History V2) y TrueCoach; el pedido de 266 entrenadores en Trainerize; ED-70, ED-75,
+  ED-76 y DL-161.
+
+**GR-04 · «Con historial» en el buscador**
+- *Qué ve el profesional:* en el buscador «Agregar ejercicio», en la fila del resultado: «Con historial · 9 sesiones ·
+  la última el mar 3 nov».
+- *Dónde:* el buscador del editor de Entrenamiento (DL-167), coordinado con su revisión visual.
+- *API:* no. El índice de API-PRJ-01 `TRAINING_PROGRESSION_BY_EXERCISE` sin ejercicio, con `sessions` y `lastDate`, del
+  último año (la API lo recorta al inicio del acompañamiento: RF-025).
+- *Criterios de aceptación:*
+  - sin el primer valor ni el último, sin flecha y sin color;
+  - un ejercicio sin sesiones no lleva marca: ni «0», ni «sin historial»;
+  - qué cuenta la marca se dice una vez, arriba de los resultados.
+- *Lo que NO hace:* la vista previa con el último valor y el mínimo y el máximo del período («última: ≈ 96 kg · entre
+  ≈ 92 y ≈ 99 kg en 9 sesiones · Epley v1») pide una lectura por lote y queda sin rama (§4.7).
+- *Evidencia:* Tufte, «Sparkline theory and practice»; Shneiderman 1996 (vista general, filtro y detalle a pedido);
+  BridgeAthletic.
+
+**GR-16 · Desde el inicio y desde la anterior: la tabla de cada toma**
+- *Qué ve el profesional:* al abrir una toma, una tabla compacta por medida: el valor, la diferencia con la primera toma,
+  la diferencia con la anterior y los días entre fechas. Debajo, siempre: «BE no tiene cargado el error de medición de
+  quien mide: no se puede decir si estos cambios lo superan».
+- *Dónde:* la ficha (Antropometría, cada toma) y, en la fase 2, «Patrones».
+- *API:* no. API-ANT-06, en tramos de hasta 92 días que cubren las fechas de las tomas, sin caché.
+- *Criterios de aceptación:*
+  - solo dentro del mismo grupo de comparabilidad (REG-06-162); una medida tomada antes de otra forma lo dice y no se
+    compara;
+  - la diferencia es una resta con su signo y su unidad («+1,5 kg», «−0,8 cm»);
+  - la primera toma dice que todavía no hay con qué compararla;
+  - sin una columna vacía del error mientras no haya dato, pero con la línea que dice que falta (GR-D4).
+- *Lo que NO hace:* sin flechas verdes o rojas y sin palabras que califiquen el cambio; no interpola ni arrastra
+  valores.
+- *Evidencia:* el informe de BodySpec (la base y la anterior); Hind et al. 2018.
+
+### 4.2 Fase 2 · la base · rama A, `wp-graficos-base`
+
+**La base, sin cambio visible.** No tiene ID de la propuesta; la usan las otras cuatro ramas.
+- **El catálogo de series** (`packages/domain/src/series-disponibles*.ts`): envuelve el diccionario de DL-126 sin
+  cambiar su versión, con la suya (`BE-SERIES-2026-11-v1`). Cada serie dice su área, su unidad, su eje X (`FECHA`,
+  `SESION` o `SEMANA`), de qué lectura sale, qué alcances necesita (caso 1), su método, su marca y su estado:
+  `OFRECIDA`, `EN_PREPARACION` (la programa una rama de esta fase) o `PIDE_DL` (no se ofrece). Los IDs tienen la forma de
+  `ReferenciaDeMetrica.metricId` (`area.nombre`): una serie nueva se guarda en una vista o en un enfoque sin cambiar
+  ningún esquema. **Series nuevas:** el 1RM estimado (Epley v1), el RIR indicado y los g/kg de proteína, carbohidratos y
+  grasa.
+- **Los IDs de los gráficos sugeridos** (`graficos-sugeridos.ts`): opacos y estables, con la forma `area.nombre`
+  (`entrenamiento.fuerza-estimada`, `nutricion.energia-por-dia`, `cruce.carbohidratos-y-fuerza`…). GR-04, GR-11 y
+  GR-23 no se eligen sueltos: son la marca del buscador, la capa de temporadas y la cinta.
+- **Las piezas comunes**, en SVG propio y sin la biblioteca de gráficos, en `apps/web/src/app/pro/advisees/graficos/`:
+  el eje de fechas común (sobre `seguimiento/geometria.ts`), los carriles y los paneles alineados, el cursor compartido
+  y el teclado, la lectura persistente de la fecha elegida (una región viva cortés), los estados vacíos, la tabla
+  equivalente y las lecturas (en tramos de 92 días, sin pedir dos veces lo que está en vuelo y sin caché).
+- **Las marcas por su sentido** (`marcas-de-los-graficos.ts`, que PG-18 reusa en la APK): lo registrado, lleno; lo
+  indicado y un subtotal, hueco; la carga rápida, hueca y gris; la serie observada por el profesional, rombo; lo
+  reportado, contorno cortado; lo calculado, punto adentro. Lo cargado tarde, con una muesca y su texto.
+- **Los estados vacíos:** cargando (con alto fijo), sin datos («Sin sesiones registradas desde el inicio del
+  acompañamiento»), falta historia («Se arma con 5 sesiones por lado; hay 3 y 7»), error (con «Reintentar», sin parecer
+  un vacío) y sin acceso, que no dibuja nada: el gráfico no está.
+- **La guardia de vocabulario** (`vocabulario-de-los-graficos.ts`): la **unión** de las listas de términos de las áreas
+  del gráfico, cada una con su regla, más lo que no va en ningún lado. Con Nutrición, el signo de porcentaje no va en
+  ningún texto del gráfico, aunque también esté Antropometría. Y la frase fija: «Coinciden en el tiempo; esto no prueba
+  que una cosa cause la otra.».
+- **El ruido de la estimación** (`lectura-de-la-estimacion.ts`): por versión, la mediana del RIR, el rango de
+  repeticiones y la mayor diferencia entre estimaciones seguidas del núcleo (GR-T16), y el cambio de lo indicado entre
+  versiones («el RIR indicado pasó de 2 a 1: la estimación puede cambiar aunque la fuerza no cambie»: dice lo que puede
+  pasar, sin afirmar qué pasó con la fuerza).
+
+**GR-23 · La cinta del tiempo de la persona**
+- *Qué ve el profesional:* una banda fina fija arriba de los gráficos, sobre el mismo eje de fechas: las versiones de los
+  planes como barras; las tomas, las sustituciones, las revisiones y las notas de coordinación como íconos con forma y
+  texto. Los hitos que caen juntos se agrupan («3 hitos»). Elegir un tramo en la cinta lo elige en todos los carriles.
+  Debajo de cada carril, la franja de cobertura, con lo cargado tarde («3 de 21 días cargados después»).
+- *Dónde:* arriba de «Analizar», de «Patrones» y de los gráficos de la ficha.
+- *API:* no. API-DSH-04 (los hitos, con `recordedLate`) y las vigencias de los planes de las áreas permitidas.
+- *Criterios de aceptación:*
+  - un evento de un área sin acceso no llega (la API ya lo filtra) ni se dibuja como «algo pasó»;
+  - una descarga no se infiere: sin dato, no se dibuja;
+  - sin flechas causales por cercanía;
+  - las notas de la persona al finalizar (PG-15) y las notas propias del profesional (PG-16, solo para su autor) entran
+    como dos fuentes más cuando se integre la tanda B;
+  - los hábitos que declara la persona (SP-08) tienen su lugar reservado y no se dibujan hasta su DL (GR-D10).
+- *Lo que NO hace:* no interpreta lo que pasó ni une un evento con un cambio de otro gráfico.
+- *Evidencia:* LifeLines (Plaisant y Shneiderman, 1996) y Epic Timeline; Bell et al. 2023 (la descarga).
+
+### 4.3 Fase 2 · Entrenamiento · rama B, `wp-graficos-entrenamiento`
+
+El cuadro del ejercicio de la estación suma dos pasos: **«Historial»** (GR-02 si el ejercicio es de la lista de la v1,
+GR-03 y GR-05 alineados, con la cinta debajo) y **«Perfil»** (GR-06). Arriba, el período: 12 semanas, 6 meses o desde
+que la acompañás, y «Abrir en Analizar» con el ejercicio y el período ya elegidos. Un ejercicio sin historial dice «Sin
+sesiones registradas desde el inicio del acompañamiento». **El cuadro se abre para todos los ejercicios; la tarjeta de
+fuerza (ED-75) sigue solo en la lista de la v1 (RM-16).** El cambio de alcance se declara en DL-174.
+
+**GR-02 · 1RM estimado (Epley v1), sesión a sesión, con las versiones del plan de fondo**
+- *Qué ve el profesional:* el 1RM estimado de cada sesión como un punto sobre fechas reales: lleno hasta 10
+  repeticiones equivalentes, hueco de 10 a 12, rombo para la serie que observó el profesional; las versiones del plan,
+  como bandas. Debajo de cada banda, la mediana del RIR registrado y el rango de repeticiones de la serie usada. Si el
+  RIR indicado o el rango cambiaron entre versiones, la primera línea lo dice («el RIR indicado pasó de 2 a 1: la
+  estimación cambia aunque la fuerza no»). Con cuatro sesiones o más de una misma versión: «entre sesiones de la misma
+  versión aparecen diferencias de hasta X kg».
+- *Dónde:* el paso «Historial» del cuadro del ejercicio y «Analizar» (la pieza de ED-74, en
+  `fuerza/fuerza-en-analizar.tsx`).
+- *API:* no. API-PRJ-01 `TRAINING_STRENGTH_ESTIMATE_BY_EXERCISE` y API-FZA-01 a 03, con `notIncluded` y sus motivos y
+  las versiones del plan. Solo los ejercicios de la lista de la v1, con RIR de 0 a 2 y procedencia PERSON.
+- *Criterios de aceptación:*
+  - el rótulo es siempre «1RM estimado (Epley v1)»; nunca una diferencia en porcentaje, un «±» ni un intervalo (RM-22,
+    DL-171), y nunca «primero → último» ni una flecha;
+  - el eje tiene un rango mínimo de 10 kg (22 lb), y los valores extremos van escritos (GR-T15);
+  - cada punto va a la versión que regía ese día (GR-T16): la mediana del RIR y el rango de repeticiones salen de los
+    puntos de esa versión;
+  - el ruido propio se dice desde cuatro sesiones de la misma versión; con menos, dice que todavía no alcanza;
+  - una serie de carga rápida (procedencia PLAN) nunca entra en la estimación (DJ-2);
+  - la línea no une puntos a través de un hueco; kg y lb nunca van juntas;
+  - la tabla equivalente, con «Cómo se calculó».
+- *Lo que NO hace:* no marca récords; no sugiere una carga (eso es ED-76); no da la diferencia entre dos puntos sueltos.
+- *Evidencia:* Grgic et al. 2020 (la confiabilidad del 1RM medido); LeSuer et al. 1997 (el sesgo de las ecuaciones por
+  rango de repeticiones); Helms et al. 2016 y Zourdos et al. 2016 (la escala RIR); `estimacion-de-fuerza.ts`.
+
+**GR-03 · Carga, repeticiones y RIR de la misma serie, en tres paneles alineados**
+- *Qué ve el profesional:* tres paneles chicos apilados con el mismo eje de fechas: la carga (con su unidad), las
+  repeticiones y el RIR de la misma serie entre sesiones, con una regla vertical común. El RIR indicado de cada sesión,
+  como marca hueca.
+- *Dónde:* el paso «Historial» del cuadro del ejercicio (todos los ejercicios) y «Analizar».
+- *API:* no. LOAD, REPETITIONS y RIR de la progresión por serie (API-PRJ-01 `TRAINING_PROGRESSION_BY_EXERCISE`); el RIR
+  indicado, del comparador «Planificado y registrado» (API-TRN-21 y API-SER-01, en tramos de 92 días: GR-T14).
+- *Criterios de aceptación:*
+  - sin doble eje: un panel por magnitud;
+  - el eje del RIR va de 0 al máximo registrado, con 5 como mínimo, y los valores altos van escritos (el contrato admite
+    de 0 a 20, con decimales);
+  - una serie sin RIR escrito no es RIR 0: no se dibuja y la tabla dice «sin dato»; el RIR que vino del plan no es de
+    la persona (hueco y gris, «carga rápida»);
+  - la serie del mismo número entre sesiones, sin promediar;
+  - la tabla equivalente, a un clic.
+- *Lo que NO hace:* no une puntos a través de huecos; no resume el ejercicio en una cifra.
+- *Evidencia:* Few 2008 (contra el doble eje); Gleicher et al. 2011 (la yuxtaposición); B10-08 §23.
+
+**GR-05 · RIR indicado y RIR registrado a lo largo del bloque**
+- *Qué ve el profesional:* en un mismo panel (la misma unidad), el RIR indicado de cada versión como escalón discontinuo
+  y el registrado como puntos. Un filtro «a igual carga» deja solo las series con la misma carga y unidad, y un texto lo
+  describe: «la misma carga, con menos RIR registrado».
+- *Dónde:* el paso «Historial» del cuadro del ejercicio y «Patrones».
+- *API:* no. La lógica del comparador «Planificado y registrado» (`training/comparacion.tsx`), sin una lectura nueva
+  (GR-T14).
+- *Criterios de aceptación:*
+  - un RIR indicado como rango («RIR 1 a 2») se dibuja como segmento hueco;
+  - «a igual carga» filtra por la carga y la unidad exactas;
+  - lo que se ve se describe; no se resume en una cifra ni se nombra con las palabras prohibidas.
+- *Lo que NO hace:* no mide cuánto se hizo de lo indicado; no ajusta el plan solo. La gente con poca experiencia estima
+  peor el RIR, y «Cómo leerlo» lo dice.
+- *Evidencia:* Zourdos et al. 2016 y Helms et al. 2016; Juggernaut y RP, que usan esta señal para ajustar solos.
+
+**GR-06 · Perfil carga-repeticiones de la persona en el ejercicio**
+- *Qué ve el profesional:* una dispersión: en X, las repeticiones equivalentes (repeticiones + RIR); en Y, la carga. Las
+  últimas 4 semanas, con otra forma y otro color que las anteriores. Opcionales, las curvas de igual 1RM estimado
+  (Epley v1), rotuladas «de la fórmula».
+- *Dónde:* el paso «Perfil» del cuadro del ejercicio. Sirve para decidir el rango de repeticiones.
+- *API:* no. Se deriva en el cliente de lo que ya devuelve la progresión por serie.
+- *Criterios de aceptación:* solo series escritas por la persona con RIR de 0 a 2; un ejercicio y una unidad por
+  gráfico; las curvas son de la fórmula, no de la persona.
+- *Lo que NO hace:* no dice «récord»; no estima otra cosa que Epley v1.
+- *Evidencia:* Strong (la mejor carga por número de repeticiones); la revisión de ecuaciones de 1RM
+  (<https://arxiv.org/pdf/2603.17495>); LeSuer et al. 1997.
+
+### 4.4 Fase 2 · Nutrición y Antropometría · rama C, `wp-graficos-nutricion-y-cuerpo`
+
+**GR-11 · Temporadas del objetivo y del plan**
+- *Qué ve el profesional:* detrás de los gráficos de Nutrición, bandas tenues con una etiqueta corta («Objetivo v3 ·
+  desde el 2/9») y una línea fina en cada cambio. El objetivo de kcal/día y de macros en g/día, como escalón. Es lo que
+  permite decir «subió los carbohidratos durante una temporada».
+- *Dónde:* todo gráfico de Nutrición, en «Analizar», «Patrones» y la ficha. Detrás de otra área, solo a pedido
+  («Mostrar las temporadas de Nutrición») y en el caso 1.
+- *API:* no. Las versiones del objetivo y del plan (API-NUT-08 y 09; `objectiveSteps` y `planVersions` de API-PRJ-01).
+- *Criterios de aceptación:*
+  - un objetivo guardado como proporción de las calorías se escribe como proporción y no se dibuja ni se convierte a
+    gramos: convertirlo pediría factores por macro que BE no tiene como método aprobado;
+  - sin color de «bueno» o «malo» por temporada;
+  - cada registro se lee contra la versión que regía ese día (REG-06-105);
+  - sin el signo de porcentaje.
+- *Lo que NO hace:* no va por defecto detrás de la fuerza: las temporadas de Nutrición detrás de otra área invitan a
+  leer causa.
+- *Evidencia:* MacroFactor (el historial de objetivos); REG-06-105.
+
+**GR-12 · Energía registrada por día, con lo que se sabe de cada día**
+- *Qué ve el profesional:* la energía registrada de cada día como un punto: lleno si el día tiene cantidades en todos
+  sus registros y ninguna comida del plan sin registro (COMPLETE); hueco si es un subtotal («falta: …»); nada si no hay
+  registro. Sin plan vigente o sin día tipo, la marca dice «no se puede saber si faltan comidas». Lo cargado tarde, con
+  otra marca. El objetivo, en escalón. La media semanal dice con qué días se hizo, cuántos quedaron afuera y por qué
+  («con 5 de 7 días; 1 sin registro y 1 con cantidades faltantes»), y se corta si no alcanza.
+- *Dónde:* «Analizar», la ficha y «Patrones».
+- *API:* no. API-PRJ-01 `NUTRITION_PRESCRIBED_VS_RECORDED` (`SUM_SOURCE_PER_100G_V1`), con la calidad del punto y
+  `coverage.planMeals`; lo cargado tarde, de API-DSH-04 (`late`).
+- *Criterios de aceptación:*
+  - «registrado», nunca «consumido»: el subregistro es sistemático;
+  - nunca la palabra «completo» para un día: un día con solo el desayuno, bien cargado, es COMPLETE;
+  - un día vacío no es cero; sin rojo ni verde;
+  - la media dice cuántos días quedaron afuera: promediar solo los COMPLETE es un sesgo de selección.
+- *Lo que NO hace:* no le pide a la persona que estime lo que no registró.
+- *Evidencia:* Hill y Davies 2001 (el subregistro); DL-153 y `contratos-analisis.ts` (`CalidadDePunto`).
+
+**GR-13 · Proteína, carbohidratos, grasa y fibra, cada uno en su panel**
+- *Qué ve el profesional:* cuatro paneles apilados con el mismo eje de fechas y la franja del objetivo de cada versión,
+  en g/día. Con Antropometría propia, también en g/kg, con la fecha de la toma usada («peso del 3/11»).
+- *Dónde:* «Analizar» y «Patrones».
+- *API:* no. Los g/día, de API-PRJ-01. Los g/kg se derivan en el website: los gramos del día divididos por el peso medido
+  de la última toma propia en ese día o antes; sin toma anterior, sin valor (GR-T13).
+- *Criterios de aceptación:*
+  - nunca barras apiladas de macros, que invitan a leer proporciones;
+  - la fibra desconocida no es cero;
+  - los g/kg solo con los alcances de Nutrición y de Antropometría y con tomas propias; cada punto dice la fecha del
+    peso; sin cambio relativo; sin el signo de porcentaje.
+- *Lo que NO hace:* no usa un peso posterior para un día pasado (API-PLN-03 usa el último peso al guardar el plan; esta
+  serie, no); no fija rangos de la literatura (los elige el profesional, TB-39).
+- *Evidencia:* Jäger et al. 2017 (ISSN, la proteína en g/kg); Morton et al. 2018.
+
+**GR-14 · Lo indicado y lo registrado, día por día, en gramos**
+- *Qué ve el profesional:* por día y por macro, una mancuerna: hueco lo indicado y lleno lo registrado, unidos por una
+  línea, con la diferencia escrita («+18 g de carbohidratos»). Debajo, una tira por comida con «sin registro» y «comida
+  diferente».
+- *Dónde:* la ficha (Nutrición, «Día por día») y «Patrones».
+- *API:* no. `construirContraste` y lo indicado por día cuando el plan no deja elegir (DL-158); la tira por comida, de
+  API-NUT-17 en tramos de 92 días.
+- *Criterios de aceptación:*
+  - sin rojo, sin el signo de porcentaje y sin las palabras que califican lo registrado frente a lo indicado;
+  - una comida diferente sin cantidades es «sin dato», no 0 g;
+  - si el plan deja elegir, no hay indicado por día y no se inventa.
+- *Lo que NO hace:* no avisa que la persona «comió de más».
+- *Evidencia:* Nutrium, como contraejemplo; REG-06-125 y DL-158.
+
+**GR-18 · Perfil por sitio entre dos tomas**
+- *Qué ve el profesional:* una fila por sitio, en orden anatómico, con los valores de dos tomas unidos por un segmento:
+  la diferencia entre dos tomas, no una interpolación en el tiempo.
+- *Dónde:* la ficha (Antropometría, vista «Por sitio») y «Analizar».
+- *API:* no. Los pliegues y los perímetros de cada toma (API-PRJ-01 `ANTHROPOMETRY_LONGITUDINAL`).
+- *Criterios de aceptación:* solo dentro del mismo grupo de comparabilidad; un sitio que no se midió es un hueco; la
+  línea del error de medición (GR-D4).
+- *Lo que NO hace:* no atribuye el cambio de un sitio al ejercicio de esa zona: no hay reducción localizada.
+- *Evidencia:* BodySpec (por región); Vispute et al. 2011.
+
+**GR-20 · Masa grasa según cada método, en un eje común**
+- *Qué ve el profesional:* un panel por tipo de masa, con un eje común en kg: la masa grasa según Durnin-Womersley y
+  según Faulkner, cada una con su forma y su versión; la masa libre de grasa, en otro panel con su propio eje común. La
+  masa muscular de Lee, aparte, porque estima otra cosa.
+- *Dónde:* «Analizar» y la ficha (Antropometría, vista «Por método»).
+- *API:* no. `be/masa-grasa-durnin-womersley-*@1`, `be/masa-grasa-faulkner@1` y sus pares de masa libre de grasa, con
+  su grupo de comparabilidad. Jackson-Pollock 7 da solo el porcentaje de grasa y no tiene masa en el catálogo.
+- *Criterios de aceptación:*
+  - el eje es común: uno propio por panel agrandaría cualquier diferencia chica;
+  - dice que los dos métodos se mueven juntos por construcción (salen de los mismos pliegues de la misma toma): no es
+    una confirmación;
+  - cada número con su método, nunca «tu grasa»; la diferencia entre métodos no es un cambio.
+- *Evidencia:* Ackland et al. 2012; Hind et al. 2018 (los protocolos no son intercambiables).
+
+### 4.5 Fase 2 · los cruces y «Analizar» · rama D, `wp-graficos-cruces-y-analizar`
+
+**GR-24 · Dos etapas lado a lado, con todas las observaciones**
+- *Qué ve el profesional:* los puntos de cada etapa (todas las observaciones, no solo el promedio), lado a lado, con la
+  cantidad escrita («7 sesiones / 9 sesiones»), la mediana como marca y la lista de lo que también cambió entre una
+  etapa y otra. Con el 1RM estimado, debajo de cada etapa, la mediana del RIR y el rango de repeticiones, y en la primera
+  línea, si cambió lo indicado.
+- *Dónde:* «Analizar» (sobre «Comparar dos etapas», C-12) y «Patrones».
+- *API:* no. Las versiones congeladas del plan como límites exactos (`compararEtapas`).
+- *Criterios de aceptación:*
+  - con menos de 5 datos de un lado no se dibuja, y se dice cuánto falta;
+  - sin ordenar las etapas por mejor o peor;
+  - sin restas con el signo de porcentaje en Nutrición.
+- *Lo que NO hace:* no es un experimento: el aprendizaje técnico, otro cambio del plan o el peso pueden explicar la
+  diferencia, y «Cómo leerlo» lo dice.
+- *Evidencia:* Bearable y WHOOP (los mínimos por lado); Kravitz y Duan 2014 (la guía N-de-1 de la AHRQ).
+
+**SP-01 · Carbohidratos registrados × 1RM estimado (Epley v1)**
+- *La pregunta:* en la temporada en que subieron los carbohidratos, ¿también se movió el 1RM estimado? Es el ejemplo de
+  Dirección.
+- *Qué ve el profesional:* dos paneles alineados por fecha: los carbohidratos registrados por día, con lo que se sabe de
+  cada día, y el 1RM estimado de un ejercicio de la lista de la v1 por sesión, con el núcleo y la orientativa, y la
+  mediana del RIR y el rango de repeticiones de cada etapa. La energía registrada va al lado. Arriba, la cinta; las dos
+  etapas, marcadas por las versiones del objetivo. Con un cambio de objetivo de por medio, «Dos etapas» (GR-24) con la
+  mediana de carbohidratos y los puntos del 1RM estimado de cada etapa, y la energía de cada una.
+- *La ventana de lectura,* fijada antes de mirar los datos: etapas de al menos 3 semanas, separadas por un cambio de
+  versión del objetivo; una sola ventana, sin mirar además el efecto del día anterior. En estudios de grupos, los
+  carbohidratos solos casi no cambian la fuerza cuando la energía alcanza (Henselmans 2022): va en «Cómo leerlo».
+- *Lo que también cambió:* la energía total; el RIR registrado y el rango de repeticiones; un cambio del RIR indicado o
+  del rango entre versiones; la fase del plan; una descarga; el peso; el aprendizaje técnico; los días sin cantidades o
+  con comidas del plan sin registro; el sueño, que no se registra.
+- *Cómo se dice* (ejemplo, con datos sintéticos): «Etapa B (objetivo v3, desde el 2/9, 35 días): mediana de
+  carbohidratos registrados de 310 g/día, con los 24 días que tienen cantidades en todos sus registros y ninguna comida
+  del plan sin registro (11 quedaron afuera: 7 sin registro y 4 con algún dato faltante). En sentadilla, el 1RM
+  estimado (Epley v1) estuvo entre ≈ 98 y ≈ 102 kg en 7 sesiones, con RIR registrado de mediana 1 y series de 5 a 6
+  repeticiones; en la etapa A, entre ≈ 92 y ≈ 96 kg en 6 sesiones, con RIR de mediana 2 y series de 5 a 6. Con la
+  versión 4 del plan de entrenamiento, el RIR indicado pasó de 2 a 1: la estimación cambia aunque la fuerza no. Entre
+  sesiones de la misma versión aparecen diferencias de hasta 3 kg. En el mismo tramo también subió la energía
+  registrada. Coinciden en el tiempo; esto no prueba que una cosa cause la otra.»
+- *El acceso:* caso 1 (el mismo profesional, con Nutrición y Entrenamiento y planes propios en las dos): completo. Caso 2,
+  en la fase 3: para la nutricionista, con la carga de la primera serie de hasta tres ejercicios principales, porque el
+  1RM estimado no viaja (matriz §3.1); para el entrenador, no existe (no recibe números de Nutrición).
+- *La prueba del caso negado:* un entrenador con el alcance de Entrenamiento y sin plan propio de Nutrición pide el
+  cruce: no se ofrece, no aparece en gris y no se pide la lectura de comidas.
+- *Dónde:* «Ver la relación», en «Patrones». En la defensa, con la cuenta de Dirección (§3).
+
+**SP-02 · Energía registrada × peso de toma a toma**
+- *La pregunta:* el objetivo energético de esta temporada, ¿se ve reflejado en el peso, de una toma a la siguiente?
+- *Qué ve el profesional:* paneles apilados: la energía por día con su media semanal (que dice con qué días se hizo) y el
+  objetivo en escalón; abajo, el peso de cada toma como punto, sin unir, con los días entre tomas escritos. Sin mínimo y
+  máximo semanal mientras no exista el peso en casa.
+- *La ventana de lectura:* de una toma a la siguiente, con al menos 14 días entre tomas. En estudios de grupos, el peso
+  del día varía por agua, glucógeno y sodio, y el equilibrio nuevo tarda mucho más (Hall 2011).
+- *Lo que también cambió:* el subregistro y los días sin cantidades o con comidas del plan sin registro; el agua y el
+  glucógeno al cambiar los carbohidratos; el ciclo menstrual; la actividad fuera del gimnasio; la hora y las condiciones
+  de cada toma; el error de medición de quien mide.
+- *Cómo se dice* (ejemplo, con datos sintéticos): «Desde el objetivo v4 (2/10) hasta la toma del 28/10 (26 días), la
+  mediana de energía registrada fue de 2.150 kcal/día, con los 19 días que tienen cantidades en todos sus registros y
+  ninguna comida del plan sin registro (7 quedaron afuera: 4 sin registro y 3 con algún dato faltante). El peso pasó de
+  81,2 kg en la toma del 30/9 a 80,1 kg en la del 28/10, 28 días después. BE no tiene cargado el error de medición de
+  quien mide ni las condiciones de cada toma: no se puede decir si 1,1 kg lo supera. Coinciden en el tiempo; esto no
+  prueba que una cosa cause la otra, y lo registrado puede no ser todo lo comido.»
+- *El acceso:* caso 1 (el mismo profesional, con Nutrición y Antropometría y planes o tomas propios): existe. Caso 2, en
+  la fase 3: para la nutricionista, con el peso que deja la matriz §3.1. Para quien lleva solo Antropometría o solo
+  Entrenamiento, no existe.
+- *La prueba del caso negado:* un profesional de Antropometría sin Nutrición pide el cruce: no se ofrece y no se lee
+  ningún registro de comida.
+- *Dónde:* «Ver la relación», en «Patrones».
+
+**GR-26 · «Armá tu gráfico»: alineadas o superpuestas**
+- *Lo que pidió Dirección:* «…ver uno arriba del otro, superpuestos en el mismo gráfico si comparten la x o alineados
+  uno arriba del otro para que los entrenadores vean los gráficos que necesiten además de los sugeridos».
+- *Qué ve el profesional:* en «Analizar», el selector ofrece el catálogo de series agrupado por área, con los sugeridos
+  primero; las series nuevas (el 1RM estimado, el RIR indicado y los g/kg) aparecen cuando están ofrecidas, y las de un
+  área sin acceso no aparecen. Los modos se llaman **«Alineadas»** (una arriba de la otra, el modo por defecto) y
+  **«Superpuestas»** (en el mismo gráfico) (GR-T05). «Cambio relativo» queda como está y no se amplía a las series
+  nuevas. En «Patrones», «Agregar un gráfico › Armá tu gráfico» abre el compositor: hasta tres series, el ejercicio, la
+  serie y la unidad cuando hacen falta, el modo, una vista previa y «Agregar al enfoque».
+- *Las reglas de «Superpuestas»:*
+  - solo con el mismo eje X: las series de día, de sesión o de toma entre sí; las semanales, solo con otras semanales
+    (GR-T03);
+  - hasta tres series y dos unidades, con un eje a cada lado. Dos series con la misma familia y unidad comparten eje
+    (DL-126). Con tres unidades, el modo se deshabilita y dice por qué: «Superpuestas admite dos unidades. Con kg, g/día
+    y RIR, miralas alineadas» (GR-T02);
+  - cada eje, rotulado con el nombre corto, la unidad y el glifo de sus series; el nombre de cada serie también va al
+    final de su línea; el color nunca es lo único;
+  - la escala de cada serie es la de «Alineadas»: no se elige a mano ni se estira para que las líneas se crucen; el
+    dibujo no sombrea entre líneas ni marca cruces;
+  - la frase «Coinciden en el tiempo; esto no prueba que una cosa cause la otra.» va debajo cuando hay dos áreas o dos
+    ejes, en cualquier modo (GR-T06), y reemplaza «coincidencia temporal; no indica causa» de «Analizar». «Cómo leerlo»
+    explica que con dos escalas un cruce de líneas no quiere decir nada;
+  - Antropometría sigue en puntos sueltos, también superpuesta;
+  - la tabla equivalente tiene una columna por serie, con su unidad.
+- *API:* no. En la URL y en las vistas guardadas (API-VAN) los modos siguen siendo `PANELS` y `OVERLAY`: una vista
+  guardada con `OVERLAY` era de una sola unidad y se ve igual.
+- *En el código:* `composicionPermitida` y `fraseDeLaCoincidencia` (rama A) reemplazan a `superposicionPermitida` en
+  «Analizar», que queda exportada y sin cambios; `seguimiento/lienzo.tsx` suma dos ejes Y (`yAxisId`), y cada línea,
+  punto de referencia y área de referencia, con el suyo; el compositor y la versión superpuesta en SVG propio para
+  «Patrones» van en `graficos/arma-tu-grafico/`.
+- *Lo que NO hace:* no superpone series con distinto eje X; no ofrece una serie de un área sin acceso ni una que pide DL;
+  no calcula una correlación.
+- *Evidencia:* Few 2008 («Dual-Scaled Axes in Graphs: Are They Ever the Best Solution?»); Datawrapper, sobre los
+  gráficos de dos ejes; los usuarios de Cronometer, que encuentran confusos sus gráficos de eje izquierdo y derecho.
+
+### 4.6 Fase 2 · «Patrones» y los enfoques · rama E, `wp-graficos-patrones-y-enfoques`
+
+**La sección «Patrones»**
+- *Qué ve el profesional,* de arriba abajo:
+  1. la cinta del tiempo (GR-23), fija arriba al desplazar;
+  2. «En el tiempo»: los gráficos del enfoque que van sobre fechas, cada uno en su tarjeta a todo el ancho, con el mismo
+     eje y un solo cursor para toda la columna. Cada tarjeta: la pregunta corta como título, el método, la cobertura,
+     «Ver la tabla», «Abrir en Analizar» (con el ejercicio, la serie y el período ya elegidos) y, al editar el enfoque,
+     «Subir», «Bajar» y «Quitar»;
+  3. «Comparaciones»: lo que no va sobre el tiempo (GR-06, GR-18 y GR-24), con su propio eje;
+  4. «Ver la relación»: los cruces preparados que existen en el caso del profesional (SP-01 y SP-02 en el caso 1), cada
+     uno con su ventana, lo que también cambió y la frase. Si no lleva las dos áreas con planes propios, la sección no
+     está;
+  5. «Agregar un gráfico»: los sugeridos que faltan y «Armá tu gráfico» (GR-26);
+  6. lo que falta: «Se arma con 5 sesiones por lado; hay 3» o «La historia empieza el día que empezaste a
+     acompañarla».
+- *Dónde:*
+  - en la ficha, como una vista más (`vista=patrones`), **entre «Resumen» y «Línea de tiempo»** (GR-T12), con el período
+    de la ficha (acortado al inicio del acompañamiento: TB-16) y su pista: «Los gráficos de esta persona en el mismo
+    tiempo, con lo que pasó en cada momento»;
+  - en el panel de la estación de los dos editores, como una pestaña más (la cuarta en Entrenamiento, la tercera en
+    Nutrición), en densidad compacta, con su período (12 semanas, 6 meses o desde que la acompañás) y, de fondo, las
+    versiones del plan que se edita. Se pliega con el panel, que en 1280 ya va plegado. Nada de ahí escribe en el plan.
+- *Sin enfoque elegido, los sugeridos para tus áreas,* como los indicadores del Resumen (TB-25), hasta seis y sin
+  repetir: con Entrenamiento, GR-02 con el ejercicio más registrado de la lista de la v1 (si hay uno), y GR-03 y GR-05
+  con el más registrado; con Nutrición, GR-12 y GR-13; con Antropometría, GR-16 o, si no entró, GR-20. El cruce que
+  corresponde va en «Ver la relación», no entre los seis.
+- *API:* no: lee lo de las otras partes.
+- *Criterios de aceptación:*
+  - «Patrones» no lee ni muestra un área sin acceso;
+  - unas veinte lecturas por período, de a cuatro (`limitarLectura`) y sin pedir dos veces lo que está en vuelo, lejos
+    del límite de 120 por minuto; la estación lee menos;
+  - se mide en las tres resoluciones de escritorio (1440, 1280 y 1024) antes de integrar: plegada en 1280, no tapa la
+    planilla;
+  - con teclado: las tarjetas y el cursor común, y cada gráfico con su tabla.
+
+**GR-27 · Los enfoques: los gráficos favoritos para una persona o un plan**
+- *Lo que pidió Dirección:* «podrían tener también su stand de gráficos favoritos para elegir ver en ese plan o persona
+  hasta que lo vayan cambiando, no sé, pensaba que capaz si se estaban enfocando en fuerza o algo en específico ya
+  sabían qué trackear principalmente».
+- *Qué ve el profesional:* arriba de «Patrones», «Enfoque: Foco en fuerza ▾», con sus enfoques, «Sugeridos para tus
+  áreas», «Guardar lo que ves como enfoque…», «Editar este enfoque» y «Mis enfoques…». Elegir uno lo guarda para la
+  persona en el momento, con «Deshacer». En la pestaña de la estación: «Enfoque de este plan» (o el de la persona, si el
+  plan no tiene uno), con «Para este plan» y «Para la persona». «Mis enfoques» es un cajón con la lista, renombrar,
+  duplicar y borrar, y «Elegido en 4 lugares». Cambiar uno elegido en otros lugares avisa: «Lo usan 4 personas: el
+  cambio se ve en todas. ¿Guardar como uno nuevo?».
+- *Qué es un enfoque:*
+  - un conjunto de hasta seis gráficos con nombre (GR-T07), **propio del profesional y reutilizable**. Cada gráfico es
+    un sugerido (con su ejercicio o su medida) o uno armado con «Armá tu gráfico» (hasta tres series y su modo);
+  - el ejercicio puede ser uno fijo del catálogo o «el más registrado» del período, 1.º a 3.º (GR-T08), para que sirva
+    con cualquier persona; lo que no aplica con una persona no se dibuja;
+  - **guarda referencias, nunca datos:** abrirlo vuelve a pedir todo a la API, que decide con el PDP en ese momento. Un
+    enfoque no concede nada.
+- *Dónde rige* (GR-T09): el de un plan, en la estación de ese plan; el de la persona, en el resto; sin ninguno, los
+  sugeridos para tus áreas. **Queda hasta que se cambie.**
+- *API:* **sí: la familia GRF (API-GRF-01 a 07, §7),** dos tablas y una migración que solo agrega.
+- *Criterios de aceptación:*
+  - un enfoque o una elección ajenos responden el mismo 404 que uno inexistente;
+  - sin un vínculo vigente en algún alcance, API-GRF-05 a 07 responden 404; las elecciones de antes quedan guardadas y
+    no se leen;
+  - un plan ajeno o de un área sin alcance: 404;
+  - el contenido es un esquema estricto, sin un campo donde poner un valor, una nota clínica ni el nombre de la
+    persona. El nombre del enfoque y el título de un gráfico propio llevan la pista «No pongas datos de salud: el
+    enfoque se usa con varias personas»;
+  - los topes: seis gráficos por enfoque y 50 enfoques por profesional;
+  - crear, borrar y quitar con `Idempotency-Key`; cambiar, con la versión esperada; dos pestañas que eligen a la vez no
+    dejan dos elecciones: la segunda recibe 409;
+  - borrar un enfoque quita sus elecciones, después de avisar en cuántos lugares estaba elegido (GR-T10);
+  - la auditoría, en la misma transacción.
+- *Lo que NO hace:* no entra en la exportación de la persona: es configuración del profesional, como las vistas de
+  DL-128 (GR-T11). La APK no lo lee: no se congela nada. No suma un enlace a la navegación del espacio profesional.
+- *Antecedentes:* el anclaje de minigráficos de la propuesta («la elección queda guardada para esa persona») y las
+  vistas guardadas de «Analizar» (API-VAN, DL-128).
+
+### 4.7 Lo que queda de la fase 2 sin rama en este reparto
+
+La propuesta pone estas piezas en su fase 2, pero ninguna de las cinco ramas las toma. Las que piden una lectura nueva
+se declaran con su ID y su DL al programarse; no se abre una operación sin decisión.
+- **GR-01 completa:** todos los ejercicios, más allá de 92 días, hasta cinco sesiones y la línea de 12 semanas (el 1RM
+  estimado en la lista de la v1 y la carga de la serie 1 en el resto). Pide una lectura de «las últimas N sesiones de un
+  ejercicio»: hoy API-TRN-21 llega a 92 días y API-PRJ-01 da una métrica y un número de serie por pedido.
+- **La vista previa de GR-04:** la cantidad de sesiones, el último valor y el mínimo y el máximo del período, sin
+  flecha, al enfocar o al pasar el mouse. Pide una lectura por lote.
+- **El contexto al elegir un ejercicio, fuera del historial:** el perímetro de la zona principal del ejercicio, si el
+  mismo profesional lleva Antropometría con tomas propias, con el aviso de que no hay reducción localizada.
+- **El contexto del editor de Nutrición:** al tocar un macro del objetivo en «Rangos y totales» (sus últimas 12
+  semanas, las versiones anteriores en escalón y la mediana de cada temporada), en el paso 2 del asistente (la energía
+  de las últimas 4 semanas y las tomas del mismo tramo) y al elegir una opción o una receta (cuántas veces la registró
+  la persona). En la fase 2, el editor de Nutrición recibe «Patrones» como pestaña de su estación.
+
+### 4.8 Fases 3 a 5: declaradas, sin programar
+
+Cada una espera lo que dice; mientras tanto, el catálogo la deja en `EN_PREPARACION` o `PIDE_DL` y «Armá tu gráfico» no
+la ofrece.
+
+**Fase 3 · enero y febrero de 2027: lo ratificado que espera programación, y el caso 2**
+- **GR-07 · «Lo que trabaja la semana»:** con el borrador, cuántas series por semana nombra cada zona, como principal y
+  como secundaria, contadas con la regla de D-15 (una serie por zona, por rol y sin ponderar), en el cuerpo y en una
+  tabla, recalculadas al editar. Sin rango, sin mínimos ni un ideal y nunca al lado de lo registrado (D-20); lo
+  registrado por zona va aparte, como la capa Trabajo (D-14). Espera TB-31 y TB-38. El rótulo: «Series por zona y por
+  semana».
+- **GR-09 · kg × repeticiones del ejercicio por semana:** barras semanales por ejercicio, sin sumar ejercicios
+  distintos, con la cobertura de la semana. Espera TB-34 y su término (GR-D2). Las series largas lo inflan y no equivale
+  a estímulo.
+- **GR-10 · La carga de la semana con el esfuerzo de la sesión:** barras semanales en unidades arbitrarias (esfuerzo ×
+  minutos) con la media de las 4 semanas previas, sin cociente. Espera D-16 y TB-35 (API-ESF), con la duración medida.
+  Sin «riesgo» ni «fatiga»; una semana con sesiones sin esfuerzo es un subtotal y lo dice.
+- **GR-15 · El reparto de la proteína por comida:** una grilla día × comida con una sola tinta y gris para lo que no
+  tiene dato. Espera TB-34. Un umbral por comida no es una meta de BE; «sin registro» no es «no comió».
+- **GR-22 · Somatocarta con el recorrido de la persona:** el triángulo con los puntos numerados por fecha y, debajo, los
+  tres componentes en el tiempo. Espera TB-34 y D-3, D-4, D-10 y D-11 de las medidas en la APK. Sin etiquetas
+  categóricas ni puntos de deportistas de referencia.
+- **SP-03 · Energía y peso × 1RM estimado, en una etapa de déficit:** mientras baja el peso, ¿se sostiene el 1RM
+  estimado? Tres paneles alineados, etapas de al menos 4 semanas comparadas por semanas y entre tomas, sin un cociente
+  fuerza/peso como cifra resumen. Caso 1, con las tres áreas; caso 2, para la nutricionista, con la carga de la primera
+  serie; para el entrenador, no existe.
+- **SP-05 · Proteína (g/kg/día) × masa muscular de Lee con perímetros:** la mediana de g/kg/día de cada intervalo entre
+  tomas junto a la diferencia de la medida, con al menos 6 semanas entre tomas, nunca semana a semana. Solo la masa
+  muscular de Lee con perímetros o los perímetros corregidos (las que arrastran el peso confunden un kilo perdido con
+  músculo perdido).
+- **SP-07 · Series por semana × RIR registrado a igual carga:** después de semanas con más series o de una descarga
+  declarada, ¿la misma carga se registra con otro RIR? Dentro de Entrenamiento; no viaja a otras áreas (la matriz no
+  comparte el RIR).
+- **El caso 2 de SP-01 y SP-02,** por API-RES, después de TB-29 y de la revisión legal.
+
+**Fase 4 · desde marzo de 2027: lo que pide una DL o un desafío del legajo**
+- **GR-08 · Series según un umbral de RIR del profesional:** barras semanales segmentadas (RIR hasta el umbral, mayor,
+  sin RIR escrito y carga rápida, los dos últimos siempre a la vista). Es un desafío de M-11, con su fundamento
+  (Robinson 2024) y su DL; mientras tanto, GR-03 y GR-05 muestran el RIR sin fijar un umbral.
+- **GR-17 · Suma de pliegues con la franja del error de medición:** la franja del cambio mínimo detectable (≈ 2,77 × el
+  error técnico) alrededor de la toma de referencia, con el error relativo de la suma (Woolford y Gore). Espera GR-D4.
+- **GR-19 · Perímetro bruto y perímetro corregido por pliegue:** dos paneles alineados; el corregido es el paso de Lee
+  v1 con perímetros, con su misma versión (GR-D9). No viaja al entrenador.
+- **GR-25 · Lo de sus semanas anteriores:** una banda gris del mínimo al máximo de las 8 semanas anteriores con datos,
+  con el texto en sus unidades, sin una frase automática de «se salió» y sin la palabra «rango». Espera GR-D8.
+- **SP-04 · Series por zona y por semana × perímetro de esa zona:** necesita la capa Trabajo y el perímetro corregido;
+  nunca al lado de lo que indicaba el plan (D-20).
+
+**Fase 5 · después del piloto: el peso en casa, los hábitos y otras áreas**
+- **GR-21 · Masa corporal con las condiciones de la toma:** las tomas en condiciones distintas, como rombo con el motivo;
+  con el peso en casa, el mínimo y el máximo de cada semana como segmento, en su propia serie y sin línea suavizada
+  (GR-D5). Espera las condiciones de la toma y el peso en casa (D-16, TB-37, API-PCA).
+- **SP-06 · Carbohidratos por día × pesajes en casa:** los 7 días siguientes a un cambio de objetivo, con los pesajes en
+  su propia serie, nunca unidos a las tomas. Espera el peso en casa.
+- **SP-08 · Hábitos declarados × carga y RIR registrados:** los hábitos como escalón de contexto en la cinta, con
+  «Declarado por la persona», y, con datos suficientes, antes y después de la nueva versión (mínimo 5 y 5). Espera
+  GR-D10. Una pregunta por sesión sería un dato de salud nuevo, con su DL y su revisión legal.
+
+## 5. Las reglas de honestidad
+
+Valen para todas las partes, en todas las fases. Cada una tiene su por qué.
+
+1. **Coincidir no es causar.** Cada cruce lleva la frase fija, una sola ventana de lectura fijada antes de mirar y la
+   lista de lo que también cambió en esa ventana; la explicación fisiológica va en «Cómo leerlo», con su fuente. *Por
+   qué:* dos series que suben con el tiempo se correlacionan aunque no tengan relación (Yule 1926; Granger y Newbold
+   1974), y la evidencia sobre carbohidratos y fuerza es débil (Henselmans 2022).
+2. **Sin coeficiente de correlación como titular y sin buscar correlaciones solo.** *Por qué:* con muchos pares aparecen
+   coincidencias casuales. Si alguna vez se muestra un r, va en un detalle técnico, con la cantidad de semanas.
+3. **Paneles alineados con el mismo eje de fechas.** *Por qué:* con dos escalas, el doble eje deja dibujar cualquier
+   cruce y cualquier pendiente relativa (Few 2008; Datawrapper). **Enmienda por el pedido de Dirección:** el doble eje
+   existe solo en «Superpuestas», que elige el profesional, con la escala de «Alineadas», sin sombrear entre líneas, con
+   dos unidades como máximo, la frase y «Cómo leerlo» (GR-26). Los sugeridos y los cruces preparados siguen en paneles
+   alineados.
+4. **Un hueco es un hueco:** líneas cortadas, promedios con su cantidad y ningún cero inventado. *Por qué:* REG-06-165
+   y 166 prohíben imputar o suavizar, y un día sin registro dibujado como cero hace creer que la persona no comió o no
+   entrenó.
+5. **Lo registrado por la persona, separado de lo precargado del plan.** *Por qué:* con la carga rápida (DL-161), una
+   serie puede tener los números del plan sin que la persona los escriba; solo la procedencia PERSON entra en las
+   estimaciones (DJ-2).
+6. **Cada cálculo con su método, su versión y su rango de validez a la vista.** *Por qué:* un número sin método es un
+   número que el profesional no puede firmar. El 1RM estimado se degrada por encima de 10 a 12 repeticiones y con un RIR
+   alto.
+7. **En Antropometría, el cambio se lee contra el error de medición;** sin el error cargado, cada texto lo dice: «BE no
+   tiene cargado el error de medición de quien mide: no se puede decir si 0,8 cm lo supera». *Por qué:* un cambio de
+   3 mm puede estar dentro del error de quien mide; planificar sobre ruido es peor que no tener el gráfico (Hind 2018).
+8. **Los mínimos de datos, declarados:** con menos de 5 sesiones por lado o menos de 4 semanas de historia no se dibuja
+   un patrón. *Por qué:* un gráfico con dos puntos parece estable o parece un salto; decir cuánto falta es la forma
+   honesta de «cuanto más se usa, mejor».
+9. **Solo la propia historia de la persona como referencia.** *Por qué:* ubicar, nunca calificar, y nada de comparar con
+   otras personas: sin percentiles de población, rangos poblacionales ni promedios de usuarios.
+10. **Un cruce existe completo solo en el caso 1;** entre profesionales distintos, solo lo que deja la matriz §3.1, por
+    API-RES y después de TB-29 y de la revisión legal. Cada cruce tiene su prueba del caso negado. *Por qué:* los datos
+    de salud son sensibles y cada lectura del profesional ya está acotada a sus planes; un área sin acceso no aparece ni
+    como hueco ni con candado, para no delatar que hay datos.
+11. **Las palabras:** «1RM estimado (Epley v1)», «series por zona y por semana», «registrado» y no «consumido»; con
+    Nutrición, sin el signo de porcentaje. *Por qué:* las listas de términos de cada área existen porque esas palabras
+    afirman más de lo que BE sabe; un gráfico de dos áreas respeta la unión de las listas.
+12. **El ruido antes que el cambio:** con el 1RM estimado, la mediana del RIR y el rango de repeticiones de cada tramo,
+    el cambio de lo indicado en la primera línea y el ruido propio de la persona en texto, sin «±»; nunca «primero →
+    último» ni una flecha. *Por qué:* cada unidad de RIR mueve la estimación en carga/30, y el RIR autoinformado se
+    yerra en cerca de una repetición: una brecha de 4 kg puede ser solo RIR.
+13. **Un día de comida se describe con lo que BE sabe:** «con cantidades en todos sus registros y sin comidas del plan
+    sin registro», nunca «día completo»; cada media dice con qué días se hizo, cuántos quedaron afuera y por qué. *Por
+    qué:* COMPLETE no dice que el día esté completo (DL-153), y promediar solo los días cuidados es un sesgo de
+    selección.
+14. **Lo cargado tarde se marca** en cada punto y en la franja de cobertura. *Por qué:* un registro cargado días después
+    es un recuerdo; para leer patrones en el tiempo esa diferencia importa, y BE ya guarda los dos relojes
+    (`occurredAt` y `recordedAt`).
+
+## 6. Las decisiones
+
+### 6.1 GR-D0 a GR-D10 · tomadas por la delegación de Dirección, según la recomendación
+
+Dirección delegó: «a menos que sea una decisión crítica con criterio haz lo que me recomiendes». Ninguna de estas es
+crítica en ese sentido (ninguna cambia una garantía del legajo ni abre datos de salud a otro profesional), así que rige
+la recomendación de la propuesta. Las que piden su propia DL la abren al programarse, en su fase.
+
+- **GR-D1 · La fase 1 de solo lectura** · **rige la recomendación; el 2026-11-14 se adelantó la fase 2 y se levantó el congelamiento.**
+  - *La pregunta:* ¿se declara el paquete con estos IDs y entra antes del 23/11 una fase 1 de solo lectura: la marca
+    «con historial» (GR-04), la tabla desde el inicio y desde la anterior (GR-16) y «La vez pasada» reducida (GR-01)?
+  - *Rige:* sí, y SP-01 en la defensa con la cuenta de Dirección, que lleva las dos áreas. El pedido del 14/11 («ya
+    tienes que ponerte a trabajar en eso») adelanta la fase 2, y la regla del mismo día («Todo se integra lo antes posible una vez que esté aprobado, no retrasamos las cosas por la planificación, si adelantamos la producción se adelanta todo») levanta el
+    congelamiento: cada rama entra apenas queda aprobada (§3).
+  - *Alternativa descartada:* no programar nada nuevo antes del 25/11 y presentar la propuesta como visión.
+  - *En el código:* ninguna rama de la fase 2 toca GR-01, GR-04 ni GR-16; SP-01 se muestra en vivo solo si la rama D
+    ya entró.
+- **GR-D2 · El término de TB-34** · **rige la recomendación.**
+  - *La pregunta:* ¿qué término de pantalla reemplaza a la palabra prohibida para TB-34 (DL-163 D-15), y con qué
+    convención para la mancuerna única, lo unilateral y el peso corporal?
+  - *Rige:* «kg × repeticiones por semana (método v1)», por ejercicio y sin sumar ejercicios distintos, en una DL nueva
+    que también saque la contradicción con INV-06-153.
+  - *Alternativa descartada:* «Carga movida por semana», más amable y menos explícito sobre cómo se calcula.
+  - *En el código:* GR-09 es de la fase 3 y abre esa DL. Hasta entonces la palabra sigue prohibida, el catálogo deja la
+    serie en `PIDE_DL` y la entrada vieja del diccionario sigue sin ofrecerse.
+- **GR-D3 · retirada.** Estaba en la primera versión de la propuesta: la cuenta por zona ya la fijó D-15 (TB-31). Queda
+  en GR-D0.
+- **GR-D4 · El error técnico de medición** · **rige la recomendación.**
+  - *La pregunta:* ¿BE carga el error técnico de medición del profesional antropometrista (GR-17)?
+  - *Rige:* sí: el profesional lo declara una vez por sitio (o el de su nivel ISAK) y queda con cada toma; más adelante,
+    las réplicas por sitio, para calcularlo con sus propios datos.
+  - *Alternativa descartada:* un error fijo de protocolo para todos, rotulado «de referencia ISAK», menos fiel a cada
+    evaluador.
+  - *En el código:* es de la fase 4, con su DL. Mientras tanto, GR-16, GR-18 y GR-20 llevan la línea «BE no tiene
+    cargado el error de medición de quien mide: no se puede decir si estos cambios lo superan», sin franja y sin una
+    columna vacía.
+- **GR-D5 · La línea del peso que filtra el ruido** · **rige la recomendación.**
+  - *La pregunta:* ¿se permite una línea del peso que filtre el ruido del día (como MacroFactor), hoy prohibida como
+    «tendencia automática»?
+  - *Rige:* todavía no: las tomas como puntos, sin línea. Se reconsidera cuando exista el peso en casa (D-16, TB-37),
+    con un método declarado y versionado.
+  - *Alternativa descartada:* aprobar ya una media semanal declarada («media de la semana, método v1») sobre los
+    pesajes.
+  - *En el código:* Antropometría tiene `unirPuntos: false` en el catálogo; ningún modo une tomas ni suaviza, y una
+    prueba lo fija.
+- **GR-D6 · La historia del profesional anterior** · **rige la recomendación.**
+  - *La pregunta:* desafío de RF-025 y DJ-14 (el profesional nuevo no ve la historia del anterior): ¿se abre, con el
+    permiso explícito de la persona, lo que ella registró antes del acompañamiento?
+  - *Rige:* no por ahora. DJ-14 se mantiene, el límite se dice en pantalla y la persona tiene la exportación de su
+    propia historia como derecho propio. El desafío, con su fundamento y su revisión legal, después del piloto; si se
+    aprueba, con una marca propia («Antes de tu acompañamiento»), nunca con `partialView`, que en BE quiere decir «hay
+    datos de esta área que no ves».
+  - *Alternativa descartada:* abrirlo ya con el permiso de la persona, sin las notas del otro profesional, con la
+    revisión legal antes del piloto.
+  - *En el código:* los gráficos arrancan en el inicio del vínculo (TB-16) y lo dicen; no hay lectura nueva.
+- **GR-D7 · retirada.** Era el esfuerzo de la sesión: ya lo fijó D-16 (TB-35). Queda en GR-D0.
+- **GR-D8 · Lo de sus semanas anteriores** · **rige la recomendación.**
+  - *La pregunta:* ¿se aprueba «lo de sus semanas anteriores» (GR-25) como método de BE?
+  - *Rige:* sí, con una DL: del mínimo al máximo de las 8 semanas anteriores con datos (del percentil 10 al 90 solo con
+    12 semanas o más), la misma ventana en Entrenamiento y en Nutrición, sin una frase automática de «se salió», sin la
+    palabra «rango» y sin usarlo en Antropometría.
+  - *Alternativa descartada:* no dibujar bandas y dejar solo «Dos etapas» como comparación con la propia historia.
+  - *En el código:* GR-25 es de la fase 4; la fase 2 no lo dibuja.
+- **GR-D9 · El perímetro corregido por pliegue** · **rige la recomendación.**
+  - *La pregunta:* ¿se expone el perímetro corregido (el paso intermedio de Lee v1 con perímetros) como métrica propia,
+    con la misma versión (GR-19)?
+  - *Rige:* sí, en Antropometría y para quien lleva el área: la cuenta ya está aprobada dentro de Lee v1, así que no es
+    un método nuevo. No viaja al entrenador, porque revela el pliegue.
+  - *Alternativa descartada:* dejarlo adentro de Lee y mostrar solo el perímetro bruto y el pliegue al lado.
+  - *En el código:* GR-19 es de la fase 4; el catálogo lo deja en `PIDE_DL`.
+- **GR-D10 · Las versiones anteriores de los hábitos** · **rige la recomendación.**
+  - *La pregunta:* ¿el profesional que recibe los hábitos de la persona (API-HBT-05) puede leer sus versiones
+    anteriores, para ponerlas como contexto en la cinta del tiempo (SP-08)?
+  - *Rige:* sí, después del piloto y con una DL: es el primer paso de la ampliación a otras áreas, con un dato que ya
+    existe, versionado y de solo agregar, con su autorización aparte.
+  - *Alternativa descartada:* una pregunta por sesión («¿cómo dormiste?»): más fina, pero es un dato de salud nuevo, con
+    su DL y su revisión legal.
+  - *En el código:* la cinta deja su lugar reservado y no lee la historia de API-HBT-05.
+- **GR-D0 · Lo ya decidido** · **no se vuelve a preguntar.**
+  - *Qué es:* el conteo por zona, por rol y sin ponderar (D-15, TB-31); «Lo que trabaja la semana», sin rango y nunca al
+    lado de lo registrado (D-20, TB-38); el esfuerzo de la sesión (D-16, TB-35); el profesional nuevo no ve la historia
+    del anterior (DJ-14); el peso en casa, después del piloto (D-16, TB-37).
+  - *Rige:* programarlos en las fases 3 y 5 tal como están ratificados.
+  - *Alternativa:* ninguna; cambiar cualquiera de ellos sería un desafío explícito, con su fundamento.
+  - *En el código:* el catálogo los deja en `EN_PREPARACION` o `PIDE_DL` y «Armá tu gráfico» no los ofrece.
+
+### 6.2 GR-T01 a GR-T19 · del continuador en el diseño técnico (a ratificar)
+
+Mientras no haya respuesta, rigen. Cada una con su alternativa, cuando la hay.
+
+- **GR-T01 · El nombre de GR-27:** «Enfoques» («Enfoque: Foco en fuerza», «Mis enfoques»), con la palabra de Dirección
+  («si se estaban enfocando en fuerza»). Se descarta «de cabecera», porque en BE la cabecera ya es la barra de arriba
+  (DL-117, PG-04). En el código, nombres neutros (`ConjuntoDeGraficos`): si cambia el nombre, cambia un texto.
+  *Alternativa:* «Conjuntos de gráficos».
+- **GR-T02 · «Superpuestas» admite hasta tres series y dos unidades,** con un eje a cada lado. Con tres unidades, el modo
+  se deshabilita y dice por qué. *Alternativa descartada:* un eje por serie (tres ejes), que hace ilegible el gráfico.
+- **GR-T03 · «Comparten la x» quiere decir:** las series de día, de sesión o de toma entre sí; las semanales, solo con
+  semanales.
+- **GR-T04 · La regla de DL-126 se amplía, no se cambia:** con la misma familia y unidad, un eje, como hoy; con unidades
+  distintas, dos ejes. La enmienda va en DL-174, por el pedido de Dirección del 14/11. Las vistas guardadas con
+  `OVERLAY` siguen iguales.
+- **GR-T05 · Los modos de «Analizar» pasan a llamarse «Alineadas» (por defecto) y «Superpuestas»,** con las palabras de
+  Dirección; en la URL y en API-VAN siguen `PANELS` y `OVERLAY`. *Alternativa:* dejar «Separadas» y «Juntas».
+- **GR-T06 · La frase** «Coinciden en el tiempo; esto no prueba que una cosa cause la otra.» va siempre que hay dos
+  áreas o dos ejes, en cualquier modo, y reemplaza «coincidencia temporal; no indica causa».
+- **GR-T07 · Los topes:** un enfoque tiene como máximo seis gráficos (el tope que la propuesta pone al panel); un
+  profesional, como máximo 50 enfoques, como en API-VAN.
+- **GR-T08 · El ejercicio de un gráfico guardado** puede ser fijo (del catálogo) o «el más registrado» del período (1.º a
+  3.º), para que el enfoque sirva con cualquier persona.
+- **GR-T09 · Dónde rige la elección:** la de un plan, en la estación de ese plan; la de la persona, en el resto; sin
+  ninguna, los sugeridos para tus áreas (como los indicadores del Resumen, TB-25).
+- **GR-T10 · Borrar un enfoque quita sus elecciones,** después de avisar en cuántos lugares estaba elegido. Cambiar un
+  enfoque que usan otras personas pregunta si se guarda como uno nuevo.
+- **GR-T11 · Las elecciones de enfoque no entran en la exportación de la persona:** son configuración del profesional,
+  como las vistas de DL-128. *Alternativa:* exportarlas, como las notas propias de PG-D11.
+- **GR-T12 · «Patrones» es la segunda vista de la ficha,** entre «Resumen» y «Línea de tiempo», y una pestaña del panel
+  de la estación en los dos editores. *Alternativa:* ponerla al final, sin mover las pestañas de hoy.
+- **GR-T13 · Los g/kg registrados (GR-13) se derivan en el website,** sin API nueva en el caso 1: los gramos del día
+  divididos por el peso de la última toma propia en ese día o antes. Sin toma anterior, no hay valor, y cada punto dice
+  la fecha del peso. Se aparta de API-PLN-03 (el último peso al guardar) porque una serie del pasado no puede usar un
+  peso posterior.
+- **GR-T14 · El RIR indicado (GR-03 y GR-05) sale del comparador** (API-TRN-21 y API-SER-01), en tramos de 92 días y sin
+  una lectura nueva. *Alternativa:* extender API-PRJ-01 con lo indicado por punto, como DL-158 hizo en Nutrición.
+- **GR-T15 · El rango mínimo del eje del 1RM estimado es 10 kg (22 lb),** para que el ruido de un RIR no parezca un
+  salto.
+- **GR-T16 · El ruido propio se dice desde cuatro sesiones de la misma versión:** la mayor diferencia entre
+  estimaciones seguidas del núcleo, en texto, sin «±» ni porcentaje. Cada punto se asigna a la versión que regía ese
+  día, porque el punto de fuerza no trae su versión.
+- **GR-T17 · La API valida los IDs de gráficos y de series de un enfoque con una expresión,** no con una lista cerrada
+  (`^(entrenamiento|nutricion|antropometria|cruce)\.[a-z0-9-]+$` para los gráficos): un gráfico nuevo no obliga a
+  redesplegarla, y el website ignora un ID que no conoce.
+- **GR-T18 · El calendario de la fase 2** (actualizada el 2026-11-14 por dos pedidos de Dirección): se programa desde
+  el 14/11 y cada rama se integra apenas queda aprobada (la revisión adversaria sin altas ni medias pendientes y la CI en
+  verde), empezando por la base; la API de los enfoques, después de la base y de la rama D. No hay congelamiento:
+  «Todo se integra lo antes posible una vez que esté aprobado, no retrasamos las cosas por la planificación, si adelantamos la producción se adelanta todo». *Antes:* el diseño integraba toda la fase 2 desde el 26/11, y la primera declaración, solo lo sólido antes
+  del 23/11.
+- **GR-T19 · Los rangos por rama, para no pisarse:** TEST-GRF-001 a 019 (A), 020 a 039 (B), 040 a 059 (C), 060 a 079
+  (D) y 080 a 099 (E); las decisiones al programar, en bloques de diez (§6.3); una hoja de estilos por rama, importada
+  una sola vez en `app/layout.tsx`, sin tocar `globals.css`.
+
+### 6.3 Las decisiones al programar
+
+Cada rama numera las suyas en su rango, las escribe en su apartado de §13 y en su PR, **a ratificar**: la fase 1,
+GR-T70 a 79; A, GR-T20 a 29; B, GR-T30 a 39; C, GR-T40 a 49; D, GR-T50 a 59; E, GR-T60 a 69. Una decisión de producto
+que el paquete no resuelve se toma por el lado más conservador y se anota así.
+
+## 7. Las operaciones nuevas: la familia GRF (GR-27)
+
+Una familia propia de BE, **GRF** (gráficos), que la guardia de trazabilidad declara con DL-174 al programarse. Solo
+para el website del profesional: la APK no la lee.
+
+| ID | Método y ruta | Para qué | Respuestas |
+|---|---|---|---|
+| API-GRF-01 | `GET /me/chart-sets` | Tus enfoques, cada uno con en cuántos lugares está elegido | 200; 403 si no es un profesional habilitado |
+| API-GRF-02 | `POST /me/chart-sets` | Crear un enfoque: nombre (de 1 a 80) y de 1 a 6 gráficos, solo referencias | 201; exige `Idempotency-Key`; 422 con el contenido inválido, y `TOO_MANY_SETS` desde el número 51 |
+| API-GRF-03 | `PUT /me/chart-sets/{setId}` | Cambiar el nombre o los gráficos de un enfoque propio | 200; con `expectedVersion` (409 `VERSION_CONFLICT`); uno ajeno o inexistente, el mismo 404 |
+| API-GRF-04 | `DELETE /me/chart-sets/{setId}` | Borrar un enfoque propio; sus elecciones se quitan con él y esas personas vuelven a los sugeridos | 204, también al reintentar; exige `Idempotency-Key` |
+| API-GRF-05 | `GET /advisees/{adviseeId}/chart-set-choices` | Qué enfoque elegiste para la persona y para cada uno de sus planes | 200; lectura protegida (429 `RATE_LIMITED`); sin un alcance permitido hoy, 404 como una persona inexistente |
+| API-GRF-06 | `PUT /advisees/{adviseeId}/chart-set-choices` | Elegir o cambiar el enfoque de la persona (`PERSON`) o de un plan propio (`TRAINING_PLAN` o `NUTRITION_PLAN`, con el alcance de esa área) | 201 al crear (`expectedVersion: null`), 200 al cambiar; 409 si otra pestaña eligió antes; la persona, el plan o el enfoque ajenos o inexistentes, 404 |
+| API-GRF-07 | `DELETE /advisees/{adviseeId}/chart-set-choices/{choiceId}` | Volver a los sugeridos para tus áreas | 204; exige `Idempotency-Key` |
+
+**Los contratos** (`packages/domain/src/contratos-enfoques.ts`), estrictos: un enfoque tiene `setId`, `name`, `content`
+(`schemaVersion: 1` y de 1 a 6 `charts`), `choices`, `version` y los dos momentos. Cada gráfico es `SUGGESTED` (el ID de
+un sugerido, con su ejercicio, `FIXED` o `MOST_RECORDED` del 1.º al 3.º, o su medida de Antropometría) o `CUSTOM` (un
+título de hasta 60, de 1 a 3 referencias de métricas y el modo `PANELS` u `OVERLAY`). Una elección tiene `choiceId`,
+`scope` (`PERSON`, `TRAINING_PLAN` o `NUTRITION_PLAN`), `planId`, el enfoque y su versión. `TOO_MANY_SETS` es un código
+nuevo de `CodigoDeError`, que solo agrega (API-VAN responde su tope con `VALIDATION_FAILED` y no cambia).
+
+**Los permisos:**
+- **solo el dueño:** un profesional verificado y habilitado en algún alcance, con su segundo factor (`puedeOperarArea`,
+  UF-11 de DL-169), como API-VAN. Un enfoque o una elección ajenos responden el mismo 404 que uno inexistente;
+- **con la persona, el PDP de hoy:** API-GRF-05 a 07 deciden dentro de su transacción con
+  `decidirAlgunAlcanceEnTransaccion` (como API-HBT-05 y API-RES). Sin un vínculo aceptado y vigente en algún alcance,
+  404;
+- **el plan, propio y de un área permitida:** un plan de Entrenamiento exige el alcance de Entrenamiento con la persona;
+  uno de Nutrición, el de Nutrición; y el plan tiene que ser de este profesional y de esta persona. Si no, 404;
+- **la auditoría,** en la misma transacción, con un ejecutor propio (`EjecutorDeGraficos`, como `EjecutorDeVistas`).
+
+**Las tablas y la migración, que solo agrega** (`prisma/migrations/<fecha al integrar>_enfoques_de_graficos/`, generada
+con `prisma migrate diff` y completada a mano, como la de DL-128):
+- `conjunto_de_graficos`: el profesional, el nombre, el contenido (JSON), la versión, la procedencia y los dos momentos;
+- `eleccion_de_conjunto_de_graficos`: el profesional, la persona (con el nombre de columna del resto del esquema), el
+  ámbito (un enumerado nuevo: persona, plan de Entrenamiento o plan nutricional), el plan que corresponde, el enfoque
+  (con borrado en cascada desde el enfoque), la versión, la procedencia y los dos momentos;
+- `CHECK` del nombre (de 1 a 80, sin espacios en los bordes), de la versión (1 o más), de que el contenido sea un objeto
+  y del ámbito (con la persona, los dos planes en `NULL`; con un plan, solo su columna);
+- índices únicos parciales: uno por profesional y persona para la persona, uno por profesional y plan de
+  Entrenamiento y uno por profesional y plan nutricional. El tope de 50 enfoques va en el servicio, como en API-VAN;
+- no toca datos ni columnas existentes. La fecha del nombre se fija al integrar, después de las migraciones de la tanda
+  B.
+
+**Lo que hay que tocar para declararlas** (rama E): siete entradas en `packages/domain/src/openapi.ts`, con `fuente:
+'pedido de Dirección del 2026-11-14 · ID propio de BE (familia GRF) · DEUDA_LEGAJO DL-174'`; API-GRF-05 en
+`LECTURAS_PROTEGIDAS`; siete métodos en `cliente-http.ts` (`listarEnfoques`, `crearEnfoque`, `reemplazarEnfoque`,
+`borrarEnfoque`, `leerEleccionesDeEnfoque`, `elegirEnfoque` y `quitarEleccionDeEnfoque`); `GRF: 'DL-174'` en
+`FAMILIAS_DE_BE` de `scripts/trazabilidad-de-operaciones.test.cjs`; y `docs/api/openapi.json`, regenerado con
+`npm run openapi`.
+
+**Lecturas nuevas sin ID todavía** (§4.7): la de «las últimas N sesiones de un ejercicio» (GR-01 completa) y la de la
+vista previa por lote (GR-04). Se declaran con su ID y su DL al programarse.
+
+## 8. Riesgos
+
+- **Que un cruce se lea como causa** («subió los carbohidratos y por eso subió la fuerza») y el profesional decida con
+  eso. *Cómo se cuida:* la frase fija, una sola ventana fijada antes de mirar, lo que también cambió a la vista, la
+  energía siempre al lado de los carbohidratos y «Dos etapas» con todas las observaciones en lugar de una regresión.
+- **Que «Superpuestas», con dos escalas, se lea como causa o como cruce** (Few 2008), justo lo que la propuesta evitaba.
+  *Cómo se cuida:* «Alineadas» por defecto, la escala de «Alineadas», sin sombrear entre líneas, dos unidades como
+  máximo, la frase, «Cómo leerlo» y la tabla a un clic.
+- **Que lo precargado del plan se dibuje como hecho por la persona.** *Cómo se cuida:* la procedencia en cada punto, la
+  marca que sale del dominio (hueca y gris) y una prueba que falla si una serie de carga rápida se dibuja llena o si una
+  serie PLAN entra en una estimación.
+- **Que se cuele una palabra prohibida en un gráfico de dos áreas, o el signo de porcentaje con Nutrición.** *Cómo se
+  cuida:* la guardia unida corre sobre todos los textos de cada rama, también los de «Cómo leerlo».
+- **Que un cruce o una serie delate un área sin acceso.** *Cómo se cuida:* cada lectura pasa por el PDP y por el filtro
+  de planes propios; `seriesOfrecidas` no ofrece lo que no corresponde; el estado sin acceso no dibuja nada; cada cruce
+  tiene su prueba del caso negado (no se pide la lectura del área que falta).
+- **Que «Patrones» sature la estación en 1280 y tape la planilla.** *Cómo se cuida:* plegada por defecto en 1280, hasta
+  seis gráficos, un solo período y la medición en 1440, 1280 y 1024 antes de integrar.
+- **Que el profesional nuevo vea los gráficos vacíos,** contra «cuanto más se usa, mejor». *Cómo se cuida:* el límite
+  dicho en pantalla («La historia empieza el día que empezaste a acompañarla») y la exportación propia de la persona
+  (GR-D6).
+- **Que la velocidad meta algo que no está aprobado o que pide una DL.** *Cómo se cuida:* nada entra sin la revisión
+  adversaria y la CI en verde (§3); lo que pide una DL la abre antes de programarse, y lo que no llegue a la defensa se
+  dice como próximo paso en la guía de la demo, no a medio hacer.
+- **Que las lecturas acotadas** (92 días en API-ANT-06, API-NUT-17 y API-TRN-21; 366 en API-PRJ-01) **hagan lentos los
+  paneles largos o pasen el límite de 120 por minuto.** *Cómo se cuida:* tramos de 92 días dichos en pantalla, de a
+  cuatro y sin pedir dos veces lo que está en vuelo, 12 semanas por defecto en la estación y grano semanal para más de
+  un año; nunca caché de datos de salud en el navegador.
+- **Que el ruido de la estimación se lea como un cambio de fuerza.** *Cómo se cuida:* la mediana del RIR y el rango de
+  repeticiones de cada tramo, el cambio de lo indicado en la primera línea, el ruido propio en texto y nunca «primero →
+  último» ni una flecha.
+- **Que «rango» se confunda con los rangos de macros del profesional (TB-39)** y se lea como «se pasó de lo indicado».
+  *Cómo se cuida:* lo de la persona se llama «lo de sus semanas anteriores»; «rango» queda para lo que fija el
+  profesional.
+- **Que las ramas se pisen.** *Cómo se cuida:* archivos propios, hojas de estilo propias, los registros vacíos que crea
+  A, los archivos de prueba ya listados y los rangos de IDs por rama (§11). La rama A es un cuello de botella: publica
+  primero los tipos y los registros vacíos, y deja la cinta y el ruido para un segundo commit.
+- **Que el cuadro del ejercicio lo toquen la fase 1 (GR-01) y la rama B a la vez.** *Cómo se cuida:* B espera la
+  integración de GR-01 y engancha sus pasos con una línea; el cambio de alcance de ED-75 se declara (DL-174).
+- **Que los editores y la API los toquen la tanda B de WP-PULIDO-GRANDES (PG-15 y PG-16) y la rama E.** *Cómo se cuida:*
+  E se integra después de la tanda B, con dos cambios chicos en los editores; la fecha de su migración se fija al
+  integrar.
+- **Que «Analizar» (1822 y 633 líneas, con pruebas de pantalla) se rompa con el segundo eje.** *Cómo se cuida:* solo D lo
+  toca; cada línea, punto y área de referencia, atado a su eje; las tres capas de Nutrición y las vistas guardadas de
+  antes se prueban sin cambios.
+- **Que los g/kg y el RIR indicado, derivados en el cliente, cambien de regla sin aviso.** *Cómo se cuida:* la regla del
+  peso (la última toma en ese día o antes) se declara con su versión, para que el profesional pueda firmarla, y una
+  prueba fija que no se usa una toma posterior.
+
+## 9. Oráculos a escribir
+
+Al programar, en `WP-GRAFICOS-ORACULOS.md`, con los trece campos del 11A. Cada uno, con su mutación: se rompe la regla a
+propósito, la prueba se pone en rojo y se vuelve atrás. En modo liviano, los oráculos quedan en las pruebas y la ficha
+se escribe al cerrar cada rama.
+
+| Oráculo | Qué fija | Mutación que lo pone en rojo | Parte |
+|---|---|---|---|
+| TEST-GR-001 | «La vez pasada»: solo lo registrado; lo precargado, distinto de lo escrito; lo cargado otro día, marcado; una vez hecha con otro ejercicio no cuenta como el mismo; una serie que falta, sin dato | Tomar una sustitución como el mismo ejercicio | GR-01 (y PG-11, con TEST-PG-010) |
+| TEST-GR-004 | La marca «con historial», con las sesiones y la última fecha; sin sesiones, sin marca; sin primero ni último | Mostrar «0 sesiones» | GR-04 |
+| TEST-GR-016 | La tabla, solo dentro del mismo grupo de comparabilidad, con la resta con su signo y la línea del error de medición | Comparar dos grupos distintos | GR-16 |
+| TEST-GRF-001 a 019 | Cada serie del catálogo con su área, su eje X, una fuente que existe en `openapi.ts`, sus alcances y su método si es derivada; `seriesOfrecidas` no ofrece nada de un área sin acceso y los g/kg solo con las dos áreas; `composicionPermitida` con tres unidades, con semana y sesión y con cuatro series; la frase con dos áreas o dos ejes; la guardia unida; las marcas de lo indicado, la carga rápida y la observada; la línea cortada en un hueco y entre tramos; la tabla dice lo mismo que el dibujo; los tramos de 92 días sin días perdidos; la cinta sin eventos de un área denegada; el ruido con menos de cuatro sesiones es nulo | Una serie de Nutrición sin el alcance de Nutrición; los g/kg con una sola área; dejar tres unidades; sacar la frase; aplicar solo la lista de la primera área; la carga rápida llena; unir a través de un hueco; perder los subtotales en la tabla; tramos de 93 días; dejar los eventos denegados; el ruido con dos sesiones | La base y GR-23 (A) |
+| TEST-GRF-020 a 039 | La mediana del RIR y el rango de repeticiones por versión; el cambio de lo indicado en la primera línea; ningún «primero → último», «±» ni porcentaje; el eje del 1RM con 10 kg como mínimo; el eje del RIR de 0 al máximo, con 5 como mínimo; un RIR sin escribir no es 0; «a igual carga» filtra la misma carga y unidad; el perfil solo con lo escrito por la persona y RIR de 0 a 2, con las curvas rotuladas «de la fórmula»; la tarjeta de fuerza sigue solo en la v1 | Asignar un punto a la versión de hoy y no a la de su día; dibujar un RIR vacío como 0; filtrar «a igual carga» sin la unidad; una serie PLAN en el perfil | GR-02, GR-03, GR-05 y GR-06 (B) |
+| TEST-GRF-040 a 059 | Una proporción no se dibuja ni se convierte; COMPLETE llena, subtotal hueca, sin registro nada; «no se puede saber si faltan comidas» sin plan; la media semanal dice sus días; nunca «completo» para un día; los g/kg con el peso de la toma anterior y sin valor sin toma; la diferencia en gramos con su signo; sin indicado cuando el plan deja elegir; los pares por sitio solo dentro del mismo grupo; el eje común de las masas | Convertir la proporción a gramos; usar la última toma del período para un día anterior; un día sin registro como cero; un eje propio por método | GR-11 a GR-14, GR-18 y GR-20 (C) |
+| TEST-GRF-060 a 079 | Dos etapas no se dibujan con menos de 5 por lado; SP-01 y SP-02 no se ofrecen sin las dos áreas con planes propios y no piden la lectura del área que falta (el caso negado); la energía va al lado de los carbohidratos; dos ejes rotulados con su unidad; tres unidades deshabilitan «Superpuestas» con su motivo; series con distinto eje X no se superponen; una vista guardada con `OVERLAY` de antes se ve igual | Ofrecer SP-01 con una sola área; pedir la lectura de comidas igual; dejar superponer semana con sesión; dibujar con 4 de un lado | GR-24, SP-01, SP-02 y GR-26 (D) |
+| TEST-GRF-080 a 099 | Un enfoque ajeno responde el mismo 404 que uno inexistente; sin vínculo vigente, API-GRF-05 a 07 responden 404; el esquema rechaza un campo que no sea una referencia; los topes de 50 y 6; la idempotencia de crear, borrar y quitar; la versión esperada al cambiar; borrar un enfoque quita sus elecciones; un plan ajeno o de un área no permitida responde 404; la elección del plan gana a la de la persona; «Patrones» no lee ni muestra un área sin acceso | Dejar leer al otro profesional; aceptar un valor dentro del contenido; pedir la lectura de un área sin acceso igual | GR-27 y «Patrones» (E) |
+| TEST-PRJ-009 y las listas de cada área | Ningún texto nuevo usa las palabras que prohíben; con Nutrición, sin el signo de porcentaje | Un texto de «Cómo leerlo» con una palabra prohibida | Todas |
+
+## 10. Dependencias y coordinación
+
+- **Entre las partes:**
+  - todo depende de la rama A: el catálogo, las piezas comunes, la guardia, las marcas y los registros vacíos;
+  - GR-02, GR-24 y SP-01 comparten el ruido de la estimación (A); GR-03 y GR-05, el RIR indicado del comparador (A deja
+    el adaptador; B lo ofrece);
+  - «Patrones» y los enfoques (E) muestran lo que registran B, C y D a medida que se integran, y usan el compositor de
+    «Armá tu gráfico» (D);
+  - la rama B engancha sus pasos en el cuadro del ejercicio después de que se integre GR-01 (fase 1); la rama C, las
+    vistas «Por sitio» y «Por método» después de mirar GR-16.
+- **Con otros paquetes:**
+  - **WP-PULIDO-GRANDES (DL-173):** PG-11 y GR-01 son la misma pieza («La vez pasada»), con la misma función de
+    comparabilidad (TEST-PG-010 y TEST-GR-001); PG-18 usa las marcas de este paquete; las notas de PG-15 y PG-16 entran
+    en la cinta (GR-23), y esas dos partes tocan la API y los editores antes que la rama E; cualquier fecha que se elija
+    en un gráfico del website del profesional usa `CampoDeFecha` (PG-14: TEST-PG-013 rechaza un campo de fecha nativo);
+  - **WP-EDITORES-PROFESIONAL (DL-167 y DL-171):** el cuadro del ejercicio (ED-75), el buscador, con su revisión visual
+    pendiente, y la estación con sus pestañas;
+  - **WP-TABLERO-ALTA-GAMA (DL-163):** la matriz §3.1 (el caso 2), TB-16 (el período desde el vínculo), TB-25 (los
+    indicadores por área), TB-29 (las otras áreas en la ficha), TB-50 (la evolución de las tomas) y lo que esperan las
+    fases 3 a 5 (TB-31, TB-34, TB-35, TB-37, TB-38 y TB-39);
+  - **WP-DASHBOARD-PROFESIONAL (DL-126 y DL-128):** «Analizar» y las vistas guardadas, que GR-26 amplía sin cambiar lo
+    guardado;
+  - **las APK instaladas (DL-152):** no leen nada de este paquete.
+
+## 11. El reparto de la fase 2
+
+### 11.1 Las reglas para no pisarse
+
+- **La rama A sale primero** y publica en el día su primer commit: el catálogo, los tipos, las piezas mínimas, los
+  registros vacíos de cada rama, las hojas de estilo y los archivos de prueba. B, C, D y E salen de ese commit. Lo que A
+  sume después (la cinta y el ruido de la estimación) llega a las otras integrando la rama A, sin reescribir nada
+  publicado.
+- **Archivos propios:** cada rama crea los suyos dentro de `apps/web/src/app/pro/advisees/graficos/<su carpeta>/` y edita
+  solo los archivos existentes que le tocan en §11.2. Si necesita otro, lo dice en su PR antes de tocarlo.
+- **Estilos:** cada rama escribe solo en su hoja de `graficos/estilos/`, importada una sola vez en `app/layout.tsx`.
+  Nadie toca `globals.css`.
+- **Pruebas:** los cinco archivos `apps/web/test/graficos-*.test.mjs` ya están en la lista de `npm test` (los pone A).
+  Cada rama escribe en el suyo, con su rango de IDs (GR-T19).
+- **Con la fase 1 y con la tanda B de WP-PULIDO-GRANDES:** antes de tocar un archivo existente, se mira si lo tocan
+  (`git diff --stat origin/main...origin/<rama>`). Si lo tocan, se espera su integración o la parte va en un archivo
+  nuevo con una sola línea de enganche.
+
+### 11.2 Las cinco ramas
+
+| Rama | IDs | Qué | Archivos existentes que toca | Depende de | API |
+|---|---|---|---|---|---|
+| **A** · `wp-graficos-base` | GR-23 y la base (§4.2) | El catálogo de series, los IDs de los sugeridos, las piezas comunes en SVG, las marcas, la guardia de vocabulario, el ruido de la estimación, las lecturas, los adaptadores y la cinta del tiempo. Sin cambio visible | `packages/domain/src/index.ts`, `seguimiento/series.ts` (saca `leerDisponibles`), `app/layout.tsx` (las cinco hojas), `app/tokens.css` (`--grafico-indicado`, `--grafico-carga-rapida` y `--grafico-cursor`, en los dos temas y con 3:1) y `apps/web/package.json` (los cinco archivos de prueba) | Nada | No |
+| **B** · `wp-graficos-entrenamiento` | GR-02, GR-03, GR-05 y GR-06 | El historial en el cuadro del ejercicio («Historial» y «Perfil»), el período, «Abrir en Analizar» y GR-02 en «Analizar» con el ruido | `fuerza/detalle-del-ejercicio.tsx` (después de GR-01), `fuerza/fuerza-en-analizar.tsx`, `fuerza/fuerza.ts`, `training/ejercicio-del-editor.tsx` (el cuadro para todos) y `series-disponibles-entrenamiento.ts` | A; la fase 1 (el cuadro del ejercicio) | No |
+| **C** · `wp-graficos-nutricion-y-cuerpo` | GR-11, GR-12, GR-13, GR-14, GR-18 y GR-20 | Las temporadas, la energía por día, los macros en paneles y en g/kg, lo indicado y lo registrado por día, el perfil por sitio y la masa grasa por método | `nutrition/registros.tsx` («Día por día»), `anthropometry/evolucion.tsx` («Por sitio» y «Por método») y `series-disponibles-nutricion.ts` y `-antropometria.ts` | A; la fase 1 (para no pisar GR-16) | No |
+| **D** · `wp-graficos-cruces-y-analizar` | GR-24, SP-01, SP-02 y GR-26 | Dos etapas, los dos cruces del caso 1 con su caso negado, «Alineadas» y «Superpuestas» en «Analizar» y el compositor de «Armá tu gráfico». Es la única rama que toca «Analizar» | `seguimiento/analizar.tsx`, `lienzo.tsx`, `selector.tsx`, `series.ts` (el despacho, sobre lo que dejó A) y `etapas.tsx` | A | No |
+| **E** · `wp-graficos-patrones-y-enfoques` | GR-27 y «Patrones» | La API de los enfoques (§7), la vista «Patrones» de la ficha, la pestaña de la estación y los sugeridos para tus áreas. Es la única rama con API | `prisma/schema.prisma`, `apps/api/src/app.module.ts`, `packages/domain/src/index.ts`, `openapi.ts`, `cliente-http.ts`, `copy-pistas.ts`, `scripts/trazabilidad-de-operaciones.test.cjs`, `workspace.tsx`, `seguimiento/estado.ts`, `seguimiento/como-se-lee.tsx`, `training/editor.tsx` y `nutrition/editor.tsx` (la pestaña, después de la tanda B) | A y D; la tanda B integrada; B y C solo para mostrar lo suyo | **Sí** |
+
+Las rutas de `fuerza/`, `training/`, `nutrition/`, `anthropometry/` y `seguimiento/` son de
+`apps/web/src/app/pro/advisees/`.
+
+### 11.3 El orden de integración
+
+- **Sábado 14/11:** A publica su primer commit; B, C, D y E salen de él, y E empieza por la API.
+- **Cada rama, apenas queda aprobada** (la revisión adversaria sin altas ni medias pendientes y la CI en verde), se
+  integra: A primero; B, C y D después de A, en el orden en que queden aprobadas; E después de A y de D, porque guarda en
+  los enfoques los gráficos armados con «Armá tu gráfico».
+- **Las fases 3 y 4** se programan a continuación, con el diseño que se hace en paralelo desde el 14/11.
+
+## 12. Los referentes
+
+De la propuesta: lo que hace cada producto, lo que BE toma y cómo va más allá.
+
+| Referente | Lo que BE toma | Cómo va más allá | Fuente |
+|---|---|---|---|
+| HubFit (Exercise History V2) | El historial del ejercicio dentro del armador de rutinas, con el enlace de cada punto a su sesión | Paneles alineados en lugar de métricas mezcladas; el método del 1RM declarado; lo indicado separado de lo registrado; el cruce con Nutrición y Antropometría | <https://hubfit.com/changelog/exercise-history-v2> |
+| BridgeAthletic | Que el historial se abra desde el ejercicio, sin salir del editor | No compara personas: el historial es de una sola persona, con su RIR y su procedencia | <https://intercom.help/bridgeathletic/en/articles/6598240-how-to-view-athlete-history-while-building-a-program> |
+| Trainerize | La prueba de que es una carencia conocida: 266 entrenadores pidieron ver el historial al armar el programa | En BE, el historial está en el editor desde la primera serie registrada | <https://ideas.abcfitness.com/forums/167887-coach-trainer-abc-trainerize/suggestions/49673516-being-able-to-view-the-history-of-an-exercise-for> |
+| TrueCoach y Everfit | «La vez pasada» al lado del ejercicio, y los comentarios de la persona junto a los números | Lo precargado siempre se distingue de lo escrito (ED-70), y la carga calculada la confirma el profesional (ED-76) | <https://help.truecoach.co/en/articles/2403762-client-exercise-history> · <https://blog.everfit.io/everfit-may-2026-new-features> |
+| Hevy y Hevy Coach | El selector de rango y las series por zona y por semana como unidad de trabajo | Nunca mezcla medido y estimado, declara la fórmula y su rango válido y no compara con nadie | <https://www.hevyapp.com/features/exercise-performance/> |
+| Strong | La relación entre carga y repeticiones como perfil, y el límite de repeticiones de la estimación | Todas las series con su RIR, no solo las mejores; núcleo y orientativa separados; sin la palabra récord | <https://help.strongapp.io/article/237-about-exercise-detail> |
+| RP Hypertrophy y Juggernaut AI | Las señales que usan (RIR a igual carga, series por zona y por semana), a la vista del profesional | BE no ajusta a escondidas: muestra la información con su método y decide el profesional; no fija rangos por zona (D-14, D-15 y D-20) | <https://rpstrength.com/training-volume-landmarks-muscle-growth/> |
+| TrainingPeaks | Lo planificado y lo registrado del mismo ejercicio en la misma pantalla, mientras se planifica | Sin colorear desvíos ni resumir en un porcentaje de lo hecho; marcas huecas y llenas; sin cocientes agudo:crónico (Impellizzeri 2020) | <https://www.trainingpeaks.com/blog/the-top-7-dashboard-charts-for-coaches/> |
+| Fitbod | Nada: es el contraejemplo (la recuperación de cada músculo de 0 a 100 y la fuerza comparada con el usuario promedio, sin fórmulas publicadas) | Sin cifras opacas, sin mapas del cuerpo que se leen como estado y sin comparar con la población | <https://help.fitbod.me/hc/en-us/articles/360006269014-Muscle-Recovery> |
+| MacroFactor | El objetivo dibujado en el tiempo con sus cambios, la neutralidad sin rojo y el dato crudo separado de su lectura | No pide estimar lo no registrado (un hueco es un hueco) y cruza comida y entrenamiento en un mismo eje, con la ventana y lo que también cambió | <https://macrofactor.com/macrofactors-algorithms-and-core-philosophy/> |
+| Cronometer Pro | El gráfico exportable y que cada promedio diga con qué días se hizo | Las palabras de lo que BE sabe en vez de «días completos», y paneles alineados en lugar de su doble eje, que sus usuarios encuentran confuso | <https://forums.cronometer.com/discussion/2171/chart-comparison-overlays> |
+| Nutrium y Practice Better | De Practice Better, el hueco visible por defecto; de Nutrium, el detalle por comida de qué se cambió | La diferencia en gramos, sin verde, sin porcentaje y sin avisos de «comió de más» | <https://help.practicebetter.io/hc/en-us/articles/360048122572-Analyzing-Journal-Entries> |
+| InBody, BodySpec e ISCD (Hind et al. 2018) | La base y la anterior, la historia corta y la larga, y que cada cambio vaya con el umbral que lo vuelve creíble | El error de medición del propio profesional, sin rangos poblacionales ni cifras resumen | <https://eprints.leedsbeckett.ac.uk/id/eprint/4641/1/InterpretationofDualEnergyAM_HIND.pdf> |
+| Oura, Garmin y Apple Salud | Lo de sus semanas anteriores como banda de fondo, y lo reciente frente a la historia larga de la misma persona | Sin etiquetas de estado, sin flechas y sin «se salió», en las unidades de cada cosa y diciendo cuánta historia falta | <https://support.apple.com/en-lamr/guide/iphone/iph4c34a8a95/16.0/ios> |
+| Bearable, Exist y WHOOP | Dos etapas con un mínimo de datos explícito por lado | Las etapas salen de las versiones congeladas del plan, con una ventana fijada antes y lo que también cambió, sin estrellas ni categorías | <https://bearable.app/support/howto/the-factor-effect-report/> |
+| LifeLines (Plaisant y Shneiderman) y Epic Timeline | La cinta de eventos fija arriba de todos los gráficos, donde cada marca abre su origen | Los eventos de BE ya están versionados y fechados, y respetan el permiso del área que los originó | <https://www.cs.umd.edu/~ben/papers/Plaisant1996LifeLines.pdf> |
+| Stripe ContextView, Notion y Linear Peek | El contexto al costado, sin sacar al usuario de lo que hace | Se abre con teclado, mouse y tacto, y respeta el ancho de 1280 (plegado por defecto) | <https://linear.app/docs/peek> |
+
+## 13. Lo programado
+
+Un apartado por rama. Cada rama escribe solo en el suyo, como §9 y §10 de WP-PULIDO-GRANDES: el estado (desde qué
+`main`, el PR y si está integrado), una tabla con cada parte, lo que quedó, dónde y su oráculo; las mutaciones probadas;
+sus decisiones a ratificar (§6.3); y lo que falta para cerrar.
+
+### 13.1 Fase 1 · `wp-graficos-fase-1`
+
+> Programada el 2026-11-14 desde `main` `1089fc24`, con `main` integrado hasta #275; PR #273, revisado con ojo adversario
+> el mismo día. Sin integrar al escribir esto. Sin operaciones nuevas en la API, sin migraciones y sin dependencias
+> nuevas; la APK no suma lecturas (lee «Tu historial», que ya está en lo que lee la 0.28).
+
+| Parte | Lo que quedó | Dónde | Oráculo |
+|---|---|---|---|
+| GR-04 | «Con historial · 9 sesiones · la última el mar 3 nov» en cada resultado de «Agregar ejercicio» que la persona ya tiene en sus sesiones registradas, del índice de API-PRJ-01 del último año, leído al abrir el cajón. Arriba de los resultados, una vez, qué cuenta: también las sesiones registradas como no realizadas o hechas con otro ejercicio (GR-T73). Si la lectura falla, se dice y se reintenta. Sin flecha, sin color, sin primero y último | `training/agregar-ejercicio.tsx`, `packages/domain/src/historial-del-buscador.ts` | TEST-GR-004 |
+| GR-01 (website) | «La vez pasada»: las últimas tres veces del ejercicio, serie por serie (carga × repeticiones · RIR; sin carga ni repeticiones, el tiempo), debajo de «Lo que indica el plan» y nunca mezclada. Lo escrito, en marca llena; la carga rápida, hueca y en gris, con su texto; «con la carga del plan» si solo una parte vino del plan; lo cargado otro día y lo corregido, con su etiqueta; una vez hecha con otro ejercicio lo dice y no es comparable. Lee API-TRN-21 de los últimos 91 días y dice desde cuándo | `training/la-vez-pasada.tsx`, `fuerza/detalle-del-ejercicio.tsx`, `training/ejercicio-del-editor.tsx`, `packages/domain/src/la-vez-pasada.ts` | TEST-GR-001 |
+| GR-01 · PG-11 (APK, solo lectura) | Debajo del ejercicio, en la sesión en curso, una línea tenue: «La vez pasada, mar 10 nov: 22 kg × 8 · RIR 2, 20 kg × 10 · RIR 2 (como el plan)», la última vez del mismo ejercicio en los 90 días hasta la fecha de la sesión (PG-D6), con la misma función del dominio. TalkBack la lee con la fecha entera | `apps/mobile/src/la-vez-pasada-en-la-sesion.ts`, `pantallas/entrenamiento.tsx`, `pantallas/sesion-enfocada.tsx` | TEST-PG-010 |
+| GR-16 | Al final de cada toma abierta de «Tomas», «Desde el inicio y desde la anterior»: cada medida con su valor, la resta con su signo contra la primera toma y contra la anterior del mismo protocolo, método y unidad, y los días de calendario. Los resultados calculados, aparte y con su método. Si hay más de una toma el mismo día, lo dice (GR-T79). Debajo, siempre, la línea del error de medición | `anthropometry/desde-el-inicio.tsx`, `anthropometry/evaluaciones.tsx`, `packages/domain/src/desde-el-inicio.ts` | TEST-GR-016 |
+
+**Las pruebas:** `la-vez-pasada.test.ts`, `historial-del-buscador.test.ts` y `desde-el-inicio.test.ts` (el dominio),
+`la-vez-pasada-en-la-sesion.test.ts` (la APK) y `apps/web/test/graficos-fase-1.test.mjs` (dónde va cada pieza en el
+website). **Las mutaciones** están escritas en el encabezado de cada archivo y se revisaron leyendo el código, sin
+correrlas (la PC no tiene memoria para las pruebas; la CI es el juez de que pasan). En la revisión, dos no ponían nada en
+rojo y se arreglaron: «no saltear las no realizadas» (ahora la prueba usa una no realizada que trae el ejercicio
+resumido) y «contar dos veces un punto repetido entre tramos» (no cambia ningún valor de la tabla: se reemplazó por
+«comparar con una toma posterior a esta»).
+
+**Decisiones del continuador al programar, a ratificar (§6.3):**
+- **GR-T70 · El cuadro del ejercicio para todos (ED-75, ampliado por DL-174):** los ejercicios de la lista de la v1 (RM-16)
+  ven «La vez pasada» dentro de «Detalle y fuerza estimada»; los demás, en un cuadro lateral propio («La vez pasada», en
+  el ejercicio y en «Más») con «Lo que indica el plan» arriba y sin la fuerza estimada, que sigue solo en la v1.
+  *Alternativa:* un solo cuadro con la tarjeta de fuerza escondida fuera de la v1, que espera a la rama B.
+- **GR-T71 · La ventana del editor:** API-TRN-21 de los últimos 91 días (la API acepta 92 y su hoy puede ir un día
+  adelante del navegador). Como API-TRN-21 trae solo las sesiones de los planes de quien mira, la tabla dice «en tus
+  planes, … desde el …», y sin historial, «Sin sesiones registradas con este ejercicio en tus planes desde el …», no
+  «desde el inicio del acompañamiento». *Alternativa:* la lectura nueva de GR-01 completa (§4.7).
+- **GR-T72 · Lo que indicaba el plan en cada sesión pasada no se muestra:** arriba va lo indicado hoy; el comparador
+  «Planificado y registrado» sigue en «Sesiones registradas». *Alternativa:* una fila por sesión con lo que indicaba, que
+  pide leer los objetivos por serie de cada versión (API-SER-01).
+- **GR-T73 · Qué cuenta la marca del buscador:** las sesiones registradas de los planes de quien mira en las que aparece
+  el ejercicio, en el último año, que es lo que da el índice de API-PRJ-01: también las registradas como no realizadas,
+  las que no lo incluyeron y las hechas con otro ejercicio en su lugar. El índice no las separa, así que la línea de
+  arriba de los resultados lo dice entero, para que «la última el 3 nov» no se lea como «lo hizo el 3 nov».
+  *Alternativa:* contar solo las hechas con el mismo ejercicio, que pide la lectura por lote de §4.7.
+- **GR-T74 · Dónde va GR-16 y cuánto lee:** al final de cada toma abierta en «Tomas»; «Patrones» es de la fase 2. Se leen
+  como mucho 8 tramos de 92 días (dos años de tomas seguidas); si hay más, «Desde el inicio» dice desde cuándo leyó. La
+  primera toma no lee nada y dice que todavía no hay con qué compararla.
+- **GR-T75 · La APK sin «cargada otro día»** (la persona sabe cuándo la cargó) **y sin la línea si sustituyó el ejercicio
+  en esta sesión** (sería de otro ejercicio). Si la lectura falla o no hay red, la línea no se dibuja y la sesión sigue
+  igual.
+- **GR-T76 · El RIR en la línea de la APK** («20 kg × 8 · RIR 2»), con el formato de GR-01, aunque el ejemplo de PG-11 no
+  lo traía. *Alternativa:* sin RIR, más corta.
+- **GR-T77 · La línea de la APK va debajo del ejercicio,** como describe PG-11, y no como una columna más de la tabla de
+  series: con Serie, carga, Rep., RIR, Tiempo y la casilla, no entra en 360 dp.
+- **GR-T78 · Las fechas en pocas palabras,** como el campo de fecha del website (PG-14): «mar 3 nov», con el año si no es
+  el de hoy, y «hoy»; el lector oye «martes 3 de noviembre».
+- **GR-T79 · Dos tomas el mismo día en GR-16 se dicen, no se corrigen:** API-ANT-06 trae un punto por día y por medida
+  (el de su checkpoint), así que de dos tomas del mismo día la tabla puede no ver las dos: puede faltar una medida de la
+  toma abierta, o la anterior puede no ser la última de ese día. La sección nombra esos días. *Alternativa:* leer con
+  `ANTHROPOMETRY_LONGITUDINAL` de API-PRJ-01, que trae todas las tomas (hasta tres medidas por pedido), en la fase 2.
+
+**Lo que falta para cerrar:**
+1. **PG-11, el resto (tanda B de WP-PULIDO-GRANDES):** tocar la línea para copiar los números en los campos vacíos de la
+   fila que sigue, con «Deshacer». `comparable` y `esDelMismoEjercicio` ya dicen qué se puede copiar.
+2. **GR-01 completa y la vista previa de GR-04:** las lecturas nuevas de §4.7, declaradas ante Dirección.
+3. **GR-16 en «Patrones»** (fase 2) y la columna del error de medición cuando exista (GR-17, GR-D4).
+4. **La evidencia en pantalla:** Azul noche y Claro; 1440, 1280 y 1024; el lector de pantalla en las tablas; en el
+   teléfono, la línea con la letra ×1,3 y TalkBack.
+5. **Correr las mutaciones** de cada prueba (descritas en cada archivo).
+
+### 13.2 Rama A · `wp-graficos-base`
+
+> **Estado:** programada el 2026-11-14 en `wp-graficos-base` (#276), desde `main` `7cb79d3a`, con `main` `b55414d2`
+> traído (#273, la fase 1, ya integrada) y después `main` `03d2b3d2` (#271, la tanda B: las notas de PG-15 y PG-16).
+> Revisada con ojo adversario el mismo día (ver «La revisión», abajo). Sin integrar. Sin API y sin cambio visible: las
+> piezas las montan las ramas B a E. El primer commit (`257912a6`) fijó el contrato del que salieron las otras ramas; los
+> siguientes solo agregan. Las decisiones GR-T20 a GR-T29 están **a ratificar**; mientras tanto, rigen.
+
+| Parte | Qué quedó | Dónde | Oráculo |
+|---|---|---|---|
+| El catálogo de series | Envuelve el diccionario de DL-126 sin cambiarlo (`BE-SERIES-2026-11-v1`): cada serie con su eje X, su fuente, sus alcances, su método, su marca y su estado. Se ofrecen las del diccionario y el 1RM estimado (Epley v1); el RIR indicado y los g/kg quedan EN_PREPARACION; el descanso, las calorías previstas, el perímetro corregido y la entrada de carga × repeticiones, PIDE_DL. `composicionPermitida` y `fraseDeLaCoincidencia` para «Armá tu gráfico» | `packages/domain/src/series-disponibles*.ts` | TEST-GRF-001, 002, 003 y 009 |
+| Los IDs de los sugeridos | Los 14 IDs estables, validados con una expresión (GR-T17) | `graficos-sugeridos.ts` | TEST-GRF-007 |
+| La guardia unida y la frase | La unión de las listas de las áreas del gráfico, cada una con su regla, más lo que no va en ningún lado; «Coinciden en el tiempo; esto no prueba que una cosa cause la otra.» | `vocabulario-de-los-graficos.ts` | TEST-GRF-004, 005 y 018 |
+| Las marcas por su sentido | Lleno lo registrado; hueco lo indicado y el subtotal; hueco y gris la carga rápida; rombo lo observado; contorno cortado lo reportado; punto adentro lo calculado | `marcas-de-los-graficos.ts`, `graficos/marcas.tsx` | TEST-GRF-006 |
+| El ruido de la estimación | Por versión: sesiones, mediana del RIR, rango de repeticiones y la mayor diferencia entre estimaciones seguidas del núcleo desde cuatro sesiones; el cambio de lo indicado en palabras | `lectura-de-la-estimacion.ts` | TEST-GRF-008 |
+| El eje de fechas y los paneles alineados | Un solo eje, las marcas sin pisarse, los carriles con su escala, las bandas de las versiones con su etiqueta, la tira de cobertura (el estado del día por la altura, con una muesca en lo cargado después), la cuenta de lo que no entra en la escala y la cinta como carril | `eje-de-fechas.ts`, `carriles.ts`, `paneles-alineados.tsx`, `medidas-del-grafico.ts` | TEST-GRF-010 y 011 |
+| El cursor, la lectura y la tabla | El cursor compartido con teclado (flechas, Inicio, Fin, Mayúscula y Escape), la lectura viva y la tabla con los tramos sin registros en texto | `cursor-de-fechas.tsx`, `lectura-en-la-fecha.tsx`, `tabla-equivalente*.ts(x)` | TEST-GRF-012, 014 y 015 |
+| Los estados | Cargando con alto fijo, sin datos, falta historia, falla con «Reintentar» y sin acceso, que no dibuja nada | `estado-del-grafico.tsx` | TEST-GRF-015 |
+| Las lecturas | Todo a la API, sin caché de datos de salud: en tramos de 92 días, compartidas solo mientras están en vuelo, de a cuatro. Lo indicado del entrenamiento: API-TRN-21 en tramos y API-SER-01 por versión, con el comparador del dominio (GR-T14 y GR-T27) | `lecturas.ts`, `adaptadores.ts` | TEST-GRF-011, 013 y 015 |
+| **GR-23** · la cinta del tiempo | Las versiones como barras, las tomas, las revisiones, las sesiones con cambios, las sustituciones y las notas de coordinación como íconos, una fila por área; lo que cae junto, agrupado; elegir una barra o un grupo elige su tramo en todos los gráficos; la lista en palabras, la leyenda y la lectura viva. `CintaDelTiempoLeida` lee API-DSH-04 | `cinta-del-tiempo.ts`, `cinta-del-tiempo-en-pantalla.tsx`, `dibujo-de-la-cinta.tsx` | TEST-GRF-019 |
+| Los registros, las hojas y los tokens | Un registro por rama, una hoja por rama importada una vez y `--grafico-indicado`, `--grafico-carga-rapida` y `--grafico-cursor` con 3:1 en los dos temas | `registro-de-graficos.ts`, `registros.ts`, `estilos/`, `tokens.css` | TEST-GRF-016 y 017 |
+
+**Los oráculos y sus mutaciones** (en `packages/domain/src/series-disponibles.test.ts` y
+`apps/web/test/graficos-base.test.mjs`). Cada prueba fija exactamente la propiedad que su mutación rompe; en esta máquina
+no se corre nada pesado, así que ponerlas en rojo una por una queda para la revisión:
+
+| Oráculo | Mutación que lo pone en rojo |
+|---|---|
+| TEST-GRF-001 | Una serie de Nutrición sin el alcance NUTRICION |
+| TEST-GRF-002 | Ofrecer los g/kg con una sola área o sin lo propio en las dos (ahora con la función real y un catálogo de prueba) |
+| TEST-GRF-003 | Dejar tres unidades en «Superpuestas» |
+| TEST-GRF-004 | Sacar la frase con dos áreas o con dos ejes |
+| TEST-GRF-005 | Aplicar solo la lista de la primera área |
+| TEST-GRF-006 | La carga rápida, llena |
+| TEST-GRF-008 | Decir el ruido con dos sesiones |
+| TEST-GRF-003 | Mirar solo el eje X del catálogo y no el grano elegido (una serie de día vista por semana, superpuesta con una de sesión) |
+| TEST-GRF-008 | Afirmar en el cambio de lo indicado que la fuerza no cambió |
+| TEST-GRF-011 | Unir a través de un hueco; unir lo indicado de dos versiones |
+| TEST-GRF-011 (b) | Marcar lo observado por el profesional como dato de la persona en el 1RM estimado; pedir la estimación con una versión suelta o con un ejercicio fuera de la lista de la v1; dibujar una semana fuera del eje; una banda que pisa el día del corte |
+| TEST-GRF-012 | Perder los subtotales en la tabla |
+| TEST-GRF-012 (b) | Dejar solo en la forma de la marca lo tildado sin escribir, lo observado, lo reportado o lo calculado |
+| TEST-GRF-013 | Tramos de 93 días; leer API-TRN-21 sin tramos; leer la cinta en un solo pedido o del tramo más antiguo al más reciente |
+| TEST-GRF-019 | Dejar los eventos de un área denegada; dibujar un hábito o lo anulado |
+| TEST-GRF-019 (b) | Dejar en la cinta una nota de un área denegada o una nota propia archivada; usar el día UTC de una nota propia; mostrar en el cuadro de un ejercicio las notas de otras sesiones; dejar el texto de las notas a la vista con «Ocultar nombres» |
+
+#### Decisiones del continuador al programar (a ratificar)
+
+- **GR-T20 · El tipo de la fuente se llama `FuenteDeLaSerieDisponible`:** `FuenteDeLaSerie` ya lo exporta la estimación
+  de fuerza con otro sentido. Por lo mismo, la constructora de Antropometría es `serieDisponibleAntropometrica`.
+- **GR-T21 · Una serie de dos áreas (los g/kg) se ofrece solo con los dos alcances y con planes o tomas propios en las
+  dos** (caso 1). Una de un área pide solo su alcance.
+- **GR-T22 · `FALTA_HISTORIA` lleva `hay` como lista** (un número por lado, o uno solo), para decir «hay 3 y 7».
+- **GR-T23 · Un archivo puro y su pantalla no comparten nombre** (`tabla-equivalente.ts` y
+  `tabla-equivalente-en-pantalla.tsx`; `cinta-del-tiempo.ts` y `cinta-del-tiempo-en-pantalla.tsx`): con `.ts` y `.tsx`
+  del mismo nombre, TypeScript y el empaquetador resuelven archivos distintos.
+- **GR-T24 · `leerDisponibles` devuelve lo leído y las áreas que respondieron «sin acceso»,** o `null` si la sesión se
+  perdió; `leerEnTramos` devuelve también la primera falla.
+- **GR-T25 · El 1RM estimado tiene su propia familia** (`estimacion-de-fuerza`): nunca comparte un eje con la carga
+  registrada.
+- **GR-T26 · La guardia prohíbe en todo gráfico, también en negación,** los términos de B05 y TEST-PRJ-009.
+- **GR-T27 · Lo indicado del entrenamiento sale del comparador del dominio** (`observacionesDelEjercicio` y `evolucion`)
+  con los objetivos por serie de API-SER-01. Si una versión no se puede leer, es una falla con «Reintentar» y no se cae
+  a lo de la prescripción, que puede no ser el de esa serie (DL-122). Un rango es un segmento hueco sin valor del medio;
+  un % RM y otra unidad no se dibujan, y la línea de lo indicado se corta al cambiar de versión o de prescripción.
+  *Alternativa:* dibujar lo de la prescripción con una nota cuando falta una versión.
+- **GR-T28 · Qué entra en la cinta:** las versiones (de las vigencias, no de las activaciones, para no repetirlas), las
+  tomas, las revisiones, las notas de coordinación, las sesiones registradas con cambios y las sustituciones de otro
+  ejercicio. Las notas de coordinación no se filtran por área: no son datos de un área sino una comunicación dirigida a
+  quien la lee, y la API decide quién la ve (DL-140). Las sustituciones salen del registro de cada sesión (API-TRN-21)
+  cuando quien usa la cinta ya leyó esas sesiones: API-DSH-04 no las marca y la cinta no suma lecturas por ellas.
+  Quedan fuera los objetivos, los seguimientos abiertos o cerrados, los formularios y lo anulado. *Alternativa:* sumar
+  los objetivos como hitos de la cinta. **Con la tanda B integrada (#271), la cinta lee también las notas:** las de la
+  persona al finalizar (PG-15, API-TRN-25-LISTA en tramos de 92 días, solo con Entrenamiento), el día de su sesión y en la
+  fila de Entrenamiento; y las notas propias del profesional (PG-16, API-NPP-02, que solo le devuelve las suyas), el día
+  de Buenos Aires en que se escribieron, en la fila del área de su ancla (un ejercicio, Entrenamiento; una comida,
+  Nutrición) o en la de las notas, con el ícono «a mano» para no confundirlas con una nota de coordinación. Las propias
+  **archivadas no entran**: quien la escribió la sacó de lo que tiene a mano. En el cuadro de un ejercicio, solo las notas
+  de las sesiones con ese ejercicio (si esas sesiones no se leyeron, ninguna) y las propias atadas a él. Una nota que no
+  se pudo leer es una falla con «Reintentar», no «sin notas». Con «Ocultar nombres» (PG-T73), las notas están con su día y
+  su ancla pero sin su texto, hasta «Mostrar en esta pantalla». La cinta es el tercer lector de API-NPP-02, una vez por
+  cinta (TEST-PG-015 lo dice). *Alternativa:* mostrar también las archivadas, marcadas.
+- **GR-T29 · Cómo se ve la cinta:** una fila por área, con su ícono, y una para las notas; la barra de una versión va
+  del día que empezó a regir al anterior al corte; lo que cae a menos de 18 px se agrupa en un círculo con la cantidad
+  («2 hitos», o «3 hechos» si hay una sesión o una sustitución); se leen hasta cuatro páginas de 50 por pedido, en
+  tramos de 366 días (lo que admite API-DSH-04) del más reciente al más antiguo, y, si hay más, la cinta dice que
+  faltan los más antiguos. *Alternativa:* una sola fila con todos los hechos.
+
+#### La revisión (2026-11-14)
+
+Con ojo adversario sobre el diff de la rama, el diseño y el código vecino. Ninguna alta. Lo arreglado:
+
+- **Media · lo observado por el profesional se dibujaba como dato de la persona** cuando el 1RM estimado llegaba por
+  `carrilDeSerie` (la serie de `serieDeLaFuerza` no dice la procedencia en la marca del dominio). Ahora va en rombo, lo
+  orientativo hueco y el núcleo lleno (`marcaDelPuntoAnaliticoDeFuerza`), y el carril toma el rango mínimo del catálogo
+  (10 kg o 22 lb, GR-T15).
+- **Media · la estimación se pedía con cualquier clave:** una versión suelta (`v:`) viajaba como `exerciseId` y un
+  ejercicio fuera de la lista de la v1 se pedía igual. Ahora solo `e:` de la lista (RM-16); sin ejercicio, falla; otro,
+  «sin especificación».
+- **Media · las notas de la tanda B no entraban en la cinta** aunque #271 ya está en `main` (§3.8 del diseño). Entran
+  con GR-T28 ampliada.
+- **Media · «Superpuestas» dejaba juntar una serie de día vista por semana con una de sesión:** `SerieElegida` suma el
+  grano, y por semana el eje X es el de las semanales (GR-T03).
+- **Media · la tabla no decía con palabras lo que dice la forma** (lo tildado sin escribir, lo observado, lo reportado y
+  lo calculado): el lector de pantalla no ve la marca. Ahora lo dice, sin repetir lo que la lectura ya dice.
+- **Baja · el cambio de lo indicado afirmaba que la fuerza no cambió:** ahora dice que la estimación puede cambiar aunque
+  la fuerza no cambie.
+- **Baja · las barras semanales no se recortaban al eje** (una semana anterior al vínculo salía de la caja y estiraba la
+  escala) y **las bandas de las versiones pisaban el día del corte**, al revés que las barras de la cinta.
+- **Baja · la nota propia y la de coordinación tenían el mismo ícono** en la cinta.
+
+Queda, en baja y sin arreglar: si la lectura de la cinta llega al tope de páginas justo al terminar un tramo, dice que
+faltan los más antiguos aunque el tramo anterior pudiera estar vacío (lo conservador es avisar).
+
+#### Lo que falta para cerrar
+
+- Poner en rojo, una por una, las mutaciones de la tabla de oráculos (en esta máquina no se corre nada pesado; la CI
+  corre las pruebas tal cual).
+- Las capturas y la evidencia: la rama no cambia nada visible. Van con la primera rama que monte las piezas.
+- `WP-GRAFICOS-ORACULOS.md` con los trece campos: en modo liviano, los oráculos quedaron en las pruebas.
+- **Para B:** el adaptador de lo indicado ya está (`puntosDeLoIndicado`, `serieDeLoIndicado` y
+  `leerSerieDelCatalogo` para `entrenamiento.rir-indicado`); B lo ofrece al usarlo, cambiando su estado a OFRECIDA.
+- **Para C:** los g/kg (fuente DERIVADA) siguen respondiendo «sin especificación» en `leerSerieDelCatalogo` hasta que C
+  programe la regla y su lectura; si la engancha ahí, lo dice en su PR antes de tocar `lecturas.ts`.
+- **Para D y E:** `CintaDelTiempoLeida` va arriba de «Analizar» (D) y fija arriba de «Patrones» (E), con los alcances y
+  las vigencias de `leerDisponibles`; en el cuadro del ejercicio (B), con `exerciseKey` y las sesiones ya leídas, que
+  suman las sustituciones y filtran las notas de la persona. Las notas de la tanda B ya las lee la cinta (GR-T28).
+- **Para B y D:** el cambio de lo indicado se dice «la estimación puede cambiar aunque la fuerza no cambie» (lo devuelve
+  `cambioDeLoIndicado`); los ejemplos de §4.3 y §4.5 con la frase anterior se leen con esta.
+- **Hallazgo fuera del paquete (severidad baja), para D:** tres textos de límites del diccionario de DL-126 que muestra
+  «Analizar» tienen un término prohibido en negación (`nutricion.registros`, `entrenamiento.carga` y
+  `entrenamiento.series-registradas`); la guardia unida no los admite. Se ajustan al pasar «Analizar» al catálogo.
+
+### 13.3 Rama B · `wp-graficos-entrenamiento`
+
+> **Estado:** programada el 2026-11-14 en `wp-graficos-entrenamiento`, desde el primer commit de la base (`257912a6`),
+> con la base (#276) y la fase 1 (#273) traídas: depende de las dos. El 2026-11-15 trajo la pasada visual (#283, §13.7)
+> y aplicó la guía a sus gráficos (abajo, «Al traer la pasada visual»). Sin integrar. Sin API, sin migraciones y sin
+> dependencias nuevas; la APK no cambia. Las decisiones GR-T30 a GR-T39 y GR-VB01 a GR-VB12 están **a ratificar**;
+> mientras tanto, rigen. (Las de la pasada visual se llamaban GR-T40 a GR-T47, el rango de la rama C en §6.3: con el de
+> B ya completo, pasan a GR-VB, «pasada visual de B», como las GR-V de §13.7; la revisión del 15/11 lo corrigió.)
+
+| Parte | Qué quedó | Dónde | Oráculo |
+|---|---|---|---|
+| GR-02 | El 1RM estimado (Epley v1) sesión a sesión, con las versiones del plan de fondo: lleno hasta 10 repeticiones equivalentes, hueco de más de 10 a 12 (con «Incluir…» encendido) y rombo para lo observado; la línea no cruza una sesión sin estimación y lo observado no la corta; el eje abarca 10 kg o 22 lb como mínimo y dice los extremos. El cambio de lo indicado, en la línea de su versión («v8 · de 4 a 3 repeticiones»: la lectura de la pasada visual, GR-VB01); debajo, a la vista, el rango de validez y lo que mueve un RIR y cada versión con la mediana del RIR registrado, las repeticiones de la serie usada y el ruido propio desde 4 sesiones del núcleo; cómo se calcula, en «Cómo leerlo» | `graficos/entrenamiento/fuerza-estimada.ts` y `-en-pantalla.tsx` | TEST-GRF-022 a 025, 040 y 043 |
+| GR-02 en «Analizar · Fuerza» | Sobre la pieza de la pasada visual (el cambio de lo indicado es el suyo): cada versión con su ruido, a la vista debajo del gráfico, y el ruido de la versión del punto elegido antes de «La anterior» | `fuerza/fuerza-en-analizar.tsx` | TEST-GRF-039 |
+| GR-03 | Carga, repeticiones y RIR de la misma serie en tres paneles alineados, sin doble eje; el RIR de 0 al máximo, con 5 como mínimo; el RIR indicado de cada sesión, hueco en su panel (`puntosDeLoIndicado`); un RIR sin escribir no es 0; la carga rápida, hueca y gris; lo cargado después, marcado | `graficos/entrenamiento/carga-repeticiones-y-rir.ts` y `-en-pantalla.tsx` | TEST-GRF-026 a 028 |
+| GR-05 | El RIR indicado por versión en escalón discontinuo (hueco en cada sesión si cambia según la sesión) y el registrado en puntos; «a igual carga» con la misma carga y la misma unidad; lo que se ve, por versión y en palabras, sin la carga rápida | `graficos/entrenamiento/rir-indicado-y-registrado.ts` y `-en-pantalla.tsx` | TEST-GRF-029 y 030 |
+| GR-06 | La dispersión de carga por repeticiones equivalentes, solo con lo que escribió la persona con RIR de 0 a 2: las últimas 4 semanas en punto lleno y las anteriores en cruz; en la lista de la v1, hasta tres curvas de igual 1RM estimado «de la fórmula»; teclado, lectura y tabla | `graficos/entrenamiento/perfil-carga-repeticiones.ts` y `-en-pantalla.tsx` | TEST-GRF-031 a 033 |
+| El historial en el cuadro | «En el tiempo» abre en el mismo cuadro «Historial» (GR-02 en la v1, GR-03 y GR-05 con un solo cursor y la cinta del tiempo debajo) y «Perfil» (GR-06), con el período, la serie, la unidad y «Abrir en Analizar» con lo elegido. Va en «Detalle y fuerza estimada» y en el cuadro de «La vez pasada»: el cuadro se abre con el historial para todos los ejercicios, y la tarjeta de fuerza sigue solo en la v1 | `graficos/entrenamiento/historial-del-ejercicio.tsx`, `acceso-al-historial.tsx`, `fuerza/detalle-del-ejercicio.tsx`, `training/la-vez-pasada.tsx` | TEST-GRF-034 y 035 |
+| El catálogo y el registro | `entrenamiento.rir-indicado` pasa a OFRECIDA (lo lee el despacho de la base); el registro ofrece GR-02 solo con un ejercicio de la lista de la v1 y nada sin Entrenamiento, y carga cada gráfico al dibujarse | `series-disponibles-entrenamiento.ts`, `graficos/entrenamiento/registro.ts` | TEST-GRF-020, 036 y 038 |
+
+**Las pruebas:** `apps/web/test/graficos-entrenamiento.test.mjs` (TEST-GRF-020 a 045): la lógica pura, con datos; las
+pantallas, el cuadro del ejercicio y «Analizar · Fuerza», leyendo el código. TEST-GRF-021 pasa todos los textos de la
+rama por la guardia de Entrenamiento, sin el signo más-menos, porcentajes ni flechas. Las mutaciones están en el título
+de cada prueba y se revisaron leyendo el código, sin correrlas (la PC no tiene memoria para las pruebas; la CI es el
+juez).
+
+**Decisiones del continuador al programar, a ratificar (§6.3):**
+- **GR-T30 · El cuadro con el historial para todos:** los ejercicios de la lista de la v1 lo abren desde «Detalle y fuerza
+  estimada» (ED-75) y los demás desde el cuadro de «La vez pasada» (GR-01, GR-T70); los dos suman «En el tiempo», con
+  «Historial» y «Perfil» en el mismo cuadro y «Atrás». La tarjeta de fuerza y GR-02, solo en la v1. *Alternativa:* un
+  solo cuadro para todos, con la tarjeta escondida fuera de la v1, que rehace el cuadro de la fase 1.
+- **GR-T31 · El período del historial:** 12 semanas de entrada, 6 meses o desde que la acompañás, con un año como tope
+  (lo que lee API-PRJ-01 en una vez); si el acompañamiento empezó antes, o no se pudo leer desde cuándo, la pantalla lo
+  dice. El inicio sale de los vínculos de quien mira con la persona, en Entrenamiento (TB-16). La cinta del cuadro
+  muestra solo Entrenamiento. *Alternativa:* más de un año en tramos y en grano semanal.
+- **GR-T32 · GR-02 con «Incluir las de más de 10 a 12» apagado de entrada** (como ED-74): lo hueco aparece al encenderlo.
+  Cada versión va en una lista debajo del gráfico, no escrita adentro de su banda, que con versiones cortas no se lee.
+  Los extremos del período van escritos en una nota. *Alternativa:* el texto adentro de cada banda.
+- **GR-T33 · Lo indicado de cada versión, para la primera línea:** el RIR y las repeticiones que indicaba esa versión
+  para las series que usó la regla por sesión (del comparador); si fueron series con objetivos distintos, el rango los
+  abarca. Cada versión se compara con la anterior que tuvo estimaciones. *Alternativa:* el objetivo de la serie 1,
+  siempre.
+- **GR-T34 · En «Analizar · Fuerza» queda «Frente a la del…» de ED-74** (DL-171, ratificado), con el ruido de la versión
+  del punto elegido antes; GR-02 no suma otra diferencia entre dos puntos ni saca la que ya estaba. *Alternativa:* sacar
+  «Frente a la del…», como pide GR-02 para su gráfico («sin diferencia entre dos puntos sueltos»).
+- **GR-T35 · El escalón de GR-05:** por versión, del primer al último día con sesiones de esa versión; si lo indicado
+  cambia según la sesión dentro de una versión, va hueco en cada sesión, porque un escalón diría algo que no existió.
+  «A igual carga» compara la mediana del RIR registrado entre dos versiones seguidas con dos sesiones o más cada una, y
+  sus puntos no se unen (entre dos puede haber habido otra carga). *Alternativa:* el escalón a lo ancho de la banda.
+- **GR-T36 · GR-06 sale del comparador** (API-TRN-21: todas las series de cada sesión, con la procedencia de cada valor,
+  ED-70) y no de la progresión por serie, que trae una serie por pedido y no dice quién escribió cada valor.
+  *Alternativa:* una lectura de API-PRJ-01 por número de serie.
+- **GR-T37 · Qué entra en el perfil:** las series que escribió la persona (carga, repeticiones y RIR de procedencia
+  PERSON, sin carga rápida) con RIR de 0 a 2; una registrada antes de la procedencia no dice quién la escribió y no
+  entra (como DJ-2), y la pantalla dice cuántas quedan afuera. Las últimas 4 semanas son 28 días con hoy.
+  *Alternativa:* aceptar las series sin procedencia.
+- **GR-T38 · Las curvas «de la fórmula», solo en la lista de la v1** (RM-16): fuera de la lista BE no estima, y van solo
+  los puntos, con el porqué. Hasta tres (la estimación más baja, la del medio y la más alta, redondeadas a 5 kg o 10
+  lb), de 1 a 12 repeticiones equivalentes, con un interruptor para sacarlas. *Alternativa:* las curvas en todos.
+- **GR-T39 · Cómo se lee:** el RIR indicado del catálogo pasa a OFRECIDA y lo lee el despacho de la base; en el historial,
+  un proveedor lee el comparador una vez para todos sus gráficos y la cinta (sin guardar nada después); el registro carga
+  cada gráfico al dibujarse (sin JSX, para que las pruebas lo importen); lo cargado después se cuenta con el día civil de
+  la zona de la sesión. *Alternativa:* que cada gráfico lea por su cuenta.
+
+**Hallazgo en la base (severidad media), arreglado con una línea:** la marca del medio del eje vertical se escribía con
+los decimales de las puntas: de 0 a 5 decía «3» en el lugar de 2,5, y de 95 a 110, «103» en el de 102,5. Ahora va solo si
+se escribe tal cual (`carriles.ts`); lo prueban TEST-GRF-024 y 026.
+
+**Al traer la revisión de la base (#276):** las bandas de las versiones llegan ahora al día anterior al corte, incluido;
+GR-05 buscaba la versión de una sesión con el fin exclusivo, y el último día de una versión quedaba «sin versión». Ahora
+lo incluye (`versionDeLaFecha`, TEST-GRF-030). El cambio de lo indicado se dice como lo devuelve la base: «la estimación
+puede cambiar aunque la fuerza no cambie». Las notas de la tanda B (PG-15 y PG-16) ya las lee la cinta del cuadro, con
+el ejercicio que se mira.
+
+#### Al traer la pasada visual (#283, 15/11)
+
+La rama trajo `main` con la pasada visual (un merge, sin rebase) y aplicó la guía (`DISENO-VISUAL` §2 «B ·
+Entrenamiento») a sus gráficos con las piezas comunes de main. **§5 manda sobre la guía**, como en §13.7: lo que §5 pide
+a la vista queda a la vista.
+
+**Los choques, resueltos con la versión de main y lo que suma la rama:**
+- `graficos/carriles.ts`: las marcas redondas de main (de 3 a 5, sin un número repetido) cubren el arreglo de la marca
+  del medio de la rama (el hallazgo de arriba); queda el de main.
+- `training/la-vez-pasada.tsx`: la lista de GR-01 de main y el acceso al historial de la rama (dos imports).
+- `fuerza/fuerza-en-analizar.tsx`: la pieza de main entera, más lo de la rama que main no tiene y §5.12 pide a la vista:
+  cada versión con la mediana del RIR, las repeticiones y el ruido propio, debajo del gráfico, y el ruido de la versión
+  del punto elegido antes de «La anterior». **El cambio de lo indicado queda uno solo, el de main** (GR-V02, en la línea
+  de la versión y, si no entra, debajo): la primera línea propia de la rama sale de «Analizar» y del historial.
+
+| Gráfico | Antes | Después | Prueba |
+|---|---|---|---|
+| GR-02 | 96 px; la leyenda decía «Registrado: lleno» y se veía la línea sin los puntos (la marca medía con el ancho de un día: 1,8 de radio bajo una línea de 2 px); el número del último decía «160,4» y la lectura «≈ 160,5 kg»; debajo, cuatro notas largas (los extremos, la carga sobre 30, «solo lo ves vos»), la primera línea propia arriba y un segundo «Cómo se calculó» | 240 px; un punto por sesión con su tamaño (`porSesion`: 3,5 de radio con su halo, también en un año); la leyenda en fichas, solo con lo que se ve, y la tira («Cada sesión»: entera con estimación, una raya baja sin); el número del punto es el de la lectura, al medio kilo; el cambio de lo indicado en la línea de la versión; a la vista, la línea de validez y ruido de «Analizar» y cada versión con su ruido; en «Cómo leerlo», cómo se calcula y que la persona no lo ve | TEST-GRVB-001, 002 y 004 |
+| GR-03 | La tira de cada sesión debajo de cada panel, sin leyenda; tres notas debajo; «3» rotulado dos veces en una serie pareja | La tira en la leyenda («Cada sesión», con una raya baja donde falta el dato: en el panel del RIR, la sesión con el RIR sin escribir o solo indicado, como en GR-05); lo que aclara cada marca, en «Cómo leerlo»; a la vista, lo que falta (si el comparador no se leyó); un número que ya está escrito no se repite; tres paneles de 96 px | TEST-GRVB-001, 002 y 004 |
+| GR-05 | Puntos que no se veían; la línea cortada explicada en una nota; dos «Cómo leerlo» (el de la base y uno propio) y «lo que se ve» debajo de los dos | 240 px; los puntos de una sesión; la línea cortada («Indicado por versión») y la tira en la leyenda; «lo que se ve», a la vista antes del pie; un solo «Cómo leerlo» con lo que aclara | TEST-GRVB-001, 002 y 004 |
+| GR-06 | El eje X de 0 a 12 con los puntos apiñados entre 3 y 6; las curvas rotuladas en el margen; la leyenda abajo en renglones largos; cinco párrafos de texto | Los dos ejes ajustados a los datos con un margen y marcas redondas (X de 2 a 8 con series de 3 a 6; Y con un 8 % de aire y 10 kg como mínimo); las curvas recortadas y rotuladas donde salen del dibujo, sin pisarse y con un halo que la línea no cruza; título, línea tenue y leyenda en fichas arriba; qué entra, en una línea a la vista (§5.6); lo demás en «Cómo leerlo» | TEST-GRVB-003 y 004 |
+| La cinta (GR-23) | Íconos de 15 px pegados a la barra; en el margen, el ícono del área, que a ese tamaño se leía como una flecha «↔» | Íconos de 18 px sobre un fondo de 22 que no toca la barra (la fila, de 30 px; dos íconos a menos de 22 px se agrupan); con una sola fila, sin el ícono del área; en el cuadro de 1024, la leyenda larga se parte y ya no corta la cinta a la derecha | TEST-GRF-019 (la geometría de la cinta, de la base) |
+
+**Lo que la rama sumó a la base, sin cambiar lo de antes:** `porSesion` en el carril de puntos (la marca se mide con
+8,75 px por día como mínimo); fichas de la leyenda para lo que no es un punto (la tira y la línea cortada, con su texto
+largo para el lector de pantalla); un lugar «a la vista» entre las notas y el pie (`aLaVista`); que un extremo con el
+número del último no se rotule (`rotulosDeLoLleno`); y la geometría de la cinta (18 px). La prueba de la leyenda de
+TEST-GRV-008 se ajustó a la línea nueva.
+
+**Decisiones del continuador en la pasada visual, a ratificar:**
+- **GR-VB01 · Una sola lectura del cambio de lo indicado, la de main (GR-V02):** todas las series del ejercicio en las
+  sesiones que ejecutaron cada versión, contra la inmediata anterior, en la línea de la versión de GR-02, GR-03 y GR-05
+  (`bandasConElCambio`, del comparador que ya lee el historial) y en «Analizar». Reemplaza GR-T33 y la primera línea.
+  *Alternativa:* la de la rama (las series que usó la regla de cada sesión), como primera línea arriba del gráfico.
+- **GR-VB02 · Un punto por sesión con su tamaño:** en los carriles de Entrenamiento, la marca se mide con 8,75 px por día
+  como mínimo (3,5 de radio, con halo), no con el ancho real del día. Con sesiones muy seguidas en un año, los puntos se
+  tocan; el halo los separa. *Alternativa:* medirla con la distancia mínima entre dos sesiones.
+- **GR-VB03 · La tira de Entrenamiento es por sesión, y está en la leyenda:** en GR-02, entera con estimación y una raya
+  baja en la sesión sin estimación (el corte de la línea se lee como lo que es); en GR-03 y GR-05, una raya baja donde
+  falta el dato (un RIR sin escribir). *Alternativa:* sacar la tira de GR-02, que repite los puntos.
+- **GR-VB04 · El número del punto del 1RM estimado es el de la lectura** (al medio kilo o a la libra) y el punto se dibuja
+  ahí: se corre menos de un cuarto de kilo. *Alternativa:* dibujar el valor exacto y rotular el redondeado.
+- **GR-VB05 · Los ejes de GR-06, ajustados a los datos:** X de una repetición equivalente menos que la menor a una más que
+  la mayor, en marcas enteras; Y con un 8 % de aire y el rango mínimo de 10 kg o 22 lb; las curvas, recortadas.
+  *Alternativa:* X fijo de 1 a 12, con la curva de la fórmula entera.
+- **GR-VB06 · Los altos en el historial:** GR-02 y GR-05, 240 px (los principales del paso); GR-03, tres paneles de 96;
+  GR-06, 240. *Alternativa:* todos compactos, para ver más sin desplazar.
+- **GR-VB07 · La cinta del cuadro:** íconos de 18 px y fila de 30; sin el ícono del área con una sola fila.
+  *Alternativa:* el ícono del área siempre, a 18 px.
+- **GR-VB08 · Qué va a la vista y qué a «Cómo leerlo» en la rama (§5 manda):** a la vista, el rango de validez y lo que
+  mueve un RIR (GR-02, §5.6 y §5.12), cada versión con su ruido (§5.12), lo que falta, lo que se ve (GR-05) y qué entra
+  en el perfil (§5.6); en «Cómo leerlo», cómo se calcula, que la persona no lo ve, qué es cada marca, «a igual carga» y
+  qué son las curvas. *Alternativa:* también cada versión en «Cómo leerlo», como pide la guía para lo que no es una
+  cifra.
+
+**Lo que no quedó como pide la guía, y por qué:**
+- **Cada versión con su ruido sigue a la vista** (GR-02 y «Analizar»): la guía manda a «Cómo leerlo» lo que no es la cifra,
+  pero §5.12 pide la mediana del RIR, las repeticiones y el ruido propio de cada tramo a la vista. §5 manda.
+- **La leyenda de la cinta sigue abajo y en renglones largos:** es de la base y la usan las otras ramas; el pedido para
+  la rama B era que los íconos se lean y no se pisen. En el cuadro, se parte para no cortar la cinta.
+- **Los colores siguen siendo los de las métricas** y no los de cada área, como en §13.7.
+- **Lo bajo que queda:** en GR-03, el mínimo de la carga (el primer punto, en el borde de abajo del eje) va arriba de su
+  punto y la línea que sube pasa cerca del número; en GR-05, la línea de lo registrado y la cortada de lo indicado se
+  superponen cuando son iguales (es lo que dicen los datos: RIR 2 indicado y registrado).
+
+**Quedan superadas:** GR-T32 en lo de los extremos (ya no van en una nota: el máximo y el mínimo se rotulan en el dibujo,
+GR-V09), GR-T33 (por GR-VB01) y GR-T34 (la pasada visual cambió «Frente a la del…» por «La anterior (2 nov): ≈ 154,5 kg»,
+sin diferencia: GR-02 ya no da una diferencia entre dos puntos sueltos en ningún lado).
+
+**Lo que falta para cerrar:**
+1. **El lector de pantalla** en el cuadro, en los dos temas (las capturas de la CI muestran el cuadro en 1024, 1280,
+   1440 y 1920).
+2. **GR-03 y GR-05 en «Patrones» y en «Analizar»:** el registro ya los ofrece; los muestran las ramas E y D.
+3. **Correr las mutaciones** de cada prueba (descritas en su título).
+
+#### Revisión adversaria con la pasada visual (15/11)
+
+Tres miradas, en este orden: la honestidad (§5 manda sobre la guía), el código (el merge y las piezas comunes) y lo
+visible (las capturas de la CI en Claro y Azul noche, a 1024, 1440 y 1920). El merge no perdió nada de `main`:
+`carriles.ts` es el de `main`, `la-vez-pasada.tsx` suma solo el acceso al historial y `fuerza-en-analizar.tsx` suma solo
+lo de la rama; de la rama se perdió un aviso, que volvió (abajo).
+
+| Hallazgo | Severidad | Qué se hizo | Prueba |
+|---|---|---|---|
+| GR-03 y GR-05, que son de una serie, rotulaban en la línea de la versión el cambio de lo indicado de **todas** las series: en GR-05 el escalón de la serie 2 podía seguir en RIR 2 mientras su versión decía «RIR de 2 a 1» por la serie 1 | Media | El cambio de lo indicado de la serie elegida (`bandasConElCambio` con la serie; `cambiosPorVersion` la admite sin cambiar lo de antes); GR-02 sigue con todas | TEST-GRVB-005 |
+| Una sesión «no realizada» (o con el ejercicio del plan sin registrar, o hecho otro en su lugar) entraba en GR-05 como sesión: la contaba («12 sesiones»), dibujaba su RIR indicado y la tira la marcaba «sin el dato»; GR-03 también dibujaba su RIR indicado | Media | `seHizoElEjercicio`: esas sesiones no se cuentan ni se dibujan; la línea se corta, como en la progresión por serie de la API | TEST-GRVB-005 |
+| GR-03: solo la tira del RIR marcaba la sesión con el ejercicio hecho sin series escritas; en la carga y las repeticiones la línea se cortaba sin que la tira dijera por qué | Media | Las tres tiras marcan las mismas sesiones (`fechasConElEjercicio`), cada una con su raya baja donde falta el dato | TEST-GRVB-005 |
+| GR-02 (historial y «Analizar») unía la línea a través de una sesión con el ejercicio hecho sin series (un registro resumido): la API no la cuenta entre las que no entraron, y la tira no la marcaba; GR-03, debajo, sí cortaba | Media | `fechasSinSeries`: la línea se corta y la sesión va como «sin estimación», en el historial y en «Analizar» | TEST-GRVB-006 |
+| La leyenda de GR-02 llamaba «Registrado» al 1RM estimado lleno; «Analizar» dice «Hasta 10 rep. equivalentes» (es una estimación, RM-22) | Media | Un sentido nuevo del dominio, `NUCLEO_DE_LA_ESTIMACION` («Hasta 10 rep. equivalentes»), en los puntos llenos de GR-02 | TEST-GRVB-001 y 006 |
+| Al traer la pasada visual se perdió el aviso de que no se pudo leer lo indicado (la rama lo tenía en «Analizar»): GR-02 callaba el cambio de lo indicado sin decir por qué | Media | «No pudimos leer lo que indicaba el plan…», a la vista en el historial y en «Analizar», antes de cada versión | TEST-GRVB-004 y 006 |
+| La misma versión decía «9 sesiones» en GR-02 y «12 sesiones» en GR-05: cuentan cosas distintas | Baja | GR-02 dice «9 sesiones con estimación» | TEST-GRF-022 y 045 |
+| Las decisiones de la pasada visual usaban GR-T40 a GR-T47, el rango de la rama C (§6.3) | Baja | Pasan a GR-VB01 a GR-VB08; las de esta revisión, GR-VB09 a GR-VB12 | — |
+| TEST-GRF-036 comparaba con un texto que ya no existía (`indexOf` daba −1 y la comparación pasaba siempre) | Baja | Compara con el texto de ahora y exige que esté | TEST-GRF-036 |
+
+**Decisiones del continuador en la revisión, a ratificar:**
+- **GR-VB09 · El cambio de lo indicado, por serie en GR-03 y GR-05:** de la serie elegida; en GR-02, de todas las series
+  (de cada sesión entra la de mayor carga). Afina GR-VB01. *Alternativa:* todas las series en los tres, como antes.
+- **GR-VB10 · Una sesión en la que no se hizo el ejercicio no es una sesión de la serie:** ni se cuenta ni se dibuja lo
+  que indicaba, y la tira no la marca; la línea se corta en ella. *Alternativa:* dibujarla con una marca de «no realizada».
+- **GR-VB11 · Una sesión del ejercicio sin series escritas corta la línea de GR-02** (historial y «Analizar») y va en la
+  tira como sin estimación; las tres tiras de GR-03 marcan las mismas sesiones. *Alternativa:* que la API la cuente entre
+  las que no entraron (cambia API-PRJ-01 y API-FZA).
+- **GR-VB12 · Lo lleno del 1RM estimado se llama «Hasta 10 rep. equivalentes»**, con un sentido del dominio
+  (`NUCLEO_DE_LA_ESTIMACION`), y cada versión cuenta «sesiones con estimación». *Alternativa:* una ficha propia de la rama
+  sin tocar el dominio.
+
+**Lo que la revisión deja abierto (bajo):**
+- **«v8 · de 4 a 3 repeticiones» no dice «indicadas»:** en el panel de las repeticiones registradas de GR-03 se puede leer
+  como lo registrado. Es el texto de `main` (GR-V02); el lector de pantalla y «Cómo leerlo» dicen «lo indicado».
+  *Propuesta:* «v8 · indicado: de 4 a 3 repeticiones», en la pieza de `main`, para todas las ramas.
+- **GR-03:** el mínimo de la carga en el borde de abajo (el «130» del primer punto) lo cruza la línea que sube y queda al
+  lado del «130» del eje (ya estaba declarado).
+- **GR-06:** una serie de las últimas 4 semanas y una anterior en el mismo lugar se tapan (el punto sobre la cruz); la
+  tabla dice cuántas hay.
+- **Las fechas de la lista por versión** van como «desde el 17/5» y las del eje, «24 ago».
+- **«Analizar · Fuerza»:** la sesión sin series corta la línea y lleva su marca, pero la tabla de origen no la lista (la
+  tabla sale de lo que devuelve la API).
+- **Lo que la rama cambia para todas las ramas en las piezas comunes:** un extremo con el número ya escrito no se rotula
+  (`rotulosDeLoLleno`), y la cinta mide 30 px por fila, agrupa los íconos a menos de 22 px y, con una sola fila, no lleva
+  el ícono del área. Las ramas C, D y E lo heredan al traer `main` después de B.
+
+### 13.4 Rama C · `wp-graficos-nutricion-y-cuerpo`
+
+> Programada el 2026-11-14 desde el primer commit de la base (`257912a6`) y terminada el 2026-11-15 con `main` traído
+> (#271, #272, #276 y #279 integrados); el 2026-11-15 trajo otra vez `main` (#283, #284, #280 y #285) y pasó por la pasada visual
+> (abajo, «Pasada visual de la rama C»). Sin integrar al escribir esto. Sin operaciones nuevas en la API, sin migraciones y
+> sin dependencias nuevas; la APK no lee nada de esta rama. Fuera de sus archivos toca, con lo mínimo,
+> `graficos/lecturas.ts` (de la base: un import y una línea, para que `leerSerieDelCatalogo` lea los g/kg),
+> `packages/domain/src/graficos-sugeridos.ts` (una línea: la tarjeta de los g/kg, GR-T48), un comentario de
+> `series-disponibles.test.ts` que todavía decía que los g/kg estaban en preparación y, como pedía el reparto,
+> `nutrition/registros.tsx` y `anthropometry/evolucion.tsx`; con la pasada visual, una escena de la herramienta de capturas
+> (`EVIDENCIA/GRAFICOS/herramientas/capturas.mjs`).
+
+| Parte | Lo que quedó | Dónde | Oráculo |
+|---|---|---|---|
+| GR-11 | La capa de temporadas de todo gráfico de Nutrición: las versiones del plan de fondo, alternadas y sin color de juicio, con su rótulo arriba del primer panel («Plan v3»); una línea fina donde empieza cada versión del plan o del objetivo; la lista entera en texto («Plan v3 · desde el 5/10 · Objetivo desde el 1/10»); el objetivo en kcal o g por día en escalón, leído contra la versión que regía cada día. Una proporción de las calorías se escribe («30 de las calorías (proporción): BE no la convierte a gramos ni la dibuja») y no se dibuja | `graficos/nutricion/temporadas.ts` | TEST-GRF-041 |
+| GR-12 | Las calorías registradas por día: lleno con todo registrado, hueco si es un subtotal (dice qué falta) u hoy, contorno cortado si no se puede saber si faltan comidas, y nada sin registros; lo cargado después con su muesca (API-DSH-04 con `late`; si la lectura queda a medias, la nota dice desde qué día se sabe y lo anterior no se marca); el objetivo en escalón y la media de cada semana, que dice con qué días se hizo y cuáles quedaron afuera («con 4 de 7 días; 1 sin registro, 1 con cantidades faltantes y 1 con comidas del plan sin registro»), o cuánto le falta | `graficos/nutricion/energia-por-dia.ts` y `-en-pantalla.tsx`, `dias-de-nutricion.ts` | TEST-GRF-042, 043, 056 y 058 |
+| GR-13 | Proteínas, carbohidratos, grasas y fibra, cada uno en su panel con su eje desde cero y su objetivo; la fibra sin dato es un subtotal, no un cero. Los g/kg, en una tarjeta propia: cada día dividido por el peso medido de la última toma propia en ese día o antes, con la fecha del peso en cada punto, la lista de los pesos usados y los días sin peso anterior (cada uno lo dice una vez en la tabla, sin marca); la línea se corta donde cambia el peso. En el catálogo, los g/kg pasan a ofrecidos y «Analizar» los lee, con el motivo «sin toma de peso anterior» escrito con palabras | `graficos/nutricion/macros-en-paneles.ts` y `-en-pantalla.tsx`, `gramos-por-kilo.ts`, `lecturas-de-nutricion.ts`, `series-disponibles-nutricion.ts` | TEST-GRF-044, 045, 051 y 059 |
+| GR-14 | Lo indicado y lo registrado, día por día, en calorías y en los tres macronutrientes: un rombo hueco para lo indicado del día (solo si el plan no deja elegir) y la marca del día para lo registrado, unidos con la diferencia con su signo («+18 g») solo en los días con todo registrado. Debajo, la tira por comida de API-NUT-17 (con la opción del plan, con una comida diferente, sin registro); un día sin registros es un hueco. En «Registros» de Nutrición va arriba de la lista, como «Día por día» | `graficos/nutricion/indicado-y-registrado-por-dia.ts` y `-en-pantalla.tsx`, `dia-por-dia-en-registros.tsx`, `nutrition/registros.tsx` | TEST-GRF-046 y 047 |
+| GR-18 | El perfil por sitio entre dos tomas (por omisión, la más nueva y la anterior; se elige otro par): una fila por sitio en el orden del catálogo, cada familia con su eje común, la toma anterior en cuadrado y la más nueva en círculo, unidas solo dentro del mismo grupo de comparabilidad, y la diferencia escrita. Un sitio medido en una sola toma es un hueco. Debajo, que no hay reducción localizada y la línea del error de medición. Con una sola toma en las fechas, dice que en «Tomas» cada toma ya dice cuánto cambió desde la anterior (GR-16). Es la vista «Por sitio» de «Evolución» | `graficos/antropometria/perfil-por-sitio.ts` y `-en-pantalla.tsx`, `tomas.ts`, `vistas-de-evolucion.tsx`, `anthropometry/evolucion.tsx` | TEST-GRF-048 |
+| GR-20 | La masa grasa según Durnin y Womersley y según Faulkner en un panel con un eje común, la libre de grasa en otro y la muscular de Lee aparte; cada método con su forma y su versión, calculado con su punto adentro (y la tabla lo dice: «14,2 kg (calculado)»); nada une dos tomas, y una línea fina dice cuánto se separan los dos métodos de la misma toma. Dice que se mueven juntos por construcción. Es la vista «Por método» de «Evolución» | `graficos/antropometria/masa-grasa-por-metodo.ts` y `-en-pantalla.tsx`, `series-disponibles-antropometria.ts` | TEST-GRF-049 y 059 |
+| El lienzo y el registro | Un lienzo propio para estas capas, sobre las piezas puras de la base y con sus medidas comunes (una fecha cae en el mismo lugar que en la cinta), con el mismo teclado, cursor compartido, lectura viva y tabla; la marca del medio del eje vertical va solo si se escribe tal cual (la regla que la rama B le puso a `carriles.ts`; también en los ejes de GR-18). Seis gráficos en los registros de la rama, ofrecidos solo si se ofrecen todas sus series; cada pantalla se carga al dibujarse. El registro y `GRAFICOS_SUGERIDOS` del dominio dicen lo mismo de cada gráfico (código, área, lugar, series y alcances) | `graficos/nutricion-y-cuerpo/`, `graficos/nutricion/registro.ts`, `graficos/antropometria/registro.ts`, `graficos-sugeridos.ts` | TEST-GRF-040, 050 a 055 y 057 |
+
+**Las pruebas:** `apps/web/test/graficos-nutricion-y-cuerpo.test.mjs` (TEST-GRF-040 a 059; las de la pasada visual, TEST-GRVC-001 a 008). **Las mutaciones** están en
+el título de cada prueba y se revisaron leyendo el código, sin correrlas (la PC no tiene memoria para las pruebas; la CI
+es el juez de que pasan).
+
+**La segunda revisión (2026-11-15)** sumó tres arreglos, sin cambiar ninguna regla de arriba:
+- **Lo de otro profesional se dice.** Cuando API-PRJ-01 de Nutrición responde con `partialView` (hay registros de comida
+  de otro profesional en esas fechas), GR-12, GR-13 (también en g/kg) y GR-14 lo dicen en una nota: esos registros no se
+  ven y no están en los números, así que un día no se lee como todo lo que la persona registró. En los g/kg, lo mismo con
+  las tomas de otro profesional: su peso no se usa. Lo fijan TEST-GRF-042, 045 y 046.
+- **Las fechas de otro año llevan el año.** El peso de los g/kg se busca hasta un año antes (GR-T44): sin el año, «peso
+  del 20/12» se leería como reciente y «se buscó desde el 2/11» como el primer día del período. La fecha del peso, la de
+  la búsqueda, las temporadas, el objetivo y las tomas de GR-18 llevan el año cuando no es el del último día del gráfico
+  (o de la toma más nueva), como el selector de fechas de PG-14. Lo fijan TEST-GRF-042, 045 y 048.
+- **«Día por día» no salta.** «Registros» relee en silencio después de guardar una estimación, para que la lista no
+  salte; el gráfico de arriba volvía a «cargando» y movía la lista igual. Ahora, con la misma persona y el mismo período,
+  lo que se ve sigue a la vista hasta que llega lo nuevo (`esLaMismaLectura`). Lo fija TEST-GRF-054.
+
+**Decisiones del continuador al programar, a ratificar (§6.3):**
+- **GR-T40 · Un lienzo propio de la rama** (`graficos/nutricion-y-cuerpo/`, una carpeta que el reparto no nombraba), sobre
+  las piezas puras de la base y sus medidas, porque los paneles alineados no dibujan dos series con un eje (GR-20), las
+  uniones (GR-14), las medias semanales (GR-12) ni la tira por comida. *Alternativa:* sumar esas capas a
+  `paneles-alineados.tsx`, de la rama A.
+- **GR-T41 · Tres marcas para un día de Nutrición:** lleno, hueco y, sin poder saber si faltan comidas (sin plan vigente o
+  sin día tipo), contorno cortado. *Alternativa:* lleno, con la duda solo en la lectura.
+- **GR-T42 · La media de la semana (v1):** el promedio de los días con cantidades en todos sus registros, con 4 o más;
+  hoy no cuenta; dice cuántos y cuáles quedaron afuera, por motivo. *Alternativa:* la media por semana de API-PRJ-01, que
+  promedia también los subtotales.
+- **GR-T43 · En los g/kg, solo el peso medido en kg** de las tomas propias; uno reportado o en otra unidad no se usa.
+- **GR-T44 · El peso anterior se busca hasta un año antes del período,** sin pasar del inicio del vínculo; la nota dice
+  desde cuándo.
+- **GR-T45 · GR-14:** lo indicado es un rombo hueco, como en «Analizar» (el círculo hueco ya es el subtotal); la
+  diferencia va solo en los días llenos; suma las calorías, como el sugerido del dominio; sin líneas entre días.
+- **GR-T46 · GR-18:** «en orden anatómico» es el orden del catálogo de medidas (el de la planilla); una familia, un eje;
+  las dos tomas se ordenan en el tiempo aunque se elijan al revés.
+- **GR-T47 · GR-20:** la línea fina entre los dos métodos de una toma; Lee con perímetros y con peso y talla en su panel;
+  las otras masas siguen en «Por medida».
+- **GR-T48 · Los g/kg en una tarjeta propia del registro** (`nutricion.macros-por-kilo`, GR-13), que pide las dos áreas y
+  lo propio en las dos: el gráfico no recibe el acceso, y así nunca pide la lectura de un área que no está. Está en
+  `GRAFICOS_SUGERIDOS` con esos dos alcances (una línea, al terminar la rama). *Alternativa:* un conmutador dentro de
+  GR-13, que pide pasarle el acceso al gráfico.
+- **GR-T49 · Lo demás de la pantalla:** las pantallas del registro se cargan al dibujarse (React.lazy, sin JSX en el
+  registro); «Día por día» arranca abierto y se pliega; en pantalla, «Calorías» (C-28); los ejes de Nutrición desde cero;
+  «Por sitio» y «Por método» usan la lectura de «Evolución» (API-ANT-06, un punto por día y por medida, como GR-T79); lo
+  cargado después se lee de a 50 y hasta 10 páginas: si no alcanzan, se dice desde qué día se sabe y lo anterior no se
+  marca, en vez de pedir más páginas o de dejarlo pasar por cargado a tiempo.
+
+**Lo que falta para cerrar:**
+1. **«Patrones» (rama E):** los seis gráficos se ven ahí cuando entre; las series de GR-12, GR-13 y GR-20, también en
+   «Analizar» (rama D).
+2. **GR-11 detrás de otra área, a pedido:** las ramas B y D usan `temporadasDeNutricion` con su conmutador.
+3. **La evidencia en pantalla:** Azul noche y Claro; 1440, 1280 y 1024; el lector de pantalla en las tablas.
+4. **El error de medición** (GR-17, GR-D4, fase 4): la columna y la franja de GR-18 y GR-20.
+5. **Correr las mutaciones** de cada prueba.
+6. **GR-18 en «Analizar»:** §4.4 lo pone también ahí, pero el reparto (§11) no se lo da a ninguna rama: hoy está en
+   «Evolución › Por sitio» y en el registro, para «Patrones». Queda para quien integre «Analizar» (rama D) o para la
+   fase 3.
+7. **Los g/kg en «Analizar»:** `leerSerieDelCatalogo` los lee con `leerSeriePorKilo`, que no recibe el acceso. El
+   selector de la rama D los tiene que ofrecer solo con `seriesOfrecidas`, y una vista guardada con los g/kg, abierta sin
+   Antropometría, no debería pedir la lectura del peso (hoy la API la responde con 404 y no se ve nada).
+
+#### Pasada visual de la rama C (15/11)
+
+La rama trajo `main` tres veces con un merge, sin rebase: primero la pasada visual (#283) y la historia anterior (#284);
+después, la rama B (#280), y al final #285 (compartir casi por omisión). No hubo choques: las piezas comunes quedan como en `main` y la rama C solo suma lo suyo. Lo que
+B cambió en las piezas comunes lo hereda por usarlas: un número ya escrito no se repite como extremo
+(`rotulosDeLoLleno`, que ahora usa el lienzo de la rama); la cinta (filas de 30 px, sin el ícono del área con una sola
+fila) no la dibuja ningún gráfico de C. Al traer #283 la rama no compilaba: la tabla de la base pide en cada celda si es
+de lo registrado (`registrada`, para «Lo último») y la lectura pide `hoy`; las celdas de GR-12, GR-13, GR-14 y GR-20 lo
+dicen (en GR-14, lo indicado solo no cuenta como registrado).
+
+Después aplicó la guía visual (`DISENO-VISUAL` §1 y §2 «C») a sus gráficos con el mismo lenguaje que #283 le dio a la
+fase 1 y a la base. **§5 manda sobre la guía**, como en §13.7 y §13.3: lo que §5 pide a la vista queda a la vista.
+
+| Gráfico | Antes | Después | Oráculo |
+|---|---|---|---|
+| El lienzo de la rama (todos) | El título suelto, la lista de temporadas en un renglón, las versiones del plan como bloques de color pleno, el eje con tres marcas (abajo, medio, arriba) y una línea vertical en cada fecha, 140 px aunque hubiera un solo panel, la leyenda en renglones largos debajo, la instrucción del teclado como lectura y todas las notas en párrafos | El título (16 px) con su línea tenue (la unidad, cómo se agrupa, el período y el método, §5.6); «Por semana \| Día por día» si el gráfico los tiene; la leyenda en fichas cortas arriba, solo con lo que se ve, con el texto entero para el lector de pantalla; 240 px con un panel y 140 con más; el eje con 3 a 5 marcas redondas y su grilla tenue (las de la base); las versiones con un tono tenue que alterna y una línea fina en el cambio, con «Plan v5 · desde el 2/3» si entra; un número solo en el elegido, el último y los extremos (discretos), sin pisarse; con tres paneles o más, las fechas también arriba; debajo, «Lo último» de cada columna, lo que §5 pide a la vista y, al pie, «Ver la tabla» y «Cómo leerlo» | TEST-GRF-041 y 050, TEST-GRVC-003, 004 y 007 |
+| GR-12 y GR-13 · por semana | Un punto por día con un tramo corto de la media de cada semana encima: un peine con muchos días sin registro | Con más de seis semanas y alguna semana con media, de entrada, una barra por semana con la media de la semana (v1, GR-T42), llena solo si entran los siete días y hueca si no; una semana con días pero sin media es un contorno cortado sin relleno, y una sin ningún día con valor, la columna gris de la base: nunca una barra en cero; los días, tenues detrás; debajo, la tira de cada día (con lo cargado después marcado, §5.14); la lectura de la semana elegida a la vista, con el teclado (las flechas eligen la semana) y para el lector de pantalla, y la tabla de las semanas; «Día por día», a un toque. La misma media en GR-12, GR-13 y GR-14 | TEST-GRF-043, TEST-GRVC-001 |
+| GR-13 · g/kg | Las notas en párrafos | Solo día por día (GR-VC02); los pesos usados y los días sin peso, a la vista; la regla del peso, en «Cómo leerlo» | TEST-GRVC-002 y 004 |
+| GR-14 | La diferencia escrita en cada día con lugar («+138 kcal» en cada mancuerna); sin indicado del día, un párrafo de tres líneas; el título «…, día por día» | La diferencia, solo en el día elegido y en el último (la lectura y la tabla la dicen siempre); sin indicado del día, una sola línea («Sin indicado del día en estas fechas: comidas con varias opciones.») y el párrafo en «Cómo leerlo»; por semana, lo registrado como barra y lo indicado de cada día como rombos tenues, con la lectura «indicado del día de 2.100 kcal a 2.200 kcal en 3 días» y sin diferencia (va día por día, GR-VC04); el título «Lo indicado y lo registrado», y en «Registros» el botón «Ocultar el gráfico» | TEST-GRF-046, TEST-GRVC-002 y 003 |
+| GR-18 | Los nombres largos cortados con «…» («Perímetro del brazo flexionado y …»); el eje con tres marcas (0, 75, 150); la leyenda en renglones; cinco notas a la vista | El nombre entero, en dos renglones si no entra; el eje de cada familia con 3 a 5 marcas redondas y su grilla; la columna de la diferencia con su encabezado; la línea tenue dice qué se compara («pliegues en mm y perímetros en cm · entre la toma del 2/10 y la del 12/11»); las tomas como fichas con su fecha; a la vista, el error de medición (§5.7) y lo que no se compara; la línea, el eje común y que no hay reducción localizada (la explicación fisiológica, con su fuente, §5.1), en «Cómo leerlo» | TEST-GRVC-006 |
+| GR-20 | Con dos tomas, dos puntitos en un gráfico de 140 px; nombraba a Faulkner sin datos de Faulkner («Durnin y Womersley y Faulkner salen de los mismos pliegues…», columnas vacías, «según Faulkner en 0 tomas»); seis notas a la vista | Con menos de 4 tomas, la tabla a la vista (GR-VC05); solo los métodos que aparecen, en las columnas, la leyenda, la descripción y las notas; «por construcción» solo con los dos; a la vista, el error de medición y lo de otro profesional; lo demás, en «Cómo leerlo» | TEST-GRF-049, TEST-GRVC-005 |
+
+**Las mutaciones** están en el título de cada prueba (dibujar la semana sin media en cero, llenar la barra con 6 de 7,
+perder lo cargado después por semana, restar dos medias en GR-14, llevar el párrafo de lo indicado a la vista, rotular
+todos los puntos, llevar lo cargado después o los pesos a «Cómo leerlo», nombrar a Faulkner sin datos, dibujar dos
+puntitos, cortar un nombre con «…», decidir el modo sin la regla de la base, «sin racha» en una ficha). Las de la lógica
+ejecutan las funciones puras; las de la pantalla leen el código. La CI es la que las corre.
+
+**Las capturas** (`capturas-de-los-graficos`) suman una escena, `20-gr14-por-semana`: lo indicado y lo registrado con 90
+días, para ver «Por semana» en pantalla. GR-12 y GR-13 no están todavía en ninguna pantalla (los muestran «Analizar» y
+«Patrones», ramas D y E): los fijan las pruebas.
+
+**Decisiones del continuador en la pasada visual, a ratificar:**
+- **GR-VC01 · Nutrición por semana en GR-12, GR-13 y GR-14,** de entrada con más de seis semanas (`convienePorSemana`, la
+  regla de GR-V01) y «Día por día» a un toque. La barra es la **media de la semana (v1) de GR-12** (GR-T42: los días con
+  cantidades en todos sus registros, si son 4 o más; los demás afuera y contados), no la de GR-24, que promedia también
+  los subtotales: §4.4 pide para GR-12 la media que deja afuera los días con cantidades faltantes y lo dice. Llena solo
+  con los siete días; hueca si no; sin media, una columna gris. *Alternativa:* la media de GR-24 (GR-V01), una sola media
+  semanal en todo BE.
+- **GR-VC02 · Los g/kg van solo día por día:** cada día usa el peso de su toma y la línea se corta donde cambia el peso;
+  una media de la semana mezclaría dos pesos sin decirlo. *Alternativa:* la media de la semana de los g/kg de cada día,
+  con los pesos usados en su lectura.
+- **GR-VC03 · Los números del dibujo:** con una serie, el elegido, el último y, con 4 o más llenos, el mínimo y el máximo
+  de lo lleno (discretos); con dos métodos (GR-20), el elegido y el último de cada uno, sin extremos; la diferencia de
+  GR-14, solo en el día elegido y en el último; por semana, la media de la semana elegida o, sin elegir, la de la última
+  con media. *Alternativa:* la diferencia de GR-14 en cada día con lugar, como antes.
+- **GR-VC04 · GR-14 por semana no escribe una diferencia:** lo registrado es la barra de la media de la semana y lo
+  indicado, el rango de lo indicado de cada día («de 2.100 kcal a 2.200 kcal en 3 días»), sin promediarlo; la diferencia
+  queda en «Día por día», donde es de cada día. *Alternativa:* la media de las diferencias de los días con todo
+  registrado e indicado del día, con sus días.
+- **GR-VC05 · GR-20 va como tabla a la vista con menos de 4 tomas** (§5.8: con tan pocos puntos un gráfico parece estable
+  o un salto). *Alternativa:* el umbral en 3 tomas.
+- **GR-VC06 · GR-20 nombra solo los métodos que aparecen:** una ficha por método aunque esté en dos paneles («Durnin y
+  Womersley»), la separación solo con los dos, «por construcción» solo con los dos, y en la línea tenue «cada número, con
+  su método y su versión». En la tabla, la versión del método va una vez en el encabezado si toda la columna es de la
+  misma (si no, en cada celda).
+- **GR-VC07 · GR-18 con el lenguaje de la base:** el nombre del sitio entero en uno o dos renglones (la columna mide lo que
+  el más largo, entre 120 px y el 42 % del ancho), el eje redondo con su grilla, la columna de la diferencia con su
+  encabezado, las fichas con la fecha de cada toma y la línea tenue de qué se compara.
+- **GR-VC08 · Qué se ve y qué va a «Cómo leerlo» en la rama (§5 manda):** a la vista, el método (en la línea tenue), lo
+  cargado después (la cuenta y la nota si la lectura quedó a medias), lo de otro profesional, un objetivo en proporción
+  (no se dibuja), los pesos usados y los días sin peso de los g/kg, sin indicado del día (una línea), el error de
+  medición, lo que no se compara en GR-18 y «por construcción» en GR-20; en «Cómo leerlo», el método entero, que es lo
+  registrado y no la ingesta, por qué un día sin registros no es un cero, cómo se arma cada barra, cómo se lee la
+  diferencia, la regla del peso, la reducción localizada, el eje común y las temporadas enteras.
+- **GR-VC09 · La ficha del día con todo registrado dice «Sin faltantes»** (el lector de pantalla oye «Con cantidades en
+  todos sus registros y sin comidas del plan sin registro: lleno»). *Alternativa:* «Registrado», como la ficha de la
+  base, que deja al subtotal como si no fuera registrado.
+- **GR-VC10 · Con tres paneles o más (GR-13 y GR-14), las fechas van también arriba:** a 1440 × 900 el eje de abajo queda
+  debajo del pliegue. *Alternativa:* paneles más bajos.
+- **GR-VC11 · GR-14 se llama «Lo indicado y lo registrado»**, sin «día por día» (también va por semana); en «Registros», el
+  botón dice «Ocultar el gráfico» y «Ver el gráfico de lo indicado y lo registrado». *Alternativa:* el nombre de §4.4,
+  con «día por día» solo en ese modo.
+- **GR-VC12 · Por semana de entrada solo si alguna semana tiene media,** y la semana con días pero sin media no es un hueco:
+  con la cohorte de prueba (Diego Sosa, 90 días) ninguna semana llega a 4 días sin faltantes, y «por semana» quedaba todo
+  en columnas grises. Sin ninguna media, de entrada va día por día (por semana sigue a un toque y dice por qué no hay
+  media); la semana con días pero sin media es un contorno cortado sin relleno («Sin media») y la columna gris queda para
+  la semana sin ningún día con valor («Sin días con valor»), como en la base. *Alternativa:* la media de GR-24, que con
+  los subtotales adentro tendría barras para la misma persona (ver lo que queda abierto).
+
+**Lo que no quedó como pide la guía, y por qué:**
+- **GR-12 por semana no usa la media de GR-24** (GR-VC01): §4.4 define la media semanal de GR-12, y §5.13 pide que diga qué
+  quedó afuera; la de GR-24 cuenta los subtotales adentro.
+- **Lo que §5 pide a la vista sigue a la vista** (GR-VC08): el error de medición, lo cargado después, los pesos de los g/kg
+  y «por construcción» no van a «Cómo leerlo», aunque la guía mande ahí las aclaraciones.
+- **Los colores siguen siendo los de las métricas** y no los de cada área, como en §13.7.
+- **«Lo último» de GR-14 es largo:** dice lo registrado, lo indicado y la diferencia de cada métrica, y las comidas; con
+  cuatro métricas son cinco renglones. Es la misma fila que la tabla.
+
+#### Revisión adversaria de la pasada visual (15/11)
+
+Tres miradas, una después de la otra: la honestidad (§5 manda sobre la guía), el código (el merge, los cálculos, las
+semanas, los husos, los estados vacíos y las pruebas) y la accesibilidad y el texto (el teclado, el lector de pantalla, la
+tabla, el contraste en Azul noche, nada cortado a 1024, 1280, 1440 y 1920 y las palabras). Las capturas de la CI
+(`capturas-de-los-graficos`, en Claro y Azul noche a los cuatro anchos) se miraron después de cada tanda.
+
+| Hallazgo | Severidad | Arreglo | Prueba |
+|---|---|---|---|
+| Al traer #283 la rama no compilaba: la tabla de la base pide `registrada` en cada celda y la lectura, `hoy` | Alta | Las celdas lo dicen (en GR-14, lo indicado solo no cuenta como registrado); la lectura recibe `hoy` | La CI (typecheck y build) |
+| GR-12 y GR-13 sin «Por semana»: un peine con muchos días sin registro (principio 6 y GR-V01) | Media | Por semana con la media de la semana v1 y sus días a la vista (GR-VC01) | TEST-GRF-043, TEST-GRVC-001 |
+| Por semana, todo en columnas grises con los datos de la cohorte: la semana con días pero sin media se dibujaba como la que no tiene ningún día, y arrancaba así | Media | Contorno cortado para «sin media», la columna gris solo sin ningún día; de entrada por semana solo con alguna media (GR-VC12) | TEST-GRVC-001 |
+| Por semana, lo cargado después dejaba de verse: los puntos tenues no llevan muesca (§5.14) | Media | La tira de cada día lo marca y la leyenda de la semana tiene su ficha | TEST-GRVC-001 y 007 |
+| GR-20 nombraba a Faulkner sin datos de Faulkner: la nota de «por construcción», columnas vacías y «según Faulkner en 0 tomas» | Media | Solo los métodos que aparecen; «por construcción» solo con los dos | TEST-GRVC-005 |
+| GR-20 con dos tomas dibujaba dos puntitos, que parecen estables o un salto (§5.8) | Media | Con menos de 4 tomas, tabla a la vista (GR-VC05) | TEST-GRVC-005 |
+| GR-18 cortaba los nombres largos con «…» | Media | Enteros, en dos renglones si no entran | TEST-GRVC-006 |
+| GR-14 escribía la diferencia en cada día con lugar: un rótulo en cada punto, que se pisaban | Media | Solo en el día elegido y en el último (GR-VC03) | TEST-GRVC-003 |
+| GR-14 sin indicado del día: un párrafo de tres líneas a la vista | Media | Una línea; el párrafo, en «Cómo leerlo» | TEST-GRVC-002 |
+| Las versiones del plan, como bloques de color pleno que dominaban el gráfico | Media | Un tono tenue que alterna y una línea fina en el cambio | TEST-GRF-041 |
+| El eje con tres marcas (abajo, medio, arriba) y una raya vertical en cada fecha | Media | De 3 a 5 marcas redondas con la grilla de la base | TEST-GRF-050 |
+| Los selectores de las tomas de GR-18, grises y sin el estilo del website en Azul noche | Media | Los tokens de los campos del website | Las capturas (Azul noche) |
+| Los números de las calorías en el dibujo con decimal («2.460,9») y en la lectura enteros («2.461 kcal») | Baja | Con los decimales de la lectura | TEST-GRVC-003 |
+| La ficha «Versión del plan» sin fondo ni cambio que mostrar (una sola versión que viene de antes) | Baja | Va solo si se ve un fondo o un cambio | TEST-GRVC-004 |
+| Por semana, cada columna de GR-14 repetía «sin indicado del día» con la línea de abajo ya diciéndolo | Baja | Sale de la lectura de la semana cuando ningún día tiene indicado | TEST-GRVC-002 |
+| GR-20 como tabla empujaba 3 px el cuadro a 1024 (la grilla no la dejaba achicarse) | Baja | La tabla se achica y se desplaza ella | Las capturas (1024) |
+| GR-20 como tabla, a 1024: la versión del método repetida en cada celda dejaba el valor de la segunda columna cortado contra el borde | Media | Si toda la columna es de la misma versión, va una vez en el encabezado («Masa grasa (Durnin y Womersley), hombres») y cada celda dice su valor; con versiones distintas, cada celda la suya | TEST-GRF-049 y 059, TEST-GRVC-005 |
+| Todo a la vista en párrafos: el método entero, por qué un hueco no es cero, la reducción localizada | Baja | A «Cómo leerlo»; a la vista, lo que §5 pide (GR-VC08) | TEST-GRVC-004 y 006 |
+| Lo cargado después solo en la muesca, sin la cuenta que da la base | Baja | «1 de 3 días con registros cargados después.», a la vista | TEST-GRVC-004 |
+| El mínimo y el máximo rotulados con el mismo peso que el último | Baja | Discretos, como la base | TEST-GRVC-003 |
+| GR-13 no releía al cambiar el día (`hoy` fuera de sus dependencias) | Baja | Suma `periodo.hoy` | — |
+| Un «#283» en un comentario lo leía como un color la guardia de los tokens | Baja | Otra redacción | `scripts/contraste.test.cjs` |
+
+**Revisado sin hallazgos:** ninguno de los gráficos de C es un cruce (la frase fija no aplica); lo indicado y lo registrado
+van separados (rombo hueco y marca del día; por semana, rombos tenues y su rango en la lectura); sin flechas ni «primero →
+último» (el resumen de las semanas dice «entre» el mínimo y el máximo); sin el signo de porcentaje en Nutrición; los g/kg
+con el último peso de cada día (nunca uno posterior); las semanas, de lunes a domingo con fechas civiles (sin husos de por
+medio); hoy no entra en ninguna media; un área sin acceso no deja rastro; «Cómo leerlo» es un `<details>` con el nombre de
+su gráfico; las tablas tienen caption y encabezados con alcance; la región viva cambia solo con un clic, un toque o el
+teclado; ninguna palabra prohibida, ni negada (TEST-GRVC-008).
+
+**Resuelto al integrar (15/11):**
+- **Una sola media semanal para todo BE (GR-VC13, a ratificar):** la de §4.4 (GR-12 v1), que cuenta solo los días sin
+  faltantes y pide cuatro o más. Un subtotal no entra en una media: es un día a medias, y sumarlo la baja sin que se vea
+  (un hueco es un hueco). La semana dice siempre sus días; sin media, los días se ven igual. GR-24, que hoy promedia
+  también los subtotales, se alinea con esta regla en la rama D.
+- **Los números de las pruebas de la rama B:** las de la pasada visual de #280 pasaron de TEST-GRF-040 a 045 a
+  TEST-GRVB-001 a 006 (en `graficos-entrenamiento.test.mjs` y §13.3), y el rango TEST-GRF-040 a 059 queda para la rama C.
+
+**Lo que queda abierto:**
+- **GR-12 y GR-13 no están en ninguna pantalla todavía** (baja): los muestran «Analizar» y «Patrones» (ramas D y E); los
+  fijan las pruebas, no las capturas.
+- **El lector de pantalla real** (NVDA, TalkBack) no se probó; las pruebas leen el código (baja).
+- **Correr las mutaciones** de cada prueba (baja).
+
+### 13.5 Rama D · `wp-graficos-cruces-y-analizar`
+
+> **Estado:** programada del 14 al 15/11 en `wp-graficos-cruces-y-analizar` (#278), desde el primer commit de la base
+> (`257912a6`), con la base traída dos veces y después `main` `899c5a1d` (#276, la base, ya integrada; #273, la fase 1;
+> #271 y #272, la tanda B; #279, la APK 0.29). Terminada el 15/11 con lo que faltaba del diseño (§3.4, §3.8 y §4.3): lo
+> indicado del entrenamiento en «Analizar» y la cinta con la fecha elegida de los gráficos. Sin integrar al escribir
+> esto. Sin operaciones nuevas en la API, sin migraciones y sin dependencias nuevas; la APK no suma lecturas. Las
+> decisiones GR-T50 a GR-T59 están **a ratificar**; mientras tanto, rigen. El 15/11 a la noche trajo otra vez `main` (#283,
+> #284, #280, #285 y #281) y pasó por la pasada visual y una tercera revisión (abajo): una sola media semanal (GR-VC13),
+> GR-12 y GR-13 en «Analizar» y las decisiones GR-VD01 a GR-VD09, también a ratificar.
+
+| Parte | Qué quedó | Dónde | Oráculo |
+|---|---|---|---|
+| **GR-26** en «Analizar» | Los modos se llaman **«Alineadas»** (por defecto) y **«Superpuestas»**; en la URL y en las vistas guardadas siguen `PANELS` y `OVERLAY`. «Superpuestas» sigue `composicionPermitida`: el mismo eje X (una serie por semana va solo con otras semanales), hasta tres series y dos unidades, un eje a cada lado (`yAxisId`) rotulado con su muestra, el nombre corto de sus series y la unidad; el nombre de cada línea va al final. Cada eje con la escala de «Alineadas», sin sombrear entre líneas. Si no se puede, se apaga y dice qué hacer. Una vista guardada con `OVERLAY` de antes se ve igual (un eje). El selector ofrece el catálogo con el acceso de hoy, con las series de los sugeridos primero; el 1RM estimado (Epley v1) solo con un ejercicio de la lista de la v1, sin las orientativas y con lo observado en rombo. **Lo indicado del entrenamiento** elegido como serie (el RIR indicado, cuando la rama B lo ofrezca) va como lo indicado de Nutrición: rombos huecos sueltos, sin línea, con su leyenda; y en «Superpuestas», en el eje de lo registrado de su misma unidad, con su escala (no suma un eje). La frase de la coincidencia al pie y, con dos ejes, «Cómo leerlo» | `seguimiento/analizar.tsx`, `lienzo.tsx`, `selector.tsx`, `series.ts` (el despacho), `graficos/arma-tu-grafico/compositor.ts` | TEST-GRF-068 a 071, 073 a 076 y 078 |
+| **GR-23** arriba de «Analizar» | La cinta del tiempo de la base arriba de los gráficos, sobre el intervalo que se ve, con los alcances de hoy y las versiones de los planes propios; se lee cuando ya se sabe qué áreas hay. **Comparte la fecha elegida con los gráficos** (§3.8): elegir en la cinta la elige en los gráficos y en la lectura, y la cinta dice lo que regía en la fecha que se lee. Para eso, el proveedor del cursor de la base admite una fecha de afuera (un cambio que solo agrega: sin ella, el cursor es propio, como siempre) | `seguimiento/analizar.tsx`, `graficos/cursor-de-fechas.tsx` | TEST-GRF-076 |
+| **GR-24** · dos etapas lado a lado | Debajo de la tabla de «Comparar dos etapas», «Lado a lado, con todas las observaciones»: cada métrica en dos columnas, cada día, sesión o toma en su fecha dentro de la etapa, la mediana como raya y la cantidad escrita. Con menos de 5 de un lado no se dibuja y dice cuánto hay. Lo que no entra en la mediana se ve hueco o en rombo y se cuenta con su motivo. Con el 1RM estimado, la mediana del RIR registrado y el rango de repeticiones de cada etapa. Lo que también cambió y lo que BE no registra. Cada una con su tabla | `graficos/cruces/dos-etapas.ts` y `dos-etapas-en-pantalla.tsx`, `seguimiento/etapas.tsx` | TEST-GRF-061 y 062 |
+| **SP-01** · carbohidratos × 1RM estimado | Tres carriles alineados (los carbohidratos por día con el objetivo en escalón, las calorías al lado y el 1RM estimado por sesión, con un eje de 10 kg o 22 lb como mínimo), las dos etapas del objetivo de fondo, «Dos etapas» de los carbohidratos y del 1RM, y la lectura: la ventana fijada antes de mirar, lo que cambió en lo indicado en la primera línea, cada etapa con sus días (cuántos entran en la mediana y cuántos quedaron afuera, y por qué), el 1RM entre ≈ y ≈ con la mediana del RIR y las repeticiones, el ruido propio antes del cambio, las calorías de cada etapa, lo que también cambió, lo que BE no registra, «Cómo leerlo» (Henselmans 2022) y la frase | `graficos/cruces/carbohidratos-y-fuerza.ts` y `-en-pantalla.tsx`, `ventanas.ts`, `lo-que-tambien-cambio.ts`, `lecturas-de-los-cruces.ts`, `lectura-del-cruce.tsx` | TEST-GRF-063, 065, 066 y 077 |
+| **SP-02** · energía × peso | Las calorías por día con el objetivo, su media semanal que dice con cuántos días se hizo, y el peso de cada toma en puntos sueltos con los días desde la anterior; la ventana entre dos tomas del mismo protocolo con 14 días o más; el error de medición que BE no tiene cargado; «Lo registrado puede no ser todo lo comido»; «Cómo leerlo» (Hall 2011) y la frase | `graficos/cruces/energia-y-peso.ts` y `-en-pantalla.tsx`, `ventanas.ts` | TEST-GRF-064 y 067 |
+| «Armá tu gráfico» · el compositor | `CompositorDeGraficos`, sobre `CuadroEnfocado`: hasta tres series con el ejercicio, la serie y la unidad cuando hacen falta, el modo con su motivo, la vista previa, el nombre con la pista «No pongas datos de salud: el enfoque se usa con varias personas.» y «Agregar al enfoque», que devuelve la forma del gráfico `CUSTOM` del enfoque. `GraficoSuperpuesto` en SVG propio para «Patrones», con un eje a cada lado, teclado, lectura, leyenda, la frase y la tabla | `graficos/arma-tu-grafico/` (`compositor.ts`, `compositor-en-pantalla.tsx`, `superpuestas.ts`, `superpuestas-en-pantalla.tsx`, `grafico-armado.tsx`) | TEST-GRF-068 a 070 y 073 |
+| El registro y el caso de acceso | `cruce.dos-etapas` («Comparaciones»), `cruce.carbohidratos-y-fuerza` y `cruce.energia-y-peso` («Ver la relación»), cargados a pedido. SP-01 y SP-02 solo en el caso 1; el caso negado no se ofrece, no aparece en gris y no pide ninguna lectura | `graficos/cruces/registro.ts`, `caso-de-acceso.ts` | TEST-GRF-060, 063 y 064 |
+| Los textos | La guardia unida de las áreas que se juntan corre sobre todos los textos de la rama y sobre lo que «Analizar» muestra de cada serie ofrecida. Los tres límites del diccionario que la base señaló (§13.2) dejan el término que decían en negación; los textos del diccionario pasan a `BE-METRICAS-TEXTOS-2026-11-v3` (la versión de las derivaciones, la que devuelve API-PRJ-01, no cambia) | `graficos/cruces/copy.ts`, `packages/domain/src/metricas-del-analisis.ts` | TEST-GRF-072 y TEST-EDP-050 |
+| Sin datos de salud en el navegador | Nada de la rama guarda en `localStorage`, `sessionStorage` ni IndexedDB; ningún `.ts` comparte nombre con un `.tsx` | toda la rama | TEST-GRF-079 |
+
+**Los oráculos y sus mutaciones** (en `apps/web/test/graficos-cruces.test.mjs`). Se revisaron leyendo el código, sin
+correrlas en esta máquina; la CI corre las pruebas tal cual:
+
+| Oráculo | Mutación que lo pone en rojo |
+|---|---|
+| TEST-GRF-060 | Importar un `.tsx` en el registro |
+| TEST-GRF-061 | Dibujar «Dos etapas» con 4 de un lado; asignar una sesión a la versión de su fecha y no a la que ejecutó |
+| TEST-GRF-062 | Perder la observación que no entra en la mediana; contar una orientativa en la mediana del RIR o en el rango de repeticiones |
+| TEST-GRF-063 | Ofrecer SP-01 con una sola área; que GR-24 sin ejercicio compare las calorías aunque falte Nutrición; pedirle un ejercicio a quien no tiene Entrenamiento; que un gráfico armado pida una serie de un área sin acceso |
+| TEST-GRF-064 | Pedir la lectura de comidas en el caso negado de SP-02 |
+| TEST-GRF-065 | Sacar las calorías de SP-01 |
+| TEST-GRF-066 | Aceptar una etapa del objetivo de 2 semanas; aceptar dos etapas con otra versión del objetivo en el medio |
+| TEST-GRF-067 | Tomar la toma de otro protocolo |
+| TEST-GRF-068 | Un solo eje con dos unidades |
+| TEST-GRF-069 | Dejar «Superpuestas» con tres unidades; darle a lo indicado su propio eje; apagar «Agregar al enfoque» con el motivo de «Superpuestas»; poner lo indicado en el eje del RIR de otro ejercicio |
+| TEST-GRF-070 | Superponer una serie semanal con una de sesión |
+| TEST-GRF-071 | Abrir siempre el segundo eje en una vista con `OVERLAY` de antes |
+| TEST-GRF-072 | Un «%» en la lectura de un cruce; devolverle a un límite del diccionario el término prohibido que decía en negación |
+| TEST-GRF-073 | Unir las tomas de Antropometría (también en el lienzo de «Analizar»); unir lo indicado con una línea o dibujarlo lleno, también en un gráfico armado; la leyenda fija de antes, también en SP-01 y SP-02 |
+| TEST-GRF-074 | Ofrecer el 1RM estimado con cualquier ejercicio |
+| TEST-GRF-075 | Leer el 1RM estimado como métrica del diccionario |
+| TEST-GRF-076 | Volver a «Juntas»; sacar la cinta de arriba de «Analizar» o su proveedor del cursor; que la cinta vea la fecha acotada y pierda el evento que empieza antes de lo que se ve |
+| TEST-GRF-077 | Asignar una sesión por su fecha; decir un cambio fuera de la ventana; sacar lo que también cambió entre dos etapas de las versiones del período de la ficha |
+| TEST-GRF-078 | Perder la marca de la orientativa; dejar automático el eje del 1RM estimado en «Analizar» |
+| TEST-GRF-079 | Guardar en `localStorage` |
+
+#### Decisiones del continuador al programar (a ratificar)
+
+- **GR-T50 · La frase va siempre al pie de «Analizar»**, como iba la anterior, y no solo con dos áreas o dos ejes: es lo
+  más conservador. Con dos ejes, además, «Cómo leerlo» debajo del gráfico.
+- **GR-T51 · «Superpuestas» con una sola serie se apaga** («pide dos series o tres»), además de los motivos del dominio.
+- **GR-T52 · La ventana de SP-02** es la última toma y la más reciente del mismo protocolo con 14 días o más antes (con
+  tomas semanales, no es la anterior inmediata). Las calorías se leen desde esa toma, o desde el cambio de objetivo si fue
+  después, hasta el día anterior a la última toma.
+- **GR-T53 · La ventana de SP-01** es la última pareja seguida de etapas del objetivo nutricional (los escalones del
+  objetivo de los carbohidratos) con 21 días o más cada una dentro del período. Sin ella, se dice por qué y los carriles
+  se ven igual.
+- **GR-T54 · Lo indicado de cada versión** (la primera línea de SP-01) sale de las prescripciones de las sesiones
+  registradas, con la lectura compartida de la base (`leerLasSesionesEnTramos`): el RIR del criterio de intensidad y las
+  repeticiones del ejercicio, por la versión que ejecutó cada sesión (`planId`). *Alternativa:* los objetivos por serie de
+  API-SER-01, una lectura más por versión.
+- **GR-T55 · Las medianas de Nutrición de los cruces y de «Dos etapas»** usan solo los días con cantidades en todos sus
+  registros y ninguna comida del plan sin registro; los demás se ven huecos y se cuentan afuera, con el motivo. La tabla
+  de «Comparar dos etapas» sigue con su media de siempre.
+- **GR-T56 · GR-24 en «Patrones»** compara la versión vigente con la anterior: con un ejercicio, en Entrenamiento (el 1RM
+  estimado si está en la lista de la v1; si no, la carga de la serie); sin ejercicio, en Nutrición (las calorías). Una
+  medida corporal no se compara entre etapas en esta versión. *Ampliada el 15/11, en la revisión:* sin ejercicio compara
+  las calorías **solo** si el profesional tiene Nutrición con un plan propio; si no (un entrenador sin Nutrición), no
+  lee nada y pide un ejercicio, para no pedir un área sin acceso. Por eso GR-24 se ofrece con Nutrición propia o con
+  Entrenamiento propio y algún ejercicio con sesiones, y los gráficos del registro reciben `acceso` (una prop opcional
+  que solo agrega, en `registro-de-graficos.ts`): sin él, GR-24 sin ejercicio tampoco lee.
+- **GR-T57 · Los gráficos del registro se cargan con `React.lazy` y su propio `Suspense`**, para que el registro siga
+  siendo un `.ts` sin JSX que las pruebas cargan en Node.
+- **GR-T58 · Los `.tsx` de la rama se llaman «…-en-pantalla»** (como GR-T23), y la rama suma en sus carpetas
+  `grafico-armado.tsx`, `lectura-del-cruce.tsx` y `lecturas-de-los-cruces.ts`.
+- **GR-T59 · En «Analizar», el 1RM estimado elegido a mano se lee sin las orientativas** (como «Fuerza» en «Analizar»,
+  ED-74) y una serie observada se dibuja en rombo con su leyenda. En SP-01, las orientativas van huecas y no entran en el
+  rango. *Ampliada el 15/11:* **lo indicado del entrenamiento elegido como serie** (el RIR indicado) se dibuja en
+  «Analizar» como lo indicado de Nutrición (DL-158): rombos huecos sueltos, sin línea, con una leyenda que dice cuál es; y
+  en «Superpuestas» (en «Analizar» y en «Patrones») va en el eje de lo registrado de su misma unidad, con la misma escala:
+  el RIR indicado y el RIR registrado no tienen familia, y sin esto serían dos ejes «RIR» con escalas distintas. Por eso
+  no suma un eje: con el RIR registrado, el RIR indicado y la carga quedan dos y se puede. *Alternativa:* darle al RIR
+  indicado la familia del RIR en el catálogo (archivo de la rama B), que cambiaría la regla para todos los gráficos.
+
+#### Lo que falta para cerrar
+
+- «Ver la relación», «Comparaciones» y «Armá tu gráfico» **en «Patrones»** los muestra la rama E con este registro y
+  estas piezas; SP-01 en vivo para la defensa depende de eso. La cinta arriba de SP-01 la pone «Patrones».
+- Lo indicado del entrenamiento en «Analizar» se ve recién cuando se integre la rama B (#280), que ofrece el RIR
+  indicado; hasta entonces no se puede elegir.
+- «Patrones» (rama E) tiene que pasarles `acceso` a los gráficos del registro: GR-24 sin ejercicio lo usa para no leer
+  Nutrición sin el alcance, y sin él no lee nada. `GraficoArmadoEnPantalla` lo pide como obligatorio: con él no pide
+  una serie de un área sin acceso.
+- La evidencia en pantalla (1440, 1280 y 1024) y la revisión con lector de pantalla: no se corrió el website local (la PC
+  tiene poca memoria); lo juzgan la CI, los recorridos del navegador y las capturas de #282.
+
+#### La revisión del 15/11 (ojo adversario) y lo que se arregló
+
+| Severidad | Hallazgo | Arreglo |
+|---|---|---|
+| Media | La cinta de «Analizar» acotaba la fecha elegida a lo que se ve: un evento que empieza antes (la barra de una versión vigente desde antes) dejaba de verse elegido, y con el teclado la flecha volvía siempre al primero | El proveedor del cursor recibe `limites`, le avisa a la página la fecha acotada y la cinta sigue viendo la suya (`fechaVistaAdentro`); un clic en un gráfico sigue mandando. Elegir un tramo deja la fecha adentro del tramo |
+| Media | El 1RM estimado elegido en «Analizar» tenía el eje automático: 2 kg de ruido ocupaban todo el alto, contra GR-T15 | El lienzo usa el rango mínimo del catálogo en cada eje (10 kg o 22 lb), en «Alineadas» y en «Superpuestas»; en «Cambio relativo», no (`dominioConRangoMinimo`) |
+| Media | GR-24 en «Patrones» sin ejercicio leía las calorías aunque el profesional no tuviera Nutrición: pedía un área sin acceso | `referenciaDeLaComparacion` decide con el acceso y no lee si falta; el registro lo ofrece con Nutrición propia o con Entrenamiento propio y ejercicios (GR-T56 ampliada) |
+| Media | En el compositor, con «Superpuestas» elegida y después una sola serie (o tres unidades), «Agregar al enfoque» quedaba apagado mientras se veía «Alineadas» marcada, y tocarla no cambiaba nada | Se ve y se guarda «Alineadas» y el botón sigue (`modoDelCompositor`) |
+| Media | Un gráfico armado de «Patrones» unía lo indicado (el RIR indicado, cuando #280 lo ofrezca) con una línea, como lo registrado, y su leyenda era fija (sin el rombo de lo observado ni lo indicado) | Lo indicado va suelto (`unirLaSerie`) y la leyenda dice lo que está dibujado (`leyendaDeLasSeries`) |
+| Baja | La ventana de SP-01 tomaba como seguidas dos etapas del objetivo con otra versión en el medio (una versión sin los carbohidratos no trae su escalón) | Se exige que B empiece el día después del último de A |
+| Baja | Un gráfico armado que perdió una serie por falta de acceso decía «Superpuestas: pide dos series o tres», un rastro de lo que no se ve | Sin ese motivo cuando faltan series |
+| Baja | Con el RIR registrado de dos ejercicios y un RIR indicado, lo indicado iba al eje del primero, aunque fuera del otro ejercicio | Con dos registrados de su unidad, lo indicado no se une a ninguno: quedan tres ejes y «Superpuestas» dice por qué |
+| Baja (queda) | GR-24 en «Patrones» dice lo que BE no registra, pero no lista las versiones de la otra área que se activaron entre las etapas (en «Analizar» sí) | Pide una lectura más de la otra área, con su alcance: queda para cuando «Patrones» esté en pantalla (rama E) |
+
+#### La segunda revisión del 15/11 (ojo adversario) y lo que se arregló
+
+| Severidad | Hallazgo | Arreglo |
+|---|---|---|
+| Media | En «Analizar», las tomas de Antropometría se unían con una línea, también en «Superpuestas» con las calorías, contra GR-D5 y §4.5 («Antropometría sigue en puntos sueltos, también superpuesta») | El lienzo deja sin línea lo que el catálogo no une (`unir: unirLaSerieDe(…)`), en todos los modos, como la pestaña Antropometría; lo indicado sigue en rombos |
+| Media | El gráfico armado (la vista previa del compositor y un gráfico propio de un enfoque) pedía cada serie aunque fuera de un área sin acceso, y esperaba el 404 de la API | `GraficoArmadoEnPantalla` recibe el `acceso` (obligatorio) y no pide lo que `serieConAcceso` no deja: ni se dibuja ni deja hueco |
+| Media | «Lo que también cambió» de «Comparar dos etapas» salía de las versiones del período de la ficha: con dos etapas de hace meses no listaba lo que se activó entre ellas y decía que no había otro cambio | Sale de las etapas del último año de las dos áreas (`versionesEntreLasEtapas`, con las versiones de la misma área entre A y B); si no se pudieron leer, dice que no se sabe. El texto sin cambios dice solo lo que se leyó |
+| Baja | En «Dos etapas», la mediana del RIR y el rango de repeticiones contaban las orientativas, que no entran en la mediana: en SP-01 decía otra cosa que la lectura del cruce | Solo el núcleo de lo escrito por la persona, como la mediana |
+| Baja | GR-24 en «Patrones» con un ejercicio y sin el alcance de Entrenamiento pedía «Elegí un ejercicio… Entrenamiento»: nombraba un área sin acceso | Sin ese alcance (o sin saber el acceso), el gráfico no está |
+| Baja | SP-01 y SP-02 llevaban una leyenda fija (con lo reportado o lo observado aunque no hubiera ninguno) | La leyenda sale de lo dibujado (`leyendaDeLosCarriles`) |
+| Baja (queda) | En «Superpuestas» de dos áreas, el lienzo dibuja las bandas de las versiones de las dos, una sobre otra (rotuladas con su área) | Elegir qué bandas van con dos áreas es una decisión de diseño de la vista; queda para la revisión en pantalla |
+
+#### La pasada visual y la tercera revisión (15/11, noche)
+
+La rama trajo `main` con un merge, sin rebase: la pasada visual (#283), la historia anterior (#284), la rama B (#280),
+compartir casi por omisión (#285) y la rama C (#281). Dos choques: en «Analizar», el pie de «Comparar dos etapas» quedó
+como en `main` (la frase fija como pieza y el límite en «Cómo leerlo»); en `etapas.tsx`, los dos comentarios y, de los
+imports, `serieDisponible` (GR-24). Las piezas comunes quedan como en `main` y la rama D suma lo suyo; lo de B y C se
+hereda al usarlas (los números de lo lleno sin repetir un extremo, la cinta de filas de 30 px, el lienzo de C con las
+temporadas, el eje de 3 a 5 marcas redondas y la barra semanal de GR-12). Al traerlo no compilaba: «Superpuestas» en SVG
+propio no le pasaba `hoy` a la lectura de la base.
+
+**Una sola media semanal para todo BE (GR-VC13).** La media de una semana de Nutrición es la de GR-12
+(`mediasDeLasSemanas`, §4.4: los días con cantidades en todos sus registros, si son 4 o más; dice con cuántos días se
+hizo y por qué quedaron afuera los otros). La rama D tenía tres más y las tres pasan a esa:
+
+| Dónde | Antes | Ahora | Oráculo |
+|---|---|---|---|
+| GR-24 por semana («Las mismas métricas, en el tiempo») | La media de los días con valor, con los subtotales adentro («1.912 kcal, media de 2 de 6 días (2 subtotales)») | La de GR-12, por medio de `cruces/semanas-de-nutricion.ts`, que no calcula ninguna media: corta el período en las etapas y le pide cada tramo a `mediasDeLasSemanas`. La semana con días y sin media va con su contorno cortado, sin relleno, y sus días se ven igual; la columna gris queda para la que no tiene ningún día con valor. De entrada va por semana solo si alguna semana tiene media (GR-VD04). La leyenda dice solo lo que se ve y «Cómo se arma cada barra» dice la regla de GR-12 | TEST-GRVD-001 |
+| SP-02, el carril de la media semanal | Una media propia, sin mínimo de días | La de GR-12; la barra hueca si quedó algún día afuera, el contorno cortado si no hay media; sus fichas en la leyenda y la semana sin media también en la tabla | TEST-GRVD-001 y TEST-GRF-067 |
+| «Analizar», «Agrupar por: Semana» con una métrica de Nutrición | La semana de API-PRJ-01, que promedia también los subtotales | Se leen los días (una sola lectura) y se arma la semana de GR-12 (`serieSemanalDeNutricion`, GR-VD03). Sin media, el punto no tiene valor; lleno solo con los siete días. El «Cómo se calcula» del diccionario (textos v3, de esta rama) dice la misma regla | TEST-GRVD-005 |
+
+Las piezas de la base solo suman campos opcionales (las semanas ya calculadas, su texto, «con días y sin media», la barra
+hueca del carril semanal y sus fichas): sin ellos, todo sigue como antes. `semanasDeLosDias` queda en la base como la
+media genérica, sin ningún gráfico de Nutrición que la use.
+
+**GR-12 y GR-13 en «Analizar»** (lo que §4.4 pone ahí y §13.4 dejó para la rama D): una pregunta propia, «¿Qué registró
+en Nutrición, por día y por semana?», que responde con las pantallas de la rama C (las calorías por día y los
+macronutrientes, también en g/kg si se ofrecen), con el período de la ficha. **«Ver la relación»** también llega a
+«Analizar», con SP-01 y SP-02, mientras «Patrones» (rama E) no está: SP-01 con el ejercicio más registrado de la lista
+de la v1 y los otros a elegir. Las dos, como la composición y la fuerza (TA-25), viven en el website y no se guardan como
+vista; cada gráfico se ofrece con la regla de su registro y el acceso de hoy, y la tarjeta de la pregunta solo aparece si
+se ofrece alguno. Abierta por la dirección sin nada que ofrecer, vuelve a «Analizar» sin pregunta: responde igual que una
+que no existe (GR-VD01, GR-VD02 y GR-VD08). Lo fija TEST-GRVD-003.
+
+**La guía visual en los gráficos de la rama** (`DISENO-VISUAL` §1 y §2 «D»; §5 manda sobre la guía):
+
+| Gráfico | Antes | Después | Oráculo |
+|---|---|---|---|
+| GR-24 · lado a lado | El eje con el piso, el medio y el techo («4, 4, 3» con las repeticiones); la leyenda fija y repetida en cada métrica; tres renglones por etapa; «Lo que también cambió» decía que no había otro cambio aunque el plan pasó de 4 a 3 repeticiones | El eje de 3 a 5 marcas redondas de la base, con su grilla tenue; el título de la base con su línea tenue (la unidad y qué es cada punto); la leyenda en fichas una sola vez, arriba, solo con lo que se ve; cada etapa en dos renglones (cuándo, y cuánto con su mediana) y, tenue, lo que no entra; «Lo que también cambió» lista primero lo indicado para el ejercicio («Lo indicado para Sentadilla trasera con barra: de 4 a 3 repeticiones (de la versión 7 a la 8)»), también con el 1RM estimado solo, y si no se pudo leer lo dice | TEST-GRVD-002 |
+| SP-01 y SP-02 | La frase dos veces (en las notas y en la lectura), la lectura afuera de la tarjeta y un «Cómo leerlo» propio sin el nombre de su gráfico | Una sola tarjeta: la frase una vez, tenue, en las notas; la lectura del cruce (la ventana, lo que cambió en lo indicado, cada etapa, lo que también cambió y lo que BE no registra) a la vista adentro; Henselmans 2022 y Hall 2011, en el «Cómo leerlo» de la base | TEST-GRVD-004 |
+| «Analizar» · el pie | El límite de la pregunta y la frase en un mismo párrafo | La frase con la pieza de la base, a la vista; el límite de la pregunta en «Cómo leerlo», último (GR-T50 y GR-V08) | TEST-GRVD-004 y TEST-GRF-076 |
+| «Analizar» · «Superpuestas» con dos ejes | — | Sin cambios de fondo: cada eje dice su unidad y sus series, nada se sombrea entre líneas y «que dos líneas se crucen o se separen no quiere decir nada» va a la vista debajo del gráfico | TEST-GRVD-004 |
+| «Superpuestas» en SVG propio («Patrones») | El nombre de cada línea cortado con «…»; la leyenda debajo | El título con su línea tenue, la leyenda arriba, la frase con su pieza, «Cómo leerlo» con dos ejes y el nombre de cada línea entero o ninguno (lo dicen su eje y la leyenda) | La CI (typecheck) |
+
+**Decisiones del continuador en esta pasada, a ratificar:**
+- **GR-VD01 · GR-12 y GR-13 en «Analizar» como una pregunta propia**, con las pantallas de la rama C y el período de la
+  ficha, solo si se ofrecen. *Alternativa:* esperar a «Patrones» (rama E).
+- **GR-VD02 · «Ver la relación» también en «Analizar»** (SP-01 y SP-02, caso 1), mientras «Patrones» no está; SP-01 con el
+  ejercicio más registrado de la lista de la v1, con los otros a elegir. Cuando entre la rama E, quedan en los dos
+  lugares. *Alternativa:* solo en «Patrones», como dice §4.5.
+- **GR-VD03 · La semana de Nutrición en «Analizar» se arma en el website** con la media de GR-12, con una lectura de los
+  días (antes eran dos lecturas: la semana y los días). *Alternativa:* cambiar la agregación semanal de API-PRJ-01, que
+  pide la API y su DL.
+- **GR-VD04 · GR-24 arranca por semana solo si alguna semana tiene media** (como GR-VC12): con la cohorte, ninguna llega a
+  4 días sin faltantes y por semana se vería solo «sin media». *Alternativa:* por semana siempre con más de seis semanas.
+- **GR-VD05 · «Lo que también cambió» de GR-24 lista primero el cambio de lo indicado para el ejercicio** (las repeticiones
+  y el RIR, de las sesiones que ejecutaron cada versión), además de la diferencia de la tabla. *Alternativa:* solo en la
+  diferencia, como dejó #283.
+- **GR-VD06 · La leyenda de «Lado a lado», una vez arriba**, con lo que se ve en todas las métricas; cada etapa en dos
+  renglones. *Alternativa:* una leyenda por métrica.
+- **GR-VD07 · En SP-01 y SP-02, la lectura del cruce va adentro de la tarjeta**, en lo que la base pone a la vista, y la
+  frase una sola vez. *Alternativa:* la lectura debajo, afuera de la tarjeta.
+- **GR-VD08 · Una pregunta con gráficos abierta por la dirección sin nada que ofrecer** vuelve a «Analizar» sin pregunta,
+  sin el título ni un aviso. *Alternativa:* un estado vacío neutro con el título.
+- **GR-VD10 · La semana sin media es una raya cortada y baja sobre el eje** (no una caja punteada de todo el alto, que
+  con la cohorte enrejaba el año y tapaba los días); la caja llena, solo para la semana con media, y la de «Con días
+  afuera», con un contorno fino. **De entrada va por semana solo si la mayoría de las semanas tienen media** (refina
+  GR-VD04 y GR-VC12); si no, día por día. Vale para GR-12, GR-13, GR-14, GR-24 y la media semanal de SP-02 (revisión de
+  las capturas v2, 18/11). *Alternativa:* la caja punteada, más tenue.
+- **GR-VD09 · Las piezas de la base solo suman campos opcionales** y `semanasDeLosDias` queda como la media genérica sin
+  usuarios de Nutrición. *Alternativa:* borrarla o pasarla a la regla de GR-12, que cambia las pruebas de #283.
+
+**La revisión adversaria (tres miradas, una después de la otra) y las capturas.** La honestidad (§5 manda sobre la guía),
+el código (el merge, los cálculos, las semanas, los husos, `composicionPermitida`, la URL, los estados vacíos, el acceso y
+las pruebas) y la accesibilidad y el texto (el teclado, el lector, la tabla, Azul noche, 1024 a 1920 y las palabras). Las
+capturas de la CI se miraron en Claro y Azul noche a los cuatro anchos (v1, de `cc6d4229`, y v2, de `399cf6e3`).
+
+| Hallazgo | Severidad | Arreglo | Prueba |
+|---|---|---|---|
+| Al traer `main`, «Superpuestas» en SVG no compilaba: la lectura de la base pide `hoy` | Alta | Se lo pasa | La CI (typecheck y build) |
+| GR-24 por semana promediaba también los subtotales: otra media que la de GR-12 para la misma semana (GR-VC13) | Alta | La de GR-12, por el adaptador | TEST-GRVD-001 |
+| SP-02 tenía su propia media semanal, sin mínimo de días | Media | La de GR-12, con barra hueca y «sin media» | TEST-GRVD-001, TEST-GRF-067 |
+| «Agrupar por: Semana» de Nutrición en «Analizar» dibujaba la semana de la API, con los subtotales | Media | La de GR-12, con los días (GR-VD03); el diccionario lo dice | TEST-GRVD-005 |
+| La semana con días y sin media se dibujaba como la que no tiene ninguno (columna gris) | Media | Contorno cortado, sin relleno; sus días se ven | TEST-GRVD-001 |
+| GR-24 lado a lado: el eje «4, 4, 3» (piso, medio y techo) | Media | Las marcas redondas de la base | TEST-GRVD-002 |
+| «Lo que también cambió» no listaba el cambio de 4 a 3 repeticiones del plan (DISENO-VISUAL §2 «D») | Media | Lo indicado para el ejercicio, primero, también con el 1RM solo | TEST-GRVD-002 |
+| La leyenda de «Lado a lado», fija (con el rombo aunque no hubiera) y repetida en cada métrica | Media | Una vez, con lo que se ve | TEST-GRVD-002 |
+| GR-12 y GR-13 sin ninguna pantalla; SP-01 y SP-02 sin pantalla hasta «Patrones» | Media | Dos preguntas de «Analizar», solo con lo que se ofrece (GR-VD01 y GR-VD02) | TEST-GRVD-003, capturas 21 a 23 |
+| Una de esas preguntas, abierta por la dirección por quien no tiene el área, mostraba su título | Media | Responde como una que no existe (GR-VD08) | TEST-GRVD-003 |
+| Capturas: el peso de cada toma era un píxel en un año, en «Analizar» (también «Superpuestas») y en SP-02 | Media | La marca con el lugar de una sesión, como la base; también las sesiones del 1RM de SP-01 | TEST-GRVD-006 |
+| Capturas: GR-24 por semana desbordaba la página a lo ancho (979 px a 1024) por la tabla oculta | Media | La tabla, dentro de un div oculto | TEST-GRVD-006, TEST-GRV-013 |
+| SP-01 y SP-02: la frase dos veces y un «Cómo leerlo» propio sin el nombre de su gráfico | Baja | La frase una vez; «Cómo leerlo» de la base | TEST-GRVD-004 |
+| El pie de «Analizar»: el límite de la pregunta a la vista, pegado a la frase | Baja | La frase con su pieza; el límite en «Cómo leerlo» | TEST-GRVD-004, TEST-GRF-076 |
+| «Superpuestas» en SVG: el nombre de cada línea cortado con «…» y la leyenda debajo | Baja | Entero o ninguno; la leyenda arriba | TEST-GRVD-004 |
+| Las kcal del dibujo con decimal («1.924,8») | Baja | Enteras | TEST-GRVD-006 |
+| Capturas v2 (Dirección): con casi todas las semanas «Sin media», las cajas punteadas de todo el alto enrejaban el año de GR-12 y tapaban los días | Media | Una raya baja sobre el eje; la hueca, con contorno fino; por semana de entrada solo con la mayoría con media (GR-VD10) | TEST-GRVD-007 |
+| La leyenda por semana, fija con todas las marcas | Baja | Solo las que se ven | TEST-GRVD-001 |
+
+**Revisado sin hallazgos:** ubica sin calificar (ningún «mejor» ni «peor», las etapas sin orden de valor); cada cálculo con
+su método (GR-12 v1, Epley v1, la mediana); la frase fija a la vista en los cruces, en «Superpuestas» con dos ejes y al
+pie de «Analizar»; lo indicado y lo registrado separados (rombos sueltos); sin flechas ni «primero → último» en los textos
+nuevos; en Nutrición, sin «%» en los textos de la rama; las semanas, de lunes a domingo con fechas civiles y hoy afuera;
+`composicionPermitida` sigue mandando en «Superpuestas»; las preguntas nuevas no se guardan como vista; un área sin acceso
+no deja rastro; «Cómo leerlo» es un `<details>` con el nombre de su gráfico; ninguna palabra prohibida en pantalla, ni
+negada; el caso negado del entrenador no ve las preguntas (captura 22).
+
+**Lo que queda abierto:**
+- **«Cambio relativo» con Nutrición escribe «%» en «Analizar»** (media): choca con §5.11, pero es DL-126 y GR-26 lo deja
+  como está. Lo decide Dirección.
+- **El eje de «Analizar» (Recharts) no usa las marcas redondas de la base** («0, 55, 110, 165, 220» en las proteínas)
+  ni la franja de las versiones de la guía (baja): pasar el lienzo a los paneles alineados de la base es un trabajo
+  aparte.
+- **En «Superpuestas» de dos áreas, las bandas de las versiones de las dos van una sobre otra** (baja, de la segunda
+  revisión).
+- **SP-01 no se ve en las capturas** (baja): la cohorte no tiene un profesional con Nutrición y Entrenamiento; lo fijan
+  las pruebas.
+- **`semanasDeLosDias` queda en la base con la media de antes**, sin ningún gráfico que la use (baja, GR-VD09).
+- **El lector de pantalla real** (NVDA, TalkBack) no se probó; las pruebas leen el código (baja).
+
+**Las pruebas de esta pasada:** TEST-GRVD-001 a 006 en `apps/web/test/graficos-cruces.test.mjs`. Se corrieron en esta
+máquina (la lógica pura, con Node) y en la CI.
+
+### 13.6 Rama E · `wp-graficos-patrones-y-enfoques`
+
+> Sin programar al declarar este paquete.
+
+### 13.7 Pasada visual · `wp-graficos-pulido-visual`
+
+> Programada el 2026-11-15 desde `main` `899c5a1d` (con #282, las capturas de la CI), después de que Dirección preguntó si
+> se había preparado cómo se iban a ver los gráficos «como lo haría una gran empresa de calidad». La especificación es
+> `DISENO-VISUAL` (doce principios y un apartado por componente): cambia dónde y cómo se dicen las cosas, **no qué se
+> dice** — las reglas de honestidad de §5 no se tocan. Sin API, sin migraciones, sin dependencias y sin la APK. Toca la
+> fase 1 (GR-01, GR-04 y GR-16), la fuerza estimada de «Analizar» (ED-74, que usan GR-02 y GR-26), «Comparar dos etapas»
+> (GR-24) y las piezas comunes de la base, que las ramas B a E heredan al traer `main`.
+
+| Parte | Lo que cambió | Dónde | Oráculo |
+|---|---|---|---|
+| Las piezas comunes | El título en 16 px con su línea tenue (unidad y período); la leyenda como fichas cortas arriba, **solo con las marcas que se ven** (`sentidosQueSeVen`); 240 px con un carril; el eje con 3 a 5 marcas redondas y una grilla tenue (`marcasRedondas`), sin números repetidos; las fechas abreviadas y el año solo donde hace falta (`textoDelEje`); un número solo en el elegido, el último, el máximo y el mínimo, sin pisarse (`rotulosSinPisarse`); las versiones con un tono tenue que alterna, una línea fina en el cambio y «v8 · de 4 a 3 repeticiones» si entra (`versionesEnElEje`), y el cambio también en texto: en el nombre del gráfico y a la vista si no entra en su línea; debajo, la línea de lectura («Lo último» de cada carril, con su fecha) y **todas las notas a la vista** (la frase fija, también con algo agregado; lo cargado después; la muesca de lo que no entra en la escala); en «Cómo leerlo» (un `<details>` cerrado con su «i» y el nombre de su gráfico), solo las aclaraciones; con un solo carril, el método en la línea tenue; los extremos rotulados, de lo registrado lleno; las barras semanales con la semana vacía como una columna gris de todo el alto; la tabla sin partir un valor | `graficos/ejes.ts`, `versiones-en-el-eje.ts`, `semanas.ts`, `como-leerlo.tsx`, `paneles-alineados.tsx`, `notas-del-grafico.ts`, `carriles.ts`, `marcas.tsx`, `lectura-en-la-fecha.tsx`, `tabla-equivalente.ts`, `tabla-equivalente-en-pantalla.tsx`, `eje-de-fechas.ts`, `estilos/base.css` | TEST-GRV-001 a 004, 006 a 008, 015, 017 y 018 |
+| Lo indicado en el tiempo | Lo que indicaba el plan para un ejercicio en un tramo (una versión, una etapa) y cómo se dice que cambió: corto en la línea de la versión, en palabras en la diferencia de dos etapas. Cada versión contra la inmediata anterior, con las sesiones que la ejecutaron (`planVersionId`) | `graficos/lo-indicado-en-el-tiempo.ts`, `lectura-de-lo-indicado.ts` | TEST-GRV-005 y 016 |
+| GR-01 · «La vez pasada» | Una lista: una fila por sesión, la fecha y la sesión a la izquierda y las series como fichas que no se parten («137,5 × 3 · RIR 2», con la unidad una vez arriba y la serie entera para el lector); «—» para una serie que falta; las tres últimas y «Ver las N anteriores», con todas las veces de los 91 días leídos; la línea de arriba dice que es lo registrado; una sola unidad para toda la lista; lo que aclara, en «Cómo leerlo»; el cuadro lateral de 480, 560 y 640 px | `training/la-vez-pasada.tsx`, `training/lista-de-la-vez-pasada.ts`, `globals.css` | TEST-GR-001, TEST-GRV-011 y 020 |
+| GR-04 · la marca del buscador | Una ficha compacta en el renglón del origen («47 sesiones · la última, 9 nov»; el lector oye la frase entera); qué cuenta, en una línea que dice que entran también las no realizadas o hechas con otro ejercicio, con «Cómo se cuenta» escrito al lado; filas más compactas | `training/agregar-ejercicio.tsx`, `globals.css` | TEST-GR-004 |
+| La fuerza estimada en «Analizar» | Al ancho medido (la letra no cambia entre 1024 y 1920); «1RM estimado (Epley v1)» como título; sin un número en cada punto; el globo al pasar el mouse y las flechas en el gráfico; las versiones discretas con el cambio de lo indicado; debajo del gráfico, a la vista, el rango de validez («Solo series de RIR 0 a 2 y hasta 10 repeticiones equivalentes») y lo que mueve un RIR (§5.6 y §5.12); la lectura del costado con lo que mueve un RIR en esa estimación y, después, «La anterior (2 nov): ≈ 154,5 kg», sin flecha; la fórmula y lo que no entra, en «Cómo leerlo»; el año en el eje si el período cruza un año; la tabla con 8 filas a la vista (y una fila que dice cuántas quedan entre medio si la elegida es vieja) y, con menos ancho, menos columnas | `fuerza/fuerza-en-analizar.tsx`, `fuerza/fuerza.ts`, `globals.css` | TEST-GRV-012 y las de ED-74 (`fuerza.test.mjs`) |
+| GR-16 · «Desde el inicio» | Lo que ya es un porcentaje se resta en puntos («−6,1 puntos»); sin la fila «Edad»; toda la historia, desde la primera toma; la tabla angosta y con las cifras a la derecha | `anthropometry/desde-el-inicio.tsx`, `anthropometry/diferencia-en-puntos.ts` | TEST-GR-016, TEST-GRV-010 |
+| GR-24 · «Comparar dos etapas» | Debajo de la diferencia de una métrica registrada por serie, lo que cambió en lo indicado («el plan indica 1 repetición menos»); Nutrición por semana de entrada, con «Día por día» a un toque: cada media dice a la vista con cuántos días se hizo, cuántos son subtotales y qué quedó afuera y por qué, con el teclado y para el lector; las semanas no cruzan el cambio de etapa; la descripción para el lector sin «la primera…; la última…»; al pie, la frase fija y el límite en «Cómo leerlo», último | `seguimiento/etapas.tsx`, `seguimiento/analizar.tsx`, `seguimiento/resumen-del-grafico-chico.ts`, `graficos/minigrafico-por-semana.tsx`, `graficos/semanas.ts` | TEST-GRV-009, 013, 014 y 019 |
+
+**Las mutaciones** están en el nombre de cada prueba (dejar el «4, 4, 3» del eje, dibujar todos los rótulos, repetir el
+año en cada marca, dibujar una semana vacía en cero, dejar «−1 rep» suelto, poner en la leyenda una marca que no se ve,
+volver al bloque gris con «Plan · versión 7», esconder la frase, volver al peine de los días, dejar «−6,1 %», volver a la
+tabla de columnas de GR-01, volver a «154,5 → 160,5 kg»; y, con la revisión, contar los subtotales en silencio, contar hoy en el «de 7», mezclar A y B en una barra, cortar los decimales del eje en 2, comparar lo indicado con una versión más vieja, dejar el cambio de lo indicado solo en el SVG, llevar una nota a «Cómo leerlo», rotular un subtotal como el mínimo, leer una sola fecha en «Lo último», esconder el ruido del RIR y armar doce veces en GR-01). Las de la revisión ejecutan la lógica (funciones puras); las de estructura leen el código. La CI es la que las corre.
+
+#### Decisiones del continuador en la pasada visual (a ratificar)
+
+- **GR-V01 · Nutrición por semana de entrada en GR-24** (y en la base, `convienePorSemana`: con más de seis semanas de
+  período). La barra es la media de los días con valor de esa semana, con el criterio de la tabla: los subtotales entran
+  (son un piso) y se cuentan; hoy no entra, ni en la media ni en el denominador. **Cada media se dice a la vista** debajo
+  del gráfico («Semana del 3 nov: 1.850 kcal, media de 5 de 7 días (1 subtotal); fuera de la media: 2 días sin
+  registros»), con el teclado (el gráfico recibe el foco; las flechas eligen la semana), con un toque y para el lector
+  (región viva y la tabla de las semanas). La barra va **llena solo con los siete días con valor**, sin subtotales y sin
+  hoy; si no, **hueca, con su contorno**; un tramo sin días con valor es una **columna gris de todo el alto**, nunca una
+  raya sobre el cero; debajo, la tira de cobertura de cada día; la leyenda y «Cómo se arma cada barra», una vez arriba.
+  **Las semanas se parten en el cambio de etapa:** ninguna barra mezcla A con B (revisión de #283). *Alternativa:* «Día
+  por día» de entrada y la semana a un toque.
+- **GR-V02 · El cambio de lo indicado en la línea de la versión del 1RM estimado:** solo el RIR y las repeticiones, que
+  son lo que mueve la estimación de Epley; lo indicado de una versión es el de todas las series del ejercicio en las
+  sesiones de sus fechas (un rango si difieren). Suma una lectura del comparador (API-TRN-21 en tramos de 92 días y
+  API-SER-01 por versión, compartidas en vuelo y sin caché); si falla, las versiones van sin ese rótulo. *Alternativa:*
+  lo indicado solo para las series que usó la regla de cada sesión, que es lo que hace la rama B en su primera línea.
+- **GR-V03 · «El plan indica 1 repetición menos» en GR-24:** va debajo de la diferencia, que conserva su número con
+  signo; lo indicado de cada etapa es el de las sesiones que ejecutaron esa versión, para la serie de la métrica. Vale
+  para las repeticiones, el RIR («el plan indica RIR 1 (antes 2)») y la carga sugerida («el plan sugiere 2,5 kg más»).
+  *Alternativa:* reemplazar el número por palabras («1 repetición menos en B»).
+- **GR-V04 · «Ver las N anteriores» en GR-01:** se arman todas las veces de los mismos 91 días que ya se leían (sin otra
+  lectura; antes, hasta 12, y el botón contaba mal) y se ven las tres últimas. El botón cuenta filas, no sesiones: el
+  mismo ejercicio dos veces en una sesión son dos. Con una sola unidad, la unidad va una vez arriba y cada ficha sin ella; con kg y lb
+  a la vez, cada ficha dice la suya. *Alternativa:* «Ver más» que abra el historial del ejercicio (rama B).
+- **GR-V05 · GR-16 lee toda la historia (reemplaza el tope de GR-T74):** sin tope de tramos de 92 días; se leen solo los
+  tramos con tomas, de a pocos a la vez. Cada tramo es una lectura protegida que cuenta para el cupo del profesional:
+  Diego Sosa, con tres años de tomas, suma unos trece. *Alternativa:* un tope más alto (16 tramos, cuatro años).
+- **GR-V06 · GR-16 en puntos y sin la edad:** la resta de una medida en porcentaje se escribe en puntos; la edad al
+  momento de la toma sale de la tabla (no es una medida para restar; sigue en la toma).
+- **GR-V07 · El cuadro lateral del editor** mide 480 px hasta 1280, 560 a 1440 y 640 a 1920: el del ejercicio y también
+  «Agregar ejercicio».
+- **GR-V08 · La frase fija al pie de GR-24** reemplaza «Coincidencia temporal: no indica causa.»; el límite de la pregunta
+  («no se restan totales de duraciones distintas…») va a «Cómo leerlo». El pie de los gráficos de «Analizar» fuera de
+  GR-24 sigue como estaba: es de la rama D.
+- **GR-V09 · Los rótulos de los puntos:** el elegido, el último y, con cuatro puntos o más, el máximo y el mínimo, en 12
+  px; uno que pisaría a otro (o a un número del eje) no se dibuja. La leyenda corta («Registrado», «Subtotal») lleva el
+  sentido entero para el lector de pantalla («Registrado: lleno»).
+- **GR-V10 · El eje vertical de la base:** pasos de 1, 2 o 5 por una potencia de diez (y 25, 250…, nunca 2,5, que deja
+  «102,5»), de 3 a 5 marcas, con los extremos en la primera y la última. Cambia los extremos de los carriles (antes, tres
+  marcas con la del medio); el rango mínimo del catálogo (10 kg o 22 lb para el 1RM) sigue mandando.
+- **GR-V11 · La tabla de origen de la fuerza:** las 8 filas más recientes a la vista (y la elegida, si es más vieja), con
+  «Ver las N filas»; con menos de 900 px van sin «Quién la escribió» ni «Banda» (lo que dicen pasa al lado del valor:
+  «la observaste vos», «orientativa») y con menos de 600, también sin las repeticiones equivalentes, que están en «Cómo
+  se calculó».
+- **GR-V12 · La lectura de los paneles sin una fecha elegida** dice lo último registrado de cada carril, con su fecha
+  («Lo último · Peso: 79,5 kg (10 nov) · Calorías: 2.150 kcal (14 nov)»), no una instrucción ni una sola fecha para
+  todos: cómo se recorre con el teclado está en el nombre del gráfico y en «Cómo leerlo». La región viva cambia con un
+  clic, un toque o el teclado, no al pasar el mouse (revisión de #283).
+- **GR-V13 · Las fechas del eje** van abreviadas («3 nov», «nov») y con el año solo en la primera marca y en enero, si el
+  período cruza un año. Los textos (la tabla, los tramos sin registros) siguen con «3/11».
+
+#### Lo que no quedó como pide la especificación
+
+- **Los colores de las áreas:** el website no tiene tokens por área; los gráficos siguen con los de las métricas
+  (`--metrica-1` a `--metrica-3`), sin verde ni rojo. Sumar tokens de área pide medir el contraste en los dos temas
+  (`scripts/contraste.test.cjs`) y queda para una pasada con Dirección.
+- **§5 manda sobre la guía visual** (revisión de #283): la guía llevaba a «Cómo leerlo» el rango de validez y el ruido del
+  RIR de la fuerza estimada, el método con un solo carril y las notas de la base. Quedan a la vista; a «Cómo leerlo» va
+  la fórmula, lo que no entra y las aclaraciones.
+- **Los gráficos grandes de GR-24 («Abrir estos gráficos en grande») y el pie de «Analizar»** siguen como estaban: son de
+  la rama D, que los pasa al catálogo y a los paneles alineados de la base.
+- **El eje de un gráfico chico de GR-24 con dos valores enteros seguidos** (las repeticiones, 3 y 4) queda con dos marcas:
+  sumar una afuera cambiaría la escala del dibujo, que es la del Resumen (`geometriaDelMinigrafico`).
+- **«Cómo leerlo» lleva la flecha de BE** delante de su «i», como todo desplegable sin clase propia del website: se dejó así
+  para que se lea igual que los demás.
+
+#### Revisión de #283 (15/11)
+
+Una revisión con las reglas de §5 delante encontró que la guía visual, en algunos lugares, escondía lo que §5 pide a la
+vista. §5 manda. Lo alto y lo medio quedó arreglado, cada uno con su prueba; de lo bajo, lo que costaba poco.
+
+| Hallazgo | Qué se hizo | Prueba |
+|---|---|---|
+| GR-24 por semana: la media sin su cantidad a la vista; los subtotales contados en silencio; la barra clara sin explicar; hoy en el «de 7» y una semana con solo hoy dibujada vacía con un punto encima (§5.4, §5.13) | La lectura a la vista, con el teclado, el toque y el lector; llena solo 7 de 7, hueca con contorno; tira de cobertura y leyenda; hoy fuera de la media y del denominador, dicho | TEST-GRV-004 y 013 |
+| GR-24: la semana sin datos como raya sobre el cero | Columna gris de todo el alto (también en la base) | TEST-GRV-013 y 018 |
+| GR-24: una barra que mezcla A y B | Las semanas se parten en el cambio de etapa | TEST-GRV-014 |
+| GR-24: contraste de las barras en Azul noche (2,1:1) | Llena a 3:1 contra la superficie y contra la hueca en los dos temas; los puntos de los días también | TEST-GRV-013 |
+| GR-24: la descripción para el lector con «la primera…; la última…» | Sin primero ni último | TEST-GRV-019 |
+| Fuerza: el rango de validez y el ruido del RIR en «Cómo leerlo», cerrado; «la más baja… la más alta…» como primero → último y mezclando orientativas (§5.6, §5.12) | Rango de validez y ruido a la vista, el ruido antes que «La anterior»; sin la línea del período | TEST-GRV-012 |
+| Fuerza y base: el cambio de lo indicado solo en el SVG | En el nombre del gráfico, en la lectura y a la vista si no entra | TEST-GRV-012 y 017 |
+| Lo indicado: contra la última versión con sesiones y por fecha | Contra la inmediata anterior y por `planVersionId`; sin rótulo si la anterior no tiene sesiones | TEST-GRV-016 |
+| Base con un solo carril: el método y las notas en «Cómo leerlo» (§5.6) | Método en la línea tenue; todas las notas a la vista | TEST-GRV-008 y 018 |
+| Base: «Lo último» de una sola fecha; la región viva siguiendo al mouse | Lo último de cada carril con su fecha; la región viva solo con clic, toque o teclado | TEST-GRV-018 |
+| Base: un subtotal o una carga rápida rotulados como el mínimo | Los extremos, de lo registrado lleno | TEST-GRV-018 |
+| Ejes: números repetidos en rangos chicos; «80,5» cortado entre «80» y «81» | Hasta 4 decimales; las marcas del medio solo en la grilla de los extremos y con sus decimales | TEST-GRV-015 |
+| GR-01: «Ver 9 sesiones más» con doce armadas; la unidad que cambiaba al abrir; «En tus planes» como si fuera lo indicado | Todas las veces de lo leído; una unidad para toda la lista; «Lo registrado por…» | TEST-GRV-011 y 020, TEST-GR-001 |
+| GR-04: «47 sesiones · 9 nov» como «desde el 9 nov»; qué cuenta detrás de una «i» | «la última, 9 nov»; qué cuenta, a la vista; «Cómo se cuenta» escrito | TEST-GR-004 |
+| Lo bajo que se arregló: la leyenda que confundía subtotal y orientativa, «De 10 a 12» que pisaba «Hasta 10», «sep» y «sept», las fechas del pie pegadas, el modo que no volvía al cambiar de etapas, el glifo de línea sobre las barras, la tabla de origen sin marcar el salto, el año en el eje de la fuerza, «Cómo leerlo» sin nombre de su gráfico y el del pie que saltaba de lugar al abrirse | — | TEST-GRV-006, 009, 012, 013 y 014 |
+
+**Lo bajo que queda, con su porqué:** GR-16 dice «−8,9 puntos» (no «puntos porcentuales»: la columna es angosta y la
+fila tiene «18,8 %» en «Esta toma», al lado); GR-16 sigue leyendo toda la historia (GR-V05; un tramo que falla
+deja la tabla en error con «Reintentar»); con un lector en modo exploración las flechas del gráfico de la fuerza las toma
+el lector (la tabla de origen elige cada fecha con un botón); en GR-24 Entrenamiento lo indicado va en la celda de la
+diferencia, rotulado («el plan sugiere…»), y las fichas de GR-01 no muestran «S1» a la vista (el lector lo oye).

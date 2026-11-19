@@ -5,8 +5,9 @@
  * - **Es el mismo borrador que la estación:** el asistente no guarda en qué paso quedó; el paso pedido vive en la
  *   dirección (\`asistente=N\`) y el sugerido se deduce de la estructura, como en Entrenamiento (EDT-13).
  * - **Paso 2, el objetivo (DJ-7):** el vigente se llama «Objetivo general», con su versión y su fecha; o se escribe una
- *   versión nueva, como hoy (REG-06-123). El reparto se escribe en gramos y ningún texto de Nutrición dice «%». Sin
- *   objetivo, el asistente no ofrece el paso 2: empieza por la evaluación (B10-06; DL-145).
+ *   versión nueva, como hoy (REG-06-123). El reparto se escribe en gramos; el «%» de las kcal se ve solo con su base y
+ *   su número al lado (NUP-D08 y NUP-D11), nunca como cumplimiento. Sin objetivo, el asistente no ofrece el paso 2:
+ *   empieza por la evaluación (B10-06; DL-145).
  * - **Paso 4, las comidas:** la estructura del día o una comida habitual. **Paso 5, las opciones:** cada una se arma en el
  *   cuadro de la opción (ED-31).
  */
@@ -115,6 +116,8 @@ export const COPY_ASISTENTE_DE_NUTRICION = {
   opcionesAyuda: 'La persona elige una opción en cada comida. Cada opción se arma en su cuadro, con el buscador adentro.',
   editarLaOpcion: (opcion: string) => `Armar ${opcion}`,
   agregarOpcion: (comida: string) => `Agregar una opción de alimentos a ${comida}`,
+  // NUP-13: al lado, la opción de receta (las otras dos usan los textos de la comida del editor).
+  opcionDeReceta: '+ Opción de receta',
   receta: 'Receta',
   sinAlimentos: 'sin alimentos',
   // Paso 6 y 7
@@ -124,7 +127,8 @@ export const COPY_ASISTENTE_DE_NUTRICION = {
   nadaSinCompletar: 'No queda nada sin completar.',
   impiden: 'Lo que impide activar',
   sinCompletar: 'Lo que queda sin completar',
-  irEnLaEstacion: 'Ir a corregirlo en la estación',
+  // NUP-14: «estación» es jerga del código; para el profesional, es el plan.
+  irEnLaEstacion: 'Corregirlo en el plan',
   rangosIndicados: 'Rangos de macronutrientes (opcional)',
   rangosIndicadosAyuda: 'Si querés, indicá un rango para el día o para cada comida, en gramos o en gramos por kilo. No impide activar.',
   activar: 'Activar la versión',

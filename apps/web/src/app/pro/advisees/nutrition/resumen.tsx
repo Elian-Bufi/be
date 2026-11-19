@@ -27,6 +27,7 @@ import { datosDe, fallo, LecturasParciales, SegunLectura, type Lectura } from '.
 import { useNutricion } from './nutricion';
 import { numerosDeVersion } from './plan';
 import { FormularioDeEvaluacion, FormularioDeObjetivo } from './formularios';
+import { ContextoCitado } from '../training/resumen';
 import { useNombres } from '../../../../lib/nombres-ocultos';
 
 interface Lecturas {
@@ -206,7 +207,19 @@ function Resumen({
           <div>
             <dt>Última evaluación</dt>
             <dd>
-              <SegunLectura lectura={evaluaciones}>{(lista) => (lista[0] ? dia(lista[0].occurredAt) : 'Sin evaluaciones registradas.')}</SegunLectura>
+              <SegunLectura lectura={evaluaciones}>
+                {(lista) =>
+                  lista[0] ? (
+                    <>
+                      {dia(lista[0].occurredAt)}
+                      {/* DL-179: lo que cita la última evaluación, como en Entrenamiento. */}
+                      {lista[0].formResponseReferences.length > 0 ? <ContextoCitado citas={lista[0].formResponseReferences} /> : null}
+                    </>
+                  ) : (
+                    'Sin evaluaciones registradas.'
+                  )
+                }
+              </SegunLectura>
             </dd>
           </div>
           <div>

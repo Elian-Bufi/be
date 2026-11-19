@@ -228,8 +228,10 @@ test('TB-48 · los editores duplican y mueven con el módulo, y lo abierto sigue
   assert.match(comida, /onClick=\{\(\) => alDuplicarOpcion\(k\)\}/);
   // Entrenamiento: la sesión en su menú; el ejercicio con «Subir», «Bajar» y «Duplicar ejercicio».
   for (const clave of ['duplicarSesion', 'moverAntes', 'moverDespues']) assert.match(entrenamiento, new RegExp(`texto: E\\.${clave}`));
-  assert.match(entrenamiento, /dejarAbiertos\(posicionesTrasMover\(abiertos, l, hacia\)\)/);
-  assert.match(entrenamiento, /onSubir=\{\(\) => moverEjercicio\(l, l - 1\)\}/);
+  // DL-181: se mueve dentro de su bloque o saltando un bloque entero (`bloques-del-editor.ts`); lo abierto sigue a cada
+  // ejercicio por su posición de antes.
+  assert.match(entrenamiento, /dejarAbiertos\(abiertosTrasReordenar\(abiertos, r\.desdeDonde\)\)/);
+  assert.match(entrenamiento, /onSubir=\{\(\) => moverEjercicio\(l, -1\)\}/);
   assert.match(ejercicio, /aria-disabled=\{esElUltimo \|\| undefined\} onClick=\{\(\) => !esElUltimo && onBajar\(\)\}/);
   assert.doesNotMatch(ejercicio + comida, / disabled=\{es(La|El)(Primer|Ultim)/, 'ningún «Subir» ni «Bajar» con disabled');
   assert.match(ejercicio, /\{ clave: 'duplicar', texto: EDICION\.duplicarEjercicio, alElegir: onDuplicar \}/);
@@ -269,7 +271,7 @@ test('TB-48 · el microciclo se ofrece también con sesiones sueltas, que pasan 
   assert.equal(normalizarEntrenamiento({ blocks: [{ ...organizado, sessions: bloque.sessions }] }).ok, false, 'mutación: las sesiones quedan también en el bloque');
   assert.deepEqual(X.organizadoEnMicrociclos({ label: 'Vacío', sessions: [] }).microcycles, [{ label: 'Semana 1', purpose: null, sessions: [] }]);
   assert.equal(X.loQuePasaConLasSesiones(0), null);
-  assert.equal(X.loQuePasaConLasSesiones(3), 'Las 3 sesiones del bloque pasan a «Semana 1».');
+  assert.equal(X.loQuePasaConLasSesiones(3), 'Las 3 sesiones de la fase pasan a «Semana 1».');
   const entrenamiento = leer('training/editor.tsx');
   assert.match(entrenamiento, /cambiar\(\(x\) => \(\(x\[i\] = organizadoEnMicrociclos\(x\[i\]!\)\), x\)\)/);
   assert.match(entrenamiento, /detalle: loQuePasaConLasSesiones\(sesiones\.length\),\s+noSePuede: sesiones\.length > TOPES_DE_ENTRENAMIENTO\.sesionesDelMicrociclo/);

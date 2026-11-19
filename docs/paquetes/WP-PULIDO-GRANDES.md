@@ -2,8 +2,8 @@
 
 > **Estado:** DECLARADO el 2026-11-13, sin programar. Las partes PG-01 a PG-19 y el calendario (§3) son el pedido de
 > Dirección. Las decisiones PG-D1 a PG-D15 (§5) están **a ratificar**: mientras no haya respuesta, rige la
-> recomendación de cada una, salvo en las que lo dicen (PG-D10 y PG-D11 esperan el sí antes de programar su
-> parte; PG-D1 la decidió Dirección el 2026-11-13). DL-173.
+> recomendación de cada una. Tres ya las decidió Dirección: PG-D1, el 2026-11-13, y PG-D10 y PG-D11, el 2026-11-14
+> («Tienes mi sí para las notas»). DL-173.
 >
 > **Encargo** (Dirección, 2026-11-13):
 > - de la página «Pulido como las grandes», Dirección eligió quince ideas y pidió: «Armá el paquete con sus IDs y decime
@@ -90,7 +90,8 @@ contraseña todos los días», «Los recordatorios, a la hora que te sirve», «
 «Modo cocina» y «Comparar dos tomas que elijas». Siguen en el catálogo para otra vuelta. El continuador recomienda
 volver a mirar la primera antes del 25/11 (§8).
 
-**Tampoco entra:** el paquete de gráficos que se está investigando. PG-18 se diseña junto con él.
+**Tampoco entra:** el paquete de gráficos que se estaba investigando, declarado el 2026-11-14 como WP-GRAFICOS
+(DL-174). PG-18 se diseña junto con él, y PG-11 es la misma pieza que su GR-01 («La vez pasada»).
 
 ## 3. El calendario
 
@@ -103,8 +104,9 @@ Hoy es el viernes 13/11. La entrega es el miércoles 25/11.
 | **Después del 25/11** | Sin fecha | PG-18 y PG-19 | «Tu ejercicio en el tiempo», con el paquete de gráficos, y «Lo que anotás sin señal», que es grande |
 
 **Las reglas del calendario:**
-- **Congelamiento:** desde el lunes 23/11, solo arreglos. Nada nuevo entra a `main` después de esa fecha hasta la
-  entrega.
+- **Sin congelamiento desde el 2026-11-14.** Dirección: «Todo se integra lo antes posible una vez que esté aprobado, no retrasamos las cosas por la planificación, si adelantamos la producción se adelanta todo». Cada parte entra apenas queda aprobada (la revisión
+  sin altas ni medias pendientes y la CI en verde), y la APK sale apenas `main` tiene algo que la justifique: la 0.28
+  salió el 14/11. *Antes:* desde el lunes 23/11, solo arreglos.
 - **Si una parte de la B no está estable el viernes 20/11, pasa a después del 25/11.** «Estable» quiere decir: sus
   criterios de aceptación cumplidos, su oráculo en verde con su mutación, la CI en verde y probada en el teléfono o en el
   website de `test`.
@@ -247,6 +249,10 @@ regla a propósito, la prueba se pone en rojo y se vuelve atrás.
   - los tres pasos están en castellano, con la marca elegible y su dibujo;
   - con el ancho de un teléfono, no hay QR y no hay desplazamiento horizontal.
 - *Lo que NO hace:* no publica en Google Play; no cambia cómo se construye ni cómo se firma la APK; no pide datos.
+- *Desde el 2026-11-14* (Dirección: «Tiene que tener el QR para descargar y un botón de descarga también»): en la
+  compu, la portada muestra el QR **y** el botón «Bajar BE», uno al lado del otro; con el ancho de un teléfono, sigue
+  solo el botón, a todo el ancho (#270, TEST-PG-005). El enlace chico «O bajá el archivo en esta compu» (PG-T32) salió:
+  lo reemplaza el botón.
 
 **PG-07 · La página «no encontrada», con la voz de BE**
 - *Qué ve la persona:* «Esta página no existe. Si venías de una invitación, pedile a tu profesional un enlace nuevo»,
@@ -435,6 +441,11 @@ regla a propósito, la prueba se pone en rojo y se vuelve atrás.
   - una prueba fija que la hoja no imprime la navegación (mutación: sacar la regla de impresión).
 - *Lo que NO hace:* no genera un archivo en el servidor; no manda el plan por correo ni por WhatsApp; no imprime la
   evolución ni las medidas.
+- *Desde el 2026-11-14* (el mismo pedido de Dirección que PG-06: «Tiene que tener el QR para descargar y un botón de
+  descarga también»): el PDF lleva el QR de la app, para bajarla, y la pantalla del plan, un botón de descarga, como la
+  portada (PG-06). El QR sigue sin datos de la persona (PG-D12). Si el QR lleva directo al archivo de la última
+  publicación (DL-169, UF-00) o a la dirección de PG-D12, que abre el plan en la app y sin ella ofrece bajarla, se
+  define al programar PG-17 y se anota con PG-D12.
 
 ### 4.3 Después del 25/11
 
@@ -473,7 +484,8 @@ regla a propósito, la prueba se pone en rojo y se vuelve atrás.
 ## 5. Lo que decide Dirección (PG-D)
 
 Son propuestas del continuador, cada una con su recomendación y su alternativa, **a ratificar**. Mientras no haya
-respuesta, rige la recomendación, salvo en PG-D1, PG-D10 y PG-D11, que esperan el sí antes de programar su parte.
+respuesta, rige la recomendación. PG-D1 (el 2026-11-13) y PG-D10 y PG-D11 (el 2026-11-14) ya las decidió Dirección: PG-15
+y PG-16 se pueden programar.
 
 - **PG-D1 · Inicio con varias sesiones** · **decidida por Dirección el 2026-11-13: la que sigue y «Otra sesión»; revisa DL-077 para Inicio.**
   - *Recomiendo:* la tarjeta con la que sigue en el orden del plan, después de la última registrada, y «Otra sesión»
@@ -519,12 +531,14 @@ respuesta, rige la recomendación, salvo en PG-D1, PG-D10 y PG-D11, que esperan 
     («en 2 semanas») y las revisiones marcadas, en otra vuelta.
   - *Alternativa:* todo junto, como en el catálogo. Corre el riesgo de no llegar al 17/11, y el congelamiento del 23/11
     deja poco margen.
-- **PG-D10 · Dónde viaja la nota para tu profe** · **a ratificar (espera el sí).**
+- **PG-D10 · Dónde viaja la nota para tu profe** · **aprobada por Dirección el 2026-11-14 («Tienes mi sí para las
+  notas»): rige la recomendación.** Lo programado está en §11.
   - *Recomiendo:* las dos operaciones nuevas de PG-15 (API-TRN-25 y su lista), aparte de confirmar la sesión. Las APK
     instaladas no cambian, y si la nota falla, la sesión ya quedó registrada.
   - *Alternativa:* un campo opcional en API-TRN-18. Es una operación menos, pero cambia lo que manda la APK al confirmar
     y va contra DL-137 D-7.
-- **PG-D11 · Quién ve las notas propias del profesional** · **a ratificar (espera el sí).**
+- **PG-D11 · Quién ve las notas propias del profesional** · **aprobada por Dirección el 2026-11-14 («Tienes mi sí
+  para las notas»): rige la recomendación: solo su autor, y entran en la exportación de la persona.** Lo programado está en §11.
   - *Recomiendo:* solo su autor. La persona no las ve en la app, pero entran en lo que puede pedir de sus datos: son
     datos sobre ella (derecho de acceso).
   - *Alternativa:* que la persona las vea siempre, en «Quién ve qué». Es más transparente, pero el profesional deja de
@@ -599,7 +613,9 @@ Al programar, en `WP-PULIDO-GRANDES-ORACULOS.md`, con los trece campos del 11A. 
   - WP-EDITORES-PROFESIONAL (DL-167): PG-10, PG-14 y PG-16 van sobre los editores integrados;
   - la portada sin la palabra prohibida (#266): PG-06 cambia la misma sección de la portada. Se programa después
     de que #266 se integre, para no pisarse;
-  - el paquete de gráficos (en investigación): PG-18.
+  - WP-GRAFICOS (DL-174, declarado el 2026-11-14): PG-18 usa sus marcas y su función de comparabilidad; PG-11 y su
+    GR-01 son la misma pieza («La vez pasada»); las notas de PG-15 y PG-16 entran en su cinta del tiempo (GR-23), y su
+    rama con API (los enfoques) se integra después de la tanda B.
 - **Lo que el continuador recomienda mirar antes del 25/11, fuera de este paquete:** «Si algo se rompe, BE no se cierra
   y te deja avisar». Es el seguro de la entrega: hoy un error de dibujo cierra la app. Queda a decisión de Dirección.
 
@@ -650,6 +666,8 @@ se declara), los dos de la línea 57 del SDK.
 
 ### 9.2 Lo que falta para cerrar la tanda A en la APK
 
+**Publicada el 2026-11-14 como la 0.28.0-candidata.1 (latest, con `be.apk`; versionCode 42; commit 7729c2b).** Dirección pidió no esperar al calendario: «Todo se integra lo antes posible una vez que esté aprobado». El AAB y la APK dieron todo bien en la PC de Dirección, con la 0.27 como referencia, y lo que lee la 0.28 quedó congelado (`packages/domain/fixtures/lecturas-de-la-apk/0.28.0-candidata.1.json`): las mismas 98 operaciones que la 0.27. Lo que sigue de esta lista se prueba sobre la 0.28.
+
 - Probarlo en el teléfono: la letra ×1,3 en Inicio y en la cabecera, TalkBack en las seis partes, la pantalla encendida
   con el teléfono apoyado, la háptica en un Android 10 y en uno nuevo, y el gesto de tirar en las cuatro pantallas.
 - La medición de cuadros de PG-04 (percentil 90 frente a la 0.27, como en AV2-16): sin teléfono no se puede medir. Si
@@ -688,7 +706,7 @@ editor (TB-48 y TEST-EDP-026) cambian solo la forma del cálculo que leen: ahora
 **Decisiones nuevas, a ratificar:**
 - **PG-T30 · La marca de los pasos:** arranca en Samsung, la más común acá, y se cambia con un toque. *Alternativa:* adivinarla por el navegador (poco confiable).
 - **PG-T31 · La línea de la versión:** «Versión 0.28.0 · 85 MB», con la etiqueta tal cual (si la última es candidata, lo dice) y el tamaño en megabytes de mil, como lo dice Android al bajar.
-- **PG-T32 · En la compu, también el archivo:** debajo del QR, un enlace chico «O bajá el archivo en esta compu». El botón grande es solo para el ancho de un teléfono, y en `test` conserva el aviso de prueba de UF-08.
+- **PG-T32 · En la compu, también el archivo:** debajo del QR, un enlace chico «O bajá el archivo en esta compu». El botón grande es solo para el ancho de un teléfono, y en `test` conserva el aviso de prueba de UF-08. **Reemplazada el 2026-11-14 (#270), por pedido de Dirección:** en la compu, el botón «Bajar BE» va al lado del QR y el enlace chico salió (PG-06).
 - **PG-T33 · Lo que impide activar no se agrupa:** cada cosa sigue con su «Ir a corregir» y el principal cuenta lo mismo. Se agrupa lo sin completar. *Alternativa:* agrupar también lo que impide, contando el grupo como una cosa.
 - **PG-T34 · «Completar»:** solo para las series sin repeticiones; acepta un número o un rango («8-12», el menor primero); escribe solo las vacías y se deshace con el «Deshacer» del editor. No aparece para otros motivos.
 - **PG-T35 · Cómo se dice el rango:** tres o más series seguidas van con «a» («series 1 a 4»); dos seguidas se nombran («series 1 y 2»).
@@ -707,3 +725,201 @@ editor (TB-48 y TEST-EDP-026) cambian solo la forma del cálculo que leen: ahora
 3. **El código 404 en `test`** se mide después de integrar, con una dirección inventada.
 4. **La mirada en pantalla** (Azul noche y Claro, 360 y 1440 px, el QR a 30 cm en 1366 × 768, el lector de pantalla en el calendario): queda para la evidencia de la tanda, con el website de `test`.
 5. `/invitacion` sigue ofreciendo la página de publicaciones si no hay app: lo cambia PG-17 (tanda B).
+
+## 11. Lo programado · tanda B · las notas (rama `wp-pulido-b-notas`)
+
+> Programado el 2026-11-14 sobre `main` `1089fc24`, con PG-D10 y PG-D11 aprobadas por Dirección ese mismo día («Tienes mi
+> sí para las notas»). PR #271, sin integrar. Cubre PG-15 y PG-16 en la API, el website y la APK, con una sola migración
+> que solo agrega: es la ventana de redespliegue de la API de la tanda B (§3). Las decisiones nuevas (PG-T60 a PG-T73)
+> están **a ratificar**; mientras tanto, rige lo programado.
+
+| Parte | Qué quedó | Dónde | Oráculo |
+|---|---|---|---|
+| PG-15 · API | **API-TRN-25** `POST /training/executions/{executionId}/notes`: la persona agrega una nota a una sesión suya ya registrada, hasta 280 caracteres, con Idempotency-Key, solo agrega (hasta 20 por sesión). **API-TRN-25-LISTA** `GET /advisees/{adviseeId}/training/execution-notes`: el profesional de Entrenamiento lee las de las sesiones de sus planes, por período (hasta 92 días). **API-TRN-25-PROPIA** `GET /me/training/executions/{executionId}/notes`: la persona lee las suyas. API-TRN-18 no cambia | `entrenamiento/notas-de-la-sesion.service.ts` y `.controller.ts` | TEST-PG-014 |
+| PG-15 · website | En Registros de Entrenamiento, la fila dice «Con nota» (un rótulo, sin color de alarma ni contador) y el detalle de la sesión muestra «Lo que contó la persona al terminar», con su hora. Se lee aparte, con el mismo período: si falla, las sesiones se ven igual | `training/ejecuciones.tsx` | TEST-PG-014 |
+| PG-15 · APK | «¿Algo para contarle a tu profe?» en la pantalla de la sesión ya registrada (la que abre «Finalizar», con «Sesión registrada» arriba, y la de cada sesión de «Tu historial»): tres frases a un toque y un campo corto. Se manda aparte, con su clave; «Le contaste a tu profe» solo con la respuesta; si falla, «No se mandó» con «Reintentar» y la sesión sigue registrada. Finalizar no cambia | `nota-para-tu-profe.ts`, `pantallas/nota-para-tu-profe.tsx`, `pantallas/entrenamiento.tsx` | TEST-PG-014 |
+| PG-16 · API | Familia propia **NPP**: **API-NPP-01** `POST /advisees/{adviseeId}/professional-notes` (hasta 1000 caracteres, sin ancla o atada a un ejercicio del catálogo o a una comida por su nombre), **API-NPP-02** `GET` de la misma ruta (las propias, activas y archivadas, hasta 200) y **API-NPP-03** `POST /professional-notes/{noteId}/archive`. Solo el autor, mientras acompaña a la persona en algún área; el ancla pide su área. Cada ancla dice si hoy está en el plan (`inPlan`) | `notas-propias/` (servicio, controlador, ejecutor y módulo); `entrenamiento/catalogo.service.ts` (`ejercicioCitable`) | TEST-PG-015 |
+| PG-16 · website | «Tus notas» en el Resumen de la ficha, después de las notas del equipo, en las tres disposiciones: qué son, escribir, la lista con su fecha y su ancla («Del ejercicio X, que ya no está en el plan»), «Archivar» y «Archivadas (n)» plegado. En los dos editores (DL-167), una sola lectura por editor: las notas al lado de cada ejercicio y cada comida, con el candado de «solo vos», y «Anotar sobre este ejercicio» o «… esta comida» en su menú, con el cuadro enfocado | `seguimiento/tus-notas.tsx`, `notas-propias.tsx`, `training/ejercicio-del-editor.tsx`, `nutrition/comida-del-editor.tsx`, los dos `plan.tsx` | TEST-PG-015 |
+| La base | Una migración que solo agrega un tipo y tres tablas (`nota_de_ejecucion`, `nota_propia` y `archivo_de_nota_propia`), de solo agregar (trigger), con sus guardias: la nota de una sesión es de la persona que la registró; el ancla es coherente con su tipo; una nota propia la archiva su autor, una sola vez | `prisma/migrations/20261114120000_notas_de_la_sesion_y_propias` | TEST-PG-014 y 015 |
+| La exportación | Suma `notasPropiasDeSusProfesionales` (siempre, con el autor, el ancla y si se archivó; PG-D11) y `entrenamiento.notasParaSuProfesional` | `derechos/exportacion.ts` | TEST-PG-015 |
+| El contrato | Las seis operaciones en `openapi.ts`, el OpenAPI al día y el cliente compartido. La guardia de trazabilidad declara la familia NPP con DL-173, y API-TRN-25 como un ID nuevo de la familia TRN del 09 (que llega a API-TRN-24), con sus sufijos LISTA y PROPIA | `packages/domain`, `scripts/trazabilidad-de-operaciones.test.cjs` | TEST-CT |
+
+**Oráculos.** TEST-PG-014 y TEST-PG-015 viven en cuatro lugares: la parte pura en `packages/domain/src/notas-propias.test.ts`;
+la de la APK en `apps/mobile/src/nota-para-tu-profe.test.ts`; la del website en `apps/web/test/pulido-grandes.test.mjs`; y la
+de la API, contra PostgreSQL, en `test/integration/notas-pulido-grandes.int-spec.ts` (permiso, idempotencia, el largo, que
+solo agrega, el autor, archivar, sin vínculo, el ancla y la exportación). TEST-PG-019 suma los archivos nuevos a
+`scripts/copy-pantallas.test.cjs`, con todas las listas.
+
+| Oráculo | Mutación | Resultado |
+|---|---|---|
+| TEST-PG-014 (dominio) | Las notas de una sesión, de la más nueva a la más vieja | rojo |
+| TEST-PG-014 (APK) | Mandar la nota dentro de `finalizar()` | rojo |
+| TEST-PG-014 (APK) | Dar por enviada una nota sin respuesta del servidor | rojo |
+| TEST-PG-014 (APK) | Tratar el 404 (sin acceso) como reintentable | rojo |
+| TEST-PG-014 (APK) | Las frases en el orden en que se tocaron | rojo |
+| TEST-PG-015 (dominio) | Comparar las comidas sin sacar las tildes | rojo |
+| TEST-PG-015 (dominio) | Una archivada al lado de su ejercicio | rojo |
+| TEST-PG-015 (dominio) | «Sobre…» cuando el ejercicio ya no está en el plan | rojo |
+| TEST-PG-015 (website) | Sacar «Tus notas» de una disposición del Resumen | rojo |
+| TEST-PG-015 (website) | Leer las notas en cada ejercicio | rojo |
+
+Las mutaciones de la API (dejar leer las notas de las sesiones a otra área, filtrar las notas propias por la persona y no
+por el autor, dejar que el profesional del plan escriba por la persona, borrar al archivar) quedaron **descritas en la
+prueba y sin correr**: piden la base de la CI. Las de la APK se corrieron sobre el módulo transpilado, con las mismas
+comprobaciones de su prueba.
+
+**Decisiones del continuador, a ratificar:**
+- **PG-T60 · Quién escribe la nota para el profe y con qué permiso:** solo la persona de la sesión, con el permiso con
+  que corrige su registro (el PDP del par con su profesional). El profesional del plan la lee y no escribe por ella (el
+  mismo 404 que lo ajeno). *Alternativa:* solo con el A3 de la persona; quedaría guardada aunque el profesional ya no la
+  pueda leer.
+- **PG-T61 · Hasta 20 notas por sesión** (después, 422 VALIDATION_FAILED con NOTE_LIMIT_REACHED), contadas con la
+  ejecución tomada. *Alternativa:* sin tope.
+- **PG-T62 · Las frases a un toque se suman al texto**, en el orden de la lista y cada una con su punto; la API guarda
+  solo el texto. *Alternativa:* guardarlas aparte, como datos; se podrían contar, y eso es calificar.
+- **PG-T63 · Dónde se escribe en la APK:** en la pantalla de la sesión ya registrada, a la que lleva «Finalizar», y no en
+  el cuadro de «Finalizar». Así la nota nunca está en el camino de confirmar, y sirve también desde «Tu historial».
+  *Alternativa:* el renglón en el cuadro de «Finalizar», mandado después de confirmar.
+- **PG-T64 · API-TRN-25-PROPIA:** la persona ve lo que le mandó a su profe, con su A3, como «Tu historial». No estaba en
+  §4.2. *Alternativa:* sin lectura; lo enviado se vería solo mientras la pantalla está abierta.
+- **PG-T65 · API-TRN-25-LISTA por período**, el mismo de Registros (hasta 92 días): una lectura para todas las sesiones
+  a la vista. *Alternativa:* una lectura por sesión, al abrir su detalle.
+- **PG-T66 · Lo que ve el profesional:** «Con nota» en la fila y el texto con su hora en el detalle de la sesión; sin
+  aviso, sin novedad y sin contador.
+- **PG-T67 · El ancla de una nota propia:** un ejercicio del catálogo (no su versión), que aparece en cualquier sesión y
+  versión del plan; una comida por su nombre, sin tildes ni mayúsculas, que aparece en cada día tipo con ese nombre.
+  *Alternativa:* el identificador de la comida en una versión; se pierde en otro día tipo y al copiar.
+- **PG-T68 · «Que ya no está»:** se mira contra la última versión del plan del autor con esa persona en esa área (la que
+  prepara o, si no hay, la vigente). Sin plan de esa área, no se dice.
+- **PG-T69 · API-NPP-02 trae hasta 200 notas**, archivadas incluidas, sin páginas (`page.hasMore` dice si quedaron más).
+  *Alternativa:* paginar.
+- **PG-T70 · Archivar dos veces responde lo mismo**, sin error; en esta vuelta no hay «desarchivar».
+- **PG-T71 · El permiso de una nota sin ancla:** alguna área con la persona (la primera que el PDP permite: Entrenamiento,
+  Nutrición, Antropometría), decidida y registrada para que el reintento vuelva a decidir; con ancla, la del ancla.
+- **PG-T72 · La exportación:** `notasPropiasDeSusProfesionales` va siempre (son datos sobre la persona, PG-D11) y
+  `entrenamiento.notasParaSuProfesional`, con Entrenamiento.
+- **PG-T73 · «Ocultar nombres»:** el texto de las notas propias se oculta hasta «Mostrar en esta pantalla»: la pantalla
+  se está mostrando a otros. Las notas de la persona en Registros se ven como el resto del detalle (como el motivo que
+  escribe la persona). *Alternativa:* mostrarlas igual, como las notas de coordinación.
+
+**Lo que falta para cerrar la parte de las notas:**
+1. Probarlo en el teléfono: la nota al terminar una sesión, con TalkBack (las frases dicen si están elegidas) y la letra
+   ×1,3; sin señal, «No se mandó» y «Reintentar».
+2. La mirada en pantalla del website (Azul noche y Claro, 360 y 1440 px): el bloc, las notas al lado, el cuadro y «Con
+   nota» en Registros, con el lector de pantalla.
+3. Correr las mutaciones de la API con la base de la CI.
+4. `WP-PULIDO-GRANDES-ORACULOS.md` con los trece campos: en modo liviano, como la tanda A, los oráculos quedaron en las
+   pruebas, con su mutación.
+5. Congelar lo que la APK empieza a leer y a escribir (API-TRN-25 y API-TRN-25-PROPIA) con la candidata que la lleve
+   (DL-152): lo hace quien la publica. Si esta rama entra antes de cortar la 0.28, la 0.28 ya trae la nota; si no, va en
+   la 0.29, como dice §3. *Hecho con la 0.29.0-candidata.1 (2026-11-14; ver §12.4).*
+6. La ventana de redespliegue de la API: la migración solo agrega, y la API nueva sale con ella, en un solo cambio.
+
+## 12. Lo programado · tanda B · el resto (rama `wp-pulido-b-resto`)
+
+> Programado el 2026-11-14 sobre `main` `1089fc24`, con el pedido de Dirección de ese día para el plan: «tiene que tener
+> el QR para descargar y un botón de descarga también». Cubre PG-12 y PG-13 (la APK) y PG-17 (el website), y el punto 5
+> de §10. PG-11 va con GR-01, y PG-15 y PG-16 con las notas, en otras ramas. Sin integrar: #272. Las decisiones nuevas
+> (PG-T80 a PG-T90) están **a ratificar**; mientras tanto, rige lo programado.
+
+| Parte | Commit | Qué quedó | Oráculo |
+|---|---|---|---|
+| PG-12 | `2a261551` | `quien-miro.ts` y `pantallas/quien-ve-que.tsx`: debajo del nombre de cada profesional, «Miró tu plan de Nutrición el martes 10 a las 18:20» (la última lectura, por su hora, en 24 h) o «Todavía no miró tu plan de Nutrición» cuando se sabe. La lectura de lo compartido va aparte: si falla, la línea no se dibuja y la tarjeta sigue con sus permisos. `formato.ts` suma `fechaCivilDeUnInstante` | TEST-PG-011 |
+| PG-13 | `990aa333` | `presentacion.ts`, `presentacion-en-el-telefono.ts`, `pantallas/presentacion.tsx` y `App.tsx`: las tres tarjetas después de «Antes de seguir», una vez por teléfono y por cuenta, en lugar de la app y sin la barra ni la campana; «Saltar» en todas, el dedo, «Tarjeta 1 de 3» para TalkBack y sin fundido con «reducir movimiento»; los avisos, solo en la tercera, con «Ahora no». La Bienvenida dice «Tu seguimiento, con tus profesionales» y la línea de la versión y el commit va más chica | TEST-PG-012 |
+| PG-17 | `c8611489`, `02e8dced` | `lib/hoja-del-plan.ts`, `components/hoja-del-plan.tsx`, `pro/advisees/descargar-el-plan.tsx`, la hoja de estilos de impresión de `globals.css` y los tokens `--hoja-*`: «Descargar el plan en PDF» en el plan activo de Nutrición y en el de Entrenamiento, con el QR para bajar la app; `/invitacion`, sin la app, baja el mismo archivo. El segundo commit saca el cambio del título de la pestaña al imprimir (TEST-TAG-004) | TEST-PG-016 |
+| Palabras | `3aa6c1ce` | T13 (`copy-pantallas.test.cjs`) suma los archivos nuevos y los pasa por todas las listas | TEST-PG-019 |
+
+**La API no cambia:** ninguna operación nueva, ninguna migración y nada en `packages/domain`, así que esta rama no
+redespliega la API. La APK empieza a leer `GET /me/summary-sharing` (API-RES-01, que ya devuelve las últimas 50 lecturas
+de lo compartido): **se congela con la candidata que la lleve** (DL-152). La hoja del plan lee, al tocar el botón, el
+Resumen de la ficha (API-DSH-03) para la próxima revisión, con el mismo permiso que el marco del área.
+
+**Sin dependencias nuevas:** el PDF sale de la ventana de impresión del navegador («Guardar como PDF») y el QR, de
+`components/codigo-qr.tsx`.
+
+### 12.1 Decisiones del continuador al programar (a ratificar)
+
+- **PG-T80 · La tercera tarjeta no promete anotar comidas sin plan.** *Elegí:* «Tu profesional arma el plan; mientras,
+  podés contar tus hábitos». Registrar una comida pide el plan activo (el registro de comidas lo lleva siempre), así que
+  lo que decía el paquete no se podía cumplir. La tarjeta dice que con el plan se registra desde Inicio y que, mientras
+  tanto, se cuentan los hábitos en «Mis hábitos». *Alternativa:* dejar registrar comidas sin plan, que es una operación
+  nueva y queda fuera de PG-13.
+- **PG-T81 · Quién ve la presentación.** *Elegí:* toda cuenta, una vez en cada teléfono, también las que ya usaban BE: la
+  ven una vez al actualizar y la saltan con un toque. *Alternativa:* solo las cuentas nuevas, que pide leer la fecha de
+  alta.
+- **PG-T82 · Los avisos en la tercera.** *Elegí:* «Activar avisos» y «Ahora no» del mismo peso (los dos secundarios), y
+  activar hace lo mismo que en Cuenta: el permiso de Android, el registro y, la primera vez, los dos recordatorios. La
+  respuesta se dice con las palabras de Cuenta y sigue «Entrar a BE». *Alternativa:* «Activar avisos» como principal.
+- **PG-T83 · Si el teléfono no deja leer lo visto,** o tarda más de un segundo y medio, cuenta como vista: es mejor
+  perderse la presentación que verla cada vez.
+- **PG-T84 · Qué dice la línea de quién miró.** *Elegí:* lo que miró, sin repetir el nombre, que es el título de la
+  tarjeta: «Miró tu plan de Nutrición el martes 10 a las 18:20». La API registra la lectura del plan de otra área que la
+  persona comparte, y «Lo miró Laura, de Nutrición» se leía como si Laura fuera de Nutrición. La fecha: «hoy», «ayer»,
+  «el martes 10» en el mismo mes, con el mes si es otro y con el año si es de otro año.
+- **PG-T85 · «Todavía no miró», solo cuando se sabe:** con un plan compartido para mirar («resumen y plan») y la lista de
+  lecturas sin llenar (menos de 50). Lo que se comparte solo como resumen no se registra como lectura: de eso no se dice
+  nada, ni que lo miró ni que no.
+- **PG-T86 · El QR de la hoja baja la app** (Dirección, 2026-11-14), el mismo archivo de la portada, en lugar de abrir el
+  plan en la app (la recomendación de PG-D12). No hacen falta `/plan` ni un enlace nuevo en la APK, y la hoja dice qué
+  versión muestra y que lo vigente está siempre en la app. *Alternativa:* el QR a `/plan`, que la APK abriría en el plan.
+- **PG-T87 · Cómo se descarga.** *Elegí:* «Descargar el plan en PDF» abre la ventana de impresión del navegador con la
+  hoja, donde «Guardar como PDF» la descarga; la pista del botón lo dice antes de tocarlo. El título de la pestaña no
+  cambia (TEST-TAG-004), así que el navegador nombra el PDF con el título de siempre. *Alternativa:* armar el PDF en el
+  navegador con una biblioteca, que es una dependencia nueva.
+- **PG-T88 · La próxima revisión de la hoja** es la acordada hoy, la del Resumen de la ficha, leída al tocar el botón
+  (hasta 8 s). Si no contesta, o mientras tanto se activó otra versión, la hoja sale sin esa línea; nunca con la fecha
+  que fijó la versión al activarse, que pudo quedar vieja.
+- **PG-T89 · Con «Ocultar nombres»,** la hoja sale como la pantalla, con la referencia, y antes se avisa cómo sacarla con
+  el nombre. *Alternativa:* imprimir con el nombre aunque la pantalla lo oculte, que lo mostraría en la vista previa.
+- **PG-T90 · Qué lleva la hoja.** Nutrición: todos los días tipo, cada comida con sus opciones y cantidades (y la receta,
+  si la opción sale de una). Entrenamiento: cada bloque y microciclo, con sus sesiones, los días de la agenda si los hay,
+  y cada ejercicio con su renglón, la tabla de series y lo general. Arriba, los datos y el QR; abajo, el día en que se
+  descargó y que lo vigente está en la app.
+
+### 12.2 Oráculos y mutaciones
+
+Los oráculos están en las pruebas: TEST-PG-011 en `apps/mobile/src/quien-miro.test.ts`, TEST-PG-012 en
+`apps/mobile/src/presentacion.test.ts` (los dos con el jest de la APK) y TEST-PG-016 en
+`apps/web/test/plan-en-papel.test.mjs` (con `npm run test -w @be/web`). Las mutaciones se corrieron en la CI, en dos
+ramas descartables, una por superficie (`npm test` corta en la primera que falla), que después se borraron. Cada una pone
+en rojo su prueba:
+
+| Oráculo | Mutación | Resultado |
+|---|---|---|
+| TEST-PG-011 | La línea toma la lectura más vieja de cada profesional en lugar de la última | rojo |
+| TEST-PG-011 | «Todavía no miró» sin mirar el tope de 50 lecturas | rojo |
+| TEST-PG-012 | No guardar lo visto en el teléfono | rojo |
+| TEST-PG-012 | Pedir los avisos sin mirar en qué tarjeta se está | rojo |
+| TEST-PG-016 | Sacar la regla de impresión que esconde lo demás de la página | rojo |
+| TEST-PG-016 | Poner el nombre de la persona en el enlace del QR | rojo |
+| TEST-PG-016 | «Vale desde» con el día UTC en lugar del de Buenos Aires | rojo |
+| TEST-PG-016 | Las comidas sin ordenar | rojo |
+
+TEST-AVR-009 suma la lectura nueva a las de «Quién ve qué», que sigue sin escribir nada, y la prueba de contraste mide
+los tres tokens de la hoja (`--hoja-texto`, `--hoja-tenue` y `--hoja-borde`, sobre `--hoja-fondo`).
+
+### 12.3 La revisión adversaria (2026-11-14)
+
+- **Las decisiones de esta rama se renumeraron de PG-T60–PG-T70 a PG-T80–PG-T90:** §11 (las notas, ya en `main`) usa
+  PG-T60 a PG-T73, y los mismos números decían dos cosas distintas.
+- **«Activar avisos» ya no deja la tercera tarjeta esperando:** si el teléfono tira un error a mitad de camino (el
+  permiso o el almacén), la respuesta es «No pudimos activar los avisos…» y sigue «Entrar a BE». Antes quedaba en «Un
+  momento…», con «Saltar» y «Ahora no» apagados, y solo se salía cerrando la app. Lo fija TEST-PG-012.
+- **La hoja suma «Bajar BE»** (Dirección: «tiene que tener el QR para descargar y un botón de descarga también»): un
+  enlace al mismo `be.apk` del QR, junto a él. En el PDF se toca, para quien lo abre en el mismo teléfono y no puede
+  escanear su propia pantalla; en el papel queda como un rótulo. Es el único enlace de la hoja (TEST-PG-016).
+- Sin cambios, después de mirarlo: la línea de quién miró usa la zona del teléfono, como el resto de la APK; la hoja,
+  la de Buenos Aires; lo que se imprime es lo que el profesional ya ve con su Alcance, y la próxima revisión sale de la
+  misma lectura del Resumen, con el mismo permiso.
+
+### 12.4 Lo que falta para cerrar la tanda B (el resto)
+
+**Publicada el 2026-11-14 como la 0.29.0-candidata.1 (latest, con `be.apk`; versionCode 43; commit 2b5ba83).** Trae la tanda B en la APK (PG-12, PG-13 y PG-15) y GR-01, «La vez pasada», de la fase 1 de WP-GRAFICOS. Lo que lee la 0.29 quedó congelado (`packages/domain/fixtures/lecturas-de-la-apk/0.29.0-candidata.1.json`): las 98 operaciones de la 0.28, con la misma forma, y tres más, cada una con su escenario en `lecturas-de-las-apk.int-spec.ts`: API-RES-01 (quién miró, PG-12), API-TRN-25 y API-TRN-25-PROPIA (la nota para tu profe, PG-15). Con eso quedan hechos el punto 5 de §11 y el congelamiento de esta lista. Lo que sigue se prueba sobre la 0.29.
+
+- Probarlo en el teléfono: la presentación con TalkBack y con «reducir movimiento», el gesto, el permiso de avisos en un
+  Android 13, y la línea de quién miró con la cuenta de la cohorte que comparte su plan (Diego Sosa, con Lic. Sofía Paz).
+- Mirar la hoja en el navegador: impresa y en PDF, en Chrome y en Firefox, en A4 y en carta, desde Azul noche y desde
+  Claro, y el QR del papel escaneado con un teléfono.
+- ~~Congelar `GET /me/summary-sharing` con la candidata que lleve PG-12 (DL-152).~~ Hecho con la 0.29.0-candidata.1.
+- `WP-PULIDO-GRANDES-ORACULOS.md` con los trece campos: como en la tanda A, los oráculos quedaron en las pruebas, con su
+  mutación; la ficha se escribe al cerrar la tanda.

@@ -18,6 +18,10 @@ export function enumerar(numeros: readonly number[]): string {
 /** «la serie 2» o «las series 1 y 2». */
 const lasSeries = (numeros: readonly number[]): string => (numeros.length === 1 ? `la serie ${enumerar(numeros)}` : `las series ${enumerar(numeros)}`);
 
+/** DL-178: «la serie 2» o «el calentamiento» (`null`), y «de la serie 2» o «del calentamiento». */
+const laSerie = (n: number | null): string => (n === null ? 'el calentamiento' : `la serie ${numero(n, 0)}`);
+const deLaSerie = (n: number | null): string => (n === null ? 'del calentamiento' : `de la serie ${numero(n, 0)}`);
+
 export const TEXTOS_DE_LA_SESION = {
   // La franja de arriba
   ejercicioYSerie: (ejercicio: number, total: number, serie: string) => `Ejercicio ${numero(ejercicio, 0)} de ${numero(total, 0)} · ${serie}`,
@@ -28,24 +32,25 @@ export const TEXTOS_DE_LA_SESION = {
   tramos: (registradas: number, planificadas: number) => `${numero(registradas, 0)} de ${numero(planificadas, 0)} series planificadas registradas en la sesión`,
   // La tabla
   columnaTiempo: 'Tiempo',
-  serieRegistrada: (n: number) => `Serie ${numero(n, 0)} registrada`,
+  // DL-178: donde una serie se nombra por su número, `n` es el número efectivo y `null` es una de calentamiento.
+  serieRegistrada: (n: number | null) => (n === null ? 'Calentamiento registrado' : `Serie ${numero(n, 0)} registrada`),
   /** El nombre de la casilla de la fila: lo que hace. El lector agrega si está marcada. */
-  registrarLaSerie: (n: number) => `Registrar la serie ${numero(n, 0)}`,
+  registrarLaSerie: (n: number | null) => `Registrar ${laSerie(n)}`,
   /** El rótulo chico de una serie tildada sin escribir nada (DL-161, `AS_PLANNED`). Las escritas no llevan rótulo. */
   comoElPlan: COPY_REGISTRO_POR_NIVELES.comoElPlan,
   pistaParaTildar: 'Tildala al terminarla. Sin nada escrito, queda lo planificado que ves en gris.',
   pistaParaDestildar: 'Destildala para deshacer el registro mientras no finalices.',
   enConflictoSinTilde: 'Resolvé el conflicto de esta serie más abajo.',
   escritaSinRegistrar: 'Escrita, sin registrar',
-  medirLaSerie: (n: number) => `Medir el tiempo de la serie ${numero(n, 0)}`,
-  pararElReloj: (n: number) => `Parar el reloj de la serie ${numero(n, 0)}`,
-  relojEnCurso: (n: number, minutos: string) => `Reloj de la serie ${numero(n, 0)} en curso: ${minutos}`,
+  medirLaSerie: (n: number | null) => `Medir el tiempo ${deLaSerie(n)}`,
+  pararElReloj: (n: number | null) => `Parar el reloj ${deLaSerie(n)}`,
+  relojEnCurso: (n: number | null, minutos: string) => `Reloj ${deLaSerie(n)} en curso: ${minutos}`,
   escribirElTiempo: 'Escribir el tiempo',
   mantenerParaEscribir: 'Mantenelo apretado para escribir el tiempo sin medirlo.',
-  tiempoDeLaSerie: (n: number) => `Tiempo de la serie ${numero(n, 0)}, opcional`,
-  serieMedida: (n: number) => `Serie ${numero(n, 0)} medida`,
-  serieRegistradaAnuncio: (n: number) => `Serie ${numero(n, 0)} registrada`,
-  serieDestildada: (n: number) => `Serie ${numero(n, 0)} sin registrar`,
+  tiempoDeLaSerie: (n: number | null) => `Tiempo ${deLaSerie(n)}, opcional`,
+  serieMedida: (n: number | null) => (n === null ? 'Calentamiento medido' : `Serie ${numero(n, 0)} medida`),
+  serieRegistradaAnuncio: (n: number | null) => (n === null ? 'Calentamiento registrado' : `Serie ${numero(n, 0)} registrada`),
+  serieDestildada: (n: number | null) => (n === null ? 'Calentamiento sin registrar' : `Serie ${numero(n, 0)} sin registrar`),
   cambiarUnidad: (a: 'kg' | 'lb') => `Cambiar a ${a}`,
   agregarUnaSerie: 'Agregar una serie',
   // La ayuda plegada, junto a la tabla
@@ -62,14 +67,17 @@ export const TEXTOS_DE_LA_SESION = {
   tiempoMaximo: 'Revisá el tiempo: el máximo es de 10 horas.',
   // Tildar sin datos
   // «Terminar serie N» o «Registrar serie N» que no pudo registrar (AV2-30): se anuncia y queda junto al botón
-  paraRegistrarEnRango: (n: string, rango: string) => `Para registrar la serie ${n}, escribí cuántas repeticiones hiciste (${rango}) o la carga.`,
-  paraRegistrar: (n: string, motivo: string) => `Para registrar la serie ${n}: ${motivo}`,
-  medicionResuelta: (n: number) => `La medición de la serie ${numero(n, 0)} quedó resuelta: registrala con lo que hiciste.`,
-  medicionLarga: (n: string) => `La serie ${n} se está midiendo desde hace más de 10 horas: decidí si terminó ahora o si queda incompleta.`,
+  // DL-178: `laSerie` es «la serie 2» o «el calentamiento» (`laSerieOElCalentamiento`).
+  paraRegistrarEnRango: (laSerie: string, rango: string) => `Para registrar ${laSerie}, escribí cuántas repeticiones hiciste (${rango}) o la carga.`,
+  paraRegistrar: (laSerie: string, motivo: string) => `Para registrar ${laSerie}: ${motivo}`,
+  medicionResuelta: (deLaSerie: string) => `La medición ${deLaSerie} quedó resuelta: registrala con lo que hiciste.`,
+  medicionLarga: (laSerie: string) => `${String(laSerie).charAt(0).toUpperCase()}${String(laSerie).slice(1)} se está midiendo desde hace más de 10 horas: decidí si terminó ahora o si queda incompleta.`,
   repeticionesEnRango: (rango: string) => `Las repeticiones del plan van en un rango (${rango}): anotá las que hiciste, o la carga.`,
   // Antes de finalizar
   escritasTitulo: 'Series escritas sin registrar',
-  escritasDe: (nombre: string, series: readonly number[]) => `${nombre}: ${lasSeries(series)}.`,
+  /** DL-178: `series` son los números efectivos; `conCalentamiento`, si también hay calentamiento escrito sin registrar. */
+  escritasDe: (nombre: string, series: readonly number[], conCalentamiento = false) =>
+    `${nombre}: ${[...(conCalentamiento ? ['el calentamiento'] : []), ...(series.length > 0 ? [lasSeries(series)] : [])].join(' y ')}.`,
   escritasPregunta: '¿Las registramos antes de finalizar? En lo que quedó vacío va lo planificado.',
   registrarlas: 'Registrarlas',
   descartarLoEscrito: 'Descartar lo escrito',

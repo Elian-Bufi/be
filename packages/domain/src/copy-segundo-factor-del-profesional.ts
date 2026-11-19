@@ -3,6 +3,10 @@
  * son los de Administración (`COPY_ADMINISTRACION`), que ya pasaron por las guardias: el código, la clave, el QR y los
  * códigos de recuperación se dicen igual. Acá va lo que cambia para el profesional: por qué se pide, que la primera vez se
  * configura solo y que, si pasó el plazo, hay que volver a entrar.
+ *
+ * Desde DL-177 (2026-11-18) el profesional no usa el autenticador: la pantalla «Seguridad de tu acceso» dice cómo entra
+ * hoy, qué viene después (un código por correo) y cómo cuidar la contraseña (`seguridad.sinAutenticador`). Lo demás
+ * queda para cuando la exigencia vuelva.
  */
 import { COPY_ADMINISTRACION } from './copy-administracion';
 
@@ -115,6 +119,17 @@ export const COPY_SEGUNDO_FACTOR_DEL_PROFESIONAL = {
     restantes: A.seguridad.restantes,
     reciente: (hora: string): string => `Para reemplazar el autenticador o generar códigos nuevos, tenés hasta las ${hora}. Después, volvé a entrar.`,
     noReciente: 'Para reemplazar el autenticador o generar códigos nuevos, volvé a entrar: se pide una entrada reciente.',
+    /** DL-177: sin el autenticador. Cómo entra hoy, qué viene y cómo cuidar la contraseña. */
+    sinAutenticador: {
+      comoEntras: 'Entrás a BE con tu contraseña o con tu cuenta de Google. Por ahora, BE no te pide un código aparte para entrar.',
+      proximamente: 'Más adelante, cuando entres desde un dispositivo nuevo, BE te va a mandar un código a tu correo para confirmar que sos vos.',
+      cuidar:
+        'Tu contraseña protege los datos de salud de las personas que acompañás. Usá una que no uses en otro lado, no la compartas y cerrá la sesión en las computadoras que no son tuyas.',
+      sospecha: 'Si creés que alguien más sabe tu contraseña, cambiala: al cambiarla se cierran todas tus sesiones, también las de la app.',
+      cambiarContrasena: 'Cambiar la contraseña',
+      verComoEntras: 'Ver cómo entrás',
+      autenticadorViejo: 'Si ya habías configurado una aplicación de códigos para BE, ya no se usa: podés borrar la cuenta de BE de esa aplicación.',
+    },
   },
   pasoDesconocido: 'Hay una versión nueva de BE. Recargá la página para seguir.',
   salir: 'Cerrar sesión',

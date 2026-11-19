@@ -203,6 +203,8 @@ model Identidad {
   ejerciciosCreados                          EjercicioDeCatalogo[]                     @relation("EjercicioCreadoPor")
   plantillasDePlanDeEntrenamiento            PlantillaDePlanDeEntrenamiento[]          @relation("PlantillaDePlanDelProfesional")
   versionesDePlantillaAutor                  VersionDePlantillaDePlanDeEntrenamiento[] @relation("VersionDePlantillaPorAutor")
+  /// PLT (DL-182): las plantillas de entrenamiento que el profesional está preparando, sin persona.
+  preparacionesDePlantillaDeEntrenamiento    PreparacionDePlantillaDeEntrenamiento[]   @relation("PreparacionDePlantillaDelProfesional")
   plantillasDePlanNutricional                PlantillaDePlanNutricional[]              @relation("PlantillaNutricionalDelProfesional")
   versionesDePlantillaNutricionalAutor       VersionDePlantillaDePlanNutricional[]     @relation("VersionDePlantillaNutricionalPorAutor")
   ejerciciosHabituales                       EjercicioHabitual[]                       @relation("EjercicioHabitualDelProfesional")
@@ -314,6 +316,24 @@ model Identidad {
   cambiosDeIncidencia    CambioDeIncidencia[] @relation("CambioDeIncidenciaDelAdministrador")
   // RF-004 (DL-172): los retiros y las reasociaciones de sus métodos de acceso.
   cambiosDeMetodoDeAcceso CambioDeMetodoDeAcceso[] @relation("CambioDeMetodoDeAccesoDeLaIdentidad")
+  // PG-15 y PG-16 (DL-173): las notas que dejó en sus sesiones para su profesional; como profesional, sus notas propias y
+  // los archivos de esas notas; como persona, las notas propias que otros escribieron sobre ella (no las lee en la app).
+  notasDeSusSesiones     NotaDeEjecucion[]     @relation("NotaDeEjecucionDeLaPersona")
+  notasPropiasEscritas   NotaPropia[]          @relation("NotaPropiaDelProfesional")
+  notasPropiasSobreElla  NotaPropia[]          @relation("NotaPropiaSobreLaPersona")
+  archivosDeNotasPropias ArchivoDeNotaPropia[] @relation("ArchivoDeNotaPropiaDelProfesional")
+  // WP-HISTORIA-ANTERIOR (DL-175): como persona, las versiones de su autorización de la historia anterior; como
+  // profesional, las que lo nombran.
+  autorizacionesDeHistoriaAnterior     AutorizacionDeHistoriaAnterior[] @relation("AutorizacionDeHistoriaAnteriorDeLaPersona")
+  autorizacionesDeHistoriaAnteriorRecibidas AutorizacionDeHistoriaAnterior[] @relation("AutorizacionDeHistoriaAnteriorDelProfesional")
+  // WP-NUTRICION-ALIMENTOS (DL-180): los grupos que asignó a sus alimentos y, como administradora, las revisiones de
+  // alimentos cargados a mano que registró.
+  gruposDeAlimentoAsignados GrupoDeAlimentoAsignado[]          @relation("GrupoDeAlimentoDelAutor")
+  revisionesDeAlimentos     RevisionAdministrativaDeAlimento[] @relation("RevisionDeAlimentoDelAdministrador")
+  // DL-180, segundo tramo (NUA-D16): como administradora, los alimentos que sumó al catálogo verificado.
+  alimentosSumadosAlCanon   AlimentoDelCanon[]                 @relation("AlimentoDelCanonDelAdministrador")
+  // DL-180, segundo tramo (NUA-08): las medidas caseras que definió para sus alimentos cargados a mano.
+  medidasCaserasDefinidas   MedidasCaserasDeAlimento[]         @relation("MedidasCaserasDelAutor")
 
   @@map("identidad")
 }
@@ -890,6 +910,9 @@ model AlcanceDeVinculo {
   destinatariosDeResumenes DestinatarioDeResumenes[] @relation("DestinatarioDeResumenesDelReceptor")
   origenDeResumenes        DestinatarioDeResumenes[] @relation("DestinatarioDeResumenesDelOrigen")
   pedidosDeAccesoAPlan     PedidoDeAccesoAPlan[]
+  /// DL-175: las versiones de la autorización de la persona para que el profesional de este componente vea su historia
+  /// anterior de esta área.
+  autorizacionesDeHistoriaAnterior AutorizacionDeHistoriaAnterior[]
 
   @@index([vinculoId, alcance])
   @@map("alcance_de_vinculo")
@@ -1349,6 +1372,9 @@ enum TipoDeEventoDeNutricion {
   CantidadesDeIngestaRectificadas
   /// WP-TABLERO-ALTA-GAMA (DL-163 D-21; TB-47): un borrador de plan que nunca se activó, descartado.
   BorradorDePlanDescartado
+  /// WP-NUTRICION-ALIMENTOS (DL-180, NUA-01 y NUA-02): un alimento cargado a mano, corregido (una versión nueva) o retirado.
+  ElementoDeCatalogoVersionado
+  ElementoDeCatalogoRetirado
 }
 
 /// T-06-31 — Elemento de catálogo: identificador BE estable (REG-06-99). Inmutable; el contenido vive en sus versiones.
@@ -1366,6 +1392,20 @@ model ElementoDeCatalogoNutricional {
   itemExterno         ItemExternoDeCatalogo?
   /// DL-141 D-2: los otros nombres con los que se lo encuentra.
   nombresAlternativos NombreAlternativoDeAlimento[]
+  /// DL-180 (NUA-05): su grupo, para el ícono; un hecho aparte de sus versiones.
+  grupos              GrupoDeAlimentoAsignado[]
+  /// DL-180 (NUA-03): desde cuándo lo veían los demás profesionales (primer tramo). Desde el segundo tramo, historia: lo
+  /// cargado a mano es de quien lo cargó (NUA-D14), y esta tabla ya no se lee ni se escribe.
+  compartido          AlimentoCompartido?
+  /// DL-180, segundo tramo (NUA-D16): si Administración lo sumó al catálogo verificado, con su fuente.
+  delCanon            AlimentoDelCanon?                  @relation("AlimentoDelCanon")
+  /// Las cargas a mano de las que partió un alimento del canon.
+  canonQueParte       AlimentoDelCanon[]                 @relation("AlimentoDelCanonOrigen")
+  /// DL-180, segundo tramo (NUA-08): sus medidas caseras, un hecho aparte de sus versiones.
+  medidasCaseras      MedidasCaserasDeAlimento[]
+  /// DL-180 (NUA-04): lo que decidió Administración sobre él, y los alimentos de los que es el equivalente verificado.
+  revisiones          RevisionAdministrativaDeAlimento[] @relation("RevisionDelAlimento")
+  equivalenteDe       RevisionAdministrativaDeAlimento[] @relation("EquivalenteVerificado")
 
   @@map("elemento_de_catalogo_nutricional")
 }
@@ -1385,6 +1425,8 @@ model VersionDeElementoNutricional {
   elemento    ElementoDeCatalogoNutricional @relation(fields: [elementoId], references: [id], onDelete: Restrict, onUpdate: Restrict)
   predecesora VersionDeElementoNutricional? @relation("CadenaDeElemento", fields: [predecesoraId], references: [id], onDelete: Restrict, onUpdate: Restrict)
   sucesora    VersionDeElementoNutricional? @relation("CadenaDeElemento")
+  /// DL-180 (NUA-04): las decisiones de Administración que la revisaron.
+  revisiones  RevisionAdministrativaDeAlimento[]
 
   @@index([elementoId])
   @@map("version_de_elemento_nutricional")
@@ -1407,9 +1449,34 @@ model EvaluacionNutricional {
   profesional Identidad                      @relation("EvaluacionDelProfesional", fields: [profesionalId], references: [id], onDelete: Restrict, onUpdate: Restrict)
   asesorado   Identidad                      @relation("EvaluacionDelAsesorado", fields: [asesoradoId], references: [id], onDelete: Restrict, onUpdate: Restrict)
   objetivos   VersionDeObjetivoNutricional[]
+  /// DL-179: las respuestas de formulario que cita (como DL-102 en Entrenamiento).
+  citas       CitaDeRespuestaEnEvaluacionNutricional[]
 
   @@index([asesoradoId, profesionalId, momentoDeRegistro])
   @@map("evaluacion_nutricional")
+}
+
+/// DL-179 (WP-CONTEXTO-DE-LA-PERSONA): una respuesta de formulario citada como evidencia de una evaluación de Nutrición,
+/// con las mismas reglas que la de Entrenamiento (DL-102): referencia, no copia; fija la versión vigente al citar; solo
+/// agregado; la base repite la pertenencia (una Solicitud propia, de alcance NUTRICION, de la misma persona).
+model CitaDeRespuestaEnEvaluacionNutricional {
+  id                String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  evaluacionId      String   @map("evaluacion_id") @db.Uuid
+  respuestaId       String   @map("respuesta_id") @db.Uuid
+  /// La rectificación vigente al citar; `null` si lo vigente era la respuesta original.
+  rectificacionId   String?  @map("rectificacion_id") @db.Uuid
+  codigoDeCampo     String   @map("codigo_de_campo")
+  orden             Int
+  momentoDeRegistro DateTime @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+
+  evaluacion    EvaluacionNutricional                 @relation(fields: [evaluacionId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  respuesta     RespuestaDeFormulario                 @relation(fields: [respuestaId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  rectificacion RectificacionDeRespuestaDeFormulario? @relation(fields: [rectificacionId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([evaluacionId, orden])
+  @@unique([evaluacionId, respuestaId, codigoDeCampo], map: "cita_nutricional_respuesta_y_campo_unicos")
+  @@index([respuestaId])
+  @@map("cita_de_respuesta_en_evaluacion_nutricional")
 }
 
 /// T-06-27 — Objetivo: uno por (profesional, asesorado); sus versiones forman una sucesión lineal y la efectiva es la
@@ -2078,6 +2145,8 @@ model EjercicioDeCatalogo {
   asignacionesDeZonas AsignacionDeZonasDeEjercicio[]
   /// ED-72 (DL-171): las series observadas por un profesional en este ejercicio.
   seriesObservadas    SerieObservada[]
+  /// PG-16 (DL-173): las notas propias de un profesional atadas a este ejercicio.
+  notasPropias        NotaPropia[]
 
   @@map("ejercicio_de_catalogo")
 }
@@ -2319,6 +2388,8 @@ model EjecucionDeEntrenamiento {
   versionDePlan VersionDePlanDeEntrenamiento           @relation(fields: [versionDePlanId], references: [id], onDelete: Restrict, onUpdate: Restrict)
   borrador      BorradorDeEjecucionDeEntrenamiento     @relation(fields: [borradorId], references: [id], onDelete: Restrict, onUpdate: Restrict)
   correcciones  CorreccionDeEjecucionDeEntrenamiento[]
+  /// PG-15 (DL-173): las notas que la persona dejó para su profesional. No cambian la ejecución.
+  notas         NotaDeEjecucion[]
 
   @@unique([asesoradoId, versionDePlanId, sesionPlanificadaId, fechaLocal])
   @@index([asesoradoId, fechaLocal])
@@ -2531,6 +2602,7 @@ model RespuestaDeFormulario {
   templateVersion VersionDePlantillaDeFormulario               @relation(fields: [templateVersionId], references: [id], onDelete: Restrict, onUpdate: Restrict)
   rectificaciones RectificacionDeRespuestaDeFormulario[]
   citas           CitaDeRespuestaEnEvaluacionDeEntrenamiento[]
+  citasNutricionales CitaDeRespuestaEnEvaluacionNutricional[]
   /// DL-165 D-9: la versión de los hábitos que agregó esta Respuesta, si su versión traía la parte «Tus hábitos».
   habitos         HabitosDeLaPersona[]
 
@@ -2554,6 +2626,7 @@ model RectificacionDeRespuestaDeFormulario {
   correccionPrevia RectificacionDeRespuestaDeFormulario?        @relation("SucesionDeRectificacionDeFormulario", fields: [correccionPreviaId], references: [id], onDelete: Restrict, onUpdate: Restrict)
   siguiente        RectificacionDeRespuestaDeFormulario?        @relation("SucesionDeRectificacionDeFormulario")
   citas            CitaDeRespuestaEnEvaluacionDeEntrenamiento[]
+  citasNutricionales CitaDeRespuestaEnEvaluacionNutricional[]
 
   @@index([respuestaId])
   @@map("rectificacion_de_respuesta_de_formulario")
@@ -3031,6 +3104,141 @@ model RetiroDeNombreAlternativoDeAlimento {
   @@map("retiro_de_nombre_alternativo_de_alimento")
 }
 
+// ─── WP-NUTRICION-ALIMENTOS (DL-180) · los alimentos del catálogo: grupo, compartir y revisión ─────────────
+
+/// DL-180 (NUA-05): el grupo de un alimento, para su ícono en el buscador y en las opciones.
+enum GrupoDeAlimento {
+  CARNES
+  PESCADOS
+  HUEVOS
+  LACTEOS
+  CEREALES
+  LEGUMBRES
+  VERDURAS
+  FRUTAS
+  ACEITES
+  FRUTOS_SECOS
+  DULCES
+  BEBIDAS
+  OTROS
+}
+
+/// DL-180 (NUA-05) · el grupo de un alimento es un hecho aparte de sus versiones, como sus nombres alternativos: cambiarlo
+/// no emite una versión ni toca planes, recetas ni registros. El vigente es el de mayor `numero`. Lo siembra BE (sin
+/// autor) o lo elige quien cargó el alimento a mano. Append-only.
+model GrupoDeAlimentoAsignado {
+  id                String          @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  elementoId        String          @map("elemento_id") @db.Uuid
+  numero            Int
+  grupo             GrupoDeAlimento
+  /// Quién lo eligió; NULL si lo sembró BE con una migración.
+  autorId           String?         @map("autor_id") @db.Uuid
+  procedencia       Json
+  momentoDeRegistro DateTime        @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+
+  elemento ElementoDeCatalogoNutricional @relation(fields: [elementoId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  autor    Identidad?                    @relation("GrupoDeAlimentoDelAutor", fields: [autorId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([elementoId, numero])
+  @@map("grupo_de_alimento")
+}
+
+/// DL-180 (NUA-03, NUA-D05) · un alimento cargado a mano que ven los demás profesionales de Nutrición, desde que su autor
+/// lo cargó o lo corrigió con el aviso a la vista. Lo cargado antes de DL-180 no se comparte solo. Una fila por alimento;
+/// append-only. **Segundo tramo (decisión de Dirección del 2026-11-19, NUA-D14):** lo cargado a mano no se comparte; la
+/// tabla queda como historia, ya no se lee ni se escribe (la migración `20261120120000_lo_propio_es_propio` la cierra).
+model AlimentoCompartido {
+  elementoId        String   @id @map("elemento_id") @db.Uuid
+  procedencia       Json
+  momentoDeRegistro DateTime @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+
+  elemento ElementoDeCatalogoNutricional @relation(fields: [elementoId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@map("alimento_compartido")
+}
+
+/// DL-180, segundo tramo (NUA-D16; decisión de Dirección del 2026-11-19) · un alimento que Administración sumó al catálogo
+/// verificado («Sumar al canon»): un alimento de BE (sin profesional que lo cargue, de todos), «Verificado» en el buscador,
+/// con la fuente citada (obligatoria) y, si partió de los valores de una carga a mano, cuál. Lo escribe solo un
+/// administrador con su rol vigente (trigger). Append-only: una fila por alimento.
+model AlimentoDelCanon {
+  elementoId        String   @id @map("elemento_id") @db.Uuid
+  /// La tabla, la publicación o el rótulo de donde salen sus valores.
+  fuente            String
+  /// La carga a mano de cuyos valores partió, si partió de una.
+  origenId          String?  @map("origen_id") @db.Uuid
+  administradorId   String   @map("administrador_id") @db.Uuid
+  procedencia       Json
+  momentoDeRegistro DateTime @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+
+  elemento      ElementoDeCatalogoNutricional  @relation("AlimentoDelCanon", fields: [elementoId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  origen        ElementoDeCatalogoNutricional? @relation("AlimentoDelCanonOrigen", fields: [origenId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  administrador Identidad                      @relation("AlimentoDelCanonDelAdministrador", fields: [administradorId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@map("alimento_del_canon")
+}
+
+/// DL-180, segundo tramo (NUA-08; aprobado por Dirección el 2026-11-16) · las medidas caseras de un alimento (la unidad, la
+/// cucharada, la taza y la porción), cada una con su equivalencia en la unidad de su composición: un hecho aparte de sus
+/// versiones, como el grupo. La vigente es la de mayor `numero` (`medidas`, un arreglo de {kind, amount}; vacío, ninguna).
+/// Las define quien cargó el alimento a mano; sin autor, las siembra BE de la fuente que las documente. Cambiarlas no toca
+/// los planes: cada ítem guarda la medida que eligió y su equivalencia. Append-only.
+model MedidasCaserasDeAlimento {
+  id                String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  elementoId        String   @map("elemento_id") @db.Uuid
+  numero            Int
+  medidas           Json
+  /// Quién las definió; NULL si las sembró BE con una migración.
+  autorId           String?  @map("autor_id") @db.Uuid
+  procedencia       Json
+  momentoDeRegistro DateTime @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+
+  elemento ElementoDeCatalogoNutricional @relation(fields: [elementoId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  autor    Identidad?                    @relation("MedidasCaserasDelAutor", fields: [autorId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([elementoId, numero])
+  @@map("medidas_caseras_de_alimento")
+}
+
+/// DL-180 (NUA-04): lo que decide Administración sobre un alimento cargado a mano.
+enum ResultadoDeRevisionDeAlimento {
+  /// Certificado con una fuente citada, para la versión revisada.
+  CERTIFICADO
+  /// Equivalente de uno verificado: el buscador sugiere ese.
+  EQUIVALENTE
+  /// Lo decidido antes deja de valer.
+  QUITADA
+}
+
+/// DL-180 (NUA-04) · cada decisión de Administración sobre un alimento cargado a mano es una fila nueva; la vigente es la
+/// de mayor `numero`. Una certificación vale para la versión revisada: si su autor lo corrige, la versión nueva no está
+/// certificada. Administración ve el nombre y los valores, nunca a quién se le indicó ni quién lo cargó. Append-only; la
+/// escribe solo un administrador con su rol vigente (trigger).
+model RevisionAdministrativaDeAlimento {
+  id                String                        @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  elementoId        String                        @map("elemento_id") @db.Uuid
+  numero            Int
+  resultado         ResultadoDeRevisionDeAlimento
+  /// La versión que vio y revisó.
+  versionId         String                        @map("version_id") @db.Uuid
+  /// La fuente citada: solo y siempre en CERTIFICADO.
+  fuente            String?
+  /// El alimento verificado equivalente: solo y siempre en EQUIVALENTE.
+  equivalenteId     String?                       @map("equivalente_id") @db.Uuid
+  administradorId   String                        @map("administrador_id") @db.Uuid
+  procedencia       Json
+  momentoDeRegistro DateTime                      @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+
+  elemento      ElementoDeCatalogoNutricional  @relation("RevisionDelAlimento", fields: [elementoId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  version       VersionDeElementoNutricional   @relation(fields: [versionId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  equivalente   ElementoDeCatalogoNutricional? @relation("EquivalenteVerificado", fields: [equivalenteId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  administrador Identidad                      @relation("RevisionDeAlimentoDelAdministrador", fields: [administradorId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([elementoId, numero])
+  @@index([equivalenteId])
+  @@map("revision_administrativa_de_alimento")
+}
+
 // ─── PF-09 · Plantillas de plan de entrenamiento del profesional (DL-108) ─────────────────────────────
 
 enum EstadoDePlantilla {
@@ -3059,6 +3267,8 @@ model PlantillaDePlanDeEntrenamiento {
 
   profesional Identidad                                 @relation("PlantillaDePlanDelProfesional", fields: [profesionalId], references: [id], onDelete: Restrict, onUpdate: Restrict)
   versiones   VersionDePlantillaDePlanDeEntrenamiento[]
+  /// PLT (DL-182): los cambios en preparación, si los hay (a lo sumo uno).
+  preparacion PreparacionDePlantillaDeEntrenamiento?
 
   @@unique([profesionalId, nombreNormalizado])
   @@index([profesionalId, estado, momentoDeActualizacion])
@@ -3080,9 +3290,45 @@ model VersionDePlantillaDePlanDeEntrenamiento {
 
   plantilla PlantillaDePlanDeEntrenamiento @relation(fields: [plantillaId], references: [id], onDelete: Restrict, onUpdate: Restrict)
   autor     Identidad                      @relation("VersionDePlantillaPorAutor", fields: [autorId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  /// PLT (DL-182): las preparaciones que partieron de esta versión.
+  preparaciones PreparacionDePlantillaDeEntrenamiento[] @relation("PreparacionDesdeLaVersion")
 
   @@unique([plantillaId, numero])
   @@map("version_de_plantilla_de_plan_de_entrenamiento")
+}
+
+/// PLT (DL-182): la preparación de una plantilla de entrenamiento: el trabajo en curso del profesional, privado y sin
+/// persona, que se autoguarda sin tocar ninguna versión. Guardarla crea la plantilla (la primera vez) o una versión nueva
+/// (inmutable, como siempre); descartarla deja las versiones como estaban. En los dos casos la fila se borra: la historia
+/// son las versiones y la auditoría de cada operación, no el trabajo a medias (PLT-D03).
+/// - `plantillaId` NULL: una plantilla nueva, que nace al guardarla; con plantilla, a lo sumo una preparación por plantilla
+///   (el índice único: PostgreSQL no compara los NULL, así que puede haber varias nuevas).
+/// - `versionBaseId`: la versión vigente al abrirla. Guardar exige que siga siendo la vigente.
+/// - `nombre` y `descripcion`: solo en una plantilla nueva (PLT-D05); los de una existente son los de la plantilla.
+/// - `estructura`: la estructura de entrada (la misma forma que API-TRN-07), normalizada y con los identificadores que
+///   le pone el servidor, para que el editor los conserve entre guardados. Con las cargas que se escribieron: el interruptor
+///   (`cargas`, D-2 de DL-108) decide si van a la versión al guardarla.
+/// - `version`: el token de concurrencia de la preparación (`expectedVersion`), como el de un borrador de plan.
+model PreparacionDePlantillaDeEntrenamiento {
+  id                     String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  profesionalId          String            @map("profesional_id") @db.Uuid
+  plantillaId            String?           @unique @map("plantilla_id") @db.Uuid
+  versionBaseId          String?           @map("version_base_id") @db.Uuid
+  nombre                 String?
+  descripcion            String?
+  estructura             Json
+  cargas                 CargasDePlantilla @default(NO_COPIADAS)
+  version                Int               @default(1)
+  procedencia            Json
+  momentoDeRegistro      DateTime          @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+  momentoDeActualizacion DateTime          @default(now()) @map("momento_de_actualizacion") @db.Timestamptz(3)
+
+  profesional Identidad                                @relation("PreparacionDePlantillaDelProfesional", fields: [profesionalId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  plantilla   PlantillaDePlanDeEntrenamiento?          @relation(fields: [plantillaId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  versionBase VersionDePlantillaDePlanDeEntrenamiento? @relation("PreparacionDesdeLaVersion", fields: [versionBaseId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@index([profesionalId, momentoDeActualizacion])
+  @@map("preparacion_de_plantilla_de_entrenamiento")
 }
 
 /// D-2 en nutrición: si la versión de plantilla conserva las cantidades (nunca un booleano: TEST-RUN-003).
@@ -4536,4 +4782,113 @@ model CambioDeMetodoDeAcceso {
   @@unique([metodoDeAccesoId, numero])
   @@index([identidadId])
   @@map("cambio_de_metodo_de_acceso")
+}
+
+// ─── WP-PULIDO-GRANDES (DL-173): PG-15, la nota para tu profe, y PG-16, las notas propias del profesional ──────────────
+
+/// PG-15 (PG-D10, aprobada por Dirección el 2026-11-14): la nota que la persona deja en una sesión suya ya registrada, para
+/// su profesional (API-TRN-25). Aparte de la ejecución, que no cambia. Solo se agrega: no se edita ni se borra (trigger).
+/// La base exige que la persona sea la de la ejecución y hasta 280 caracteres (CHECK).
+model NotaDeEjecucion {
+  id                String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  ejecucionId       String   @map("ejecucion_id") @db.Uuid
+  asesoradoId       String   @map("asesorado_id") @db.Uuid
+  texto             String
+  procedencia       Json
+  momentoDeRegistro DateTime @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+
+  ejecucion EjecucionDeEntrenamiento @relation(fields: [ejecucionId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  asesorado Identidad                @relation("NotaDeEjecucionDeLaPersona", fields: [asesoradoId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@index([ejecucionId, momentoDeRegistro])
+  @@index([asesoradoId])
+  @@map("nota_de_ejecucion")
+}
+
+/// PG-16: a qué está atada una nota propia (PG-T67): un ejercicio del catálogo o una comida del plan, por su nombre.
+enum AnclaDeNotaPropia {
+  EJERCICIO
+  COMIDA
+}
+
+/// PG-16 (PG-D11, aprobada por Dirección el 2026-11-14): la nota propia de un profesional sobre una persona (API-NPP-01 a
+/// 03). Solo la lee y la archiva su autor; entra en la exportación de la persona. Solo se agrega (trigger): archivarla es
+/// una fila de `archivo_de_nota_propia`. El ancla es coherente con su tipo y el texto, de 1 a 1000 caracteres (CHECK).
+model NotaPropia {
+  id                String             @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  profesionalId     String             @map("profesional_id") @db.Uuid
+  asesoradoId       String             @map("asesorado_id") @db.Uuid
+  texto             String
+  ancla             AnclaDeNotaPropia?
+  ejercicioId       String?            @map("ejercicio_id") @db.Uuid
+  comida            String?
+  procedencia       Json
+  momentoDeRegistro DateTime           @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+
+  profesional Identidad            @relation("NotaPropiaDelProfesional", fields: [profesionalId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  asesorado   Identidad            @relation("NotaPropiaSobreLaPersona", fields: [asesoradoId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  ejercicio   EjercicioDeCatalogo? @relation(fields: [ejercicioId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  archivo     ArchivoDeNotaPropia?
+
+  @@index([profesionalId, asesoradoId])
+  @@index([asesoradoId])
+  @@map("nota_propia")
+}
+
+/// PG-16: el archivo de una nota propia, una sola vez y por su autor (trigger). La nota queda en la historia: no se borra.
+model ArchivoDeNotaPropia {
+  notaId            String   @id @map("nota_id") @db.Uuid
+  profesionalId     String   @map("profesional_id") @db.Uuid
+  procedencia       Json
+  momentoDeRegistro DateTime @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+
+  nota        NotaPropia @relation(fields: [notaId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  profesional Identidad  @relation("ArchivoDeNotaPropiaDelProfesional", fields: [profesionalId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@map("archivo_de_nota_propia")
+}
+
+// ─── WP-HISTORIA-ANTERIOR · la historia anterior de un área, para el profesional nuevo (DL-175) ──────────────────────
+// 08 §14.1 («Cambio de profesional»: el nuevo ve la historia previa solo si el titular lo consiente), REG-06-55 y RF-025.
+// Lo que Prisma no modela está en la migración 20261115120000: la sucesión por componente, la coherencia con el vínculo,
+// que solo la da la persona y que VIGENTE lleva el texto aceptado con su hash; solo se agrega.
+
+/// DL-175 (HA-T01): el estado de una versión de la autorización. Retirarla es una versión nueva, nunca un cambio de la
+/// anterior.
+enum EstadoDeAutorizacionDeHistoriaAnterior {
+  VIGENTE
+  RETIRADA
+}
+
+/// DL-175 (HA-T01, HA-T04): la autorización de la persona para que el profesional de un componente de vínculo vea su
+/// historia anterior de esa área (lo de otros profesionales en la misma área, antes de su acompañamiento). Un acto
+/// distinto de A3, de B2, de los hábitos y de lo de otras áreas. Versionada por componente: cada cambio es una fila que
+/// sucede a la anterior (1, 2, 3…). La VIGENTE guarda el texto que aceptó, con su hash (08 §12.2); la da y la retira
+/// siempre la persona (`actor_id` = `asesorado_id`). El profesional y el área son los del componente (trigger).
+model AutorizacionDeHistoriaAnterior {
+  id                  String                                 @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  asesoradoId         String                                 @map("asesorado_id") @db.Uuid
+  profesionalId       String                                 @map("profesional_id") @db.Uuid
+  alcance             Alcance
+  alcanceDeVinculoId  String                                 @map("alcance_de_vinculo_id") @db.Uuid
+  version             Int
+  predecesoraId       String?                                @unique @map("predecesora_id") @db.Uuid
+  estado              EstadoDeAutorizacionDeHistoriaAnterior
+  /// El texto aceptado (`TEXTO_DE_LA_HISTORIA_ANTERIOR` de @be/domain) y su hash; solo en una VIGENTE.
+  textoId             String?                                @map("texto_id")
+  hashDelTexto        String?                                @map("hash_del_texto")
+  actorId             String                                 @map("actor_id") @db.Uuid
+  procedencia         Json
+  momentoDeOcurrencia DateTime                               @map("momento_de_ocurrencia") @db.Timestamptz(3)
+  momentoDeRegistro   DateTime                               @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+
+  asesorado        Identidad                       @relation("AutorizacionDeHistoriaAnteriorDeLaPersona", fields: [asesoradoId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  profesional      Identidad                       @relation("AutorizacionDeHistoriaAnteriorDelProfesional", fields: [profesionalId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  alcanceDeVinculo AlcanceDeVinculo                @relation(fields: [alcanceDeVinculoId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  predecesora      AutorizacionDeHistoriaAnterior? @relation("SucesionDeAutorizacionDeHistoriaAnterior", fields: [predecesoraId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  sucesora         AutorizacionDeHistoriaAnterior? @relation("SucesionDeAutorizacionDeHistoriaAnterior")
+
+  @@unique([alcanceDeVinculoId, version], map: "autorizacion_de_historia_anterior_componente_version_key")
+  @@index([asesoradoId])
+  @@map("autorizacion_de_historia_anterior")
 }

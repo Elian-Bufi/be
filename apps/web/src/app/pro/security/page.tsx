@@ -8,7 +8,8 @@ export const metadata: Metadata = { title: 'Seguridad de tu acceso · BE' };
 
 /**
  * Website `/pro/security` (WP-USO-FINAL UF-11; DL-169): el segundo factor del profesional. Llega con el segundo factor
- * verificado, porque la compuerta de `/pro` lo pide antes.
+ * verificado, porque la compuerta de `/pro` lo pide antes. Desde DL-177 (2026-11-18), sin el autenticador: la pantalla
+ * dice cómo entra y cómo cuidar la contraseña; el menú ya no la ofrece, pero la dirección sigue respondiendo.
  */
 export default function PaginaDeSeguridad() {
   return (

@@ -120,9 +120,11 @@ export interface AccesoDeLaPersona {
  * Las series que se pueden elegir con esta persona: solo las OFRECIDAS y con todos sus alcances permitidos. Una serie de
  * dos áreas (los g/kg) pide además planes o tomas propios en cada una, porque en el caso 1 se arma con lo del
  * profesional que consulta (GR-T21). Lo demás no aparece: ni en gris ni con candado.
+ *
+ * `catalogo` es el de BE salvo en las pruebas, que así prueban la regla de dos áreas con una serie ya ofrecida.
  */
-export function seriesOfrecidas(acceso: AccesoDeLaPersona): SerieDisponible[] {
-  return SERIES_DISPONIBLES.filter((s) => {
+export function seriesOfrecidas(acceso: AccesoDeLaPersona, catalogo: readonly SerieDisponible[] = SERIES_DISPONIBLES): SerieDisponible[] {
+  return catalogo.filter((s) => {
     if (s.estado !== 'OFRECIDA') return false;
     if (!s.acceso.alcances.every((a) => acceso.alcances.includes(a))) return false;
     return s.acceso.alcances.length < 2 || s.acceso.alcances.every((a) => acceso.propios[a] === true);
@@ -138,7 +140,15 @@ export interface SerieElegida {
   readonly serie: SerieDisponible;
   /** La unidad de los datos (kg o lb en la carga; la de la toma en Antropometría). */
   readonly unidad: string;
+  /**
+   * El grano elegido, si la serie admite más de uno: una serie de día o de sesión vista por semana va en baldes de lunes a
+   * domingo, y entonces su eje X es el de las semanales.
+   */
+  readonly grano?: Grano;
 }
+
+/** El eje X con que se dibuja una serie elegida: por semana, el de las semanales (GR-T03). */
+export const ejeXDeLaElegida = (s: SerieElegida): EjeX => (s.grano === 'WEEK' ? 'SEMANA' : s.serie.ejeX);
 
 export type MotivoSinComposicion = 'NINGUNA' | 'MAS_DE_TRES' | 'EJE_X_DISTINTO' | 'MAS_DE_DOS_UNIDADES';
 
@@ -188,7 +198,7 @@ export function composicionPermitida(series: readonly SerieElegida[], modo: 'PAN
     return { permitida: true, motivo: null, ejesY, frase: fraseDeLaCoincidencia(series, modo, ejesY.length) };
   }
   for (let i = 0; i < series.length; i++) {
-    for (let j = i + 1; j < series.length; j++) if (!ejesCompatibles(series[i].serie.ejeX, series[j].serie.ejeX)) return negada('EJE_X_DISTINTO');
+    for (let j = i + 1; j < series.length; j++) if (!ejesCompatibles(ejeXDeLaElegida(series[i]), ejeXDeLaElegida(series[j]))) return negada('EJE_X_DISTINTO');
   }
   const grupos: { clave: string; unidad: string; familia: string | null; series: string[] }[] = [];
   for (const s of series) {

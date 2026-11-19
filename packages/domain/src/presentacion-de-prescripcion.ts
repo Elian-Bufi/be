@@ -13,6 +13,7 @@
 import type { Prescripcion } from './contratos-entrenamiento';
 import { COPY_ENTRENAMIENTO, ETIQUETA_DE_CRITERIO } from './copy-entrenamiento';
 import { cantidad, numero } from './formato-numeros';
+import { COPY_TIPOS_DE_SERIE, seriesDeCalentamiento, seriesEfectivas, tieneCalentamiento } from './tipos-de-serie';
 
 type Serie = Prescripcion['sets'][number];
 
@@ -27,6 +28,14 @@ export function repeticionesPlanificadas(s: Pick<Serie, 'repetitions'>): string 
  * Series iguales sin repeticiones fijadas: «3 series sin repeticiones fijadas».
  */
 export function seriesPlanificadas(p: Pick<Prescripcion, 'sets'>): string[] {
+  // DL-178: el calentamiento va en su renglón, antes; las efectivas se resumen como siempre, con su número efectivo.
+  if (tieneCalentamiento(p.sets)) {
+    const calentamiento = seriesDeCalentamiento(p.sets);
+    const reps = [...new Set(calentamiento.map((s) => repeticionesPlanificadas(s) ?? COPY_ENTRENAMIENTO.sinRepeticionesFijadas))];
+    const efectivas = seriesEfectivas(p.sets).map((s, i) => ({ ...s, setIndex: i + 1 }));
+    const n = calentamiento.length;
+    return [`${COPY_TIPOS_DE_SERIE.calentamiento}: ${numero(n)} ${n === 1 ? 'serie' : 'series'} (${reps.join(', ')})`, ...seriesPlanificadas({ sets: efectivas })];
+  }
   if (p.sets.length === 0) return [];
   const primera = repeticionesPlanificadas(p.sets[0]!);
   const iguales = p.sets.every((s) => repeticionesPlanificadas(s) === primera && !s.note);

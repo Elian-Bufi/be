@@ -19,13 +19,17 @@
  * Una cita inválida devuelve el mismo 422 exista o no la respuesta: no se revela si un identificador es de otra persona.
  * La base repite las reglas de pertenencia (trigger `be_cita_de_respuesta_en_evaluacion_insertar`).
  *
+ * **DL-179 (WP-CONTEXTO-DE-LA-PERSONA):** la evaluación de Nutrición cita igual, con su alcance (NUTRICION), su código de
+ * error (`NUTRITION_EVALUATION_INVALID`) y su tabla (`cita_de_respuesta_en_evaluacion_nutricional`, con su trigger). Las
+ * reglas son las mismas y viven acá una sola vez, con el área como parámetro.
+ *
  * **Precondición de versión** (auditoría del #102). Si la cita trae `expectedVersion` (la versión que el profesional vio
  * al elegirla) y la versión vigente en esta misma lectura es otra, la API responde 409 `VERSION_CONFLICT` y la
  * transacción no escribe ni la evaluación ni ninguna cita. Así una rectificación entre la carga de la pantalla y el envío
  * no reemplaza en silencio lo que el profesional eligió. El control va después del PDP y de la pertenencia: sobre una
  * respuesta ajena o inexistente sigue saliendo el 422 neutral, nunca un 409 que revele que existe.
  */
-import { CodigoDeError, resolverVistaEfectiva, resumenDeValor, type CampoDePlantillaV2, type CitaDeRespuestaDeFormulario, type RelacionDeCorreccion, type RespuestaCitada, type ValorDeRespuestaV2 } from '@be/domain';
+import { CodigoDeError, resolverVistaEfectiva, seCita, type Alcance, resumenDeValor, type CampoDePlantillaV2, type CitaDeRespuestaDeFormulario, type RelacionDeCorreccion, type RespuestaCitada, type ValorDeRespuestaV2 } from '@be/domain';
 import type { Prisma } from '@prisma/client';
 import { ErrorDeApi } from '../http/errores';
 import { camposPorCodigo, terminalVersion } from '../formularios/lectura-formularios';
@@ -63,8 +67,15 @@ const INCLUIR_RESPUESTA = { solicitud: true, templateVersion: true, rectificacio
 
 const token = (n: number): string => `v${n}`;
 
-function invalida(indice: number): ErrorDeApi {
-  return new ErrorDeApi(422, CodigoDeError.TRAINING_EVALUATION_INVALID, 'Una respuesta citada no puede usarse como evidencia de esta evaluación.', {
+/** El área de la evaluación que cita: decide el alcance de las Solicitudes citables y el código del 422. */
+export type AreaQueCita = Extract<Alcance, 'ENTRENAMIENTO' | 'NUTRICION'>;
+const CODIGO_INVALIDA: Readonly<Record<AreaQueCita, CodigoDeError>> = {
+  ENTRENAMIENTO: CodigoDeError.TRAINING_EVALUATION_INVALID,
+  NUTRICION: CodigoDeError.NUTRITION_EVALUATION_INVALID,
+};
+
+function invalida(indice: number, area: AreaQueCita = 'ENTRENAMIENTO'): ErrorDeApi {
+  return new ErrorDeApi(422, CODIGO_INVALIDA[area], 'Una respuesta citada no puede usarse como evidencia de esta evaluación.', {
     issues: [{ code: 'FORM_RESPONSE_REFERENCE_INVALID', path: `formResponseReferences[${indice}]` }],
   });
 }
@@ -95,28 +106,36 @@ type RespuestaCitable = { respuestaId: string; rectificacionId: string | null; v
  * la respuesta, después de comprobar la pertenencia, así un mismo UUID con otras mayúsculas no la esquiva y el orden de
  * los controles no revela nada de una respuesta ajena.
  */
-export async function validarCitas(tx: Tx, citas: readonly CitaDeRespuestaDeFormulario[], par: { profesionalId: string; asesoradoId: string }): Promise<CitaValidada[]> {
+export async function validarCitas(
+  tx: Tx,
+  citas: readonly CitaDeRespuestaDeFormulario[],
+  par: { profesionalId: string; asesoradoId: string },
+  area: AreaQueCita = 'ENTRENAMIENTO',
+): Promise<CitaValidada[]> {
   const leidas = new Map<string, RespuestaCitable>();
   const vistas = new Set<string>();
   const validadas: CitaValidada[] = [];
   for (const [i, cita] of citas.entries()) {
-    if (!esUuid(cita.formResponseId)) throw invalida(i);
+    if (!esUuid(cita.formResponseId)) throw invalida(i, area);
+    // CTX-D09 (revisión del PR): la conducta alimentaria no se cita nunca. Se decide antes de leer la respuesta, así es el
+    // mismo 422 neutral sea de quien sea.
+    if (!seCita(cita.fieldCode)) throw invalida(i, area);
     const id = cita.formResponseId.toLowerCase();
-    if (!leidas.has(id)) leidas.set(id, await leerCitable(tx, id, par));
+    if (!leidas.has(id)) leidas.set(id, await leerCitable(tx, id, par, area));
     const r = leidas.get(id);
-    if (!r) throw invalida(i);
+    if (!r) throw invalida(i, area);
     if (cita.expectedVersion !== undefined && cita.expectedVersion !== token(r.version)) throw versionCambiada(i);
     const clave = `${r.respuestaId}#${cita.fieldCode}`;
-    if (vistas.has(clave) || !r.campos.has(cita.fieldCode)) throw invalida(i);
+    if (vistas.has(clave) || !r.campos.has(cita.fieldCode)) throw invalida(i, area);
     vistas.add(clave);
     validadas.push({ respuestaId: r.respuestaId, rectificacionId: r.rectificacionId, codigoDeCampo: cita.fieldCode });
   }
   return validadas;
 }
 
-async function leerCitable(tx: Tx, id: string, par: { profesionalId: string; asesoradoId: string }): Promise<RespuestaCitable> {
+async function leerCitable(tx: Tx, id: string, par: { profesionalId: string; asesoradoId: string }, area: AreaQueCita): Promise<RespuestaCitable> {
   const r = await tx.respuestaDeFormulario.findUnique({ where: { id }, include: INCLUIR_RESPUESTA });
-  if (!r || r.asesoradoId !== par.asesoradoId || r.solicitud.profesionalId !== par.profesionalId || r.solicitud.alcance !== 'ENTRENAMIENTO') return null;
+  if (!r || r.asesoradoId !== par.asesoradoId || r.solicitud.profesionalId !== par.profesionalId || r.solicitud.alcance !== area) return null;
   const relaciones: RelacionDeCorreccion[] = r.rectificaciones.map((c) => ({ id: c.id, originalId: r.id, correccionPreviaId: c.correccionPreviaId }));
   const vista = resolverVistaEfectiva(r.id, relaciones);
   if (vista.tipo === 'NO_RESOLUBLE') return null;
@@ -134,13 +153,33 @@ async function leerCitable(tx: Tx, id: string, par: { profesionalId: string; ase
  * impide ramas y ciclos. Si alguna vez no lo fuera, `terminalVersion` devolvería la del original y el aviso daría `false`.
  */
 export async function citasResueltas(tx: Tx, evaluacionIds: readonly string[]): Promise<Map<string, RespuestaCitada[]>> {
-  const porEvaluacion = new Map<string, RespuestaCitada[]>(evaluacionIds.map((id) => [id, []]));
-  if (evaluacionIds.length === 0) return porEvaluacion;
+  if (evaluacionIds.length === 0) return new Map();
   const filas = await tx.citaDeRespuestaEnEvaluacionDeEntrenamiento.findMany({
     where: { evaluacionId: { in: [...evaluacionIds] } },
     orderBy: [{ evaluacionId: 'asc' }, { orden: 'asc' }],
     include: { respuesta: { include: INCLUIR_RESPUESTA }, rectificacion: true },
   });
+  return resolver(evaluacionIds, filas);
+}
+
+/** DL-179: lo mismo para las evaluaciones de Nutrición, desde su tabla. */
+export async function citasResueltasDeNutricion(tx: Tx, evaluacionIds: readonly string[]): Promise<Map<string, RespuestaCitada[]>> {
+  if (evaluacionIds.length === 0) return new Map();
+  const filas = await tx.citaDeRespuestaEnEvaluacionNutricional.findMany({
+    where: { evaluacionId: { in: [...evaluacionIds] } },
+    orderBy: [{ evaluacionId: 'asc' }, { orden: 'asc' }],
+    include: { respuesta: { include: INCLUIR_RESPUESTA }, rectificacion: true },
+  });
+  return resolver(evaluacionIds, filas);
+}
+
+type FilaDeCita = Awaited<ReturnType<Tx['citaDeRespuestaEnEvaluacionDeEntrenamiento']['findMany']>>[number] & {
+  respuesta: Prisma.RespuestaDeFormularioGetPayload<{ include: typeof INCLUIR_RESPUESTA }>;
+  rectificacion: Prisma.RectificacionDeRespuestaDeFormularioGetPayload<object> | null;
+};
+
+function resolver(evaluacionIds: readonly string[], filas: readonly FilaDeCita[]): Map<string, RespuestaCitada[]> {
+  const porEvaluacion = new Map<string, RespuestaCitada[]>(evaluacionIds.map((id) => [id, []]));
   for (const f of filas) {
     const citada = f.rectificacion ?? f.respuesta;
     const respuesta = respuestasDe(citada.contenido).find((a) => a.fieldCode === f.codigoDeCampo);

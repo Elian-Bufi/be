@@ -19,8 +19,10 @@
  */
 import { z } from 'zod';
 import { IdOpaco, Instante, ValidationIssueSchema } from './contratos';
+import { CertificacionDeAlimentoSchema, GrupoDeAlimentoSchema, MedidaElegidaSchema, MedidasCaserasSchema, NivelDeOrigenSchema } from './alimentos-del-catalogo';
 import { FuenteExternaDeAlimentoSchema, OrigenEnElBuscadorSchema } from './contratos-procedencia-externa';
 import { PaginaSchema, ResumenDeActorSchema, TokenDeVersionSchema } from './contratos-vinculo';
+import { CitaDeRespuestaDeFormularioSchema, RespuestaCitadaSchema } from './contratos-citas-de-respuestas';
 
 // ─── Tipos comunes ──────────────────────────────────────────────────────────────────────────────
 /** Fecha local del asesorado, sin hora (RNF-DAT-005). */
@@ -62,6 +64,12 @@ export const CrearEvaluacionRequestSchema = z.strictObject({
   assessment: ValoracionSchema,
   evidenceReferences: z.array(Texto(200)).max(20),
   professionalNotes: TextoOpcional(4000),
+  /**
+   * DL-179 (WP-CONTEXTO-DE-LA-PERSONA): las respuestas de formulario citadas como evidencia, como en Entrenamiento
+   * (DL-102): de la persona, a una Solicitud propia de alcance NUTRICION, en su versión vigente. Opcional para no romper a
+   * los clientes que ya crean evaluaciones; ausente es lo mismo que `[]`.
+   */
+  formResponseReferences: z.array(CitaDeRespuestaDeFormularioSchema).max(20).optional(),
 });
 export type CrearEvaluacionRequest = z.infer<typeof CrearEvaluacionRequestSchema>;
 
@@ -81,6 +89,8 @@ export const EvaluacionNutricionalSchema = z.strictObject({
   assessment: ValoracionSchema,
   evidenceReferences: z.array(z.string()),
   professionalNotes: z.string().nullable(),
+  /** DL-179: las respuestas citadas, en el orden en que se citaron (`[]` si no cita ninguna). */
+  formResponseReferences: z.array(RespuestaCitadaSchema),
 });
 export type EvaluacionNutricional = z.infer<typeof EvaluacionNutricionalSchema>;
 export const EvaluacionResponseSchema = z.strictObject({ data: EvaluacionNutricionalSchema });
@@ -144,6 +154,12 @@ export const ItemPrescriptoEntradaSchema = z.strictObject({
   quantity: CantidadSchema.nullable(),
   preparationState: EstadoDePreparacionSchema.nullable(),
   note: TextoOpcional(300).optional(),
+  /**
+   * NUA-08 (DL-180, segundo tramo), opcional: la medida casera con la que se escribió la cantidad, y su equivalencia de
+   * ese momento. La cantidad sigue en gramos (o mililitros) y es la que cuenta; tiene que ser `count × amountPerUnit`
+   * (HOUSEHOLD_MEASURE_INCONSISTENT). Solo la ve el profesional: la persona recibe la cantidad en gramos, como siempre.
+   */
+  householdMeasure: MedidaElegidaSchema.nullable().optional(),
 });
 export const OpcionDeComidaEntradaSchema = z.strictObject({
   optionId: IdOpaco.optional(),
@@ -205,7 +221,9 @@ export type DiaTipo = z.infer<typeof DiaTipoSchema>;
  * que nació cada opción. «Hoy» (API-NUT-14) sigue con `DiaTipoSchema`: la APK instalada valida con un esquema estricto
  * que no conoce `recipe` (DL-121; la prueba de compatibilidad congela esa forma).
  */
-export const OpcionDeComidaDelProfesionalSchema = OpcionDeComidaSchema.extend({ recipe: RecetaDeOpcionSchema.optional() });
+/** NUA-08 (DL-180, segundo tramo): el ítem como lo lee el profesional, con la medida casera elegida si la tiene. */
+export const ItemPrescriptoDelProfesionalSchema = ItemPrescriptoSchema.extend({ householdMeasure: MedidaElegidaSchema.optional() });
+export const OpcionDeComidaDelProfesionalSchema = OpcionDeComidaSchema.extend({ recipe: RecetaDeOpcionSchema.optional(), items: z.array(ItemPrescriptoDelProfesionalSchema) });
 export const ComidaDelProfesionalSchema = ComidaSchema.extend({ options: z.array(OpcionDeComidaDelProfesionalSchema) });
 export const DiaTipoDelProfesionalSchema = DiaTipoSchema.extend({ meals: z.array(ComidaDelProfesionalSchema) });
 export type DiaTipoDelProfesional = z.infer<typeof DiaTipoDelProfesionalSchema>;
@@ -297,6 +315,7 @@ export const ComposicionSchema = z.strictObject({
   /** DL-119: opcional. Ausente o `null` quiere decir desconocida, nunca cero. */
   fiberG: z.number().nonnegative().finite().nullable().optional(),
 });
+export type Composicion = z.infer<typeof ComposicionSchema>;
 /**
  * De dónde salió un elemento del catálogo: sembrado por BE, cargado a mano por un profesional, o **importado de un
  * proveedor externo después de su revisión** (WP-08; UC-I07). Lo comparten nutrición y entrenamiento.
@@ -320,11 +339,31 @@ export const ListaDeCatalogoResponseSchema = z.strictObject({ data: z.array(Elem
  * coincidió con lo buscado y (D-6) lo que hace falta para decir su origen en la fila. API-NUT-13 responde sin estos
  * campos: la forma de las lecturas legadas no cambia.
  */
+/**
+ * DL-180 (NUA-04): el alimento verificado que Administración marcó como equivalente de uno cargado a mano; el buscador lo
+ * sugiere en su lugar. Con la forma de un alimento del catálogo, para sumarlo como cualquier otro, y su grupo.
+ */
+export const EquivalenteVerificadoSchema = ElementoDeCatalogoSchema.extend({ foodGroup: GrupoDeAlimentoSchema.nullable() });
+export type EquivalenteVerificado = z.infer<typeof EquivalenteVerificadoSchema>;
 export const ElementoEncontradoSchema = ElementoDeCatalogoSchema.extend({
   /** El nombre alternativo que coincidió («Aguacate» al buscar «aguacate»), tal como está guardado; `null` si coincidió el principal, o sin texto. */
   matchedAlternativeName: z.string().nullable(),
   /** DL-141 D-6: quién lo cargó y si su correspondencia con la fuente es aproximada. */
   origin: OrigenEnElBuscadorSchema,
+  /**
+   * DL-180 (NUA-03 a NUA-05). Opcionales: una API anterior no los manda, y un campo ausente vale lo de siempre (sin grupo,
+   * sin nivel, sin certificación ni equivalente).
+   * - `foodGroup`: el grupo, para su ícono; `null` sin grupo.
+   * - `originLevel`: «Verificado», «Tuyo», «De otro profesional» o, en lo importado y lo de demostración, ninguno.
+   * - `certification`: la fuente que citó Administración al certificar la versión vigente.
+   * - `verifiedEquivalent`: el verificado que Administración marcó como su equivalente, si está disponible.
+   */
+  foodGroup: GrupoDeAlimentoSchema.nullable().optional(),
+  originLevel: NivelDeOrigenSchema.optional(),
+  certification: CertificacionDeAlimentoSchema.nullable().optional(),
+  verifiedEquivalent: EquivalenteVerificadoSchema.nullable().optional(),
+  /** NUA-08 (segundo tramo), opcional: sus medidas caseras; ausente o vacía, ninguna. */
+  householdMeasures: MedidasCaserasSchema.optional(),
 });
 export type ElementoEncontrado = z.infer<typeof ElementoEncontradoSchema>;
 export const BusquedaEnCatalogoResponseSchema = z.strictObject({ data: z.array(ElementoEncontradoSchema), page: PaginaSchema });
@@ -340,7 +379,18 @@ export const BusquedaEnCatalogoRequestSchema = z.strictObject({
   cursor: z.string().max(400).optional(),
 });
 export type BusquedaEnCatalogoRequest = z.infer<typeof BusquedaEnCatalogoRequestSchema>;
-export const CrearElementoDeCatalogoRequestSchema = z.strictObject({ name: Texto(120), itemType: z.literal('FOOD'), composition: ComposicionSchema });
+/**
+ * DL-180 (NUA-05): `group`, opcional, el grupo del alimento (su ícono); sin él, queda sin grupo como antes. Desde el segundo
+ * tramo (NUA-D14), lo cargado a mano es de quien lo carga: no se comparte con nadie.
+ */
+export const CrearElementoDeCatalogoRequestSchema = z.strictObject({
+  name: Texto(120),
+  itemType: z.literal('FOOD'),
+  composition: ComposicionSchema,
+  group: GrupoDeAlimentoSchema.optional(),
+  /** NUA-08 (segundo tramo), opcional: sus medidas caseras, con su equivalencia; ausente, ninguna. */
+  householdMeasures: MedidasCaserasSchema.optional(),
+});
 export type CrearElementoDeCatalogoRequest = z.infer<typeof CrearElementoDeCatalogoRequestSchema>;
 export const ElementoDeCatalogoResponseSchema = z.strictObject({ data: ElementoDeCatalogoSchema });
 

@@ -114,7 +114,7 @@ export function SolicitarVinculo({
       onClose={onCerrar}
     >
       <h2 id={`${id}-titulo`}>{COPY_VINCULO.solicitarVinculo}</h2>
-      <form className="formulario" onSubmit={enviar} onBlur={avisos.alSalir} noValidate>
+      <form className="formulario" onSubmit={enviar} onBlur={avisos.alSalir} onKeyDown={avisos.alEnter} noValidate>
         <AnuncioDeLosAvisos texto={avisos.anuncio(COPY_AVISOS_VIVOS.listoParaEnviar)} />
         {envio.tipo === 'error' ? (
           <Aviso tipo="error" enfocar>

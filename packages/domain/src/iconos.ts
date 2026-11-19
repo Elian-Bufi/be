@@ -29,14 +29,17 @@ export type FormaDeIcono =
   | { readonly forma: 'elipse'; readonly cx: number; readonly cy: number; readonly rx: number; readonly ry: number; readonly giro?: string }
   | { readonly forma: 'grupo'; readonly giro: string; readonly formas: readonly FormaDeIcono[] };
 
-export type GrupoDeIcono = 'Áreas' | 'Vistas' | 'Nutrición' | 'Entrenamiento' | 'Antropometría' | 'Hechos' | 'Estados' | 'Datos' | 'Gráficos' | 'Acciones' | 'Navegación' | 'Casillas' | 'Sistema' | 'Personas' | 'Biblioteca';
+export type GrupoDeIcono = 'Áreas' | 'Vistas' | 'Nutrición' | 'Entrenamiento' | 'Antropometría' | 'Hechos' | 'Estados' | 'Datos' | 'Gráficos' | 'Acciones' | 'Navegación' | 'Casillas' | 'Sistema' | 'Personas' | 'Biblioteca' | 'Alimentos';
 
 export interface DefinicionDeIcono {
   readonly grupo: GrupoDeIcono;
   readonly formas: readonly FormaDeIcono[];
 }
 
-/** Los 117 nombres: los 106 del catálogo, en su orden, los nueve que sumó la APK (PA-06) y los dos de DL-166, al final. */
+/**
+ * Los 129 nombres: los 106 del catálogo, en su orden, los nueve que sumó la APK (PA-06), los dos de DL-166 y los doce
+ * grupos de alimentos de DL-180, al final.
+ */
 export const NOMBRES_DE_ICONO = [
   // Áreas
   'nutricion', 'entrenamiento', 'antropometria', 'informacion',
@@ -73,6 +76,9 @@ export const NOMBRES_DE_ICONO = [
   // WP-APP-VUELTA-DE-ROSCA (DL-166, AV-09): «Mis hábitos», un reloj envuelto por una flecha circular, y el engranaje de los
   // ajustes del descanso. Dibujados en la versión 3 de las maquetas «App más simple» (2026-11-07).
   'habitos', 'engranaje',
+  // WP-NUTRICION-ALIMENTOS (DL-180, NUA-05): un ícono por grupo de alimentos, en el buscador y en las opciones. «Otros» y
+  // lo que no tiene grupo usan `alimento`.
+  'carnes', 'pescados', 'huevos', 'lacteos', 'cereales', 'legumbres', 'verduras', 'frutas', 'aceites', 'frutos-secos', 'dulces', 'bebidas',
 ] as const;
 export type NombreDeIcono = (typeof NOMBRES_DE_ICONO)[number];
 
@@ -213,4 +219,31 @@ export const ICONOS: Readonly<Record<NombreDeIcono, DefinicionDeIcono>> = {
       { forma: 'circulo', cx: 12, cy: 12, r: 3 },
     ],
   },
+  // ── WP-NUTRICION-ALIMENTOS (DL-180, NUA-05): los grupos de alimentos, con el trazo y el lienzo de la familia ──
+  // Una propuesta de la dirección de UX, a validar por Dirección: entran al taller de diseño (fuera del repositorio) con
+  // la próxima tanda del catálogo. Cada uno es un alimento entero y reconocible, sin fotos ni color, y ninguno califica.
+  // Un bife con su hueso y su borde.
+  carnes: { grupo: 'Alimentos', formas: [{ forma: 'trazo', d: 'M7 6.3c2.7-2 7.6-2.2 10.6-.2 2.9 1.9 3.7 5.5 2 8.3-1.5 2.4-4.3 3-6.2 4.9-1.8 1.8-4.8 2.2-6.8.6-2.2-1.8-2.7-5.4-2.1-8.1.4-2.1 1.1-4.2 2.5-5.5z' }, { forma: 'circulo', cx: 15.4, cy: 9.6, r: 1.8 }, { forma: 'trazo', d: 'M6.6 14.2c1.6.5 3.6-.1 4.6-1.6' }] },
+  // Un pescado de perfil, con el ojo (un punto) y la agalla.
+  pescados: { grupo: 'Alimentos', formas: [{ forma: 'trazo', d: 'M3.5 12c2.1-3.1 4.7-4.6 7.6-4.6 2.6 0 4.6 1.4 6.4 4.6-1.8 3.2-3.8 4.6-6.4 4.6-2.9 0-5.5-1.5-7.6-4.6z' }, { forma: 'trazo', d: 'M17.5 12l3-3v6z' }, { forma: 'circulo', cx: 7.6, cy: 11.2, r: 1, lleno: true }, { forma: 'trazo', d: 'M11.4 9.6c.7.7 1 1.5 1 2.4s-.3 1.7-1 2.4' }] },
+  // Un huevo, con su brillo.
+  huevos: { grupo: 'Alimentos', formas: [{ forma: 'trazo', d: 'M12 3.5c-3.4 0-6.3 5.3-6.3 9.7a6.3 6.3 0 0 0 12.6 0c0-4.4-2.9-9.7-6.3-9.7z' }, { forma: 'trazo', d: 'M9.2 13.4a2.9 2.9 0 0 0 2 2.7' }] },
+  // Un sachet o cartón de leche con su tapa.
+  lacteos: { grupo: 'Alimentos', formas: [{ forma: 'trazo', d: 'M7.5 9.5L10 5.5h4l2.5 4v10a1 1 0 0 1-1 1h-7a1 1 0 0 1-1-1z' }, { forma: 'trazo', d: 'M7.5 9.5h9M10 5.5V3.5h4v2' }, { forma: 'trazo', d: 'M10.5 14h3' }] },
+  // Una rodaja de pan: los cereales, las harinas y los panificados (el trigo de `carbohidratos` es el macro).
+  cereales: { grupo: 'Alimentos', formas: [{ forma: 'trazo', d: 'M6 11.3A3.7 3.7 0 0 1 8.2 4.5h7.6a3.7 3.7 0 0 1 2.2 6.8v7.7a1.5 1.5 0 0 1-1.5 1.5h-9A1.5 1.5 0 0 1 6 19z' }, { forma: 'trazo', d: 'M9.5 12.5l1.5 1.5M13 11l1.5 1.5M11 16l1.5 1.5' }] },
+  // Una vaina con tres granos.
+  legumbres: { grupo: 'Alimentos', formas: [{ forma: 'trazo', d: 'M4 18.5c2.8-.6 4.9-2.3 6.6-4.6 2.1-2.8 3.4-6.3 9.4-8.4.6 5.3-1.7 9.6-5.4 12-3.3 2.2-7.2 2.6-10.6 1z' }, { forma: 'circulo', cx: 9.4, cy: 16.3, r: 1.5 }, { forma: 'circulo', cx: 12.6, cy: 13.4, r: 1.5 }, { forma: 'circulo', cx: 15.6, cy: 10.4, r: 1.5 }] },
+  // Una zanahoria con sus hojas.
+  verduras: { grupo: 'Alimentos', formas: [{ forma: 'trazo', d: 'M15.4 8.6c-1.9-1.9-4.8-1.5-6.2.3L3.9 18.5c-.5 1 .6 2.1 1.6 1.6l9.6-5.3c1.8-1.4 2.2-4.3.3-6.2z' }, { forma: 'trazo', d: 'M15.4 8.6L19 5M15.8 4.2c-.2 1.6.1 2.8 1 3.8M20.2 8.6c-1.6.2-2.8-.1-3.8-1' }, { forma: 'trazo', d: 'M8.7 13.3l1.3 1.3M11.3 10.7l1.2 1.2' }] },
+  // Dos cerezas: la manzana es el ícono de Nutrición.
+  frutas: { grupo: 'Alimentos', formas: [{ forma: 'circulo', cx: 8, cy: 16.5, r: 3.2 }, { forma: 'circulo', cx: 16.2, cy: 15.3, r: 3.2 }, { forma: 'trazo', d: 'M8 13.3c.3-3.9 2.3-7 5.8-9.3M16.2 12.1c-.4-2.9-1.1-5.6-2.4-8.1' }, { forma: 'trazo', d: 'M13.8 4c1.7-1 3.8-.8 5.2.7-1.7 1-3.8.8-5.2-.7z' }] },
+  // Una botella de aceite con su etiqueta (sin gota: la gota queda para el agua).
+  aceites: { grupo: 'Alimentos', formas: [{ forma: 'trazo', d: 'M10 3.5h4M10.5 3.5v3.2L8 10.2v9.3a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1v-9.3l-2.5-3.5V3.5' }, { forma: 'trazo', d: 'M8 13.5h8M8 17h8' }] },
+  // Un maní con su cáscara: los frutos secos y las semillas.
+  'frutos-secos': { grupo: 'Alimentos', formas: [{ forma: 'trazo', d: 'M12 3.5a4 4 0 0 1 4 4c0 1.6-.9 2.6-.9 4.5s.9 2.9.9 4.5a4 4 0 0 1-8 0c0-1.6.9-2.6.9-4.5S8 9.1 8 7.5a4 4 0 0 1 4-4z' }, { forma: 'circulo', cx: 10.6, cy: 7.4, r: 0.9, lleno: true }, { forma: 'circulo', cx: 13.4, cy: 16.4, r: 0.9, lleno: true }] },
+  // Un caramelo envuelto: los azúcares y los dulces.
+  dulces: { grupo: 'Alimentos', formas: [{ forma: 'circulo', cx: 12, cy: 12, r: 4 }, { forma: 'trazo', d: 'M8.4 10.3L4 7.5v9l4.4-2.8M15.6 10.3L20 7.5v9l-4.4-2.8' }] },
+  // Un vaso con sorbete: las bebidas y las infusiones.
+  bebidas: { grupo: 'Alimentos', formas: [{ forma: 'trazo', d: 'M6 5.5h12l-1.5 13.6a1.5 1.5 0 0 1-1.5 1.4H9a1.5 1.5 0 0 1-1.5-1.4z' }, { forma: 'trazo', d: 'M6.8 11h10.4' }, { forma: 'trazo', d: 'M13.2 11l1.8-7.5h2.5' }] },
 };
