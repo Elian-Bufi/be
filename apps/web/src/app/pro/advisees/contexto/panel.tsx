@@ -32,7 +32,7 @@ import {
   type ResumenesParaElProfesionalResponse,
   type RespuestasDelContextoResponse,
 } from '@be/domain';
-import { useCallback, useEffect, useId, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
+import { createContext, useCallback, useContext, useEffect, useId, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
 import { Icono } from '../../../../components/icono';
 import { api, nuevaClaveDeIdempotencia, type Resultado } from '../../../../lib/api';
 import { motivoDeFalla, razonDeFalla } from '../../../../lib/fallas';
@@ -46,23 +46,37 @@ import { avisoDeCitar, citasAdmitidas, claveDeCitaVista, pestanaPorTecla, PESTAN
 
 type Lectura<T> = { readonly tipo: 'cargando' } | { readonly tipo: 'listo'; readonly datos: T } | { readonly tipo: 'no-disponible' } | { readonly tipo: 'error'; readonly razon: string };
 
+/**
+ * Lo ya leído mientras el panel está abierto, por clave (la vuelta va adentro). Revisión del PR: cada pestaña se montaba de
+ * nuevo al volver a ella y leía otra vez (y el cuerpo compartido quedaba otra vez en «Quién miró»). Vive en la memoria de esta
+ * pestaña del navegador y se va al cerrar el panel (08 §27.3); «Volver a leer» y «Actualizar» cambian la vuelta y leen de nuevo.
+ */
+const LoLeidoEnElPanel = createContext<Map<string, unknown> | null>(null);
+
 /** Una lectura del panel: se repite cuando cambia `vuelta` («Volver a leer»), y una respuesta tardía no pisa a una nueva. */
 function useLecturaDelPanel<T>(clave: string | null, leer: () => Promise<Resultado<T>>, sesionPerdida: (r: Resultado<unknown>) => boolean): Lectura<T> {
-  const [lectura, setLectura] = useState<Lectura<T>>({ tipo: 'cargando' });
+  const leido = useContext(LoLeidoEnElPanel);
+  const [lectura, setLectura] = useState<Lectura<T>>(() => (clave !== null && leido?.has(clave) ? { tipo: 'listo', datos: leido.get(clave) as T } : { tipo: 'cargando' }));
   const generacion = useRef(0);
   const leerRef = useRef(leer);
   leerRef.current = leer;
   useEffect(() => {
     if (clave === null) return;
     const esta = ++generacion.current;
+    if (leido?.has(clave)) {
+      setLectura({ tipo: 'listo', datos: leido.get(clave) as T });
+      return;
+    }
     setLectura({ tipo: 'cargando' });
     void leerRef.current().then((r) => {
       if (esta !== generacion.current || sesionPerdida(r)) return;
-      if (r.ok) setLectura({ tipo: 'listo', datos: r.datos });
-      else if (r.tipo === 'API' && r.codigo === 'RESOURCE_NOT_FOUND') setLectura({ tipo: 'no-disponible' });
+      if (r.ok) {
+        leido?.set(clave, r.datos);
+        setLectura({ tipo: 'listo', datos: r.datos });
+      } else if (r.tipo === 'API' && r.codigo === 'RESOURCE_NOT_FOUND') setLectura({ tipo: 'no-disponible' });
       else setLectura({ tipo: 'error', razon: razonDeFalla(motivoDeFalla(r)) });
     });
-  }, [clave, sesionPerdida]);
+  }, [clave, sesionPerdida, leido]);
   return lectura;
 }
 
@@ -99,6 +113,8 @@ export function PanelDeContexto({ area, asesoradoId, token, nombre, modo, pestan
   const vuelta = propia + actualizacion * 1000;
   const encabezado = useRef<HTMLHeadingElement>(null);
   const pestanas = useRef<Partial<Record<Pestana, HTMLButtonElement | null>>>({});
+  // Lo leído mientras está abierto: volver a una pestaña no lee de nuevo (se va al cerrar el panel).
+  const leido = useRef(new Map<string, unknown>());
 
   // Al abrirlo la persona, el foco va al título del panel: el lector de pantalla dice dónde está. Solo al montarse.
   const enfocar = useRef(enfocarAlAbrir);
@@ -158,11 +174,13 @@ export function PanelDeContexto({ area, asesoradoId, token, nombre, modo, pestan
         ))}
       </div>
       <div className="panel-de-contexto__contenido" role="tabpanel" id={`${idPanel}-contenido`} aria-labelledby={`${idPanel}-${pestana}`} tabIndex={0}>
-        {pestana === 'importante' ? <LoImportante area={area} asesoradoId={asesoradoId} token={token} vuelta={vuelta} sesionPerdida={sesionPerdida} /> : null}
-        {pestana === 'formularios' ? <Formularios asesoradoId={asesoradoId} token={token} vuelta={vuelta} sesionPerdida={sesionPerdida} /> : null}
-        {pestana === 'cuerpo' ? <Cuerpo asesoradoId={asesoradoId} token={token} vuelta={vuelta} sesionPerdida={sesionPerdida} /> : null}
-        {pestana === 'otras' ? <OtrasAreas area={area} asesoradoId={asesoradoId} token={token} vuelta={vuelta} sesionPerdida={sesionPerdida} /> : null}
-        {pestana === 'notas' ? <Notas asesoradoId={asesoradoId} token={token} vuelta={vuelta} sesionPerdida={sesionPerdida} /> : null}
+        <LoLeidoEnElPanel.Provider value={leido.current}>
+          {pestana === 'importante' ? <LoImportante area={area} asesoradoId={asesoradoId} token={token} vuelta={vuelta} sesionPerdida={sesionPerdida} /> : null}
+          {pestana === 'formularios' ? <Formularios asesoradoId={asesoradoId} token={token} vuelta={vuelta} sesionPerdida={sesionPerdida} /> : null}
+          {pestana === 'cuerpo' ? <Cuerpo asesoradoId={asesoradoId} token={token} vuelta={vuelta} sesionPerdida={sesionPerdida} /> : null}
+          {pestana === 'otras' ? <OtrasAreas area={area} asesoradoId={asesoradoId} token={token} vuelta={vuelta} sesionPerdida={sesionPerdida} /> : null}
+          {pestana === 'notas' ? <Notas asesoradoId={asesoradoId} token={token} vuelta={vuelta} sesionPerdida={sesionPerdida} /> : null}
+        </LoLeidoEnElPanel.Provider>
       </div>
     </aside>
   );
@@ -456,8 +474,8 @@ function CambioEnDosRenglones({ partes }: { partes: { readonly diferencia: strin
 
 // ─── Otras áreas ────────────────────────────────────────────────────────────────────────────────
 
-function PlanDeOtraArea({ asesoradoId, token, area, sesionPerdida }: { asesoradoId: string; token: string; area: 'NUTRICION' | 'ENTRENAMIENTO'; sesionPerdida: (r: Resultado<unknown>) => boolean }) {
-  const lectura = useLecturaDelPanel(`${asesoradoId}|p|${area}`, () => api.planCompartido(token, asesoradoId, area), sesionPerdida);
+function PlanDeOtraArea({ asesoradoId, token, area, vuelta, sesionPerdida }: { asesoradoId: string; token: string; area: 'NUTRICION' | 'ENTRENAMIENTO'; vuelta: number; sesionPerdida: (r: Resultado<unknown>) => boolean }) {
+  const lectura = useLecturaDelPanel(`${asesoradoId}|p|${area}|${vuelta}`, () => api.planCompartido(token, asesoradoId, area), sesionPerdida);
   return (
     <EstadoDelPanel lectura={lectura} que="el plan">
       {(r: { data: PlanCompartido | null }) =>
@@ -536,7 +554,7 @@ function OtrasAreas({ area, asesoradoId, token, vuelta, sesionPerdida }: PropsDe
                     ))}
                     {t.estado === 'PLAN' && (a.area === 'NUTRICION' || a.area === 'ENTRENAMIENTO') ? (
                       verPlan === a.area ? (
-                        <PlanDeOtraArea asesoradoId={asesoradoId} token={token} area={a.area} sesionPerdida={sesionPerdida} />
+                        <PlanDeOtraArea asesoradoId={asesoradoId} token={token} area={a.area} vuelta={vuelta} sesionPerdida={sesionPerdida} />
                       ) : (
                         <button type="button" className="boton boton--quieto boton--compacto" onClick={() => setVerPlan(a.area)}>
                           Ver el plan vigente

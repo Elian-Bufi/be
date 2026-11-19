@@ -184,7 +184,18 @@ test('TEST-CTX-028 · «Citar»: el renglón entra entero o no entra (tope de 20
   assert.deepEqual(P.citasQueCambiaron([citaDe('a'), citaDe('b')], [{ code: 'FORM_RESPONSE_VERSION_CHANGED', path: 'formResponseReferences[1].expectedVersion' }]), ['r1#b']);
 });
 
-test('TEST-CTX-029 · el foco vuelve a donde estaba, el panel reabierto solo no lo roba, «Ocultar nombres» en «La tomó», y las pestañas en un renglón', () => {
+test('TEST-CTX-029 · el foco vuelve a donde estaba, el panel reabierto solo no lo roba, volver a una pestaña no lee de nuevo, «Ocultar nombres» en «La tomó», y las pestañas en un renglón', () => {
+  // Lo leído queda en la memoria del panel abierto, por clave con la vuelta adentro: «Volver a leer» lee de nuevo, cambiar
+  // de pestaña no (y el cuerpo compartido no vuelve a quedar en «Quién miró» por eso).
+  const delPanel = leer('contexto/panel.tsx');
+  assert.match(delPanel, /const leido = useRef\(new Map<string, unknown>\(\)\);/);
+  assert.match(delPanel, /<LoLeidoEnElPanel\.Provider value=\{leido\.current\}>/);
+  assert.match(delPanel, /if \(leido\?\.has\(clave\)\) \{/);
+  assert.match(delPanel, /leido\?\.set\(clave, r\.datos\);/);
+  // Toda clave de lectura lleva la vuelta (si no, «Volver a leer» mostraría lo guardado).
+  const claves = [...delPanel.matchAll(/=\s*useLecturaDelPanel(?:<[^>]+>)?\(\s*(`[^`]*`|[^,]+),/g)].map((m) => m[1]);
+  assert.ok(claves.length >= 8, `se esperaban las lecturas del panel y hay ${claves.length}`);
+  for (const c of claves) assert.match(c, /\$\{vuelta\}/, `la lectura ${c} no lleva la vuelta`);
   const marco = leer('marco-del-area.tsx');
   // Se recuerda dónde estaba el foco al abrir (con Alt + C, el campo de la evaluación).
   assert.match(marco, /focoAlAbrir\.current = activo instanceof HTMLElement && activo !== document\.body \? activo : null;/);
