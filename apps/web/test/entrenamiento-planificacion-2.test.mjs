@@ -447,6 +447,23 @@ test('Revisión · escena 10: «Las próximas dos semanas» queda a la vista, co
   );
 });
 
+test('Revisión · ENP-D17 también al duplicar una sesión o insertar una habitual: nacen con su identificador, sin el de su origen', async () => {
+  // Antes, la copia y la habitual quedaban sin identificador hasta el guardado: sus chips decían que primero había que
+  // guardar, a diferencia de «Agregar sesión» y «Sesiones vacías».
+  assert.match(EDITOR, /duplicarEn\(lasSesiones\(x\), k, \{ \.\.\.copiaDeLaSesion\(lasSesiones\(x\)\[k\]!, k\), sessionId: crypto\.randomUUID\(\) \}\)/);
+  assert.match(EDITOR, /lasSesiones\(x\)\.push\(\{ \.\.\.structuredClone\(h\.structure\), sessionId: crypto\.randomUUID\(\) \}\)/);
+  // La copia no lleva los identificadores de su origen (si no, el servidor rechaza el plan por un identificador repetido).
+  const X = await import('../src/app/pro/advisees/editar-la-estructura.ts');
+  const copia = X.copiaDeLaSesion({ sessionId: 's-1', label: 'Piernas A', instructions: null, prescriptions: [{ prescriptionId: 'p-1', exerciseVersionId: 'e', sets: [] }] }, 0);
+  assert.equal(copia.sessionId, undefined);
+  assert.equal(copia.prescriptions[0].prescriptionId, undefined);
+});
+
+test('Revisión · «Ocultar» la vuelta a la revisión deja el foco en la sesión: el botón desaparece con la barra', () => {
+  assert.match(EDITOR, /data-ocultar-la-vuelta\n\s*onClick=\{\(\) => \{\n\s*setVolverALaRevision\(null\);\n(?:\s*\/\/.*\n)*\s*setParaEnfocar\('zona-editor'\);/);
+  assert.match(EDITOR, /<div id="zona-editor" className="estacion__zona estacion__centro" data-zona="editor" role="region" aria-label=\{CE\.editor\} tabIndex=\{-1\}>/);
+});
+
 test('Revisión · sin ninguna sesión con días, «Próximas fechas» se cierra: no vuelve a abrirse sola con el próximo día', () => {
   assert.match(EDITOR, /if \(!a \|\| a\.sessions\.length === 0\) setFechasAbiertas\(false\);/);
 });

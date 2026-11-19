@@ -1065,7 +1065,8 @@ export function EditorDePlan({
   };
   /** TB-48: la copia de la sesión va justo después, y se la mira con su nombre a la vista para cambiarlo. */
   const duplicarSesion = () => {
-    cambiar((x) => (duplicarEn(lasSesiones(x), k, copiaDeLaSesion(lasSesiones(x)[k]!, k)), x));
+    // Revisión del tramo 2 (ENP-D17): la copia nace con su identificador, como «Agregar sesión»: sus días se eligen enseguida.
+    cambiar((x) => (duplicarEn(lasSesiones(x), k, { ...copiaDeLaSesion(lasSesiones(x)[k]!, k), sessionId: crypto.randomUUID() }), x));
     elegirSesion(k + 1);
     setTexto({ de: 'nombre-de-la-sesion', i, j, k: k + 1 });
   };
@@ -1074,11 +1075,14 @@ export function EditorDePlan({
     cambiar((x) => (mover(lasSesiones(x), k, hacia), x));
     elegirSesion(hacia);
   };
-  /** Una copia de la sesión habitual (sin identificadores: el servidor los asigna al guardar) al final de las sesiones que se miran. */
+  /**
+   * Una copia de la sesión habitual al final de las sesiones que se miran: sin los identificadores de sus ejercicios (el
+   * servidor los asigna al guardar) y, desde la revisión del tramo 2 (ENP-D17), con uno nuevo para la sesión.
+   */
   const insertarSesion = (h: SesionHabitual) => {
     const n = sesiones.length;
     setNombres((x) => ({ ...x, ...nombresDeHabitual(h) }));
-    cambiar((x) => (lasSesiones(x).push(structuredClone(h.structure)), x));
+    cambiar((x) => (lasSesiones(x).push({ ...structuredClone(h.structure), sessionId: crypto.randomUUID() }), x));
     elegirSesion(n);
     setInsertandoHabitual(false);
     // DL-113: es el resultado de una acción, así que aparece donde se está mirando; el foco vuelve a «Agregar».
@@ -2181,7 +2185,16 @@ export function EditorDePlan({
                 <Icono nombre="izquierda" tamano={15} />
                 {COPY_VOLVER_A_LA_REVISION.volver}
               </button>
-              <button type="button" className="boton boton--enlace" onClick={() => setVolverALaRevision(null)}>
+              <button
+                type="button"
+                className="boton boton--enlace"
+                data-ocultar-la-vuelta
+                onClick={() => {
+                  setVolverALaRevision(null);
+                  // Revisión del tramo 2: el botón desaparece con la barra; el foco no se pierde, queda en la sesión.
+                  setParaEnfocar('zona-editor');
+                }}
+              >
                 {COPY_VOLVER_A_LA_REVISION.ocultar}
               </button>
             </div>
