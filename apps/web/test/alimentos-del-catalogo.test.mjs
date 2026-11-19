@@ -195,7 +195,8 @@ test('NUA-08 · la cantidad con una medida casera: la medida a la vista, la cuen
   assert.match(FILA, /value=\{valorDeLaUnidad\(item\)\}/);
   assert.match(FILA, /onCambiar\(conUnidad\(item, e\.target\.value, datos\.medidas\)\)/);
   assert.match(FILA, /onCambiar\(conNumero\(item, n \?\? Number\.NaN\)\)/);
-  assert.match(FILA, /\{COPY_ALIMENTOS\.equivaleA\(formatearCantidad\(magnitud\.value/);
+  assert.match(FILA, /\{COPY_ALIMENTOS\.equivaleA\(\n\s*formatearCantidad\(magnitud\.value[\s\S]{0,200}equivalenciaEnPalabras\(/);
+  assert.equal(d.COPY_ALIMENTOS.equivaleA('135 g', '1 taza = 90 g'), '= 135 g · 1 taza = 90 g');
 });
 
 test('NUA-D15 y D16 · la consola: quién lo cargó, los parecidos con cuántos profesionales y «Sumar al canon» con fuente', async () => {
