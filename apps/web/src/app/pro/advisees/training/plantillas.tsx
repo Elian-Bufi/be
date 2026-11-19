@@ -12,6 +12,7 @@
 import {
   COPY_GUARDADO,
   COPY_PLANTILLAS,
+  COPY_PREPARACION_DE_PLANTILLA,
   falloDeGuardado,
   notasDeLaEstructura,
   vaciarNota,
@@ -126,21 +127,30 @@ export function DialogoGuardarPlantilla({
   );
 }
 
-/** «Creada desde la plantilla X, versión N» en un borrador que salió de una plantilla. */
+/**
+ * «Creada desde la plantilla X, versión N» en un borrador que salió de una plantilla. PLT (DL-182): N es el número de la
+ * versión que se aplicó (`templateVersionId`), leída de las versiones de la plantilla (API-TPL-14), no el de la vigente:
+ * antes decía la vigente en los dos casos. El nombre es el de hoy. Si la versión no aparece, se dice el nombre solo.
+ */
 export function NotaDeOrigen({ token, origen }: { token: string; origen: OrigenDePlanEnPlantilla }) {
   const [texto, setTexto] = useState<string | null>(null);
   useEffect(() => {
     let vigente = true;
-    void api.consultarPlantillaDeEntrenamiento(token, origen.templateId).then((r) => {
+    void Promise.all([api.consultarPlantillaDeEntrenamiento(token, origen.templateId), api.versionesDePlantillaDeEntrenamiento(token, origen.templateId)]).then(([r, v]) => {
       if (!vigente) return;
-      // La versión aplicada puede no ser la vigente de la plantilla: se muestra el número de la que se aplicó si coincide, o el nombre solo.
-      setTexto(r.ok ? COPY_PLANTILLAS.creadaDesde(r.datos.data.name, r.datos.data.versionId === origen.templateVersionId ? r.datos.data.versionNumber : r.datos.data.versionNumber) : COPY_PLANTILLAS.origenDesconocido);
+      if (!r.ok) return setTexto(COPY_PLANTILLAS.origenDesconocido);
+      const aplicada = v.ok ? v.datos.data.find((x) => x.versionId === origen.templateVersionId) : undefined;
+      setTexto(aplicada ? COPY_PLANTILLAS.creadaDesde(r.datos.data.name, aplicada.versionNumber) : COPY_PREPARACION_DE_PLANTILLA.creadaDesdeSinNumero(r.datos.data.name));
     });
     return () => {
       vigente = false;
     };
   }, [token, origen]);
-  return texto ? <p className="nota">{texto}</p> : null;
+  return texto ? (
+    <p className="nota" data-nota-de-origen>
+      {texto}
+    </p>
+  ) : null;
 }
 
 function esCodigo(r: Resultado<unknown>, codigo: string): boolean {

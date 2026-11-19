@@ -54,7 +54,7 @@ import { MenuDeAcciones, type AccionDelMenu } from '../../../../components/menu-
 import { numeroEnCampo } from '../../../../lib/formato';
 import { COPY_DE_LOS_EDITORES as EDICION, sinLaSerie } from '../editar-la-estructura';
 import { ImagenGuardadaDeEjercicio } from '../../exercises/imagen-de-ejercicio';
-import { useEntrenamiento } from './entrenamiento';
+import { useEditorDeEntrenamiento } from './entrenamiento';
 import { LineaDePrescripcion } from './linea-de-prescripcion';
 import { COPY_ESCRITURA_RAPIDA } from './escritura-rapida';
 import { cambioDeCriterio, conElCriterio, COPY_CAMBIO_DE_CRITERIO, deshacerElCambioDeCriterio, sigueElCambio, type CambioDeCriterio } from './cambio-de-criterio';
@@ -224,7 +224,8 @@ export function EjercicioDelEditor({
   /** El ejercicio del catálogo, si ya se conoce (lo trae la versión guardada): con él, la fuerza estimada (§5.8). */
   exerciseId?: string | null;
 }) {
-  const { token, asesoradoId, sesionPerdida } = useEntrenamiento();
+  // PLT (DL-182): sin persona (una plantilla), el editor no pasa el ejercicio del catálogo y nada de esto se pide.
+  const { token, asesoradoId, sesionPerdida } = useEditorDeEntrenamiento();
   // PG-16 (DL-173): «Anotar sobre este ejercicio», si el editor tiene las notas propias y se sabe qué ejercicio es.
   const notasPropias = useNotasPropias();
   const propio = useId();
@@ -367,7 +368,7 @@ export function EjercicioDelEditor({
           </>
         ) : null}
       </div>
-      {conFuerza ? (
+      {conFuerza && asesoradoId !== null ? (
         <DetalleDelEjercicio
           abierto={detalle}
           onCerrar={() => {
@@ -388,7 +389,7 @@ export function EjercicioDelEditor({
           onEscribirEnLasSeries={(c) => onCambiar(c as Partial<PrescripcionE>)}
         />
       ) : null}
-      {conLaVezPasada && exerciseId ? (
+      {conLaVezPasada && exerciseId && asesoradoId !== null ? (
         <CuadroDeLaVezPasada
           abierto={vezPasada}
           onCerrar={() => setVezPasada(false)}

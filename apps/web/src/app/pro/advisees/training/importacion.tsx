@@ -27,13 +27,13 @@ import { Aviso, Campo } from '../../../../components/formulario';
 import { api } from '../../../../lib/api';
 import { dia } from '../../../../lib/formato';
 import { esIncierto, mensajeDeFallo, useClaveDeIntento } from '../../../../lib/intento';
-import { useEntrenamiento } from './entrenamiento';
+import { useEditorDeEntrenamiento } from './entrenamiento';
 
 const LARGO_MAXIMO_DEL_NOMBRE = 120;
 type Bloqueo = null | { tipo: 'incierto'; pedido: ResolverCandidatoDeEjercicioRequest } | { tipo: 'cerrado' };
 
 export function ImportacionDeWger({ id, onIncorporado, onCargarManualmente }: { id: string; onIncorporado: (e: EjercicioDeCatalogo) => void; onCargarManualmente: () => void }) {
-  const { token, sesionPerdida, accesoRetirado } = useEntrenamiento();
+  const { token, sesionPerdida, accesoRetirado } = useEditorDeEntrenamiento();
   const [numero, setNumero] = useState('');
   const [errorDeNumero, setErrorDeNumero] = useState<string | null>(null);
   const [consultando, setConsultando] = useState(false);

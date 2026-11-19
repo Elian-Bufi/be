@@ -8743,3 +8743,41 @@ dentro de la sesión: la sesión es una lista ordenada de prescripciones (REG-06
   recordado por posición, el tope de 20 bloques en el editor, la lectura de la versión activa sin los bloques, entre
   otros), en §7 del documento del paquete.
 - El tramo siguiente del paquete (C5 a C11). Detalle completo: `docs/paquetes/WP-ENTRENAMIENTO-PLANIFICACION.md`.
+
+---
+
+## DL-182 — Las plantillas de entrenamiento independientes: crearlas y editarlas sin una persona
+
+**Prioridad:** alta (preparar los planes base es trabajo diario del profesional) · **Documento:** RF-037 · DL-108 (PF-09)
+· DL-122 · DL-178 · DL-181 · B05 · **Estado:** DECIDIDA por Dirección el 2026-11-19 (crear y editar sin persona, con el
+mismo editor, y el recorte de la v1) · PROGRAMADA en `wp-plantillas-de-entrenamiento` (PR en borrador, sin integrar, sobre
+`wp-entrenamiento-planificacion-2`) · PLT-D01 a PLT-D18, **a ratificar**. Si al integrar el número choca con otro paquete,
+se renumera.
+
+**Qué decidió Dirección.** Que un profesional pueda crear y editar una plantilla de Entrenamiento desde «Mis plantillas»,
+sin elegir a nadie (en blanco o desde una existente), con el mismo núcleo del editor del plan, autoguardado, «Guardar
+plantilla» la primera vez y «Guardar nueva versión» después, con una revisión antes; que editarla no toque los planes ya
+creados y que el plan diga el número de la versión que se aplicó. Afuera, como lo siguiente: el historial con
+diferencias, el conflicto con un diff y «usar una versión vieja como base».
+
+**Qué dice el legajo.** El 09 no tiene plantillas: son una familia propia de BE (TPL, DL-108), que solo se creaba desde el
+plan de una persona. DL-108 fija que la plantilla no lleva nada de una persona (D-5) y que las cargas se copian solo con
+el interruptor (D-2).
+
+**Lo programado.**
+- **La preparación de una plantilla** (tabla nueva, migración aditiva escrita con `prisma migrate diff`): el trabajo en
+  curso, privado, que se autoguarda sin tocar ninguna versión; guardarla crea la plantilla o la versión siguiente (con
+  las escrituras de API-TPL-01 y 04) y la borra. Una por plantilla.
+- **Nueve operaciones aditivas, API-TPL-06 a 14:** crear (en blanco o copia), abrir la de una existente, listar, leer,
+  autoguardar, revisar, guardar, descartar y las versiones de una plantilla con cuántos planes salieron de cada una. Lo
+  ajeno es 404; las escrituras simultáneas, 409. Ninguna operación de antes cambia de forma, y la APK no recibe nada
+  nuevo.
+- **El website:** el editor del plan recibe qué edita y, con una plantilla, guarda, revisa y guarda como versión con sus
+  operaciones; lo de la persona no aparece. «Mis plantillas» suma «Nueva plantilla», lo que está en preparación,
+  «Editar» y «Crear otra desde esta», y el detalle agrupado por bloque con sus versiones. La nota de origen del plan dice
+  la versión aplicada (antes, la vigente).
+
+**Lo que queda.**
+- Ratificar PLT-D01 a PLT-D18.
+- Lo declarado como siguiente (arriba) y, fuera del paquete, el mismo error de la nota de origen en Nutrición.
+- La prueba manual con el teclado y un lector de pantalla. Detalle completo: `docs/paquetes/WP-PLANTILLAS-DE-ENTRENAMIENTO.md`.

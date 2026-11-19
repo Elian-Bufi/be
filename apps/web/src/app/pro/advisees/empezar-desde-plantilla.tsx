@@ -29,6 +29,7 @@ export function DialogoEmpezarDesdePlantilla({
   error,
   onCerrar,
   onAplicar,
+  dondeSeArman = COPY_PLANTILLAS.dondeSeArman,
 }: {
   abierto: boolean;
   /** Las plantillas activas, todas. Una sesión vencida la resuelve quien llama. */
@@ -38,6 +39,8 @@ export function DialogoEmpezarDesdePlantilla({
   error: string | null;
   onCerrar: () => void;
   onAplicar: (templateVersionId: string) => void;
+  /** PLT (DL-182): dónde se arman las plantillas del área (las de Entrenamiento, también en «Plantillas y habituales»). */
+  dondeSeArman?: string;
 }) {
   const nombre = useId();
   const [lectura, setLectura] = useState<Resultado<readonly PlantillaParaEmpezar[]> | null>(null);
@@ -82,7 +85,7 @@ export function DialogoEmpezarDesdePlantilla({
       ) : lectura.datos.length === 0 ? (
         <>
           <p>{COPY_PLANTILLAS.sinPlantillasActivas}</p>
-          <p className="nota">{COPY_PLANTILLAS.dondeSeArman}</p>
+          <p className="nota">{dondeSeArman}</p>
         </>
       ) : (
         <>

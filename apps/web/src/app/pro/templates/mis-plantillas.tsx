@@ -6,13 +6,31 @@
  *   coincida se dice eso, con «Ver todas» (no «todavía no guardaste ninguna»); una lectura que falla se dice como falla.
  * - Detalle en solo lectura: la estructura con los nombres vigentes de los ejercicios (`exercises`); un ejercicio que
  *   ya no está disponible se dice.
- * - Renombrar y describir, archivar y reactivar, con `expectedVersion`. La estructura no se edita acá: una versión
- *   nueva se guarda desde un plan («Guardar como plantilla»), que es donde el profesional la trabaja.
+ * - Renombrar y describir, archivar y reactivar, con `expectedVersion`.
+ * - PLT (DL-182): una plantilla se crea y se edita acá, sin persona: «Nueva plantilla» (en blanco), «Crear otra desde
+ *   esta» (una copia) y «Editar» (sus cambios, que se guardan como una versión nueva) abren el mismo editor del plan
+ *   (`/pro/templates/training`). Lo que está en preparación se ve en la lista: una nueva, «Sin título» hasta tener
+ *   nombre, y los cambios de una existente, junto a su versión disponible. El detalle agrupa la estructura por fase,
+ *   sesión y bloque, y lista las versiones con cuántos planes salieron de cada una.
  */
-import { COPY_PLANTILLAS, cuentaDeSeries, type EstructuraDePlanDeEntrenamientoEntrada, type PlantillaDeEntrenamiento, type ResumenDePlantillaDeEntrenamiento } from '@be/domain';
+import {
+  COPY_PLANTILLAS,
+  COPY_PREPARACION_DE_PLANTILLA as PLT,
+  todasLasPaginas,
+  type PlantillaDeEntrenamiento,
+  type ResumenDePlantillaDeEntrenamiento,
+  type ResumenDePreparacionDePlantilla,
+} from '@be/domain';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Enlace } from '../../../components/enlace';
+import { Icono } from '../../../components/icono';
+import { tomarAvisoPara } from '../../../lib/aviso-al-llegar';
+import { useClaveDeIntento } from '../../../lib/intento';
+import { EstructuraAgrupada, VersionesDeLaPlantilla } from './detalle-de-la-plantilla';
+import { hrefDelEditor } from './training/editor-de-la-plantilla';
 import { AvisoFlotante } from '../../../components/ayuda';
-import { useAvisarALaLista, useCambiosParaSalir, useDetalleConGuardia } from '../../../components/salida-segura';
+import { useAntesDeSalir, useAvisarALaLista, useCambiosParaSalir, useDetalleConGuardia } from '../../../components/salida-segura';
 import { Cargando, ErrorConReintento, EstadoVacio, VerMas } from '../../../components/estados';
 import { Aviso, Campo } from '../../../components/formulario';
 import { api, type Resultado } from '../../../lib/api';
@@ -30,11 +48,17 @@ type Estado = 'ACTIVE' | 'ARCHIVED';
 export function MisPlantillas() {
   const { token, sesionPerdida, yo, cargarYo } = useEspacioProfesional('/pro/templates');
   const [estado, setEstado] = useState<Estado | ''>('');
-  const [abiertaId, setAbiertaId] = useState<string | null>(null);
+  // PLT (DL-182): al volver del editor, la plantilla guardada queda abierta (`?plantilla=`), con su aviso.
+  const pedida = useSearchParams().get('plantilla');
+  const [abiertaId, setAbiertaId] = useState<string | null>(pedida);
   // ED-65: cerrar el detalle, abrir otra o cambiar el filtro (la lista vuelve a leerse) lo desmontan: con el nombre o la
   // descripción sin guardar, pregunta.
   const detalle = useDetalleConGuardia();
   const [aviso, setAviso] = useState<{ tipo: 'exito' | 'error'; texto: string } | null>(null);
+  useEffect(() => {
+    const llegada = tomarAvisoPara('/pro/templates');
+    if (llegada) setAviso({ tipo: 'exito', texto: llegada });
+  }, []);
   // «Ver todas» desaparece al quitar el filtro: el foco va al filtro, que es lo que cambió.
   const filtroDeEstado = useRef<HTMLSelectElement>(null);
   const verTodas = () => {
@@ -59,6 +83,15 @@ export function MisPlantillas() {
     sesionPerdida,
   );
 
+  // PLT (DL-182): lo que está en preparación, para la lista: las nuevas arriba y los cambios junto a su plantilla.
+  const preparaciones = usePreparaciones(token && listo && !sinArea ? token : null, sesionPerdida);
+  const abrirElEditor = useAbrirElEditor(token, sesionPerdida, (texto) => setAviso({ tipo: 'error', texto }));
+
+  // PLT (DL-182), revisión del 2026-11-19: con una plantilla abierta, la sección toma el ancho entero (como las demás
+  // pantallas del espacio profesional) y el detalle va en dos columnas: la estructura a la izquierda; las versiones, el
+  // nombre y la descripción a la derecha. Sin una abierta, las dos columnas de «Plantillas y habituales» siguen igual.
+  const conDetalle = lista.estado.tipo === 'listo' && lista.estado.items.some((p) => p.templateId === abiertaId);
+
   if (!token) return <EsperandoSesion />;
   if (yo.tipo === 'cargando') return <Cargando />;
   if (yo.tipo === 'error') return <ErrorConReintento onReintentar={cargarYo} />;
@@ -77,9 +110,18 @@ export function MisPlantillas() {
         </Aviso>
       ) : null}
       {sinArea ? null : (
-      <section className="seccion" aria-labelledby="titulo-plantillas">
-        <h2 id="titulo-plantillas">{COPY_PLANTILLAS.plantillasDeEntrenamiento}</h2>
+      <section className={conDetalle ? 'seccion seccion--con-detalle' : 'seccion'} aria-labelledby="titulo-plantillas" data-con-detalle={conDetalle ? '' : undefined}>
+        <div className="plantillas-y-habituales__cabecera">
+          <h2 id="titulo-plantillas">{COPY_PLANTILLAS.plantillasDeEntrenamiento}</h2>
+          {/* PLT (DL-182): una plantilla nueva, sin persona: abre el editor en blanco, sin pedir nada antes. */}
+          <button type="button" className="boton boton--primario" data-nueva-plantilla disabled={abrirElEditor.abriendo} onClick={() => void abrirElEditor.nueva()}>
+            <Icono nombre="mas" tamano={18} />
+            {abrirElEditor.abriendo ? PLT.creandoLaPlantilla : PLT.nuevaPlantilla}
+          </button>
+        </div>
+        <p className="nota">{PLT.queSeHaceAca}</p>
         <p className="nota">{COPY_PLANTILLAS.soloTuya}</p>
+        <EnPreparacion preparaciones={preparaciones} />
         {/* Sin plantillas y sin filtro, el filtro no tiene nada que filtrar: aparece cuando hay alguna. */}
         {estado === '' && lista.estado.tipo === 'listo' && lista.estado.items.length === 0 ? null : (
         <div className="campo">
@@ -104,7 +146,7 @@ export function MisPlantillas() {
         {lista.estado.tipo === 'listo' ? (
           lista.estado.items.length === 0 ? (
             estado === '' ? (
-              <p>{COPY_PLANTILLAS.sinPlantillas}</p>
+              <p>{PLT.sinPlantillasDeEntrenamiento}</p>
             ) : (
               // Con el filtro puesto, lo que no hay es una plantilla con ese estado: el filtro sigue a la vista, arriba.
               <EstadoVacio
@@ -128,9 +170,13 @@ export function MisPlantillas() {
                   <p className="nota">
                     Versión {p.versionNumber} · {COPY_PLANTILLAS.sesiones(p.sessionCount)} · {p.copiedLoads ? COPY_PLANTILLAS.conCargas : COPY_PLANTILLAS.sinCargas} · {p.origin ? COPY_PLANTILLAS.origen(fecha(p.createdAt)) : COPY_PLANTILLAS.desdeCero} · actualizada el {fecha(p.updatedAt)}
                   </p>
+                  <CambiosEnPreparacion preparacion={cambiosDe(preparaciones, p.templateId)} version={p.versionNumber} />
+                  <div className="acciones lista__acciones">
                   <button type="button" className="boton boton--enlace" aria-expanded={abiertaId === p.templateId} onClick={() => detalle.antes(() => setAbiertaId(abiertaId === p.templateId ? null : p.templateId))}>
                     {abiertaId === p.templateId ? 'Cerrar' : 'Ver'}
                   </button>
+                  <AccionesDeEdicion plantilla={p} preparacion={cambiosDe(preparaciones, p.templateId)} editor={abrirElEditor} />
+                  </div>
                   {abiertaId === p.templateId ? (
                     <DetalleDePlantilla
                       token={token}
@@ -205,13 +251,21 @@ function DetalleDePlantilla({
   }
 
   return (
-    <div className="detalle-de-valores">
+    <div className="detalle-de-valores detalle-de-la-plantilla-abierta" data-detalle-de-la-plantilla>
       {error ? (
         <Aviso tipo="error">
           <p>{error}</p>
         </Aviso>
       ) : null}
-      <Estructura estructura={p.structure} ejercicios={p.exercises} />
+      {/* Al ancho: la estructura a la izquierda; lo de la plantilla (versiones, nombre y descripción) a la derecha. */}
+      <div className="detalle-de-la-plantilla-abierta__estructura">
+        <EstructuraAgrupada estructura={p.structure} ejercicios={p.exercises} />
+      </div>
+      <div className="detalle-de-la-plantilla-abierta__lateral" data-lateral-de-la-plantilla>
+      <VersionesDeLaPlantilla token={token} templateId={p.templateId} sesionPerdida={sesionPerdida} />
+      <p className="nota" data-usar-con-una-persona>
+        {PLT.usarConUnaPersona}
+      </p>
       <h4>Nombre y descripción</h4>
       <Campo id={`tpl-${p.templateId}-nombre`} etiqueta={COPY_PLANTILLAS.nombre} value={nombre} onChange={(e) => setNombre(e.target.value)} maxLength={120} />
       <Campo id={`tpl-${p.templateId}-descripcion`} etiqueta={COPY_PLANTILLAS.descripcion} value={descripcion} onChange={(e) => setDescripcion(e.target.value)} maxLength={1000} />
@@ -229,62 +283,123 @@ function DetalleDePlantilla({
           </button>
         )}
       </div>
+      </div>
     </div>
   );
 }
 
-/** La estructura de una plantilla, en solo lectura, con los nombres vigentes del catálogo. */
-function Estructura({ estructura, ejercicios }: { estructura: EstructuraDePlanDeEntrenamientoEntrada; ejercicios: PlantillaDeEntrenamiento['exercises'] }) {
-  const sesion = (s: NonNullable<EstructuraDePlanDeEntrenamientoEntrada['blocks'][number]['sessions']>[number], clave: string) => (
-    <div key={clave} className="nodo nodo--comida">
-      <h4>{s.label}</h4>
-      {s.instructions ? <p className="nota">{s.instructions}</p> : null}
-      <ul>
-        {s.prescriptions.map((p, i) => {
-          const e = ejercicios[p.exerciseVersionId];
-          return (
-            <li key={p.prescriptionId ?? `${clave}-${i}`}>
-              <strong>{e ? e.exerciseName : 'Ejercicio no disponible en el catálogo'}</strong>
-              {e && !e.available ? <span className="insignia"> no disponible</span> : null}
-              <ul className="lista-compacta">
-                <li>
-                  {cuentaDeSeries(p.sets)}
-                  {p.sets.length > 0 ? `: ${p.sets.map((x) => (x.repetitions === null ? '—' : 'value' in x.repetitions ? String(x.repetitions.value) : `${x.repetitions.min}-${x.repetitions.max}`)).join(' · ')} repeticiones` : ''}
-                </li>
-                {p.intensity ? <li>Intensidad: {p.intensity.criterion} {p.intensity.target.value}</li> : null}
-                {p.suggestedLoad ? (
-                  <li>
-                    Carga de referencia: {p.suggestedLoad.value} {p.suggestedLoad.unit}
-                  </li>
-                ) : null}
-                {p.note ? <li>Nota: {p.note}</li> : null}
-              </ul>
-            </li>
-          );
-        })}
+// ─── PLT (DL-182): lo que está en preparación y cómo se abre el editor ─────────────────────────────────────────────
+
+type LecturaDePreparaciones = { readonly tipo: 'cargando' } | { readonly tipo: 'listo'; readonly lista: readonly ResumenDePreparacionDePlantilla[] } | { readonly tipo: 'falla' };
+
+/** Las plantillas en preparación del profesional (API-TPL-08), todas: son pocas y la lista las necesita a todas. */
+function usePreparaciones(token: string | null, sesionPerdida: (r: Resultado<unknown>) => boolean): LecturaDePreparaciones {
+  const [lectura, setLectura] = useState<LecturaDePreparaciones>({ tipo: 'cargando' });
+  useEffect(() => {
+    if (!token) return;
+    let vigente = true;
+    void todasLasPaginas((f) => api.listarPreparacionesDePlantilla(token, f)).then((r) => {
+      if (!vigente || sesionPerdida(r)) return;
+      setLectura(r.ok ? { tipo: 'listo', lista: r.datos.data } : { tipo: 'falla' });
+    });
+    return () => {
+      vigente = false;
+    };
+  }, [token, sesionPerdida]);
+  return lectura;
+}
+
+const cambiosDe = (l: LecturaDePreparaciones, templateId: string): ResumenDePreparacionDePlantilla | null =>
+  l.tipo === 'listo' ? (l.lista.find((x) => x.templateId === templateId) ?? null) : null;
+
+/**
+ * Abrir el editor: una plantilla nueva (API-TPL-06, en blanco o como copia de una versión) o los cambios de una existente
+ * (API-TPL-07, que retoma los que ya hay). Cada pedido con su clave: un doble toque no crea dos.
+ */
+function useAbrirElEditor(token: string | null, sesionPerdida: (r: Resultado<unknown>) => boolean, alFallar: (texto: string) => void) {
+  const router = useRouter();
+  const antesDeSalir = useAntesDeSalir();
+  const intento = useClaveDeIntento();
+  const [abriendo, setAbriendo] = useState(false);
+  const ir = (r: Resultado<{ data: { draftId: string } }>) => {
+    intento.registrar(r);
+    setAbriendo(false);
+    if (sesionPerdida(r)) return;
+    if (!r.ok) return alFallar(r.tipo === 'API' && r.codigo === 'TEMPLATE_ARCHIVED' ? PLT.archivada : mensajeDeFallo(r));
+    antesDeSalir(() => router.push(hrefDelEditor(r.datos.data.draftId)));
+  };
+  return {
+    abriendo,
+    nueva: async (fromTemplateVersionId?: string) => {
+      if (!token || abriendo) return;
+      setAbriendo(true);
+      ir(await api.crearPreparacionDePlantilla(token, fromTemplateVersionId ? { fromTemplateVersionId } : {}, intento.actual(fromTemplateVersionId ?? 'en-blanco')));
+    },
+    editar: async (templateId: string) => {
+      if (!token || abriendo) return;
+      setAbriendo(true);
+      ir(await api.abrirPreparacionDePlantilla(token, templateId));
+    },
+  };
+}
+type AbrirElEditor = ReturnType<typeof useAbrirElEditor>;
+
+/** Las plantillas nuevas en preparación: «Sin título» hasta tener nombre, con «Retomar». */
+function EnPreparacion({ preparaciones }: { preparaciones: LecturaDePreparaciones }) {
+  if (preparaciones.tipo === 'falla') return <p className="nota">{PLT.noSeLeyeronLasEnPreparacion}</p>;
+  if (preparaciones.tipo !== 'listo') return null;
+  const nuevas = preparaciones.lista.filter((x) => x.templateId === null);
+  if (nuevas.length === 0) return null;
+  return (
+    <section className="plantillas-en-preparacion" aria-labelledby="titulo-en-preparacion" data-plantillas-en-preparacion>
+      <h3 id="titulo-en-preparacion">{PLT.enPreparacion}</h3>
+      <ul className="lista">
+        {nuevas.map((x) => (
+          <li key={x.draftId} className="lista__item" data-preparacion-nueva>
+            <p className="lista__titulo">
+              {x.name.trim() || PLT.sinTitulo} <span className="insignia">{PLT.nuevaEnPreparacion}</span>
+            </p>
+            <p className="nota">
+              {COPY_PLANTILLAS.sesiones(x.sessionCount)} · {PLT.guardadaEl(fecha(x.updatedAt))}
+            </p>
+            <Enlace className="boton boton--secundario boton--compacto" href={hrefDelEditor(x.draftId)} data-retomar>
+              {PLT.retomar}
+            </Enlace>
+          </li>
+        ))}
       </ul>
-    </div>
+    </section>
   );
+}
+
+/** Junto a una plantilla con cambios en preparación: la versión que se sigue usando y que hay cambios. */
+function CambiosEnPreparacion({ preparacion, version }: { preparacion: ResumenDePreparacionDePlantilla | null; version: number }) {
+  return preparacion ? (
+    <p className="nota" data-cambios-en-preparacion>
+      <Icono nombre="borrador" tamano={15} />
+      {PLT.cambiosEnPreparacion(preparacion.baseVersionNumber ?? version)} · {PLT.guardadaEl(fecha(preparacion.updatedAt))}
+    </p>
+  ) : null;
+}
+
+/** «Editar» (o «Retomar los cambios») y «Crear otra desde esta». Una archivada se copia, pero no se edita. */
+function AccionesDeEdicion({ plantilla, preparacion, editor }: { plantilla: ResumenDePlantillaDeEntrenamiento; preparacion: ResumenDePreparacionDePlantilla | null; editor: AbrirElEditor }) {
   return (
     <>
-      {estructura.blocks.map((b, i) => (
-        <div key={b.blockId ?? i} className="nodo nodo--dia">
-          <h3>
-            {b.label}
-            {b.purpose ? <span className="nota"> · {b.purpose}</span> : null}
-          </h3>
-          {(b.microcycles ?? []).map((m, j) => (
-            <div key={m.microcycleId ?? j} className="nodo nodo--opcion">
-              <p className="lista__titulo">
-                {m.label}
-                {m.purpose ? ` · ${m.purpose}` : ''}
-              </p>
-              {m.sessions.map((s, k) => sesion(s, `${i}-${j}-${k}`))}
-            </div>
-          ))}
-          {(b.sessions ?? []).map((s, k) => sesion(s, `${i}-${k}`))}
-        </div>
-      ))}
+      {preparacion ? (
+        <Enlace className="boton boton--secundario boton--compacto" href={hrefDelEditor(preparacion.draftId)} data-retomar-los-cambios>
+          {PLT.retomarLosCambios}
+        </Enlace>
+      ) : plantilla.state === 'ACTIVE' ? (
+        <button type="button" className="boton boton--secundario boton--compacto" disabled={editor.abriendo} onClick={() => void editor.editar(plantilla.templateId)} data-editar-la-plantilla>
+          <Icono nombre="abrir" tamano={15} />
+          {PLT.editar}
+        </button>
+      ) : null}
+      <button type="button" className="boton boton--quieto boton--compacto" disabled={editor.abriendo} onClick={() => void editor.nueva(plantilla.versionId)} data-crear-otra-desde-esta>
+        <Icono nombre="duplicar" tamano={15} />
+        {PLT.crearOtraDesdeEsta}
+      </button>
     </>
   );
 }

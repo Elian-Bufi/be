@@ -34,5 +34,7 @@ export const COPY_SESIONES_VACIAS = {
   cuantas: 'Cuántas sesiones',
   armar: (cuantas: number, yaHay: number) => `Armar ${cualesSeArman(cuantas, yaHay)}`,
   ayuda: 'Sin nombre ni propósito: se llaman Sesión A, B, C… y el nombre se cambia cuando quieras. Sus días se eligen al costado.',
+  /** PLT (DL-182): una plantilla no tiene días. */
+  ayudaEnLaPlantilla: 'Sin nombre ni propósito: se llaman Sesión A, B, C… y el nombre se cambia cuando quieras.',
   armadas: (cuantas: number, yaHay: number) => `Quedaron ${cualesSeArman(cuantas, yaHay)}, vacías. Elegí sus días en la lista y agregá ejercicios a cada una.`,
 } as const;

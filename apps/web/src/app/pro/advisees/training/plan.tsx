@@ -28,6 +28,7 @@ import {
   COPY_DESCARTAR_LA_VERSION,
   COPY_ENTRENAMIENTO,
   COPY_PLANTILLAS,
+  COPY_PREPARACION_DE_PLANTILLA,
   estructuraConObjetivosComoEntrada,
   historialDeVersiones,
   lineasDePrescripcion,
@@ -257,7 +258,8 @@ export function VistaDePlan() {
       datos: res.datos.data.map((p) => ({
         versionId: p.versionId,
         nombre: p.name,
-        detalle: `${COPY_PLANTILLAS.sesiones(p.sessionCount)} · ${p.copiedLoads ? COPY_PLANTILLAS.conCargas : COPY_PLANTILLAS.sinCargas}`,
+        // PLT (DL-182): la versión que se va a aplicar, la vigente: es la que después dice la nota de origen del plan.
+        detalle: `${COPY_PREPARACION_DE_PLANTILLA.version(p.versionNumber)} · ${COPY_PLANTILLAS.sesiones(p.sessionCount)} · ${p.copiedLoads ? COPY_PLANTILLAS.conCargas : COPY_PLANTILLAS.sinCargas}`,
       })),
     };
   }, [token, sesionPerdida]);
@@ -455,6 +457,7 @@ export function VistaDePlan() {
                 ) : null}
                 <DialogoEmpezarDesdePlantilla
                   abierto={desdePlantilla}
+                  dondeSeArman={COPY_PREPARACION_DE_PLANTILLA.dondeSeArmanEntrenamiento}
                   leer={leerPlantillas}
                   creando={creando}
                   error={falloDesdePlantilla}

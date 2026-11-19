@@ -70,3 +70,110 @@ export const COPY_PLANTILLAS = {
   plantillasDeEntrenamiento: 'Plantillas de entrenamiento',
   plantillasDeNutricion: 'Plantillas de comidas',
 } as const;
+
+/**
+ * PLT (DL-182): los textos de la preparación de una plantilla de entrenamiento, sin persona: la colección, el editor, la
+ * revisión antes de guardar, el detalle con sus versiones y la nota de origen de un plan. Ubican y no califican; dicen qué
+ * queda guardado, qué versión se usa y que los planes ya creados no cambian.
+ */
+export const COPY_PREPARACION_DE_PLANTILLA = {
+  // La colección
+  nuevaPlantilla: 'Nueva plantilla',
+  creandoLaPlantilla: 'Abriendo el editor…',
+  queSeHaceAca: 'Armala acá, sin elegir a nadie: en blanco o desde otra. Se usa con una persona desde su plan, con «Empezar desde una plantilla».',
+  sinTitulo: 'Sin título',
+  enPreparacion: 'En preparación',
+  nuevaEnPreparacion: 'Nueva · todavía no es una plantilla',
+  cambiosEnPreparacion: (n: number): string => `Versión ${n} disponible · cambios en preparación`,
+  guardadaEl: (fecha: string): string => `lo preparado se guardó el ${fecha}`,
+  retomar: 'Retomar',
+  retomarLosCambios: 'Retomar los cambios',
+  editar: 'Editar',
+  crearOtraDesdeEsta: 'Crear otra desde esta',
+  ningunaEnPreparacion: 'No tenés plantillas en preparación.',
+  sinPlantillasDeEntrenamiento: 'Todavía no tenés plantillas de entrenamiento. Creá la primera con «Nueva plantilla», o guardala desde una versión de plan con «Guardar como plantilla».',
+  sinIndicar: 'Sin indicar',
+  noSeLeyeronLasEnPreparacion: 'No pudimos leer tus plantillas en preparación.',
+  // El editor
+  queEs: 'Plantilla de entrenamiento',
+  nueva: 'Plantilla nueva · todavía no se guardó como plantilla',
+  cambiosSobre: (n: number): string => `Cambios sobre la versión ${n}`,
+  laVersionSigue: (n: number): string => `La versión ${n} sigue disponible y sin cambios hasta que guardes una nueva.`,
+  archivada: 'Archivada: para guardar una versión nueva, reactivala en «Mis plantillas».',
+  volver: 'Plantillas y habituales',
+  revisarYGuardar: 'Revisar y guardar…',
+  nombre: 'Nombre de la plantilla',
+  nombreAyuda: 'Podés escribirlo después: se pide al guardar la plantilla.',
+  descripcion: 'Descripción',
+  nombreEnMisPlantillas: 'El nombre y la descripción se cambian en «Mis plantillas», sin crear una versión.',
+  sinDias: 'Una plantilla no tiene días: se eligen en el plan de cada persona, al usarla.',
+  sinPersona: 'La revisión mira lo que impide guardar la plantilla. Lo que depende de una persona (sus días, su objetivo, su app) se revisa en su plan, antes de activarlo.',
+  masDeLaPlantilla: 'Más acciones de la plantilla',
+  descartarLaNueva: 'Descartar esta plantilla nueva',
+  descartarLosCambios: 'Descartar estos cambios',
+  noDisponible: 'Esta plantilla en preparación ya no está: se guardó o se descartó, quizás en otra pestaña.',
+  irAMisPlantillas: 'Ir a «Mis plantillas»',
+  // Las cargas (D-2 de DL-108)
+  cargasEscritasNoVan: (n: number): string =>
+    `${n === 1 ? 'Un ejercicio tiene' : `${n} ejercicios tienen`} una carga sugerida escrita: con esto apagado, no va a la plantilla.`,
+  cargasVan: (n: number): string => `${n === 1 ? 'La carga escrita en un ejercicio va' : `Las cargas escritas en ${n} ejercicios van`} a la plantilla como referencia.`,
+  // La revisión antes de guardar
+  tituloNueva: 'Antes de guardar la plantilla',
+  tituloVersion: (n: number): string => `Antes de guardar los cambios sobre la versión ${n}`,
+  guardarPlantilla: 'Guardar plantilla',
+  guardarNuevaVersion: 'Guardar nueva versión',
+  guardando: 'Guardando…',
+  descartando: 'Descartando…',
+  volverAlEditor: 'Volver al editor',
+  loQueImpide: 'Lo que impide guardar',
+  revisando: 'Revisando lo preparado…',
+  nadaImpide: 'No se encontraron impedimentos para guardar la plantilla.',
+  noSePudoRevisar: 'No se pudo revisar lo preparado.',
+  volverARevisar: 'Volver a revisar',
+  cambiosSinGuardar: 'Hay cambios que todavía no se guardaron: lo que se guarda como plantilla es lo guardado.',
+  paraCompletar: 'Para completar al usarla con una persona',
+  paraCompletarAyuda: 'No impide guardar: se completa en el plan de cada persona, antes de activarlo.',
+  nadaParaCompletar: 'No queda nada para completar.',
+  loQueCambia: (n: number): string => `Lo que cambia frente a la versión ${n}`,
+  sinLaBase: 'No pudimos leer la versión de la que partió: lo que cambia no se puede mostrar.',
+  queQueda: 'Qué queda guardado',
+  consecuenciaNueva: 'Queda en «Mis plantillas» como versión 1, lista para usar con una persona. Solo vos la ves.',
+  consecuenciaVersion: (n: number): string =>
+    `Se guarda como la versión siguiente. La versión ${n} no cambia, y los planes que ya creaste desde esta plantilla tampoco: la nueva se ofrece para los próximos.`,
+  falta: (partes: readonly string[]): string => `Falta: ${partes.join(', ')}.`,
+  guardarLosCambios: 'guardar los cambios',
+  corregir: (n: number): string => (n === 1 ? 'corregir 1 cosa' : `corregir ${n} cosas`),
+  revisarDeNuevo: 'revisar de nuevo',
+  cargarLaGuardada: 'cargar lo guardado',
+  irACorregir: 'Ir a corregir',
+  volverALaRevision: 'Corregí acá y volvé a «Antes de guardar».',
+  // El resultado
+  guardadaPrimera: 'Plantilla guardada · versión 1',
+  guardadaVersion: (n: number): string => `Versión ${n} guardada. Las anteriores y los planes ya creados no cambian.`,
+  descartadaLaNueva: 'Se descartó la plantilla nueva.',
+  descartadosLosCambios: (n: number): string => `Se descartaron los cambios. La versión ${n} sigue como estaba.`,
+  confirmarDescarteNueva: 'Lo preparado se pierde. No hay ninguna versión guardada de esta plantilla.',
+  confirmarDescarteCambios: (n: number): string => `Lo preparado se pierde. La versión ${n} sigue disponible, como estaba.`,
+  // Lo que impide guardar, dicho de la plantilla
+  problema: {
+    TEMPLATE_NAME_REQUIRED: 'falta el nombre de la plantilla',
+    TEMPLATE_NAME_TAKEN: 'ya tenés otra plantilla con ese nombre',
+    TEMPLATE_SESSION_REQUIRED: 'no tiene ninguna sesión',
+    TEMPLATE_ARCHIVED: 'la plantilla está archivada: reactivala en «Mis plantillas» para guardar una versión nueva',
+    TEMPLATE_UNCHANGED: 'no cambió nada frente a la versión de la que partió',
+  } as Readonly<Record<string, string>>,
+  irAlNombre: 'Nombre de la plantilla',
+  // El detalle
+  versiones: 'Versiones',
+  vigente: 'vigente',
+  version: (n: number): string => `Versión ${n}`,
+  planesCreados: (n: number): string => (n === 0 ? 'todavía no se usó con nadie' : n === 1 ? 'se usó en 1 plan' : `se usó en ${n} planes`),
+  planesCreadosAyuda: 'Cuántos planes (en preparación o activados) nacieron de cada versión. No dice de quién: la plantilla no lleva personas.',
+  noSeLeyeronLasVersiones: 'No pudimos leer las versiones de esta plantilla.',
+  usarConUnaPersona: 'Para usarla con una persona: en su plan, «Empezar desde una plantilla». Se usa la versión vigente.',
+  estructura: 'Lo que tiene',
+  // La nota de origen en el plan de una persona: el número de la versión que se aplicó, no el de la vigente.
+  creadaDesdeSinNumero: (nombre: string): string => `Creada desde la plantilla «${nombre}». El plan es de esta persona: la plantilla no cambia si lo editás.`,
+  // «Empezar desde una plantilla» (Entrenamiento): ya no se guardan solo desde un plan.
+  dondeSeArmanEntrenamiento: 'Se crean en «Plantillas y habituales», con «Nueva plantilla», o desde una versión de plan, con «Guardar como plantilla».',
+} as const;

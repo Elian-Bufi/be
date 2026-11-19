@@ -203,6 +203,8 @@ model Identidad {
   ejerciciosCreados                          EjercicioDeCatalogo[]                     @relation("EjercicioCreadoPor")
   plantillasDePlanDeEntrenamiento            PlantillaDePlanDeEntrenamiento[]          @relation("PlantillaDePlanDelProfesional")
   versionesDePlantillaAutor                  VersionDePlantillaDePlanDeEntrenamiento[] @relation("VersionDePlantillaPorAutor")
+  /// PLT (DL-182): las plantillas de entrenamiento que el profesional está preparando, sin persona.
+  preparacionesDePlantillaDeEntrenamiento    PreparacionDePlantillaDeEntrenamiento[]   @relation("PreparacionDePlantillaDelProfesional")
   plantillasDePlanNutricional                PlantillaDePlanNutricional[]              @relation("PlantillaNutricionalDelProfesional")
   versionesDePlantillaNutricionalAutor       VersionDePlantillaDePlanNutricional[]     @relation("VersionDePlantillaNutricionalPorAutor")
   ejerciciosHabituales                       EjercicioHabitual[]                       @relation("EjercicioHabitualDelProfesional")
@@ -3095,6 +3097,8 @@ model PlantillaDePlanDeEntrenamiento {
 
   profesional Identidad                                 @relation("PlantillaDePlanDelProfesional", fields: [profesionalId], references: [id], onDelete: Restrict, onUpdate: Restrict)
   versiones   VersionDePlantillaDePlanDeEntrenamiento[]
+  /// PLT (DL-182): los cambios en preparación, si los hay (a lo sumo uno).
+  preparacion PreparacionDePlantillaDeEntrenamiento?
 
   @@unique([profesionalId, nombreNormalizado])
   @@index([profesionalId, estado, momentoDeActualizacion])
@@ -3116,9 +3120,45 @@ model VersionDePlantillaDePlanDeEntrenamiento {
 
   plantilla PlantillaDePlanDeEntrenamiento @relation(fields: [plantillaId], references: [id], onDelete: Restrict, onUpdate: Restrict)
   autor     Identidad                      @relation("VersionDePlantillaPorAutor", fields: [autorId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  /// PLT (DL-182): las preparaciones que partieron de esta versión.
+  preparaciones PreparacionDePlantillaDeEntrenamiento[] @relation("PreparacionDesdeLaVersion")
 
   @@unique([plantillaId, numero])
   @@map("version_de_plantilla_de_plan_de_entrenamiento")
+}
+
+/// PLT (DL-182): la preparación de una plantilla de entrenamiento: el trabajo en curso del profesional, privado y sin
+/// persona, que se autoguarda sin tocar ninguna versión. Guardarla crea la plantilla (la primera vez) o una versión nueva
+/// (inmutable, como siempre); descartarla deja las versiones como estaban. En los dos casos la fila se borra: la historia
+/// son las versiones y la auditoría de cada operación, no el trabajo a medias (PLT-D03).
+/// - `plantillaId` NULL: una plantilla nueva, que nace al guardarla; con plantilla, a lo sumo una preparación por plantilla
+///   (el índice único: PostgreSQL no compara los NULL, así que puede haber varias nuevas).
+/// - `versionBaseId`: la versión vigente al abrirla. Guardar exige que siga siendo la vigente.
+/// - `nombre` y `descripcion`: solo en una plantilla nueva (PLT-D05); los de una existente son los de la plantilla.
+/// - `estructura`: la estructura de entrada (la misma forma que API-TRN-07), normalizada y con los identificadores que
+///   le pone el servidor, para que el editor los conserve entre guardados. Con las cargas que se escribieron: el interruptor
+///   (`cargas`, D-2 de DL-108) decide si van a la versión al guardarla.
+/// - `version`: el token de concurrencia de la preparación (`expectedVersion`), como el de un borrador de plan.
+model PreparacionDePlantillaDeEntrenamiento {
+  id                     String            @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  profesionalId          String            @map("profesional_id") @db.Uuid
+  plantillaId            String?           @unique @map("plantilla_id") @db.Uuid
+  versionBaseId          String?           @map("version_base_id") @db.Uuid
+  nombre                 String?
+  descripcion            String?
+  estructura             Json
+  cargas                 CargasDePlantilla @default(NO_COPIADAS)
+  version                Int               @default(1)
+  procedencia            Json
+  momentoDeRegistro      DateTime          @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+  momentoDeActualizacion DateTime          @default(now()) @map("momento_de_actualizacion") @db.Timestamptz(3)
+
+  profesional Identidad                                @relation("PreparacionDePlantillaDelProfesional", fields: [profesionalId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  plantilla   PlantillaDePlanDeEntrenamiento?          @relation(fields: [plantillaId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  versionBase VersionDePlantillaDePlanDeEntrenamiento? @relation("PreparacionDesdeLaVersion", fields: [versionBaseId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@index([profesionalId, momentoDeActualizacion])
+  @@map("preparacion_de_plantilla_de_entrenamiento")
 }
 
 /// D-2 en nutrición: si la versión de plantilla conserva las cantidades (nunca un booleano: TEST-RUN-003).

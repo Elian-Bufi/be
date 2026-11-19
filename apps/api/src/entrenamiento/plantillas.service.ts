@@ -34,7 +34,7 @@ const CASO_DE_USO = 'UC-P15';
 const token = (n: number): string => `v${n}`;
 const nombreTomado = (): ErrorDeApi => new ErrorDeApi(409, CodigoDeError.TEMPLATE_NAME_TAKEN, 'Ya tenés una plantilla con ese nombre.');
 
-type PlantillaFila = Prisma.PlantillaDePlanDeEntrenamientoGetPayload<{ include: { versiones: true } }>;
+export type PlantillaFila = Prisma.PlantillaDePlanDeEntrenamientoGetPayload<{ include: { versiones: true } }>;
 
 /**
  * PF-09 · DL-108 — Plantillas de plan de entrenamiento del profesional (API-TPL-01 a 05).
@@ -69,26 +69,13 @@ export class PlantillasDeEntrenamientoService {
         const estructura = await this.estructuraVerificada(tx, actor.identidadId, pedido.structure, pedido.copySuggestedLoads === true);
         if (pedido.origin) await this.exigirVersionDePlanPropia(tx, actor.identidadId, pedido.origin.planVersionId);
         await this.exigirNombreLibre(tx, actor.identidadId, pedido.name, null);
-        const momento = await momentoDeLaBase(tx);
-        const plantilla = await sinDuplicar(
-          tx.plantillaDePlanDeEntrenamiento.create({
-            data: { profesionalId: actor.identidadId, nombre: pedido.name, nombreNormalizado: nombreNormalizadoDePlantilla(pedido.name), descripcion: pedido.description ?? null, momentoDeActualizacion: momento },
-          }),
-          nombreTomado,
+        const plantillaId = await this.crearConSuPrimeraVersion(
+          tx,
+          actor.identidadId,
+          { nombre: pedido.name, descripcion: pedido.description ?? null, estructura, conCargas: pedido.copySuggestedLoads === true, origen: pedido.origin ?? null },
+          procedencia,
         );
-        await tx.versionDePlantillaDePlanDeEntrenamiento.create({
-          data: {
-            plantillaId: plantilla.id,
-            numero: 1,
-            estructura: estructura as unknown as Prisma.InputJsonValue,
-            cargas: pedido.copySuggestedLoads === true ? 'COPIADAS' : 'NO_COPIADAS',
-            ...(pedido.origin ? { origen: pedido.origin as unknown as Prisma.InputJsonValue } : {}),
-            autorId: actor.identidadId,
-            procedencia: procedencia as unknown as Prisma.InputJsonValue,
-          },
-        });
-        await this.evento(tx, 'PlantillaDePlanCreada', actor.identidadId, plantilla.id, procedencia, momento);
-        return { estadoHttp: 201, cuerpo: { data: await this.leer(tx, actor.identidadId, plantilla.id) }, sujetoId: null, recurso: { tipo: RECURSO, id: plantilla.id } };
+        return { estadoHttp: 201, cuerpo: { data: await this.leer(tx, actor.identidadId, plantillaId) }, sujetoId: null, recurso: { tipo: RECURSO, id: plantillaId } };
       },
     });
   }
@@ -159,21 +146,7 @@ export class PlantillasDeEntrenamientoService {
         if (fila.estado === 'ARCHIVADA') throw archivada();
         const estructura = await this.estructuraVerificada(tx, actor.identidadId, pedido.structure, pedido.copySuggestedLoads === true);
         if (pedido.origin) await this.exigirVersionDePlanPropia(tx, actor.identidadId, pedido.origin.planVersionId);
-        const momento = await momentoDeLaBase(tx);
-        await this.avanzarVersion(tx, fila, { momentoDeActualizacion: momento });
-        const ultima = fila.versiones[0];
-        await sinDuplicar(tx.versionDePlantillaDePlanDeEntrenamiento.create({
-          data: {
-            plantillaId: fila.id,
-            numero: (ultima?.numero ?? 0) + 1,
-            estructura: estructura as unknown as Prisma.InputJsonValue,
-            cargas: pedido.copySuggestedLoads === true ? 'COPIADAS' : 'NO_COPIADAS',
-            ...(pedido.origin ? { origen: pedido.origin as unknown as Prisma.InputJsonValue } : {}),
-            autorId: actor.identidadId,
-            procedencia: procedencia as unknown as Prisma.InputJsonValue,
-          },
-        }), errores.conflictoDeVersion);
-        await this.evento(tx, 'PlantillaDePlanVersionada', actor.identidadId, fila.id, procedencia, momento);
+        await this.agregarVersion(tx, actor.identidadId, fila, { estructura, conCargas: pedido.copySuggestedLoads === true, origen: pedido.origin ?? null }, procedencia);
         return { estadoHttp: 201, cuerpo: { data: await this.leer(tx, actor.identidadId, fila.id) }, sujetoId: null, recurso };
       },
     });
@@ -222,19 +195,81 @@ export class PlantillasDeEntrenamientoService {
     return { plantillaId: v.plantilla.id, versionId: v.id, estructura: v.estructura as unknown as EstructuraDePlanDeEntrenamientoEntrada };
   }
 
+  // ─── Escrituras compartidas con la preparación (PLT, DL-182) ─────────────
+
+  /**
+   * La plantilla nueva con su versión 1 y su hecho: API-TPL-01 y «Guardar plantilla» de una preparación (API-TPL-12).
+   * La estructura llega verificada y, sin el interruptor, ya sin cargas (D-2). Un nombre tomado entre tanto es 409.
+   */
+  async crearConSuPrimeraVersion(
+    tx: Tx,
+    profesionalId: string,
+    d: { readonly nombre: string; readonly descripcion: string | null; readonly estructura: EstructuraDePlanDeEntrenamientoEntrada; readonly conCargas: boolean; readonly origen: OrigenDePlantilla | null },
+    procedencia: unknown,
+  ): Promise<string> {
+    const momento = await momentoDeLaBase(tx);
+    const plantilla = await sinDuplicar(
+      tx.plantillaDePlanDeEntrenamiento.create({
+        data: { profesionalId, nombre: d.nombre, nombreNormalizado: nombreNormalizadoDePlantilla(d.nombre), descripcion: d.descripcion, momentoDeActualizacion: momento },
+      }),
+      nombreTomado,
+    );
+    await tx.versionDePlantillaDePlanDeEntrenamiento.create({
+      data: {
+        plantillaId: plantilla.id,
+        numero: 1,
+        estructura: d.estructura as unknown as Prisma.InputJsonValue,
+        cargas: d.conCargas ? 'COPIADAS' : 'NO_COPIADAS',
+        ...(d.origen ? { origen: d.origen as unknown as Prisma.InputJsonValue } : {}),
+        autorId: profesionalId,
+        procedencia: procedencia as unknown as Prisma.InputJsonValue,
+      },
+    });
+    await this.evento(tx, 'PlantillaDePlanCreada', profesionalId, plantilla.id, procedencia, momento);
+    return plantilla.id;
+  }
+
+  /**
+   * La versión siguiente y su hecho: API-TPL-04 y «Guardar nueva versión» de una preparación (API-TPL-12). Avanza la
+   * plantilla con la condición en la base (`avanzarVersion`): de dos escrituras con la misma versión, una sola.
+   */
+  async agregarVersion(
+    tx: Tx,
+    profesionalId: string,
+    fila: PlantillaFila,
+    d: { readonly estructura: EstructuraDePlanDeEntrenamientoEntrada; readonly conCargas: boolean; readonly origen: OrigenDePlantilla | null },
+    procedencia: unknown,
+  ): Promise<void> {
+    const momento = await momentoDeLaBase(tx);
+    await this.avanzarVersion(tx, fila, { momentoDeActualizacion: momento });
+    const ultima = fila.versiones[0];
+    await sinDuplicar(tx.versionDePlantillaDePlanDeEntrenamiento.create({
+      data: {
+        plantillaId: fila.id,
+        numero: (ultima?.numero ?? 0) + 1,
+        estructura: d.estructura as unknown as Prisma.InputJsonValue,
+        cargas: d.conCargas ? 'COPIADAS' : 'NO_COPIADAS',
+        ...(d.origen ? { origen: d.origen as unknown as Prisma.InputJsonValue } : {}),
+        autorId: profesionalId,
+        procedencia: procedencia as unknown as Prisma.InputJsonValue,
+      },
+    }), errores.conflictoDeVersion);
+    await this.evento(tx, 'PlantillaDePlanVersionada', profesionalId, fila.id, procedencia, momento);
+  }
+
   // ─── Apoyo ───────────────────────────────────────────────────────────────
 
   /** Solo un profesional de Entrenamiento verificado y habilitado (la misma regla que el catálogo propio, RF-037). */
-  private async exigirProfesional(tx: Tx, identidadId: string): Promise<void> {
+  async exigirProfesional(tx: Tx, identidadId: string): Promise<void> {
     if (!(await this.catalogo.esProfesionalDeEntrenamiento(tx, identidadId))) throw errores.accionNoPermitida();
   }
 
-  private propia(tx: Tx, profesionalId: string, templateId: string): Promise<PlantillaFila | null> {
+  propia(tx: Tx, profesionalId: string, templateId: string): Promise<PlantillaFila | null> {
     if (!/^[0-9a-f-]{36}$/i.test(templateId)) return Promise.resolve(null);
     return tx.plantillaDePlanDeEntrenamiento.findFirst({ where: { id: templateId, profesionalId }, include: { versiones: { orderBy: { numero: 'desc' }, take: 1 } } });
   }
 
-  private async leer(tx: Tx, profesionalId: string, templateId: string): Promise<PlantillaDeEntrenamiento> {
+  async leer(tx: Tx, profesionalId: string, templateId: string): Promise<PlantillaDeEntrenamiento> {
     const fila = await this.propia(tx, profesionalId, templateId);
     if (!fila) throw errores.recursoNoEncontrado();
     return this.conEjercicios(tx, profesionalId, fila);
@@ -274,7 +309,7 @@ export class PlantillasDeEntrenamientoService {
     if (!v || v.estado === 'DESCARTADA' || v.plan.profesionalId !== profesionalId) throw errores.validacionFallida([{ code: 'TEMPLATE_ORIGIN_NOT_OWN', path: 'origin.planVersionId' }]);
   }
 
-  private async exigirNombreLibre(tx: Tx, profesionalId: string, nombre: string, salvoId: string | null): Promise<void> {
+  async exigirNombreLibre(tx: Tx, profesionalId: string, nombre: string, salvoId: string | null): Promise<void> {
     const existente = await tx.plantillaDePlanDeEntrenamiento.findUnique({ where: { profesionalId_nombreNormalizado: { profesionalId, nombreNormalizado: nombreNormalizadoDePlantilla(nombre) } }, select: { id: true } });
     if (existente && existente.id !== salvoId) throw nombreTomado();
   }
@@ -289,7 +324,7 @@ export class PlantillasDeEntrenamientoService {
     if (r.count === 0) throw errores.conflictoDeVersion();
   }
 
-  private evento(tx: Tx, tipo: 'PlantillaDePlanCreada' | 'PlantillaDePlanVersionada' | 'PlantillaDePlanEditada', actorId: string, plantillaId: string, procedencia: unknown, momento: Date): Promise<void> {
+  evento(tx: Tx, tipo: 'PlantillaDePlanCreada' | 'PlantillaDePlanVersionada' | 'PlantillaDePlanEditada', actorId: string, plantillaId: string, procedencia: unknown, momento: Date): Promise<void> {
     return registrarEventoDeEntrenamiento(tx, {
       tipo,
       profesionalId: actorId,

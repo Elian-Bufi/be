@@ -65,7 +65,7 @@ import { diaYMes } from '../graficos/eje-de-fechas';
 import { unAnioAntes } from '../fuerza/lectura-de-fuerza';
 import { hoyEn } from '../seguimiento/estado';
 import { mensajeDeFallo, useClaveDeIntento } from '../../../../lib/intento';
-import { useEntrenamiento } from './entrenamiento';
+import { useEditorDeEntrenamiento } from './entrenamiento';
 import type { EjerciciosHabituales } from './habituales';
 import { ImportacionDeWger } from './importacion';
 import { alternarMarcado, conLasZonas, COPY_VARIOS_A_LA_VEZ as V, sesionDeDonde, zonasDeLosResultados } from './varios-a-la-vez';
@@ -95,15 +95,21 @@ type HistorialDelBuscador =
   | { readonly tipo: 'cargando' }
   | { readonly tipo: 'listo'; readonly porEjercicio: ReadonlyMap<string, EjercicioDelPeriodo>; readonly hoy: string }
   | { readonly tipo: 'sin-acceso' }
+  // PLT (DL-182): el editor de una plantilla no tiene persona: no hay lo que hizo, y el buscador no marca nada.
+  | { readonly tipo: 'sin-persona' }
   | { readonly tipo: 'falla' };
 
 /** Lee el índice una vez, al abrirse el cajón (lo de adentro vive solo mientras está abierto), y con «Reintentar». */
 function useHistorialDelBuscador(): { readonly historial: HistorialDelBuscador; readonly recargar: () => void } {
-  const { token, asesoradoId, sesionPerdida } = useEntrenamiento();
+  const { token, asesoradoId, sesionPerdida } = useEditorDeEntrenamiento();
   const [historial, setHistorial] = useState<HistorialDelBuscador>({ tipo: 'cargando' });
   const [vuelta, setVuelta] = useState(0);
   useEffect(() => {
     let vigente = true;
+    if (asesoradoId === null) {
+      setHistorial({ tipo: 'sin-persona' });
+      return;
+    }
     setHistorial({ tipo: 'cargando' });
     // Sin `periodEnd`: la API toma su hoy (el del navegador puede ir un día adelante).
     void api.proyeccion(token, asesoradoId, 'TRAINING_PROGRESSION_BY_EXERCISE', { periodStart: unAnioAntes(hoyEn()) }).then((r) => {
@@ -252,7 +258,7 @@ function ContenidoDeAgregarEjercicio({
   /** Lo creado a mano o importado queda marcado. */
   onCreado: (e: EjercicioDeCatalogo) => void;
 }) {
-  const { token, sesionPerdida } = useEntrenamiento();
+  const { token, sesionPerdida } = useEditorDeEntrenamiento();
   const id = useId();
   const [texto, setTexto] = useState('');
   const [busqueda, setBusqueda] = useState<Busqueda>({ tipo: 'sin-buscar' });
@@ -613,7 +619,7 @@ function ContenidoDeAgregarEjercicio({
  * marcado y entra con «Agregar», como lo demás (EDT-17).
  */
 function CrearManualmente({ id, nombreInicial, onCreado, onVolver }: { id: string; nombreInicial: string; onCreado: (e: EjercicioDeCatalogo) => void; onVolver: () => void }) {
-  const { token, sesionPerdida, accesoRetirado } = useEntrenamiento();
+  const { token, sesionPerdida, accesoRetirado } = useEditorDeEntrenamiento();
   const intento = useClaveDeIntento();
   const [nombre, setNombre] = useState(nombreInicial);
   const [falta, setFalta] = useState<string | null>(null);

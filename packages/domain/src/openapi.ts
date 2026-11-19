@@ -140,6 +140,15 @@ import {
   ListaDePlantillasNutricionalesResponseSchema,
   NuevaVersionDePlantillaNutricionalRequestSchema,
   PlantillaNutricionalResponseSchema,
+  AbrirPreparacionDePlantillaRequestSchema,
+  CrearPreparacionDePlantillaRequestSchema,
+  DescarteDePreparacionResponseSchema,
+  GuardarPreparacionDePlantillaRequestSchema,
+  ListaDePreparacionesDePlantillaResponseSchema,
+  PreparacionDePlantillaResponseSchema,
+  RevisionDePreparacionResponseSchema,
+  VersionDeLaPreparacionRequestSchema,
+  VersionesDePlantillaDeEntrenamientoResponseSchema,
 } from './contratos-plantillas';
 import {
   EditarHabitualRequestSchema,
@@ -2051,6 +2060,136 @@ const DEFINIDAS: readonly Operacion[] = [
     exitos: [{ status: 200, schema: PlantillaDeEntrenamientoResponseSchema }],
     errores: { ...SESION, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 403: ['ACTION_FORBIDDEN'], 404: ['RESOURCE_NOT_FOUND'], 409: ['VERSION_CONFLICT', 'TEMPLATE_NAME_TAKEN'] },
     fuente: 'docs/propuestas/PLANTILLAS-DEL-PROFESIONAL_ficha.md · DEUDA_LEGAJO DL-108',
+  },
+  // ─── PLT (DL-182) · la preparación de una plantilla de entrenamiento: crearla y editarla sin una persona ──────────
+  {
+    id: 'API-TPL-06',
+    metodo: 'post',
+    ruta: '/training/plan-template-drafts',
+    resumen:
+      'Empezar una plantilla nueva, sin persona: una preparación en blanco (una fase, sin sesiones) o, con fromTemplateVersionId, la copia de una versión propia (que puede estar archivada). La preparación es privada y no tiene plantilla hasta guardarse (API-TPL-12). Solo un profesional de Entrenamiento verificado y habilitado; una versión ajena o inexistente es 404, sin distinguir.',
+    autenticacion: 'SESSION',
+    idempotencia: true,
+    request: CrearPreparacionDePlantillaRequestSchema,
+    exitos: [{ status: 201, schema: PreparacionDePlantillaResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 403: ['ACTION_FORBIDDEN'], 404: ['RESOURCE_NOT_FOUND'], 409: ['IDEMPOTENCY_KEY_REUSED'] },
+    fuente: 'docs/paquetes/WP-PLANTILLAS-DE-ENTRENAMIENTO.md · DEUDA_LEGAJO DL-182 · DL-108',
+  },
+  {
+    id: 'API-TPL-07',
+    metodo: 'put',
+    ruta: '/training/plan-templates/{templateId}/draft',
+    resumen:
+      'Editar una plantilla propia: abre su preparación desde la versión vigente (201) o devuelve la que ya tiene (200): una por plantilla, y tocar «Editar» dos veces da la misma. Una archivada no se edita: 422 TEMPLATE_ARCHIVED (se reactiva antes). Ajena o inexistente: 404, sin distinguir.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    request: AbrirPreparacionDePlantillaRequestSchema,
+    requestOpcional: true,
+    exitos: [
+      { status: 201, schema: PreparacionDePlantillaResponseSchema },
+      { status: 200, schema: PreparacionDePlantillaResponseSchema },
+    ],
+    errores: { ...SESION, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 403: ['ACTION_FORBIDDEN'], 404: ['RESOURCE_NOT_FOUND'], 422: ['TEMPLATE_ARCHIVED'] },
+    fuente: 'docs/paquetes/WP-PLANTILLAS-DE-ENTRENAMIENTO.md · DEUDA_LEGAJO DL-182 · DL-108',
+  },
+  {
+    id: 'API-TPL-08',
+    metodo: 'get',
+    ruta: '/training/plan-template-drafts',
+    resumen: 'Mis plantillas en preparación (solo las propias): las nuevas, todavía sin plantilla, y los cambios de una existente, con la versión de la que partieron. Sin la estructura.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    query: [LIMIT, CURSOR],
+    exitos: [{ status: 200, schema: ListaDePreparacionesDePlantillaResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST', 'INVALID_CURSOR'], 403: ['ACTION_FORBIDDEN'] },
+    fuente: 'docs/paquetes/WP-PLANTILLAS-DE-ENTRENAMIENTO.md · DEUDA_LEGAJO DL-182 · DL-108',
+  },
+  {
+    id: 'API-TPL-09',
+    metodo: 'get',
+    ruta: '/training/plan-template-drafts/{draftId}',
+    resumen: 'Una preparación propia, con su estructura y el nombre vigente, la disponibilidad y la imagen de cada ejercicio. Ajena, inexistente, ya guardada o descartada: 404, sin distinguir.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    exitos: [{ status: 200, schema: PreparacionDePlantillaResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST'], 403: ['ACTION_FORBIDDEN'], 404: ['RESOURCE_NOT_FOUND'] },
+    fuente: 'docs/paquetes/WP-PLANTILLAS-DE-ENTRENAMIENTO.md · DEUDA_LEGAJO DL-182 · DL-108',
+  },
+  {
+    id: 'API-TPL-10',
+    metodo: 'patch',
+    ruta: '/training/plan-template-drafts/{draftId}',
+    resumen:
+      'El autoguardado de una preparación: reemplaza la estructura entera, con expectedVersion (409 si cambió en otra pestaña), y la valida como el borrador de un plan (forma, criterios de intensidad y ejercicios que este profesional puede citar; uno que dejó de estar disponible se conserva y lo dice la revisión). El nombre y la descripción, solo en una plantilla nueva (en una existente, 422 VALIDATION_FAILED: se cambian con API-TPL-05). No cambia ninguna versión de la plantilla.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    request: GuardarPreparacionDePlantillaRequestSchema,
+    exitos: [{ status: 200, schema: PreparacionDePlantillaResponseSchema }],
+    errores: {
+      ...SESION,
+      400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'],
+      403: ['ACTION_FORBIDDEN'],
+      404: ['RESOURCE_NOT_FOUND'],
+      409: ['VERSION_CONFLICT'],
+      422: ['VALIDATION_FAILED', 'TRAINING_PLAN_STRUCTURE_INVALID', 'INTENSITY_CRITERION_INVALID', 'EXERCISE_REFERENCE_INVALID'],
+    },
+    fuente: 'docs/paquetes/WP-PLANTILLAS-DE-ENTRENAMIENTO.md · DEUDA_LEGAJO DL-182 · DL-108',
+  },
+  {
+    id: 'API-TPL-11',
+    metodo: 'post',
+    ruta: '/training/plan-template-drafts/{draftId}/review',
+    resumen:
+      'Revisar una preparación antes de guardarla. 200 aunque valid sea falso. issues impide guardar (el nombre de una plantilla nueva, el nombre tomado, ninguna sesión, un ejercicio que ya no está disponible, una plantilla archivada); toComplete queda para completar al adaptarla a una persona y no impide nada. Sin las reglas que dependen de una persona: ni objetivo ni días.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    request: VersionDeLaPreparacionRequestSchema,
+    exitos: [{ status: 200, schema: RevisionDePreparacionResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 403: ['ACTION_FORBIDDEN'], 404: ['RESOURCE_NOT_FOUND'], 409: ['VERSION_CONFLICT'] },
+    fuente: 'docs/paquetes/WP-PLANTILLAS-DE-ENTRENAMIENTO.md · DEUDA_LEGAJO DL-182 · DL-108',
+  },
+  {
+    id: 'API-TPL-12',
+    metodo: 'post',
+    ruta: '/training/plan-template-drafts/{draftId}/publish',
+    resumen:
+      'Guardar la preparación: en una plantilla nueva, crea la plantilla con su versión 1 («Guardar plantilla»); en una existente, crea la versión siguiente («Guardar nueva versión»). Las versiones anteriores y los planes ya creados no cambian. Exige la versión de la preparación y que la plantilla siga en la versión de la que partió; sin cargas sugeridas salvo el interruptor (D-2 de DL-108). Lo que impide guardar es 422 OPERATION_NOT_READY con su lugar (lo mismo que dice API-TPL-11). Guardada, la preparación deja de existir.',
+    autenticacion: 'SESSION',
+    idempotencia: true,
+    request: VersionDeLaPreparacionRequestSchema,
+    exitos: [{ status: 201, schema: PlantillaDeEntrenamientoResponseSchema }],
+    errores: {
+      ...SESION,
+      400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'],
+      403: ['ACTION_FORBIDDEN'],
+      404: ['RESOURCE_NOT_FOUND'],
+      409: ['IDEMPOTENCY_KEY_REUSED', 'VERSION_CONFLICT', 'TEMPLATE_NAME_TAKEN'],
+      422: ['OPERATION_NOT_READY', 'TEMPLATE_ARCHIVED'],
+    },
+    fuente: 'docs/paquetes/WP-PLANTILLAS-DE-ENTRENAMIENTO.md · DEUDA_LEGAJO DL-182 · DL-108',
+  },
+  {
+    id: 'API-TPL-13',
+    metodo: 'post',
+    ruta: '/training/plan-template-drafts/{draftId}/discard',
+    resumen: 'Descartar una preparación: lo preparado se pierde y las versiones de la plantilla quedan como estaban. Exige la versión de la preparación.',
+    autenticacion: 'SESSION',
+    idempotencia: true,
+    request: VersionDeLaPreparacionRequestSchema,
+    exitos: [{ status: 200, schema: DescarteDePreparacionResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 403: ['ACTION_FORBIDDEN'], 404: ['RESOURCE_NOT_FOUND'], 409: ['IDEMPOTENCY_KEY_REUSED', 'VERSION_CONFLICT'] },
+    fuente: 'docs/paquetes/WP-PLANTILLAS-DE-ENTRENAMIENTO.md · DEUDA_LEGAJO DL-182 · DL-108',
+  },
+  {
+    id: 'API-TPL-14',
+    metodo: 'get',
+    ruta: '/training/plan-templates/{templateId}/versions',
+    resumen: 'Las versiones de una plantilla propia, de la más nueva a la primera, con su fecha, sus sesiones, si conserva las cargas y cuántos planes (en preparación o activados) salieron de cada una, sin nombrar a nadie. Ajena o inexistente: 404.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    exitos: [{ status: 200, schema: VersionesDePlantillaDeEntrenamientoResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST'], 403: ['ACTION_FORBIDDEN'], 404: ['RESOURCE_NOT_FOUND'] },
+    fuente: 'docs/paquetes/WP-PLANTILLAS-DE-ENTRENAMIENTO.md · DEUDA_LEGAJO DL-182 · DL-108',
   },
   // ─── PF-09 bis · «Mis habituales» del profesional (DL-109, decidido el 2026-09-30) ──────────────────────
   {
@@ -4749,7 +4888,7 @@ const LECTURAS_PROTEGIDAS: ReadonlySet<string> = new Set([
 // API-MED-02 escribe sin Idempotency-Key: la ruta firmada identifica la subida, y repetirla responde el mismo medio.
 // API-TIE-01 tampoco: cada evento trae su identificador, y repetirlo responde lo mismo sin sumar.
 // API-GOO-02 y 03 (DL-138) tampoco: vincular y crear con Google son idempotentes por la cuenta de Google.
-const ESCRITURAS_SIN_CLAVE: ReadonlySet<string> = new Set(['API-TIE-01', 'API-PLN-03', 'API-CON-04', 'API-CON-08', 'API-EVI-04', 'API-NUT-10', 'API-NUT-11', 'API-ANT-10', 'API-TRN-10', 'API-TRN-11', 'API-TRN-15', 'API-TRN-17', 'API-TPL-05', 'API-TPN-05', 'API-HAB-02', 'API-HAB-05', 'API-HAB-08', 'API-HAN-02', 'API-HAN-05', 'API-HAN-08', 'API-MED-02', 'API-NOV-03', 'API-NOV-04', 'API-NOV-06', 'API-GOO-02', 'API-GOO-03', 'API-MET-02', 'API-MET-03', 'API-ADM-05', 'API-ADM-06', 'API-ADM-07', 'API-ADM-08', 'API-ADM-09']);
+const ESCRITURAS_SIN_CLAVE: ReadonlySet<string> = new Set(['API-TIE-01', 'API-PLN-03', 'API-CON-04', 'API-CON-08', 'API-EVI-04', 'API-NUT-10', 'API-NUT-11', 'API-ANT-10', 'API-TRN-10', 'API-TRN-11', 'API-TRN-15', 'API-TRN-17', 'API-TPL-05', 'API-TPL-07', 'API-TPL-10', 'API-TPL-11', 'API-TPN-05', 'API-HAB-02', 'API-HAB-05', 'API-HAB-08', 'API-HAN-02', 'API-HAN-05', 'API-HAN-08', 'API-MED-02', 'API-NOV-03', 'API-NOV-04', 'API-NOV-06', 'API-GOO-02', 'API-GOO-03', 'API-MET-02', 'API-MET-03', 'API-ADM-05', 'API-ADM-06', 'API-ADM-07', 'API-ADM-08', 'API-ADM-09']);
 
 function conCodigosComunes(op: Operacion): Operacion {
   const errores: { -readonly [S in keyof Errores]: Errores[S] } = { ...op.errores };

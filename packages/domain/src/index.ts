@@ -80,6 +80,8 @@ export * from './lamina';
 export * from './contratos-plantillas';
 export * from './copy-plantillas';
 export * from './plantillas-de-plan';
+// PLT (DL-182): la preparación de una plantilla de entrenamiento, sin persona.
+export * from './preparacion-de-plantilla';
 export * from './contratos-habituales';
 export * from './copy-habituales';
 export * from './habituales';

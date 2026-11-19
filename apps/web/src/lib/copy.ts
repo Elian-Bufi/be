@@ -34,9 +34,11 @@ const RUTAS_CON_ID: ReadonlySet<string> = new Set([
   '/pro/advisees/training',
   '/pro/advisees/forms',
   '/pro/recipes',
+  // PLT (DL-182): el editor de una plantilla de entrenamiento, por su preparación.
+  '/pro/templates/training',
 ]);
 /** El nombre del parámetro con el identificador, si no es `id`: «Mis recetas» abre una receta con `?receta=` (DL-119). */
-const PARAMETRO_DEL_ID: Readonly<Record<string, string>> = { '/pro/recipes': 'receta' };
+const PARAMETRO_DEL_ID: Readonly<Record<string, string>> = { '/pro/recipes': 'receta', '/pro/templates/training': 'preparacion' };
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 /**

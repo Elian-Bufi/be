@@ -40,6 +40,9 @@ import {
   COPY_ENTRENAMIENTO,
   COPY_HABITUALES,
   COPY_PLANTILLAS,
+  COPY_PREPARACION_DE_PLANTILLA as PLT,
+  ejerciciosConCargaEscrita,
+  sinCargasSugeridas,
   PROBLEMA_DE_AGENDA,
   PROBLEMA_DEL_EDITOR_DE_ENTRENAMIENTO as N,
   avisoDeLoQueNoDejaGuardarElEntrenamiento,
@@ -68,6 +71,7 @@ import {
   type AgendaDeEntrenamiento,
   type DiaDeLaSemana,
   type PresetDeEstructura,
+  type PreparacionDePlantilla,
   type DetalleDelFallo,
   type ImagenDeEjercicio,
   type PlanConObjetivos,
@@ -161,11 +165,29 @@ import {
   type DeshacerLasVueltas,
   type SesionReordenada,
 } from './bloques-del-editor';
-import { COPY_REVISION_DEL_PLAN, COPY_VOLVER_A_LA_REVISION, destinoDelLugar, RevisionDelPlan, type EstadoDeLaRevision, type Impedimento } from './revision-del-plan';
+import { COPY_REVISION_DE_LA_PLANTILLA, COPY_REVISION_DEL_PLAN, COPY_VOLVER_A_LA_REVISION, destinoDelLugar, RevisionDelPlan, type EstadoDeLaRevision, type Impedimento } from './revision-del-plan';
+import {
+  PRIMER_USO_DE_LA_PLANTILLA,
+  AntesDeGuardarLaPlantilla,
+  bloquesDeLaPreparacion,
+  CabeceraDeLaPlantilla,
+  comoPlan,
+  cuerpoDeLaPreparacion,
+  delCatalogoDeLaPreparacion,
+  DescartarLaPreparacion,
+  esDelPlan,
+  guardadoDeLaPlantilla,
+  metadatosDe,
+  PreparacionQueYaNoEsta,
+  type EdicionDePlantilla,
+  type GuardadoDeLaPlantilla,
+  type LoGuardado,
+  type MetadatosDeLaPlantilla,
+} from './edicion-de-plantilla';
 import { campoParaEnfocar, camposDelProblema, SIN_APLICAR } from './ir-al-campo';
 import { cantidadesDeSesionesVacias, COPY_SESIONES_VACIAS as SV, sesionesVacias } from './sesiones-vacias';
 import { claveDeLaLinea, conLaLinea, COPY_ESCRITURA_RAPIDA, lineasConLosIdentificadores, lineasPendientes, lineasTrasReordenar, ordenTrasDuplicar, ordenTrasQuitar, type LineasSinAplicar } from './escritura-rapida';
-import { NoDisponible, useEntrenamiento } from './entrenamiento';
+import { NoDisponible, useEditorDeEntrenamiento } from './entrenamiento';
 import { SelectorDeNivel } from './estructura-del-plan';
 import { DialogoGuardarSesionHabitual, InsertarSesionHabitual, nombresDeHabitual, useEjerciciosHabituales, useSesionesHabituales } from './habituales';
 import { DialogoGuardarPlantilla, NotaDeOrigen } from './plantillas';
@@ -256,14 +278,32 @@ const PROBLEMA: Readonly<Record<string, string>> = {
   ...PROBLEMA_DE_AGENDA,
   // TB-48: los topes del contrato, avisados antes de guardar.
   ...TEXTO_DE_LOS_TOPES,
+  // PLT (DL-182): lo que impide guardar una plantilla.
+  ...PLT.problema,
 };
 
 /** Lo que no deja guardar: lo que el editor ve solo y, desde TB-48, los topes del contrato que se pasan. */
 const loQueNoDejaGuardar = (bloques: Bloques) => [...loQueNoDejaGuardarElEntrenamiento(bloques), ...topesPasadosDeEntrenamiento(bloques)];
 
+/**
+ * Precierre del 2026-10-06 y DL-178: lo que la app de la persona todavía no muestra (los objetivos por serie, las series de
+ * calentamiento) impide activar. PLT (DL-182): sin persona (una plantilla), nada lo retiene.
+ */
+function loQueRetieneLaApp(version: LoGuardado, bloques: Bloques, exigeObjetivosPorSerie: boolean): { readonly bloqueadoPorLaApp: boolean; readonly calentamientoBloqueado: boolean } {
+  if (!esDelPlan(version)) return { bloqueadoPorLaApp: false, calentamientoBloqueado: false };
+  const bloqueadoPorLaApp = exigeObjetivosPorSerie && !version.setTargetsDelivery.adviseeClientCapable;
+  // DL-178: lo mismo con las series de calentamiento: una app que no las distingue las vería y registraría como efectivas.
+  const conCalentamiento = planTieneCalentamiento({ blocks: bloques });
+  const calentamientoBloqueado = conCalentamiento && !version.setKindsDelivery.adviseeClientCapable;
+  return { bloqueadoPorLaApp, calentamientoBloqueado };
+}
+
+/** PLT: lo de la plantilla entera (su nombre, ninguna sesión, su estado) no tiene un lugar en la estructura. */
+const DE_LA_PLANTILLA: ReadonlySet<string> = new Set(['name', 'blocks', 'templateId']);
+
 /** Dónde está un problema, en palabras: los de la agenda, en «Días de entrenamiento». */
 const dondeEsta = (p: ValidationIssue, bloques: Bloques): string =>
-  p.path.startsWith('agenda') ? COPY_AGENDA_DE_ENTRENAMIENTO.titulo : ubicacionDelProblemaDeEntrenamiento(p.path, bloques);
+  p.path.startsWith('agenda') ? COPY_AGENDA_DE_ENTRENAMIENTO.titulo : DE_LA_PLANTILLA.has(p.path) ? 'Plan' : ubicacionDelProblemaDeEntrenamiento(p.path, bloques);
 
 
 const esDelEditor = (codigo: string): boolean => (Object.values(N) as readonly string[]).includes(codigo);
@@ -303,6 +343,7 @@ export function EditorDePlan({
   onReemplazarConPlantilla,
   plantillasNoSePueden = null,
   sinPlanActivo = false,
+  plantilla = null,
 }: {
   /** ENP-D12: todavía no hay un plan activo; se dice en la cabecera, en una etiqueta, y no en un renglón aparte. */
   sinPlanActivo?: boolean;
@@ -330,11 +371,26 @@ export function EditorDePlan({
   onReemplazarConPlantilla?: (templateVersionId: string) => void;
   /** EDT-54: por qué no se puede reemplazar con una plantilla (falta el objetivo vigente); `null`: se puede. */
   plantillasNoSePueden?: string | null;
+  /**
+   * PLT (DL-182): el editor edita la preparación de una plantilla, sin persona (`edicion-de-plantilla.tsx`): se guarda como
+   * plantilla o como versión nueva, no se activa. `planId` es entonces el de la preparación, y lo de la persona no está.
+   */
+  plantilla?: EdicionDePlantilla | null;
 }) {
-  const { token, asesoradoId, sesionPerdida, accesoRetirado, parametros, ir } = useEntrenamiento();
+  const { token, asesoradoId, sesionPerdida, accesoRetirado, parametros, ir } = useEditorDeEntrenamiento();
+  const preparacionId = plantilla?.preparacionId ?? null;
   // DL-169: el nombre de la persona, o la referencia neutral, para decir quién no ve la versión y quién la va a ver.
   const persona = usePersonaDelArea();
-  const [version, setVersion] = useState<PlanConObjetivos | null>(null);
+  // PLT (DL-182): lo guardado: la versión en preparación del plan o la preparación de una plantilla (`LoGuardado`).
+  const [version, setVersion] = useState<LoGuardado | null>(null);
+  // PLT: en una plantilla, lo que viaja con la estructura (el nombre y la descripción de una nueva, las cargas), lo que
+  // queda para completar al usarla (API-TPL-11), «Guardar plantilla» y la versión de la que partió, para lo que cambia.
+  const [metadatos, setMetadatos] = useState<MetadatosDeLaPlantilla>({ nombre: '', descripcion: '', conCargas: false });
+  const [paraCompletar, setParaCompletar] = useState<{ readonly version: string; readonly problemas: readonly ValidationIssue[] } | null>(null);
+  const [guardandoLaPlantilla, setGuardandoLaPlantilla] = useState(false);
+  const [falloAlGuardarLaPlantilla, setFalloAlGuardarLaPlantilla] = useState<string | null>(null);
+  const intentoDeGuardarLaPlantilla = useClaveDeIntento();
+  const [baseDeLaPlantilla, setBaseDeLaPlantilla] = useState<{ readonly bloques: Bloques; readonly nombres: Record<string, string> } | null | undefined>(undefined);
   const [error, setError] = useState<'no-disponible' | 'error' | null>(null);
   const [bloques, setBloques] = useState<Bloques>([]);
   const [nombres, setNombres] = useState<Record<string, string>>({});
@@ -453,6 +509,24 @@ export function EditorDePlan({
 
   const cargar = useCallback(async () => {
     setError(null);
+    // PLT (DL-182): la preparación de una plantilla se lee con API-TPL-09; lo demás, como siempre.
+    if (preparacionId) {
+      const p = await api.consultarPreparacionDePlantilla(token, preparacionId);
+      if (sesionPerdida(p)) return;
+      if (!p.ok) return setError(p.tipo === 'API' && p.codigo === 'RESOURCE_NOT_FOUND' ? 'no-disponible' : 'error');
+      const delCatalogo = delCatalogoDeLaPreparacion(p.datos.data);
+      setVersion(guardadoDeLaPlantilla(p.datos.data));
+      setBloques(bloquesDeLaPreparacion(p.datos.data));
+      setNombres(delCatalogo.nombres);
+      setImagenes(delCatalogo.imagenes);
+      setEjercicios(delCatalogo.ejercicios);
+      setMetadatos(metadatosDe(p.datos.data));
+      setSucio(false);
+      setFallo(false);
+      setConflicto(false);
+      sinRespuesta.current = [];
+      return;
+    }
     const r = await api.planConObjetivos(token, planId);
     if (sesionPerdida(r)) return;
     if (!r.ok) return setError(r.tipo === 'API' && r.codigo === 'RESOURCE_NOT_FOUND' ? 'no-disponible' : 'error');
@@ -467,11 +541,11 @@ export function EditorDePlan({
     setFallo(false);
     setConflicto(false);
     sinRespuesta.current = [];
-  }, [token, planId, sesionPerdida]);
+  }, [token, planId, sesionPerdida, preparacionId]);
 
   useEffect(() => {
     ediciones.current += 1;
-  }, [bloques, agenda, proximaRevision]);
+  }, [bloques, agenda, proximaRevision, metadatos]);
 
   useEffect(() => {
     void cargar();
@@ -509,7 +583,9 @@ export function EditorDePlan({
    * cuya respuesta se perdió, que se manda otra vez sobre la versión que ese guardado dejó, con las ediciones contadas
    * desde el primer envío.
    */
-  async function guardar(automatico = false, reenvio: { readonly base: PlanConObjetivos; readonly bloques: Bloques; readonly ediciones: number } | null = null): Promise<PlanConObjetivos | null> {
+  async function guardar(automatico = false, reenvio: { readonly base: PlanConObjetivos; readonly bloques: Bloques; readonly ediciones: number } | null = null): Promise<LoGuardado | null> {
+    // PLT (DL-182): la preparación de una plantilla se guarda con su operación (API-TPL-10).
+    if (version && !esDelPlan(version)) return guardarLaPreparacion(automatico, version);
     const base = reenvio?.base ?? version;
     if (!base) return null;
     const bloquesEnviados = reenvio?.bloques ?? bloques;
@@ -650,7 +726,7 @@ export function EditorDePlan({
   const puedeGuardar = loQueNoDejaGuardar(bloques).length === 0;
   // ED-03: por qué «Guardar ahora» está apagado, o `null`.
   const sinGuardarAhora = motivoSinGuardarAhora({ guardando, sucio, conflicto });
-  const cambiosParaGuardar = useMemo(() => [bloques, agenda, proximaRevision], [bloques, agenda, proximaRevision]);
+  const cambiosParaGuardar = useMemo(() => [bloques, agenda, proximaRevision, metadatos], [bloques, agenda, proximaRevision, metadatos]);
   const autoguardado = useAutoguardado({
     habilitado: !!version && sucio && puedeGuardar && !guardando && !conflicto && !confirmar && !activando && !guardarPlantilla && !descartar,
     cambios: cambiosParaGuardar,
@@ -658,7 +734,7 @@ export function EditorDePlan({
   });
   // ED-02: un enlace interno con cambios guarda antes de salir (si se puede: nada a medio escribir ni un conflicto) o
   // pregunta; recargar o cerrar la pestaña, también pregunta.
-  useCambiosSinGuardar(sucio, 'el plan en preparación', { sePuede: puedeGuardar && !conflicto, ocupado: guardando, guardar: async () => (await guardar()) !== null });
+  useCambiosSinGuardar(sucio, plantilla ? 'la plantilla' : 'el plan en preparación', { sePuede: puedeGuardar && !conflicto, ocupado: guardando, guardar: async () => (await guardar()) !== null });
   // C7: lo escrito en la escritura rápida y sin aplicar no es parte del plan (no se guarda): salir o recargar pregunta.
   const lineasSinAplicar = lineasPendientes(lineas, bloques);
   useCambiosSinGuardar(lineasSinAplicar.length > 0, COPY_ESCRITURA_RAPIDA.alSalir);
@@ -667,7 +743,9 @@ export function EditorDePlan({
    * ED-07: la revisión de la API de la versión guardada (API-TRN-11). Lo que dice entra en «Lo que impide activar»; la
    * validación final sigue siendo la de la API al activar. Revisar mira la forma, no la calidad (B10-06:563-591).
    */
-  async function revisar(v: PlanConObjetivos) {
+  async function revisar(v: LoGuardado) {
+    // PLT (DL-182): la de una plantilla mira lo que impide guardarla (API-TPL-11).
+    if (!esDelPlan(v)) return revisarLaPreparacion(v);
     setRevision({ estado: 'revisando', problemas: [], version: v.version });
     const r = await api.validarPlanDeEntrenamiento(token, planId, v.version);
     if (sesionPerdida(r) || accesoRetirado(r)) return;
@@ -707,6 +785,14 @@ export function EditorDePlan({
    * elegido: se conserva el contexto.
    */
   function abrirElCuadro(previa: EleccionDeLaProxima | null) {
+    // PLT (DL-182): en una plantilla, el cuadro es «Antes de guardar», con la misma revisión de lo guardado.
+    if (version && !esDelPlan(version)) {
+      setVolverALaRevision(null);
+      setFalloAlGuardarLaPlantilla(null);
+      setRevision((x) => (x && x.version === version.version && x.estado !== 'fallo' ? x : null));
+      setConfirmar(true);
+      return;
+    }
     if (!version) return;
     setVolverALaRevision(null);
     setFalloDeActivacion(null);
@@ -719,13 +805,42 @@ export function EditorDePlan({
 
   /** ED-07: cerrar el cuadro sin activar. La fecha es de este acto: vuelve a la que estaba guardada. */
   function cerrarAntesDeActivar() {
+    if (plantilla) {
+      setConfirmar(false);
+      setFalloAlGuardarLaPlantilla(null);
+      // Con el resultado incierto, la clave se conserva, como al activar (ED-62).
+      if (!intentoDeGuardarLaPlantilla.quedoIncierto()) intentoDeGuardarLaPlantilla.descartar();
+      return;
+    }
     setConfirmar(false);
     setFalloDeActivacion(null);
-    setProximaRevision(version?.nextReviewAt ?? '');
+    setProximaRevision(comoPlan(version)?.nextReviewAt ?? '');
     setCuando(NADA_ELEGIDO);
     // ED-62: con el resultado incierto, la clave se conserva: el intento siguiente (el mismo pedido) la reusa.
     if (!intentoDeActivar.quedoIncierto()) intentoDeActivar.descartar();
   }
+
+  // PLT (DL-182): con «Antes de guardar» abierto, la versión de la que partió la plantilla, para decir lo que cambia.
+  const deLaPlantilla = version && !esDelPlan(version) ? version.preparacion : null;
+  const plantillaDeBase = deLaPlantilla?.templateId ?? null;
+  const versionDeBase = deLaPlantilla?.baseVersionId ?? null;
+  useEffect(() => {
+    if (!confirmar || !plantillaDeBase || !versionDeBase) return;
+    let vigente = true;
+    setBaseDeLaPlantilla(undefined);
+    void api.consultarPlantillaDeEntrenamiento(token, plantillaDeBase).then((r) => {
+      if (!vigente || sesionPerdida(r)) return;
+      // Si la vigente ya no es la de base, lo que cambia no se compara con otra: al guardar, la API lo dice (409).
+      setBaseDeLaPlantilla(
+        r.ok && r.datos.data.versionId === versionDeBase
+          ? { bloques: r.datos.data.structure.blocks as Bloques, nombres: Object.fromEntries(Object.entries(r.datos.data.exercises).map(([id, e]) => [id, e.exerciseName])) }
+          : null,
+      );
+    });
+    return () => {
+      vigente = false;
+    };
+  }, [confirmar, plantillaDeBase, versionDeBase, token, sesionPerdida]);
 
   // ED-07: con el cuadro abierto y todo guardado, la API revisa lo guardado (al abrirlo, o apenas llega la respuesta de
   // un guardado). Con cambios sin guardar, el cuadro ofrece primero «Guardar ahora».
@@ -736,13 +851,13 @@ export function EditorDePlan({
   }, [confirmar, version, sucio, guardando, revision]);
 
   async function activar() {
-    if (!version || fechaQueResulta(cuando, hoyEn()) === undefined) return;
+    if (!version || !esDelPlan(version) || fechaQueResulta(cuando, hoyEn()) === undefined) return;
     setActivando(true);
     setFalloDeActivacion(null);
     // La próxima revisión se fija en este acto: si cambió, se guarda antes, y se activa la versión que eso deja.
     let v: PlanConObjetivos | null = version;
     if (proximaRevision !== (version.nextReviewAt ?? '')) {
-      v = await guardar();
+      v = comoPlan(await guardar());
       if (!v) {
         setActivando(false);
         return setFalloDeActivacion(COPY_DE_ACTIVAR_EL_PLAN.noSePudoGuardarAntes);
@@ -799,6 +914,8 @@ export function EditorDePlan({
    * descartó o se activó en otra pestaña), la sección vuelve a leer el plan; si no, el cuadro dice por qué.
    */
   async function descartarLaVersion() {
+    // PLT (DL-182): en una plantilla se descarta lo preparado (API-TPL-13).
+    if (plantilla) return descartarLaPreparacion();
     if (!version || descartando) return;
     setDescartando(true);
     setFalloDelDescarte(null);
@@ -836,6 +953,174 @@ export function EditorDePlan({
     onReemplazarConPlantilla(templateVersionId);
   }
 
+  // ── PLT (DL-182): guardar, revisar, guardar como plantilla y descartar lo preparado de una plantilla ──────────────
+  /** Escribir el nombre, la descripción o el interruptor de las cargas es un cambio más: el autoguardado lo manda. */
+  function cambiarMetadatos(m: MetadatosDeLaPlantilla) {
+    setMetadatos(m);
+    setSucio(true);
+    setProblemas(null);
+    setMensaje(null);
+  }
+
+  /** Lo que guardó el servidor pasa a la pantalla; lo escrito mientras viajaba se conserva y viaja en el próximo. */
+  function adoptarLaPreparacion(p: PreparacionDePlantilla, bloquesEnviados: Bloques, edicionesAlEnviar: number): GuardadoDeLaPlantilla {
+    const guardada = guardadoDeLaPlantilla(p);
+    const delCatalogo = delCatalogoDeLaPreparacion(p);
+    setGuardando(false);
+    setVersion(guardada);
+    setFallo(false);
+    setConflicto(false);
+    setGuardadoA(horaDelDia(new Date()));
+    autoguardado.informar('GUARDADO');
+    setNombres((n) => ({ ...n, ...delCatalogo.nombres }));
+    setImagenes((x) => ({ ...x, ...delCatalogo.imagenes }));
+    setEjercicios((x) => ({ ...x, ...delCatalogo.ejercicios }));
+    if (ediciones.current === edicionesAlEnviar) {
+      setBloques(bloquesDeLaPreparacion(p));
+      // C7: lo escrito sin aplicar en un ejercicio que recién recibió su identificador pasa a él.
+      setLineas((m) => lineasConLosIdentificadores(m, bloquesEnviados, bloquesDeLaPreparacion(p)));
+      setSucio(false);
+    }
+    return guardada;
+  }
+
+  /**
+   * PLT: el autoguardado de la preparación (API-TPL-10), con las mismas reglas que el del plan: lo que no deja guardar no
+   * viaja; un 409 después de un guardado sin respuesta se compara con lo mandado (ED-61) antes de decir «conflicto».
+   */
+  async function guardarLaPreparacion(automatico: boolean, base: GuardadoDeLaPlantilla, reenvio: { readonly bloques: Bloques; readonly ediciones: number } | null = null): Promise<LoGuardado | null> {
+    const bloquesEnviados = reenvio?.bloques ?? bloques;
+    const impide = loQueNoDejaGuardar(bloquesEnviados);
+    if (impide.length > 0) {
+      if (automatico) return null;
+      setProblemas(impide);
+      setMensaje({ tipo: 'error', texto: impide.some((p) => esUnTope(p.code)) ? AVISO_DE_LOS_TOPES : avisoDeLoQueNoDejaGuardarElEntrenamiento(impide) });
+      return null;
+    }
+    const nueva = base.preparacion.templateId === null;
+    const edicionesAlEnviar = reenvio?.ediciones ?? ediciones.current;
+    const m = metadatos;
+    setGuardando(true);
+    if (!automatico) setMensaje(null);
+    const cuerpo = cuerpoDeLaPreparacion(bloquesEnviados, nueva, m);
+    const r = await api.guardarPreparacionDePlantilla(token, base.preparacion.draftId, {
+      expectedVersion: base.version,
+      structure: { blocks: bloquesEnviados },
+      ...(nueva ? { name: m.nombre.trim(), description: m.descripcion.trim() || null } : {}),
+      copySuggestedLoads: m.conCargas,
+    });
+    if (sesionPerdida(r) || accesoRetirado(r)) {
+      setGuardando(false);
+      return null;
+    }
+    if (!r.ok) {
+      if (r.tipo === 'API' && r.codigo === 'VERSION_CONFLICT') {
+        const mandados = sinRespuesta.current;
+        const leida = mandados.length > 0 && !reenvio ? await api.consultarPreparacionDePlantilla(token, base.preparacion.draftId) : null;
+        if (leida && (sesionPerdida(leida) || accesoRetirado(leida))) {
+          setGuardando(false);
+          return null;
+        }
+        if (leida && !leida.ok) {
+          setGuardando(false);
+          setFallo(true);
+          setDetalle({ ...detalleDelFallo(leida, horaDelDia(new Date())), motivo: 'SIN_RESPUESTA' });
+          autoguardado.informar('SIN_RESPUESTA');
+          return null;
+        }
+        const p = leida?.ok ? leida.datos.data : null;
+        const cual = p ? cualMande(cuerpoDeLaPreparacion(p.structure.blocks, nueva, metadatosDe(p)), mandados) : -1;
+        if (p && cual >= 0) {
+          // Lo guardado es de esta pantalla: no hay conflicto. Si se escribió algo después, se manda sobre lo adoptado.
+          sinRespuesta.current = [];
+          const mandado = mandados[cual]!;
+          if (huellaDelGuardado(cuerpo) !== huellaDelGuardado(mandado)) {
+            return guardarLaPreparacion(automatico, guardadoDeLaPlantilla(p), { bloques: conLosIdentificadoresNuevos(bloquesEnviados, mandado.estructura, bloquesDeLaPreparacion(p)), ediciones: edicionesAlEnviar });
+          }
+          return adoptarLaPreparacion(p, bloquesEnviados, edicionesAlEnviar);
+        }
+        setGuardando(false);
+        setConflicto(true);
+        autoguardado.informar('OTRO');
+        return null;
+      }
+      setGuardando(false);
+      setFallo(true);
+      setDetalle(detalleDelFallo(r, horaDelDia(new Date())));
+      const motivo = falloDeGuardado(r);
+      if (motivo === 'SIN_RESPUESTA') sinRespuesta.current = [...sinRespuesta.current, cuerpo];
+      autoguardado.informar(motivo, ediciones.current !== edicionesAlEnviar);
+      if (motivo === 'DEMASIADO_GRANDE') {
+        setProblemas(null);
+        setMensaje({ tipo: 'error', texto: COPY_GUARDADO.demasiadoGrande, sinFoco: automatico });
+        return null;
+      }
+      if (automatico || motivo === 'SIN_RESPUESTA') return null;
+      if (r.tipo === 'API' && r.issues.length > 0) setProblemas(r.issues);
+      setMensaje({ tipo: 'error', texto: r.tipo === 'API' && r.issues.length > 0 ? 'Hay elementos de la plantilla que no se pueden guardar.' : mensajeDeFallo(r) });
+      return null;
+    }
+    sinRespuesta.current = [];
+    return adoptarLaPreparacion(r.datos.data, bloquesEnviados, edicionesAlEnviar);
+  }
+
+  /** PLT: la revisión de lo guardado (API-TPL-11): lo que impide guardarla y lo que queda para completar al usarla. */
+  async function revisarLaPreparacion(v: GuardadoDeLaPlantilla) {
+    setRevision({ estado: 'revisando', problemas: [], version: v.version });
+    const r = await api.revisarPreparacionDePlantilla(token, v.preparacion.draftId, v.version);
+    if (sesionPerdida(r) || accesoRetirado(r)) return;
+    if (r.ok) setParaCompletar({ version: v.version, problemas: r.datos.data.toComplete });
+    setRevision((x) => (x && x.version !== v.version ? x : r.ok ? { estado: 'lista', problemas: r.datos.data.issues, version: v.version } : { estado: 'fallo', problemas: [], version: v.version }));
+  }
+
+  /** PLT: «Guardar plantilla» o «Guardar nueva versión» (API-TPL-12), con la versión de lo preparado que se ve. */
+  async function guardarComoPlantilla() {
+    if (!plantilla || !version || esDelPlan(version) || guardandoLaPlantilla) return;
+    const p = version.preparacion;
+    setGuardandoLaPlantilla(true);
+    setFalloAlGuardarLaPlantilla(null);
+    // La clave es la de este pedido (lo preparado en esta versión): un resultado incierto la conserva (ED-62).
+    const r = await api.publicarPreparacionDePlantilla(token, p.draftId, version.version, intentoDeGuardarLaPlantilla.actual(`${p.draftId}:${version.version}`));
+    intentoDeGuardarLaPlantilla.registrar(r);
+    setGuardandoLaPlantilla(false);
+    if (sesionPerdida(r)) return;
+    if (!r.ok) {
+      if (r.tipo === 'API' && r.codigo === 'TEMPLATE_NAME_TAKEN') return setFalloAlGuardarLaPlantilla(COPY_PLANTILLAS.nombreTomado);
+      if (r.tipo === 'API' && r.codigo === 'TEMPLATE_ARCHIVED') return setFalloAlGuardarLaPlantilla(PLT.problema.TEMPLATE_ARCHIVED ?? mensajeDeFallo(r));
+      if (r.tipo === 'API' && r.codigo === 'OPERATION_NOT_READY') {
+        setRevision({ estado: 'lista', problemas: r.issues, version: version.version });
+        return setFalloAlGuardarLaPlantilla('Hay elementos por corregir antes de guardar la plantilla.');
+      }
+      if (r.tipo === 'API' && r.codigo === 'VERSION_CONFLICT') {
+        setConflicto(true);
+        return setFalloAlGuardarLaPlantilla(COPY_GUARDADO.conflicto);
+      }
+      if (r.tipo === 'API' && r.codigo === 'RESOURCE_NOT_FOUND') return setError('no-disponible');
+      return setFalloAlGuardarLaPlantilla(mensajeDeFallo(r));
+    }
+    setSucio(false);
+    setConfirmar(false);
+    plantilla.onGuardada(r.datos.data, p.templateId === null);
+  }
+
+  /** PLT: descartar lo preparado (API-TPL-13). Si ya no estaba (se guardó o se descartó en otra pestaña), también se vuelve. */
+  async function descartarLaPreparacion() {
+    if (!plantilla || !version || esDelPlan(version) || descartando) return;
+    const p = version.preparacion;
+    setDescartando(true);
+    setFalloDelDescarte(null);
+    const r = await api.descartarPreparacionDePlantilla(token, p.draftId, version.version, intentoDeDescartar.actual());
+    intentoDeDescartar.registrar(r);
+    setDescartando(false);
+    if (sesionPerdida(r)) return;
+    const yaNoEstaba = !r.ok && r.tipo === 'API' && r.codigo === 'RESOURCE_NOT_FOUND';
+    if (!r.ok && !yaNoEstaba) return setFalloDelDescarte(r.tipo === 'API' && r.codigo === 'VERSION_CONFLICT' ? COPY_GUARDADO.conflicto : mensajeDeFallo(r));
+    setSucio(false);
+    setDescartar(false);
+    plantilla.onDescartada(p.templateId === null || p.baseVersionNumber === null ? PLT.descartadaLaNueva : PLT.descartadosLosCambios(p.baseVersionNumber));
+  }
+
+  if (error === 'no-disponible' && plantilla) return <PreparacionQueYaNoEsta volver={plantilla.volver} />;
   if (error === 'no-disponible') return <NoDisponible />;
   if (error === 'error') return <ErrorConReintento onReintentar={cargar} />;
   if (!version) return <Cargando />;
@@ -859,10 +1144,8 @@ export function EditorDePlan({
     setProblemas(null);
     setMensaje(null);
   };
-  const bloqueadoPorLaApp = exigeObjetivosPorSerie && !version.setTargetsDelivery.adviseeClientCapable;
-  // DL-178: lo mismo con las series de calentamiento: una app que no las distingue las vería y registraría como efectivas.
-  const conCalentamiento = planTieneCalentamiento({ blocks: bloques });
-  const calentamientoBloqueado = conCalentamiento && !version.setKindsDelivery.adviseeClientCapable;
+  // DL-178 y PLT (DL-182): lo que retiene la app de la persona, solo con una persona (`loQueRetieneLaApp`).
+  const { bloqueadoPorLaApp, calentamientoBloqueado } = loQueRetieneLaApp(version, bloques, exigeObjetivosPorSerie);
 
   // ── Lo que se mira: el bloque, el microciclo y la sesión, por su posición, según la dirección ──────────────────
   const mira = loQueSeMiraEnElEditor(bloques, { bloque: parametros.get('bloque'), microciclo: parametros.get('micro'), sesion: parametros.get('sesion') });
@@ -967,9 +1250,38 @@ export function EditorDePlan({
   // «Deshacer» vive en el aviso flotante, que con el cuadro abierto queda inerte y fuera del alcance del lector (revisión
   // de la tanda A). Cada aviso conserva su «Ir»; «Completar» sigue en el panel y en el asistente.
   const sinCompletarAlActivar = confirmar ? enGrupos(loQueQuedaSinCompletarEnEntrenamiento(bloques), conSuLugar).map((c) => ({ ...c, completar: null })) : [];
+  // PLT (DL-182): «Antes de guardar». Lo de la plantilla entera se dice sin lugar; el nombre lleva a su campo.
+  const enLaPlantilla = (p: ValidationIssue, texto: string): CosaParaRevisar =>
+    DE_LA_PLANTILLA.has(p.path) ? { texto: texto.charAt(0).toUpperCase() + texto.slice(1), ir: p.path === 'name' ? irDesdeElCuadro(p) : null } : conSuLugar(p, texto);
+  const impidenGuardar: CosaParaRevisar[] = plantilla
+    ? [
+        ...impideGuardar.map((p) => conSuLugar(p, PROBLEMA[p.code] ?? 'revisá este elemento')),
+        ...sinAplicar.map((x) => conSuLugar(x.issue, x.texto)),
+        ...(revision?.estado === 'lista' && revision.version === version.version ? revision.problemas.map((p) => enLaPlantilla(p, PROBLEMA[p.code] ?? 'revisá este elemento')) : []),
+      ]
+    : [];
+  const paraCompletarAlUsarla: CosaParaRevisar[] =
+    plantilla && confirmar
+      ? [
+          ...(paraCompletar && paraCompletar.version === version.version ? paraCompletar.problemas.map((p) => conSuLugar(p, PROBLEMA[p.code] ?? 'revisá este elemento')) : []),
+          ...enGrupos(loQueQuedaSinCompletarEnEntrenamiento(bloques), conSuLugar).map((c) => ({ ...c, completar: null })),
+        ]
+      : [];
+  // Lo que cambia frente a la versión de base, con las cargas que irían a la versión (D-2 de DL-108).
+  const bloquesQueIrian = metadatos.conCargas ? bloques : sinCargasSugeridas({ blocks: bloques }).blocks;
+  const cambiosFrenteALaBase =
+    plantilla && confirmar && baseDeLaPlantilla
+      ? compararEntrenamiento(baseDeLaPlantilla.bloques, bloquesQueIrian, {
+          nombreDelEjercicio: (id) => nombres[id] ?? baseDeLaPlantilla.nombres[id] ?? 'Ejercicio',
+          renglon: (p) => ejercicioPlegadoDelEditor(p, 0).resumen,
+        })
+      : baseDeLaPlantilla === undefined
+        ? undefined
+        : null;
+  const cargasEscritas = plantilla ? ejerciciosConCargaEscrita({ blocks: bloques }) : 0;
   const nombresDeLaVigente = vigente?.plan ? nombresDe(vigente.plan) : {};
   // Frente a la vigente; en la primera versión, frente a nada: todo es «agregado». Sin la vigente leída, nada.
-  const baseDeLaComparacion = vigente?.plan ? aEntrada(vigente.plan) : !version.predecessorPlanId ? [] : null;
+  const baseDeLaComparacion = vigente?.plan ? aEntrada(vigente.plan) : !comoPlan(version)?.predecessorPlanId ? [] : null;
   const cambiosFrenteALaVigente =
     confirmar && baseDeLaComparacion
       ? compararEntrenamiento(baseDeLaComparacion, bloques, {
@@ -1177,7 +1489,8 @@ export function EditorDePlan({
         prescripcion={p}
         nombre={nombre}
         imagen={imagenes[p.exerciseVersionId] ?? null}
-        exerciseId={ejercicios[p.exerciseVersionId] ?? null}
+        // PLT (DL-182): sin persona, sin la fuerza estimada ni «La vez pasada»: el ejercicio del catálogo no se pasa.
+        exerciseId={asesoradoId === null ? null : (ejercicios[p.exerciseVersionId] ?? null)}
         abierto={abiertos.has(l)}
         problemas={problemasDelEjercicio(rutasConProblemas, { bloque: i, microciclo: j, sesion: k, ejercicio: l })}
         alAlternar={() => {
@@ -1308,6 +1621,8 @@ export function EditorDePlan({
    * un nombre, abre su campo.
    */
   const irAlProblema = (p: ValidationIssue) => {
+    // PLT (DL-182): el nombre de una plantilla nueva se escribe en la cabecera.
+    if (plantilla && p.path === 'name') return setParaEnfocar('nombre-de-la-plantilla');
     const l = lugarDelProblemaDeEntrenamiento(p.path);
     if (l.bloque === null) return;
     setInsertandoHabitual(false);
@@ -1403,8 +1718,10 @@ export function EditorDePlan({
   const estadoDeLaRevision: EstadoDeLaRevision = revisionVigente ? (revisionVigente.estado === 'revisando' ? 'revisando' : revisionVigente.estado) : 'pendiente';
   const impedimento = (p: ValidationIssue): Impedimento => {
     const lugar = dondeEsta(p, bloques);
-    const sePuedeIr = lugarDelProblemaDeEntrenamiento(p.path).bloque !== null;
-    return { lugar, texto: PROBLEMA[p.code] ?? 'revisá este elemento', destino: sePuedeIr ? destinoDelLugar(lugar) : null, ir: sePuedeIr ? () => irDesdeElPanel(p) : null };
+    // PLT (DL-182): el nombre de una plantilla nueva tiene su lugar: su campo, en la cabecera.
+    const alNombre = plantilla !== null && p.path === 'name';
+    const sePuedeIr = lugarDelProblemaDeEntrenamiento(p.path).bloque !== null || alNombre;
+    return { lugar, texto: PROBLEMA[p.code] ?? 'revisá este elemento', destino: sePuedeIr ? (alNombre ? PLT.irAlNombre : destinoDelLugar(lugar)) : null, ir: sePuedeIr ? () => irDesdeElPanel(p) : null };
   };
   const delEditor: Impedimento[] = [
     ...impideGuardar.map(impedimento),
@@ -1416,7 +1733,7 @@ export function EditorDePlan({
   const delServidor: Impedimento[] = revisionVigente?.estado === 'lista' ? revisionVigente.problemas.map(impedimento) : [];
   const cuantosImpiden = delEditor.length + delServidor.length;
   const revisionEnElPanel = (
-    <RevisionDelPlan estado={estadoDeLaRevision} sinGuardar={sucio} delServidor={delServidor} delEditor={delEditor} motivoSinRevisar={motivoSinRevisar} guardando={guardando} onRevisar={() => void revisarAhora()} />
+    <RevisionDelPlan estado={estadoDeLaRevision} sinGuardar={sucio} delServidor={delServidor} delEditor={delEditor} motivoSinRevisar={motivoSinRevisar} guardando={guardando} onRevisar={() => void revisarAhora()} para={plantilla ? 'guardar' : 'activar'} />
   );
   const sinCompletarEnVivo = enGrupos(loQueQuedaSinCompletarEnEntrenamiento(bloques), enElPanel);
   /** El nombre de una sesión por su identificador, como lo dice la agenda. */
@@ -1474,6 +1791,8 @@ export function EditorDePlan({
 
   /** ED-24: los días de una sesión en siete chips y «Sin día»; la estación y el paso 5 del asistente usan los mismos. */
   const chipsDeDias = (s: SesionE, n: number) => {
+    // PLT (DL-182): una plantilla no tiene días: se eligen en el plan de cada persona.
+    if (plantilla) return null;
     const id = s.sessionId;
     if (!id) return <p className="nota">{CE.primeroGuardar}</p>;
     const dias = agendaVisible?.sessions.find((x) => x.sessionId === id)?.weekdays ?? [];
@@ -1492,6 +1811,7 @@ export function EditorDePlan({
   };
   /** ED-20: los días que trajo un preset, marcados «del preset», para confirmar. */
   const diasDelPresetDe = (s: SesionE) => {
+    if (plantilla) return null;
     const id = s.sessionId;
     const dias = id ? (agendaVisible?.sessions.find((x) => x.sessionId === id)?.weekdays ?? []) : [];
     const delPreset = diasDelPreset[s.label] ?? [];
@@ -1505,7 +1825,8 @@ export function EditorDePlan({
   // ── ED-14 y ED-20: el asistente, sobre el mismo borrador y las mismas operaciones que la estación ─────────────────
   // Cada paso escribe solo lo que toca (con `cambiar` o `cambiarAgenda`, como la estación): lo que no muestra (los
   // valores propios de una serie, las notas, los parámetros) viaja intacto (TEST-EDP-021 y TEST-EDP-055).
-  const pasoDelAsistente = pasoPedido(parametros.get('asistente'));
+  // PLT (DL-182): el asistente arma el plan de una persona (sus días, activarlo): en una plantilla no está.
+  const pasoDelAsistente = plantilla ? null : pasoPedido(parametros.get('asistente'));
   const sugerido = pasoQueSigue(bloques, agendaVisible);
   const irAlPaso = (n: PasoDelAsistente | null) => {
     setNoAvanzo(false);
@@ -1803,6 +2124,7 @@ export function EditorDePlan({
     <section className="seccion editor-del-plan editor-de-entrenamiento estacion" aria-labelledby="titulo-borrador" data-estacion data-panel-abierto={panelAbierto ? '' : undefined} data-en-el-asistente={pasoDelAsistente ? '' : undefined}>
       {/* ED-15 (DJ-6): la barra de comandos, fija, con cada acción siempre en el mismo lugar. El único botón lleno es
           «Revisar y activar…». «Guardar como preset» y lo demás van en el «⋯» (ED-12). */}
+      {esDelPlan(version) ? (
       <div className="editor-del-plan__cabecera estacion__barra" data-barra-de-comandos>
         {/* DJ-6: la versión en preparación lleva número (el de las activadas más uno) y dice que la persona no la ve. */}
         <h2 id="titulo-borrador">
@@ -1898,6 +2220,56 @@ export function EditorDePlan({
           )}
         </div>
       </div>
+      ) : (
+        // PLT (DL-182): la cabecera de la plantilla: su nombre, de dónde parte, las cargas y «Revisar y guardar…».
+        <CabeceraDeLaPlantilla
+          preparacion={version.preparacion}
+          metadatos={metadatos}
+          onMetadatos={cambiarMetadatos}
+          cargasEscritas={cargasEscritas}
+          estadoDeGuardado={
+            <>
+              <EstadoDeGuardado
+                className="editor-del-plan__estado"
+                guardando={guardando}
+                sucio={sucio}
+                puedeGuardar={puedeGuardar}
+                fallo={fallo}
+                conflicto={conflicto}
+                guardadoA={guardadoA}
+                detalle={detalle}
+                onReintentar={() => void guardar()}
+              />
+              <button
+                type="button"
+                className="boton boton--secundario"
+                data-guardar-ahora
+                aria-disabled={sinGuardarAhora ? true : undefined}
+                aria-describedby={sinGuardarAhora ? 'motivo-sin-guardar-ahora' : undefined}
+                onClick={() => {
+                  if (!sinGuardarAhora) void guardar();
+                }}
+              >
+                <Icono nombre="guardar" tamano={18} />
+                {COPY_GUARDADO.guardarAhora}
+              </button>
+              {sinGuardarAhora ? (
+                <span id="motivo-sin-guardar-ahora" className="visualmente-oculto">
+                  {sinGuardarAhora}
+                </span>
+              ) : null}
+            </>
+          }
+          onRevisarYGuardar={abrirAntesDeActivar}
+          alDescartar={() => {
+            setFalloDelDescarte(null);
+            setDescartar(true);
+          }}
+          panelAbierto={panelAbierto}
+          onPanel={() => setPanelAbierto((x) => !x)}
+          textosDelPanel={{ abrir: CE.abrirPanel, cerrar: CE.cerrarPanel }}
+        />
+      )}
       {pasoDelAsistente ? null : (
       <>
       {/* TEST-EDP-018: los saltos entre las zonas, para el teclado. Se ven al recibir el foco. */}
@@ -1933,7 +2305,7 @@ export function EditorDePlan({
           </button>
         </Aviso>
       ) : null}
-      {version.templateOrigin ? <NotaDeOrigen token={token} origen={version.templateOrigin} /> : null}
+      {esDelPlan(version) && version.templateOrigin ? <NotaDeOrigen token={token} origen={version.templateOrigin} /> : null}
       {bloqueadoPorLaApp ? (
         <Aviso tipo="info">
           <div id="motivo-sin-activar">
@@ -1944,7 +2316,7 @@ export function EditorDePlan({
             <p>{COPY_COMPATIBILIDAD_DE_CLIENTES.queHacer}</p>
           </div>
         </Aviso>
-      ) : exigeObjetivosPorSerie ? (
+      ) : exigeObjetivosPorSerie && !plantilla ? (
         <p className="nota editor-del-plan__que-es" data-listo-para-activar>
           {COPY_COMPATIBILIDAD_DE_CLIENTES.listoParaActivar}
         </p>
@@ -1960,7 +2332,7 @@ export function EditorDePlan({
           </div>
         </Aviso>
       ) : null}
-      {objetivoVigente && objetivoVigente !== version.objectiveVersionId ? (
+      {objetivoVigente && esDelPlan(version) && objetivoVigente !== version.objectiveVersionId ? (
         <Aviso tipo="info">
           <p>Hay una versión de objetivo más nueva. Al guardar, el borrador pasa a usarla.</p>
         </Aviso>
@@ -2149,6 +2521,11 @@ export function EditorDePlan({
               </ol>
               {/* C5: lo que sale de los días, a pedido: «Ver próximas fechas» abre el inicio, la semana y las dos semanas
                   que siguen arriba de la sesión. Sin días, se dice qué pasa. */}
+              {plantilla ? (
+                <p className="nota estacion__fechas" data-sin-dias-en-la-plantilla>
+                  {PLT.sinDias}
+                </p>
+              ) : (
               <div className="estacion__fechas" data-fechas-de-la-agenda>
                 {agendaConDias ? (
                   <>
@@ -2173,6 +2550,7 @@ export function EditorDePlan({
                   <p className="nota">{COPY_AGENDA_DE_ENTRENAMIENTO.sinAgenda}</p>
                 )}
               </div>
+              )}
             </section>
           ) : null}
         </div>
@@ -2180,7 +2558,7 @@ export function EditorDePlan({
           {/* C9: después de «Ir a…», la vuelta a la revisión, fija arriba de la sesión mientras se corrige. */}
           {volverALaRevision ? (
             <div className="estacion__volver" data-volver-a-la-revision={volverALaRevision.desde}>
-              <p className="nota">{volverALaRevision.desde === 'cuadro' ? COPY_VOLVER_A_LA_REVISION.desdeElCuadro : COPY_VOLVER_A_LA_REVISION.desdeElPanel}</p>
+              <p className="nota">{volverALaRevision.desde === 'cuadro' ? (plantilla ? PLT.volverALaRevision : COPY_VOLVER_A_LA_REVISION.desdeElCuadro) : COPY_VOLVER_A_LA_REVISION.desdeElPanel}</p>
               <button type="button" className="boton boton--secundario boton--compacto" data-volver-ahora onClick={volverAhora}>
                 <Icono nombre="izquierda" tamano={15} />
                 {COPY_VOLVER_A_LA_REVISION.volver}
@@ -2201,7 +2579,8 @@ export function EditorDePlan({
           ) : null}
           {/* ED-17: lo que antes se repetía en un párrafo fijo va en una ayuda de primer uso que se cierra. Va arriba del
               centro y no encima de las zonas: así las tres entran en la pantalla (revisión visual del 2026-11-13). */}
-          <PrimerUso {...PRIMER_USO_DE_LA_ESTACION} />
+          {/* PLT (DL-182): en una plantilla, lo mismo sin días ni activar. */}
+          {plantilla ? <PrimerUso {...PRIMER_USO_DE_LA_PLANTILLA} /> : <PrimerUso {...PRIMER_USO_DE_LA_ESTACION} />}
           {/* C5: los días se eligen en un solo lugar, junto a cada sesión. «Ver próximas fechas» (desde la lista de
               sesiones) abre acá lo que sale de ellos: el inicio, la semana con «Duplicar el día» (ED-24) y las dos semanas
               que siguen. Antes, la tira de la semana y «Días de entrenamiento» repetían los días arriba de la sesión. */}
@@ -2287,7 +2666,7 @@ export function EditorDePlan({
                       <Icono nombre="mas" tamano={15} />
                       {SV.armar(cuantasVacias, sesiones.length)}
                     </button>
-                    <p className="nota">{SV.ayuda}</p>
+                    <p className="nota">{plantilla ? SV.ayudaEnLaPlantilla : SV.ayuda}</p>
                   </div>
                 ) : null}
               </div>
@@ -2464,6 +2843,7 @@ export function EditorDePlan({
         <aside id="zona-panel" className="estacion__zona estacion__panel" data-zona="panel" aria-label={CE.panel} tabIndex={-1}>
           {/* ED-25: el contexto, en pestañas. «Antes de activar», en vivo; la validación final sigue siendo de la API. */}
           {/* Las pestañas se recorren con las flechas, Inicio y Fin (el patrón de pestañas de ARIA); Tab entra a la elegida. */}
+          {plantilla ? null : (
           <div
             className="estacion__pestanas"
             role="tablist"
@@ -2492,13 +2872,21 @@ export function EditorDePlan({
               </button>
             ))}
           </div>
+          )}
           {pestana === 'antes' ? (
-            <div role="tabpanel" id="panel-antes" aria-labelledby="pestana-antes" data-panel-en-vivo>
+            // PLT (DL-182): sin pestañas en la plantilla, el panel no es una pestaña (su rótulo apuntaría a nada).
+            <div role={plantilla ? undefined : 'tabpanel'} id="panel-antes" aria-labelledby={plantilla ? undefined : 'pestana-antes'} aria-label={plantilla ? COPY_REVISION_DE_LA_PLANTILLA.titulo : undefined} data-panel-en-vivo>
               {/* Un título que no afirma nada: «⚠ Impide activar» quedaba arriba de «✓ … no se encontraron impedimentos». */}
+              {plantilla ? (
+                <h3 data-revision-para-guardar>
+                  <Icono nombre="revision" tamano={15} /> {COPY_REVISION_DE_LA_PLANTILLA.titulo}
+                </h3>
+              ) : (
               <h3>
                 <Icono nombre="revision" tamano={15} />
                 {COPY_REVISION_DEL_PLAN.titulo}
               </h3>
+              )}
               {/* ENP-D13: el estado de la revisión, siempre dicho; nunca «nada impide» antes de que responda la API. */}
               {revisionEnElPanel}
               <h3>
@@ -2516,10 +2904,10 @@ export function EditorDePlan({
                   ))}
                 </ul>
               )}
-              <p className="nota">{CE.enVivo(persona)}</p>
+              <p className="nota">{plantilla ? PLT.sinPersona : CE.enVivo(persona)}</p>
             </div>
           ) : null}
-          {pestana === 'otras' ? (
+          {pestana === 'otras' && asesoradoId !== null ? (
             <div role="tabpanel" id="panel-otras" aria-labelledby="pestana-otras">
               {/* TB-54: lee API-RES-04 al abrir; sin otra área, nada. */}
               <OtrasAreas token={token} asesoradoId={asesoradoId} sesionPerdida={sesionPerdida} area="ENTRENAMIENTO" />
@@ -2698,6 +3086,7 @@ export function EditorDePlan({
         }}
       />
 
+      {esDelPlan(version) ? (
       <AntesDeActivar
         abierto={confirmar}
         area="Entrenamiento"
@@ -2739,7 +3128,29 @@ export function EditorDePlan({
           />
         }
       />
+      ) : (
+        <AntesDeGuardarLaPlantilla
+          abierto={confirmar}
+          preparacion={version.preparacion}
+          impiden={impidenGuardar}
+          paraCompletar={paraCompletarAlUsarla}
+          revisando={!sucio && (revision === null || revision.version !== version.version || revision.estado === 'revisando')}
+          sinRevisar={revision?.estado === 'fallo' && revision.version === version.version}
+          onVolverARevisar={() => void revisar(version)}
+          sinGuardar={sucio}
+          guardando={guardando}
+          conflicto={conflicto}
+          onGuardarAhora={() => void guardar()}
+          cambios={cambiosFrenteALaBase}
+          cargas={cargasEscritas > 0 ? (metadatos.conCargas ? PLT.cargasVan(cargasEscritas) : PLT.cargasEscritasNoVan(cargasEscritas)) : null}
+          guardandoLaPlantilla={guardandoLaPlantilla}
+          error={falloAlGuardarLaPlantilla}
+          onGuardar={() => void guardarComoPlantilla()}
+          onVolver={cerrarAntesDeActivar}
+        />
+      )}
 
+      {esDelPlan(version) ? (
       <CuadroDelDescarte
         abierto={descartar}
         persona={persona}
@@ -2756,6 +3167,30 @@ export function EditorDePlan({
         }}
         onDescartar={() => void descartarLaVersion()}
       />
+      ) : (
+        <DescartarLaPreparacion
+          abierto={descartar}
+          preparacion={version.preparacion}
+          enviando={descartando}
+          error={falloDelDescarte}
+          onVolver={() => {
+            setDescartar(false);
+            setFalloDelDescarte(null);
+          }}
+          onDescartar={() => void descartarLaVersion()}
+        />
+      )}
     </section>
   );
 }
+
+/**
+ * PLT (DL-182): el mismo editor sobre la preparación de una plantilla, sin persona. Se guarda como plantilla o como una
+ * versión nueva, no se activa: lo del plan de una persona (activar, la agenda, el asistente) no se usa.
+ */
+export function EditorDePlantilla({ plantilla }: { readonly plantilla: EdicionDePlantilla }) {
+  return <EditorDePlan planId={plantilla.preparacionId} numero={0} objetivoVigente={null} onActivado={sinPersona} onDescartado={sinPersona} plantilla={plantilla} />;
+}
+
+/** Sin persona no hay versión que activar ni borrador del plan que descartar: lo preparado lo resuelve `plantilla`. */
+const sinPersona = (): void => undefined;
