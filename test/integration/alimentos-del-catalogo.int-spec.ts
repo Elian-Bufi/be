@@ -253,7 +253,8 @@ describe('NUA-03 · lo de otro profesional se ve como «De otro profesional» y 
     const marca = `Zzpru${unico()}`;
     const mio = await cargarAMano(yo, `${marca} galleta propia`);
     const ajeno = await cargarAMano(otro, `${marca} galleta ajena`);
-    const filas = await buscar(yo, marca);
+    // Solo estos dos: el buscador puede completar la página con parecidos de otras pruebas (los nombres comparten la fecha).
+    const filas = (await buscar(yo, marca)).filter((f) => f.catalogItemId === mio.catalogItemId || f.catalogItemId === ajeno.catalogItemId);
     expect(filas.map((f) => f.catalogItemId)).toEqual([mio.catalogItemId, ajeno.catalogItemId]);
     expect(filas[0]).toMatchObject({ originLevel: 'YOURS', origin: { loadedBy: 'YOU' } });
     expect(filas[1]).toMatchObject({ originLevel: 'OTHER_PROFESSIONAL', origin: { loadedBy: 'ANOTHER_PROFESSIONAL' } });

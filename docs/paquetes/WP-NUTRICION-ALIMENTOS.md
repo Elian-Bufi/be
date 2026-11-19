@@ -115,8 +115,9 @@ las migraciones (`schema.int-spec.ts`).
   un dibujo por grupo ya no lo es.
 - **NUA-D09 · Una familia propia, ALI.** No es NUT ni ADM: no choca con otras ramas que sumen operaciones a esas familias.
   Las de Administración van bajo `/admin/foods`, con la sesión administrativa y el segundo factor de WP-ADMINISTRACION.
-- **NUA-D10 · «Mis alimentos»** es un lugar propio del espacio profesional (`/pro/foods`), junto a «Mis recetas», con
-  corregir y retirar; los alimentos se siguen cargando desde la opción del plan («Crearlo a mano»), que ahora pide también
+- **NUA-D10 · «Mis alimentos»** es un lugar propio del espacio profesional (`/pro/foods`), con corregir y retirar. No va
+  en la barra (con un quinto enlace, a 1024 px pasaba a dos renglones): se llega desde «Plantillas y habituales» y desde el
+  cuadro de la opción, en otra pestaña; los alimentos se siguen cargando desde la opción del plan («Crearlo a mano»), que ahora pide también
   el grupo y la fibra (opcional: vacía es «sin dato»).
 - **NUA-D11 · La imagen de la receta.** Se elige en el formulario de la receta nueva y se carga al guardar, con la versión
   que devolvió la creación. Si la receta quedó guardada y la imagen no, la receta guardada retoma lo elegido con
@@ -152,7 +153,8 @@ continuador juntos:
 
 1. Integrar la planificación entera y desplegar test (la API aplica las dos migraciones de DL-180 al arrancar).
 2. Entrar al website de test como profesional de Nutrición, con la cuenta con la que se cargó.
-3. Ir a «Mis alimentos» (barra del espacio profesional). Buscar «Proteína en polvo» en la lista; mirar su versión, su
+3. Ir a «Mis alimentos»: desde «Plantillas y habituales» (junto a los alimentos habituales) o desde el cuadro de una
+   opción del plan («¿Uno tuyo tiene un error?»). Buscar «Proteína en polvo» en la lista; mirar su versión, su
    fecha y sus valores para confirmar que es el cargado mal (si hubiera dos con el mismo nombre, el de los valores
    equivocados).
 4. «Retirar» → leer qué pasa → «Retirar». Queda «Retirado», con una versión más.

@@ -13,7 +13,7 @@ import { CalculoDeRecetaResponseSchema, DetalleDeRecetaResponseSchema, ListaDeRe
 import { randomUUID } from 'node:crypto';
 import { PrismaService } from '../../apps/api/src/prisma/prisma.service';
 import { appDePrueba, claveDeIdempotencia, conSesion } from './soporte-api';
-import { alimento } from './soporte-nutricion';
+import { alimento, alimentoSinCompartir } from './soporte-nutricion';
 import {
   ALIMENTOS,
   alimentosUsda,
@@ -227,15 +227,13 @@ describe('Permisos y referencias (DL-119)', () => {
       expect(r.body.error.code).toBe('CATALOG_REFERENCE_INVALID');
       expect(r.body.error.details.issues[0].path).toMatch(/^ingredients\[0\]\.catalogItem(Version)?Id$/);
     }
-    // Un alimento cargado por otro profesional es de su ámbito (REG-06-135).
+    // Un alimento cargado por otro profesional que no se compartió es de su ámbito (REG-06-135; DL-180, NUA-D05: lo cargado
+    // desde DL-180 se comparte, y entonces sí se puede citar).
     const otro = await prepararProfesional(app, 'recetas-catalogo-ajeno', ['NUTRICION']);
-    const propioDelOtro = await conSesion(app, otro.token)
-      .post('/api/v1/nutrition/catalog-items')
-      .send({ name: 'Galleta sintética de otro profesional', itemType: 'FOOD', composition: { referenceAmount: '100g', energyKcal: 420, proteinG: 8, carbohydrateG: 70, fatG: 12 } })
-      .expect(201);
+    const propioDelOtro = await alimentoSinCompartir(app.get(PrismaService), otro.id, 'Galleta sintética de otro profesional', { referenceAmount: '100g', energyKcal: 420, proteinG: 8, carbohydrateG: 70, fatG: 12 });
     const r = await calcular({
       servings: 1,
-      ingredients: [{ catalogItemId: propioDelOtro.body.data.catalogItemId, catalogItemVersionId: propioDelOtro.body.data.versionId, quantity: { value: 50, unit: 'g' }, preparationState: 'AS_PURCHASED' }],
+      ingredients: [{ catalogItemId: propioDelOtro.catalogItemId, catalogItemVersionId: propioDelOtro.versionId, quantity: { value: 50, unit: 'g' }, preparationState: 'AS_PURCHASED' }],
     }).expect(422);
     expect(r.body.error.code).toBe('CATALOG_REFERENCE_INVALID');
     // El cliente no manda totales: un campo de más es 400 (contrato estricto).
