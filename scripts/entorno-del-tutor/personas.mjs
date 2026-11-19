@@ -53,7 +53,8 @@ export const rx = (ej, series, reps, rir, extra = {}) => ({ ej, series, reps, ri
 
 /**
  * La Lic. Julieta Arce (REQ-TUT-06): licenciada en Nutrición, profesora de Educación Física y antropometrista, con las
- * tres áreas. 14 meses de uso (REQ-TUT-08). La matrícula es un valor que no puede existir (REQ-TUT-07).
+ * tres áreas, con un perfil sanitario (el de licenciada: BE tiene un solo tipo de perfil por profesional). 16 meses de uso
+ * (REQ-TUT-08, TUT-D03). La matrícula es un valor que no puede existir (REQ-TUT-07).
  */
 export const PROFESIONAL = {
   clave: 'julieta',
@@ -63,7 +64,7 @@ export const PROFESIONAL = {
   semanas: 70,
   alcances: [
     ['NUTRICION', 'SANITARIO'],
-    ['ENTRENAMIENTO', 'NO_SANITARIO'],
+    ['ENTRENAMIENTO', 'SANITARIO'],
     ['ANTROPOMETRIA', 'SANITARIO'],
   ],
 };

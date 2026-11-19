@@ -206,7 +206,9 @@ async function vincularEnElPasado(tx, { pro, proId, aseId, alcance, momento, cla
   const solicitudId = id(`${clave}|solicitud|${alcance}`);
   if (await existe(tx, 'solicitud_de_vinculo', solicitudId)) return false;
   const finalidad = dominio.FINALIDAD_DE_ALCANCE[alcance];
-  const texto = dominio.VERSION_VIGENTE[tipoDe(pro, alcance) === 'SANITARIO' ? 'CONSENTIMIENTO_PROFESIONAL_SANITARIO' : 'CONSENTIMIENTO_PROFESIONAL_NO_SANITARIO'];
+  // El texto de B2 es el del perfil del profesional (uno solo por identidad), como lo exige la base (08 §12.3).
+  const [perfil] = await filas(tx, `SELECT "tipo"::text AS tipo FROM "perfil_profesional" WHERE "identidad_id" = $1::uuid`, proId);
+  const texto = dominio.VERSION_VIGENTE[(perfil?.tipo ?? tipoDe(pro, alcance)) === 'SANITARIO' ? 'CONSENTIMIENTO_PROFESIONAL_SANITARIO' : 'CONSENTIMIENTO_PROFESIONAL_NO_SANITARIO'];
   const aceptada = masMinutos(momento, 5 * 60 + 20);
   const otorgado = masMinutos(aceptada, 2);
   const alcanceId = id(`${clave}|alcance|${alcance}`);
@@ -708,6 +710,23 @@ async function compartirDeSilvia(silviaId) {
   return 'hecho';
 }
 
+/** Las notas de coordinación entre Julieta y la colega de Nutrición de Silvia (REQ-TUT-12), por la API: con la fecha del armado (TUT-D13). */
+async function coordinacion(silviaId) {
+  const hechas = [];
+  for (const n of COORDINACION) {
+    const autor = n.de === 'julieta' ? 'julieta' : 'natalia';
+    const otra = n.de === 'julieta' ? 'natalia' : 'julieta';
+    const token = await sesion(autor);
+    const r = await pedir('POST', `/advisees/${silviaId}/coordination-notes`, {
+      token,
+      cuerpo: { originScope: n.de === 'julieta' ? 'ENTRENAMIENTO' : 'NUTRICION', purpose: 'CHANGE_IN_MY_AREA', recipients: { mode: 'ONE', identityId: ids[otra] }, text: n.texto },
+      clave: idCliente(`coordinacion|${n.texto}`),
+    });
+    hechas.push(r.status);
+  }
+  return hechas.length;
+}
+
 async function historiaAnterior(valeria) {
   const t = await sesion('valeria', 'APK');
   const r = await pedir('GET', '/me/previous-history', { token: t, superficie: 'APK' });
@@ -811,6 +830,7 @@ async function cargar(h) {
   // Lo que comparte Silvia con las dos (REQ-TUT-26) y la historia anterior de Valeria (REQ-TUT-21).
   log(`compartir de Silvia: ${await compartirDeSilvia(ids.silvia)}`);
   log(`historia anterior de Valeria: ${await historiaAnterior(ids.valeria)}`);
+  log(`notas de coordinación de Silvia: ${await coordinacion(ids.silvia)}`);
 }
 
 /** El origen de la muestra que ya está en la base: sale de la fecha del primer vínculo de Tomás. */
@@ -912,4 +932,3 @@ try {
 }
 void diasEntre;
 void ALIMENTO;
-void COORDINACION;
