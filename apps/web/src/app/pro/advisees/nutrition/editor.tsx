@@ -113,6 +113,7 @@ import { ofreceDescartar, resultadoDelDescarte, textoDelDescarteQueNoSeHizo } fr
 import { conLosIdentificadoresNuevos, cualMande, huellaDelGuardado, type CuerpoDelGuardado } from '../es-lo-que-mande';
 import { COPY_RESULTADO_DE_ACTIVAR, hayQueReleer, loQuePasoAlActivar, type VersionReleida } from '../resultado-de-activar';
 import { useCambiosSinGuardar, usePersonaDelArea } from '../marco-del-area';
+import { PatronesDelPlan } from '../graficos/patrones/patrones-del-plan-en-pantalla';
 import { AVISO_DE_LOS_TOPES, esUnTope, TEXTO_DE_LOS_TOPES, topesPasadosDeNutricion } from '../topes-del-plan';
 import { loQueQuedaSinCompletarEnNutricion, TEXTO_DE_LO_INCOMPLETO } from '../revisar-el-plan';
 import { COPY_DE_LOS_EDITORES as E, copiaDeLaComida, copiaDeLaOpcion, copiaDelDiaTipo, duplicarEn, elegidasTrasMover, mover, posicionesTrasInsertar, posicionesTrasMover, posicionesTrasQuitar } from '../editar-la-estructura';
@@ -251,7 +252,7 @@ export function EditorDeBorrador({
   /** ED-30: el asistente escribió una versión nueva del objetivo: la sección vuelve a leer el vigente. */
   onObjetivoNuevo?: () => void | Promise<void>;
 }) {
-  const { token, sesionPerdida, accesoRetirado, parametros, ir } = useNutricion();
+  const { token, asesoradoId, sesionPerdida, accesoRetirado, parametros, ir } = useNutricion();
   const router = useRouter();
   const antesDeSalir = useAntesDeSalir();
   // DL-169: el nombre de la persona, o la referencia neutral, para decir quién no ve la versión y quién la va a ver.
@@ -337,7 +338,8 @@ export function EditorDeBorrador({
   // ED-33: el cuadro del «⋯» de la comida que está abierto («Copiar desde otra comida» o «Usar una comida habitual»).
   const [otraComida, setOtraComida] = useState<{ readonly que: 'copiar' | 'habitual'; readonly i: number; readonly j: number } | null>(null);
   // ED-34: la pestaña del panel.
-  const [pestanaDelPanel, setPestanaDelPanel] = useState<'antes' | 'rangos'>('rangos');
+  // WP-GRAFICOS rama E (GR-T12): «Patrones», la tercera pestaña del panel.
+  const [pestanaDelPanel, setPestanaDelPanel] = useState<'antes' | 'rangos' | 'patrones'>('rangos');
   // ED-32: la receta nueva que se crea desde una comida (en un cuadro), si tiene algo escrito, y lo que quedó por
   // recuperar si se guardó pero no se pudo agregar.
   const [recetaNueva, setRecetaNueva] = useState<LugarDeLaReceta | null>(null);
@@ -1438,6 +1440,7 @@ export function EditorDeBorrador({
       <PanelDeNutricion
         pestana={pestanaDelPanel}
         alElegir={setPestanaDelPanel}
+        patrones={<PatronesDelPlan token={token} asesoradoId={asesoradoId} sesionPerdida={sesionPerdida} area="NUTRICION" planId={version?.nutritionPlanId ?? null} />}
         impiden={impidenEnVivo}
         sinCompletar={sinCompletarEnVivo}
         persona={persona}
@@ -1772,7 +1775,8 @@ export function EditorDeBorrador({
 }
 
 /**
- * ED-25 y ED-34 en Nutrición · El panel al costado, con dos pestañas: «Rangos y totales» y «Antes de activar», en vivo.
+ * ED-25 y ED-34 en Nutrición · El panel al costado, con tres pestañas: «Rangos y totales», «Antes de activar», en vivo, y
+ * «Patrones» (WP-GRAFICOS rama E, GR-T12).
  * Las pestañas se recorren con las flechas, Inicio y Fin (el patrón de pestañas de ARIA).
  */
 function PanelDeNutricion({
@@ -1782,13 +1786,16 @@ function PanelDeNutricion({
   sinCompletar,
   persona,
   rangos,
+  patrones,
 }: {
-  pestana: 'antes' | 'rangos';
-  alElegir: (p: 'antes' | 'rangos') => void;
+  pestana: 'antes' | 'rangos' | 'patrones';
+  alElegir: (p: 'antes' | 'rangos' | 'patrones') => void;
   impiden: readonly ParaCorregir[];
   sinCompletar: readonly ParaCorregir[];
   persona: string | null;
   rangos: ReactNode;
+  /** WP-GRAFICOS rama E: los gráficos de la persona con el enfoque de este plan; se monta solo con la pestaña elegida. */
+  patrones: ReactNode;
 }) {
   const lista = (cosas: readonly ParaCorregir[]) => (
     <ul className="estacion__lista-del-panel">
@@ -1807,7 +1814,9 @@ function PanelDeNutricion({
   const pestanas = [
     ['rangos', COPY_RANGOS.pestana],
     ['antes', CE.pestanaAntes],
+    ['patrones', CE.pestanaPatrones],
   ] as const;
+  const orden = pestanas.map(([clave]) => clave);
   return (
     <aside className="panel-de-nutricion" aria-label={CE.panel} data-panel-de-nutricion>
       <div
@@ -1815,8 +1824,9 @@ function PanelDeNutricion({
         role="tablist"
         aria-label={CE.panel}
         onKeyDown={(e) => {
-          const otra = pestana === 'rangos' ? 'antes' : 'rangos';
-          const destino = e.key === 'ArrowRight' || e.key === 'ArrowLeft' ? otra : e.key === 'Home' ? 'rangos' : e.key === 'End' ? 'antes' : null;
+          const n = Math.max(0, orden.indexOf(pestana));
+          const destino =
+            e.key === 'ArrowRight' ? orden[(n + 1) % orden.length] : e.key === 'ArrowLeft' ? orden[(n + orden.length - 1) % orden.length] : e.key === 'Home' ? orden[0] : e.key === 'End' ? orden[orden.length - 1] : null;
           if (!destino) return;
           e.preventDefault();
           alElegir(destino);
@@ -1842,6 +1852,10 @@ function PanelDeNutricion({
           </h3>
           {sinCompletar.length === 0 ? <p className="nota">{CE.nadaSinCompletar}</p> : lista(sinCompletar)}
           <p className="nota">{CE.enVivo(persona)}</p>
+        </div>
+      ) : pestana === 'patrones' ? (
+        <div role="tabpanel" id="panel-nut-patrones" aria-labelledby="pestana-nut-patrones" data-panel-patrones>
+          {patrones}
         </div>
       ) : (
         <div role="tabpanel" id="panel-nut-rangos" aria-labelledby="pestana-nut-rangos" data-rangos>

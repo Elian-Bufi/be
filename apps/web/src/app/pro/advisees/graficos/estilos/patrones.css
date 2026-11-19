@@ -1,1 +1,327 @@
 /* WP-GRAFICOS fase 2 (DL-174): los estilos de «Patrones» y los enfoques. Los escribe solo la rama E. */
+
+/* Cada grilla de «Patrones» tiene una sola columna que puede achicarse: sin esto, el primer dibujo de un gráfico (720 px
+   antes de medir) ensancha la columna y el panel angosto del editor queda con el contenido cortado a la derecha. */
+.patrones-de-la-ficha,
+.patrones,
+.patrones__seccion,
+.patrones__lista,
+.patrones__tarjeta,
+.patrones-del-plan,
+.patrones-del-plan__arriba {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.patrones__cinta,
+.patrones__grafico,
+.patrones-del-plan > * {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.patrones__pregunta h4,
+.patrones-del-plan__enfoque {
+  overflow-wrap: anywhere;
+}
+
+/* ─── La vista y su enfoque ─────────────────────────────────────────────────────────────────────────── */
+
+.patrones-de-la-ficha {
+  display: grid;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.patrones__enfoque {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1rem;
+}
+
+.patrones__que-rige {
+  margin: 0;
+}
+
+/* Mientras se edita un enfoque: lo que se guarda y lo que hay que saber, juntos y arriba. */
+.patrones__editando {
+  display: grid;
+  gap: 0.6rem;
+  border-color: var(--borde-control);
+  background: var(--fondo-suave);
+}
+
+.patrones__editando-titulo {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0;
+}
+
+.patrones__editando .campo {
+  max-width: 32rem;
+}
+
+.patrones__otros-lugares {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0.5rem 0.75rem;
+  border-inline-start: 3px solid var(--borde-control);
+  background: var(--superficie);
+  border-radius: 4px;
+}
+
+.patrones__editando-acciones {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* ─── El cuerpo ───────────────────────────────────────────────────────────────────────────────────── */
+
+.patrones {
+  display: grid;
+  gap: 1.25rem;
+  min-width: 0;
+}
+
+/* La cinta, fija arriba al desplazar: la regla del tiempo de toda la columna. */
+.patrones__cinta {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  background: var(--superficie);
+  padding-block: 0.25rem;
+}
+
+.patrones--compacta .patrones__cinta {
+  position: static;
+}
+
+.patrones__vacio {
+  margin: 0;
+}
+
+.patrones__seccion {
+  display: grid;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.patrones__titulo-de-seccion {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.patrones__titulo-de-seccion h3 {
+  margin: 0;
+  font-size: 1.0625rem;
+}
+
+.patrones__titulo-de-seccion .nota {
+  margin: 0;
+}
+
+.patrones__lista {
+  display: grid;
+  gap: 1rem;
+  min-width: 0;
+}
+
+/* Cada tarjeta, a todo el ancho: el mismo eje de fechas para toda la columna. */
+.patrones__tarjeta {
+  display: grid;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.patrones__cabecera {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+}
+
+.patrones__pregunta {
+  display: grid;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.patrones__pregunta h4 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.patrones__pregunta .nota {
+  margin: 0;
+}
+
+.patrones__acciones,
+.patrones__edicion {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.patrones__grafico {
+  min-width: 0;
+}
+
+.patrones__tarjeta--a-pedido {
+  background: var(--fondo-suave);
+}
+
+.patrones__agregar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.patrones__falta {
+  display: grid;
+  gap: 0.25rem;
+  margin: 0;
+  padding-inline-start: 1.25rem;
+  color: var(--tenue);
+}
+
+/* ─── En el panel del editor: angosto y compacto ──────────────────────────────────────────────────── */
+
+.patrones-del-plan {
+  display: grid;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.patrones-del-plan__arriba {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.patrones-del-plan__arriba .nota,
+.patrones-del-plan__enfoque {
+  margin: 0;
+}
+
+.patrones-del-plan__enfoque {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.4rem;
+}
+
+.patrones-del-plan__elegir {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.patrones-del-plan__botones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.patrones--compacta .patrones__tarjeta {
+  padding: 0.75rem;
+}
+
+.patrones--compacta .patrones__titulo-de-seccion h3 {
+  font-size: 0.9375rem;
+}
+
+/* ─── «Mis enfoques» ──────────────────────────────────────────────────────────────────────────────── */
+
+.mis-enfoques {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.mis-enfoques__lista {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.mis-enfoques__enfoque {
+  display: grid;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  border: 1px solid var(--borde);
+  border-radius: 12px;
+  background: var(--superficie);
+}
+
+.mis-enfoques__nombre {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.mis-enfoques__acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.mis-enfoques__confirmar p {
+  margin: 0 0 0.5rem;
+}
+
+.mis-enfoques__renombrar {
+  display: grid;
+  gap: 0.5rem;
+}
+
+/* La pestaña «Patrones» del panel del editor: su ancho es el del panel, nunca el de su contenido. Es un hijo de la
+   grilla del panel y, sin esto, el primer dibujo de la cinta (720 px antes de medir) la ensanchaba y quedaba cortada. */
+[data-panel-patrones] {
+  contain: inline-size;
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+}
+
+/* Adentro de «Patrones», los gráficos de la base también tienen una sola columna que se achica: su raíz es una grilla con
+   una columna automática, y el dibujo antes de medir (720 px) la ensanchaba en el panel angosto. */
+.patrones .grafico-base,
+.patrones .grafico-base > * {
+  min-width: 0;
+}
+
+.patrones .grafico-base {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+/* GR-VE14: pegada arriba, la cinta muestra solo el dibujo y lo elegido; lo demás vuelve al subir. */
+.patrones__marca-de-la-cinta {
+  height: 1px;
+  margin-bottom: -1px;
+}
+
+.patrones__cinta[data-pegada] {
+  box-shadow: 0 1px 0 var(--borde);
+}
+
+.patrones__cinta[data-pegada] .grafico-base__titulo,
+.patrones__cinta[data-pegada] .grafico-base__leyenda,
+.patrones__cinta[data-pegada] .grafico-base__lectura + .nota,
+.patrones__cinta[data-pegada] .grafico-base__tabla,
+.patrones__cinta[data-pegada] .grafico-base__nota {
+  display: none;
+}
+
+/* Con la cinta pegada arriba, lo que recibe el foco al recorrer con el teclado (o al saltar a un ancla) se lleva debajo de
+   ella, no detrás (WCAG 2.4.11), como con la barra de acciones fija abajo. */
+html:has(.patrones__cinta[data-pegada]) {
+  scroll-padding-top: 10rem;
+}

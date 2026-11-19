@@ -11,7 +11,8 @@
  * «Actualizar» vuelve a preguntar a la API y muestra la hora de la última consulta.
  *
  * WP-DASHBOARD-PROFESIONAL: la ficha tiene tres vistas —Resumen, Línea de tiempo y Analizar— con el mismo período,
- * todo en la URL (`vista=`, `p=` o `desde`/`hasta`, y el estado de cada vista).
+ * todo en la URL (`vista=`, `p=` o `desde`/`hasta`, y el estado de cada vista). WP-GRAFICOS rama E suma «Patrones»
+ * entre «Resumen» y «Línea de tiempo» (GR-T12).
  *
  * WP-DASHBOARD-COMPRENSION (encargo del 2026-10-09):
  * - **Ficha del asesorado:** el nombre visible es el título; la identidad técnica ocupa una línea.
@@ -70,6 +71,8 @@ import { Pista } from '../../../components/pista';
 import { ComoSeLeeEstaVista } from './seguimiento/como-se-lee';
 import { EsperandoSesion } from '../../../lib/sesion';
 
+// WP-GRAFICOS rama E (GR-T12): «Patrones», con sus gráficos cargados a pedido, como «Analizar».
+const Patrones = dynamic(() => import('./graficos/patrones/patrones-de-la-ficha-en-pantalla').then((m) => m.PatronesDeLaFicha), { ssr: false, loading: () => <Cargando /> });
 const Analizar = dynamic(() => import('./seguimiento/analizar').then((m) => m.Analizar), { ssr: false, loading: () => <Cargando /> });
 
 /** El ícono de cada eslabón de la acción del momento (TB-09). */
@@ -398,6 +401,7 @@ export function Workspace() {
         )}
         <div className="ficha__cuerpo secciones">
           {vista === 'resumen' ? <ResumenDelSeguimiento /> : null}
+          {vista === 'patrones' ? <Patrones /> : null}
           {vista === 'linea' ? <LineaDeTiempo /> : null}
           {vista === 'analizar' ? <Analizar /> : null}
         </div>
