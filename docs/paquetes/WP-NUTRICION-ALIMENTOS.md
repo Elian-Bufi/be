@@ -44,8 +44,8 @@ los campos de BE.
 | API-ALI-02 | `PATCH /nutrition/catalog-items/{id}` | Corregir: versión nueva si cambian el nombre o la composición; `group` cambia el grupo sin versión |
 | API-ALI-03 | `POST /nutrition/catalog-items/{id}/retirement` | Retirar: una versión RETIRADO; retirarlo otra vez no cambia nada |
 | API-ALI-04 | `POST /nutrition/catalog-items/lookup` | Los que se ven, por identidad (hasta 200), también los retirados: el editor del plan |
-| API-ALI-05 | `POST /admin/foods/query` | Administración: lo cargado a mano para revisar, con filtro de estado y texto |
-| API-ALI-06 | `POST /admin/foods/{id}/decisions` | Administración: certificar con fuente, equivalente de uno oficial o quitar lo decidido |
+| API-ALI-05 | `POST /admin/foods/query` | Administración: lo cargado a mano **y compartido** para revisar, con filtro de estado y texto |
+| API-ALI-06 | `POST /admin/foods/{id}/decisions` | Administración: certificar con fuente, equivalente de uno oficial o quitar lo decidido; lo no compartido es el mismo 404 que lo inexistente |
 | API-ALI-07 | `POST /admin/foods/verified/query` | Administración: los de la tabla oficial, para elegir el equivalente |
 
 Los cambios en lo que ya existía, todos aditivos (un campo ausente vale lo de siempre):
@@ -60,7 +60,7 @@ Los cambios en lo que ya existía, todos aditivos (un campo ausente vale lo de s
 
 ## 3. El modelo de datos y las migraciones
 
-Dos migraciones nuevas, que solo agregan:
+Tres migraciones nuevas, que solo agregan:
 - `20261119120000_tipos_de_alimentos_del_catalogo`: los hechos `ElementoDeCatalogoVersionado` y
   `ElementoDeCatalogoRetirado` (aparte: PostgreSQL no usa un valor de enum en la transacción que lo agrega).
 - `20261119120100_alimentos_del_catalogo`:
@@ -73,6 +73,9 @@ Dos migraciones nuevas, que solo agregan:
     número. Certificar exige la fuente; un equivalente nombra a otro alimento de la tabla oficial disponible; la escribe
     solo un administrador con su rol vigente (triggers y CHECK).
   - Las tres son de solo agregar (`be_solo_agregar`, sin UPDATE, DELETE ni TRUNCATE).
+- `20261119120200_revision_de_lo_compartido` (de la revisión adversaria): la guardia de
+  `revision_administrativa_de_alimento` exige además que el alimento esté compartido (NUA-D05). Solo reemplaza el cuerpo
+  de esa función, creada en la migración anterior de esta misma rama; ninguna fila cambia.
 - **Corregir y retirar no necesitan tablas:** usan la cadena de versiones de siempre (`version_de_elemento_nutricional`,
   REG-06-99 a 101). El token es «v» y el número de versiones del alimento: las tablas del catálogo son de solo agregar y
   no admiten una columna de versión que cambie.
@@ -106,8 +109,10 @@ las migraciones (`schema.int-spec.ts`).
   de sumarlo»: el aviso y su composición cada 100 g, con «Sumarlo» y «Volver a buscar».
 - **NUA-D07 · La certificación es de una versión; el equivalente, del alimento.** Si su autor lo corrige, la versión nueva
   vuelve a «sin revisar» (el formulario se lo avisa). El equivalente solo puede ser de la tabla oficial y estar disponible;
-  no toca los planes viejos. Administración revisa solo cargas a mano (no Open Food Facts) y ve el nombre, los valores, el
-  grupo y la versión: nunca quién lo cargó ni a quién se le indicó. La auditoría guarda la operación sin los textos.
+  no toca los planes viejos. Administración revisa solo cargas a mano **compartidas** (no Open Food Facts, ni lo de antes
+  de DL-180 que su autor no corrigió: eso lo ve solo él, como le dice «Mis alimentos»; la base lo sostiene) y ve el
+  nombre, los valores, el grupo y la versión: nunca quién lo cargó ni a quién se le indicó. La auditoría guarda la
+  operación sin los textos.
 - **NUA-D08 · El grupo es un hecho aparte, no una versión.** Trece grupos: doce con su ícono y «Otros», con el genérico
   (`alimento`). Sin grupo (lo cargado antes, lo importado), el genérico. Los doce íconos nuevos siguen las reglas de la
   familia (`iconos.test.ts`) y son una **propuesta a validar por Dirección**: el taller de diseño (fuera del repositorio) los
@@ -124,8 +129,10 @@ las migraciones (`schema.int-spec.ts`).
   «Reintentar la imagen», que nunca vuelve a crear la receta. En «Receta nueva» del plan: con la imagen cargada, el cuadro
   se cierra y el plan lo dice; si falló, el paso de la foto la muestra con el reintento; sin imagen, la ofrece como antes.
 - **NUA-D12 · El paso 3 tenía el mismo campo suelto que el 4:** se arregló igual.
-- **NUA-D13 · Corregir comparte.** Corregir un alimento de antes de DL-180 lo comparte (el formulario lo dice). Si Dirección
-  prefiere que compartir sea una elección aparte, es un interruptor más en el mismo formulario.
+- **NUA-D13 · Corregir comparte.** Corregir un alimento de antes de DL-180 lo comparte (el formulario lo dice). Solo si de
+  verdad se corrige algo (el nombre, los valores o el grupo): guardar sin cambios responde «no cambió» y no lo comparte.
+  Si Dirección prefiere que compartir sea una elección aparte, es un interruptor más en el mismo formulario (la revisión
+  adversaria lo recomienda, §9).
 
 ## 5. El tramo siguiente (declarado, sin nada a medias)
 
@@ -195,3 +202,50 @@ Como se cargó antes de DL-180, no se compartió con nadie: retirarlo no lo mues
 - Una receta que cita un ingrediente retirado lo conserva, pero el editor de recetas todavía no lo marca «retirado».
 - Administración no revisa lo importado de Open Food Facts (solo cargas a mano).
 - Volver a ofrecer un alimento retirado.
+- Las bajas de la revisión adversaria (§9).
+
+## 9. La revisión adversaria (2026-11-19)
+
+Revisó la privacidad y la autorización (el buscador, la consulta por identidad, la sugerencia del equivalente, los
+errores, los conteos y los identificadores), la consola de Administración, las versiones y sus carreras, las migraciones,
+la imagen de la receta y lo de siempre (identificadores, foco, aserciones, idioma). No encontró nada de severidad alta: lo
+ajeno no revela a su autor ni a sus personas por ningún camino, el 404 es el mismo para lo ajeno, lo no compartido y lo
+inexistente, cada operación de `/admin/foods` exige la sesión administrativa con el segundo factor (los guardias van en
+cada ruta), la prueba de la carrera de dos correcciones falla sin el bloqueo, las migraciones solo agregan y la siembra es
+idempotente, y la APK instalada no recibe nada nuevo.
+
+**Corregido en la rama (media), cada uno con su prueba de integración:**
+- **Guardar una corrección sin cambios compartía el alimento.** «Mis alimentos» le dice al autor de lo cargado antes de
+  DL-180 «Por ahora lo ves solo vos: se comparte cuando lo corregís»; abrir «Corregir» y guardar sin tocar nada respondía
+  «no cambió» y, a la vez, lo dejaba a la vista de todos los profesionales de Nutrición. Ahora se comparte solo si cambia
+  el nombre, los valores o el grupo (NUA-D13).
+- **Administración veía lo que su autor no compartió.** La consola listaba todas las cargas a mano, también las de antes
+  de DL-180, con el mismo nombre que fue la razón para no compartirlas (NUA-D05). Ahora lista y decide solo lo compartido
+  (lo demás, el mismo 404 que lo inexistente), y la base lo sostiene (`20261119120200_revision_de_lo_compartido`).
+- **La consola desentonaba con `/admin`:** viñetas sueltas y filtros apilados. Ahora, los filtros en un renglón como en la
+  lista de profesionales y cada alimento en su tarjeta, como en «Mis alimentos».
+- De paso (baja): un equivalente con un identificador que no es un UUID daba un error de la base (500, sin auditar); ahora
+  es el mismo 422 que uno que no es de la tabla oficial.
+
+**Bajas, abiertas:**
+- Un borrador acepta al guardarse cualquier alimento retirado, no solo el que ya citaba (una comida habitual, «Copiar desde
+  otra comida» o un pedido armado a mano lo pueden sumar). Validar y activar lo frenan, así que no llega a la persona.
+- Una receta puede citar una versión vieja (disponible) de un alimento retirado, también en una versión nueva de la receta:
+  `versionesCitables` no mira si el alimento se retiró. Por esa receta, un alimento retirado puede llegar a un plan que se
+  activa después del retiro. Para recetas nuevas convendría rechazarlo; las que ya lo citaban lo conservan (NUA-D02).
+- Las versiones de antes de compartir un alimento (las de antes de su corrección) siguen siendo citables por su
+  identificador. Nadie más las conoce (no se devuelven en ninguna respuesta y son UUID al azar), pero la regla de
+  `alimento_compartido` es por alimento, no por versión.
+- Administración puede decidir sobre uno retirado si manda su versión vigente: la lista no lo ofrece y no cambia nada para
+  nadie, pero no se rechaza.
+- Si la sesión vence mientras se carga la imagen de una receta recién creada, la receta queda sin imagen y, al volver,
+  nadie lo dice.
+- En la consola, «Revisar» abre el formulario debajo sin llevarle el foco (con el teclado, un Tab).
+- Incidencias y derechos (`/admin/incidents`, `/admin/rights`) siguen con la lista con viñetas que tenía esta consola.
+
+**Decisiones con riesgo para la privacidad (a ratificar):**
+- **NUA-D05 y NUA-D13 juntas: lo compartido no se puede dejar de compartir.** `alimento_compartido` es de solo agregar y
+  no hay un retiro de lo compartido; corregir el nombre no alcanza, porque la versión que otro profesional ya activó queda
+  en la instantánea de su persona para siempre. Todo descansa en el aviso de no escribir datos de personas. Recomendación:
+  que para lo de antes de DL-180 compartir sea una elección aparte al corregir (el interruptor que ya prevé NUA-D13), y,
+  más adelante, un hecho de «dejar de compartir» que saque el alimento del buscador de los demás (lo ya activado no cambia).
