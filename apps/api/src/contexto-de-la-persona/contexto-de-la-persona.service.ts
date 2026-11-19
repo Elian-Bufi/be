@@ -137,6 +137,9 @@ export class ContextoDeLaPersonaService {
           ctx,
         );
         const { componentes } = await componentesDeLaPersona(tx, personaId);
+        // Revisión del PR, como API-RES-06: un área que lleva él mismo (aunque esté en pausa o sin su B2) la ve por su Alcance,
+        // nunca por lo compartido. Si no, un B2 revocado en Antropometría se esquivaba con el resumen de otro profesional.
+        if (componentes.some((c) => c.profesionalId === yo && c.alcance === 'ANTROPOMETRIA')) throw noLoComparte('LLEVA_EL_AREA');
         // La autorización, con su cerrojo compartido: un retiro que empezó antes ya está confirmado cuando se lee.
         await tomarLaAutorizacionDeResumenes(tx, personaId, 'leer');
         const vigente = await autorizacionDeResumenesVigente(tx, personaId);

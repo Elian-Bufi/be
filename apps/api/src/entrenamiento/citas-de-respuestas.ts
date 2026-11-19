@@ -29,7 +29,7 @@
  * no reemplaza en silencio lo que el profesional eligió. El control va después del PDP y de la pertenencia: sobre una
  * respuesta ajena o inexistente sigue saliendo el 422 neutral, nunca un 409 que revele que existe.
  */
-import { CodigoDeError, resolverVistaEfectiva, type Alcance, resumenDeValor, type CampoDePlantillaV2, type CitaDeRespuestaDeFormulario, type RelacionDeCorreccion, type RespuestaCitada, type ValorDeRespuestaV2 } from '@be/domain';
+import { CodigoDeError, resolverVistaEfectiva, seCita, type Alcance, resumenDeValor, type CampoDePlantillaV2, type CitaDeRespuestaDeFormulario, type RelacionDeCorreccion, type RespuestaCitada, type ValorDeRespuestaV2 } from '@be/domain';
 import type { Prisma } from '@prisma/client';
 import { ErrorDeApi } from '../http/errores';
 import { camposPorCodigo, terminalVersion } from '../formularios/lectura-formularios';
@@ -117,6 +117,9 @@ export async function validarCitas(
   const validadas: CitaValidada[] = [];
   for (const [i, cita] of citas.entries()) {
     if (!esUuid(cita.formResponseId)) throw invalida(i, area);
+    // CTX-D09 (revisión del PR): la conducta alimentaria no se cita nunca. Se decide antes de leer la respuesta, así es el
+    // mismo 422 neutral sea de quien sea.
+    if (!seCita(cita.fieldCode)) throw invalida(i, area);
     const id = cita.formResponseId.toLowerCase();
     if (!leidas.has(id)) leidas.set(id, await leerCitable(tx, id, par, area));
     const r = leidas.get(id);

@@ -112,7 +112,11 @@ export const TextoDeCompartirResumenesSchema = z.strictObject({
 });
 export type TextoDeCompartirResumenes = z.infer<typeof TextoDeCompartirResumenesSchema>;
 
-/** Una lectura de lo compartido: quién la hizo, de qué área y cuándo. La persona ve todas (08 §19.7). */
+/**
+ * Una lectura de lo compartido: quién la hizo, de qué área y cuándo. La persona ve todas (08 §19.7). Es la del plan de
+ * Nutrición o Entrenamiento (API-RES-06) o, desde DL-179, la del resumen de Antropometría, que no tiene plan (API-CTX-02):
+ * quien la muestra dice «tu resumen de Antropometría».
+ */
 export const AccesoALoCompartidoSchema = z.strictObject({
   professional: ResumenDeActorSchema,
   area: AlcanceSchema,

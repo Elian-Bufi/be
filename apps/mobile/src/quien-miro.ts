@@ -13,6 +13,9 @@
  * - **«Todavía no miró» solo cuando se sabe:** hoy le compartís un plan para mirar y la lista no llegó al tope (con 50,
  *   una lectura más vieja pudo quedar afuera). Lo que se comparte solo como resumen no se registra como lectura: de eso
  *   no se dice nada, ni que lo miró ni que no.
+ * - **DL-179 (WP-CONTEXTO-DE-LA-PERSONA):** el resumen de Antropometría (el peso y la composición en kilos) sí se registra
+ *   cuando un profesional lo abre en «Contexto de <nombre>». Antropometría no tiene plan: la línea dice «Miró tu resumen de
+ *   Antropometría», nunca «tu plan de Antropometría». «Todavía no miró» sigue siendo solo de los planes.
  * - **Si la lectura falla, la línea no se dibuja:** la tarjeta sigue con sus permisos.
  * Las lecturas son solo de profesionales: Administración no aparece. No avisa cada vez que alguien mira, y quitar un
  * permiso sigue en su lugar (el vínculo o Privacidad).
@@ -30,6 +33,7 @@ export const TEXTOS_DE_QUIEN_MIRO = {
   miro: (plan: string, cuando: string) => `Miró ${plan} ${cuando}`,
   todaviaNoMiro: (plan: string) => `Todavía no miró ${plan}`,
   tuPlanDe: (area: string) => `tu plan de ${area}`,
+  tuResumenDe: (area: string) => `tu resumen de ${area}`,
   tusPlanesDe: (areas: string) => `tus planes de ${areas}`,
   hoy: (laHora: string) => `hoy a las ${laHora}`,
   ayer: (laHora: string) => `ayer a las ${laHora}`,
@@ -41,6 +45,9 @@ const T = TEXTOS_DE_QUIEN_MIRO;
 const ORDEN_DE_LAS_AREAS: readonly string[] = ['NUTRICION', 'ENTRENAMIENTO', 'ANTROPOMETRIA'];
 const mismo =(a: string, b: string): boolean => a.toLowerCase() === b.toLowerCase();
 const nombreDelArea = (area: string): string => ETIQUETA_DE_ALCANCE[area as keyof typeof ETIQUETA_DE_ALCANCE] ?? area;
+/** Las áreas que tienen plan. De las demás (Antropometría), lo que se mira es el resumen (DL-179). */
+const AREAS_CON_PLAN: readonly string[] = ['NUTRICION', 'ENTRENAMIENTO'];
+const loQueMiro = (area: string): string => (AREAS_CON_PLAN.includes(area) ? T.tuPlanDe(nombreDelArea(area)) : T.tuResumenDe(nombreDelArea(area)));
 const enumerar = (nombres: readonly string[]): string => (nombres.length <= 1 ? (nombres[0] ?? '') : `${nombres.slice(0, -1).join(', ')} y ${nombres[nombres.length - 1]}`);
 
 /** El día anterior a una fecha civil. */
@@ -78,7 +85,7 @@ export function quienMiro(compartido: LoCompartido, hoy: string, zona?: string):
     const anterior = ultimas.get(id);
     if (!anterior || Date.parse(lectura.readAt) > Date.parse(anterior.readAt)) ultimas.set(id, lectura);
   }
-  for (const [id, lectura] of ultimas) lineas.set(id, T.miro(T.tuPlanDe(nombreDelArea(lectura.area)), cuandoLoMiro(lectura.readAt, hoy, zona)));
+  for (const [id, lectura] of ultimas) lineas.set(id, T.miro(loQueMiro(lectura.area), cuandoLoMiro(lectura.readAt, hoy, zona)));
   // Sin lecturas: solo si hoy le compartís un plan para mirar y la lista está entera.
   if (compartido.sharing.status !== 'ACTIVE' || compartido.accesses.length >= TOPE_DE_LECTURAS) return lineas;
   for (const p of compartido.professionals) {

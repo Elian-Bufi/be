@@ -134,3 +134,13 @@ describe('TEST-PG-011 · la pantalla (lectura del código)', () => {
     expect(todos).not.toMatch(/\d+ veces|vez|siempre|nunca|todos tus datos/i);
   });
 });
+
+describe('TEST-CTX-050 (DL-179, revisión del PR) · el resumen de Antropometría que miró en «Contexto de <nombre>»', () => {
+  test('Antropometría no tiene plan: la línea dice «tu resumen de Antropometría», nunca «tu plan»', () => {
+    // Mutación verificada: con `tuPlanDe` para toda área, la línea dice «Miró tu plan de Antropometría».
+    const delCuerpo = { professional: { identityId: MARTIN, displayName: 'Prof.' }, area: 'ANTROPOMETRIA' as const, readAt: '2026-11-14T21:20:00.000Z' };
+    const lineas = quienMiro({ sharing: ACTIVA, professionals: [profesional(MARTIN, 'Martín', [resumen('ANTROPOMETRIA')])], accesses: [delCuerpo] }, HOY, ZONA);
+    expect(lineaDe(lineas, MARTIN)).toBe('Miró tu resumen de Antropometría hoy a las 18:20');
+    expect(lineaDe(lineas, MARTIN)).not.toMatch(/plan/);
+  });
+});

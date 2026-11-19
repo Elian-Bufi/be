@@ -18,11 +18,12 @@ import {
   RespuestasDelContextoResponseSchema,
   VERSION_VIGENTE,
 } from '@be/domain';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, type Prisma } from '@prisma/client';
 import { randomUUID } from 'node:crypto';
 import { administradorListo } from './soporte-administracion';
 import { borradorSembrado, circuitoAntropometrico, medicionSembrada, registrarBorrador, type CircuitoAntropometrico } from './soporte-antropometria';
 import { appDePrueba, conSesion } from './soporte-api';
+import { esperarQueEsperen, pidDeLaTransaccion } from './soporte-concurrencia';
 import { circuitoV2, fri, pedirV2, RESPUESTAS_V2, conAgua, sembrarPlantillaV2, type CircuitoV2 } from './soporte-formularios-v2';
 import { cuerpoDeEvaluacion } from './soporte-nutricion';
 import { pausar, prepararProfesional, revocarB2, versionDeVinculo, vinculoCompleto, type Parte } from './soporte-vinculo';
@@ -254,5 +255,130 @@ describe('DL-179 · 4. API-CTX-02, el cuerpo', () => {
     const c = await circuitoAntropometrico(app, prisma, `ctx-vacio-${++contador}`);
     const data = CuerpoDelContextoResponseSchema.parse((await cuerpo(c.pro.token, c.ase.id).expect(200)).body).data;
     expect(data).toEqual({ access: 'OWN_AREA', latest: null, previous: null, metrics: [] });
+  });
+});
+
+// ─── 5. Revisión del PR: los cortes, también en carrera ───────────────────────────────────────────
+
+/** La persona le comparte a `quien` el resumen de Antropometría (DL-163 D-13), con el texto de «resumen». */
+async function compartirElCuerpo(ase: Parte, quien: Parte): Promise<void> {
+  const s = conSesion(app, ase.token);
+  const yo = MisResumenesCompartidosResponseSchema.parse((await s.get('/api/v1/me/summary-sharing').expect(200)).body).data;
+  await s
+    .put('/api/v1/me/summary-sharing')
+    .send({ expectedVersion: yo.sharing.version, acceptedTexts: { summary: VERSION_VIGENTE.RESUMENES_COMPARTIDOS.id, summaryAndPlan: null }, grants: [{ professionalId: quien.id, area: 'ANTROPOMETRIA', level: 'SUMMARY' }] })
+    .expect(200);
+}
+
+type Respuesta = Awaited<ReturnType<typeof respuestas>>;
+
+/**
+ * Un corte en curso, sin pausas: una transacción de la prueba retiene lo que retiene el corte (`retener`), dispara la lectura y
+ * la suelta recién cuando la base dice que la lectura la espera (`pg_stat_activity`). Si la lectura no tomara ese cerrojo,
+ * terminaría sin esperar y la prueba queda en rojo.
+ */
+async function laLecturaEspera(retener: (tx: Prisma.TransactionClient) => Promise<unknown>, leer: () => Promise<Respuesta>, que: string): Promise<Respuesta> {
+  let respuesta: Promise<Respuesta> | undefined;
+  let termino = false;
+  await prisma.$transaction(
+    async (tx) => {
+      await retener(tx);
+      const pid = await pidDeLaTransaccion(tx);
+      respuesta = leer().finally(() => {
+        termino = true;
+      });
+      await esperarQueEsperen(prisma, 1, { bloqueadoPor: pid, yaPaso: () => termino, que });
+      expect(termino).toBe(false);
+    },
+    { timeout: 40_000, maxWait: 10_000 },
+  );
+  return respuesta as Promise<Respuesta>;
+}
+
+describe('DL-179 · 5. revisión del PR: retirar un permiso corta, también en carrera', () => {
+  it('TEST-CTX-042 · el cuerpo compartido, retirado o con el vínculo de quien lo recibe en pausa: el mismo 404 de lo inexistente', async () => {
+    const c = await circuitoAntropometrico(app, prisma, `ctx-corta-${++contador}`);
+    await toma(c, [{ metrica: 'peso', valor: 70, unidad: 'kg' }]);
+    const inexistente = cuerpoDel404(await cuerpo(c.pro.token, randomUUID()).expect(404));
+    // Retirar lo compartido (API-RES-03) corta desde ese momento.
+    const nutri = await prepararProfesional(app, `ctx-corta-n-${contador}`, ['NUTRICION']);
+    await vinculoCompleto(app, nutri, c.ase, 'NUTRICION');
+    await compartirElCuerpo(c.ase, nutri);
+    await cuerpo(nutri.token, c.ase.id).expect(200);
+    const s = conSesion(app, c.ase.token);
+    const yo = MisResumenesCompartidosResponseSchema.parse((await s.get('/api/v1/me/summary-sharing').expect(200)).body).data;
+    await s.post('/api/v1/me/summary-sharing/withdrawal').send({ expectedVersion: yo.sharing.version }).expect(200);
+    expect(cuerpoDel404(await cuerpo(nutri.token, c.ase.id).expect(404))).toEqual(inexistente);
+    // Con el vínculo de quien lo recibe en pausa, tampoco, aunque siga compartido.
+    const otro = await prepararProfesional(app, `ctx-corta-o-${contador}`, ['ENTRENAMIENTO']);
+    const { vinculoId } = await vinculoCompleto(app, otro, c.ase, 'ENTRENAMIENTO');
+    await compartirElCuerpo(c.ase, otro);
+    await cuerpo(otro.token, c.ase.id).expect(200);
+    await pausar(app, otro.token, vinculoId, await versionDeVinculo(app, otro.token, vinculoId)).expect(200);
+    expect(cuerpoDel404(await cuerpo(otro.token, c.ase.id).expect(404))).toEqual(inexistente);
+  });
+
+  it('TEST-CTX-043 · con dos áreas, revocar el B2 de una saca sus formularios y deja los de la otra', async () => {
+    const c = await respondido('dos-areas');
+    const dos = await prepararProfesional(app, `ctx-dos-areas-${++contador}`, ['NUTRICION', 'ENTRENAMIENTO']);
+    await vinculoCompleto(app, dos, c.ase, 'NUTRICION');
+    const trn = await vinculoCompleto(app, dos, c.ase, 'ENTRENAMIENTO');
+    const nut = await sembrarPlantillaV2(prisma, `ctx-dos-n-${contador}`, 'NUTRICION');
+    const ent = await sembrarPlantillaV2(prisma, `ctx-dos-e-${contador}`, 'ENTRENAMIENTO');
+    const deNutricion = await pedirV2(app, dos, c.ase.id, nut.versionId, 'NUTRICION');
+    const deEntrenamiento = await pedirV2(app, dos, c.ase.id, ent.versionId, 'ENTRENAMIENTO');
+    for (const s of [deNutricion, deEntrenamiento]) await fri(app, c.ase.token).responder(s, { answers: RESPUESTAS_V2, fromProposal: null }).expect(201);
+    const antes = RespuestasDelContextoResponseSchema.parse((await respuestas(dos.token, c.ase.id).expect(200)).body).data;
+    expect([...antes.scopes].sort()).toEqual(['ENTRENAMIENTO', 'NUTRICION']);
+    expect(antes.forms.map((f) => f.formRequestId).sort()).toEqual([deEntrenamiento, deNutricion].sort());
+    await revocarB2(app, c.ase, trn.consentId as string).expect(200);
+    const despues = RespuestasDelContextoResponseSchema.parse((await respuestas(dos.token, c.ase.id).expect(200)).body).data;
+    expect(despues.scopes).toEqual(['NUTRICION']);
+    expect(despues.forms.map((f) => f.formRequestId)).toEqual([deNutricion]);
+  });
+
+  it('TEST-CTX-044 · un corte en curso hace esperar a las dos lecturas: toman los mismos cerrojos que las demás (el PDP y el de la autorización de resúmenes)', async () => {
+    // Mutación verificada: sacar `tomarLaAutorizacionDeResumenes` de API-CTX-02 pone en rojo el tercer caso (no espera).
+    // API-CTX-01: una revocación del B2 en curso retiene el consentimiento; el PDP de la lectura lo pide en modo compartido.
+    const c = await respondido('carrera');
+    const r1 = await laLecturaEspera(
+      (tx) => tx.$queryRaw`SELECT 1 FROM "consentimiento" WHERE "id" = ${c.consentId}::uuid FOR UPDATE`,
+      () => respuestas(c.pro.token, c.ase.id).then((r) => r),
+      'API-CTX-01 esperando el consentimiento',
+    );
+    expect(r1.status).toBe(200);
+    // API-CTX-02 por el área propia: lo mismo, con el consentimiento de Antropometría.
+    const a = await circuitoAntropometrico(app, prisma, `ctx-carrera-${++contador}`);
+    const r2 = await laLecturaEspera(
+      (tx) => tx.$queryRaw`SELECT 1 FROM "consentimiento" WHERE "id" = ${a.consentId}::uuid FOR UPDATE`,
+      () => cuerpo(a.pro.token, a.ase.id).then((r) => r),
+      'API-CTX-02 (área propia) esperando el consentimiento',
+    );
+    expect(r2.status).toBe(200);
+    // API-CTX-02 por lo compartido: un retiro en curso (API-RES-03) tiene el cerrojo de la autorización en modo exclusivo.
+    const nutri = await prepararProfesional(app, `ctx-carrera-n-${contador}`, ['NUTRICION']);
+    await vinculoCompleto(app, nutri, a.ase, 'NUTRICION');
+    await compartirElCuerpo(a.ase, nutri);
+    const cerrojo = `autorizacion-de-resumenes|${a.ase.id}`;
+    const r3 = await laLecturaEspera(
+      (tx) => tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${cerrojo}, 0))`,
+      () => cuerpo(nutri.token, a.ase.id).then((r) => r),
+      'API-CTX-02 (compartido) esperando la autorización',
+    );
+    expect(r3.status).toBe(200);
+  });
+
+  it('TEST-CTX-045 · quien lleva Antropometría (aunque sin su B2) no la ve por lo compartido: la ve por su Alcance, como API-RES-06', async () => {
+    // Mutación verificada: sin la guardia, X ve el peso de la toma de otro profesional sin haber recibido su B2 de Antropometría.
+    const c = await circuitoAntropometrico(app, prisma, `ctx-lleva-${++contador}`);
+    await toma(c, [{ metrica: 'peso', valor: 70, unidad: 'kg' }]);
+    const x = await prepararProfesional(app, `ctx-lleva-x-${contador}`, ['NUTRICION', 'ANTROPOMETRIA']);
+    await vinculoCompleto(app, x, c.ase, 'NUTRICION');
+    await compartirElCuerpo(c.ase, x);
+    expect(CuerpoDelContextoResponseSchema.parse((await cuerpo(x.token, c.ase.id).expect(200)).body).data.access).toBe('SHARED_SUMMARY');
+    // Empieza a llevar Antropometría con la persona, todavía sin su B2.
+    await vinculoCompleto(app, x, c.ase, 'ANTROPOMETRIA', { b2: false });
+    const inexistente = cuerpoDel404(await cuerpo(x.token, randomUUID()).expect(404));
+    expect(cuerpoDel404(await cuerpo(x.token, c.ase.id).expect(404))).toEqual(inexistente);
   });
 });
