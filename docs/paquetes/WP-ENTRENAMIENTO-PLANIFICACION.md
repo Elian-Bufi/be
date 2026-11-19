@@ -36,7 +36,8 @@
 | C3 | Las acciones con el nombre del objeto | en esta rama |
 | C4 | «Copiar» a la vista y la edición conjunta de series, con repeticiones y rangos | en esta rama |
 | C10 | Sin la pestaña «Lo que trabaja la semana» mientras no tenga datos (era una línea) | en esta rama |
-| C5 a C9 y C11 | Los días junto a cada sesión, el catálogo, la escritura rápida, de dónde sale cada valor, guardar y revisar encadenados, «Sesiones vacías» | **tramo siguiente** (§6) |
+| C5 a C9 y C11 | Los días junto a cada sesión, el catálogo, la escritura rápida, de dónde sale cada valor, guardar y revisar encadenados, «Sesiones vacías» | **tramo 2** (§6) |
+| §7 | Las bajas de la revisión adversaria que pesan para el profesional: el preset con la sesión vacía, el tope de «Agregar bloque», los bloques en la versión activa y en lo compartido | **tramo 2** (§6) |
 
 ## 2. El modelo de datos de los bloques (DL-181)
 
@@ -134,6 +135,78 @@ Sesión
   a 1000, y que no termina antes de empezar), carga, RIR y descanso, y «Volver a lo general». «Copiar hacia abajo» sigue
   siendo Ctrl+D en cada celda, y «Quitar», el de cada serie: en la barra **no** están (§7).
 
+**D. El tramo 2** (rama `wp-entrenamiento-planificacion-2`, sobre esta)
+- **ENP-D17 · Una sesión nueva nace con su identificador.** «Agregar sesión», el asistente, «Sesiones vacías» y, desde la
+  revisión adversaria del tramo, «Duplicar sesión» y una sesión habitual insertada le ponen a la sesión un identificador
+  de nodo (`crypto.randomUUID()`), como ya hacía «Duplicar el día»: el contrato lo admite (`IdDeNodoSchema`) y el
+  servidor lo conserva al normalizar (rechaza uno repetido dentro del plan, `DUPLICATE_NODE_ID`; las copias no llevan el
+  de su origen). Sus días se eligen enseguida, sin esperar al guardado, y lo
+  que la pantalla le ata la sigue aunque se mueva o se quite otra. Nada cambia en el contrato ni en lo que recibe la APK.
+- **ENP-D18 · El preset con la sesión vacía vive en la pantalla, atado a la sesión, y lo dice.** Se recuerda por el
+  `sessionId` (no por la posición: quitar o mover otra sesión le pasaba la etiqueta a la que quedaba en su lugar); una
+  sesión sin identificador todavía (una habitual recién insertada) lo recibe al elegir el preset. El texto ya no dice
+  «queda como su prescripción», que se leía como guardado: «Vive en esta pantalla: se escribe en cada ejercicio al
+  agregarlo. Si cerrás o recargás el editor antes, no queda.» **Propuesta para Dirección (no se hizo):** guardarlo de
+  verdad necesitaría un campo nuevo y opcional en la sesión del contrato (una prescripción por omisión que solo lee el
+  website, con su capacidad de cliente como DL-178 y DL-181 para que la APK instalada no lo reciba). Mientras no se
+  decida, la pantalla no afirma lo que no guarda.
+- **ENP-D19 · La versión activa y el plan compartido agrupan bajo su bloque, y el bloque se describe.** Usan la regla del
+  dominio (`partesDeLaSesion`, como el editor y la APK) por `bloques-en-la-lectura.ts`; un bloque sin ejercicios no se
+  muestra. Lo leen profesionales (el que armó el plan y, en lo compartido, otros): el encabezado describe, no le indica a
+  nadie: «En vueltas · se alternan 2 ejercicios · 3 vueltas · 90 s de descanso al terminar cada vuelta» (la APK le dice a
+  la persona «Alterná…»). Uno «Seguido» lleva solo su nombre.
+- **ENP-D20 · «Agregar bloque» tiene el tope del contrato** (20 por sesión): en el tope queda apagado, con el motivo a la
+  vista («Una sesión admite hasta 20 bloques: para otro, quitá uno.»); y, como los otros topes (TB-48), uno pasado es un
+  problema con su lugar antes de guardar.
+- **ENP-D21 · «Ir a…» lleva al campo exacto** (C9; `ir-al-campo.ts`): el RIR de la serie 3, el objetivo del criterio, la
+  casilla del calentamiento que quedó abajo, «Agregar serie» si no tiene ninguna, «Agregar ejercicios» si la sesión está
+  vacía, «Agregar sesión» si la fase no tiene; primero por el código (lo que ve el editor) y después por la ruta (lo que
+  dice la API). Si el campo exacto no está dibujado (el RIR por serie de un ejercicio sin el criterio RIR), el siguiente
+  de la lista; el último es siempre el renglón del ejercicio. El foco espera a que el ejercicio esté abierto.
+- **ENP-D22 · Volver a la revisión conserva el contexto** (C9): después de «Ir a…», arriba de la sesión queda «Volver a la
+  revisión» mientras se corrige. Desde «Antes de activar», vuelve al cuadro con la fecha de la próxima revisión que se
+  había elegido (antes se perdía); desde el panel, que a menos de 1440 está encima de la sesión y tapaba el campo, «Ir
+  a…» lo cierra y volver lo abre en «Antes de activar». «Revisar ahora» sigue apagado con el autoguardado en curso (§7),
+  y ahora lo dice a la vista: «la revisión se pide sola apenas termine» (guardar y revisar quedan encadenados: el
+  autoguardado termina y la revisión se pide sola).
+- **ENP-D23 · La escritura rápida tiene rótulo, lectura en vivo y «Aplicar»** (C7; `linea-de-prescripcion.tsx`): «Escritura
+  rápida» a la vista, el ejemplo como «Ej.: …» (antes se leía como algo cargado), «Se lee: …» mientras se escribe y
+  «Aplicar» al lado, apagado con su motivo mientras no haya qué aplicar o no se entienda; Enter sigue aplicando.
+- **ENP-D24 · Lo escrito sin aplicar se pregunta, no se pierde** (C7; `escritura-rapida.ts`). Vive en el editor, por
+  ejercicio (su identificador o su lugar, y pasa al identificador cuando un guardado se lo da; antes, ese guardado volvía
+  a armar el ejercicio y lo borraba): plegar, ir a otra sesión o al paso 4 del asistente no lo borra, y plegado se dice
+  («Escritura rápida sin aplicar: «…»»). No es parte del plan: no se guarda ni impide guardar. Pero el panel y «Antes de
+  activar» lo listan con «Ir a…» a su línea, y no se activa sin resolverlo (aplicarlo o borrarlo); salir del editor o
+  recargar pregunta. Por su lugar, sigue a su ejercicio cuando la sesión se reordena (revisión adversaria del tramo).
+- **ENP-D25 · Cambiar de criterio dice qué se quita y se puede deshacer** (C7; `cambio-de-criterio.ts`): «Al pasar a % RM
+  se quitaron el objetivo RIR 2 y el RIR propio de 3 series. Falta escribir el objetivo de % RM.», con «Deshacer», que
+  devuelve el criterio, el objetivo y el RIR de cada serie («Sin objetivo» incluido) y se ofrece mientras siga el criterio
+  elegido (un guardado en el medio no lo retira, si el ejercicio ya estaba guardado: ver §6). Sin nada que perder no se dice nada: no se suma una confirmación.
+- **ENP-D26 · Los días se eligen en un solo lugar: los chips junto a cada sesión** (C5). Antes aparecían también en la
+  tabla de «Días de entrenamiento», en la tira de la semana arriba de la sesión, en el renglón de cada sesión y en el
+  selector de la sesión. Ahora el renglón dice solo lo que tiene la sesión y, al pie de la lista, «Desde el …» con «Ver
+  próximas fechas», que abre arriba de la sesión lo que sale de los días: cuándo empieza, la semana con «Duplicar el día»
+  (ED-24, que no se pierde: va adentro), las dos semanas que siguen con «Mover» y «Quitar los días». Sin días, una línea
+  dice qué pasa. Con ENP-D17, una sesión nueva elige sus días enseguida.
+- **ENP-D27 · El catálogo: los elegidos a la vista y un solo principal** (C6; `agregar-ejercicio.tsx`). En el pie fijo del
+  cajón, «3 elegidos, en el orden en que entran:» con cada uno como ficha que se quita sin perder la búsqueda (con muchos,
+  la lista se desplaza sola) y «Agregar 3 ejercicios a Sesión A» (o al bloque desde cuyo pie se abrió). «Crear un
+  ejercicio propio» e «Importar desde wger» van en «No encuentro el ejercicio», al final de la búsqueda, plegado; sin
+  resultados, abierto. Lo creado o importado queda elegido, como antes.
+- **ENP-D28 · Cada valor dice de dónde sale, en la celda** (C8; `origenDeLaCelda` en `planilla-de-series.ts`). Los tres
+  estados de DL-122 no cambian (`celdaDeObjetivoDelEditor`, del dominio); cambia cómo se leen, sin agregar filas ni
+  columnas: la fila «General» pasa a «Común · a todas las series»; una celda que toma el común muestra su valor tenue con
+  la marca «común»; una con valor propio, la marca «propio» (reemplaza el punto, que no decía nada con palabras); y una
+  sin indicar dice «Sin indicar» (también si no hay común que tomar: no se muestra un valor que no rige). El lector oye
+  lo mismo con el valor común al lado. Las opciones de la celda dicen «Sin indicar en esta serie» y «Usar el valor
+  común», y la ayuda de la fila del RIR ya no dice «abajo» (el criterio va arriba desde ENP-D14). El dominio y la APK
+  conservan «Sin objetivo».
+- **ENP-D29 · «Sesiones vacías»** (C11; `sesiones-vacias.ts`). En la fase (o el microciclo) sin sesiones, junto a «Agregar
+  sesión»: una cantidad (de 1 a 7, 3 por omisión, sin pasar el tope del lugar) y «Armar Sesión A, B y C». No pide nombre
+  ni propósito (no abre ningún campo): se llaman como las de «Agregar sesión», siguen a las que ya hay y nacen con su
+  identificador (ENP-D17), así que sus días se eligen enseguida. Están vacías: no eligen un enfoque de entrenamiento
+  («Tres sesiones» no es «Cuerpo entero»). Un plan nuevo ya nace con «Fase 1», que es la fase inicial donde se arman.
+
 ## 4. Las reglas, y dónde se prueban
 
 | Regla | Prueba |
@@ -149,6 +222,8 @@ Sesión
 | Los textos del editor (fase, bloque, revisión, acciones) | `apps/web/test/entrenamiento-planificacion.test.mjs` |
 | Lo que corrigió la revisión adversaria en el editor (§7) | `apps/web/test/entrenamiento-planificacion.test.mjs` («Revisión · …») |
 | La sesión de respaldo de la APK conserva el tipo de serie y los bloques | `apps/mobile/src/sesion-de-respaldo.test.ts` |
+| Tramo 2: el preset atado a la sesión, el tope de bloques, las lecturas agrupadas y C5 a C9 y C11 | `apps/web/test/entrenamiento-planificacion-2.test.mjs` |
+| Lo que corrigió la revisión adversaria del tramo 2 (§6), y lo que la herramienta de capturas verifica en pantalla | `apps/web/test/entrenamiento-planificacion-2.test.mjs` («Revisión · …») y `EVIDENCIA/ENTRENAMIENTO-PLANIFICACION/herramientas/capturas.mjs` (`verificar`) |
 
 ## 5. Cómo se ve
 
@@ -157,16 +232,88 @@ Las capturas del editor en Claro y Azul noche, a 1280 × 800, 1536 × 730 (Windo
 Estados: implementado; verificado automáticamente; observado en captura (lo que diga el informe de la CI). Pendiente de
 prueba manual: el teclado y el lector de pantalla en el editor, y la APK con TalkBack.
 
-## 6. El tramo siguiente (C5 a C9 y C11, en este orden; nada de esto está a medias en el código)
+## 6. El tramo 2 (rama `wp-entrenamiento-planificacion-2`, sobre esta; hecho entero)
 
-5. **Los días en un solo lugar,** junto a cada sesión, con «Ver próximas fechas» a pedido (`agenda-del-plan.tsx`).
-6. **El catálogo:** la selección a la vista y un pie fijo («Agregar 3 ejercicios a Sesión A»); crear o importar, bajo «No
-   encuentro el ejercicio».
-7. **La escritura rápida** con su rótulo, su interpretación y «Aplicar»; lo escrito sin aplicar se resuelve antes de
-   salir; cambiar de RIR a % RM avisa y se puede deshacer.
-8. **De dónde sale cada valor:** común a todas las series, propio de esta serie o sin indicar.
-9. **Guardar y revisar encadenados,** con «Ir a…» al campo exacto y la vuelta a la revisión conservando el contexto.
-11. **«Sesiones vacías»:** con una cantidad, arma A, B y C dentro de una fase inicial, sin pedir nombre ni propósito.
+Se hizo en el orden de prioridad de Dirección (§7, C9, C7, C5, C6, C8, C11), un commit por punto, cada uno con sus
+pruebas en `apps/web/test/entrenamiento-planificacion-2.test.mjs` y al menos una mutación verificada en rojo.
+
+| Punto | Qué | Decisión |
+| --- | --- | --- |
+| §7 | El preset con la sesión vacía, atado a la sesión y dicho como es; «Agregar bloque» con su tope; la versión activa y lo compartido agrupan bajo su bloque | ENP-D17 a ENP-D20 |
+| C9 | «Ir a…» al campo exacto; «Volver a la revisión» con la fecha elegida; «Revisar ahora» dice que la revisión sigue sola | ENP-D21 y ENP-D22 |
+| C7 | La escritura rápida con su rótulo y «Aplicar»; lo escrito sin aplicar se pregunta; el cambio de criterio con «Deshacer» | ENP-D23 a ENP-D25 |
+| C5 | Los días en un solo lugar, con «Ver próximas fechas» a pedido | ENP-D26 |
+| C6 | El catálogo con los elegidos a la vista y crear o importar bajo «No encuentro el ejercicio» | ENP-D27 |
+| C8 | Cada valor dice si es común, propio o sin indicar | ENP-D28 |
+| C11 | «Sesiones vacías» | ENP-D29 |
+
+Las capturas de la CI suman una escena por cada punto que cambia la pantalla (§5).
+
+**Lo que corrigieron las capturas:** a 1536 × 730 el pie del catálogo, con los elegidos en varias filas, tapaba todos los
+resultados. La fila «Común» se partía en cuatro renglones por su detalle («a todas las series»), que ahora lo oye solo el
+lector. Y el aviso de los objetivos por serie decía «tu asesorado» en el editor (venía de antes): el editor lo dice con
+«la persona», como el del calentamiento. El texto del dominio no cambia, porque es también el mensaje del 409 de la API,
+que cambia en su ventana (ED-08, etapa 2; la excepción contada en `scripts/copy-pantallas.test.cjs`).
+
+**La revisión adversaria del tramo 2 (2026-11-19)** corrigió, cada cosa con su prueba en
+`entrenamiento-planificacion-2.test.mjs` («Revisión · …») y, lo que se ve, con una verificación de la herramienta de
+capturas que hace fallar el paso (`verificar`, en cada tamaño y tema):
+- **El pie del catálogo (escena 11).** La fila única que se desplazaba de costado cortaba la tercera ficha contra el borde
+  sin que se notara que seguía: las fichas van debajo de su título, con todo el ancho del pie, y bajan de renglón; dos
+  renglones a la vista y, con más, la lista se desplaza hacia abajo con su barra (el título dice cuántos son), sin cortar
+  una ficha a medias; un nombre largo se recorta con «…» adentro de su ficha. El campo «Prescripción para todos» no tenía
+  estilo y se veía como una línea finita: tiene el alto y el borde de los campos del cajón, en un renglón con su rótulo
+  cuando entra, y el ejemplo adentro («Ej.: 4×8-12 RIR 2 · 90 s», como la escritura rápida), así la ayuda entra en un
+  renglón y el pie no crece.
+- **«Común» (escena 09)** se pisaba con «en cada serie»: la columna «Serie» pasa de 3 a 4 rem (de 2,5 a 3,5 entre 40 y 46).
+- **«Las próximas dos semanas» (escena 10)** dibujaba las sesiones en sus días, pero la escena quedaba arriba y las
+  cortaba: va al calendario y verifica que alguna sesión quede a la vista. Ahí se vio también que, con muchas sesiones,
+  el selector de la sesión (una lista desplegable) no tenía el borde ni el fondo de los campos: venía de antes; ya los tiene.
+- **«estación» en pantalla:** «Cómo se usa el editor», «El editor tiene tres zonas», «Saltos del editor»; el armazón
+  común del asistente («Seguir en el plan», «Corregirlo en el plan», «Lo que llevás armado») lleva el mismo cambio que
+  NUP-14 en `wp-nutricion-planificacion`, línea por línea, para que las dos ramas se integren sin chocar. Los textos
+  propios de Nutrición los cambia esa rama. Una prueba recorre los textos del website del profesional (sin Nutrición).
+- **«asesorado» en pantalla:** no queda ninguno en Entrenamiento ni en Nutrición del website, ni en la APK (una prueba
+  recorre sus textos). Quedan las dos excepciones contadas de ED-06: el 409 (en pantalla, con «la persona») y la
+  referencia neutral de quien no tiene nombre.
+- **Lo escrito sin aplicar sigue a su ejercicio** al quitar, duplicar, subir, bajar, pasar a un bloque o sumar
+  ejercicios en la sesión (`lineasTrasReordenar`). El caso que había quedado abierto no duraba «un segundo»: mientras algo
+  impide guardar (un valor que no se entiende, un conflicto), los ejercicios nuevos siguen sin identificador.
+- **ENP-D17 también al duplicar una sesión o insertar una habitual:** quedaban sin identificador hasta el guardado y sus
+  chips decían que primero había que guardar.
+- **«Próximas fechas» se cierra** cuando ninguna sesión tiene días (volvía a abrirse sola con el próximo día elegido), y
+  **«Ocultar» la vuelta a la revisión** deja el foco en la sesión (desaparecía con la barra y el foco quedaba en ningún lado).
+
+**Lo que queda abierto del tramo 2:**
+- **Guardar de verdad el preset de la sesión vacía** (ENP-D18): propuesta para Dirección; necesita un campo opcional en
+  la sesión del contrato, con su capacidad de cliente. Mientras tanto, la pantalla dice que vive en ella.
+- **Lo escrito sin aplicar en un ejercicio que todavía no tiene identificador** (baja) sigue a su ejercicio dentro de la
+  sesión, pero no en lo que mueve sesiones enteras: quitar o mover una sesión o una fase, «Organizar por microciclos» o
+  «Cargar la versión guardada» tras un conflicto, mientras algún ejercicio nuevo no se guardó. Se ve (la línea lo muestra y
+  el panel lo lista) y aplicarlo pide un gesto. Propuesta: que los ejercicios nazcan con su identificador, como las
+  sesiones (ENP-D17); cierra el caso entero, pero toca todo lo que crea ejercicios y conviene probarlo con la API.
+- **«Deshacer» del cambio de criterio** (ENP-D25, baja) vive en el ejercicio: se pierde al plegarlo y en el primer guardado
+  de un ejercicio nuevo (la pieza se vuelve a armar con su identificador), así que «un guardado en el medio no lo retira»
+  vale para los ya guardados. Y devuelve el RIR de cada serie por su lugar: si en el medio se quitó una serie, el de las de
+  abajo vuelve corrido.
+- **Dos nombres para el mismo estado** (baja): el editor dice «Sin indicar» (ENP-D28) y la lectura de la versión activa y
+  del plan compartido sigue con «Sin objetivo» (el del dominio, que también lee la APK). Decidir si la lectura del website
+  pasa a «Sin indicar».
+- **«Copiar la sesión» y «Copiar a otra semana»** (baja) dejan la copia sin identificador hasta el guardado (como antes
+  «Duplicar sesión»): sus chips dicen que primero hay que guardar.
+- **«Quitar los días»** (baja) cierra «Próximas fechas» y, sin días, no queda «Ver próximas fechas» para devolverle el foco.
+- **«Volver a la revisión» desde el paso 6 del asistente** (baja) vuelve al panel, no al paso del asistente.
+- **Las lecturas agrupadas para el lector** (baja): en la versión activa cada bloque es una región con nombre
+  (`<section aria-label>`), y en lo compartido el nombre va en un `<li>`. Verificarlo con un lector de pantalla.
+- **Fuera del paquete (preexistente, baja):** un 409 por las series de calentamiento llega con el mismo código que el de
+  los objetivos por serie, y el editor dice el texto de los objetivos por serie; casi siempre lo ataja antes el aviso del
+  calentamiento, que el editor ve solo.
+- **«Duplicar el día» quedó dentro de «Ver próximas fechas»** (ENP-D26): no se perdió, pero se ve a pedido. Si en la
+  prueba con profesionales no se encuentra, puede ir también al menú de la sesión.
+- **El plan compartido agrupado por bloque** (ENP-D19) está probado en su fuente y con la misma regla que la versión
+  activa, pero no tiene escena en las capturas: la cohorte no comparte el plan de Diego Sosa con otro profesional.
+- **Prueba manual pendiente:** el teclado y el lector de pantalla en el editor (las marcas «común» y «propio» se leen
+  con la descripción de cada celda, y «Volver a la revisión» con su botón).
 
 ## 7. La revisión adversaria (2026-11-19)
 
@@ -198,14 +345,11 @@ tiene se muestra suelto, y el registro sigue por ejercicio. Los textos nuevos de
 usa el vocabulario que B05 excluye.
 
 **Lo que queda abierto (baja):**
-- **El preset con la sesión vacía (ENP-D10) se recuerda por la posición de la sesión** (`${prefijo}-s${k}`): si se quita o
-  se mueve una sesión anterior, la etiqueta pasa a la que quedó en ese lugar (se ve, no es silencioso). Y al recargar se
-  pierde sin aviso: el texto «queda como su prescripción» puede leerse como guardado. Propuesta: recordarlo por
-  `sessionId` y decir «mientras tengas abierto el editor».
+- ~~El preset con la sesión vacía se recordaba por la posición de la sesión y se leía como guardado~~: **resuelto en el
+  tramo 2** (ENP-D17 y ENP-D18).
 - **La barra de «Seleccionar series» no tiene «Copiar hacia abajo» ni «Quitar»** (el documento los prometía): hoy son
   Ctrl+D en cada celda y el «Quitar» de cada serie. Decidir si van.
-- **Una sesión admite hasta 20 bloques** (el contrato) y «Agregar bloque» no tiene tope: el bloque 21 lo rechaza el
-  servidor en el guardado automático. Propuesta: apagarlo con su motivo, como los otros topes.
+- ~~«Agregar bloque» no tenía tope y el bloque 21 lo rechazaba el servidor~~: **resuelto en el tramo 2** (ENP-D20).
 - **Quitar un ejercicio no reordena los bloques** (un bloque que queda vacío no pasa al final, como lo guarda el servidor):
   solo pesa si se pierde la respuesta de un guardado (ED-61), que entonces puede leer un conflicto donde no lo hay.
 - **La selección de series guarda posiciones:** si las series cambian desde afuera (las vueltas del bloque, la línea de
@@ -213,5 +357,5 @@ usa el vocabulario que B05 excluye.
 - **Los menús fijos a la ventana** siguen a su botón aunque un panel interior lo haya desplazado fuera de la vista.
 - **La revisión se anuncia en cada autoguardado** (`role="status"`: «Revisando esta versión…» y su resultado): verificar
   con un lector de pantalla si molesta y, si es así, anunciar solo el resultado.
-- **La lectura de la versión activa** (`estructura-del-plan.tsx`) **y el plan compartido** no agrupan los ejercicios
-  bajo su bloque: el profesional no ve ahí lo que la persona ve en la APK nueva.
+- ~~La lectura de la versión activa y el plan compartido no agrupaban bajo su bloque~~: **resuelto en el tramo 2**
+  (ENP-D19).

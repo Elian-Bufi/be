@@ -11,7 +11,10 @@
 //   (`BE_API_BASE_URL=http://localhost:3001 npm run build:web`). CHROME apunta al navegador.
 //
 // Qué captura, en Claro y en Azul noche, a 1280 × 800, a 1536 × 730 (Windows al 125 % con Chrome al 100 % en 1920 × 1080)
-// y a 1920 × 950. Cada pantalla es un paso: si uno falla, queda anotado en `capturas.json` con una captura del momento y
+// y a 1920 × 950. El tramo 2 suma una escena por punto que cambia la pantalla (06 a 15): la escritura rápida sin aplicar,
+// «Ir a…» y «Volver a la revisión», el cambio de criterio, de dónde sale cada valor, las próximas fechas, el catálogo con
+// los elegidos y sin resultados, «Sesiones vacías» y la versión activa agrupada por bloque (activa la versión con bloques
+// por la API y prepara otra sobre ella). Cada pantalla es un paso: si uno falla, queda anotado en `capturas.json` con una captura del momento y
 // se sigue. `capturas.json` anota, además, si un menú abierto queda entero y si la tabla de series se desplaza adentro.
 import { execFileSync, spawn } from 'node:child_process';
 import { randomBytes } from 'node:crypto';
@@ -151,6 +154,15 @@ async function clic(page, selector, texto = null) {
   return e;
 }
 
+/** Vacía un campo de verdad: el foco, Ctrl+A y borrar (el triple clic no seleccionaba todo en el buscador). */
+async function vaciar(page, elemento) {
+  await elemento.click();
+  await page.keyboard.down('Control');
+  await page.keyboard.press('KeyA');
+  await page.keyboard.up('Control');
+  await page.keyboard.press('Backspace');
+}
+
 /** El tema, como lo aplica el menú de la cuenta (`aplicarTema`): el atributo y la preferencia guardada. */
 async function ponerTema(page, tema) {
   await page.evaluate((t) => {
@@ -253,8 +265,20 @@ async function prepararLosBloques(ids, nota) {
       p.sets = dominio.seriesParaLasVueltas(p.sets, vueltas, vacia);
     } else if (n === 2) p.exerciseGroupId = 'g-2';
   });
-  await cliente.pedir('PATCH', `/training/plans/${borrador.planId}`, { token: martin, capacidades: DEL_WEBSITE, cuerpo: { expectedVersion: detalle.version, changes: { blocks: fases } } });
+  const guardado = await cliente.pedir('PATCH', `/training/plans/${borrador.planId}`, { token: martin, capacidades: DEL_WEBSITE, cuerpo: { expectedVersion: detalle.version, changes: { blocks: fases } } });
   nota(`bloques en la fase ${lugar.i + 1}${lugar.j === null ? '' : `, semana ${lugar.j + 1}`}, sesión ${lugar.k + 1} (${s.prescriptions.length} ejercicios)`);
+  // Tramo 2 (§7): la versión con bloques se activa, para ver la versión activa agrupada bajo su bloque, y se prepara una
+  // nueva sobre ella (con los mismos bloques) para el editor. Si no se puede activar, el editor sigue con esta.
+  lugar.activada = false;
+  try {
+    await cliente.pedir('POST', `/training/plans/${borrador.planId}/activate`, { token: martin, capacidades: DEL_WEBSITE, cuerpo: { expectedVersion: guardado.data.version } });
+    lugar.activada = true;
+    const objetivo = await cliente.pedir('GET', `/advisees/${ids.diego}/training/objectives/effective`, { token: martin });
+    await cliente.pedir('POST', `/advisees/${ids.diego}/training/plans`, { token: martin, cuerpo: { objectiveVersionId: objetivo.data.objective?.versionId ?? detalle.objectiveVersionId, basedOnPlanId: borrador.planId } });
+    nota('la versión con bloques quedó activa y hay otra en preparación sobre ella');
+  } catch (e) {
+    nota(`no se activó la versión con bloques: ${String(e?.message ?? e).slice(0, 240)}`);
+  }
   return lugar;
 }
 
@@ -335,8 +359,241 @@ function pantallas(ids, lugar) {
         await clic(page, '.galeria__tarjeta[data-preset]');
         const texto = await page.evaluate(() => document.querySelector('[data-para-los-que-agregues]')?.textContent ?? null);
         if (!texto) nota('la galería no dijo qué hace el preset con la sesión vacía');
+        else if (/queda como su prescripción/.test(texto)) nota('la galería todavía dice «queda como su prescripción»');
       },
       despues: (page) => cerrarCuadros(page),
+    },
+    // ─── Tramo 2 ───────────────────────────────────────────────────────────────────────────────────────────────
+    {
+      // C7: la escritura rápida con su rótulo, su lectura y «Aplicar»; lo escrito sin aplicar, en el panel.
+      nombre: '06-escritura-rapida-sin-aplicar',
+      llegar: async (page) => {
+        await ir(page, editor);
+        await visible(page, '.bloque-del-editor');
+        await clic(page, '.bloque-del-editor [id^="abrir-ejercicio-"]');
+        const linea = await visible(page, '[data-linea-de-prescripcion] input');
+        await vaciar(page, linea);
+        await page.keyboard.type('4x8-12 RIR 2 90 s');
+        await asentar(page);
+        await page.evaluate(() => document.querySelector('[data-linea-de-prescripcion]')?.scrollIntoView({ block: 'center' }));
+        await pausa(300);
+      },
+    },
+    {
+      // C9: «Ir a…» desde el panel lleva a la línea (el campo exacto) y deja «Volver a la revisión».
+      nombre: '07-ir-al-campo-y-volver',
+      vistaInicial: [1280, 800],
+      llegar: async (page, nota) => {
+        await conElPanel(page);
+        await page.waitForFunction(() => [...document.querySelectorAll('[data-revision] li')].some((li) => li.textContent.includes('escritura rápida')), { timeout: 20_000 });
+        await page.evaluate(() => [...document.querySelectorAll('[data-revision] li')].find((li) => li.textContent.includes('escritura rápida'))?.querySelector('[data-ir-al-problema]')?.click());
+        await asentar(page);
+        await visible(page, '[data-volver-a-la-revision]');
+        const foco = await page.evaluate(() => document.activeElement?.id ?? '');
+        if (!foco.endsWith('-linea')) nota(`el foco quedó en «${foco}», no en la escritura rápida`);
+        const panelAbierto = await page.$('.estacion[data-panel-abierto]');
+        if (panelAbierto) nota('a 1280 el panel quedó abierto encima de la sesión');
+      },
+      despues: async (page) => {
+        // Lo escrito se borra (y con eso deja de estar pendiente) y la barra se oculta.
+        const linea = await page.$('[data-linea-de-prescripcion] input');
+        if (linea) await vaciar(page, linea);
+        const ocultar = await page.$('[data-volver-a-la-revision] .boton--enlace');
+        if (ocultar) await ocultar.click();
+        await asentar(page);
+      },
+    },
+    {
+      // C7: cambiar el criterio dice qué se quita y ofrece «Deshacer».
+      nombre: '08-cambio-de-criterio',
+      llegar: async (page) => {
+        const id = await (await visible(page, 'select[id$="-criterio"]')).evaluate((e) => e.id);
+        const ahora = await page.$eval(`#${id}`, (e) => e.value);
+        await page.select(`#${id}`, ahora === 'RIR' ? 'PERCENT_RM' : 'RIR');
+        await asentar(page);
+        await visible(page, '[data-cambio-de-criterio]');
+        await page.evaluate(() => document.querySelector('[data-criterio-del-ejercicio]')?.scrollIntoView({ block: 'center' }));
+        await pausa(300);
+      },
+      despues: async (page) => {
+        const deshacer = await page.$('[data-deshacer-el-criterio]');
+        if (deshacer) await deshacer.click();
+        await asentar(page);
+      },
+    },
+    {
+      // C8: cada valor dice si es común, propio o sin indicar (un valor propio en la carga de la serie 2).
+      nombre: '09-de-donde-sale-cada-valor',
+      llegar: async (page, nota) => {
+        const celda = await visible(page, 'input[id$="-serie-1-carga"]');
+        await vaciar(page, celda);
+        await page.keyboard.type('130');
+        await page.keyboard.press('Tab');
+        await asentar(page);
+        await page.evaluate(() => document.querySelector('.series-del-editor')?.scrollIntoView({ block: 'center' }));
+        await pausa(300);
+        const marcas = await page.$$eval('[data-origen-de-la-celda]', (x) => x.map((e) => e.textContent));
+        if (!marcas.includes('propio')) nota(`las marcas de las celdas: ${marcas.join(', ') || 'ninguna'}`);
+      },
+      antesDeCapturar: async (page) => {
+        await page.evaluate(() => document.querySelector('.series-del-editor')?.scrollIntoView({ block: 'center' }));
+        await pausa(200);
+      },
+      // Revisión del tramo 2: el rótulo «Común» entra en su columna y no se pisa con «en cada serie».
+      verificar: (page) =>
+        page.evaluate(() => {
+          const problemas = [];
+          for (const fila of document.querySelectorAll('[data-fila-general]')) {
+            const th = fila.querySelector(':scope > th');
+            const texto = [...(th?.childNodes ?? [])].find((n) => n.nodeType === 3 && n.textContent.trim());
+            const vecino = fila.querySelector(':scope > td .nota');
+            if (!th || !texto || !vecino) continue;
+            const r = document.createRange();
+            r.selectNodeContents(texto);
+            const delRotulo = r.getBoundingClientRect();
+            const delVecino = vecino.getBoundingClientRect();
+            const borde = th.getBoundingClientRect().right;
+            if (delRotulo.right > borde + 0.5) problemas.push(`«${texto.textContent.trim()}» se sale de su columna (${Math.round(delRotulo.right - borde)} px)`);
+            if (delRotulo.right > delVecino.left + 0.5 && delRotulo.top < delVecino.bottom && delVecino.top < delRotulo.bottom) problemas.push(`«${texto.textContent.trim()}» se pisa con «${vecino.textContent.trim()}»`);
+          }
+          return problemas;
+        }),
+    },
+    {
+      // C5: los días junto a cada sesión y «Ver próximas fechas» a pedido.
+      nombre: '10-proximas-fechas',
+      llegar: async (page) => {
+        await clic(page, '[data-sesion-de-la-lista="1"] [data-dia="MONDAY"]');
+        await clic(page, '[data-sesion-de-la-lista="2"] [data-dia="WEDNESDAY"]');
+        await clic(page, '[data-ver-proximas-fechas]');
+        await visible(page, '[data-proximas-fechas]');
+        await pausa(300);
+      },
+      // Revisión del tramo 2: la captura quedaba arriba y cortaba «Las próximas dos semanas» antes de las sesiones. Va al
+      // calendario, con la semana encima si entra.
+      antesDeCapturar: async (page) => {
+        await page.evaluate(() => {
+          const zona = document.querySelector('#zona-editor');
+          const semana = document.querySelector('[data-proximas-fechas] .agenda-del-plan__subtitulo');
+          const calendario = document.querySelector('[data-proximas-fechas] .agenda-del-plan__calendario');
+          if (!zona || !calendario) return;
+          const z = zona.getBoundingClientRect();
+          const desde = (semana ?? calendario).getBoundingClientRect().top;
+          const hasta = calendario.getBoundingClientRect().bottom;
+          // La semana arriba si todo entra; si no, el calendario entero contra el borde de abajo.
+          zona.scrollTop += hasta - desde <= z.height - 16 ? desde - z.top - 8 : hasta - z.bottom + 8;
+        });
+        await pausa(250);
+      },
+      verificar: (page) =>
+        page.evaluate(() => {
+          const zona = document.querySelector('#zona-editor')?.getBoundingClientRect();
+          const sesiones = [...document.querySelectorAll('[data-proximas-fechas] .agenda-del-plan__calendario .agenda-del-plan__sesion')];
+          if (sesiones.length === 0) return ['las próximas dos semanas no muestran ninguna sesión'];
+          const aLaVista = sesiones.filter((e) => {
+            const r = e.getBoundingClientRect();
+            return zona && r.top >= Math.max(zona.top, 0) - 1 && r.bottom <= Math.min(zona.bottom, window.innerHeight) + 1;
+          });
+          return aLaVista.length > 0 ? [] : [`ninguna de las ${sesiones.length} sesiones del calendario queda a la vista`];
+        }),
+      despues: async (page) => {
+        const cerrar = await page.$('[data-cerrar-agenda]');
+        if (cerrar) await cerrar.click();
+        await asentar(page);
+      },
+    },
+    {
+      // C6: el catálogo con los elegidos a la vista en el pie fijo; crear o importar, en «No encuentro el ejercicio».
+      nombre: '11-catalogo-con-elegidos',
+      llegar: async (page) => {
+        await clic(page, '#agregar-ejercicios-a-la-sesion');
+        const campo = await visible(page, '.agregar-item__buscador input[type="search"]');
+        await campo.type('sentadilla');
+        await page.keyboard.press('Enter');
+        await page.waitForSelector('[data-marcar-ejercicio]', { timeout: 20_000 });
+        for (const c of (await page.$$('[data-marcar-ejercicio]')).slice(0, 3)) await c.click();
+        await asentar(page);
+      },
+      // Revisión del tramo 2: el campo «Prescripción para todos» se veía como una línea finita y la tercera ficha quedaba
+      // cortada contra el borde, sin que se notara que seguía.
+      verificar: (page) =>
+        page.evaluate(() => {
+          const problemas = [];
+          const campo = document.querySelector('[data-para-todos] input');
+          const alto = campo?.getBoundingClientRect().height ?? 0;
+          if (alto < 36) problemas.push(`el campo de la prescripción para todos mide ${Math.round(alto)} px de alto`);
+          // El ejemplo de adentro entra entero.
+          if (campo?.placeholder) {
+            const estilo = getComputedStyle(campo);
+            const lienzo = document.createElement('canvas').getContext('2d');
+            lienzo.font = estilo.font;
+            const libre = campo.clientWidth - parseFloat(estilo.paddingLeft) - parseFloat(estilo.paddingRight);
+            if (lienzo.measureText(campo.placeholder).width > libre + 1) problemas.push(`el ejemplo «${campo.placeholder}» no entra en el campo`);
+          }
+          const lista = document.querySelector('[data-elegidos] ul');
+          if (!lista) return [...problemas, 'no están los elegidos'];
+          const l = lista.getBoundingClientRect();
+          if (lista.scrollWidth > lista.clientWidth + 1) problemas.push('la lista de elegidos se desplaza de costado');
+          for (const b of lista.querySelectorAll('[data-quitar-elegido]')) {
+            const r = b.getBoundingClientRect();
+            if (r.left < l.left - 1 || r.right > l.right + 1) problemas.push(`«${b.textContent.trim()}» queda cortada a lo ancho`);
+            if (r.top < l.bottom - 1 && r.bottom > l.bottom + 1) problemas.push(`«${b.textContent.trim()}» queda cortada a lo alto`);
+            // Con tres elegidos (los de la escena) entran todos: ninguno escondido debajo, aunque esté entero.
+            else if (r.top >= l.bottom - 1) problemas.push(`«${b.textContent.trim()}» queda escondida debajo de los otros`);
+          }
+          const pie = document.querySelector('.cajon__pie')?.getBoundingClientRect();
+          if (pie && pie.height > window.innerHeight * 0.45) problemas.push(`el pie ocupa ${Math.round(pie.height)} px de ${window.innerHeight}`);
+          return problemas;
+        }),
+    },
+    {
+      // C6: sin resultados, «No encuentro el ejercicio» abierto, con crear e importar.
+      nombre: '12-catalogo-sin-resultados',
+      llegar: async (page) => {
+        const campo = await visible(page, '.agregar-item__buscador input[type="search"]');
+        await vaciar(page, campo);
+        await page.keyboard.type('qxqxqxjw');
+        await page.keyboard.press('Enter');
+        await visible(page, '[data-sin-resultados]');
+        await visible(page, '[data-crear-ejercicio]');
+      },
+      despues: async (page) => {
+        await page.keyboard.press('Escape');
+        await pausa(400);
+        const cerrar = await page.$$('dialog[open] button');
+        for (const b of cerrar) if ((await b.evaluate((e) => e.textContent ?? '')).includes('Cerrar sin guardar')) await b.click();
+        await cerrarCuadros(page);
+      },
+    },
+    {
+      // C11: una fase nueva, sin sesiones: «Sesiones vacías».
+      nombre: '13-sesiones-vacias',
+      llegar: async (page) => {
+        await ir(page, editor);
+        await clic(page, '[data-agregar-bloque]');
+        await page.keyboard.press('Enter');
+        await asentar(page);
+        await visible(page, '[data-sesiones-vacias]');
+      },
+    },
+    {
+      // C11: «Armar Sesión A, B y C»: tres sesiones, sin pedir nombre ni propósito, con sus días a mano.
+      nombre: '14-sesiones-armadas',
+      llegar: async (page) => {
+        await clic(page, '[data-armar-sesiones-vacias]');
+        await visible(page, '[data-sesion-de-la-lista="3"]');
+      },
+    },
+    {
+      // §7: la versión activa agrupa los ejercicios bajo su bloque, como los ve la persona en la APK nueva.
+      nombre: '15-version-activa-por-bloque',
+      llegar: async (page) => {
+        if (!lugar.activada) throw new Error('la versión con bloques no se activó (ver «preparacion» en capturas.json)');
+        await ir(page, `/pro/advisees/training?id=${ids.diego}&vista=plan&version=activa&${pedido}`);
+        await visible(page, '[data-bloque-del-plan]');
+        await page.evaluate(() => document.querySelector('[data-bloque-del-plan]')?.scrollIntoView({ block: 'center' }));
+        await pausa(300);
+      },
     },
   ];
 }
@@ -391,6 +648,7 @@ async function capturarTodo() {
     await entrar(page, 'PRO_T');
     for (const p of pantallas(ids, lugar)) {
       const fila = { pantalla: p.nombre, ok: true, notas: [], medidas: {} };
+      const problemas = [];
       const nota = (t) => fila.notas.push(t);
       try {
         const [anchoInicial, altoInicial] = p.vistaInicial ?? [1440, 900];
@@ -402,10 +660,16 @@ async function capturarTodo() {
           for (const [ancho, alto] of TAMANOS) {
             await page.setViewport({ width: ancho, height: alto, deviceScaleFactor: 1 });
             await pausa(700);
+            // Revisión del tramo 2: una escena puede acomodar lo que se ve en cada tamaño (el desplazamiento cambia al
+            // cambiar la ventana) y verificar lo que tiene que verse; lo que no cumple hace fallar el paso, con las
+            // capturas igual tomadas.
+            if (p.antesDeCapturar) await p.antesDeCapturar(page);
             await page.screenshot({ path: path.join(salida, `${p.nombre}-${tema}-${ancho}.png`) });
             fila.medidas[`${tema}-${ancho}`] = await medir(page);
+            if (p.verificar) problemas.push(...(await p.verificar(page)).map((x) => `${tema} ${ancho}: ${x}`));
           }
         }
+        if (problemas.length > 0) throw new Error(`no cumple lo que tiene que verse: ${problemas.slice(0, 6).join(' · ')}`);
       } catch (e) {
         fila.ok = false;
         fila.error = String(e?.message ?? e).slice(0, 500);

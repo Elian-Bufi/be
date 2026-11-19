@@ -9,8 +9,9 @@
  *   otra pestaña, tus plantillas de plan (Dirección, 2026-11-12): una plantilla reemplaza el borrador entero, que se
  *   descarta y nace de nuevo desde ella, y el borrador nuevo anota de qué plantilla salió (`templateOrigin`).
  *
- * ENP-D10 (la prueba de Elián del 18/11): con la sesión vacía, «Usar» ya no queda apagado. El preset de prescripción queda
- * como la prescripción de la sesión y se aplica a cada ejercicio que se agregue (`onElegirParaLaSesionVacia`).
+ * ENP-D10 (la prueba de Elián del 18/11): con la sesión vacía, «Usar» ya no queda apagado. ENP-D18: el preset de
+ * prescripción vive en la pantalla, atado a la sesión, y se escribe en cada ejercicio que se agregue
+ * (`onElegirParaLaSesionVacia`); no se guarda solo en el plan.
  *
  * Nada viene elegido al abrir (TEST-EDP-014). Elegir una tarjeta muestra su vista previa al costado. «Usar» aplica con
  * un clic si solo llena lo vacío; si pisa algo, el mismo cuadro pasa a la vista previa del alcance («antes → después»,
@@ -77,9 +78,12 @@ export const COPY_PLANTILLAS_EN_LA_GALERIA = {
     `Se descarta la ${borrador} con todo lo que tiene, y se crea una nueva desde «${nombre}», que anota de qué plantilla salió. La versión activa no cambia.`,
 } as const;
 
-/** ENP-D10: lo que hace «Usar» con la sesión vacía, dicho antes de usarlo. */
+/**
+ * ENP-D10 y ENP-D18: lo que hace «Usar» con la sesión vacía, dicho antes de usarlo. El texto anterior se leía como algo
+ * guardado en el plan: el preset vive en la pantalla hasta que se agregan ejercicios.
+ */
 export const COPY_PRESET_CON_LA_SESION_VACIA = {
-  queHace: 'La sesión todavía no tiene ejercicios: este preset queda como su prescripción y se aplica a cada ejercicio que agregues.',
+  queHace: 'La sesión todavía no tiene ejercicios: «Usar» lo deja en esta pantalla y se escribe en cada ejercicio que agregues. No queda guardado en el plan hasta entonces.',
 } as const;
 
 /** «4 × 5 · RIR 1 · 3:00»: una prescripción habitual en una línea, como se lee un ejercicio plegado. */

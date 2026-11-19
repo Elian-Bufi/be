@@ -11,7 +11,7 @@
 /** Los topes del contrato de Nutrición (API-NUT-07 a 10). */
 export const TOPES_DE_NUTRICION = { diasTipo: 7, comidas: 12, opciones: 12, items: 40 } as const;
 /** Los topes del contrato de Entrenamiento (API-TRN-07 a 10). */
-export const TOPES_DE_ENTRENAMIENTO = { bloques: 12, microciclos: 26, sesionesDelBloque: 30, sesionesDelMicrociclo: 14, ejercicios: 40, series: 20, parametros: 12 } as const;
+export const TOPES_DE_ENTRENAMIENTO = { bloques: 12, microciclos: 26, sesionesDelBloque: 30, sesionesDelMicrociclo: 14, ejercicios: 40, series: 20, parametros: 12, bloquesDeLaSesion: 20 } as const;
 
 /** El código de cada tope, como el de un problema de «Validar»: se dice con su texto y lleva a su lugar. */
 export const TOPE = {
@@ -25,6 +25,8 @@ export const TOPE = {
   ejercicios: 'TOPE_DE_EJERCICIOS',
   series: 'TOPE_DE_SERIES',
   parametros: 'TOPE_DE_PARAMETROS',
+  /** DL-181: los bloques de una sesión (WP-ENTRENAMIENTO-PLANIFICACION, §7). */
+  bloquesDeLaSesion: 'TOPE_DE_BLOQUES_DE_LA_SESION',
 } as const;
 
 /** Lo que dice cada tope en la lista de problemas: cuánto admite, en palabras. */
@@ -39,7 +41,12 @@ export const TEXTO_DE_LOS_TOPES: Readonly<Record<string, string>> = {
   [TOPE.ejercicios]: `hay más ejercicios de los que admite una sesión (${TOPES_DE_ENTRENAMIENTO.ejercicios} como máximo)`,
   [TOPE.series]: `hay más series de las que admite un ejercicio (${TOPES_DE_ENTRENAMIENTO.series} como máximo)`,
   [TOPE.parametros]: `hay más parámetros de los que admite un ejercicio (${TOPES_DE_ENTRENAMIENTO.parametros} como máximo)`,
+  [TOPE.bloquesDeLaSesion]: `hay más bloques de los que admite una sesión (${TOPES_DE_ENTRENAMIENTO.bloquesDeLaSesion} como máximo)`,
 };
+
+/** §7: «Agregar bloque» apagado en el tope, con su motivo a la vista (el servidor rechazaba el bloque 21 al guardar). */
+export const motivoSinAgregarBloque = (bloquesDeLaSesion: number): string | null =>
+  bloquesDeLaSesion >= TOPES_DE_ENTRENAMIENTO.bloquesDeLaSesion ? `Una sesión admite hasta ${TOPES_DE_ENTRENAMIENTO.bloquesDeLaSesion} bloques: para otro, quitá uno.` : null;
 
 /** El aviso que encabeza la lista cuando hay un tope pasado: qué hacer, sin mandar a buscar. */
 export const AVISO_DE_LOS_TOPES = 'Hay más elementos de los que admite un plan. Quitá los que sobran antes de guardar.';
@@ -74,6 +81,7 @@ export function topesPasadosDeNutricion(dias: readonly DiaTipo[]): readonly Prob
 
 interface Sesion {
   readonly prescriptions: readonly { readonly sets: readonly unknown[]; readonly professionalParameters?: readonly unknown[] | null }[];
+  readonly exerciseGroups?: readonly unknown[] | null;
 }
 interface Bloque {
   readonly microcycles?: readonly { readonly sessions: readonly Sesion[] }[] | null;
@@ -89,6 +97,7 @@ export function topesPasadosDeEntrenamiento(bloques: readonly Bloque[]): readonl
     sesiones.forEach((s, k) => {
       const deLaSesion = `${base}.sessions[${k}]`;
       if (s.prescriptions.length > t.ejercicios) problemas.push({ code: TOPE.ejercicios, path: deLaSesion });
+      if ((s.exerciseGroups ?? []).length > t.bloquesDeLaSesion) problemas.push({ code: TOPE.bloquesDeLaSesion, path: deLaSesion });
       s.prescriptions.forEach((p, l) => {
         const delEjercicio = `${deLaSesion}.prescriptions[${l}]`;
         if (p.sets.length > t.series) problemas.push({ code: TOPE.series, path: delEjercicio });

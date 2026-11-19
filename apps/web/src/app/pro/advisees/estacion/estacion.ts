@@ -52,7 +52,7 @@ export function tiraDeLaSemana(agenda: AgendaDeEntrenamiento | null, nombreDe: (
 }
 
 export const COPY_ESTACION = {
-  saltos: 'Saltos de la estación',
+  saltos: 'Saltos del editor',
   irALaEstructura: 'Ir a la estructura',
   irAlEditor: 'Ir al editor',
   irAlPanel: 'Ir al panel',
@@ -85,7 +85,7 @@ export const COPY_ESTACION = {
   irACorregir: 'Ir a corregir',
   enVivo: (persona: string | null) => `Esta pestaña se actualiza mientras escribís. «Revisar y activar…» abre lo mismo, con lo que va a ver ${persona ?? 'la persona'} y la fecha de la revisión.`,
   semanaComoSeCuenta: 'Una serie por cada zona de su ejercicio, por rol, contada del plan de esta semana. Sin mínimos ni un ideal, y nunca junto a lo registrado.',
-  semanaMasAdelante: 'La cuenta por zona necesita las zonas de cada ejercicio del catálogo; la suma la próxima entrega de esta estación. Mientras tanto, cada sesión muestra sus zonas en el plan activo.',
+  semanaMasAdelante: 'La cuenta por zona necesita las zonas de cada ejercicio del catálogo; la suma una próxima entrega del editor. Mientras tanto, cada sesión muestra sus zonas en el plan activo.',
   // El «⋯» de la barra (ED-12)
   masDeLaVersion: 'más acciones de la versión',
   guardarComoPreset: 'Guardar como preset',
@@ -100,7 +100,8 @@ export const COPY_ESTACION = {
 /** ED-17: la ayuda de primer uso de la estación, de tres renglones; se cierra y se recuerda en el navegador. */
 export const PRIMER_USO_DE_LA_ESTACION = {
   clave: 'be.primer-uso.estacion.v1',
-  titulo: 'Cómo se usa la estación',
+  // Revisión del tramo 2 de WP-ENTRENAMIENTO-PLANIFICACION: «estación» es jerga del código; en pantalla, «el editor».
+  titulo: 'Cómo se usa el editor',
   renglones: [
     'A la izquierda, la estructura: la fase, las semanas y las sesiones con sus días.',
     'Al centro, la sesión elegida; arriba de cada ejercicio, la prescripción en una línea.',
