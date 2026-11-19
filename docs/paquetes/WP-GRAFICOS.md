@@ -2105,6 +2105,7 @@ prueba (19 de 19 mueren); las de la API, con la base de la CI.
 | TEST-GRPE-004 | Que «Guardar lo que ves como enfoque…» guarde (y cuente) el contenido entero, con lo de un área sin acceso o lo que no aplica |
 | TEST-GRPE-005 | Que «Subir» y «Bajar» intercambien con la posición vecina del enfoque aunque no se vea o sea de otra sección |
 | TEST-GRPE-006 | Que el editor del plan prometa «Volver a los sugeridos» cuando, al quitar la del plan, rige el enfoque de la persona |
+| TEST-GRPE-007 | Dejar «Deshacer» activo mientras vuelve (un segundo toque responde 409 y tapa el aviso) |
 | TEST-GRPE-010 | (Con la base) que un «Deshacer» repetido pise la elección; que duplicar copie las elecciones |
 
 #### Decisiones del continuador al programar (a ratificar)

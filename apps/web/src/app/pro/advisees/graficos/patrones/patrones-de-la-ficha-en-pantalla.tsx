@@ -54,6 +54,9 @@ import { COPY_DE_PATRONES as C, graficosQueSeVen, intercambiarGraficos, sugerido
 
 const EN_LA_FICHA: LugarDelEnfoque = { tipo: 'PERSONA' };
 
+/** Una elección que no se pudo hacer: si otra pestaña la cambió antes (409), se dice así; si no, la falla. */
+const textoDelFalloAlElegir = (r: Resultado<unknown>): string => (!r.ok && r.tipo === 'API' && r.codigo === 'VERSION_CONFLICT' ? C.eleccionDeOtraPestana : mensajeDeFallo(r));
+
 /** Lo que se está editando: un enfoque tuyo (`setId`) o uno nuevo (`null`), con su nombre y su contenido sin guardar. */
 interface Borrador {
   readonly setId: string | null;
@@ -103,17 +106,27 @@ export function PatronesDeLaFicha() {
     setOcupado(true);
     const r = await elecciones.elegir(EN_LA_FICHA, e.setId, actual);
     setOcupado(false);
-    if (!r.ok) return setAviso({ texto: r.tipo === 'API' && r.codigo === 'VERSION_CONFLICT' ? C.eleccionDeOtraPestana : mensajeDeFallo(r), deshacer: null });
+    if (!r.ok) return setAviso({ texto: textoDelFalloAlElegir(r), deshacer: null });
     const nueva = r.datos.data;
     setAviso({
       texto: `${C.elegido(e.name)}. ${C.elegidoParaLaPersona}`,
       deshacer: conDeshacer
         ? async () => {
             const vuelta = anterior ? await elecciones.elegir(EN_LA_FICHA, anterior.setId, nueva) : await elecciones.quitar(nueva);
-            setAviso(vuelta.ok ? null : { texto: mensajeDeFallo(vuelta), deshacer: null });
+            setAviso(vuelta.ok ? null : { texto: textoDelFalloAlElegir(vuelta), deshacer: null });
           }
         : null,
     });
+  };
+  // «Deshacer» va de a uno: un segundo toque mientras vuelve no manda otra elección (que respondería 409 y taparía el aviso).
+  const deshacer = async (f: (() => Promise<void>) | null) => {
+    if (!f || ocupado) return;
+    setOcupado(true);
+    try {
+      await f();
+    } finally {
+      setOcupado(false);
+    }
   };
   const volverALosSugeridos = async () => {
     const actual = eleccionDelLugar(lista, EN_LA_FICHA);
@@ -126,7 +139,7 @@ export function PatronesDeLaFicha() {
       texto: C.volvioALosSugeridos,
       deshacer: async () => {
         const vuelta = await elecciones.elegir(EN_LA_FICHA, actual.set.setId, null);
-        setAviso(vuelta.ok ? null : { texto: mensajeDeFallo(vuelta), deshacer: null });
+        setAviso(vuelta.ok ? null : { texto: textoDelFalloAlElegir(vuelta), deshacer: null });
       },
     });
   };
@@ -311,7 +324,7 @@ export function PatronesDeLaFicha() {
           <p>
             {aviso.texto}{' '}
             {aviso.deshacer ? (
-              <button type="button" className="boton boton--enlace" disabled={ocupado} onClick={() => void aviso.deshacer?.()} data-deshacer-el-enfoque>
+              <button type="button" className="boton boton--enlace" disabled={ocupado} onClick={() => void deshacer(aviso.deshacer)} data-deshacer-el-enfoque>
                 <Icono nombre="deshacer" tamano={18} />
                 {C.deshacer}
               </button>

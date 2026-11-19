@@ -308,3 +308,10 @@ test('TEST-GRPE-006 · en el editor del plan, quitar la elección del plan dice 
   assert.equal(P.textoAlQuitarDelPlan(false), 'Volver a los sugeridos');
   assert.match(leer(join(PATRONES, 'patrones-del-plan-en-pantalla.tsx')), /textoAlQuitarDelPlan\(eleccionDelLugar\(lista, \{ tipo: 'PERSONA' \}\) !== null\)/);
 });
+
+test('TEST-GRPE-007 · «Deshacer» va de a uno, y un 409 al deshacer se dice como un cambio de otra pestaña (mutación: dejar el botón activo mientras vuelve)', () => {
+  const ficha = leer(join(PATRONES, 'patrones-de-la-ficha-en-pantalla.tsx'));
+  assert.match(ficha, /onClick=\{\(\) => void deshacer\(aviso\.deshacer\)\}/);
+  assert.match(ficha, /const deshacer = async[\s\S]{0,120}if \(!f \|\| ocupado\) return;\s*setOcupado\(true\);/);
+  assert.doesNotMatch(ficha, /texto: mensajeDeFallo\(vuelta\)/);
+});
