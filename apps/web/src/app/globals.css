@@ -19194,6 +19194,10 @@ html:has(.estacion:not([data-en-el-asistente])) {
   border-radius: 10px;
 }
 
+.formulario-del-alimento__medidas .campo__ayuda {
+  margin: 0 0 0.6rem;
+}
+
 .formulario-del-alimento__medidas legend {
   padding: 0 0.25rem;
   font-weight: 600;
@@ -19344,7 +19348,7 @@ html:has(.estacion:not([data-en-el-asistente])) {
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
-  margin: 0 0 1rem;
+  margin: 1rem 0;
 }
 
 .parecidos__grupo {

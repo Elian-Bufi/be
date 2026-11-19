@@ -659,8 +659,9 @@ export function FilaDeItem({
         ) : null}
       </td>
       <td data-etiqueta="Unidad">
-        {/* NUA-08: las medidas caseras del alimento, con su equivalencia, junto a las unidades de siempre. */}
-        <select id={`${id}-unidad`} aria-label={`Unidad de ${nombre}`} value={valorDeLaUnidad(item)} disabled={!magnitud} onChange={(e) => magnitud && onCambiar(conUnidad(item, e.target.value, datos.medidas))}>
+        {/* NUA-08: las medidas caseras del alimento, con su equivalencia, junto a las unidades de siempre. Con medidas, se
+            puede elegir una antes de escribir la cantidad: empieza con 1. */}
+        <select id={`${id}-unidad`} aria-label={`Unidad de ${nombre}`} value={valorDeLaUnidad(item)} disabled={!magnitud && datos.medidas.length === 0} onChange={(e) => onCambiar(conUnidad(item, e.target.value, datos.medidas))}>
           {opcionesDeUnidad(datos.medidas, ETIQUETA_DE_UNIDAD as Readonly<Record<Unidad, string>>).map((o) => (
             <option key={o.valor} value={o.valor}>
               {o.texto}

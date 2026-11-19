@@ -186,6 +186,9 @@ test('NUA-08 · la cantidad con una medida casera: la medida a la vista, la cuen
   assert.deepEqual(A.conNumero(conTaza, 1.5), { quantity: { value: 360, unit: 'g' }, householdMeasure: { kind: 'CUP', count: 1.5, amountPerUnit: 240 } });
   // Volver a gramos conserva el número y deja la medida.
   assert.deepEqual(A.conUnidad({ ...conTaza, householdMeasure: { kind: 'CUP', count: 2, amountPerUnit: 240 } }, 'g', medidas), { quantity: { value: 2, unit: 'g' }, householdMeasure: null });
+  // Sin cantidad todavía, elegir una medida empieza con 1 (el selector se ofrece si el alimento tiene medidas).
+  assert.deepEqual(A.conUnidad({ quantity: null }, 'medida:UNIT', medidas), { quantity: { value: 50, unit: 'g' }, householdMeasure: { kind: 'UNIT', count: 1, amountPerUnit: 50 } });
+  assert.match(FILA, /disabled={!magnitud && datos.medidas.length === 0}/);
   // Una medida que el alimento ya no tiene no se elige.
   assert.deepEqual(A.conUnidad(sinMedida, 'medida:PORTION', medidas), { quantity: { value: 120, unit: 'g' }, householdMeasure: null });
   // En la fila: el selector con las medidas y «= 240 g» al lado.
