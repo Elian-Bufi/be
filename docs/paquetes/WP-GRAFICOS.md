@@ -2102,6 +2102,9 @@ prueba (19 de 19 mueren); las de la API, con la base de la CI.
 | TEST-GRPE-001 | «Tu racha» (o «%», «estación», una causa) en un texto de «Patrones» |
 | TEST-GRPE-002 | Tratar la falla de API-GRF-05 como «sin elección» y dibujar los sugeridos |
 | TEST-GRPE-003 | Esconder que el período empieza antes del acompañamiento |
+| TEST-GRPE-004 | Que «Guardar lo que ves como enfoque…» guarde (y cuente) el contenido entero, con lo de un área sin acceso o lo que no aplica |
+| TEST-GRPE-005 | Que «Subir» y «Bajar» intercambien con la posición vecina del enfoque aunque no se vea o sea de otra sección |
+| TEST-GRPE-006 | Que el editor del plan prometa «Volver a los sugeridos» cuando, al quitar la del plan, rige el enfoque de la persona |
 | TEST-GRPE-010 | (Con la base) que un «Deshacer» repetido pise la elección; que duplicar copie las elecciones |
 
 #### Decisiones del continuador al programar (a ratificar)
