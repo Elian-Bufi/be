@@ -1235,7 +1235,7 @@ export function EditorDeBorrador({
             {/* Los macros ya llegaron con el objetivo: acá no hay una lectura que reintentar. */}
             <TiraDelObjetivo calorias={objetivo.estimatedEnergyRequirement.value} macros={{ estado: 'listos', valor: objetivo.macronutrientDistribution }} onReintentar={() => undefined} />
             {/* NUP-07: las kcal que suman sus gramos, a la vista, y si no coinciden con las indicadas. */}
-            <KcalDelObjetivo kcal={objetivo.estimatedEnergyRequirement.value} gramos={gramosDelObjetivo(objetivo)} />
+            <KcalDelObjetivo kcal={objetivo.estimatedEnergyRequirement.value} gramos={gramosDelObjetivo(objetivo)} compacto />
           </div>
         ) : null}
       </div>

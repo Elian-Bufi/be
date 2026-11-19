@@ -157,7 +157,11 @@ async function clic(page, selector, texto = null) {
 async function escribir(page, selector, texto) {
   const e = await visible(page, selector);
   await e.evaluate((x) => x.scrollIntoView({ block: 'center' }));
-  await e.click({ clickCount: 3 });
+  await e.click();
+  // Todo lo que tenía, seleccionado y borrado (el triple clic dejaba parte del número).
+  await page.keyboard.down('Control');
+  await page.keyboard.press('KeyA');
+  await page.keyboard.up('Control');
   await page.keyboard.press('Backspace');
   await e.type(texto);
   return e;

@@ -195,7 +195,8 @@ export function ComidaDelEditor({
   const aporta = rangoDeOpciones ? loQueAportaLaComida(rangoDeOpciones, comida.options.length) : null;
   const aportaEnPalabras = rangoDeOpciones ? loQueAportaLaComidaEnPalabras(rangoDeOpciones, comida.options.length) : null;
   // NUP-04: la opción abierta frente al rango de su comida, y el día frente al suyo.
-  const frente: readonly LineaFrenteAlRango[] = total ? [...opcionFrenteAlRango(total, rango.indicado, plegada.titulo), ...(rangosDelDia ? diaFrenteAlRango(rangosDelDia, rango.delDia) : [])] : [];
+  const conAlgo = !!opcion && (opcion.items.length > 0 || !!opcion.recipeVersionId);
+  const frente: readonly LineaFrenteAlRango[] = total && conAlgo ? [...opcionFrenteAlRango(total, rango.indicado, plegada.titulo), ...(rangosDelDia ? diaFrenteAlRango(rangosDelDia, rango.delDia) : [])] : [];
   const vacia = comidaVacia(comida);
   /** NUP-12: «alimentos» abre la primera opción vacía en su cuadro; sin opciones, nace la 1 y se abre. */
   const empezarConAlimentos = () => {
@@ -219,7 +220,9 @@ export function ComidaDelEditor({
               {/* NUP-02: de la opción que menos aporta a la que más; las iniciales a la vista, los nombres para el lector. */}
               {aporta ? (
                 <span className="comida-del-editor__aporta" data-aporta-la-comida>
-                  <span aria-hidden="true">{aporta}</span>
+                  <span aria-hidden="true">
+                    <EnPartes texto={aporta} />
+                  </span>
                   <span className="visualmente-oculto">{aportaEnPalabras}</span>
                 </span>
               ) : null}
@@ -291,7 +294,20 @@ export function ComidaDelEditor({
               />
             ) : null}
             {/* NUP-05: el rango de la comida se ve y se indica mientras se arma, no recién en «Revisar». */}
-            <RangoEnUnRenglon de={plegada.titulo} rango={rango} />
+            <RangoEnUnRenglon de={plegada.titulo} rango={rango} soloElBoton />
+            {/* NUP-12: la comida vacía dice por dónde empezar, con lo que ya existía, antes que nada. */}
+            {vacia ? (
+              <p className="comida-del-editor__empeza" data-empeza-con>
+                <span>{CP.empezaCon}</span>
+                <AccionDeInicio texto={CP.unaHabitual} noSePuede={noSePuedeUsarHabitual} alTocar={alUsarHabitual} comida={plegada.titulo} />
+                <span aria-hidden="true">·</span>
+                <AccionDeInicio texto={CP.copiarDeOtra} noSePuede={noSePuedeCopiar} alTocar={alCopiarDesdeOtra} comida={plegada.titulo} />
+                <span aria-hidden="true">·</span>
+                <AccionDeInicio texto={CP.unaReceta} noSePuede={null} alTocar={alAgregarReceta} comida={plegada.titulo} />
+                <span aria-hidden="true">·</span>
+                <AccionDeInicio texto={CP.alimentos} noSePuede={null} alTocar={empezarConAlimentos} comida={plegada.titulo} />
+              </p>
+            ) : null}
             <div className="comida-del-editor__opciones">
               {comida.options.length > 0 ? (
                 <ul className="opciones-plegables" aria-label={`Opciones de ${plegada.titulo}`}>
@@ -314,7 +330,9 @@ export function ComidaDelEditor({
                             <span className="opcion-plegable__nombre">{pestanaDeLaOpcion(o, n)}</span>
                             {numeros ? (
                               <span className="opcion-plegable__numeros" data-numeros-de-la-opcion>
-                                <span aria-hidden="true">{numeros.linea}</span>
+                                <span aria-hidden="true">
+                                  <EnPartes texto={numeros.linea} />
+                                </span>
                                 <span className="visualmente-oculto">{numeros.palabras}</span>
                               </span>
                             ) : null}
@@ -407,7 +425,7 @@ export function ComidaDelEditor({
                                 </div>
                               )}
                               {/* ED-31: el total de la opción, al instante; lo que falta, «Sin dato» y por qué. */}
-                              {total ? (
+                              {total && conAlgo ? (
                                 <div className="opcion-del-editor__total" data-total-de-la-opcion>
                                   <p>
                                     <strong>
@@ -458,19 +476,6 @@ export function ComidaDelEditor({
               ) : (
                 <p className="nota">Esta comida todavía no tiene opciones.</p>
               )}
-              {/* NUP-12: la comida vacía dice por dónde empezar, con lo que ya existía. */}
-              {vacia ? (
-                <p className="comida-del-editor__empeza" data-empeza-con>
-                  <span>{CP.empezaCon}</span>
-                  <AccionDeInicio texto={CP.unaHabitual} noSePuede={noSePuedeUsarHabitual} alTocar={alUsarHabitual} comida={plegada.titulo} />
-                  <span aria-hidden="true">·</span>
-                  <AccionDeInicio texto={CP.copiarDeOtra} noSePuede={noSePuedeCopiar} alTocar={alCopiarDesdeOtra} comida={plegada.titulo} />
-                  <span aria-hidden="true">·</span>
-                  <AccionDeInicio texto={CP.unaReceta} noSePuede={null} alTocar={alAgregarReceta} comida={plegada.titulo} />
-                  <span aria-hidden="true">·</span>
-                  <AccionDeInicio texto={CP.alimentos} noSePuede={null} alTocar={empezarConAlimentos} comida={plegada.titulo} />
-                </p>
-              ) : null}
               {/* ED-33: las dos clases de opción, por separado y a la vista. Una opción es de alimentos o de receta. */}
               <span className="comida-del-editor__agregar-opcion">
                 <button
@@ -595,7 +600,9 @@ export function FilaDeItem({
         {/* NUP-01: lo que aporta con su cantidad; la pista, al pasar el mouse. */}
         <Pista texto={pista}>
           <span className="item-del-editor__aporte" data-aporte-del-item>
-            <span aria-hidden="true">{aporteEnUnaLinea(aporte)}</span>
+            <span aria-hidden="true">
+              <EnPartes texto={aporteEnUnaLinea(aporte)} />
+            </span>
             <span className="visualmente-oculto">{aporteEnPalabras(aporte)}</span>
           </span>
         </Pista>

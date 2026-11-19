@@ -16505,7 +16505,12 @@ p.cifra-del-espacio__desglose {
   gap: 0.5rem;
 }
 
-/* NUP-01: lo que aporta cada alimento, debajo de su nombre, en cifras del mismo ancho para que no salte al escribir. */
+/* NUP-01: lo que aporta cada alimento, debajo de su nombre, en cifras del mismo ancho para que no salte al escribir. La
+   pista que lo envuelve ocupa su propio renglón. */
+.item-del-editor__nombre > .pista {
+  display: flex;
+}
+
 .item-del-editor__aporte {
   display: block;
   margin-top: 0.15rem;
@@ -16543,6 +16548,13 @@ p.cifra-del-espacio__desglose {
   font-weight: 600;
 }
 
+/* En el cuadro de la opción ya va dentro de su tarjeta: sin otra caja adentro. */
+.cuadro-de-la-opcion__tarjeta .frente-a-los-rangos {
+  padding: 0;
+  border: 0;
+  background: none;
+}
+
 /* NUP-06: la suma de los rangos indicados frente al objetivo, arriba de las comidas. */
 .suma-de-los-rangos {
   display: grid;
@@ -16570,13 +16582,19 @@ p.cifra-del-espacio__desglose {
   font-variant-numeric: tabular-nums;
 }
 
-.suma-de-los-rangos__tabla td,
-.suma-de-los-rangos__tabla th {
-  vertical-align: top;
+/* Una tabla chica: un renglón por fila, con la franja en su propia columna. */
+.suma-de-los-rangos__tabla th,
+.suma-de-los-rangos__tabla td {
+  padding-block: 0.3rem;
+  vertical-align: middle;
 }
 
-.suma-de-los-rangos__nota {
-  display: block;
+.suma-de-los-rangos__celda-de-la-franja {
+  width: 11rem;
+}
+
+.suma-de-los-rangos__notas {
+  margin: 0;
   font-size: 0.85rem;
 }
 
@@ -16585,9 +16603,9 @@ p.cifra-del-espacio__desglose {
   position: relative;
   display: block;
   width: 100%;
-  max-width: 14rem;
+  max-width: 10rem;
   height: 0.6rem;
-  margin: 0.35rem 0 0.15rem;
+  margin: 0;
   border-radius: 999px;
   background: var(--fondo-suave);
   outline: 1px solid var(--borde);
@@ -16607,8 +16625,7 @@ p.cifra-del-espacio__desglose {
 
 /* Sin tope, la banda se desvanece hacia la derecha: no tiene un final. */
 .suma-de-los-rangos__franja[data-abierta] .suma-de-los-rangos__banda {
-  -webkit-mask-image: linear-gradient(to right, #000 60%, transparent);
-  mask-image: linear-gradient(to right, #000 60%, transparent);
+  background: linear-gradient(to right, var(--azul) 60%, transparent);
 }
 
 .suma-de-los-rangos__marca {
@@ -16641,6 +16658,11 @@ p.cifra-del-espacio__desglose {
 .kcal-del-objetivo__aviso .icono {
   flex: none;
   margin-top: 0.15rem;
+}
+
+.kcal-del-objetivo--compacto {
+  flex-basis: 100%;
+  margin: 0;
 }
 
 .kcal-del-objetivo__porcentajes {

@@ -14,6 +14,7 @@
 import { todasLasPaginas, type ComidaHabitual, type EvaluacionNutricional, type VersionDeObjetivo } from '@be/domain';
 import { useEffect, useId, useState, type ReactNode } from 'react';
 import { Icono } from '../../../../components/icono';
+import { Pista } from '../../../../components/pista';
 import { api } from '../../../../lib/api';
 import { dia as fechaDelDia } from '../../../../lib/formato';
 import { COPY_ANTES_DE_ACTIVAR } from '../antes-de-activar';
@@ -501,20 +502,14 @@ function PasoDeLasComidas({
 
 /** NUP-13: una forma de sumar una opción; si no se puede, queda apagada (sin perder el foco) y dice por qué al lado. */
 function BotonConMotivo({ texto, comida, noSePuede, alTocar }: { texto: string; comida: string; noSePuede: string | null; alTocar: () => void }) {
-  const id = useId();
-  return (
-    <>
-      <button type="button" className="boton boton--enlace" aria-haspopup="dialog" aria-disabled={noSePuede ? true : undefined} aria-describedby={noSePuede ? id : undefined} onClick={() => (noSePuede ? undefined : alTocar())}>
-        {texto}
-        <span className="visualmente-oculto"> en {comida}</span>
-      </button>
-      {noSePuede ? (
-        <span id={id} className="nota">
-          ({noSePuede})
-        </span>
-      ) : null}
-    </>
+  const boton = (
+    <button type="button" className="boton boton--enlace" aria-haspopup="dialog" aria-disabled={noSePuede ? true : undefined} onClick={() => (noSePuede ? undefined : alTocar())}>
+      {texto}
+      <span className="visualmente-oculto"> en {comida}</span>
+    </button>
   );
+  // La pista lo dice al pasar el mouse o al llegar con el teclado, y el lector la oye como descripción del botón.
+  return noSePuede ? <Pista texto={noSePuede}>{boton}</Pista> : boton;
 }
 
 /** Paso 6: una lista de cosas con su lugar; cada una lleva a corregirla en el plan (NUP-14). */

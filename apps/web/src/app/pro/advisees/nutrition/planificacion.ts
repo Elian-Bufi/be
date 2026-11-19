@@ -317,6 +317,8 @@ export interface FilaFrenteAlObjetivo {
   readonly suma: string;
   /** «objetivo 112 g», o `null` si el objetivo no tiene ese dato en gramos. */
   readonly objetivo: string | null;
+  /** Lo mismo sin la palabra, para la columna que ya se llama «Objetivo del día»: «112 g». */
+  readonly objetivoCifra: string | null;
   /** «adentro», «260 g por encima del máximo», «20 g por debajo del mínimo»; `null` sin objetivo o sin rangos. */
   readonly ubicacion: string | null;
   /** Por qué la suma no tiene tope o tiene huecos: «Cena sin rango». */
@@ -329,7 +331,8 @@ const listaDeNombres = (ns: readonly string[]): string => (ns.length <= 1 ? (ns[
 
 function filaFrenteAlObjetivo(clave: FilaFrenteAlObjetivo['clave'], nombre: string, unidad: string, s: { min: number; max: number | null; conRango: number }, objetivo: number | null, nota: string | null): FilaFrenteAlObjetivo {
   const cifra = (n: number) => (unidad === 'kcal' ? numero(n, 0) : numero(n, 1));
-  if (s.conRango === 0) return { clave, nombre, suma: 'Sin rangos indicados', objetivo: objetivo === null ? null : `objetivo ${cifra(objetivo)} ${unidad}`, ubicacion: null, nota: null, franja: null };
+  const objetivoCifra = objetivo === null ? null : `${cifra(objetivo)} ${unidad}`;
+  if (s.conRango === 0) return { clave, nombre, suma: 'Sin rangos indicados', objetivo: objetivoCifra && `objetivo ${objetivoCifra}`, objetivoCifra, ubicacion: null, nota: null, franja: null };
   const suma = s.max === null ? `desde ${cifra(s.min)} ${unidad}` : s.min === s.max ? `${cifra(s.min)} ${unidad}` : `${cifra(s.min)}–${cifra(s.max)} ${unidad}`;
   let ubicacion: string | null = null;
   if (objetivo !== null) {
@@ -340,7 +343,7 @@ function filaFrenteAlObjetivo(clave: FilaFrenteAlObjetivo['clave'], nombre: stri
   const tope = Math.max(s.min, s.max ?? 0, objetivo ?? 0) * 1.15 || 1;
   const a = (n: number) => Math.round((n / tope) * 1000) / 10;
   const franja = { desde: a(s.min), hasta: s.max === null ? 100 : a(s.max), abierta: s.max === null, objetivo: objetivo === null ? null : a(objetivo) };
-  return { clave, nombre, suma, objetivo: objetivo === null ? null : `objetivo ${cifra(objetivo)} ${unidad}`, ubicacion, nota, franja };
+  return { clave, nombre, suma, objetivo: objetivoCifra && `objetivo ${objetivoCifra}`, objetivoCifra, ubicacion, nota, franja };
 }
 
 /**
@@ -402,6 +405,15 @@ export function porcentajeDeLasKcal(macro: MacroDelRango, gramosDelMacro: number
   return `${numero((kcal / kcalIndicadas) * 100, 0)} % de las ${numero(kcalIndicadas, 0)} kcal · ${numero(gramosDelMacro, 1)} g · ${numero(kcal, 0)} kcal`;
 }
 
+/**
+ * NUP-D08, en una parte corta para un renglón: «Proteínas 79 g · 18 % de las kcal». La base (las kcal indicadas) va dicha en
+ * el mismo renglón, antes. `null` sin kcal o sin gramos.
+ */
+export function porcentajeEnUnaParte(macro: MacroDelRango, gramosDelMacro: number | null, kcalIndicadas: number | null): string | null {
+  if (gramosDelMacro === null || !Number.isFinite(gramosDelMacro) || gramosDelMacro < 0 || kcalIndicadas === null || !(kcalIndicadas > 0)) return null;
+  return `${NOMBRE_DEL_MACRO[macro]} ${numero(gramosDelMacro, 1)} g · ${numero(((gramosDelMacro * KCAL_POR_GRAMO[macro]) / kcalIndicadas) * 100, 0)} % de las kcal`;
+}
+
 export const COPY_PLANIFICACION = {
   // NUP-02
   indicado: 'Indicado',
@@ -423,6 +435,8 @@ export const COPY_PLANIFICACION = {
   noCoinciden: (k: KcalDeLosGramos, indicadas: number) =>
     `No coinciden con las ${numero(indicadas, 0)} kcal indicadas: los gramos suman ${numero(Math.abs(k.frente!.diferencia), 0)} kcal ${k.frente!.diferencia > 0 ? 'más' : 'menos'}. Revisá los gramos o las kcal; se puede guardar igual.`,
   coinciden: (indicadas: number) => `Coinciden con las ${numero(indicadas, 0)} kcal indicadas.`,
+  /** En un renglón (el objetivo vigente, en el editor): «Los gramos suman 1.750 kcal (proteínas 79 g × 4 + …)». */
+  kcalEnUnRenglon: (k: KcalDeLosGramos) => `Los gramos suman ${numero(k.kcal, 0)} kcal (${k.cuenta})`,
   // NUP-12
   empezaCon: 'Empezá con:',
   unaHabitual: 'una comida habitual',

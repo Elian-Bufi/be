@@ -339,7 +339,8 @@ test('NUP-04 y NUP-05 · la línea frente a los rangos, en la opción y en el cu
   // Un solo cuadro del rango por editor, que abren la lista, cada comida y el asistente.
   assert.equal(EDITOR.match(/<CuadroDelRangoIndicado /g)?.length, 1);
   assert.doesNotMatch(DEL_PLAN.slice(DEL_PLAN.indexOf('export function RangosIndicados'), DEL_PLAN.indexOf('export function CuadroDelRangoIndicado')), /<CuadroDelRango\b/);
-  assert.match(COMIDA, /<RangoEnUnRenglon de=\{plegada\.titulo\} rango=\{rango\} \/>/);
+  // Abierta la comida, su encabezado ya dice el rango: abajo va el botón para indicarlo o cambiarlo.
+  assert.match(COMIDA, /<RangoEnUnRenglon de=\{plegada\.titulo\} rango=\{rango\} soloElBoton \/>/);
   // En el asistente: el día (paso 3) y cada comida (pasos 4 y 5).
   assert.equal(PASOS.match(/<RangoEnUnRenglon /g)?.length, 3);
   assert.match(EDITOR, /rangoDe=\{rangoParaIndicar\}/);
@@ -357,7 +358,9 @@ test('NUP-07 y NUP-10 · el objetivo: las kcal de los gramos al escribir y en lo
   assert.match(FORMULARIOS, /<div className="fila-de-dato fila-de-dato--arriba">/);
   assert.match(ESTILOS, /\.fila-de-dato--arriba \{\n\s*align-items: flex-start;\n\}/);
   assert.match(FORMULARIOS, /<KcalDelObjetivo kcal=\{numeroPositivo\(valores\.kcal\)\} gramos=\{\{ protein: numeroNoNegativo\(valores\.proteina\), carbohydrate: numeroNoNegativo\(valores\.carbohidratos\), fat: numeroNoNegativo\(valores\.grasas\) \}\} \/>/);
-  assert.match(EDITOR, /<KcalDelObjetivo kcal=\{objetivo\.estimatedEnergyRequirement\.value\} gramos=\{gramosDelObjetivo\(objetivo\)\} \/>/);
+  // En el editor, en dos renglones: las comidas siguen a la vista.
+  assert.match(EDITOR, /<KcalDelObjetivo kcal=\{objetivo\.estimatedEnergyRequirement\.value\} gramos=\{gramosDelObjetivo\(objetivo\)\} compacto \/>/);
+  assert.equal(P.porcentajeEnUnaParte('protein', 79, 1750), 'Proteínas 79 g · 18 % de las kcal');
   assert.match(PASOS, /<KcalDelObjetivo kcal=\{objetivo\.estimatedEnergyRequirement\.value\} gramos=\{gramosDelObjetivo\(objetivo\)\} \/>/);
   // El aviso no bloquea: el formulario no lo cuenta como error.
   assert.doesNotMatch(FORMULARIOS.slice(FORMULARIOS.indexOf('export function erroresDeObjetivo'), FORMULARIOS.indexOf('export function aObjetivo')), /kcalDeLosGramos|noCoinciden/);
@@ -383,4 +386,7 @@ test('NUP-12, NUP-13 y NUP-14 · la comida vacía dice por dónde empezar; el pa
   assert.equal(N.COPY_ASISTENTE_DE_NUTRICION.irEnLaEstacion, 'Corregirlo en el plan');
   const textos = Object.values(N.COPY_ASISTENTE_DE_NUTRICION).map((t) => (typeof t === 'function' ? t('x', 'y') : t));
   for (const t of textos) assert.doesNotMatch(t, /estaci[oó]n/i, t);
+  // Y en el armazón común del asistente (los dos editores): «Seguir en el plan», «Corregirlo en el plan» y «Lo que llevás armado».
+  const comun = leer('app/pro/advisees/asistente/paso-que-sigue.ts');
+  for (const clave of ['seguirEnLaEstacion', 'irEnLaEstacion', 'queEs']) assert.doesNotMatch(comun.match(new RegExp(`${clave}: '[^']*'`))[0], /estaci[oó]n/, clave);
 });
