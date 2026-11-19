@@ -11,7 +11,10 @@
 //   (`BE_API_BASE_URL=http://localhost:3001 npm run build:web`). CHROME apunta al navegador.
 //
 // Qué captura, en Claro y en Azul noche, a 1280 × 800, a 1536 × 730 (Windows al 125 % con Chrome al 100 % en 1920 × 1080)
-// y a 1920 × 950. Cada pantalla es un paso: si uno falla, queda anotado en `capturas.json` con una captura del momento y
+// y a 1920 × 950. El tramo 2 suma una escena por punto que cambia la pantalla (06 a 15): la escritura rápida sin aplicar,
+// «Ir a…» y «Volver a la revisión», el cambio de criterio, de dónde sale cada valor, las próximas fechas, el catálogo con
+// los elegidos y sin resultados, «Sesiones vacías» y la versión activa agrupada por bloque (activa la versión con bloques
+// por la API y prepara otra sobre ella). Cada pantalla es un paso: si uno falla, queda anotado en `capturas.json` con una captura del momento y
 // se sigue. `capturas.json` anota, además, si un menú abierto queda entero y si la tabla de series se desplaza adentro.
 import { execFileSync, spawn } from 'node:child_process';
 import { randomBytes } from 'node:crypto';
@@ -253,8 +256,20 @@ async function prepararLosBloques(ids, nota) {
       p.sets = dominio.seriesParaLasVueltas(p.sets, vueltas, vacia);
     } else if (n === 2) p.exerciseGroupId = 'g-2';
   });
-  await cliente.pedir('PATCH', `/training/plans/${borrador.planId}`, { token: martin, capacidades: DEL_WEBSITE, cuerpo: { expectedVersion: detalle.version, changes: { blocks: fases } } });
+  const guardado = await cliente.pedir('PATCH', `/training/plans/${borrador.planId}`, { token: martin, capacidades: DEL_WEBSITE, cuerpo: { expectedVersion: detalle.version, changes: { blocks: fases } } });
   nota(`bloques en la fase ${lugar.i + 1}${lugar.j === null ? '' : `, semana ${lugar.j + 1}`}, sesión ${lugar.k + 1} (${s.prescriptions.length} ejercicios)`);
+  // Tramo 2 (§7): la versión con bloques se activa, para ver la versión activa agrupada bajo su bloque, y se prepara una
+  // nueva sobre ella (con los mismos bloques) para el editor. Si no se puede activar, el editor sigue con esta.
+  lugar.activada = false;
+  try {
+    await cliente.pedir('POST', `/training/plans/${borrador.planId}/activate`, { token: martin, capacidades: DEL_WEBSITE, cuerpo: { expectedVersion: guardado.data.version } });
+    lugar.activada = true;
+    const objetivo = await cliente.pedir('GET', `/advisees/${ids.diego}/training/objectives/effective`, { token: martin });
+    await cliente.pedir('POST', `/advisees/${ids.diego}/training/plans`, { token: martin, cuerpo: { objectiveVersionId: objetivo.data.objective?.versionId ?? detalle.objectiveVersionId, basedOnPlanId: borrador.planId } });
+    nota('la versión con bloques quedó activa y hay otra en preparación sobre ella');
+  } catch (e) {
+    nota(`no se activó la versión con bloques: ${String(e?.message ?? e).slice(0, 240)}`);
+  }
   return lugar;
 }
 
@@ -335,8 +350,164 @@ function pantallas(ids, lugar) {
         await clic(page, '.galeria__tarjeta[data-preset]');
         const texto = await page.evaluate(() => document.querySelector('[data-para-los-que-agregues]')?.textContent ?? null);
         if (!texto) nota('la galería no dijo qué hace el preset con la sesión vacía');
+        else if (/queda como su prescripción/.test(texto)) nota('la galería todavía dice «queda como su prescripción»');
       },
       despues: (page) => cerrarCuadros(page),
+    },
+    // ─── Tramo 2 ───────────────────────────────────────────────────────────────────────────────────────────────
+    {
+      // C7: la escritura rápida con su rótulo, su lectura y «Aplicar»; lo escrito sin aplicar, en el panel.
+      nombre: '06-escritura-rapida-sin-aplicar',
+      llegar: async (page) => {
+        await ir(page, editor);
+        await visible(page, '.bloque-del-editor');
+        await clic(page, '.bloque-del-editor [id^="abrir-ejercicio-"]');
+        const linea = await visible(page, '[data-linea-de-prescripcion] input');
+        await linea.click({ clickCount: 3 });
+        await page.keyboard.type('4x8-12 RIR 2 90 s');
+        await asentar(page);
+        await page.evaluate(() => document.querySelector('[data-linea-de-prescripcion]')?.scrollIntoView({ block: 'center' }));
+        await pausa(300);
+      },
+    },
+    {
+      // C9: «Ir a…» desde el panel lleva a la línea (el campo exacto) y deja «Volver a la revisión».
+      nombre: '07-ir-al-campo-y-volver',
+      vistaInicial: [1280, 800],
+      llegar: async (page, nota) => {
+        await conElPanel(page);
+        await page.waitForFunction(() => [...document.querySelectorAll('[data-revision] li')].some((li) => li.textContent.includes('escritura rápida')), { timeout: 20_000 });
+        await page.evaluate(() => [...document.querySelectorAll('[data-revision] li')].find((li) => li.textContent.includes('escritura rápida'))?.querySelector('[data-ir-al-problema]')?.click());
+        await asentar(page);
+        await visible(page, '[data-volver-a-la-revision]');
+        const foco = await page.evaluate(() => document.activeElement?.id ?? '');
+        if (!foco.endsWith('-linea')) nota(`el foco quedó en «${foco}», no en la escritura rápida`);
+        const panelAbierto = await page.$('.estacion[data-panel-abierto]');
+        if (panelAbierto) nota('a 1280 el panel quedó abierto encima de la sesión');
+      },
+      despues: async (page) => {
+        // Lo escrito se borra (y con eso deja de estar pendiente) y la barra se oculta.
+        const linea = await page.$('[data-linea-de-prescripcion] input');
+        if (linea) {
+          await linea.click({ clickCount: 3 });
+          await page.keyboard.press('Backspace');
+        }
+        const ocultar = await page.$('[data-volver-a-la-revision] .boton--enlace');
+        if (ocultar) await ocultar.click();
+        await asentar(page);
+      },
+    },
+    {
+      // C7: cambiar el criterio dice qué se quita y ofrece «Deshacer».
+      nombre: '08-cambio-de-criterio',
+      llegar: async (page) => {
+        const id = await (await visible(page, 'select[id$="-criterio"]')).evaluate((e) => e.id);
+        const ahora = await page.$eval(`#${id}`, (e) => e.value);
+        await page.select(`#${id}`, ahora === 'RIR' ? 'PERCENT_RM' : 'RIR');
+        await asentar(page);
+        await visible(page, '[data-cambio-de-criterio]');
+        await page.evaluate(() => document.querySelector('[data-criterio-del-ejercicio]')?.scrollIntoView({ block: 'center' }));
+        await pausa(300);
+      },
+      despues: async (page) => {
+        const deshacer = await page.$('[data-deshacer-el-criterio]');
+        if (deshacer) await deshacer.click();
+        await asentar(page);
+      },
+    },
+    {
+      // C8: cada valor dice si es común, propio o sin indicar (un valor propio en la carga de la serie 2).
+      nombre: '09-de-donde-sale-cada-valor',
+      llegar: async (page, nota) => {
+        const celda = await visible(page, 'input[id$="-serie-1-carga"]');
+        await celda.click({ clickCount: 3 });
+        await page.keyboard.type('130');
+        await page.keyboard.press('Tab');
+        await asentar(page);
+        await page.evaluate(() => document.querySelector('.series-del-editor')?.scrollIntoView({ block: 'center' }));
+        await pausa(300);
+        const marcas = await page.$$eval('[data-origen-de-la-celda]', (x) => x.map((e) => e.textContent));
+        if (!marcas.includes('propio')) nota(`las marcas de las celdas: ${marcas.join(', ') || 'ninguna'}`);
+      },
+    },
+    {
+      // C5: los días junto a cada sesión y «Ver próximas fechas» a pedido.
+      nombre: '10-proximas-fechas',
+      llegar: async (page) => {
+        await clic(page, '[data-sesion-de-la-lista="1"] [data-dia="MONDAY"]');
+        await clic(page, '[data-sesion-de-la-lista="2"] [data-dia="WEDNESDAY"]');
+        await clic(page, '[data-ver-proximas-fechas]');
+        await visible(page, '[data-proximas-fechas]');
+        await page.evaluate(() => document.querySelector('#zona-editor')?.scrollTo({ top: 0 }));
+        await pausa(300);
+      },
+      despues: async (page) => {
+        const cerrar = await page.$('[data-cerrar-agenda]');
+        if (cerrar) await cerrar.click();
+        await asentar(page);
+      },
+    },
+    {
+      // C6: el catálogo con los elegidos a la vista en el pie fijo; crear o importar, en «No encuentro el ejercicio».
+      nombre: '11-catalogo-con-elegidos',
+      llegar: async (page) => {
+        await clic(page, '#agregar-ejercicios-a-la-sesion');
+        const campo = await visible(page, '.agregar-item__buscador input[type="search"]');
+        await campo.type('sentadilla');
+        await page.keyboard.press('Enter');
+        await page.waitForSelector('[data-marcar-ejercicio]', { timeout: 20_000 });
+        for (const c of (await page.$$('[data-marcar-ejercicio]')).slice(0, 3)) await c.click();
+        await asentar(page);
+      },
+    },
+    {
+      // C6: sin resultados, «No encuentro el ejercicio» abierto, con crear e importar.
+      nombre: '12-catalogo-sin-resultados',
+      llegar: async (page) => {
+        const campo = await visible(page, '.agregar-item__buscador input[type="search"]');
+        await campo.click({ clickCount: 3 });
+        await page.keyboard.type('zzzz');
+        await page.keyboard.press('Enter');
+        await visible(page, '[data-sin-resultados]');
+        await visible(page, '[data-crear-ejercicio]');
+      },
+      despues: async (page) => {
+        await page.keyboard.press('Escape');
+        await pausa(400);
+        const cerrar = await page.$$('dialog[open] button');
+        for (const b of cerrar) if ((await b.evaluate((e) => e.textContent ?? '')).includes('Cerrar sin guardar')) await b.click();
+        await cerrarCuadros(page);
+      },
+    },
+    {
+      // C11: una fase nueva, sin sesiones: «Sesiones vacías».
+      nombre: '13-sesiones-vacias',
+      llegar: async (page) => {
+        await ir(page, editor);
+        await clic(page, '[data-agregar-bloque]');
+        await page.keyboard.press('Enter');
+        await asentar(page);
+        await visible(page, '[data-sesiones-vacias]');
+      },
+    },
+    {
+      // C11: «Armar Sesión A, B y C»: tres sesiones, sin pedir nombre ni propósito, con sus días a mano.
+      nombre: '14-sesiones-armadas',
+      llegar: async (page) => {
+        await clic(page, '[data-armar-sesiones-vacias]');
+        await visible(page, '[data-sesion-de-la-lista="3"]');
+      },
+    },
+    {
+      // §7: la versión activa agrupa los ejercicios bajo su bloque, como los ve la persona en la APK nueva.
+      nombre: '15-version-activa-por-bloque',
+      llegar: async (page) => {
+        if (!lugar.activada) throw new Error('la versión con bloques no se activó (ver «preparacion» en capturas.json)');
+        await ir(page, `/pro/advisees/training?id=${ids.diego}&vista=plan&version=activa&${pedido}`);
+        await visible(page, '[data-bloque-del-plan]');
+        await page.evaluate(() => document.querySelector('[data-bloque-del-plan]')?.scrollIntoView({ block: 'center' }));
+        await pausa(300);
+      },
     },
   ];
 }
