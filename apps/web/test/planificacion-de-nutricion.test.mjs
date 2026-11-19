@@ -366,7 +366,7 @@ const ESTILOS = leer('app/globals.css');
 test('NUP-01 · la fila de cada alimento dice lo que aporta con su cantidad, en vivo, y la pista con el mouse o el foco', () => {
   // Se calcula con la cantidad del ítem, que el campo propaga con cada tecla: cambia mientras se escriben los gramos.
   assert.match(COMIDA, /const aporte = aporteDelItem\(\{ catalogItemId: item\.catalogItemId, quantity: magnitud, nombre \}, composicion\);/);
-  assert.match(COMIDA, /setEscrito\(e\.target\.value\);\n\s*const n = leerNumero\(e\.target\.value\);[\s\S]{0,400}onCambiar\(conNumero\(item, n \?\? Number\.NaN\)\)/);
+  assert.match(COMIDA, /setEscrito\(e\.target\.value\);\n\s*const n = leerNumero\(e\.target\.value\);[\s\S]{0,400}onCambiar\(conNumero\(item, n \?\? Number\.NaN, ml\)\)/);
   // Debajo del nombre, con la pista al pasar el mouse; y la misma pista con el foco en la cantidad.
   // DL-180: antes del nombre, el ícono de su grupo (NUA-05); después, la marca de retirado si corresponde (NUA-02).
   assert.match(COMIDA, /<th scope="row" className="item-del-editor__nombre">\n\s*<span className="item-del-editor__grupo"[\s\S]{0,200}\n\s*\{nombre\}[\s\S]{0,500}<Pista texto=\{pista\}>\n\s*<span className="item-del-editor__aporte" data-aporte-del-item>/);
