@@ -134,5 +134,7 @@ principio; el rediseño completo del asistente. **El panel de contexto de la per
 - Cada fila redondea su aporte (kcal enteras, gramos a un decimal) y el total también: sumadas a ojo, las filas pueden
   diferir del total en 0,1 g o 1 kcal. La cuenta exacta coincide (NUP-D01).
 - La comida plegada dice «kcal sin dato · P Sin dato»: las mayúsculas no coinciden.
+- En el editor, con la columna principal más angosta, la tabla de la suma parte «desde 1.026 kcal» en dos renglones
+  (la ubicación sin tope es más larga que «adentro»): la columna de la suma podría no cortarse.
 - Dos comentarios quedaron viejos: «ningún texto de Nutrición dice «%»» (`asistente-de-nutricion.ts`) y «Sin «%»»
   (`rangos.ts`).
