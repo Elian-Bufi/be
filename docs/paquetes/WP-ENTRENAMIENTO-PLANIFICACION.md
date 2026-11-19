@@ -259,13 +259,16 @@ que cambia en su ventana (ED-08, etapa 2; la excepción contada en `scripts/copy
 `entrenamiento-planificacion-2.test.mjs` («Revisión · …») y, lo que se ve, con una verificación de la herramienta de
 capturas que hace fallar el paso (`verificar`, en cada tamaño y tema):
 - **El pie del catálogo (escena 11).** La fila única que se desplazaba de costado cortaba la tercera ficha contra el borde
-  sin que se notara que seguía: las fichas bajan de renglón, dos renglones a la vista y, con más, la lista se desplaza
-  hacia abajo con su barra (el título dice cuántos son); un nombre largo se recorta con «…» adentro de su ficha. El campo
-  «Prescripción para todos» no tenía estilo y se veía como una línea finita: tiene el alto y el borde de los campos del
-  cajón, en un renglón con su rótulo; la nota del catálogo comparte renglón con el principal, para que el pie no crezca.
+  sin que se notara que seguía: las fichas van debajo de su título, con todo el ancho del pie, y bajan de renglón; dos
+  renglones a la vista y, con más, la lista se desplaza hacia abajo con su barra (el título dice cuántos son), sin cortar
+  una ficha a medias; un nombre largo se recorta con «…» adentro de su ficha. El campo «Prescripción para todos» no tenía
+  estilo y se veía como una línea finita: tiene el alto y el borde de los campos del cajón, en un renglón con su rótulo
+  cuando entra, y el ejemplo adentro («Ej.: 4×8-12 RIR 2 · 90 s», como la escritura rápida), así la ayuda entra en un
+  renglón y el pie no crece.
 - **«Común» (escena 09)** se pisaba con «en cada serie»: la columna «Serie» pasa de 3 a 4 rem (de 2,5 a 3,5 entre 40 y 46).
 - **«Las próximas dos semanas» (escena 10)** dibujaba las sesiones en sus días, pero la escena quedaba arriba y las
-  cortaba: va al calendario y verifica que alguna sesión quede a la vista.
+  cortaba: va al calendario y verifica que alguna sesión quede a la vista. Ahí se vio también que, con muchas sesiones,
+  el selector de la sesión (una lista desplegable) no tenía el borde ni el fondo de los campos: venía de antes; ya los tiene.
 - **«estación» en pantalla:** «Cómo se usa el editor», «El editor tiene tres zonas», «Saltos del editor»; el armazón
   común del asistente («Seguir en el plan», «Corregirlo en el plan», «Lo que llevás armado») lleva el mismo cambio que
   NUP-14 en `wp-nutricion-planificacion`, línea por línea, para que las dos ramas se integren sin chocar. Los textos
