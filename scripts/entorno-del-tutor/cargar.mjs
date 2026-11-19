@@ -135,6 +135,8 @@ async function cuenta(clave, intencion, nombre) {
       },
     });
   }
+  // La entrada que ya sirvió se reusa: cada cuenta entra una sola vez por corrida (el límite de intentos de la API).
+  if (intento.status !== 401) sesiones.set(`${clave}|${superficie}`, intento.data.session.accessToken);
   const token = await sesion(clave, superficie);
   const yo = await pedir('GET', '/me', { token, superficie });
   return yo.data.identityId;
@@ -802,6 +804,12 @@ async function cargar(h) {
       if (!q) continue;
       const lista = area === 'NUTRICION' ? p.nut.versiones : p.trn.versiones;
       if (q === 'J' && lista.length) {
+        // Si todas las versiones ya están activadas, no hay nada que pedirle a la API (y un vínculo finalizado no deja).
+        const ya = await versionesExistentes(area, ids.julieta, aseId);
+        if (ya.length >= lista.length && ya.slice(0, lista.length).every((x) => x.estado === 'ACTIVADA')) {
+          versiones[area] = ya.slice(0, lista.length).map((x) => x.id);
+          continue;
+        }
         const evalId = await evaluacion(area, p, 'julieta', aseId);
         versiones[area] = await planes(area, p, 'julieta', aseId, evalId, herr.plantillas);
       }

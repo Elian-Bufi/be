@@ -48,7 +48,7 @@ async function arrancarApi(demo = '') {
     BE_DEMO_PROFESIONALES: demo,
     BE_CLAVE_DEL_SEGUNDO_FACTOR: randomBytes(32).toString('base64url'),
     RATE_LIMIT_REGISTRO_MAX: '100',
-    RATE_LIMIT_LOGIN_MAX: '400',
+    RATE_LIMIT_LOGIN_MAX: '5000',
     RATE_LIMIT_CONSULTA_PROTEGIDA_MAX: '5000',
   };
   const p = spawn(process.execPath, [path.join(REPO, 'apps/api/dist/main.js')], { cwd: REPO, env, stdio: ['ignore', 'pipe', 'pipe'] });
@@ -164,12 +164,15 @@ async function capturas() {
     await page.evaluate((u) => window.next.router.push(u), ruta);
     await asentar();
   };
-  const idDe = async (nombre) =>
-    page.evaluate(async (n) => {
-      const enlaces = [...document.querySelectorAll('a[href*="/pro/advisees?id="]')];
-      const e = enlaces.find((a) => a.textContent.includes(n));
-      return e ? new URL(e.href).searchParams.get('id') : null;
-    }, nombre);
+  // La identidad de cada persona, por la API con su propia cuenta (la contraseña sale del mismo secreto).
+  const idDe = async (clavePersona) => {
+    const c = `tutor-g1.${clavePersona}@example.invalid`;
+    const k = `Be-${createHmac('sha256', CLAVE).update(c).digest('base64url').slice(0, 26)}`;
+    const cab = { 'Content-Type': 'application/json', 'X-BE-Surface': 'APK' };
+    const s = await fetch(`${API}/api/v1/auth/sessions`, { method: 'POST', headers: cab, body: JSON.stringify({ method: 'LOCAL', identifier: c, credential: k }) }).then((r) => r.json());
+    const yo = await fetch(`${API}/api/v1/me`, { headers: { ...cab, Authorization: `Bearer ${s.data.session.accessToken}` } }).then((r) => r.json());
+    return yo.data?.identityId ?? null;
+  };
   const indice = ['# Capturas de la muestra del tutor (WP-ENTORNO-DEL-TUTOR, DL-184)', '', `Origen ${origen}, hoy ${hoy}. ${PROFESIONAL.nombre}, tema Claro, 1920 × 1080. Datos sintéticos: ninguna persona es real.`, '', '| Archivo | Pantalla | Persona |', '|---|---|---|'];
   const foto = async (archivo, que, quien = '—') => {
     await page.screenshot({ path: path.join(salida, archivo) });
@@ -182,8 +185,7 @@ async function capturas() {
   await foto('01-personas.png', '«Las personas que acompañás»');
   const profundas = PERSONAS.filter((p) => !p.liviana);
   for (const [i, p] of profundas.entries()) {
-    await ir('/pro/advisees');
-    const pid = await idDe(p.nombre);
+    const pid = await idDe(p.clave).catch(() => null);
     if (!pid) {
       indice.push(`| — | no se encontró a ${p.nombre} en la lista | ${p.nombre} |`);
       continue;
