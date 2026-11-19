@@ -61,6 +61,30 @@ export function useEntrenamiento(): ContextoDeEntrenamiento {
   return c;
 }
 
+/**
+ * PLT (DL-182): lo que lee el editor de Entrenamiento y sus piezas (el ejercicio, el catálogo), con o sin una persona. El
+ * plan de una persona lo provee esta pestaña, con su `asesoradoId`; la preparación de una plantilla, su página, sin
+ * persona (`asesoradoId: null`): lo que depende de la persona (la fuerza estimada, «La vez pasada», lo que hizo en el
+ * buscador) no se pide.
+ */
+export interface ContextoDelEditorDeEntrenamiento extends Omit<ContextoDeEntrenamiento, 'asesoradoId' | 'irA'> {
+  readonly asesoradoId: string | null;
+}
+
+const ContextoSinPersona = createContext<ContextoDelEditorDeEntrenamiento | null>(null);
+
+/** PLT: el editor sin persona (la preparación de una plantilla). */
+export const ProveedorDelEditorSinPersona = ContextoSinPersona.Provider;
+
+/** El contexto del editor: el de la plantilla, si lo hay; si no, el de la pestaña Entrenamiento de la persona. */
+export function useEditorDeEntrenamiento(): ContextoDelEditorDeEntrenamiento {
+  const sinPersona = useContext(ContextoSinPersona);
+  const conPersona = useContext(Contexto);
+  const c = sinPersona ?? conPersona;
+  if (!c) throw new Error('useEditorDeEntrenamiento fuera de la pestaña Entrenamiento y de una plantilla');
+  return c;
+}
+
 /** Texto neutral del 404 del profesional (10-B10:407). Es el del marco del área, que vuelve a preguntar el acceso. */
 export const NoDisponible = NoDisponibleEnElArea;
 

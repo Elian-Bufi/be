@@ -49,6 +49,19 @@ export const COPY_REVISION_DEL_PLAN = {
   seRevisaAlGuardar: 'Se está guardando lo que escribiste: la revisión se pide sola apenas termine.',
 } as const;
 
+/**
+ * PLT (DL-182): la misma revisión honesta en el editor de una plantilla, que no se activa: se guarda. Lo que impide es lo
+ * que impide guardarla (sin las reglas de una persona); el título y los estados lo dicen con esas palabras.
+ */
+export const COPY_REVISION_DE_LA_PLANTILLA = {
+  ...COPY_REVISION_DEL_PLAN,
+  titulo: 'Revisión para guardar',
+  revisando: 'Revisando lo preparado…',
+  terminadaSinImpedimentos: 'Revisión terminada: no se encontraron impedimentos para guardar la plantilla.',
+  terminadaCon: (n: number) => (n === 1 ? 'Revisión terminada: hay 1 cosa que impide guardar la plantilla.' : `Revisión terminada: hay ${n} cosas que impiden guardar la plantilla.`),
+  fallo: 'No se pudo revisar lo preparado.',
+} as const;
+
 /** C9: «Volver a la revisión», arriba de la sesión, después de «Ir a…». */
 export const COPY_VOLVER_A_LA_REVISION = {
   desdeElCuadro: 'Corregí acá y volvé a «Antes de activar»: la fecha de la próxima revisión que elegiste se conserva.',
@@ -68,6 +81,7 @@ export function RevisionDelPlan({
   motivoSinRevisar = null,
   guardando = false,
   onRevisar,
+  para = 'activar',
 }: {
   estado: EstadoDeLaRevision;
   /** El borrador tiene cambios que todavía no se guardaron. */
@@ -85,8 +99,11 @@ export function RevisionDelPlan({
   guardando?: boolean;
   /** «Revisar ahora» o «Reintentar»: guarda si hace falta y pide la revisión. */
   onRevisar: () => void;
+  /** PLT (DL-182): para activar el plan de una persona o para guardar una plantilla. */
+  para?: 'activar' | 'guardar';
 }) {
   const motivoId = useId();
+  const T = para === 'guardar' ? COPY_REVISION_DE_LA_PLANTILLA : COPY_REVISION_DEL_PLAN;
   const lista = (cosas: readonly Impedimento[]) => (
     <ul className="estacion__lista-del-panel revision-del-plan__lista">
       {cosas.map((x, n) => (
@@ -97,7 +114,7 @@ export function RevisionDelPlan({
           {x.ir && x.destino ? (
             <button type="button" className="boton boton--enlace" onClick={x.ir} data-ir-al-problema>
               <Icono nombre="derecha" tamano={15} />
-              {COPY_REVISION_DEL_PLAN.irA(x.destino)}
+              {T.irA(x.destino)}
             </button>
           ) : null}
         </li>
@@ -111,16 +128,16 @@ export function RevisionDelPlan({
       <p className="revision-del-plan__estado" role="status" data-estado-de-la-revision={estado}>
         <Icono nombre={terminada && impiden.length === 0 ? 'tilde' : estado === 'revisando' ? 'reloj' : 'aviso'} tamano={15} />
         {estado === 'pendiente'
-          ? COPY_REVISION_DEL_PLAN.pendiente
+          ? T.pendiente
           : estado === 'revisando'
-            ? COPY_REVISION_DEL_PLAN.revisando
+            ? T.revisando
             : estado === 'fallo'
-              ? COPY_REVISION_DEL_PLAN.fallo
+              ? T.fallo
               : impiden.length === 0
-                ? COPY_REVISION_DEL_PLAN.terminadaSinImpedimentos
-                : COPY_REVISION_DEL_PLAN.terminadaCon(impiden.length)}
+                ? T.terminadaSinImpedimentos
+                : T.terminadaCon(impiden.length)}
       </p>
-      {estado === 'pendiente' ? <p className="nota">{sinGuardar ? COPY_REVISION_DEL_PLAN.conCambios : COPY_REVISION_DEL_PLAN.pendienteAyuda}</p> : null}
+      {estado === 'pendiente' ? <p className="nota">{sinGuardar ? T.conCambios : T.pendienteAyuda}</p> : null}
       {estado === 'pendiente' || estado === 'fallo' ? (
         <>
           <button
@@ -134,17 +151,17 @@ export function RevisionDelPlan({
             data-revisar-ahora
           >
             <Icono nombre="revision" tamano={15} />
-            {estado === 'fallo' ? COPY_REVISION_DEL_PLAN.reintentar : COPY_REVISION_DEL_PLAN.revisarAhora}
+            {estado === 'fallo' ? T.reintentar : T.revisarAhora}
           </button>
           {/* C9: el motivo a la vista, no solo para el lector: con el autoguardado en curso, la revisión sigue sola. */}
           {motivoSinRevisar ? (
             <p id={motivoId} className="nota" data-motivo-sin-revisar>
-              {guardando ? COPY_REVISION_DEL_PLAN.seRevisaAlGuardar : motivoSinRevisar}
+              {guardando ? T.seRevisaAlGuardar : motivoSinRevisar}
             </p>
           ) : null}
         </>
       ) : null}
-      {!terminada && delEditor.length > 0 ? <p className="nota">{COPY_REVISION_DEL_PLAN.yaSeSabe}</p> : null}
+      {!terminada && delEditor.length > 0 ? <p className="nota">{T.yaSeSabe}</p> : null}
       {impiden.length > 0 ? lista(impiden) : null}
     </div>
   );
