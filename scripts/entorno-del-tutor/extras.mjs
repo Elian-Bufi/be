@@ -7,6 +7,8 @@ import { estructuraDeEntrenamiento } from './historia.mjs';
 import { HERRAMIENTAS } from './herramientas.mjs';
 
 /** `c`: { pedir, sesion, ids, versionesDeAlimentos(claves) → (clave) → { catalogItemId, catalogItemVersionId }, dominio }. */
+const FORMATO_3 = 'forms-format-3';
+
 export function extras(c) {
   const lista = async (ruta, token) => (await c.pedir('GET', ruta, { token })).data ?? [];
   const ingrediente = (version) => ([k, g]) => ({ ...version(k), quantity: { value: g, unit: 'g' }, preparationState: ALIMENTO[k].estado });
@@ -83,7 +85,8 @@ export function extras(c) {
   async function plantillaDelArea(token, area, excluir = []) {
     plantillas ??= await lista('/form-templates?limit=50', token);
     const t = plantillas.find((x) => x.domain === area && !excluir.includes(x.templateId)) ?? plantillas.find((x) => !excluir.includes(x.templateId));
-    const def = (await c.pedir('GET', `/form-templates/${t.templateId}/versions/${t.latestVersionId}/definition`, { token })).data;
+    // Las plantillas de inicio son de formato 3: se leen como un cliente que lo declara (DL-165).
+    const def = (await c.pedir('GET', `/form-templates/${t.templateId}/versions/${t.latestVersionId}/definition`, { token, capacidades: FORMATO_3 })).data;
     return { t, campos: def.sections.flatMap((s) => s.fields) };
   }
   const plantillaDe = (x) => x.templateId ?? x.template?.templateId ?? x.templateVersion?.templateId ?? null;
@@ -102,7 +105,7 @@ export function extras(c) {
       const textos = campos.filter((x) => x.dataType === 'TEXT' && !x.showIf && codigos.includes(x.fieldCode));
       let respuestas = textos.map((x) => ({ x, texto: respuestaDe(p, x) })).filter((y) => y.texto);
       if (!respuestas.length && textos.length) respuestas = [{ x: textos[0], texto: p.formulario.entrenamiento?.objetivo ?? 'Mejorar mi salud.' }];
-      await c.pedir('POST', `/me/form-requests/${r.data.formRequestId}/answers`, { token: await c.sesion(p.clave, 'APK'), superficie: 'APK', cuerpo: { answers: respuestas.map(({ x, texto }) => ({ fieldCode: x.fieldCode, answer: { type: 'TEXT', text: texto.slice(0, x.maxLength ?? 500) } })), fromProposal: null } });
+      await c.pedir('POST', `/me/form-requests/${r.data.formRequestId}/answers`, { token: await c.sesion(p.clave, 'APK'), superficie: 'APK', capacidades: FORMATO_3, cuerpo: { answers: respuestas.map(({ x, texto }) => ({ fieldCode: x.fieldCode, answer: { type: 'TEXT', text: texto.slice(0, x.maxLength ?? 500) } })), fromProposal: null } });
       n++;
     }
     return n;

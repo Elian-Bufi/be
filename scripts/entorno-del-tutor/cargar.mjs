@@ -76,8 +76,9 @@ function destino() {
 
 const espera = (ms) => new Promise((r) => setTimeout(r, ms));
 let D;
-async function pedir(metodo, ruta, { token, cuerpo, superficie = 'WEB', esperado, clave } = {}) {
+async function pedir(metodo, ruta, { token, cuerpo, superficie = 'WEB', esperado, clave, capacidades } = {}) {
   const headers = { 'Content-Type': 'application/json', 'X-BE-Surface': superficie };
+  if (capacidades) headers[dominio.HEADER_DE_CAPACIDADES] = capacidades;
   if (token) headers.Authorization = `Bearer ${token}`;
   if (clave !== false && ['POST', 'PUT', 'PATCH', 'DELETE'].includes(metodo)) headers['Idempotency-Key'] = clave ?? idCliente(`${metodo}|${ruta}|${JSON.stringify(cuerpo ?? null)}`);
   const esperados = esperado ? [esperado].flat() : [200, 201, 204];
