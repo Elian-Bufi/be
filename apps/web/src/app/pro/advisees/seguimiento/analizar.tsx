@@ -1513,7 +1513,7 @@ function TablaDeDatos({ series, nombres, todas, desde, hasta }: { series: readon
                   const del = s.estado.serie.points.filter((p) => p.date === f);
                   // El objetivo de la fila: el del día, o los de la semana si cambió dentro de ella.
                   const m = metricaNutricionalDe(s);
-                  const objetivo = m && s.estado.escalones.length > 0 ? (objetivoEnCelda(s.estado.escalones, m, f, del.find((p) => p.dateEnd)?.dateEnd ?? f) ?? 'Sin objetivo') : null;
+                  const objetivo = m && s.estado.escalones.length > 0 ? (objetivoEnCelda(s.estado.escalones, m, f, del.find((p) => p.dateEnd)?.dateEnd ?? f) ?? 'Sin indicar') : null;
                   const indicado = m && conIndicadoPorDia(s) ? (s.estado.indicado?.dias.find((d) => d.date === f) ?? null) : undefined;
                   return [
                     <td key={s.clave}>
@@ -1877,7 +1877,7 @@ function CapasDeLaLectura({ s, indice, fecha, semana }: { s: Lista; indice: numb
           <dt>
             <Marca indice={indice} plan /> {CAPAS_DE_LA_COMPARACION.objetivo}
           </dt>
-          <dd>{tramos.length === 0 ? 'Sin objetivo en esta fecha.' : tramos.map((t) => `${objetivoEnPalabras(t.escalon, m)} · rige desde el ${diaCivil(t.escalon.from)}`).join('; ')}</dd>
+          <dd>{tramos.length === 0 ? 'Sin indicar en esta fecha.' : tramos.map((t) => `${objetivoEnPalabras(t.escalon, m)} · rige desde el ${diaCivil(t.escalon.from)}`).join('; ')}</dd>
         </div>
       ) : null}
       {indicado !== null ? (
