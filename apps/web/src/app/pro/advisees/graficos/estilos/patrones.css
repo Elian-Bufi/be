@@ -314,7 +314,7 @@
 
 .patrones__cinta[data-pegada] .grafico-base__titulo,
 .patrones__cinta[data-pegada] .grafico-base__leyenda,
-.patrones__cinta[data-pegada] .grafico-base__lectura > .nota,
+.patrones__cinta[data-pegada] .grafico-base__lectura + .nota,
 .patrones__cinta[data-pegada] .grafico-base__tabla,
 .patrones__cinta[data-pegada] .grafico-base__nota {
   display: none;
