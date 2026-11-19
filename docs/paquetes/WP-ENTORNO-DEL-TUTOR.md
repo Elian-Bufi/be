@@ -111,26 +111,25 @@ node scripts/entorno-del-tutor/cargar.mjs credenciales  # correo y contraseña d
 | Requisitos | Estado |
 | --- | --- |
 | REQ-TUT-06, 07, 09 a 11, 13, 15, 16, 18 a 28 | **Cubiertos en la historia y en la carga**, con lo de TUT-D02, D03 y D10 |
-| REQ-TUT-17 | **En parte:** todo lo de cada persona se carga salvo los formularios de inicio, que están en la historia (coherentes y con campos sin responder) pero todavía no se cargan por la API |
+| REQ-TUT-17 | **Cubierto:** los formularios de inicio de las cinco se piden y se responden por la API (formato 3), con los campos de texto que la persona puede contestar desde su historia y los demás sin responder; con la fecha del armado (TUT-D13). Las livianas no tienen formularios |
 | REQ-TUT-29, 30, 33, 35 a 40, 42, 45, 46 | **Cubiertos por el verificador** (reglas y matriz), con lo de TUT-D09 |
 | REQ-TUT-43, 47, 49, 59 a 64 | **Cubiertos** (marca, separación, construcción, semilla, idempotencia, fechas relativas) |
 | REQ-TUT-71, 73 | **Cubiertos** (el verificador tiene sus pruebas con casos que fallan; R-TXT-01 con la guardia de BE) |
-| REQ-TUT-72, 74 | **En parte:** capturas en Claro a 1920 × 1080 de las pantallas clave; `comprobar` compara conteos y lee la cartera y la cola por la API, pero todavía no compara «Te toca a vos» renglón por renglón con la foto del día |
-| REQ-TUT-12, 14 | **En parte:** las notas de coordinación están escritas (`COORDINACION`) pero no se cargan todavía; la foto del día arma los vencimientos (Tomás hoy, Gustavo vencida hace 3 días, dos livianas) pero no la invitación de ayer ni el pedido de información a Silvia |
+| REQ-TUT-72, 74 | **Cubiertos en la CI:** capturas de las pantallas clave de cada persona en Claro y Azul noche, a 1920 × 1080 y a 1440 × 900; `comprobar` compara los conteos y «Te toca a vos» renglón por renglón (cada revisión vencida o de hoy tiene su renglón con la fecha acordada, y cada renglón sale de la historia). Las capturas por celda de la matriz siguen siendo de la revisión con Elián |
+| REQ-TUT-12, 14 | **Cubiertos**, con la fecha del armado en lo que va por la API (TUT-D13): las notas de coordinación de Silvia, el pedido de información a Silvia que espera respuesta, la invitación a una persona nueva y los vencimientos (Tomás hoy, Gustavo vencida hace 3 días, dos livianas) |
 | REQ-TUT-08 | **Cubierto** con 16 meses (TUT-D03) |
-| REQ-TUT-31, 32, 34 | **Cubiertos**, salvo las recetas como opciones del plan (REQ-TUT-34): las recetas están en las herramientas pero no se cargan todavía |
-| REQ-TUT-52 | **Abierto:** las fotos de comidas están marcadas en la historia (R-NUT-08) pero no se cargan: faltan las imágenes de Elián o de un banco con licencia, fuera del repositorio |
-| REQ-TUT-65, 75 a 77 | **Abiertos:** se corren en test con Elián (el comando de §4); la prueba de permisos y la del «tutor travieso» no están programadas |
+| REQ-TUT-31, 32, 34 | **Cubiertos:** 11 recetas de la profesional y, en la última versión del plan de Tomás, Valeria y Carolina, una opción que nace de una receta (con los mismos alimentos y cantidades de la historia, en una porción) |
+| REQ-TUT-52 | **Declarado, a decidir por Elián:** las fotos están marcadas en la historia (R-NUT-08: un tercio de las comidas de Carolina, algunas de Valeria) pero no se cargan hasta que Elián elija las imágenes (propias o de un banco con licencia, sin metadatos y con la fuente fuera del repositorio) |
+| REQ-TUT-76, 77 | **Cubiertos en la CI:** con la cuenta de la profesional, una cuenta ajena a la muestra da 403 o 404 en cinco pedidos y Administración no entra; el «tutor travieso» crea un borrador del plan de Tomás, escribe y archiva una nota, retira un alimento propio e invita, y después `al-dia` corre igual: no duplica nada, no borra lo del tutor y la cuenta ajena sigue sin vínculos |
+| REQ-TUT-65, 75 | **Abiertos:** se corren en test con Elián (el comando de §4) |
 | REQ-TUT-44, 48, 66 a 70 | **No van** por las decisiones de Elián (TUT-D05, D07, D08) |
 | REQ-TUT-01 a 05, 41, 50, 51, 53 a 58, 78, 79 | **De la guía y de la revisión con Elián**, fuera del generador |
 
 ## 7. Lo que queda
 
-- Cargar lo que ya está escrito pero no se carga: las notas de coordinación, las recetas (y como opciones de plan), las
-  medidas caseras, las comidas y sesiones habituales, las vistas de «Analizar» y los formularios de inicio por la API.
 - Las fotos (REQ-TUT-52), con las imágenes que elija Elián.
-- La foto del día completa (la invitación de ayer, el pedido de información a Silvia) y su comparación por la API.
+- Las medidas caseras van en los alimentos propios (13, NUA-08): BE no las pone en los alimentos del catálogo base, así que
+  el «1 taza de arroz cocido» del plan de Gustavo queda pendiente de Administración.
 - Los gráficos que todavía no existen (GR-07 a 10, 15, 17, 19, 21, 22, 25, SP-03 a 08) y los enfoques y «Patrones»
   (por integrar en #277): la matriz verifica que los datos los dejan listos; la guía muestra solo lo que funciona.
-- Las capturas en Azul noche y a 1440 × 900 de las tres pantallas de REQ-TUT-03.
 - Ratificar TUT-D01 a TUT-D14.

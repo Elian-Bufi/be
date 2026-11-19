@@ -49,6 +49,8 @@ async function arrancarApi(demo = '') {
     BE_CLAVE_DEL_SEGUNDO_FACTOR: randomBytes(32).toString('base64url'),
     RATE_LIMIT_REGISTRO_MAX: '100',
     RATE_LIMIT_LOGIN_MAX: '5000',
+    RATE_LIMIT_LOGIN_IP_MAX: '5000',
+    RATE_LIMIT_LOGIN_ID_MAX: '500',
     RATE_LIMIT_CONSULTA_PROTEGIDA_MAX: '5000',
   };
   const p = spawn(process.execPath, [path.join(REPO, 'apps/api/dist/main.js')], { cwd: REPO, env, stdio: ['ignore', 'pipe', 'pipe'] });
@@ -205,10 +207,14 @@ async function permisosYTutorTravieso(conteosAntes) {
   const tomasId = (await llamar('GET', '/me', { token: tomas, superficie: 'APK' })).cuerpo.data.identityId;
   const hechos = [];
   const planes = await llamar('GET', `/advisees/${tomasId}/training/plans`, { token });
-  const vigente = (planes.cuerpo?.data ?? []).filter((x) => x.state === 'ACTIVATED').at(-1);
-  const objetivoId = vigente?.objectiveVersionId;
-  const borrador = await llamar('POST', `/advisees/${tomasId}/training/plans`, { token, cuerpo: { objectiveVersionId: objetivoId, basedOnPlanId: vigente?.planId } });
-  hechos.push(`borrador del plan de Tomás → ${borrador.status}`);
+  // El borrador sale de la versión vigente: se prueba con cada activada hasta que la API la acepta como base.
+  let borrador = null;
+  for (const v of (planes.cuerpo?.data ?? []).filter((x) => x.state === 'ACTIVATED')) {
+    borrador = await llamar('POST', `/advisees/${tomasId}/training/plans`, { token, cuerpo: { objectiveVersionId: v.objectiveVersionId, basedOnPlanId: v.planId } });
+    if (borrador.status < 300) break;
+  }
+  borrador ??= { status: 0, cuerpo: null };
+  hechos.push(`borrador del plan de Tomás → ${borrador.status}${borrador.status >= 300 ? ` (${borrador.cuerpo?.error?.code}: ${borrador.cuerpo?.error?.message})` : ''}`);
   const nota = await llamar('POST', `/advisees/${tomasId}/professional-notes`, { token, cuerpo: { text: 'Nota del tutor, de prueba.' } });
   hechos.push(`nota propia → ${nota.status}`);
   const notaId = nota.cuerpo?.data?.noteId ?? nota.cuerpo?.data?.id;
