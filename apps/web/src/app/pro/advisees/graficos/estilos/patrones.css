@@ -93,7 +93,7 @@
   position: sticky;
   top: 0;
   z-index: 3;
-  background: var(--fondo);
+  background: var(--superficie);
   padding-block: 0.25rem;
 }
 
@@ -300,4 +300,22 @@
 
 .patrones .grafico-base {
   grid-template-columns: minmax(0, 1fr);
+}
+
+/* GR-VE14: pegada arriba, la cinta muestra solo el dibujo y lo elegido; lo demás vuelve al subir. */
+.patrones__marca-de-la-cinta {
+  height: 1px;
+  margin-bottom: -1px;
+}
+
+.patrones__cinta[data-pegada] {
+  box-shadow: 0 1px 0 var(--borde);
+}
+
+.patrones__cinta[data-pegada] .grafico-base__titulo,
+.patrones__cinta[data-pegada] .grafico-base__leyenda,
+.patrones__cinta[data-pegada] .grafico-base__lectura > .nota,
+.patrones__cinta[data-pegada] .grafico-base__tabla,
+.patrones__cinta[data-pegada] .grafico-base__nota {
+  display: none;
 }

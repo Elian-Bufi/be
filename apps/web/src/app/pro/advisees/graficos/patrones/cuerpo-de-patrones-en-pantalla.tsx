@@ -16,7 +16,7 @@
  * acceso no aparece (`tarjetasDelEnfoque`), y nada de acá escribe en un plan.
  */
 import type { AccesoDeLaPersona, GraficoDelEnfoque, VigenciaDePlan } from '@be/domain';
-import { useId, useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react';
 import { Enlace } from '../../../../../components/enlace';
 import { Icono } from '../../../../../components/icono';
 import { bandasDeVersion } from '../adaptadores';
@@ -74,9 +74,9 @@ export function CuerpoDePatrones({ lectura, periodo, disponibles, acceso, charts
 
   const contenido = (
     <ProveedorDelCursor>
-      <div className="patrones__cinta">
-        <CintaDelTiempoLeida lectura={lectura} alcances={acceso.alcances} vigencias={[...vigencias.nutricion, ...vigencias.entrenamiento]} periodo={periodo} densidad={densidad} fija />
-      </div>
+      <CintaQueSePega densidad={densidad}>
+        <CintaDelTiempoLeida lectura={lectura} alcances={acceso.alcances} vigencias={[...vigencias.nutricion, ...vigencias.entrenamiento]} periodo={periodo} densidad={densidad} />
+      </CintaQueSePega>
       {sinNada ? (
         <p className="nota patrones__vacio" data-patrones-vacio>
           {acceso.alcances.length === 0 ? C.sinAreas : C.sinGraficos}
@@ -146,6 +146,30 @@ export function CuerpoDePatrones({ lectura, periodo, disponibles, acceso, charts
         contenido
       )}
     </div>
+  );
+}
+
+/**
+ * La cinta, fija arriba al desplazar (GR-VE14): pegada, muestra solo el dibujo y lo elegido, para no tapar los gráficos;
+ * la explicación, la leyenda y «Ver la lista» vuelven al subir. En el panel del editor no se pega (es angosto y corto).
+ */
+function CintaQueSePega({ densidad, children }: { densidad: DensidadDelGrafico; children: ReactNode }) {
+  const marca = useRef<HTMLDivElement>(null);
+  const [pegada, setPegada] = useState(false);
+  useEffect(() => {
+    const m = marca.current;
+    if (!m || densidad === 'COMPACTA' || typeof IntersectionObserver === 'undefined') return;
+    const o = new IntersectionObserver(([e]) => setPegada(e ? !e.isIntersecting && e.boundingClientRect.top < 0 : false));
+    o.observe(m);
+    return () => o.disconnect();
+  }, [densidad]);
+  return (
+    <>
+      <div ref={marca} className="patrones__marca-de-la-cinta" aria-hidden="true" />
+      <div className="patrones__cinta" data-pegada={pegada ? '' : undefined}>
+        {children}
+      </div>
+    </>
   );
 }
 

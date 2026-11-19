@@ -2068,7 +2068,7 @@ máquina (la lógica pura, con Node) y en la CI.
 > Dirección decidió terminar la rama e integrarla, porque «Patrones» es el corazón de la visión de BE (el seguimiento en
 > el tiempo y los patrones entre áreas, sin afirmar causas). Sin dependencias nuevas; la APK no lee nada de esto y no se
 > congela ninguna lectura (DL-152). La migración de los enfoques pasó a `20261120150000_enfoques_de_graficos`, después de
-> las de `main` (§7: la fecha se fija al integrar). Las decisiones GR-T60 a GR-T64 (la API) y GR-VE01 a GR-VE13 (las
+> las de `main` (§7: la fecha se fija al integrar). Las decisiones GR-T60 a GR-T64 (la API) y GR-VE01 a GR-VE14 (las
 > pantallas) están **a ratificar**; mientras tanto, rigen. Registro: DL-183.
 
 | Parte | Qué quedó | Dónde | Oráculo |
@@ -2151,6 +2151,9 @@ De las pantallas (el 19/11):
 - **GR-VE13 · Para la carga, «el más registrado» es el más registrado con carga** (GR-03 y GR-06): con la cohorte, el más
   registrado de Diego eran unas dominadas sin lastre y el panel de la carga quedaba vacío (lo mostró la captura 10). Un
   ejercicio fijo se respeta, y GR-05 (el RIR) sigue con el más registrado de todos.
+- **GR-VE14 · La cinta fija, compacta:** al bajar, la cinta queda pegada arriba con solo su dibujo y lo elegido; el título,
+  la explicación, la leyenda y «Ver la lista» vuelven al subir. Entera y pegada tapaba un tercio de la ventana a 1280 × 800
+  (lo mostró la captura 10). En el panel del editor no se pega.
 
 #### Lo que difiere de lo que dicen los documentos de la entrega
 
