@@ -19,6 +19,7 @@ import { NotasDeLaSesionController } from './notas-de-la-sesion.controller';
 import { NotasDeLaSesionService } from './notas-de-la-sesion.service';
 import { PlanesDeEntrenamientoService } from './planes.service';
 import { PlantillasDeEntrenamientoService } from './plantillas.service';
+import { PreparacionesDePlantillaService } from './preparaciones-de-plantilla.service';
 import { RevisionesDeEntrenamientoService } from './revisiones.service';
 import { ObjetivosPorSerieService } from './series.service';
 import { TiemposDeSesionService } from './tiempos.service';
@@ -39,6 +40,8 @@ import { TiemposDeSesionService } from './tiempos.service';
     EvaluacionesDeEntrenamientoService,
     PlanesDeEntrenamientoService,
     PlantillasDeEntrenamientoService,
+    // PLT (DL-182): la preparación de una plantilla, sin persona (API-TPL-06 a 14).
+    PreparacionesDePlantillaService,
     HabitualesDeEntrenamientoService,
     EjecucionesDeEntrenamientoService,
     RevisionesDeEntrenamientoService,

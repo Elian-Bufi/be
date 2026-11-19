@@ -9,7 +9,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { esEscrituraDePlanOReceta, LIMITE_DE_PLANES_Y_RECETAS, RUTAS_DE_PLANES_Y_RECETAS } from './limite-de-cuerpo';
 
 /**
- * DL-168 · el límite del cuerpo por ruta (arreglo del 2026-11-11). Las catorce escrituras que llevan un plan entero (un
+ * DL-168 · el límite del cuerpo por ruta (arreglo del 2026-11-11). Las quince escrituras que llevan un plan entero (un
  * borrador o una plantilla) o una receta aceptan hasta 700 KB; el resto de la API, 16 KB, como siempre. Estas pruebas no
  * usan base de datos: la app se
  * arma con `crearApp`, como en producción, y un pedido sin sesión que pasa el parser llega al guard (401). Lo que guarda
@@ -28,7 +28,7 @@ function cuerpoDe(bytes: number): string {
 }
 
 /**
- * Las catorce, fijas y como las declaran los controladores: el archivo, el decorador y, de ahí, el método y una ruta de
+ * Las quince, fijas y como las declaran los controladores: el archivo, el decorador y, de ahí, el método y una ruta de
  * ejemplo. Las pruebas de abajo recorren esta lista y no la de `limite-de-cuerpo.ts`, que es lo que se prueba: si una ruta
  * se cae de aquella, su pedido grande deja de entrar y la prueba lo dice.
  */
@@ -41,6 +41,8 @@ const ESPERADAS: Readonly<Record<string, readonly [archivo: string, decorador: s
   'API-TPN-04': ['nutricion/nutricion.controller.ts', "@Post('nutrition/plan-templates/:templateId/versions')"],
   'API-TPL-01': ['entrenamiento/entrenamiento.controller.ts', "@Post('training/plan-templates')"],
   'API-TPL-04': ['entrenamiento/entrenamiento.controller.ts', "@Post('training/plan-templates/:templateId/versions')"],
+  // PLT (DL-182): el autoguardado de la preparación de una plantilla manda la estructura entera.
+  'API-TPL-10': ['entrenamiento/entrenamiento.controller.ts', "@Patch('training/plan-template-drafts/:draftId')"],
   'API-REC-01': ['nutricion/recetas.controller.ts', "@Post('nutrition/recipes')"],
   'API-REC-04': ['nutricion/recetas.controller.ts', "@Patch('nutrition/recipes/:recipeId')"],
   // ED-64 (WP-EDITORES-PROFESIONAL, DL-167): los habituales grandes se guardan (TEST-EDP-051).
@@ -50,7 +52,7 @@ const ESPERADAS: Readonly<Record<string, readonly [archivo: string, decorador: s
   'API-HAN-05': ['nutricion/habituales.controller.ts', "@Patch('nutrition/meal-presets/:presetId')"],
 };
 
-/** El método y una ruta de ejemplo de una de las catorce, con un identificador en cada parámetro. */
+/** El método y una ruta de ejemplo de una de las quince, con un identificador en cada parámetro. */
 function pedidoDe(operacion: string): { readonly metodo: string; readonly ruta: string } {
   const [, metodo, ruta] = /^@(\w+)\('([^']+)'\)$/.exec((ESPERADAS[operacion] as readonly [string, string])[1]) as RegExpExecArray;
   return { metodo: metodo!.toUpperCase(), ruta: `/api/v1/${ruta!.replace(/:\w+/g, ID)}` };
@@ -69,6 +71,12 @@ const VECINAS: readonly (readonly [string, string])[] = [
   ['PATCH', `/api/v1/training/plan-templates/${ID}`],
   ['POST', `/api/v1/nutrition/plan-templates/${ID}`],
   ['POST', `/api/v1/training/plan-templates/${ID}/versions/${ID}`],
+  // PLT (DL-182): crear, abrir, revisar, guardar como versión y descartar la preparación llevan cuerpos chicos.
+  ['POST', '/api/v1/training/plan-template-drafts'],
+  ['PUT', `/api/v1/training/plan-templates/${ID}/draft`],
+  ['POST', `/api/v1/training/plan-template-drafts/${ID}/review`],
+  ['POST', `/api/v1/training/plan-template-drafts/${ID}/publish`],
+  ['POST', `/api/v1/training/plan-template-drafts/${ID}/discard`],
   ['POST', '/api/v1/nutrition/recipe-calculations'],
   ['PUT', `/api/v1/nutrition/recipes/${ID}/image`],
   ['PUT', `/api/v1/nutrition/plans/${ID}`],
@@ -84,7 +92,7 @@ const VECINAS: readonly (readonly [string, string])[] = [
   ['POST', `/api/v1/training/session-presets/${ID}`],
 ];
 
-describe('DL-168 · las catorce escrituras con el límite de planes y recetas (diez de DL-168 y cuatro de ED-64)', () => {
+describe('DL-168 · las quince escrituras con el límite de planes y recetas (diez de DL-168, cuatro de ED-64 y una de PLT, DL-182)', () => {
   it('son las de los controladores, con su método y su ruta', () => {
     expect(RUTAS_DE_PLANES_Y_RECETAS.map((r) => r.operacion).sort()).toEqual(Object.keys(ESPERADAS).sort());
     for (const [operacion, [archivo, decorador]] of Object.entries(ESPERADAS)) {

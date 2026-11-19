@@ -26,6 +26,7 @@
  * - WP-USO-FINAL (UF-05): API-ACC-08, aceptar la versión vigente de los términos o de la privacidad (DL-169).
  * - RF-068 y RF-004: las familias INC y MET, las incidencias y los métodos de acceso de la cuenta propia (DL-172).
  * - WP-PULIDO-GRANDES (DL-173): API-TRN-25 y sus variantes LISTA y PROPIA (PG-15) y la familia NPP (PG-16).
+ * - WP-PLANTILLAS-DE-ENTRENAMIENTO (DL-182): API-TPL-06 a 14, la preparación de una plantilla sin persona.
  * Un observador registra cada respuesta real (método, ruta, status, código). Después se exige que todo par
  * (status, código) esté declarado para esa operación en `OPERACIONES`, la misma fuente que genera
  * `docs/api/openapi.json` (09v7 T21).
@@ -988,6 +989,45 @@ it('TEST-CT (WP-06, tramo 1): se ejercitan éxitos y errores de la evaluación, 
   await pro.patch(`/api/v1/training/plan-templates/${plantillaId}`).send({ expectedVersion: segunda.body.data.version }).expect(400);
   await pro.patch(`/api/v1/training/plan-templates/${plantillaId}`).send({ expectedVersion: segunda.body.data.version, state: 'ARCHIVED' }).expect(200);
   await request(app.getHttpServer()).get('/api/v1/training/plan-templates').expect(401);
+
+  // TPL-06..14 (la preparación de una plantilla, sin persona; DL-182): crear en blanco y como copia, listar, leer,
+  // autoguardar, revisar, guardar como plantilla y como versión, descartar, editar una existente y sus versiones.
+  const preparaciones = '/api/v1/training/plan-template-drafts';
+  const enBlanco = (await pro.post(preparaciones).send({}).expect(201)).body.data as { draftId: string; version: string };
+  await pro.post(preparaciones).send({ fromTemplateVersionId: randomUUID() }).expect(404);
+  await pro.post(preparaciones).send({ adviseeId: randomUUID() }).expect(400);
+  await ase.post(preparaciones).send({}).expect(403);
+  await pro.get(preparaciones).expect(200);
+  await pro.get(`${preparaciones}?cursor=basura`).expect(400);
+  await pro.get(`${preparaciones}/${enBlanco.draftId}`).expect(200);
+  await pro.get(`${preparaciones}/${randomUUID()}`).expect(404);
+  await pro.patch(`${preparaciones}/${enBlanco.draftId}`).send({ expectedVersion: 'v99', structure: estructuraDeEntrenamiento() }).expect(409);
+  const conOtroEjercicio = { blocks: [{ label: 'F', sessions: [{ label: 'A', prescriptions: [{ exerciseVersionId: randomUUID(), sets: [{ repetitions: { value: 8 } }], intensity: null }] }] }] };
+  await pro.patch(`${preparaciones}/${enBlanco.draftId}`).send({ expectedVersion: enBlanco.version, structure: conOtroEjercicio }).expect(422);
+  await pro.patch(`${preparaciones}/${enBlanco.draftId}`).send({ expectedVersion: enBlanco.version, structure: estructuraDeEntrenamiento(), extra: 1 }).expect(400);
+  const preparada = (await pro.patch(`${preparaciones}/${enBlanco.draftId}`).send({ expectedVersion: enBlanco.version, structure: estructuraDeEntrenamiento(), name: 'Molde preparado' }).expect(200)).body.data as { draftId: string; version: string };
+  await pro.post(`${preparaciones}/${enBlanco.draftId}/review`).send({ expectedVersion: preparada.version }).expect(200);
+  await pro.post(`${preparaciones}/${enBlanco.draftId}/review`).send({ expectedVersion: 'v99' }).expect(409);
+  // Sin nombre ni sesiones: 422 OPERATION_NOT_READY. Con el nombre de otra: 409 TEMPLATE_NAME_TAKEN.
+  const sinNombre = (await pro.post(preparaciones).send({}).expect(201)).body.data as { draftId: string; version: string };
+  await pro.post(`${preparaciones}/${sinNombre.draftId}/publish`).send({ expectedVersion: sinNombre.version }).expect(422);
+  const tomado = (await pro.patch(`${preparaciones}/${sinNombre.draftId}`).send({ expectedVersion: sinNombre.version, structure: estructuraDeEntrenamiento(), name: 'molde de contrato' }).expect(200)).body.data as { version: string };
+  await pro.post(`${preparaciones}/${sinNombre.draftId}/publish`).send({ expectedVersion: tomado.version }).expect(409);
+  await pro.post(`${preparaciones}/${sinNombre.draftId}/discard`).send({ expectedVersion: 'v99' }).expect(409);
+  await pro.post(`${preparaciones}/${sinNombre.draftId}/discard`).send({ expectedVersion: tomado.version }).expect(200);
+  const guardadaComoPlantilla = (await pro.post(`${preparaciones}/${enBlanco.draftId}/publish`).send({ expectedVersion: preparada.version }).expect(201)).body.data as { templateId: string; versionId: string };
+  await pro.post(`${preparaciones}/${enBlanco.draftId}/publish`).send({ expectedVersion: preparada.version }).expect(404);
+  // Editar la existente (201 y, otra vez, 200), una archivada (422) y una que no existe (404).
+  const deLaExistente = (await pro.put(`/api/v1/training/plan-templates/${guardadaComoPlantilla.templateId}/draft`).send({}).expect(201)).body.data as { draftId: string; version: string };
+  await pro.put(`/api/v1/training/plan-templates/${guardadaComoPlantilla.templateId}/draft`).send({}).expect(200);
+  await pro.put(`/api/v1/training/plan-templates/${plantillaId}/draft`).send({}).expect(422);
+  await pro.put(`/api/v1/training/plan-templates/${randomUUID()}/draft`).send({}).expect(404);
+  // Sin cambios frente a la versión de base: no se guarda una versión igual (PLT-D10).
+  await pro.post(`${preparaciones}/${deLaExistente.draftId}/publish`).send({ expectedVersion: deLaExistente.version }).expect(422);
+  await pro.post(preparaciones).send({ fromTemplateVersionId: guardadaComoPlantilla.versionId }).expect(201);
+  await pro.get(`/api/v1/training/plan-templates/${guardadaComoPlantilla.templateId}/versions`).expect(200);
+  await pro.get(`/api/v1/training/plan-templates/${randomUUID()}/versions`).expect(404);
+  await ase.get(`/api/v1/training/plan-templates/${guardadaComoPlantilla.templateId}/versions`).expect(403);
 
   // TPN-01..05 (plantillas de comidas, DL-108): con un circuito de nutrición.
   const nut = await circuitoListoParaPlanificar(app, 'contrato-tpn');
