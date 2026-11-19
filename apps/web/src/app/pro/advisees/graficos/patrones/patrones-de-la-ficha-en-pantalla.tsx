@@ -22,7 +22,6 @@ import {
   eleccionQueRige,
   LARGO_MAXIMO_DEL_NOMBRE_DEL_ENFOQUE,
   MAXIMO_DE_ENFOQUES,
-  moverGrafico,
   nombreDeLaCopia,
   otrosLugares,
   quitarGrafico,
@@ -51,7 +50,7 @@ import { REGISTRO_DE_GRAFICOS } from '../registros';
 import { CuerpoDePatrones } from './cuerpo-de-patrones-en-pantalla';
 import { useElecciones, useEnfoques } from './lecturas-de-los-enfoques';
 import { MisEnfoques } from './mis-enfoques-en-pantalla';
-import { COPY_DE_PATRONES as C, sugeridosConEstaPersona } from './patrones';
+import { COPY_DE_PATRONES as C, graficosQueSeVen, intercambiarGraficos, sugeridosConEstaPersona } from './patrones';
 
 const EN_LA_FICHA: LugarDelEnfoque = { tipo: 'PERSONA' };
 
@@ -94,6 +93,8 @@ export function PatronesDeLaFicha() {
   const sugeridos = useMemo(() => sugeridosConEstaPersona(contexto, REGISTRO_DE_GRAFICOS), [contexto]);
   const base = borrador?.setId ? (mios.find((e) => e.setId === borrador.setId) ?? null) : null;
   const charts: readonly GraficoDelEnfoque[] = borrador ? (borrador.contenido?.charts ?? []) : elegido ? elegido.content.charts : sugeridos;
+  // «Guardar lo que ves» guarda lo que se dibuja: nada de un área sin acceso ni lo que no aplica en el período.
+  const queSeVen = useMemo(() => graficosQueSeVen(charts, contexto, REGISTRO_DE_GRAFICOS), [charts, contexto]);
 
   // ─── Elegir, volver a los sugeridos y deshacer ────────────────────────────────────────────────────────────
   const elegir = async (e: Pick<Enfoque, 'setId' | 'name'>, conDeshacer = true) => {
@@ -145,8 +146,7 @@ export function PatronesDeLaFicha() {
     });
   const edicion = borrador?.contenido
     ? {
-        subir: (i: number) => cambiar((c) => moverGrafico(c, i, -1)),
-        bajar: (i: number) => cambiar((c) => moverGrafico(c, i, 1)),
+        intercambiar: (a: number, b: number) => cambiar((c) => intercambiarGraficos(c, a, b)),
         quitar: (i: number) => cambiar((c) => quitarGrafico(c, i)),
         total: borrador.contenido.charts.length,
       }
@@ -232,8 +232,8 @@ export function PatronesDeLaFicha() {
       clave: 'guardar',
       texto: C.guardarComoEnfoque,
       icono: <Icono nombre="guardar" tamano={18} />,
-      alElegir: () => setNombrando(contenidoCon(charts)),
-      noSePuede: mios.length >= MAXIMO_DE_ENFOQUES ? C.tantosEnfoques : charts.length === 0 ? C.sinGraficos : null,
+      alElegir: () => setNombrando(contenidoCon(queSeVen)),
+      noSePuede: mios.length >= MAXIMO_DE_ENFOQUES ? C.tantosEnfoques : queSeVen.length === 0 ? C.sinGraficos : null,
     },
     {
       clave: 'editar',

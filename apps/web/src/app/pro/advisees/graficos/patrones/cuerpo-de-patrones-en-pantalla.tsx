@@ -30,12 +30,12 @@ import { ProveedorDelComparador } from '../entrenamiento/lecturas-del-ejercicio'
 import type { DisponiblesLeidos, ParametrosDeLectura } from '../lecturas';
 import type { DensidadDelGrafico } from '../paneles-alineados';
 import { REGISTRO_DE_GRAFICOS } from '../registros';
-import { COPY_DE_PATRONES as C, crucesDeLaRelacion, enlaceEnAnalizar, loQueFalta, sugeridosQueFaltan, tarjetasDelEnfoque, type Tarjeta, type TarjetaSugerida } from './patrones';
+import { COPY_DE_PATRONES as C, crucesDeLaRelacion, enlaceEnAnalizar, loQueFalta, sugeridosQueFaltan, tarjetasDelEnfoque, vecinasEnLaSeccion, type Tarjeta, type TarjetaSugerida, type VecinasDeLaTarjeta } from './patrones';
 
 /** Lo que la pantalla deja hacer con las tarjetas mientras se edita un enfoque. */
 export interface EdicionDeLasTarjetas {
-  readonly subir: (indice: number) => void;
-  readonly bajar: (indice: number) => void;
+  /** Intercambia dos gráficos del enfoque por su posición: «Subir» y «Bajar» lo hacen con la vecina que se ve en la sección. */
+  readonly intercambiar: (a: number, b: number) => void;
   readonly quitar: (indice: number) => void;
   readonly total: number;
 }
@@ -70,6 +70,8 @@ export function CuerpoDePatrones({ lectura, periodo, disponibles, acceso, charts
   const conEntrenamiento = [...tarjetas.enElTiempo, ...tarjetas.comparaciones].some((t) => t.tipo === 'SUGERIDO' && t.grafico.area === 'ENTRENAMIENTO');
   const falta = loQueFalta({ noAplican: tarjetas.noAplican, empiezaAntesDelVinculo: empiezaAntesDelVinculo(periodo) });
   const sinNada = tarjetas.enElTiempo.length === 0 && tarjetas.comparaciones.length === 0 && relacion.length === 0;
+  // «Subir» y «Bajar» mueven entre las tarjetas que se ven en la misma sección (no con un gráfico oculto ni de otra sección).
+  const vecinas = useMemo(() => new Map([...vecinasEnLaSeccion(tarjetas.enElTiempo), ...vecinasEnLaSeccion(tarjetas.comparaciones)]), [tarjetas]);
   const props = { lectura, periodo, densidad, acceso, nombres, vigencias, asesoradoId: lectura.asesoradoId, edicion };
 
   const contenido = (
@@ -85,14 +87,14 @@ export function CuerpoDePatrones({ lectura, periodo, disponibles, acceso, charts
       {tarjetas.enElTiempo.length > 0 ? (
         <Seccion titulo={C.enElTiempo} detalle={C.enElTiempoDetalle} clave="en-el-tiempo">
           {tarjetas.enElTiempo.map((t) => (
-            <TarjetaDePatrones key={t.clave} t={t} {...props} />
+            <TarjetaDePatrones key={t.clave} t={t} {...props} vecinas={vecinas.get(t.clave) ?? null} />
           ))}
         </Seccion>
       ) : null}
       {tarjetas.comparaciones.length > 0 ? (
         <Seccion titulo={C.comparaciones} detalle={C.comparacionesDetalle} clave="comparaciones">
           {tarjetas.comparaciones.map((t) => (
-            <TarjetaDePatrones key={t.clave} t={t} {...props} />
+            <TarjetaDePatrones key={t.clave} t={t} {...props} vecinas={vecinas.get(t.clave) ?? null} />
           ))}
         </Seccion>
       ) : null}
@@ -196,13 +198,15 @@ interface PropsDeLaTarjeta {
   readonly vigencias: { readonly nutricion: readonly VigenciaDePlan[]; readonly entrenamiento: readonly VigenciaDePlan[] };
   readonly asesoradoId: string;
   readonly edicion: EdicionDeLasTarjetas | null;
+  /** Con qué gráfico se intercambia al subir o bajar (las vecinas que se ven en su sección). */
+  readonly vecinas?: VecinasDeLaTarjeta | null;
 }
 
 /** El ejercicio de una tarjeta, en palabras: «Sentadilla trasera · serie 2 (kg)». */
 const detalleDelEjercicio = (t: TarjetaSugerida): string | null => (t.ejercicio ? `${t.ejercicio.nombre}${t.ejercicio.serie !== null ? ` · serie ${t.ejercicio.serie}` : ''}` : null);
 
 export function TarjetaDePatrones(p: PropsDeLaTarjeta) {
-  const { t, periodo, asesoradoId, edicion } = p;
+  const { t, periodo, asesoradoId, edicion, vecinas = null } = p;
   const id = useId();
   const href = enlaceEnAnalizar(t, asesoradoId, periodo);
   const detalle = t.tipo === 'SUGERIDO' ? detalleDelEjercicio(t) : null;
@@ -221,7 +225,7 @@ export function TarjetaDePatrones(p: PropsDeLaTarjeta) {
               <span className="visualmente-oculto">: {t.titulo}</span>
             </Enlace>
           ) : null}
-          {edicion ? <ControlesDeEdicion t={t} edicion={edicion} /> : null}
+          {edicion ? <ControlesDeEdicion t={t} edicion={edicion} vecinas={vecinas} /> : null}
         </div>
       </header>
       <div className="patrones__grafico">{t.tipo === 'ARMADO' ? <GraficoArmadoEnPantalla grafico={t.armado} lectura={p.lectura} periodo={periodo} densidad={p.densidad} ejercicios={p.nombres} acceso={p.acceso} /> : <GraficoSugerido {...p} t={t} />}</div>
@@ -229,15 +233,17 @@ export function TarjetaDePatrones(p: PropsDeLaTarjeta) {
   );
 }
 
-function ControlesDeEdicion({ t, edicion }: { t: Tarjeta; edicion: EdicionDeLasTarjetas }) {
+function ControlesDeEdicion({ t, edicion, vecinas }: { t: Tarjeta; edicion: EdicionDeLasTarjetas; vecinas: VecinasDeLaTarjeta | null }) {
   const ultimo = edicion.total <= 1;
+  const anterior = vecinas?.anterior ?? null;
+  const siguiente = vecinas?.siguiente ?? null;
   return (
     <span className="patrones__edicion" role="group" aria-label={`Ordenar o quitar: ${t.titulo}`}>
-      <button type="button" className="boton boton--quieto boton--compacto" disabled={t.indice <= 0} onClick={() => edicion.subir(t.indice)} data-subir>
+      <button type="button" className="boton boton--quieto boton--compacto" disabled={anterior === null} onClick={() => (anterior === null ? undefined : edicion.intercambiar(t.indice, anterior))} data-subir>
         <Icono nombre="arriba" tamano={18} />
         {C.subir}
       </button>
-      <button type="button" className="boton boton--quieto boton--compacto" disabled={t.indice >= edicion.total - 1} onClick={() => edicion.bajar(t.indice)} data-bajar>
+      <button type="button" className="boton boton--quieto boton--compacto" disabled={siguiente === null} onClick={() => (siguiente === null ? undefined : edicion.intercambiar(t.indice, siguiente))} data-bajar>
         <Icono nombre="abajo" tamano={18} />
         {C.bajar}
       </button>

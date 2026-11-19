@@ -3908,7 +3908,7 @@ model VistaDeAnalisis {
 
 // ─── Los enfoques: conjuntos de gráficos del profesional (WP-GRAFICOS GR-27; DL-174) ─────────────────────────────────
 // packages/domain/src/contratos-enfoques.ts (API-GRF-01 a 07). Lo que Prisma no modela está en la migración
-// 20261114200000: una elección por persona y una por plan (índices únicos parciales), el ámbito coherente con sus
+// 20261120150000: una elección por persona y una por plan (índices únicos parciales), el ámbito coherente con sus
 // columnas, el enfoque y el plan del mismo profesional y de la misma persona (disparador), y los CHECK del nombre, la
 // versión y el contenido.
 

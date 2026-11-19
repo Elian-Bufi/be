@@ -93,6 +93,7 @@ export const COPY_DE_PATRONES = {
   rigeElDeLaPersona: 'Este plan no tiene uno propio: rige el de la persona.',
   rigenLosSugeridos: 'Ni este plan ni la persona tienen uno: van los sugeridos para tus áreas.',
   volverALosSugeridos: 'Volver a los sugeridos',
+  usarElDeLaPersona: 'Usar el de la persona',
   nadaSeEscribeEnElPlan: 'Lo que ves acá no escribe en el plan.',
 } as const;
 
@@ -327,3 +328,46 @@ export function loQueFalta(o: { readonly noAplican: number; readonly empiezaAnte
 
 /** Los gráficos de un contenido, o ninguno (los sugeridos se calculan aparte). */
 export const graficosDe = (contenido: ContenidoDelEnfoque | null): readonly GraficoDelEnfoque[] => contenido?.charts ?? [];
+
+// ─── Lo que se ve y el orden al editar ───────────────────────────────────────────────────────────────────────
+
+/**
+ * «Guardar lo que ves como enfoque…» guarda lo que se ve (revisión adversaria del PR #277): los gráficos del enfoque que se
+ * dibujan con esta persona, en el orden del enfoque, y un armado con solo las series que se leen. Lo de un área sin acceso,
+ * un identificador que este website no conoce y lo que no aplica en el período no se ven: no se guardan ni se cuentan.
+ */
+export function graficosQueSeVen(charts: readonly GraficoDelEnfoque[], c: ContextoDelRegistro, registro: RegistroDeGraficos): GraficoDelEnfoque[] {
+  const t = tarjetasDelEnfoque(charts, c, registro);
+  return [...t.enElTiempo, ...t.comparaciones, ...t.relacion]
+    .sort((a, b) => a.indice - b.indice)
+    .map((x): GraficoDelEnfoque => (x.tipo === 'ARMADO' ? { kind: 'CUSTOM', title: x.armado.title, series: [...x.armado.series], mode: x.armado.mode } : x.referencia));
+}
+
+/** Con qué gráfico del enfoque se intercambia una tarjeta al subirla o bajarla (su posición en el enfoque), o `null`. */
+export interface VecinasDeLaTarjeta {
+  readonly anterior: number | null;
+  readonly siguiente: number | null;
+}
+
+/**
+ * «Subir» y «Bajar» mueven entre las tarjetas que se ven en la misma sección: intercambiar con un gráfico que no se ve (de
+ * un área sin acceso, o que no aplica) o con uno de otra sección no cambiaría nada en pantalla.
+ */
+export function vecinasEnLaSeccion(lista: readonly Tarjeta[]): ReadonlyMap<string, VecinasDeLaTarjeta> {
+  return new Map(lista.map((t, k): [string, VecinasDeLaTarjeta] => [t.clave, { anterior: lista[k - 1]?.indice ?? null, siguiente: lista[k + 1]?.indice ?? null }]));
+}
+
+/** Intercambia dos gráficos del enfoque; con una posición fuera del enfoque, queda como está. */
+export function intercambiarGraficos(contenido: ContenidoDelEnfoque, a: number, b: number): ContenidoDelEnfoque {
+  const n = contenido.charts.length;
+  if (a === b || a < 0 || b < 0 || a >= n || b >= n) return contenido;
+  const charts = [...contenido.charts];
+  [charts[a], charts[b]] = [charts[b]!, charts[a]!];
+  return { ...contenido, charts };
+}
+
+/**
+ * Quitar la elección del plan devuelve lo que rige sin ella (GR-T09): el enfoque de la persona, si tiene uno; si no, los
+ * sugeridos. El botón dice a dónde vuelve, sin prometer los sugeridos cuando va a regir el de la persona.
+ */
+export const textoAlQuitarDelPlan = (laPersonaTieneUno: boolean): string => (laPersonaTieneUno ? COPY_DE_PATRONES.usarElDeLaPersona : COPY_DE_PATRONES.volverALosSugeridos);

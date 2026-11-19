@@ -26,7 +26,7 @@ import { contextoDelRegistro } from '../cruces/preguntas-con-graficos';
 import { REGISTRO_DE_GRAFICOS } from '../registros';
 import { CuerpoDePatrones } from './cuerpo-de-patrones-en-pantalla';
 import { useDisponiblesDelPeriodo, useElecciones, useEnfoques } from './lecturas-de-los-enfoques';
-import { COPY_DE_PATRONES as C, sugeridosConEstaPersona } from './patrones';
+import { COPY_DE_PATRONES as C, sugeridosConEstaPersona, textoAlQuitarDelPlan } from './patrones';
 
 export interface PropsDePatronesDelPlan {
   readonly token: string;
@@ -124,7 +124,7 @@ export function PatronesDelPlan({ token, asesoradoId, sesionPerdida, area, planI
               </button>
               {rige?.de === 'PLAN' ? (
                 <button type="button" className="boton boton--quieto boton--compacto" disabled={ocupado} onClick={() => void quitarDelPlan()}>
-                  {C.volverALosSugeridos}
+                  {textoAlQuitarDelPlan(eleccionDelLugar(lista, { tipo: 'PERSONA' }) !== null)}
                 </button>
               ) : null}
             </div>

@@ -269,3 +269,42 @@ test('TEST-GRPE-003 · «Lo que falta» dice cuándo empieza la historia y cuán
   assert.match(dos[0], /^2 gráficos del enfoque no se dibujan/);
   assert.deepEqual(P.loQueFalta({ noAplican: 0, empiezaAntesDelVinculo: false }), []);
 });
+
+test('TEST-GRPE-004 · «Guardar lo que ves como enfoque…» guarda y cuenta solo lo que se dibuja: nada de un área sin acceso ni lo que no aplica (mutación: guardar el contenido entero del enfoque)', () => {
+  const enfoque = [
+    sug('nutricion.energia-por-dia'),
+    sug('entrenamiento.carga-repeticiones-y-rir', { kind: 'MOST_RECORDED', rank: 1 }),
+    sug('entrenamiento.carga-repeticiones-y-rir', { kind: 'MOST_RECORDED', rank: 3 }),
+    { kind: 'CUSTOM', title: 'Carbohidratos y carga', series: [CARBOHIDRATOS, CARGA], mode: 'OVERLAY' },
+    sug('nutricion.un-grafico-del-futuro'),
+  ];
+  const seVen = P.graficosQueSeVen(enfoque, ENTRENADOR, REGISTRO_DE_GRAFICOS);
+  // Lo de Nutrición, lo que no aplica (el 3.º más registrado) y lo desconocido no se ven: no se guardan ni se cuentan.
+  assert.deepEqual(seVen, [enfoque[1], { kind: 'CUSTOM', title: 'Carbohidratos y carga', series: [CARGA], mode: 'OVERLAY' }]);
+  // La ficha arma el contenido nuevo con lo que se ve, y el diálogo dice ese número.
+  const ficha = leer(join(PATRONES, 'patrones-de-la-ficha-en-pantalla.tsx'));
+  assert.match(ficha, /setNombrando\(contenidoCon\(queSeVen\)\)/);
+  assert.doesNotMatch(ficha, /contenidoCon\(charts\)/);
+});
+
+test('TEST-GRPE-005 · «Subir» y «Bajar» mueven entre las tarjetas que se ven en la misma sección (mutación: intercambiar con la posición vecina del enfoque, aunque no se vea)', () => {
+  const enfoque = [sug('entrenamiento.carga-repeticiones-y-rir', { kind: 'MOST_RECORDED', rank: 1 }), sug('nutricion.energia-por-dia'), sug('entrenamiento.fuerza-estimada', { kind: 'MOST_RECORDED', rank: 1 })];
+  const t = P.tarjetasDelEnfoque(enfoque, ENTRENADOR, REGISTRO_DE_GRAFICOS);
+  const vecinas = P.vecinasEnLaSeccion(t.enElTiempo);
+  const [carga, fuerza] = t.enElTiempo;
+  assert.deepEqual(vecinas.get(carga.clave), { anterior: null, siguiente: 2 });
+  assert.deepEqual(vecinas.get(fuerza.clave), { anterior: 0, siguiente: null });
+  // Subir la fuerza la pone primera; el gráfico que no se ve queda en su lugar.
+  const contenido = { schemaVersion: 1, charts: enfoque };
+  assert.deepEqual(P.intercambiarGraficos(contenido, 2, 0).charts, [enfoque[2], enfoque[1], enfoque[0]]);
+  assert.equal(P.intercambiarGraficos(contenido, 2, 3), contenido);
+  const cuerpo = leer(join(PATRONES, 'cuerpo-de-patrones-en-pantalla.tsx'));
+  assert.match(cuerpo, /edicion\.intercambiar\(t\.indice, anterior\)/);
+  assert.match(cuerpo, /edicion\.intercambiar\(t\.indice, siguiente\)/);
+});
+
+test('TEST-GRPE-006 · en el editor del plan, quitar la elección del plan dice a dónde vuelve: al enfoque de la persona si tiene uno (mutación: prometer los sugeridos cuando rige el de la persona)', () => {
+  assert.equal(P.textoAlQuitarDelPlan(true), 'Usar el de la persona');
+  assert.equal(P.textoAlQuitarDelPlan(false), 'Volver a los sugeridos');
+  assert.match(leer(join(PATRONES, 'patrones-del-plan-en-pantalla.tsx')), /textoAlQuitarDelPlan\(eleccionDelLugar\(lista, \{ tipo: 'PERSONA' \}\) !== null\)/);
+});
