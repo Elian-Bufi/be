@@ -414,6 +414,33 @@ describe('NUA-04, NUA-D15 y NUA-D16 · Administración ve quién lo cargó, agru
     // La base: la fila del canon, con la fuente y su origen.
     expect(await prisma.alimentoDelCanon.findUnique({ where: { elementoId: canon.catalogItemId } })).toMatchObject({ origenId: deA.catalogItemId, administradorId: admin.id });
   });
+
+  it('sumar al canon y una decisión a la vez sobre la misma carga: la base las ordena y no se pierde ninguna', async () => {
+    const autor = await nutricionista();
+    const carga = await cargarAMano(autor, `Zzcarrera${unico()} flan casero`);
+    const respuestas: request.Response[] = [];
+    let terminados = 0;
+    const anotar = (r: request.Response) => {
+      respuestas.push(r);
+      terminados += 1;
+    };
+    await prisma.$transaction(
+      async (tx) => {
+        // La prueba retiene la carga; las dos escrituras de Administración tienen que quedar esperándola.
+        await tx.$queryRaw`SELECT 1 FROM "elemento_de_catalogo_nutricional" WHERE "id" = ${carga.catalogItemId}::uuid FOR UPDATE`;
+        void sumarAlCanon({ name: `${carga.name} del canon`, composition: COMPOSICION, source: 'Tabla sintética de prueba', equivalentCatalogItemIds: [carga.catalogItemId] }).then(anotar);
+        void decidir(carga.catalogItemId, { expectedVersion: 'v1', decision: 'CERTIFY', source: 'Rótulo sintético' }).then(anotar);
+        await esperarQueEsperen(prisma, 2, { yaPaso: () => terminados > 0, que: 'sumar al canon y la decisión esperando la carga' });
+        expect(terminados).toBe(0);
+      },
+      { timeout: 40_000, maxWait: 10_000 },
+    );
+    for (let i = 0; i < 400 && terminados < 2; i++) await new Promise((r) => setTimeout(r, 25));
+    expect(respuestas.map((r) => r.status).sort()).toEqual([200, 201]);
+    const revisiones = await prisma.revisionAdministrativaDeAlimento.findMany({ where: { elementoId: carga.catalogItemId }, orderBy: { numero: 'asc' }, select: { numero: true, resultado: true } });
+    expect(revisiones.map((r) => r.numero)).toEqual([1, 2]);
+    expect(revisiones.map((r) => r.resultado).sort()).toEqual(['CERTIFICADO', 'EQUIVALENTE']);
+  });
 });
 
 // ─── NUA-05 · El grupo ───────────────────────────────────────────────────────────────────────────

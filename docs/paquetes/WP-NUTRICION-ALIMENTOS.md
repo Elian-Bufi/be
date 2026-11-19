@@ -325,6 +325,6 @@ que ya muestra la consola por decisión de Dirección (el profesional que la car
 - La fibra que no se cargó dice «sin dato» en la consola y en «Mis alimentos»; la regla del 19/11 pide «Sin indicar» para
   lo no indicado. Es la convención de todo el catálogo: cambiarla es de un paquete chico aparte.
 - La guardia de las medidas admite filas sin autor (las que sembraría BE) también sobre una carga a mano.
-- No hay prueba de concurrencia de «Sumar al canon» contra una decisión simultánea sobre la misma carga: las dos toman las
-  cargas con `FOR NO KEY UPDATE` en el mismo orden, así que se ordenan; falta la prueba con la barrera de
-  `pg_stat_activity`.
+- ~~No había prueba de concurrencia de «Sumar al canon» contra una decisión simultánea sobre la misma carga.~~ Resuelta:
+  la prueba retiene la carga, espera con la barrera de `pg_stat_activity` que las dos queden esperándola y comprueba que
+  se ordenan (revisiones 1 y 2, ninguna perdida).
