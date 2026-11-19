@@ -19294,3 +19294,15 @@ html:has(.estacion:not([data-en-el-asistente])) {
   gap: 0.4rem;
   margin: 0.25rem 0;
 }
+
+.decidir-sobre-alimento fieldset {
+  margin: 0 0 0.75rem;
+  padding: 0;
+  border: 0;
+}
+
+.decidir-sobre-alimento legend {
+  margin-bottom: 0.25rem;
+  padding: 0;
+  font-weight: 600;
+}

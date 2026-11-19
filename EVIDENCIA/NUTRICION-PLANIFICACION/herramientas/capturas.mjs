@@ -672,6 +672,9 @@ function pantallas(norma) {
       nombre: '19-editor-alimento-retirado',
       llegar: async (page) => {
         // NUA-02: el alimento que se retiró después de citarlo sigue en la fila, con la marca discreta.
+        // Antes, que el editor guarde lo que tenga pendiente; después, se monta de nuevo para leer el borrador.
+        await asentar(page);
+        await ir(page, '/pro');
         await ponerEnElBorradorYRetirar(norma);
         await ir(page, nutricion());
         await abrirComida(page, 2);

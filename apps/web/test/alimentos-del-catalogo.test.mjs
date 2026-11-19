@@ -102,9 +102,14 @@ test('NUA-04 · el verificado equivalente va justo antes del que lo tiene, y no 
   );
   assert.equal(r[0].alimento.originLevel, 'VERIFIED');
   assert.equal(r[2].habitual, true);
-  // Si el verificado ya está en la lista, no se sugiere otra vez.
+  // Si el verificado ya venía más arriba, no se repite ni se mueve (la fila lo nombra con `avisoDeEquivalente`).
   const conElOficial = A.conSugeridos([{ alimento: alimento('oficial', oficial.name), habitual: false }, filas[0]], (e) => e);
-  assert.deepEqual(conElOficial.map((f) => f.alimento.catalogItemId), ['oficial', 'a']);
+  assert.deepEqual(conElOficial.map((f) => [f.alimento.catalogItemId, f.sugeridoPor]), [['oficial', null], ['a', null]]);
+  assert.equal(A.avisoDeEquivalente(filas[0].alimento), 'Hay uno verificado equivalente: «Arroz blanco de grano largo, cocido».');
+  // Si venía más abajo (lo común: «arroz blanco» trae el oficial), sube justo antes, como sugerencia, sin repetirse.
+  const masAbajo = A.conSugeridos([filas[0], filas[1], { alimento: alimento('oficial', oficial.name), habitual: true }], (e) => e);
+  assert.deepEqual(masAbajo.map((f) => [f.alimento.catalogItemId, f.sugeridoPor, f.habitual]), [['oficial', 'Arroz casero', true], ['a', null, false], ['b', null, true]]);
+  assert.ok(CUADRO.includes('{avisoDeEquivalente(r.alimento) && resultados[n - 1]?.sugeridoPor !== r.alimento.name ?'), 'la fila nombra su equivalente si no quedó justo arriba');
   assert.match(CUADRO, /conSugeridos\(resultadosDelBuscador</);
   assert.match(CUADRO, /\{COPY_ALIMENTOS\.equivalenteSugerido\(r\.sugeridoPor\)\}/);
 });

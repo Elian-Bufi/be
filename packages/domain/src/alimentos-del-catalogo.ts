@@ -184,6 +184,7 @@ export const COPY_MIS_ALIMENTOS = {
   version: (n: number) => `Versión ${n}`,
   cadaCien: (ml: boolean) => (ml ? 'cada 100 ml' : 'cada 100 g'),
   retirado: 'Retirado',
+  retiradoNota: 'No aparece en el buscador de nadie; los planes, las recetas y los registros que lo citan lo conservan.',
   sinRevisar: 'Sin revisión de Administración',
   verificado: (fuente: string) => `Verificado por Administración. Fuente: ${fuente}`,
   equivalente: (de: string) => `Administración lo marcó como equivalente de «${de}»: el buscador sugiere ese en su lugar.`,

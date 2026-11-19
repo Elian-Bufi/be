@@ -65,18 +65,23 @@ export interface FilaSugerida<A> {
 }
 
 /**
- * NUA-04: cada alimento que tiene un equivalente verificado lleva ese verificado justo antes, como sugerencia, salvo que
- * ya esté en la lista (entonces no se repite). Una sugerencia no se sugiere dos veces.
+ * NUA-04: cada alimento que tiene un equivalente verificado lleva ese verificado justo antes, como sugerencia. Si el
+ * verificado ya venía más abajo en la lista, sube a ese lugar (no se repite); si ya estaba más arriba, queda donde estaba
+ * y la fila del alimento lo nombra (`avisoDeEquivalente`). Una sugerencia no se sugiere dos veces.
  */
 export function conSugeridos<A extends ConNivel>(filas: readonly { readonly alimento: A; readonly habitual: boolean }[], comoAlimento: (equivalente: NonNullable<ConNivel['verifiedEquivalent']>) => A): FilaSugerida<A>[] {
-  const presentes = new Set(filas.map((f) => f.alimento.catalogItemId));
+  const porId = new Map(filas.map((f) => [f.alimento.catalogItemId, f]));
+  const puestos = new Set<string>();
   const resultado: FilaSugerida<A>[] = [];
   for (const f of filas) {
+    if (puestos.has(f.alimento.catalogItemId)) continue;
     const e = f.alimento.verifiedEquivalent;
-    if (e && !presentes.has(e.catalogItemId)) {
-      presentes.add(e.catalogItemId);
-      resultado.push({ alimento: comoAlimento(e), habitual: false, sugeridoPor: f.alimento.name });
+    if (e && !puestos.has(e.catalogItemId)) {
+      const yaEstaba = porId.get(e.catalogItemId);
+      puestos.add(e.catalogItemId);
+      resultado.push({ alimento: yaEstaba ? yaEstaba.alimento : comoAlimento(e), habitual: yaEstaba?.habitual ?? false, sugeridoPor: f.alimento.name });
     }
+    puestos.add(f.alimento.catalogItemId);
     resultado.push({ ...f, sugeridoPor: null });
   }
   return resultado;

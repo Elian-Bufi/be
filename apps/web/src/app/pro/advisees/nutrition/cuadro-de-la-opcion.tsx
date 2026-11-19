@@ -37,7 +37,7 @@ import {
   type VersionDeObjetivo,
 } from '@be/domain';
 import { useContext, useEffect, useId, useRef, useState, type RefObject } from 'react';
-import { conSugeridos, ContextoDeLosAlimentos, datosDelAlimento, etiquetaDelNivel, pideMirarAntesDeSumar, type DatosDelAlimento } from './alimentos-del-catalogo';
+import { avisoDeEquivalente, conSugeridos, ContextoDeLosAlimentos, datosDelAlimento, etiquetaDelNivel, pideMirarAntesDeSumar, type DatosDelAlimento } from './alimentos-del-catalogo';
 import { CuadroEnfocado } from '../../../../components/cuadro-enfocado';
 import { Enlace } from '../../../../components/enlace';
 import { Aviso } from '../../../../components/formulario';
@@ -561,6 +561,8 @@ function BuscadorDeLaOpcion({
                   {'origin' in r.alimento ? `${origenEnElCatalogo(r.alimento, fechaDelDia).breve} · ` : ''}
                   {C.cadaCien(c.referenceAmount === '100ml')} · {completitudEnPalabras(c)}
                   {'certification' in r.alimento && r.alimento.certification ? ` · ${COPY_ALIMENTOS.certificadoCon(r.alimento.certification.source)}` : ''}
+                  {/* NUA-04: si su verificado equivalente no quedó justo arriba (ya estaba antes en la lista), lo nombra. */}
+                  {avisoDeEquivalente(r.alimento) && resultados[n - 1]?.sugeridoPor !== r.alimento.name ? <span data-tiene-equivalente>{` · ${avisoDeEquivalente(r.alimento)}`}</span> : null}
                 </span>
               </div>
               <div id={celda(n, 1)} role="gridcell" aria-selected={n === actual && columna === 1} className="buscador-de-la-opcion__estrella" data-celda-marcada={n === actual && columna === 1 ? '' : undefined}>

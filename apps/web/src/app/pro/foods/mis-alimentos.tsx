@@ -135,10 +135,18 @@ export function MisAlimentos() {
                       <p className="nota">
                         {a.foodGroup ? NOMBRE_DEL_GRUPO[a.foodGroup] : 'Sin grupo'} · {C.version(a.versionNumber)} · {fecha(a.updatedAt)}
                       </p>
-                      <p className="nota" data-revision>
-                        {revisionEnPalabras(a)}
-                      </p>
-                      <p className="nota">{a.shared ? C.compartido : C.soloVos}</p>
+                      {a.available ? (
+                        <>
+                          <p className="nota" data-revision>
+                            {revisionEnPalabras(a)}
+                          </p>
+                          <p className="nota">{a.shared ? C.compartido : C.soloVos}</p>
+                        </>
+                      ) : (
+                        <p className="nota" data-retirado-nota>
+                          {C.retiradoNota}
+                        </p>
+                      )}
                     </div>
                     {a.available ? (
                       <div className="mis-alimentos__acciones">
