@@ -67,7 +67,7 @@ export class RecetasService {
       huellaExtra: {},
       efecto: async (tx, pedido, procedencia) => {
         await exigirProfesionalDeNutricion(tx, actor.identidadId);
-        const { guardados, calculo } = await this.ingredientesCalculados(tx, actor.identidadId, pedido.servings, pedido.ingredients);
+        const { guardados, calculo } = await this.ingredientesCalculados(tx, actor.identidadId, pedido.servings, pedido.ingredients, true);
         const momento = await momentoDeLaBase(tx);
         const receta = await tx.receta.create({ data: { profesionalId: actor.identidadId, momentoDeActualizacion: momento } });
         await tx.versionDeReceta.create({
@@ -168,7 +168,7 @@ export class RecetasService {
         if (!esToken(pedido.expectedVersion, r.version)) throw errores.conflictoDeVersion();
         const anterior = (await versionesVigentes(tx, [r.id])).get(r.id);
         if (!anterior) throw errores.interno();
-        const { guardados, calculo } = await this.ingredientesCalculados(tx, actor.identidadId, pedido.servings, pedido.ingredients);
+        const { guardados, calculo } = await this.ingredientesCalculados(tx, actor.identidadId, pedido.servings, pedido.ingredients, true);
         const momento = await momentoDeLaBase(tx);
         await tx.versionDeReceta.create({
           data: {
@@ -290,7 +290,10 @@ export class RecetasService {
     profesionalId: string,
     porciones: number,
     entrada: readonly IngredienteDeRecetaEntrada[],
+    /** DL-180, segundo tramo (NUA-D16): al guardar, lo ajeno se toma antes de mirarlo; el cálculo previo solo lee. */
+    tomar = false,
   ): Promise<{ guardados: IngredienteDeReceta[]; calculo: ReturnType<typeof calcularReceta> }> {
+    if (tomar) await this.catalogo.tomarParaCitar(tx, profesionalId, entrada.map((i) => i.catalogItemId));
     const versiones = await this.catalogo.versionesCitables(tx, profesionalId, entrada.map((i) => i.catalogItemVersionId));
     const issues: { code: string; path: string }[] = [];
     entrada.forEach((ing, i) => {

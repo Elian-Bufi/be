@@ -249,6 +249,8 @@ export class PlantillasNutricionalesService {
     if (conReceta.length > 0) throw new ErrorDeApi(422, CodigoDeError.VALIDATION_FAILED, 'Una plantilla no lleva opciones de receta: agregá la receta en el plan de cada persona.', { issues: conReceta });
     const guardar = conCantidades ? entrada : sinCantidades(entrada);
     const contenido = normalizarEstructura(guardar, randomUUID);
+    // DL-180, segundo tramo (NUA-D16): lo ajeno se toma antes de mirarlo.
+    await this.catalogo.tomarParaCitar(tx, profesionalId, idsDeCatalogo(contenido));
     const disponibles = await this.catalogo.disponibles(tx, profesionalId, idsDeCatalogo(contenido));
     const problemas: ValidationIssue[] = problemasDeBorrador(contenido, new Set(disponibles.keys()));
     if (problemas.length > 0) throw new ErrorDeApi(422, CodigoDeError.VALIDATION_FAILED, 'Hay elementos de la plantilla que no se pueden guardar.', { issues: problemas });

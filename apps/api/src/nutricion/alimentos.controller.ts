@@ -60,6 +60,21 @@ export class AlimentosController {
     sinParametrosDeQuery(query);
     return responder(res, await this.alimentos.retirar(actorDe(req), catalogItemId, cuerpo, clave, contextoDe(req)));
   }
+
+  /** API-ALI-08 (DL-180, segundo tramo): compartirlo o dejar de compartirlo, un hecho nuevo. */
+  @Post('nutrition/catalog-items/:catalogItemId/sharing')
+  @HttpCode(200)
+  async compartir(
+    @Param('catalogItemId') catalogItemId: string,
+    @Body() cuerpo: unknown,
+    @Headers(HEADER_IDEMPOTENCY_KEY) clave: string | undefined,
+    @Query() query: Record<string, unknown>,
+    @Req() req: Solicitud,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<unknown> {
+    sinParametrosDeQuery(query);
+    return responder(res, await this.alimentos.compartir(actorDe(req), catalogItemId, cuerpo, clave, contextoDe(req)));
+  }
 }
 
 function responder(res: Response, resultado: ResultadoIdempotente): unknown {

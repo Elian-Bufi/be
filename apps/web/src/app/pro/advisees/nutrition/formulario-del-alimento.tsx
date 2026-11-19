@@ -3,8 +3,9 @@
 /**
  * WP-NUTRICION-ALIMENTOS (DL-180) · El formulario de un alimento cargado a mano: el nombre, los valores cada 100 g, la
  * fibra (opcional: vacía es «sin dato», nunca cero) y el grupo (NUA-05, para su ícono). Lo usan «Crearlo a mano» (en el
- * cuadro de la opción) y «Corregir» (en «Mis alimentos», NUA-01). Dice, a la vista, que lo que se carga lo ven los demás
- * profesionales de Nutrición con su nombre y sus valores (NUA-D05).
+ * cuadro de la opción) y «Corregir» (en «Mis alimentos», NUA-01). Compartirlo con los demás profesionales de Nutrición es
+ * un interruptor a la vista, con el aviso al lado (NUA-D05; segundo tramo, NUA-D14): encendido al cargar uno nuevo,
+ * apagado al corregir uno que no se comparte. Sin interruptor (al corregir uno que ya se comparte), quien lo usa lo dice.
  * - Los requisitos de siempre, señalados en el campo que falta (B10-10:164-165); Enter pasa al siguiente que falta (NUP-09).
  * - La lógica de los valores está en `valores-del-alimento.ts` (`valoresDelAlimento`), sin React, para probarla.
  */
@@ -51,6 +52,7 @@ export function FormularioDelAlimento({
   alEnviar,
   alEscribir,
   pie,
+  compartir = null,
 }: {
   id: string;
   inicial: AlimentoEscrito;
@@ -58,7 +60,9 @@ export function FormularioDelAlimento({
   textoEnviando: string;
   cabecera?: ReactNode;
   nota?: ReactNode;
-  alEnviar: (v: { readonly nombre: string; readonly composicion: Composicion; readonly grupo: GrupoDeAlimento | null }) => Promise<string | null>;
+  /** NUA-D14: el interruptor de compartir y cómo empieza; `null` u omitido, sin interruptor. */
+  compartir?: { readonly inicial: boolean } | null;
+  alEnviar: (v: { readonly nombre: string; readonly composicion: Composicion; readonly grupo: GrupoDeAlimento | null; readonly compartir: boolean }) => Promise<string | null>;
   /** NUP-11: se escribió algo; quien lo contiene pregunta antes de cerrar. */
   alEscribir?: () => void;
   pie?: ReactNode;
@@ -67,6 +71,7 @@ export function FormularioDelAlimento({
   const [errores, setErrores] = useState<Readonly<Record<string, string>>>({});
   const [fallo, setFallo] = useState<string | null>(null);
   const [enviando, setEnviando] = useState(false);
+  const [compartido, setCompartido] = useState(compartir?.inicial ?? false);
   const cambiar = (c: Partial<AlimentoEscrito>) => setEscrito((e) => ({ ...e, ...c }));
   // NUP-09: Enter, mientras falte algún valor obligatorio, pasa al siguiente campo vacío; con todo escrito, envía.
   const loQueFalta = (): string[] =>
@@ -81,7 +86,7 @@ export function FormularioDelAlimento({
     }
     setErrores({});
     setEnviando(true);
-    const problema = await alEnviar(v);
+    const problema = await alEnviar({ ...v, compartir: compartir !== null && compartido });
     setEnviando(false);
     setFallo(problema);
   }
@@ -99,10 +104,29 @@ export function FormularioDelAlimento({
         <Campo id={`${id}-fibra`} etiqueta="Fibra (g), si la sabés" inputMode="decimal" value={escrito.fibra} onChange={(e) => cambiar({ fibra: e.target.value })} error={errores['fibra'] ?? null} />
       </div>
       <SelectorDeGrupo id={`${id}-grupo`} valor={escrito.grupo} alCambiar={(grupo) => cambiar({ grupo })} apagado={enviando} />
-      <p className="nota formulario-del-alimento__compartir" data-aviso-de-compartir>
-        <Icono nombre="info" tamano={18} />
-        {COPY_ALIMENTOS.avisoDeCompartir}
-      </p>
+      {compartir ? (
+        <div className="formulario-del-alimento__compartir" data-compartir>
+          <label className="capa formulario-del-alimento__interruptor">
+            <input
+              type="checkbox"
+              role="switch"
+              checked={compartido}
+              disabled={enviando}
+              aria-describedby={`${id}-aviso-de-compartir`}
+              onChange={(e) => {
+                setCompartido(e.target.checked);
+                alEscribir?.();
+              }}
+              data-interruptor-de-compartir
+            />
+            <span>{COPY_ALIMENTOS.compartirInterruptor}</span>
+          </label>
+          <p className="nota formulario-del-alimento__aviso" id={`${id}-aviso-de-compartir`} data-aviso-de-compartir>
+            <Icono nombre="info" tamano={18} />
+            {compartido ? COPY_ALIMENTOS.avisoDeCompartir : COPY_ALIMENTOS.noSeComparte}
+          </p>
+        </div>
+      ) : null}
       {fallo ? (
         <Aviso tipo="error">
           <p>{fallo}</p>

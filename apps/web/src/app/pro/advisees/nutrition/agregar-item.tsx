@@ -46,6 +46,8 @@ export function CrearManualmente({
       textoDelBoton="Crear y agregar"
       textoEnviando="Creando…"
       alEscribir={alEscribir}
+      // NUA-D14: compartirlo es un interruptor a la vista, encendido por defecto, con el aviso al lado.
+      compartir={{ inicial: true }}
       cabecera={
         <>
           <button type="button" className="boton boton--enlace agregar-item__volver" onClick={onVolver}>
@@ -57,7 +59,11 @@ export function CrearManualmente({
       }
       nota={<p className="nota">Un alimento tuyo, con sus valores cada 100 g. Queda en el catálogo para volver a usarlo.</p>}
       alEnviar={async (v) => {
-        const r = await api.crearElementoDeCatalogo(token, { name: v.nombre, itemType: 'FOOD', composition: v.composicion, ...(v.grupo ? { group: v.grupo } : {}) }, intento.actual());
+        const r = await api.crearElementoDeCatalogo(
+          token,
+          { name: v.nombre, itemType: 'FOOD', composition: v.composicion, ...(v.grupo ? { group: v.grupo } : {}), share: v.compartir },
+          intento.actual(),
+        );
         intento.registrar(r);
         if (sesionPerdida(r) || accesoRetirado(r)) return null;
         if (!r.ok) return mensajeDeFallo(r);

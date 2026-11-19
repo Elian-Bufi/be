@@ -15,6 +15,8 @@ export interface FilaDeAlimentoCargado {
   cantidadDeVersiones: number;
   grupoDeAlimento: GrupoDeAlimentoEnLaBase | null;
   compartido: boolean;
+  /** DL-180, segundo tramo: su autor lo compartió y después lo dejó de compartir. Ausente: no. */
+  dejoDeCompartir?: boolean;
   creado: Date;
   actualizado: Date;
   resultado: 'CERTIFICADO' | 'EQUIVALENTE' | 'QUITADA' | null;

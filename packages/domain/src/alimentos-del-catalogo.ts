@@ -155,9 +155,13 @@ export const COPY_ALIMENTOS = {
   grupo: 'Grupo',
   sinGrupo: 'Sin grupo',
   elegirGrupo: 'Elegí su grupo',
-  /** NUA-D05: lo que se carga a mano lo ven los demás profesionales, con su nombre y sus valores. */
-  avisoDeCompartir:
-    'Lo ven también los demás profesionales de Nutrición de BE, como «De otro profesional», con su nombre y sus valores. No escribas datos de personas en el nombre.',
+  /**
+   * NUA-D05 y, desde el segundo tramo, NUA-D14: compartir es un interruptor a la vista, con el aviso al lado. Al cargar un
+   * alimento nuevo viene encendido; al corregir uno que no se comparte, apagado.
+   */
+  compartirInterruptor: 'Compartirlo con los demás profesionales de Nutrición',
+  avisoDeCompartir: 'Lo ven como «De otro profesional», con su nombre y sus valores. No escribas datos de personas en el nombre.',
+  noSeComparte: 'Lo ves solo vos. Lo podés compartir después desde «Mis alimentos».',
   /** NUA-03: lo de otro profesional, antes de sumarlo. */
   deOtroProfesional: 'De otro profesional',
   avisoDeOtroProfesional: 'Lo cargó a mano otro profesional y Administración no lo revisó: mirá sus valores cada 100 g antes de sumarlo.',
@@ -178,7 +182,7 @@ export const COPY_ALIMENTOS = {
 export const COPY_MIS_ALIMENTOS = {
   titulo: 'Tus alimentos cargados a mano',
   queEs:
-    'Si uno tiene un error, corregilo: nace una versión nueva, y los planes activados, las recetas y los registros conservan la versión que citaban. Si ya no lo querés usar, retiralo: deja de aparecer en el buscador, y lo que ya lo cita lo sigue mostrando.',
+    'Si uno tiene un error, corregilo: nace una versión nueva, y los planes activados, las recetas y los registros conservan la versión que citaban. Si ya no lo querés usar, retiralo: deja de aparecer en el buscador, y lo que ya lo cita lo sigue mostrando. Vos elegís cuáles ven los demás profesionales de Nutrición: los podés compartir y dejar de compartir cuando quieras.',
   sinAlimentos: 'Todavía no cargaste alimentos a mano. Se cargan desde una opción del plan, con «Crearlo a mano».',
   soloNutricion: 'Los alimentos son del área de Nutrición, y tu cuenta no la tiene habilitada.',
   version: (n: number) => `Versión ${n}`,
@@ -189,7 +193,23 @@ export const COPY_MIS_ALIMENTOS = {
   verificado: (fuente: string) => `Verificado por Administración. Fuente: ${fuente}`,
   equivalente: (de: string) => `Administración lo marcó como equivalente de «${de}»: el buscador sugiere ese en su lugar.`,
   compartido: 'Lo ven los demás profesionales de Nutrición como «De otro profesional».',
-  soloVos: 'Por ahora lo ves solo vos: se comparte cuando lo corregís.',
+  soloVos: 'Lo ves solo vos.',
+  /** NUA-D15: lo dejado de compartir, con honestidad sobre lo que ya lo usa. */
+  dejasteDeCompartir: 'Dejaste de compartirlo: lo ves solo vos. Los planes que ya lo usan lo conservan.',
+  compartir: 'Compartir',
+  dejarDeCompartir: 'Dejar de compartir',
+  compartirTitulo: (nombre: string) => `¿Compartir «${nombre}»?`,
+  compartirQuePasa:
+    'Lo van a ver los demás profesionales de Nutrición en su buscador, como «De otro profesional», con su nombre y sus valores, y Administración lo va a poder revisar. No escribas datos de personas en el nombre: si tiene alguno, corregilo antes de compartirlo.',
+  dejarDeCompartirTitulo: (nombre: string) => `¿Dejar de compartir «${nombre}»?`,
+  dejarDeCompartirQuePasa:
+    'Deja de aparecer en el buscador de los demás profesionales y en la revisión de Administración. Los planes que ya lo usan lo conservan, igual que las recetas y los registros que lo citan: no se puede sacar de lo que ya se activó. Lo podés volver a compartir cuando quieras.',
+  compartiendo: 'Compartiendo…',
+  dejandoDeCompartir: 'Dejando de compartir…',
+  compartidoAviso: (nombre: string) => `«${nombre}» ya lo ven los demás profesionales de Nutrición.`,
+  dejadoDeCompartirAviso: (nombre: string) => `Dejaste de compartir «${nombre}»: lo ves solo vos.`,
+  /** NUA-D14: al corregir uno que se comparte, la versión nueva también la ven. */
+  corregirCompartido: 'Lo ven los demás profesionales de Nutrición: la versión corregida también. Para que deje de verse, usá «Dejar de compartir».',
   corregir: 'Corregir',
   retirar: 'Retirar',
   corregirTitulo: (nombre: string) => `Corregir «${nombre}»`,

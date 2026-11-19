@@ -265,6 +265,7 @@ import {
   AlimentoPropioResponseSchema,
   AlimentosConsultadosResponseSchema,
   ListaDeAlimentosPropiosResponseSchema,
+  type CompartirAlimentoRequest,
   type CorregirAlimentoRequest,
   type RetirarAlimentoRequest,
 } from './contratos-alimentos';
@@ -1199,6 +1200,10 @@ export function crearClienteBe(opciones: OpcionesDeCliente) {
     /** API-ALI-03 (NUA-02): retirarlo; no se borra. */
     retirarAlimento(token: string, alimentoId: string, cuerpo: RetirarAlimentoRequest, claveDeIdempotencia: string) {
       return llamar('POST', `/nutrition/catalog-items/${encodeURIComponent(alimentoId)}/retirement`, { token, claveDeIdempotencia, esquema: AlimentoPropioResponseSchema, cuerpo });
+    },
+    /** API-ALI-08 (DL-180, segundo tramo): compartirlo con los demás profesionales de Nutrición o dejar de compartirlo. */
+    compartirAlimento(token: string, alimentoId: string, cuerpo: CompartirAlimentoRequest, claveDeIdempotencia: string) {
+      return llamar('POST', `/nutrition/catalog-items/${encodeURIComponent(alimentoId)}/sharing`, { token, claveDeIdempotencia, esquema: AlimentoPropioResponseSchema, cuerpo });
     },
     /** API-ALI-04: los que se ven, por su identidad (también los retirados), para lo que ya está citado. */
     consultarAlimentos(token: string, ids: readonly string[]) {

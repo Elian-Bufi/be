@@ -8,6 +8,9 @@
  * - **API-ALI-03:** retirarlo: una versión RETIRADO. Deja de aparecer en el buscador y no se puede sumar de nuevo, pero no
  *   se borra: lo que ya lo cita sigue mostrándolo, con la marca «retirado».
  * - **API-ALI-04:** consultar alimentos por su identidad (el editor del plan, para los que ya cita), también los retirados.
+ * - **API-ALI-08 (segundo tramo, NUA-D14 a D16):** compartirlo con los demás profesionales de Nutrición o dejar de
+ *   compartirlo. Cada vez es un hecho nuevo, de solo agregar; lo que ya lo cita (planes activados, recetas, registros) lo
+ *   conserva. Para los demás, lo que no se comparte es el mismo 404 que lo inexistente por todos los caminos.
  * - **API-ALI-05 a 07:** Administración: los alimentos cargados a mano para revisar (solo el nombre y los valores, nunca
  *   quién los cargó ni a quién se le indicaron), la decisión (certificar con una fuente, equivalente de uno verificado o
  *   quitar lo decidido) y la búsqueda de los verificados para elegir el equivalente.
@@ -49,6 +52,11 @@ export const AlimentoPropioSchema = z.strictObject({
   available: z.boolean(),
   /** Si lo ven los demás profesionales (NUA-D05). */
   shared: z.boolean(),
+  /**
+   * Segundo tramo (NUA-D15), opcional: `true` si su autor lo compartió y después dejó de compartirlo. Ausente o `false`
+   * con `shared: false`: nunca se compartió (lo cargado antes de DL-180, o sin el interruptor).
+   */
+  stoppedSharing: z.boolean().optional(),
   review: RevisionDelAlimentoSchema,
   createdAt: Instante,
   updatedAt: Instante,
@@ -59,18 +67,31 @@ export type ListaDeAlimentosPropiosResponse = z.infer<typeof ListaDeAlimentosPro
 export const AlimentoPropioResponseSchema = z.strictObject({ data: AlimentoPropioSchema });
 export type AlimentoPropioResponse = z.infer<typeof AlimentoPropioResponseSchema>;
 
-/** API-ALI-02: el nombre y la composición de la versión nueva; `group`, opcional, cambia el grupo sin emitir una versión. */
+/**
+ * API-ALI-02: el nombre y la composición de la versión nueva; `group`, opcional, cambia el grupo sin emitir una versión.
+ * `share` (segundo tramo, NUA-D14), opcional: `true` lo comparte si no se compartía (es una elección aparte, apagada por
+ * defecto en el formulario); ausente o `false` no cambia lo compartido. Guardar una corrección nunca comparte solo, y
+ * dejar de compartir es API-ALI-08.
+ */
 export const CorregirAlimentoRequestSchema = z.strictObject({
   expectedVersion: TokenDeVersionSchema,
   name: Texto(120),
   composition: ComposicionSchema,
   group: GrupoDeAlimentoSchema.optional(),
+  share: z.boolean().optional(),
 });
 export type CorregirAlimentoRequest = z.infer<typeof CorregirAlimentoRequestSchema>;
 
 /** API-ALI-03. */
 export const RetirarAlimentoRequestSchema = z.strictObject({ expectedVersion: TokenDeVersionSchema });
 export type RetirarAlimentoRequest = z.infer<typeof RetirarAlimentoRequestSchema>;
+
+/**
+ * API-ALI-08 (segundo tramo, NUA-D14 a D16): compartirlo (`true`) o dejar de compartirlo (`false`). Si ya está así, no
+ * agrega nada. No va contra la versión: compartir no cambia el alimento, y se decide sobre la vigente.
+ */
+export const CompartirAlimentoRequestSchema = z.strictObject({ shared: z.boolean() });
+export type CompartirAlimentoRequest = z.infer<typeof CompartirAlimentoRequestSchema>;
 
 // ─── API-ALI-04 · por identidad ────────────────────────────────────────────────────────────────────
 

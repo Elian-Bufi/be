@@ -70,3 +70,37 @@ export function revisionEnPalabras(a: Pick<AlimentoPropio, 'review'>): string {
   if (a.review.state === 'EQUIVALENT' && a.review.equivalent) return COPY_MIS_ALIMENTOS.equivalente(a.review.equivalent.name);
   return COPY_MIS_ALIMENTOS.sinRevisar;
 }
+
+// ─── Compartir con control (DL-180, segundo tramo; NUA-D14 a D16) ───────────────────────────────────────────────
+
+/** Si lo ven los demás profesionales de Nutrición, si su autor dejó de compartirlo o si nunca se compartió. */
+export type EstadoDeCompartido = 'COMPARTIDO' | 'DEJADO' | 'NUNCA';
+
+/** Un campo ausente vale lo de siempre: sin `stoppedSharing`, lo que no se comparte nunca se compartió. */
+export function estadoDeCompartido(a: Pick<AlimentoPropio, 'shared'> & { readonly stoppedSharing?: boolean | undefined }): EstadoDeCompartido {
+  if (a.shared) return 'COMPARTIDO';
+  return a.stoppedSharing === true ? 'DEJADO' : 'NUNCA';
+}
+
+/** Lo que «Mis alimentos» dice de lo compartido, con honestidad sobre lo que ya lo usa. */
+export function compartidoEnPalabras(a: Pick<AlimentoPropio, 'shared'> & { readonly stoppedSharing?: boolean | undefined }): string {
+  const e = estadoDeCompartido(a);
+  return e === 'COMPARTIDO' ? COPY_MIS_ALIMENTOS.compartido : e === 'DEJADO' ? COPY_MIS_ALIMENTOS.dejasteDeCompartir : COPY_MIS_ALIMENTOS.soloVos;
+}
+
+/**
+ * La acción de compartir que ofrece cada alimento propio: dejar de compartir lo que se comparte (también si se retiró:
+ * quienes ya lo citan lo siguen viendo) y compartir lo que no, si está disponible (uno retirado no se suma a nada nuevo).
+ */
+export function accionDeCompartir(a: Pick<AlimentoPropio, 'shared' | 'available'>): { readonly compartir: boolean; readonly texto: string } | null {
+  if (a.shared) return { compartir: false, texto: COPY_MIS_ALIMENTOS.dejarDeCompartir };
+  return a.available ? { compartir: true, texto: COPY_MIS_ALIMENTOS.compartir } : null;
+}
+
+/**
+ * NUA-D14: al corregir, compartir es una elección aparte. Si ya se comparte, no hay interruptor (la versión corregida
+ * también la ven, y dejar de compartir es otra acción); si no, el interruptor viene apagado: guardar nunca comparte solo.
+ */
+export function interruptorAlCorregir(a: Pick<AlimentoPropio, 'shared'>): { readonly inicial: boolean } | null {
+  return a.shared ? null : { inicial: false };
+}

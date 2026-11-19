@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import {
   CodigoDeError,
   ConsultarAlimentosRequestSchema,
+  CompartirAlimentoRequestSchema,
   CorregirAlimentoRequestSchema,
   GRUPO_API,
   RetirarAlimentoRequestSchema,
@@ -21,7 +22,7 @@ import { momentoDeLaBase } from '../prisma/concurrencia';
 import { PrismaService } from '../prisma/prisma.service';
 import type { ActorAutenticado } from '../sesion/sesion.guard';
 import { esToken } from '../vinculo/lectura';
-import { asignarGrupo, CatalogoService, compartir, VERSION_VIGENTE } from './catalogo.service';
+import { ALIMENTO_COMPARTIDO, asignarGrupo, CatalogoService, cambiarCompartido, DEJADO_DE_COMPARTIR, VERSION_VIGENTE } from './catalogo.service';
 import { EjecutorNutricional, esUuid } from './ejecutor';
 import { registrarEventoDeNutricion } from './eventos';
 import { exigirProfesionalDeNutricion } from './profesional-de-nutricion';
@@ -44,7 +45,7 @@ export function leerAlimentosCargados(cliente: Cliente, donde: Prisma.Sql, orden
            (v."disponibilidad" = 'DISPONIBLE') AS "disponible",
            (SELECT count(*) FROM "version_de_elemento_nutricional" x WHERE x."elemento_id" = e."id")::int AS "cantidadDeVersiones",
            gru."grupo"::text AS "grupoDeAlimento",
-           EXISTS (SELECT 1 FROM "alimento_compartido" c WHERE c."elemento_id" = e."id") AS "compartido",
+           ${ALIMENTO_COMPARTIDO} AS "compartido", ${DEJADO_DE_COMPARTIR} AS "dejoDeCompartir",
            e."momento_de_registro" AS "creado", v."momento_de_registro" AS "actualizado",
            rev."resultado"::text AS "resultado", rev."version_id"::text AS "versionRevisadaId", rev."fuente",
            rev."equivalente_id"::text AS "equivalenteId", rev."momento_de_registro" AS "decidido",
@@ -74,6 +75,7 @@ function alimentoPropioApi(f: FilaDeAlimentoCargado): AlimentoPropio {
     foodGroup: f.grupoDeAlimento ? GRUPO_API[f.grupoDeAlimento] : null,
     available: f.disponible,
     shared: f.compartido,
+    stoppedSharing: f.dejoDeCompartir === true,
     review: revisionDelAlimento(f),
     createdAt: f.creado.toISOString(),
     updatedAt: f.actualizado.toISOString(),
@@ -89,6 +91,9 @@ function alimentoPropioApi(f: FilaDeAlimentoCargado): AlimentoPropio {
  *   activados, las recetas (que citan su versión) y los registros conservan la que citaban; un borrador usa la vigente.
  * - **Retirar (NUA-02)** emite una versión RETIRADO con el mismo nombre y la misma composición: deja de estar disponible
  *   para lo nuevo, y lo que ya lo cita lo sigue mostrando. No se borra nada.
+ * - **Compartir y dejar de compartir (API-ALI-08, segundo tramo; NUA-D14 a D16)** son hechos nuevos de su autor, con la
+ *   versión vigente; corregir nunca comparte solo (`share: true` es una elección aparte). Para los demás, lo que no se
+ *   comparte es el mismo 404 que lo inexistente, y lo que ya lo cita lo conserva.
  * - Corregir y retirar toman el alimento con el mismo bloqueo que una receta (`FOR NO KEY UPDATE`, con el dueño en el
  *   mismo `WHERE`) y van contra la versión que se vio: si cambió, 409 VERSION_CONFLICT. La base además no deja dos
  *   sucesoras de la misma versión (índice único de la cadena).
@@ -142,8 +147,9 @@ export class AlimentosService {
         if (!vigente.disponible) throw new ErrorDeApi(422, CodigoDeError.INVALID_STATE_TRANSITION, 'Este alimento está retirado: no se corrige.');
         const cambia = pedido.name !== vigente.nombre || !mismaComposicion(pedido.composition, vigente.composicion);
         const momento = await momentoDeLaBase(tx);
+        let versionVigenteId = vigente.versionId;
         if (cambia) {
-          await tx.versionDeElementoNutricional.create({
+          ({ id: versionVigenteId } = await tx.versionDeElementoNutricional.create({
             data: {
               elementoId: vigente.elementoId,
               predecesoraId: vigente.versionId,
@@ -152,13 +158,15 @@ export class AlimentosService {
               disponibilidad: 'DISPONIBLE',
               procedencia: { ...procedencia, carga: 'MANUAL', correccion: true } as unknown as Prisma.InputJsonValue,
             },
-          });
+            select: { id: true },
+          }));
         }
-        const otroGrupo = pedido.group ? await asignarGrupo(tx, vigente.elementoId, pedido.group, actor.identidadId, procedencia) : false;
-        // NUA-D05 y D13: corregirlo con el aviso a la vista lo comparte, como cargarlo después de DL-180. Solo si de verdad
-        // se corrigió algo: guardar sin cambios responde «no cambió», y lo cargado antes de DL-180 sigue siendo solo de su
-        // autor, como le dice «Mis alimentos» («Por ahora lo ves solo vos»).
-        if (cambia || otroGrupo) await compartir(tx, vigente.elementoId, procedencia);
+        if (pedido.group) await asignarGrupo(tx, vigente.elementoId, pedido.group, actor.identidadId, procedencia);
+        // NUA-D14 (segundo tramo; reemplaza NUA-D13): guardar una corrección nunca comparte solo. Compartir es una elección
+        // aparte (el interruptor del formulario, apagado por defecto), y se comparte la versión que queda vigente.
+        if (pedido.share === true) {
+          await cambiarCompartido(tx, { elementoId: vigente.elementoId, versionId: versionVigenteId, autorId: actor.identidadId, compartido: true, procedencia });
+        }
         if (cambia) await this.evento(tx, 'ElementoDeCatalogoVersionado', actor.identidadId, vigente.elementoId, procedencia, momento);
         return { estadoHttp: 200, cuerpo: { data: await this.leerPropio(tx, actor.identidadId, vigente.elementoId) }, sujetoId: null, recurso };
       },
@@ -197,6 +205,33 @@ export class AlimentosService {
           });
           await this.evento(tx, 'ElementoDeCatalogoRetirado', actor.identidadId, vigente.elementoId, procedencia, momento);
         }
+        return { estadoHttp: 200, cuerpo: { data: await this.leerPropio(tx, actor.identidadId, vigente.elementoId) }, sujetoId: null, recurso };
+      },
+    });
+  }
+
+  // ─── API-ALI-08 ────────────────────────────────────────────────────────────────────────────
+  /**
+   * Compartirlo o dejar de compartirlo (NUA-D14 a D16): un hecho nuevo con la versión vigente, también si está retirado
+   * (lo retirado lo siguen viendo, con la marca, quienes ya lo citan). Si ya está así, 200 con lo que está.
+   */
+  compartir(actor: ActorAutenticado, catalogItemId: string, cuerpo: unknown, clave: string | undefined, ctx: ContextoDeSolicitud): Promise<ResultadoIdempotente> {
+    const recurso = { tipo: RECURSO_ALIMENTO, id: catalogItemId };
+    return this.ejecutor.escribirIdempotente({
+      operacion: 'API-ALI-08',
+      casoDeUso: CASO_DE_USO,
+      actor,
+      ctx,
+      recursoIntentado: recurso,
+      clave,
+      esquema: CompartirAlimentoRequestSchema,
+      cuerpo,
+      huellaExtra: { catalogItemId },
+      efecto: async (tx, pedido, procedencia) => {
+        await exigirProfesionalDeNutricion(tx, actor.identidadId);
+        // El mismo bloqueo que corregir y retirar: las citas de los demás lo toman en modo compartido (NUA-D16).
+        const vigente = await this.propioBloqueado(tx, 'API-ALI-08', actor, catalogItemId, ctx);
+        await cambiarCompartido(tx, { elementoId: vigente.elementoId, versionId: vigente.versionId, autorId: actor.identidadId, compartido: pedido.shared, procedencia });
         return { estadoHttp: 200, cuerpo: { data: await this.leerPropio(tx, actor.identidadId, vigente.elementoId) }, sujetoId: null, recurso };
       },
     });

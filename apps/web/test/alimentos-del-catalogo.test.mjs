@@ -145,9 +145,49 @@ test('el formulario del alimento: la fibra vacía es «sin dato» (no se manda),
     grupo: '',
   });
   assert.match(FORMULARIO, /const v = valoresDelAlimento\(escrito\);/);
-  // NUA-D05: el aviso de que se comparte va siempre a la vista.
-  assert.match(FORMULARIO, /<p className="nota formulario-del-alimento__compartir" data-aviso-de-compartir>\n\s*<Icono nombre="info" tamano=\{18\} \/>\n\s*\{COPY_ALIMENTOS\.avisoDeCompartir\}/);
+  // NUA-D05 y NUA-D14: compartir es un interruptor a la vista, con el aviso al lado (encendido, el aviso; apagado, que lo
+  // ve solo quien lo carga). Lo que se manda es lo que muestra el interruptor.
+  assert.match(FORMULARIO, /<input\n\s*type="checkbox"\n\s*role="switch"\n\s*checked=\{compartido\}/);
+  assert.match(FORMULARIO, /\{compartido \? COPY_ALIMENTOS\.avisoDeCompartir : COPY_ALIMENTOS\.noSeComparte\}/);
+  assert.match(FORMULARIO, /const problema = await alEnviar\(\{ \.\.\.v, compartir: compartir !== null && compartido \}\);/);
   assert.match(d.COPY_ALIMENTOS.avisoDeCompartir, /No escribas datos de personas/);
+});
+
+// ─── Segundo tramo · compartir con control (NUA-D14 a D16) ─────────────────────────────────────────────────
+
+test('NUA-D14 · al cargar uno nuevo, el interruptor viene encendido y lo elegido viaja en el pedido', () => {
+  const AGREGAR = leer('app/pro/advisees/nutrition/agregar-item.tsx');
+  assert.match(AGREGAR, /compartir=\{\{ inicial: true \}\}/);
+  assert.match(AGREGAR, /share: v\.compartir \}/);
+});
+
+test('NUA-D14 y D15 · lo compartido en palabras y la acción de cada alimento; al corregir, compartir es aparte', () => {
+  const compartido = { shared: true, available: true };
+  const dejado = { shared: false, stoppedSharing: true, available: true };
+  const nunca = { shared: false, available: true };
+  const anterior = { shared: false, available: true }; // una API anterior no manda stoppedSharing
+  assert.equal(V.estadoDeCompartido(compartido), 'COMPARTIDO');
+  assert.equal(V.estadoDeCompartido(dejado), 'DEJADO');
+  assert.equal(V.estadoDeCompartido(nunca), 'NUNCA');
+  assert.equal(V.estadoDeCompartido(anterior), 'NUNCA');
+  assert.equal(V.compartidoEnPalabras(dejado), d.COPY_MIS_ALIMENTOS.dejasteDeCompartir);
+  assert.match(V.compartidoEnPalabras(dejado), /Los planes que ya lo usan lo conservan/);
+  assert.equal(V.compartidoEnPalabras(nunca), 'Lo ves solo vos.');
+  assert.deepEqual(V.accionDeCompartir(compartido), { compartir: false, texto: 'Dejar de compartir' });
+  assert.deepEqual(V.accionDeCompartir(nunca), { compartir: true, texto: 'Compartir' });
+  // Uno retirado que se comparte se puede dejar de compartir; uno retirado que no, no se comparte.
+  assert.deepEqual(V.accionDeCompartir({ shared: true, available: false }), { compartir: false, texto: 'Dejar de compartir' });
+  assert.equal(V.accionDeCompartir({ shared: false, available: false }), null);
+  // Al corregir: uno compartido no trae interruptor; uno que no se comparte, apagado.
+  assert.equal(V.interruptorAlCorregir(compartido), null);
+  assert.deepEqual(V.interruptorAlCorregir(dejado), { inicial: false });
+  assert.match(MIS_ALIMENTOS, /compartir=\{interruptorAlCorregir\(corrigiendo\)\}/);
+  assert.match(MIS_ALIMENTOS, /\.\.\.\(v\.compartir \? \{ share: true \} : \{\}\)/);
+  // Dejar de compartir se confirma diciendo qué pasa con lo que ya lo usa.
+  assert.match(MIS_ALIMENTOS, /api\.compartirAlimento\(token, alimento\.catalogItemId, \{ shared: compartir \}/);
+  assert.match(MIS_ALIMENTOS, /\{compartiendo\?\.compartir \? C\.compartirQuePasa : C\.dejarDeCompartirQuePasa\}/);
+  assert.match(d.COPY_MIS_ALIMENTOS.dejarDeCompartirQuePasa, /Los planes que ya lo usan lo conservan/);
+  assert.match(d.COPY_MIS_ALIMENTOS.compartirQuePasa, /No escribas datos de personas/);
 });
 
 // ─── NUA-01 y NUA-02 · «Mis alimentos» ───────────────────────────────────────────────────────────────────────
@@ -169,7 +209,7 @@ test('NUA-01 y NUA-02 · «Mis alimentos» corrige y retira contra la versión v
   assert.equal((MIS_ALIMENTOS.match(/r\.codigo === 'VERSION_CONFLICT'/g) ?? []).length, 2);
   // Retirar se confirma diciendo qué pasa; uno retirado no ofrece ni corregir ni retirar.
   assert.match(MIS_ALIMENTOS, /<p>\{C\.retirarQuePasa\}<\/p>/);
-  assert.match(MIS_ALIMENTOS, /\{a\.available \? \(\n\s*<div className="mis-alimentos__acciones">/);
+  assert.match(MIS_ALIMENTOS, /\{a\.available \|\| accion \? \(\n\s*<div className="mis-alimentos__acciones">\n\s*\{a\.available \? \(\n\s*<button type="button" className="boton boton--secundario" onClick=\{\(\) => setCorrigiendo\(a\)\} data-corregir>/);
   assert.match(d.COPY_MIS_ALIMENTOS.retirarQuePasa, /No se borra/);
   assert.match(d.COPY_MIS_ALIMENTOS.corregirQuePasa(3), /Nace la versión 3/);
 });

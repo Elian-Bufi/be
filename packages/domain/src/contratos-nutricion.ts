@@ -360,8 +360,18 @@ export const BusquedaEnCatalogoRequestSchema = z.strictObject({
   cursor: z.string().max(400).optional(),
 });
 export type BusquedaEnCatalogoRequest = z.infer<typeof BusquedaEnCatalogoRequestSchema>;
-/** DL-180 (NUA-05): `group`, opcional, el grupo del alimento (su ícono); sin él, queda sin grupo como antes. */
-export const CrearElementoDeCatalogoRequestSchema = z.strictObject({ name: Texto(120), itemType: z.literal('FOOD'), composition: ComposicionSchema, group: GrupoDeAlimentoSchema.optional() });
+/**
+ * DL-180 (NUA-05): `group`, opcional, el grupo del alimento (su ícono); sin él, queda sin grupo como antes.
+ * DL-180, segundo tramo (NUA-D14): `share`, opcional, si lo ven los demás profesionales de Nutrición. El formulario lo
+ * muestra como un interruptor encendido, con el aviso al lado; ausente vale `true`, lo de antes de este tramo.
+ */
+export const CrearElementoDeCatalogoRequestSchema = z.strictObject({
+  name: Texto(120),
+  itemType: z.literal('FOOD'),
+  composition: ComposicionSchema,
+  group: GrupoDeAlimentoSchema.optional(),
+  share: z.boolean().optional(),
+});
 export type CrearElementoDeCatalogoRequest = z.infer<typeof CrearElementoDeCatalogoRequestSchema>;
 export const ElementoDeCatalogoResponseSchema = z.strictObject({ data: ElementoDeCatalogoSchema });
 

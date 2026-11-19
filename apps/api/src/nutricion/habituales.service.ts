@@ -132,6 +132,7 @@ export class HabitualesNutricionalesService {
         const momento = await momentoDeLaBase(tx);
         if (pedido.state === 'MARKED') {
           // Solo se marca lo que este profesional puede prescribir hoy: la misma regla que un ítem del borrador.
+          await this.catalogo.tomarParaCitar(tx, profesionalId, [catalogItemId]);
           const disponibles = await this.catalogo.disponibles(tx, profesionalId, [catalogItemId]);
           if (!disponibles.has(catalogItemId)) throw new ErrorDeApi(422, CodigoDeError.CATALOG_REFERENCE_INVALID, 'Ese elemento del catálogo no está disponible para prescribir.', { issues: [{ code: CodigoDeProblemaDePlan.CATALOG_REFERENCE_INVALID, path: 'catalogItemId' }] });
           // Idempotente también a la vez: la inserción ignora el duplicado y cada transición se condiciona al estado.
@@ -309,6 +310,8 @@ export class HabitualesNutricionalesService {
     const base = sinIdentificadoresDeComida(entrada);
     const guardar = conCantidades ? base : sinCantidadesDeLaComida(base);
     const contenido = normalizarEstructura({ dayTypes: [{ label: 'Habitual', meals: [guardar] }] }, randomUUID);
+    // DL-180, segundo tramo (NUA-D16): lo ajeno se toma antes de mirarlo.
+    await this.catalogo.tomarParaCitar(tx, profesionalId, idsDeLaComida(guardar));
     const disponibles = await this.catalogo.disponibles(tx, profesionalId, idsDeLaComida(guardar));
     const problemas: ValidationIssue[] = problemasDeBorrador(contenido, new Set(disponibles.keys())).map((p) => ({ ...p, path: (p.path ?? '').replace(PREFIJO_DE_ENVOLTURA, '') || 'structure' }));
     if (problemas.length > 0) {

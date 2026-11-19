@@ -61,8 +61,9 @@ function alimentoParaRevisar(f: FilaDeAlimentoCargado): AlimentoParaRevisar {
  * (API-ALI-05 a 07), con la autorización de WP-ADMINISTRACION: la sesión administrativa con el segundo factor la exige el
  * controlador; acá no se decide nada de autorización con lo que manda el cliente.
  * - **Lo que ve:** el nombre, los valores cada 100 g, el grupo y lo decidido. Nunca quién lo cargó ni a quién se le indicó.
- *   Solo lo compartido (NUA-D05): lo que su autor no compartió (lo cargado antes de DL-180 y sin corregir) lo ve solo él,
- *   como le dice «Mis alimentos», y Administración tampoco lo ve ni decide sobre eso. La base lo sostiene (trigger).
+ *   Solo lo que se comparte ahora (NUA-D05; segundo tramo, NUA-D15): lo que su autor no compartió o dejó de compartir lo
+ *   ve solo él, como le dice «Mis alimentos», y Administración tampoco lo ve ni decide sobre eso (el mismo 404 que lo
+ *   inexistente). La base lo sostiene (trigger).
  * - **Lo que decide:** certificarlo con una fuente citada (vale para la versión que vio; si su autor lo corrige, la nueva
  *   vuelve a esperar revisión), marcarlo como equivalente de un alimento de la tabla oficial (el buscador sugiere ese en su
  *   lugar, y los planes viejos no cambian) o quitar lo decidido. Cada decisión es una fila nueva: la historia no se pisa.
@@ -123,8 +124,8 @@ export class RevisionDeAlimentosService {
         // compartió es el mismo 404 que lo inexistente (NUA-D05).
         const [tomado] = id
           ? await tx.$queryRaw<{ id: string }[]>`
-              SELECT "id"::text AS "id" FROM "elemento_de_catalogo_nutricional" WHERE "id" = ${id}::uuid AND "procedencia" = 'PROFESSIONAL_MANUAL'
-                 AND EXISTS (SELECT 1 FROM "alimento_compartido" c WHERE c."elemento_id" = ${id}::uuid)
+              SELECT e."id"::text AS "id" FROM "elemento_de_catalogo_nutricional" e WHERE e."id" = ${id}::uuid AND e."procedencia" = 'PROFESSIONAL_MANUAL'
+                 AND ${ALIMENTO_COMPARTIDO}
                FOR NO KEY UPDATE`
           : [];
         const [actual] = tomado ? await leerAlimentosCargados(tx, Prisma.sql`e."id" = ${tomado.id}::uuid`, Prisma.sql`e."id"`, 1) : [];

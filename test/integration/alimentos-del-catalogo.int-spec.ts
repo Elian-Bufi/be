@@ -9,7 +9,11 @@
  * - **NUA-04 · Administración** verifica con una fuente (para la versión que vio) o marca un equivalente de la tabla
  *   oficial, que el buscador sugiere; ve el nombre y los valores, nunca quién lo cargó;
  * - **NUA-05 · el grupo** se elige al cargarlo, se cambia sin emitir una versión y está sembrado en la tabla oficial;
- * - lo ajeno y lo inexistente son el mismo 404, y la base sostiene las guardias aunque el código se equivoque.
+ * - lo ajeno y lo inexistente son el mismo 404, y la base sostiene las guardias aunque el código se equivoque;
+ * - **segundo tramo (NUA-D14 a D17): compartir con control.** Compartir es un interruptor al cargar y una elección aparte
+ *   al corregir; dejar de compartir es un hecho nuevo que lo saca de todos los caminos de los demás (el mismo 404 que lo
+ *   inexistente) mientras lo que ya lo cita lo conserva; las versiones de antes de compartir no se citan; una cita y un
+ *   «dejar de compartir» simultáneos se ordenan en la base. Y las bajas de la revisión adversaria que tocan lo retirado.
  */
 import type { INestApplication } from '@nestjs/common';
 import {
@@ -29,8 +33,8 @@ import { randomUUID } from 'node:crypto';
 import request from 'supertest';
 import { appDePrueba, claveDeIdempotencia, conSesion } from './soporte-api';
 import { adm, administradorListo, type Administrador } from './soporte-administracion';
-import { esperarQueEsperen } from './soporte-concurrencia';
-import { activar, circuitoListoParaPlanificar, patchConSesion, type Circuito } from './soporte-nutricion';
+import { esperarQueEsperen, pidDeLaTransaccion } from './soporte-concurrencia';
+import { activar, circuitoListoParaPlanificar, crearBorrador, patchConSesion, type Circuito } from './soporte-nutricion';
 import { prepararProfesional, type Parte } from './soporte-vinculo';
 
 const prisma = new PrismaClient();
@@ -73,6 +77,10 @@ function corregir(pro: Parte, id: string, cuerpo: Record<string, unknown>, clave
 
 function retirar(pro: Parte, id: string, version: string, clave = claveDeIdempotencia()) {
   return conSesion(app, pro.token).post(`${CATALOGO}/${id}/retirement`, clave).send({ expectedVersion: version });
+}
+
+function compartir(pro: Parte, id: string, compartido: boolean, clave = claveDeIdempotencia()) {
+  return conSesion(app, pro.token).post(`${CATALOGO}/${id}/sharing`, clave).send({ shared: compartido });
 }
 
 async function porIdentidad(pro: Parte, ids: string[]) {
@@ -278,12 +286,16 @@ describe('NUA-03 · lo de otro profesional se ve como «De otro profesional» y 
     expect((await buscar(autor, nombre)).some((e) => e.catalogItemId === elemento.id)).toBe(true);
     expect((await propios(autor)).find((a) => a.catalogItemId === elemento.id)).toMatchObject({ shared: false });
     // Guardar la corrección sin cambiar nada no es corregir: responde la misma versión («no cambió») y sigue sin
-    // compartirse, como le dice «Mis alimentos» («Por ahora lo ves solo vos»).
+    // compartirse, como le dice «Mis alimentos» («Lo ves solo vos»).
     const sinCambios = await corregir(autor, elemento.id, { expectedVersion: 'v1', name: nombre, composition: COMPOSICION }).expect(200);
     expect(AlimentoPropioResponseSchema.parse(sinCambios.body).data).toMatchObject({ versionNumber: 1, shared: false });
     expect((await buscar(otro, nombre)).some((e) => e.catalogItemId === elemento.id)).toBe(false);
     expect(await porIdentidad(otro, [elemento.id])).toEqual([]);
+    // NUA-D14 (segundo tramo): una corrección de verdad tampoco lo comparte sola; compartir es una elección aparte.
     await corregir(autor, elemento.id, { expectedVersion: 'v1', name: nombre, composition: { ...COMPOSICION, fatG: 7 } }).expect(200);
+    expect((await propios(autor)).find((a) => a.catalogItemId === elemento.id)).toMatchObject({ versionNumber: 2, shared: false, stoppedSharing: false });
+    expect((await buscar(otro, nombre)).some((e) => e.catalogItemId === elemento.id)).toBe(false);
+    await corregir(autor, elemento.id, { expectedVersion: 'v2', name: nombre, composition: { ...COMPOSICION, fatG: 7 }, share: true }).expect(200);
     expect((await buscar(otro, nombre)).find((e) => e.catalogItemId === elemento.id)).toMatchObject({ originLevel: 'OTHER_PROFESSIONAL' });
   });
 });
@@ -374,8 +386,8 @@ describe('NUA-04 · Administración verifica con una fuente o marca un equivalen
     const raro = await decidir(compartido.catalogItemId, { expectedVersion: 'v1', decision: 'EQUIVALENT', equivalentCatalogItemId: 'no-es-un-id' }).expect(422);
     expect(raro.body.error.details.issues).toEqual([{ code: 'EQUIVALENT_NOT_VERIFIED', path: 'equivalentCatalogItemId' }]);
 
-    // Cuando su autor lo corrige (y así lo comparte, NUA-D13), entra en la revisión.
-    await corregir(autor, elemento.id, { expectedVersion: 'v1', name: nombre, composition: { ...COMPOSICION, fatG: 7 } }).expect(200);
+    // Cuando su autor lo comparte (NUA-D14: con el interruptor, al corregirlo), entra en la revisión.
+    await corregir(autor, elemento.id, { expectedVersion: 'v1', name: nombre, composition: { ...COMPOSICION, fatG: 7 }, share: true }).expect(200);
     expect((await lista(nombre)).map((f) => f.catalogItemId)).toEqual([elemento.id]);
   });
 });
@@ -401,6 +413,162 @@ describe('NUA-05 · el grupo de cada alimento', () => {
   });
 });
 
+// ─── Segundo tramo · compartir con control (NUA-D14 a D16) ───────────────────────────────────────
+
+/** Una receta de un solo ingrediente: el alimento dado, en la versión dada. */
+function recetaCon(pro: Parte, alimentoId: string, versionId: string) {
+  return conSesion(app, pro.token)
+    .post('/api/v1/nutrition/recipes')
+    .send({
+      name: `Receta de prueba ${unico()}`,
+      description: null,
+      servings: 1,
+      steps: [],
+      ingredients: [{ catalogItemId: alimentoId, catalogItemVersionId: versionId, quantity: { value: 50, unit: 'g' }, preparationState: 'RAW' }],
+    });
+}
+
+describe('NUA-D14 a D16 · compartir con control', () => {
+  const lista = async (q: string) => ListaDeAlimentosParaRevisarResponseSchema.parse((await adm(app, admin.token).post('/admin/foods/query').send({ q }).expect(200)).body).data;
+  const decidir = (id: string) => adm(app, admin.token).post(`/admin/foods/${id}/decisions`).set('Idempotency-Key', claveDeIdempotencia()).send({ expectedVersion: 'v1', decision: 'CERTIFY', source: 'Rótulo sintético' });
+  type Borrador = { version: string; dayTypes: { meals: { options: { items: { catalogItemId: string; name: string }[] }[] }[] }[] };
+  const leerBorrador = async (pro: Parte, planId: string) => (await conSesion(app, pro.token).get(`/api/v1/nutrition/plans/${planId}`).expect(200)).body.data as Borrador;
+  const nombreEn = (b: Borrador, id: string) => b.dayTypes.flatMap((d) => d.meals.flatMap((m) => m.options.flatMap((o) => o.items))).find((it) => it.catalogItemId === id)?.name;
+
+  it('cargado con el interruptor apagado no se comparte; compartirlo y dejar de compartirlo son hechos nuevos', async () => {
+    const autor = await nutricionista();
+    const otro = await nutricionista();
+    const creado = await cargarAMano(autor, `Zzpriv${unico()} licuado`, { share: false });
+    expect((await propios(autor)).find((a) => a.catalogItemId === creado.catalogItemId)).toMatchObject({ shared: false, stoppedSharing: false });
+    expect((await buscar(otro, creado.name)).some((e) => e.catalogItemId === creado.catalogItemId)).toBe(false);
+    expect(await porIdentidad(otro, [creado.catalogItemId])).toEqual([]);
+    expect(await lista(creado.name)).toEqual([]);
+
+    const r = await compartir(autor, creado.catalogItemId, true).expect(200);
+    expect(AlimentoPropioResponseSchema.parse(r.body).data).toMatchObject({ shared: true, stoppedSharing: false, versionNumber: 1 });
+    // Compartirlo otra vez no agrega nada.
+    await compartir(autor, creado.catalogItemId, true).expect(200);
+    expect((await buscar(otro, creado.name)).find((e) => e.catalogItemId === creado.catalogItemId)).toMatchObject({ originLevel: 'OTHER_PROFESSIONAL' });
+    expect((await lista(creado.name)).map((a) => a.catalogItemId)).toEqual([creado.catalogItemId]);
+
+    const dejado = await compartir(autor, creado.catalogItemId, false).expect(200);
+    expect(AlimentoPropioResponseSchema.parse(dejado.body).data).toMatchObject({ shared: false, stoppedSharing: true });
+    const cambios = await prisma.cambioDeAlimentoCompartido.findMany({ where: { elementoId: creado.catalogItemId }, orderBy: { numero: 'asc' } });
+    expect(cambios.map((c) => [c.numero, c.compartido])).toEqual([
+      [1, true],
+      [2, false],
+    ]);
+    expect(cambios.every((c) => c.versionId === creado.versionId && c.autorId === autor.id)).toBe(true);
+  });
+
+  it('dejado de compartir: el mismo 404 que lo inexistente para los demás, y lo que ya lo cita lo conserva', async () => {
+    const autor = await nutricionista();
+    const c = await circuitoListoParaPlanificar(app, `nuac-${unico()}`);
+    const nombre = `Zzdejar${unico()} batido`;
+    const creado = await cargarAMano(autor, nombre);
+    // El otro profesional lo usa: un plan activado y, después, el borrador que sigue.
+    const b = await borradorCon(c, creado.catalogItemId);
+    await activar(app, c.pro, b.planId, b.version).expect(200);
+    const sucesora = await conSesion(app, c.pro.token).post(`/api/v1/advisees/${c.ase.id}/nutrition/plans`).send({ objectiveVersionId: c.objectiveVersionId, basedOnPlanId: b.planId }).expect(201);
+    const borradorId = sucesora.body.data.planId as string;
+
+    await compartir(autor, creado.catalogItemId, false).expect(200);
+    // El buscador, la consulta por identidad y Administración: como si no existiera.
+    expect((await buscar(c.pro, nombre)).some((e) => e.catalogItemId === creado.catalogItemId)).toBe(false);
+    expect(await porIdentidad(c.pro, [creado.catalogItemId])).toEqual([]);
+    expect(await lista(nombre)).toEqual([]);
+    const dejado = await decidir(creado.catalogItemId).expect(404);
+    const inexistente = await decidir(randomUUID()).expect(404);
+    expect(dejado.body.error).toEqual(inexistente.body.error);
+    // Una receta nueva del otro no lo cita.
+    const receta = await recetaCon(c.pro, creado.catalogItemId, creado.versionId);
+    expect(receta.status).toBe(422);
+    expect(receta.body.error.code).toBe('CATALOG_REFERENCE_INVALID');
+
+    // El plan activado lo conserva, con su versión.
+    expect(itemDe(await estimacion(c.pro, b.planId), creado.catalogItemId)).toMatchObject({ catalogItemVersionId: creado.versionId });
+    // Su autor lo corrige para él solo: el borrador del otro sigue mostrando el nombre que ya conocía.
+    await corregir(autor, creado.catalogItemId, { expectedVersion: 'v1', name: `${nombre} de una persona`, composition: COMPOSICION }).expect(200);
+    const leido = await leerBorrador(c.pro, borradorId);
+    expect(nombreEn(leido, creado.catalogItemId)).toBe(nombre);
+    expect(JSON.stringify(leido)).not.toContain('de una persona');
+    // El borrador que ya lo citaba se guarda; validar lo señala.
+    const guardado = await patchConSesion(app, c.pro.token, `/api/v1/nutrition/plans/${borradorId}`).send({ expectedVersion: leido.version, changes: estructuraCon(creado.catalogItemId, c.arroz) }).expect(200);
+    const validado = await conSesion(app, c.pro.token).post(`/api/v1/nutrition/plans/${borradorId}/validate`).send({ expectedVersion: guardado.body.data.version }).expect(200);
+    expect(validado.body.data.issues).toContainEqual(expect.objectContaining({ code: 'CATALOG_REFERENCE_INVALID' }));
+
+    // Volver a compartirlo es otro hecho: los demás ven la versión vigente.
+    await compartir(autor, creado.catalogItemId, true).expect(200);
+    expect((await buscar(c.pro, nombre)).find((e) => e.catalogItemId === creado.catalogItemId)?.name).toBe(`${nombre} de una persona`);
+    const cambios = await prisma.cambioDeAlimentoCompartido.findMany({ where: { elementoId: creado.catalogItemId }, orderBy: { numero: 'asc' } });
+    expect(cambios.map((k) => k.compartido)).toEqual([true, false, true]);
+  });
+
+  it('las versiones de antes de compartir no las cita nadie más, aunque se conozca su identificador', async () => {
+    const autor = await nutricionista();
+    const otro = await nutricionista();
+    const creado = await cargarAMano(autor, `Zzantes${unico()} de una persona`, { share: false });
+    const r = await corregir(autor, creado.catalogItemId, { expectedVersion: 'v1', name: `Zzantes${unico()} licuado`, composition: COMPOSICION, share: true }).expect(200);
+    const compartida = AlimentoPropioResponseSchema.parse(r.body).data;
+    const vieja = await recetaCon(otro, creado.catalogItemId, creado.versionId);
+    expect(vieja.status).toBe(422);
+    expect(vieja.body.error.details.issues).toEqual([{ code: 'CATALOG_REFERENCE_INVALID', path: 'ingredients[0].catalogItemVersionId' }]);
+    await recetaCon(otro, creado.catalogItemId, compartida.versionId).expect(201);
+    // Su autor sí cita la suya, la que sea.
+    await recetaCon(autor, creado.catalogItemId, creado.versionId).expect(201);
+  });
+
+  /**
+   * NUA-D16: una cita (guardar un borrador que lo suma) y el «dejar de compartir» de su autor, a la vez. La prueba retiene
+   * el alimento; los dos pedidos quedan esperándolo (la cita lo toma en modo compartido) y el primero que quedó esperando
+   * sigue primero. Sin ese bloqueo, la cita no esperaría y la barrera no se cumpliría.
+   */
+  async function aLaVez(primero: 'dejar' | 'citar') {
+    const autor = await nutricionista();
+    const c = await circuitoListoParaPlanificar(app, `nuar-${unico()}`);
+    const creado = await cargarAMano(autor, `Zzcarrera${unico()} galleta`);
+    const b = await crearBorrador(app, c);
+    const resultado: { dejar: request.Response | null; citar: request.Response | null } = { dejar: null, citar: null };
+    const pedidos = {
+      dejar: () => void compartir(autor, creado.catalogItemId, false).then((r) => (resultado.dejar = r)),
+      citar: () =>
+        void patchConSesion(app, c.pro.token, `/api/v1/nutrition/plans/${b.planId}`)
+          .send({ expectedVersion: b.version, changes: estructuraCon(creado.catalogItemId, c.arroz) })
+          .then((r) => (resultado.citar = r)),
+    };
+    const segundo = primero === 'dejar' ? 'citar' : 'dejar';
+    await prisma.$transaction(
+      async (tx) => {
+        await tx.$queryRaw`SELECT 1 FROM "elemento_de_catalogo_nutricional" WHERE "id" = ${creado.catalogItemId}::uuid FOR UPDATE`;
+        const pid = await pidDeLaTransaccion(tx);
+        pedidos[primero]();
+        await esperarQueEsperen(prisma, 1, { bloqueadoPor: pid, yaPaso: () => resultado[primero] !== null, que: `«${primero}» esperando el alimento` });
+        pedidos[segundo]();
+        await esperarQueEsperen(prisma, 2, { yaPaso: () => resultado[segundo] !== null, que: `«${segundo}» esperando el alimento` });
+        expect([resultado.dejar, resultado.citar]).toEqual([null, null]);
+      },
+      { timeout: 40_000, maxWait: 10_000 },
+    );
+    for (let i = 0; i < 400 && (resultado.dejar === null || resultado.citar === null); i++) await new Promise((r) => setTimeout(r, 25));
+    return { ...resultado, c, b };
+  }
+
+  it('una cita y un «dejar de compartir» a la vez: si se deja de compartir primero, la cita no entra', async () => {
+    const { dejar, citar } = await aLaVez('dejar');
+    expect(dejar!.status).toBe(200);
+    expect(citar!.status).toBe(422);
+    expect(citar!.body.error.code).toBe('CATALOG_REFERENCE_INVALID');
+  });
+
+  it('una cita y un «dejar de compartir» a la vez: si la cita va primero, el borrador lo conserva y validar lo señala', async () => {
+    const { dejar, citar, c, b } = await aLaVez('citar');
+    expect(citar!.status).toBe(200);
+    expect(dejar!.status).toBe(200);
+    const validado = await conSesion(app, c.pro.token).post(`/api/v1/nutrition/plans/${b.planId}/validate`).send({ expectedVersion: citar!.body.data.version }).expect(200);
+    expect(validado.body.data.issues).toContainEqual(expect.objectContaining({ code: 'CATALOG_REFERENCE_INVALID' }));
+  });
+});
+
 // ─── La base ─────────────────────────────────────────────────────────────────────────────────────
 
 describe('DL-180 · la base sostiene las guardias', () => {
@@ -411,8 +579,24 @@ describe('DL-180 · la base sostiene las guardias', () => {
     const otro = await nutricionista();
     const creado = await cargarAMano(autor, `Zzbase${unico()}`);
     await expect(prisma.$executeRaw`INSERT INTO "grupo_de_alimento" ("elemento_id", "numero", "grupo", "autor_id", "procedencia") VALUES (${creado.catalogItemId}::uuid, 1, 'CARNES', ${otro.id}::uuid, ${JSON.stringify(PROCEDENCIA)}::jsonb)`).rejects.toThrow(/lo elige quien lo cargó/);
-    await expect(prisma.$executeRaw`UPDATE "alimento_compartido" SET "procedencia" = '{}'::jsonb WHERE "elemento_id" = ${creado.catalogItemId}::uuid`).rejects.toThrow();
-    await expect(prisma.$executeRaw`DELETE FROM "alimento_compartido" WHERE "elemento_id" = ${creado.catalogItemId}::uuid`).rejects.toThrow();
+    // Segundo tramo: lo compartido son cambios de solo agregar; la tabla del primer tramo ya no se escribe.
+    await expect(prisma.$executeRaw`UPDATE "cambio_de_alimento_compartido" SET "procedencia" = '{}'::jsonb WHERE "elemento_id" = ${creado.catalogItemId}::uuid`).rejects.toThrow();
+    await expect(prisma.$executeRaw`DELETE FROM "cambio_de_alimento_compartido" WHERE "elemento_id" = ${creado.catalogItemId}::uuid`).rejects.toThrow();
+    await expect(prisma.$executeRaw`INSERT INTO "alimento_compartido" ("elemento_id", "procedencia") VALUES (${creado.catalogItemId}::uuid, ${JSON.stringify(PROCEDENCIA)}::jsonb)`).rejects.toThrow(/cambio_de_alimento_compartido/);
+    // Lo deja de compartir solo quien lo cargó; cada cambio invierte el anterior y guarda la versión vigente.
+    await expect(
+      prisma.$executeRaw`INSERT INTO "cambio_de_alimento_compartido" ("elemento_id", "numero", "compartido", "version_id", "autor_id", "procedencia")
+                         VALUES (${creado.catalogItemId}::uuid, 2, FALSE, ${creado.versionId}::uuid, ${otro.id}::uuid, ${JSON.stringify(PROCEDENCIA)}::jsonb)`,
+    ).rejects.toThrow(/quien lo cargó/);
+    await expect(
+      prisma.$executeRaw`INSERT INTO "cambio_de_alimento_compartido" ("elemento_id", "numero", "compartido", "version_id", "autor_id", "procedencia")
+                         VALUES (${creado.catalogItemId}::uuid, 2, TRUE, ${creado.versionId}::uuid, ${autor.id}::uuid, ${JSON.stringify(PROCEDENCIA)}::jsonb)`,
+    ).rejects.toThrow(/alterna/);
+    await corregir(autor, creado.catalogItemId, { expectedVersion: 'v1', name: creado.name, composition: { ...COMPOSICION, fatG: 8 } }).expect(200);
+    await expect(
+      prisma.$executeRaw`INSERT INTO "cambio_de_alimento_compartido" ("elemento_id", "numero", "compartido", "version_id", "autor_id", "procedencia")
+                         VALUES (${creado.catalogItemId}::uuid, 2, FALSE, ${creado.versionId}::uuid, ${autor.id}::uuid, ${JSON.stringify(PROCEDENCIA)}::jsonb)`,
+    ).rejects.toThrow(/versión vigente/);
     // Una revisión la escribe solo un administrador con su rol vigente.
     await expect(
       prisma.$executeRaw`INSERT INTO "revision_administrativa_de_alimento" ("elemento_id", "numero", "resultado", "version_id", "fuente", "administrador_id", "procedencia")
