@@ -3,12 +3,13 @@
 /**
  * WP-NUTRICION-ALIMENTOS (DL-180) · El formulario de un alimento cargado a mano: el nombre, los valores cada 100 g, la
  * fibra (opcional: vacía es «sin dato», nunca cero) y el grupo (NUA-05, para su ícono). Lo usan «Crearlo a mano» (en el
- * cuadro de la opción) y «Corregir» (en «Mis alimentos», NUA-01). Dice, a la vista, que lo que se carga lo ven los demás
- * profesionales de Nutrición con su nombre y sus valores (NUA-D05).
+ * cuadro de la opción) y «Corregir» (en «Mis alimentos», NUA-01). Desde el segundo tramo, las medidas caseras con su
+ * equivalencia (NUA-08), y dice, a la vista, que lo cargado es de quien lo carga y que Administración lo ve con su nombre
+ * de profesional (NUA-D14 y D15; decisión de Dirección del 2026-11-19).
  * - Los requisitos de siempre, señalados en el campo que falta (B10-10:164-165); Enter pasa al siguiente que falta (NUP-09).
  * - La lógica de los valores está en `valores-del-alimento.ts` (`valoresDelAlimento`), sin React, para probarla.
  */
-import { COPY_ALIMENTOS, GRUPOS_DE_ALIMENTO, NOMBRE_DEL_GRUPO, type Composicion, type GrupoDeAlimento } from '@be/domain';
+import { COPY_ALIMENTOS, GRUPOS_DE_ALIMENTO, NOMBRE_DE_LA_MEDIDA, NOMBRE_DEL_GRUPO, TIPOS_DE_MEDIDA_CASERA, type Composicion, type GrupoDeAlimento, type MedidaCasera } from '@be/domain';
 import { useState, type FormEvent, type ReactNode } from 'react';
 import { Aviso, Campo, enterAlQueFalta } from '../../../../components/formulario';
 import { Icono } from '../../../../components/icono';
@@ -58,7 +59,7 @@ export function FormularioDelAlimento({
   textoEnviando: string;
   cabecera?: ReactNode;
   nota?: ReactNode;
-  alEnviar: (v: { readonly nombre: string; readonly composicion: Composicion; readonly grupo: GrupoDeAlimento | null }) => Promise<string | null>;
+  alEnviar: (v: { readonly nombre: string; readonly composicion: Composicion; readonly grupo: GrupoDeAlimento | null; readonly medidas: readonly MedidaCasera[] }) => Promise<string | null>;
   /** NUP-11: se escribió algo; quien lo contiene pregunta antes de cerrar. */
   alEscribir?: () => void;
   pie?: ReactNode;
@@ -99,9 +100,28 @@ export function FormularioDelAlimento({
         <Campo id={`${id}-fibra`} etiqueta="Fibra (g), si la sabés" inputMode="decimal" value={escrito.fibra} onChange={(e) => cambiar({ fibra: e.target.value })} error={errores['fibra'] ?? null} />
       </div>
       <SelectorDeGrupo id={`${id}-grupo`} valor={escrito.grupo} alCambiar={(grupo) => cambiar({ grupo })} apagado={enviando} />
-      <p className="nota formulario-del-alimento__compartir" data-aviso-de-compartir>
+      {/* NUA-08: cuánto pesa cada medida casera; vacía, el alimento no la tiene. */}
+      <fieldset className="formulario-del-alimento__medidas" data-medidas-caseras>
+        <legend>{COPY_ALIMENTOS.medidasCaseras}</legend>
+        <p className="campo__ayuda">{COPY_ALIMENTOS.medidasCaserasAyuda}</p>
+        <div className="agregar-item__valores">
+          {TIPOS_DE_MEDIDA_CASERA.map((tipo) => (
+            <Campo
+              key={tipo}
+              id={`${id}-medida-${tipo}`}
+              etiqueta={COPY_ALIMENTOS.medidaCaseraCampo(NOMBRE_DE_LA_MEDIDA[tipo].una, false)}
+              inputMode="decimal"
+              value={escrito.medidas?.[tipo] ?? ''}
+              onChange={(e) => cambiar({ medidas: { ...escrito.medidas, [tipo]: e.target.value } })}
+              error={errores[`medida-${tipo}`] ?? null}
+            />
+          ))}
+        </div>
+      </fieldset>
+      {/* NUA-D14 y D15: lo cargado es de quien lo carga; Administración lo ve con su nombre de profesional. */}
+      <p className="nota formulario-del-alimento__es-tuyo" data-es-tuyo>
         <Icono nombre="info" tamano={18} />
-        {COPY_ALIMENTOS.avisoDeCompartir}
+        {COPY_ALIMENTOS.esTuyo}
       </p>
       {fallo ? (
         <Aviso tipo="error">

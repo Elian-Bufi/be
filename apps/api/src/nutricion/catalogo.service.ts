@@ -13,6 +13,7 @@ import {
   type FuenteExternaDeAlimento,
   type GrupoDeAlimento,
   type GrupoDeAlimentoEnLaBase,
+  type MedidaCasera,
 } from '@be/domain';
 import { Prisma } from '@prisma/client';
 import type { Entorno } from '../config/entorno';
@@ -55,26 +56,34 @@ interface ConRevision {
   fuenteCertificada: string | null;
   momentoDeCertificacion: Date | null;
   equivalenteId: string | null;
+  /** NUA-08: sus medidas caseras vigentes; `null` si nunca tuvo. */
+  medidasCaseras: MedidaCasera[] | null;
+  /** NUA-D16: la fuente con la que Administración lo sumó al canon, si es del canon. */
+  fuenteDelCanon: string | null;
+  momentoDelCanon: Date | null;
 }
 
 type FilaDelBuscador = FilaDeCatalogo & ConOrigenEnLaBase & ConRevision;
 
 /**
- * DL-180 (NUA-03, NUA-D05): el alimento `e` cargado a mano que su autor compartió con los demás profesionales de Nutrición
- * (al cargarlo o corregirlo después de DL-180, con el aviso a la vista). La consulta tiene que llamar `e` al elemento.
- * También acota lo que revisa Administración (API-ALI-05 y 06): lo que su autor no compartió no lo ve nadie más.
+ * DL-180, segundo tramo (NUA-D16): el alimento `e` es del canon (Administración lo sumó al catálogo verificado, con su
+ * fuente). La consulta tiene que llamar `e` al elemento.
  */
-export const ALIMENTO_COMPARTIDO =Prisma.sql`EXISTS (SELECT 1 FROM "alimento_compartido" c WHERE c."elemento_id" = e."id")`;
+export const DEL_CANON = Prisma.sql`EXISTS (SELECT 1 FROM "alimento_del_canon" k WHERE k."elemento_id" = e."id")`;
+
+/** De la tabla oficial (USDA FoodData Central · SR Legacy) o del canon: lo que puede ser un equivalente verificado. Usa `v` y `e`. */
+export const VERIFICADO_DE_BE = Prisma.sql`(v."procedencia" -> 'fuenteExterna' ->> 'provider' = 'USDA_FDC_SR_LEGACY' OR ${DEL_CANON})`;
 
 /**
- * Los alimentos `e` que ve un profesional: lo sembrado por una migración (sin profesional que lo cargue), lo importado de
- * Open Food Facts, que es de todos (DL-141 D-1), lo propio y, desde DL-180, lo que otro profesional cargó a mano y
- * compartió (NUA-03: se ve como «De otro profesional», con su nombre y sus valores, nunca con datos de sus personas). La
- * consulta tiene que llamar `e` al elemento.
+ * Los alimentos `e` que ve un profesional: lo sembrado por una migración y lo que Administración sumó al canon (sin
+ * profesional que lo cargue), lo importado de Open Food Facts, que es de todos (DL-141 D-1), y lo propio. La consulta tiene
+ * que llamar `e` al elemento.
+ * DL-180, segundo tramo (NUA-D14; decisión de Dirección del 2026-11-19): lo cargado a mano lo ve y lo cita **solo quien lo
+ * cargó**. Lo que otro profesional cargó es, para los demás, lo mismo que lo inexistente.
  * UF-09 (DL-169): fuera de `test` y de desarrollo, sin lo sembrado como demostración (`ofrece` en falso).
  */
 export function alimentoVisible(profesionalId: string, ofrece: boolean): Prisma.Sql {
-  return Prisma.sql`(e."creado_por_id" IS NULL OR ${ALIMENTO_DE_UN_ITEM_EXTERNO} OR e."creado_por_id" = ${profesionalId}::uuid OR ${ALIMENTO_COMPARTIDO}) AND ${sinLoDeDemostracion(ofrece)}`;
+  return Prisma.sql`(e."creado_por_id" IS NULL OR ${ALIMENTO_DE_UN_ITEM_EXTERNO} OR e."creado_por_id" = ${profesionalId}::uuid) AND ${sinLoDeDemostracion(ofrece)}`;
 }
 
 /** La versión `v` es la vigente: la terminal de su cadena (REG-06-99). */
@@ -97,23 +106,18 @@ const TABLAS_CON_REVISION = Prisma.sql`"version_de_elemento_nutricional" v
   JOIN "elemento_de_catalogo_nutricional" e ON e."id" = v."elemento_id"
   LEFT JOIN LATERAL (SELECT r."resultado", r."version_id", r."fuente", r."equivalente_id", r."momento_de_registro"
                        FROM "revision_administrativa_de_alimento" r WHERE r."elemento_id" = e."id" ORDER BY r."numero" DESC LIMIT 1) rev ON TRUE
-  LEFT JOIN LATERAL (SELECT g."grupo" FROM "grupo_de_alimento" g WHERE g."elemento_id" = e."id" ORDER BY g."numero" DESC LIMIT 1) gru ON TRUE`;
+  LEFT JOIN LATERAL (SELECT g."grupo" FROM "grupo_de_alimento" g WHERE g."elemento_id" = e."id" ORDER BY g."numero" DESC LIMIT 1) gru ON TRUE
+  LEFT JOIN "alimento_del_canon" can ON can."elemento_id" = e."id"
+  LEFT JOIN LATERAL (SELECT m."medidas" FROM "medidas_caseras_de_alimento" m WHERE m."elemento_id" = e."id" ORDER BY m."numero" DESC LIMIT 1) med ON TRUE`;
 const CERTIFICADA = Prisma.sql`COALESCE(rev."resultado" = 'CERTIFICADO' AND rev."version_id" = v."id", FALSE)`;
 const COLUMNAS_DE_REVISION = Prisma.sql`gru."grupo"::text AS "grupoDeAlimento", ${CERTIFICADA} AS "certificado",
        CASE WHEN ${CERTIFICADA} THEN rev."fuente" END AS "fuenteCertificada",
        CASE WHEN ${CERTIFICADA} THEN rev."momento_de_registro" END AS "momentoDeCertificacion",
-       CASE WHEN rev."resultado" = 'EQUIVALENTE' THEN rev."equivalente_id"::text END AS "equivalenteId"`;
+       CASE WHEN rev."resultado" = 'EQUIVALENTE' THEN rev."equivalente_id"::text END AS "equivalenteId",
+       can."fuente" AS "fuenteDelCanon", can."momento_de_registro" AS "momentoDelCanon", med."medidas" AS "medidasCaseras"`;
 
 /** Las del buscador suman lo que necesita el origen de la fila (DL-141 D-6) y, desde DL-180, el grupo y la revisión. */
 const COLUMNAS_DEL_BUSCADOR = Prisma.sql`${COLUMNAS}, e."creado_por_id"::text AS "creadoPorId", ${CORRESPONDENCIA}, ${COLUMNAS_DE_REVISION}`;
-
-/**
- * NUA-03: lo de otro profesional que Administración no certificó va después (1); lo demás, en su orden de siempre (0).
- * Usa `e`, `v` y `rev` de `TABLAS_CON_REVISION`.
- */
-function nivelEnElOrden(actorId: string): Prisma.Sql {
-  return Prisma.sql`(CASE WHEN e."procedencia" = 'PROFESSIONAL_MANUAL' AND e."creado_por_id" IS DISTINCT FROM ${actorId}::uuid AND NOT ${CERTIFICADA} THEN 1 ELSE 0 END)`;
-}
 
 /**
  * Catálogo nutricional propio (RF-027; API-NUT-13 y API-INT-NUT-01).
@@ -143,7 +147,7 @@ export class CatalogoService {
   /**
    * El buscador tolera tildes, mayúsculas, el orden de las palabras, los plurales y los errores de tipeo
    * (`http/busqueda.ts`; DL-139), y busca también en los nombres alternativos (DL-141). Sin texto, el catálogo entero, lo
-   * más nuevo primero. Desde DL-180, dentro de cada grupo de coincidencia, lo de otro profesional va después (NUA-03).
+   * más nuevo primero. Desde DL-180, lo cargado a mano es solo de quien lo cargó (NUA-D14).
    */
   async listar(actor: ActorAutenticado, query: Record<string, unknown>): Promise<{ data: ElementoDeCatalogo[]; page: unknown }> {
     const { filas, page } = await this.buscarFilas(actor, query);
@@ -176,7 +180,6 @@ export class CatalogoService {
            AND v."disponibilidad" = 'DISPONIBLE'
            AND ${alimentoVisible(actor.identidadId, this.ofrece)}`,
         nombresAlternativos: NOMBRES_ALTERNATIVOS,
-        nivel: nivelEnElOrden(actor.identidadId),
       },
       leerBusqueda(q),
       consulta.limit,
@@ -218,7 +221,7 @@ export class CatalogoService {
       {
         columnas: Prisma.sql`${COLUMNAS}, gru."grupo"::text AS "grupoDeAlimento"`,
         tablas: TABLAS_CON_REVISION,
-        visibles: Prisma.sql`${VERSION_VIGENTE} AND v."disponibilidad" = 'DISPONIBLE' AND v."procedencia" -> 'fuenteExterna' ->> 'provider' = 'USDA_FDC_SR_LEGACY'`,
+        visibles: Prisma.sql`${VERSION_VIGENTE} AND v."disponibilidad" = 'DISPONIBLE' AND ${VERIFICADO_DE_BE}`,
         nombresAlternativos: NOMBRES_ALTERNATIVOS,
       },
       leerBusqueda(q),
@@ -244,8 +247,8 @@ export class CatalogoService {
 
   // ─── API-INT-NUT-01 ────────────────────────────────────────────────────────────────────────
   /**
-   * Desde DL-180, lo cargado a mano se comparte con los demás profesionales de Nutrición (NUA-D05: el formulario lo dice) y
-   * puede llevar su grupo (NUA-05).
+   * Desde DL-180, puede llevar su grupo (NUA-05). Desde el segundo tramo (NUA-D14), lo cargado a mano es de quien lo
+   * cargó: no se comparte con nadie (Administración lo ve, con el nombre de quien lo cargó, para sumar al canon).
    */
   crear(actor: ActorAutenticado, cuerpo: unknown, clave: string | undefined, ctx: ContextoDeSolicitud): Promise<ResultadoIdempotente> {
     return this.ejecutor.escribirIdempotente({
@@ -270,8 +273,9 @@ export class CatalogoService {
             procedencia: { ...procedencia, carga: 'MANUAL' } as unknown as Prisma.InputJsonValue,
           },
         });
-        await compartir(tx, elemento.id, procedencia);
         if (pedido.group) await asignarGrupo(tx, elemento.id, pedido.group, actor.identidadId, procedencia);
+        // NUA-08: sus medidas caseras, si las trae.
+        if (pedido.householdMeasures && pedido.householdMeasures.length > 0) await asignarMedidas(tx, elemento.id, pedido.householdMeasures, actor.identidadId, procedencia);
         await registrarEventoDeNutricion(tx, {
           tipo: 'ElementoDeCatalogoCreado',
           profesionalId: actor.identidadId,
@@ -363,9 +367,13 @@ export class CatalogoService {
 
   /**
    * DL-119 · las versiones que cita una receta, por elemento **y** versión: la versión es de ese elemento, está
-   * disponible y el elemento es global, importado (de todos, DL-141), propio de este profesional o compartido (DL-180).
+   * disponible y el elemento es global, importado (de todos, DL-141), o propio de este profesional.
    * Las que no cumplen no figuran en el mapa (quien llama responde CATALOG_REFERENCE_INVALID con la ruta). No exige que
    * sea la versión vigente: una receta conserva la versión que citó aunque el catálogo emita otra.
+   * DL-180, segundo tramo (de la revisión adversaria, NUA-D18): **de un alimento retirado no se cita ninguna versión**,
+   * tampoco una vieja disponible: una receta nueva, o una versión nueva de una receta, no lo suma (las versiones de receta
+   * que ya lo citaban lo conservan, NUA-D02). Y lo cargado a mano por otro profesional no se ve (NUA-D14): ninguna de sus
+   * versiones se cita, tampoco las de antes de que se compartiera en el primer tramo.
    */
   async versionesCitables(cliente: Cliente, profesionalId: string, ids: readonly string[]): Promise<Map<string, VersionCitable>> {
     const validos = [...new Set(ids)].filter((id) => /^[0-9a-f-]{36}$/i.test(id));
@@ -376,7 +384,8 @@ export class CatalogoService {
         JOIN "elemento_de_catalogo_nutricional" e ON e."id" = v."elemento_id"
        WHERE v."id" = ANY(${validos}::uuid[])
          AND v."disponibilidad" = 'DISPONIBLE'
-         AND ${alimentoVisible(profesionalId, this.ofrece)}`;
+         AND ${alimentoVisible(profesionalId, this.ofrece)}
+         AND NOT EXISTS (SELECT 1 FROM "version_de_elemento_nutricional" r WHERE r."elemento_id" = e."id" AND r."disponibilidad" = 'RETIRADO')`;
     return new Map(filas.map((f) => [f.versionId, f]));
   }
 
@@ -435,18 +444,32 @@ function encontradoApi(f: FilaDelBuscador, nombreAlternativo: string | null, act
     matchedAlternativeName: nombreAlternativo,
     origin,
     foodGroup: f.grupoDeAlimento ? GRUPO_API[f.grupoDeAlimento] : null,
-    originLevel: nivelDeOrigen({ provenance: f.procedencia, externalProvider: f.fuenteExterna?.provider ?? null, loadedBy: origin.loadedBy, certified: f.certificado }),
-    certification: f.certificado && f.fuenteCertificada && f.momentoDeCertificacion ? { source: f.fuenteCertificada, certifiedAt: f.momentoDeCertificacion.toISOString() } : null,
+    originLevel: nivelDeOrigen({ provenance: f.procedencia, externalProvider: f.fuenteExterna?.provider ?? null, loadedBy: origin.loadedBy, certified: f.certificado || f.fuenteDelCanon !== null }),
+    // NUA-D16: lo del canon dice la fuente con la que Administración lo sumó, como una certificación.
+    certification:
+      f.fuenteDelCanon && f.momentoDelCanon
+        ? { source: f.fuenteDelCanon, certifiedAt: f.momentoDelCanon.toISOString() }
+        : f.certificado && f.fuenteCertificada && f.momentoDeCertificacion
+          ? { source: f.fuenteCertificada, certifiedAt: f.momentoDeCertificacion.toISOString() }
+          : null,
     verifiedEquivalent: f.equivalenteId ? (equivalentes.get(f.equivalenteId) ?? null) : null,
+    // NUA-08: las medidas caseras, si tiene (un campo ausente vale lo de siempre: ninguna).
+    ...(f.medidasCaseras && f.medidasCaseras.length > 0 ? { householdMeasures: f.medidasCaseras } : {}),
   };
 }
 
-/** NUA-D05: lo cargado a mano desde DL-180 lo ven los demás profesionales de Nutrición. Una sola vez por alimento. */
-export async function compartir(tx: Prisma.TransactionClient, elementoId: string, procedencia: object): Promise<void> {
-  await tx.$executeRaw`
-    INSERT INTO "alimento_compartido" ("elemento_id", "procedencia")
-    VALUES (${elementoId}::uuid, ${JSON.stringify(procedencia)}::jsonb)
-    ON CONFLICT ("elemento_id") DO NOTHING`;
+/**
+ * NUA-08: las medidas caseras nuevas de un alimento, como un hecho que sigue al anterior; si son las mismas (en cualquier
+ * orden), no se agrega nada. Las define quien lo cargó (la base lo exige). Una lista vacía las quita. Devuelve si cambiaron.
+ */
+export async function asignarMedidas(tx: Prisma.TransactionClient, elementoId: string, medidas: readonly MedidaCasera[], autorId: string, procedencia: object): Promise<boolean> {
+  const ordenadas = [...medidas].sort((a, b) => a.kind.localeCompare(b.kind)).map((m) => ({ kind: m.kind, amount: m.amount }));
+  const ultima = await tx.medidasCaserasDeAlimento.findFirst({ where: { elementoId }, orderBy: { numero: 'desc' }, select: { numero: true, medidas: true } });
+  if (JSON.stringify(ultima?.medidas ?? []) === JSON.stringify(ordenadas)) return false;
+  await tx.medidasCaserasDeAlimento.create({
+    data: { elementoId, numero: (ultima?.numero ?? 0) + 1, medidas: ordenadas as unknown as Prisma.InputJsonValue, autorId, procedencia: procedencia as Prisma.InputJsonValue },
+  });
+  return true;
 }
 
 /**

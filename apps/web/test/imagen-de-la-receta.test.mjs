@@ -109,8 +109,33 @@ test('NUA-06 · lo que la API rechaza de la imagen pide otro archivo; el 409 de 
   const conflicto = pasos({ subidas: [medio('m1')], asociaciones: [rechazo('VERSION_CONFLICT')] });
   assert.deepEqual(await I.cargarLaImagen(conflicto, datos()), { tipo: 'fallo', motivo: 'RECETA_CAMBIO', subido: 'm1' });
   const vencida = pasos({ subidas: [rechazo('AUTH_REQUIRED', 401)] });
-  assert.deepEqual(await I.cargarLaImagen(vencida, datos({ sesionPerdida: (r) => !r.ok && r.status === 401 })), { tipo: 'sesion-perdida' });
+  assert.deepEqual(await I.cargarLaImagen(vencida, datos({ sesionPerdida: (r) => !r.ok && r.status === 401 })), { tipo: 'sesion-perdida', subido: null });
   assert.equal(vencida.llamadas.asociar.length, 0);
+  // Si vence al asociarla, el medio ya subido viaja: el reintento solo asocia.
+  const alAsociar = pasos({ subidas: [medio('m2')], asociaciones: [rechazo('AUTH_REQUIRED', 401)] });
+  assert.deepEqual(await I.cargarLaImagen(alAsociar, datos({ sesionPerdida: (r) => !r.ok && r.status === 401 })), { tipo: 'sesion-perdida', subido: 'm2' });
+});
+
+test('DL-180, segundo tramo · si la sesión vence mientras se carga la imagen de una receta recién creada, al volver se dice y se reintenta', () => {
+  const pendiente = { recetaId: 'r1', elegida: { archivo: { name: 'a.jpg', size: 1 } }, procedencia: 'PROPIA', autoria: '', subido: null, motivo: 'NO_CARGADA', claves: null };
+  assert.equal(I.laImagenSinCargar(), null);
+  I.anotarLaImagenSinCargar('Tarta de prueba', pendiente);
+  assert.deepEqual(I.laImagenSinCargar(), { recetaId: 'r1', nombre: 'Tarta de prueba' });
+  // Otra receta no la toma; la suya, una sola vez.
+  assert.equal(I.tomarLaImagenSinCargar('otra'), null);
+  assert.equal(I.tomarLaImagenSinCargar('r1'), pendiente);
+  assert.equal(I.tomarLaImagenSinCargar('r1'), null);
+  assert.equal(I.laImagenSinCargar(), null);
+  I.anotarLaImagenSinCargar('Tarta de prueba', pendiente);
+  I.olvidarLaImagenSinCargar();
+  assert.equal(I.laImagenSinCargar(), null);
+  assert.match(d.COPY_RECETAS.imagenSinCargarPorLaSesion('Tarta'), /^«Tarta» quedó guardada, pero la sesión venció/);
+  // El editor la anota en vez de callarse; «Mis recetas» y el plan lo dicen al volver, con el reintento.
+  const editor = leer('app/pro/recipes/editor-de-receta.tsx');
+  assert.match(editor, /if \(conImagen\?\.tipo === 'sesion-perdida'\) return anotarLaImagenSinCargar\(creada\.name, conImagen\.pendiente\);/);
+  const recetas = leer('app/pro/recipes/mis-recetas.tsx');
+  assert.match(recetas, /<AvisoDeLaImagenSinCargar\n\s*key=\{recetaId \?\? 'lista'\}\n\s*alReintentar=\{\(id\) => \{\n\s*setImagenPendiente\(tomarLaImagenSinCargar\(id\)\);/);
+  assert.match(leer('app/pro/advisees/nutrition/editor.tsx'), /<AvisoDeLaImagenSinCargar alReintentar=\{\(id\) => antesDeSalir\(\(\) => router\.push\(/);
 });
 
 test('NUA-06 · recién creada la receta, la falla dice que quedó guardada y que el reintento no la vuelve a crear', () => {

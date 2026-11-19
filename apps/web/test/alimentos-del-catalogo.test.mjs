@@ -40,9 +40,10 @@ const alimento = (id, nombre, extra = {}) => ({ catalogItemId: id, name: nombre,
 // ─── NUA-02 y NUA-05 · lo que se sabe de un alimento citado ─────────────────────────────────────────────────────
 
 test('NUA-02 y NUA-05 · un campo ausente vale lo de siempre: sin grupo y no retirado', () => {
-  assert.deepEqual(A.datosDelAlimento(undefined), { grupo: null, retirado: false });
-  assert.deepEqual(A.datosDelAlimento({}), { grupo: null, retirado: false });
-  assert.deepEqual(A.datosDelAlimento({ foodGroup: 'DAIRY', retired: true }), { grupo: 'DAIRY', retirado: true });
+  assert.deepEqual(A.datosDelAlimento(undefined), { grupo: null, retirado: false, medidas: [] });
+  assert.deepEqual(A.datosDelAlimento({}), { grupo: null, retirado: false, medidas: [] });
+  assert.deepEqual(A.datosDelAlimento({ foodGroup: 'DAIRY', retired: true }), { grupo: 'DAIRY', retirado: true, medidas: [] });
+  assert.deepEqual(A.datosDelAlimento({ householdMeasures: [{ kind: 'CUP', amount: 240 }] }).medidas, [{ kind: 'CUP', amount: 240 }]);
   assert.equal(A.iconoDeLaFila({ grupo: null }), 'alimento');
   assert.equal(A.iconoDeLaFila({ grupo: 'MEAT' }), 'carnes');
 });
@@ -66,21 +67,15 @@ test('NUA-02 · el editor lee lo citado por su identidad (API-ALI-04), no por su
 
 // ─── NUA-03 y NUA-04 · el buscador ─────────────────────────────────────────────────────────────────────────────
 
-test('NUA-03 · el nivel a la vista; lo de otro profesional se mira antes de sumarlo', () => {
+test('NUA-03 y NUA-D14 · el nivel a la vista; no hay «De otro profesional» ni «mirar antes de sumar»', () => {
   assert.equal(A.etiquetaDelNivel({ originLevel: 'VERIFIED' }), 'Verificado');
   assert.equal(A.etiquetaDelNivel({ originLevel: 'YOURS' }), 'Tuyo');
-  assert.equal(A.etiquetaDelNivel({ originLevel: 'OTHER_PROFESSIONAL' }), 'De otro profesional');
   assert.equal(A.etiquetaDelNivel({ originLevel: 'UNVERIFIED' }), null);
   assert.equal(A.etiquetaDelNivel({}), null, 'una API anterior no lo manda');
-  assert.equal(A.pideMirarAntesDeSumar({ originLevel: 'OTHER_PROFESSIONAL' }), true);
-  for (const n of ['VERIFIED', 'YOURS', 'UNVERIFIED', undefined]) assert.equal(A.pideMirarAntesDeSumar({ originLevel: n }), false, String(n));
-  // En el cuadro: elegirlo abre «mirar antes de sumar» en vez de sumarlo, con la composición y las dos salidas.
-  assert.match(CUADRO, /if \(pideMirarAntesDeSumar\(r\.alimento\)\) return setPorMirar\(r\.alimento\);\n\s*sumar\(r\.alimento\);/);
-  assert.match(CUADRO, /<p className="nota">\{COPY_ALIMENTOS\.avisoDeOtroProfesional\}<\/p>/);
-  assert.match(CUADRO, /\{COPY_ALIMENTOS\.sumarIgual\}/);
-  assert.match(CUADRO, /\{COPY_ALIMENTOS\.volverABuscar\}/);
-  // El aviso no nombra a quien lo cargó.
-  assert.doesNotMatch(d.COPY_ALIMENTOS.avisoDeOtroProfesional, /\$\{/);
+  assert.equal('pideMirarAntesDeSumar' in A, false);
+  assert.doesNotMatch(CUADRO, /MirarAntesDeSumar|avisoDeOtroProfesional|porMirar/);
+  // Elegir un resultado lo suma: no hay un paso de por medio.
+  assert.match(CUADRO, /const r = resultados\[n\];\n\s*if \(!r\) return;\n\s*sumar\(r\.alimento\);/);
 });
 
 test('NUA-04 · el verificado equivalente va justo antes del que lo tiene, y no se repite', () => {
@@ -105,7 +100,8 @@ test('NUA-04 · el verificado equivalente va justo antes del que lo tiene, y no 
   // Si el verificado ya venía más arriba, no se repite ni se mueve (la fila lo nombra con `avisoDeEquivalente`).
   const conElOficial = A.conSugeridos([{ alimento: alimento('oficial', oficial.name), habitual: false }, filas[0]], (e) => e);
   assert.deepEqual(conElOficial.map((f) => [f.alimento.catalogItemId, f.sugeridoPor]), [['oficial', null], ['a', null]]);
-  assert.equal(A.avisoDeEquivalente(filas[0].alimento), 'Hay uno verificado equivalente: «Arroz blanco de grano largo, cocido».');
+  assert.equal(A.avisoDeEquivalente(filas[0].alimento), 'Hay una versión verificada de este alimento: «Arroz blanco de grano largo, cocido».');
+  assert.equal(d.COPY_ALIMENTOS.equivalenteSugerido('Arroz casero'), 'Hay una versión verificada de «Arroz casero»');
   // Si venía más abajo (lo común: «arroz blanco» trae el oficial), sube justo antes, como sugerencia, sin repetirse.
   const masAbajo = A.conSugeridos([filas[0], filas[1], { alimento: alimento('oficial', oficial.name), habitual: true }], (e) => e);
   assert.deepEqual(masAbajo.map((f) => [f.alimento.catalogItemId, f.sugeridoPor, f.habitual]), [['oficial', 'Arroz casero', true], ['a', null, false], ['b', null, true]]);
@@ -143,11 +139,93 @@ test('el formulario del alimento: la fibra vacía es «sin dato» (no se manda),
     p: '8',
     fibra: '',
     grupo: '',
+    medidas: {},
   });
   assert.match(FORMULARIO, /const v = valoresDelAlimento\(escrito\);/);
-  // NUA-D05: el aviso de que se comparte va siempre a la vista.
-  assert.match(FORMULARIO, /<p className="nota formulario-del-alimento__compartir" data-aviso-de-compartir>\n\s*<Icono nombre="info" tamano=\{18\} \/>\n\s*\{COPY_ALIMENTOS\.avisoDeCompartir\}/);
-  assert.match(d.COPY_ALIMENTOS.avisoDeCompartir, /No escribas datos de personas/);
+  // NUA-D14 y D15 (decisión de Dirección del 2026-11-19): lo cargado es de quien lo carga, y Administración lo ve con su
+  // nombre de profesional. Nada de compartir.
+  assert.match(FORMULARIO, /<p className="nota formulario-del-alimento__es-tuyo" data-es-tuyo>\n\s*<Icono nombre="info" tamano=\{18\} \/>\n\s*\{COPY_ALIMENTOS\.esTuyo\}/);
+  assert.match(d.COPY_ALIMENTOS.esTuyo, /^Lo ves solo vos\. Administración lo puede ver, con tu nombre de profesional/);
+  // NUA-D07 (ratificada el 19/11): el aviso de no escribir datos de personas se mantiene, porque lo lee Administración.
+  assert.match(d.COPY_ALIMENTOS.esTuyo, /No escribas datos de personas en el nombre\.$/);
+  assert.doesNotMatch(FORMULARIO, /role="switch"|compartirlo|share/);
+  // NUA-08: las medidas caseras, una por tipo; vacía, sin esa medida; lo que no se entiende se dice en su campo.
+  const conMedidas = valores({ nombre: 'Arroz', kcal: '130', c: '28', g: '0,3', p: '2,7', fibra: '', grupo: '', medidas: { CUP: '158', UNIT: '', TABLESPOON: 'abc' } });
+  assert.equal(conMedidas.tipo, 'faltan');
+  assert.deepEqual(Object.keys(conMedidas.problemas), ['medida-TABLESPOON']);
+  const bien = valores({ nombre: 'Arroz', kcal: '130', c: '28', g: '0,3', p: '2,7', fibra: '', grupo: '', medidas: { CUP: '158', PORTION: '200,5' } });
+  assert.deepEqual(bien.medidas, [{ kind: 'CUP', amount: 158 }, { kind: 'PORTION', amount: 200.5 }]);
+  assert.deepEqual(V.alimentoEscrito({ name: 'Arroz', composition: { referenceAmount: '100g', energyKcal: 1, proteinG: 1, carbohydrateG: 1, fatG: 1 }, foodGroup: null, householdMeasures: [{ kind: 'CUP', amount: 158.5 }] }).medidas, { CUP: '158,5' });
+});
+
+// ─── Segundo tramo · lo propio es propio y el canon (NUA-D14 a D16) ─────────────────────────────────────────────
+
+test('NUA-D16 · un nombre igual al de uno verificado se avisa antes de crear, sin impedir crear el propio', () => {
+  const AGREGAR = leer('app/pro/advisees/nutrition/agregar-item.tsx');
+  const avena = { catalogItemId: 'v', name: 'Avena arrollada', originLevel: 'VERIFIED' };
+  const mia = { catalogItemId: 'm', name: 'Avena arrollada', originLevel: 'YOURS' };
+  assert.match(AGREGAR, /export function verificadoConElMismoNombre/);
+  assert.match(AGREGAR, /\{COPY_ALIMENTOS\.yaExisteVerificado\(igual\.verificado\.name\)\}/);
+  assert.match(AGREGAR, /onClick=\{\(\) => onCreado\(igual\.verificado\)\} data-usar-el-verificado>/);
+  assert.match(AGREGAR, /onClick=\{\(\) => void crear\(igual\.escrito\)\.then\(setFalloAlCrear\)\} data-crear-el-mio>/);
+  assert.equal(d.COPY_ALIMENTOS.yaExisteVerificado('Avena arrollada'), 'Ya existe «Avena arrollada» verificado: ¿usarlo?');
+  assert.match(AGREGAR, /householdMeasures: \[\.\.\.v\.medidas\]/);
+});
+
+test('NUA-08 · la cantidad con una medida casera: la medida a la vista, la cuenta en gramos', () => {
+  const medidas = [{ kind: 'CUP', amount: 240 }, { kind: 'UNIT', amount: 50 }];
+  const ET = { g: 'g', ml: 'ml', unit: 'unidad' };
+  assert.deepEqual(A.opcionesDeUnidad(medidas, ET).map((o) => o.texto), ['g', 'ml', 'unidad', 'taza (240 g)', 'unidad (50 g)']);
+  const sinMedida = { quantity: { value: 120, unit: 'g' }, householdMeasure: null };
+  assert.equal(A.valorDeLaUnidad(sinMedida), 'g');
+  const conTaza = A.conUnidad(sinMedida, 'medida:CUP', medidas);
+  assert.deepEqual(conTaza, { quantity: { value: 240, unit: 'g' }, householdMeasure: { kind: 'CUP', count: 1, amountPerUnit: 240 } });
+  assert.equal(A.valorDeLaUnidad(conTaza), 'medida:CUP');
+  assert.equal(A.numeroDelCampo(conTaza), 1);
+  // Escribir 1,5 tazas: la cantidad es 360 g y la medida guarda cuántas.
+  assert.deepEqual(A.conNumero(conTaza, 1.5), { quantity: { value: 360, unit: 'g' }, householdMeasure: { kind: 'CUP', count: 1.5, amountPerUnit: 240 } });
+  // De la revisión adversaria: volver a gramos conserva la cantidad en gramos («2 tazas» son 480 g, no «2 g»); a
+  // unidades, cuántas.
+  const dosTazas = { quantity: { value: 480, unit: 'g' }, householdMeasure: { kind: 'CUP', count: 2, amountPerUnit: 240 } };
+  assert.deepEqual(A.conUnidad(dosTazas, 'g', medidas), { quantity: { value: 480, unit: 'g' }, householdMeasure: null });
+  assert.deepEqual(A.conUnidad(dosTazas, 'unit', medidas), { quantity: { value: 2, unit: 'unit' }, householdMeasure: null });
+  // El ítem conserva la equivalencia que eligió aunque el alimento la cambie o la quite: el selector la sigue ofreciendo
+  // con la suya (si no, mostraba «g» junto al número de tazas).
+  const conOtraTaza = { quantity: { value: 135, unit: 'g' }, householdMeasure: { kind: 'CUP', count: 1.5, amountPerUnit: 90 } };
+  assert.deepEqual(A.opcionesDeUnidad(medidas, ET, false, conOtraTaza.householdMeasure).map((o) => o.texto), ['g', 'ml', 'unidad', 'taza (90 g)', 'unidad (50 g)']);
+  assert.deepEqual(A.opcionesDeUnidad([], ET, false, conOtraTaza.householdMeasure).map((o) => o.valor), ['g', 'ml', 'unit', 'medida:CUP']);
+  // Un alimento cada 100 ml: las medidas en mililitros.
+  assert.deepEqual(A.opcionesDeUnidad(medidas, ET, true).map((o) => o.texto).slice(3), ['taza (240 ml)', 'unidad (50 ml)']);
+  assert.deepEqual(A.conUnidad(sinMedida, 'medida:CUP', medidas, true).quantity, { value: 240, unit: 'ml' });
+  // Sin cantidad todavía, elegir una medida empieza con 1 (el selector se ofrece si el alimento tiene medidas).
+  assert.deepEqual(A.conUnidad({ quantity: null }, 'medida:UNIT', medidas), { quantity: { value: 50, unit: 'g' }, householdMeasure: { kind: 'UNIT', count: 1, amountPerUnit: 50 } });
+  assert.match(FILA, /disabled={!magnitud && datos.medidas.length === 0}/);
+  // Una medida que el alimento ya no tiene no se elige.
+  assert.deepEqual(A.conUnidad(sinMedida, 'medida:PORTION', medidas), { quantity: { value: 120, unit: 'g' }, householdMeasure: null });
+  // En la fila: el selector con las medidas y «= 240 g» al lado.
+  assert.match(FILA, /value=\{valorDeLaUnidad\(item\)\}/);
+  assert.match(FILA, /onCambiar\(conUnidad\(item, e\.target\.value, datos\.medidas, ml\)\)/);
+  assert.match(FILA, /onCambiar\(conNumero\(item, n \?\? Number\.NaN, ml\)\)/);
+  assert.match(FILA, /opcionesDeUnidad\(datos\.medidas, ETIQUETA_DE_UNIDAD as Readonly<Record<Unidad, string>>, ml, item\.householdMeasure\)/);
+  assert.match(FILA, /\{COPY_ALIMENTOS\.equivaleA\(\n\s*formatearCantidad\(magnitud\.value[\s\S]{0,200}equivalenciaEnPalabras\(/);
+  assert.equal(d.COPY_ALIMENTOS.equivaleA('135 g', '1 taza = 90 g'), '= 135 g · 1 taza = 90 g');
+});
+
+test('NUA-D15 y D16 · la consola: quién lo cargó, los parecidos con cuántos profesionales y «Sumar al canon» con fuente', async () => {
+  const P = await import('../src/app/admin/foods/parecidos.tsx').catch(() => null);
+  const PARECIDOS = leer('app/admin/foods/parecidos.tsx');
+  assert.equal(d.COPY_REVISION_DE_ALIMENTOS.cuantosCargaron(7, 'milanesa de soja'), '7 profesionales cargaron «milanesa de soja»');
+  assert.equal(d.COPY_REVISION_DE_ALIMENTOS.cuantosCargaron(1, 'Avena'), '1 profesional cargó «Avena»');
+  assert.match(PARECIDOS, /\{C\.cuantosCargaron\(g\.professionals, g\.names\[0\] \?\? g\.key\)\}/);
+  assert.match(PARECIDOS, /\{C\.cargadoPor\(a\.loadedBy\.displayName\)\}/);
+  assert.match(REVISION, /\{C\.cargadoPor\(a\.loadedBy\.displayName\)\}/);
+  // La fuente es obligatoria para sumar al canon; marcar las cargas como equivalentes viene marcado.
+  assert.match(PARECIDOS, /export function faltaParaSumar\(fuente: string\): string \| null \{\n\s*return fuente\.trim\(\) === '' \? C\.faltaLaFuente : null;/);
+  assert.match(PARECIDOS, /const \[marcar, setMarcar\] = useState\(true\);/);
+  assert.match(PARECIDOS, /\.\.\.\(marcar \? \{ equivalentCatalogItemIds: grupo\.loads\.map\(\(a\) => a\.catalogItemId\) \} : \{\}\)/);
+  // Nunca las personas ni sus planes.
+  assert.doesNotMatch(PARECIDOS.replace(/\/\*\*[\s\S]*?\*\//g, ''), /asesorad|adviseeId|persona|planId/i);
+  void P;
 });
 
 // ─── NUA-01 y NUA-02 · «Mis alimentos» ───────────────────────────────────────────────────────────────────────
@@ -157,7 +235,7 @@ test('NUA-04 · lo decidido, en una línea, para el profesional y para la consol
   const equivalente = { review: { state: 'EQUIVALENT', certification: null, equivalent: { catalogItemId: 'x', name: 'Arroz blanco' } } };
   const pendiente = { review: { state: 'PENDING', certification: null, equivalent: null } };
   assert.equal(V.revisionEnPalabras(certificado), 'Verificado por Administración. Fuente: Rótulo');
-  assert.match(V.revisionEnPalabras(equivalente), /equivalente de «Arroz blanco»/);
+  assert.match(V.revisionEnPalabras(equivalente), /Hay una versión verificada de este alimento, «Arroz blanco»/);
   assert.equal(V.revisionEnPalabras(pendiente), 'Sin revisión de Administración');
   assert.equal(R.decididoEnPalabras(certificado), 'Verificado · Rótulo');
   assert.equal(R.decididoEnPalabras(pendiente), 'Sin revisar');
@@ -170,13 +248,17 @@ test('NUA-01 y NUA-02 · «Mis alimentos» corrige y retira contra la versión v
   // Retirar se confirma diciendo qué pasa; uno retirado no ofrece ni corregir ni retirar.
   assert.match(MIS_ALIMENTOS, /<p>\{C\.retirarQuePasa\}<\/p>/);
   assert.match(MIS_ALIMENTOS, /\{a\.available \? \(\n\s*<div className="mis-alimentos__acciones">/);
+  // NUA-D14: lo propio no se comparte; NUA-08: la corrección manda las medidas caseras y la lista las muestra.
+  assert.doesNotMatch(MIS_ALIMENTOS, /compartir|shared/i);
+  assert.match(MIS_ALIMENTOS, /householdMeasures: \[\.\.\.v\.medidas\] \}/);
+  assert.match(MIS_ALIMENTOS, /\{a\.householdMeasures\.map\(\(m\) => equivalenciaEnPalabras\(m, c\.referenceAmount\)\)\.join\(' · '\)\}/);
   assert.match(d.COPY_MIS_ALIMENTOS.retirarQuePasa, /No se borra/);
   assert.match(d.COPY_MIS_ALIMENTOS.corregirQuePasa(3), /Nace la versión 3/);
 });
 
 // ─── NUA-04 · Administración ─────────────────────────────────────────────────────────────────────────────────
 
-test('NUA-04 · la consola pide la fuente para verificar y el equivalente para marcarlo; no muestra quién lo cargó', async () => {
+test('NUA-04 · la consola pide la fuente para verificar y el equivalente para marcarlo; muestra quién lo cargó, nunca a quién se le indicó', async () => {
   {
     assert.equal(R.faltaParaDecidir('CERTIFY', '  ', null), d.COPY_REVISION_DE_ALIMENTOS.faltaLaFuente);
     assert.equal(R.faltaParaDecidir('CERTIFY', 'Rótulo', null), null);
@@ -185,7 +267,12 @@ test('NUA-04 · la consola pide la fuente para verificar y el equivalente para m
   }
   assert.match(REVISION, /expectedVersion: alimento\.version,/);
   assert.match(REVISION, /if \(r\.tipo === 'API' && r\.codigo === 'VERSION_CONFLICT'\) return alDesactualizarse\(\);/);
-  assert.doesNotMatch(REVISION, /professional|profesionalId|loadedBy|creadoPor/i, 'la consola no ve quién lo cargó');
+  // Segundo tramo (NUA-D15): ve quién lo cargó, por su nombre de profesional; nunca a quién se le indicó.
+  assert.doesNotMatch(REVISION, /asesorad|adviseeId|planId|creadoPor/i, 'la consola no ve a quién se le indicó');
+  assert.match(REVISION, /loadedBy.displayName/);
+  // Segundo tramo (de la revisión adversaria): «Revisar» lleva el foco al formulario, por su título.
+  assert.match(REVISION, /useEffect\(\(\) => titulo\.current\?\.focus\(\), \[\]\);/);
+  assert.match(REVISION, /<h3 ref=\{titulo\} tabIndex=\{-1\} data-titulo-de-la-revision>/);
   // Nunca «certificación oficial» ni «certificado por BE» (B10-03 §20).
   for (const t of Object.values(d.COPY_REVISION_DE_ALIMENTOS).flatMap((v) => (typeof v === 'string' ? [v] : typeof v === 'object' ? Object.values(v).filter((x) => typeof x === 'string') : []))) {
     assert.deepEqual(d.terminosProhibidosDeAdministracionEn(t), [], t);

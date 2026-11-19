@@ -324,6 +324,10 @@ model Identidad {
   // alimentos cargados a mano que registró.
   gruposDeAlimentoAsignados GrupoDeAlimentoAsignado[]          @relation("GrupoDeAlimentoDelAutor")
   revisionesDeAlimentos     RevisionAdministrativaDeAlimento[] @relation("RevisionDeAlimentoDelAdministrador")
+  // DL-180, segundo tramo (NUA-D16): como administradora, los alimentos que sumó al catálogo verificado.
+  alimentosSumadosAlCanon   AlimentoDelCanon[]                 @relation("AlimentoDelCanonDelAdministrador")
+  // DL-180, segundo tramo (NUA-08): las medidas caseras que definió para sus alimentos cargados a mano.
+  medidasCaserasDefinidas   MedidasCaserasDeAlimento[]         @relation("MedidasCaserasDelAutor")
 
   @@map("identidad")
 }
@@ -1384,8 +1388,15 @@ model ElementoDeCatalogoNutricional {
   nombresAlternativos NombreAlternativoDeAlimento[]
   /// DL-180 (NUA-05): su grupo, para el ícono; un hecho aparte de sus versiones.
   grupos              GrupoDeAlimentoAsignado[]
-  /// DL-180 (NUA-03): desde cuándo lo ven los demás profesionales, si es una carga a mano.
+  /// DL-180 (NUA-03): desde cuándo lo veían los demás profesionales (primer tramo). Desde el segundo tramo, historia: lo
+  /// cargado a mano es de quien lo cargó (NUA-D14), y esta tabla ya no se lee ni se escribe.
   compartido          AlimentoCompartido?
+  /// DL-180, segundo tramo (NUA-D16): si Administración lo sumó al catálogo verificado, con su fuente.
+  delCanon            AlimentoDelCanon?                  @relation("AlimentoDelCanon")
+  /// Las cargas a mano de las que partió un alimento del canon.
+  canonQueParte       AlimentoDelCanon[]                 @relation("AlimentoDelCanonOrigen")
+  /// DL-180, segundo tramo (NUA-08): sus medidas caseras, un hecho aparte de sus versiones.
+  medidasCaseras      MedidasCaserasDeAlimento[]
   /// DL-180 (NUA-04): lo que decidió Administración sobre él, y los alimentos de los que es el equivalente verificado.
   revisiones          RevisionAdministrativaDeAlimento[] @relation("RevisionDelAlimento")
   equivalenteDe       RevisionAdministrativaDeAlimento[] @relation("EquivalenteVerificado")
@@ -3097,7 +3108,8 @@ model GrupoDeAlimentoAsignado {
 
 /// DL-180 (NUA-03, NUA-D05) · un alimento cargado a mano que ven los demás profesionales de Nutrición, desde que su autor
 /// lo cargó o lo corrigió con el aviso a la vista. Lo cargado antes de DL-180 no se comparte solo. Una fila por alimento;
-/// append-only.
+/// append-only. **Segundo tramo (decisión de Dirección del 2026-11-19, NUA-D14):** lo cargado a mano no se comparte; la
+/// tabla queda como historia, ya no se lee ni se escribe (la migración `20261120120000_lo_propio_es_propio` la cierra).
 model AlimentoCompartido {
   elementoId        String   @id @map("elemento_id") @db.Uuid
   procedencia       Json
@@ -3106,6 +3118,49 @@ model AlimentoCompartido {
   elemento ElementoDeCatalogoNutricional @relation(fields: [elementoId], references: [id], onDelete: Restrict, onUpdate: Restrict)
 
   @@map("alimento_compartido")
+}
+
+/// DL-180, segundo tramo (NUA-D16; decisión de Dirección del 2026-11-19) · un alimento que Administración sumó al catálogo
+/// verificado («Sumar al canon»): un alimento de BE (sin profesional que lo cargue, de todos), «Verificado» en el buscador,
+/// con la fuente citada (obligatoria) y, si partió de los valores de una carga a mano, cuál. Lo escribe solo un
+/// administrador con su rol vigente (trigger). Append-only: una fila por alimento.
+model AlimentoDelCanon {
+  elementoId        String   @id @map("elemento_id") @db.Uuid
+  /// La tabla, la publicación o el rótulo de donde salen sus valores.
+  fuente            String
+  /// La carga a mano de cuyos valores partió, si partió de una.
+  origenId          String?  @map("origen_id") @db.Uuid
+  administradorId   String   @map("administrador_id") @db.Uuid
+  procedencia       Json
+  momentoDeRegistro DateTime @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+
+  elemento      ElementoDeCatalogoNutricional  @relation("AlimentoDelCanon", fields: [elementoId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  origen        ElementoDeCatalogoNutricional? @relation("AlimentoDelCanonOrigen", fields: [origenId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  administrador Identidad                      @relation("AlimentoDelCanonDelAdministrador", fields: [administradorId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@map("alimento_del_canon")
+}
+
+/// DL-180, segundo tramo (NUA-08; aprobado por Dirección el 2026-11-16) · las medidas caseras de un alimento (la unidad, la
+/// cucharada, la taza y la porción), cada una con su equivalencia en la unidad de su composición: un hecho aparte de sus
+/// versiones, como el grupo. La vigente es la de mayor `numero` (`medidas`, un arreglo de {kind, amount}; vacío, ninguna).
+/// Las define quien cargó el alimento a mano; sin autor, las siembra BE de la fuente que las documente. Cambiarlas no toca
+/// los planes: cada ítem guarda la medida que eligió y su equivalencia. Append-only.
+model MedidasCaserasDeAlimento {
+  id                String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  elementoId        String   @map("elemento_id") @db.Uuid
+  numero            Int
+  medidas           Json
+  /// Quién las definió; NULL si las sembró BE con una migración.
+  autorId           String?  @map("autor_id") @db.Uuid
+  procedencia       Json
+  momentoDeRegistro DateTime @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+
+  elemento ElementoDeCatalogoNutricional @relation(fields: [elementoId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  autor    Identidad?                    @relation("MedidasCaserasDelAutor", fields: [autorId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([elementoId, numero])
+  @@map("medidas_caseras_de_alimento")
 }
 
 /// DL-180 (NUA-04): lo que decide Administración sobre un alimento cargado a mano.

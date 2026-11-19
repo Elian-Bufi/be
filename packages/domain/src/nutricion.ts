@@ -10,6 +10,7 @@
  *
  * BE no calcula requerimientos ni juzga la dieta (INV-06-133; 09v9:554-557): validar es estructural.
  */
+import { cantidadDeLaMedida, type MedidaElegida } from './alimentos-del-catalogo';
 import type { ValidationIssue } from './contratos';
 import type {
   ContrasteDescriptivo,
@@ -110,6 +111,8 @@ export interface ContenidoDePlan {
           readonly quantity: Cantidad | null;
           readonly preparationState: EstadoDePreparacion | null;
           readonly note: string | null;
+          /** NUA-08: la medida casera con la que se escribió la cantidad; solo la ve el profesional. */
+          readonly householdMeasure?: MedidaElegida;
         }[];
       }[];
     }[];
@@ -138,6 +141,8 @@ export function normalizarEstructura(entrada: EstructuraDePlanEntrada, nuevoId: 
             quantity: i.quantity,
             preparationState: i.preparationState,
             note: i.note ?? null,
+            // NUA-08: la medida va solo con una cantidad; sin cantidad, no hay nada que escribir con ella.
+            ...(i.householdMeasure && i.quantity ? { householdMeasure: i.householdMeasure } : {}),
           })),
         })),
       })),
@@ -160,6 +165,8 @@ export const CodigoDeProblemaDePlan = {
   MEAL_OPTION_REQUIRED: 'MEAL_OPTION_REQUIRED',
   OPTION_ITEM_REQUIRED: 'OPTION_ITEM_REQUIRED',
   PREPARATION_STATE_REQUIRED: 'PREPARATION_STATE_REQUIRED',
+  /** NUA-08: la cantidad no es la medida casera elegida por su equivalencia, o no está en gramos ni en mililitros. */
+  HOUSEHOLD_MEASURE_INCONSISTENT: 'HOUSEHOLD_MEASURE_INCONSISTENT',
 } as const;
 export type CodigoDeProblemaDePlan = (typeof CodigoDeProblemaDePlan)[keyof typeof CodigoDeProblemaDePlan];
 
@@ -186,6 +193,10 @@ export function problemasDeBorrador(c: ContenidoDePlan, catalogoDisponible: Read
           const pi = `${po}.items[${l}]`;
           unico(it.itemId, pi);
           if (!catalogoDisponible.has(it.catalogItemId)) problemas.push({ code: CodigoDeProblemaDePlan.CATALOG_REFERENCE_INVALID, path: `${pi}.catalogItemId` });
+          const m = it.householdMeasure;
+          if (m && (!it.quantity || it.quantity.unit === 'unit' || Math.abs(it.quantity.value - cantidadDeLaMedida(m)) > 0.05)) {
+            problemas.push({ code: CodigoDeProblemaDePlan.HOUSEHOLD_MEASURE_INCONSISTENT, path: `${pi}.householdMeasure` });
+          }
         });
       });
     });

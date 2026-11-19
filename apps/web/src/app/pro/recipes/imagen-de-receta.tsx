@@ -22,7 +22,7 @@ import { api, type Resultado } from '../../../lib/api';
 import { fecha } from '../../../lib/formato';
 import { mensajeDeFallo, useClaveDeIntento } from '../../../lib/intento';
 import { revisarImagen, subirImagen, useImagenDeMedio, type ImagenElegida } from '../../../lib/medios';
-import { cargarLaImagen, textoDeLaFalla, type ClavesDeLaImagen, type ImagenPendiente, type MotivoDeLaFalla, type ResultadoDeLaCarga } from './cargar-la-imagen';
+import { cargarLaImagen, laImagenSinCargar, olvidarLaImagenSinCargar, textoDeLaFalla, type ClavesDeLaImagen, type ImagenPendiente, type MotivoDeLaFalla, type ResultadoDeLaCarga } from './cargar-la-imagen';
 
 /**
  * La imagen guardada de una receta, o su respaldo. Compartida con la lista (encargo del 2026-10-19, bloque 4):
@@ -64,7 +64,9 @@ interface FallaDeLaImagen {
 
 /** Lo que devuelve `cargar`: el resultado de la carga, o que no había qué cargar. */
 export type CargaDeLaImagen =
-  | Exclude<ResultadoDeLaCarga, { readonly tipo: 'fallo' }>
+  | Exclude<ResultadoDeLaCarga, { readonly tipo: 'fallo' } | { readonly tipo: 'sesion-perdida' }>
+  /** DL-180, segundo tramo: la sesión venció; lo elegido, para anotarlo y reintentarlo al volver. */
+  | { readonly tipo: 'sesion-perdida'; readonly pendiente: ImagenPendiente }
   | { readonly tipo: 'sin-imagen' }
   | { readonly tipo: 'falta-la-procedencia' }
   /** Lo elegido, para que la receta ya guardada lo retome con su falla. */
@@ -156,7 +158,8 @@ export function useImagenParaCargar(token: string, sesionPerdida: (r: Resultado<
         { version: receta.version, subido, claves, sesionPerdida, queSeSube: JSON.stringify([elegida.archivo.name, elegida.archivo.size, procedencia, declarada]) },
       );
       setCargando(false);
-      if (r.tipo === 'sesion-perdida') return r;
+      // DL-180, segundo tramo: lo elegido vuelve como pendiente, para anotarlo y reintentarlo al volver de la entrada.
+      if (r.tipo === 'sesion-perdida') return { tipo: 'sesion-perdida', pendiente: { recetaId: receta.recipeId, elegida, procedencia, autoria, subido: r.subido, motivo: 'NO_CARGADA', claves } };
       if (r.tipo === 'fallo') {
         setSubido(r.subido);
         setFalla({ motivo: r.motivo, trasGuardar });
@@ -169,6 +172,38 @@ export function useImagenParaCargar(token: string, sesionPerdida: (r: Resultado<
 }
 
 export type ImagenParaCargar = ReturnType<typeof useImagenParaCargar>;
+
+/**
+ * DL-180, segundo tramo: al volver de la entrada, si la sesión venció mientras se cargaba la imagen de una receta recién
+ * creada, se dice y se ofrece reintentar (`alReintentar` abre esa receta con lo elegido) o dejarlo para después.
+ */
+export function AvisoDeLaImagenSinCargar({ alReintentar }: { alReintentar: (recetaId: string) => void }) {
+  const [anotada, setAnotada] = useState(laImagenSinCargar);
+  if (!anotada) return null;
+  return (
+    <Aviso tipo="info">
+      <div data-imagen-sin-cargar>
+        <p>{COPY_RECETAS.imagenSinCargarPorLaSesion(anotada.nombre)}</p>
+        <div className="acciones">
+          <button type="button" className="boton boton--primario" onClick={() => alReintentar(anotada.recetaId)}>
+            <Icono nombre="imagen" tamano={18} />
+            {COPY_RECETAS.reintentarImagen}
+          </button>
+          <button
+            type="button"
+            className="boton boton--secundario"
+            onClick={() => {
+              olvidarLaImagenSinCargar();
+              setAnotada(null);
+            }}
+          >
+            {COPY_RECETAS.ahoraNo}
+          </button>
+        </div>
+      </div>
+    </Aviso>
+  );
+}
 
 /** El grupo de la imagen, igual al crear la receta y con la receta guardada: el título y qué es una imagen de referencia. */
 function MarcoDeLaImagen({ id, titulo, children }: { id: string; titulo: string; children: ReactNode }) {

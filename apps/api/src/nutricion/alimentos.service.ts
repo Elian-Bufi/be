@@ -21,7 +21,7 @@ import { momentoDeLaBase } from '../prisma/concurrencia';
 import { PrismaService } from '../prisma/prisma.service';
 import type { ActorAutenticado } from '../sesion/sesion.guard';
 import { esToken } from '../vinculo/lectura';
-import { asignarGrupo, CatalogoService, compartir, VERSION_VIGENTE } from './catalogo.service';
+import { asignarGrupo, asignarMedidas, CatalogoService, VERSION_VIGENTE } from './catalogo.service';
 import { EjecutorNutricional, esUuid } from './ejecutor';
 import { registrarEventoDeNutricion } from './eventos';
 import { exigirProfesionalDeNutricion } from './profesional-de-nutricion';
@@ -44,7 +44,7 @@ export function leerAlimentosCargados(cliente: Cliente, donde: Prisma.Sql, orden
            (v."disponibilidad" = 'DISPONIBLE') AS "disponible",
            (SELECT count(*) FROM "version_de_elemento_nutricional" x WHERE x."elemento_id" = e."id")::int AS "cantidadDeVersiones",
            gru."grupo"::text AS "grupoDeAlimento",
-           EXISTS (SELECT 1 FROM "alimento_compartido" c WHERE c."elemento_id" = e."id") AS "compartido",
+           e."creado_por_id"::text AS "autorId", per."nombre_visible" AS "autorNombre", med."medidas" AS "medidasCaseras",
            e."momento_de_registro" AS "creado", v."momento_de_registro" AS "actualizado",
            rev."resultado"::text AS "resultado", rev."version_id"::text AS "versionRevisadaId", rev."fuente",
            rev."equivalente_id"::text AS "equivalenteId", rev."momento_de_registro" AS "decidido",
@@ -56,6 +56,8 @@ export function leerAlimentosCargados(cliente: Cliente, donde: Prisma.Sql, orden
       LEFT JOIN LATERAL (SELECT r."resultado", r."version_id", r."fuente", r."equivalente_id", r."momento_de_registro"
                            FROM "revision_administrativa_de_alimento" r WHERE r."elemento_id" = e."id" ORDER BY r."numero" DESC LIMIT 1) rev ON TRUE
       LEFT JOIN LATERAL (SELECT g."grupo" FROM "grupo_de_alimento" g WHERE g."elemento_id" = e."id" ORDER BY g."numero" DESC LIMIT 1) gru ON TRUE
+      LEFT JOIN "perfil_profesional" per ON per."identidad_id" = e."creado_por_id"
+      LEFT JOIN LATERAL (SELECT m."medidas" FROM "medidas_caseras_de_alimento" m WHERE m."elemento_id" = e."id" ORDER BY m."numero" DESC LIMIT 1) med ON TRUE
      WHERE e."procedencia" = 'PROFESSIONAL_MANUAL'
        AND ${VERSION_VIGENTE}
        AND ${donde}
@@ -73,7 +75,7 @@ function alimentoPropioApi(f: FilaDeAlimentoCargado): AlimentoPropio {
     composition: f.composicion,
     foodGroup: f.grupoDeAlimento ? GRUPO_API[f.grupoDeAlimento] : null,
     available: f.disponible,
-    shared: f.compartido,
+    householdMeasures: f.medidasCaseras ?? [],
     review: revisionDelAlimento(f),
     createdAt: f.creado.toISOString(),
     updatedAt: f.actualizado.toISOString(),
@@ -154,11 +156,10 @@ export class AlimentosService {
             },
           });
         }
-        const otroGrupo = pedido.group ? await asignarGrupo(tx, vigente.elementoId, pedido.group, actor.identidadId, procedencia) : false;
-        // NUA-D05 y D13: corregirlo con el aviso a la vista lo comparte, como cargarlo después de DL-180. Solo si de verdad
-        // se corrigió algo: guardar sin cambios responde «no cambió», y lo cargado antes de DL-180 sigue siendo solo de su
-        // autor, como le dice «Mis alimentos» («Por ahora lo ves solo vos»).
-        if (cambia || otroGrupo) await compartir(tx, vigente.elementoId, procedencia);
+        // NUA-D14 (segundo tramo): corregir no comparte nada; lo cargado a mano es de quien lo cargó.
+        if (pedido.group) await asignarGrupo(tx, vigente.elementoId, pedido.group, actor.identidadId, procedencia);
+        // NUA-08: las medidas caseras, como el grupo, sin emitir una versión; ausentes, no cambian.
+        if (pedido.householdMeasures !== undefined) await asignarMedidas(tx, vigente.elementoId, pedido.householdMeasures, actor.identidadId, procedencia);
         if (cambia) await this.evento(tx, 'ElementoDeCatalogoVersionado', actor.identidadId, vigente.elementoId, procedencia, momento);
         return { estadoHttp: 200, cuerpo: { data: await this.leerPropio(tx, actor.identidadId, vigente.elementoId) }, sujetoId: null, recurso };
       },

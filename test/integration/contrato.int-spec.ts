@@ -2832,7 +2832,7 @@ it('TEST-CT (WP-COMPARTIR, DL-176): CMP-01 a 03 — la pantalla única de consen
   await request(servidor).post(RETIRAR).set('Idempotency-Key', claveDeIdempotencia()).send({ key: resumen.key }).expect(401);
 });
 
-it('TEST-CT (DL-180): ALI-01 a 07 — los alimentos cargados a mano y su revisión por Administración, con éxitos y errores declarados', async () => {
+it('TEST-CT (DL-180): ALI-01 a 09 — los alimentos cargados a mano y su revisión por Administración, con éxitos y errores declarados', async () => {
   const servidor = app.getHttpServer();
   const pro = await prepararProfesional(app, `ct-ali-${randomUUID().slice(0, 6)}`, ['NUTRICION']);
   const otro = await prepararProfesional(app, `ct-ali-otro-${randomUUID().slice(0, 6)}`, ['NUTRICION']);
@@ -2888,6 +2888,19 @@ it('TEST-CT (DL-180): ALI-01 a 07 — los alimentos cargados a mano y su revisi�
   await decidir(randomUUID(), { expectedVersion: 'v1', decision: 'CERTIFY', source: 'Rótulo' }).expect(404); // RESOURCE_NOT_FOUND
   await decidir(uno.catalogItemId, { expectedVersion: 'v2', decision: 'CERTIFY', source: 'Rótulo', extra: 1 }).expect(400); // UNKNOWN_FIELD
   await decidir(uno.catalogItemId, { expectedVersion: 'v2', decision: 'EQUIVALENT', equivalentCatalogItemId: verificados[0]!.catalogItemId }).expect(200);
+  // ALI-08 y 09 (segundo tramo): los parecidos y sumar al canon.
+  await adm(app, a.token).post('/admin/foods/similar/query').send({ q: 'contrato' }).expect(200);
+  await adm(app, a.token).post('/admin/foods/similar/query').send({ extra: 1 }).expect(400); // UNKNOWN_FIELD
+  await adm(app, a.token).post('/admin/foods/similar/query').send({ minProfessionals: 0 }).expect(400); // INVALID_REQUEST
+  await adm(app, pro.token).post('/admin/foods/similar/query').send({}).expect(403); // ACTION_FORBIDDEN
+  const canon = { name: 'Galleta verificada del contrato', composition: composicion, source: 'Rótulo sintético del contrato' };
+  const claveDeCanon = claveDeIdempotencia();
+  await adm(app, a.token).post('/admin/foods/canon').set('Idempotency-Key', claveDeCanon).send(canon).expect(201);
+  await adm(app, a.token).post('/admin/foods/canon').set('Idempotency-Key', claveDeCanon).send({ ...canon, name: 'Otra' }).expect(409); // IDEMPOTENCY_KEY_REUSED
+  await adm(app, a.token).post('/admin/foods/canon').set('Idempotency-Key', claveDeIdempotencia()).send({ ...canon, extra: 1 }).expect(400); // UNKNOWN_FIELD
+  await adm(app, a.token).post('/admin/foods/canon').set('Idempotency-Key', claveDeIdempotencia()).send({ ...canon, source: undefined }).expect(400); // INVALID_REQUEST: sin fuente
+  await adm(app, a.token).post('/admin/foods/canon').set('Idempotency-Key', claveDeIdempotencia()).send({ ...canon, fromCatalogItemId: randomUUID() }).expect(422); // VALIDATION_FAILED
+  await adm(app, pro.token).post('/admin/foods/canon').set('Idempotency-Key', claveDeIdempotencia()).send(canon).expect(403); // ACTION_FORBIDDEN
 });
 
 it('TEST-CT: todo (status, código) observado está declarado para su operación; los éxitos coinciden con el contrato', () => {

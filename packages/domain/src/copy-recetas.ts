@@ -83,6 +83,10 @@ export const COPY_RECETAS = {
   guardadaSinLaImagen: 'La receta quedó guardada, sin la imagen.',
   imagenNoCargadaTrasGuardar: 'La receta quedó guardada, pero la imagen no se pudo cargar. Probá de nuevo: se carga solo la imagen, sin volver a crear la receta.',
   reintentarImagen: 'Reintentar la imagen',
+  /** DL-180, segundo tramo: la sesión venció mientras se cargaba la imagen de una receta recién creada. */
+  imagenSinCargarPorLaSesion: (nombre: string) =>
+    `«${nombre}» quedó guardada, pero la sesión venció mientras se cargaba su imagen y la imagen no quedó. Podés cargarla ahora, sin volver a crear la receta.`,
+  ahoraNo: 'Ahora no',
   calculo: 'Energía y macros estimados',
   recetaCompleta: 'Receta completa',
   porPorcion: 'Por porción',

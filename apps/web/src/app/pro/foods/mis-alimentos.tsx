@@ -4,13 +4,13 @@
  * «Mis alimentos» (DL-180; WP-NUTRICION-ALIMENTOS): los alimentos que el profesional de Nutrición cargó a mano, también
  * los retirados, con su versión, su grupo y lo que decidió Administración.
  * - **Corregir (NUA-01):** el formulario común del alimento, en un cuadro. Nace una versión nueva: los planes activados,
- *   las recetas y los registros conservan la que citaban. Corregirlo lo comparte con los demás profesionales (el
- *   formulario lo dice), y una verificación de Administración vale para la versión que revisó.
+ *   las recetas y los registros conservan la que citaban. Una verificación de Administración vale para la versión que
+ *   revisó. Desde el segundo tramo, son del profesional (NUA-D14: no se comparten) y llevan sus medidas caseras (NUA-08).
  * - **Retirar (NUA-02):** se confirma diciendo qué pasa; no se borra nada.
  * - Contra la versión que se vio: si cambió mientras tanto (otra pestaña), se dice y se vuelve a leer la lista.
  * - Un profesional sin el área de Nutrición recibe 403 y la página lo dice: mostrar u ocultar no autoriza nada.
  */
-import { COPY_MIS_ALIMENTOS as C, cantidad as formatearCantidad, NOMBRE_DEL_GRUPO, type AlimentoPropio } from '@be/domain';
+import { COPY_MIS_ALIMENTOS as C, cantidad as formatearCantidad, equivalenciaEnPalabras, NOMBRE_DEL_GRUPO, type AlimentoPropio } from '@be/domain';
 import { useMemo, useState } from 'react';
 import { Ayuda, AvisoFlotante } from '../../../components/ayuda';
 import { CuadroEnfocado } from '../../../components/cuadro-enfocado';
@@ -140,7 +140,11 @@ export function MisAlimentos() {
                           <p className="nota" data-revision>
                             {revisionEnPalabras(a)}
                           </p>
-                          <p className="nota">{a.shared ? C.compartido : C.soloVos}</p>
+                          {a.householdMeasures && a.householdMeasures.length > 0 ? (
+                            <p className="nota" data-medidas-caseras>
+                              {a.householdMeasures.map((m) => equivalenciaEnPalabras(m, c.referenceAmount)).join(' · ')}
+                            </p>
+                          ) : null}
                         </>
                       ) : (
                         <p className="nota" data-retirado-nota>
@@ -194,7 +198,7 @@ export function MisAlimentos() {
               const r = await api.corregirAlimento(
                 token,
                 corrigiendo.catalogItemId,
-                { expectedVersion: corrigiendo.version, name: v.nombre, composition: v.composicion, ...(v.grupo ? { group: v.grupo } : {}) },
+                { expectedVersion: corrigiendo.version, name: v.nombre, composition: v.composicion, ...(v.grupo ? { group: v.grupo } : {}), householdMeasures: [...v.medidas] },
                 intentoDeCorregir.actual(corrigiendo.catalogItemId),
               );
               intentoDeCorregir.registrar(r);

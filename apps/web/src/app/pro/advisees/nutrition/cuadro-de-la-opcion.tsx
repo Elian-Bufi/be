@@ -37,7 +37,7 @@ import {
   type VersionDeObjetivo,
 } from '@be/domain';
 import { useContext, useEffect, useId, useRef, useState, type RefObject } from 'react';
-import { avisoDeEquivalente, conSugeridos, ContextoDeLosAlimentos, datosDelAlimento, etiquetaDelNivel, pideMirarAntesDeSumar, type DatosDelAlimento } from './alimentos-del-catalogo';
+import { avisoDeEquivalente, conSugeridos, ContextoDeLosAlimentos, datosDelAlimento, etiquetaDelNivel, type DatosDelAlimento } from './alimentos-del-catalogo';
 import { CuadroEnfocado } from '../../../../components/cuadro-enfocado';
 import { Enlace } from '../../../../components/enlace';
 import { Aviso } from '../../../../components/formulario';
@@ -388,12 +388,6 @@ function BuscadorDeLaOpcion({
   const [marcado, setMarcado] = useState(0);
   const [columna, setColumna] = useState<0 | 1>(0);
   const pedido = useRef(0);
-  // NUA-03: el alimento de otro profesional que se eligió y se está mirando antes de sumarlo.
-  const [porMirar, setPorMirar] = useState<ElementoDeCatalogo | ElementoEncontrado | null>(null);
-  const sumarlo = useRef<HTMLButtonElement>(null);
-  useEffect(() => {
-    if (porMirar) sumarlo.current?.focus();
-  }, [porMirar]);
 
   // Busca mientras se escribe, con una pausa: una respuesta vieja no pisa a la nueva.
   useEffect(() => {
@@ -428,7 +422,6 @@ function BuscadorDeLaOpcion({
     setColumna(0);
   };
   const sumar = (a: ElementoDeCatalogo) => {
-    setPorMirar(null);
     alSumar(a);
     escribir('');
     campo.current?.focus();
@@ -436,8 +429,6 @@ function BuscadorDeLaOpcion({
   const elegir = (n: number) => {
     const r = resultados[n];
     if (!r) return;
-    // NUA-03: lo de otro profesional se mira antes de sumarlo: su aviso y su composición cada 100 g.
-    if (pideMirarAntesDeSumar(r.alimento)) return setPorMirar(r.alimento);
     sumar(r.alimento);
   };
   const alternar = (n: number) => {
@@ -585,7 +576,6 @@ function BuscadorDeLaOpcion({
           );
         })}
       </div>
-      {porMirar ? <MirarAntesDeSumar alimento={porMirar} boton={sumarlo} alSumar={() => sumar(porMirar)} alVolver={() => (setPorMirar(null), campo.current?.focus())} /> : null}
     </div>
   );
 }
@@ -595,50 +585,3 @@ function comoEncontrado(e: EquivalenteVerificado): ElementoEncontrado {
   return { ...e, matchedAlternativeName: null, origin: { loadedBy: null, approximateCorrespondence: null }, originLevel: 'VERIFIED', certification: null, verifiedEquivalent: null };
 }
 
-/**
- * NUA-03 · Lo de otro profesional se mira antes de sumarlo: el aviso (lo cargó otro profesional y Administración no lo
- * revisó) y su composición cada 100 g, con «Sumarlo» (que recibe el foco) y «Volver a buscar». Nada de quién lo cargó.
- */
-function MirarAntesDeSumar({ alimento, boton, alSumar, alVolver }: { alimento: ElementoDeCatalogo | ElementoEncontrado; boton: RefObject<HTMLButtonElement | null>; alSumar: () => void; alVolver: () => void }) {
-  const c = alimento.composition;
-  const titulo = useId();
-  return (
-    <section className="buscador-de-la-opcion__mirar tarjeta" aria-labelledby={titulo} data-mirar-antes-de-sumar onKeyDown={(e) => (e.key === 'Escape' ? (e.stopPropagation(), alVolver()) : undefined)}>
-      <h3 id={titulo}>
-        {alimento.name} <span className="etiqueta-de-dato" data-nivel="OTHER_PROFESSIONAL">{COPY_ALIMENTOS.deOtroProfesional}</span>
-      </h3>
-      <p className="nota">{COPY_ALIMENTOS.avisoDeOtroProfesional}</p>
-      <dl className="buscador-de-la-opcion__composicion">
-        <div>
-          <dt>Energía</dt>
-          <dd>{valorDe(c.energyKcal, 'kcal')}</dd>
-        </div>
-        <div>
-          <dt>Carbohidratos</dt>
-          <dd>{valorDe(c.carbohydrateG, 'g')}</dd>
-        </div>
-        <div>
-          <dt>Grasas</dt>
-          <dd>{valorDe(c.fatG, 'g')}</dd>
-        </div>
-        <div>
-          <dt>Proteínas</dt>
-          <dd>{valorDe(c.proteinG, 'g')}</dd>
-        </div>
-        <div>
-          <dt>{C.fibra}</dt>
-          <dd>{valorDe(c.fiberG, 'g')}</dd>
-        </div>
-      </dl>
-      <p className="nota">{C.cadaCien(c.referenceAmount === '100ml')}</p>
-      <div className="acciones">
-        <button ref={boton} type="button" className="boton boton--primario" onClick={alSumar} data-sumarlo>
-          {COPY_ALIMENTOS.sumarIgual}
-        </button>
-        <button type="button" className="boton boton--secundario" onClick={alVolver}>
-          {COPY_ALIMENTOS.volverABuscar}
-        </button>
-      </div>
-    </section>
-  );
-}

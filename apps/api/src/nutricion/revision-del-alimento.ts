@@ -3,7 +3,7 @@
  * leen el profesional y Administración, lo que decidió Administración sobre la versión vigente (NUA-D07) y cuándo una
  * corrección cambia algo (NUA-D01). Las prueba `revision-del-alimento.spec.ts`.
  */
-import type { ElementoDeCatalogo, GrupoDeAlimentoEnLaBase, RevisionDelAlimento } from '@be/domain';
+import type { ElementoDeCatalogo, GrupoDeAlimentoEnLaBase, MedidaCasera, RevisionDelAlimento } from '@be/domain';
 
 /** Un alimento cargado a mano, en su versión vigente, con lo que hace falta para el profesional y para Administración. */
 export interface FilaDeAlimentoCargado {
@@ -14,7 +14,14 @@ export interface FilaDeAlimentoCargado {
   disponible: boolean;
   cantidadDeVersiones: number;
   grupoDeAlimento: GrupoDeAlimentoEnLaBase | null;
-  compartido: boolean;
+  /**
+   * DL-180, segundo tramo (NUA-D15): quién lo cargó, para la consola de Administración (su identidad, para contar
+   * profesionales distintos, y su nombre de profesional). Nunca sus personas ni sus planes.
+   */
+  autorId: string | null;
+  autorNombre: string | null;
+  /** NUA-08: sus medidas caseras vigentes; `null` si nunca tuvo. Opcional para las filas sintéticas de las pruebas. */
+  medidasCaseras?: MedidaCasera[] | null;
   creado: Date;
   actualizado: Date;
   resultado: 'CERTIFICADO' | 'EQUIVALENTE' | 'QUITADA' | null;
