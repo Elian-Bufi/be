@@ -2,7 +2,8 @@
 
 /**
  * Confirmación contextual con CTA explícito (10-B04 §26: sin «Escribí FINALIZAR»). `<dialog>` nativo en modo modal:
- * retiene el foco y lo devuelve al disparador al cerrar; Esc equivale a «Volver» salvo mientras se envía. El foco
+ * retiene el foco y lo devuelve al disparador al cerrar; Esc y tocar afuera (NUP-11) equivalen a «Volver» salvo mientras se
+ * envía, y si se escribió algo adentro, primero preguntan en el mismo diálogo. El foco
  * inicial cae en el primer control (el motivo, si hay, o «Volver»): la acción de efecto nunca es la opción por defecto.
  *
  * Se abre y se cierra en un efecto de diseño (`useLayoutEffect`), antes de los efectos comunes de la página. Cerrar un
@@ -11,8 +12,10 @@
  * devolvía a «Revisar y activar…» (revisión adversaria de la etapa 1 de WP-EDITORES-PROFESIONAL).
  */
 import { COPY_VINCULO } from '@be/domain';
-import { useId, useLayoutEffect, useRef, type ReactNode } from 'react';
+import { useId, useLayoutEffect, useRef, useState, type ReactNode } from 'react';
+import { COPY_CUADRO_ENFOCADO } from './cuadro-enfocado';
 import { Aviso } from './formulario';
+import { useTocarAfuera } from './tocar-afuera';
 
 interface PropsDeDialogo {
   readonly abierto: boolean;
@@ -54,17 +57,36 @@ export function DialogoDeConfirmacion({
 }: PropsDeDialogo) {
   const ref = useRef<HTMLDialogElement>(null);
   const volver = useRef<HTMLButtonElement>(null);
+  const seguir = useRef<HTMLButtonElement>(null);
   const id = useId();
+  // NUP-11 (NUP-D10): si se escribió algo adentro desde que se abrió, Escape y tocar afuera primero preguntan.
+  const escrito = useRef(false);
+  const [preguntando, setPreguntando] = useState(false);
 
   useLayoutEffect(() => {
     const dialogo = ref.current;
     if (!dialogo) return;
     if (abierto && !dialogo.open) {
+      escrito.current = false;
+      setPreguntando(false);
       dialogo.showModal();
       if (focoEnVolver) volver.current?.focus();
     }
     if (!abierto && dialogo.open) dialogo.close();
   }, [abierto, focoEnVolver]);
+
+  useLayoutEffect(() => {
+    if (preguntando) seguir.current?.focus();
+  }, [preguntando]);
+
+  /** Escape y tocar afuera: nunca mientras se envía; con algo escrito, preguntan. «Volver» es explícito y no pregunta. */
+  const pedirVolver = () => {
+    if (enviando) return;
+    if (escrito.current && !preguntando) return setPreguntando(true);
+    setPreguntando(false);
+    onVolver();
+  };
+  const afuera = useTocarAfuera(pedirVolver, !enviando);
 
   return (
     <dialog
@@ -73,8 +95,12 @@ export function DialogoDeConfirmacion({
       aria-labelledby={`${id}-titulo`}
       onCancel={(e) => {
         e.preventDefault();
-        if (!enviando) onVolver();
+        pedirVolver();
       }}
+      onInput={() => {
+        escrito.current = true;
+      }}
+      {...afuera}
     >
       <h2 id={`${id}-titulo`}>{titulo}</h2>
       {children}
@@ -83,6 +109,25 @@ export function DialogoDeConfirmacion({
           <p>{error}</p>
         </Aviso>
       ) : null}
+      {/* NUP-11: la pregunta va en el mismo diálogo, en el lugar de las acciones: un diálogo no abre otro encima. */}
+      {preguntando ? (
+        <div className="dialogo__pregunta" role="alertdialog" aria-labelledby={`${id}-pregunta`} aria-describedby={`${id}-explicacion`} data-pregunta-al-cerrar>
+          <p id={`${id}-pregunta`}>
+            <strong>{COPY_CUADRO_ENFOCADO.preguntaAlCerrar}</strong>
+          </p>
+          <p id={`${id}-explicacion`} className="nota">
+            {COPY_CUADRO_ENFOCADO.explicacionAlCerrar}
+          </p>
+          <p className="dialogo__acciones-de-la-pregunta">
+            <button ref={seguir} type="button" className="boton boton--secundario" onClick={() => setPreguntando(false)}>
+              {COPY_CUADRO_ENFOCADO.seguirEditando}
+            </button>
+            <button type="button" className="boton boton--quieto" onClick={pedirVolver}>
+              {COPY_CUADRO_ENFOCADO.cerrarSinGuardar}
+            </button>
+          </p>
+        </div>
+      ) : (
       <div className="acciones">
         <button ref={volver} type="button" className="boton boton--secundario" onClick={onVolver} disabled={enviando}>
           {textoVolver}
@@ -105,6 +150,7 @@ export function DialogoDeConfirmacion({
           {enviando ? textoEnviando : textoConfirmar}
         </button>
       </div>
+      )}
     </dialog>
   );
 }

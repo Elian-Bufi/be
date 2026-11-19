@@ -12,7 +12,7 @@
  */
 import { COPY_NUTRICION, leerNumero, motivoDeNumeroIlegible, type ElementoDeCatalogo } from '@be/domain';
 import { useState, type FormEvent } from 'react';
-import { Aviso, Campo } from '../../../../components/formulario';
+import { Aviso, Campo, enterAlQueFalta } from '../../../../components/formulario';
 import { Icono } from '../../../../components/icono';
 import { api } from '../../../../lib/api';
 import { mensajeDeFallo, useClaveDeIntento } from '../../../../lib/intento';
@@ -26,6 +26,9 @@ export function CrearManualmente({ id, nombreInicial, onCreado, onVolver }: { id
   const [errores, setErrores] = useState<Record<string, string>>({});
   const [fallo, setFallo] = useState<string | null>(null);
   const [creando, setCreando] = useState(false);
+  // NUP-09: Enter, mientras falte algún valor, pasa al siguiente campo vacío; con todo escrito, crea.
+  const loQueFalta = (): string[] =>
+    ([['nombre', nuevo.nombre], ['kcal', nuevo.kcal], ['c', nuevo.c], ['g', nuevo.g], ['p', nuevo.p]] as const).filter(([, v]) => v.trim() === '').map(([clave]) => `${id}-${clave}`);
 
   async function crear(e: FormEvent) {
     e.preventDefault();
@@ -60,7 +63,7 @@ export function CrearManualmente({ id, nombreInicial, onCreado, onVolver }: { id
   }
 
   return (
-    <form className="agregar-item__otro" onSubmit={(e) => void crear(e)} noValidate>
+    <form className="agregar-item__otro" onSubmit={(e) => void crear(e)} onKeyDown={(e) => enterAlQueFalta(e, loQueFalta())} noValidate>
       <button type="button" className="boton boton--enlace agregar-item__volver" onClick={onVolver}>
         <Icono nombre="izquierda" tamano={18} />
         Volver a la opción

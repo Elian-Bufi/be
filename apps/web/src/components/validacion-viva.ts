@@ -57,6 +57,18 @@ export function idsDelCampo(elemento: { readonly id?: string; readonly parentEle
   return ids;
 }
 
+/**
+ * NUP-09 (WP-NUTRICION-PLANIFICACION; NUP-D09) · Enter en un campo, mientras falten datos: a qué campo pasa. Las
+ * posiciones son el orden del formulario: `actual`, la del campo donde se apretó; `faltan`, las de los campos que
+ * faltan o tienen algo por corregir. Pasa al siguiente que falta después del actual y, si no hay, al primero. `null`:
+ * no falta nada en otro campo (o falta solo el actual), y Enter envía como siempre.
+ */
+export function siguienteQueFalta(actual: number, faltan: readonly number[]): number | null {
+  const otros = [...new Set(faltan)].filter((p) => p !== actual).sort((a, b) => a - b);
+  if (otros.length === 0) return null;
+  return otros.find((p) => p > actual) ?? otros[0]!;
+}
+
 /** Lo que oye el lector cuando ya no queda nada por corregir, después de haber mostrado avisos; si no, nada. */
 export function anuncioDeLosAvisos(a: AvisosDelFormulario, listo: string): string {
   return a.huboAvisos && a.mostrados.length === 0 ? listo : '';

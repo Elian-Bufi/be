@@ -115,7 +115,7 @@ export function FormularioDeEvaluacion({ onRegistrada, onCancelar, conTitulo = t
   // El mismo error va al resumen y al campo (B10-10:164-165).
   const porCampo = erroresPorCampo(errores);
   return (
-    <form className="formulario" onSubmit={enviar} onBlur={avisos.alSalir} noValidate>
+    <form className="formulario" onSubmit={enviar} onBlur={avisos.alSalir} onKeyDown={avisos.alEnter} noValidate>
       {conTitulo ? <h3>{COPY_NUTRICION.nuevaEvaluacion}</h3> : null}
       <ResumenDeErrores titulo="Revisá estos datos:" errores={errores} intento={avisos.envios} />
       <AnuncioDeLosAvisos texto={avisos.anuncio(COPY_AVISOS_VIVOS.listoParaGuardar)} />
@@ -382,7 +382,7 @@ export function FormularioDeObjetivo({
     );
   }
   return (
-    <form className="formulario" onSubmit={enviar} onBlur={avisos.alSalir} noValidate>
+    <form className="formulario" onSubmit={enviar} onBlur={avisos.alSalir} onKeyDown={avisos.alEnter} noValidate>
       <h3>{COPY_NUTRICION.nuevaVersionDeObjetivo}</h3>
       <ResumenDeErrores titulo="Revisá estos datos:" errores={errores} intento={avisos.envios} />
       <AnuncioDeLosAvisos texto={avisos.anuncio(COPY_AVISOS_VIVOS.listoParaGuardar)} />

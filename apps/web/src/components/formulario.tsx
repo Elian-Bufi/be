@@ -4,8 +4,8 @@
  * Piezas de formulario accesibles (10-B10 §6-§8): label persistente (el placeholder no la sustituye), error asociado al
  * campo con texto (no solo color), resumen de errores que recibe el foco.
  */
-import { forwardRef, useEffect, useRef, useState, type FocusEvent, type InputHTMLAttributes, type ReactNode } from 'react';
-import { alEnviar, alSalirDelCampo, anuncioDeLosAvisos, idsDelCampo, SIN_AVISOS, type AvisosDelFormulario, type ErrorDeCampo } from './validacion-viva';
+import { forwardRef, useEffect, useRef, useState, type FocusEvent, type InputHTMLAttributes, type KeyboardEvent, type ReactNode } from 'react';
+import { alEnviar, alSalirDelCampo, anuncioDeLosAvisos, idsDelCampo, siguienteQueFalta, SIN_AVISOS, type AvisosDelFormulario, type ErrorDeCampo } from './validacion-viva';
 
 interface PropsDeCampo extends InputHTMLAttributes<HTMLInputElement> {
   readonly id: string;
@@ -112,7 +112,39 @@ export function useAvisosVivos(validar: () => readonly ErrorDeCampo[]) {
     },
     /** Lo que oye el lector cuando ya no queda nada por corregir. */
     anuncio: (listo: string): string => anuncioDeLosAvisos(avisos, listo),
+    /** NUP-09: en el `onKeyDown` del `<form>`: Enter, mientras falten datos, pasa al siguiente campo que falta. */
+    alEnter: (evento: KeyboardEvent<HTMLElement>): void => enterAlQueFalta(evento, ultimo.current().map((e) => e.id)),
   };
+}
+
+/** Los campos de una línea donde Enter envía el formulario: los demás (casillas, botones, archivos) no se tocan. */
+const SIN_ENTER = new Set(['button', 'submit', 'reset', 'checkbox', 'radio', 'file', 'image', 'color', 'range']);
+
+/**
+ * NUP-09 (WP-NUTRICION-PLANIFICACION; NUP-D09) · Enter en un campo de una línea: si falta algo en otro campo del
+ * formulario (`faltan`, sus `id`), lleva el foco al siguiente que falta (o al primero) en vez de enviar. Si no falta nada
+ * en otro, Enter envía como siempre, y el envío muestra lo que falte. No toca las áreas de texto (Enter es un renglón
+ * nuevo), las listas ni los botones. Lo usa `useAvisosVivos`; un formulario sin ella lo llama con su propia lista.
+ */
+export function enterAlQueFalta(evento: KeyboardEvent<HTMLElement>, faltan: readonly string[]): void {
+  if (evento.key !== 'Enter' || evento.defaultPrevented || evento.shiftKey || evento.altKey || evento.ctrlKey || evento.metaKey || evento.nativeEvent.isComposing) return;
+  const campo = evento.target;
+  if (!(campo instanceof HTMLInputElement) || SIN_ENTER.has(campo.type)) return;
+  // Un buscador con su lista (un combobox) usa Enter para elegir: es suyo.
+  if (campo.getAttribute('role') === 'combobox') return;
+  const forma = evento.currentTarget;
+  const lugares = faltan.map((id) => document.getElementById(id)).filter((e): e is HTMLElement => e !== null && forma.contains(e));
+  // El orden del formulario: el campo actual y los que faltan, como están en la página.
+  const enOrden = [...new Set<HTMLElement>([campo, ...lugares])].sort((a, b) => (a === b ? 0 : a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1));
+  const actual = enOrden.indexOf(campo);
+  // Un grupo que contiene al campo (un `fieldset` con su aviso) es el campo actual.
+  const posiciones = lugares.map((e) => (e === campo || e.contains(campo) ? actual : enOrden.indexOf(e)));
+  const destino = siguienteQueFalta(actual, posiciones);
+  if (destino === null) return;
+  evento.preventDefault();
+  const lugar = enOrden[destino]!;
+  const enfocable = lugar.matches('input, select, textarea, button, [tabindex]') ? lugar : lugar.querySelector<HTMLElement>('input, select, textarea, button, [tabindex]');
+  (enfocable ?? lugar).focus();
 }
 
 /** ED-04: la región que lee el lector de pantalla cuando ya no queda nada por corregir («Listo para registrar»). */

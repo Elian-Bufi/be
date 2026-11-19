@@ -9,8 +9,9 @@
  * Las reglas de §2.3, todas acá:
  * - **un solo botón principal** (`principal`): el cuadro no dibuja otro lleno;
  * - el título dice qué se decide, y **al abrirse el foco va al título** (o a `focoInicial`, un buscador);
- * - **Escape y «Cancelar» no escriben nada:** solo llaman a `onCerrar`. Mientras está `ocupado` (un envío en curso) no
- *   se cierra, porque su resultado tiene que poder leerse;
+ * - **Escape, «Cancelar» y tocar afuera no escriben nada:** solo llaman a `onCerrar` (tocar afuera, NUP-11, va por la
+ *   misma salida que Escape). Mientras está `ocupado` (un envío en curso) no se cierra, porque su resultado tiene que
+ *   poder leerse;
  * - **con cambios (`conCambios`), cerrar pregunta,** en el mismo cuadro: un cuadro no abre otro encima. «Seguir
  *   editando» tiene el foco;
  * - el paso siguiente reemplaza al anterior en el mismo cuadro: lo decide quien lo abre, con su contenido.
@@ -19,6 +20,7 @@
  */
 import { useEffect, useId, useRef, useState, type ReactNode, type RefObject } from 'react';
 import { Icono } from './icono';
+import { useTocarAfuera } from './tocar-afuera';
 
 export const COPY_CUADRO_ENFOCADO = {
   cerrar: 'Cerrar',
@@ -122,6 +124,8 @@ export function CuadroEnfocado({
     setPreguntando(false);
     onCerrar();
   };
+  // NUP-11: tocar el fondo es Escape; con cambios, pregunta.
+  const afuera = useTocarAfuera(pedirCerrar, !ocupado);
 
   const clase = ['dialogo', 'cuadro-enfocado', forma === 'panel' ? 'cajon' : 'cuadro-enfocado--dialogo', ancho ? 'dialogo--ancho' : '', className].filter(Boolean).join(' ');
   return (
@@ -137,6 +141,7 @@ export function CuadroEnfocado({
       onClose={() => {
         if (abierto) onCerrar();
       }}
+      {...afuera}
     >
       <div className="cajon__cabecera">
         <div>

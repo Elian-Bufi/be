@@ -282,7 +282,7 @@ export function EditorDeReceta({
           <h2>{cargada ? `${COPY_RECETAS.editarReceta} · ${COPY_RECETAS.version(cargada.versionNumber)}` : COPY_RECETAS.nuevaReceta}</h2>
         </>
       )}
-      <form onSubmit={(e) => void guardar(e)} onBlur={avisos.alSalir} noValidate className="secciones">
+      <form onSubmit={(e) => void guardar(e)} onBlur={avisos.alSalir} onKeyDown={avisos.alEnter} noValidate className="secciones">
         <ResumenDeErrores titulo="Revisá estos datos antes de guardar" errores={errores} intento={avisos.envios} />
         <AnuncioDeLosAvisos texto={avisos.anuncio(COPY_AVISOS_VIVOS.listoParaGuardar)} />
         <section className="seccion" aria-labelledby="receta-datos">

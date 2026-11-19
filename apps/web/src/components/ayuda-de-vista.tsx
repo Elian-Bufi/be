@@ -17,6 +17,7 @@
 import { Enlace } from './enlace';
 import { createContext, useContext, useEffect, useId, useRef, type ReactNode } from 'react';
 import { Icono } from './icono';
+import { useTocarAfuera } from './tocar-afuera';
 
 const EnLaGuia = createContext(false);
 
@@ -72,6 +73,8 @@ export function AyudaDeVista({
   useEffect(() => {
     if (dialogo.current?.open) dialogo.current.close();
   }, [deQue]);
+  // NUP-11: tocar afuera la cierra, como Escape.
+  const afuera = useTocarAfuera(() => dialogo.current?.close());
   if (enLaGuia) {
     return (
       <section className="guia__seccion como-se-lee" id={anclaDeLaAyuda(deQue)} aria-labelledby={`${id}-titulo`}>
@@ -86,7 +89,7 @@ export function AyudaDeVista({
         <Icono nombre="ayuda" tamano={18} />
         <span className="como-se-lee__palabras">Cómo se lee esta vista</span>
       </button>
-      <dialog ref={dialogo} className="dialogo como-se-lee" aria-labelledby={`${id}-titulo`}>
+      <dialog ref={dialogo} className="dialogo como-se-lee" aria-labelledby={`${id}-titulo`} {...afuera}>
         <h2 id={`${id}-titulo`} ref={encabezado} tabIndex={-1}>
           {titulo}
         </h2>
