@@ -122,7 +122,7 @@ import { ofreceDescartar, resultadoDelDescarte, textoDelDescarteQueNoSeHizo } fr
 import { conLosIdentificadoresNuevos, cualMande, huellaDelGuardado, type CuerpoDelGuardado } from '../es-lo-que-mande';
 import { COPY_RESULTADO_DE_ACTIVAR, hayQueReleer, loQuePasoAlActivar, type VersionReleida } from '../resultado-de-activar';
 import { useCambiosSinGuardar, usePersonaDelArea } from '../marco-del-area';
-import { AVISO_DE_LOS_TOPES, esUnTope, TEXTO_DE_LOS_TOPES, TOPES_DE_ENTRENAMIENTO, topesPasadosDeEntrenamiento } from '../topes-del-plan';
+import { AVISO_DE_LOS_TOPES, esUnTope, motivoSinAgregarBloque, TEXTO_DE_LOS_TOPES, TOPES_DE_ENTRENAMIENTO, topesPasadosDeEntrenamiento } from '../topes-del-plan';
 import { INCOMPLETO, loQueQuedaSinCompletarEnEntrenamiento, TEXTO_DE_LO_INCOMPLETO } from '../revisar-el-plan';
 import { agruparAvisos, completarLasVacias, COPY_AVISOS_AGRUPADOS, leerLasRepeticiones, lugarDelEjercicio, seriesEnPalabras } from '../avisos-agrupados';
 import { RenglonDeAviso, type CosaParaRevisar } from '../renglon-de-aviso';
@@ -172,11 +172,16 @@ import { COPY_DUPLICAR_EL_DIA as DD, diasDeDestino, duplicarElDia, sesionesDelDi
 
 type MicrocicloE = NonNullable<BloqueE['microcycles']>[number];
 
-/** ENP-D10: el preset de prescripción elegido con la sesión vacía. */
+/**
+ * ENP-D10 y ENP-D18: el preset de prescripción elegido con la sesión vacía. Vive en esta pantalla, atado a la sesión (por
+ * su identificador), hasta que se agregan ejercicios: entonces se escribe en cada uno. No se guarda solo en el plan, y el
+ * texto lo dice.
+ */
 export const COPY_PRESCRIPCION_DE_LA_SESION = {
   paraLosQueAgregues: (nombre: string) => `Para los ejercicios que agregues: «${nombre}»`,
+  dondeVive: 'Vive en esta pantalla: se escribe en cada ejercicio al agregarlo. Si cerrás o recargás el editor antes, no queda.',
   quitar: 'Quitar',
-  elegido: (nombre: string) => `«${nombre}» queda para los ejercicios que agregues a esta sesión.`,
+  elegido: (nombre: string) => `«${nombre}» se va a escribir en cada ejercicio que agregues a esta sesión. Hasta entonces vive en esta pantalla: no queda guardado.`,
 } as const;
 
 /** La jerarquía de API-SER-01 como entrada del PATCH, con los tres estados de cada serie (en el dominio, para que las pruebas editen igual). */
@@ -253,7 +258,12 @@ const dondeEsta = (p: ValidationIssue, bloques: Bloques): string =>
 
 const esDelEditor = (codigo: string): boolean => (Object.values(N) as readonly string[]).includes(codigo);
 
-const sesionVacia = (n: number): SesionE => ({ label: `Sesión ${String.fromCharCode(64 + Math.min(n, 26))}`, instructions: null, prescriptions: [] });
+/**
+ * Una sesión nueva, «Sesión A», «Sesión B»… ENP-D17: nace con su identificador, como las de «Duplicar el día» (el contrato
+ * lo admite y el servidor lo conserva): sus días se eligen enseguida, sin esperar al guardado, y lo que la pantalla le
+ * ata (el preset de la sesión vacía) la sigue aunque se mueva o se quite otra.
+ */
+const sesionVacia = (n: number): SesionE => ({ sessionId: crypto.randomUUID(), label: `Sesión ${String.fromCharCode(64 + Math.min(n, 26))}`, instructions: null, prescriptions: [] });
 
 const nombreDelBloque = (b: { readonly label: string }, n: number): string => b.label.trim() || `${COPY_ENTRENAMIENTO.bloque} ${n + 1}`;
 const nombreDelMicrociclo = (m: { readonly label: string }, n: number): string => m.label.trim() || `${COPY_ENTRENAMIENTO.microciclo} ${n + 1}`;
@@ -1036,8 +1046,10 @@ export function EditorDePlan({
   };
   // ── DL-181: los bloques de la sesión ─────────────────────────────────────────────────────────────────────────
   const claveDelBloque = (groupId: string) => `${prefijo}-s${k}-${groupId}`;
+  // §7: el tope de bloques de la sesión (el del contrato), dicho antes de tocar.
+  const sinAgregarBloque = sesion ? motivoSinAgregarBloque(sesion.exerciseGroups?.length ?? 0) : null;
   const agregarUnBloqueALaSesion = () => {
-    if (!sesion) return;
+    if (!sesion || sinAgregarBloque) return;
     const r = agregarBloqueALaSesion(sesion);
     cambiar((x) => ((lasSesiones(x)[k] = r.sesion), x));
     // Nace con un nombre de compromiso y con su campo abierto: lo que se escribe lo reemplaza.
@@ -1063,9 +1075,13 @@ export function EditorDePlan({
     cambiar((x) => ((sesionesDelGrupo(x, donde)[donde.k] = structuredClone(antes)), x));
     setMensaje({ tipo: 'exito', texto: COPY_PRESETS.deshecho });
   };
-  /** ENP-D10: el preset elegido con la sesión vacía, para los ejercicios que se agreguen a esta sesión. */
-  const claveDeEstaSesion = `${prefijo}-s${k}`;
-  const prescripcionDeEstaSesion = prescripcionDeLaSesion[claveDeEstaSesion] ?? null;
+  /**
+   * ENP-D10 y ENP-D18: el preset elegido con la sesión vacía, para los ejercicios que se agreguen a esta sesión, atado a su
+   * identificador: si se quita o se mueve otra sesión, no pasa a la que quedó en su lugar. Una sesión sin identificador
+   * todavía (una habitual recién insertada) lo recibe al elegir el preset.
+   */
+  const claveDeEstaSesion = sesion?.sessionId ?? null;
+  const prescripcionDeEstaSesion = claveDeEstaSesion ? (prescripcionDeLaSesion[claveDeEstaSesion] ?? null) : null;
   /** Un ejercicio de la sesión que se mira, suelto o dentro de su bloque (DL-181: ahí su título es de un nivel más). */
   const ejercicioEnLaSesion = (l: number, enBloque: boolean) => {
     if (!sesion) return null;
@@ -2180,15 +2196,21 @@ export function EditorDePlan({
                 <Icono nombre="plantillas" tamano={18} />
                 {CE.presets}
               </button>
-              {prescripcionDeEstaSesion ? (
-                <p className="etiqueta-de-dato estacion__prescripcion-de-la-sesion" data-prescripcion-de-la-sesion>
-                  <Icono nombre="aplicar" tamano={15} />
-                  {COPY_PRESCRIPCION_DE_LA_SESION.paraLosQueAgregues(prescripcionDeEstaSesion.nombre)}
-                  <button type="button" className="boton boton--enlace" onClick={() => setPrescripcionDeLaSesion(({ [claveDeEstaSesion]: _quitada, ...resto }) => resto)}>
-                    {COPY_PRESCRIPCION_DE_LA_SESION.quitar}
-                    <span className="visualmente-oculto"> {prescripcionDeEstaSesion.nombre}</span>
-                  </button>
-                </p>
+              {prescripcionDeEstaSesion && claveDeEstaSesion ? (
+                <div className="estacion__prescripcion-de-la-sesion" data-prescripcion-de-la-sesion>
+                  <p className="etiqueta-de-dato">
+                    <Icono nombre="aplicar" tamano={15} />
+                    {COPY_PRESCRIPCION_DE_LA_SESION.paraLosQueAgregues(prescripcionDeEstaSesion.nombre)}
+                    <button type="button" className="boton boton--enlace" onClick={() => setPrescripcionDeLaSesion(({ [claveDeEstaSesion]: _quitada, ...resto }) => resto)}>
+                      {COPY_PRESCRIPCION_DE_LA_SESION.quitar}
+                      <span className="visualmente-oculto"> {prescripcionDeEstaSesion.nombre}</span>
+                    </button>
+                  </p>
+                  {/* ENP-D18: dice dónde vive: no es algo guardado en el plan. */}
+                  <p className="nota" data-donde-vive-el-preset>
+                    {COPY_PRESCRIPCION_DE_LA_SESION.dondeVive}
+                  </p>
+                </div>
               ) : null}
             </div>
           ) : null}
@@ -2251,11 +2273,26 @@ export function EditorDePlan({
                   <Icono nombre="mas" tamano={18} />
                   {COPY_ENTRENAMIENTO.agregarEjercicio}
                 </button>
-                {/* DL-181: un bloque nuevo, «Seguido», con su nombre a la vista para cambiarlo. */}
-                <button type="button" className="boton boton--quieto" data-agregar-bloque-de-la-sesion onClick={agregarUnBloqueALaSesion}>
+                {/* DL-181: un bloque nuevo, «Seguido», con su nombre a la vista para cambiarlo. §7: en el tope del contrato
+                    (20 por sesión) queda apagado, con su motivo a la vista: antes, el bloque 21 lo rechazaba el servidor. */}
+                <button
+                  type="button"
+                  className="boton boton--quieto"
+                  data-agregar-bloque-de-la-sesion
+                  aria-disabled={sinAgregarBloque ? true : undefined}
+                  aria-describedby={sinAgregarBloque ? `${prefijo}-s${k}-tope-de-bloques` : undefined}
+                  onClick={() => {
+                    if (!sinAgregarBloque) agregarUnBloqueALaSesion();
+                  }}
+                >
                   <Icono nombre="mas" tamano={18} />
                   {COPY_BLOQUES_DE_LA_SESION.agregarBloque}
                 </button>
+                {sinAgregarBloque ? (
+                  <p id={`${prefijo}-s${k}-tope-de-bloques`} className="nota editor-del-plan__tope" data-tope-de-bloques>
+                    {sinAgregarBloque}
+                  </p>
+                ) : null}
                 <span className="nota">Del catálogo BE, de tus habituales o creado a mano.</span>
                 <Ayuda titulo="Qué es un bloque">
                   <p>{COPY_BLOQUES_DE_LA_SESION.queEs}</p>
@@ -2393,7 +2430,11 @@ export function EditorDePlan({
         }
         onAplicarPrescripcion={aplicarElPreset}
         onElegirParaLaSesionVacia={(nombre, aplicar) => {
-          setPrescripcionDeLaSesion((m) => ({ ...m, [claveDeEstaSesion]: { nombre, aplicar } }));
+          if (!sesion) return;
+          // ENP-D18: atado al identificador de la sesión; si todavía no tiene (una habitual recién insertada), lo recibe ahora.
+          const clave = sesion.sessionId ?? crypto.randomUUID();
+          if (!sesion.sessionId) cambiarLaSesion((s) => ({ ...s, sessionId: clave }));
+          setPrescripcionDeLaSesion((m) => ({ ...m, [clave]: { nombre, aplicar } }));
           setMensaje({ tipo: 'exito', texto: COPY_PRESCRIPCION_DE_LA_SESION.elegido(nombre) });
         }}
         onAplicarEstructura={aplicarLaEstructura}

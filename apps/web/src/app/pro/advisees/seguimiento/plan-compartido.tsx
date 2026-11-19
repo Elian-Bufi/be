@@ -16,6 +16,7 @@
  */
 import {
   COPY_DEL_PLAN,
+  COPY_BLOQUES_DE_LA_SESION,
   COPY_DEL_PLAN_DE_ENTRENAMIENTO as C,
   COPY_ENTRENAMIENTO,
   ETIQUETA_DE_ALCANCE,
@@ -33,6 +34,7 @@ import { Retrato } from '../../../../components/retrato';
 import { diaCivil, diaSinElAnioEnCurso } from '../../../../lib/formato';
 import { useNombres } from '../../../../lib/nombres-ocultos';
 import { ComidasDelPlan, SelectorDeDiaTipo } from '../nutrition/estructura-del-plan';
+import { partesParaLeer } from '../training/bloques-en-la-lectura';
 import { TiraDelObjetivo } from './tira-del-objetivo';
 import { COPY_OTRAS_AREAS as T, encabezadoDelPlan, tablaDelAvance } from './otras-areas';
 
@@ -209,20 +211,46 @@ function Sesiones({ sesiones, abrir }: { sesiones: readonly Sesion[]; abrir: () 
               <span className="nivel-del-plan__rotulo">{COPY_ENTRENAMIENTO.indicacionesDeLaSesion}</span> {conNumerosPegados(s.instructions)}
             </p>
           ) : null}
+          {/* §7 (WP-ENTRENAMIENTO-PLANIFICACION): los ejercicios bajo su bloque, como los ve la persona. Lo leen otros
+              profesionales: el bloque se describe («En vueltas · se alternan 2 ejercicios · 3 vueltas»), no se indica. */}
           <ol className="plan-compartido__ejercicios">
-            {enOrden(s.prescriptions).map((p) => (
-              <li key={p.prescriptionId}>
-                <strong>{p.exerciseName}</strong>
-                <ul className="lista-compacta">
-                  {lineasDePrescripcion(p, { sinCriterioExplicito: true }).map((l, i) => (
-                    <li key={i}>{l}</li>
-                  ))}
-                </ul>
-              </li>
-            ))}
+            {partesParaLeer(s).map((parte) =>
+              parte.tipo === 'suelto' ? (
+                <EjercicioCompartido key={parte.ejercicio.prescriptionId} p={parte.ejercicio} />
+              ) : (
+                <li key={parte.encabezado.groupId} className="plan-compartido__bloque-de-la-sesion" aria-label={parte.encabezado.etiqueta} data-bloque-del-plan={parte.encabezado.groupId}>
+                  <p className="plan-compartido__nombre-del-bloque">
+                    <span className="bloque-del-editor__rotulo">{COPY_BLOQUES_DE_LA_SESION.bloque}</span> <strong>{parte.encabezado.nombre}</strong>
+                  </p>
+                  {parte.encabezado.detalle ? (
+                    <p className="nota" data-detalle-del-bloque>
+                      {parte.encabezado.detalle}
+                    </p>
+                  ) : null}
+                  <ol className="plan-compartido__ejercicios">
+                    {parte.ejercicios.map((p) => (
+                      <EjercicioCompartido key={p.prescriptionId} p={p} />
+                    ))}
+                  </ol>
+                </li>
+              ),
+            )}
           </ol>
         </details>
       ))}
     </>
+  );
+}
+
+function EjercicioCompartido({ p }: { p: Sesion['prescriptions'][number] }) {
+  return (
+    <li>
+      <strong>{p.exerciseName}</strong>
+      <ul className="lista-compacta">
+        {lineasDePrescripcion(p, { sinCriterioExplicito: true }).map((l, i) => (
+          <li key={i}>{l}</li>
+        ))}
+      </ul>
+    </li>
   );
 }

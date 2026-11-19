@@ -19479,3 +19479,70 @@ html:has(.estacion:not([data-en-el-asistente])) {
   padding: 0.35rem 0;
   border-top: 1px solid var(--borde);
 }
+
+/* ═══ WP-ENTRENAMIENTO-PLANIFICACION, tramo 2 ════════════════════════════════════════════════════════════════════════
+   §7: los bloques de la sesión en las lecturas (la versión activa y el plan compartido), con la raya del editor. */
+.bloque-del-plan {
+  display: grid;
+  gap: 0.45rem;
+  padding: 0.55rem 0.75rem 0.7rem 0.9rem;
+  border: 1px solid var(--borde);
+  border-left: 4px solid var(--borde-control);
+  border-radius: 12px;
+}
+
+.bloque-del-plan[data-tipo='ROUNDS'] {
+  border-left-color: var(--enlace);
+}
+
+.bloque-del-plan__titulo {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.bloque-del-plan__detalle {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0;
+  font-weight: 600;
+}
+
+.bloque-del-plan__detalle > svg {
+  flex: none;
+}
+
+.bloque-del-plan__ejercicios {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.plan-compartido__bloque-de-la-sesion {
+  padding: 0.35rem 0 0.35rem 0.6rem;
+  border-left: 3px solid var(--borde-control);
+}
+
+.plan-compartido__bloque-de-la-sesion > p {
+  margin: 0;
+}
+
+/* ENP-D18: el preset de la sesión vacía, con dónde vive dicho debajo. */
+.estacion__prescripcion-de-la-sesion {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.estacion__prescripcion-de-la-sesion > p {
+  margin: 0;
+}
+
+.estacion__prescripcion-de-la-sesion .etiqueta-de-dato {
+  width: fit-content;
+  white-space: normal;
+}
+
+/* §7: «Agregar bloque» en el tope, con su motivo a la vista. */
+.editor-del-plan__tope {
+  flex-basis: 100%;
+  margin: 0;
+}

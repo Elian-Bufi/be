@@ -28,12 +28,14 @@ import {
   type PrescripcionConObjetivos,
   type SesionConObjetivos,
   COPY_TIPOS_DE_SERIE,
+  COPY_BLOQUES_DE_LA_SESION,
 } from '@be/domain';
 import { useId, type ReactNode } from 'react';
 import { EnPartes, conNumerosPegados } from '../../../../components/en-partes';
 import { Icono } from '../../../../components/icono';
 import type { Resultado } from '../../../../lib/api';
 import { ImagenGuardadaDeEjercicio } from '../../exercises/imagen-de-ejercicio';
+import { partesParaLeer, type EncabezadoLeido } from './bloques-en-la-lectura';
 
 /** Con qué se lee la imagen de un ejercicio: lo da la pestaña o la ficha, la que esté usando la pieza. */
 export interface AccesoALasImagenes {
@@ -154,18 +156,49 @@ export function EjerciciosDeLaSesion({
               </button>
             ) : null}
           </div>
-          {ejercicios.map((p) => (
-            <EjercicioDelPlan key={p.prescriptionId} prescripcion={p} abierto={abiertos.has(p.order)} onAlternar={() => alternar(p.order)} acceso={acceso} nivel={nivel} />
-          ))}
+          {/* §7 (WP-ENTRENAMIENTO-PLANIFICACION): los ejercicios bajo su bloque, como los ve la persona en la APK nueva. */}
+          {partesParaLeer(sesion).map((parte) =>
+            parte.tipo === 'suelto' ? (
+              <EjercicioDelPlan key={parte.ejercicio.prescriptionId} prescripcion={parte.ejercicio} abierto={abiertos.has(parte.ejercicio.order)} onAlternar={() => alternar(parte.ejercicio.order)} acceso={acceso} nivel={nivel} />
+            ) : (
+              <BloqueDelPlan key={parte.encabezado.groupId} encabezado={parte.encabezado} nivel={nivel}>
+                {parte.ejercicios.map((p) => (
+                  <EjercicioDelPlan key={p.prescriptionId} prescripcion={p} abierto={abiertos.has(p.order)} onAlternar={() => alternar(p.order)} acceso={acceso} nivel={nivel === 3 ? 4 : 5} />
+                ))}
+              </BloqueDelPlan>
+            ),
+          )}
         </>
       )}
     </div>
   );
 }
 
-function EjercicioDelPlan({ prescripcion: p, abierto, onAlternar, acceso, nivel }: { prescripcion: PrescripcionConObjetivos; abierto: boolean; onAlternar: () => void; acceso: AccesoALasImagenes; nivel: 3 | 4 }) {
-  const id = useId();
+/**
+ * Un bloque de la sesión en la lectura: su nombre y, en uno «En vueltas», cómo se hace, con sus ejercicios debajo (un
+ * nivel de título más). Describe, no califica.
+ */
+function BloqueDelPlan({ encabezado, nivel, children }: { encabezado: EncabezadoLeido; nivel: 3 | 4; children: ReactNode }) {
   const Titulo = nivel === 3 ? 'h3' : 'h4';
+  return (
+    <section className="bloque-del-plan" aria-label={encabezado.etiqueta} data-bloque-del-plan={encabezado.groupId} data-tipo={encabezado.detalle ? 'ROUNDS' : 'SEQUENTIAL'}>
+      <Titulo className="bloque-del-plan__titulo">
+        <span className="bloque-del-editor__rotulo">{COPY_BLOQUES_DE_LA_SESION.bloque}</span> {encabezado.nombre}
+      </Titulo>
+      {encabezado.detalle ? (
+        <p className="bloque-del-plan__detalle" data-detalle-del-bloque>
+          <Icono nombre="ordenar" tamano={15} />
+          {encabezado.detalle}
+        </p>
+      ) : null}
+      <div className="bloque-del-plan__ejercicios">{children}</div>
+    </section>
+  );
+}
+
+function EjercicioDelPlan({ prescripcion: p, abierto, onAlternar, acceso, nivel }: { prescripcion: PrescripcionConObjetivos; abierto: boolean; onAlternar: () => void; acceso: AccesoALasImagenes; nivel: 3 | 4 | 5 }) {
+  const id = useId();
+  const Titulo = nivel === 3 ? 'h3' : nivel === 4 ? 'h4' : 'h5';
   const { filas, conRir, conNota } = seriesDelEjercicio(p);
   const general = loGeneralDelEjercicio(p);
   const sinObjetivo = <span className="tenue">{COPY_ENTRENAMIENTO_POR_SERIE.sinObjetivo}</span>;

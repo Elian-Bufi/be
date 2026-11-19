@@ -36,7 +36,8 @@
 | C3 | Las acciones con el nombre del objeto | en esta rama |
 | C4 | «Copiar» a la vista y la edición conjunta de series, con repeticiones y rangos | en esta rama |
 | C10 | Sin la pestaña «Lo que trabaja la semana» mientras no tenga datos (era una línea) | en esta rama |
-| C5 a C9 y C11 | Los días junto a cada sesión, el catálogo, la escritura rápida, de dónde sale cada valor, guardar y revisar encadenados, «Sesiones vacías» | **tramo siguiente** (§6) |
+| C5 a C9 y C11 | Los días junto a cada sesión, el catálogo, la escritura rápida, de dónde sale cada valor, guardar y revisar encadenados, «Sesiones vacías» | **tramo 2** (§6) |
+| §7 | Las bajas de la revisión adversaria que pesan para el profesional: el preset con la sesión vacía, el tope de «Agregar bloque», los bloques en la versión activa y en lo compartido | **tramo 2** (§6) |
 
 ## 2. El modelo de datos de los bloques (DL-181)
 
@@ -134,6 +135,28 @@ Sesión
   a 1000, y que no termina antes de empezar), carga, RIR y descanso, y «Volver a lo general». «Copiar hacia abajo» sigue
   siendo Ctrl+D en cada celda, y «Quitar», el de cada serie: en la barra **no** están (§7).
 
+**D. El tramo 2** (rama `wp-entrenamiento-planificacion-2`, sobre esta)
+- **ENP-D17 · Una sesión nueva nace con su identificador.** «Agregar sesión» y el asistente le ponen a la sesión un
+  identificador de nodo (`crypto.randomUUID()`), como ya hacía «Duplicar el día»: el contrato lo admite
+  (`IdDeNodoSchema`) y el servidor lo conserva al normalizar. Sus días se eligen enseguida, sin esperar al guardado, y lo
+  que la pantalla le ata la sigue aunque se mueva o se quite otra. Nada cambia en el contrato ni en lo que recibe la APK.
+- **ENP-D18 · El preset con la sesión vacía vive en la pantalla, atado a la sesión, y lo dice.** Se recuerda por el
+  `sessionId` (no por la posición: quitar o mover otra sesión le pasaba la etiqueta a la que quedaba en su lugar); una
+  sesión sin identificador todavía (una habitual recién insertada) lo recibe al elegir el preset. El texto ya no dice
+  «queda como su prescripción», que se leía como guardado: «Vive en esta pantalla: se escribe en cada ejercicio al
+  agregarlo. Si cerrás o recargás el editor antes, no queda.» **Propuesta para Dirección (no se hizo):** guardarlo de
+  verdad necesitaría un campo nuevo y opcional en la sesión del contrato (una prescripción por omisión que solo lee el
+  website, con su capacidad de cliente como DL-178 y DL-181 para que la APK instalada no lo reciba). Mientras no se
+  decida, la pantalla no afirma lo que no guarda.
+- **ENP-D19 · La versión activa y el plan compartido agrupan bajo su bloque, y el bloque se describe.** Usan la regla del
+  dominio (`partesDeLaSesion`, como el editor y la APK) por `bloques-en-la-lectura.ts`; un bloque sin ejercicios no se
+  muestra. Lo leen profesionales (el que armó el plan y, en lo compartido, otros): el encabezado describe, no le indica a
+  nadie: «En vueltas · se alternan 2 ejercicios · 3 vueltas · 90 s de descanso al terminar cada vuelta» (la APK le dice a
+  la persona «Alterná…»). Uno «Seguido» lleva solo su nombre.
+- **ENP-D20 · «Agregar bloque» tiene el tope del contrato** (20 por sesión): en el tope queda apagado, con el motivo a la
+  vista («Una sesión admite hasta 20 bloques: para otro, quitá uno.»); y, como los otros topes (TB-48), uno pasado es un
+  problema con su lugar antes de guardar.
+
 ## 4. Las reglas, y dónde se prueban
 
 | Regla | Prueba |
@@ -149,6 +172,7 @@ Sesión
 | Los textos del editor (fase, bloque, revisión, acciones) | `apps/web/test/entrenamiento-planificacion.test.mjs` |
 | Lo que corrigió la revisión adversaria en el editor (§7) | `apps/web/test/entrenamiento-planificacion.test.mjs` («Revisión · …») |
 | La sesión de respaldo de la APK conserva el tipo de serie y los bloques | `apps/mobile/src/sesion-de-respaldo.test.ts` |
+| Tramo 2: el preset atado a la sesión, el tope de bloques, las lecturas agrupadas y C5 a C9 y C11 | `apps/web/test/entrenamiento-planificacion-2.test.mjs` |
 
 ## 5. Cómo se ve
 
@@ -198,14 +222,11 @@ tiene se muestra suelto, y el registro sigue por ejercicio. Los textos nuevos de
 usa el vocabulario que B05 excluye.
 
 **Lo que queda abierto (baja):**
-- **El preset con la sesión vacía (ENP-D10) se recuerda por la posición de la sesión** (`${prefijo}-s${k}`): si se quita o
-  se mueve una sesión anterior, la etiqueta pasa a la que quedó en ese lugar (se ve, no es silencioso). Y al recargar se
-  pierde sin aviso: el texto «queda como su prescripción» puede leerse como guardado. Propuesta: recordarlo por
-  `sessionId` y decir «mientras tengas abierto el editor».
+- ~~El preset con la sesión vacía se recordaba por la posición de la sesión y se leía como guardado~~: **resuelto en el
+  tramo 2** (ENP-D17 y ENP-D18).
 - **La barra de «Seleccionar series» no tiene «Copiar hacia abajo» ni «Quitar»** (el documento los prometía): hoy son
   Ctrl+D en cada celda y el «Quitar» de cada serie. Decidir si van.
-- **Una sesión admite hasta 20 bloques** (el contrato) y «Agregar bloque» no tiene tope: el bloque 21 lo rechaza el
-  servidor en el guardado automático. Propuesta: apagarlo con su motivo, como los otros topes.
+- ~~«Agregar bloque» no tenía tope y el bloque 21 lo rechazaba el servidor~~: **resuelto en el tramo 2** (ENP-D20).
 - **Quitar un ejercicio no reordena los bloques** (un bloque que queda vacío no pasa al final, como lo guarda el servidor):
   solo pesa si se pierde la respuesta de un guardado (ED-61), que entonces puede leer un conflicto donde no lo hay.
 - **La selección de series guarda posiciones:** si las series cambian desde afuera (las vueltas del bloque, la línea de
@@ -213,5 +234,5 @@ usa el vocabulario que B05 excluye.
 - **Los menús fijos a la ventana** siguen a su botón aunque un panel interior lo haya desplazado fuera de la vista.
 - **La revisión se anuncia en cada autoguardado** (`role="status"`: «Revisando esta versión…» y su resultado): verificar
   con un lector de pantalla si molesta y, si es así, anunciar solo el resultado.
-- **La lectura de la versión activa** (`estructura-del-plan.tsx`) **y el plan compartido** no agrupan los ejercicios
-  bajo su bloque: el profesional no ve ahí lo que la persona ve en la APK nueva.
+- ~~La lectura de la versión activa y el plan compartido no agrupaban bajo su bloque~~: **resuelto en el tramo 2**
+  (ENP-D19).
