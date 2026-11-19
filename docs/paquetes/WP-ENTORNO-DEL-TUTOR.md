@@ -69,9 +69,9 @@ del operador abierta en Render mientras dura la carga, y un secreto propio para 
 cd <el repo, con las dependencias instaladas>
 npm run build:domain && npx prisma generate
 export BE_TUTOR_DESTINO=test
-export BE_TUTOR_API=https://be-api-hndp.onrender.com
+export BE_TUTOR_API=https://be-api-hndp.onrender.com   # la guardia exige esta y no otra (en local, solo localhost)
 export BE_TUTOR_BASE="$(cat C:/Users/bufim/BE-datos-locales/render-test-db.txt)"
-export BE_TUTOR_CLAVE="<un secreto de 24 caracteres o más, guardado fuera del repositorio>"
+read -rs BE_TUTOR_CLAVE && export BE_TUTOR_CLAVE      # se escribe sin que se vea ni quede en el historial de la terminal
 export BE_TUTOR_CONFIRMO_TEST=si
 node scripts/entorno-del-tutor/verificar.mjs          # el chequeo, sin tocar nada
 node scripts/entorno-del-tutor/cargar.mjs armar       # la primera vez se detiene y muestra BE_DEMO_PROFESIONALES

@@ -9,6 +9,9 @@
  *   macros que no cierran (REQ-TUT-71).
  * - TEST-TUT-06 · el generador no tiene fechas fijas (REQ-TUT-63) y la lista de los seis con barra es la del dominio.
  * - TEST-TUT-07 · las cuentas son de example.invalid y ningún nombre es de la lista que no va (REQ-TUT-45 y 46).
+ * - TEST-TUT-08 · las guardias: la base y la API del mismo ambiente, la confirmación de test, ningún error con la URL de
+ *   la base, y las opciones y la generación bien escritas (REQ-TUT-43 y 49).
+ * - TEST-TUT-09 · un corte entre el POST y el PATCH del borrador no deja una versión con el contenido de su base (REQ-TUT-62).
  *
  * Uso: node --test scripts/entorno-del-tutor.test.mjs (con el dominio compilado: `npm run build:domain`).
  */
@@ -117,4 +120,56 @@ test('TEST-TUT-07 · las cuentas son de example.invalid y ningún nombre es de l
   assert.equal(PERSONAS.filter((p) => !p.liviana).length, 5);
   assert.equal(PERSONAS.filter((p) => p.liviana).length, 10);
   assert.ok(fallasDe(h, 'R-PRV-01').length === 0);
+});
+
+test('TEST-TUT-08 · las guardias: la base y la API del mismo ambiente, sin mostrar la URL de la base', async () => {
+  const { destinoDesde, opcionesDesde, generacionDesde, API_DE_TEST } = await import('./entorno-del-tutor/guardias.mjs');
+  const clave = 'x'.repeat(24);
+  const local = { BE_TUTOR_DESTINO: 'local', BE_TUTOR_API: 'http://localhost:3001', BE_TUTOR_BASE: 'postgresql://u:p@localhost:5432/be_test_tutor', BE_TUTOR_CLAVE: clave };
+  const test_ = { BE_TUTOR_DESTINO: 'test', BE_TUTOR_API: API_DE_TEST, BE_TUTOR_BASE: 'postgresql://be_test:secreta@dpg-x-a.oregon-postgres.render.com/be_test', BE_TUTOR_CLAVE: clave, BE_TUTOR_CONFIRMO_TEST: 'si' };
+  assert.equal(destinoDesde(local).api, 'http://localhost:3001');
+  assert.match(destinoDesde(test_).base, /sslmode=require/);
+  // En local, la API de test (o cualquier otra que no sea localhost) se rechaza: crearía cuentas en test sin confirmar.
+  assert.throws(() => destinoDesde({ ...local, BE_TUTOR_API: API_DE_TEST }), /la API tiene que ser la de localhost/);
+  // En test, la API tiene que ser la de test.
+  assert.throws(() => destinoDesde({ ...test_, BE_TUTOR_API: 'http://localhost:3001' }), /la API tiene que ser/);
+  assert.throws(() => destinoDesde({ ...test_, BE_TUTOR_API: 'https://otra.onrender.com' }), /la API tiene que ser/);
+  assert.throws(() => destinoDesde({ ...test_, BE_TUTOR_CONFIRMO_TEST: 'sí' }), /BE_TUTOR_CONFIRMO_TEST=si/);
+  assert.throws(() => destinoDesde({ ...test_, BE_TUTOR_BASE: test_.BE_TUTOR_BASE.replace(/\/be_test$/, '/otra') }), /solo la base be_test/);
+  // Un parámetro que cambia el servidor de verdad (host) no pasa.
+  assert.throws(() => destinoDesde({ ...local, BE_TUTOR_BASE: `${local.BE_TUTOR_BASE}?host=otra.render.com` }), /parámetro host/);
+  // Una URL mal escrita no deja la contraseña en el error (el TypeError de Node la trae entera en `input`).
+  let error = null;
+  try {
+    destinoDesde({ ...test_, BE_TUTOR_BASE: 'postgresql://be_test:secreta@[mal/be_test' });
+  } catch (e) {
+    error = e;
+  }
+  assert.ok(error, 'una URL inválida se rechaza');
+  assert.ok(!JSON.stringify({ ...error, mensaje: error.message, pila: error.stack }).includes('secreta'), 'el error no repite la contraseña');
+  // Las opciones: una mal escrita frena, y la generación es un entero.
+  assert.deepEqual(opcionesDesde(['--origen', '2026-11-12', '--hasta', '2026-11-12']), { origen: '2026-11-12', hasta: '2026-11-12' });
+  assert.throws(() => opcionesDesde(['--generation', '2']), /Opción desconocida/);
+  assert.throws(() => opcionesDesde(['--origen']), /fecha/);
+  assert.equal(generacionDesde(undefined), 1);
+  assert.equal(generacionDesde('2'), 2);
+  for (const x of ['abc', '0', '-1', '1.5', '']) assert.throws(() => generacionDesde(x), /entero/, x);
+});
+
+test('TEST-TUT-09 · un corte entre el POST y el PATCH del borrador: la corrida siguiente le escribe la estructura', async () => {
+  const { asegurarBorrador } = await import('./entorno-del-tutor/borradores.mjs');
+  const llamadas = [];
+  const c = {
+    crear: async () => (llamadas.push('crear'), { planId: 'nuevo', version: 'v1' }),
+    versionDe: async (id) => (llamadas.push(`version ${id}`), 'v1'),
+    escribir: async (id, version) => llamadas.push(`escribir ${id} ${version}`),
+  };
+  assert.equal(await asegurarBorrador({ existente: null, ...c }), 'nuevo');
+  assert.deepEqual(llamadas.splice(0), ['crear', 'escribir nuevo v1']);
+  // El borrador que quedó del corte (sin su estructura): se reescribe con su versión vigente, sin crear otro.
+  assert.equal(await asegurarBorrador({ existente: { id: 'cortado', estado: 'BORRADOR' }, ...c }), 'cortado');
+  assert.deepEqual(llamadas.splice(0), ['version cortado', 'escribir cortado v1']);
+  // Una versión activada no se toca.
+  assert.equal(await asegurarBorrador({ existente: { id: 'activa', estado: 'ACTIVADA' }, ...c }), 'activa');
+  assert.deepEqual(llamadas, []);
 });

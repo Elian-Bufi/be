@@ -37,6 +37,8 @@ import { CASO_DE_USO, COLEGAS, DOMINIO_DE_CORREO, OPERACION, PERSONAS, PROFESION
 import { COORDINACION } from './textos.mjs';
 import { HERRAMIENTAS } from './herramientas.mjs';
 import { extras } from './extras.mjs';
+import { destinoDesde, generacionDesde, opcionesDesde } from './guardias.mjs';
+import { asegurarBorrador } from './borradores.mjs';
 import { METODOS } from '../../EVIDENCIA/DASHBOARD-PROFESIONAL/herramientas/datos/cohorte/personas.mjs';
 import { masMinutos, instante } from '../../EVIDENCIA/DASHBOARD-PROFESIONAL/herramientas/datos/cohorte/herramientas.mjs';
 
@@ -45,8 +47,8 @@ const dominio = createRequire(path.join(REPO, 'packages/domain/'))(path.join(REP
 // ─── Argumentos y guardias ────────────────────────────────────────────────────────────────────────────────────
 
 const [comando, ...resto] = process.argv.slice(2);
-const opciones = Object.fromEntries(resto.join(' ').split(/\s*--/).filter(Boolean).map((x) => x.split(/\s+/)));
-const GENERACION = Number(opciones.generacion ?? 1);
+const opciones = opcionesDesde(resto);
+const GENERACION = generacionDesde(opciones.generacion);
 const PROC = { fuente: 'PROPIA', casoDeUso: CASO_DE_USO, operacion: OPERACION, superficie: null, requestId: null };
 const PROTOCOLO = '3e0b1b56-6e0a-4d1a-8f1a-6a6d2b6a2f10';
 const ESPACIO = uuidV5('be.wp-entorno-del-tutor', '6ba7b811-9dad-11d1-80b4-00c04fd430c8');
@@ -54,23 +56,8 @@ const ESPACIO = uuidV5('be.wp-entorno-del-tutor', '6ba7b811-9dad-11d1-80b4-00c04
 const id = (clave) => uuidV5(`g${GENERACION}|${clave}`, ESPACIO);
 const idCliente = (clave) => `t${createHash('sha256').update(`g${GENERACION}|${clave}`).digest('hex').slice(0, 30)}`;
 
-function destino() {
-  const nombre = process.env.BE_TUTOR_DESTINO;
-  const api = process.env.BE_TUTOR_API;
-  const base = process.env.BE_TUTOR_BASE;
-  if (!['local', 'test'].includes(nombre)) throw new Error('BE_TUTOR_DESTINO tiene que ser local o test.');
-  if (!api || !base) throw new Error('Faltan BE_TUTOR_API y BE_TUTOR_BASE.');
-  const u = new URL(base);
-  if (nombre === 'local' && (!['localhost', '127.0.0.1'].includes(u.hostname) || !/^\/be_test_[a-z0-9_]+$/.test(u.pathname))) throw new Error('Guardia: en local, solo una base be_test_* de localhost.');
-  if (nombre === 'test') {
-    if (!/\.render\.com$/.test(u.hostname) || u.pathname !== '/be_test') throw new Error('Guardia: en test, solo la base be_test de Render.');
-    if (process.env.BE_TUTOR_CONFIRMO_TEST !== 'si') throw new Error('Para cargar en test hace falta BE_TUTOR_CONFIRMO_TEST=si.');
-    u.searchParams.set('sslmode', 'require');
-  }
-  const clave = process.env.BE_TUTOR_CLAVE ?? '';
-  if (clave.length < 24) throw new Error('BE_TUTOR_CLAVE tiene que tener 24 caracteres o más.');
-  return { nombre, api: api.replace(/\/$/, ''), base: u.href, clave };
-}
+/** Las guardias (guardias.mjs): la base y la API del mismo ambiente, la confirmación de test y el secreto. */
+const destino = () => destinoDesde(process.env);
 
 // ─── La API ───────────────────────────────────────────────────────────────────────────────────────────────────
 
@@ -418,21 +405,29 @@ async function planes(area, p, proClave, aseId, evaluacionId, plantillas, receta
   };
   const existentes = await versionesExistentes(area, proId, aseId);
   const creadas = existentes.map((x) => x.id);
+  const estados = new Map(existentes.map((x) => [x.id, x.estado]));
   const inicio = instante(p.inicio, '09:10');
   let objetivoId =
     area === 'NUTRICION'
       ? await en((tx) => objetivoNutricional(tx, { clave: `${p.clave}|nut|0`, proId, aseId, contenido: contenidoDelObjetivo(versiones[0], evaluacionId, inicio), momento: inicio }))
       : await en((tx) => objetivoDeEntrenamiento(tx, { clave: `${p.clave}|trn|0`, proId, aseId, evaluacionId, enunciado: p.formulario.entrenamiento?.objetivo ?? 'Entrenar fuerza con buena técnica.', momento: inicio }));
   const conPlantilla = (v) => (v.plantilla && plantillas[v.plantilla[0]]?.[v.plantilla[1] - 1] ? { fromTemplateVersionId: plantillas[v.plantilla[0]][v.plantilla[1] - 1] } : {});
-  /** Crea la versión k como borrador por la API (desde la anterior o desde una plantilla), si todavía no existe. */
+  /**
+   * Crea la versión k como borrador por la API (desde la anterior o desde una plantilla), si todavía no existe; si existe
+   * en borrador (un corte entre el POST y el PATCH), le vuelve a escribir la estructura (borradores.mjs).
+   */
   const borrador = async (k) => {
-    if (creadas[k]) return;
+    if (creadas[k] && estados.get(creadas[k]) === 'ESCRITA') return;
     const v = versiones[k];
     const desdePlantilla = conPlantilla(v);
     const cuerpo = desdePlantilla.fromTemplateVersionId ? { objectiveVersionId: objetivoId, ...desdePlantilla } : k === 0 ? { objectiveVersionId: objetivoId, initialStructure: estructura(v) } : { objectiveVersionId: objetivoId, basedOnPlanId: creadas[k - 1] };
-    const b = (await pedir('POST', `/advisees/${aseId}/${t.ruta}/plans`, { token, cuerpo, clave: idCliente(`${p.clave}|${area}|plan|${k}`) })).data;
-    await pedir('PATCH', `/${t.ruta}/plans/${b.planId}`, { token, cuerpo: { expectedVersion: b.version, changes: estructura(v) }, clave: idCliente(`${p.clave}|${area}|plan|${k}|estructura`) });
-    creadas[k] = b.planId;
+    creadas[k] = await asegurarBorrador({
+      existente: creadas[k] ? { id: creadas[k], estado: estados.get(creadas[k]) } : null,
+      crear: async () => (await pedir('POST', `/advisees/${aseId}/${t.ruta}/plans`, { token, cuerpo, clave: idCliente(`${p.clave}|${area}|plan|${k}`) })).data,
+      versionDe: async (planId) => `v${(await en((tx) => filas(tx, `SELECT "version" FROM "${t.version}" WHERE "id" = $1::uuid`, planId)))[0].version}`,
+      escribir: (planId, version, { reintento }) => pedir('PATCH', `/${t.ruta}/plans/${planId}`, { token, cuerpo: { expectedVersion: version, changes: estructura(v) }, clave: reintento ? false : idCliente(`${p.clave}|${area}|plan|${k}|estructura`) }),
+    });
+    if (estados.get(creadas[k]) !== 'ACTIVADA') estados.set(creadas[k], 'ESCRITA');
   };
   await borrador(0);
   await activarEnElPasado(area, creadas[0], instante(versiones[0].desde, '10:00'), proId, aseId);
