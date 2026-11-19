@@ -62,8 +62,9 @@ type FilaDelBuscador = FilaDeCatalogo & ConOrigenEnLaBase & ConRevision;
 /**
  * DL-180 (NUA-03, NUA-D05): el alimento `e` cargado a mano que su autor compartió con los demás profesionales de Nutrición
  * (al cargarlo o corregirlo después de DL-180, con el aviso a la vista). La consulta tiene que llamar `e` al elemento.
+ * También acota lo que revisa Administración (API-ALI-05 y 06): lo que su autor no compartió no lo ve nadie más.
  */
-const ALIMENTO_COMPARTIDO = Prisma.sql`EXISTS (SELECT 1 FROM "alimento_compartido" c WHERE c."elemento_id" = e."id")`;
+export const ALIMENTO_COMPARTIDO =Prisma.sql`EXISTS (SELECT 1 FROM "alimento_compartido" c WHERE c."elemento_id" = e."id")`;
 
 /**
  * Los alimentos `e` que ve un profesional: lo sembrado por una migración (sin profesional que lo cargue), lo importado de
@@ -450,12 +451,13 @@ export async function compartir(tx: Prisma.TransactionClient, elementoId: string
 
 /**
  * NUA-05: el grupo nuevo de un alimento, como un hecho que sigue al anterior; si ya es ese, no se agrega nada. Lo elige
- * quien lo cargó (la base lo exige).
+ * quien lo cargó (la base lo exige). Devuelve si cambió: corregir solo el grupo también es una corrección (NUA-D13).
  */
-export async function asignarGrupo(tx: Prisma.TransactionClient, elementoId: string, grupo: GrupoDeAlimento, autorId: string, procedencia: object): Promise<void> {
+export async function asignarGrupo(tx: Prisma.TransactionClient, elementoId: string, grupo: GrupoDeAlimento, autorId: string, procedencia: object): Promise<boolean> {
   const ultimo = await tx.grupoDeAlimentoAsignado.findFirst({ where: { elementoId }, orderBy: { numero: 'desc' }, select: { numero: true, grupo: true } });
-  if (ultimo?.grupo === GRUPO_EN_LA_BASE[grupo]) return;
+  if (ultimo?.grupo === GRUPO_EN_LA_BASE[grupo]) return false;
   await tx.grupoDeAlimentoAsignado.create({
     data: { elementoId, numero: (ultimo?.numero ?? 0) + 1, grupo: GRUPO_EN_LA_BASE[grupo], autorId, procedencia: procedencia as Prisma.InputJsonValue },
   });
+  return true;
 }

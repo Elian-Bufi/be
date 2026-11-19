@@ -154,9 +154,11 @@ export class AlimentosService {
             },
           });
         }
-        if (pedido.group) await asignarGrupo(tx, vigente.elementoId, pedido.group, actor.identidadId, procedencia);
-        // NUA-D05: corregirlo con el aviso a la vista lo comparte, como cargarlo después de DL-180.
-        await compartir(tx, vigente.elementoId, procedencia);
+        const otroGrupo = pedido.group ? await asignarGrupo(tx, vigente.elementoId, pedido.group, actor.identidadId, procedencia) : false;
+        // NUA-D05 y D13: corregirlo con el aviso a la vista lo comparte, como cargarlo después de DL-180. Solo si de verdad
+        // se corrigió algo: guardar sin cambios responde «no cambió», y lo cargado antes de DL-180 sigue siendo solo de su
+        // autor, como le dice «Mis alimentos» («Por ahora lo ves solo vos»).
+        if (cambia || otroGrupo) await compartir(tx, vigente.elementoId, procedencia);
         if (cambia) await this.evento(tx, 'ElementoDeCatalogoVersionado', actor.identidadId, vigente.elementoId, procedencia, momento);
         return { estadoHttp: 200, cuerpo: { data: await this.leerPropio(tx, actor.identidadId, vigente.elementoId) }, sujetoId: null, recurso };
       },
