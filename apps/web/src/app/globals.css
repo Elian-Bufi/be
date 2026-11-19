@@ -17036,6 +17036,7 @@ p.cifra-del-espacio__desglose {
 
   /* El resplandor, solo en el principal de la vista: «Revisar y activar…» en la estación o el del paso en el asistente. */
   .estacion [data-barra-de-comandos] .boton--primario,
+  .estacion [data-barra-de-la-plantilla] .boton--primario,
   .asistente__siguiente {
     box-shadow: 0 0 1.25rem var(--resplandor);
   }
@@ -17059,6 +17060,7 @@ p.cifra-del-espacio__desglose {
   }
 
   .estacion [data-barra-de-comandos] .boton--primario,
+  .estacion [data-barra-de-la-plantilla] .boton--primario,
   .asistente__siguiente {
     box-shadow: none;
   }
@@ -19929,11 +19931,6 @@ html:has(.estacion:not([data-en-el-asistente])) {
   }
 }
 
-@supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
-  .estacion [data-barra-de-la-plantilla] .boton--primario {
-    box-shadow: 0 0 1.25rem var(--resplandor);
-  }
-}
 
 .plantillas-y-habituales__cabecera {
   display: flex;
