@@ -78,7 +78,7 @@ Los cambios en lo que ya existía, todos aditivos (un campo ausente vale lo de s
 
 ## 3. El modelo de datos y las migraciones
 
-Cinco migraciones nuevas, que solo agregan (la tabla de cada una, escrita con `prisma migrate diff`; las guardias, a mano):
+Seis migraciones nuevas, que solo agregan (la tabla de cada una, escrita con `prisma migrate diff`; las guardias, a mano):
 - `20261119120000_tipos_de_alimentos_del_catalogo`: los hechos `ElementoDeCatalogoVersionado` y
   `ElementoDeCatalogoRetirado` (aparte: PostgreSQL no usa un valor de enum en la transacción que lo agrega).
 - `20261119120100_alimentos_del_catalogo`: `grupo_de_alimento` (NUA-05, con la siembra de los 393 de la tabla oficial y
@@ -96,6 +96,11 @@ Cinco migraciones nuevas, que solo agregan (la tabla de cada una, escrita con `p
   como un hecho aparte de sus versiones (la vigente es la de mayor número): un arreglo de a lo sumo cuatro, cada una con
   su tipo y una equivalencia mayor que cero y de hasta 5000 (CHECK con `jsonb_path_exists`). Las define quien cargó el
   alimento; sin autor, las sembraría BE desde una fuente. De solo agregar.
+- **`20261120140000_medidas_caseras_forma_estricta`** (segundo tramo, de su revisión adversaria): el CHECK dejaba pasar
+  una equivalencia que no es un número («"amount": "240"»), un tipo dentro de un arreglo o un dato de más (en jsonpath,
+  comparar tipos distintos da «desconocido» y el filtro solo toma lo verdadero). La guardia de la fila exige ahora un
+  objeto con `kind` (texto) y `amount` (número), nada más, y una medida de cada tipo. Solo reemplaza el cuerpo de la
+  función.
 - **Corregir y retirar no necesitan tablas:** usan la cadena de versiones de siempre (REG-06-99 a 101).
 - **El canon** son alimentos `CONTROLLED_IMPORT` sin profesional que los cargue (de todos, como la tabla oficial), con su
   versión, su grupo sembrado sin autor y su fila de `alimento_del_canon`. Ningún enum nuevo.
@@ -282,3 +287,44 @@ elección aparte al corregir y un hecho «dejar de compartir». Se llegó a prog
 y Administración ve quién lo cargó y suma al canon lo que conviene a todos. **Todo lo de compartir se sacó** (la API, el
 website, las pruebas y la migración de este tramo, que nunca se integró ni se aplicó en una base que dure): lo que queda
 es lo de §4, NUA-D14 a D16.
+
+## 11. La revisión adversaria del segundo tramo (2026-11-19)
+
+Revisó la privacidad de lo propio (el buscador, la consulta por identidad, las recetas, los planes, las plantillas, los
+habituales, la estructuración de un registro libre, el equivalente sugerido), lo que ve Administración, «Sumar al canon»,
+la transición desde el primer tramo, las migraciones, las medidas caseras y lo de siempre.
+
+**Alta:** ninguna. Ningún camino deja ver ni citar lo ajeno: todo pasa por `alimentoVisible`, y la lectura del borrador
+no lee el nombre de lo ajeno. Administración no llega a la persona ni al plan por ningún campo, error o conteo: cada carga
+dice su nombre, sus valores y el nombre de profesional de quien la cargó, nada más. «Sumar al canon» no arrastra al autor:
+el alimento nuevo no tiene profesional que lo cargue, su nombre lo escribe Administración y el origen queda solo en la
+base (`alimento_del_canon.origen_id`), sin salir por la API. En «Parecidos», un grupo de 1 no identifica a nadie más de lo
+que ya muestra la consola por decisión de Dirección (el profesional que la cargó).
+
+**Media, corregidas (con su prueba, que falla sin la corrección):**
+- La guardia de `medidas_caseras_de_alimento` dejaba pasar una equivalencia en texto, un tipo dentro de un arreglo, un dato
+  de más y dos medidas del mismo tipo (§3, `20261120140000_medidas_caseras_forma_estricta`; prueba de integración).
+- En el editor, pasar de «2 tazas» a gramos dejaba «2 g» (la cantidad caía de 480 g a 2 g con un solo cambio del
+  selector). Ahora conserva los gramos; a unidades, cuántas.
+- Si quien cargó el alimento cambia o quita la medida que eligió un ítem, el selector mostraba «g» junto al número de
+  tazas. Ahora la ofrece con la equivalencia que guardó el ítem.
+- A 1280, el selector cortaba «taza (90 g)»: la columna de la unidad entra entera («cucharada (12,5 g)»).
+
+**Bajas, abiertas:**
+- **La transición desde el primer tramo no tiene escenario real:** el primer tramo no se integró, así que ninguna base
+  tiene filas en `alimento_compartido`. Si las hubiera, el borrador de otro profesional que citaba lo compartido dice
+  «Elemento no disponible», se sigue guardando y validar y activar lo señalan (como un retirado); los planes activados lo
+  conservan en su instantánea. Una plantilla o una receta con ese ítem no se vuelve a guardar sin cambiarlo.
+- La equivalencia de la medida que llega en un ítem del plan no se coteja con las del alimento: se guarda la que manda el
+  editor (es lo que permite conservarla). Por la API se podría escribir cualquiera; la persona recibe solo los gramos.
+- «Parecidos» agrupa las últimas 2000 cargas y filtra lo escrito después: con más cargas, una vieja no aparece.
+- «Sumar al canon» con «marcar como equivalentes»: si una carga del grupo se retiró entre leer y enviar, el pedido entero
+  es 422 y la consola dice el aviso general, sin señalar cuál.
+- El nombre del alimento del canon parte del de la carga: la consola no recuerda que no lleve datos de personas. Las cargas
+  de antes de DL-180 se hicieron sin el aviso de que Administración las vería (en test, solo las de Elián).
+- La fibra que no se cargó dice «sin dato» en la consola y en «Mis alimentos»; la regla del 19/11 pide «Sin indicar» para
+  lo no indicado. Es la convención de todo el catálogo: cambiarla es de un paquete chico aparte.
+- La guardia de las medidas admite filas sin autor (las que sembraría BE) también sobre una carga a mano.
+- No hay prueba de concurrencia de «Sumar al canon» contra una decisión simultánea sobre la misma carga: las dos toman las
+  cargas con `FOR NO KEY UPDATE` en el mismo orden, así que se ordenan; falta la prueba con la barrera de
+  `pg_stat_activity`.

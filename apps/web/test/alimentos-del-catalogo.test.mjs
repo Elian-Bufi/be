@@ -258,7 +258,7 @@ test('NUA-01 y NUA-02 · «Mis alimentos» corrige y retira contra la versión v
 
 // ─── NUA-04 · Administración ─────────────────────────────────────────────────────────────────────────────────
 
-test('NUA-04 · la consola pide la fuente para verificar y el equivalente para marcarlo; no muestra quién lo cargó', async () => {
+test('NUA-04 · la consola pide la fuente para verificar y el equivalente para marcarlo; muestra quién lo cargó, nunca a quién se le indicó', async () => {
   {
     assert.equal(R.faltaParaDecidir('CERTIFY', '  ', null), d.COPY_REVISION_DE_ALIMENTOS.faltaLaFuente);
     assert.equal(R.faltaParaDecidir('CERTIFY', 'Rótulo', null), null);
