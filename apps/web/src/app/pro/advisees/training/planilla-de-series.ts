@@ -17,6 +17,28 @@ export type CampoDeLaSerie = ObjetivoDeLaSerie | 'repetitions' | 'note';
 
 const OBJETIVOS: readonly ObjetivoDeLaSerie[] = ['restSeconds', 'suggestedLoad', 'rir'];
 
+/** El tope de las repeticiones de una serie: el del contrato (`RepeticionesPrescriptasSchema`). */
+const TOPE_DE_REPETICIONES = 1000;
+
+/**
+ * Lo escrito en las repeticiones de una serie, en la celda y en la edición conjunta (ENP-D16): vacío es «sin repeticiones
+ * fijadas»; un entero de 1 a 1000, o un rango «8-12» que empieza en 1 o más y no termina antes de empezar. Lo demás
+ * —«12-8», «0-10», «abc»— queda como «no se entiende» (NaN), que no deja guardar y dice dónde. Antes, un rango al revés
+ * pasaba como bueno, la edición conjunta lo escribía en todas las elegidas y el guardado automático lo rechazaba en el
+ * servidor sin nombrar el lugar.
+ */
+export function leerRepeticiones(s: string): Serie['repetitions'] {
+  if (s.trim() === '') return null;
+  const valido = (n: number) => Number.isInteger(n) && n >= 1 && n <= TOPE_DE_REPETICIONES;
+  const rango = s.match(/^\s*(\d+)\s*-\s*(\d+)\s*$/);
+  if (rango) {
+    const [min, max] = [Number(rango[1]), Number(rango[2])];
+    return valido(min) && valido(max) && max >= min ? { min, max } : { min: Number.NaN, max: Number.NaN };
+  }
+  const n = Number(s.trim());
+  return { value: valido(n) ? n : Number.NaN };
+}
+
 /** Escribe el mismo valor propio en las series elegidas; las demás no cambian. */
 export function escribirEnLasSeries<S extends Serie>(sets: readonly S[], elegidas: ReadonlySet<number>, campo: ObjetivoDeLaSerie, valor: S[ObjetivoDeLaSerie]): S[] {
   return sets.map((s, n) => (elegidas.has(n) ? { ...s, [campo]: valor } : s));

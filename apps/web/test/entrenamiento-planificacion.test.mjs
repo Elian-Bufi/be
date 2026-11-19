@@ -256,6 +256,24 @@ test('Revisión · varios cambios de vueltas seguidos (las flechas en la lista) 
   assert.match(EDITOR, /const siguiente = deshacerTrasCambiarLasVueltas\(previo, `\$\{prefijo\}-s\$\{k\}`, groupId, sesion, r\);/);
 });
 
+test('Revisión · las repeticiones que el contrato no admite («12-8», «0-10») no se escriben como buenas en varias series', async () => {
+  const P = await import('../src/app/pro/advisees/training/planilla-de-series.ts');
+  assert.equal(P.leerRepeticiones('  '), null);
+  assert.deepEqual(P.leerRepeticiones('8'), { value: 8 });
+  assert.deepEqual(P.leerRepeticiones('8 - 12'), { min: 8, max: 12 });
+  assert.deepEqual(P.leerRepeticiones('10-10'), { min: 10, max: 10 });
+  for (const mal of ['12-8', '0-10', '5-1001', '0', '1001', 'abc', '8.5']) {
+    const r = P.leerRepeticiones(mal);
+    const enNaN = 'value' in r ? Number.isNaN(r.value) : Number.isNaN(r.min) && Number.isNaN(r.max);
+    assert.ok(enNaN, `«${mal}» no se entiende`);
+    // Y entonces no deja guardar, con su lugar (antes, «12-8» llegaba al servidor y el guardado automático fallaba).
+    const bloques = [{ label: 'F', sessions: [{ label: 'A', prescriptions: [{ exerciseVersionId: 'e1', intensity: null, sets: [{ repetitions: r }] }] }] }];
+    assert.deepEqual(d.loQueNoDejaGuardarElEntrenamiento(bloques).map((p) => p.path), ['blocks[0].sessions[0].prescriptions[0].sets[0]'], mal);
+  }
+  // La celda y la edición conjunta leen con la misma regla.
+  assert.match(EJERCICIO, /const leerReps = \(s: string\): Repeticiones => leerRepeticiones\(s\);/);
+});
+
 test('Revisión · «Lo que cambia frente a la vigente» cuenta los bloques de la sesión (no dice «No cambia nada»)', async () => {
   const CV = await import('../src/app/pro/advisees/comparar-versiones.ts');
   const como = { nombreDelEjercicio: (id) => ({ e1: 'Sentadilla', e2: 'Zancadas', e3: 'Plancha' })[id] ?? 'Ejercicio', renglon: () => '3 × 8' };

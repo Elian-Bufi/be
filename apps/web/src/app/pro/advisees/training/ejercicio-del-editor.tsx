@@ -62,7 +62,7 @@ import { COPY_CARGA_DESDE_LA_ESTIMACION } from '../fuerza/carga-desde-la-estimac
 import type { PrescripcionParaLaCarga } from '../fuerza/fuerza';
 import { COPY_COPIAR } from './copiar-a';
 import { COPY_LA_VEZ_PASADA_EN_EL_EDITOR, CuadroDeLaVezPasada } from './la-vez-pasada';
-import { celdaDeLaPlanilla, copiarHaciaAbajo, COPY_PLANILLA as PL, escribirEnLasSeries, loQueSePierdeAlQuitarLaSerie, volverALoGeneral, type ObjetivoDeLaSerie } from './planilla-de-series';
+import { celdaDeLaPlanilla, copiarHaciaAbajo, COPY_PLANILLA as PL, escribirEnLasSeries, leerRepeticiones, loQueSePierdeAlQuitarLaSerie, volverALoGeneral, type ObjetivoDeLaSerie } from './planilla-de-series';
 import { NotasAlLado, useNotasPropias } from '../notas-propias';
 
 export type Bloques = EstructuraDePlanDeEntrenamientoEntrada['blocks'];
@@ -158,14 +158,9 @@ const unidadDe = (p: PrescripcionE): 'kg' | 'lb' => p.suggestedLoad?.unit ?? p.s
 
 const noSeEntiendenLasReps = (r: Repeticiones): boolean => !!r && ('value' in r ? Number.isNaN(r.value) : Number.isNaN(r.min) || Number.isNaN(r.max));
 const reps = (r: Repeticiones): string => (!r || noSeEntiendenLasReps(r) ? '' : 'value' in r ? String(r.value) : `${r.min}-${r.max}`);
-// Vacío: sin repeticiones fijadas. Un número o un rango «8-12». Otra cosa no se guarda como si no hubiera nada.
-const leerReps = (s: string): Repeticiones => {
-  if (s.trim() === '') return null;
-  const rango = s.match(/^\s*(\d+)\s*-\s*(\d+)\s*$/);
-  if (rango) return { min: Number(rango[1]), max: Number(rango[2]) };
-  const n = Number(s.trim());
-  return { value: Number.isInteger(n) && n > 0 ? n : Number.NaN };
-};
+// Vacío: sin repeticiones fijadas. Un número o un rango «8-12». Otra cosa no se guarda como si no hubiera nada; un rango
+// al revés («12-8») tampoco (`leerRepeticiones`, en la planilla: la usan la celda y la edición conjunta).
+const leerReps = (s: string): Repeticiones => leerRepeticiones(s);
 const mismasReps = (a: Repeticiones, b: Repeticiones): boolean => reps(a) === reps(b) && noSeEntiendenLasReps(a) === noSeEntiendenLasReps(b);
 
 export function EjercicioDelEditor({
