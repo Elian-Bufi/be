@@ -133,6 +133,16 @@ export function MenuAdministrativo() {
               </span>
             </Link>
           ) : null}
+          {/* DL-180 (NUA-04): los alimentos que los profesionales cargaron a mano, para verificarlos o marcar su equivalente. */}
+          {vigente && ruta !== '/admin/foods' ? (
+            <Link href="/admin/foods" className="menu-de-cuenta__opcion">
+              <Icono nombre="alimento" />
+              <span>
+                Alimentos cargados a mano
+                <span className="nota">Verificarlos con una fuente o marcar su equivalente</span>
+              </span>
+            </Link>
+          ) : null}
           {/* UF-03 (DL-169; UF-D9): la recuperación asistida del acceso de una persona. */}
           {vigente && ruta !== '/admin/access' ? (
             <Link href="/admin/access" className="menu-de-cuenta__opcion">

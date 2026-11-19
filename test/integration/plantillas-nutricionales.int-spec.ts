@@ -9,7 +9,7 @@ import { PrismaClient } from '@prisma/client';
 import { randomUUID } from 'node:crypto';
 import { appDePrueba, claveDeIdempotencia, conSesion, resumenDeRespuestas, simultaneos } from './soporte-api';
 import { circuitoListoParaPlanificarEntrenamiento } from './soporte-entrenamiento';
-import { activar, circuitoListoParaPlanificar, crearBorrador, estructura, type Circuito } from './soporte-nutricion';
+import { activar, alimentoSinCompartir, circuitoListoParaPlanificar, crearBorrador, estructura, type Circuito } from './soporte-nutricion';
 
 const prisma = new PrismaClient();
 let app: INestApplication;
@@ -64,13 +64,9 @@ describe('API-TPN · plantillas de comidas propias', () => {
     const entrenador = await circuitoListoParaPlanificarEntrenamiento(app, etiqueta());
     await conSesion(app, entrenador.pro.token).get(RUTA).expect(403);
     expect((await crear(c, { name: 'MÍA', structure: estructura(c.arroz, c.pollo) }).expect(409)).body.error.code).toBe('TEMPLATE_NAME_TAKEN');
-    // Un alimento cargado a mano por otro profesional no está disponible para este: la plantilla no se guarda.
-    const ajeno = (
-      await conSesion(app, otro.pro.token)
-        .post('/api/v1/nutrition/catalog-items', claveDeIdempotencia())
-        .send({ name: `Quinoa ajena ${randomUUID().slice(0, 6)}`, itemType: 'FOOD', composition: { referenceAmount: '100g', energyKcal: 368, proteinG: 14, carbohydrateG: 64, fatG: 6 } })
-        .expect(201)
-    ).body.data.catalogItemId as string;
+    // Un alimento cargado a mano por otro profesional que no se compartió (DL-180, NUA-D05) no está disponible para este: la
+    // plantilla no se guarda.
+    const ajeno = (await alimentoSinCompartir(prisma, otro.pro.id, `Quinoa ajena ${randomUUID().slice(0, 6)}`)).catalogItemId;
     expect((await crear(c, { name: 'Ajeno', structure: estructura(ajeno, c.pollo) }).expect(422)).body.error.code).toBe('VALIDATION_FAILED');
   });
 

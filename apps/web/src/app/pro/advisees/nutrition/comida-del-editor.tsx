@@ -49,6 +49,7 @@ import {
   type RecetaDeOpcion,
   type VersionDePlan,
   COPY_NOTAS_PROPIAS,
+  COPY_ALIMENTOS,
 } from '@be/domain';
 import { useEffect, useId, useState } from 'react';
 import { CampoDeNombre } from '../../../../components/campo-de-nombre';
@@ -58,6 +59,7 @@ import { MenuDeAcciones } from '../../../../components/menu-de-acciones';
 import { Pista } from '../../../../components/pista';
 import { TextoAPedido } from '../../../../components/texto-a-pedido';
 import { numeroEnCampo } from '../../../../lib/formato';
+import { iconoDeLaFila, useDatosDelAlimento } from './alimentos-del-catalogo';
 import { COPY_DE_LOS_EDITORES as E } from '../editar-la-estructura';
 import { COPY_DE_OTRA_COMIDA, MAXIMO_DE_OPCIONES } from './opcion-de-otra-comida';
 import { COPY_VERSION_NUEVA } from './version-nueva-de-la-receta';
@@ -600,11 +602,23 @@ export function FilaDeItem({
   const [notaAbierta, setNotaAbierta] = useState(false);
   const aporte = aporteDelItem({ catalogItemId: item.catalogItemId, quantity: magnitud, nombre }, composicion);
   const pista = composicionEnLaPista(composicion, origen);
+  // DL-180: el ícono de su grupo (NUA-05) y, si se retiró del catálogo, la marca discreta (NUA-02): se sigue viendo, no
+  // se esconde; validar y activar piden cambiarlo.
+  const datos = useDatosDelAlimento(item.catalogItemId);
   return (
     <>
-    <tr className="item-del-editor">
+    <tr className="item-del-editor" data-retirado={datos.retirado ? '' : undefined}>
       <th scope="row" className="item-del-editor__nombre">
+        <span className="item-del-editor__grupo" data-grupo={datos.grupo ?? 'sin-grupo'}>
+          <Icono nombre={iconoDeLaFila(datos)} tamano={20} />
+        </span>
         {nombre}
+        {datos.retirado ? (
+          <span className="etiqueta-de-dato item-del-editor__retirado" data-marca-retirado>
+            {COPY_ALIMENTOS.retirado}
+            <span className="visualmente-oculto">. {COPY_ALIMENTOS.retiradoParaActivar}</span>
+          </span>
+        ) : null}
         {/* NUP-01: lo que aporta con su cantidad; la pista, al pasar el mouse. */}
         <Pista texto={pista}>
           <span className="item-del-editor__aporte" data-aporte-del-item>

@@ -68,6 +68,13 @@ FAMILIAS_DE_BE.HIA = 'DL-175';
  */
 FAMILIAS_DE_BE.CMP = 'DL-176';
 /**
+ * ALI (DL-180, WP-NUTRICION-ALIMENTOS; aprobado por Dirección el 2026-11-16): los alimentos que un profesional carga a mano
+ * (corregirlos con versiones, retirarlos y consultarlos por su identidad) y su revisión por Administración (certificarlos,
+ * marcarlos como equivalentes de uno verificado). El 09 no la tiene: no es NUT ni INT-NUT, que cargan y buscan, ni ADM,
+ * que administra profesionales. Se declara aparte de la lista para que se integre sin pisar a otra familia en paralelo.
+ */
+FAMILIAS_DE_BE.ALI = 'DL-180';
+/**
  * Los sufijos de BE sobre un ID del 09: una variante de esa operación (la lista propia, lo propio, por período, la
  * búsqueda con el texto en el cuerpo, DL-127, la reanudación de la sesión del website, DL-147, y la evidencia resuelta
  * de una revisión, DL-154).

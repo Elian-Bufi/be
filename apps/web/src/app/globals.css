@@ -16232,6 +16232,12 @@ p.cifra-del-espacio__desglose {
   gap: 0.25rem;
 }
 
+/* WP-NUTRICION-ALIMENTOS · NUA-07: el nombre de cada comida en el paso 4 usa el campo común (`.campo`: la letra, el
+   borde y el alto de BE, en Claro y en Azul noche). La tarjeta ya separa con `gap`: el margen del campo sobra. */
+.campo.asistente__nombre {
+  margin: 0;
+}
+
 .asistente__acciones,
 .asistente__pie {
   display: flex;
@@ -19132,4 +19138,226 @@ html:has(.estacion:not([data-en-el-asistente])) {
   padding: 0.6rem 0.8rem;
   border: 1px solid var(--borde);
   border-radius: 10px;
+}
+
+/* ─── WP-NUTRICION-ALIMENTOS (DL-180) · los alimentos del catálogo ──────────────────────────────────────────────── */
+
+/* NUA-05: el ícono del grupo, al principio del nombre: en el buscador y en la fila de cada alimento de una opción. Toma
+   el color del texto (Claro y Azul noche) y no empuja el nombre al renglón siguiente. */
+.buscador-de-la-opcion__grupo,
+.item-del-editor__grupo,
+.mis-alimentos__icono {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  color: var(--tenue);
+}
+
+.item-del-editor__grupo {
+  margin-right: 0.4rem;
+  vertical-align: -0.3rem;
+}
+
+/* NUA-03: el nivel del origen, a la vista. Ubica, no califica: el mismo aspecto para los tres. */
+.buscador-de-la-opcion__nivel {
+  font-weight: 400;
+}
+
+/* NUA-04: la sugerencia del verificado equivalente, en su propio renglón debajo del nombre. */
+.buscador-de-la-opcion__sugerido {
+  display: block;
+}
+
+/* NUA-03: lo de otro profesional, mirado antes de sumarlo. */
+.buscador-de-la-opcion__mirar {
+  margin-top: 0.75rem;
+  padding: 1rem;
+  border: 1px solid var(--borde-control);
+  border-radius: 10px;
+  background: var(--fondo-suave);
+}
+
+.buscador-de-la-opcion__mirar h3 {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0 0 0.5rem;
+  font-size: 1.05rem;
+}
+
+.buscador-de-la-opcion__composicion {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(7.5rem, 1fr));
+  gap: 0.5rem 1rem;
+  margin: 0.75rem 0 0.25rem;
+}
+
+.buscador-de-la-opcion__composicion dt {
+  color: var(--tenue);
+  font-size: 0.9rem;
+}
+
+.buscador-de-la-opcion__composicion dd {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
+
+/* NUA-02: la marca discreta de lo retirado, junto al nombre; la fila se ve igual. */
+.item-del-editor__retirado {
+  margin-left: 0.4rem;
+  font-weight: 400;
+}
+
+/* El formulario común del alimento: el grupo con su ícono al lado, y el aviso de que se comparte. */
+.formulario-del-alimento__grupo-fila {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.formulario-del-alimento__grupo-fila select {
+  flex: 1;
+  min-width: 0;
+}
+
+.formulario-del-alimento__compartir {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.4rem;
+}
+
+.formulario-del-alimento__compartir .icono {
+  flex: none;
+  margin-top: 0.15rem;
+}
+
+/* «Mis alimentos» (NUA-01 y NUA-02): el ícono, lo que es y lo que se puede hacer, en una fila que se acomoda. */
+.mis-alimentos__item {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 0.75rem 1rem;
+}
+
+.mis-alimentos__cuerpo p {
+  margin: 0.15rem 0;
+}
+
+.mis-alimentos__cuerpo .lista__titulo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.mis-alimentos__acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: flex-end;
+}
+
+@media (max-width: 40rem) {
+  .mis-alimentos__item {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .mis-alimentos__acciones {
+    grid-column: 1 / -1;
+    justify-content: flex-start;
+  }
+}
+
+/* La revisión de Administración (NUA-04): cada alimento en su tarjeta, como en «Mis alimentos» (el ícono, lo que es y
+   «Revisar»); lo que se decide se abre debajo, a todo el ancho de la tarjeta. */
+.alimentos-para-revisar__item {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 0.5rem 1rem;
+}
+
+.alimentos-para-revisar__icono {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  color: var(--tenue);
+}
+
+.alimentos-para-revisar__cuerpo p {
+  margin: 0.15rem 0;
+}
+
+.alimentos-para-revisar__acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: flex-end;
+}
+
+.alimentos-para-revisar__item > .decidir-sobre-alimento {
+  grid-column: 1 / -1;
+  margin-top: 0.25rem;
+}
+
+@media (max-width: 40rem) {
+  .alimentos-para-revisar__item {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .alimentos-para-revisar__acciones {
+    grid-column: 1 / -1;
+    justify-content: flex-start;
+  }
+}
+
+.decidir-sobre-alimento {
+  margin-top: 0.75rem;
+  padding: 1rem;
+  border: 1px solid var(--borde-control);
+  border-radius: 10px;
+  background: var(--fondo-suave);
+}
+
+.decidir-sobre-alimento h3 {
+  margin-top: 0;
+}
+
+.decidir-sobre-alimento__verificados {
+  display: grid;
+  gap: 0.25rem;
+  margin: 0.5rem 0;
+  padding: 0;
+  list-style: none;
+}
+
+.decidir-sobre-alimento__buscar {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.decidir-sobre-alimento__buscar input {
+  flex: 1;
+  min-width: 0;
+}
+
+.decidir-sobre-alimento .opcion-en-linea {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0.25rem 0;
+}
+
+.decidir-sobre-alimento fieldset {
+  margin: 0 0 0.75rem;
+  padding: 0;
+  border: 0;
+}
+
+.decidir-sobre-alimento legend {
+  margin-bottom: 0.25rem;
+  padding: 0;
+  font-weight: 600;
 }

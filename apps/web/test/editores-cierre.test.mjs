@@ -133,7 +133,9 @@ test('ED-31 · Enter suma el marcado y el cuadro sigue abierto; el borrador camb
   assert.match(cuadro, /role="combobox"/);
   assert.match(cuadro, /else if \(e\.key === 'Enter'\) \{\n\s+e\.preventDefault\(\);\n\s+if \(actual >= 0 && columna === 1\) alternar\(actual\);\n\s+else if \(actual >= 0\) elegir\(actual\);/);
   // Elegir vacía el campo y deja el foco adentro: no cierra nada.
-  assert.match(cuadro, /alSumar\(r\.alimento\);\n\s+escribir\(''\);\n\s+campo\.current\?\.focus\(\);/);
+  // DL-180 (NUA-03): sumar es una pieza; elegir la usa, salvo lo de otro profesional, que primero se mira.
+  assert.match(cuadro, /alSumar\(a\);\n\s+escribir\(''\);\n\s+campo\.current\?\.focus\(\);/);
+  assert.match(cuadro, /\n\s+sumar\(r\.alimento\);\n\s+\};/);
   const editor = leer('nutrition/editor.tsx');
   assert.match(editor, /m\.options\[k\] = opcionAlGuardar\(m\.options\[k\], copia\);/);
   assert.doesNotMatch(editor, /<AgregarItem/);
@@ -281,8 +283,9 @@ test('ED-32 · usarla cambia solo la versión citada, y el nombre si era el de l
 
 test('ED-32 · guardada la receta, el cuadro pasa a la foto (opcional) y vuelve al plan con lo que pasó', () => {
   const editor = leer('nutrition/editor.tsx');
-  assert.match(editor, /pasarALaFoto\(r, COPY_RECETA_NUEVA\.agregada\(r\.name, res\.k, recetaNueva\.nombre\)\);/);
-  assert.match(editor, /pasarALaFoto\(r, COPY_RECETA_NUEVA\.soloGuardada\(r\.name\)\);/);
+  // NUA-06: con lo que pasó con la imagen elegida al crearla (`imagen-de-la-receta.test.mjs`).
+  assert.match(editor, /pasarALaFoto\(r, COPY_RECETA_NUEVA\.agregada\(r\.name, res\.k, recetaNueva\.nombre\), imagen\);/);
+  assert.match(editor, /pasarALaFoto\(r, COPY_RECETA_NUEVA\.soloGuardada\(r\.name\), imagen\);/);
   assert.match(editor, /principal=\{fotoDeLaReceta \? \{ texto: COPY_FOTO_DE_LA_RECETA\.listo, alTocar: cerrarLaRecetaNueva \} : null\}/);
   assert.match(editor, /<ImagenDeReceta\n\s+token=\{token\}\n\s+receta=\{fotoDeLaReceta\.receta\}/);
 });

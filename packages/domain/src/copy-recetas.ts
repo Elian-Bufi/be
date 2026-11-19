@@ -75,6 +75,14 @@ export const COPY_RECETAS = {
   avisoDeImagen: 'La imagen es una referencia: no mide la porción ni demuestra lo que se comió.',
   imagenInvalida: 'Esa imagen no se puede usar: tiene que ser JPG, PNG o WebP, de hasta 10 MB y entre 64 y 8000 píxeles por lado.',
   imagenNoCargada: 'La imagen no se pudo cargar. La receta no cambió: probá de nuevo.',
+  // NUA-06 (WP-NUTRICION-ALIMENTOS): la imagen se elige al crear la receta y se carga sola al guardarla. Si la receta se
+  // guardó y la imagen no, se dice así, y el reintento carga solo la imagen.
+  imagenDeReferenciaOpcional: 'Imagen de referencia (opcional)',
+  seCargaAlGuardar: 'La imagen se carga sola al guardar la receta.',
+  quitarImagenElegida: 'Quitar la imagen elegida',
+  guardadaSinLaImagen: 'La receta quedó guardada, sin la imagen.',
+  imagenNoCargadaTrasGuardar: 'La receta quedó guardada, pero la imagen no se pudo cargar. Probá de nuevo: se carga solo la imagen, sin volver a crear la receta.',
+  reintentarImagen: 'Reintentar la imagen',
   calculo: 'Energía y macros estimados',
   recetaCompleta: 'Receta completa',
   porPorcion: 'Por porción',
@@ -100,7 +108,6 @@ export const COPY_RECETAS = {
   abrir: 'Abrir',
   volverALaLista: 'Volver a Mis recetas',
   porcionesYEnergia: (porciones: number, kcal: string | null) => `${porciones === 1 ? '1 porción' : `${porciones} porciones`} · ${kcal === null ? 'kcal sin calcular' : `${kcal} kcal por porción`}`,
-  guardaAntesDeLaImagen: 'Guardá la receta para poder cargar su imagen de referencia.',
   elegirProcedencia: 'Elegí la procedencia',
   faltaLaProcedencia: 'Elegí de dónde viene la imagen.',
   confirmarRetiro: '¿Retirar la imagen de referencia? Los ingredientes, las versiones y los registros no cambian.',

@@ -6,10 +6,12 @@
  * como opción de una comida del plan.
  * - La receta abierta vive en la URL (`?receta=`), así recargar la página la vuelve a mostrar con su imagen guardada.
  * - Un profesional sin el área de Nutrición recibe 403 y la página lo dice: mostrar u ocultar no autoriza nada.
+ * - NUA-06: si la receta nueva quedó guardada y su imagen no, la receta guardada se abre con la imagen elegida, su falla
+ *   y «Reintentar la imagen» (`imagenPendiente`).
  */
 import { COPY_RECETAS, nutrienteParaMostrar, type Receta } from '@be/domain';
 import { usePathname, useSearchParams } from 'next/navigation';
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Ayuda, AvisoFlotante } from '../../../components/ayuda';
 import { Cargando, ErrorConReintento, VerMas } from '../../../components/estados';
 import { Aviso } from '../../../components/formulario';
@@ -18,6 +20,7 @@ import { cambiarLaDireccion } from '../../../lib/direccion';
 import { fecha } from '../../../lib/formato';
 import { useListaPaginada } from '../../../lib/lista';
 import { SinEspacioProfesional, useEspacioProfesional } from '../espacio-profesional';
+import type { ImagenPendiente } from './cargar-la-imagen';
 import { EditorDeReceta } from './editor-de-receta';
 import { ImagenGuardada } from './imagen-de-receta';
 import { EsperandoSesion } from '../../../lib/sesion';
@@ -32,6 +35,12 @@ export function MisRecetas() {
   // Cada guardado vuelve a montar el editor con lo que respondió la API (la versión nueva y su historial).
   const [montaje, setMontaje] = useState(0);
   const [sinArea, setSinArea] = useState(false);
+  // NUA-06: la imagen elegida al crear la receta que no se pudo cargar. Se entrega una sola vez, al editor de esa receta
+  // (que la toma al montarse); después se olvida, para que volver a abrirla no muestre una falla vieja.
+  const [imagenPendiente, setImagenPendiente] = useState<ImagenPendiente | null>(null);
+  useEffect(() => {
+    if (imagenPendiente && imagenPendiente.recetaId === recetaId) setImagenPendiente(null);
+  }, [imagenPendiente, recetaId]);
   const listo = yo.tipo === 'listo';
   const lista = useListaPaginada(
     useMemo(
@@ -70,9 +79,11 @@ export function MisRecetas() {
           token={token}
           sesionPerdida={sesionPerdida}
           recetaId={recetaId}
+          imagenPendiente={imagenPendiente && imagenPendiente.recetaId === recetaId ? imagenPendiente : null}
           onVolver={() => ir('')}
-          onGuardada={(r: Receta, texto) => {
+          onGuardada={(r: Receta, texto, _agregar, imagen) => {
             setAviso(texto);
+            setImagenPendiente(imagen.tipo === 'pendiente' ? imagen.pendiente : null);
             setMontaje((n) => n + 1);
             if (r.recipeId !== recetaId) cambiarLaDireccion(`${ruta}?receta=${encodeURIComponent(r.recipeId)}`);
           }}

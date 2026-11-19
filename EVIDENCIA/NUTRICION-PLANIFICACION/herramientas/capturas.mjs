@@ -15,6 +15,10 @@
 // - el editor: la suma arriba de las comidas, las comidas plegadas con lo que aportan, una comida abierta con sus
 //   opciones en renglones, una opción abierta con lo que aporta cada alimento, la pista de su composición y la línea
 //   frente a los rangos, el cuadro de la opción, la pregunta al tocar afuera con algo cambiado y la comida vacía.
+// - WP-NUTRICION-ALIMENTOS (DL-180, escenas 15 a 26): el buscador con los niveles y los íconos, mirar lo de otro
+//   profesional antes de sumarlo, la sugerencia del equivalente, crear a mano con el grupo, el alimento retirado en el
+//   editor, «Mis alimentos» (corregir y retirar), la imagen de la receta nueva (también desde el plan) y la consola de
+//   Administración. Sus datos sintéticos los prepara `prepararLosAlimentos`.
 // Cada pantalla es un paso: si uno falla, queda anotado en `capturas.json` con una captura del momento y se sigue.
 // No mide peticiones ni compara con oráculos: es para mirar.
 import { execFileSync, spawn } from 'node:child_process';
@@ -31,6 +35,7 @@ const TRABAJO = path.join(REPO, 'EVIDENCIA/DASHBOARD-PROFESIONAL/herramientas/tr
 const require = createRequire(import.meta.url);
 const puppeteer = require('puppeteer-core');
 const OTPAuth = createRequire(path.join(REPO, 'apps/api/'))('otpauth');
+const { PrismaClient } = createRequire(path.join(REPO, 'apps/api/'))('@prisma/client');
 
 const salida = path.resolve(process.argv[2] ?? 'capturas-de-la-planificacion');
 const API = 'http://localhost:3001';
@@ -228,6 +233,194 @@ async function indicarRango(page, n, gramos) {
   await asentar(page);
 }
 
+// ─── WP-NUTRICION-ALIMENTOS (DL-180): los alimentos de las capturas ─────────────────────────────────────────────
+//
+// Por la API real, con datos sintéticos: los alimentos propios de Lic. Sofía Paz (uno corregido y verificado, uno
+// retirado, uno con un equivalente de la tabla oficial), uno de otro profesional (cargado como lo deja la API, con su fila
+// de compartido) y una administradora con su autenticador, que revisa. Nada de esto toca otra base que la efímera de la CI.
+
+const ALIMENTOS = {
+  ajeno: 'Avena tostada con miel (de otro profesional)',
+  propio: 'Avena con cacao casera',
+  verificado: 'Barrita de cereal casera',
+  retirado: 'Yogur de almendras casero',
+  equivalente: 'Arroz blanco casero',
+  enElPlan: 'Proteína en polvo (de prueba)',
+};
+const prepararLos = { token: null, enElPlan: null, ultimoPasoAdmin: -1 };
+const composicion = (kcal, p, c, g, f) => ({ referenceAmount: '100g', energyKcal: kcal, proteinG: p, carbohydrateG: c, fatG: g, ...(f === undefined ? {} : { fiberG: f }) });
+
+/** Una llamada a la API con su clave de idempotencia (también en PATCH, que la exige ALI-02). */
+async function llamar(metodo, ruta, { token, cuerpo, esperado = [200, 201] } = {}) {
+  const headers = { 'Content-Type': 'application/json', 'X-BE-Surface': 'WEB' };
+  if (token) headers.Authorization = `Bearer ${token}`;
+  if (metodo !== 'GET') headers['Idempotency-Key'] = `capturas-${randomBytes(12).toString('hex')}`;
+  const r = await fetch(`${API}/api/v1${ruta}`, { method: metodo, headers, body: cuerpo === undefined ? undefined : JSON.stringify(cuerpo) });
+  const texto = await r.text();
+  if (!esperado.includes(r.status)) throw new Error(`${metodo} ${ruta}: ${r.status} ${texto.slice(0, 400)}`);
+  return texto ? JSON.parse(texto) : null;
+}
+
+async function prepararLosAlimentos() {
+  const c = cuentas();
+  const { data } = await llamar('POST', '/auth/sessions', { cuerpo: { method: 'LOCAL', identifier: c.PRO_N_CORREO, credential: c.PRO_N_CLAVE } });
+  const token = data.session.accessToken;
+  prepararLos.token = token;
+  const cargar = async (nombre, comp, grupo) => (await llamar('POST', '/nutrition/catalog-items', { token, cuerpo: { name: nombre, itemType: 'FOOD', composition: comp, group: grupo } })).data;
+  await cargar(ALIMENTOS.propio, composicion(390, 12, 63, 9, 9), 'GRAINS');
+  const barrita = await cargar(ALIMENTOS.verificado, composicion(430, 8, 64, 16, 4), 'GRAINS');
+  await llamar('PATCH', `/nutrition/catalog-items/${barrita.catalogItemId}`, { token, cuerpo: { expectedVersion: 'v1', name: ALIMENTOS.verificado, composition: composicion(412, 9, 62, 14, 5), group: 'GRAINS' } });
+  const yogur = await cargar(ALIMENTOS.retirado, composicion(70, 2, 8, 3), 'DAIRY');
+  await llamar('POST', `/nutrition/catalog-items/${yogur.catalogItemId}/retirement`, { token, cuerpo: { expectedVersion: 'v1' } });
+  const arroz = await cargar(ALIMENTOS.equivalente, composicion(131, 2.7, 28, 0.4), 'GRAINS');
+  prepararLos.enElPlan = (await cargar(ALIMENTOS.enElPlan, composicion(380, 75, 8, 5), 'DAIRY')).catalogItemId;
+
+  // Lo de otro profesional: como lo deja API-INT-NUT-01 desde DL-180 (el elemento, su versión, su grupo y su fila de
+  // compartido), a nombre del profesional de Entrenamiento de la cohorte, que ya existe. La cohorte tiene un solo
+  // profesional de Nutrición.
+  const prisma = new PrismaClient({ datasources: { db: { url: BASE } } });
+  try {
+    const [otro] = await prisma.$queryRaw`SELECT "identidad_id"::text AS "id" FROM "metodo_de_acceso" WHERE "referencia" = ${c.PRO_T_CORREO} LIMIT 1`;
+    const PROCEDENCIA = { fuente: 'PROPIA', casoDeUso: 'UC-P10', operacion: 'API-INT-NUT-01', carga: 'MANUAL', nota: 'Capturas de WP-NUTRICION-ALIMENTOS (sintético)' };
+    const elemento = await prisma.elementoDeCatalogoNutricional.create({ data: { procedencia: 'PROFESSIONAL_MANUAL', creadoPorId: otro.id } });
+    await prisma.versionDeElementoNutricional.create({ data: { elementoId: elemento.id, nombre: ALIMENTOS.ajeno, composicion: composicion(402, 10, 66, 11, 7), disponibilidad: 'DISPONIBLE', procedencia: PROCEDENCIA } });
+    await prisma.alimentoCompartido.create({ data: { elementoId: elemento.id, procedencia: PROCEDENCIA } });
+    await prisma.grupoDeAlimentoAsignado.create({ data: { elementoId: elemento.id, numero: 1, grupo: 'CEREALES', autorId: otro.id, procedencia: PROCEDENCIA } });
+  } finally {
+    await prisma.$disconnect();
+  }
+
+  // La administradora: el alta pública, el comando interno, el autenticador y una sesión con el segundo factor.
+  const admin = { correo: `admin.capturas.${Date.now().toString(36)}@example.invalid`, clave: `clave-sintetica-${randomBytes(9).toString('hex')}` };
+  const dominio = createRequire(path.join(REPO, 'packages/domain/'))(path.join(REPO, 'packages/domain/dist/index.js'));
+  await llamar('POST', '/registrations', {
+    cuerpo: {
+      registrationIntent: 'ADVISEE',
+      identity: { localIdentifier: admin.correo, localCredential: admin.clave },
+      profile: { displayName: 'Administración de las capturas' },
+      termsAcceptance: { versionId: dominio.VERSION_VIGENTE.TERMINOS.id },
+      privacyAcknowledgement: { versionId: dominio.VERSION_VIGENTE.PRIVACIDAD_INFO.id },
+      adultDeclaration: { versionId: dominio.VERSION_VIGENTE.MAYORIA_DE_EDAD.id, declared: true },
+    },
+  });
+  const salida = execFileSync(
+    process.execPath,
+    [path.join(REPO, 'apps/api/dist/administracion/comando.js'), 'incorporar', '--correo', admin.correo, '--nombre', 'Administración de las capturas', '--fundamento', 'Capturas de WP-NUTRICION-ALIMENTOS, datos sintéticos', '--operador', 'CI de capturas', '--salida', 'json'],
+    { cwd: REPO, env: { ...process.env, DATABASE_URL: BASE, APP_ENV: 'development' }, encoding: 'utf8' },
+  );
+  const { codigoDeIncorporacion } = JSON.parse(salida.trim().split('\n').pop());
+  const primera = await llamar('POST', '/admin/auth/sessions', { cuerpo: { identifier: admin.correo, credential: admin.clave } });
+  const tokenAdmin = primera.data.session.accessToken;
+  const { data: config } = await llamar('POST', '/admin/auth/second-factor/enrollment', { token: tokenAdmin, cuerpo: { incorporationCode: codigoDeIncorporacion } });
+  admin.secreto = config.secret;
+  const paso = Math.floor(Date.now() / PERIODO_MS);
+  prepararLos.ultimoPasoAdmin = paso;
+  await llamar('POST', '/admin/auth/second-factor/enrollment/confirm', { token: tokenAdmin, cuerpo: { code: codigoDelPaso(admin.secreto, paso) } });
+  // Lo que decide: la barrita (versión 2) verificada con una fuente; el arroz casero, equivalente del de la tabla oficial.
+  await llamar('POST', `/admin/foods/${barrita.catalogItemId}/decisions`, { token: tokenAdmin, cuerpo: { expectedVersion: 'v2', decision: 'CERTIFY', source: 'Rótulo del envase, lote sintético de las capturas' } });
+  const { data: oficiales } = await llamar('POST', '/admin/foods/verified/query', { token: tokenAdmin, cuerpo: { q: 'arroz blanco de grano largo cocido' } });
+  const oficial = oficiales.find((v) => v.name === 'Arroz blanco de grano largo, cocido') ?? oficiales[0];
+  await llamar('POST', `/admin/foods/${arroz.catalogItemId}/decisions`, { token: tokenAdmin, cuerpo: { expectedVersion: 'v1', decision: 'EQUIVALENT', equivalentCatalogItemId: oficial.catalogItemId } });
+  return admin;
+}
+
+/**
+ * NUA-02, escena 19: la proteína en polvo de prueba entra en la opción 1 del almuerzo del borrador de Norma (por la API,
+ * contra su versión) y después se retira. El editor la tiene que seguir mostrando, con la marca.
+ */
+async function ponerEnElBorradorYRetirar(norma) {
+  const token = prepararLos.token;
+  const { data: planes } = await llamar('GET', `/advisees/${norma}/nutrition/plans`, { token });
+  const borrador = planes.find((p) => p.state === 'DRAFT');
+  if (!borrador) throw new Error('Norma no tiene un borrador');
+  const { data: plan } = await llamar('GET', `/nutrition/plans/${borrador.planId}`, { token });
+  const changes = {
+    dayTypes: plan.dayTypes.map((d) => ({
+      dayTypeId: d.dayTypeId,
+      label: d.label,
+      meals: d.meals.map((m) => ({
+        mealId: m.mealId,
+        label: m.label,
+        prescriptionMode: m.prescriptionMode,
+        options: m.options.map((o) =>
+          o.recipe
+            ? { optionId: o.optionId, label: o.label, items: [], recipeVersionId: o.recipe.recipeVersionId }
+            : { optionId: o.optionId, label: o.label, items: o.items.map((it) => ({ itemId: it.itemId, catalogItemId: it.catalogItemId, quantity: it.quantity, preparationState: it.preparationState, note: it.note })) },
+        ),
+      })),
+    })),
+  };
+  const almuerzo = changes.dayTypes[0].meals[1];
+  const opcion = almuerzo.options.find((o) => !o.recipeVersionId) ?? almuerzo.options[0];
+  opcion.items.push({ catalogItemId: prepararLos.enElPlan, quantity: { value: 30, unit: 'g' }, preparationState: 'AS_PURCHASED', note: null });
+  await llamar('PATCH', `/nutrition/plans/${borrador.planId}`, { token, cuerpo: { expectedVersion: plan.version, changes } });
+  await llamar('POST', `/nutrition/catalog-items/${prepararLos.enElPlan}/retirement`, { token, cuerpo: { expectedVersion: 'v1' } });
+}
+
+/** NUA-04: la consola de Administración, en otro contexto del navegador (otra sesión, otro almacenamiento). */
+async function capturarAdministracion(navegador, admin, resultado) {
+  const contexto = await navegador.createBrowserContext();
+  const page = await contexto.newPage();
+  await page.emulateTimezone('America/Argentina/Buenos_Aires');
+  page.on('pageerror', (e) => resultado.errores.push(String(e).slice(0, 300)));
+  const escenas = [
+    {
+      nombre: '25-administracion-alimentos',
+      entera: true,
+      llegar: async () => {
+        await page.goto(`${WEB}/admin/foods`, { waitUntil: 'networkidle0' });
+        await page.waitForSelector('#adm-correo', { timeout: 60_000 });
+        await page.waitForFunction(() => Object.keys(document.querySelector('#adm-correo') ?? {}).some((k) => k.startsWith('__reactProps')), { timeout: 60_000 });
+        await page.type('#adm-correo', admin.correo);
+        await page.type('#adm-contrasena', admin.clave);
+        await page.keyboard.press('Enter');
+        await page.waitForSelector('#adm-codigo', { timeout: 30_000 });
+        while (Math.floor(Date.now() / PERIODO_MS) <= prepararLos.ultimoPasoAdmin) await pausa(1000);
+        await page.type('#adm-codigo', codigoDelPaso(admin.secreto, Math.floor(Date.now() / PERIODO_MS)));
+        await page.keyboard.press('Enter');
+        await visible(page, '[data-alimento-para-revisar]', null, 60_000);
+        await asentar(page);
+      },
+    },
+    {
+      nombre: '26-administracion-revisar',
+      llegar: async () => {
+        await clic(page, '[data-alimento-para-revisar] [data-revisar]');
+        await visible(page, '[data-decidir-sobre-alimento]');
+        await page.$eval('[data-decidir-sobre-alimento]', (e) => e.scrollIntoView({ block: 'center' }));
+      },
+    },
+  ];
+  for (const p of escenas) {
+    const fila = { pantalla: p.nombre, ok: true, notas: [], medidas: {} };
+    try {
+      await page.setViewport({ width: 1536, height: 760, deviceScaleFactor: 1 });
+      await p.llegar();
+      for (const tema of TEMAS) {
+        await ponerTema(page, tema);
+        for (const [ancho, alto] of TAMANOS) {
+          await page.setViewport({ width: ancho, height: alto, deviceScaleFactor: 1 });
+          await pausa(700);
+          await page.screenshot({ path: path.join(salida, `${p.nombre}-${tema}-${ancho}.png`) });
+          fila.medidas[`${tema}-${ancho}`] = await medir(page);
+          if (p.entera && fila.medidas[`${tema}-${ancho}`].alto > alto + 40) {
+            await page.setViewport({ width: ancho, height: Math.min(fila.medidas[`${tema}-${ancho}`].alto, 9000), deviceScaleFactor: 1 });
+            await pausa(700);
+            await page.screenshot({ path: path.join(salida, `${p.nombre}-${tema}-${ancho}-entera.png`) });
+          }
+        }
+      }
+    } catch (e) {
+      fila.ok = false;
+      fila.error = String(e?.message ?? e).slice(0, 500);
+      await page.screenshot({ path: path.join(salida, `${p.nombre}-FALLO.png`) }).catch(() => {});
+    }
+    resultado.pantallas.push(fila);
+    console.log(`${p.nombre}: ${fila.ok ? 'bien' : `FALLÓ (${fila.error})`}`);
+  }
+  await contexto.close();
+}
+
 // ─── Las pantallas ──────────────────────────────────────────────────────────────────────────────────────────────
 
 /**
@@ -240,6 +433,10 @@ function pantallas(norma) {
   const abrirComida = async (page, n) => {
     if (!(await page.$(`${comida(n)}[data-abierta]`))) await clic(page, `${comida(n)} .comida-del-plan__boton`);
     await page.waitForSelector(`${comida(n)}[data-abierta]`, { timeout: 15_000 });
+  };
+  const abrirOpcion1 = async (page) => {
+    const boton = `${comida(2)} [data-opcion-plegable="1"] .opcion-plegable__boton`;
+    if (await page.$(`${boton}[aria-expanded="false"]`)) await clic(page, boton);
   };
   return [
     {
@@ -419,6 +616,122 @@ function pantallas(norma) {
       },
       despues: cerrarCuadros,
     },
+    // ─── WP-NUTRICION-ALIMENTOS (DL-180): las escenas del segundo tramo ───────────────────────────────────────────
+    {
+      nombre: '15-buscador-niveles-e-iconos',
+      llegar: async (page) => {
+        // NUA-03 y NUA-05: «avena» trae la tabla oficial («Verificado»), lo propio («Tuyo»), lo de demostración y, después
+        // dentro de su grupo, lo de otro profesional; cada fila con el ícono de su grupo.
+        await ir(page, nutricion());
+        await abrirComida(page, 2);
+        await abrirOpcion1(page);
+        await clic(page, `${comida(2)} [data-agregar-item]`);
+        await visible(page, 'dialog[open] .cuadro-de-la-opcion__cuerpo');
+        await escribir(page, 'dialog[open] .buscador-de-la-opcion__campo input', 'avena');
+        await visible(page, 'dialog[open] [data-nivel="OTHER_PROFESSIONAL"]', null, 20_000);
+        await page.$eval('dialog[open] .buscador-de-la-opcion__lista', (e) => e.scrollIntoView({ block: 'center' }));
+        return { niveles: await page.$$eval('dialog[open] .buscador-de-la-opcion__resultado', (xs) => xs.map((x) => `${x.querySelector('strong')?.textContent} · ${x.querySelector('[data-nivel]')?.textContent ?? '—'} · ${x.querySelector('[data-grupo]')?.getAttribute('data-grupo')}`)) };
+      },
+    },
+    {
+      nombre: '16-mirar-antes-de-sumar',
+      llegar: async (page) => {
+        // NUA-03: lo de otro profesional se mira antes de sumarlo.
+        await clic(page, 'dialog[open] .buscador-de-la-opcion__resultado .buscador-de-la-opcion__alimento', ALIMENTOS.ajeno);
+        await visible(page, 'dialog[open] [data-mirar-antes-de-sumar]');
+        await page.$eval('dialog[open] [data-mirar-antes-de-sumar]', (e) => e.scrollIntoView({ block: 'center' }));
+      },
+    },
+    {
+      nombre: '17-sugerencia-del-equivalente',
+      llegar: async (page) => {
+        // NUA-04: el verificado que Administración marcó como equivalente va justo antes, como sugerencia.
+        await clic(page, 'dialog[open] [data-mirar-antes-de-sumar] button', 'Volver a buscar');
+        await escribir(page, 'dialog[open] .buscador-de-la-opcion__campo input', 'arroz blanco');
+        await visible(page, 'dialog[open] [data-sugerido-por]', null, 20_000);
+        await page.$eval('dialog[open] .buscador-de-la-opcion__lista', (e) => e.scrollIntoView({ block: 'center' }));
+      },
+      despues: cerrarCuadros,
+    },
+    {
+      nombre: '18-crear-a-mano-con-grupo',
+      llegar: async (page) => {
+        // NUA-05 y NUA-D05: crear a mano pide el grupo y avisa que lo ven los demás profesionales.
+        await abrirOpcion1(page);
+        await clic(page, `${comida(2)} [data-agregar-item]`);
+        await visible(page, 'dialog[open] .cuadro-de-la-opcion__cuerpo');
+        await clic(page, 'dialog[open] .cuadro-de-la-opcion__otro button', 'Crearlo a mano');
+        await visible(page, 'dialog[open] [data-aviso-de-compartir]');
+        await escribir(page, '#opcion-crear-a-mano-nombre', 'Galletitas de arroz caseras');
+        await page.select('#opcion-crear-a-mano-grupo', 'GRAINS');
+        await page.$eval('dialog[open] [data-aviso-de-compartir]', (e) => e.scrollIntoView({ block: 'center' }));
+      },
+      despues: cerrarCuadros,
+    },
+    {
+      nombre: '19-editor-alimento-retirado',
+      llegar: async (page) => {
+        // NUA-02: el alimento que se retiró después de citarlo sigue en la fila, con la marca discreta.
+        // Antes, que el editor guarde lo que tenga pendiente; después, se monta de nuevo para leer el borrador.
+        await asentar(page);
+        await ir(page, '/pro');
+        await ponerEnElBorradorYRetirar(norma);
+        await ir(page, nutricion());
+        await abrirComida(page, 2);
+        await abrirOpcion1(page);
+        const fila = await visible(page, `${comida(2)} [data-marca-retirado]`, null, 20_000);
+        await fila.evaluate((x) => x.scrollIntoView({ block: 'center' }));
+        await page.evaluate(() => document.activeElement?.blur());
+        await pausa(400);
+      },
+    },
+    {
+      nombre: '20-mis-alimentos',
+      entera: true,
+      llegar: async (page) => {
+        // NUA-01 y NUA-02: los propios, corregidos (versión 2, verificado), retirados y sin compartir.
+        await ir(page, '/pro/foods');
+        await visible(page, '[data-alimento-propio]');
+      },
+    },
+    {
+      nombre: '21-mis-alimentos-corregir',
+      llegar: async (page) => {
+        await clic(page, '[data-alimento-propio] [data-corregir]');
+        await visible(page, 'dialog[open] [data-aviso-de-compartir]');
+      },
+      despues: cerrarCuadros,
+    },
+    {
+      nombre: '22-mis-alimentos-retirar',
+      llegar: async (page) => {
+        await clic(page, '[data-alimento-propio]:not([data-retirado]) [data-retirar]');
+        await visible(page, 'dialog[open]');
+      },
+      despues: cerrarCuadros,
+    },
+    {
+      nombre: '23-receta-nueva-con-imagen',
+      entera: true,
+      llegar: async (page) => {
+        // NUA-06: la imagen se elige al crear la receta.
+        await ir(page, '/pro/recipes?nueva=1');
+        await visible(page, 'section[aria-label="Imagen de referencia"]');
+      },
+    },
+    {
+      nombre: '24-receta-nueva-desde-el-plan',
+      llegar: async (page) => {
+        // NUA-06: «Receta nueva» desde una comida del plan, con la imagen en el formulario.
+        await ir(page, nutricion());
+        await abrirComida(page, 2);
+        await clic(page, `${comida(2)} [data-opcion-de-receta]`);
+        await clic(page, '[data-receta-nueva]');
+        const seccion = await visible(page, 'dialog[open] section[aria-label="Imagen de referencia"]', null, 20_000);
+        await seccion.evaluate((x) => x.scrollIntoView({ block: 'center' }));
+      },
+      despues: cerrarCuadros,
+    },
   ];
 }
 
@@ -453,7 +766,7 @@ const medir = (page) =>
     };
   });
 
-async function capturarTodo() {
+async function capturarTodo(admin) {
   const estado = JSON.parse(fs.readFileSync(path.join(TRABAJO, 'estado.json'), 'utf8'));
   const norma = estado.personas?.norma?.aseId;
   if (!norma) throw new Error('La cohorte no dejó a Norma en estado.json.');
@@ -506,6 +819,8 @@ async function capturarTodo() {
       console.log(`${p.nombre}: ${fila.ok ? 'bien' : `FALLÓ (${fila.error})`}${fila.notas.length ? ` · ${fila.notas.join(' · ')}` : ''}`);
     }
     await contexto.close();
+    if (admin) await capturarAdministracion(navegador, admin, resultado);
+    else resultado.errores.push('sin la administradora: no se capturó la consola');
   } finally {
     fs.writeFileSync(path.join(salida, 'capturas.json'), `${JSON.stringify(resultado, null, 2)}\n`);
     await navegador.close();
@@ -538,7 +853,13 @@ try {
     stdio: 'inherit',
   });
   await pausa(1500);
-  const r = await capturarTodo();
+  let admin = null;
+  try {
+    admin = await prepararLosAlimentos();
+  } catch (e) {
+    console.error(`No se prepararon todos los alimentos de las capturas: ${String(e?.message ?? e).slice(0, 600)}`);
+  }
+  const r = await capturarTodo(admin);
   const fallas = r.pantallas.filter((p) => !p.ok);
   console.log(`${r.pantallas.length - fallas.length} de ${r.pantallas.length} pantallas capturadas; errores de la página: ${r.errores.length ? r.errores.slice(0, 8).join(' | ') : 'ninguno'}`);
   if (fallas.length) process.exitCode = 1;

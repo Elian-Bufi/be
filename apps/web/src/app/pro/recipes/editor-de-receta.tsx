@@ -7,6 +7,10 @@
  *   convierte entre estados ni entre mililitros y gramos: si la unidad no tiene equivalencia, el cálculo lo dice.
  * - El cálculo lo hace la API (API-REC-07) mientras se edita, y otra vez al guardar: la pantalla no suma nada.
  * - Guardar una receta existente emite una versión nueva (API-REC-04). Los planes ya activados conservan la suya.
+ * - **NUA-06 (WP-NUTRICION-ALIMENTOS):** la imagen de referencia se elige desde el principio, en el formulario de la
+ *   receta nueva, y se carga sola al guardarla: se crea la receta (API-REC-01) y, con la versión que devuelve, se sube el
+ *   medio y se asocia (API-REC-05). Si la receta quedó guardada y la imagen no, `onGuardada` lo avisa con lo elegido
+ *   (`pendiente`): la receta guardada lo muestra con su falla y «Reintentar la imagen», que no vuelve a crear la receta.
  */
 import {
   COPY_RECETAS,
@@ -36,7 +40,8 @@ import { fecha } from '../../../lib/formato';
 import { mensajeDeFallo, useClaveDeIntento } from '../../../lib/intento';
 import { procedenciaDeElemento } from '../advisees/nutrition/importacion';
 import { TablaDeCalculo } from './calculo-de-receta';
-import { ImagenDeReceta } from './imagen-de-receta';
+import { SIN_IMAGEN, type ImagenAlCrear, type ImagenPendiente } from './cargar-la-imagen';
+import { ImagenDeLaRecetaNueva, ImagenDeReceta, useImagenParaCargar } from './imagen-de-receta';
 
 type Detalle = DetalleDeRecetaResponse['data'];
 type Unidad = 'g' | 'ml';
@@ -99,6 +104,9 @@ function pedidoDeCalculo(porciones: string, ingredientes: readonly IngredienteEn
 
 const comoTexto = (n: number) => String(n).replace('.', ',');
 
+/** NUA-06: la base de los `id` de la imagen de la receta nueva; el formulario marca su procedencia si falta. */
+const ID_DE_LA_IMAGEN = 'receta-imagen';
+
 /** ED-32: los textos de las dos salidas, cuando la receta nueva se crea desde una comida del plan. */
 export const COPY_RECETA_EN_EL_PLAN = {
   guardarYAgregar: (comida: string) => `Guardar la receta y agregarla a ${comida}`,
@@ -114,12 +122,16 @@ export function EditorDeReceta({
   onVolver,
   enElPlan = null,
   alCambiarLoEscrito,
+  imagenPendiente = null,
 }: {
   token: string;
   sesionPerdida: (r: Resultado<unknown>) => boolean;
   recetaId: string | null;
-  /** `agregar` (ED-32): se eligió «Guardar la receta y agregarla a …». Fuera del plan, siempre `false`. */
-  onGuardada: (r: Receta, aviso: string, agregar: boolean) => void;
+  /**
+   * `agregar` (ED-32): se eligió «Guardar la receta y agregarla a …». Fuera del plan, siempre `false`. `imagen` (NUA-06):
+   * lo que pasó con la imagen elegida al crear la receta; al guardar una versión nueva, siempre `sin-imagen`.
+   */
+  onGuardada: (r: Receta, aviso: string, agregar: boolean, imagen: ImagenAlCrear) => void;
   onVolver: () => void;
   /**
    * ED-32: la receta nueva se crea en un cuadro, desde una comida del plan (`destino`: «Merienda»). Sin «Volver a la
@@ -128,6 +140,8 @@ export function EditorDeReceta({
   enElPlan?: { readonly destino: string } | null;
   /** ED-32: si hay algo escrito sin guardar, para que el cuadro pregunte al cerrarse. */
   alCambiarLoEscrito?: (hay: boolean) => void;
+  /** NUA-06: la imagen que se eligió al crear esta receta y no se pudo cargar; la sección de la imagen la retoma. */
+  imagenPendiente?: ImagenPendiente | null;
 }) {
   const [cargada, setCargada] = useState<Detalle | null>(null);
   const [lectura, setLectura] = useState<'cargando' | 'lista' | 'no-disponible' | 'sin-area' | 'error'>(recetaId ? 'cargando' : 'lista');
@@ -148,6 +162,8 @@ export function EditorDeReceta({
   const errores = avisos.errores;
   const [fallo, setFallo] = useState<string | null>(null);
   const [avisoDeImagen, setAvisoDeImagen] = useState<string | null>(null);
+  // NUA-06: la imagen elegida, desde la receta nueva hasta la guardada (la de antes de guardar, o la pendiente).
+  const imagen = useImagenParaCargar(token, sesionPerdida, imagenPendiente);
   const intento = useClaveDeIntento();
   const generacion = useRef(0);
 
@@ -228,6 +244,8 @@ export function EditorDeReceta({
       }
       if (i.estado === '') problemas.push({ id: `${i.clave}-estado`, texto: `${i.nombre}: ${COPY_RECETAS.faltaElEstado}` });
     }
+    // NUA-06: con una imagen elegida en la receta nueva, su procedencia es parte de lo que se guarda.
+    if (!cargada && imagen.elegida && !imagen.procedencia) problemas.push({ id: `${ID_DE_LA_IMAGEN}-procedencia`, texto: COPY_RECETAS.faltaLaProcedencia });
     return problemas;
   }
 
@@ -242,15 +260,29 @@ export function EditorDeReceta({
     const cuerpo = { ...calculable, name: nombre.trim(), description: descripcion.trim() || null, steps: pasos.map((p) => p.trim()).filter(Boolean) };
     const r = cargada ? await api.editarReceta(token, cargada.recipeId, { ...cuerpo, expectedVersion: cargada.version }, intento.actual()) : await api.crearReceta(token, cuerpo, intento.actual());
     intento.registrar(r);
-    setEnviando(false);
-    if (sesionPerdida(r)) return;
+    if (sesionPerdida(r)) return setEnviando(false);
     if (!r.ok) {
+      setEnviando(false);
       if (r.tipo === 'API' && r.codigo === 'CATALOG_REFERENCE_INVALID') return setFallo(COPY_RECETAS.ingredienteNoDisponible);
       if (r.tipo === 'API' && r.codigo === 'ACTION_FORBIDDEN') return setFallo(COPY_RECETAS.soloNutricion);
       return setFallo(mensajeDeFallo(r));
     }
+    const enLaComida = enElPlan !== null && agregar;
+    if (cargada) {
+      setEnviando(false);
+      setSucio(false);
+      return onGuardada(r.datos.data, COPY_RECETAS.versionNueva(r.datos.data.versionNumber), enLaComida, SIN_IMAGEN);
+    }
+    // NUA-06: la receta nueva ya está guardada. Si se eligió una imagen, se carga ahora, con la versión que devolvió la
+    // creación. Si no se puede, la receta no se vuelve a crear: lo elegido pasa a la receta guardada, con su reintento.
+    const creada = r.datos.data;
+    const conImagen = imagen.elegida ? await imagen.cargar(creada, true) : null;
+    setEnviando(false);
+    if (conImagen?.tipo === 'sesion-perdida') return;
     setSucio(false);
-    onGuardada(r.datos.data, cargada ? COPY_RECETAS.versionNueva(r.datos.data.versionNumber) : COPY_RECETAS.guardada, enElPlan !== null && agregar);
+    if (conImagen?.tipo === 'asociada') return onGuardada(conImagen.receta, `${COPY_RECETAS.guardada} ${COPY_RECETAS.imagenCargada}`, enLaComida, { tipo: 'cargada' });
+    if (conImagen?.tipo === 'fallo') return onGuardada(creada, COPY_RECETAS.guardada, enLaComida, { tipo: 'pendiente', pendiente: conImagen.pendiente });
+    onGuardada(creada, COPY_RECETAS.guardada, enLaComida, SIN_IMAGEN);
   }
 
   if (lectura === 'cargando') return <Cargando />;
@@ -434,6 +466,13 @@ export function EditorDeReceta({
           </button>
         </section>
 
+        {/* NUA-06: en la receta nueva, la imagen va en el formulario, antes de guardar: se carga con la receta. */}
+        {cargada ? null : (
+          <section className="seccion" aria-label={COPY_RECETAS.imagenDeReferencia}>
+            <ImagenDeLaRecetaNueva id={ID_DE_LA_IMAGEN} imagen={imagen} apagado={enviando} errorDeProcedencia={porCampo[`${ID_DE_LA_IMAGEN}-procedencia`] ?? null} alCambiar={cambiar} />
+          </section>
+        )}
+
         {fallo ? (
           <Aviso tipo="error" enfocar>
             <p>{fallo}</p>
@@ -443,7 +482,7 @@ export function EditorDeReceta({
           // ED-32: dos salidas; un solo principal, que guarda y agrega a la comida (Enter en el formulario hace lo mismo).
           <div className="acciones" data-dos-salidas>
             <button type="submit" className="boton boton--primario" disabled={enviando} data-guardar-y-agregar>
-              {enviando ? COPY_RECETAS.guardando : COPY_RECETA_EN_EL_PLAN.guardarYAgregar(enElPlan.destino)}
+              {enviando ? (imagen.cargando ? COPY_RECETAS.cargandoImagen : COPY_RECETAS.guardando) : COPY_RECETA_EN_EL_PLAN.guardarYAgregar(enElPlan.destino)}
             </button>
             <button type="button" className="boton boton--secundario" disabled={enviando} onClick={() => void guardar(null, false)} data-guardar-solo>
               {COPY_RECETA_EN_EL_PLAN.guardarSolo}
@@ -453,7 +492,7 @@ export function EditorDeReceta({
         ) : (
           <div className="acciones">
             <button type="submit" className="boton boton--primario" disabled={enviando || (cargada !== null && !sucio)}>
-              {enviando ? COPY_RECETAS.guardando : COPY_RECETAS.guardar}
+              {enviando ? (imagen.cargando ? COPY_RECETAS.cargandoImagen : COPY_RECETAS.guardando) : COPY_RECETAS.guardar}
             </button>
           </div>
         )}
@@ -471,15 +510,14 @@ export function EditorDeReceta({
             token={token}
             receta={cargada}
             sesionPerdida={sesionPerdida}
+            imagen={imagen}
             onCambio={(r, aviso) => {
               setCargada((d) => (d ? { ...d, ...r } : d));
               setAvisoDeImagen(aviso);
             }}
           />
         </section>
-      ) : (
-        <p className="nota">{COPY_RECETAS.guardaAntesDeLaImagen}</p>
-      )}
+      ) : null}
 
       {cargada ? (
         <section className="seccion" aria-labelledby="receta-versiones">
