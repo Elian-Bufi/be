@@ -270,6 +270,10 @@ async function prepararLosBloques(ids, nota) {
       p.sets = dominio.seriesParaLasVueltas(p.sets, vueltas, vacia);
     } else if (n === 2) p.exerciseGroupId = 'g-2';
   });
+  // ENP-D01, ratificado el 19/11: la fase lleva el nombre automático de los planes viejos («Bloque N»), que en pantalla se
+  // lee «Fase N» (escenas 01, 15 y 15b). El dato guardado queda «Bloque N».
+  lugar.nombreViejo = `Bloque ${lugar.i + 1}`;
+  fases[lugar.i].label = lugar.nombreViejo;
   const guardado = await cliente.pedir('PATCH', `/training/plans/${borrador.planId}`, { token: martin, capacidades: DEL_WEBSITE, cuerpo: { expectedVersion: detalle.version, changes: { blocks: fases } } });
   nota(`bloques en la fase ${lugar.i + 1}${lugar.j === null ? '' : `, semana ${lugar.j + 1}`}, sesión ${lugar.k + 1} (${s.prescriptions.length} ejercicios)`);
   // Tramo 2 (§7): la versión con bloques se activa, para ver la versión activa agrupada bajo su bloque, y se prepara una
@@ -582,13 +586,32 @@ function pantallas(ids, lugar) {
         for (const c of (await page.$$('[data-marcar-ejercicio]')).slice(0, 3)) await c.click();
         await asentar(page);
       },
+      // Ratificación del 19/11: la lista se mira desde arriba, sin desplazar, como al abrir el catálogo.
+      antesDeCapturar: (page) =>
+        page.evaluate(() => {
+          const cuerpo = document.querySelector('dialog[open] .cajon__cuerpo, .cajon__cuerpo');
+          if (cuerpo) cuerpo.scrollTop = 0;
+        }),
       // Revisión del tramo 2: el campo «Prescripción para todos» se veía como una línea finita y la tercera ficha quedaba
-      // cortada contra el borde, sin que se notara que seguía.
+      // cortada contra el borde, sin que se notara que seguía. Ratificación del 19/11: a 1280 × 800 el pie tapaba la lista
+      // (se veía el título del catálogo y no los ejercicios); ahora se ven al menos 3 resultados sin desplazar.
       verificar: (page) =>
         page.evaluate(() => {
           const problemas = [];
-          const campo = document.querySelector('[data-para-todos] input');
-          const alto = campo?.getBoundingClientRect().height ?? 0;
+          // Los del cajón abierto: otro cajón cerrado en la página mide cero y no cuenta.
+          const pie = document.querySelector('dialog[open] .cajon__pie')?.getBoundingClientRect();
+          const cuerpo = document.querySelector('dialog[open] .cajon__cuerpo')?.getBoundingClientRect();
+          if (pie && cuerpo) {
+            const abajo = Math.min(pie.top, cuerpo.bottom);
+            const filas = [...document.querySelectorAll('dialog[open] [data-marcar-ejercicio]')].map((c) => (c.closest('tr, li') ?? c).getBoundingClientRect());
+            const enteras = filas.filter((r) => r.height > 0 && r.top >= cuerpo.top - 1 && r.bottom <= abajo + 1).length;
+            if (window.innerWidth <= 1280 && window.innerHeight <= 800 && enteras < 3) problemas.push(`se ven ${enteras} resultados enteros sin desplazar (hacen falta 3)`);
+          }
+          // Plegada, «Prescripción para todos» es un renglón; el campo se mide en la escena 11b, abierta.
+          const pliegue = document.querySelector('[data-para-todos-pliegue]');
+          if (!pliegue) problemas.push('«Prescripción para todos» no está plegada');
+          const campo = pliegue?.open ? document.querySelector('[data-para-todos] input') : null;
+          const alto = campo?.getBoundingClientRect().height ?? 40;
           if (alto < 36) problemas.push(`el campo de la prescripción para todos mide ${Math.round(alto)} px de alto`);
           // El ejemplo de adentro entra entero.
           if (campo?.placeholder) {
@@ -609,10 +632,34 @@ function pantallas(ids, lugar) {
             // Con tres elegidos (los de la escena) entran todos: ninguno escondido debajo, aunque esté entero.
             else if (r.top >= l.bottom - 1) problemas.push(`«${b.textContent.trim()}» queda escondida debajo de los otros`);
           }
-          const pie = document.querySelector('.cajon__pie')?.getBoundingClientRect();
-          if (pie && pie.height > window.innerHeight * 0.45) problemas.push(`el pie ocupa ${Math.round(pie.height)} px de ${window.innerHeight}`);
+          if (pie && pie.height > window.innerHeight * 0.35) problemas.push(`el pie ocupa ${Math.round(pie.height)} px de ${window.innerHeight}`);
           return problemas;
         }),
+    },
+    {
+      // Ratificación del 19/11: «Prescripción para todos» abierta ocupa su renglón, con el campo a su alto y el ejemplo
+      // entero adentro.
+      nombre: '11b-prescripcion-para-todos-abierta',
+      llegar: async (page) => {
+        await clic(page, '[data-para-todos-pliegue] > summary');
+        await visible(page, '[data-para-todos] input');
+      },
+      verificar: (page) =>
+        page.evaluate(() => {
+          const problemas = [];
+          const campo = document.querySelector('[data-para-todos] input');
+          const alto = campo?.getBoundingClientRect().height ?? 0;
+          if (alto < 36) problemas.push(`el campo de la prescripción para todos mide ${Math.round(alto)} px de alto`);
+          if (campo?.placeholder) {
+            const estilo = getComputedStyle(campo);
+            const lienzo = document.createElement('canvas').getContext('2d');
+            lienzo.font = estilo.font;
+            const libre = campo.clientWidth - parseFloat(estilo.paddingLeft) - parseFloat(estilo.paddingRight);
+            if (lienzo.measureText(campo.placeholder).width > libre + 1) problemas.push(`el ejemplo «${campo.placeholder}» no entra en el campo`);
+          }
+          return problemas;
+        }),
+      despues: (page) => clic(page, '[data-para-todos-pliegue] > summary'),
     },
     {
       // C6: sin resultados, «No encuentro el ejercicio» abierto, con crear e importar.
@@ -661,6 +708,41 @@ function pantallas(ids, lugar) {
         await visible(page, '[data-bloque-del-plan]');
         await page.evaluate(() => document.querySelector('[data-bloque-del-plan]')?.scrollIntoView({ block: 'center' }));
         await pausa(300);
+      },
+      // ENP-D01, ratificado el 19/11: la fase guardada «Bloque N» se lee «Fase N» en la versión activa.
+      verificar: (page) =>
+        page.evaluate((viejo) => {
+          const texto = document.querySelector('main')?.innerText ?? '';
+          const fase = viejo.replace('Bloque', 'Fase');
+          return [...(texto.includes(fase) ? [] : [`no dice «${fase}»`]), ...(new RegExp(`${viejo}(?!\\d)`).test(texto) ? [`dice «${viejo}» como nombre de la fase`] : [])];
+        }, lugar.nombreViejo),
+    },
+    {
+      // DL-108 D-3, ratificado el 19/11: «Guardar como plantilla» muestra, además de las notas, los nombres, los
+      // parámetros y la referencia del %RM, para confirmarlos o vaciarlos uno por uno. Los nombres comunes («Pierna»,
+      // «Piernas A», «Torso B») no nombran a nadie y no se listan.
+      nombre: '15b-guardar-como-plantilla-con-nombres',
+      llegar: async (page) => {
+        await clic(page, '.menu-de-acciones__boton', 'Plantillas');
+        await clic(page, '.menu-de-acciones__panel button', 'Guardar como plantilla');
+        await visible(page, 'dialog[open] [data-lo-que-viaja-a-la-plantilla]');
+        await page.evaluate(() => document.querySelector('dialog[open] [data-lo-que-viaja-a-la-plantilla]')?.scrollIntoView({ block: 'center' }));
+        await pausa(300);
+      },
+      verificar: (page) =>
+        page.evaluate(() => {
+          const lista = document.querySelector('dialog[open] [data-lo-que-viaja-a-la-plantilla]');
+          const nombres = [...(lista?.querySelectorAll('li[data-tipo="NOMBRE"]') ?? [])].map((li) => li.textContent ?? '');
+          const parametros = lista?.querySelectorAll('li[data-tipo="PARAMETRO"]').length ?? 0;
+          return [
+            ...(parametros > 0 ? [] : ['no aparece ningún parámetro para revisar']),
+            ...nombres.filter((t) => /: «(Pierna|Piernas A|Torso A)»/.test(t)).map((t) => `se lista un nombre común: ${t.slice(0, 80)}`),
+          ];
+        }),
+      despues: async (page) => {
+        await page.keyboard.press('Escape');
+        await pausa(300);
+        await cerrarCuadros(page);
       },
     },
     // ─── WP-PLANTILLAS-DE-ENTRENAMIENTO (DL-182) ──────────────────────────────────────────────────────────────

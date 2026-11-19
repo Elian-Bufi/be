@@ -66,7 +66,9 @@ test('TEST-CTX-001 · Entrenamiento: el PAR-Q+ todo «no» es un renglón; con u
   assert.equal(salud.datos.length, 1);
   const med = salud.datos[0]!;
   assert.equal(med.respuesta, 'Sí · Atenolol 50 mg');
-  assert.match(med.nota ?? '', /esfuerzo percibido/);
+  // La nota ubica, no indica (CTX-D08): dice por qué importa, sin consejo de dosificación; decide el profesional.
+  assert.match(med.nota ?? '', /cambian el pulso o la respuesta al esfuerzo/);
+  assert.doesNotMatch(med.nota ?? '', /dosific|esfuerzo percibido|dosis|si es así/i);
   // Se cita la pregunta y su detalle; nunca un conteo de «sí».
   assert.deepEqual(med.citas.map((c) => c.fieldCode), ['medicacion_relevante', 'trn_medicacion_cual']);
   assert.ok(!JSON.stringify(grupos).includes('de 7'));

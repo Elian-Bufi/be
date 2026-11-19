@@ -35,6 +35,7 @@ import {
   nombreDeMetrica,
   porSemana,
   rotuloDelAutor,
+  nombreDeLaFase,
   tramoAnterior,
   tramoSiguiente,
   type Alcance,
@@ -168,7 +169,7 @@ export function versionesEnPantalla(h: HistoriaAnterior, dia: Dia): readonly Ver
       contenido:
         v.content.kind === 'NUTRITION'
           ? [...v.content.dayTypes].sort((a, b) => a.order - b.order).map((d) => conDetalle(d.label, [...d.meals].sort((a, b) => a.order - b.order).map((m) => m.label)))
-          : [...v.content.blocks].sort((a, b) => a.order - b.order).map((b) => conDetalle(b.label, [...b.sessions].sort((a, c) => a.order - c.order).map((s) => s.label))),
+          : [...v.content.blocks].sort((a, b) => a.order - b.order).map((b, i) => conDetalle(nombreDeLaFase(b.label, i), [...b.sessions].sort((a, c) => a.order - c.order).map((s) => s.label))),
     }));
 }
 

@@ -12,6 +12,7 @@ import {
   COPY_PLANTILLAS,
   COPY_PREPARACION_DE_PLANTILLA as P,
   ejercicioPlegadoDelEditor,
+  nombreDeLaFase,
   type EstructuraDePlanDeEntrenamientoEntrada,
   type PlantillaDeEntrenamiento,
   type VersionDePlantillaDeEntrenamiento,
@@ -77,7 +78,7 @@ export function EstructuraAgrupada({ estructura, ejercicios }: { estructura: Est
       {estructura.blocks.map((b, i) => (
         <div key={b.blockId ?? i} className="nodo nodo--dia">
           <p className="lista__titulo">
-            {b.label}
+            {nombreDeLaFase(b.label, i)}
             {b.purpose ? <span className="nota"> · {b.purpose}</span> : null}
           </p>
           {(b.microcycles ?? []).map((m, j) => (

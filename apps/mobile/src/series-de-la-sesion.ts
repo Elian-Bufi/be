@@ -2,7 +2,7 @@
  * La tabla de series de la sesión enfocada (WP-ENTRENAMIENTO-SERIES §7.3; DL-122): lo planificado de cada serie y lo que
  * escribe la persona, siempre separados.
  *
- * - **Placeholders** (`placeholdersDeLaSerie`): el objetivo de ESA serie, en gris, o «Sin objetivo». Son presentación:
+ * - **Placeholders** (`placeholdersDeLaSerie`): el objetivo de ESA serie, en gris, o «Sin indicar». Son presentación:
  *   nunca entran a lo que se guarda. `leerFila` solo lee lo escrito.
  * - **Lo escrito** se lee con `leerNumero` (coma o punto). El cero es un valor: 0 kg y RIR 0 se guardan como 0. Vacío
  *   es `null`: no informado. El RIR admite decimales, de 0 a 20; las repeticiones, enteros.
@@ -151,7 +151,7 @@ export interface Placeholders {
 }
 
 /**
- * Lo que muestran en gris los campos vacíos de una serie: el objetivo de esa serie, o «Sin objetivo». La carga lleva la
+ * Lo que muestran en gris los campos vacíos de una serie: el objetivo de esa serie, o «Sin indicar». La carga lleva la
  * unidad solo si no es la de la columna: «16» en una columna en kg, «35 lb» si el objetivo está en libras.
  */
 export function placeholdersDeLaSerie(objetivo: ObjetivoDeSerie | null, unidadDeLaColumna: Unidad): Placeholders {
@@ -162,7 +162,7 @@ export function placeholdersDeLaSerie(objetivo: ObjetivoDeSerie | null, unidadDe
   return {
     carga: carga === null ? sin : carga.unit === unidadDeLaColumna ? numero(carga.value) : `${numero(carga.value)} ${carga.unit}`,
     repeticiones: reps === null ? sin : 'value' in reps ? numero(reps.value, 0) : `${numero(reps.min, 0)}–${numero(reps.max, 0)}`,
-    // El cero es un objetivo: «RIR 0» se muestra, no se confunde con «Sin objetivo».
+    // El cero es un objetivo: «RIR 0» se muestra, no se confunde con «Sin indicar».
     rir: rir === null ? sin : numero(rir),
   };
 }
@@ -803,7 +803,7 @@ export function unidadDelEjercicio(p: Pick<PrescripcionConObjetivos, 'sets' | 's
 export const ANCHO_DE_LA_COLUMNA_SERIE = 34;
 /** La columna de la casilla: el área de toque mínima de 44 dp (PA-02), que no crece con la letra. */
 export const ANCHO_DE_LA_CASILLA = 44;
-/** Lo mínimo para que «12–16» o «Sin objetivo» entren en una celda sin cortarse, con la letra normal. */
+/** Lo mínimo para que «12–16» o «Sin indicar» entren en una celda sin cortarse, con la letra normal. */
 export const ANCHO_MINIMO_DE_CELDA = 48;
 export const SEPARACION_DE_CELDAS = 4;
 /** kg, Rep., RIR y Tiempo (PA-02). */

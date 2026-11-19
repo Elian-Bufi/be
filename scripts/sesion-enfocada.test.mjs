@@ -110,11 +110,11 @@ test('1 · los placeholders muestran el objetivo de ESA serie: 12–16 / 10–12
       ['20', '8–10', '1'],
     ],
   );
-  // Sin objetivo de RIR (la zancada) dice «Sin objetivo»; la carga 0 kg es un objetivo y se muestra.
+  // Sin objetivo de RIR (la zancada) dice «Sin indicar»; la carga 0 kg es un objetivo y se muestra.
   const z = series.placeholdersDeLaSerie(ZANCADA.sets[0].target, 'kg');
   assert.equal(z.rir, COPY_ENTRENAMIENTO_POR_SERIE.sinObjetivo);
   assert.equal(z.carga, '0');
-  // Una serie de más, sin planificar: los tres dicen «Sin objetivo».
+  // Una serie de más, sin planificar: los tres dicen «Sin indicar».
   assert.deepEqual(Object.values(series.placeholdersDeLaSerie(null, 'kg')), [COPY_ENTRENAMIENTO_POR_SERIE.sinObjetivo, COPY_ENTRENAMIENTO_POR_SERIE.sinObjetivo, COPY_ENTRENAMIENTO_POR_SERIE.sinObjetivo]);
   // Un objetivo en otra unidad lleva su unidad: no se compara kg con lb.
   assert.equal(series.placeholdersDeLaSerie({ ...GOBLET.sets[0].target, suggestedLoad: { value: 35, unit: 'lb' } }, 'kg').carga, '35 lb');
@@ -275,7 +275,7 @@ test('6 · el resumen dice «N de M series registradas» y cuáles quedan «Sin 
 test('6 · la banda «Plan de la serie N» y las bases declaradas, sin suponer lo que no se declaró', () => {
   assert.equal(series.bandaDeLaSerie(1, GOBLET.sets[0].target).completa, 'Plan de la serie 1: 16 kg · 12–16 rep. · RIR 3 · Descanso recomendado 01:30');
   assert.equal(series.bandaDeLaSerie(3, ZANCADA.sets[2].target).completa, 'Plan de la serie 3: 0 kg · 8–10 rep.');
-  assert.equal(series.bandaDeLaSerie(4, null).completa, 'Plan de la serie 4: Sin objetivo');
+  assert.equal(series.bandaDeLaSerie(4, null).completa, 'Plan de la serie 4: Sin indicar');
   assert.deepEqual(series.basesDeLaPrescripcion(RUMANO), { carga: 'por mancuerna o implemento', repeticiones: 'por serie' });
   assert.deepEqual(series.basesDeLaPrescripcion({ loadBasis: null, repetitionBasis: null }), { carga: null, repeticiones: null });
 });

@@ -2002,7 +2002,9 @@ que no existe (GR-VD01, GR-VD02 y GR-VD08). Lo fija TEST-GRVD-003.
 - **GR-VD07 · En SP-01 y SP-02, la lectura del cruce va adentro de la tarjeta**, en lo que la base pone a la vista, y la
   frase una sola vez. *Alternativa:* la lectura debajo, afuera de la tarjeta.
 - **GR-VD08 · Una pregunta con gráficos abierta por la dirección sin nada que ofrecer** vuelve a «Analizar» sin pregunta,
-  sin el título ni un aviso. *Alternativa:* un estado vacío neutro con el título.
+  sin el título ni un aviso. *Alternativa:* un estado vacío neutro con el título. **Ratificada con la alternativa
+  (Dirección, 19/11):** la pregunta muestra su título y un estado vacío que dice por qué (`porQueNoHayGraficos`;
+  TEST-GRVD-003).
 - **GR-VD10 · La semana sin media es una raya cortada y baja sobre el eje** (no una caja punteada de todo el alto, que
   con la cohorte enrejaba el año y tapaba los días); la caja llena, solo para la semana con media, y la de «Con días
   afuera», con un contorno fino. **De entrada va por semana solo si la mayoría de las semanas tienen media** (refina

@@ -20,6 +20,7 @@ import {
   diaDeLaSemana,
   fechaDeLaAgenda,
   fechasPrevistas,
+  nombreDeLaFase,
   problemasDeAgenda,
   type AgendaDeEntrenamiento,
 } from '@be/domain';
@@ -56,7 +57,7 @@ export function sesionesParaLaAgenda(bloques: readonly BloqueConSesiones[]): Ses
     nombre: contexto.length > 0 ? `${corto} (${contexto.join(', ')})` : corto,
   });
   return bloques.flatMap((b, bi) => {
-    const delBloque = bloques.length > 1 ? [nombre(b.label, 'Fase', bi)] : [];
+    const delBloque = bloques.length > 1 ? [nombreDeLaFase(b.label, bi)] : [];
     const directas = (b.sessions ?? []).map((s, si) => una(s.sessionId, nombre(s.label, 'Sesión', si), delBloque));
     const enMicrociclos = (b.microcycles ?? []).flatMap((m, mi) => m.sessions.map((s, si) => una(s.sessionId, nombre(s.label, 'Sesión', si), [...delBloque, nombre(m.label, 'Microciclo', mi)])));
     return [...directas, ...enMicrociclos];

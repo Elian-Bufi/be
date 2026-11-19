@@ -21,6 +21,8 @@ on:
       - "wp-nutricion-alimentos"
       - "wp-nutricion-alimentos-2"
       - "integracion-planificacion"
+      # Los ajustes de la ratificación del 19/11 (el catálogo a 1280 × 800, «Fase N», lo que viaja a la plantilla).
+      - "wp-ajustes-de-la-ratificacion"
     paths:
       - ".github/workflows/capturas-de-la-planificacion.yml"
       - "EVIDENCIA/ENTRENAMIENTO-PLANIFICACION/herramientas/**"

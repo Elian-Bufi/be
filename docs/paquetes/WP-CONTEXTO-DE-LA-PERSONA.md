@@ -194,8 +194,9 @@ pedido), API-HBT-06 y 07 (el pedido de ver los hábitos y su estado), API-NPP-01
 - **CTX-D07 · El PAR-Q+, pregunta por pregunta.** Si todas son «no», un renglón: «Las 7 preguntas de salud: todas "no"».
   Si alguna es «sí», cada «sí» en su renglón, con el apto médico al lado. No se cuenta «2 de 7»: no es un puntaje.
 - **CTX-D08 · La medicación, con la frase de para qué se mira.** Entrenamiento: «Algunas medicaciones cambian el pulso o la
-  respuesta al esfuerzo: si es así, dosificá por esfuerzo percibido.» Nutrición: «Mirá si va con horarios o con algún
-  alimento.» Es una nota fija del área, no una lectura del fármaco.
+  respuesta al esfuerzo.» Nutrición: «Algunas medicaciones van con horarios o con algún alimento.» Es una nota fija del
+  área, no una lectura del fármaco: ubica, no indica. Sin consejo de dosificación; la decisión es del profesional
+  (ratificación de Dirección del 19/11).
 - **CTX-D09 · La conducta alimentaria, con cuidado.** El renglón dice «Conducta alimentaria» (no el nombre del trastorno), lo
   que marcó («Contó un antecedente» o «Prefiere hablarlo en persona») y lo que el formulario le prometió («armar el plan
   sin números a la vista y junto con un profesional de la salud»). Va sin color, sin ícono de alerta, fuera del título del

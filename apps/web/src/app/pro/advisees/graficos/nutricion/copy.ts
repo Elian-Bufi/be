@@ -43,7 +43,8 @@ export const COPY_NUTRICION_EN_GRAFICOS = {
   temporadaDelObjetivo: (desde: string) => `Objetivo desde el ${desde}`,
   temporadaDelObjetivoCorta: 'Objetivo',
   proporcion: (nombre: string, desde: string, texto: string) => `${nombre}, objetivo desde el ${desde}: ${texto}.`,
-  sinObjetivo: 'sin objetivo',
+  // Lo que el profesional no indicó se dice «Sin indicar» en todas las pantallas (Dirección, 19/11).
+  sinObjetivo: 'Sin indicar',
   objetivoEnLaCelda: (texto: string) => `objetivo ${texto}`,
 
   // ─── La leyenda: fichas cortas a la vista, y el texto entero (con la forma) para el lector de pantalla ───
