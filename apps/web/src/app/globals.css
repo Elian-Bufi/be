@@ -19643,3 +19643,36 @@ html:has(.estacion:not([data-en-el-asistente])) {
 [data-proximas-fechas] > .nota {
   margin: 0 0 0.5rem;
 }
+
+/* C6: los elegidos del catálogo, a la vista en el pie fijo del cajón; si son muchos, la lista se desplaza sola. */
+.agregar-ejercicio__elegidos {
+  display: grid;
+  flex-basis: 100%;
+  gap: 0.35rem;
+}
+
+.agregar-ejercicio__elegidos-titulo {
+  margin: 0;
+  font-weight: 600;
+}
+
+.agregar-ejercicio__fichas-elegidas {
+  max-height: 5.5rem;
+  margin: 0;
+  overflow-y: auto;
+}
+
+.agregar-ejercicio__fichas-elegidas .boton {
+  gap: 0.35rem;
+}
+
+/* C6: «No encuentro el ejercicio», al final de la búsqueda. */
+.agregar-ejercicio__no-encuentro {
+  margin-top: 1rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--borde);
+}
+
+.agregar-ejercicio__crear-o-importar > .nota {
+  margin: 0 0 0.5rem;
+}

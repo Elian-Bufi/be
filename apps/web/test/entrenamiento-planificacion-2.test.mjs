@@ -272,3 +272,28 @@ test('C5 · «Ver próximas fechas» a pedido, desde la lista de sesiones: el in
   // Sin días, se dice qué pasa, en una línea.
   assert.match(EDITOR, /<p className="nota">\{COPY_AGENDA_DE_ENTRENAMIENTO\.sinAgenda\}<\/p>/);
 });
+
+// ─── C6 · el catálogo: la selección a la vista con un pie fijo; crear o importar, aparte ───────────────────────
+
+const CATALOGO = fuente('../src/app/pro/advisees/training/agregar-ejercicio.tsx');
+const V = (await import('../src/app/pro/advisees/training/varios-a-la-vez.ts')).COPY_VARIOS_A_LA_VEZ;
+
+test('C6 · los elegidos quedan a la vista en el pie fijo, en su orden, y cada uno se quita sin perder la búsqueda', () => {
+  const pie = CATALOGO.slice(CATALOGO.indexOf('pie={'), CATALOGO.indexOf('<ContenidoDeAgregarEjercicio'));
+  assert.match(pie, /data-elegidos=\{marcados\.length\}/);
+  assert.match(pie, /aria-label=\{V\.quitarDeLosElegidos\(m\.name\)\} onClick=\{\(\) => setMarcados\(\(x\) => alternarMarcado\(x, m\)\)\} data-quitar-elegido/);
+  assert.equal(V.agregar(3, 'Sesión A'), 'Agregar 3 ejercicios a Sesión A');
+  assert.equal(V.elegidos(3), '3 elegidos, en el orden en que entran:');
+  assert.equal(V.quitarDeLosElegidos('Remo'), 'Quitar Remo de los elegidos');
+  // Un solo principal en el pie: crear e importar ya no compiten con terminar la selección.
+  assert.doesNotMatch(pie, /setModo\('manual'\)|setModo\('importar'\)/);
+});
+
+test('C6 · crear o importar, bajo «No encuentro el ejercicio», al final de la búsqueda; sin resultados, abierto', () => {
+  assert.equal(V.noEncuentro, 'No encuentro el ejercicio');
+  const seccion = CATALOGO.slice(CATALOGO.indexOf('data-no-encuentro'));
+  assert.match(seccion, /alCambiarDeModo\('manual'\)\} data-crear-ejercicio/);
+  assert.match(seccion, /alCambiarDeModo\('importar'\)\} data-importar-ejercicio/);
+  assert.match(CATALOGO, /const sinResultados = busqueda\.tipo === 'lista' && ejercicios\.length === 0;\n\s*const noEncuentroAbierto = noEncuentro \|\| sinResultados;/);
+  assert.match(CATALOGO, /Podés crearlo o importarlo, en «\{V\.noEncuentro\}»\./);
+});

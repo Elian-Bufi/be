@@ -186,6 +186,11 @@ Sesión
   próximas fechas», que abre arriba de la sesión lo que sale de los días: cuándo empieza, la semana con «Duplicar el día»
   (ED-24, que no se pierde: va adentro), las dos semanas que siguen con «Mover» y «Quitar los días». Sin días, una línea
   dice qué pasa. Con ENP-D17, una sesión nueva elige sus días enseguida.
+- **ENP-D27 · El catálogo: los elegidos a la vista y un solo principal** (C6; `agregar-ejercicio.tsx`). En el pie fijo del
+  cajón, «3 elegidos, en el orden en que entran:» con cada uno como ficha que se quita sin perder la búsqueda (con muchos,
+  la lista se desplaza sola) y «Agregar 3 ejercicios a Sesión A» (o al bloque desde cuyo pie se abrió). «Crear un
+  ejercicio propio» e «Importar desde wger» van en «No encuentro el ejercicio», al final de la búsqueda, plegado; sin
+  resultados, abierto. Lo creado o importado queda elegido, como antes.
 
 ## 4. Las reglas, y dónde se prueban
 

@@ -32,6 +32,12 @@ export const COPY_VARIOS_A_LA_VEZ = {
   prescripcionParaTodos: 'Prescripción para todos (opcional)',
   prescripcionAyuda: 'Por ejemplo «4×8-12 RIR 2 · 90 s». Vacía, cada uno entra con una serie para completar.',
   creadoYMarcado: (nombre: string) => `${nombre}: creado y marcado.`,
+  // C6 (WP-ENTRENAMIENTO-PLANIFICACION, tramo 2): los elegidos a la vista, en el pie, y crear o importar aparte.
+  ningunoElegido: 'Todavía no elegiste ninguno: marcalos en la lista.',
+  elegidos: (n: number) => (n === 1 ? '1 elegido:' : `${n} elegidos, en el orden en que entran:`),
+  quitarDeLosElegidos: (nombre: string) => `Quitar ${nombre} de los elegidos`,
+  noEncuentro: 'No encuentro el ejercicio',
+  noEncuentroAyuda: 'Crealo con su nombre o importalo de wger: queda elegido, para agregarlo con los demás.',
 } as const;
 
 /**
