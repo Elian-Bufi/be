@@ -1,0 +1,94 @@
+# WP-ENTORNO-DEL-TUTOR (DL-184): el generador de la muestra del tutor y su verificador. Dos trabajos:
+# - `verificador`: las pruebas del generador y el chequeo de verosimilitud y de la matriz de los gráficos, sin base;
+# - `carga`: la carga entera contra un PostgreSQL efímero (nunca contra una base real), dos veces para probar que no
+#   duplica, «ponerse al día», la comprobación por la API con la cuenta de la profesional y las capturas de las pantallas
+#   clave de cada persona en Claro a 1920 × 1080, que quedan como artefacto para mirarlas.
+# Solo datos sintéticos: ninguna persona es real. No despliega nada.
+name: entorno-del-tutor
+
+on:
+  pull_request:
+    paths:
+      - "scripts/entorno-del-tutor/**"
+      - "scripts/entorno-del-tutor.test.mjs"
+      - ".github/workflows/entorno-del-tutor.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: entorno-del-tutor-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verificador:
+    name: entorno del tutor · generador y verificador
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npm run build:domain
+      - name: Las pruebas del generador
+        run: node --test scripts/entorno-del-tutor.test.mjs
+      - name: El chequeo de verosimilitud y la matriz, con el origen de hoy
+        run: node scripts/entorno-del-tutor/verificar.mjs --salida informe-del-tutor
+        env:
+          TZ: America/Argentina/Buenos_Aires
+      - name: El informe
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: informe-del-tutor
+          path: informe-del-tutor
+          if-no-files-found: warn
+          retention-days: 30
+
+  carga:
+    name: entorno del tutor · carga, idempotencia, al día y capturas (PostgreSQL efímero)
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: be_test
+          POSTGRES_PASSWORD: be_test
+          POSTGRES_DB: be_test_tutor
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U be_test -d be_test_tutor"
+          --health-interval 5s --health-timeout 5s --health-retries 20
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: npm
+      - run: npm ci
+      - run: npx prisma generate
+      - name: Build de la API
+        run: npm run build:api
+      - name: Build del website contra la API local
+        run: npm run build:web
+        env:
+          BE_API_BASE_URL: http://localhost:3001
+      - name: La carga y las capturas
+        run: node scripts/entorno-del-tutor/ci.mjs entorno-del-tutor
+        env:
+          BE_E2E_DATABASE_URL: postgresql://be_test:be_test@localhost:5432/be_test_tutor
+          CHROME: /usr/bin/google-chrome
+          TZ: America/Argentina/Buenos_Aires
+      - name: Capturas, conteos y registros (datos sintéticos)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: entorno-del-tutor
+          path: entorno-del-tutor
+          if-no-files-found: warn
+          retention-days: 30
