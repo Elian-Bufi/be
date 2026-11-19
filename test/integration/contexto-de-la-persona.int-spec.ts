@@ -205,7 +205,7 @@ describe('DL-179 · 3. la evaluación de Nutrición cita respuestas, como DL-102
 async function toma(c: CircuitoAntropometrico, medidas: { metrica: string; valor: number; unidad: string }[], contexto: string | null = null): Promise<string> {
   const id = await borradorSembrado(prisma, c);
   for (const m of medidas) await medicionSembrada(prisma, c, id, m);
-  if (contexto) await prisma.$executeRawUnsafe(`UPDATE "evaluacion_antropometrica" SET "contexto" = '${contexto}' WHERE "id" = '${id}'`);
+  if (contexto) await prisma.$executeRawUnsafe(`UPDATE "evaluacion_antropometrica" SET "contexto" = '${contexto}', "version" = "version" + 1 WHERE "id" = '${id}'`);
   await registrarBorrador(prisma, id);
   return id;
 }

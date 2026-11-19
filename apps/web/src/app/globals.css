@@ -18963,12 +18963,6 @@ html:has(.estacion:not([data-en-el-asistente])) {
   box-shadow: var(--sombra);
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  .panel-de-contexto--cajon {
-    animation: cajon-entra 160ms ease-out;
-  }
-}
-
 .panel-de-contexto__cabecera {
   display: flex;
   align-items: center;
@@ -19004,14 +18998,18 @@ html:has(.estacion:not([data-en-el-asistente])) {
 
 .panel-de-contexto__pestanas {
   display: flex;
-  flex-wrap: wrap;
-  gap: 0.25rem;
-  padding: 0.5rem 1rem 0;
+  flex-wrap: nowrap;
+  gap: 0.1rem;
+  padding: 0.4rem 0.5rem 0;
+  overflow-x: auto;
   border-bottom: 1px solid var(--borde);
 }
 
 .panel-de-contexto__pestana {
-  padding: 0.45rem 0.6rem;
+  flex-shrink: 0;
+  padding: 0.45rem 0.4rem;
+  font-size: 0.875rem;
+  white-space: nowrap;
   border: 0;
   border-bottom: 3px solid transparent;
   background: none;
@@ -19116,7 +19114,17 @@ html:has(.estacion:not([data-en-el-asistente])) {
 }
 
 .panel-de-contexto__formulario > summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.15rem 0.4rem;
   cursor: pointer;
+}
+
+.panel-de-contexto__diferencia,
+.panel-de-contexto__porcentaje {
+  display: block;
+  white-space: nowrap;
 }
 
 .panel-de-contexto__buscar input {

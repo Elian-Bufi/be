@@ -31,7 +31,7 @@ ALTER TABLE "cita_de_respuesta_en_evaluacion_nutricional" ADD CONSTRAINT "cita_d
 ALTER TABLE "cita_de_respuesta_en_evaluacion_nutricional" ADD CONSTRAINT "cita_de_respuesta_en_evaluacion_nutricional_respuesta_id_fkey" FOREIGN KEY ("respuesta_id") REFERENCES "respuesta_de_formulario"("id") ON DELETE RESTRICT ON UPDATE RESTRICT;
 
 -- AddForeignKey
-ALTER TABLE "cita_de_respuesta_en_evaluacion_nutricional" ADD CONSTRAINT "cita_de_respuesta_en_evaluacion_nutricional_rectificacion_fkey" FOREIGN KEY ("rectificacion_id") REFERENCES "rectificacion_de_respuesta_de_formulario"("id") ON DELETE RESTRICT ON UPDATE RESTRICT;
+ALTER TABLE "cita_de_respuesta_en_evaluacion_nutricional" ADD CONSTRAINT "cita_de_respuesta_en_evaluacion_nutricional_rectificacion__fkey" FOREIGN KEY ("rectificacion_id") REFERENCES "rectificacion_de_respuesta_de_formulario"("id") ON DELETE RESTRICT ON UPDATE RESTRICT;
 
 -- ─── Historia por adición: una cita no se edita, no se borra y no se trunca (06 §4.4) ────────────────
 CREATE TRIGGER "cita_de_respuesta_en_evaluacion_nutricional_solo_agregar" BEFORE UPDATE OR DELETE ON "cita_de_respuesta_en_evaluacion_nutricional" FOR EACH ROW EXECUTE FUNCTION "be_solo_agregar"();

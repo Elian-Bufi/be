@@ -39,7 +39,7 @@ export const COPY_CONTEXTO = {
   citada: 'Citada',
   citarEnLaEvaluacion: 'Citar en la evaluación',
   citarEnElObjetivo: 'Citar en el fundamento del objetivo',
-  sinDondeCitar: 'Para citar, abrí «Registrar evaluación» o «Nueva versión del objetivo» en el Resumen.',
+  sinDondeCitar: 'Para citar, abrí «Nueva evaluación» o «Nueva versión de objetivo» en el Resumen.',
   topeDeCitas: (n: number) => `Ya hay ${n} citas: es el máximo por evaluación.`,
   citadaEnLaEvaluacion: 'Quedó citada en la evaluación.',
   citadaEnElObjetivo: 'Quedó en el fundamento del objetivo.',
@@ -124,6 +124,8 @@ interface Pregunta {
   readonly pregunta: string;
   /** El código de la pregunta que la detalla («¿Cuál?»): su respuesta va al lado. */
   readonly detalle?: readonly string[];
+  /** Cómo se presenta el detalle, si no se entiende solo («indicación del médico: …»). */
+  readonly rotuloDelDetalle?: string;
   readonly nota?: string;
   readonly sensible?: boolean;
   /** Si `true`, una respuesta «No» o «Ninguna» no se muestra (no aporta nada que tener presente). */
@@ -197,7 +199,7 @@ const GRUPOS: Readonly<Record<Alcance, readonly Grupo[]>> = {
         { codigos: ['trn_dias_posibles'], pregunta: 'Días posibles' },
         { codigos: ['trn_franja'], pregunta: 'Momento del día' },
         { codigos: ['trn_minutos_por_sesion'], pregunta: 'Minutos por sesión' },
-        { codigos: ['trn_lugar_y_equipamiento'], pregunta: 'Dónde entrena', detalle: ['trn_equipamiento'] },
+        { codigos: ['trn_lugar_y_equipamiento'], pregunta: 'Dónde entrena', detalle: ['trn_equipamiento'], rotuloDelDetalle: 'cuenta con' },
         { codigos: ['habitos_deportes', 'trn_otros_deportes'], pregunta: 'Otras actividades de la semana' },
         { codigos: ['nivel_de_actividad'], pregunta: 'Su día, en movimiento' },
       ],
@@ -228,18 +230,18 @@ const GRUPOS: Readonly<Record<Alcance, readonly Grupo[]>> = {
       titulo: 'Alergias e intolerancias',
       preguntas: [
         { codigos: ['nut_alergias'], pregunta: 'Alergia alimentaria diagnosticada', detalle: ['nut_alergias_cuales'] },
-        { codigos: ['nut_intolerancias'], pregunta: 'Intolerancia o condición que pide evitar algo', detalle: ['nut_intolerancias_quien'] },
+        { codigos: ['nut_intolerancias'], pregunta: 'Intolerancia o condición que pide evitar algo', detalle: ['nut_intolerancias_quien'], rotuloDelDetalle: 'diagnóstico médico' },
       ],
     },
     {
       clave: 'salud',
       titulo: 'Salud que el plan tiene en cuenta',
       preguntas: [
-        { codigos: ['condiciones_declaradas'], pregunta: 'Condiciones diagnosticadas', detalle: ['nut_condiciones_indicacion'] },
+        { codigos: ['condiciones_declaradas'], pregunta: 'Condiciones diagnosticadas', detalle: ['nut_condiciones_indicacion'], rotuloDelDetalle: 'indicación del médico' },
         { codigos: ['medicacion_relevante'], pregunta: 'Medicación todos los días', detalle: ['nut_medicacion_cual'], nota: NOTA_MEDICACION_NUTRICION },
         { codigos: ['nut_suplementos'], pregunta: 'Suplementos', soloSiAporta: true },
         { codigos: ['nut_embarazo'], pregunta: 'Embarazo o lactancia', soloSiAporta: true },
-        { codigos: ['nut_digestion'], pregunta: 'Acidez, hinchazón o constipación', detalle: ['nut_digestion_que'] },
+        { codigos: ['nut_digestion'], pregunta: 'Acidez, hinchazón o constipación', detalle: ['nut_digestion_que'], rotuloDelDetalle: 'qué le pasa' },
         { codigos: ['nut_peso_reciente'], pregunta: 'Su peso en los últimos 6 meses' },
         { codigos: ['nut_tca'], pregunta: 'Conducta alimentaria', sensible: true, soloSiAporta: true },
       ],
@@ -252,7 +254,7 @@ const GRUPOS: Readonly<Record<Alcance, readonly Grupo[]>> = {
         { codigos: ['nut_alimentos_no'], pregunta: 'Lo que no come o no quiere' },
         { codigos: ['nut_no_negociable'], pregunta: 'Lo que no quiere cambiar' },
         { codigos: ['nut_ritmo_de_cambio'], pregunta: 'Cómo prefiere los cambios' },
-        { codigos: ['nut_planes_previos'], pregunta: 'Planes anteriores', detalle: ['nut_planes_previos_que'] },
+        { codigos: ['nut_planes_previos'], pregunta: 'Planes anteriores', detalle: ['nut_planes_previos_que'], rotuloDelDetalle: 'qué le sirvió y qué no' },
         { codigos: ['nut_alimentos_si'], pregunta: 'Lo que le gusta y comería seguido' },
       ],
     },
@@ -261,12 +263,12 @@ const GRUPOS: Readonly<Record<Alcance, readonly Grupo[]>> = {
       titulo: 'Horario y día tipo',
       preguntas: [
         { codigos: ['habitos_horarios', 'nut_horarios'], pregunta: 'Se levanta y se acuesta' },
-        { codigos: ['nut_jornada'], pregunta: 'Su jornada', detalle: ['nut_comida_en_jornada'] },
+        { codigos: ['nut_jornada'], pregunta: 'Su jornada', detalle: ['nut_comida_en_jornada'], rotuloDelDetalle: 'afuera' },
         { codigos: ['nut_momentos'], pregunta: 'Comidas de un día típico' },
-        { codigos: ['nut_saltea'], pregunta: 'Comidas que saltea', detalle: ['nut_saltea_por_que'], soloSiAporta: true },
+        { codigos: ['nut_saltea'], pregunta: 'Comidas que saltea', detalle: ['nut_saltea_por_que'], rotuloDelDetalle: 'por qué', soloSiAporta: true },
         { codigos: ['nut_mas_hambre'], pregunta: 'Cuándo tiene más hambre' },
-        { codigos: ['nut_fin_de_semana'], pregunta: 'El fin de semana', detalle: ['nut_fin_de_semana_que_cambia'] },
-        { codigos: ['nut_afuera'], pregunta: 'Come afuera o pide', detalle: ['nut_afuera_que_elegis'] },
+        { codigos: ['nut_fin_de_semana'], pregunta: 'El fin de semana', detalle: ['nut_fin_de_semana_que_cambia'], rotuloDelDetalle: 'qué cambia' },
+        { codigos: ['nut_afuera'], pregunta: 'Come afuera o pide', detalle: ['nut_afuera_que_elegis'], rotuloDelDetalle: 'qué elige' },
         { codigos: ['nut_hora_de_entrenamiento'], pregunta: 'Cuándo entrena' },
         { codigos: ['habitos_deportes'], pregunta: 'Actividades de la semana' },
       ],
@@ -385,7 +387,7 @@ function datoDe(p: Pregunta, buscar: (c: string) => Hallada | null): DatoImporta
     const opcion = h.respuesta.answer.type === 'CHOICE' ? h.respuesta.answer.option : '';
     return { clave: `${p.codigos[0]}`, pregunta: p.pregunta, respuesta: TCA_EN_PALABRAS[opcion] ?? h.respuesta.text, fuente: h.fuente, citas: [], sensible: true, nota: null };
   }
-  const respuesta = detalle && detalle.respuesta.text ? `${h.respuesta.text} · ${detalle.respuesta.text}` : h.respuesta.text;
+  const respuesta = detalle && detalle.respuesta.text ? `${h.respuesta.text} · ${p.rotuloDelDetalle ? `${p.rotuloDelDetalle}: ` : ''}${detalle.respuesta.text}` : h.respuesta.text;
   const citas = [citaDe(h, p.pregunta), detalle ? citaDe(detalle, p.pregunta) : null].filter((c): c is CitaPosible => c !== null);
   return { clave: p.codigos[0]!, pregunta: p.pregunta, respuesta, fuente: h.fuente, citas, sensible: false, nota: p.nota ?? null };
 }
@@ -578,7 +580,15 @@ export const motivosDelCuerpoEnPalabras = (motivos: readonly ('PROTOCOL' | 'METH
  * kg)». `numero` escribe un número como la pantalla (coma decimal). Sin «mejor» ni «peor».
  */
 export function cambioDelCuerpoEnPalabras(c: NonNullable<MetricaDelCuerpo['change']>, numero: (x: number) => string): string {
+  const { diferencia, porcentaje } = partesDelCambio(c, numero);
+  return porcentaje === null ? diferencia : `${diferencia} (${porcentaje})`;
+}
+
+/** El cambio en dos partes, para dos renglones: la diferencia con su signo, y el «%» con su base (`null` si la base es cero). */
+export function partesDelCambio(c: NonNullable<MetricaDelCuerpo['change']>, numero: (x: number) => string): { readonly diferencia: string; readonly porcentaje: string | null } {
   const signo = (x: number) => (x > 0 ? '+' : x < 0 ? '−' : '');
-  const base = `${signo(c.value)}${numero(Math.abs(c.value))} ${c.unit}`;
-  return c.percent === null ? base : `${base} (${signo(c.percent)}${numero(Math.abs(c.percent))} % de ${numero(c.base)} ${c.unit})`;
+  return {
+    diferencia: `${signo(c.value)}${numero(Math.abs(c.value))} ${c.unit}`,
+    porcentaje: c.percent === null ? null : `${signo(c.percent)}${numero(Math.abs(c.percent))} % de ${numero(c.base)} ${c.unit}`,
+  };
 }

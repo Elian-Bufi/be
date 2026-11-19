@@ -94,6 +94,9 @@ test('TEST-CTX-003 · Nutrición: alergias primero, con su detalle; lo que no ap
   assert.equal(grupos[0]!.datos[0]!.respuesta, 'Sí · Maní: urticaria');
   // «Ninguna» en intolerancias se muestra (es un dato de seguridad); «No tomo» suplementos, no.
   assert.equal(grupos[0]!.datos[1]!.respuesta, 'Ninguna');
+  // El detalle se presenta con su rótulo cuando no se entiende solo.
+  const conIndicacion = loImportante('NUTRICION', { formularios: [formulario('NUTRICION', [r('condiciones_declaradas', { type: 'MULTI_CHOICE', options: ['presion_alta'], otherText: null }, 'Presión alta'), opcion('nut_condiciones_indicacion', 'me_la_dijo', 'Sí, me la dijo')])] }, formato);
+  assert.equal(conIndicacion[0]!.datos[0]!.respuesta, 'Presión alta · indicación del médico: Sí, me la dijo');
   assert.ok(!grupos.some((g) => g.datos.some((d) => d.clave === 'nut_suplementos')));
   assert.equal(grupos.at(-1)!.clave, 'logistica');
 });

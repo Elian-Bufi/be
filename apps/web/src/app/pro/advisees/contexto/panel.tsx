@@ -10,7 +10,7 @@
  * - «Citar» aparece solo si hay algo abierto donde citar (CTX-D12), y dice qué pasó.
  */
 import {
-  cambioDelCuerpoEnPalabras,
+  partesDelCambio,
   cantidadDeRespuestas,
   buscarEnFormularios,
   COPY_CONTEXTO,
@@ -395,6 +395,10 @@ function Cuerpo({ asesoradoId, token, vuelta, sesionPerdida }: PropsDeLectura) {
         return (
           <div className="panel-de-contexto__cuerpo">
             {access === 'SHARED_SUMMARY' ? <p className="nota">{COPY_CONTEXTO.cuerpoCompartido(delProfesional(latest.author))}</p> : null}
+            <p className="nota">
+              {COPY_CONTEXTO.ultimaToma}: {fechaCorta(latest.occurredAt)}
+              {previous ? ` · ${COPY_CONTEXTO.tomaAnterior}: ${fechaCorta(previous.occurredAt)}` : null}
+            </p>
             {!previous ? <p className="nota">{COPY_CONTEXTO.unaSolaToma}</p> : null}
             <div className="desplazable-x">
               <table className="tabla panel-de-contexto__tabla">
@@ -402,30 +406,28 @@ function Cuerpo({ asesoradoId, token, vuelta, sesionPerdida }: PropsDeLectura) {
                 <thead>
                   <tr>
                     <th scope="col">Medida</th>
-                    <th scope="col">
-                      {COPY_CONTEXTO.ultimaToma}
-                      <span className="nota"> · {fechaCorta(latest.occurredAt)}</span>
-                    </th>
-                    {previous ? (
-                      <th scope="col">
-                        {COPY_CONTEXTO.tomaAnterior}
-                        <span className="nota"> · {fechaCorta(previous.occurredAt)}</span>
-                      </th>
-                    ) : null}
+                    <th scope="col">{COPY_CONTEXTO.ultimaToma}</th>
+                    {previous ? <th scope="col">{COPY_CONTEXTO.tomaAnterior}</th> : null}
                     {previous ? <th scope="col">{COPY_CONTEXTO.cambio}</th> : null}
                   </tr>
                 </thead>
                 <tbody>
                   {metrics.map((m) => (
                     <tr key={m.metricCode}>
-                      <th scope="row">
-                        {nombreDeMetrica(m.metricCode)}
-                        {m.latest?.methodName ? <span className="nota"> · {m.latest.methodName}</span> : null}
-                      </th>
+                      {/* El nombre de un resultado ya dice su método («Masa grasa (Durnin y Womersley)»). */}
+                      <th scope="row">{nombreDeMetrica(m.metricCode)}</th>
                       <td>{m.latest ? `${numeroDelPanel(m.latest.value)} ${m.latest.unit}` : '—'}</td>
                       {previous ? <td>{m.previous ? `${numeroDelPanel(m.previous.value)} ${m.previous.unit}` : '—'}</td> : null}
                       {previous ? (
-                        <td>{m.change ? cambioDelCuerpoEnPalabras(m.change, numeroDelPanel) : m.notComparableBecause.length > 0 ? <span className="nota">{COPY_CONTEXTO.noSeCompara(motivosDelCuerpoEnPalabras(m.notComparableBecause))}</span> : '—'}</td>
+                        <td>
+                          {m.change ? (
+                            <CambioEnDosRenglones partes={partesDelCambio(m.change, numeroDelPanel)} />
+                          ) : m.notComparableBecause.length > 0 ? (
+                            <span className="nota">{COPY_CONTEXTO.noSeCompara(motivosDelCuerpoEnPalabras(m.notComparableBecause))}</span>
+                          ) : (
+                            '—'
+                          )}
+                        </td>
                       ) : null}
                     </tr>
                   ))}
@@ -439,6 +441,16 @@ function Cuerpo({ asesoradoId, token, vuelta, sesionPerdida }: PropsDeLectura) {
         );
       }}
     </EstadoDelPanel>
+  );
+}
+
+/** CTX-D15: la diferencia con su signo y, abajo, el «%» con su base. Sin colores de bien o mal. */
+function CambioEnDosRenglones({ partes }: { partes: { readonly diferencia: string; readonly porcentaje: string | null } }) {
+  return (
+    <>
+      <span className="panel-de-contexto__diferencia">{partes.diferencia}</span>
+      {partes.porcentaje ? <span className="nota panel-de-contexto__porcentaje">{partes.porcentaje}</span> : null}
+    </>
   );
 }
 

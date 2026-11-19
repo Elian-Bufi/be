@@ -170,7 +170,8 @@ pedido), API-HBT-06 y 07 (el pedido de ver los hábitos y su estado), API-NPP-01
 
 - **CTX-D01 · En el marco del área, en las tres.** El botón va en el marco común, así está en el editor, en la evaluación,
   en el objetivo y en las demás secciones sin repetirlo. Se suma Antropometría, porque sus condiciones de medición son su
-  «Lo importante» y porque quien mide también planifica la próxima toma. Alternativa: solo en Plan y Resumen de dos áreas.
+  «Lo importante» y porque quien mide también planifica la próxima toma. Información, que es de las tres áreas y ya
+  muestra los formularios, no lo trae. Alternativa: solo en Plan y Resumen de dos áreas.
 - **CTX-D02 · Se monta una sola vez por área y no se vuelve a leer al cambiar de sección.** Las lecturas salen al abrirlo
   por primera vez (nunca al cargar la página: el panel cerrado no lee datos de salud) y se repiten con «Actualizar» del
   marco o con «Volver a leer» del panel. No hay caché fuera de la memoria de la pestaña (08 §27.3).
@@ -256,6 +257,13 @@ pedido), API-HBT-06 y 07 (el pedido de ver los hábitos y su estado), API-NPP-01
 
 ## 7. Cómo se ve, y qué falta
 
-Las capturas están en `apps/web/capturas/contexto-de-la-persona/` (las escenas de la CI): Claro y Azul noche, a 1280, 1536
-y 1920, con el editor de Entrenamiento, el de Nutrición y la evaluación con una cita. Lo que quedó abierto está en el
-informe del PR.
+**Las capturas** las saca la CI (`.github/workflows/capturas-del-contexto.yml`, con la herramienta
+`EVIDENCIA/CONTEXTO-DE-LA-PERSONA/herramientas/capturas.mjs`) y quedan como artefacto `capturas-del-contexto`: Claro y
+Azul noche, a 1280 × 800, a 1536 × 730 (Windows al 125 %) y a 1920 × 950, con el editor de Entrenamiento en cada pestaña,
+la evaluación de Entrenamiento con una cita, el editor de Nutrición, su evaluación con una cita y «Notas». Cada captura
+anota en `capturas.json` si el panel quedó al costado o como cajón y el ancho que le quedó al editor.
+
+**Lo que queda abierto** (además de ratificar CTX-D01 a CTX-D18):
+- las propuestas CTX-P01 a CTX-P09, que no se programan sin su paquete;
+- la prueba con TalkBack/NVDA y con una persona real, que la CI no reemplaza;
+- el número de DL (DL-179), si otro paquete de la misma planificación lo toma antes de integrar.

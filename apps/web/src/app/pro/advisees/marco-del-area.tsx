@@ -275,6 +275,8 @@ export function MarcoDelArea<C extends string>({
   );
   const { delAsesorado } = useNombres();
   // ─── El panel del contexto (DL-179) ───────────────────────────────────────────────────────────
+  // Información es de las tres áreas: ahí no hay un «Lo importante» de un área, y el panel no se ofrece.
+  const conContexto = alcance !== null;
   const areaDelPanel = alcance ?? 'NUTRICION';
   const [panel, setPanel] = useState<{ abierto: boolean; pestana: Pestana }>({ abierto: false, pestana: 'importante' });
   const [modo, setModo] = useState<ModoDelPanel>('cajon');
@@ -317,6 +319,7 @@ export function MarcoDelArea<C extends string>({
   const panelAbierto = panel.abierto;
   useEffect(() => {
     // CTX-D04: Alt + C abre y cierra, también desde un campo.
+    if (!conContexto) return;
     const alTeclear = (e: globalThis.KeyboardEvent) => {
       if (!esAtajoDelPanel(e)) return;
       e.preventDefault();
@@ -325,7 +328,7 @@ export function MarcoDelArea<C extends string>({
     };
     window.addEventListener('keydown', alTeclear);
     return () => window.removeEventListener('keydown', alTeclear);
-  }, [panelAbierto, cerrarPanel, cambiarPanel]);
+  }, [conContexto, panelAbierto, cerrarPanel, cambiarPanel]);
   // ED-02: «Volver a la ficha» pasa por la guardia de la salida.
   // TB-07: se llegó desde el Espacio (una ficha de «Tu semana», un verbo de «Te toca a vos» o el cajón).
   const desdeElEspacio = useSearchParams().get('origen') === 'espacio';
@@ -344,7 +347,7 @@ export function MarcoDelArea<C extends string>({
         ? { href: '/pro', texto: COPY_LUGAR.volver }
         : { href: `/pro/advisees?id=${encodeURIComponent(id)}`, texto: 'Volver a la ficha' });
 
-  const conPanel = listo && !!token && panel.abierto;
+  const conPanel = conContexto && listo && !!token && panel.abierto;
   return (
     <ProveedorDeCitas>
     <div className={conPanel && modo === 'costado' ? 'ficha ficha--con-contexto' : 'ficha'}>
@@ -374,6 +377,7 @@ export function MarcoDelArea<C extends string>({
                   </button>
                 </Pista>
                 {consultadoEn ? <span className="nota">Consultado a las {horaDelDia(consultadoEn)}</span> : null}
+                {conContexto ? (
                 <button
                   ref={botonDelPanel}
                   type="button"
@@ -389,6 +393,7 @@ export function MarcoDelArea<C extends string>({
                     {COPY_CONTEXTO.atajo}
                   </kbd>
                 </button>
+                ) : null}
               </div>
             ) : null}
           </div>

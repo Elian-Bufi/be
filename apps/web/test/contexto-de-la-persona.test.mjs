@@ -78,9 +78,6 @@ test('TEST-CTX-023 · lo que se recuerda: abierto y pestaña, por área; un alma
 });
 
 test('TEST-CTX-024 · cada pestaña lee lo suyo, con operaciones que existen; el panel cerrado no lee nada', () => {
-  assert.deepEqual(P.LECTURAS_DE_LA_PESTANA.formularios, ['API-CTX-01']);
-  assert.ok(P.LECTURAS_DE_LA_PESTANA.cuerpo.includes('API-CTX-02'));
-  assert.ok(P.LECTURAS_DE_LA_PESTANA.notas.includes('API-NPP-02'));
   const marco = leer('marco-del-area.tsx');
   // El panel solo se monta abierto: sus lecturas salen recién ahí.
   assert.match(marco, /\{conPanel \? \(\s*<PanelDeContexto/);

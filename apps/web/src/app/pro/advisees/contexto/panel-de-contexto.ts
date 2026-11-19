@@ -48,14 +48,9 @@ export function pestanaPorTecla(actual: Pestana, tecla: string): Pestana | null 
   return null;
 }
 
-/** Lo que lee cada pestaña, con el ID de su operación: nada se lee hasta abrirla (CTX-D02). */
-export const LECTURAS_DE_LA_PESTANA: Readonly<Record<Pestana, readonly string[]>> = {
-  importante: ['API-CTX-01', 'API-HBT-05', 'API-CTX-02'],
-  formularios: ['API-CTX-01'],
-  cuerpo: ['API-CTX-02', 'API-RES-04'],
-  otras: ['API-RES-04', 'API-HBT-07'],
-  notas: ['API-NPP-02'],
-};
+// Lo que lee cada pestaña, recién al abrirla (CTX-D02): «Lo importante», API-CTX-01 y API-HBT-05 (y API-CTX-02 en
+// Antropometría); «Formularios», API-CTX-01; «Cuerpo», API-CTX-02; «Otras áreas», API-RES-04 y API-HBT-07 (API-RES-06 al
+// pedir el plan); «Notas», API-NPP-02. Lo fija `apps/web/test/contexto-de-la-persona.test.mjs` sobre el panel.
 
 // ─── Lo que se recuerda en el navegador (CTX-D18) ───────────────────────────────────────────────
 
