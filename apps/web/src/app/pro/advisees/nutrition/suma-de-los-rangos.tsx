@@ -11,20 +11,22 @@
  *   base y sus gramos (decisión de Dirección del 18/11: en el website del profesional, el «%» va con su número real).
  */
 import { MACROS_DEL_RANGO, type Rango, type VersionDeObjetivo } from '@be/domain';
-import type { CSSProperties } from 'react';
+import { useId, type CSSProperties } from 'react';
 import { Icono } from '../../../../components/icono';
 import { COPY_PLANIFICACION as C, kcalDeLosGramos, objetivoDelDia, porcentajeDeLasKcal, sumaDeLosRangos, sumaFrenteAlObjetivo, type GramosDelObjetivo } from './planificacion';
 import { COPY_RANGOS_INDICADOS, NOMBRE_DEL_MACRO, rangoEnPalabras, rangoEnUnaLinea } from './rangos-indicados';
 
 /** NUP-06: la tabla de la suma. `comidas`: cada comida del día tipo con su rango indicado (o `null`). */
 export function SumaDeLosRangosIndicados({ comidas, objetivo }: { comidas: readonly { readonly nombre: string; readonly rango: Rango | null }[]; objetivo: VersionDeObjetivo | null }) {
+  // Puede haber más de una (una por día tipo en el paso 4, y la del editor detrás del asistente): cada una con su id.
+  const id = useId();
   if (comidas.length === 0) return null;
   const suma = sumaDeLosRangos(comidas);
   const sinRangos = MACROS_DEL_RANGO.every((m) => suma.macros[m].conRango === 0);
   const filas = sumaFrenteAlObjetivo(suma, objetivo ? objetivoDelDia(objetivo) : null);
   return (
-    <section className="suma-de-los-rangos" aria-labelledby="suma-de-los-rangos-titulo" data-suma-de-los-rangos>
-      <h3 id="suma-de-los-rangos-titulo" className="suma-de-los-rangos__titulo">
+    <section className="suma-de-los-rangos" aria-labelledby={`${id}-titulo`} data-suma-de-los-rangos>
+      <h3 id={`${id}-titulo`} className="suma-de-los-rangos__titulo">
         <Icono nombre="objetivo" tamano={18} />
         {C.sumaTitulo}
       </h3>

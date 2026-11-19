@@ -507,7 +507,6 @@ export function ComidaDelEditor({
 
 /** NUP-12: una forma de empezar la comida vacía. Si no se puede, queda apagada y dice por qué (a la vista y al lector). */
 function AccionDeInicio({ texto, noSePuede, alTocar, comida }: { texto: string; noSePuede: string | null; alTocar: () => void; comida: string }) {
-  const id = useId();
   if (noSePuede) {
     return (
       <Pista texto={noSePuede}>
@@ -519,7 +518,7 @@ function AccionDeInicio({ texto, noSePuede, alTocar, comida }: { texto: string; 
     );
   }
   return (
-    <button type="button" className="boton boton--enlace" aria-haspopup="dialog" id={id} onClick={alTocar}>
+    <button type="button" className="boton boton--enlace" aria-haspopup="dialog" onClick={alTocar}>
       {texto}
       <span className="visualmente-oculto"> en {comida}</span>
     </button>
