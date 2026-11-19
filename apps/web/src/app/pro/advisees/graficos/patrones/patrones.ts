@@ -332,7 +332,7 @@ export const graficosDe = (contenido: ContenidoDelEnfoque | null): readonly Graf
 // ─── Lo que se ve y el orden al editar ───────────────────────────────────────────────────────────────────────
 
 /**
- * «Guardar lo que ves como enfoque…» guarda lo que se ve (revisión adversaria del PR #277): los gráficos del enfoque que se
+ * «Guardar lo que ves como enfoque…» guarda lo que se ve (revisión adversaria de «Patrones»): los gráficos del enfoque que se
  * dibujan con esta persona, en el orden del enfoque, y un armado con solo las series que se leen. Lo de un área sin acceso,
  * un identificador que este website no conoce y lo que no aplica en el período no se ven: no se guardan ni se cuentan.
  */
