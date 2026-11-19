@@ -16232,6 +16232,12 @@ p.cifra-del-espacio__desglose {
   gap: 0.25rem;
 }
 
+/* WP-NUTRICION-ALIMENTOS · NUA-07: el nombre de cada comida en el paso 4 usa el campo común (`.campo`: la letra, el
+   borde y el alto de BE, en Claro y en Azul noche). La tarjeta ya separa con `gap`: el margen del campo sobra. */
+.campo.asistente__nombre {
+  margin: 0;
+}
+
 .asistente__acciones,
 .asistente__pie {
   display: flex;

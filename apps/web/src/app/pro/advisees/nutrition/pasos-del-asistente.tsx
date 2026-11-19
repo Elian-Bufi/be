@@ -207,10 +207,13 @@ export function PasosDeNutricion({
           <ol className="asistente__sesiones">
             {estructura.map((d, i) => (
               <li key={d.dayTypeId ?? `nuevo-${i}`} className="asistente__sesion" data-dia-del-asistente={i + 1}>
-                <label className="asistente__campo">
-                  <span className="visualmente-oculto">{C.nombreDelDia(i + 1)}</span>
-                  <input value={d.label} maxLength={80} placeholder={`Día tipo ${i + 1}`} onChange={(e) => cambiar((x) => ((x[i]!.label = e.target.value), x))} />
-                </label>
+                {/* NUA-07: el mismo campo común que el nombre de cada comida en el paso 4 (tenía el mismo borde suelto). */}
+                <div className="campo asistente__nombre">
+                  <label htmlFor={`${id}-dia-${i}`} className="visualmente-oculto">
+                    {C.nombreDelDia(i + 1)}
+                  </label>
+                  <input id={`${id}-dia-${i}`} type="text" value={d.label} maxLength={80} placeholder={`Día tipo ${i + 1}`} onChange={(e) => cambiar((x) => ((x[i]!.label = e.target.value), x))} />
+                </div>
                 <span className="nota">{d.meals.length === 0 ? 'Sin comidas' : d.meals.length === 1 ? '1 comida incluida' : `${d.meals.length} comidas incluidas`}</span>
                 {/* NUP-05: el rango del día, a la vista y a mano mientras se arman los días tipo. */}
                 {rangoDe ? <RangoEnUnRenglon de={nombreDelDiaTipo(d, i)} rango={rangoDe(i, null)} /> : null}
@@ -461,10 +464,14 @@ function PasoDeLasComidas({
       <ol className="asistente__sesiones">
         {dia.meals.map((m, j) => (
           <li key={m.mealId ?? `nueva-${j}`} className="asistente__sesion">
-            <label className="asistente__campo">
-              <span className="visualmente-oculto">{C.nombreDeLaComida(nombreDelDia, j + 1)}</span>
-              <input id={`${id}-comida-${j}`} value={m.label} maxLength={80} placeholder={`Comida ${j + 1}`} onChange={(e) => cambiar((x) => ((x[i]!.meals[j]!.label = e.target.value), x))} />
-            </label>
+            {/* NUA-07: el campo común del website (`campo`), como el resto: la letra, el borde y el alto de BE, en Claro y
+                en Azul noche. La etiqueta sigue oculta a la vista: el nombre escrito ya dice qué es. */}
+            <div className="campo asistente__nombre">
+              <label htmlFor={`${id}-comida-${j}`} className="visualmente-oculto">
+                {C.nombreDeLaComida(nombreDelDia, j + 1)}
+              </label>
+              <input id={`${id}-comida-${j}`} type="text" value={m.label} maxLength={80} placeholder={`Comida ${j + 1}`} onChange={(e) => cambiar((x) => ((x[i]!.meals[j]!.label = e.target.value), x))} />
+            </div>
             <span className="nota">{m.options.length === 1 ? '1 opción' : `${m.options.length} opciones`}</span>
             {rangoDe ? <RangoEnUnRenglon de={nombreDeLaComida(m, j)} rango={rangoDe(i, j)} /> : null}
           </li>
