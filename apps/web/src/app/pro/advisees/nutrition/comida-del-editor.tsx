@@ -50,6 +50,7 @@ import {
   type VersionDePlan,
   COPY_NOTAS_PROPIAS,
   COPY_ALIMENTOS,
+  equivalenciaEnPalabras,
 } from '@be/domain';
 import { useEffect, useId, useState } from 'react';
 import { CampoDeNombre } from '../../../../components/campo-de-nombre';
@@ -670,7 +671,10 @@ export function FilaDeItem({
         </select>
         {item.householdMeasure && magnitud && Number.isFinite(magnitud.value) ? (
           <span className="nota item-del-editor__equivale" data-equivale-a>
-            {COPY_ALIMENTOS.equivaleA(formatearCantidad(magnitud.value, magnitud.unit === 'ml' ? 'ml' : 'g'))}
+            {COPY_ALIMENTOS.equivaleA(
+              formatearCantidad(magnitud.value, magnitud.unit === 'ml' ? 'ml' : 'g'),
+              equivalenciaEnPalabras({ kind: item.householdMeasure.kind, amount: item.householdMeasure.amountPerUnit }, magnitud.unit === 'ml' ? '100ml' : '100g'),
+            )}
           </span>
         ) : null}
       </td>

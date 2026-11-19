@@ -265,7 +265,8 @@ export const COPY_ALIMENTOS = {
   medidasCaseras: 'Medidas caseras',
   medidasCaserasAyuda: 'Si querés, cuánto pesa cada una. En el plan se elige la cantidad con ellas, y la cuenta se hace igual en gramos.',
   medidaCaseraCampo: (una: string, ml: boolean) => `1 ${una}, en ${ml ? 'ml' : 'g'}`,
-  equivaleA: (cantidad: string) => `= ${cantidad}`,
+  /** «= 135 g · 1 taza = 90 g»: la cantidad en gramos y la equivalencia de la medida, a la vista aunque el selector se corte. */
+  equivaleA: (cantidad: string, equivalencia?: string) => (equivalencia ? `= ${cantidad} · ${equivalencia}` : `= ${cantidad}`),
   laPersonaVeGramos: 'La persona ve la cantidad en gramos.',
 } as const;
 
