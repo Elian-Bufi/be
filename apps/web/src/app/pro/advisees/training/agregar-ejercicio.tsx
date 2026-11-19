@@ -218,7 +218,7 @@ export function AgregarEjercicio({
               data-para-todos-pliegue
             >
               <summary>
-                {V.prescripcionParaTodos}
+                {V.prescripcionParaTodosCorta}
                 {lectura?.ok ? <span className="nota"> · {vistaPreviaDePrescripcion(lectura.leida)}</span> : null}
               </summary>
               <label className="agregar-ejercicio__para-todos" data-para-todos>
@@ -399,6 +399,9 @@ function ContenidoDeAgregarEjercicio({
         {marcados.length > 0 ? <span className="visualmente-oculto">{`${V.marcados(marcados.length)}: ${marcados.map((m) => m.name).join(', ')}.`}</span> : null}
       </p>
 
+      {/* Ratificación del 19/11 (el catálogo a 1280 × 800): sin habituales, la explicación de cómo se marcan se ve antes de
+          buscar; con una búsqueda hecha, deja el lugar a los resultados. */}
+      {habituales.lectura === 'lista' && habituales.habituales.length === 0 && busqueda.tipo !== 'sin-buscar' ? null : (
       <section className="agregar-item__habituales" aria-labelledby={`${id}-habituales`} data-habituales="ejercicios">
         <h3 id={`${id}-habituales`} className="agregar-item__titulo">
           <Icono nombre="habitual" tamano={18} />
@@ -437,6 +440,7 @@ function ContenidoDeAgregarEjercicio({
           </ul>
         )}
       </section>
+      )}
 
       <section className="agregar-item__resultados" aria-labelledby={`${id}-catalogo`} data-resultados={busqueda.tipo}>
         <h3 id={`${id}-catalogo`} className="agregar-item__titulo">

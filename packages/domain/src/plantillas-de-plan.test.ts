@@ -36,7 +36,7 @@ test('las notas de texto libre se listan con su lugar y su rótulo, en orden de 
       ['blocks[0].microcycles[0].sessions[0].prescriptions[0].sets[0].note', 'lento'],
     ],
   );
-  assert.equal(notas[0]!.rotulo, 'Propósito de la fase «Bloque 1»');
+  assert.equal(notas[0]!.rotulo, 'Propósito de la fase «Fase 1»', 'ENP-D01: la fase guardada «Bloque 1» se lee «Fase 1»');
   assert.equal(notas[2]!.rotulo, 'Nota de la prescripción 1 de «A» (microciclo «Semana 1»)');
 });
 

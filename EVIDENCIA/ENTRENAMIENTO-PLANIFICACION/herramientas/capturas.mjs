@@ -598,13 +598,14 @@ function pantallas(ids, lugar) {
       verificar: (page) =>
         page.evaluate(() => {
           const problemas = [];
-          const pie = document.querySelector('.cajon__pie')?.getBoundingClientRect();
-          const cuerpo = document.querySelector('.cajon__cuerpo')?.getBoundingClientRect();
+          // Los del cajón abierto: otro cajón cerrado en la página mide cero y no cuenta.
+          const pie = document.querySelector('dialog[open] .cajon__pie')?.getBoundingClientRect();
+          const cuerpo = document.querySelector('dialog[open] .cajon__cuerpo')?.getBoundingClientRect();
           if (pie && cuerpo) {
             const abajo = Math.min(pie.top, cuerpo.bottom);
-            const filas = [...document.querySelectorAll('[data-marcar-ejercicio]')].map((c) => (c.closest('li') ?? c).getBoundingClientRect());
+            const filas = [...document.querySelectorAll('dialog[open] [data-marcar-ejercicio]')].map((c) => (c.closest('tr, li') ?? c).getBoundingClientRect());
             const enteras = filas.filter((r) => r.height > 0 && r.top >= cuerpo.top - 1 && r.bottom <= abajo + 1).length;
-            if (window.innerHeight <= 800 && enteras < 3) problemas.push(`se ven ${enteras} resultados enteros sin desplazar (hacen falta 3)`);
+            if (window.innerWidth <= 1280 && window.innerHeight <= 800 && enteras < 3) problemas.push(`se ven ${enteras} resultados enteros sin desplazar (hacen falta 3)`);
           }
           // Plegada, «Prescripción para todos» es un renglón; el campo se mide en la escena 11b, abierta.
           const pliegue = document.querySelector('[data-para-todos-pliegue]');

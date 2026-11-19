@@ -17031,7 +17031,9 @@ p.cifra-del-espacio__desglose {
 }
 
 .agregar-item__antes.agregar-ejercicio__aviso-del-catalogo {
-  flex: 1 1 12rem;
+  flex: 1 1 9rem;
+  font-size: 0.82rem;
+  line-height: 1.3;
 }
 
 

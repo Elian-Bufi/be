@@ -1023,7 +1023,8 @@ test('TEST-GRVD-003 · GR-12 y GR-13 en «Analizar», y «Ver la relación» con
   assert.match(analizar, /<ListaDePreguntas conGraficos=\{preguntasConGraficos\} \/>/);
   assert.match(leer(join(SEGUIMIENTO, 'preguntas.tsx')), /\{conGraficos\.map\(\(p\) => \(/);
   const pieza = leer(join(SEGUIMIENTO, 'graficos-en-analizar.tsx'));
-  assert.match(pieza, /graficosDeLaPregunta\(pregunta, contextoDelRegistro\(acceso, disponibles\)\)/);
+  // El mismo contexto decide qué se ofrece y, sin nada, por qué (GR-VD08).
+  assert.match(pieza, /const contexto = contextoDelRegistro\(acceso, disponibles\);\n\s+const graficos = disponibles\.cargando \? \[\] : graficosDeLaPregunta\(pregunta, contexto\);/);
   assert.match(pieza, /acceso=\{acceso\}/, 'cada gráfico recibe el acceso con que se ofreció');
   // GR-VD08, ratificado el 19/11: abierta sin nada que ofrecer (un entrenador que escribe «pregunta=ver-la-relacion», o un
   // período sin lo que pide), muestra su título y un estado vacío que dice por qué; ya no vuelve a «Analizar» sin decir nada.

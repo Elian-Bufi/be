@@ -7,6 +7,7 @@
  * - **vaciar** una nota por su lugar, sin tocar nada más.
  */
 import type { EstructuraDePlanDeEntrenamientoEntrada } from './contratos-entrenamiento';
+import { nombreDeLaFase } from './copy-entrenamiento';
 
 type Estructura = EstructuraDePlanDeEntrenamientoEntrada;
 type Bloque = Estructura['blocks'][number];
@@ -44,13 +45,13 @@ export function notasDeLaEstructura(e: Estructura): NotaDeLaEstructura[] {
   const notas: NotaDeLaEstructura[] = [];
   e.blocks.forEach((b, i) => {
     const lb = `blocks[${i}]`;
-    if (tiene(b.purpose)) notas.push({ lugar: `${lb}.purpose`, rotulo: `Propósito de la fase «${b.label}»`, texto: b.purpose });
+    if (tiene(b.purpose)) notas.push({ lugar: `${lb}.purpose`, rotulo: `Propósito de la fase «${nombreDeLaFase(b.label, i)}»`, texto: b.purpose });
     (b.microcycles ?? []).forEach((m, j) => {
       const lm = `${lb}.microcycles[${j}]`;
-      if (tiene(m.purpose)) notas.push({ lugar: `${lm}.purpose`, rotulo: `Propósito del microciclo «${m.label}» (fase «${b.label}»)`, texto: m.purpose });
+      if (tiene(m.purpose)) notas.push({ lugar: `${lm}.purpose`, rotulo: `Propósito del microciclo «${m.label}» (fase «${nombreDeLaFase(b.label, i)}»)`, texto: m.purpose });
       m.sessions.forEach((s, k) => notas.push(...notasDeSesion(s, `${lm}.sessions[${k}]`, ` (microciclo «${m.label}»)`)));
     });
-    (b.sessions ?? []).forEach((s, k) => notas.push(...notasDeSesion(s, `${lb}.sessions[${k}]`, ` (fase «${b.label}»)`)));
+    (b.sessions ?? []).forEach((s, k) => notas.push(...notasDeSesion(s, `${lb}.sessions[${k}]`, ` (fase «${nombreDeLaFase(b.label, i)}»)`)));
   });
   return notas;
 }
@@ -169,7 +170,7 @@ export function loQueViajaALaPlantilla(e: Estructura): LoQueViajaALaPlantilla[] 
   e.blocks.forEach((b, i) => {
     const lb = `blocks[${i}]`;
     items.push(...nombre(`${lb}.label`, `Nombre de la fase ${i + 1}`, b.label, `Fase ${i + 1}`));
-    const fase = b.label.trim() || `Fase ${i + 1}`;
+    const fase = nombreDeLaFase(b.label, i);
     (b.microcycles ?? []).forEach((m, j) => {
       const lm = `${lb}.microcycles[${j}]`;
       items.push(...nombre(`${lm}.label`, `Nombre del microciclo ${j + 1} (fase «${fase}»)`, m.label, `Semana ${j + 1}`));

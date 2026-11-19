@@ -88,8 +88,8 @@ test('El catálogo a 1280 × 800: «Prescripción para todos» va plegada y el p
   const css = fuente('../src/app/globals.css');
   assert.match(css, /\.agregar-ejercicio__para-todos-pliegue \{\n\s+flex: 0 1 auto;/);
   assert.match(css, /\.agregar-ejercicio__para-todos-pliegue\[open\] \{\n\s+flex-basis: 100%;/);
-  assert.match(css, /\.agregar-item__antes\.agregar-ejercicio__aviso-del-catalogo \{\n\s+flex: 1 1 12rem;/, 'el aviso del catálogo ya no ocupa un renglón entero');
+  assert.match(css, /\.agregar-item__antes\.agregar-ejercicio__aviso-del-catalogo \{\n\s+flex: 1 1 9rem;/, 'el aviso del catálogo ya no ocupa un renglón entero');
   const capturas = fuente('../../../EVIDENCIA/ENTRENAMIENTO-PLANIFICACION/herramientas/capturas.mjs');
-  assert.match(capturas, /if \(window\.innerHeight <= 800 && enteras < 3\) problemas\.push/);
+  assert.match(capturas, /if \(window\.innerWidth <= 1280 && window\.innerHeight <= 800 && enteras < 3\) problemas\.push/);
   assert.match(capturas, /nombre: '11b-prescripcion-para-todos-abierta'/);
 });
