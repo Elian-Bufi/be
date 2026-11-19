@@ -533,7 +533,7 @@ test('los textos del plan de la serie y de los tiempos dicen el dato sin juzgarl
   assert.equal(textoDelPlanDeLaSerie(a1!), '16 kg · 12–16 rep. · RIR 3');
   const [c1] = objetivosEfectivos(PRESCRIPCIONES.C!);
   assert.equal(textoDelPlanDeLaSerie(c1!), '0 kg · 10–12 rep.');
-  assert.equal(textoDelPlanDeLaSerie({ repetitions: null, rir: null, suggestedLoad: null, restSeconds: null }), 'Sin objetivo');
+  assert.equal(textoDelPlanDeLaSerie({ repetitions: null, rir: null, suggestedLoad: null, restSeconds: null }), 'Sin indicar');
   assert.equal(textoDelPlanDeLaSerie({ repetitions: { value: 8 }, rir: 2.5, suggestedLoad: { value: 22.5, unit: 'lb' }, restSeconds: null }), '22,5 lb · 8 rep. · RIR 2,5');
   assert.equal(textoDeDescanso({ duration: { ms: 105_000, quality: 'MEASURED' }, recommendedSeconds: 90, differenceMs: 15_000 }), '01:45 registrado · 01:30 recomendado · +00:15');
   assert.equal(textoDeDescanso({ duration: { ms: 75_000, quality: 'ESTIMATED' }, recommendedSeconds: null, differenceMs: null }), '01:15 estimado · sin recomendado');

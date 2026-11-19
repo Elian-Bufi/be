@@ -36,7 +36,8 @@ export const COPY_ENTRENAMIENTO_POR_SERIE = {
   serieActual: 'Serie actual',
   guardada: 'Guardada',
   enGris: 'En gris: lo planificado',
-  sinObjetivo: 'Sin objetivo',
+  // Lo que el profesional no indicó se dice «Sin indicar» en todas las pantallas (Dirección, 19/11).
+  sinObjetivo: 'Sin indicar',
   planDeLaSerie: (n: number) => `Plan de la serie ${numero(n, 0)}`,
   descansoRecomendado: 'Descanso recomendado',
   // Registrar
@@ -194,7 +195,7 @@ export const textoDeCarga = (c: Carga | null): string | null => (c ? cantidad(c.
 /** «RIR 2,5»; `null` si no hay RIR. */
 export const textoDeRir = (rir: number | null): string | null => (rir === null ? null : `RIR ${numero(rir)}`);
 
-/** «16 kg · 12–16 rep. · RIR 3», o «Sin objetivo» si la serie no tiene ninguno. El descanso va aparte. */
+/** «16 kg · 12–16 rep. · RIR 3», o «Sin indicar» si la serie no tiene ninguno. El descanso va aparte. */
 export function textoDelPlanDeLaSerie(o: ObjetivoDeSerie): string {
   const partes = [textoDeCarga(o.suggestedLoad), textoDeRepeticiones(o.repetitions), textoDeRir(o.rir)].filter((p): p is string => p !== null);
   return partes.length > 0 ? partes.join(' · ') : COPY_ENTRENAMIENTO_POR_SERIE.sinObjetivo;

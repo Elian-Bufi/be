@@ -9,10 +9,18 @@
  * El período es el de la ficha, que la API recorta al inicio del acompañamiento. Cada gráfico pide sus lecturas con el
  * acceso de este momento: si un permiso cambió, el gráfico no se dibuja y no deja rastro.
  */
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { BloqueDeEstado, Cargando } from '../../../../components/estados';
 import { Icono } from '../../../../components/icono';
-import { contextoDelRegistro, ejercicioDelCruce, ejerciciosDeLaListaV1, graficosDeLaPregunta, PREGUNTAS_CON_GRAFICOS, type PreguntaConGraficos } from '../graficos/cruces/preguntas-con-graficos';
+import {
+  contextoDelRegistro,
+  ejercicioDelCruce,
+  ejerciciosDeLaListaV1,
+  graficosDeLaPregunta,
+  porQueNoHayGraficos,
+  PREGUNTAS_CON_GRAFICOS,
+  type PreguntaConGraficos,
+} from '../graficos/cruces/preguntas-con-graficos';
 import { textoDeFalla, useSeguimiento } from './contexto';
 import { hoyEn, parametrosDePregunta } from './estado';
 import { accesoDeLosDisponibles } from './selector';
@@ -24,17 +32,16 @@ export function GraficosEnAnalizar({ tituloId, pregunta }: { tituloId: string; p
   const [elegido, setElegido] = useState<string | null>(null);
   const P = PREGUNTAS_CON_GRAFICOS[pregunta];
   const acceso = accesoDeLosDisponibles(disponibles);
-  const graficos = disponibles.cargando ? [] : graficosDeLaPregunta(pregunta, contextoDelRegistro(acceso, disponibles));
+  const contexto = contextoDelRegistro(acceso, disponibles);
+  const graficos = disponibles.cargando ? [] : graficosDeLaPregunta(pregunta, contexto);
   const ejercicio = ejercicioDelCruce(disponibles.ejercicios, elegido);
   const v1 = ejerciciosDeLaListaV1(disponibles.ejercicios);
   const periodoDelGrafico = { desde: periodo.desde, hasta: periodo.hasta, hoy: hoyEn(), desdeElVinculo: null };
-  // Abierta por la dirección sin ningún gráfico que se ofrezca (un área sin acceso, o nada en el período), responde igual
-  // que una pregunta que no existe: «Analizar» sin pregunta. No dice el título ni por qué: no delata qué hay.
+  // GR-VD08, ratificado el 19/11: sin ningún gráfico que se ofrezca (un área sin acceso, o nada en el período), la pregunta
+  // muestra su título y un estado vacío que dice por qué, en vez de volver a «Analizar» sin decir nada.
   const sinNadaQueOfrecer = !disponibles.cargando && !disponibles.falla && graficos.length === 0;
-  useEffect(() => {
-    if (sinNadaQueOfrecer) ir(parametrosDePregunta(null));
-  }, [sinNadaQueOfrecer, ir]);
-  if (disponibles.cargando || sinNadaQueOfrecer) return <Cargando />;
+  if (disponibles.cargando) return <Cargando />;
+  const vacio = sinNadaQueOfrecer ? porQueNoHayGraficos(pregunta, contexto) : null;
   return (
     <section className="seccion analizar graficos-en-analizar" aria-labelledby={tituloId}>
       <div className="pregunta-en-curso pregunta-activa">
@@ -47,7 +54,13 @@ export function GraficosEnAnalizar({ tituloId, pregunta }: { tituloId: string; p
           </button>
         </div>
       </div>
-      {graficos.length === 0 && disponibles.falla ? (
+      {vacio ? (
+        <div data-sin-graficos>
+          <BloqueDeEstado tipo="vacio" icono="informacion" titulo={vacio.titulo}>
+            {vacio.texto}
+          </BloqueDeEstado>
+        </div>
+      ) : graficos.length === 0 && disponibles.falla ? (
         // Una falla no es una ausencia: no se sabe si habría gráficos.
         <BloqueDeEstado tipo="error" icono="aviso" onReintentar={disponibles.recargar} textoDelBoton="Reintentar" rol="alert">
           {textoDeFalla(disponibles.falla, 'qué datos hay en el período')}

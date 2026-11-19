@@ -12,7 +12,10 @@ import {
   COPY_GUARDADO,
   COPY_PLANTILLAS,
   falloDeGuardado,
+  loQueViajaALaPlantillaNutricional,
+  notaDeOrigenNutricional,
   notasDeLaEstructuraNutricional,
+  vaciarLoQueViaja,
   vaciarNota,
   type EstructuraDePlanEntrada,
   type OrigenDePlanEnPlantilla,
@@ -23,6 +26,7 @@ import { DialogoDeConfirmacion } from '../../../../components/dialogo';
 import { Campo } from '../../../../components/formulario';
 import { api, type Resultado } from '../../../../lib/api';
 import { mensajeDeFallo, useClaveDeIntento } from '../../../../lib/intento';
+import { LoQueViajaALaPlantillaParaRevisar } from '../lo-que-viaja-a-la-plantilla';
 
 export function DialogoGuardarPlantillaNutricional({
   token,
@@ -115,6 +119,14 @@ export function DialogoGuardarPlantillaNutricional({
           </ul>
         </>
       )}
+      {/* DL-108 D-3, ratificado el 19/11: los nombres de días tipo, comidas y opciones, también a la vista. */}
+      <LoQueViajaALaPlantillaParaRevisar
+        items={loQueViajaALaPlantillaNutricional(estructura)}
+        titulo={COPY_PLANTILLAS.nombresTitulo}
+        ayuda={COPY_PLANTILLAS.nombresAyuda}
+        vacio={COPY_PLANTILLAS.sinNombres}
+        onVaciar={(x) => setEstructura((e) => vaciarLoQueViaja(e, x))}
+      />
       {/* DL-113: lo que explica la plantilla, plegado y al final: así el foco del diálogo abre en el nombre. */}
       <Ayuda titulo="Qué se copia y quién lo ve">
         <p>{COPY_PLANTILLAS.queCopiaNutricion}</p>
@@ -124,17 +136,26 @@ export function DialogoGuardarPlantillaNutricional({
   );
 }
 
+/**
+ * «Creada desde la plantilla X, versión N» en un borrador de Nutrición que salió de una plantilla. Como en Entrenamiento
+ * (ratificación del 19/11): N es la versión que se aplicó (`templateVersionId`), no la vigente. La regla está en
+ * `notaDeOrigenNutricional`.
+ */
 export function NotaDeOrigenNutricional({ token, origen }: { token: string; origen: OrigenDePlanEnPlantilla }) {
   const [texto, setTexto] = useState<string | null>(null);
   useEffect(() => {
     let vigente = true;
-    void api.consultarPlantillaNutricional(token, origen.templateId).then((r: Resultado<{ data: { name: string; versionNumber: number } }>) => {
+    void api.consultarPlantillaNutricional(token, origen.templateId).then((r: Resultado<{ data: { name: string; versionId: string; versionNumber: number } }>) => {
       if (!vigente) return;
-      setTexto(r.ok ? COPY_PLANTILLAS.creadaDesde(r.datos.data.name, r.datos.data.versionNumber) : COPY_PLANTILLAS.origenDesconocido);
+      setTexto(notaDeOrigenNutricional(origen, r.ok ? r.datos.data : null));
     });
     return () => {
       vigente = false;
     };
   }, [token, origen]);
-  return texto ? <p className="nota">{texto}</p> : null;
+  return texto ? (
+    <p className="nota" data-nota-de-origen>
+      {texto}
+    </p>
+  ) : null;
 }

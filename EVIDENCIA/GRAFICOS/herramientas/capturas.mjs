@@ -728,6 +728,22 @@ function pantallas({ diego, versiones }) {
         enfocar: '.preguntas-profesionales',
       },
       {
+        nombre: '24-pregunta-sin-graficos',
+        codigo: 'GR-VD08',
+        de: 'ratificación de Dirección del 19/11 (wp-ajustes-de-la-ratificacion)',
+        que: '«Ver la relación» abierta por la dirección por el entrenador, que no ve Nutrición: la pregunta muestra su título y un estado vacío que dice por qué, en vez de volver a «Analizar» sin decir nada.',
+        llegar: async (page, nota) => {
+          await ir(page, enLaFicha({ vista: 'analizar', pregunta: 'ver-la-relacion', p: '365' }));
+          if (!(await siAparece(page, '.graficos-en-analizar', null, 20_000))) throw new NoEstaEnLaRama('el estado vacío de una pregunta sin gráficos lo monta wp-ajustes-de-la-ratificacion.');
+          await visible(page, '.graficos-en-analizar [data-sin-graficos]', null, 30_000);
+          const titulo = await page.$eval('.graficos-en-analizar h2', (h) => h.textContent ?? '');
+          const porQue = await page.$eval('.graficos-en-analizar [data-sin-graficos]', (x) => x.textContent ?? '');
+          if (!/dos áreas/.test(titulo) || !/No hay gráficos para mostrar/.test(porQue)) throw new Error(`el estado vacío dice «${titulo}» · «${porQue}»`);
+          nota(`«${titulo}»: ${porQue}`);
+        },
+        enfocar: '.graficos-en-analizar',
+      },
+      {
         nombre: '10-patrones-con-entrenamiento',
         codigo: '«Patrones» y GR-27',
         de: 'rama E (wp-graficos-patrones-y-enfoques)',

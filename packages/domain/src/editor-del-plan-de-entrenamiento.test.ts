@@ -173,7 +173,7 @@ const N = PROBLEMA_DEL_EDITOR_DE_ENTRENAMIENTO;
 test('de un ejercicio no deja guardar lo escrito que no se entiende, en lo general y en cada serie; lo que falta no es un problema', () => {
   assert.deepEqual(loQueNoDejaGuardarDelEjercicio(REMO, 'x'), []);
   assert.deepEqual(loQueNoDejaGuardarDelEjercicio(DOMINADAS, 'x'), []);
-  // Vacío no es un error: sin carga, sin descanso, sin repeticiones fijadas, «Sin objetivo en esta serie».
+  // Vacío no es un error: sin carga, sin descanso, sin repeticiones fijadas, «Sin indicar en esta serie».
   assert.deepEqual(loQueNoDejaGuardarDelEjercicio({ intensity: null, suggestedLoad: null, restSeconds: null, professionalParameters: [], sets: [{ repetitions: null, rir: null, suggestedLoad: null, restSeconds: null }] }, 'x'), []);
   const todoMal: EjercicioDelEditor = {
     intensity: { criterion: 'RIR', target: { value: Number.NaN } },
@@ -270,21 +270,21 @@ test('el descanso que se muestra se vuelve a leer igual: escribirlo y leerlo no 
 test('una celda vacía toma de lo general: lo muestra en gris, lo dice con palabras y ofrece quitarle el objetivo a la serie', () => {
   assert.deepEqual(celdaDeObjetivoDelEditor(undefined, '62,5 kg'), { estado: 'de-lo-general', sinValor: '62,5 kg', enGris: true, descripcion: 'Vacío: toma 62,5 kg de lo general.', opciones: ['sin-objetivo'] });
   // Si lo general tampoco lo tiene, la serie queda sin objetivo, y también va en gris: nadie lo eligió para esta serie.
-  assert.deepEqual(celdaDeObjetivoDelEditor(undefined, null), { estado: 'de-lo-general', sinValor: 'Sin objetivo', enGris: true, descripcion: 'Vacío: sin objetivo, porque lo general no lo tiene.', opciones: ['sin-objetivo'] });
+  assert.deepEqual(celdaDeObjetivoDelEditor(undefined, null), { estado: 'de-lo-general', sinValor: 'Sin indicar', enGris: true, descripcion: 'Vacío: sin indicar, porque lo general no lo tiene.', opciones: ['sin-objetivo'] });
 });
 
-test('«Sin objetivo» elegido para una serie va en el color del texto y ofrece volver a tomar de lo general', () => {
-  assert.deepEqual(celdaDeObjetivoDelEditor(null, '02:30'), { estado: 'sin-objetivo', sinValor: 'Sin objetivo', enGris: false, descripcion: 'Sin objetivo en esta serie. Lo general: 02:30.', opciones: ['de-lo-general'] });
-  assert.deepEqual(celdaDeObjetivoDelEditor(null, null), { estado: 'sin-objetivo', sinValor: 'Sin objetivo', enGris: false, descripcion: 'Sin objetivo en esta serie.', opciones: ['de-lo-general'] });
+test('«Sin indicar» elegido para una serie va en el color del texto y ofrece volver a tomar de lo general', () => {
+  assert.deepEqual(celdaDeObjetivoDelEditor(null, '02:30'), { estado: 'sin-objetivo', sinValor: 'Sin indicar', enGris: false, descripcion: 'Sin indicar en esta serie. Lo general: 02:30.', opciones: ['de-lo-general'] });
+  assert.deepEqual(celdaDeObjetivoDelEditor(null, null), { estado: 'sin-objetivo', sinValor: 'Sin indicar', enGris: false, descripcion: 'Sin indicar en esta serie.', opciones: ['de-lo-general'] });
 });
 
 test('con un valor propio la celda ofrece las dos salidas; el cero es un valor, y lo que no se entiende se dice', () => {
   assert.deepEqual(celdaDeObjetivoDelEditor(60, '62,5 kg'), { estado: 'propio', sinValor: '62,5 kg', enGris: true, descripcion: 'Propio de esta serie. Lo general: 62,5 kg.', opciones: ['sin-objetivo', 'de-lo-general'] });
-  assert.deepEqual(celdaDeObjetivoDelEditor(0, null), { estado: 'propio', sinValor: 'Sin objetivo', enGris: true, descripcion: 'Propio de esta serie.', opciones: ['sin-objetivo', 'de-lo-general'] });
+  assert.deepEqual(celdaDeObjetivoDelEditor(0, null), { estado: 'propio', sinValor: 'Sin indicar', enGris: true, descripcion: 'Propio de esta serie.', opciones: ['sin-objetivo', 'de-lo-general'] });
   assert.deepEqual(celdaDeObjetivoDelEditor(Number.NaN, 'RIR 2'), { estado: 'no-se-entiende', sinValor: 'RIR 2', enGris: true, descripcion: 'No se entiende lo escrito.', opciones: ['sin-objetivo', 'de-lo-general'] });
 });
 
-test('lo que la celda deja en la serie: vacía, nada; un número, el propio; lo que no se entiende, NaN; «Sin objetivo» se elige, no se escribe', () => {
+test('lo que la celda deja en la serie: vacía, nada; un número, el propio; lo que no se entiende, NaN; «Sin indicar» se elige, no se escribe', () => {
   const leerNumero = (t: string): number | null => (/^\d+(,\d+)?$/.test(t.trim()) ? Number(t.trim().replace(',', '.')) : null);
   assert.equal(objetivoEscritoEnLaCelda('', leerNumero), undefined);
   assert.equal(objetivoEscritoEnLaCelda('   ', leerNumero), undefined);
@@ -298,7 +298,7 @@ test('lo que la celda deja en la serie: vacía, nada; un número, el propio; lo 
   assert.equal(objetivoElegidoEnLaCelda('de-lo-general'), undefined);
 });
 
-test('lo escrito en la celda es lo que la serie tiene: vacía vale por nada y por «Sin objetivo»; lo que no se entiende, solo por sí mismo', () => {
+test('lo escrito en la celda es lo que la serie tiene: vacía vale por nada y por «Sin indicar»; lo que no se entiende, solo por sí mismo', () => {
   assert.equal(esLoQueTieneLaCelda(undefined, undefined), true);
   assert.equal(esLoQueTieneLaCelda(undefined, null), true);
   assert.equal(esLoQueTieneLaCelda(undefined, 60), false);
@@ -309,7 +309,7 @@ test('lo escrito en la celda es lo que la serie tiene: vacía vale por nada y po
   assert.equal(esLoQueTieneLaCelda(0, null), false);
   assert.equal(esLoQueTieneLaCelda(0, undefined), false);
   assert.equal(esLoQueTieneLaCelda(Number.NaN, Number.NaN), true);
-  // Algo mal escrito que quedó en la celda no vale por «Sin objetivo» ni por nada: la celda se limpia.
+  // Algo mal escrito que quedó en la celda no vale por «Sin indicar» ni por nada: la celda se limpia.
   assert.equal(esLoQueTieneLaCelda(Number.NaN, null), false);
   assert.equal(esLoQueTieneLaCelda(Number.NaN, undefined), false);
   assert.equal(esLoQueTieneLaCelda(Number.NaN, 60), false);

@@ -11,6 +11,7 @@
  */
 import type { PrescripcionConObjetivos } from './contratos-entrenamiento-por-serie';
 import { COPY_ENTRENAMIENTO_POR_SERIE } from './copy-entrenamiento-por-serie';
+import { nombreDeLaFase } from './copy-entrenamiento';
 import { comidasAbiertasEnElEditor, pedidoDeComidasDelEditor, posicionPedida, type ProblemaDelEditor } from './editor-del-plan-de-nutricion';
 import { renglonDelEjercicio } from './lectura-del-plan-de-entrenamiento';
 import { cuentaDeSeries } from './tipos-de-serie';
@@ -137,7 +138,7 @@ export function ubicacionDelProblemaDeEntrenamiento(ruta: string, bloques: reado
   const l = lugarDelProblemaDeEntrenamiento(ruta);
   if (l.bloque === null) return 'Plan';
   const bloque = bloques[l.bloque];
-  const partes = [bloque?.label.trim() || `Fase ${l.bloque + 1}`];
+  const partes = [nombreDeLaFase(bloque?.label ?? '', l.bloque)];
   const microciclo = l.microciclo !== null ? bloque?.microcycles?.[l.microciclo] : undefined;
   if (l.microciclo !== null) partes.push(microciclo?.label.trim() || `Microciclo ${l.microciclo + 1}`);
   const sesiones = l.microciclo !== null ? microciclo?.sessions : bloque?.sessions;
@@ -163,7 +164,7 @@ export function problemasDelEjercicio(rutas: readonly string[], lugar: { readonl
 /**
  * Los problemas que el editor encuentra solo, antes de pedirle nada a la API. Lo escrito que no es un número viaja como
  * NaN, y al armar el pedido un NaN se vuelve «nada»: en un descanso o en el RIR de una serie, «nada» quiere decir otra
- * cosa («sin pausa indicada», «Sin objetivo en esta serie») y se guardaría en silencio. Por eso el editor no lo manda.
+ * cosa («sin pausa indicada», «Sin indicar en esta serie») y se guardaría en silencio. Por eso el editor no lo manda.
  */
 export const PROBLEMA_DEL_EDITOR_DE_ENTRENAMIENTO = {
   faltaElNombre: 'NAME_REQUIRED',
@@ -322,10 +323,10 @@ export type OpcionDeLaCelda = 'sin-objetivo' | 'de-lo-general';
  */
 export interface CeldaDeObjetivoDelEditor {
   readonly estado: 'de-lo-general' | 'propio' | 'sin-objetivo' | 'no-se-entiende';
-  /** Lo que la celda dice cuando no tiene un valor escrito: lo que toma de lo general, o «Sin objetivo». */
+  /** Lo que la celda dice cuando no tiene un valor escrito: lo que toma de lo general, o «Sin indicar». */
   readonly sinValor: string;
   /**
-   * Si eso va en gris: es lo que la serie toma de lo general (o lo general no lo tiene). «Sin objetivo» elegido a mano
+   * Si eso va en gris: es lo que la serie toma de lo general (o lo general no lo tiene). «Sin indicar» elegido a mano
    * va en el color del texto: es una decisión de esa serie.
    */
   readonly enGris: boolean;
@@ -348,12 +349,12 @@ export function celdaDeObjetivoDelEditor(valor: number | null | undefined, deLoG
       estado: 'de-lo-general',
       sinValor: loGeneral,
       enGris: true,
-      descripcion: deLoGeneral ? `Vacío: toma ${deLoGeneral} de lo general.` : 'Vacío: sin objetivo, porque lo general no lo tiene.',
+      descripcion: deLoGeneral ? `Vacío: toma ${deLoGeneral} de lo general.` : 'Vacío: sin indicar, porque lo general no lo tiene.',
       opciones: ['sin-objetivo'],
     };
   }
   if (valor === null) {
-    return { estado: 'sin-objetivo', sinValor: sinObjetivo, enGris: false, descripcion: deLoGeneral ? `Sin objetivo en esta serie. Lo general: ${deLoGeneral}.` : 'Sin objetivo en esta serie.', opciones: ['de-lo-general'] };
+    return { estado: 'sin-objetivo', sinValor: sinObjetivo, enGris: false, descripcion: deLoGeneral ? `Sin indicar en esta serie. Lo general: ${deLoGeneral}.` : 'Sin indicar en esta serie.', opciones: ['de-lo-general'] };
   }
   if (Number.isNaN(valor)) return { estado: 'no-se-entiende', sinValor: loGeneral, enGris: true, descripcion: 'No se entiende lo escrito.', opciones: ['sin-objetivo', 'de-lo-general'] };
   return { estado: 'propio', sinValor: loGeneral, enGris: true, descripcion: deLoGeneral ? `Propio de esta serie. Lo general: ${deLoGeneral}.` : 'Propio de esta serie.', opciones: ['sin-objetivo', 'de-lo-general'] };
@@ -361,7 +362,7 @@ export function celdaDeObjetivoDelEditor(valor: number | null | undefined, deLoG
 
 /**
  * Lo que queda en la serie al escribir en la celda: vacío, nada —la clave no viaja y la serie toma de lo general—; un
- * número, el propio; lo que no se entiende, NaN, que no deja guardar. Nunca `null`: «Sin objetivo» se elige, no se
+ * número, el propio; lo que no se entiende, NaN, que no deja guardar. Nunca `null`: «Sin indicar» se elige, no se
  * escribe.
  */
 export function objetivoEscritoEnLaCelda(texto: string, leer: (t: string) => number | null): number | undefined {
@@ -369,12 +370,12 @@ export function objetivoEscritoEnLaCelda(texto: string, leer: (t: string) => num
   return leer(texto) ?? Number.NaN;
 }
 
-/** Lo que queda al elegir con el botón de la celda: «Sin objetivo» es `null`; «Tomar de lo general», que la clave no viaje. */
+/** Lo que queda al elegir con el botón de la celda: «Sin indicar» es `null`; «Tomar de lo general», que la clave no viaje. */
 export function objetivoElegidoEnLaCelda(opcion: OpcionDeLaCelda): null | undefined {
   return opcion === 'sin-objetivo' ? null : undefined;
 }
 
-/** Si lo escrito en la celda y lo que la serie tiene son lo mismo: nada y «Sin objetivo» se ven igual (la celda vacía). */
+/** Si lo escrito en la celda y lo que la serie tiene son lo mismo: nada y «Sin indicar» se ven igual (la celda vacía). */
 export function esLoQueTieneLaCelda(escrito: number | undefined, valor: number | null | undefined): boolean {
   return escrito === undefined ? valor === undefined || valor === null : Object.is(escrito, valor);
 }

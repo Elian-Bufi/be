@@ -42,8 +42,8 @@ test('TEST-EDP-022 · el orden marcado se respeta y nada entra sin «Agregar»',
   // En el buscador, marcar no le avisa nada al editor: solo «Agregar» llama a \`onAgregar\`.
   assert.equal((BUSCADOR.match(/onAgregar\(/g) ?? []).length, 1);
   assert.match(BUSCADOR, /const agregar = \(\) => \{\n\s*if \(marcados\.length === 0\) return setFalta\(true\);/);
-  // Una prescripción que no se entiende no se aplica.
-  assert.match(BUSCADOR, /if \(lectura && !lectura\.ok\) return;/);
+  // Una prescripción que no se entiende no se aplica: vuelve antes de `onAgregar`, abriendo el pliegue con el motivo.
+  assert.match(BUSCADOR, /if \(lectura && !lectura\.ok\) return setParaTodosAbierta\(true\);\n\s*onAgregar\(/);
 });
 
 test('ED-21 · los chips por zona salen de lo encontrado y filtran sin perder ninguno que nombre una elegida', async () => {

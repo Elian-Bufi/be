@@ -122,7 +122,7 @@ export function InformacionParaRevisar({ area, disponibles }: { area: 'NUTRICION
                 <dd>
                   {d.nutrition.summary?.objective
                     ? `${cantidad(d.nutrition.summary.objective.estimatedEnergyRequirement.value, 'kcal por día')} (requerimiento energético estimado) · rige desde el ${fecha(d.nutrition.summary.objective.effectiveFrom)} · ${delProfesional(d.nutrition.summary.objective.authoredBy)}`
-                    : 'Sin objetivo vigente'}
+                    : 'Sin indicar'}
                 </dd>
               </div>
               <div>
@@ -175,7 +175,7 @@ export function InformacionParaRevisar({ area, disponibles }: { area: 'NUTRICION
                 <dd>
                   {d.training.summary?.objective
                     ? `${d.training.summary.objective.statement || 'Sin enunciado'} · rige desde el ${fecha(d.training.summary.objective.effectiveFrom)} · ${delProfesional(d.training.summary.objective.authoredBy)}`
-                    : 'Sin objetivo vigente'}
+                    : 'Sin indicar'}
                 </dd>
               </div>
               <div>

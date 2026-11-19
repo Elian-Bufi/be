@@ -11,7 +11,7 @@
  *   plan vigente de las otras áreas para este profesional y lo de su área para los demás, la historia anterior del área si
  *   la hubo y los hábitos si corresponde. Lo que la persona retiró antes no vuelve marcado.
  * - **Los botones:** «Aceptar y compartir», el principal; «Elegir qué compartir», que despliega un interruptor por cosa; y
- *   «Ahora no», que no escribe nada.
+ *   «Ahora no», que no escribe nada. Los dos últimos son botones a la vista, no enlaces chicos (CMP-D8, ratificado el 19/11).
  * - **Lo que se registra** (API-CMP-02): un toque escribe todos los actos, cada uno con su texto, su versión y su
  *   auditoría, en una sola transacción. Los textos completos de lo marcado se leen acá mismo, plegados, cada uno con su
  *   versión y su huella: lo que se muestra es lo que se acepta (08 §12.2).
@@ -206,7 +206,9 @@ export function PantallaDeConsentimiento({
             />
           ) : null}
           {!eligiendo ? <Boton texto={C.elegir} tipo="secundario" onPress={() => setEligiendo(true)} deshabilitado={enviando} /> : null}
-          <Boton texto={C.ahoraNo} tipo="enlace" onPress={irAlVinculo} deshabilitado={enviando} />
+          {/* CMP-D8 (DL-176), ratificado el 19/11: «Ahora no» es un botón a la vista, como «Elegir qué compartir», y no un
+              enlace chico: el consentimiento es libre (Ley 25.326, art. 5) si decir que no está tan a mano como decir que sí. */}
+          <Boton texto={C.ahoraNo} tipo="secundario" onPress={irAlVinculo} deshabilitado={enviando} />
         </>
       )}
     </>

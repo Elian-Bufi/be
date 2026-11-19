@@ -116,7 +116,7 @@ test('1 · lo planificado en una línea: «3 × 10 · RIR 2 · 16 kg», la carga
   const mixta = prescripcion('pM', 6, 'Mixta', [serie(1, { repetitions: { value: 8 }, rir: 1 }), serie(2, { repetitions: { value: 8 } })]);
   assert.equal(rr.lineaDelPlan(mixta), '2 × 8 · RIR 1/–');
   assert.equal(rr.lineaDeLaSerie(GOBLET.sets[0]), '10 rep. · RIR 2 · 16 kg');
-  assert.equal(rr.lineaDeLaSerie(PLANCHA.sets[0]), 'Sin objetivo');
+  assert.equal(rr.lineaDeLaSerie(PLANCHA.sets[0]), 'Sin indicar');
 });
 
 // ─── 2. La serie con lo planificado ─────────────────────────────────────────────────────────────

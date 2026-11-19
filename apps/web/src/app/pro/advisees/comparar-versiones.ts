@@ -12,7 +12,7 @@
  * vueltas», «Alterná estos 2 ejercicios · 3 vueltas · descansá 90 s…»): se agregan, se quitan y cambian como cualquier
  * parte. Sin esto, cambiar solo el descanso de las vueltas decía «No cambia nada frente a la vigente».
  */
-import { descansoEnPalabras, nombreDelBloqueDeLaSesion, resumenDelBloque, type TipoDeBloque } from '@be/domain';
+import { descansoEnPalabras, nombreDeLaFase, nombreDelBloqueDeLaSesion, resumenDelBloque, type TipoDeBloque } from '@be/domain';
 /**
  * Los identificadores que el servidor pone a cada parte de un plan. Es la misma lista que la de `es-lo-que-mande.ts` (una
  * prueba lo cuida): este módulo no importa a sus vecinos, para que la prueba lo cargue solo.
@@ -176,7 +176,8 @@ export function compararEntrenamiento<P extends PrescripcionParaComparar>(
 ): CambiosFrenteALaVigente {
   const c = cambios();
   const nombreDeSesion = (s: SesionParaComparar<P>) => s.label.trim() || 'Sesión sin nombre';
-  const nombreDeBloque = (b: BloqueParaComparar<P>) => b.label.trim() || 'Fase sin nombre';
+  // ENP-D01: «Bloque N» de un plan viejo se lee «Fase N».
+  const nombreDeBloque = (b: BloqueParaComparar<P>) => nombreDeLaFase(b.label) || 'Fase sin nombre';
   compararListas(vigente, borrador, (b) => b.blockId, {
     agregado: (b) => c.agregado(`fase ${nombreDeBloque(b)}`),
     quitado: (b) => c.quitado(`fase ${nombreDeBloque(b)}`),

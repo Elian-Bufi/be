@@ -29,6 +29,7 @@ import {
   diasDeLaSemanaEnPalabras,
   indicadoDelItem,
   loGeneralDelEjercicio,
+  nombreDeLaFase,
   opcionesEnPalabras,
   renglonDelEjercicio,
   seriesDelEjercicio,
@@ -243,14 +244,16 @@ export function hojaDeEntrenamiento(version: Pick<PlanConObjetivos, 'activatedAt
       vacia: ejercicios.length === 0 ? COPY_DEL_PLAN_DE_ENTRENAMIENTO.sinEjercicios : null,
     };
   };
-  const grupos = enOrden(version.blocks).flatMap((b): GrupoDeLaHoja[] => {
+  // ENP-D01: «Bloque N» de un plan viejo se lee «Fase N»; el nombre guardado no cambia.
+  const grupos = enOrden(version.blocks).flatMap((b, i): GrupoDeLaHoja[] => {
+    const fase = nombreDeLaFase(b.label, i);
     if (b.microcycles.length === 0) {
       const sesiones = enOrden(b.sessions).map(sesion);
-      return [{ titulo: b.label, proposito: b.purpose, sesiones, vacio: sesiones.length === 0 ? COPY_DEL_PLAN_DE_ENTRENAMIENTO.sinSesiones : null }];
+      return [{ titulo: fase, proposito: b.purpose, sesiones, vacio: sesiones.length === 0 ? COPY_DEL_PLAN_DE_ENTRENAMIENTO.sinSesiones : null }];
     }
     return enOrden(b.microcycles).map((m) => {
       const sesiones = enOrden(m.sessions).map(sesion);
-      return { titulo: `${b.label} · ${m.label}`, proposito: m.purpose ?? b.purpose, sesiones, vacio: sesiones.length === 0 ? COPY_DEL_PLAN_DE_ENTRENAMIENTO.sinSesiones : null };
+      return { titulo: `${fase} · ${m.label}`, proposito: m.purpose ?? b.purpose, sesiones, vacio: sesiones.length === 0 ? COPY_DEL_PLAN_DE_ENTRENAMIENTO.sinSesiones : null };
     });
   });
   return armar('ENTRENAMIENTO', c, version.activatedAt, {

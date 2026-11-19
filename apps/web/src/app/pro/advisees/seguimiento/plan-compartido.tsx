@@ -20,6 +20,7 @@ import {
   COPY_DEL_PLAN_DE_ENTRENAMIENTO as C,
   COPY_ENTRENAMIENTO,
   ETIQUETA_DE_ALCANCE,
+  conNombresDeFase,
   cuentaDeLaSesion,
   diaTipoElegido,
   lineasDePrescripcion,
@@ -158,7 +159,8 @@ function PlanDeNutricion({ plan }: { plan: DeNutricion }) {
 
 /** El plan de entrenamiento entero: cada bloque, con sus microciclos si los usa, y sus sesiones. */
 function PlanDeEntrenamiento({ plan }: { plan: DeEntrenamiento }) {
-  const bloques = enOrden(plan.plan.blocks);
+  // ENP-D01: «Bloque N» de un plan viejo se lee «Fase N»; el nombre guardado no cambia.
+  const bloques = conNombresDeFase(enOrden(plan.plan.blocks));
   if (bloques.length === 0) return <p className="nota">{C.sinBloques}</p>;
   let primera = true;
   const abrirLaPrimera = () => {

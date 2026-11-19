@@ -205,7 +205,9 @@ describe('TEST-CMP-047 · las pantallas: la única al aceptar, la tarjeta de Ini
     expect(pantalla).toContain('api.loQueSePuedeCompartir(token, vinculoId)');
     expect(pantalla).toContain('api.compartirLoElegido(token, pedidoDelToque(p, marcadas), intento.actual())');
     expect(pantalla).toContain('<Boton texto={C.elegir} tipo="secundario"');
-    expect(pantalla).toContain('<Boton texto={C.ahoraNo} tipo="enlace"');
+    // CMP-D8 (ratificado el 19/11): «Elegir qué compartir» y «Ahora no», botones a la vista; ninguno como enlace chico.
+    expect(pantalla).toContain('<Boton texto={C.ahoraNo} tipo="secundario"');
+    expect(pantalla).not.toMatch(/<Boton texto=\{C\.(ahoraNo|elegir)\} tipo="enlace"/);
     expect(pantalla).toContain('<TextosCompletos textos={textosParaLeer(p, marcadas)} />');
     expect(pantalla).toContain('COPY_VINCULO.aclaracionDeConsentimiento');
   });

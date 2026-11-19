@@ -47,6 +47,15 @@ export const COPY_PLANTILLAS = {
   notasAyuda: 'Revisá que ninguna nombre a una persona ni describa su situación. Podés vaciarlas una por una.',
   vaciarNota: 'Vaciar',
   sinNotas: 'Esta versión no tiene notas de texto libre.',
+  // DL-108 D-3, ratificado el 19/11: además de las notas, los nombres, los parámetros y la referencia del %RM.
+  textosTitulo: 'Nombres, parámetros y referencias que se van a copiar',
+  nombresTitulo: 'Nombres que se van a copiar',
+  textosAyuda: 'También pueden nombrar a la persona. Revisalos uno por uno: un nombre que vaciás pasa a ser el de su lugar («Fase 2», «Sesión A»).',
+  nombresAyuda: 'También pueden nombrar a la persona. Revisalos uno por uno: un nombre que vaciás pasa a ser el de su lugar («Comida 2», «Opción 1»).',
+  sinTextos: 'No hay nombres propios, parámetros ni referencias del %RM para revisar.',
+  sinNombres: 'No hay nombres propios para revisar.',
+  usarGenerico: (generico: string): string => `Usar «${generico}»`,
+  quitar: 'Quitar',
   guardada: 'Plantilla guardada. La encontrás en «Mis plantillas».',
   versionCreada: 'Nueva versión guardada. Las anteriores no cambian; los planes ya creados tampoco.',
   aplicada: 'Borrador creado desde la plantilla. Adaptalo a la persona antes de activarlo: la persona no lo ve hasta que lo actives.',
@@ -177,3 +186,18 @@ export const COPY_PREPARACION_DE_PLANTILLA = {
   // «Empezar desde una plantilla» (Entrenamiento): ya no se guardan solo desde un plan.
   dondeSeArmanEntrenamiento: 'Se crean en «Plantillas y habituales», con «Nueva plantilla», o desde una versión de plan, con «Guardar como plantilla».',
 } as const;
+
+/**
+ * La nota de origen de un plan de Nutrición (ratificación de Dirección del 19/11, como en Entrenamiento): dice la
+ * versión de la plantilla **que se aplicó**, no la vigente. La lectura de la plantilla nutricional trae solo la vigente:
+ * si es la aplicada, se dice su número; si no, que salió de una versión anterior, con el número de la vigente para
+ * ubicarla. Nunca el número de la vigente como si fuera el de la aplicada. Sin la plantilla, que ya no está disponible.
+ */
+export function notaDeOrigenNutricional(
+  origen: { readonly templateVersionId: string },
+  plantilla: { readonly name: string; readonly versionId: string; readonly versionNumber: number } | null,
+): string {
+  if (!plantilla) return COPY_PLANTILLAS.origenDesconocido;
+  if (plantilla.versionId === origen.templateVersionId) return COPY_PLANTILLAS.creadaDesde(plantilla.name, plantilla.versionNumber);
+  return `Creada desde la plantilla «${plantilla.name}», con una versión anterior a la vigente (hoy va por la versión ${plantilla.versionNumber}). El plan es de esta persona: la plantilla no cambia si lo editás.`;
+}

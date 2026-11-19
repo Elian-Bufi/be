@@ -30,7 +30,7 @@ import { numeroEnCampo } from '../../../../lib/formato';
  * Un objetivo de una serie con sus tres estados (DL-122):
  * - el campo vacío hereda de la prescripción, y lo heredado se ve como texto de ayuda;
  * - un número lo sobrescribe en esta serie;
- * - «Sin objetivo en esta serie» lo quita, aunque la prescripción lo tenga.
+ * - «Sin indicar en esta serie» lo quita, aunque la prescripción lo tenga.
  * Lo que no se entiende se propaga como NaN: el guardado lo rechaza y señala el ejercicio, en vez de guardar otra cosa.
  */
 export function CampoHeredable({
@@ -58,7 +58,7 @@ export function CampoHeredable({
     setTexto((t) => (typeof valor === 'number' && Number.isNaN(valor) ? t : leerNumero(t) === (typeof valor === 'number' ? valor : null) ? t : externo));
   }, [externo, valor]);
   const sinObjetivo = valor === null;
-  const ayuda = sinObjetivo ? 'Esta serie no tiene este objetivo.' : heredado ? `Vacío: hereda ${heredado} de la prescripción.` : 'Vacío: sin objetivo, porque la prescripción no lo tiene.';
+  const ayuda = sinObjetivo ? 'Esta serie no tiene este objetivo.' : heredado ? `Vacío: hereda ${heredado} de la prescripción.` : 'Vacío: sin indicar, porque la prescripción no lo tiene.';
   return (
     <div className="campo campo--heredable">
       <label htmlFor={id}>{etiqueta}</label>
@@ -81,7 +81,7 @@ export function CampoHeredable({
         }}
       />
       <label className="campo__casilla">
-        <input type="checkbox" checked={sinObjetivo} onChange={(e) => onCambiar(e.target.checked ? null : undefined)} /> Sin objetivo en esta serie
+        <input type="checkbox" checked={sinObjetivo} onChange={(e) => onCambiar(e.target.checked ? null : undefined)} /> Sin indicar en esta serie
       </label>
     </div>
   );

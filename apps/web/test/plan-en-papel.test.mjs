@@ -191,8 +191,9 @@ test('TEST-PG-016 · Entrenamiento: cada bloque y microciclo, con sus sesiones, 
   assert.equal(cuerpo.area, 'ENTRENAMIENTO');
   assert.equal(cuerpo.sinDias, null, 'con agenda, cada sesión dice sus días');
   assert.deepEqual(cuerpo.grupos.map((g) => [g.titulo, g.proposito]), [
-    ['Bloque 1', 'Base'],
-    ['Bloque 2 · Semana 1', 'Fuerza'],
+    // ENP-D01: la fase de un plan viejo con el nombre automático «Bloque N» se lee «Fase N».
+    ['Fase 1', 'Base'],
+    ['Fase 2 · Semana 1', 'Fuerza'],
   ]);
   const [piernas, torso] = cuerpo.grupos[0].sesiones;
   assert.equal(piernas.titulo, 'Piernas A');

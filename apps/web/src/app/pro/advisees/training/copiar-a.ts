@@ -11,7 +11,7 @@
  * - **Los topes del contrato se respetan:** 30 sesiones en un bloque, 14 en un microciclo y 40 ejercicios en una sesión.
  * - Nada de esto cambia el borrador que recibe: cada función devuelve la estructura nueva.
  */
-import { sinIdentificadoresDeSesion, type EstructuraDePlanDeEntrenamientoEntrada } from '@be/domain';
+import { nombreDeLaFase, sinIdentificadoresDeSesion, type EstructuraDePlanDeEntrenamientoEntrada } from '@be/domain';
 
 type Bloques = EstructuraDePlanDeEntrenamientoEntrada['blocks'];
 type Sesion = NonNullable<Bloques[number]['sessions']>[number];
@@ -31,7 +31,7 @@ export interface LugarDeLaSesion {
 
 const TOPE = { delBloque: 30, delMicrociclo: 14, ejercicios: 40 } as const;
 
-const nombreDelBloque = (b: { readonly label: string }, i: number) => b.label.trim() || `Fase ${i + 1}`;
+const nombreDelBloque = (b: { readonly label: string }, i: number) => nombreDeLaFase(b.label, i);
 const nombreDelMicrociclo = (m: { readonly label: string }, j: number) => m.label.trim() || `Semana ${j + 1}`;
 const nombreDeLaSesion = (s: { readonly label: string }, k: number) => s.label.trim() || `Sesión ${k + 1}`;
 

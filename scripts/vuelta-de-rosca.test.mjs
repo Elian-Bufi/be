@@ -378,7 +378,8 @@ test('TEST-AVR-012 · la actividad de Inicio: realizadas y no realizadas por sep
   assert.deepEqual(desplegable.problemasDelPliegue(inicio.PLIEGUE_DE_LA_SESION_DE_HOY), []);
   assert.deepEqual(desplegable.problemasDelPliegue(inicio.PLIEGUE_DE_PARA_RESPONDER), []);
   assert.deepEqual(inicio.detalleDeLaSesion({ blockLabel: 'Bloque 2', microcycleLabel: 'Semana 3', prescriptions: [1, 2, 3, 4, 5, 6].map((i) => ({ exerciseName: `E${i}`, sets: [1, 2, 3] })) }), {
-    bloque: 'Bloque 2 · Semana 3',
+    // ENP-D01 (ratificado el 19/11): la fase guardada «Bloque 2» se lee «Fase 2».
+    bloque: 'Fase 2 · Semana 3',
     ejercicios: ['E1 · 3 series', 'E2 · 3 series', 'E3 · 3 series'],
     yMas: 'y 3 más',
   });

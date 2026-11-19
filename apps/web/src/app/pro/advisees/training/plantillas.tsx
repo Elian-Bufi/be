@@ -14,7 +14,9 @@ import {
   COPY_PLANTILLAS,
   COPY_PREPARACION_DE_PLANTILLA,
   falloDeGuardado,
+  loQueViajaALaPlantilla,
   notasDeLaEstructura,
+  vaciarLoQueViaja,
   vaciarNota,
   type EstructuraDePlanDeEntrenamientoEntrada,
   type OrigenDePlanEnPlantilla,
@@ -25,6 +27,7 @@ import { DialogoDeConfirmacion } from '../../../../components/dialogo';
 import { Campo } from '../../../../components/formulario';
 import { api, type Resultado } from '../../../../lib/api';
 import { mensajeDeFallo, useClaveDeIntento } from '../../../../lib/intento';
+import { LoQueViajaALaPlantillaParaRevisar } from '../lo-que-viaja-a-la-plantilla';
 
 export function DialogoGuardarPlantilla({
   token,
@@ -118,6 +121,14 @@ export function DialogoGuardarPlantilla({
           </ul>
         </>
       )}
+      {/* DL-108 D-3, ratificado el 19/11: los nombres, los parámetros y la referencia del %RM, también a la vista. */}
+      <LoQueViajaALaPlantillaParaRevisar
+        items={loQueViajaALaPlantilla(estructura)}
+        titulo={COPY_PLANTILLAS.textosTitulo}
+        ayuda={COPY_PLANTILLAS.textosAyuda}
+        vacio={COPY_PLANTILLAS.sinTextos}
+        onVaciar={(x) => setEstructura((e) => vaciarLoQueViaja(e, x))}
+      />
       {/* DL-113: lo que explica la plantilla, plegado y al final: así el foco del diálogo abre en el nombre. */}
       <Ayuda titulo="Qué se copia y quién lo ve">
         <p>{COPY_PLANTILLAS.queCopia}</p>

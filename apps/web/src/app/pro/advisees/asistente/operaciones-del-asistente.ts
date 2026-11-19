@@ -10,7 +10,7 @@
  * - **La marca «escrita para 6-8: revisala»** (`firmaDeLaCarga`) vale mientras el ejercicio siga como quedó al aplicar:
  *   si se edita la carga o las repeticiones, o se deshace, deja de verse; si se mueve, va con él.
  */
-import { COPY_ENTRENAMIENTO, type EstructuraDePlanDeEntrenamientoEntrada } from '@be/domain';
+import { COPY_ENTRENAMIENTO, nombreDeLaFase, type EstructuraDePlanDeEntrenamientoEntrada } from '@be/domain';
 
 type Bloques = EstructuraDePlanDeEntrenamientoEntrada['blocks'];
 type SesionE = NonNullable<Bloques[number]['sessions']>[number];
@@ -29,7 +29,7 @@ const nombre = (label: string, defecto: string, n: number): string => label.trim
 /** Todas las sesiones del plan, por bloque (o por semana, si el bloque las usa), en orden. */
 export function gruposDelAsistente(bloques: Bloques): readonly GrupoDelAsistente[] {
   return bloques.flatMap((b, i): GrupoDelAsistente[] => {
-    const bloque = nombre(b.label, COPY_ENTRENAMIENTO.bloque, i);
+    const bloque = nombreDeLaFase(b.label, i);
     const semanas = b.microcycles ?? [];
     if (semanas.length === 0) return [{ i, j: null, titulo: bloque, sesiones: b.sessions ?? [] }];
     return semanas.map((m, j) => ({ i, j, titulo: `${bloque} · ${nombre(m.label, COPY_ENTRENAMIENTO.microciclo, j)}`, sesiones: m.sessions }));

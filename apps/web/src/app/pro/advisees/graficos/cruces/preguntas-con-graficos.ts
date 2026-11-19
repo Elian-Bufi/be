@@ -10,14 +10,15 @@
  * Como la composición y la fuerza (TA-25), viven en el website y no se guardan como vista: sus identificadores no entran
  * en `ID_DE_PREGUNTAS`, que valida la API. Cada gráfico se ofrece con la regla de su registro (`ofrecido`, con el acceso
  * de hoy): un área sin acceso no aparece, ni en gris ni con candado, y la tarjeta de la pregunta tampoco si no se ofrece
- * ningún gráfico. Abierta por la dirección sin nada que ofrecer, responde como una pregunta que no existe («Analizar» sin
- * pregunta).
+ * ningún gráfico. Abierta por la dirección sin nada que ofrecer, muestra un estado vacío con su título que dice por qué
+ * (`porQueNoHayGraficos`; GR-VD08, ratificado el 19/11).
  *
  * Es puro: lo prueba `apps/web/test/graficos-cruces.test.mjs` (TEST-GRVD-003).
  */
 import { entraEnLaEstimacion, type AccesoDeLaPersona, type EjercicioDelPeriodo } from '@be/domain';
 import { GRAFICOS_DE_NUTRICION } from '../nutricion/registro';
 import type { ContextoDelRegistro, EjercicioDelGraficoElegido, GraficoRegistrado } from '../registro-de-graficos';
+import { cruceOfrecido } from './caso-de-acceso';
 import { GRAFICOS_DE_CRUCES } from './registro';
 
 /** Los identificadores de las preguntas en la dirección (`pregunta=`). No son de `ID_DE_PREGUNTAS` (TA-25). */
@@ -71,4 +72,36 @@ export function ejercicioDelCruce(ejercicios: readonly EjercicioDelPeriodo[] | n
   if (!e) return null;
   const unidad = e.loadUnits.includes('kg') ? 'kg' : e.loadUnits.includes('lb') ? 'lb' : null;
   return { exerciseKey: e.exerciseKey, nombre: e.name, unidad, serie: null };
+}
+
+/** Por qué una pregunta no tiene nada que mostrar: un título y una frase que ubican, sin calificar. */
+export interface SinGraficosParaMostrar {
+  readonly titulo: string;
+  readonly texto: string;
+}
+
+/**
+ * GR-VD08, ratificado por Dirección el 19/11: una pregunta con gráficos sin ninguno que se ofrezca (abierta por la
+ * dirección, o porque el período no tiene lo que pide) **muestra un estado vacío con su título que dice por qué**, en vez
+ * de volver a «Analizar» sin decir nada. El motivo sale de lo mismo que decide ofrecer cada gráfico: el acceso de hoy
+ * (un área que no se ve, o sin planes o tomas propios en las dos áreas de un cruce) o lo que hay en el período. Dice lo
+ * que el profesional ya sabe de su propio acceso; nunca qué hay en un área que no ve.
+ */
+export function porQueNoHayGraficos(pregunta: PreguntaConGraficos, c: ContextoDelRegistro): SinGraficosParaMostrar {
+  const titulo = 'No hay gráficos para mostrar';
+  if (pregunta === PREGUNTA_DE_NUTRICION_POR_DIA) {
+    return c.acceso.alcances.includes('NUTRICION')
+      ? { titulo, texto: 'Con lo que ves hoy de Nutrición de esta persona no se arma ninguno de estos gráficos.' }
+      : { titulo, texto: 'Esta pregunta se responde con lo que la persona registra en Nutrición, y hoy no ves su Nutrición.' };
+  }
+  const fuerza = cruceOfrecido('SP-01', c.acceso);
+  const peso = cruceOfrecido('SP-02', c.acceso);
+  if (!fuerza && !peso) {
+    return {
+      titulo,
+      texto: 'Ver la relación junta dos áreas en las que acompañás a esta persona con planes o tomas tuyos: Nutrición con Entrenamiento, o Nutrición con Antropometría. Hoy no se da ninguno de esos pares.',
+    };
+  }
+  const falta = [...(fuerza ? ['sesiones de un ejercicio con el que se estima la fuerza'] : []), ...(peso ? ['tomas de peso'] : [])];
+  return { titulo, texto: `En el período no hay ${falta.join(' ni ')}. Probá con otro período.` };
 }

@@ -17000,6 +17000,42 @@ p.cifra-del-espacio__desglose {
   margin: 0;
 }
 
+/* Ratificación del 19/11: a 1280 × 800 el pie tapaba la lista (se veía el título del catálogo y no los ejercicios). La
+   prescripción para todos va plegada y comparte el último renglón con el aviso del catálogo y el botón; abierta, o con
+   algo escrito, ocupa su renglón. Así, a 1280 × 800 se ven al menos 3 resultados sin desplazar (lo verifica la escena 11). */
+.agregar-ejercicio__para-todos-pliegue {
+  flex: 0 1 auto;
+  min-width: 0;
+}
+
+.agregar-ejercicio__para-todos-pliegue[open] {
+  flex-basis: 100%;
+}
+
+.agregar-ejercicio__para-todos-pliegue > summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0 0.35rem;
+  min-height: 40px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.agregar-ejercicio__para-todos-pliegue > summary .nota {
+  font-weight: 400;
+}
+
+.agregar-ejercicio__para-todos-pliegue > .agregar-ejercicio__para-todos {
+  margin-top: 0.35rem;
+}
+
+.agregar-item__antes.agregar-ejercicio__aviso-del-catalogo {
+  flex: 1 1 9rem;
+  font-size: 0.82rem;
+  line-height: 1.3;
+}
+
 
 /* Revisión adversaria del tramo 2 (escenas 10 y 15): con muchas sesiones, el selector de la sesión pasa a ser una lista
    desplegable, que no tenía el borde ni el fondo de los campos: se veía gris de sistema, también en Azul noche. */

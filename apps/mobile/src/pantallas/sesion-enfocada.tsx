@@ -610,7 +610,7 @@ function CasillaDeLaFila({ fila: f, ocupado, onTildar }: { fila: FilaDeLaTabla; 
 
 /**
  * Una celda que se escribe. El objetivo de esa serie se ve en gris mientras está vacía: es un texto encima, que no recibe
- * toques ni entra en lo que se guarda. Se usa en lugar del placeholder del campo para que «Sin objetivo» pueda partirse en
+ * toques ni entra en lo que se guarda. Se usa en lugar del placeholder del campo para que «Sin indicar» pueda partirse en
  * dos líneas en una celda angosta.
  */
 function CeldaEditable({

@@ -182,10 +182,10 @@ export function indicadoDelPeriodoEnTexto(dias: readonly IndicadoDelDiaApi[]): s
 
 const numeroDelArchivo = (v: number): string => String(Number(v.toPrecision(15))).replace('.', ',');
 
-/** El objetivo de un rango en una celda del archivo: los números con coma («2200», «2200 y 1950»), la proporción dicha, o «sin objetivo». */
+/** El objetivo de un rango en una celda del archivo: los números con coma («2200», «2200 y 1950»), la proporción dicha, o «sin indicar» (Dirección, 19/11). */
 export function objetivoParaExportar(escalones: readonly EscalonDelObjetivoApi[], desde: string, hasta: string): string {
   const tramos = escalonesDelRango(escalones, desde, hasta);
-  if (tramos.length === 0) return 'sin objetivo';
+  if (tramos.length === 0) return 'sin indicar';
   const cantidades = [...new Set(tramos.flatMap((t) => (t.escalon.amount ? [t.escalon.amount.value] : [])))];
   const proporciones = [...new Set(tramos.flatMap((t) => (t.escalon.amount ? [] : [t.escalon.energyShare ?? 0])))];
   return [...(cantidades.length > 0 ? [cantidades.map(numeroDelArchivo).join(' y ')] : []), ...proporciones.map((p) => `proporción de las calorías ${numeroDelArchivo(p)}`)].join(' y ');
