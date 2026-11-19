@@ -48,7 +48,7 @@ describe('TEST-RF-018 / UC-P04 — solicitar por alcance y finalidad, sin acceso
       advisee: { identityId: a01.id },
     });
     // El asesorado ve al profesional por nombre visible; el profesional ve al asesorado con una referencia neutral (DL-040).
-    expect(r.body.data.advisee.displayName).toMatch(/^Asesorado · [0-9a-f]{6}$/);
+    expect(r.body.data.advisee.displayName).toMatch(/^Persona · [0-9a-f]{6}$/);
     const lista = ListaDeSolicitudesResponseSchema.parse((await conSesion(app, a01.token).get('/api/v1/me/relationship-requests').expect(200)).body);
     expect(lista.data.map((s) => s.relationshipRequestId)).toContain(r.body.data.relationshipRequestId);
     const eventos = await prisma.eventoDeVinculo.findMany({ where: { solicitudDeVinculoId: r.body.data.relationshipRequestId } });

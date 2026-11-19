@@ -93,7 +93,7 @@ export function useCambiosSinGuardar(hay: boolean, que: string, guardarAntes: Gu
 }
 
 /**
- * De quién es el área («Asesorado · d21da6»), para decirlo donde el marco queda tapado: un cajón que se abre encima.
+ * De quién es el área («Persona · d21da6»), para decirlo donde el marco queda tapado: un cajón que se abre encima.
  * `null` mientras el marco no la leyó, o fuera de un área.
  */
 export function usePersonaDelArea(): string | null {

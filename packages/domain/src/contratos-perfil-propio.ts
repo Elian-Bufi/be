@@ -11,7 +11,7 @@
  *   guardadas sin nombre quedan en la historia.
  * - **Quién lo ve.** El profesional con un vínculo vigente con la persona (aceptado o en pausa, en algún alcance): es el
  *   «contacto mínimo del vínculo» (08 §11, dato C3). Antes de que acepte, después de que termine, o si la cuenta todavía
- *   no completó su nombre, el profesional ve la referencia neutral («Asesorado · c36743»). El correo, nunca.
+ *   no completó su nombre, el profesional ve la referencia neutral («Persona · c36743»). El correo, nunca.
  * - **`/me` no lo trae.** Su respuesta es un objeto estricto, y la APK instalada, que la valida así, dejaría de leer el
  *   estado de la cuenta si apareciera un campo nuevo (fichas de Dirección del 2026-10-02, ficha 1). La lectura va aparte.
  * - **`expectedVersion`:** «v0» mientras el perfil no tiene versiones; después, la efectiva («v1», «v2»…). Un cambio
@@ -80,7 +80,7 @@ export function problemaDelNombre(nombre: string | null | undefined): 'FALTA' | 
 export const referenciaCorta = (identityId: string): string => identityId.replace(/-/g, '').slice(-6);
 
 /** La referencia neutral con que el profesional ve a una persona sin nombre visible para él (DL-040). */
-export const referenciaNeutral = (identityId: string): string => `Asesorado · ${referenciaCorta(identityId)}`;
+export const referenciaNeutral = (identityId: string): string => `Persona · ${referenciaCorta(identityId)}`;
 
 /** Una versión del contrato: «v0», «v1»… */
 const VersionDelPerfil = z.string().regex(/^v\d+$/);
