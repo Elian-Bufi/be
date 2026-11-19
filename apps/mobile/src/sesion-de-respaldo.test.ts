@@ -1,6 +1,7 @@
 /**
  * La sesión de respaldo de la APK (`sesionDesdeLaOcurrencia`): la que arma desde «Hoy» (API-TRN-14) cuando el plan de
- * cada serie (API-SER-02) no responde. Revisión adversaria de WP-ENTRENAMIENTO-PLANIFICACION (trae #288, DL-178).
+ * cada serie (API-SER-02) no responde. Revisión adversaria de WP-ENTRENAMIENTO-PLANIFICACION, que trae las series de
+ * calentamiento (DL-178).
  *
  * - **El tipo de cada serie viaja.** «Hoy» trae `setKind` a esta APK, que declara `training-set-kinds-1`. Si el respaldo
  *   lo perdía, un calentamiento se veía como «Serie 1», se numeraba entre las efectivas y se registraba sin su tipo.

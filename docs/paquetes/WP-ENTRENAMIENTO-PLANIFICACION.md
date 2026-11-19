@@ -170,7 +170,8 @@ prueba manual: el teclado y el lector de pantalla en el editor, y la APK con Tal
 
 ## 7. La revisión adversaria (2026-11-19)
 
-Se revisó solo lo propio de esta rama (sin #288 ni #289, salvo lo que esta rama hereda de #288 en la APK).
+Se revisó solo lo propio de esta rama: no las series de calentamiento (DL-178) ni el contexto de la persona (DL-179), que
+trae adentro, salvo lo que hereda de DL-178 en la APK.
 
 **Lo corregido** (cada corrección con una prueba que queda en rojo sin ella):
 
