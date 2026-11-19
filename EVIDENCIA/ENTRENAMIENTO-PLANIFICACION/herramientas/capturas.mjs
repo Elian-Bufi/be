@@ -154,6 +154,15 @@ async function clic(page, selector, texto = null) {
   return e;
 }
 
+/** Vacía un campo de verdad: el foco, Ctrl+A y borrar (el triple clic no seleccionaba todo en el buscador). */
+async function vaciar(page, elemento) {
+  await elemento.click();
+  await page.keyboard.down('Control');
+  await page.keyboard.press('KeyA');
+  await page.keyboard.up('Control');
+  await page.keyboard.press('Backspace');
+}
+
 /** El tema, como lo aplica el menú de la cuenta (`aplicarTema`): el atributo y la preferencia guardada. */
 async function ponerTema(page, tema) {
   await page.evaluate((t) => {
@@ -363,7 +372,7 @@ function pantallas(ids, lugar) {
         await visible(page, '.bloque-del-editor');
         await clic(page, '.bloque-del-editor [id^="abrir-ejercicio-"]');
         const linea = await visible(page, '[data-linea-de-prescripcion] input');
-        await linea.click({ clickCount: 3 });
+        await vaciar(page, linea);
         await page.keyboard.type('4x8-12 RIR 2 90 s');
         await asentar(page);
         await page.evaluate(() => document.querySelector('[data-linea-de-prescripcion]')?.scrollIntoView({ block: 'center' }));
@@ -388,10 +397,7 @@ function pantallas(ids, lugar) {
       despues: async (page) => {
         // Lo escrito se borra (y con eso deja de estar pendiente) y la barra se oculta.
         const linea = await page.$('[data-linea-de-prescripcion] input');
-        if (linea) {
-          await linea.click({ clickCount: 3 });
-          await page.keyboard.press('Backspace');
-        }
+        if (linea) await vaciar(page, linea);
         const ocultar = await page.$('[data-volver-a-la-revision] .boton--enlace');
         if (ocultar) await ocultar.click();
         await asentar(page);
@@ -420,7 +426,7 @@ function pantallas(ids, lugar) {
       nombre: '09-de-donde-sale-cada-valor',
       llegar: async (page, nota) => {
         const celda = await visible(page, 'input[id$="-serie-1-carga"]');
-        await celda.click({ clickCount: 3 });
+        await vaciar(page, celda);
         await page.keyboard.type('130');
         await page.keyboard.press('Tab');
         await asentar(page);
@@ -465,8 +471,8 @@ function pantallas(ids, lugar) {
       nombre: '12-catalogo-sin-resultados',
       llegar: async (page) => {
         const campo = await visible(page, '.agregar-item__buscador input[type="search"]');
-        await campo.click({ clickCount: 3 });
-        await page.keyboard.type('zzzz');
+        await vaciar(page, campo);
+        await page.keyboard.type('qxqxqxjw');
         await page.keyboard.press('Enter');
         await visible(page, '[data-sin-resultados]');
         await visible(page, '[data-crear-ejercicio]');

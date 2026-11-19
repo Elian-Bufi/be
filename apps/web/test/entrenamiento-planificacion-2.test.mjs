@@ -283,7 +283,7 @@ test('C6 · los elegidos quedan a la vista en el pie fijo, en su orden, y cada u
   assert.match(pie, /data-elegidos=\{marcados\.length\}/);
   assert.match(pie, /aria-label=\{V\.quitarDeLosElegidos\(m\.name\)\} onClick=\{\(\) => setMarcados\(\(x\) => alternarMarcado\(x, m\)\)\} data-quitar-elegido/);
   assert.equal(V.agregar(3, 'Sesión A'), 'Agregar 3 ejercicios a Sesión A');
-  assert.equal(V.elegidos(3), '3 elegidos, en el orden en que entran:');
+  assert.equal(V.elegidos(3), '3 elegidos, en este orden:');
   assert.equal(V.quitarDeLosElegidos('Remo'), 'Quitar Remo de los elegidos');
   // Un solo principal en el pie: crear e importar ya no compiten con terminar la selección.
   assert.doesNotMatch(pie, /setModo\('manual'\)|setModo\('importar'\)/);
@@ -362,4 +362,17 @@ test('C11 · «Sesiones vacías» no pide nombre ni propósito: no abre ningún 
   assert.match(EDITOR, /data-armar-sesiones-vacias onClick=\{\(\) => armarSesionesVacias\(cuantasVacias\)\}/);
   assert.match(EDITOR, /const \[cuantasVacias, setCuantasVacias\] = useState\(3\);/);
   for (const t of [SVM.COPY_SESIONES_VACIAS.ayuda, SVM.COPY_SESIONES_VACIAS.armadas(3, 0)]) assert.doesNotMatch(t, /cuerpo entero|recomend|ideal/i, 'no elige un enfoque de entrenamiento');
+});
+
+// ─── Lo que mostraron las capturas ──────────────────────────────────────────────────────────────────────────────
+
+test('Capturas · en pantalla nunca «asesorado»: el aviso de los objetivos por serie dice «la persona»', () => {
+  assert.doesNotMatch(d.COPY_COMPATIBILIDAD_DE_CLIENTES.activacionBloqueada, /asesorad/);
+  assert.match(d.COPY_COMPATIBILIDAD_DE_CLIENTES.activacionBloqueada, /la persona todavía no usó una versión de BE/);
+});
+
+test('Capturas · el pie del catálogo no tapa los resultados: los elegidos en una sola fila; la fila «Común» no se parte', () => {
+  const CSS = fuente('../src/app/globals.css');
+  assert.match(CSS, /\.agregar-ejercicio__fichas-elegidas \{\n\s*display: flex;\n\s*flex: 1 1 auto;\n\s*flex-wrap: nowrap;/);
+  assert.match(EJERCICIO, /<span className="visualmente-oculto"> \{PL\.generalDetalle\}<\/span>/);
 });

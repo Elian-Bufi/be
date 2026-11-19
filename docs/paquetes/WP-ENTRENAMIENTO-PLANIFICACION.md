@@ -246,6 +246,25 @@ pruebas en `apps/web/test/entrenamiento-planificacion-2.test.mjs` y al menos una
 
 Las capturas de la CI suman una escena por cada punto que cambia la pantalla (§5).
 
+**Lo que corrigieron las capturas:** a 1536 × 730 el pie del catálogo, con los elegidos en varias filas, tapaba todos los
+resultados: van en una sola fila compacta que se desplaza de costado. La fila «Común» se partía en cuatro renglones por
+su detalle («a todas las series»), que ahora lo oye solo el lector. Y el aviso de los objetivos por serie decía «tu
+asesorado» en pantalla (venía de antes, en el dominio): dice «la persona», como el del calentamiento; es también el
+mensaje del 409 de la API, que los clientes no leen por su texto.
+
+**Lo que queda abierto del tramo 2:**
+- **Guardar de verdad el preset de la sesión vacía** (ENP-D18): propuesta para Dirección; necesita un campo opcional en
+  la sesión del contrato, con su capacidad de cliente. Mientras tanto, la pantalla dice que vive en ella.
+- **Lo escrito sin aplicar en un ejercicio que todavía no se guardó** se recuerda por su lugar hasta que el guardado le da
+  el identificador (un segundo, más o menos). Si en ese rato se sube o se quita otro ejercicio nuevo de la misma sesión, lo
+  escrito puede quedar en el ejercicio que pasó a ese lugar (se ve: la línea lo muestra y el panel lo lista).
+- **«Duplicar el día» quedó dentro de «Ver próximas fechas»** (ENP-D26): no se perdió, pero se ve a pedido. Si en la
+  prueba con profesionales no se encuentra, puede ir también al menú de la sesión.
+- **El plan compartido agrupado por bloque** (ENP-D19) está probado en su fuente y con la misma regla que la versión
+  activa, pero no tiene escena en las capturas: la cohorte no comparte el plan de Diego Sosa con otro profesional.
+- **Prueba manual pendiente:** el teclado y el lector de pantalla en el editor (las marcas «común» y «propio» se leen
+  con la descripción de cada celda, y «Volver a la revisión» con su botón).
+
 ## 7. La revisión adversaria (2026-11-19)
 
 Se revisó solo lo propio de esta rama: no las series de calentamiento (DL-178) ni el contexto de la persona (DL-179), que

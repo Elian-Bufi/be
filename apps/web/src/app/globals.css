@@ -19707,10 +19707,6 @@ html:has(.estacion:not([data-en-el-asistente])) {
   padding-inline-start: 3.2rem;
 }
 
-.series-del-editor__detalle-de-la-fila {
-  display: block;
-  font-weight: 400;
-}
 
 /* C11: «Sesiones vacías», en la sesión vacía de la fase: la cantidad y «Armar Sesión A, B y C». */
 .estacion__sesiones-vacias {
@@ -19738,4 +19734,39 @@ html:has(.estacion:not([data-en-el-asistente])) {
 .estacion__sesiones-vacias > .nota {
   flex-basis: 100%;
   margin: 0;
+}
+
+/* C6 (corrección de las capturas): a 1536 × 730 el pie con los elegidos en varias filas tapaba los resultados. Ahora van
+   en una sola fila compacta, al lado de su título, que se desplaza de costado si son muchos. */
+.agregar-ejercicio__elegidos {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.agregar-ejercicio__elegidos-titulo {
+  flex: none;
+}
+
+.agregar-ejercicio__fichas-elegidas {
+  display: flex;
+  flex: 1 1 auto;
+  flex-wrap: nowrap;
+  gap: 0.35rem;
+  min-width: 0;
+  max-height: none;
+  padding: 0 0 0.15rem;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+.agregar-ejercicio__fichas-elegidas > li {
+  flex: none;
+}
+
+.agregar-ejercicio__fichas-elegidas .boton {
+  min-height: 32px;
+  padding: 0.1rem 0.55rem;
+  font-size: 0.86rem;
 }

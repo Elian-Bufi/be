@@ -736,7 +736,7 @@ function SeriesDelEjercicio({
               {seleccionando ? <td className="series-del-editor__elegir" /> : null}
               <th scope="row" data-etiqueta={COPY_ENTRENAMIENTO_POR_SERIE.columnaSerie}>
                 {PL.general}
-                <span className="nota series-del-editor__detalle-de-la-fila">{PL.generalDetalle}</span>
+                <span className="visualmente-oculto"> {PL.generalDetalle}</span>
               </th>
               <td data-etiqueta="Repeticiones">
                 <span className="nota">{PL.repeticionesPorSerie}</span>
