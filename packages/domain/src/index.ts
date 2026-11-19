@@ -106,6 +106,7 @@ export * from './copy-entrenamiento-por-serie';
 export * from './contratos-analisis';
 // WP-GRAFICOS (DL-174) · GR-27: los enfoques, la familia GRF.
 export * from './contratos-enfoques';
+export * from './enfoques';
 export * from './contratos-evidencia-de-revision';
 export * from './evidencia-registrada';
 export * from './metricas-del-analisis';

@@ -101,6 +101,7 @@ import { CuadroDeCopiar } from './cuadro-de-copiar';
 import { alternarDia, COPY_ESTACION as CE, DIA_CORTO, DIA_LARGO, diasCompartidos, nombreDelChip, PRIMER_USO_DE_LA_ESTACION, ponerDias, sinDias, tiraDeLaSemana } from '../estacion/estacion';
 import { GaleriaDePresets } from '../galeria-de-presets';
 import { OtrasAreas } from '../seguimiento/otras-areas-en-pantalla';
+import { PatronesDelPlan } from '../graficos/patrones/patrones-del-plan-en-pantalla';
 import { PrimerUso } from '../../../../components/primer-uso';
 import { ArmazonDelAsistente } from '../asistente/asistente';
 import { COPY_ASISTENTE as CA, loQueLlevasArmado, pasoPedido, pasoQueSigue, sePuedeAvanzar, type PasoDelAsistente } from '../asistente/paso-que-sigue';
@@ -475,7 +476,8 @@ export function EditorDePlan({
   const [copiando, setCopiando] = useState<{ readonly que: 'sesion' | 'semana' } | { readonly que: 'ejercicio' | 'prescripcion' | 'series'; readonly l: number } | null>(null);
   // ED-20: los días que trajo un preset de estructura, por nombre de sesión, para confirmarlos (son «del preset»).
   const [diasDelPreset, setDiasDelPreset] = useState<Readonly<Record<string, readonly DiaDeLaSemana[]>>>({});
-  const [pestana, setPestana] = useState<'antes' | 'otras'>('antes');
+  // WP-GRAFICOS rama E (GR-T12): «Patrones» es la tercera pestaña del panel (la cuarta, cuando vuelva «Lo que trabaja la semana»).
+  const [pestana, setPestana] = useState<'antes' | 'otras' | 'patrones'>('antes');
   // ED-11: la galería de presets, abierta desde la sesión (prescripción) o desde la estructura.
   const [galeria, setGaleria] = useState<{ readonly tarea: 'prescripcion' | 'estructura'; readonly ejercicio: number | null } | null>(null);
   // ED-11 (DJ-8): «Deshacer» de la última aplicación, con las prescripciones de antes por posición. Es la operación
@@ -2849,10 +2851,15 @@ export function EditorDePlan({
             role="tablist"
             aria-label={CE.panel}
             onKeyDown={(e) => {
-              // C10: «Lo que trabaja la semana» no está mientras no tenga datos: quedan dos pestañas.
-              const orden = ['antes', 'otras'] as const;
-              const n = Math.max(0, orden.indexOf(pestana as (typeof orden)[number]));
-              const teclas: Readonly<Record<string, (typeof orden)[number] | undefined>> = { ArrowRight: orden[(n + 1) % 2], ArrowLeft: orden[(n + 1) % 2], Home: orden[0], End: orden[1] };
+              // C10: «Lo que trabaja la semana» no está mientras no tenga datos: quedan tres pestañas, con «Patrones».
+              const orden = ['antes', 'otras', 'patrones'] as const;
+              const n = Math.max(0, orden.indexOf(pestana));
+              const teclas: Readonly<Record<string, (typeof orden)[number] | undefined>> = {
+                ArrowRight: orden[(n + 1) % orden.length],
+                ArrowLeft: orden[(n + orden.length - 1) % orden.length],
+                Home: orden[0],
+                End: orden[orden.length - 1],
+              };
               const destino = teclas[e.key];
               if (!destino) return;
               e.preventDefault();
@@ -2864,6 +2871,7 @@ export function EditorDePlan({
               [
                 ['antes', CE.pestanaAntes],
                 ['otras', CE.pestanaOtras],
+                ['patrones', CE.pestanaPatrones],
               ] as const
             ).map(([clave, texto]) => (
               <button key={clave} type="button" role="tab" id={`pestana-${clave}`} aria-selected={pestana === clave} aria-controls={`panel-${clave}`} tabIndex={pestana === clave ? 0 : -1} onClick={() => setPestana(clave)}>
@@ -2911,6 +2919,12 @@ export function EditorDePlan({
             <div role="tabpanel" id="panel-otras" aria-labelledby="pestana-otras">
               {/* TB-54: lee API-RES-04 al abrir; sin otra área, nada. */}
               <OtrasAreas token={token} asesoradoId={asesoradoId} sesionPerdida={sesionPerdida} area="ENTRENAMIENTO" />
+            </div>
+          ) : null}
+          {pestana === 'patrones' && asesoradoId !== null ? (
+            <div role="tabpanel" id="panel-patrones" aria-labelledby="pestana-patrones" data-panel-patrones>
+              {/* WP-GRAFICOS rama E: los gráficos de la persona con el enfoque de este plan; nada de acá escribe en el plan. */}
+              <PatronesDelPlan token={token} asesoradoId={asesoradoId} sesionPerdida={sesionPerdida} area="ENTRENAMIENTO" planId={comoPlan(version)?.trainingPlanId ?? null} />
             </div>
           ) : null}
         </aside>

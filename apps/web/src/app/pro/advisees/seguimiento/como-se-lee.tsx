@@ -67,6 +67,35 @@ function DeAnalizar() {
   );
 }
 
+/** «Patrones» (WP-GRAFICOS rama E, GR-27): cómo se lee la columna, el enfoque y lo que no dice. */
+function DePatrones() {
+  return (
+    <>
+      <p className="nota">Los gráficos de esta persona en el mismo tiempo, uno debajo del otro, con lo que pasó en cada momento. Ubican lo que pasó: no califican ni dicen por qué pasó.</p>
+      <ul className="como-se-lee__lista">
+        <Renglon esencial muestra={<Icono nombre="linea-de-tiempo" tamano={20} />}>
+          <strong>La cinta de arriba</strong> marca las versiones de tus planes, las tomas, las revisiones y las notas. Queda fija al bajar.
+        </Renglon>
+        <Renglon esencial muestra={<Icono nombre="calendario" tamano={20} />}>
+          <strong>Un solo eje de fechas:</strong> los gráficos de «En el tiempo» comparten el período y la fecha elegida. Elegir un día en uno (o en la cinta) lo elige en todos.
+        </Renglon>
+        <Renglon esencial muestra={<Icono nombre="separadas" tamano={20} />}>
+          <strong>El enfoque</strong> son los gráficos que elegiste mirar con esta persona («Foco en fuerza», por ejemplo). Sin uno elegido, van los sugeridos para tus áreas. Queda hasta que lo cambies, y un mismo enfoque sirve para varias personas: guarda qué gráficos, nunca los datos.
+        </Renglon>
+        <Renglon esencial muestra={<Icono nombre="comparar" tamano={20} />}>
+          <strong>«Ver la relación»</strong> junta dos áreas que llevás vos, con una ventana fijada antes de mirar y lo que también cambió. Coinciden en el tiempo; esto no prueba que una cosa cause la otra.
+        </Renglon>
+        <Renglon esencial muestra={<Icono nombre="oculto" tamano={20} />}>
+          <strong>Solo tus áreas:</strong> un área que no llevás con esta persona no aparece, tampoco lo que ella comparte de otras áreas (eso está en «Otras áreas» del editor).
+        </Renglon>
+        <Renglon muestra={<Icono nombre="tabla" tamano={20} />}>
+          <strong>Cada gráfico</strong> trae su método, cuántos datos tiene y «Ver la tabla» con los valores. «Abrir en Analizar» lo abre con el ejercicio y el período ya elegidos.
+        </Renglon>
+      </ul>
+    </>
+  );
+}
+
 /** Cada hecho de una tarjeta del Resumen, nombrado en pocas palabras: al lado va de dónde sale (lo dice el dominio). */
 const HECHO_DE_LA_REGLA: Readonly<Record<ReglaDelResumen, string>> = {
   REVISION_SIN_APLICAR: 'Una revisión registrada, sin aplicar',
@@ -234,6 +263,7 @@ function DeLinea() {
 /** El título y el contenido de la ayuda de cada vista. Sin entrada, la vista todavía no tiene la suya. */
 const AYUDA: Readonly<Partial<Record<VistaDelSeguimiento, { readonly titulo: string; readonly contenido: () => ReactNode }>>> = {
   resumen: { titulo: 'Cómo se lee el Resumen', contenido: DeResumen },
+  patrones: { titulo: 'Cómo se lee Patrones', contenido: DePatrones },
   linea: { titulo: 'Cómo se lee la Línea de tiempo', contenido: DeLinea },
   analizar: { titulo: 'Cómo se lee Analizar', contenido: DeAnalizar },
 };

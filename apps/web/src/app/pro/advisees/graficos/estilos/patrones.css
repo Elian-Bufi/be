@@ -1,1 +1,259 @@
 /* WP-GRAFICOS fase 2 (DL-174): los estilos de «Patrones» y los enfoques. Los escribe solo la rama E. */
+
+/* ─── La vista y su enfoque ─────────────────────────────────────────────────────────────────────────── */
+
+.patrones-de-la-ficha {
+  display: grid;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.patrones__enfoque {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1rem;
+}
+
+.patrones__que-rige {
+  margin: 0;
+}
+
+/* Mientras se edita un enfoque: lo que se guarda y lo que hay que saber, juntos y arriba. */
+.patrones__editando {
+  display: grid;
+  gap: 0.6rem;
+  border-color: var(--borde-control);
+  background: var(--fondo-suave);
+}
+
+.patrones__editando-titulo {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0;
+}
+
+.patrones__editando .campo {
+  max-width: 32rem;
+}
+
+.patrones__otros-lugares {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0.5rem 0.75rem;
+  border-inline-start: 3px solid var(--borde-control);
+  background: var(--superficie);
+  border-radius: 4px;
+}
+
+.patrones__editando-acciones {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* ─── El cuerpo ───────────────────────────────────────────────────────────────────────────────────── */
+
+.patrones {
+  display: grid;
+  gap: 1.25rem;
+  min-width: 0;
+}
+
+/* La cinta, fija arriba al desplazar: la regla del tiempo de toda la columna. */
+.patrones__cinta {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  background: var(--fondo);
+  padding-block: 0.25rem;
+}
+
+.patrones--compacta .patrones__cinta {
+  position: static;
+}
+
+.patrones__vacio {
+  margin: 0;
+}
+
+.patrones__seccion {
+  display: grid;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.patrones__titulo-de-seccion {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.patrones__titulo-de-seccion h3 {
+  margin: 0;
+  font-size: 1.0625rem;
+}
+
+.patrones__titulo-de-seccion .nota {
+  margin: 0;
+}
+
+.patrones__lista {
+  display: grid;
+  gap: 1rem;
+  min-width: 0;
+}
+
+/* Cada tarjeta, a todo el ancho: el mismo eje de fechas para toda la columna. */
+.patrones__tarjeta {
+  display: grid;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.patrones__cabecera {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+}
+
+.patrones__pregunta {
+  display: grid;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.patrones__pregunta h4 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.patrones__pregunta .nota {
+  margin: 0;
+}
+
+.patrones__acciones,
+.patrones__edicion {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.patrones__grafico {
+  min-width: 0;
+}
+
+.patrones__tarjeta--a-pedido {
+  background: var(--fondo-suave);
+}
+
+.patrones__agregar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.patrones__falta {
+  display: grid;
+  gap: 0.25rem;
+  margin: 0;
+  padding-inline-start: 1.25rem;
+  color: var(--tenue);
+}
+
+/* ─── En el panel del editor: angosto y compacto ──────────────────────────────────────────────────── */
+
+.patrones-del-plan {
+  display: grid;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.patrones-del-plan__arriba {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.patrones-del-plan__arriba .nota,
+.patrones-del-plan__enfoque {
+  margin: 0;
+}
+
+.patrones-del-plan__enfoque {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.4rem;
+}
+
+.patrones-del-plan__elegir {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.patrones-del-plan__botones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.patrones--compacta .patrones__tarjeta {
+  padding: 0.75rem;
+}
+
+.patrones--compacta .patrones__titulo-de-seccion h3 {
+  font-size: 0.9375rem;
+}
+
+/* ─── «Mis enfoques» ──────────────────────────────────────────────────────────────────────────────── */
+
+.mis-enfoques {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.mis-enfoques__lista {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.mis-enfoques__enfoque {
+  display: grid;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  border: 1px solid var(--borde);
+  border-radius: 12px;
+  background: var(--superficie);
+}
+
+.mis-enfoques__nombre {
+  display: grid;
+  gap: 0.15rem;
+}
+
+.mis-enfoques__acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.mis-enfoques__confirmar p {
+  margin: 0 0 0.5rem;
+}
+
+.mis-enfoques__renombrar {
+  display: grid;
+  gap: 0.5rem;
+}
