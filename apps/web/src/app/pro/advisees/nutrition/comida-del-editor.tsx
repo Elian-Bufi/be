@@ -61,7 +61,7 @@ import { numeroEnCampo } from '../../../../lib/formato';
 import { COPY_DE_LOS_EDITORES as E } from '../editar-la-estructura';
 import { COPY_DE_OTRA_COMIDA, MAXIMO_DE_OPCIONES } from './opcion-de-otra-comida';
 import { COPY_VERSION_NUEVA } from './version-nueva-de-la-receta';
-import { aporteDelItem, aporteEnPalabras, aporteEnUnaLinea, composicionEnLaPista, COPY_PLANIFICACION as CP, diaFrenteAlRango, loQueAportaLaComida, loQueAportaLaComidaEnPalabras, numerosDeLaOpcion, opcionFrenteAlRango, type LineaFrenteAlRango } from './planificacion';
+import { aporteDelItem, aporteEnPalabras, aporteEnUnaLinea, comidaVacia, composicionEnLaPista, COPY_PLANIFICACION as CP, diaFrenteAlRango, loQueAportaLaComida, loQueAportaLaComidaEnPalabras, numerosDeLaOpcion, opcionFrenteAlRango, type LineaFrenteAlRango } from './planificacion';
 import { faltantesDeLaOpcion, queFaltaEnPalabras, totalEnPalabras, totalEnUnaLinea, type ComposicionConocida, type RangoPorNutriente, type TotalDeLaOpcion } from './rangos';
 import { rangoEnPalabras, rangoEnUnaLinea } from './rangos-indicados';
 import { RangoEnUnRenglon, type RangoParaIndicar } from './suma-de-los-rangos';
@@ -83,9 +83,6 @@ export interface RangoDeLaComida extends RangoParaIndicar {
   /** El del día tipo, para ubicar el día (NUP-04). */
   readonly delDia: RangoIndicado | null;
 }
-
-/** Una comida está vacía si ninguna de sus opciones tiene alimentos ni receta (NUP-12). */
-export const comidaVacia = (c: Pick<ComidaEnEdicion, 'options'>): boolean => c.options.every((o) => o.items.length === 0 && !o.recipeVersionId);
 
 export function ComidaDelEditor({
   id,

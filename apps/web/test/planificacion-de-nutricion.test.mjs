@@ -25,6 +25,7 @@ const P = await import('../src/app/pro/advisees/nutrition/planificacion.ts');
 const R = await import('../src/app/pro/advisees/nutrition/rangos.ts');
 const V = await import('../src/components/validacion-viva.ts');
 const T = await import('../src/components/tocar-afuera.ts');
+const N = await import('../src/app/pro/advisees/nutrition/asistente-de-nutricion.ts');
 const d = await import('@be/domain');
 
 const leer = (ruta) => readFileSync(new URL(`../src/${ruta}`, import.meta.url), 'utf8').replace(/\r\n/g, '\n');
@@ -187,6 +188,9 @@ test('NUP-06 · una comida sin rango o sin máximo deja la suma sin tope, y se d
   assert.equal(P.filaEnUnaLinea(proteinas), 'Proteínas · desde 65 g · objetivo 112 g · adentro');
   assert.equal(proteinas.nota, 'Cena sin rango · Desayuno sin máximo: la suma no tiene tope');
   assert.equal(proteinas.franja.abierta, true);
+  // Una sola comida sin rango alcanza para que la suma no tenga tope: lo de esa comida no tiene límite.
+  const unaSinRango = P.sumaDeLosRangos([{ nombre: 'Almuerzo', rango: rangoIndicado([40, 55]) }, { nombre: 'Cena', rango: null }]);
+  assert.deepEqual([unaSinRango.macros.protein.min, unaSinRango.macros.protein.max, unaSinRango.macros.protein.sinRango], [40, null, ['Cena']]);
   assert.equal(P.filaEnUnaLinea(carbohidratos), 'Carbohidratos · Sin rangos indicados', 'un objetivo en proporción no se compara');
   assert.equal(kcal.suma, 'desde 260 kcal');
   // Sin objetivo: la suma se ve igual, sin ubicarla.
@@ -280,4 +284,103 @@ test('NUP-11 (NUP-D10) · tocar el fondo cierra como Escape; adentro de la caja,
   assert.match(dialogo, /onCancel=\{\(e\) => \{\n\s*e\.preventDefault\(\);\n\s*pedirVolver\(\);/, 'Escape y tocar afuera, por la misma salida');
   assert.match(dialogo, /if \(escrito\.current && !preguntando\) return setPreguntando\(true\);/, 'con algo escrito, primero pregunta');
   for (const ruta of ['components/panel.tsx', 'components/ayuda-de-vista.tsx']) assert.match(leer(ruta), /useTocarAfuera\(/, ruta);
+});
+
+// ─── Las pantallas (se lee el componente, sin React en las pruebas) ──────────────────────────────────────────────
+
+const COMIDA = leer('app/pro/advisees/nutrition/comida-del-editor.tsx');
+const EDITOR = leer('app/pro/advisees/nutrition/editor.tsx');
+const CUADRO = leer('app/pro/advisees/nutrition/cuadro-de-la-opcion.tsx');
+const PASOS = leer('app/pro/advisees/nutrition/pasos-del-asistente.tsx');
+const PIEZAS = leer('app/pro/advisees/nutrition/suma-de-los-rangos.tsx');
+const DEL_PLAN = leer('app/pro/advisees/nutrition/rangos-indicados-del-plan.tsx');
+const FORMULARIOS = leer('app/pro/advisees/nutrition/formularios.tsx');
+const ESTILOS = leer('app/globals.css');
+
+test('NUP-01 · la fila de cada alimento dice lo que aporta con su cantidad, en vivo, y la pista con el mouse o el foco', () => {
+  // Se calcula con la cantidad del ítem, que el campo propaga con cada tecla: cambia mientras se escriben los gramos.
+  assert.match(COMIDA, /const aporte = aporteDelItem\(\{ catalogItemId: item\.catalogItemId, quantity: magnitud, nombre \}, composicion\);/);
+  assert.match(COMIDA, /setEscrito\(e\.target\.value\);\n\s*const n = leerNumero\(e\.target\.value\);[\s\S]{0,400}onCambiar\(\{ quantity: \{ value: n \?\? Number\.NaN/);
+  // Debajo del nombre, con la pista al pasar el mouse; y la misma pista con el foco en la cantidad.
+  assert.match(COMIDA, /<th scope="row" className="item-del-editor__nombre">\n\s*\{nombre\}[\s\S]{0,200}<Pista texto=\{pista\}>\n\s*<span className="item-del-editor__aporte" data-aporte-del-item>/);
+  assert.match(COMIDA, /<Pista texto=\{pista\}>\n\s*<input\n\s*id=\{`\$\{id\}-cantidad`\}/);
+  // La comida del editor y el cuadro de la opción le pasan la composición y el origen de cada alimento.
+  assert.match(COMIDA, /composicion=\{composiciones\.get\(it\.catalogItemId\)\}\n\s*origen=\{origenes\.get\(it\.catalogItemId\) \?\? null\}/);
+  assert.match(CUADRO, /composicion=\{todasLasComposiciones\.get\(it\.catalogItemId\)\}\n\s*origen=\{todosLosOrigenes\.get\(it\.catalogItemId\) \?\? null\}/);
+  // De dónde sale: de los habituales, de lo que trajo el buscador y de lo que se sumó en el cuadro.
+  assert.match(EDITOR, /if \(encontrado\) setOrigenes\(\(m\) => new Map\(m\)\.set\(catalogItemId, origenBreve\(encontrado\)\)\);/);
+  assert.match(EDITOR, /setOrigenes\(\(m\) => new Map\(\[\.\.\.m, \.\.\.nuevos\.origenes\]\)\);/);
+  assert.match(CUADRO, /setOrigenesNuevos\(\(m\) => new Map\(m\)\.set\(e\.catalogItemId, origenBreve\(e\)\)\);/);
+});
+
+test('NUP-02 y NUP-03 · la comida plegada dice lo que aporta y su rango; cada opción es un renglón plegable', () => {
+  // Lo que aporta y el rango indicado van adentro del botón de la comida: se ven plegada.
+  const desde = COMIDA.indexOf('id={`abrir-comida-${id}`}');
+  const boton = COMIDA.slice(desde, COMIDA.indexOf('</button>', desde));
+  assert.match(boton, /data-aporta-la-comida/);
+  assert.match(boton, /data-rango-indicado-de-la-comida/);
+  // Cada opción: un botón con `aria-expanded`, que la abre o la pliega; la tabla y las acciones, solo en la abierta.
+  assert.match(COMIDA, /aria-expanded=\{abiertaLaOpcion\}\n\s*aria-controls=\{`\$\{propio\}-opcion-\$\{n\}`\}\n\s*onClick=\{\(\) => alElegirOpcion\(abiertaLaOpcion \? -1 : n\)\}/);
+  assert.match(COMIDA, /\{abiertaLaOpcion && opcion \? \(\n\s*<div className="opcion-del-editor" data-opcion=\{k \+ 1\}>/);
+  assert.match(COMIDA, /data-numeros-de-la-opcion/);
+  // NUP-D04: sin elegir, una sola opción nace abierta; con varias, plegadas.
+  assert.match(EDITOR, /const pestana = \(j: number\) => pestanas\[`\$\{i\}-\$\{j\}`\] \?\? \(\(dia\?\.meals\[j\]\?\.options\.length \?\? 0\) === 1 \? 0 : -1\);/);
+  assert.doesNotMatch(COMIDA, /type="radio"/, 'ya no son pestañas');
+});
+
+test('NUP-04 y NUP-05 · la línea frente a los rangos, en la opción y en el cuadro; el rango se indica donde se arma', () => {
+  assert.match(COMIDA, /\{frente\.length > 0 \? <FrenteALosRangos lineas=\{frente\} \/> : null\}/);
+  assert.match(CUADRO, /<FrenteALosRangos lineas=\{frente\} \/>/);
+  // Ubica, no califica: la pieza no usa los colores de error ni de éxito.
+  const pieza = COMIDA.slice(COMIDA.indexOf('export function FrenteALosRangos'), COMIDA.indexOf('export function FilaDeItem'));
+  assert.doesNotMatch(pieza, /error|exito|peligro/);
+  const estilo = ESTILOS.slice(ESTILOS.indexOf('.frente-a-los-rangos {'), ESTILOS.indexOf('/* NUP-06'));
+  assert.doesNotMatch(estilo, /--error|--exito|--peligro/);
+  // Un solo cuadro del rango por editor, que abren la lista, cada comida y el asistente.
+  assert.equal(EDITOR.match(/<CuadroDelRangoIndicado /g)?.length, 1);
+  assert.doesNotMatch(DEL_PLAN.slice(DEL_PLAN.indexOf('export function RangosIndicados'), DEL_PLAN.indexOf('export function CuadroDelRangoIndicado')), /<CuadroDelRango\b/);
+  assert.match(COMIDA, /<RangoEnUnRenglon de=\{plegada\.titulo\} rango=\{rango\} \/>/);
+  // En el asistente: el día (paso 3) y cada comida (pasos 4 y 5).
+  assert.equal(PASOS.match(/<RangoEnUnRenglon /g)?.length, 3);
+  assert.match(EDITOR, /rangoDe=\{rangoParaIndicar\}/);
+});
+
+test('NUP-06 · la suma de los rangos va arriba de las comidas, en el editor y en el paso 4, y se separa de las opciones', () => {
+  const comidas = EDITOR.slice(EDITOR.indexOf('<div className="comidas-del-plan comidas-del-editor"'));
+  assert.ok(comidas.indexOf('<SumaDeLosRangosIndicados') >= 0 && comidas.indexOf('<SumaDeLosRangosIndicados') < comidas.indexOf('{dia.meals.map((m, j) => ('), 'arriba de las comidas');
+  assert.match(PASOS, /<SumaDeLosRangosIndicados comidas=\{dia\.meals\.map/);
+  assert.match(P.COPY_PLANIFICACION.sumaAyuda, /otra cuenta que «Rangos y totales»/);
+  assert.match(PIEZAS, /<p className="nota">\{C\.sumaAyuda\}<\/p>/);
+});
+
+test('NUP-07 y NUP-10 · el objetivo: las kcal de los gramos al escribir y en lo vigente; los macros alineados arriba', () => {
+  assert.match(FORMULARIOS, /<div className="fila-de-dato fila-de-dato--arriba">/);
+  assert.match(ESTILOS, /\.fila-de-dato--arriba \{\n\s*align-items: flex-start;\n\}/);
+  assert.match(FORMULARIOS, /<KcalDelObjetivo kcal=\{numeroPositivo\(valores\.kcal\)\} gramos=\{\{ protein: numeroNoNegativo\(valores\.proteina\), carbohydrate: numeroNoNegativo\(valores\.carbohidratos\), fat: numeroNoNegativo\(valores\.grasas\) \}\} \/>/);
+  assert.match(EDITOR, /<KcalDelObjetivo kcal=\{objetivo\.estimatedEnergyRequirement\.value\} gramos=\{gramosDelObjetivo\(objetivo\)\} \/>/);
+  assert.match(PASOS, /<KcalDelObjetivo kcal=\{objetivo\.estimatedEnergyRequirement\.value\} gramos=\{gramosDelObjetivo\(objetivo\)\} \/>/);
+  // El aviso no bloquea: el formulario no lo cuenta como error.
+  assert.doesNotMatch(FORMULARIOS.slice(FORMULARIOS.indexOf('export function erroresDeObjetivo'), FORMULARIOS.indexOf('export function aObjetivo')), /kcalDeLosGramos|noCoinciden/);
+});
+
+test('NUP-12, NUP-13 y NUP-14 · la comida vacía dice por dónde empezar; el paso 5 ofrece las cuatro formas; «Corregirlo en el plan»', () => {
+  assert.equal(P.comidaVacia({ options: [{ label: 'Opción 1', items: [] }] }), true);
+  assert.equal(P.comidaVacia({ options: [] }), true);
+  assert.equal(P.comidaVacia({ options: [{ label: 'Budín', items: [], recipeVersionId: 'rv1' }] }), false);
+  assert.equal(P.comidaVacia({ options: [{ label: 'A', items: [] }, { label: 'B', items: [{ catalogItemId: 'x' }] }] }), false);
+  assert.match(COMIDA, /\{vacia \? \(\n\s*<p className="comida-del-editor__empeza" data-empeza-con>/);
+  for (const t of ['unaHabitual', 'copiarDeOtra', 'unaReceta', 'alimentos']) assert.match(COMIDA, new RegExp(`texto=\\{CP\\.${t}\\}`), t);
+  // Lo que se suma a una comida recién creada ocupa el lugar de su «Opción 1» sin tocar.
+  assert.match(EDITOR, /if \(m\.options\.length === 1 && esLaOpcionSinTocar\(m\.options\[0\]!\)\) m\.options\.splice\(0, 1\);/);
+  // El paso 5: «+ Opción de receta», «Copiar desde otra comida» y «Usar una comida habitual», con las operaciones de siempre.
+  assert.match(PASOS, /data-asistente-opcion-de-receta.*onClick=\{\(\) => onAgregarReceta\(i, j\)\}/);
+  assert.match(PASOS, /<BotonConMotivo texto=\{COPY_DE_OTRA_COMIDA\.copiar\}/);
+  assert.match(PASOS, /<BotonConMotivo texto=\{COPY_DE_OTRA_COMIDA\.usarHabitual\}/);
+  assert.match(EDITOR, /onAgregarReceta=\{\(di, j\) => setEligiendoReceta\(\{ i: di, j \}\)\}/);
+  assert.match(EDITOR, /onCopiarDesdeOtra=\{\(di, j\) => setOtraComida\(\{ que: 'copiar', i: di, j \}\)\}/);
+  assert.match(EDITOR, /onUsarHabitual=\{\(di, j\) => setOtraComida\(\{ que: 'habitual', i: di, j \}\)\}/);
+  // NUP-14: «estación» es jerga del código.
+  assert.equal(N.COPY_ASISTENTE_DE_NUTRICION.irEnLaEstacion, 'Corregirlo en el plan');
+  const textos = Object.values(N.COPY_ASISTENTE_DE_NUTRICION).map((t) => (typeof t === 'function' ? t('x', 'y') : t));
+  for (const t of textos) assert.doesNotMatch(t, /estaci[oó]n/i, t);
 });

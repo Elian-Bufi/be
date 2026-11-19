@@ -153,6 +153,12 @@ export function loQueAportaLaComidaEnPalabras(rango: RangoPorNutriente, opciones
   }).join(' · ')}`;
 }
 
+// ─── NUP-12 · La comida vacía ────────────────────────────────────────────────────────────────────────────────────
+
+/** NUP-12: una comida está vacía si ninguna de sus opciones tiene alimentos ni receta: dice por dónde empezar. */
+export const comidaVacia = (c: { readonly options: readonly { readonly items: readonly unknown[]; readonly recipeVersionId?: string | undefined }[] }): boolean =>
+  c.options.every((o) => o.items.length === 0 && !o.recipeVersionId);
+
 // ─── NUP-04 · Ubicar frente a un rango indicado ──────────────────────────────────────────────────────────────────
 
 export interface Limites {
