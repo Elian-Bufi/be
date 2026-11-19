@@ -16,6 +16,11 @@
 // los elegidos y sin resultados, «Sesiones vacías» y la versión activa agrupada por bloque (activa la versión con bloques
 // por la API y prepara otra sobre ella). Cada pantalla es un paso: si uno falla, queda anotado en `capturas.json` con una captura del momento y
 // se sigue. `capturas.json` anota, además, si un menú abierto queda entero y si la tabla de series se desplaza adentro.
+//
+// WP-PLANTILLAS-DE-ENTRENAMIENTO (DL-182) suma las escenas 16 a 21, con el mismo editor sin persona: la colección con lo
+// que está en preparación, una plantilla nueva en blanco, el editor de la plantilla con sus bloques, «Antes de guardar»
+// con lo que cambia, el detalle con sus versiones después de guardar la 2 y el plan de Diego Sosa creado desde la versión
+// 1, que dice «versión 1» aunque la vigente sea la 2. Lo arma Prof. Martín Acosta por la API (`prepararLasPlantillas`).
 import { execFileSync, spawn } from 'node:child_process';
 import { randomBytes } from 'node:crypto';
 import fs from 'node:fs';
@@ -281,6 +286,63 @@ async function prepararLosBloques(ids, nota) {
   }
   return lugar;
 }
+
+// ─── Las plantillas, sin persona (DL-182) ────────────────────────────────────────────────────────────────────────
+
+/**
+ * Prof. Martín Acosta arma una plantilla sin persona con la estructura de la versión en preparación de Diego Sosa (con
+ * sus bloques) y la guarda (versión 1); descarta esa versión de Diego y crea otra desde la plantilla (versión 1); abre
+ * cambios sobre la plantilla (el nombre de una sesión), que la escena 19 guarda como versión 2; y deja una plantilla
+ * nueva sin título en preparación. Devuelve lo que piden las escenas.
+ */
+async function prepararLasPlantillas(ids, nota) {
+  const c = cuentas();
+  const martin = await cliente.sesion(c.PRO_T_CORREO, c.PRO_T_CLAVE, 'WEB');
+  const op = (metodo, ruta, cuerpo) => cliente.pedir(metodo, ruta, { token: martin, capacidades: DEL_WEBSITE, ...(cuerpo ? { cuerpo } : {}) });
+  const lista = await op('GET', `/advisees/${ids.diego}/training/plans?limit=50`);
+  const borrador = lista.data.find((v) => v.state === 'DRAFT');
+  if (!borrador) throw new Error('Diego Sosa no tiene una versión en preparación de la que tomar la estructura.');
+  const detalle = (await op('GET', `/training/plans/${borrador.planId}/detail`)).data;
+  const fases = dominio.estructuraConObjetivosComoEntrada(detalle);
+  // 1. La plantilla, en blanco y sin persona: la estructura, el nombre y la descripción; guardada, es la versión 1.
+  const nueva = (await op('POST', '/training/plan-template-drafts', {})).data;
+  const preparada = (
+    await op('PATCH', `/training/plan-template-drafts/${nueva.draftId}`, { expectedVersion: nueva.version, structure: { blocks: fases }, name: 'Fuerza en vueltas', description: 'Tres días, con un bloque en vueltas en la sesión de piernas.' })
+  ).data;
+  const v1 = (await op('POST', `/training/plan-template-drafts/${nueva.draftId}/publish`, { expectedVersion: preparada.version })).data;
+  // 2. El plan de Diego desde la versión 1 (la que está en preparación se descarta: un plan tiene una sola).
+  await op('POST', `/training/plans/${borrador.planId}/discard`, { expectedVersion: detalle.version });
+  const objetivo = await op('GET', `/advisees/${ids.diego}/training/objectives/effective`);
+  await op('POST', `/advisees/${ids.diego}/training/plans`, { objectiveVersionId: objetivo.data.objective?.versionId ?? detalle.objectiveVersionId, fromTemplateVersionId: v1.versionId });
+  // 3. Cambios en preparación sobre la versión 1: el nombre de la primera sesión.
+  const cambios = (await op('PUT', `/training/plan-templates/${v1.templateId}/draft`, {})).data;
+  const estructura = structuredClone(cambios.structure);
+  const primera = estructura.blocks[0]?.sessions?.[0] ?? estructura.blocks[0]?.microcycles?.[0]?.sessions?.[0];
+  if (primera) primera.label = `${primera.label} con saltos`;
+  await op('PATCH', `/training/plan-template-drafts/${cambios.draftId}`, { expectedVersion: cambios.version, structure: estructura });
+  // 4. Una plantilla nueva, todavía sin título.
+  await op('POST', '/training/plan-template-drafts', {});
+  nota(`plantilla «Fuerza en vueltas» (versión 1), el plan de Diego desde ella, cambios en preparación y una nueva sin título`);
+  return { templateId: v1.templateId, cambios: cambios.draftId };
+}
+
+/** Lo que no puede aparecer en el editor de una plantilla: lo que depende de una persona, y las palabras que no van. */
+const sinPersonaEnPantalla = (page) =>
+  page.evaluate(() => {
+    const problemas = [];
+    for (const [selector, que] of [
+      ['.estacion__chips', 'los días de una sesión'],
+      ['#pestana-otras', '«Otras áreas»'],
+      ['[data-revisar-y-activar]', '«Revisar y activar…»'],
+      ['[data-fechas-de-la-agenda]', 'las fechas de la agenda'],
+      ['.panel-de-contexto, [data-panel-de-contexto]', 'el contexto de la persona'],
+    ]) {
+      if (document.querySelector(selector)) problemas.push(`aparece ${que}`);
+    }
+    const texto = document.querySelector('main')?.innerText ?? '';
+    for (const palabra of [/asesorad/i, /estación/i, /cumplimiento|adherencia|racha|puntaje/i]) if (palabra.test(texto)) problemas.push(`dice «${texto.match(palabra)[0]}»`);
+    return problemas;
+  });
 
 // ─── Las pantallas ──────────────────────────────────────────────────────────────────────────────────────────────
 
@@ -595,8 +657,102 @@ function pantallas(ids, lugar) {
         await pausa(300);
       },
     },
+    // ─── WP-PLANTILLAS-DE-ENTRENAMIENTO (DL-182) ──────────────────────────────────────────────────────────────
+    {
+      // La colección: «Nueva plantilla», lo que está en preparación (una nueva, sin título) y los cambios junto a su versión.
+      nombre: '16-plantillas-en-la-coleccion',
+      llegar: async (page, nota) => {
+        plantillas.datos = await prepararLasPlantillas(ids, nota);
+        await ir(page, '/pro/templates');
+        await visible(page, '[data-plantillas-en-preparacion]');
+        await visible(page, '[data-cambios-en-preparacion]');
+        await page.evaluate(() => document.querySelector('#titulo-plantillas')?.scrollIntoView({ block: 'start' }));
+        await pausa(300);
+      },
+      verificar: (page) =>
+        page.evaluate(() => {
+          const texto = document.querySelector('main')?.innerText ?? '';
+          return [
+            ...(texto.includes('Sin título') ? [] : ['no dice «Sin título» en la plantilla nueva']),
+            ...(texto.includes('Versión 1 disponible · cambios en preparación') ? [] : ['no dice que la versión 1 sigue disponible con cambios en preparación']),
+          ];
+        }),
+    },
+    {
+      // «Nueva plantilla»: el editor en blanco, sin pedir nada antes ni a ninguna persona.
+      nombre: '17-plantilla-nueva-en-blanco',
+      llegar: async (page) => {
+        await clic(page, '[data-nueva-plantilla]');
+        await page.waitForFunction(() => location.pathname.startsWith('/pro/templates/training'), { timeout: 30_000 });
+        await visible(page, '[data-cabecera-de-la-plantilla]');
+        await visible(page, '[data-sesiones-vacias]');
+      },
+      verificar: sinPersonaEnPantalla,
+    },
+    {
+      // El editor de la plantilla: el mismo núcleo que el del plan, con la sesión del bloque en vueltas.
+      nombre: '18-editor-de-la-plantilla',
+      llegar: async (page) => {
+        await ir(page, `/pro/templates/training?preparacion=${plantillas.datos.cambios}&${pedido}`);
+        await visible(page, '.bloque-del-editor');
+        await clic(page, '.bloque-del-editor [id^="abrir-ejercicio-"]');
+        await page.waitForSelector('[data-estado-de-la-revision="lista"], [data-estado-de-la-revision="fallo"]', { timeout: 30_000 }).catch(() => {});
+        await asentar(page);
+        await page.evaluate(() => document.querySelector('.bloque-del-editor')?.scrollIntoView({ block: 'start' }));
+        await pausa(300);
+      },
+      verificar: async (page) => [...(await sinPersonaEnPantalla(page)), ...((await page.$('[data-sin-dias-en-la-plantilla]')) ? [] : ['no dice que una plantilla no tiene días'])],
+    },
+    {
+      // «Antes de guardar»: lo que impide, lo que queda para completar al usarla, lo que cambia frente a la versión 1.
+      nombre: '19-antes-de-guardar-la-plantilla',
+      llegar: async (page) => {
+        await clic(page, '[data-revisar-y-guardar]');
+        await visible(page, '[data-antes-de-guardar-la-plantilla]');
+        await visible(page, '[data-lo-que-cambia] [data-contadores]');
+        await page.waitForFunction(() => {
+          const b = [...document.querySelectorAll('dialog[open] button')].find((x) => x.textContent.includes('Guardar nueva versión'));
+          return b && !b.disabled && b.getAttribute('aria-disabled') !== 'true';
+        }, { timeout: 30_000 });
+      },
+    },
+    {
+      // Guardada la versión 2: el detalle en la colección, agrupado por bloque y con sus versiones.
+      nombre: '20-detalle-con-versiones',
+      llegar: async (page) => {
+        await clic(page, 'dialog[open] button', 'Guardar nueva versión');
+        await page.waitForFunction(() => location.pathname === '/pro/templates', { timeout: 30_000 });
+        await visible(page, '[data-version-de-la-plantilla="2"]');
+        await page.evaluate(() => document.querySelector('[data-versiones-de-la-plantilla]')?.scrollIntoView({ block: 'center' }));
+        await pausa(300);
+      },
+      verificar: (page) =>
+        page.evaluate(() => {
+          const v1 = document.querySelector('[data-version-de-la-plantilla="1"]')?.textContent ?? '';
+          const bloque = document.querySelector('[data-bloque-de-la-plantilla]');
+          return [...(v1.includes('se usó en 1 plan') ? [] : [`la versión 1 dice «${v1}»`]), ...(bloque ? [] : ['el detalle no agrupa por bloque'])];
+        }),
+    },
+    {
+      // El plan de Diego, creado desde la versión 1: dice «versión 1», aunque la vigente de la plantilla sea la 2.
+      nombre: '21-plan-desde-la-plantilla',
+      llegar: async (page) => {
+        await ir(page, `/pro/advisees/training?id=${ids.diego}&vista=plan`);
+        await visible(page, '[data-nota-de-origen]');
+        await page.evaluate(() => document.querySelector('[data-nota-de-origen]')?.scrollIntoView({ block: 'center' }));
+        await pausa(300);
+      },
+      verificar: (page) =>
+        page.evaluate(() => {
+          const t = document.querySelector('[data-nota-de-origen]')?.textContent ?? '';
+          return /versión 1\./.test(t) ? [] : [`la nota de origen dice «${t}»`];
+        }),
+    },
   ];
 }
+
+/** Lo que arma la escena 16 para las que siguen. */
+const plantillas = { datos: null };
 
 /** Lo que conviene anotar de cada captura: desbordes a lo ancho, el alto de la página y si algún menú queda cortado. */
 const medir = (page) =>

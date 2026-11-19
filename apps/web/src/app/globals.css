@@ -19861,3 +19861,117 @@ html:has(.estacion:not([data-en-el-asistente])) {
   padding: 0.35rem 0;
   border-top: 1px solid var(--borde);
 }
+
+/* ═══ PLT (DL-182) · La plantilla en el editor (`training/edicion-de-plantilla.tsx`) y en «Mis plantillas» ══════════════
+   La cabecera de la plantilla es la barra de comandos del editor, con lo que es de la plantilla: de dónde parte, su
+   nombre (el de una nueva se escribe acá), la descripción y el interruptor de las cargas, en una franja compacta debajo.
+   Las zonas del editor descuentan esa franja para seguir entrando en la pantalla. */
+.editor-de-la-plantilla__titulo {
+  display: grid;
+  gap: 0.1rem;
+  min-width: 0;
+}
+
+.editor-de-la-plantilla__titulo h2 {
+  margin: 0;
+}
+
+.editor-de-la-plantilla__que-es {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+  margin: 0;
+}
+
+.editor-de-la-plantilla__datos {
+  display: grid;
+  grid-template-columns: minmax(12rem, 20rem) minmax(12rem, 1fr) minmax(16rem, 1.3fr);
+  gap: 0.5rem 1rem;
+  align-items: start;
+  margin-top: 0.6rem;
+  padding: 0.5rem 0.9rem;
+  border: 1px solid var(--borde);
+  border-radius: 14px;
+  background: var(--superficie);
+}
+
+.editor-de-la-plantilla__datos .campo,
+.editor-de-la-plantilla__existente p,
+.editor-de-la-plantilla__cargas p {
+  margin: 0;
+}
+
+.editor-de-la-plantilla__existente {
+  display: grid;
+  grid-column: span 2;
+  gap: 0.2rem;
+}
+
+.editor-de-la-plantilla__cargas {
+  display: grid;
+  gap: 0.2rem;
+}
+
+@media (min-width: 64.0625rem) {
+  .estacion:has(.editor-de-la-plantilla__cabecera) .estacion__zonas {
+    height: calc(100dvh - 19rem);
+  }
+}
+
+@media (max-width: 64rem) {
+  .editor-de-la-plantilla__datos {
+    grid-template-columns: 1fr;
+  }
+
+  .editor-de-la-plantilla__existente {
+    grid-column: auto;
+  }
+}
+
+@supports (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px)) {
+  .estacion [data-barra-de-la-plantilla] .boton--primario {
+    box-shadow: 0 0 1.25rem var(--resplandor);
+  }
+}
+
+.plantillas-y-habituales__cabecera {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+}
+
+.plantillas-y-habituales__cabecera h2 {
+  margin: 0;
+}
+
+.lista__acciones {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.plantillas-en-preparacion {
+  margin-block: 0.75rem;
+}
+
+.detalle-de-la-plantilla__sesion h5 {
+  margin: 0.25rem 0;
+}
+
+.detalle-de-la-plantilla__bloque {
+  margin-block: 0.35rem;
+  padding-inline-start: 0.6rem;
+  border-inline-start: 3px solid var(--borde);
+}
+
+.detalle-de-la-plantilla__bloque > p {
+  margin: 0 0 0.2rem;
+}
+
+.versiones-de-la-plantilla__lista li {
+  margin-block: 0.2rem;
+}

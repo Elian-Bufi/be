@@ -8,11 +8,13 @@ name: capturas-de-la-planificacion
 
 on:
   push:
-    branches: ["wp-entrenamiento-planificacion"]
+    branches: ["wp-entrenamiento-planificacion", "wp-plantillas-de-entrenamiento"]
     paths:
       - "EVIDENCIA/ENTRENAMIENTO-PLANIFICACION/herramientas/**"
       - ".github/workflows/capturas-de-la-planificacion.yml"
       - "apps/web/src/app/pro/advisees/training/**"
+      # WP-PLANTILLAS-DE-ENTRENAMIENTO (DL-182): la colección, el detalle y el editor de una plantilla.
+      - "apps/web/src/app/pro/templates/**"
   workflow_dispatch:
 
 permissions:
