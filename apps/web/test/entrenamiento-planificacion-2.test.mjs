@@ -106,3 +106,63 @@ test('ENP-D18 · el texto dice la verdad: vive en esta pantalla hasta agregar ej
   assert.match(EDITOR, /data-donde-vive-el-preset/);
   assert.match(GALERIA, /No queda guardado en el plan hasta entonces\./);
 });
+
+// ─── C9 · guardar y revisar encadenados: «Ir a…» al campo exacto y la vuelta con el contexto ───────────────────
+
+const I = await import('../src/app/pro/advisees/training/ir-al-campo.ts');
+const R = await import('../src/app/pro/advisees/revisar-el-plan.ts');
+const REVISION = fuente('../src/app/pro/advisees/training/revision-del-plan.tsx');
+const EJERCICIO = fuente('../src/app/pro/advisees/training/ejercicio-del-editor.tsx');
+
+test('C9 · «Ir a…» lleva al campo exacto: el de la serie, el del criterio, «Agregar serie»; el renglón queda de ancla', () => {
+  const ej = 'b0-s1-p2';
+  const ruta = 'blocks[0].sessions[1].prescriptions[2]';
+  const campos = (code, path, serie = null) => I.camposDelProblema({ code, path }, ej, serie);
+  const ancla = 'abrir-ejercicio-b0-s1-p2';
+  // Lo que dice la API, por la ruta.
+  assert.deepEqual(campos('SET_RIR_OUT_OF_RANGE', `${ruta}.sets[3].rir`, 3), [`${ej}-serie-3-rir`, ancla]);
+  assert.deepEqual(campos('WARM_UP_AFTER_WORKING_SET', `${ruta}.sets[1].setKind`, 1), [`${ej}-serie-1-calentamiento`, ancla]);
+  assert.deepEqual(campos('INTENSITY_TARGET_OUT_OF_RANGE', `${ruta}.intensity.target.value`), [`${ej}-objetivo`, `${ej}-criterio`, ancla]);
+  assert.deepEqual(campos('INTENSITY_CRITERIA_COMBINED', `${ruta}.intensity.criterion`), [`${ej}-criterio`, ancla]);
+  assert.deepEqual(campos('INTENSITY_TARGET_OUT_OF_RANGE', 'changes.blocks.0.sessions.1.prescriptions.2.intensity.target.value'), [`${ej}-objetivo`, `${ej}-criterio`, ancla], 'también con la ruta del pedido');
+  // Sin el criterio RIR, la columna del RIR no está: el criterio, después.
+  assert.deepEqual(campos('SET_RIR_WITHOUT_RIR_CRITERION', `${ruta}.sets[0].rir`, 0), [`${ej}-serie-0-rir`, `${ej}-criterio`, ancla]);
+  // Lo que ve el editor, por el código; lo que queda sin completar, donde se completa.
+  assert.deepEqual(campos(d.PROBLEMA_DEL_EDITOR_DE_ENTRENAMIENTO.rirIlegible, `${ruta}.sets[2]`, 2), [`${ej}-serie-2-rir`, ancla]);
+  assert.deepEqual(campos('INCOMPLETO_SIN_REPETICIONES', `${ruta}.sets[2].repetitions`, 2), [`${ej}-serie-2`, ancla]);
+  assert.deepEqual(campos('INCOMPLETO_SIN_SERIES', ruta), [`${ej}-agregar-serie`, ancla]);
+  assert.equal(R.INCOMPLETO.sinSeries, 'INCOMPLETO_SIN_SERIES', 'la constante de `ir-al-campo.ts` es la de lo incompleto');
+  assert.deepEqual(campos(d.PROBLEMA_DEL_EDITOR_DE_ENTRENAMIENTO.parametroIncompleto, `${ruta}.professionalParameters[1]`), [`${ej}-param-1-etiqueta`, ancla]);
+  assert.deepEqual(campos('EXERCISE_NOT_AVAILABLE', `${ruta}.exerciseVersionId`), [ancla]);
+  // Los campos que nombra existen en el ejercicio.
+  for (const id of ['-serie-${n}-calentamiento', '-agregar-serie', '-criterio', '-objetivo', '-linea']) assert.ok(EJERCICIO.includes(id) || fuente('../src/app/pro/advisees/training/linea-de-prescripcion.tsx').includes(id), id);
+});
+
+test('C9 · el foco espera a que el ejercicio esté abierto y elige el primer campo dibujado', () => {
+  const dibujados = new Set(['abrir-ejercicio-x', 'x-criterio']);
+  const existe = (id) => dibujados.has(id);
+  assert.equal(I.campoParaEnfocar(['x-serie-0-rir', 'x-criterio', 'abrir-ejercicio-x'], existe, () => false), null, 'cerrado todavía: no salta al renglón antes de tiempo');
+  assert.equal(I.campoParaEnfocar(['x-serie-0-rir', 'x-criterio', 'abrir-ejercicio-x'], existe, () => true), 'x-criterio');
+  assert.equal(I.campoParaEnfocar(['menu-de-la-sesion'], () => true, () => false), 'menu-de-la-sesion', 'un campo solo, apenas existe');
+  assert.match(EDITOR, /setParaEnfocar\(camposDelProblema\(p, `b\$\{l\.bloque\}/);
+  assert.match(EDITOR, /p\.code === 'PRESCRIPTION_REQUIRED' \? 'agregar-ejercicios-a-la-sesion'/);
+  assert.match(EDITOR, /id="agregar-ejercicios-a-la-sesion"/);
+});
+
+test('C9 · al volver a la revisión se conserva el contexto: la fecha elegida en el cuadro, el panel en su pestaña', () => {
+  // Se cierra el cuadro y se va al problema (TEST-EDP-008); la fecha elegida es la del dibujo en que se tocó «Ir a…».
+  assert.match(EDITOR, /cerrarAntesDeActivar\(\);\n\s*irAlProblema\(p\);\n(?:\s*\/\/.*\n)*\s*setVolverALaRevision\(\{ desde: 'cuadro', cuando \}\);/);
+  assert.match(EDITOR, /if \(v\.desde === 'cuadro'\) return abrirElCuadro\(v\.cuando\);/);
+  assert.match(EDITOR, /setCuando\(previa \?\? eleccionAlActivar\(version\.nextReviewAt\)\);/);
+  // Desde el panel, que a menos de 1440 está encima de la sesión y tapaba el campo, «Ir a…» lo cierra.
+  assert.match(EDITOR, /const irDesdeElPanel = \(p: ValidationIssue\) => \{\n\s*setPanelAbierto\(false\);/);
+  assert.match(EDITOR, /data-volver-a-la-revision=\{volverALaRevision\.desde\}/);
+  assert.match(EDITOR, /onClick=\{abrirAntesDeActivar\}/, 'la barra sigue abriendo el cuadro con la fecha guardada');
+});
+
+test('C9 · «Revisar ahora» sigue apagado con el autoguardado en curso (§7) y lo dice a la vista: la revisión sigue sola', () => {
+  assert.match(EDITOR, /const motivoSinRevisar = sucio \? sinGuardarAhora : null;/);
+  assert.match(REVISION, /<p id=\{motivoId\} className="nota" data-motivo-sin-revisar>\n\s*\{guardando \? COPY_REVISION_DEL_PLAN\.seRevisaAlGuardar : motivoSinRevisar\}/);
+  assert.doesNotMatch(REVISION, /<span id=\{motivoId\} className="visualmente-oculto">/, 'el motivo no queda solo para el lector');
+  assert.match(EDITOR, /guardando=\{guardando\} onRevisar=\{\(\) => void revisarAhora\(\)\}/);
+});

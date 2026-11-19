@@ -762,7 +762,7 @@ function SeriesDelEjercicio({
                   </span>
                   {/* DL-178: «C» marca la serie como calentamiento: se registra y no entra en los cálculos. */}
                   <label className="series-del-editor__calentamiento" title={COPY_TIPOS_DE_SERIE.ayudaDelEditor}>
-                    <input type="checkbox" checked={esDeCalentamiento(s)} onChange={() => marcarCalentamiento(n)} data-marcar-calentamiento={n + 1} />
+                    <input type="checkbox" id={`${id}-serie-${n}-calentamiento`} checked={esDeCalentamiento(s)} onChange={() => marcarCalentamiento(n)} data-marcar-calentamiento={n + 1} />
                     <span aria-hidden="true">{COPY_TIPOS_DE_SERIE.marca}</span>
                     <span className="visualmente-oculto">{`${COPY_TIPOS_DE_SERIE.marcarComoCalentamiento} (${rotulos[n]!.largo})`}</span>
                   </label>
@@ -852,7 +852,7 @@ function SeriesDelEjercicio({
       </CuadroEnfocado>
       <div className="ejercicio-del-editor__pie-de-series">
         {/* Una serie nueva copia las repeticiones de la anterior; sus objetivos propios no se copian: toma de lo general. */}
-        <button type="button" className="boton boton--secundario" data-agregar-serie onClick={() => onCambiar({ sets: [...p.sets, { repetitions: p.sets[p.sets.length - 1]?.repetitions ?? null }] })}>
+        <button type="button" id={`${id}-agregar-serie`} className="boton boton--secundario" data-agregar-serie onClick={() => onCambiar({ sets: [...p.sets, { repetitions: p.sets[p.sets.length - 1]?.repetitions ?? null }] })}>
           <Icono nombre="mas" tamano={18} />
           Agregar serie
         </button>

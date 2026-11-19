@@ -156,6 +156,17 @@ Sesión
 - **ENP-D20 · «Agregar bloque» tiene el tope del contrato** (20 por sesión): en el tope queda apagado, con el motivo a la
   vista («Una sesión admite hasta 20 bloques: para otro, quitá uno.»); y, como los otros topes (TB-48), uno pasado es un
   problema con su lugar antes de guardar.
+- **ENP-D21 · «Ir a…» lleva al campo exacto** (C9; `ir-al-campo.ts`): el RIR de la serie 3, el objetivo del criterio, la
+  casilla del calentamiento que quedó abajo, «Agregar serie» si no tiene ninguna, «Agregar ejercicios» si la sesión está
+  vacía, «Agregar sesión» si la fase no tiene; primero por el código (lo que ve el editor) y después por la ruta (lo que
+  dice la API). Si el campo exacto no está dibujado (el RIR por serie de un ejercicio sin el criterio RIR), el siguiente
+  de la lista; el último es siempre el renglón del ejercicio. El foco espera a que el ejercicio esté abierto.
+- **ENP-D22 · Volver a la revisión conserva el contexto** (C9): después de «Ir a…», arriba de la sesión queda «Volver a la
+  revisión» mientras se corrige. Desde «Antes de activar», vuelve al cuadro con la fecha de la próxima revisión que se
+  había elegido (antes se perdía); desde el panel, que a menos de 1440 está encima de la sesión y tapaba el campo, «Ir
+  a…» lo cierra y volver lo abre en «Antes de activar». «Revisar ahora» sigue apagado con el autoguardado en curso (§7),
+  y ahora lo dice a la vista: «la revisión se pide sola apenas termine» (guardar y revisar quedan encadenados: el
+  autoguardado termina y la revisión se pide sola).
 
 ## 4. Las reglas, y dónde se prueban
 

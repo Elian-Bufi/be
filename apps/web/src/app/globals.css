@@ -19546,3 +19546,29 @@ html:has(.estacion:not([data-en-el-asistente])) {
   flex-basis: 100%;
   margin: 0;
 }
+
+/* C9: «Volver a la revisión», fija arriba de la sesión mientras se corrige lo que dijo la revisión. */
+.estacion__volver {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem 0.75rem;
+  margin: -0.25rem 0 0.75rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--borde-control);
+  border-radius: 10px;
+  background: var(--superficie);
+  box-shadow: var(--sombra-suave);
+}
+
+.estacion__volver > .nota {
+  flex: 1 1 16rem;
+  margin: 0;
+}
+
+.revision-del-plan > [data-motivo-sin-revisar] {
+  margin: 0;
+}

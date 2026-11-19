@@ -45,6 +45,16 @@ export const COPY_REVISION_DEL_PLAN = {
   reintentar: 'Reintentar',
   irA: (destino: string) => `Ir a ${destino}`,
   yaSeSabe: 'Lo que el editor ya ve, sin esperar la revisión:',
+  /** C9: con el autoguardado en curso, «Revisar ahora» queda apagado (§7) y la revisión sigue sola al guardar. */
+  seRevisaAlGuardar: 'Se está guardando lo que escribiste: la revisión se pide sola apenas termine.',
+} as const;
+
+/** C9: «Volver a la revisión», arriba de la sesión, después de «Ir a…». */
+export const COPY_VOLVER_A_LA_REVISION = {
+  desdeElCuadro: 'Corregí acá y volvé a «Antes de activar»: la fecha de la próxima revisión que elegiste se conserva.',
+  desdeElPanel: 'Corregí acá y volvé a la revisión del panel.',
+  volver: 'Volver a la revisión',
+  ocultar: 'Ocultar',
 } as const;
 
 /** El nombre del lugar al que se va: lo último de «Fase 1 → Sesión B». */
@@ -56,6 +66,7 @@ export function RevisionDelPlan({
   delServidor,
   delEditor,
   motivoSinRevisar = null,
+  guardando = false,
   onRevisar,
 }: {
   estado: EstadoDeLaRevision;
@@ -70,6 +81,8 @@ export function RevisionDelPlan({
    * falso), o `null`. Apagado con `aria-disabled`, que conserva el foco, y dice por qué.
    */
   motivoSinRevisar?: string | null;
+  /** C9: hay un guardado en curso; al terminar, la revisión se pide sola (lo dice, a la vista). */
+  guardando?: boolean;
   /** «Revisar ahora» o «Reintentar»: guarda si hace falta y pide la revisión. */
   onRevisar: () => void;
 }) {
@@ -123,10 +136,11 @@ export function RevisionDelPlan({
             <Icono nombre="revision" tamano={15} />
             {estado === 'fallo' ? COPY_REVISION_DEL_PLAN.reintentar : COPY_REVISION_DEL_PLAN.revisarAhora}
           </button>
+          {/* C9: el motivo a la vista, no solo para el lector: con el autoguardado en curso, la revisión sigue sola. */}
           {motivoSinRevisar ? (
-            <span id={motivoId} className="visualmente-oculto">
-              {motivoSinRevisar}
-            </span>
+            <p id={motivoId} className="nota" data-motivo-sin-revisar>
+              {guardando ? COPY_REVISION_DEL_PLAN.seRevisaAlGuardar : motivoSinRevisar}
+            </p>
           ) : null}
         </>
       ) : null}

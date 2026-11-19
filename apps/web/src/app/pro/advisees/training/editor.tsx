@@ -161,7 +161,8 @@ import {
   type DeshacerLasVueltas,
   type SesionReordenada,
 } from './bloques-del-editor';
-import { COPY_REVISION_DEL_PLAN, destinoDelLugar, RevisionDelPlan, type EstadoDeLaRevision, type Impedimento } from './revision-del-plan';
+import { COPY_REVISION_DEL_PLAN, COPY_VOLVER_A_LA_REVISION, destinoDelLugar, RevisionDelPlan, type EstadoDeLaRevision, type Impedimento } from './revision-del-plan';
+import { campoParaEnfocar, camposDelProblema } from './ir-al-campo';
 import { NoDisponible, useEntrenamiento } from './entrenamiento';
 import { SelectorDeNivel } from './estructura-del-plan';
 import { DialogoGuardarSesionHabitual, InsertarSesionHabitual, nombresDeHabitual, useEjerciciosHabituales, useSesionesHabituales } from './habituales';
@@ -282,20 +283,6 @@ type QueTexto = 'nombre-del-bloque' | 'proposito-del-bloque' | 'nombre-del-micro
 /** El texto que se está cambiando: un nombre, un propósito o las indicaciones, con su lugar. */
 type TextoQueSeCambia = (Lugar & { readonly de: QueTexto }) | null;
 
-/** El campo al que lleva un problema dentro de un ejercicio: el dato que hay que corregir, o el renglón del ejercicio. */
-function campoDelProblema(p: ValidationIssue, ejercicio: string, serie: number | null): string {
-  if (serie !== null) {
-    const cual = p.code === N.cargaIlegible ? '-carga' : p.code === N.rirIlegible ? '-rir' : p.code === N.descansoIlegible ? '-descanso' : '';
-    return `${ejercicio}-serie-${serie}${cual}`;
-  }
-  if (p.code === N.faltaElObjetivo) return `${ejercicio}-objetivo`;
-  if (p.code === N.cargaIlegible) return `${ejercicio}-carga`;
-  if (p.code === N.descansoIlegible) return `${ejercicio}-descanso`;
-  const parametro = /professionalParameters\[(\d+)\]/.exec(p.path);
-  if (p.code === N.parametroIncompleto && parametro) return `${ejercicio}-param-${parametro[1]}-etiqueta`;
-  return `abrir-ejercicio-${ejercicio}`;
-}
-
 export function EditorDePlan({
   planId,
   numero,
@@ -406,7 +393,11 @@ export function EditorDePlan({
   const [agregando, setAgregando] = useState(false);
   // El texto que se está cambiando, y el campo que hay que enfocar después de ir a un problema.
   const [texto, setTexto] = useState<TextoQueSeCambia>(null);
-  const [paraEnfocar, setParaEnfocar] = useState<string | null>(null);
+  // C9: un campo, o los campos de un ejercicio en orden (el último, su renglón: `ir-al-campo.ts`).
+  const [paraEnfocar, setParaEnfocar] = useState<string | readonly string[] | null>(null);
+  // C9: «Volver a la revisión» después de «Ir a…»: desde el cuadro «Antes de activar» (con la fecha que se había elegido)
+  // o desde el panel. Se ve en la sesión hasta volver o cerrarlo.
+  const [volverALaRevision, setVolverALaRevision] = useState<{ readonly desde: 'cuadro'; readonly cuando: EleccionDeLaProxima } | { readonly desde: 'panel' } | null>(null);
   // DJ-8 (ED-11 y ED-22): las cargas que quedaron escritas para otras repeticiones, por sesión, con la firma del ejercicio
   // tal como quedó (`firmaDeLaCarga`): si se edita su carga o sus repeticiones, o se deshace, la marca deja de verse; si se
   // mueve, va con él. Es una marca de la pantalla, no un dato: no viaja ni se guarda (EDT-12).
@@ -476,11 +467,18 @@ export function EditorDePlan({
 
   // Después de ir a un problema, el foco va a su lugar en cuanto está dibujado (la sesión puede tardar un instante en
   // cambiar). Si la persona hace otra cosa antes, ese foco pendiente se olvida: no salta más tarde.
+  // C9: con los campos de un ejercicio, se espera a que esté abierto y se elige el primero que esté dibujado.
   useEffect(() => {
     if (!paraEnfocar) return;
-    const campo = document.getElementById(paraEnfocar);
+    const cual = campoParaEnfocar(
+      typeof paraEnfocar === 'string' ? [paraEnfocar] : paraEnfocar,
+      (id) => document.getElementById(id) !== null,
+      (id) => document.getElementById(id)?.getAttribute('aria-expanded') === 'true',
+    );
+    const campo = cual ? document.getElementById(cual) : null;
     if (!campo) return;
-    campo.focus();
+    campo.focus({ preventScroll: true });
+    campo.scrollIntoView({ block: 'center' });
     setParaEnfocar(null);
   });
 
@@ -683,10 +681,18 @@ export function EditorDePlan({
 
   /** ED-07 (DJ-6): «Revisar y activar…» abre el cuadro siempre, también con algo por corregir o sin guardar. */
   function abrirAntesDeActivar() {
+    abrirElCuadro(null);
+  }
+  /**
+   * El cuadro «Antes de activar». C9: al volver de «Ir a…» (`previa`), con la fecha de la próxima revisión que se había
+   * elegido: se conserva el contexto.
+   */
+  function abrirElCuadro(previa: EleccionDeLaProxima | null) {
     if (!version) return;
+    setVolverALaRevision(null);
     setFalloDeActivacion(null);
-    setCuando(eleccionAlActivar(version.nextReviewAt));
-    setProximaRevision(version.nextReviewAt ?? '');
+    setCuando(previa ?? eleccionAlActivar(version.nextReviewAt));
+    setProximaRevision(previa ? (fechaQueResulta(previa, hoyEn()) ?? '') : (version.nextReviewAt ?? ''));
     // ENP-D13: si lo guardado ya está revisado (o se está revisando), el cuadro usa esa revisión; si no, la pide.
     setRevision((x) => (x && x.version === version.version && x.estado !== 'fallo' ? x : null));
     setConfirmar(true);
@@ -898,6 +904,28 @@ export function EditorDePlan({
   const irDesdeElCuadro = (p: ValidationIssue) => () => {
     cerrarAntesDeActivar();
     irAlProblema(p);
+    // C9: la fecha que se había elegido, para «Volver a la revisión». Es la de este dibujo: cerrar el cuadro la vuelve a la
+    // guardada en el próximo.
+    setVolverALaRevision({ desde: 'cuadro', cuando });
+  };
+  /**
+   * C9: desde el panel, «Ir a…» lo cierra si está encima de la sesión (por debajo de 1440) —tapaba el campo— y deja
+   * «Volver a la revisión».
+   */
+  const irDesdeElPanel = (p: ValidationIssue) => {
+    setPanelAbierto(false);
+    setVolverALaRevision({ desde: 'panel' });
+    irAlProblema(p);
+  };
+  /** C9: volver a donde se estaba: el cuadro, con la fecha elegida, o el panel en «Antes de activar». */
+  const volverAhora = () => {
+    const v = volverALaRevision;
+    setVolverALaRevision(null);
+    if (!v) return;
+    if (v.desde === 'cuadro') return abrirElCuadro(v.cuando);
+    setPestana('antes');
+    setPanelAbierto(true);
+    setParaEnfocar('zona-panel');
   };
   const conSuLugar = (p: ValidationIssue, texto: string) => ({ texto: `${dondeEsta(p, bloques)}: ${texto}`, ir: lugarDelProblemaDeEntrenamiento(p.path).bloque === null ? null : irDesdeElCuadro(p) });
   // Lo que impide activar: lo que el editor ve solo (al instante), lo que dijo la API de lo guardado y, hasta ED-08, la
@@ -1249,9 +1277,11 @@ export function EditorDePlan({
     if (p.code === N.faltaElNombre) {
       return setTexto({ de: l.sesion !== null ? 'nombre-de-la-sesion' : l.microciclo !== null ? 'nombre-del-microciclo' : 'nombre-del-bloque', i: l.bloque, j: l.microciclo, k: l.sesion });
     }
-    if (l.sesion === null) return setParaEnfocar(l.microciclo === null ? 'menu-del-bloque' : 'menu-del-microciclo');
-    if (l.ejercicio === null) return setParaEnfocar('menu-de-la-sesion');
-    setParaEnfocar(campoDelProblema(p, `b${l.bloque}${l.microciclo === null ? '' : `-m${l.microciclo}`}-s${l.sesion}-p${l.ejercicio}`, l.serie));
+    // C9: lo que falta se ubica donde se agrega: una fase sin sesiones, en «Agregar sesión»; una sesión sin ejercicios,
+    // en «Agregar ejercicios».
+    if (l.sesion === null) return setParaEnfocar(p.code === 'SESSION_REQUIRED' ? 'agregar-sesion' : l.microciclo === null ? 'menu-del-bloque' : 'menu-del-microciclo');
+    if (l.ejercicio === null) return setParaEnfocar(p.code === 'PRESCRIPTION_REQUIRED' ? 'agregar-ejercicios-a-la-sesion' : 'menu-de-la-sesion');
+    setParaEnfocar(camposDelProblema(p, `b${l.bloque}${l.microciclo === null ? '' : `-m${l.microciclo}`}-s${l.sesion}-p${l.ejercicio}`, l.serie));
   };
 
   const agregarUnBloque = (
@@ -1313,14 +1343,14 @@ export function EditorDePlan({
   // ── ED-25: «Antes de activar», en vivo en el panel ─────────────────────────────────────────────────────────
   // Lo mismo que dice el cuadro (lo que el editor ve solo, lo que dijo la API de lo guardado y, hasta ED-08, la app de la
   // persona), cada cosa con su lugar; desde el panel, «Ir a corregir» va directo, sin cuadro que cerrar.
-  const enElPanel = (p: ValidationIssue, texto: string) => ({ texto: `${dondeEsta(p, bloques)}: ${texto}`, ir: lugarDelProblemaDeEntrenamiento(p.path).bloque === null ? null : () => irAlProblema(p) });
+  const enElPanel = (p: ValidationIssue, texto: string) => ({ texto: `${dondeEsta(p, bloques)}: ${texto}`, ir: lugarDelProblemaDeEntrenamiento(p.path).bloque === null ? null : () => irDesdeElPanel(p) });
   // ENP-D13: la revisión honesta. Lo que dijo la API vale solo para la versión que revisó y mientras no haya cambios.
   const revisionVigente = revision && revision.version === version.version && !sucio ? revision : null;
   const estadoDeLaRevision: EstadoDeLaRevision = revisionVigente ? (revisionVigente.estado === 'revisando' ? 'revisando' : revisionVigente.estado) : 'pendiente';
   const impedimento = (p: ValidationIssue): Impedimento => {
     const lugar = dondeEsta(p, bloques);
     const sePuedeIr = lugarDelProblemaDeEntrenamiento(p.path).bloque !== null;
-    return { lugar, texto: PROBLEMA[p.code] ?? 'revisá este elemento', destino: sePuedeIr ? destinoDelLugar(lugar) : null, ir: sePuedeIr ? () => irAlProblema(p) : null };
+    return { lugar, texto: PROBLEMA[p.code] ?? 'revisá este elemento', destino: sePuedeIr ? destinoDelLugar(lugar) : null, ir: sePuedeIr ? () => irDesdeElPanel(p) : null };
   };
   const delEditor: Impedimento[] = [
     ...impideGuardar.map(impedimento),
@@ -1330,7 +1360,7 @@ export function EditorDePlan({
   const delServidor: Impedimento[] = revisionVigente?.estado === 'lista' ? revisionVigente.problemas.map(impedimento) : [];
   const cuantosImpiden = delEditor.length + delServidor.length;
   const revisionEnElPanel = (
-    <RevisionDelPlan estado={estadoDeLaRevision} sinGuardar={sucio} delServidor={delServidor} delEditor={delEditor} motivoSinRevisar={motivoSinRevisar} onRevisar={() => void revisarAhora()} />
+    <RevisionDelPlan estado={estadoDeLaRevision} sinGuardar={sucio} delServidor={delServidor} delEditor={delEditor} motivoSinRevisar={motivoSinRevisar} guardando={guardando} onRevisar={() => void revisarAhora()} />
   );
   const sinCompletarEnVivo = enGrupos(loQueQuedaSinCompletarEnEntrenamiento(bloques), enElPanel);
   /** El nombre de una sesión por su identificador, como lo dice la agenda. */
@@ -2065,6 +2095,19 @@ export function EditorDePlan({
           ) : null}
         </div>
         <div id="zona-editor" className="estacion__zona estacion__centro" data-zona="editor" role="region" aria-label={CE.editor} tabIndex={-1}>
+          {/* C9: después de «Ir a…», la vuelta a la revisión, fija arriba de la sesión mientras se corrige. */}
+          {volverALaRevision ? (
+            <div className="estacion__volver" data-volver-a-la-revision={volverALaRevision.desde}>
+              <p className="nota">{volverALaRevision.desde === 'cuadro' ? COPY_VOLVER_A_LA_REVISION.desdeElCuadro : COPY_VOLVER_A_LA_REVISION.desdeElPanel}</p>
+              <button type="button" className="boton boton--secundario boton--compacto" data-volver-ahora onClick={volverAhora}>
+                <Icono nombre="izquierda" tamano={15} />
+                {COPY_VOLVER_A_LA_REVISION.volver}
+              </button>
+              <button type="button" className="boton boton--enlace" onClick={() => setVolverALaRevision(null)}>
+                {COPY_VOLVER_A_LA_REVISION.ocultar}
+              </button>
+            </div>
+          ) : null}
           {/* ED-17: lo que antes se repetía en un párrafo fijo va en una ayuda de primer uso que se cierra. Va arriba del
               centro y no encima de las zonas: así las tres entran en la pantalla (revisión visual del 2026-11-13). */}
           <PrimerUso {...PRIMER_USO_DE_LA_ESTACION} />
@@ -2263,6 +2306,7 @@ export function EditorDePlan({
               <div className="editor-del-plan__al-pie">
                 <button
                   type="button"
+                  id="agregar-ejercicios-a-la-sesion"
                   className="boton boton--quieto"
                   data-agregar-ejercicio
                   onClick={() => {
