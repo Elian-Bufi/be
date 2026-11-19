@@ -12,6 +12,7 @@ import {
   COPY_GUARDADO,
   COPY_PLANTILLAS,
   falloDeGuardado,
+  notaDeOrigenNutricional,
   notasDeLaEstructuraNutricional,
   vaciarNota,
   type EstructuraDePlanEntrada,
@@ -124,17 +125,26 @@ export function DialogoGuardarPlantillaNutricional({
   );
 }
 
+/**
+ * «Creada desde la plantilla X, versión N» en un borrador de Nutrición que salió de una plantilla. Como en Entrenamiento
+ * (#294; ratificación del 19/11): N es la versión que se aplicó (`templateVersionId`), no la vigente. La regla está en
+ * `notaDeOrigenNutricional`.
+ */
 export function NotaDeOrigenNutricional({ token, origen }: { token: string; origen: OrigenDePlanEnPlantilla }) {
   const [texto, setTexto] = useState<string | null>(null);
   useEffect(() => {
     let vigente = true;
-    void api.consultarPlantillaNutricional(token, origen.templateId).then((r: Resultado<{ data: { name: string; versionNumber: number } }>) => {
+    void api.consultarPlantillaNutricional(token, origen.templateId).then((r: Resultado<{ data: { name: string; versionId: string; versionNumber: number } }>) => {
       if (!vigente) return;
-      setTexto(r.ok ? COPY_PLANTILLAS.creadaDesde(r.datos.data.name, r.datos.data.versionNumber) : COPY_PLANTILLAS.origenDesconocido);
+      setTexto(notaDeOrigenNutricional(origen, r.ok ? r.datos.data : null));
     });
     return () => {
       vigente = false;
     };
   }, [token, origen]);
-  return texto ? <p className="nota">{texto}</p> : null;
+  return texto ? (
+    <p className="nota" data-nota-de-origen>
+      {texto}
+    </p>
+  ) : null;
 }

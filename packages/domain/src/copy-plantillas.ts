@@ -177,3 +177,18 @@ export const COPY_PREPARACION_DE_PLANTILLA = {
   // «Empezar desde una plantilla» (Entrenamiento): ya no se guardan solo desde un plan.
   dondeSeArmanEntrenamiento: 'Se crean en «Plantillas y habituales», con «Nueva plantilla», o desde una versión de plan, con «Guardar como plantilla».',
 } as const;
+
+/**
+ * La nota de origen de un plan de Nutrición (ratificación de Dirección del 19/11, como Entrenamiento en #294): dice la
+ * versión de la plantilla **que se aplicó**, no la vigente. La lectura de la plantilla nutricional trae solo la vigente:
+ * si es la aplicada, se dice su número; si no, que salió de una versión anterior, con el número de la vigente para
+ * ubicarla. Nunca el número de la vigente como si fuera el de la aplicada. Sin la plantilla, que ya no está disponible.
+ */
+export function notaDeOrigenNutricional(
+  origen: { readonly templateVersionId: string },
+  plantilla: { readonly name: string; readonly versionId: string; readonly versionNumber: number } | null,
+): string {
+  if (!plantilla) return COPY_PLANTILLAS.origenDesconocido;
+  if (plantilla.versionId === origen.templateVersionId) return COPY_PLANTILLAS.creadaDesde(plantilla.name, plantilla.versionNumber);
+  return `Creada desde la plantilla «${plantilla.name}», con una versión anterior a la vigente (hoy va por la versión ${plantilla.versionNumber}). El plan es de esta persona: la plantilla no cambia si lo editás.`;
+}

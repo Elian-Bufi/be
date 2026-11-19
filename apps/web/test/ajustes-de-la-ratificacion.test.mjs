@@ -33,3 +33,11 @@ test('ENP-D01 · la versión activa, lo compartido, la plantilla y la historia a
   assert.match(fuente('../src/app/pro/advisees/training/agenda-del-plan.tsx'), /\[nombreDeLaFase\(b\.label, bi\)\]/);
   assert.match(fuente('../src/app/pro/advisees/training/editor.tsx'), /const nombreDelBloque = \(b: \{ readonly label: string \}, n: number\): string => nombreDeLaFase\(b\.label, n\);/);
 });
+
+// ─── La nota de origen de Nutrición: la versión que se aplicó ──────────────────────────────────────────────────
+
+test('la nota de origen de Nutrición sale de notaDeOrigenNutricional, con la versión aplicada (como Entrenamiento, #294)', () => {
+  const pieza = fuente('../src/app/pro/advisees/nutrition/plantillas.tsx');
+  assert.match(pieza, /setTexto\(notaDeOrigenNutricional\(origen, r\.ok \? r\.datos\.data : null\)\);/);
+  assert.doesNotMatch(pieza, /COPY_PLANTILLAS\.creadaDesde\(r\.datos\.data\.name, r\.datos\.data\.versionNumber\)/, 'nunca el número de la vigente como el aplicado');
+});
