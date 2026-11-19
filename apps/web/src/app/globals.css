@@ -19469,3 +19469,12 @@ html:has(.estacion:not([data-en-el-asistente])) {
 .bloque-del-editor__campo input[aria-invalid='true'] {
   border-color: var(--error, var(--borde-control));
 }
+
+/* ENP-D15: «Agregar sesión» no se parte en dos renglones; si no entra al lado de «Sesiones», baja entero. */
+.estacion__sesiones-cabecera {
+  flex-wrap: wrap;
+}
+
+.estacion__sesiones-cabecera .boton {
+  white-space: nowrap;
+}
