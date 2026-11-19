@@ -1,7 +1,7 @@
 /**
  * WP-CONTEXTO-DE-LA-PERSONA (DL-179) · TEST-CTX-020 a TEST-CTX-027 · el panel «Contexto de <nombre>» en el website, sin
  * navegador:
- *  1. al costado desde 1680 px y como cajón debajo: a 1920 el editor queda en 1500 px; a 1536 y a 1280 el editor no se
+ *  1. al costado desde 1680 px y como cajón debajo: a 1920 el editor queda en 1480 px; a 1536 y a 1280 el editor no se
  *     comprime (el panel lo tapa en parte, como un cajón);
  *  2. Alt + C, por la tecla física, sin otros modificadores;
  *  3. las pestañas, en orden, con flechas, Inicio y Fin;
@@ -27,14 +27,14 @@ const leer = (ruta) => readFileSync(join(AQUI, '../src/app/pro/advisees', ruta),
 
 test('TEST-CTX-020 · al costado desde 1680 px; como cajón debajo, sin comprimir el editor', () => {
   assert.equal(P.modoDelPanel(1920), 'costado');
-  assert.equal(P.anchoDelEditor(1920), 1500);
+  assert.equal(P.anchoDelEditor(1920), 1480);
   assert.equal(P.modoDelPanel(1680), 'costado');
   assert.equal(P.modoDelPanel(1679), 'cajon');
   // Windows al 125 % con Chrome al 100 % en una pantalla de 1920: 1536 de ancho.
   assert.equal(P.modoDelPanel(1536), 'cajon');
   assert.equal(P.anchoDelEditor(1536), 1536);
   assert.equal(P.anchoDelEditor(1280), 1280);
-  assert.equal(P.anchoDelPanel(1280), 420);
+  assert.equal(P.anchoDelPanel(1280), 440);
   // En una ventana angosta, el cajón no pasa del 92 %.
   assert.equal(P.anchoDelPanel(400), 368);
 });

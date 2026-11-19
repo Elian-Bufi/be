@@ -132,7 +132,7 @@ sección. También se abre y se cierra con **Alt + C**. Con «Ocultar nombres»,
 **Cómo.** Un panel lateral, a la derecha:
 - **con 1680 px de ancho o más** (por ejemplo, 1920 con Chrome al 100 %), va al costado y empuja: el editor sigue entero y
   legible al lado;
-- **con menos** (1536, que es Windows al 125 %, y 1280), se abre como un cajón encima del editor, de 420 px como mucho y
+- **con menos** (1536, que es Windows al 125 %, y 1280), se abre como un cajón encima del editor, de 440 px como mucho y
   nunca más del 92 % del ancho. Tapa parte del editor sin comprimirlo, y se cierra con Escape, con la X o con el mismo botón.
 
 Al cerrarse, el foco vuelve al botón que lo abrió. Es un `aside` con nombre («Contexto de Diego Sosa»), sus pestañas son un
@@ -175,7 +175,7 @@ pedido), API-HBT-06 y 07 (el pedido de ver los hábitos y su estado), API-NPP-01
 - **CTX-D02 · Se monta una sola vez por área y no se vuelve a leer al cambiar de sección.** Las lecturas salen al abrirlo
   por primera vez (nunca al cargar la página: el panel cerrado no lee datos de salud) y se repiten con «Actualizar» del
   marco o con «Volver a leer» del panel. No hay caché fuera de la memoria de la pestaña (08 §27.3).
-- **CTX-D03 · Al costado desde 1680 px; cajón debajo de eso.** A 1920 el editor queda en 1500 px; a 1536 o 1280,
+- **CTX-D03 · Al costado desde 1680 px; cajón debajo de eso.** A 1920 el editor queda en 1480 px; a 1536 o 1280,
   comprimirlo lo volvía ilegible (las tablas de series y las comidas no entran), así que el panel se superpone. Alternativa:
   comprimir hasta 1280 (descartada: el editor de Entrenamiento necesita ~1100 px).
 - **CTX-D04 · Alt + C, también dentro de un campo.** El profesional quiere mirar algo mientras escribe la evaluación. En

@@ -10,10 +10,10 @@
  */
 import { COPY_CONTEXTO, type CitaPosible } from '@be/domain';
 
-/** El ancho de ventana desde el que el panel va al costado (CTX-D03). A 1920 deja el editor en ~1500 px. */
+/** El ancho de ventana desde el que el panel va al costado (CTX-D03). A 1920 deja el editor en ~1480 px. */
 export const ANCHO_PARA_EL_COSTADO = 1680;
 /** El ancho del panel: al costado, fijo; como cajón, hasta el 92 % de la ventana. */
-export const ANCHO_DEL_PANEL = 420;
+export const ANCHO_DEL_PANEL = 440;
 
 export type ModoDelPanel = 'costado' | 'cajon';
 export const modoDelPanel = (anchoDeVentana: number): ModoDelPanel => (anchoDeVentana >= ANCHO_PARA_EL_COSTADO ? 'costado' : 'cajon');

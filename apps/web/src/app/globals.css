@@ -18930,7 +18930,7 @@ html:has(.estacion:not([data-en-el-asistente])) {
 /* CTX-D03: desde 1680 px, al costado y empujando (el editor queda entero al lado); debajo, un cajón encima del editor. */
 .ficha--con-contexto {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 26.25rem;
+  grid-template-columns: minmax(0, 1fr) 27.5rem;
   align-items: start;
 }
 
@@ -18958,7 +18958,7 @@ html:has(.estacion:not([data-en-el-asistente])) {
   position: fixed;
   inset: 0 0 0 auto;
   z-index: 60;
-  width: min(26.25rem, 92vw);
+  width: min(27.5rem, 92vw);
   height: 100dvh;
   box-shadow: var(--sombra);
 }
@@ -19007,8 +19007,8 @@ html:has(.estacion:not([data-en-el-asistente])) {
 
 .panel-de-contexto__pestana {
   flex-shrink: 0;
-  padding: 0.45rem 0.4rem;
-  font-size: 0.875rem;
+  padding: 0.45rem 0.35rem;
+  font-size: 0.82rem;
   white-space: nowrap;
   border: 0;
   border-bottom: 3px solid transparent;
