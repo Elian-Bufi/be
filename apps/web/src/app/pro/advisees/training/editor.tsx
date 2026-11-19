@@ -187,6 +187,13 @@ export const COPY_PRESCRIPCION_DE_LA_SESION = {
   elegido: (nombre: string) => `«${nombre}» se va a escribir en cada ejercicio que agregues a esta sesión. Hasta entonces vive en esta pantalla: no queda guardado.`,
 } as const;
 
+/**
+ * Por qué no se activa sin una app que muestre los objetivos por serie, dicho con «la persona»: en pantalla no va
+ * «asesorado». El texto del dominio es también el mensaje del 409 de la API, que cambia en su ventana (ED-08, etapa 2;
+ * la excepción contada en `scripts/copy-pantallas.test.cjs`): acá se dice sin tocarlo.
+ */
+const ACTIVACION_BLOQUEADA_POR_LA_APP = COPY_COMPATIBILIDAD_DE_CLIENTES.activacionBloqueada.replace(/tu asesorado/, 'la persona');
+
 /** La jerarquía de API-SER-01 como entrada del PATCH, con los tres estados de cada serie (en el dominio, para que las pruebas editen igual). */
 const aEntrada = (v: PlanConObjetivos): Bloques => estructuraConObjetivosComoEntrada(v);
 
@@ -779,7 +786,7 @@ export function EditorDePlan({
       case 'SU_APP':
         // Hasta ED-08, la API espera que la persona haya abierto una app que muestre los objetivos por serie.
         void cargar();
-        return setFalloDeActivacion(`${COPY_COMPATIBILIDAD_DE_CLIENTES.activacionBloqueada} ${COPY_COMPATIBILIDAD_DE_CLIENTES.queHacer}`);
+        return setFalloDeActivacion(`${ACTIVACION_BLOQUEADA_POR_LA_APP} ${COPY_COMPATIBILIDAD_DE_CLIENTES.queHacer}`);
       case 'INCIERTO':
         return setFalloDeActivacion(COPY_RESULTADO_DE_ACTIVAR.incierto);
       default:
@@ -949,7 +956,7 @@ export function EditorDePlan({
     ...impideGuardar.map((p) => conSuLugar(p, PROBLEMA[p.code] ?? 'revisá este elemento')),
     ...sinAplicar.map((x) => conSuLugar(x.issue, x.texto)),
     ...(revision?.estado === 'lista' && revision.version === version.version ? revision.problemas.map((p) => conSuLugar(p, PROBLEMA[p.code] ?? 'revisá este elemento')) : []),
-    ...(bloqueadoPorLaApp ? [{ texto: COPY_COMPATIBILIDAD_DE_CLIENTES.activacionBloqueada, ir: null }] : []),
+    ...(bloqueadoPorLaApp ? [{ texto: ACTIVACION_BLOQUEADA_POR_LA_APP, ir: null }] : []),
     ...(calentamientoBloqueado ? [{ texto: COPY_CALENTAMIENTO_Y_LA_APP.activacionBloqueada, ir: null }] : []),
   ];
   // TB-48: lo que queda sin completar no impide nada; se dice aparte, cada cosa con su lugar.
@@ -1391,7 +1398,7 @@ export function EditorDePlan({
     ...impideGuardar.map(impedimento),
     // C7: la escritura rápida sin aplicar, con «Ir a…» a su línea.
     ...sinAplicar.map((x) => ({ ...impedimento(x.issue), texto: x.texto })),
-    ...(bloqueadoPorLaApp ? [{ lugar: 'Plan', texto: COPY_COMPATIBILIDAD_DE_CLIENTES.activacionBloqueada, destino: null, ir: null }] : []),
+    ...(bloqueadoPorLaApp ? [{ lugar: 'Plan', texto: ACTIVACION_BLOQUEADA_POR_LA_APP, destino: null, ir: null }] : []),
     ...(calentamientoBloqueado ? [{ lugar: 'Plan', texto: COPY_CALENTAMIENTO_Y_LA_APP.activacionBloqueada, destino: null, ir: null }] : []),
   ];
   const delServidor: Impedimento[] = revisionVigente?.estado === 'lista' ? revisionVigente.problemas.map(impedimento) : [];
@@ -1921,7 +1928,7 @@ export function EditorDePlan({
             <p>
               <strong>{COPY_COMPATIBILIDAD_DE_CLIENTES.activacionBloqueadaTitulo}</strong>
             </p>
-            <p>{COPY_COMPATIBILIDAD_DE_CLIENTES.activacionBloqueada}</p>
+            <p>{ACTIVACION_BLOQUEADA_POR_LA_APP}</p>
             <p>{COPY_COMPATIBILIDAD_DE_CLIENTES.queHacer}</p>
           </div>
         </Aviso>

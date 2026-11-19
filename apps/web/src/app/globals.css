@@ -16613,6 +16613,298 @@ p.cifra-del-espacio__desglose {
   white-space: nowrap;
 }
 
+/* ═══ WP-ENTRENAMIENTO-PLANIFICACION, tramo 2 ════════════════════════════════════════════════════════════════════════
+   §7: los bloques de la sesión en las lecturas (la versión activa y el plan compartido), con la raya del editor. */
+.bloque-del-plan {
+  display: grid;
+  gap: 0.45rem;
+  padding: 0.55rem 0.75rem 0.7rem 0.9rem;
+  border: 1px solid var(--borde);
+  border-left: 4px solid var(--borde-control);
+  border-radius: 12px;
+}
+
+.bloque-del-plan[data-tipo='ROUNDS'] {
+  border-left-color: var(--enlace);
+}
+
+.bloque-del-plan__titulo {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.bloque-del-plan__detalle {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0;
+  font-weight: 600;
+}
+
+.bloque-del-plan__detalle > svg {
+  flex: none;
+}
+
+.bloque-del-plan__ejercicios {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.plan-compartido__bloque-de-la-sesion {
+  padding: 0.35rem 0 0.35rem 0.6rem;
+  border-left: 3px solid var(--borde-control);
+}
+
+.plan-compartido__bloque-de-la-sesion > p {
+  margin: 0;
+}
+
+/* ENP-D18: el preset de la sesión vacía, con dónde vive dicho debajo. */
+.estacion__prescripcion-de-la-sesion {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.estacion__prescripcion-de-la-sesion > p {
+  margin: 0;
+}
+
+.estacion__prescripcion-de-la-sesion .etiqueta-de-dato {
+  width: fit-content;
+  white-space: normal;
+}
+
+/* §7: «Agregar bloque» en el tope, con su motivo a la vista. */
+.editor-del-plan__tope {
+  flex-basis: 100%;
+  margin: 0;
+}
+
+/* C9: «Volver a la revisión», fija arriba de la sesión mientras se corrige lo que dijo la revisión. */
+.estacion__volver {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem 0.75rem;
+  margin: -0.25rem 0 0.75rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--borde-control);
+  border-radius: 10px;
+  background: var(--superficie);
+  box-shadow: var(--sombra-suave);
+}
+
+.estacion__volver > .nota {
+  flex: 1 1 16rem;
+  margin: 0;
+}
+
+.revision-del-plan > [data-motivo-sin-revisar] {
+  margin: 0;
+}
+
+/* C7: la escritura rápida, con su rótulo a la vista y «Aplicar» al lado del campo. */
+.linea-de-prescripcion {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.linea-de-prescripcion__rotulo {
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.linea-de-prescripcion__fila {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  max-width: 36rem;
+}
+
+.linea-de-prescripcion__fila > .linea-de-prescripcion__campo {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.linea-de-prescripcion__fila > .boton {
+  flex: none;
+}
+
+/* Lo escrito sin aplicar se marca: el borde del campo, como un cambio que todavía no entró. */
+.linea-de-prescripcion[data-sin-aplicar] .linea-de-prescripcion__campo {
+  border-style: dashed;
+  border-color: var(--enlace);
+}
+
+.ejercicio-del-editor__sin-aplicar {
+  border-style: dashed;
+}
+
+/* C7: el aviso del criterio que cambió, con «Deshacer». */
+.criterio-del-ejercicio__aviso {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.3rem 0.6rem;
+  grid-column: 1 / -1;
+  margin: 0;
+}
+
+/* C5: el pie de la lista de sesiones: desde cuándo y «Ver próximas fechas». Las fechas se abren arriba de la sesión. */
+.estacion__fechas {
+  display: grid;
+  gap: 0.35rem;
+  margin-top: 0.75rem;
+  padding-top: 0.6rem;
+  border-top: 1px solid var(--borde);
+}
+
+.estacion__fechas > .nota {
+  margin: 0;
+}
+
+.estacion__fechas > .boton {
+  justify-self: start;
+}
+
+[data-proximas-fechas] {
+  margin-bottom: 0.75rem;
+}
+
+[data-proximas-fechas] > .nota {
+  margin: 0 0 0.5rem;
+}
+
+/* C6: los elegidos del catálogo, a la vista en el pie fijo del cajón; si son muchos, la lista se desplaza sola. */
+.agregar-ejercicio__elegidos {
+  display: grid;
+  flex-basis: 100%;
+  gap: 0.35rem;
+}
+
+.agregar-ejercicio__elegidos-titulo {
+  margin: 0;
+  font-weight: 600;
+}
+
+.agregar-ejercicio__fichas-elegidas {
+  max-height: 5.5rem;
+  margin: 0;
+  overflow-y: auto;
+}
+
+.agregar-ejercicio__fichas-elegidas .boton {
+  gap: 0.35rem;
+}
+
+/* C6: «No encuentro el ejercicio», al final de la búsqueda. */
+.agregar-ejercicio__no-encuentro {
+  margin-top: 1rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--borde);
+}
+
+.agregar-ejercicio__crear-o-importar > .nota {
+  margin: 0 0 0.5rem;
+}
+
+/* C8: de dónde sale cada valor de una serie, dicho en la celda: «común» (tenue) o «propio» (en el color de los enlaces),
+   a la izquierda del valor, que va a la derecha. Reemplaza el punto de lo propio: ahora lo dice una palabra. */
+.celda-de-objetivo {
+  position: relative;
+}
+
+.celda-de-objetivo[data-origen]::before {
+  content: none;
+}
+
+.celda-de-objetivo__origen {
+  position: absolute;
+  inset-inline-start: 0.5rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--tenue);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  pointer-events: none;
+}
+
+.celda-de-objetivo[data-origen='propio'] .celda-de-objetivo__origen {
+  color: var(--enlace);
+}
+
+.celda-de-objetivo[data-origen] > input {
+  padding-inline-start: 3.2rem;
+}
+
+
+/* C11: «Sesiones vacías», en la sesión vacía de la fase: la cantidad y «Armar Sesión A, B y C». */
+.estacion__sesiones-vacias {
+  display: flex;
+  flex-wrap: wrap;
+  flex-basis: 100%;
+  align-items: center;
+  gap: 0.4rem 0.6rem;
+  margin-top: 0.4rem;
+  padding: 0.6rem 0.75rem;
+  border: 1px dashed var(--borde-control);
+  border-radius: 10px;
+}
+
+.estacion__sesiones-vacias select {
+  min-height: 40px;
+  padding: 0.3rem 0.5rem;
+  border: 1px solid var(--borde-control);
+  border-radius: 8px;
+  background: var(--superficie);
+  color: var(--texto);
+  font: inherit;
+}
+
+.estacion__sesiones-vacias > .nota {
+  flex-basis: 100%;
+  margin: 0;
+}
+
+/* C6 (corrección de las capturas): a 1536 × 730 el pie con los elegidos en varias filas tapaba los resultados. Ahora van
+   en una sola fila compacta, al lado de su título, que se desplaza de costado si son muchos. */
+.agregar-ejercicio__elegidos {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.agregar-ejercicio__elegidos-titulo {
+  flex: none;
+}
+
+.agregar-ejercicio__fichas-elegidas {
+  display: flex;
+  flex: 1 1 auto;
+  flex-wrap: nowrap;
+  gap: 0.35rem;
+  min-width: 0;
+  max-height: none;
+  padding: 0 0 0.15rem;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+.agregar-ejercicio__fichas-elegidas > li {
+  flex: none;
+}
+
+.agregar-ejercicio__fichas-elegidas .boton {
+  min-height: 32px;
+  padding: 0.1rem 0.55rem;
+  font-size: 0.86rem;
+}
+
+
 /* ═══ ED-18 · El vidrio del website (WP-EDITORES-PROFESIONAL, §2.7; DL-170) ════════════════════════════════════════════
    Solo en la estación y el asistente de Entrenamiento: el fondo con dos destellos, y de vidrio la barra de comandos, el
    panel, la tarjeta del paso y los cuadros que se abren desde ahí. La planilla y las zonas de edición siguen opacas, para
@@ -19478,295 +19770,4 @@ html:has(.estacion:not([data-en-el-asistente])) {
   gap: 0.5rem;
   padding: 0.35rem 0;
   border-top: 1px solid var(--borde);
-}
-
-/* ═══ WP-ENTRENAMIENTO-PLANIFICACION, tramo 2 ════════════════════════════════════════════════════════════════════════
-   §7: los bloques de la sesión en las lecturas (la versión activa y el plan compartido), con la raya del editor. */
-.bloque-del-plan {
-  display: grid;
-  gap: 0.45rem;
-  padding: 0.55rem 0.75rem 0.7rem 0.9rem;
-  border: 1px solid var(--borde);
-  border-left: 4px solid var(--borde-control);
-  border-radius: 12px;
-}
-
-.bloque-del-plan[data-tipo='ROUNDS'] {
-  border-left-color: var(--enlace);
-}
-
-.bloque-del-plan__titulo {
-  margin: 0;
-  font-size: 1rem;
-}
-
-.bloque-del-plan__detalle {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  margin: 0;
-  font-weight: 600;
-}
-
-.bloque-del-plan__detalle > svg {
-  flex: none;
-}
-
-.bloque-del-plan__ejercicios {
-  display: grid;
-  gap: 0.5rem;
-}
-
-.plan-compartido__bloque-de-la-sesion {
-  padding: 0.35rem 0 0.35rem 0.6rem;
-  border-left: 3px solid var(--borde-control);
-}
-
-.plan-compartido__bloque-de-la-sesion > p {
-  margin: 0;
-}
-
-/* ENP-D18: el preset de la sesión vacía, con dónde vive dicho debajo. */
-.estacion__prescripcion-de-la-sesion {
-  display: grid;
-  gap: 0.2rem;
-}
-
-.estacion__prescripcion-de-la-sesion > p {
-  margin: 0;
-}
-
-.estacion__prescripcion-de-la-sesion .etiqueta-de-dato {
-  width: fit-content;
-  white-space: normal;
-}
-
-/* §7: «Agregar bloque» en el tope, con su motivo a la vista. */
-.editor-del-plan__tope {
-  flex-basis: 100%;
-  margin: 0;
-}
-
-/* C9: «Volver a la revisión», fija arriba de la sesión mientras se corrige lo que dijo la revisión. */
-.estacion__volver {
-  position: sticky;
-  top: 0;
-  z-index: 3;
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.4rem 0.75rem;
-  margin: -0.25rem 0 0.75rem;
-  padding: 0.5rem 0.75rem;
-  border: 1px solid var(--borde-control);
-  border-radius: 10px;
-  background: var(--superficie);
-  box-shadow: var(--sombra-suave);
-}
-
-.estacion__volver > .nota {
-  flex: 1 1 16rem;
-  margin: 0;
-}
-
-.revision-del-plan > [data-motivo-sin-revisar] {
-  margin: 0;
-}
-
-/* C7: la escritura rápida, con su rótulo a la vista y «Aplicar» al lado del campo. */
-.linea-de-prescripcion {
-  grid-template-columns: minmax(0, 1fr);
-}
-
-.linea-de-prescripcion__rotulo {
-  font-size: 0.9rem;
-  font-weight: 600;
-}
-
-.linea-de-prescripcion__fila {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  max-width: 36rem;
-}
-
-.linea-de-prescripcion__fila > .linea-de-prescripcion__campo {
-  flex: 1 1 auto;
-  min-width: 0;
-}
-
-.linea-de-prescripcion__fila > .boton {
-  flex: none;
-}
-
-/* Lo escrito sin aplicar se marca: el borde del campo, como un cambio que todavía no entró. */
-.linea-de-prescripcion[data-sin-aplicar] .linea-de-prescripcion__campo {
-  border-style: dashed;
-  border-color: var(--enlace);
-}
-
-.ejercicio-del-editor__sin-aplicar {
-  border-style: dashed;
-}
-
-/* C7: el aviso del criterio que cambió, con «Deshacer». */
-.criterio-del-ejercicio__aviso {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 0.3rem 0.6rem;
-  grid-column: 1 / -1;
-  margin: 0;
-}
-
-/* C5: el pie de la lista de sesiones: desde cuándo y «Ver próximas fechas». Las fechas se abren arriba de la sesión. */
-.estacion__fechas {
-  display: grid;
-  gap: 0.35rem;
-  margin-top: 0.75rem;
-  padding-top: 0.6rem;
-  border-top: 1px solid var(--borde);
-}
-
-.estacion__fechas > .nota {
-  margin: 0;
-}
-
-.estacion__fechas > .boton {
-  justify-self: start;
-}
-
-[data-proximas-fechas] {
-  margin-bottom: 0.75rem;
-}
-
-[data-proximas-fechas] > .nota {
-  margin: 0 0 0.5rem;
-}
-
-/* C6: los elegidos del catálogo, a la vista en el pie fijo del cajón; si son muchos, la lista se desplaza sola. */
-.agregar-ejercicio__elegidos {
-  display: grid;
-  flex-basis: 100%;
-  gap: 0.35rem;
-}
-
-.agregar-ejercicio__elegidos-titulo {
-  margin: 0;
-  font-weight: 600;
-}
-
-.agregar-ejercicio__fichas-elegidas {
-  max-height: 5.5rem;
-  margin: 0;
-  overflow-y: auto;
-}
-
-.agregar-ejercicio__fichas-elegidas .boton {
-  gap: 0.35rem;
-}
-
-/* C6: «No encuentro el ejercicio», al final de la búsqueda. */
-.agregar-ejercicio__no-encuentro {
-  margin-top: 1rem;
-  padding-top: 0.75rem;
-  border-top: 1px solid var(--borde);
-}
-
-.agregar-ejercicio__crear-o-importar > .nota {
-  margin: 0 0 0.5rem;
-}
-
-/* C8: de dónde sale cada valor de una serie, dicho en la celda: «común» (tenue) o «propio» (en el color de los enlaces),
-   a la izquierda del valor, que va a la derecha. Reemplaza el punto de lo propio: ahora lo dice una palabra. */
-.celda-de-objetivo {
-  position: relative;
-}
-
-.celda-de-objetivo[data-origen]::before {
-  content: none;
-}
-
-.celda-de-objetivo__origen {
-  position: absolute;
-  inset-inline-start: 0.5rem;
-  top: 50%;
-  transform: translateY(-50%);
-  color: var(--tenue);
-  font-size: 0.72rem;
-  font-weight: 600;
-  letter-spacing: 0.02em;
-  pointer-events: none;
-}
-
-.celda-de-objetivo[data-origen='propio'] .celda-de-objetivo__origen {
-  color: var(--enlace);
-}
-
-.celda-de-objetivo[data-origen] > input {
-  padding-inline-start: 3.2rem;
-}
-
-
-/* C11: «Sesiones vacías», en la sesión vacía de la fase: la cantidad y «Armar Sesión A, B y C». */
-.estacion__sesiones-vacias {
-  display: flex;
-  flex-wrap: wrap;
-  flex-basis: 100%;
-  align-items: center;
-  gap: 0.4rem 0.6rem;
-  margin-top: 0.4rem;
-  padding: 0.6rem 0.75rem;
-  border: 1px dashed var(--borde-control);
-  border-radius: 10px;
-}
-
-.estacion__sesiones-vacias select {
-  min-height: 40px;
-  padding: 0.3rem 0.5rem;
-  border: 1px solid var(--borde-control);
-  border-radius: 8px;
-  background: var(--superficie);
-  color: var(--texto);
-  font: inherit;
-}
-
-.estacion__sesiones-vacias > .nota {
-  flex-basis: 100%;
-  margin: 0;
-}
-
-/* C6 (corrección de las capturas): a 1536 × 730 el pie con los elegidos en varias filas tapaba los resultados. Ahora van
-   en una sola fila compacta, al lado de su título, que se desplaza de costado si son muchos. */
-.agregar-ejercicio__elegidos {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  min-width: 0;
-}
-
-.agregar-ejercicio__elegidos-titulo {
-  flex: none;
-}
-
-.agregar-ejercicio__fichas-elegidas {
-  display: flex;
-  flex: 1 1 auto;
-  flex-wrap: nowrap;
-  gap: 0.35rem;
-  min-width: 0;
-  max-height: none;
-  padding: 0 0 0.15rem;
-  overflow-x: auto;
-  overflow-y: hidden;
-}
-
-.agregar-ejercicio__fichas-elegidas > li {
-  flex: none;
-}
-
-.agregar-ejercicio__fichas-elegidas .boton {
-  min-height: 32px;
-  padding: 0.1rem 0.55rem;
-  font-size: 0.86rem;
 }

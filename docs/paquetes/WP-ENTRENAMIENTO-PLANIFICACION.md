@@ -249,8 +249,9 @@ Las capturas de la CI suman una escena por cada punto que cambia la pantalla (§
 **Lo que corrigieron las capturas:** a 1536 × 730 el pie del catálogo, con los elegidos en varias filas, tapaba todos los
 resultados: van en una sola fila compacta que se desplaza de costado. La fila «Común» se partía en cuatro renglones por
 su detalle («a todas las series»), que ahora lo oye solo el lector. Y el aviso de los objetivos por serie decía «tu
-asesorado» en pantalla (venía de antes, en el dominio): dice «la persona», como el del calentamiento; es también el
-mensaje del 409 de la API, que los clientes no leen por su texto.
+asesorado» en el editor (venía de antes): el editor lo dice con «la persona», como el del calentamiento. El texto del
+dominio no cambia, porque es también el mensaje del 409 de la API, que cambia en su ventana (ED-08, etapa 2; la excepción
+contada en `scripts/copy-pantallas.test.cjs`).
 
 **Lo que queda abierto del tramo 2:**
 - **Guardar de verdad el preset de la sesión vacía** (ENP-D18): propuesta para Dirección; necesita un campo opcional en

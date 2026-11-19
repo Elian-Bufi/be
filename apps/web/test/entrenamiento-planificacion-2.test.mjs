@@ -366,9 +366,15 @@ test('C11 · «Sesiones vacías» no pide nombre ni propósito: no abre ningún 
 
 // ─── Lo que mostraron las capturas ──────────────────────────────────────────────────────────────────────────────
 
-test('Capturas · en pantalla nunca «asesorado»: el aviso de los objetivos por serie dice «la persona»', () => {
-  assert.doesNotMatch(d.COPY_COMPATIBILIDAD_DE_CLIENTES.activacionBloqueada, /asesorad/);
-  assert.match(d.COPY_COMPATIBILIDAD_DE_CLIENTES.activacionBloqueada, /la persona todavía no usó una versión de BE/);
+test('Capturas · en pantalla nunca «asesorado»: el aviso de los objetivos por serie dice «la persona» (sin tocar el 409 de la API)', () => {
+  // El editor dice el texto del dominio con «la persona»; el dominio lo conserva porque es también el mensaje del 409, que
+  // cambia en la ventana de la API (ED-08, etapa 2; la excepción contada en scripts/copy-pantallas.test.cjs).
+  // La misma expresión que usa el editor (una expresión, no un texto: la guardia de ED-06 lee los textos).
+  const enPantalla = d.COPY_COMPATIBILIDAD_DE_CLIENTES.activacionBloqueada.replace(/tu asesorado/, 'la persona');
+  assert.doesNotMatch(enPantalla, /asesorad/);
+  assert.match(enPantalla, /la persona todavía no usó una versión de BE/);
+  assert.ok(EDITOR.includes("const ACTIVACION_BLOQUEADA_POR_LA_APP = COPY_COMPATIBILIDAD_DE_CLIENTES.activacionBloqueada.replace(/tu asesorado/, 'la persona');"));
+  assert.doesNotMatch(EDITOR, /COPY_COMPATIBILIDAD_DE_CLIENTES\.activacionBloqueada\b(?!Titulo)(?!\.replace)/, 'el editor no muestra el texto del dominio tal cual');
 });
 
 test('Capturas · el pie del catálogo no tapa los resultados: los elegidos en una sola fila; la fila «Común» no se parte', () => {
