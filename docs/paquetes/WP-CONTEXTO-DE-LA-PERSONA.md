@@ -127,7 +127,8 @@ hidratación, el ejercicio previo y el ciclo **no se preguntan hoy**: quedan pro
 
 **Dónde.** Un botón **«Contexto de <nombre>»** en el marco de las tres áreas (`marco-del-area.tsx`): está en el Resumen
 (donde se escriben la evaluación y el objetivo), en el Plan (el editor), en Registros y en Revisiones, sin salir de la
-sección. También se abre y se cierra con **Alt + C**. Con «Ocultar nombres», el botón dice «Contexto de la persona».
+sección. También se abre y se cierra con **Alt + C**. Con «Ocultar nombres», el botón dice «Contexto de» y la referencia
+neutral de la persona, la misma que muestra el marco; sin nombre todavía, «Contexto de la persona».
 
 **Cómo.** Un panel lateral, a la derecha:
 - **con 1680 px de ancho o más** (por ejemplo, 1920 con Chrome al 100 %), va al costado y empuja: el editor sigue entero y
@@ -135,7 +136,9 @@ sección. También se abre y se cierra con **Alt + C**. Con «Ocultar nombres»,
 - **con menos** (1536, que es Windows al 125 %, y 1280), se abre como un cajón encima del editor, de 440 px como mucho y
   nunca más del 92 % del ancho. Tapa parte del editor sin comprimirlo, y se cierra con Escape, con la X o con el mismo botón.
 
-Al cerrarse, el foco vuelve al botón que lo abrió. Es un `aside` con nombre («Contexto de Diego Sosa»), sus pestañas son un
+Al cerrarse, el foco vuelve a donde estaba al abrirlo (el campo de la evaluación, si se abrió con Alt + C mientras se
+escribía) o, si eso ya no está, al botón. Reabierto por lo que se recuerda (CTX-D18), al cargar la página, no le saca el foco
+al editor. Es un `aside` con nombre («Contexto de Diego Sosa»), sus pestañas son un
 `tablist` con flechas, y cada carga dice qué lee («Leyendo los formularios…») a un lector de pantalla con una región viva.
 
 **Las pestañas.**
@@ -155,8 +158,8 @@ Al cerrarse, el foco vuelve al botón que lo abrió. Es un `aside` con nombre (�
 | ID | Método y ruta | AuthN | Qué hace |
 |---|---|---|---|
 | API-CTX-01 | `GET /advisees/{adviseeId}/person-context/answers` | SESSION | Las respuestas vigentes de la persona a las Solicitudes **de quien consulta**, de las áreas en que hoy la acompaña con el PDP permitido, con cada pregunta en palabras, su valor estructurado y su versión para citar. Sin ninguna área permitida, el 404 de lo inexistente |
-| API-CTX-02 | `GET /advisees/{adviseeId}/person-context/body` | SESSION | La última toma registrada y la anterior, por métrica, con el cambio solo si son comparables. Quien lleva Antropometría ve sus tomas enteras; a quien la persona le comparte el resumen de Antropometría (DL-163 D-13), el peso y la composición en kilos, con su método, de las tomas de quien la lleva hoy, y la lectura queda registrada para la persona (08 §19.7). Si no, el 404 de lo inexistente |
-| API-NUT-01 (cambia, aditiva) | `POST /advisees/{adviseeId}/nutrition/evaluations` | — | Acepta `formResponseReferences` opcional, con el mismo contrato y las mismas reglas que la de Entrenamiento (DL-102). Ausente es `[]` |
+| API-CTX-02 | `GET /advisees/{adviseeId}/person-context/body` | SESSION | La última toma registrada y la anterior, por métrica, con el cambio solo si son comparables. Quien lleva Antropometría ve sus tomas enteras; a quien la persona le comparte el resumen de Antropometría (DL-163 D-13), el peso y la composición en kilos, con su método, de las tomas de quien la lleva hoy, y la lectura queda registrada para la persona (08 §19.7: en «Quién miró» de la APK, «Miró tu resumen de Antropometría»). Quien lleva Antropometría con la persona, aunque esté en pausa o sin su B2, no la ve por lo compartido: la ve por su Alcance, como API-RES-06. Si no, el 404 de lo inexistente |
+| API-NUT-01 (cambia, aditiva) | `POST /advisees/{adviseeId}/nutrition/evaluations` | — | Acepta `formResponseReferences` opcional, con el mismo contrato y las mismas reglas que la de Entrenamiento (DL-102). Ausente es `[]`. La conducta alimentaria no se cita (el 422 neutral, también en Entrenamiento) |
 | API-NUT-02 y 03 (cambian, aditivas) | las lecturas de la evaluación | — | Devuelven `formResponseReferences`, las respuestas citadas, como Entrenamiento |
 
 Migración aditiva `20261118120000_citas_en_evaluacion_nutricional`: la tabla
@@ -196,7 +199,9 @@ pedido), API-HBT-06 y 07 (el pedido de ver los hábitos y su estado), API-NPP-01
 - **CTX-D09 · La conducta alimentaria, con cuidado.** El renglón dice «Conducta alimentaria» (no el nombre del trastorno), lo
   que marcó («Contó un antecedente» o «Prefiere hablarlo en persona») y lo que el formulario le prometió («armar el plan
   sin números a la vista y junto con un profesional de la salud»). Va sin color, sin ícono de alerta, fuera del título del
-  panel y de cualquier resumen, y no se puede citar. Solo lo ve quien pidió el formulario (es de Nutrición).
+  panel y de cualquier resumen, y no se puede citar: ni en la evaluación ni en el objetivo, y la API lo repite con el 422
+  neutral. En «Formularios» también se rotula «Conducta alimentaria», y el buscador no la encuentra por los nombres que trae
+  la pregunta. Solo lo ve quien pidió el formulario (es de Nutrición).
 - **CTX-D10 · Solo los formularios propios.** El panel muestra lo que respondió la persona a las Solicitudes de **quien
   mira** (la regla de FRM-05 y de la cita, DL-102). Lo que contó a otro profesional llega solo por lo que la persona comparte
   (el resumen, el plan o sus hábitos), nunca la respuesta de otro: el texto de «resumen» lo promete («nunca incluye lo de
@@ -205,16 +210,22 @@ pedido), API-HBT-06 y 07 (el pedido de ver los hábitos y su estado), API-NPP-01
   los comparte (API-HBT-05), salen de «Mis hábitos», con esa fuente («Mis hábitos · lo compartió el 12 nov»).
 - **CTX-D12 · «Citar» va a lo que se está escribiendo.** Cuando la evaluación de Entrenamiento o de Nutrición está abierta,
   cada respuesta citable de esa área tiene «Citar» y queda en la lista de citas del formulario, con la versión que se vio
-  (DL-102: tope de 20, 409 si cambió, sin perder la selección). Con el objetivo abierto, «Citar» suma al fundamento una
+  (DL-102: tope de 20, 409 si cambió, sin perder la selección). Las citas de un renglón (la respuesta y su detalle) entran
+  juntas o ninguna; «Citada» se decide con la versión vista, así una respuesta que la persona corrigió se vuelve a citar
+  después de «Volver a leer» y reemplaza a la vieja. Con el objetivo abierto, «Citar» suma al fundamento una
   línea con la cita y su fuente («Antes de entrenar · 10 nov: Días por semana: 3»): el objetivo se funda en una evaluación
-  y su contrato no tiene citas; hacerlas estructurales queda propuesto (CTX-P07). Sin nada abierto, «Citar» no aparece.
+  y su contrato no tiene citas; hacerlas estructurales queda propuesto (CTX-P07). **Al objetivo nunca va lo de salud**
+  (la categoría `SALUD_Y_SEGURIDAD`): el objetivo viaja con el plan que la persona comparte (API-RES-06, «resumen y plan»)
+  y el texto que aceptó promete que lo compartido nunca incluye «lo de salud de tus formularios»; lo de salud se cita en la
+  evaluación, que no se comparte. Sin nada abierto, «Citar» no aparece.
 - **CTX-D13 · Nutrición cita como Entrenamiento.** El mismo contrato (`formResponseReferences`), opcional en el pedido y con
   la lista en la lectura, la misma validación (respuesta de la persona, a una Solicitud propia, de alcance NUTRICION,
   vigente al citar), el mismo 422 neutral y el mismo 409. La validación se generaliza por área en un solo módulo.
 - **CTX-D14 · El cuerpo, según cómo se llega.** Quien lleva Antropometría ve sus dos últimas tomas registradas, todas las
   métricas. Quien la recibe compartida ve lo que el texto aceptado promete: «de Antropometría, el peso y la composición en
-  kilos, con su método», de las tomas de quien la lleva hoy, y su lectura queda en «Quién miró» de la persona. Las tomas en
-  preparación nunca. Sin una de las dos cosas, 404.
+  kilos, con su método», de las tomas de quien la lleva hoy, y su lectura queda en «Quién miró» de la persona («Miró tu
+  resumen de Antropometría»). Quien lleva Antropometría con la persona, aunque esté en pausa o sin su B2, no la ve por lo
+  compartido: la ve por su Alcance, como API-RES-06. Las tomas en preparación nunca. Sin una de las dos cosas, 404.
 - **CTX-D15 · El cambio, solo entre comparables.** El cambio es la diferencia con su signo y su unidad, y además el «%» con
   su base y su número («−1,2 kg (−1,5 % de 80,0 kg)»), como pidió Dirección el 18/11. Sin colores de bien o mal. Entre dos
   tomas no comparables no hay cambio: «No se compara: otro protocolo».
@@ -232,11 +243,13 @@ pedido), API-HBT-06 y 07 (el pedido de ver los hábitos y su estado), API-NPP-01
 | Regla | Dónde |
 |---|---|
 | Solo se ve lo que la persona autorizó | API-CTX-01 (Solicitudes propias + PDP del área), API-CTX-02 (PDP de Antropometría o la autorización de resumen vigente) · `test/integration/contexto-de-la-persona.int-spec.ts` |
-| Lo ajeno o no autorizado = 404 de lo inexistente | Persona de otro, profesional sin vínculo, B2 revocado, vínculo en pausa, id malformado · mismo cuerpo |
+| Lo ajeno o no autorizado = 404 de lo inexistente | Persona de otro, profesional sin vínculo, B2 revocado, vínculo en pausa, id malformado · mismo cuerpo (TEST-CTX-033); el cuerpo compartido retirado o en pausa (TEST-CTX-042); con dos áreas, el B2 revocado de una (TEST-CTX-043); quien lleva Antropometría, nunca por lo compartido (TEST-CTX-045) |
+| Retirar un permiso corta, también en carrera | Las dos lecturas esperan a un corte en curso: el PDP (`be_bloquear_lo_que_corta`) y el cerrojo compartido de la autorización de resúmenes, como API-RES-06 (TEST-CTX-044, sin pausas) |
 | Administración nunca ve datos de salud | Una sesión de Administración recibe 404 en las dos lecturas; el panel solo vive en `/pro` |
+| Lo de salud no va al objetivo, que viaja con el plan compartido; la conducta alimentaria no se cita | `citasAdmitidas` y `fundamentoConCitas` (TEST-CTX-028), `CAMPOS_QUE_NO_SE_CITAN` (TEST-CTX-012) y `validarCitas` en la API |
 | Ubicar, nunca calificar; sin «asesorado», «cumplimiento», «adherencia», «racha» ni «puntaje» | `packages/domain/src/contexto-de-la-persona.test.ts` recorre todos los textos del panel |
-| Los «%» con su base y su número | `cambioDeLaMedida` en el dominio, con sus pruebas |
-| Teclado, foco, lector de pantalla, dos temas, 1280/1536/1920 | `apps/web/test/contexto-de-la-persona.test.mjs` y las escenas de capturas |
+| Los «%» con su base y su número | `metricasDelCuerpo` y `partesDelCambio` en el dominio (TEST-CTX-007) |
+| Teclado, foco, lector de pantalla, dos temas, 1280/1536/1920 | `apps/web/test/contexto-de-la-persona.test.mjs` (TEST-CTX-020 a 029) y las escenas de capturas |
 
 ## 6. Propuestas (CTX-P01 a CTX-P09, a ratificar; nada de esto se programa)
 
@@ -265,5 +278,18 @@ anota en `capturas.json` si el panel quedó al costado o como cajón y el ancho 
 
 **Lo que queda abierto** (además de ratificar CTX-D01 a CTX-D18):
 - las propuestas CTX-P01 a CTX-P09, que no se programan sin su paquete;
-- la prueba con TalkBack/NVDA y con una persona real, que la CI no reemplaza;
+- la prueba con TalkBack/NVDA y con una persona real, que la CI no reemplaza (en particular, si «Leyendo…» se anuncia: la
+  región viva aparece junto con su texto, y algunos lectores no anuncian eso);
 - el número de DL (DL-179), si otro paquete de la misma planificación lo toma antes de integrar.
+
+## 8. La revisión adversaria (2026-11-19)
+
+Tres miradas, una después de la otra: privacidad y permisos, datos y código, y experiencia. Lo alto y lo medio se arregló en
+la rama, cada cosa con su prueba; el detalle está en la descripción del PR. Lo que cambió del comportamiento:
+- **Al fundamento del objetivo no va lo de salud** (CTX-D12): viaja con el plan compartido.
+- **API-CTX-02 no se abre por lo compartido a quien lleva Antropometría** (CTX-D14), como API-RES-06.
+- **«Quién miró», en la APK,** dice «tu resumen de Antropometría» (Antropometría no tiene plan). Llega con la próxima APK.
+- **La conducta alimentaria no se cita tampoco por la API** (CTX-D09).
+- **«Citar»:** el renglón entra entero o no entra (tope de 20), y una cita que cambió se vuelve a citar (CTX-D12).
+- **«Lo importante»:** el detalle sale del mismo formulario que la respuesta; «La tomó» respeta «Ocultar nombres».
+- **El foco** vuelve a donde estaba al abrir, y **las pestañas** van en un renglón.
