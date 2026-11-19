@@ -90,7 +90,7 @@ import { AntesDeActivar } from '../cuadro-antes-de-activar';
 import { CuadroDelDescarte } from '../cuadro-del-descarte';
 import { CuadroEnfocado } from '../../../../components/cuadro-enfocado';
 import { COPY_ESTACION as CE } from '../estacion/estacion';
-import { alimentosSinComposicion, COPY_RANGOS, itemsParaElTotal, nombreDeLaComida, nombreDelDiaTipo, NUTRIENTES_DEL_RANGO, queFaltaEnPalabras, rangoDelDiaEnPalabras, rangoEnUnaCelda, rangosDelDia, type ComposicionConocida } from './rangos';
+import { COPY_RANGOS, itemsParaElTotal, nombreDeLaComida, nombreDelDiaTipo, NUTRIENTES_DEL_RANGO, queFaltaEnPalabras, rangoDelDiaEnPalabras, rangoEnUnaCelda, rangosDelDia, type ComposicionConocida } from './rangos';
 import { alQuitarElDia, alQuitarLaComida, alQuitarLaOpcion, COPY_QUITAR } from './quitar-con-contenido';
 import { agregarLaReceta, COPY_RECETA_NUEVA, OPCION_INICIAL, opcionesConLaReceta, opcionesQueSiguen, type LugarDeLaReceta } from './receta-en-el-plan';
 import { EditorDeReceta } from '../../recipes/editor-de-receta';
@@ -119,6 +119,7 @@ import { TiraDelObjetivo } from '../seguimiento/tira-del-objetivo';
 import { CuadroDeLaOpcion } from './cuadro-de-la-opcion';
 import { PasosDeNutricion } from './pasos-del-asistente';
 import { gramosDelObjetivo, origenBreve } from './planificacion';
+import { ContextoDeLosAlimentos, datosDelAlimento, type DatosDelAlimento } from './alimentos-del-catalogo';
 import { COPY_RANGOS_INDICADOS } from './rangos-indicados';
 import { CuadroDelRangoIndicado, rangoIndicadoDe, RangosIndicados, sePuedeIndicar, useRangosIndicados, type DiaParaLosRangos } from './rangos-indicados-del-plan';
 import { KcalDelObjetivo, SumaDeLosRangosIndicados } from './suma-de-los-rangos';
@@ -325,6 +326,8 @@ export function EditorDeBorrador({
   const [composiciones, setComposiciones] = useState<ReadonlyMap<string, ComposicionConocida>>(() => new Map());
   // NUP-01: de dónde sale cada alimento («USDA», «Demostración»…), por su identidad, para la pista de su composición.
   const [origenes, setOrigenes] = useState<ReadonlyMap<string, string>>(() => new Map());
+  // DL-180: el grupo (NUA-05) y si se retiró (NUA-02) de cada alimento citado, por su identidad, para sus filas.
+  const [alimentos, setAlimentos] = useState<ReadonlyMap<string, DatosDelAlimento>>(() => new Map());
   // ED-33: lo que se quita con contenido espera la confirmación, con lo que se va.
   const [porQuitar, setPorQuitar] = useState<{ readonly texto: string; readonly hacer: () => void } | null>(null);
   // ED-33: el cuadro del «⋯» de la comida que está abierto («Copiar desde otra comida» o «Usar una comida habitual»).
@@ -381,43 +384,49 @@ export function EditorDeBorrador({
     setOrigenes((m) => new Map([...m, ...alimentosHabituales.habituales.filter((h) => !m.has(h.catalogItemId)).map((h) => [h.catalogItemId, origenBreve(h)] as const)]));
   }, [alimentosHabituales.habituales]);
 
-  // ED-34: lo que ya estaba en el día tipo que se mira y todavía no tiene composición conocida se lee del buscador, por su
-  // nombre, y se toma solo si vuelve el mismo alimento (por su identidad). De a tres lecturas a la vez, una vez cada uno.
-  // En el asistente (ED-30), el paso 5 muestra las opciones de todos los días tipo: se leen las de todos. El cuadro de una
-  // opción (ED-31) calcula con las demás opciones de su comida: se lee también el día de esa opción.
+  // ED-34 y DL-180: lo que ya está en el día tipo que se mira se lee por su identidad (API-ALI-04), de a lotes y una vez
+  // cada uno: su composición (si todavía no se conoce), de dónde sale, su grupo (el ícono, NUA-05) y si se retiró del
+  // catálogo (la marca, NUA-02). Antes se buscaba por el nombre, y lo retirado no volvía. En el asistente (ED-30), el paso
+  // 5 muestra las opciones de todos los días tipo: se leen las de todos. El cuadro de una opción (ED-31) calcula con las
+  // demás opciones de su comida: se lee también el día de esa opción.
   const diaMirado = estructura[posicionPedida(estructura.length, parametros.get('dia'))];
   const conTodosLosDias = (pasoPedido(parametros.get('asistente')) ?? 0) >= 2;
   const diaDelCuadro = agregando ? estructura[agregando.i] : undefined;
+  const pedidosPorIdentidad = useRef(new Set<string>());
   const porLeer = useMemo(
     () => {
       if (!version) return [];
       const dias = conTodosLosDias ? estructura : [...new Set([diaMirado, diaDelCuadro])].filter((d) => d !== undefined);
-      return alimentosSinComposicion(
-        dias.flatMap((d) => d.meals.flatMap((m) => m.options.flatMap((o) => itemsParaElTotal(o, nombres, (id, rv) => itemsGuardados(version, id, rv)) ?? []))),
-        composiciones,
-      );
+      const ids = dias.flatMap((d) => d.meals.flatMap((m) => m.options.flatMap((o) => (itemsParaElTotal(o, nombres, (id, rv) => itemsGuardados(version, id, rv)) ?? []).map((it) => it.catalogItemId))));
+      return [...new Set(ids)].filter((id) => !alimentos.has(id));
     },
-    [conTodosLosDias, estructura, diaMirado, diaDelCuadro, version, nombres, composiciones],
+    [conTodosLosDias, estructura, diaMirado, diaDelCuadro, version, nombres, alimentos],
   );
   useEffect(() => {
-    if (porLeer.length === 0) return;
+    const ids = porLeer.filter((id) => !pedidosPorIdentidad.current.has(id));
+    if (ids.length === 0) return;
+    for (const id of ids) pedidosPorIdentidad.current.add(id);
     setComposiciones((m) => {
       const n = new Map(m);
-      for (const a of porLeer) n.set(a.catalogItemId, 'leyendo');
+      for (const id of ids) if (typeof n.get(id) !== 'object') n.set(id, 'leyendo');
       return n;
     });
-    const cola = [...porLeer];
-    const leer = async () => {
-      for (let a = cola.shift(); a; a = cola.shift()) {
-        const { catalogItemId, nombre } = a;
-        const r = await api.buscarEnCatalogo(token, nombre.slice(0, 80));
+    void (async () => {
+      for (let k = 0; k < ids.length; k += 200) {
+        const lote = ids.slice(k, k + 200);
+        const r = await api.consultarAlimentos(token, lote);
         if (sesionPerdida(r)) return;
-        const encontrado = r.ok ? r.datos.data.find((e) => e.catalogItemId === catalogItemId) : undefined;
-        setComposiciones((m) => new Map(m).set(catalogItemId, encontrado ? encontrado.composition : 'sin-composicion'));
-        if (encontrado) setOrigenes((m) => new Map(m).set(catalogItemId, origenBreve(encontrado)));
+        // Lo que no vuelve (o si la lectura falla) queda «sin composición» y sin marcas: nunca se inventa.
+        const porId = new Map((r.ok ? r.datos.data : []).map((e) => [e.catalogItemId, e] as const));
+        setComposiciones((m) => {
+          const n = new Map(m);
+          for (const id of lote) if (typeof n.get(id) !== 'object') n.set(id, porId.get(id)?.composition ?? 'sin-composicion');
+          return n;
+        });
+        setOrigenes((m) => new Map([...m, ...[...porId.values()].map((e) => [e.catalogItemId, origenBreve(e)] as const)]));
+        setAlimentos((m) => new Map([...m, ...lote.map((id) => [id, datosDelAlimento(porId.get(id))] as const)]));
       }
-    };
-    void Promise.all([leer(), leer(), leer()]);
+    })();
   }, [porLeer, token, sesionPerdida]);
 
   // ED-32: las recetas de las opciones del día que se mira se leen como están hoy (una vez cada una), para decir si hay
@@ -1015,6 +1024,8 @@ export function EditorDeBorrador({
   const sinPlantilla = estructura.some((d) => tieneRecetas(d.meals)) ? COPY_RECETAS.recetaEnPlantilla : null;
 
   return (
+    // DL-180: las filas de los alimentos leen de acá su grupo (el ícono) y si se retiraron (la marca).
+    <ContextoDeLosAlimentos.Provider value={alimentos}>
     <section className="seccion editor-del-plan" aria-labelledby="titulo-borrador">
       <div className="editor-del-plan__cabecera">
         {/* DJ-6: la versión en preparación lleva número (el de las activadas más uno) y dice que la persona no la ve. */}
@@ -1586,6 +1597,7 @@ export function EditorDeBorrador({
           const { i: di, j, k, nueva } = agregando;
           setNombres((n) => ({ ...n, ...nuevos.nombres }));
           setOrigenes((m) => new Map([...m, ...nuevos.origenes]));
+          setAlimentos((m) => new Map([...m, ...nuevos.alimentos]));
           // El buscador ya trajo su composición: los totales de la estación siguen al instante.
           setComposiciones((m) => new Map([...m, ...nuevos.composiciones]));
           // Sobre la estructura de ahora: si un guardado le dio identidad a la opción con el cuadro abierto, la conserva.
@@ -1749,6 +1761,7 @@ export function EditorDeBorrador({
         onDescartar={() => void descartarLaVersion()}
       />
     </section>
+    </ContextoDeLosAlimentos.Provider>
   );
 }
 

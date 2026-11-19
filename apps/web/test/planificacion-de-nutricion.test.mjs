@@ -325,7 +325,9 @@ test('NUP-09 (NUP-D09) · Enter, mientras falten datos, pasa al siguiente que fa
     assert.ok(formularios.length > 0, ruta);
     for (const f of formularios) assert.match(f, /onKeyDown=\{avisos\.alEnter\}/, `${ruta}: ${f}`);
   }
-  assert.match(leer('app/pro/advisees/nutrition/agregar-item.tsx'), /<form .*onKeyDown=\{\(e\) => enterAlQueFalta\(e, loQueFalta\(\)\)\}/);
+  // DL-180: «Crear a mano» usa el formulario común del alimento (el mismo de «Corregir»), con el mismo Enter.
+  assert.match(leer('app/pro/advisees/nutrition/formulario-del-alimento.tsx'), /<form .*onKeyDown=\{\(e\) => enterAlQueFalta\(e, loQueFalta\(\)\)\}/);
+  assert.match(leer('app/pro/advisees/nutrition/agregar-item.tsx'), /<FormularioDelAlimento\n/);
 });
 
 // ─── NUP-11 · Tocar afuera ───────────────────────────────────────────────────────────────────────────────────────
@@ -366,13 +368,14 @@ test('NUP-01 · la fila de cada alimento dice lo que aporta con su cantidad, en 
   assert.match(COMIDA, /const aporte = aporteDelItem\(\{ catalogItemId: item\.catalogItemId, quantity: magnitud, nombre \}, composicion\);/);
   assert.match(COMIDA, /setEscrito\(e\.target\.value\);\n\s*const n = leerNumero\(e\.target\.value\);[\s\S]{0,400}onCambiar\(\{ quantity: \{ value: n \?\? Number\.NaN/);
   // Debajo del nombre, con la pista al pasar el mouse; y la misma pista con el foco en la cantidad.
-  assert.match(COMIDA, /<th scope="row" className="item-del-editor__nombre">\n\s*\{nombre\}[\s\S]{0,200}<Pista texto=\{pista\}>\n\s*<span className="item-del-editor__aporte" data-aporte-del-item>/);
+  // DL-180: antes del nombre, el ícono de su grupo (NUA-05); después, la marca de retirado si corresponde (NUA-02).
+  assert.match(COMIDA, /<th scope="row" className="item-del-editor__nombre">\n\s*<span className="item-del-editor__grupo"[\s\S]{0,200}\n\s*\{nombre\}[\s\S]{0,500}<Pista texto=\{pista\}>\n\s*<span className="item-del-editor__aporte" data-aporte-del-item>/);
   assert.match(COMIDA, /<Pista texto=\{pista\}>\n\s*<input\n\s*id=\{`\$\{id\}-cantidad`\}/);
   // La comida del editor y el cuadro de la opción le pasan la composición y el origen de cada alimento.
   assert.match(COMIDA, /composicion=\{composiciones\.get\(it\.catalogItemId\)\}\n\s*origen=\{origenes\.get\(it\.catalogItemId\) \?\? null\}/);
   assert.match(CUADRO, /composicion=\{todasLasComposiciones\.get\(it\.catalogItemId\)\}\n\s*origen=\{todosLosOrigenes\.get\(it\.catalogItemId\) \?\? null\}/);
-  // De dónde sale: de los habituales, de lo que trajo el buscador y de lo que se sumó en el cuadro.
-  assert.match(EDITOR, /if \(encontrado\) setOrigenes\(\(m\) => new Map\(m\)\.set\(catalogItemId, origenBreve\(encontrado\)\)\);/);
+  // De dónde sale: de los habituales, de lo que se leyó por su identidad (DL-180, API-ALI-04) y de lo que se sumó en el cuadro.
+  assert.match(EDITOR, /setOrigenes\(\(m\) => new Map\(\[\.\.\.m, \.\.\.\[\.\.\.porId\.values\(\)\]\.map\(\(e\) => \[e\.catalogItemId, origenBreve\(e\)\] as const\)\]\)\);/);
   assert.match(EDITOR, /setOrigenes\(\(m\) => new Map\(\[\.\.\.m, \.\.\.nuevos\.origenes\]\)\);/);
   assert.match(CUADRO, /setOrigenesNuevos\(\(m\) => new Map\(m\)\.set\(e\.catalogItemId, origenBreve\(e\)\)\);/);
 });
@@ -464,7 +467,8 @@ test('NUP-11 (NUP-D10) · en el cuadro de la opción, lo escrito en «Crearlo a 
   assert.match(CUADRO, /\{copia && modo === 'importar' \? \(\n\s*<div className="agregar-item__otro" onInput=\{anotarLoEscrito\}>/);
   // Al volver a la opción o al abrir de nuevo, lo de aquel formulario ya quedó atrás.
   assert.match(CUADRO, /useEffect\(\(\) => setEscritoAparte\(false\), \[modo, abierto\]\);/);
-  assert.match(leer('app/pro/advisees/nutrition/agregar-item.tsx'), /<form className="agregar-item__otro" [^\n]*onInput=\{alEscribir\}/);
+  assert.match(leer('app/pro/advisees/nutrition/formulario-del-alimento.tsx'), /<form className="agregar-item__otro formulario-del-alimento" [^\n]*onInput=\{alEscribir\}/);
+  assert.match(leer('app/pro/advisees/nutrition/agregar-item.tsx'), /\n\s*alEscribir=\{alEscribir\}\n/);
 });
 
 // ─── Las bajas de la revisión adversaria del primer tramo (19/11) ───────────────────────────────────────────────
