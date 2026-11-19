@@ -7,6 +7,9 @@
 > ratificar**: mientras no haya respuesta, rigen. La fase 1 se programa en `wp-graficos-fase-1`; la fase 2, adelantada,
 > en cinco ramas desde el 2026-11-14 (§11). DL-174.
 >
+> **Rama E (2026-11-19):** «Patrones» y los enfoques, terminados en `wp-graficos-patrones-y-enfoques` por decisión de
+> Dirección: la API, la vista de la ficha, la pestaña de los editores y «Mis enfoques» (§13.6). DL-183.
+>
 > **Encargo** (Dirección, 2026-11-14, con sus palabras):
 > - «Aprobadas las 25 sugerencias de gráficos y podríamos agregar también la opción de que puedan ver uno arriba del
 >   otro, superpuestos en el mismo gráfico si comparten la x o alineados uno arriba del otro para que los entrenadores
@@ -978,7 +981,8 @@ Mientras no haya respuesta, rigen. Cada una con su alternativa, cuando la hay.
 ### 6.3 Las decisiones al programar
 
 Cada rama numera las suyas en su rango, las escribe en su apartado de §13 y en su PR, **a ratificar**: la fase 1,
-GR-T70 a 79; A, GR-T20 a 29; B, GR-T30 a 39; C, GR-T40 a 49; D, GR-T50 a 59; E, GR-T60 a 69. Una decisión de producto
+GR-T70 a 79; A, GR-T20 a 29; B, GR-T30 a 39; C, GR-T40 a 49; D, GR-T50 a 59; E, GR-T60 a 69. La rama E usó GR-T60 a 64 en la API y,
+para las pantallas, GR-VE01 en adelante (como las GR-VB, GR-VC y GR-VD de las pasadas visuales). Una decisión de producto
 que el paquete no resuelve se toma por el lado más conservador y se anota así.
 
 ## 7. Las operaciones nuevas: la familia GRF (GR-27)
@@ -2059,7 +2063,121 @@ máquina (la lógica pura, con Node) y en la CI.
 
 ### 13.6 Rama E · `wp-graficos-patrones-y-enfoques`
 
-> Sin programar al declarar este paquete.
+> **Estado:** programada del 14 al 19/11 en `wp-graficos-patrones-y-enfoques` (#277). El 14/11 entró la API de los
+> enfoques (`86318339`); el 19/11 se trajo `main` `f4fa73eb` (la planificación integrada) y se terminaron las pantallas:
+> Dirección decidió terminar la rama e integrarla, porque «Patrones» es el corazón de la visión de BE (el seguimiento en
+> el tiempo y los patrones entre áreas, sin afirmar causas). Sin dependencias nuevas; la APK no lee nada de esto y no se
+> congela ninguna lectura (DL-152). La migración de los enfoques pasó a `20261120150000_enfoques_de_graficos`, después de
+> las de `main` (§7: la fecha se fija al integrar). Las decisiones GR-T60 a GR-T64 (la API) y GR-VE01 a GR-VE12 (las
+> pantallas) están **a ratificar**; mientras tanto, rigen. Registro: DL-183.
+
+| Parte | Qué quedó | Dónde | Oráculo |
+|---|---|---|---|
+| **La API de los enfoques** (GR-27) | La familia GRF (API-GRF-01 a 07) como la declara §7: tus enfoques con en cuántos lugares está elegido cada uno, crear con `Idempotency-Key` (el 51 responde `TOO_MANY_SETS`), cambiar con la versión, borrar (sus elecciones se van con él), y elegir o quitar para la persona o para uno de sus planes, con el PDP de hoy y la auditoría en la misma transacción. Dos tablas, un enumerado y un disparador, en una migración que solo agrega | `apps/api/src/graficos/`, `packages/domain/src/contratos-enfoques.ts`, `prisma/migrations/20261120150000_enfoques_de_graficos/` | TEST-GRF-080 a 089 y TEST-GRPE-010 |
+| **Las reglas de los enfoques** (dominio) | Dónde rige cada elección (la del plan gana a la de la persona en el editor de ese plan; en la ficha, la de la persona; sin ninguna, los sugeridos), subir, bajar, quitar y agregar sin pasar de seis ni dejar un enfoque vacío, el nombre de la copia, los avisos de los lugares y los sugeridos para tus áreas (hasta seis, sin cruces) | `packages/domain/src/enfoques.ts` | TEST-GRF-090 a 093 |
+| **«Patrones» en la ficha** | `vista=patrones`, la segunda vista (GR-T12), con el período de la ficha acortado al inicio del acompañamiento y su pista. Arriba, «Enfoque: Foco en fuerza ▾» con «Sugeridos para tus áreas», tus enfoques (cuántos gráficos y dónde están elegidos), «Guardar lo que ves como enfoque…», «Editar este enfoque» y «Mis enfoques…»; elegir guarda en el momento, con «Deshacer». Debajo, la cinta fija, «En el tiempo» con un solo cursor, «Comparaciones», «Ver la relación» (a pedido), «Agregar un gráfico» (los sugeridos que faltan y «Armá tu gráfico») y «Lo que falta». Cada tarjeta: la pregunta, el ejercicio, «Abrir en Analizar» y, al editar, «Subir», «Bajar» y «Quitar». «Cómo se lee Patrones» en el marco de la ficha | `graficos/patrones/patrones-de-la-ficha-en-pantalla.tsx`, `cuerpo-de-patrones-en-pantalla.tsx`, `patrones.ts`, `seguimiento/estado.ts`, `seguimiento/como-se-lee.tsx`, `workspace.tsx` | TEST-GRF-094 a 097 y 099, TEST-GRPE-001 a 003 |
+| **La edición de un enfoque** | «Editar este enfoque» abre una barra con el nombre (y la pista «No pongas datos de salud: el enfoque se usa con varias personas.»), «Guardar», «Guardar como uno nuevo» y «Cancelar». Si está elegido en otros lugares, lo dice antes: «Está elegido en 3 lugares más: el cambio se ve en todos. ¿Lo guardás igual o como un enfoque nuevo?». Nada se guarda hasta «Guardar»; si otra pestaña lo cambió, 409, se vuelve a leer y se dice | `patrones-de-la-ficha-en-pantalla.tsx` | TEST-GRF-091, 092 y TEST-GRPE-010 |
+| **«Mis enfoques»** | Un cajón con cada enfoque, cuántos gráficos tiene y «Elegido en 4 lugares» (sin decir quiénes), y «Elegir para esta persona», «Renombrar», «Duplicar» y «Borrar», que avisa antes en cuántos lugares estaba elegido | `graficos/patrones/mis-enfoques-en-pantalla.tsx` | TEST-GRF-092 y TEST-GRPE-010 |
+| **La pestaña del editor** | «Patrones» en el panel del editor de Entrenamiento (la tercera) y del de Nutrición (la tercera): el período (12 semanas, 6 meses o desde que la acompañás), «Enfoque de este plan» o el de la persona, «Para este plan», «Para la persona» y «Volver a los sugeridos», en densidad compacta y con las versiones del plan que se edita de fondo. Nada de ahí escribe en el plan | `graficos/patrones/patrones-del-plan-en-pantalla.tsx`, `training/editor.tsx`, `nutrition/editor.tsx`, `estacion/estacion.ts` | TEST-GRF-099 |
+| **Lo que lee** | Lo mismo que «Analizar» (las tres lecturas de lo disponible, con el acceso propio), API-GRF-01 y 05, y lo de cada gráfico (API-PRJ-01, API-DSH-04 y el comparador, este leído una vez para todas las tarjetas de Entrenamiento). **Nunca lo que la persona comparte de otras áreas** (API-RES, DL-176): eso vive en «Otras áreas». Nada en el almacenamiento del navegador | `graficos/patrones/lecturas-de-los-enfoques.ts` | TEST-GRF-098 |
+| **Las capturas** | 06 (la pestaña del editor), 10 (con el entrenador), 10b (guardar «Foco en fuerza» y editarlo), 10c («Mis enfoques»), 18 (con la nutricionista), 18b («Ver la relación» con SP-02) y 19 («Armá tu gráfico»), en Claro y Azul noche, a 1280 × 800, 1536 × 864 y 1920 × 950 | `EVIDENCIA/GRAFICOS/herramientas/capturas.mjs` | El trabajo `capturas-de-los-graficos` |
+
+**Los oráculos y sus mutaciones.** Las del website y del dominio se corrieron en esta máquina, una por una, con su
+prueba (18 de 18 mueren); las de la API, con la base de la CI.
+
+| Oráculo | Mutación que lo pone en rojo |
+|---|---|
+| TEST-GRF-090 | Que la elección de la persona gane en el editor del plan |
+| TEST-GRF-091 | Dejar quitar el último gráfico; pasar el tope de seis |
+| TEST-GRF-092 | Contar el lugar de la pantalla entre los otros lugares |
+| TEST-GRF-093 | Sugerir un gráfico de un área sin acceso |
+| TEST-GRF-094 | Contar lo de un área sin acceso en «Lo que falta»; dibujar una serie armada de un área sin acceso |
+| TEST-GRF-095 | Tomar el más registrado de todos para el 1RM estimado; dibujar un ejercicio fijo sin sesiones |
+| TEST-GRF-096 | Ofrecer un cruce fuera del caso 1; sugerir en «Agregar un gráfico» lo que ya está |
+| TEST-GRF-097 | Perder la serie en «Abrir en Analizar» |
+| TEST-GRF-098 | Guardar en `localStorage`; llamar a otra operación que las de los enfoques (API-RES) |
+| TEST-GRF-099 | Poner «Patrones» al final de las vistas |
+| TEST-GRPE-001 | «Tu racha» (o «%», «estación», una causa) en un texto de «Patrones» |
+| TEST-GRPE-002 | Tratar la falla de API-GRF-05 como «sin elección» y dibujar los sugeridos |
+| TEST-GRPE-003 | Esconder que el período empieza antes del acompañamiento |
+| TEST-GRPE-010 | (Con la base) que un «Deshacer» repetido pise la elección; que duplicar copie las elecciones |
+
+#### Decisiones del continuador al programar (a ratificar)
+
+De la API (el 14/11, en #277):
+- **GR-T60 · El plan de una elección se nombra por su identidad** (`trainingPlanId` o `nutritionPlanId`) y no `planId`,
+  que en esas familias es una versión: la elección sigue al plan en todas sus versiones. *Alternativa:* el `planId` del
+  diseño.
+- **GR-T61 · La elección de la persona se decide con la primera área que el PDP permite hoy** (Entrenamiento, Nutrición,
+  Antropometría), para que el reintento de quitarla vuelva a decidir (08:601); la lectura decide las tres.
+- **GR-T62 · La elección del plan de un área sin acceso hoy no se lee, no se elige ni se quita** (404), aunque haya otra
+  área permitida; queda guardada y vuelve con el acceso.
+- **GR-T63 · `choices` cuenta todas las elecciones guardadas del enfoque,** también las de personas que hoy no acompaña,
+  sin decir quiénes.
+- **GR-T64 · La API no juzga la composición de un gráfico armado:** guarda el modo pedido; si con una persona no se puede
+  superponer, el website lo dibuja alineado y lo dice (`composicionPermitida`).
+
+De las pantallas (el 19/11):
+- **GR-VE01 · La pestaña del editor de Entrenamiento es la tercera, no la cuarta:** «Lo que trabaja la semana» no está
+  mientras no tenga datos (C10). Cuando vuelva, «Patrones» queda última.
+- **GR-VE02 · «Agregar un gráfico» edita, no guarda:** sumar un sugerido o uno armado abre la edición del enfoque elegido
+  (o de uno nuevo, armado desde lo que se ve) y nada se guarda hasta «Guardar». Así un clic no cambia un enfoque que está
+  elegido en otros lugares sin el aviso. *Alternativa:* guardar al agregar.
+- **GR-VE03 · «El más registrado» del 1RM estimado se cuenta entre los ejercicios de la lista de la v1:** un enfoque
+  «Foco en fuerza» sirve con cualquier persona que haga alguno.
+- **GR-VE04 · Se dice «lugares», nunca «personas»:** `choices` cuenta personas y planes (GR-T63). El aviso ofrece
+  «Guardar» y «Guardar como uno nuevo»; si el nombre no cambió, la copia se llama «… (copia)».
+- **GR-VE05 · «Ver la relación» se lee a pedido:** cada cruce del caso 1 es una tarjeta con «Ver este cruce», esté o no
+  en el enfoque. Primero se ve el enfoque, y la página queda lejos del límite de 120 lecturas por minuto.
+- **GR-VE06 · Los niveles de lectura y los valores fuera de lo lógico:** «Patrones» no suma un selector «Simple ·
+  Detalle · Datos» ni una política propia de datos dudosos: los dos se propusieron el 18/11 para todos los gráficos, con
+  maqueta y aprobación antes de programarse, y no están en `main`. Cada tarjeta muestra el gráfico como lo dibuja su rama
+  («Detalle») con «Ver la tabla» («Datos»), y «Patrones» no calcula ninguna media propia, así que no hay un número suyo
+  que un valor implausible pueda torcer. Cuando se programen, «Patrones» los hereda de cada gráfico.
+- **GR-VE07 · En el panel del editor solo se elige:** «Para este plan», «Para la persona» y «Volver a los sugeridos»;
+  editar un enfoque y armar un gráfico se hace en la ficha, que tiene el ancho. El panel no tiene «Deshacer»: la elección
+  se cambia con los mismos botones.
+- **GR-VE08 · «Lo que falta» cuenta lo que no se dibuja sin nombrar el área:** un gráfico de un área que se ve, sin lo que
+  pide en el período (un ejercicio con sesiones, tomas o registros), se cuenta; uno de un área sin acceso ni se cuenta.
+- **GR-VE09 · Una falla no es «sin elección»:** si API-GRF-05 falla (no un 404), «Patrones» no dibuja los sugeridos como
+  si no hubiera enfoque: dice la falla con «Reintentar».
+- **GR-VE10 · Las versiones de fondo:** en la ficha, las de los planes propios de Nutrición y Entrenamiento; en el
+  editor, solo las del plan que se edita. Los gráficos de Entrenamiento llevan el cambio de lo indicado como en el
+  historial del ejercicio (`useBandasDelHistorial`, ahora exportado; GR-VB01).
+- **GR-VE11 · Guardar un enfoque desde la ficha lo elige para esa persona** (lo nuevo, «Guardar lo que ves» y «Guardar
+  como uno nuevo»): es lo que se estaba mirando.
+- **GR-VE12 · La migración de los enfoques se fecha al traer `main`** (`20261120150000`), como pide §7. Nunca se aplicó en
+  una base compartida.
+
+#### Lo que difiere de lo que dicen los documentos de la entrega
+
+La auditoría del 19/11 marcó que 00, 03, 09, 10, 12, 17 y «Cómo probar BE» describen «Patrones» y los enfoques como
+hechos. Con esta rama integrada, lo que dicen queda cierto, con estas diferencias:
+- **09 y «Cómo probar BE»:** «“Patrones” → “Agregar un gráfico” abre “Armá tu gráfico”». En pantalla, «Agregar un
+  gráfico» es una sección al pie de «Patrones» con los sugeridos que faltan y el botón «Armá tu gráfico», que abre el
+  compositor; lo armado se suma al enfoque al tocar «Guardar» (GR-VE02).
+- **12 (la tabla de los gráficos):** «Dos etapas lado a lado» figura en «Analizar» y «Patrones»; en «Patrones» está en
+  «Comparaciones» cuando el enfoque lo tiene (se suma con «Agregar un gráfico»): no está entre los sugeridos.
+- **12 y 17:** las cifras cambian con la rama: **322 operaciones** (315 en `main`, más las siete de GRF), **156 modelos**
+  en el esquema (154 más dos) y **99 migraciones** (98 más una). Se recuentan el día que se congela, sobre el mismo commit.
+- **09:** las capturas `superpuestas.png` y `cinta.png` se vuelven a mirar si su epígrafe nombra el enfoque.
+- **El paquete (§4.6):** la pestaña del editor de Entrenamiento es la tercera (GR-VE01); el editor no edita enfoques
+  (GR-VE07); «Ver la relación» se abre a pedido (GR-VE05).
+
+#### Lo que queda abierto
+
+- **La evidencia en pantalla del editor de Nutrición:** la pestaña está y la prueban los oráculos, pero la herramienta
+  de capturas no llega al editor de Nutrición de Diego (no tiene un borrador); se mira a mano o con la herramienta de la
+  planificación de Nutrición (baja).
+- **El período del editor de Nutrición** arranca, con «Desde que la acompañás», en el inicio del acompañamiento de
+  Entrenamiento si el profesional lleva los dos (`useInicioDelAcompanamiento`, de la rama B); con solo Nutrición, en el de
+  Nutrición (baja).
+- **Los niveles de lectura y la política de datos dudosos** (GR-VE06): esperan su maqueta y su aprobación, y van en todos
+  los gráficos a la vez.
+- **El lector de pantalla real** (NVDA): las pruebas leen el código; el menú del enfoque, la barra de edición y el cursor
+  común no se probaron con un lector (baja).
+- **Los oráculos de §9 que piden el navegador** (unas veinte lecturas por período, de a cuatro, y la medición a 1024):
+  las lecturas pasan por `limitarLectura` y el comparador se comparte, pero no hay un recorrido que las cuente (baja).
 
 ### 13.7 Pasada visual · `wp-graficos-pulido-visual`
 

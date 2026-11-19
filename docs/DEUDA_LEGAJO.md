@@ -183,6 +183,7 @@
 | DL-177 | Decisión de Dirección · 2026-11-18 (el profesional sin el autenticador) | 08 §25 · 08 §42 (condición 6) · Ley 25.326 art. 9 · RNF-PRI-002 · DL-155 · DL-169 (UF-11, UF-D12 y UF-T56) · DL-172 | Para actuar como profesional había que configurar el autenticador y escribir el código de 6 dígitos en cada sesión; Dirección quiere que el profesional entre con su contraseña (o con Google) y, más adelante, con un código por correo | **DECIDIDA por Dirección el 2026-11-18 · PROGRAMADA en `wp-sin-autenticador-profesional` (PR abierto, sin integrar)**: «solo contraseña hasta tener correo», con una constante del dominio (`SEGUNDO_FACTOR_DEL_PROFESIONAL_EXIGIDO = false`). Administración sigue con contraseña y autenticador; API-ADM-19 queda en el contrato y fuera de la consola; sin migraciones. A ratificar: la transición, la suspensión de 08 §25 y de la condición 6 de 08 §42, y el riesgo (una sola llave para datos de salud) |
 | DL-178 | Decisión de Dirección · 2026-11-18 (las series de calentamiento) | 06 REG-06-105 · 09v10 (comparación serie por serie) · DL-122 · DL-152 · DL-161 · DL-171 (BE-E1RM, Epley v1) | El plan y el registro no tenían un tipo de serie: un calentamiento entraba en la cuenta de series, en la barra de la sesión, en «La vez pasada», en el historial, en Analizar y en el 1RM estimado | **DECIDIDA por Dirección el 2026-11-18 · PROGRAMADA en `wp-series-de-calentamiento` (PR abierto, sin integrar), a ratificar D-1 a D-6**: `setKind` (`WORKING` por omisión, `WARM_UP`) en la serie indicada y en la registrada, sin reescribir nada (la ausencia es efectiva); explícito solo para el cliente que declara `training-set-kinds-1`; el calentamiento arriba, con «C», fuera de todo cálculo; las lecturas nuevas de la APK se congelan con la próxima candidata (DL-152) |
 | DL-180 | Decisión de Dirección · 2026-11-16 (el segundo tramo de la planificación de Nutrición: los alimentos del catálogo) | REG-06-99 a 101 · REG-06-135 · RF-027 · RF-060 · DL-119 y DL-120 (el patrón de las recetas) · DL-141 (D-1, D-6) · DL-155 (WP-ADMINISTRACION) · DL-169 (UF-09) | Un alimento cargado a mano con un error no se podía corregir ni retirar; el buscador no distinguía lo verificado de lo cargado por cualquiera; Administración no tenía cómo revisar lo cargado a mano; los alimentos no tenían ícono por grupo; la imagen de la receta recién se ofrecía después del primer guardado | **PROGRAMADA en `wp-nutricion-alimentos` (PR en borrador contra `wp-nutricion-planificacion`, sin integrar) · NUA-D01 a NUA-D23 a ratificar** (NUA-D05 y D13, sin efecto por la decisión de Dirección del 2026-11-19): corregir emite una versión nueva y retirar una versión RETIRADO, en la cadena de siempre; **lo cargado a mano es de quien lo cargó** (segundo tramo, `wp-nutricion-alimentos-2`, PR en borrador contra `wp-nutricion-alimentos`); «Verificado» (la tabla oficial, el canon o lo certificado) y «Tuyo» en el buscador; Administración ve todas las cargas con el nombre de quien las cargó, las agrupa por nombre parecido, certifica con una fuente, marca equivalentes y **suma al canon**; un ícono por grupo; la imagen de la receta al crearla; los campos del asistente; las **medidas caseras** (NUA-08, en el website). Familia propia ALI (API-ALI-01 a 09), cinco migraciones aditivas. Micronutrientes y platos argentinos (NUA-09 y 10), declarados como el tramo siguiente (`docs/paquetes/WP-NUTRICION-ALIMENTOS.md`) |
+| DL-183 | Decisión de Dirección · 2026-11-19 (terminar e integrar la rama E de los gráficos: «Patrones» y los enfoques) | RF-053 · RF-054 · RF-034 · RF-045 · 08 §12.2 · RNF-PRI-002 · DL-126 · DL-128 · DL-152 · DL-163 (TB-16, TB-25) · DL-174 (GR-27, GR-T01 a GR-T19) · DL-175 · DL-176 | La entrega (00, 03, 09, 10, 12, 17 y «Cómo probar BE») describe «Patrones» y los enfoques como hechos, pero solo estaba la API, en una rama sin integrar; la ficha tenía «Resumen», «Línea de tiempo» y «Analizar» | **PROGRAMADA en `wp-graficos-patrones-y-enfoques` (#277, en borrador, sin integrar) · GR-T60 a GR-T64 y GR-VE01 a GR-VE12 a ratificar**: «Patrones» como segunda vista de la ficha (la cinta fija, «En el tiempo» con un solo cursor, «Comparaciones», «Ver la relación» a pedido, «Agregar un gráfico» y «Lo que falta»), el menú del enfoque con «Deshacer», la edición con el aviso de los otros lugares, «Guardar lo que ves como enfoque…», «Mis enfoques» y la pestaña «Patrones» de los editores de Entrenamiento y Nutrición. Sin operaciones nuevas: usa la familia GRF de DL-174 (API-GRF-01 a 07, una migración que solo agrega). Lee solo con el acceso propio, nunca lo compartido de otras áreas (DL-176). Detalle: `docs/paquetes/WP-GRAFICOS.md` §13.6 |
 
 ---
 
@@ -8846,3 +8847,39 @@ el interruptor (D-2).
 - Ratificar PLT-D01 a PLT-D18.
 - Lo declarado como siguiente (arriba) y, fuera del paquete, el mismo error de la nota de origen en Nutrición.
 - La prueba manual con el teclado y un lector de pantalla. Detalle completo: `docs/paquetes/WP-PLANTILLAS-DE-ENTRENAMIENTO.md`.
+
+## DL-183 — «Patrones» y los enfoques: los gráficos de la persona en el mismo tiempo, en la ficha y en el editor
+
+**Prioridad:** alta (es el corazón de la visión de BE: el seguimiento en el tiempo y los patrones entre áreas) ·
+**Documento:** RF-053 · RF-054 · RF-034 · RF-045 · DL-174 (GR-27) · DL-176 · **Estado:** DECIDIDA por Dirección el
+2026-11-19 (terminar la rama E e integrarla) · PROGRAMADA en `wp-graficos-patrones-y-enfoques` (#277, en borrador, sin
+integrar) · GR-T60 a GR-T64 y GR-VE01 a GR-VE12, **a ratificar**.
+
+**Qué decidió Dirección.** Terminar la rama E de WP-GRAFICOS e integrarla: «Patrones» y los enfoques (GR-27), porque son
+el corazón de la visión de BE —seguir a la persona en el tiempo y ver los patrones entre sus áreas, sin afirmar causas—
+y porque los documentos de la entrega ya los describen.
+
+**Qué dice el legajo.** RF-053 pide la ficha como síntesis del proceso, sin calificar a la persona; RF-054, la línea del
+tiempo. El 09 no tiene enfoques: son una familia propia de BE (GRF), declarada en DL-174 con su migración que solo agrega.
+08 §12.2 y DL-176: lo que la persona comparte de otras áreas se ve donde ella lo comparte, no en los gráficos del
+profesional.
+
+**Lo programado.**
+- **La vista «Patrones»** de la ficha (`vista=patrones`, entre «Resumen» y «Línea de tiempo»): la cinta del tiempo fija
+  arriba, los gráficos del enfoque sobre el mismo eje con un solo cursor, «Comparaciones», «Ver la relación» (los cruces
+  del caso 1, a pedido), «Agregar un gráfico» con «Armá tu gráfico» y «Lo que falta», sin nombrar un área sin acceso.
+- **Los enfoques en pantalla:** el menú «Enfoque: … ▾» con los sugeridos para tus áreas, tus enfoques, «Guardar lo que
+  ves como enfoque…», «Editar este enfoque» y «Mis enfoques…»; elegir guarda en el momento, con «Deshacer»; editar avisa
+  en cuántos otros lugares está elegido y ofrece guardarlo como uno nuevo.
+- **La pestaña «Patrones»** del panel de los editores de Entrenamiento y Nutrición: el enfoque de este plan o el de la
+  persona, «Para este plan» y «Para la persona», en densidad compacta. Nada escribe en el plan.
+- **Las reglas puras** en el dominio (`enfoques.ts`) y en el website (`graficos/patrones/patrones.ts`), con sus
+  pruebas y mutaciones (TEST-GRF-090 a 099, TEST-GRPE-001 a 003 y TEST-GRPE-010 con la base).
+- **La migración de los enfoques** se fecha al traer `main` (`20261120150000`), como pide DL-174.
+
+**Lo que queda.**
+- Ratificar GR-T60 a GR-T64 y GR-VE01 a GR-VE12.
+- Los niveles de lectura («Simple · Detalle · Datos») y la política de datos dudosos, para todos los gráficos a la vez,
+  después de su maqueta (GR-VE06).
+- Recontar las cifras de la entrega el día que se congela (322 operaciones, 156 modelos y 99 migraciones con esta rama).
+- La prueba con un lector de pantalla. Detalle completo: `docs/paquetes/WP-GRAFICOS.md` §13.6.

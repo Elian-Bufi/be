@@ -13,6 +13,9 @@
  *   decidir.
  * - **TEST-GRF-089:** borrar un enfoque quita sus elecciones; cada escritura queda en la auditoría y cada decisión en el
  *   registro del PDP; la base sostiene el ámbito, el dueño y el plan aunque el servicio se equivocara.
+ * - **TEST-GRPE-010** (rama E, DL-183): lo que hace el website de «Patrones» con la API: elegir y «Deshacer» (volver al
+ *   anterior con la versión de la elección nueva, o quitarla si no había), «Volver a los sugeridos» y deshacerlo,
+ *   duplicar (un enfoque nuevo sin elecciones) y «Guardar como uno nuevo» (el viejo conserva sus otros lugares).
  *
  * Mutaciones que estas pruebas matan (descritas; quedan para correrlas con la base de la CI): dejar leer o cambiar el
  * enfoque al otro profesional; aceptar un valor dentro del contenido; dejar pasar el enfoque 51; elegir sin el PDP o con
@@ -442,5 +445,52 @@ describe('TEST-GRF-089 · borrar un enfoque quita sus elecciones, todo queda aud
     await expect(enfoqueCrudo(' Con espacios ', '{}')).rejects.toThrow(/conjunto_de_graficos_coherente/);
     await expect(enfoqueCrudo('x'.repeat(81), '{}')).rejects.toThrow(/conjunto_de_graficos_coherente/);
     await expect(enfoqueCrudo('Una lista', '[]')).rejects.toThrow(/conjunto_de_graficos_coherente/);
+  });
+});
+
+// ─── TEST-GRPE-010 · lo que hace el website de «Patrones» ────────────────────────────────────────────────────
+
+describe('TEST-GRPE-010 · los recorridos del website de «Patrones»: deshacer, volver a los sugeridos, duplicar y guardar como uno nuevo (DL-183)', () => {
+  it('deshacer vuelve al anterior con la versión de la elección nueva (y uno viejo, 409); volver a los sugeridos se deshace creándola otra vez; duplicar no copia las elecciones', async () => {
+    const e = await escenario('patrones', ['ENTRENAMIENTO']);
+    const s = conSesion(app, e.pro.token);
+    const fuerza = await crearEnfoque(e.pro, 'Foco en fuerza', [FUERZA]);
+    const tecnica = await crearEnfoque(e.pro, 'Técnica y comidas', [FUERZA, ARMADO]);
+    const quitar = (choiceId: string) => s.delete(eleccion(e.ase.id, choiceId)).set('Idempotency-Key', claveDeIdempotencia());
+
+    // Sin elección, elegir y «Deshacer»: se quita la nueva y vuelven los sugeridos.
+    const primera = (await elegir(e.pro, e.ase.id, { scope: 'PERSON', setId: fuerza.setId, expectedVersion: null }).expect(201)).body.data;
+    await quitar(primera.choiceId).expect(204);
+    expect((await s.get(elecciones(e.ase.id)).expect(200)).body.data).toEqual([]);
+
+    // Con elección, cambiar y «Deshacer»: vuelve la anterior, con la versión de la elección nueva.
+    const otra = (await elegir(e.pro, e.ase.id, { scope: 'PERSON', setId: fuerza.setId, expectedVersion: null }).expect(201)).body.data;
+    const cambiada = (await elegir(e.pro, e.ase.id, { scope: 'PERSON', setId: tecnica.setId, expectedVersion: otra.version }).expect(200)).body.data;
+    const deshecha = (await elegir(e.pro, e.ase.id, { scope: 'PERSON', setId: fuerza.setId, expectedVersion: cambiada.version }).expect(200)).body.data;
+    expect(deshecha).toMatchObject({ choiceId: otra.choiceId, set: { setId: fuerza.setId, name: 'Foco en fuerza' } });
+    // Un «Deshacer» repetido trae una versión vieja: 409, sin pisar lo que quedó (lo de otra pestaña tampoco se pisa).
+    expect((await elegir(e.pro, e.ase.id, { scope: 'PERSON', setId: tecnica.setId, expectedVersion: cambiada.version }).expect(409)).body.error.code).toBe('VERSION_CONFLICT');
+
+    // «Volver a los sugeridos» y deshacerlo: la elección se crea otra vez (expectedVersion: null).
+    await quitar(deshecha.choiceId).expect(204);
+    const devuelta = (await elegir(e.pro, e.ase.id, { scope: 'PERSON', setId: fuerza.setId, expectedVersion: null }).expect(201)).body.data;
+    expect(devuelta.set.setId).toBe(fuerza.setId);
+
+    // El plan, con su elección propia: la de la persona sigue (en el editor gana la del plan; lo decide el website).
+    await elegir(e.pro, e.ase.id, { scope: 'TRAINING_PLAN', trainingPlanId: e.trainingPlanId, setId: tecnica.setId, expectedVersion: null }).expect(201);
+    expect(ambitos((await s.get(elecciones(e.ase.id)).expect(200)).body.data)).toEqual(['PERSON', 'TRAINING_PLAN']);
+
+    // Duplicar: un enfoque nuevo con el mismo contenido y sin elecciones; el original conserva las suyas.
+    const antes = (await s.get(ENFOQUES).expect(200)).body.data as { setId: string; choices: number; content: unknown }[];
+    const original = antes.find((x) => x.setId === fuerza.setId)!;
+    const copia = (await s.post(ENFOQUES).send({ name: 'Foco en fuerza (copia)', content: original.content }).expect(201)).body.data;
+    expect(copia).toMatchObject({ choices: 0, content: original.content });
+    expect(original.choices).toBe(1);
+
+    // «Guardar como uno nuevo» y elegirlo para la persona: el viejo queda sin ese lugar, el del plan no cambia.
+    const nuevo = await crearEnfoque(e.pro, 'Foco en fuerza, bloque 2', [ENERGIA]);
+    await elegir(e.pro, e.ase.id, { scope: 'PERSON', setId: nuevo.setId, expectedVersion: devuelta.version }).expect(200);
+    const despues = (await s.get(ENFOQUES).expect(200)).body.data as { setId: string; choices: number }[];
+    expect(Object.fromEntries(despues.map((x) => [x.setId, x.choices]))).toEqual({ [fuerza.setId]: 0, [tecnica.setId]: 1, [nuevo.setId]: 1, [copia.setId]: 0 });
   });
 });
