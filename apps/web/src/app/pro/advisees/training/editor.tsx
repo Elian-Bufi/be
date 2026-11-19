@@ -672,7 +672,7 @@ export function EditorDePlan({
   // ED-07: con el cuadro abierto y todo guardado, la API revisa lo guardado (al abrirlo, o apenas llega la respuesta de
   // un guardado). Con cambios sin guardar, el cuadro ofrece primero «Guardar ahora».
   useEffect(() => {
-    if (confirmar && version && !sucio && !guardando && revision === null) void revisar(version);
+    if (confirmar && version && !sucio && !guardando && (revision === null || revision.version !== version.version)) void revisar(version);
     // `revisar` es de este render y lee lo mismo que estas dependencias.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [confirmar, version, sucio, guardando, revision]);
@@ -871,7 +871,7 @@ export function EditorDePlan({
   // app de la persona (la API todavía la espera).
   const impidenActivar = [
     ...impideGuardar.map((p) => conSuLugar(p, PROBLEMA[p.code] ?? 'revisá este elemento')),
-    ...(revision?.estado === 'lista' ? revision.problemas.map((p) => conSuLugar(p, PROBLEMA[p.code] ?? 'revisá este elemento')) : []),
+    ...(revision?.estado === 'lista' && revision.version === version.version ? revision.problemas.map((p) => conSuLugar(p, PROBLEMA[p.code] ?? 'revisá este elemento')) : []),
     ...(bloqueadoPorLaApp ? [{ texto: COPY_COMPATIBILIDAD_DE_CLIENTES.activacionBloqueada, ir: null }] : []),
     ...(calentamientoBloqueado ? [{ texto: COPY_CALENTAMIENTO_Y_LA_APP.activacionBloqueada, ir: null }] : []),
   ];
@@ -1892,6 +1892,9 @@ export function EditorDePlan({
                     { clave: 'quitar', texto: 'Quitar esta fase', alElegir: quitarBloque, noSePuede: bloques.length <= 1 ? 'Es la única fase de la versión.' : null },
                   ]}
                 />
+                <Ayuda titulo="Qué es una fase">
+                  <p data-que-es-la-fase>{COPY_ENTRENAMIENTO.queEsLaFase}</p>
+                </Ayuda>
                 <span className="nota nivel-del-plan__detalle" data-sesiones-del-bloque>
                   <EnPartes texto={sesionesDelBloque(bloque)} />
                 </span>
@@ -2475,8 +2478,8 @@ export function EditorDePlan({
         primera={!version.predecessorPlanId}
         impiden={impidenActivar}
         sinCompletar={sinCompletarAlActivar}
-        revisando={revision?.estado === 'revisando'}
-        sinRevisar={revision?.estado === 'fallo'}
+        revisando={revision?.estado === 'revisando' || (!!revision && revision.version !== version.version)}
+        sinRevisar={revision?.estado === 'fallo' && revision.version === version.version}
         onVolverARevisar={() => void revisar(version)}
         sinGuardar={sucio}
         guardando={guardando}

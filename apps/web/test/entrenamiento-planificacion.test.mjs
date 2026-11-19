@@ -32,6 +32,7 @@ test('ENP-D01 · lo que era «Bloque» se lee «Fase», con su ayuda; el contrat
   assert.equal(d.ubicacionDelProblemaDeEntrenamiento('blocks[1].sessions[0]', [{ label: 'F', sessions: [] }, { label: '', sessions: [{ label: 'A', prescriptions: [] }] }]), 'Fase 2 → A');
   assert.match(PLAN, /initialStructure: \{ blocks: \[\{ label: 'Fase 1', sessions: \[\] \}\] \}/);
   assert.doesNotMatch(EDITOR, /'Quitar este bloque'|Nombre del bloque"|un bloque<\/span>/);
+  assert.match(EDITOR, /<p data-que-es-la-fase>\{COPY_ENTRENAMIENTO\.queEsLaFase\}<\/p>/);
 });
 
 test('ENP-D15 · cada «Agregar» dice qué agrega', () => {
@@ -141,6 +142,8 @@ test('ENP-D13 · la revisión honesta: nunca «Nada impide activar»; cuatro est
   assert.match(EDITOR, /destinoDelLugar\(lugar\)/);
   // La revisión se pide sola cuando lo guardado se queda quieto, no en cada tecla.
   assert.match(EDITOR, /setTimeout\(\(\) => void revisar\(version\), 900\)/);
+  // En «Antes de activar», lo mismo: una revisión de otra versión no se muestra como la de esta.
+  assert.match(EDITOR, /revision\?\.estado === 'lista' && revision\.version === version\.version \? revision\.problemas\.map\(\(p\) => conSuLugar/);
 });
 
 test('C10 · «Lo que trabaja la semana» no está mientras no tenga datos', () => {
