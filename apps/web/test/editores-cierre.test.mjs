@@ -16,7 +16,9 @@ const O = await import('../src/app/pro/advisees/nutrition/opcion-de-otra-comida.
  * Nutrición va con su base dicha («18 % de las 2.500 kcal»). Un «%» sin «de la(s)/lo(s)» después es el que no dice de qué
  * es, y sigue prohibido; también el de cumplimiento o adherencia. En la app de la persona, la regla no cambia.
  */
-const porcentajeSinSuBase = (t) => /%(?!\s*de\s+l[ao]s?\b)/.test(t);
+// La base va con su número («de las 2.500 kcal», o la expresión que lo escribe): «de las kcal» no dice de cuáles cuando
+// los gramos no suman las kcal indicadas (revisión adversaria del primer tramo de WP-NUTRICION-PLANIFICACION).
+const porcentajeSinSuBase = (t) => /%(?!\s*de\s+l[ao]s?(?:\s+\d|\s*\$\{|\s*$))/.test(t);
 
 
 const item = (itemId, catalogItemId) => ({ itemId, catalogItemId, quantity: { value: 100, unit: 'g' }, preparationState: 'COOKED', note: 'sin sal' });

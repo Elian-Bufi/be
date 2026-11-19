@@ -253,12 +253,17 @@ export interface FilaDeLaSuma {
   readonly sinMaximo: readonly string[];
   /** Cuántas comidas tienen rango de este macro. */
   readonly conRango: number;
+  /**
+   * Cuántas comidas indican un mínimo de este macro. Sin ninguna, la suma no tiene piso: su mínimo es el cero de los
+   * mínimos vacíos, no uno indicado, y no se compara contra él.
+   */
+  readonly conMinimo: number;
 }
 
 export interface SumaDeLosRangos {
   readonly macros: Readonly<Record<MacroDelRango, FilaDeLaSuma>>;
-  /** Las kcal de la suma, con 4, 4 y 9 kcal por gramo. */
-  readonly kcal: { readonly min: number; readonly max: number | null; readonly conRango: number };
+  /** Las kcal de la suma, con 4, 4 y 9 kcal por gramo. Tiene piso si algún macro lo tiene. */
+  readonly kcal: { readonly min: number; readonly max: number | null; readonly conRango: number; readonly conMinimo: number };
 }
 
 /**
@@ -272,6 +277,7 @@ export function sumaDeLosRangos(comidas: readonly { readonly nombre: string; rea
     const sinRango: string[] = [];
     const sinMaximo: string[] = [];
     let conRango = 0;
+    let conMinimo = 0;
     for (const c of comidas) {
       const l = limitesDe(c.rango?.[m]);
       if (!l) {
@@ -280,18 +286,20 @@ export function sumaDeLosRangos(comidas: readonly { readonly nombre: string; rea
         continue;
       }
       conRango += 1;
+      if (l.min !== null) conMinimo += 1;
       min += l.min ?? 0;
       if (l.max === null) {
         sinMaximo.push(c.nombre);
         max = null;
       } else if (max !== null) max += l.max;
     }
-    return { min: aUnDecimal(min), max: max === null ? null : aUnDecimal(max), sinRango, sinMaximo, conRango };
+    return { min: aUnDecimal(min), max: max === null ? null : aUnDecimal(max), sinRango, sinMaximo, conRango, conMinimo };
   };
   const macros = { protein: fila('protein'), carbohydrate: fila('carbohydrate'), fat: fila('fat') };
   const kcalMin = MACROS_DEL_RANGO.reduce((s, m) => s + macros[m].min * KCAL_POR_GRAMO[m], 0);
   const kcalMax = MACROS_DEL_RANGO.every((m) => macros[m].max !== null) ? MACROS_DEL_RANGO.reduce((s, m) => s + macros[m].max! * KCAL_POR_GRAMO[m], 0) : null;
-  return { macros, kcal: { min: Math.round(kcalMin), max: kcalMax === null ? null : Math.round(kcalMax), conRango: Math.max(...MACROS_DEL_RANGO.map((m) => macros[m].conRango)) } };
+  const elMayor = (k: 'conRango' | 'conMinimo') => Math.max(...MACROS_DEL_RANGO.map((m) => macros[m][k]));
+  return { macros, kcal: { min: Math.round(kcalMin), max: kcalMax === null ? null : Math.round(kcalMax), conRango: elMayor('conRango'), conMinimo: elMayor('conMinimo') } };
 }
 
 /** El objetivo del día, como lo compara la suma: kcal y los macros en gramos (los de proporción no se comparan). */
@@ -313,13 +321,17 @@ export const gramosDelObjetivo = (o: Parameters<typeof objetivoDelDia>[0]): Gram
 export interface FilaFrenteAlObjetivo {
   readonly clave: 'kcal' | MacroDelRango;
   readonly nombre: string;
-  /** «95–130 g», «desde 95 g», o «Sin rangos indicados». */
+  /** «95–130 g», «desde 95 g» (sin tope), «hasta 75 g» (sin piso), «sin mínimo ni tope», o «Sin rangos indicados». */
   readonly suma: string;
   /** «objetivo 112 g», o `null` si el objetivo no tiene ese dato en gramos. */
   readonly objetivo: string | null;
   /** Lo mismo sin la palabra, para la columna que ya se llama «Objetivo del día»: «112 g». */
   readonly objetivoCifra: string | null;
-  /** «adentro», «260 g por encima del máximo», «20 g por debajo del mínimo»; `null` sin objetivo o sin rangos. */
+  /**
+   * «adentro», «260 g por encima del máximo», «20 g por debajo del mínimo». Sin tope o sin piso nunca dice «adentro» (no
+   * hay con qué compararlo de ese lado): ubica frente al lado que hay, «47 g por encima del mínimo, sin tope para
+   * comparar». `null` sin objetivo o sin rangos.
+   */
   readonly ubicacion: string | null;
   /** Por qué la suma no tiene tope o tiene huecos: «Cena sin rango». */
   readonly nota: string | null;
@@ -329,15 +341,46 @@ export interface FilaFrenteAlObjetivo {
 
 const listaDeNombres = (ns: readonly string[]): string => (ns.length <= 1 ? (ns[0] ?? '') : `${ns.slice(0, -1).join(', ')} y ${ns[ns.length - 1]}`);
 
-function filaFrenteAlObjetivo(clave: FilaFrenteAlObjetivo['clave'], nombre: string, unidad: string, s: { min: number; max: number | null; conRango: number }, objetivo: number | null, nota: string | null): FilaFrenteAlObjetivo {
+function filaFrenteAlObjetivo(
+  clave: FilaFrenteAlObjetivo['clave'],
+  nombre: string,
+  unidad: string,
+  s: { min: number; max: number | null; conRango: number; conMinimo: number },
+  objetivo: number | null,
+  nota: string | null,
+): FilaFrenteAlObjetivo {
   const cifra = (n: number) => (unidad === 'kcal' ? numero(n, 0) : numero(n, 1));
   const objetivoCifra = objetivo === null ? null : `${cifra(objetivo)} ${unidad}`;
   if (s.conRango === 0) return { clave, nombre, suma: 'Sin rangos indicados', objetivo: objetivoCifra && `objetivo ${objetivoCifra}`, objetivoCifra, ubicacion: null, nota: null, franja: null };
-  const suma = s.max === null ? `desde ${cifra(s.min)} ${unidad}` : s.min === s.max ? `${cifra(s.min)} ${unidad}` : `${cifra(s.min)}–${cifra(s.max)} ${unidad}`;
+  // Sin ningún mínimo indicado, la suma no tiene piso (su cero es el de los mínimos vacíos); sin máximo en alguna comida,
+  // no tiene tope. De un lado que falta no se dice nada: ni que el objetivo queda «adentro».
+  const piso = s.conMinimo > 0;
+  const techo = s.max;
+  const suma =
+    piso && techo !== null
+      ? s.min === techo
+        ? `${cifra(s.min)} ${unidad}`
+        : `${cifra(s.min)}–${cifra(techo)} ${unidad}`
+      : piso
+        ? `desde ${cifra(s.min)} ${unidad}`
+        : techo !== null
+          ? `hasta ${cifra(techo)} ${unidad}`
+          : 'sin mínimo ni tope';
   let ubicacion: string | null = null;
   if (objetivo !== null) {
-    const u = ubicar(objetivo, { min: s.min, max: s.max });
-    ubicacion = u.tipo === 'dentro' ? 'adentro' : u.tipo === 'encima' ? `${cifra(u.diferencia)} ${unidad} por encima del máximo` : `${cifra(u.diferencia)} ${unidad} por debajo del mínimo`;
+    // Se compara lo que se muestra: las kcal, enteras; los gramos, a un decimal (así nunca dice «0 kcal por encima»).
+    const o = unidad === 'kcal' ? Math.round(objetivo) : aUnDecimal(objetivo);
+    const u = ubicar(o, { min: piso ? s.min : null, max: techo });
+    if (u.tipo === 'encima') ubicacion = `${cifra(u.diferencia)} ${unidad} por encima del máximo`;
+    else if (u.tipo === 'debajo') ubicacion = `${cifra(u.diferencia)} ${unidad} por debajo del mínimo`;
+    else if (piso && techo !== null) ubicacion = 'adentro';
+    else if (piso) {
+      const d = aUnDecimal(o - s.min);
+      ubicacion = `${d === 0 ? 'en el mínimo' : `${cifra(d)} ${unidad} por encima del mínimo`}, sin tope para comparar`;
+    } else if (techo !== null) {
+      const d = aUnDecimal(techo - o);
+      ubicacion = `${d === 0 ? 'en el máximo' : `${cifra(d)} ${unidad} por debajo del máximo`}, sin mínimo para comparar`;
+    } else ubicacion = 'sin mínimo ni tope para comparar';
   }
   // La franja: la escala llega un poco más allá del mayor de los números, para que la marca no quede en el borde.
   const tope = Math.max(s.min, s.max ?? 0, objetivo ?? 0) * 1.15 || 1;
@@ -348,7 +391,8 @@ function filaFrenteAlObjetivo(clave: FilaFrenteAlObjetivo['clave'], nombre: stri
 
 /**
  * NUP-06: la tabla chica de la suma frente al objetivo del día. «Proteínas · 95–130 g · objetivo 112 g · adentro»;
- * «Grasas · 50–75 g · objetivo 335 g · 260 g por encima del máximo». Las kcal salen de los gramos con 4, 4 y 9.
+ * «Grasas · 50–75 g · objetivo 335 g · 260 g por encima del máximo»; sin tope, «Proteínas · desde 65 g · objetivo 112 g ·
+ * 47 g por encima del mínimo, sin tope para comparar». Las kcal salen de los gramos con 4, 4 y 9.
  */
 export function sumaFrenteAlObjetivo(suma: SumaDeLosRangos, objetivo: ObjetivoDelDia | null): readonly FilaFrenteAlObjetivo[] {
   const notaDe = (f: FilaDeLaSuma): string | null => {
@@ -406,12 +450,13 @@ export function porcentajeDeLasKcal(macro: MacroDelRango, gramosDelMacro: number
 }
 
 /**
- * NUP-D08, en una parte corta para un renglón: «Proteínas 79 g · 18 % de las kcal». La base (las kcal indicadas) va dicha en
- * el mismo renglón, antes. `null` sin kcal o sin gramos.
+ * NUP-D08, en una parte corta para un renglón: «Proteínas 79 g · 18 % de las 1.750 kcal». La base va con su número en cada
+ * parte: cuando los gramos no suman las kcal indicadas, el renglón de arriba nombra dos cantidades de kcal, y «de las kcal»
+ * no diría de cuáles. `null` sin kcal o sin gramos.
  */
 export function porcentajeEnUnaParte(macro: MacroDelRango, gramosDelMacro: number | null, kcalIndicadas: number | null): string | null {
   if (gramosDelMacro === null || !Number.isFinite(gramosDelMacro) || gramosDelMacro < 0 || kcalIndicadas === null || !(kcalIndicadas > 0)) return null;
-  return `${NOMBRE_DEL_MACRO[macro]} ${numero(gramosDelMacro, 1)} g · ${numero(((gramosDelMacro * KCAL_POR_GRAMO[macro]) / kcalIndicadas) * 100, 0)} % de las kcal`;
+  return `${NOMBRE_DEL_MACRO[macro]} ${numero(gramosDelMacro, 1)} g · ${numero(((gramosDelMacro * KCAL_POR_GRAMO[macro]) / kcalIndicadas) * 100, 0)} % de las ${numero(kcalIndicadas, 0)} kcal`;
 }
 
 export const COPY_PLANIFICACION = {

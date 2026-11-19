@@ -73,7 +73,9 @@ const VUELTA_2 = [
  * va con su base dicha («18 % de las 2.500 kcal») y su número al lado. Un «%» sin «de la(s)/lo(s)» después sigue siendo
  * el que no dice de qué es. En la app de la persona, la regla no cambia: cualquier «%» es un hallazgo.
  */
-const porcentajeSinSuBase = (t) => /%(?!\s*de\s+l[ao]s?\b)/.test(t);
+// La base va con su número («de las 2.500 kcal», o la expresión que lo escribe): «de las kcal» no dice de cuáles cuando
+// los gramos no suman las kcal indicadas (revisión adversaria del primer tramo de WP-NUTRICION-PLANIFICACION).
+const porcentajeSinSuBase = (t) => /%(?!\s*de\s+l[ao]s?(?:\s+\d|\s*\$\{|\s*$))/.test(t);
 const prohibidosDelProfesionalEnNutricion = (texto) => terminosProhibidosEn(texto).filter((p) => p !== '%' || porcentajeSinSuBase(texto));
 
 /** Las pantallas de cada dominio, con la lista de términos que le corresponde. */
@@ -404,6 +406,11 @@ test('NUP-08 · en Nutrición del profesional, un «%» sin su base se detecta; 
   assert.deepEqual(prohibidosDelProfesionalEnNutricion('18 % de las 2.500 kcal · 112 g'), []);
   assert.deepEqual(prohibidosDelProfesionalEnNutricion('Registró el 82 % del plan'), ['%']);
   assert.deepEqual(prohibidosDelProfesionalEnNutricion('El 90 % de cumplimiento'), ['cumplimiento', '%']);
+  // La base, con su número: «de las kcal» o «de los días» no dicen de cuántas.
+  assert.deepEqual(prohibidosDelProfesionalEnNutricion('Proteínas 112 g · 18 % de las kcal'), ['%']);
+  assert.deepEqual(prohibidosDelProfesionalEnNutricion('Registró el 82 % de los días'), ['%']);
+  // Una plantilla se lee en partes: « % de las » antes de la expresión que escribe el número.
+  assert.deepEqual(textosDe('fixture.tsx', 'export const X = (k: number) => <p>{`18 % de las ${k} kcal`}</p>;').flatMap(({ texto }) => prohibidosDelProfesionalEnNutricion(texto)), []);
   // La app de la persona sigue con la lista entera: el mismo texto con base es un hallazgo.
   assert.deepEqual(terminosProhibidosEn('18 % de las 2.500 kcal'), ['%']);
   const persona = DOMINIOS.find((d) => d.nombre === 'nutrición');

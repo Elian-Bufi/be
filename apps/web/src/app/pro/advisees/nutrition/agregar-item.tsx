@@ -19,7 +19,20 @@ import { mensajeDeFallo, useClaveDeIntento } from '../../../../lib/intento';
 import { useNutricion } from './nutricion';
 
 /** «Crear manualmente»: un alimento propio, con sus valores cada 100 g. Lo crea y lo suma a la opción. */
-export function CrearManualmente({ id, nombreInicial, onCreado, onVolver }: { id: string; nombreInicial: string; onCreado: (e: ElementoDeCatalogo) => void; onVolver: () => void }) {
+export function CrearManualmente({
+  id,
+  nombreInicial,
+  onCreado,
+  onVolver,
+  alEscribir,
+}: {
+  id: string;
+  nombreInicial: string;
+  onCreado: (e: ElementoDeCatalogo) => void;
+  onVolver: () => void;
+  /** NUP-11: se escribió algo en el formulario; el cuadro que lo contiene pregunta antes de cerrar. */
+  alEscribir?: () => void;
+}) {
   const { token, sesionPerdida, accesoRetirado } = useNutricion();
   const intento = useClaveDeIntento();
   const [nuevo, setNuevo] = useState({ nombre: nombreInicial, kcal: '', c: '', g: '', p: '' });
@@ -63,7 +76,7 @@ export function CrearManualmente({ id, nombreInicial, onCreado, onVolver }: { id
   }
 
   return (
-    <form className="agregar-item__otro" onSubmit={(e) => void crear(e)} onKeyDown={(e) => enterAlQueFalta(e, loQueFalta())} noValidate>
+    <form className="agregar-item__otro" onSubmit={(e) => void crear(e)} onKeyDown={(e) => enterAlQueFalta(e, loQueFalta())} onInput={alEscribir} noValidate>
       <button type="button" className="boton boton--enlace agregar-item__volver" onClick={onVolver}>
         <Icono nombre="izquierda" tamano={18} />
         Volver a la opción

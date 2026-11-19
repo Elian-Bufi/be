@@ -185,7 +185,8 @@ test('NUP-06 · una comida sin rango o sin máximo deja la suma sin tope, y se d
   ]);
   assert.deepEqual([suma.macros.protein.min, suma.macros.protein.max], [65, null]);
   const [kcal, proteinas, carbohidratos] = P.sumaFrenteAlObjetivo(suma, { kcal: 2000, macros: { protein: 112, carbohydrate: null, fat: 60 } });
-  assert.equal(P.filaEnUnaLinea(proteinas), 'Proteínas · desde 65 g · objetivo 112 g · adentro');
+  // Sin tope, el objetivo no queda «adentro»: no hay máximo con qué compararlo (revisión adversaria del primer tramo).
+  assert.equal(P.filaEnUnaLinea(proteinas), 'Proteínas · desde 65 g · objetivo 112 g · 47 g por encima del mínimo, sin tope para comparar');
   assert.equal(proteinas.nota, 'Cena sin rango · Desayuno sin máximo: la suma no tiene tope');
   assert.equal(proteinas.franja.abierta, true);
   // Una sola comida sin rango alcanza para que la suma no tenga tope: lo de esa comida no tiene límite.
@@ -195,6 +196,52 @@ test('NUP-06 · una comida sin rango o sin máximo deja la suma sin tope, y se d
   assert.equal(kcal.suma, 'desde 260 kcal');
   // Sin objetivo: la suma se ve igual, sin ubicarla.
   assert.equal(P.filaEnUnaLinea(P.sumaFrenteAlObjetivo(suma, null)[1]), 'Proteínas · desde 65 g');
+});
+
+test('NUP-06 (NUP-D06) · sin tope o sin piso, la suma nunca dice «adentro»: ubica frente al lado que hay', () => {
+  // El caso de la captura 06: la Colación sin rango y la Cena sin máximo de grasas. Antes decía «adentro» en las cuatro
+  // filas, aunque la suma no tenía techo con qué comparar el objetivo.
+  const captura = P.sumaDeLosRangos([
+    { nombre: 'Desayuno', rango: rangoIndicado([15, 25], [30, 50], [5, 15]) },
+    { nombre: 'Almuerzo', rango: rangoIndicado([30, 40], [40, 70], [10, 20]) },
+    { nombre: 'Merienda', rango: rangoIndicado([8, 15], [20, 40], [3, 10]) },
+    { nombre: 'Cena', rango: rangoIndicado([25, 35], [30, 60], [8, null]) },
+    { nombre: 'Colación', rango: null },
+  ]);
+  const filas = P.sumaFrenteAlObjetivo(captura, { kcal: 1750, macros: { protein: 79, carbohydrate: 237, fat: 54 } });
+  assert.deepEqual(filas.map(P.filaEnUnaLinea), [
+    'kcal · desde 1.026 kcal · objetivo 1.750 kcal · 724 kcal por encima del mínimo, sin tope para comparar',
+    'Proteínas · desde 78 g · objetivo 79 g · 1 g por encima del mínimo, sin tope para comparar',
+    'Carbohidratos · desde 120 g · objetivo 237 g · 117 g por encima del mínimo, sin tope para comparar',
+    'Grasas · desde 26 g · objetivo 54 g · 28 g por encima del mínimo, sin tope para comparar',
+  ]);
+  for (const f of filas) assert.notEqual(f.ubicacion, 'adentro', f.nombre);
+  // Sin tope, lo que sí se puede decir: debajo del mínimo, o justo en él.
+  const debajo = P.sumaFrenteAlObjetivo(captura, { kcal: 900, macros: { protein: 70, carbohydrate: 120, fat: null } });
+  assert.deepEqual(debajo.map((f) => f.ubicacion), ['126 kcal por debajo del mínimo', '8 g por debajo del mínimo', 'en el mínimo, sin tope para comparar', null]);
+
+  // Sin piso (ninguna comida indica un mínimo): el cero de los mínimos vacíos no es un piso indicado.
+  const sinPiso = P.sumaDeLosRangos([
+    { nombre: 'Desayuno', rango: rangoIndicado(null, null, [null, 30]) },
+    { nombre: 'Almuerzo', rango: rangoIndicado(null, null, [null, 45]) },
+  ]);
+  const grasas = (g) => P.filaEnUnaLinea(P.sumaFrenteAlObjetivo(sinPiso, { kcal: 2000, macros: { protein: null, carbohydrate: null, fat: g } })[3]);
+  assert.equal(grasas(54), 'Grasas · hasta 75 g · objetivo 54 g · 21 g por debajo del máximo, sin mínimo para comparar');
+  assert.equal(grasas(75), 'Grasas · hasta 75 g · objetivo 75 g · en el máximo, sin mínimo para comparar');
+  assert.equal(grasas(80), 'Grasas · hasta 75 g · objetivo 80 g · 5 g por encima del máximo');
+  // Ni piso ni tope: no hay con qué comparar.
+  const nada = P.sumaDeLosRangos([
+    { nombre: 'Desayuno', rango: rangoIndicado(null, null, [null, 30]) },
+    { nombre: 'Cena', rango: null },
+  ]);
+  assert.equal(P.filaEnUnaLinea(P.sumaFrenteAlObjetivo(nada, { kcal: 2000, macros: { protein: null, carbohydrate: null, fat: 54 } })[3]), 'Grasas · sin mínimo ni tope · objetivo 54 g · sin mínimo ni tope para comparar');
+  // Con piso y tope sigue siendo «adentro»; y las kcal se comparan enteras, como se muestran: nunca «0 kcal por encima».
+  const completa = P.sumaDeLosRangos([{ nombre: 'Almuerzo', rango: rangoIndicado([40, 55], [60, 80], [20, 30]) }]);
+  const kcal = (k) => P.sumaFrenteAlObjetivo(completa, { kcal: k, macros: { protein: 50, carbohydrate: null, fat: null } });
+  assert.deepEqual([completa.kcal.min, completa.kcal.max], [580, 810]);
+  assert.equal(kcal(800)[1].ubicacion, 'adentro');
+  assert.equal(kcal(810.4)[0].ubicacion, 'adentro');
+  assert.equal(kcal(810.6)[0].ubicacion, '1 kcal por encima del máximo');
 });
 
 // ─── NUP-07 · El objetivo ────────────────────────────────────────────────────────────────────────────────────────
@@ -222,8 +269,12 @@ test('NUP-07 (NUP-D08) · el porcentaje va con su base y su número real al lado
 
 // ─── NUP-08 · El «%» en el website del profesional ───────────────────────────────────────────────────────────────
 
-/** NUP-D11: un «%» del website del profesional va con su base: «de las 2.500 kcal». */
-const porcentajeSinSuBase = (t) => /%(?!\s*de\s+l[ao]s?\b)/.test(t);
+/**
+ * NUP-D11: un «%» del website del profesional va con su base y el número de la base: «de las 2.500 kcal» (o la expresión
+ * que lo escribe). «De las kcal» no dice de cuáles cuando los gramos no suman las kcal indicadas (revisión adversaria del
+ * primer tramo).
+ */
+const porcentajeSinSuBase = (t) => /%(?!\s*de\s+l[ao]s?(?:\s+\d|\s*\$\{|\s*$))/.test(t);
 
 test('NUP-08 (NUP-D11) · los textos de la planificación no califican, y cada «%» dice su base', () => {
   const fuente = leer('app/pro/advisees/nutrition/planificacion.ts');
@@ -233,9 +284,16 @@ test('NUP-08 (NUP-D11) · los textos de la planificación no califican, y cada �
     assert.doesNotMatch(t, /cumplimiento|adherencia|racha|puntaje|asesorad|óptim|excelente|\bmal\b|\bbien\b/i, t);
     assert.equal(porcentajeSinSuBase(t), false, t);
   }
-  // La prueba de la prueba: un porcentaje sin base se detecta.
+  // La prueba de la prueba: un porcentaje sin base, o con la base sin su número, se detecta.
   assert.equal(porcentajeSinSuBase('Registró el 82 % del plan'), true);
+  assert.equal(porcentajeSinSuBase('Proteínas 112 g · 18 % de las kcal'), true);
+  assert.equal(porcentajeSinSuBase('Registró el 82 % de los días'), true);
   assert.equal(porcentajeSinSuBase('18 % de las 2.500 kcal'), false);
+  assert.equal(porcentajeSinSuBase('`${p} % de las ${numero(kcal, 0)} kcal`'), false);
+  // Cada parte del renglón compacto dice su base con su número, también cuando los gramos no suman las kcal indicadas.
+  const partes = ['protein', 'carbohydrate', 'fat'].map((m) => P.porcentajeEnUnaParte(m, { protein: 112, carbohydrate: 80, fat: 335 }[m], 2500));
+  assert.deepEqual(partes, ['Proteínas 112 g · 18 % de las 2.500 kcal', 'Carbohidratos 80 g · 13 % de las 2.500 kcal', 'Grasas 335 g · 121 % de las 2.500 kcal']);
+  for (const p of partes) assert.equal(porcentajeSinSuBase(p), false, p);
   const copy = Object.values(P.COPY_PLANIFICACION).map((t) => (typeof t === 'function' ? t({ kcal: 3783, cuenta: 'x', frente: { diferencia: 1, coinciden: false } }, 2500) : t));
   for (const t of copy) assert.deepEqual(d.terminosProhibidosEn(t), [], t);
 });
@@ -360,7 +418,7 @@ test('NUP-07 y NUP-10 · el objetivo: las kcal de los gramos al escribir y en lo
   assert.match(FORMULARIOS, /<KcalDelObjetivo kcal=\{numeroPositivo\(valores\.kcal\)\} gramos=\{\{ protein: numeroNoNegativo\(valores\.proteina\), carbohydrate: numeroNoNegativo\(valores\.carbohidratos\), fat: numeroNoNegativo\(valores\.grasas\) \}\} \/>/);
   // En el editor, en dos renglones: las comidas siguen a la vista.
   assert.match(EDITOR, /<KcalDelObjetivo kcal=\{objetivo\.estimatedEnergyRequirement\.value\} gramos=\{gramosDelObjetivo\(objetivo\)\} compacto \/>/);
-  assert.equal(P.porcentajeEnUnaParte('protein', 79, 1750), 'Proteínas 79 g · 18 % de las kcal');
+  assert.equal(P.porcentajeEnUnaParte('protein', 79, 1750), 'Proteínas 79 g · 18 % de las 1.750 kcal');
   assert.match(PASOS, /<KcalDelObjetivo kcal=\{objetivo\.estimatedEnergyRequirement\.value\} gramos=\{gramosDelObjetivo\(objetivo\)\} \/>/);
   // El aviso no bloquea: el formulario no lo cuenta como error.
   assert.doesNotMatch(FORMULARIOS.slice(FORMULARIOS.indexOf('export function erroresDeObjetivo'), FORMULARIOS.indexOf('export function aObjetivo')), /kcalDeLosGramos|noCoinciden/);
@@ -389,4 +447,15 @@ test('NUP-12, NUP-13 y NUP-14 · la comida vacía dice por dónde empezar; el pa
   // Y en el armazón común del asistente (los dos editores): «Seguir en el plan», «Corregirlo en el plan» y «Lo que llevás armado».
   const comun = leer('app/pro/advisees/asistente/paso-que-sigue.ts');
   for (const clave of ['seguirEnLaEstacion', 'irEnLaEstacion', 'queEs']) assert.doesNotMatch(comun.match(new RegExp(`${clave}: '[^']*'`))[0], /estaci[oó]n/, clave);
+});
+
+test('NUP-11 (NUP-D10) · en el cuadro de la opción, lo escrito en «Crearlo a mano» o «Importarlo…» no se pierde al tocar afuera', () => {
+  // Esos formularios viven adentro del cuadro y no son parte de la opción: sin esto, un toque en el fondo (o Escape)
+  // cerraba sin preguntar y se perdía el alimento a medio cargar (revisión adversaria del primer tramo).
+  assert.match(CUADRO, /conCambios=\{Boolean\(opcion && copia && cambioLaOpcion\(opcion, copia\)\) \|\| \(modo !== 'opcion' && escritoAparte\)\}/);
+  assert.match(CUADRO, /<CrearManualmente [^\n]*alEscribir=\{anotarLoEscrito\}/);
+  assert.match(CUADRO, /\{copia && modo === 'importar' \? \(\n\s*<div className="agregar-item__otro" onInput=\{anotarLoEscrito\}>/);
+  // Al volver a la opción o al abrir de nuevo, lo de aquel formulario ya quedó atrás.
+  assert.match(CUADRO, /useEffect\(\(\) => setEscritoAparte\(false\), \[modo, abierto\]\);/);
+  assert.match(leer('app/pro/advisees/nutrition/agregar-item.tsx'), /<form className="agregar-item__otro" [^\n]*onInput=\{alEscribir\}/);
 });

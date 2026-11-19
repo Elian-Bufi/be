@@ -134,6 +134,11 @@ export function CuadroDeLaOpcion({
     // Solo al abrir: la opción del borrador no cambia con el cuadro abierto (es modal).
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [abierto]);
+  // NUP-11 (NUP-D10): lo escrito en «Crearlo a mano» o en «Importarlo…» todavía no está en la opción. Cerrar (tocar afuera,
+  // Escape o «Cerrar») primero pregunta, como con la opción cambiada; «Volver a la opción» lo deja atrás a propósito.
+  const [escritoAparte, setEscritoAparte] = useState(false);
+  useEffect(() => setEscritoAparte(false), [modo, abierto]);
+  const anotarLoEscrito = () => setEscritoAparte(true);
   // Al volver de «Crearlo a mano» o de «Importarlo…», el foco vuelve al buscador (WCAG 2.4.3); al abrir lo pone el cuadro.
   const modoAnterior = useRef(modo);
   useEffect(() => {
@@ -182,7 +187,7 @@ export function CuadroDeLaOpcion({
       ancho
       titulo={titulo}
       sobretitulo={subtitulo}
-      conCambios={Boolean(opcion && copia && cambioLaOpcion(opcion, copia))}
+      conCambios={Boolean(opcion && copia && cambioLaOpcion(opcion, copia)) || (modo !== 'opcion' && escritoAparte)}
       focoInicial={buscador}
       className="cuadro-de-la-opcion"
       principal={
@@ -199,10 +204,10 @@ export function CuadroDeLaOpcion({
       onCerrar={onCerrar}
     >
       {copia && modo === 'manual' ? (
-        <CrearManualmente id="opcion-crear-a-mano" nombreInicial={texto.trim()} onCreado={sumarDeAfuera} onVolver={() => setModo('opcion')} />
+        <CrearManualmente id="opcion-crear-a-mano" nombreInicial={texto.trim()} onCreado={sumarDeAfuera} onVolver={() => setModo('opcion')} alEscribir={anotarLoEscrito} />
       ) : null}
       {copia && modo === 'importar' ? (
-        <div className="agregar-item__otro">
+        <div className="agregar-item__otro" onInput={anotarLoEscrito}>
           <button type="button" className="boton boton--enlace agregar-item__volver" onClick={() => setModo('opcion')}>
             <Icono nombre="izquierda" tamano={18} />
             {C.volver}
