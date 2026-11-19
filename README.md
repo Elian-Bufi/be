@@ -73,3 +73,7 @@ npm run audit:prod        # falla con altos o críticos
 ```
 
 Solo datos sintéticos, en todos los ambientes.
+
+## Licencia
+
+Todos los derechos reservados. Ver [LICENSE](LICENSE): que el repositorio sea visible no otorga ninguna licencia de uso.
