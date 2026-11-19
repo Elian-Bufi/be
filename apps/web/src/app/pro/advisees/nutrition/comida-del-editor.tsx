@@ -595,6 +595,8 @@ export function FilaDeItem({
   // DL-180: el ícono de su grupo (NUA-05) y, si se retiró del catálogo, la marca discreta (NUA-02): se sigue viendo, no
   // se esconde; validar y activar piden cambiarlo.
   const datos = useDatosDelAlimento(item.catalogItemId);
+  // NUA-08: un alimento que se compone cada 100 ml mide sus medidas en mililitros.
+  const ml = typeof composicion === 'object' && composicion.referenceAmount === '100ml';
   const magnitud = item.quantity;
   // NUA-08: con una medida casera, el campo es cuántas; la cantidad del ítem sigue en gramos.
   const externo = numeroEnCampo(numeroDelCampo(item));
@@ -648,7 +650,7 @@ export function FilaDeItem({
               if (e.target.value.trim() === '') return onCambiar({ quantity: null });
               // Lo que no se entiende viaja como NaN, igual que en entrenamiento: el guardado se niega y lo señala, en
               // vez de guardar en silencio el último número válido que había en el campo.
-              onCambiar(conNumero(item, n ?? Number.NaN));
+              onCambiar(conNumero(item, n ?? Number.NaN, ml));
             }}
           />
         </Pista>
@@ -662,8 +664,8 @@ export function FilaDeItem({
       <td data-etiqueta="Unidad">
         {/* NUA-08: las medidas caseras del alimento, con su equivalencia, junto a las unidades de siempre. Con medidas, se
             puede elegir una antes de escribir la cantidad: empieza con 1. */}
-        <select id={`${id}-unidad`} aria-label={`Unidad de ${nombre}`} value={valorDeLaUnidad(item)} disabled={!magnitud && datos.medidas.length === 0} onChange={(e) => onCambiar(conUnidad(item, e.target.value, datos.medidas))}>
-          {opcionesDeUnidad(datos.medidas, ETIQUETA_DE_UNIDAD as Readonly<Record<Unidad, string>>).map((o) => (
+        <select id={`${id}-unidad`} aria-label={`Unidad de ${nombre}`} value={valorDeLaUnidad(item)} disabled={!magnitud && datos.medidas.length === 0} onChange={(e) => onCambiar(conUnidad(item, e.target.value, datos.medidas, ml))}>
+          {opcionesDeUnidad(datos.medidas, ETIQUETA_DE_UNIDAD as Readonly<Record<Unidad, string>>, ml, item.householdMeasure).map((o) => (
             <option key={o.valor} value={o.valor}>
               {o.texto}
             </option>

@@ -52,29 +52,49 @@ export function valorDeLaUnidad(it: ConCantidad): string {
   return it.householdMeasure ? `${PREFIJO_DE_MEDIDA}${it.householdMeasure.kind}` : (it.quantity?.unit ?? 'g');
 }
 
-/** Las opciones del selector: las tres de siempre y, si el alimento las tiene, sus medidas con su equivalencia. */
-export function opcionesDeUnidad(medidas: readonly MedidaCasera[], etiquetas: Readonly<Record<'g' | 'ml' | 'unit', string>>, ml = false): { readonly valor: string; readonly texto: string }[] {
+/**
+ * Las medidas del alimento con la que eligió el ítem: el ítem conserva su equivalencia aunque quien cargó el alimento la
+ * cambie o la quite después (de la revisión adversaria: si no, el selector mostraba «g» junto al número de tazas).
+ */
+function conLaElegida(medidas: readonly MedidaCasera[], elegida: MedidaElegida | null | undefined): readonly MedidaCasera[] {
+  if (!elegida) return medidas;
+  const suya: MedidaCasera = { kind: elegida.kind, amount: elegida.amountPerUnit };
+  return medidas.some((m) => m.kind === elegida.kind) ? medidas.map((m) => (m.kind === elegida.kind ? suya : m)) : [...medidas, suya];
+}
+
+/**
+ * Las opciones del selector: las tres de siempre y, si el alimento las tiene, sus medidas con su equivalencia. La medida
+ * que ya eligió el ítem va con la equivalencia que guardó, también si el alimento ya no la tiene.
+ */
+export function opcionesDeUnidad(
+  medidas: readonly MedidaCasera[],
+  etiquetas: Readonly<Record<'g' | 'ml' | 'unit', string>>,
+  ml = false,
+  elegida: MedidaElegida | null | undefined = null,
+): { readonly valor: string; readonly texto: string }[] {
   return [
     ...(['g', 'ml', 'unit'] as const).map((u) => ({ valor: u, texto: etiquetas[u] })),
-    ...medidas.map((m) => ({ valor: `${PREFIJO_DE_MEDIDA}${m.kind}`, texto: `${NOMBRE_DE_LA_MEDIDA[m.kind].una} (${String(m.amount).replace('.', ',')} ${ml ? 'ml' : 'g'})` })),
+    ...conLaElegida(medidas, elegida).map((m) => ({ valor: `${PREFIJO_DE_MEDIDA}${m.kind}`, texto: `${NOMBRE_DE_LA_MEDIDA[m.kind].una} (${String(m.amount).replace('.', ',')} ${ml ? 'ml' : 'g'})` })),
   ];
 }
 
 /**
- * Lo que cambia al elegir otra unidad. Una medida empieza con 1 (su equivalencia) y guarda la equivalencia de ese momento;
- * volver a gramos, mililitros o unidades conserva el número que había y deja la medida.
+ * Lo que cambia al elegir otra unidad. Una medida empieza con 1 (su equivalencia) y guarda la equivalencia de ese momento.
+ * Desde una medida, volver a gramos o mililitros conserva la cantidad, que ya estaba en gramos (de la revisión adversaria:
+ * «2 tazas» no se vuelve «2 g»), y pasar a unidades conserva cuántas. Sin medida, se conserva el número, como siempre.
  */
 export function conUnidad(it: ConCantidad, valor: string, medidas: readonly MedidaCasera[], ml = false): Pick<ConCantidad, 'quantity'> & { readonly householdMeasure: MedidaElegida | null } {
   if (valor.startsWith(PREFIJO_DE_MEDIDA)) {
     const tipo = TipoDeMedidaCaseraSchema.safeParse(valor.slice(PREFIJO_DE_MEDIDA.length));
-    const m = tipo.success ? medidas.find((x) => x.kind === tipo.data) : undefined;
+    const m = tipo.success ? conLaElegida(medidas, it.householdMeasure).find((x) => x.kind === tipo.data) : undefined;
     if (m) {
       const elegida: MedidaElegida = { kind: m.kind, count: 1, amountPerUnit: m.amount };
       return { quantity: { value: cantidadDeLaMedida(elegida), unit: ml ? 'ml' : 'g' }, householdMeasure: elegida };
     }
   }
   const unidad = valor === 'ml' || valor === 'unit' ? valor : 'g';
-  const numero = it.householdMeasure ? it.householdMeasure.count : (it.quantity?.value ?? null);
+  const enGramos = it.quantity && Number.isFinite(it.quantity.value) ? it.quantity.value : null;
+  const numero = it.householdMeasure ? (unidad === 'unit' || enGramos === null ? it.householdMeasure.count : enGramos) : (it.quantity?.value ?? null);
   return { quantity: numero === null ? null : { value: numero, unit: unidad }, householdMeasure: null };
 }
 

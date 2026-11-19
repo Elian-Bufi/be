@@ -184,8 +184,19 @@ test('NUA-08 · la cantidad con una medida casera: la medida a la vista, la cuen
   assert.equal(A.numeroDelCampo(conTaza), 1);
   // Escribir 1,5 tazas: la cantidad es 360 g y la medida guarda cuántas.
   assert.deepEqual(A.conNumero(conTaza, 1.5), { quantity: { value: 360, unit: 'g' }, householdMeasure: { kind: 'CUP', count: 1.5, amountPerUnit: 240 } });
-  // Volver a gramos conserva el número y deja la medida.
-  assert.deepEqual(A.conUnidad({ ...conTaza, householdMeasure: { kind: 'CUP', count: 2, amountPerUnit: 240 } }, 'g', medidas), { quantity: { value: 2, unit: 'g' }, householdMeasure: null });
+  // De la revisión adversaria: volver a gramos conserva la cantidad en gramos («2 tazas» son 480 g, no «2 g»); a
+  // unidades, cuántas.
+  const dosTazas = { quantity: { value: 480, unit: 'g' }, householdMeasure: { kind: 'CUP', count: 2, amountPerUnit: 240 } };
+  assert.deepEqual(A.conUnidad(dosTazas, 'g', medidas), { quantity: { value: 480, unit: 'g' }, householdMeasure: null });
+  assert.deepEqual(A.conUnidad(dosTazas, 'unit', medidas), { quantity: { value: 2, unit: 'unit' }, householdMeasure: null });
+  // El ítem conserva la equivalencia que eligió aunque el alimento la cambie o la quite: el selector la sigue ofreciendo
+  // con la suya (si no, mostraba «g» junto al número de tazas).
+  const conOtraTaza = { quantity: { value: 135, unit: 'g' }, householdMeasure: { kind: 'CUP', count: 1.5, amountPerUnit: 90 } };
+  assert.deepEqual(A.opcionesDeUnidad(medidas, ET, false, conOtraTaza.householdMeasure).map((o) => o.texto), ['g', 'ml', 'unidad', 'taza (90 g)', 'unidad (50 g)']);
+  assert.deepEqual(A.opcionesDeUnidad([], ET, false, conOtraTaza.householdMeasure).map((o) => o.valor), ['g', 'ml', 'unit', 'medida:CUP']);
+  // Un alimento cada 100 ml: las medidas en mililitros.
+  assert.deepEqual(A.opcionesDeUnidad(medidas, ET, true).map((o) => o.texto).slice(3), ['taza (240 ml)', 'unidad (50 ml)']);
+  assert.deepEqual(A.conUnidad(sinMedida, 'medida:CUP', medidas, true).quantity, { value: 240, unit: 'ml' });
   // Sin cantidad todavía, elegir una medida empieza con 1 (el selector se ofrece si el alimento tiene medidas).
   assert.deepEqual(A.conUnidad({ quantity: null }, 'medida:UNIT', medidas), { quantity: { value: 50, unit: 'g' }, householdMeasure: { kind: 'UNIT', count: 1, amountPerUnit: 50 } });
   assert.match(FILA, /disabled={!magnitud && datos.medidas.length === 0}/);
@@ -193,8 +204,9 @@ test('NUA-08 · la cantidad con una medida casera: la medida a la vista, la cuen
   assert.deepEqual(A.conUnidad(sinMedida, 'medida:PORTION', medidas), { quantity: { value: 120, unit: 'g' }, householdMeasure: null });
   // En la fila: el selector con las medidas y «= 240 g» al lado.
   assert.match(FILA, /value=\{valorDeLaUnidad\(item\)\}/);
-  assert.match(FILA, /onCambiar\(conUnidad\(item, e\.target\.value, datos\.medidas\)\)/);
-  assert.match(FILA, /onCambiar\(conNumero\(item, n \?\? Number\.NaN\)\)/);
+  assert.match(FILA, /onCambiar\(conUnidad\(item, e\.target\.value, datos\.medidas, ml\)\)/);
+  assert.match(FILA, /onCambiar\(conNumero\(item, n \?\? Number\.NaN, ml\)\)/);
+  assert.match(FILA, /opcionesDeUnidad\(datos\.medidas, ETIQUETA_DE_UNIDAD as Readonly<Record<Unidad, string>>, ml, item\.householdMeasure\)/);
   assert.match(FILA, /\{COPY_ALIMENTOS\.equivaleA\(\n\s*formatearCantidad\(magnitud\.value[\s\S]{0,200}equivalenciaEnPalabras\(/);
   assert.equal(d.COPY_ALIMENTOS.equivaleA('135 g', '1 taza = 90 g'), '= 135 g · 1 taza = 90 g');
 });

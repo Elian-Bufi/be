@@ -10031,12 +10031,14 @@ button.comida-del-dia__fila > .icono:last-child {
   width: 9rem;
 }
 
+/* NUA-08 (de la revisión adversaria): la unidad entra entera también con una medida casera y su equivalencia
+   («cucharada (12,5 g)»), a 1280 de ancho; la preparación cede lo justo para que «Tal como se adquiere» siga entero. */
 .items-del-editor thead th:nth-child(3) {
-  width: 8rem;
+  width: 12rem;
 }
 
 .items-del-editor thead th:nth-child(4) {
-  width: 15.5rem;
+  width: 13.5rem;
 }
 
 .items-del-editor thead th:nth-child(5) {

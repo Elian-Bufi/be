@@ -611,6 +611,16 @@ describe('DL-180 · la base sostiene las guardias', () => {
     await expect(
       prisma.$executeRaw`INSERT INTO "medidas_caseras_de_alimento" ("elemento_id", "numero", "medidas", "autor_id", "procedencia") VALUES (${creado.catalogItemId}::uuid, 1, '[{"kind":"CUP","amount":0}]'::jsonb, ${autor.id}::uuid, ${JSON.stringify(PROCEDENCIA)}::jsonb)`,
     ).rejects.toThrow(/medidas_caseras_de_alimento_forma/);
+    // De la revisión adversaria: una equivalencia que no es un número, un tipo que no es un texto, un dato de más o dos
+    // medidas del mismo tipo tampoco entran (en jsonpath, comparar tipos distintos da «desconocido» y el CHECK las dejaba).
+    for (const medidas of ['[{"kind":"CUP","amount":"240"}]', '[{"kind":["CUP"],"amount":240}]', '[{"kind":"CUP","amount":240,"persona":"Ana"}]', '["CUP"]']) {
+      await expect(
+        prisma.$executeRaw`INSERT INTO "medidas_caseras_de_alimento" ("elemento_id", "numero", "medidas", "autor_id", "procedencia") VALUES (${creado.catalogItemId}::uuid, 1, ${medidas}::jsonb, ${autor.id}::uuid, ${JSON.stringify(PROCEDENCIA)}::jsonb)`,
+      ).rejects.toThrow(/un tipo y una equivalencia en número/);
+    }
+    await expect(
+      prisma.$executeRaw`INSERT INTO "medidas_caseras_de_alimento" ("elemento_id", "numero", "medidas", "autor_id", "procedencia") VALUES (${creado.catalogItemId}::uuid, 1, '[{"kind":"CUP","amount":240},{"kind":"CUP","amount":200}]'::jsonb, ${autor.id}::uuid, ${JSON.stringify(PROCEDENCIA)}::jsonb)`,
+    ).rejects.toThrow(/una medida casera de cada tipo/);
     await prisma.$executeRaw`INSERT INTO "medidas_caseras_de_alimento" ("elemento_id", "numero", "medidas", "autor_id", "procedencia") VALUES (${creado.catalogItemId}::uuid, 1, '[{"kind":"CUP","amount":240}]'::jsonb, ${autor.id}::uuid, ${JSON.stringify(PROCEDENCIA)}::jsonb)`;
     await expect(prisma.$executeRaw`UPDATE "medidas_caseras_de_alimento" SET "medidas" = '[]'::jsonb WHERE "elemento_id" = ${creado.catalogItemId}::uuid`).rejects.toThrow();
     // NUA-D16: el canon lo suma solo un administrador, y solo un alimento de BE (no una carga a mano).
