@@ -319,3 +319,9 @@
 .patrones__cinta[data-pegada] .grafico-base__nota {
   display: none;
 }
+
+/* Con la cinta pegada arriba, lo que recibe el foco al recorrer con el teclado (o al saltar a un ancla) se lleva debajo de
+   ella, no detrás (WCAG 2.4.11), como con la barra de acciones fija abajo. */
+html:has(.patrones__cinta[data-pegada]) {
+  scroll-padding-top: 10rem;
+}
