@@ -180,6 +180,12 @@ Sesión
   se quitaron el objetivo RIR 2 y el RIR propio de 3 series. Falta escribir el objetivo de % RM.», con «Deshacer», que
   devuelve el criterio, el objetivo y el RIR de cada serie («Sin objetivo» incluido) y se ofrece mientras siga el criterio
   elegido (un guardado en el medio no lo retira). Sin nada que perder no se dice nada: no se suma una confirmación.
+- **ENP-D26 · Los días se eligen en un solo lugar: los chips junto a cada sesión** (C5). Antes aparecían también en la
+  tabla de «Días de entrenamiento», en la tira de la semana arriba de la sesión, en el renglón de cada sesión y en el
+  selector de la sesión. Ahora el renglón dice solo lo que tiene la sesión y, al pie de la lista, «Desde el …» con «Ver
+  próximas fechas», que abre arriba de la sesión lo que sale de los días: cuándo empieza, la semana con «Duplicar el día»
+  (ED-24, que no se pierde: va adentro), las dos semanas que siguen con «Mover» y «Quitar los días». Sin días, una línea
+  dice qué pasa. Con ENP-D17, una sesión nueva elige sus días enseguida.
 
 ## 4. Las reglas, y dónde se prueban
 

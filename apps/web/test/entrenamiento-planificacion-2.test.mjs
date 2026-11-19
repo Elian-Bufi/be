@@ -240,3 +240,35 @@ test('C7 · cambiar de RIR a % RM dice qué se quita y se puede deshacer; sin na
   assert.match(EJERCICIO, /onCambiar\(deshacerElCambioDeCriterio\(p, avisoDelCambio\)\);/);
   assert.match(EJERCICIO, /data-cambio-de-criterio/);
 });
+
+// ─── C5 · los días en un solo lugar, con «Ver próximas fechas» a pedido ────────────────────────────────────────
+
+const AGENDA = fuente('../src/app/pro/advisees/training/agenda-del-plan.tsx');
+
+test('C5 · los días se eligen en un solo lugar: los chips junto a cada sesión', () => {
+  // La agenda ya no tiene su tabla de días por sesión, ni los elige.
+  assert.doesNotMatch(AGENDA, /agenda-del-plan__semana|const alternarDia = /);
+  assert.doesNotMatch(AGENDA, /export function AgendaDelPlan/);
+  // El editor elige los días solo en los chips (la estación y el paso 5 del asistente usan los mismos).
+  assert.equal((EDITOR.match(/alternarDia\(/g) ?? []).length, 1);
+  assert.match(EDITOR, /\{\/\* ED-24 y C5: los días en siete chips, el único lugar donde se eligen/);
+  // Arriba de la sesión, ni la tira de la semana suelta ni «Días de entrenamiento»; en el selector de la sesión, tampoco.
+  assert.doesNotMatch(EDITOR, /<AgendaDelPlan/);
+  assert.doesNotMatch(EDITOR, /data-dias-de-la-sesion|C\.sinDiaAsignado/);
+  // El renglón de la sesión no repite los días que dicen sus chips.
+  assert.doesNotMatch(EDITOR, /dias\.length > 0 \? dias\.map\(\(d\) => DIA_LARGO\[d\]\)\.join\(', '\) : CE\.sinDia/);
+});
+
+test('C5 · «Ver próximas fechas» a pedido, desde la lista de sesiones: el inicio, la semana con «Duplicar el día» y las dos semanas', () => {
+  assert.match(EDITOR, /data-ver-proximas-fechas/);
+  assert.match(EDITOR, /\{fechasAbiertas \? COPY_PROXIMAS_FECHAS\.ocultar : COPY_PROXIMAS_FECHAS\.ver\}/);
+  assert.match(EDITOR, /\{fechasAbiertas && agendaConDias \? \(\n\s*<ProximasFechas/);
+  // La tira de la semana, con «Duplicar el día» (ED-24), va adentro: no se perdió nada.
+  assert.match(EDITOR, /semana=\{\n\s*<ol className="estacion__tira" aria-label=\{CE\.semana\}>/);
+  assert.match(EDITOR, /data-duplicar-el-dia=\{d\.dia\}/);
+  assert.match(AGENDA, /<CampoDeFecha id="agenda-desde" etiqueta=\{A\.desde\}/);
+  assert.match(AGENDA, /\{A\.proximasDosSemanas\}/);
+  assert.match(AGENDA, /data-quitar-agenda/);
+  // Sin días, se dice qué pasa, en una línea.
+  assert.match(EDITOR, /<p className="nota">\{COPY_AGENDA_DE_ENTRENAMIENTO\.sinAgenda\}<\/p>/);
+});

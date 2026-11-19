@@ -1,9 +1,10 @@
 'use client';
 
 /**
- * WP-AGENDA-DE-ENTRENAMIENTO (DL-137): los días de entrenamiento de la versión en preparación.
- * - **Cada sesión guardada elige sus días de la semana,** y la agenda empieza en una fecha: BE arma con eso las fechas
- *   exactas. Una sesión nueva todavía no tiene identificador: sus días se eligen después de guardar.
+ * WP-AGENDA-DE-ENTRENAMIENTO (DL-137): los días de entrenamiento de la versión en preparación. Desde el tramo 2 de
+ * WP-ENTRENAMIENTO-PLANIFICACION (C5), los días se eligen en un solo lugar, junto a cada sesión, y esto es «Ver próximas
+ * fechas», a pedido (`ProximasFechas`).
+ * - **Cada sesión elige sus días de la semana,** y la agenda empieza en una fecha: BE arma con eso las fechas exactas.
  * - **Las dos semanas que siguen se ven como calendario.** Una fecha suelta se puede pasar a otro día («Mover») y volver
  *   a su día; mover otra vez una fecha ya movida cambia su destino.
  * - **Lo que no se puede guardar no entra:** un movimiento que choca o que cae antes del inicio se explica acá, con las
@@ -15,16 +16,14 @@ import {
   COPY_AGENDA_DE_ENTRENAMIENTO as A,
   DIA_ABREVIADO,
   DIAS_DE_LA_SEMANA,
-  NOMBRE_DEL_DIA,
   PROBLEMA_DE_AGENDA,
   diaDeLaSemana,
   fechaDeLaAgenda,
   fechasPrevistas,
   problemasDeAgenda,
   type AgendaDeEntrenamiento,
-  type DiaDeLaSemana,
 } from '@be/domain';
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { CampoDeFecha } from '../../../../components/campo-de-fecha';
 import { Aviso } from '../../../../components/formulario';
 
@@ -106,74 +105,45 @@ export function resumenDeLaAgenda(agenda: AgendaDeEntrenamiento, sesiones: reado
   return lineas.length > 0 ? A.resumen(lineas, agenda.startDate) : A.ningunaSesionConDias;
 }
 
-export function AgendaDelPlan({
+/** C5 (WP-ENTRENAMIENTO-PLANIFICACION, tramo 2): los textos de «Ver próximas fechas». */
+export const COPY_PROXIMAS_FECHAS = {
+  ver: 'Ver próximas fechas',
+  ocultar: 'Ocultar las fechas',
+  titulo: 'Próximas fechas',
+  dondeSeEligen: 'Los días de cada sesión se eligen junto a ella, en la lista de sesiones.',
+  laSemana: 'La semana',
+} as const;
+
+/**
+ * C5 (WP-ENTRENAMIENTO-PLANIFICACION, tramo 2) · «Ver próximas fechas», a pedido. Los días se eligen en un solo lugar,
+ * junto a cada sesión (los chips de la lista de la estación); antes también se elegían acá, en una tabla, y la tira de la
+ * semana los repetía arriba de la sesión. Acá queda lo que sale de esos días: cuándo empieza, la semana (con «Duplicar el
+ * día», que trae quien la muestra en `semana`), las fechas de las dos semanas que siguen —una se puede pasar a otro día y
+ * volver— y «Quitar los días». Se abre y se cierra desde la lista de sesiones.
+ */
+export function ProximasFechas({
   agenda,
   sesiones,
   hoy,
-  abierta,
-  onAbrir,
   onCerrar,
   onCambiar,
+  semana = null,
 }: {
-  /** La agenda vigente (`agendaVigente`), o `null` si la versión no tiene. */
-  agenda: AgendaDeEntrenamiento | null;
+  /** La agenda vigente (`agendaVigente`), con alguna sesión con días. */
+  agenda: AgendaDeEntrenamiento;
   sesiones: readonly SesionDeLaAgenda[];
   /** La fecha local de hoy: el calendario no mira para atrás. */
   hoy: string;
-  abierta: boolean;
-  onAbrir: () => void;
   onCerrar: () => void;
   onCambiar: (agenda: AgendaDeEntrenamiento | null) => void;
+  /** La semana, día por día, con «Duplicar el día» (la dibuja el editor, que tiene ese cuadro). */
+  semana?: ReactNode;
 }) {
   const [moviendo, setMoviendo] = useState<{ readonly sessionId: string; readonly desde: string; readonly hacia: string } | null>(null);
   const [problema, setProblema] = useState<string | null>(null);
   const ids = new Set(sesiones.flatMap((s) => (s.sessionId ? [s.sessionId] : [])));
   const nombreDe = (sessionId: string): string => sesiones.find((s) => s.sessionId === sessionId)?.nombre ?? A.sesion;
   const cortoDe = (sessionId: string): string => sesiones.find((s) => s.sessionId === sessionId)?.corto ?? A.sesion;
-
-  const abrir = () => {
-    if (!agenda) onCambiar({ startDate: hoy, sessions: [], moves: [] });
-    onAbrir();
-  };
-
-  if (!abierta || !agenda) {
-    return (
-      <section className="agenda-del-plan" aria-labelledby="titulo-agenda" data-agenda={agenda ? 'con-dias' : 'sin-dias'}>
-        <div className="agenda-del-plan__cabecera">
-          <h3 id="titulo-agenda">{A.titulo}</h3>
-          <button type="button" className="boton boton--quieto boton--compacto" data-abrir-agenda onClick={abrir}>
-            {agenda ? A.cambiarDias : A.ponerDias}
-          </button>
-        </div>
-        {agenda && lineasDeLaAgenda(agenda, sesiones).length > 0 ? (
-          <ul className="agenda-del-plan__resumen" data-resumen-de-la-agenda>
-            {lineasDeLaAgenda(agenda, sesiones).map((l) => (
-              <li key={l}>{l}</li>
-            ))}
-            <li className="nota">{A.desdeLa(agenda.startDate)}</li>
-          </ul>
-        ) : (
-          <p className="nota" data-resumen-de-la-agenda>
-            {agenda ? A.ningunaSesionConDias : A.sinAgenda}
-          </p>
-        )}
-      </section>
-    );
-  }
-
-  /** Cambia los días de una sesión; los movimientos que ya no tienen sentido se van con el día. */
-  const alternarDia = (sessionId: string, dia: DiaDeLaSemana) => {
-    const actuales = agenda.sessions.find((s) => s.sessionId === sessionId)?.weekdays ?? [];
-    const nuevos = actuales.includes(dia) ? actuales.filter((d) => d !== dia) : [...actuales, dia];
-    // En el orden de las sesiones del plan y de la semana: así se ven igual en todos lados.
-    const sessions = sesiones.flatMap((s) => {
-      if (!s.sessionId) return [];
-      const weekdays = s.sessionId === sessionId ? DIAS_DE_LA_SEMANA.filter((d) => nuevos.includes(d)) : (agenda.sessions.find((x) => x.sessionId === s.sessionId)?.weekdays ?? []);
-      return weekdays.length > 0 ? [{ sessionId: s.sessionId, weekdays }] : [];
-    });
-    setProblema(null);
-    onCambiar(agendaVigente({ ...agenda, sessions }, sesiones));
-  };
 
   const cambiarInicio = (fecha: string) => {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(fecha)) return;
@@ -207,59 +177,26 @@ export function AgendaDelPlan({
   const previstas = fechasPrevistas(agenda, desde, dias[dias.length - 1]!);
 
   return (
-    <section className="agenda-del-plan agenda-del-plan--abierta" aria-labelledby="titulo-agenda" data-agenda="editando">
+    <section id="proximas-fechas" className="agenda-del-plan agenda-del-plan--abierta" aria-labelledby="titulo-agenda" data-agenda="editando" data-proximas-fechas>
       <div className="agenda-del-plan__cabecera">
-        <h3 id="titulo-agenda">{A.titulo}</h3>
+        <h3 id="titulo-agenda" tabIndex={-1}>
+          {COPY_PROXIMAS_FECHAS.titulo}
+        </h3>
         <button type="button" className="boton boton--secundario boton--compacto" data-cerrar-agenda onClick={onCerrar}>
-          {A.ocultar}
+          {COPY_PROXIMAS_FECHAS.ocultar}
         </button>
       </div>
+      <p className="nota">{COPY_PROXIMAS_FECHAS.dondeSeEligen}</p>
       <div className="agenda-del-plan__inicio">
         <CampoDeFecha id="agenda-desde" etiqueta={A.desde} ayuda={A.desdeAyuda} value={agenda.startDate} onChange={cambiarInicio} />
       </div>
 
-      <table className="agenda-del-plan__semana">
-        <caption className="visualmente-oculto">{A.titulo}</caption>
-        <thead>
-          <tr>
-            <th scope="col">{A.sesion}</th>
-            {DIAS_DE_LA_SEMANA.map((d) => (
-              <th key={d} scope="col">
-                <abbr title={NOMBRE_DEL_DIA[d]}>{DIA_ABREVIADO[d]}</abbr>
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {sesiones.map((s, n) => {
-            const elegidos = s.sessionId ? (agenda.sessions.find((x) => x.sessionId === s.sessionId)?.weekdays ?? []) : [];
-            return (
-              <tr key={s.sessionId ?? `nueva-${n}`} data-sesion-de-la-agenda={n + 1}>
-                <th scope="row">{s.nombre}</th>
-                {s.sessionId ? (
-                  DIAS_DE_LA_SEMANA.map((d) => (
-                    <td key={d}>
-                      <button
-                        type="button"
-                        className="chip agenda-del-plan__dia"
-                        aria-pressed={elegidos.includes(d)}
-                        aria-label={`${s.nombre}, ${NOMBRE_DEL_DIA[d]}`}
-                        onClick={() => alternarDia(s.sessionId as string, d)}
-                      >
-                        {DIA_ABREVIADO[d]}
-                      </button>
-                    </td>
-                  ))
-                ) : (
-                  <td colSpan={7} className="nota">
-                    {A.sesionNueva}
-                  </td>
-                )}
-              </tr>
-            );
-          })}
-        </tbody>
-      </table>
+      {semana ? (
+        <>
+          <h4 className="agenda-del-plan__subtitulo">{COPY_PROXIMAS_FECHAS.laSemana}</h4>
+          {semana}
+        </>
+      ) : null}
 
       <h4 className="agenda-del-plan__subtitulo">{A.proximasDosSemanas}</h4>
       {previstas.length === 0 ? <p className="nota">{A.sinFechasEnEstasSemanas}</p> : null}

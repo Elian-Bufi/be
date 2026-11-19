@@ -139,7 +139,7 @@ import {
   posicionesTrasQuitar,
 } from '../editar-la-estructura';
 import { hoyEn } from '../seguimiento/estado';
-import { AgendaDelPlan, agendaVigente, sesionesParaLaAgenda } from './agenda-del-plan';
+import { agendaVigente, COPY_PROXIMAS_FECHAS, ProximasFechas, sesionesParaLaAgenda } from './agenda-del-plan';
 import { AgregarEjercicio } from './agregar-ejercicio';
 import { EjercicioDelEditor, type BloqueE, type Bloques, type PrescripcionE, type SesionE } from './ejercicio-del-editor';
 import { BloqueDelEditor } from './bloque-del-editor';
@@ -336,9 +336,9 @@ export function EditorDePlan({
   // TB-15: «¿Cuándo la revisás?» al activar, con nada elegido (o la fecha que ya tenía la versión); la fecha que resulta
   // es la que se guarda en la versión antes de activarla.
   const [cuando, setCuando] = useState<EleccionDeLaProxima>(NADA_ELEGIDO);
-  // La agenda (DL-137): los días de cada sesión. Se ve plegada en un renglón y se abre para cambiarla.
+  // La agenda (DL-137): los días de cada sesión, que se eligen junto a ella (C5). «Ver próximas fechas» abre lo que sale.
   const [agenda, setAgenda] = useState<AgendaDeEntrenamiento | null>(null);
-  const [agendaAbierta, setAgendaAbierta] = useState(false);
+  const [fechasAbiertas, setFechasAbiertas] = useState(false);
   const [sucio, setSucio] = useState(false);
   const [guardando, setGuardando] = useState(false);
   // Bloque 3 del encargo de consolidación (2026-10-19): el estado de escritura inequívoco, el conflicto con otra pestaña y
@@ -838,6 +838,8 @@ export function EditorDePlan({
   // La agenda que se ve: sin las sesiones que se sacaron ni los movimientos que dejaron de tener sentido (DL-137).
   const sesionesDeLaAgenda = sesionesParaLaAgenda(bloques);
   const agendaVisible = agendaVigente(agenda, sesionesDeLaAgenda);
+  // C5: la agenda con alguna sesión con días (sin ninguna, al guardar viaja como «sin días»).
+  const agendaConDias = agendaVisible && agendaVisible.sessions.length > 0 ? agendaVisible : null;
   const cambiarAgenda = (a: AgendaDeEntrenamiento | null) => {
     setAgenda(a);
     setSucio(true);
@@ -858,7 +860,6 @@ export function EditorDePlan({
   const sesiones: readonly SesionE[] = (microciclo ? microciclo.sessions : bloque?.sessions) ?? [];
   const k = mira.sesion;
   const sesion = k >= 0 ? sesiones[k] : undefined;
-  const diasDeEstaSesion = sesion?.sessionId ? (agendaVisible?.sessions.find((x) => x.sessionId === sesion.sessionId)?.weekdays ?? []) : [];
   // El prefijo de los identificadores de lo que cuelga del bloque o del microciclo: `b0`, `b0-m1`.
   const prefijo = `b${i}${j !== null ? `-m${j}` : ''}`;
   const abiertos = ejerciciosAbiertosEnElEditor(sesion?.prescriptions.length ?? 0, parametros.get('ejercicios'));
@@ -2090,17 +2091,17 @@ export function EditorDePlan({
               <ol className="estacion__lista-de-sesiones">
                 {sesiones.map((s, n) => {
                   const id = s.sessionId;
-                  const dias = id ? (agendaVisible?.sessions.find((x) => x.sessionId === id)?.weekdays ?? []) : [];
                   const compartidos = id ? diasCompartidos(agendaVisible, id, nombreDeLaSesionPorId) : [];
                   return (
                     <li key={id ?? `nueva-${n}`} className="estacion__sesion" data-sesion-de-la-lista={n + 1}>
                       <button type="button" className="estacion__sesion-boton" aria-current={n === k ? 'true' : undefined} onClick={() => elegirSesion(n)}>
                         <span className="estacion__sesion-nombre">{nombreDeLaSesion(s, n)}</span>
+                        {/* C5: los días los dicen los chips, justo debajo: el renglón no los repite. */}
                         <span className="nota">
-                          {dias.length > 0 ? dias.map((d) => DIA_LARGO[d]).join(', ') : CE.sinDia} · <EnPartes texto={cuentaDeLaSesion(s)} />
+                          <EnPartes texto={cuentaDeLaSesion(s)} />
                         </span>
                       </button>
-                      {/* ED-24: los días en siete chips, que escriben la agenda de DL-137 sin abrir un diálogo. */}
+                      {/* ED-24 y C5: los días en siete chips, el único lugar donde se eligen (escriben la agenda de DL-137). */}
                       {chipsDeDias(s, n)}
                       {diasDelPresetDe(s)}
                       {compartidos.length > 0 ? (
@@ -2112,6 +2113,32 @@ export function EditorDePlan({
                   );
                 })}
               </ol>
+              {/* C5: lo que sale de los días, a pedido: «Ver próximas fechas» abre el inicio, la semana y las dos semanas
+                  que siguen arriba de la sesión. Sin días, se dice qué pasa. */}
+              <div className="estacion__fechas" data-fechas-de-la-agenda>
+                {agendaConDias ? (
+                  <>
+                    <p className="nota">{COPY_AGENDA_DE_ENTRENAMIENTO.desdeLa(agendaConDias.startDate)}</p>
+                    <button
+                      id="ver-proximas-fechas"
+                      type="button"
+                      className="boton boton--quieto boton--compacto"
+                      aria-expanded={fechasAbiertas}
+                      aria-controls={fechasAbiertas ? 'proximas-fechas' : undefined}
+                      data-ver-proximas-fechas
+                      onClick={() => {
+                        setFechasAbiertas(!fechasAbiertas);
+                        if (!fechasAbiertas) setParaEnfocar('titulo-agenda');
+                      }}
+                    >
+                      <Icono nombre="calendario" tamano={15} />
+                      {fechasAbiertas ? COPY_PROXIMAS_FECHAS.ocultar : COPY_PROXIMAS_FECHAS.ver}
+                    </button>
+                  </>
+                ) : (
+                  <p className="nota">{COPY_AGENDA_DE_ENTRENAMIENTO.sinAgenda}</p>
+                )}
+              </div>
             </section>
           ) : null}
         </div>
@@ -2132,34 +2159,39 @@ export function EditorDePlan({
           {/* ED-17: lo que antes se repetía en un párrafo fijo va en una ayuda de primer uso que se cierra. Va arriba del
               centro y no encima de las zonas: así las tres entran en la pantalla (revisión visual del 2026-11-13). */}
           <PrimerUso {...PRIMER_USO_DE_LA_ESTACION} />
-          {/* ED-24: la agenda entera, en una tira de la semana arriba. */}
-          {agendaVisible ? (
-            <ol className="estacion__tira" aria-label={CE.semana}>
-              {tiraDeLaSemana(agendaVisible, nombreDeLaSesionPorId).map((d) => (
-                <li key={d.dia} data-con-sesion={d.sesiones.length > 0 ? '' : undefined}>
-                  <span className="nota">{DIA_LARGO[d.dia]}</span>
-                  <span>{d.sesiones.length > 0 ? d.sesiones.join(' · ') : CE.sinSesionEseDia}</span>
-                  {/* ED-24: «Duplicar el día» copia las sesiones de ese día a otro (Dirección, 2026-11-12). */}
-                  {d.sesiones.length > 0 ? (
-                    <button type="button" className="boton boton--enlace estacion__duplicar-el-dia" data-duplicar-el-dia={d.dia} onClick={() => setDuplicandoElDia({ desde: d.dia, hacia: null })}>
-                      <Icono nombre="duplicar" tamano={15} />
-                      {DD.accion}
-                      <span className="visualmente-oculto"> {DIA_LARGO[d.dia]}</span>
-                    </button>
-                  ) : null}
-                </li>
-              ))}
-            </ol>
+          {/* C5: los días se eligen en un solo lugar, junto a cada sesión. «Ver próximas fechas» (desde la lista de
+              sesiones) abre acá lo que sale de ellos: el inicio, la semana con «Duplicar el día» (ED-24) y las dos semanas
+              que siguen. Antes, la tira de la semana y «Días de entrenamiento» repetían los días arriba de la sesión. */}
+          {fechasAbiertas && agendaConDias ? (
+            <ProximasFechas
+              agenda={agendaConDias}
+              sesiones={sesionesDeLaAgenda}
+              hoy={hoyEn()}
+              onCerrar={() => {
+                setFechasAbiertas(false);
+                document.getElementById('ver-proximas-fechas')?.focus();
+              }}
+              onCambiar={cambiarAgenda}
+              semana={
+                <ol className="estacion__tira" aria-label={CE.semana}>
+                  {tiraDeLaSemana(agendaConDias, nombreDeLaSesionPorId).map((d) => (
+                    <li key={d.dia} data-con-sesion={d.sesiones.length > 0 ? '' : undefined}>
+                      <span className="nota">{DIA_LARGO[d.dia]}</span>
+                      <span>{d.sesiones.length > 0 ? d.sesiones.join(' · ') : CE.sinSesionEseDia}</span>
+                      {/* ED-24: «Duplicar el día» copia las sesiones de ese día a otro (Dirección, 2026-11-12). */}
+                      {d.sesiones.length > 0 ? (
+                        <button type="button" className="boton boton--enlace estacion__duplicar-el-dia" data-duplicar-el-dia={d.dia} onClick={() => setDuplicandoElDia({ desde: d.dia, hacia: null })}>
+                          <Icono nombre="duplicar" tamano={15} />
+                          {DD.accion}
+                          <span className="visualmente-oculto"> {DIA_LARGO[d.dia]}</span>
+                        </button>
+                      ) : null}
+                    </li>
+                  ))}
+                </ol>
+              }
+            />
           ) : null}
-          <AgendaDelPlan
-            agenda={agendaVisible}
-            sesiones={sesionesDeLaAgenda}
-            hoy={hoyEn()}
-            abierta={agendaAbierta}
-            onAbrir={() => setAgendaAbierta(true)}
-            onCerrar={() => setAgendaAbierta(false)}
-            onCambiar={cambiarAgenda}
-          />
 
           <div className="plan__niveles niveles-del-editor">
             {bloque && sesion ? (
@@ -2182,14 +2214,7 @@ export function EditorDePlan({
                     { clave: 'quitar', texto: 'Quitar esta sesión', alElegir: quitarSesion },
                   ]}
                 />
-                {/* Con agenda, los días de esta sesión (DL-137); sin agenda, con más de una sesión, la persona elige cuál hace. */}
-                {agendaVisible ? (
-                  <span className="nota nivel-del-plan__detalle" data-dias-de-la-sesion>
-                    {diasDeEstaSesion.length > 0 ? COPY_AGENDA_DE_ENTRENAMIENTO.diasDeLaSesion(diasDeEstaSesion) : COPY_AGENDA_DE_ENTRENAMIENTO.sinDias}
-                  </span>
-                ) : sesiones.length > 1 ? (
-                  <span className="nota nivel-del-plan__detalle">{C.sinDiaAsignado}</span>
-                ) : null}
+                {/* C5: los días de la sesión ya no se repiten acá: están junto a ella, en la lista de sesiones. */}
                 <span className="nota nivel-del-plan__cuenta" data-cuenta-de-la-sesion>
                   <EnPartes texto={cuentaDeLaSesion(sesion)} />
                 </span>

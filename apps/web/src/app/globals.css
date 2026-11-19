@@ -19618,3 +19618,28 @@ html:has(.estacion:not([data-en-el-asistente])) {
   grid-column: 1 / -1;
   margin: 0;
 }
+
+/* C5: el pie de la lista de sesiones: desde cuándo y «Ver próximas fechas». Las fechas se abren arriba de la sesión. */
+.estacion__fechas {
+  display: grid;
+  gap: 0.35rem;
+  margin-top: 0.75rem;
+  padding-top: 0.6rem;
+  border-top: 1px solid var(--borde);
+}
+
+.estacion__fechas > .nota {
+  margin: 0;
+}
+
+.estacion__fechas > .boton {
+  justify-self: start;
+}
+
+[data-proximas-fechas] {
+  margin-bottom: 0.75rem;
+}
+
+[data-proximas-fechas] > .nota {
+  margin: 0 0 0.5rem;
+}
