@@ -336,7 +336,9 @@ describe('API-TPL-06 a 14 · la plantilla es del profesional', () => {
 });
 
 describe('API-TPL-07, 10 y 12 · escrituras simultáneas (la base las ordena; nunca un 500)', () => {
-  const N = 6;
+  // Cuatro a la vez: menos que las conexiones de la app con la base, así todos llegan a esperar la fila (con más, el resto
+  // espera una conexión, que la base no muestra como un bloqueo).
+  const N = 4;
   const repetido = (codigo: string, n = N - 1) => Array<string>(n).fill(codigo);
 
   /**
@@ -351,14 +353,15 @@ describe('API-TPL-07, 10 y 12 · escrituras simultáneas (la base las ordena; nu
         else await tx.$queryRaw`SELECT 1 FROM "plantilla_de_plan_de_entrenamiento" WHERE "id" = ${id}::uuid FOR UPDATE`;
         const pid = await pidDeLaTransaccion(tx);
         enviados = Promise.all(pedidos());
-        await esperarQueEsperen(prisma, esperan, { bloqueadoPor: pid, que: `${esperan} pedidos esperando la fila de ${tabla}` });
+        // Esperan en fila: el primero, a esta transacción; los demás, al de adelante (el cerrojo de la tupla). Se cuentan todos.
+        await esperarQueEsperen(prisma, esperan, { que: `${esperan} pedidos esperando la fila de ${tabla} (la retiene el proceso ${pid})` });
       },
       { timeout: 40_000, maxWait: 10_000 },
     );
     return enviados as Promise<T[]>;
   }
 
-  it('seis autoguardados con la misma versión: uno solo; seis «Guardar» a la vez: una sola versión', async () => {
+  it('cuatro autoguardados con la misma versión: uno solo; cuatro «Guardar» a la vez: una sola versión', async () => {
     const c = await circuitoListoParaPlanificarEntrenamiento(app, etiqueta());
     const p = await nueva(c);
     const guardados = await conLaFila('preparacion_de_plantilla_de_entrenamiento', p.draftId, N, () =>
