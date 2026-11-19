@@ -17,10 +17,11 @@
 // - con Prof. Martín Acosta (Entrenamiento): el buscador «Agregar ejercicio» con la marca «Con historial» (GR-04), «La vez
 //   pasada» con y sin la fuerza estimada (GR-01), el historial y el perfil del ejercicio (GR-02, GR-03, GR-05, GR-06 y la
 //   cinta GR-23), la fuerza estimada en «Analizar» (GR-02), «Superpuestas» con el 1RM estimado y la carga (GR-26), «Comparar
-//   dos etapas» (GR-24) y «Patrones», en la ficha y en la estación (GR-27);
+//   dos etapas» (GR-24) y «Patrones», en la ficha y en la estación (GR-27), con «Guardar lo que ves como enfoque…»,
+//   «Editar este enfoque» y «Mis enfoques»;
 // - con Lic. Sofía Paz (Nutrición y Antropometría): «Desde el inicio y desde la anterior» (GR-16), «Día por día» (GR-14),
 //   «Por sitio» (GR-18) y «Por método» (GR-20), «Superpuestas» y «Alineadas» (GR-26), «Comparar dos etapas» (GR-24),
-//   «Patrones» con «Ver la relación» (SP-02) y «Armá tu gráfico» (GR-26); con la rama D, GR-12 y GR-13 en «Analizar» y
+//   «Patrones» con «Ver la relación» (SP-02, abierto a pedido) y «Armá tu gráfico» (GR-26); con la rama D, GR-12 y GR-13 en «Analizar» y
 //   «Ver la relación» (SP-02) en «Analizar»; y, con el entrenador, que esas preguntas no aparecen (el caso negado).
 // La misma lista sirve en cada rama de WP-GRAFICOS apenas trae main: una pantalla que la rama todavía no tiene se anota y
 // se saltea, y una que falla queda anotada con una captura del momento; ninguna corta la corrida. Cada pantalla deja la
@@ -53,6 +54,15 @@ const TAMANOS = [
   [1024, 768],
   [1280, 800],
   [1440, 900],
+  [1920, 950],
+];
+/**
+ * «Patrones» y los enfoques (rama E) se miran en los anchos de escritorio que pidió Dirección para esa rama: 1280 × 800,
+ * 1536 × 864 (la pantalla de 1920 al 125 %) y 1920 × 950. Cada pantalla puede traer sus tamaños (`tamanos`).
+ */
+const TAMANOS_DE_PATRONES = [
+  [1280, 800],
+  [1536, 864],
   [1920, 950],
 ];
 const TEMAS = ['claro', 'azul-noche'];
@@ -570,7 +580,15 @@ function pantallas({ diego, versiones }) {
       nota('el primer gráfico arrancó día por día: se eligió «Por semana»');
     }
   };
-  const patrones = { entera: true, graficos: '.ficha__cuerpo', enfocar: (page) => page.evaluate(() => window.scrollTo(0, 0)) };
+  const patrones = { entera: true, graficos: '.ficha__cuerpo', tamanos: TAMANOS_DE_PATRONES, enfocar: (page) => page.evaluate(() => window.scrollTo(0, 0)) };
+  /** Abre el menú del enfoque («Enfoque: … ▾») y elige una acción por su texto. */
+  const delMenuDelEnfoque = async (page, texto) => {
+    await clic(page, '[data-enfoque-elegido] .menu-de-acciones__boton');
+    const accion = await porTexto(page, '.menu-de-acciones__accion', texto, 8_000);
+    if (!accion) throw new Error(`el menú del enfoque no ofrece «${texto}»`);
+    await accion.click();
+    await asentar(page);
+  };
   return {
     PRO_T: [
       {
@@ -673,6 +691,7 @@ function pantallas({ diego, versiones }) {
         enfocar: '#zona-panel',
         paneles: [{ nombre: 'panel', selector: '#zona-panel' }],
         graficos: '#zona-panel',
+        tamanos: TAMANOS_DE_PATRONES,
       },
       {
         nombre: '07-gr02-fuerza-en-analizar',
@@ -737,6 +756,49 @@ function pantallas({ diego, versiones }) {
           await exigirPatrones(page);
         },
         ...patrones,
+      },
+      {
+        nombre: '10b-patrones-guardar-y-editar-un-enfoque',
+        codigo: 'GR-27',
+        de: 'rama E (wp-graficos-patrones-y-enfoques)',
+        que: '«Guardar lo que ves como enfoque…» con el nombre «Foco en fuerza» (queda elegido para Diego) y, después, «Editar este enfoque»: la barra de edición con el nombre, la pista de no poner datos de salud, «Guardar», «Guardar como uno nuevo» y «Cancelar», y en cada tarjeta «Subir», «Bajar» y «Quitar».',
+        llegar: async (page, nota) => {
+          await ir(page, enLaFicha({ vista: 'patrones', p: '365' }));
+          await exigirPatrones(page);
+          await esperarQueCargue(page, nota);
+          const yaHay = await page.$eval('[data-enfoque-elegido]', (e) => e.getAttribute('data-enfoque-elegido') !== 'sugeridos').catch(() => false);
+          if (!yaHay) {
+            await delMenuDelEnfoque(page, 'Guardar lo que ves como enfoque');
+            await visible(page, 'dialog[open] input[type="text"]');
+            await page.type('dialog[open] input[type="text"]', 'Foco en fuerza');
+            await clic(page, 'dialog[open] button', 'Guardar');
+            await page.waitForFunction(() => document.querySelector('[data-enfoque-elegido]')?.getAttribute('data-enfoque-elegido') !== 'sugeridos', { timeout: 20_000 });
+            nota('se guardó «Foco en fuerza» y quedó elegido para Diego');
+          } else nota('Diego ya tenía un enfoque elegido');
+          await delMenuDelEnfoque(page, 'Editar este enfoque');
+          await visible(page, '[data-editando-el-enfoque]', null, 10_000);
+          const tarjetas = await page.$eval('[data-tarjeta]', (xs) => xs.length);
+          nota(`${tarjetas} tarjetas con sus controles de edición`);
+        },
+        ...patrones,
+      },
+      {
+        nombre: '10c-mis-enfoques',
+        codigo: 'GR-27',
+        de: 'rama E (wp-graficos-patrones-y-enfoques)',
+        que: '«Mis enfoques…»: el cajón con cada enfoque, cuántos gráficos tiene y en cuántos lugares está elegido (sin decir quiénes), y «Renombrar», «Duplicar» y «Borrar».',
+        llegar: async (page, nota) => {
+          await ir(page, enLaFicha({ vista: 'patrones', p: '365' }));
+          await exigirPatrones(page);
+          await esperarQueCargue(page, nota);
+          await delMenuDelEnfoque(page, 'Mis enfoques');
+          await visible(page, 'dialog[open] [data-mis-enfoques]', null, 10_000);
+          await esperarQueCargue(page, nota, 'dialog[open]');
+          nota(`${await page.$eval('dialog[open] [data-enfoque]', (xs) => xs.length)} enfoques en la lista`);
+        },
+        paneles: [{ nombre: 'mis-enfoques', selector: 'dialog[open]' }],
+        graficos: 'body',
+        tamanos: TAMANOS_DE_PATRONES,
       },
     ],
     PRO_N: [
@@ -843,6 +905,24 @@ function pantallas({ diego, versiones }) {
         ...patrones,
       },
       {
+        nombre: '18b-patrones-ver-la-relacion',
+        codigo: '«Patrones» y SP-02',
+        de: 'rama E (wp-graficos-patrones-y-enfoques)',
+        que: '«Ver la relación» en «Patrones», abierto a pedido: la energía registrada y el peso de toma a toma (SP-02), con su ventana, lo que también cambió y la frase.',
+        llegar: async (page, nota) => {
+          await ir(page, enLaFicha({ vista: 'patrones', p: '365' }));
+          await exigirPatrones(page);
+          await esperarQueCargue(page, nota);
+          if (!(await siAparece(page, '[data-ver-el-cruce]', null, 8_000))) throw new Error('«Patrones» no ofrece «Ver la relación» a la nutricionista que también lleva Antropometría');
+          await clic(page, '[data-ver-el-cruce]');
+          await esperarQueCargue(page, nota, '[data-seccion-de-patrones="ver-la-relacion"]');
+        },
+        enfocar: '[data-seccion-de-patrones="ver-la-relacion"]',
+        paneles: [{ nombre: 'ver-la-relacion', selector: '[data-seccion-de-patrones="ver-la-relacion"]' }],
+        graficos: '[data-seccion-de-patrones="ver-la-relacion"]',
+        tamanos: TAMANOS_DE_PATRONES,
+      },
+      {
         nombre: '19-gr26-arma-tu-grafico',
         codigo: 'GR-26',
         de: 'ramas D y E',
@@ -868,6 +948,7 @@ function pantallas({ diego, versiones }) {
         },
         paneles: [{ nombre: 'compositor', selector: 'dialog[open]' }],
         graficos: 'body',
+        tamanos: TAMANOS_DE_PATRONES,
       },
       {
         nombre: '21-gr12-gr13-en-analizar',
@@ -943,7 +1024,7 @@ async function capturarUna(page, p, fila) {
   await anotarEstados(page, nota);
   for (const tema of TEMAS) {
     await ponerTema(page, tema);
-    for (const [ancho, alto] of TAMANOS) {
+    for (const [ancho, alto] of p.tamanos ?? TAMANOS) {
       await page.setViewport({ width: ancho, height: alto, deviceScaleFactor: 1 });
       await pausa(900);
       if (p.antes) await p.antes(page, ancho);

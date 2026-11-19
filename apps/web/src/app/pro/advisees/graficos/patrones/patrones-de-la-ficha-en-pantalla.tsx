@@ -248,7 +248,7 @@ export function PatronesDeLaFicha() {
   return (
     <section className="seccion patrones-de-la-ficha" aria-label={C.vista} data-vista-patrones>
       <div className="patrones__enfoque" data-enfoque-elegido={elegido?.setId ?? 'sugeridos'}>
-        <MenuDeAcciones rotulo={`${C.enfoque}: ${nombreDelElegido}. Cambiar el enfoque`} texto={C.elegido(nombreDelElegido)} acciones={acciones} icono="separadas" conFlecha alineado="izquierda" />
+        <MenuDeAcciones rotulo="Cambiar el enfoque" texto={C.elegido(nombreDelElegido)} acciones={acciones} icono="separadas" conFlecha alineado="izquierda" />
         <p className="nota patrones__que-rige">{elegido ? C.elegidoParaLaPersona : C.sugeridosDetalle}</p>
       </div>
       {borrador ? (
