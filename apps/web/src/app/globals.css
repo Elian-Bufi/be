@@ -16458,7 +16458,8 @@ p.cifra-del-espacio__desglose {
 }
 
 .bloque-del-editor__titulo {
-  flex: 1 1 12rem;
+  /* Cede lugar: a 1536 la cabecera entra en un renglón, con el «⋯» a la derecha. */
+  flex: 1 1 6rem;
   margin: 0;
   font-size: 1.05rem;
 }
