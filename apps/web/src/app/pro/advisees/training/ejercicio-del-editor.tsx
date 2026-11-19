@@ -707,7 +707,11 @@ function SeriesDelEjercicio({
                   <span className="visualmente-oculto">Elegir</span>
                 </th>
               ) : null}
-              <th scope="col">{COPY_ENTRENAMIENTO_POR_SERIE.columnaSerie}</th>
+              {/* Revisión del tramo 2: la columna lleva el rótulo «Común» de su fila: con 3 rem, «Común» se pisaba con «en
+                  cada serie» de la columna de al lado. */}
+              <th scope="col" className="series-del-editor__columna-serie">
+                {COPY_ENTRENAMIENTO_POR_SERIE.columnaSerie}
+              </th>
               <th scope="col">
                 Repeticiones <span className="nota">8 u 8-12</span>
               </th>

@@ -187,8 +187,10 @@ export function AgregarEjercicio({
                 <ul className="agregar-item__fichas agregar-ejercicio__fichas-elegidas">
                   {marcados.map((m) => (
                     <li key={m.versionId}>
-                      <button type="button" className="boton boton--quieto boton--compacto" aria-label={V.quitarDeLosElegidos(m.name)} onClick={() => setMarcados((x) => alternarMarcado(x, m))} data-quitar-elegido>
-                        {m.name}
+                      <button type="button" className="boton boton--quieto boton--compacto" aria-label={V.quitarDeLosElegidos(m.name)} title={m.name} onClick={() => setMarcados((x) => alternarMarcado(x, m))} data-quitar-elegido>
+                        {/* Revisión del tramo 2: las fichas bajan de renglón y ninguna queda cortada a medias; un nombre largo
+                            se recorta con «…» dentro de su ficha (entero en `title` y en lo que oye el lector). */}
+                        <span className="agregar-ejercicio__nombre-elegido">{m.name}</span>
                         <Icono nombre="cerrar" tamano={15} />
                       </button>
                     </li>
@@ -196,8 +198,8 @@ export function AgregarEjercicio({
                 </ul>
               ) : null}
             </div>
-            <label className="agregar-ejercicio__para-todos">
-              <span>{V.prescripcionParaTodos}</span>
+            <label className="agregar-ejercicio__para-todos" data-para-todos>
+              <span className="agregar-ejercicio__para-todos-rotulo">{V.prescripcionParaTodos}</span>
               <input type="text" value={linea} maxLength={80} onChange={(e) => setLinea(e.target.value)} aria-invalid={lectura && !lectura.ok ? true : undefined} aria-describedby="prescripcion-para-todos" autoComplete="off" spellCheck={false} />
               <span id="prescripcion-para-todos" className={lectura && !lectura.ok ? 'campo__error' : 'nota'}>
                 {!lectura ? (prescripcionDeLaSesion ? `Vacía, cada uno entra con «${prescripcionDeLaSesion}», la de la sesión.` : V.prescripcionAyuda) : lectura.ok ? vistaPreviaDePrescripcion(lectura.leida) : lectura.noSeEntiende}

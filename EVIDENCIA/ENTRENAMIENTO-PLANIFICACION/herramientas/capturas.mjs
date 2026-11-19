@@ -435,6 +435,29 @@ function pantallas(ids, lugar) {
         const marcas = await page.$$eval('[data-origen-de-la-celda]', (x) => x.map((e) => e.textContent));
         if (!marcas.includes('propio')) nota(`las marcas de las celdas: ${marcas.join(', ') || 'ninguna'}`);
       },
+      antesDeCapturar: async (page) => {
+        await page.evaluate(() => document.querySelector('.series-del-editor')?.scrollIntoView({ block: 'center' }));
+        await pausa(200);
+      },
+      // Revisión del tramo 2: el rótulo «Común» entra en su columna y no se pisa con «en cada serie».
+      verificar: (page) =>
+        page.evaluate(() => {
+          const problemas = [];
+          for (const fila of document.querySelectorAll('[data-fila-general]')) {
+            const th = fila.querySelector(':scope > th');
+            const texto = [...(th?.childNodes ?? [])].find((n) => n.nodeType === 3 && n.textContent.trim());
+            const vecino = fila.querySelector(':scope > td .nota');
+            if (!th || !texto || !vecino) continue;
+            const r = document.createRange();
+            r.selectNodeContents(texto);
+            const delRotulo = r.getBoundingClientRect();
+            const delVecino = vecino.getBoundingClientRect();
+            const borde = th.getBoundingClientRect().right;
+            if (delRotulo.right > borde + 0.5) problemas.push(`«${texto.textContent.trim()}» se sale de su columna (${Math.round(delRotulo.right - borde)} px)`);
+            if (delRotulo.right > delVecino.left + 0.5 && delRotulo.top < delVecino.bottom && delVecino.top < delRotulo.bottom) problemas.push(`«${texto.textContent.trim()}» se pisa con «${vecino.textContent.trim()}»`);
+          }
+          return problemas;
+        }),
     },
     {
       // C5: los días junto a cada sesión y «Ver próximas fechas» a pedido.
@@ -444,9 +467,35 @@ function pantallas(ids, lugar) {
         await clic(page, '[data-sesion-de-la-lista="2"] [data-dia="WEDNESDAY"]');
         await clic(page, '[data-ver-proximas-fechas]');
         await visible(page, '[data-proximas-fechas]');
-        await page.evaluate(() => document.querySelector('#zona-editor')?.scrollTo({ top: 0 }));
         await pausa(300);
       },
+      // Revisión del tramo 2: la captura quedaba arriba y cortaba «Las próximas dos semanas» antes de las sesiones. Va al
+      // calendario, con la semana encima si entra.
+      antesDeCapturar: async (page) => {
+        await page.evaluate(() => {
+          const zona = document.querySelector('#zona-editor');
+          const semana = document.querySelector('[data-proximas-fechas] .agenda-del-plan__subtitulo');
+          const calendario = document.querySelector('[data-proximas-fechas] .agenda-del-plan__calendario');
+          if (!zona || !calendario) return;
+          const z = zona.getBoundingClientRect();
+          const desde = (semana ?? calendario).getBoundingClientRect().top;
+          const hasta = calendario.getBoundingClientRect().bottom;
+          // La semana arriba si todo entra; si no, el calendario entero contra el borde de abajo.
+          zona.scrollTop += hasta - desde <= z.height - 16 ? desde - z.top - 8 : hasta - z.bottom + 8;
+        });
+        await pausa(250);
+      },
+      verificar: (page) =>
+        page.evaluate(() => {
+          const zona = document.querySelector('#zona-editor')?.getBoundingClientRect();
+          const sesiones = [...document.querySelectorAll('[data-proximas-fechas] .agenda-del-plan__calendario .agenda-del-plan__sesion')];
+          if (sesiones.length === 0) return ['las próximas dos semanas no muestran ninguna sesión'];
+          const aLaVista = sesiones.filter((e) => {
+            const r = e.getBoundingClientRect();
+            return zona && r.top >= Math.max(zona.top, 0) - 1 && r.bottom <= Math.min(zona.bottom, window.innerHeight) + 1;
+          });
+          return aLaVista.length > 0 ? [] : [`ninguna de las ${sesiones.length} sesiones del calendario queda a la vista`];
+        }),
       despues: async (page) => {
         const cerrar = await page.$('[data-cerrar-agenda]');
         if (cerrar) await cerrar.click();
@@ -465,6 +514,27 @@ function pantallas(ids, lugar) {
         for (const c of (await page.$$('[data-marcar-ejercicio]')).slice(0, 3)) await c.click();
         await asentar(page);
       },
+      // Revisión del tramo 2: el campo «Prescripción para todos» se veía como una línea finita y la tercera ficha quedaba
+      // cortada contra el borde, sin que se notara que seguía.
+      verificar: (page) =>
+        page.evaluate(() => {
+          const problemas = [];
+          const campo = document.querySelector('[data-para-todos] input');
+          const alto = campo?.getBoundingClientRect().height ?? 0;
+          if (alto < 36) problemas.push(`el campo de la prescripción para todos mide ${Math.round(alto)} px de alto`);
+          const lista = document.querySelector('[data-elegidos] ul');
+          if (!lista) return [...problemas, 'no están los elegidos'];
+          const l = lista.getBoundingClientRect();
+          if (lista.scrollWidth > lista.clientWidth + 1) problemas.push('la lista de elegidos se desplaza de costado');
+          for (const b of lista.querySelectorAll('[data-quitar-elegido]')) {
+            const r = b.getBoundingClientRect();
+            if (r.left < l.left - 1 || r.right > l.right + 1) problemas.push(`«${b.textContent.trim()}» queda cortada a lo ancho`);
+            if (r.top < l.bottom - 1 && r.bottom > l.bottom + 1) problemas.push(`«${b.textContent.trim()}» queda cortada a lo alto`);
+          }
+          const pie = document.querySelector('.cajon__pie')?.getBoundingClientRect();
+          if (pie && pie.height > window.innerHeight * 0.45) problemas.push(`el pie ocupa ${Math.round(pie.height)} px de ${window.innerHeight}`);
+          return problemas;
+        }),
     },
     {
       // C6: sin resultados, «No encuentro el ejercicio» abierto, con crear e importar.
@@ -568,6 +638,7 @@ async function capturarTodo() {
     await entrar(page, 'PRO_T');
     for (const p of pantallas(ids, lugar)) {
       const fila = { pantalla: p.nombre, ok: true, notas: [], medidas: {} };
+      const problemas = [];
       const nota = (t) => fila.notas.push(t);
       try {
         const [anchoInicial, altoInicial] = p.vistaInicial ?? [1440, 900];
@@ -579,10 +650,16 @@ async function capturarTodo() {
           for (const [ancho, alto] of TAMANOS) {
             await page.setViewport({ width: ancho, height: alto, deviceScaleFactor: 1 });
             await pausa(700);
+            // Revisión del tramo 2: una escena puede acomodar lo que se ve en cada tamaño (el desplazamiento cambia al
+            // cambiar la ventana) y verificar lo que tiene que verse; lo que no cumple hace fallar el paso, con las
+            // capturas igual tomadas.
+            if (p.antesDeCapturar) await p.antesDeCapturar(page);
             await page.screenshot({ path: path.join(salida, `${p.nombre}-${tema}-${ancho}.png`) });
             fila.medidas[`${tema}-${ancho}`] = await medir(page);
+            if (p.verificar) problemas.push(...(await p.verificar(page)).map((x) => `${tema} ${ancho}: ${x}`));
           }
         }
+        if (problemas.length > 0) throw new Error(`no cumple lo que tiene que verse: ${problemas.slice(0, 6).join(' · ')}`);
       } catch (e) {
         fila.ok = false;
         fila.error = String(e?.message ?? e).slice(0, 500);

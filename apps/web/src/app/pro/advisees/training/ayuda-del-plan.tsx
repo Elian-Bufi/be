@@ -68,7 +68,7 @@ export function AyudaDelPlanDeEntrenamiento() {
         </Renglon>
         {/* ED-17: lo que dice la ayuda de primer uso de la estación, para encontrarlo después de cerrarla. */}
         <Renglon esencial muestra={<Icono nombre="plan" tamano={20} />}>
-          <strong>La estación tiene tres zonas.</strong> {PRIMER_USO_DE_LA_ESTACION.renglones.join(' ')} En una pantalla más angosta, la de la derecha se abre con «Panel».
+          <strong>El editor tiene tres zonas.</strong> {PRIMER_USO_DE_LA_ESTACION.renglones.join(' ')} En una pantalla más angosta, la de la derecha se abre con «Panel».
         </Renglon>
         <Renglon muestra={<Icono nombre="texto" tamano={20} />}>
           <strong>La escritura rápida</strong> se escribe arriba de las series de cada ejercicio, y «Aplicar» (o Enter) la escribe en ellas. Mientras se escribe dice cómo la lee y lo que se pierde; lo escrito sin aplicar no se pierde al plegar ni al salir: el editor lo pregunta.

@@ -281,7 +281,7 @@ const V = (await import('../src/app/pro/advisees/training/varios-a-la-vez.ts')).
 test('C6 · los elegidos quedan a la vista en el pie fijo, en su orden, y cada uno se quita sin perder la búsqueda', () => {
   const pie = CATALOGO.slice(CATALOGO.indexOf('pie={'), CATALOGO.indexOf('<ContenidoDeAgregarEjercicio'));
   assert.match(pie, /data-elegidos=\{marcados\.length\}/);
-  assert.match(pie, /aria-label=\{V\.quitarDeLosElegidos\(m\.name\)\} onClick=\{\(\) => setMarcados\(\(x\) => alternarMarcado\(x, m\)\)\} data-quitar-elegido/);
+  assert.match(pie, /aria-label=\{V\.quitarDeLosElegidos\(m\.name\)\} title=\{m\.name\} onClick=\{\(\) => setMarcados\(\(x\) => alternarMarcado\(x, m\)\)\} data-quitar-elegido/);
   assert.equal(V.agregar(3, 'Sesión A'), 'Agregar 3 ejercicios a Sesión A');
   assert.equal(V.elegidos(3), '3 elegidos, en este orden:');
   assert.equal(V.quitarDeLosElegidos('Remo'), 'Quitar Remo de los elegidos');
@@ -377,8 +377,151 @@ test('Capturas · en pantalla nunca «asesorado»: el aviso de los objetivos por
   assert.doesNotMatch(EDITOR, /COPY_COMPATIBILIDAD_DE_CLIENTES\.activacionBloqueada\b(?!Titulo)(?!\.replace)/, 'el editor no muestra el texto del dominio tal cual');
 });
 
-test('Capturas · el pie del catálogo no tapa los resultados: los elegidos en una sola fila; la fila «Común» no se parte', () => {
-  const CSS = fuente('../src/app/globals.css');
-  assert.match(CSS, /\.agregar-ejercicio__fichas-elegidas \{\n\s*display: flex;\n\s*flex: 1 1 auto;\n\s*flex-wrap: nowrap;/);
+test('Capturas · la fila «Común» no se parte: su detalle lo oye solo el lector', () => {
   assert.match(EJERCICIO, /<span className="visualmente-oculto"> \{PL\.generalDetalle\}<\/span>/);
+});
+
+// ─── La revisión adversaria del tramo 2 (2026-11-19) ────────────────────────────────────────────────────────────
+
+const CSS = fuente('../src/app/globals.css');
+const CAPTURAS = fuente('../../../EVIDENCIA/ENTRENAMIENTO-PLANIFICACION/herramientas/capturas.mjs');
+/** La regla de un selector, la última que aparece (las del tramo 2 van al final y mandan). */
+const regla = (selector) => {
+  const partes = CSS.split(`${selector} {\n`);
+  assert.ok(partes.length > 1, `falta la regla ${selector}`);
+  return partes.at(-1).slice(0, partes.at(-1).indexOf('}'));
+};
+/** Una escena de la herramienta de capturas, desde su nombre hasta la siguiente. */
+const escena = (nombre) => {
+  const desde = CAPTURAS.indexOf(`nombre: '${nombre}'`);
+  assert.ok(desde > 0, nombre);
+  const hasta = CAPTURAS.indexOf("nombre: '", desde + 10);
+  return CAPTURAS.slice(desde, hasta > 0 ? hasta : undefined);
+};
+
+test('Revisión · escena 11: las fichas de los elegidos bajan de renglón y ninguna queda cortada; el campo «para todos» tiene su alto', () => {
+  // Una sola fila que se desplazaba de costado cortaba la tercera ficha contra el borde, sin que se notara que seguía.
+  const fichas = regla('.agregar-ejercicio__fichas-elegidas');
+  assert.match(fichas, /flex-wrap: wrap;/);
+  assert.match(fichas, /max-height: calc\(2 \* 32px/, 'dos renglones a la vista');
+  assert.match(fichas, /overflow-x: hidden;\n\s*overflow-y: auto;/, 'con más, se desplaza hacia abajo, con su barra');
+  assert.doesNotMatch(fichas, /nowrap/);
+  // Un nombre largo se recorta adentro de su ficha, entero en `title` y para el lector.
+  assert.match(regla('.agregar-ejercicio__nombre-elegido'), /text-overflow: ellipsis;/);
+  assert.match(CATALOGO, /aria-label=\{V\.quitarDeLosElegidos\(m\.name\)\} title=\{m\.name\}/);
+  assert.match(CATALOGO, /<span className="agregar-ejercicio__nombre-elegido">\{m\.name\}<\/span>/);
+  // El campo se veía como una línea finita: ahora con el alto y el borde de los campos del cajón, al lado de su rótulo.
+  const campo = regla('.agregar-ejercicio__para-todos > input');
+  assert.match(campo, /min-height: 40px;/);
+  assert.match(campo, /border: 1\.5px solid var\(--borde-control\);/);
+  assert.match(CATALOGO, /<label className="agregar-ejercicio__para-todos" data-para-todos>/);
+  // La herramienta de capturas lo verifica en cada tamaño y tema: si no, el paso falla.
+  const e11 = escena('11-catalogo-con-elegidos');
+  assert.match(e11, /verificar: \(page\) =>/);
+  assert.match(e11, /if \(alto < 36\) problemas\.push/);
+  assert.match(e11, /queda cortada a lo ancho/);
+  assert.match(CAPTURAS, /if \(problemas\.length > 0\) throw new Error\(`no cumple lo que tiene que verse/);
+});
+
+test('Revisión · escena 09: «Común» entra en su columna y no se pisa con «en cada serie»', () => {
+  // Con 3 rem (2,5 entre 40 y 46 rem), «Común» en negrita no entraba.
+  assert.match(EJERCICIO, /<th scope="col" className="series-del-editor__columna-serie">/);
+  assert.match(regla('.series-del-editor thead th.series-del-editor__columna-serie'), /width: 3\.5rem;/, 'la del contenedor de 40 a 46 rem, que va última');
+  assert.match(CSS, /\.series-del-editor thead th\.series-del-editor__columna-serie \{\n\s*width: 4rem;/);
+  // Las dos reglas nuevas van después de las de siempre (misma especificidad: manda la última).
+  assert.ok(CSS.lastIndexOf('th.series-del-editor__columna-serie') > CSS.lastIndexOf('.series-del-editor thead th:first-child {'));
+  assert.match(escena('09-de-donde-sale-cada-valor'), /se pisa con «/);
+});
+
+test('Revisión · escena 10: «Las próximas dos semanas» queda a la vista, con las sesiones en sus días', () => {
+  const e10 = escena('10-proximas-fechas');
+  assert.doesNotMatch(e10, /scrollTo\(\{ top: 0 \}\)/, 'quedaba arriba y cortaba el calendario antes de las sesiones');
+  assert.match(e10, /antesDeCapturar: async \(page\) =>/);
+  assert.match(e10, /las próximas dos semanas no muestran ninguna sesión/);
+  assert.match(e10, /sesiones del calendario queda a la vista/);
+  // Y la pantalla las dibuja: las fechas previstas de la agenda, en su día.
+  assert.match(AGENDA, /const delDia = previstas\.filter\(\(p\) => p\.date === fecha\);/);
+  assert.equal(
+    d.fechasPrevistas({ startDate: '2026-11-19', sessions: [{ sessionId: 'a', weekdays: ['MONDAY'] }, { sessionId: 'b', weekdays: ['WEDNESDAY'] }], moves: [] }, '2026-11-16', '2026-11-29').map((p) => `${p.sessionId} ${p.date}`).join(', '),
+    'a 2026-11-23, b 2026-11-25',
+  );
+});
+
+test('Revisión · sin ninguna sesión con días, «Próximas fechas» se cierra: no vuelve a abrirse sola con el próximo día', () => {
+  assert.match(EDITOR, /if \(!a \|\| a\.sessions\.length === 0\) setFechasAbiertas\(false\);/);
+});
+
+/** Los textos de una fuente (literales, plantillas y texto de JSX), sin comentarios ni claves («be.primer-uso.estacion.v1»). Las clases no llevan tilde. */
+const ts = (await import('typescript')).default;
+function textosDe(ruta) {
+  const contenido = readFileSync(ruta, 'utf8');
+  const archivo = ts.createSourceFile(ruta, contenido, ts.ScriptTarget.Latest, true, ruta.endsWith('x') ? ts.ScriptKind.TSX : ts.ScriptKind.TS);
+  const textos = [];
+  const visitar = (n) => {
+    if (ts.isStringLiteral(n) || ts.isNoSubstitutionTemplateLiteral(n) || ts.isTemplateHead(n) || ts.isTemplateMiddle(n) || ts.isTemplateTail(n) || ts.isJsxText(n)) {
+      const t = n.text.trim();
+      if (t && !/^[a-z0-9#./_-]+$|^[A-Z0-9_]+$/.test(t)) textos.push(t);
+    }
+    ts.forEachChild(n, visitar);
+  };
+  visitar(archivo);
+  return textos;
+}
+const { readdirSync, statSync } = await import('node:fs');
+const { join } = await import('node:path');
+const { fileURLToPath } = await import('node:url');
+const archivosDe = (carpeta) =>
+  readdirSync(carpeta).flatMap((n) => {
+    const r = join(carpeta, n);
+    return statSync(r).isDirectory() ? archivosDe(r) : /\.(ts|tsx)$/.test(n) && !/\.test\./.test(n) ? [r] : [];
+  });
+const PRO = fileURLToPath(new URL('../src/app/pro', import.meta.url));
+
+test('Revisión · «estación» es jerga del código: en pantalla, «el editor» (Entrenamiento y el resto del website profesional)', () => {
+  // Nutrición lo cambió en su paquete (NUP-14, rama wp-nutricion-planificacion): sus textos propios se cuentan ahí. El
+  // armazón común del asistente lleva acá el mismo cambio, línea por línea, para que las dos ramas se integren sin chocar.
+  const archivos = archivosDe(PRO).filter((a) => !a.includes(`${join('advisees', 'nutrition')}`));
+  assert.ok(archivos.length > 100, `se esperaban las pantallas del profesional, hay ${archivos.length}`);
+  const hallazgos = archivos.flatMap((a) => textosDe(a).filter((t) => /estación/i.test(t)).map((t) => `${a.slice(PRO.length + 1)}: «${t.slice(0, 80)}»`));
+  assert.deepEqual(hallazgos, []);
+  const E = fuente('../src/app/pro/advisees/estacion/estacion.ts');
+  assert.match(E, /titulo: 'Cómo se usa el editor',/);
+  assert.match(fuente('../src/app/pro/advisees/training/ayuda-del-plan.tsx'), /<strong>El editor tiene tres zonas\.<\/strong>/);
+  const comun = fuente('../src/app/pro/advisees/asistente/paso-que-sigue.ts');
+  assert.match(comun, /seguirEnLaEstacion: 'Seguir en el plan',/);
+  assert.match(comun, /irEnLaEstacion: 'Corregirlo en el plan',/);
+});
+
+test('Revisión · nunca «asesorado» en pantalla: tampoco en otra pantalla del website ni en la APK', () => {
+  // El 409 de la app de la persona (la excepción contada de ED-06) se dice con «la persona» en toda pantalla que lo usa.
+  for (const a of archivosDe(PRO)) {
+    assert.doesNotMatch(readFileSync(a, 'utf8'), /COPY_COMPATIBILIDAD_DE_CLIENTES\.activacionBloqueada\b(?!Titulo)(?!\.replace\(\/tu asesorado\/, 'la persona'\))/, a);
+  }
+  // La APK: ningún texto suyo dice «asesorado» (la referencia neutral de quien no tiene nombre viene del dominio y es la
+  // otra excepción contada de ED-06).
+  const APK = fileURLToPath(new URL('../../mobile/src', import.meta.url));
+  const apk = archivosDe(APK);
+  assert.ok(apk.length > 50, `se esperaban las pantallas de la APK, hay ${apk.length}`);
+  assert.deepEqual(apk.flatMap((a) => textosDe(a).filter((t) => /asesorad/i.test(t)).map((t) => `${a.slice(APK.length + 1)}: «${t.slice(0, 80)}»`)), []);
+});
+
+test('Revisión · lo escrito sin aplicar en un ejercicio sin identificador sigue a su ejercicio cuando la sesión se reordena', () => {
+  // Mientras algo impide guardar, los ejercicios nuevos siguen sin identificador: subir, bajar, quitar o duplicar otro le
+  // pasaba lo escrito al que quedaba en su lugar.
+  const lineas = { 'pos:b0-s1-p1': 'uno', 'pos:b0-s1-p2': 'dos', 'pos:b0-s10-p1': 'de otra sesión', 'pos:b0-m0-s1-p1': 'de un microciclo', 'id:x': 'con identificador' };
+  const fijas = { 'pos:b0-s10-p1': 'de otra sesión', 'pos:b0-m0-s1-p1': 'de un microciclo', 'id:x': 'con identificador' };
+  // Quitar el 0: suben.
+  assert.deepEqual(ER.lineasTrasReordenar(lineas, 'b0-s1', ER.ordenTrasQuitar(3, 0)), { ...fijas, 'pos:b0-s1-p0': 'uno', 'pos:b0-s1-p1': 'dos' });
+  // Quitar el 1: lo suyo se va con él.
+  assert.deepEqual(ER.lineasTrasReordenar(lineas, 'b0-s1', ER.ordenTrasQuitar(3, 1)), { ...fijas, 'pos:b0-s1-p1': 'dos' });
+  // Duplicar el 0: la copia, nueva, no lleva nada; los de abajo bajan.
+  assert.deepEqual(ER.ordenTrasDuplicar(3, 0), [0, -1, 1, 2]);
+  assert.deepEqual(ER.lineasTrasReordenar(lineas, 'b0-s1', ER.ordenTrasDuplicar(3, 0)), { ...fijas, 'pos:b0-s1-p2': 'uno', 'pos:b0-s1-p3': 'dos' });
+  assert.deepEqual(ER.ordenTrasDuplicar(3, 2), [0, 1, 2, -1]);
+  // Subir el 2 (`desdeDonde` de una sesión reordenada).
+  assert.deepEqual(ER.lineasTrasReordenar(lineas, 'b0-s1', [0, 2, 1]), { ...fijas, 'pos:b0-s1-p2': 'uno', 'pos:b0-s1-p1': 'dos' });
+  // El editor lo hace en cada operación que mueve ejercicios dentro de la sesión.
+  assert.match(EDITOR, /setLineas\(\(m\) => lineasTrasReordenar\(conLaLinea\(m, claveDeLaLinea\(`\$\{prefijo\}-s\$\{k\}`, l, p\.prescriptionId\), ''\), `\$\{prefijo\}-s\$\{k\}`, ordenTrasQuitar\(sesion\.prescriptions\.length, l\)\)\);/);
+  assert.match(EDITOR, /dejarAbiertos\(abiertosTrasReordenar\(abiertos, r\.desdeDonde\)\);\n(?:\s*\/\/.*\n)*\s*setLineas\(\(m\) => lineasTrasReordenar\(m, `\$\{prefijo\}-s\$\{k\}`, r\.desdeDonde\)\);/);
+  assert.match(EDITOR, /setLineas\(\(m\) => lineasTrasReordenar\(m, `\$\{prefijo\}-s\$\{k\}`, ordenTrasDuplicar\(sesion\.prescriptions\.length, l\)\)\);/);
 });

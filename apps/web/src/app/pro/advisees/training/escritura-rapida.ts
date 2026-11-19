@@ -75,6 +75,36 @@ export function lineasConLosIdentificadores(lineas: LineasSinAplicar, enviados: 
   return nuevas;
 }
 
+/**
+ * Revisión adversaria del tramo 2: lo escrito en un ejercicio que todavía no tiene identificador se recuerda por su lugar
+ * en la sesión, y ese rato no es siempre un segundo: mientras algo impide guardar (un valor que no se entiende, un
+ * conflicto), los ejercicios nuevos siguen sin identificador. Si en ese rato la sesión se reordena (subir, bajar, pasar a
+ * un bloque, sumar, duplicar o quitar un ejercicio), lo escrito sigue a su ejercicio: antes quedaba en el que pasaba a
+ * ocupar su lugar. `desdeDonde[nueva] = vieja` (`-1`, uno nuevo), como en `bloques-del-editor.ts`; lo de un ejercicio que
+ * ya no está se va con él, y lo que se recuerda por identificador no cambia.
+ */
+export function lineasTrasReordenar(lineas: LineasSinAplicar, sesion: string, desdeDonde: readonly number[]): LineasSinAplicar {
+  const deLaSesion = `pos:${sesion}-p`;
+  const nuevaDe = new Map(desdeDonde.flatMap((vieja, nueva) => (vieja >= 0 ? [[vieja, nueva] as const] : [])));
+  const resultado: Record<string, string> = {};
+  for (const [clave, texto] of Object.entries(lineas)) {
+    const lugar = clave.startsWith(deLaSesion) ? clave.slice(deLaSesion.length) : '';
+    if (!/^\d+$/.test(lugar)) {
+      resultado[clave] = texto;
+      continue;
+    }
+    const nueva = nuevaDe.get(Number(lugar));
+    if (nueva !== undefined) resultado[`${deLaSesion}${nueva}`] = texto;
+  }
+  return resultado;
+}
+
+/** El orden después de quitar el ejercicio `l` de `n` (`desdeDonde`, como el de una sesión reordenada). */
+export const ordenTrasQuitar = (n: number, l: number): number[] => Array.from({ length: n }, (_, i) => i).filter((i) => i !== l);
+
+/** El orden después de duplicar el ejercicio `l` de `n`: la copia, nueva, va justo después. */
+export const ordenTrasDuplicar = (n: number, l: number): number[] => [...Array.from({ length: l + 1 }, (_, i) => i), -1, ...Array.from({ length: Math.max(0, n - l - 1) }, (_, i) => l + 1 + i)];
+
 /** Los textos de la escritura rápida (C7). */
 export const COPY_ESCRITURA_RAPIDA = {
   rotulo: 'Escritura rápida',

@@ -16869,39 +16869,121 @@ p.cifra-del-espacio__desglose {
   margin: 0;
 }
 
-/* C6 (corrección de las capturas): a 1536 × 730 el pie con los elegidos en varias filas tapaba los resultados. Ahora van
-   en una sola fila compacta, al lado de su título, que se desplaza de costado si son muchos. */
+/* C6 (revisión adversaria del tramo 2, escena 11): los elegidos en una sola fila que se desplazaba de costado cortaban la
+   tercera ficha contra el borde («Sentadilla» a medias) sin que se notara que seguía. Ahora las fichas bajan de renglón,
+   al lado de su título: hasta dos renglones a la vista y, con más, la lista se desplaza hacia abajo con su barra (el
+   título dice cuántos son). Ninguna ficha queda cortada a lo ancho: un nombre largo se recorta con «…» adentro de su ficha
+   y entero en `title`. Y el pie no crece: la prescripción para todos va en un renglón con su rótulo, y la nota del
+   catálogo comparte renglón con el principal. */
 .agregar-ejercicio__elegidos {
   display: flex;
-  align-items: center;
-  gap: 0.5rem;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 0.35rem 0.5rem;
   min-width: 0;
 }
 
 .agregar-ejercicio__elegidos-titulo {
   flex: none;
+  padding-top: 0.3rem;
 }
 
 .agregar-ejercicio__fichas-elegidas {
   display: flex;
-  flex: 1 1 auto;
-  flex-wrap: nowrap;
+  flex: 1 1 16rem;
+  flex-wrap: wrap;
   gap: 0.35rem;
   min-width: 0;
-  max-height: none;
-  padding: 0 0 0.15rem;
-  overflow-x: auto;
-  overflow-y: hidden;
+  max-height: calc(2 * 32px + 0.35rem + 0.2rem);
+  padding: 0 0 0.2rem;
+  overflow-x: hidden;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
 }
 
 .agregar-ejercicio__fichas-elegidas > li {
   flex: none;
+  max-width: 100%;
+  min-width: 0;
 }
 
 .agregar-ejercicio__fichas-elegidas .boton {
+  max-width: 100%;
   min-height: 32px;
   padding: 0.1rem 0.55rem;
   font-size: 0.86rem;
+}
+
+.agregar-ejercicio__nombre-elegido {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* La prescripción para todos: el rótulo y el campo en un renglón (el campo baja si no entra), con el alto y el borde de
+   los campos del cajón. Antes el campo no tenía estilo y se veía como una línea finita. */
+.agregar-ejercicio__para-todos {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.3rem 0.75rem;
+}
+
+.agregar-ejercicio__para-todos-rotulo {
+  flex: none;
+  font-weight: 600;
+}
+
+.agregar-ejercicio__para-todos > input {
+  flex: 1 1 14rem;
+  min-width: 0;
+  min-height: 40px;
+  padding: 0.35rem 0.75rem;
+  border: 1.5px solid var(--borde-control);
+  border-radius: 10px;
+  background: var(--superficie);
+  color: var(--texto);
+  font: inherit;
+}
+
+.agregar-ejercicio__para-todos > input::placeholder {
+  color: var(--tenue);
+  opacity: 1;
+}
+
+.agregar-ejercicio__para-todos > input[aria-invalid='true'] {
+  border-color: var(--error);
+  border-width: 2px;
+}
+
+.agregar-ejercicio__para-todos > #prescripcion-para-todos {
+  flex-basis: 100%;
+  margin: 0;
+}
+
+.cajon__pie:has(> .agregar-ejercicio__elegidos) > .agregar-item__antes {
+  flex: 1 1 14rem;
+}
+
+/* C8 (revisión adversaria del tramo 2, escena 09): la columna «Serie» lleva el rótulo «Común» de su fila. Con 3 rem (2,5
+   entre 40 y 46 rem), «Común» se pisaba con «en cada serie» de la columna de al lado. */
+.series-del-editor thead th.series-del-editor__columna-serie {
+  width: 4rem;
+}
+
+.series-del-editor tr.series-del-editor__general > th {
+  white-space: nowrap;
+}
+
+@container ejercicios (40rem < width <= 46rem) {
+  .series-del-editor thead th.series-del-editor__columna-serie {
+    width: 3.5rem;
+  }
+
+  .series-del-editor tr.series-del-editor__general > th {
+    font-size: 0.9rem;
+  }
 }
 
 

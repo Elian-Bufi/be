@@ -164,7 +164,7 @@ import {
 import { COPY_REVISION_DEL_PLAN, COPY_VOLVER_A_LA_REVISION, destinoDelLugar, RevisionDelPlan, type EstadoDeLaRevision, type Impedimento } from './revision-del-plan';
 import { campoParaEnfocar, camposDelProblema, SIN_APLICAR } from './ir-al-campo';
 import { cantidadesDeSesionesVacias, COPY_SESIONES_VACIAS as SV, sesionesVacias } from './sesiones-vacias';
-import { claveDeLaLinea, conLaLinea, COPY_ESCRITURA_RAPIDA, lineasConLosIdentificadores, lineasPendientes, type LineasSinAplicar } from './escritura-rapida';
+import { claveDeLaLinea, conLaLinea, COPY_ESCRITURA_RAPIDA, lineasConLosIdentificadores, lineasPendientes, lineasTrasReordenar, ordenTrasDuplicar, ordenTrasQuitar, type LineasSinAplicar } from './escritura-rapida';
 import { NoDisponible, useEntrenamiento } from './entrenamiento';
 import { SelectorDeNivel } from './estructura-del-plan';
 import { DialogoGuardarSesionHabitual, InsertarSesionHabitual, nombresDeHabitual, useEjerciciosHabituales, useSesionesHabituales } from './habituales';
@@ -852,6 +852,9 @@ export function EditorDePlan({
   const agendaConDias = agendaVisible && agendaVisible.sessions.length > 0 ? agendaVisible : null;
   const cambiarAgenda = (a: AgendaDeEntrenamiento | null) => {
     setAgenda(a);
+    // Revisión del tramo 2: sin ninguna sesión con días, «Próximas fechas» se cierra (si no, volvía a abrirse sola con
+    // el próximo día elegido).
+    if (!a || a.sessions.length === 0) setFechasAbiertas(false);
     setSucio(true);
     setProblemas(null);
     setMensaje(null);
@@ -1091,7 +1094,8 @@ export function EditorDePlan({
   const quitarEjercicio = (l: number) => {
     // C7: lo escrito sin aplicar en el ejercicio que se quita se va con él.
     const p = sesion?.prescriptions[l];
-    if (p) setLineas((m) => conLaLinea(m, claveDeLaLinea(`${prefijo}-s${k}`, l, p.prescriptionId), ''));
+    // Revisión del tramo 2: lo escrito en los de más abajo que todavía no tienen identificador sube con ellos.
+    if (p && sesion) setLineas((m) => lineasTrasReordenar(conLaLinea(m, claveDeLaLinea(`${prefijo}-s${k}`, l, p.prescriptionId), ''), `${prefijo}-s${k}`, ordenTrasQuitar(sesion.prescriptions.length, l)));
     cambiar((x) => (lasSesiones(x)[k]!.prescriptions.splice(l, 1), x));
     // Lo abierto acompaña a su ejercicio: los de más abajo suben un lugar.
     dejarAbiertos(posicionesTrasQuitar(abiertos, l));
@@ -1109,6 +1113,8 @@ export function EditorDePlan({
   const aplicarReordenada = (r: SesionReordenada) => {
     cambiar((x) => ((lasSesiones(x)[k] = r.sesion), x));
     dejarAbiertos(abiertosTrasReordenar(abiertos, r.desdeDonde));
+    // Revisión del tramo 2: lo escrito sin aplicar en uno sin identificador también acompaña a su ejercicio.
+    setLineas((m) => lineasTrasReordenar(m, `${prefijo}-s${k}`, r.desdeDonde));
   };
   // ── DL-181: los bloques de la sesión ─────────────────────────────────────────────────────────────────────────
   const claveDelBloque = (groupId: string) => `${prefijo}-s${k}-${groupId}`;
@@ -1204,6 +1210,8 @@ export function EditorDePlan({
   const duplicarEjercicio = (l: number) => {
     cambiar((x) => (duplicarEn(lasSesiones(x)[k]!.prescriptions, l, copiaDelEjercicio(lasSesiones(x)[k]!.prescriptions[l]!)), x));
     dejarAbiertos(new Set([...posicionesTrasInsertar(abiertos, l + 1), l + 1]));
+    // Revisión del tramo 2: lo escrito sin aplicar en los de más abajo sin identificador baja con ellos (la copia no lo lleva).
+    if (sesion) setLineas((m) => lineasTrasReordenar(m, `${prefijo}-s${k}`, ordenTrasDuplicar(sesion.prescriptions.length, l)));
     // La copia no se lleva el foco: se dice dónde quedó (DL-113).
     setMensaje({ tipo: 'exito', texto: E.duplicado });
   };
