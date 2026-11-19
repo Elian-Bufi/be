@@ -15,10 +15,12 @@
 // - el editor: la suma arriba de las comidas, las comidas plegadas con lo que aportan, una comida abierta con sus
 //   opciones en renglones, una opción abierta con lo que aporta cada alimento, la pista de su composición y la línea
 //   frente a los rangos, el cuadro de la opción, la pregunta al tocar afuera con algo cambiado y la comida vacía.
-// - WP-NUTRICION-ALIMENTOS (DL-180, escenas 15 a 26): el buscador con los niveles y los íconos, mirar lo de otro
-//   profesional antes de sumarlo, la sugerencia del equivalente, crear a mano con el grupo, el alimento retirado en el
-//   editor, «Mis alimentos» (corregir y retirar), la imagen de la receta nueva (también desde el plan) y la consola de
-//   Administración. Sus datos sintéticos los prepara `prepararLosAlimentos`.
+// - WP-NUTRICION-ALIMENTOS (DL-180, escenas 15 a 28): el buscador con los niveles y los íconos, la sugerencia del
+//   equivalente verificado, el aviso de un nombre igual a uno verificado, crear a mano con el grupo y las medidas caseras,
+//   la cantidad con una medida casera, el alimento retirado en el editor, «Mis alimentos» (corregir y retirar), la imagen
+//   de la receta nueva (también desde el plan) y la consola de Administración (los parecidos, uno por uno, revisar y sumar
+//   al canon). Desde el segundo tramo, lo cargado a mano es de quien lo cargó (NUA-D14). Sus datos sintéticos los prepara
+//   `prepararLosAlimentos`.
 // Cada pantalla es un paso: si uno falla, queda anotado en `capturas.json` con una captura del momento y se sigue.
 // No mide peticiones ni compara con oráculos: es para mirar.
 import { execFileSync, spawn } from 'node:child_process';
@@ -240,12 +242,15 @@ async function indicarRango(page, n, gramos) {
 // de compartido) y una administradora con su autenticador, que revisa. Nada de esto toca otra base que la efímera de la CI.
 
 const ALIMENTOS = {
-  ajeno: 'Avena tostada con miel (de otro profesional)',
+  // NUA-D15: otro profesional cargó lo mismo que el propio, con otro plural: la consola los agrupa.
+  ajeno: 'Avenas con cacao caseras',
   propio: 'Avena con cacao casera',
   verificado: 'Barrita de cereal casera',
   retirado: 'Yogur de almendras casero',
   equivalente: 'Arroz blanco casero',
   enElPlan: 'Proteína en polvo (de prueba)',
+  // NUA-D16: uno del canon, para el aviso de un nombre igual al crear.
+  delCanon: 'Galletitas de arroz',
 };
 const prepararLos = { token: null, enElPlan: null, ultimoPasoAdmin: -1 };
 const composicion = (kcal, p, c, g, f) => ({ referenceAmount: '100g', energyKcal: kcal, proteinG: p, carbohydrateG: c, fatG: g, ...(f === undefined ? {} : { fiberG: f }) });
@@ -266,8 +271,9 @@ async function prepararLosAlimentos() {
   const { data } = await llamar('POST', '/auth/sessions', { cuerpo: { method: 'LOCAL', identifier: c.PRO_N_CORREO, credential: c.PRO_N_CLAVE } });
   const token = data.session.accessToken;
   prepararLos.token = token;
-  const cargar = async (nombre, comp, grupo) => (await llamar('POST', '/nutrition/catalog-items', { token, cuerpo: { name: nombre, itemType: 'FOOD', composition: comp, group: grupo } })).data;
-  await cargar(ALIMENTOS.propio, composicion(390, 12, 63, 9, 9), 'GRAINS');
+  const cargar = async (nombre, comp, grupo, extra = {}) => (await llamar('POST', '/nutrition/catalog-items', { token, cuerpo: { name: nombre, itemType: 'FOOD', composition: comp, group: grupo, ...extra } })).data;
+  // NUA-08: el propio, con sus medidas caseras.
+  await cargar(ALIMENTOS.propio, composicion(390, 12, 63, 9, 9), 'GRAINS', { householdMeasures: [{ kind: 'CUP', amount: 90 }, { kind: 'TABLESPOON', amount: 10 }] });
   const barrita = await cargar(ALIMENTOS.verificado, composicion(430, 8, 64, 16, 4), 'GRAINS');
   await llamar('PATCH', `/nutrition/catalog-items/${barrita.catalogItemId}`, { token, cuerpo: { expectedVersion: 'v1', name: ALIMENTOS.verificado, composition: composicion(412, 9, 62, 14, 5), group: 'GRAINS' } });
   const yogur = await cargar(ALIMENTOS.retirado, composicion(70, 2, 8, 3), 'DAIRY');
@@ -275,16 +281,15 @@ async function prepararLosAlimentos() {
   const arroz = await cargar(ALIMENTOS.equivalente, composicion(131, 2.7, 28, 0.4), 'GRAINS');
   prepararLos.enElPlan = (await cargar(ALIMENTOS.enElPlan, composicion(380, 75, 8, 5), 'DAIRY')).catalogItemId;
 
-  // Lo de otro profesional: como lo deja API-INT-NUT-01 desde DL-180 (el elemento, su versión, su grupo y su fila de
-  // compartido), a nombre del profesional de Entrenamiento de la cohorte, que ya existe. La cohorte tiene un solo
-  // profesional de Nutrición.
+  // Lo de otro profesional: como lo deja API-INT-NUT-01 (el elemento, su versión y su grupo), a nombre del profesional de
+  // Entrenamiento de la cohorte, que ya existe (la cohorte tiene un solo profesional de Nutrición). Es solo suyo
+  // (NUA-D14): Norma no lo ve, y la consola lo agrupa con el propio (NUA-D15).
   const prisma = new PrismaClient({ datasources: { db: { url: BASE } } });
   try {
     const [otro] = await prisma.$queryRaw`SELECT "identidad_id"::text AS "id" FROM "metodo_de_acceso" WHERE "referencia" = ${c.PRO_T_CORREO} LIMIT 1`;
     const PROCEDENCIA = { fuente: 'PROPIA', casoDeUso: 'UC-P10', operacion: 'API-INT-NUT-01', carga: 'MANUAL', nota: 'Capturas de WP-NUTRICION-ALIMENTOS (sintético)' };
     const elemento = await prisma.elementoDeCatalogoNutricional.create({ data: { procedencia: 'PROFESSIONAL_MANUAL', creadoPorId: otro.id } });
     await prisma.versionDeElementoNutricional.create({ data: { elementoId: elemento.id, nombre: ALIMENTOS.ajeno, composicion: composicion(402, 10, 66, 11, 7), disponibilidad: 'DISPONIBLE', procedencia: PROCEDENCIA } });
-    await prisma.alimentoCompartido.create({ data: { elementoId: elemento.id, procedencia: PROCEDENCIA } });
     await prisma.grupoDeAlimentoAsignado.create({ data: { elementoId: elemento.id, numero: 1, grupo: 'CEREALES', autorId: otro.id, procedencia: PROCEDENCIA } });
   } finally {
     await prisma.$disconnect();
@@ -321,6 +326,8 @@ async function prepararLosAlimentos() {
   const { data: oficiales } = await llamar('POST', '/admin/foods/verified/query', { token: tokenAdmin, cuerpo: { q: 'arroz blanco de grano largo cocido' } });
   const oficial = oficiales.find((v) => v.name === 'Arroz blanco de grano largo, cocido') ?? oficiales[0];
   await llamar('POST', `/admin/foods/${arroz.catalogItemId}/decisions`, { token: tokenAdmin, cuerpo: { expectedVersion: 'v1', decision: 'EQUIVALENT', equivalentCatalogItemId: oficial.catalogItemId } });
+  // NUA-D16: uno sumado al canon, con su fuente.
+  await llamar('POST', '/admin/foods/canon', { token: tokenAdmin, cuerpo: { name: ALIMENTOS.delCanon, composition: composicion(387, 8, 81, 3, 4), group: 'GRAINS', source: 'Rótulo del envase, lote sintético de las capturas' } });
   return admin;
 }
 
@@ -378,16 +385,31 @@ async function capturarAdministracion(navegador, admin, resultado) {
         while (Math.floor(Date.now() / PERIODO_MS) <= prepararLos.ultimoPasoAdmin) await pausa(1000);
         await page.type('#adm-codigo', codigoDelPaso(admin.secreto, Math.floor(Date.now() / PERIODO_MS)));
         await page.keyboard.press('Enter');
-        await visible(page, '[data-alimento-para-revisar]', null, 60_000);
+        // NUA-D15: la vista «Parecidos», con cuántos profesionales cargaron algo así y quién cargó cada uno.
+        await visible(page, '[data-grupo-de-parecidos]', null, 60_000);
         await asentar(page);
       },
     },
     {
       nombre: '26-administracion-revisar',
       llegar: async () => {
+        await clic(page, '[data-vista="TODOS"]');
+        await visible(page, '[data-alimento-para-revisar]', null, 30_000);
         await clic(page, '[data-alimento-para-revisar] [data-revisar]');
         await visible(page, '[data-decidir-sobre-alimento]');
         await page.$eval('[data-decidir-sobre-alimento]', (e) => e.scrollIntoView({ block: 'center' }));
+      },
+    },
+    {
+      nombre: '28-administracion-sumar-al-canon',
+      llegar: async () => {
+        // NUA-D16: «Sumar al canon» desde el grupo de los parecidos, con la fuente.
+        await clic(page, '[data-vista="PARECIDOS"]');
+        await visible(page, '[data-grupo-de-parecidos]', null, 30_000);
+        await clic(page, '[data-grupo-de-parecidos] [data-sumar-al-canon]');
+        await visible(page, '[data-sumar-al-canon-formulario]');
+        await escribir(page, '[data-sumar-al-canon-formulario] textarea', 'Rótulo del envase, lote sintético de las capturas');
+        await page.$eval('[data-sumar-al-canon-formulario]', (e) => e.scrollIntoView({ block: 'center' }));
       },
     },
   ];
@@ -620,33 +642,23 @@ function pantallas(norma) {
     {
       nombre: '15-buscador-niveles-e-iconos',
       llegar: async (page) => {
-        // NUA-03 y NUA-05: «avena» trae la tabla oficial («Verificado»), lo propio («Tuyo»), lo de demostración y, después
-        // dentro de su grupo, lo de otro profesional; cada fila con el ícono de su grupo.
+        // NUA-03 y NUA-05: «avena» trae la tabla oficial («Verificado»), lo propio («Tuyo») y lo de demostración, cada
+        // fila con el ícono de su grupo. Lo que cargó otro profesional no aparece (NUA-D14).
         await ir(page, nutricion());
         await abrirComida(page, 2);
         await abrirOpcion1(page);
         await clic(page, `${comida(2)} [data-agregar-item]`);
         await visible(page, 'dialog[open] .cuadro-de-la-opcion__cuerpo');
         await escribir(page, 'dialog[open] .buscador-de-la-opcion__campo input', 'avena');
-        await visible(page, 'dialog[open] [data-nivel="OTHER_PROFESSIONAL"]', null, 20_000);
+        await visible(page, 'dialog[open] [data-nivel="YOURS"]', null, 20_000);
         await page.$eval('dialog[open] .buscador-de-la-opcion__lista', (e) => e.scrollIntoView({ block: 'center' }));
         return { niveles: await page.$$eval('dialog[open] .buscador-de-la-opcion__resultado', (xs) => xs.map((x) => `${x.querySelector('strong')?.textContent} · ${x.querySelector('[data-nivel]')?.textContent ?? '—'} · ${x.querySelector('[data-grupo]')?.getAttribute('data-grupo')}`)) };
       },
     },
     {
-      nombre: '16-mirar-antes-de-sumar',
+      nombre: '16-sugerencia-del-equivalente',
       llegar: async (page) => {
-        // NUA-03: lo de otro profesional se mira antes de sumarlo.
-        await clic(page, 'dialog[open] .buscador-de-la-opcion__resultado .buscador-de-la-opcion__alimento', ALIMENTOS.ajeno);
-        await visible(page, 'dialog[open] [data-mirar-antes-de-sumar]');
-        await page.$eval('dialog[open] [data-mirar-antes-de-sumar]', (e) => e.scrollIntoView({ block: 'center' }));
-      },
-    },
-    {
-      nombre: '17-sugerencia-del-equivalente',
-      llegar: async (page) => {
-        // NUA-04: el verificado que Administración marcó como equivalente va justo antes, como sugerencia.
-        await clic(page, 'dialog[open] [data-mirar-antes-de-sumar] button', 'Volver a buscar');
+        // NUA-04 y NUA-D16: el verificado equivalente de lo propio va justo antes, con su composición.
         await escribir(page, 'dialog[open] .buscador-de-la-opcion__campo input', 'arroz blanco');
         await visible(page, 'dialog[open] [data-sugerido-por]', null, 20_000);
         await page.$eval('dialog[open] .buscador-de-la-opcion__lista', (e) => e.scrollIntoView({ block: 'center' }));
@@ -654,17 +666,58 @@ function pantallas(norma) {
       despues: cerrarCuadros,
     },
     {
-      nombre: '18-crear-a-mano-con-grupo',
+      nombre: '17-ya-existe-verificado',
       llegar: async (page) => {
-        // NUA-05 y NUA-D05: crear a mano pide el grupo y avisa que lo ven los demás profesionales.
+        // NUA-D16: crear uno con el nombre de uno verificado se avisa antes de guardar, sin impedirlo.
         await abrirOpcion1(page);
         await clic(page, `${comida(2)} [data-agregar-item]`);
         await visible(page, 'dialog[open] .cuadro-de-la-opcion__cuerpo');
         await clic(page, 'dialog[open] .cuadro-de-la-opcion__otro button', 'Crearlo a mano');
-        await visible(page, 'dialog[open] [data-aviso-de-compartir]');
+        await visible(page, 'dialog[open] [data-es-tuyo]');
+        await escribir(page, '#opcion-crear-a-mano-nombre', ALIMENTOS.delCanon);
+        await escribir(page, '#opcion-crear-a-mano-kcal', '387');
+        await escribir(page, '#opcion-crear-a-mano-c', '81');
+        await escribir(page, '#opcion-crear-a-mano-g', '3');
+        await escribir(page, '#opcion-crear-a-mano-p', '8');
+        await clic(page, 'dialog[open] .formulario-del-alimento button[type="submit"]');
+        await visible(page, 'dialog[open] [data-ya-existe-verificado]', null, 20_000);
+        await page.$eval('dialog[open] [data-ya-existe-verificado]', (e) => e.scrollIntoView({ block: 'center' }));
+      },
+      despues: cerrarCuadros,
+    },
+    {
+      nombre: '18-crear-a-mano-con-grupo-y-medidas',
+      llegar: async (page) => {
+        // NUA-05, NUA-08 y NUA-D14: crear a mano pide el grupo, ofrece las medidas caseras y dice que es tuyo.
+        await abrirOpcion1(page);
+        await clic(page, `${comida(2)} [data-agregar-item]`);
+        await visible(page, 'dialog[open] .cuadro-de-la-opcion__cuerpo');
+        await clic(page, 'dialog[open] .cuadro-de-la-opcion__otro button', 'Crearlo a mano');
+        await visible(page, 'dialog[open] [data-es-tuyo]');
         await escribir(page, '#opcion-crear-a-mano-nombre', 'Galletitas de arroz caseras');
         await page.select('#opcion-crear-a-mano-grupo', 'GRAINS');
-        await page.$eval('dialog[open] [data-aviso-de-compartir]', (e) => e.scrollIntoView({ block: 'center' }));
+        await escribir(page, '#opcion-crear-a-mano-medida-UNIT', '9');
+        await escribir(page, '#opcion-crear-a-mano-medida-PORTION', '27');
+        await page.$eval('dialog[open] [data-medidas-caseras]', (e) => e.scrollIntoView({ block: 'center' }));
+      },
+      despues: cerrarCuadros,
+    },
+    {
+      nombre: '27-cantidad-con-medida-casera',
+      llegar: async (page) => {
+        // NUA-08: se suma lo propio, que tiene taza y cucharada, y su cantidad se elige con la taza: «= 135 g» al lado.
+        await abrirOpcion1(page);
+        await clic(page, `${comida(2)} [data-agregar-item]`);
+        await visible(page, 'dialog[open] .cuadro-de-la-opcion__cuerpo');
+        await escribir(page, 'dialog[open] .buscador-de-la-opcion__campo input', ALIMENTOS.propio);
+        await clic(page, 'dialog[open] .buscador-de-la-opcion__resultado .buscador-de-la-opcion__alimento', ALIMENTOS.propio);
+        const unidad = await page.waitForFunction(() => [...document.querySelectorAll('dialog[open] select[id$="-unidad"]')].find((s) => [...s.options].some((o) => o.value === 'medida:CUP')) ?? null, { timeout: 20_000 });
+        const id = await unidad.evaluate((s) => s.id);
+        await page.select(`#${id}`, 'medida:CUP');
+        await asentar(page);
+        await escribir(page, `#${id.replace(/-unidad$/, '-cantidad')}`, '1,5');
+        await visible(page, 'dialog[open] [data-equivale-a]', null, 20_000);
+        await page.$eval('dialog[open] [data-equivale-a]', (e) => e.scrollIntoView({ block: 'center' }));
       },
       despues: cerrarCuadros,
     },
@@ -698,7 +751,7 @@ function pantallas(norma) {
       nombre: '21-mis-alimentos-corregir',
       llegar: async (page) => {
         await clic(page, '[data-alimento-propio] [data-corregir]');
-        await visible(page, 'dialog[open] [data-aviso-de-compartir]');
+        await visible(page, 'dialog[open] [data-medidas-caseras]');
       },
       despues: cerrarCuadros,
     },
