@@ -24,7 +24,7 @@ import {
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import type { CitaPosible } from '@be/domain';
 import { useReceptorDeCitas, type ReceptorDeCitas } from '../contexto/citas';
-import { claveDeCita, fundamentoConCita, lineaParaElFundamento } from '../contexto/panel-de-contexto';
+import { citasQueCambiaron, claveDeCita, claveDeCitaVista, fundamentoConCitas, sumarCitas } from '../contexto/panel-de-contexto';
 import { AnuncioDeLosAvisos, Aviso, Campo, erroresPorCampo, ResumenDeErrores, useAvisosVivos } from '../../../../components/formulario';
 import { COPY_AVISOS_VIVOS } from '../../../../components/validacion-viva';
 import { api } from '../../../../lib/api';
@@ -70,22 +70,27 @@ export function FormularioDeEvaluacion({ onRegistrada, onCancelar, conTitulo = t
   // de 20 que en Entrenamiento (DL-102); si una cambió antes de registrar, la API responde 409 y no se pierde ninguna.
   const [citas, setCitas] = useState<readonly CitaPosible[]>([]);
   const [citaCambiada, setCitaCambiada] = useState(false);
+  // Revisión del PR: cuáles cambiaron, según el 409, para señalarlas en la lista hasta que se vuelvan a citar.
+  const [cambiadas, setCambiadas] = useState<readonly string[]>([]);
   const receptor = useMemo<ReceptorDeCitas>(
     () => ({
       area: 'NUTRICION',
       destino: 'evaluacion',
-      citadas: new Set(citas.map(claveDeCita)),
+      // Con la versión vista: después de «Volver a leer», una que cambió se puede citar de nuevo y reemplaza a la vieja.
+      citadas: new Set(citas.map(claveDeCitaVista)),
       maximo: MAXIMO_DE_CITAS_POR_EVALUACION,
-      citar: (c) => {
-        if (c.area !== 'NUTRICION') return 'otra-area';
-        const clave = claveDeCita(c);
-        const antes = citas.find((x) => claveDeCita(x) === clave);
-        // Citar de nuevo una que cambió (después de «Volver a leer») la reemplaza con la versión nueva.
-        if (antes && antes.expectedVersion === c.expectedVersion) return 'ya';
-        if (!antes && citas.length >= MAXIMO_DE_CITAS_POR_EVALUACION) return 'tope';
-        setCitas((xs) => (antes ? xs.map((x) => (claveDeCita(x) === clave ? c : x)) : [...xs, c]));
-        setCitaCambiada(false);
-        return 'citada';
+      citar: (nuevas) => {
+        const propias = nuevas.filter((c) => c.area === 'NUTRICION');
+        if (propias.length === 0) return 'otra-area';
+        // Las del renglón, juntas: entran todas o ninguna en el tope de 20.
+        const r = sumarCitas(citas, propias, MAXIMO_DE_CITAS_POR_EVALUACION);
+        if (r.resultado === 'citada') {
+          const citadasAhora = new Set(propias.map(claveDeCita));
+          setCitas(r.lista);
+          setCambiadas((xs) => xs.filter((x) => !citadasAhora.has(x)));
+          setCitaCambiada(false);
+        }
+        return r.resultado;
       },
     }),
     [citas],
@@ -138,7 +143,11 @@ export function FormularioDeEvaluacion({ onRegistrada, onCancelar, conTitulo = t
     setEnviando(false);
     // Una escritura denegada retira el contenido de la pestaña entera (B10-06:1145-1148).
     if (sesionPerdida(r) || accesoRetirado(r)) return;
-    if (!r.ok && r.tipo === 'API' && r.codigo === 'VERSION_CONFLICT') return setCitaCambiada(true);
+    if (!r.ok && r.tipo === 'API' && r.codigo === 'VERSION_CONFLICT') {
+      // Nada se registró y nada se pierde: se señala cuál cambió, para volver a leerla y citarla.
+      setCambiadas(citasQueCambiaron(cuerpo.formResponseReferences ?? [], r.issues));
+      return setCitaCambiada(true);
+    }
     if (!r.ok) return setFallo(mensajeDeFallo(r));
     onRegistrada(r.datos.data.evaluationId);
   }
@@ -201,8 +210,9 @@ export function FormularioDeEvaluacion({ onRegistrada, onCancelar, conTitulo = t
               <li key={claveDeCita(c)}>
                 <span>
                   <strong>{c.pregunta}:</strong> {c.respuesta} <span className="nota">· {c.fuente.nombre} · {dia(c.fuente.fecha)}</span>
+                  {cambiadas.includes(claveDeCita(c)) ? <span className="nota"> · Cambió desde que la viste: volvé a leer el contexto y citala de nuevo.</span> : null}
                 </span>
-                <button type="button" className="boton boton--enlace" onClick={() => setCitas((xs) => xs.filter((x) => claveDeCita(x) !== claveDeCita(c)))}>
+                <button type="button" className="boton boton--enlace" aria-label={`Quitar la cita: ${c.pregunta}`} onClick={() => setCitas((xs) => xs.filter((x) => claveDeCita(x) !== claveDeCita(c)))}>
                   Quitar
                 </button>
               </li>
@@ -407,15 +417,15 @@ export function FormularioDeObjetivo({
   const intento = useClaveDeIntento();
   const [valores, setValores] = useState(objetivoVacio(evaluacionMasReciente(evaluaciones)));
   // DL-179 (CTX-D12): «Citar» desde el panel suma un renglón con la cita y su fuente al fundamento (CTX-P07: sin citas
-  // estructurales en el objetivo).
+  // estructurales en el objetivo). Nunca lo de salud: el objetivo viaja con el plan que la persona comparte (API-RES-06).
   const receptorDelObjetivo = useMemo<ReceptorDeCitas>(
     () => ({
       area: 'NUTRICION',
       destino: 'objetivo',
       citadas: new Set<string>(),
       maximo: null,
-      citar: (c) => {
-        const r = fundamentoConCita(valores.fundamento, lineaParaElFundamento(c, (iso) => dia(iso)));
+      citar: (citas) => {
+        const r = fundamentoConCitas(valores.fundamento, citas, (iso) => dia(iso));
         if (r.resultado === 'citada') setValores((v) => ({ ...v, fundamento: r.texto }));
         return r.resultado;
       },

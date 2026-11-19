@@ -91,6 +91,7 @@ test('TEST-CTX-025 · «Citar» en el objetivo suma un renglón con su fuente, u
     fieldCode: 'trn_dias_por_semana',
     expectedVersion: 'v2',
     area: 'ENTRENAMIENTO',
+    deSalud: false,
     pregunta: 'Días por semana',
     respuesta: '3 días por semana',
     fuente: { tipo: 'FORMULARIO', nombre: 'Antes de entrenar', fecha: '2026-11-10T10:00:00.000Z', corregida: false, cargadaConElProfesional: false },
@@ -111,7 +112,8 @@ test('TEST-CTX-026 · el marco monta el panel y el proveedor; el foco vuelve al 
   assert.match(marco, /<ProveedorDeCitas>/);
   assert.match(marco, /aria-expanded=\{panel\.abierto\}/);
   assert.match(marco, /aria-keyshortcuts="Alt\+C"/);
-  assert.match(marco, /botonDelPanel\.current\?\.focus\(\)/);
+  // Revisión del PR: vuelve a donde estaba al abrir (el campo, con Alt + C) o, si ya no está, al botón.
+  assert.match(marco, /\(volver\?\.isConnected \? volver : botonDelPanel\.current\)\?\.focus\(\)/);
   const panel = leer('contexto/panel.tsx');
   assert.match(panel, /<aside className=\{`panel-de-contexto/);
   assert.match(panel, /role="tablist"/);
@@ -135,4 +137,76 @@ test('TEST-CTX-027 · lo que se ve no dice lo prohibido, y el navegador no guard
   }
   assert.ok(!panel.includes('localStorage') && !panel.includes('sessionStorage'), 'el panel no guarda nada en el navegador');
   assert.ok(!leer('contexto/citas.tsx').includes('localStorage'));
+});
+
+// ─── Revisión del PR (adversaria) ───────────────────────────────────────────────────────────────
+
+const citaDe = (fieldCode, extra = {}) => ({
+  formResponseId: 'r1',
+  fieldCode,
+  expectedVersion: 'v1',
+  area: 'NUTRICION',
+  deSalud: false,
+  pregunta: fieldCode,
+  respuesta: 'x',
+  fuente: { tipo: 'FORMULARIO', nombre: 'Cómo comés hoy', fecha: '2026-11-10T10:00:00.000Z', corregida: false, cargadaConElProfesional: false },
+  ...extra,
+});
+
+test('TEST-CTX-028 · «Citar»: el renglón entra entero o no entra (tope de 20), una cita que cambió se reemplaza, y el objetivo nunca recibe lo de salud', () => {
+  // Mutación verificada: decidir cita por cita con la lista de antes (como el receptor anterior) deja 21.
+  const diecinueve = Array.from({ length: 19 }, (_, i) => citaDe(`c${i}`));
+  const conDetalle = [citaDe('nut_alergias', { deSalud: true }), citaDe('nut_alergias_cuales', { deSalud: true })];
+  const tope = P.sumarCitas(diecinueve, conDetalle, 20);
+  assert.equal(tope.resultado, 'tope');
+  assert.equal(tope.lista.length, 19);
+  const una = P.sumarCitas(diecinueve, [citaDe('nut_estilo')], 20);
+  assert.equal(una.resultado, 'citada');
+  assert.equal(una.lista.length, 20);
+  // Ya citada con la misma versión: nada cambia. Con otra (la persona corrigió y se volvió a leer): se reemplaza en su lugar.
+  assert.equal(P.sumarCitas(una.lista, [citaDe('c3')], 20).resultado, 'ya');
+  const nueva = P.sumarCitas(una.lista, [citaDe('c3', { expectedVersion: 'v2' })], 20);
+  assert.equal(nueva.resultado, 'citada');
+  assert.equal(nueva.lista.length, 20);
+  assert.equal(nueva.lista[3].expectedVersion, 'v2');
+  // «Citada» se decide con la versión vista: la v2 no figura como citada mientras la lista tenga la v1.
+  assert.equal(P.claveDeCitaVista(citaDe('c3')), 'r1#c3@v1');
+  assert.notEqual(P.claveDeCitaVista(citaDe('c3', { expectedVersion: 'v2' })), P.claveDeCitaVista(una.lista[3]));
+  // Lo que recibe cada destino: la evaluación, las de su área; el objetivo, nada de salud (viaja con el plan compartido).
+  const mezcla = [citaDe('nut_alergias', { deSalud: true }), citaDe('nut_estilo'), citaDe('trn_dias', { area: 'ENTRENAMIENTO' })];
+  assert.deepEqual(P.citasAdmitidas({ area: 'NUTRICION', destino: 'evaluacion' }, mezcla).map((c) => c.fieldCode), ['nut_alergias', 'nut_estilo']);
+  assert.deepEqual(P.citasAdmitidas({ area: 'NUTRICION', destino: 'objetivo' }, mezcla).map((c) => c.fieldCode), ['nut_estilo', 'trn_dias']);
+  const fundamento = P.fundamentoConCitas('Base.', mezcla, (iso) => iso.slice(0, 10));
+  assert.equal(fundamento.resultado, 'citada');
+  assert.ok(!fundamento.texto.includes('nut_alergias'), 'lo de salud no llega al fundamento');
+  assert.deepEqual(P.fundamentoConCitas('Base.', [mezcla[0]], (iso) => iso), { texto: 'Base.', resultado: 'ya' });
+  // El 409 dice cuál cambió.
+  assert.deepEqual(P.citasQueCambiaron([citaDe('a'), citaDe('b')], [{ code: 'FORM_RESPONSE_VERSION_CHANGED', path: 'formResponseReferences[1].expectedVersion' }]), ['r1#b']);
+});
+
+test('TEST-CTX-029 · el foco vuelve a donde estaba, el panel reabierto solo no lo roba, «Ocultar nombres» en «La tomó», y las pestañas en un renglón', () => {
+  const marco = leer('marco-del-area.tsx');
+  // Se recuerda dónde estaba el foco al abrir (con Alt + C, el campo de la evaluación).
+  assert.match(marco, /focoAlAbrir\.current = activo instanceof HTMLElement && activo !== document\.body \? activo : null;/);
+  assert.match(marco, /else abrirPanel\(\);/);
+  assert.match(marco, /enfocarAlAbrir=\{enfocarElPanel\}/);
+  const panel = leer('contexto/panel.tsx');
+  assert.match(panel, /if \(enfocar\.current\) encabezado\.current\?\.focus\(\);/);
+  // «La tomó» pasa por «Ocultar nombres».
+  assert.match(panel, /\{ fecha: fechaCorta, hora, nombre: delProfesional \}/);
+  // «Citar» decide con la versión vista y con lo que admite el destino; las del renglón van juntas.
+  assert.match(panel, /citasAdmitidas\(receptor, citas\)/);
+  assert.match(panel, /receptor\.citadas\.has\(claveDeCitaVista\(c\)\)/);
+  assert.match(panel, /receptor\.citar\(admitidas\)/);
+  for (const archivo of ['training/resumen.tsx', 'nutrition/formularios.tsx']) {
+    const fuente = leer(archivo);
+    assert.match(fuente, /sumarCitas/, `${archivo} no usa sumarCitas`);
+    assert.match(fuente, /fundamentoConCitas\(/, `${archivo} no filtra lo de salud del objetivo`);
+    assert.ok(!/fundamentoConCita\(|lineaParaElFundamento\(/.test(fuente), `${archivo} cita al objetivo sin el filtro`);
+  }
+  // Las pestañas: cada etiqueta entera, en un renglón.
+  const css = readFileSync(join(AQUI, '../src/app/globals.css'), 'utf8');
+  const bloque = css.slice(css.indexOf('.panel-de-contexto__pestana {'), css.indexOf('}', css.indexOf('.panel-de-contexto__pestana {')));
+  assert.match(bloque, /white-space: nowrap;/);
+  assert.doesNotMatch(bloque, /hyphens/);
 });

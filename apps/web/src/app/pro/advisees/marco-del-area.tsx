@@ -311,10 +311,22 @@ export function MarcoDelArea<C extends string>({
     },
     [areaDelPanel],
   );
+  // Revisión del PR: el foco vuelve a donde estaba al abrir (el campo de la evaluación, si se abrió con Alt + C mientras se
+  // escribía) o, si eso ya no está, al botón. Y el panel toma el foco solo cuando lo abre la persona: reabierto por lo que se
+  // recuerda (CTX-D18), al cargar la página, no se lo saca al editor.
+  const focoAlAbrir = useRef<HTMLElement | null>(null);
+  const [enfocarElPanel, setEnfocarElPanel] = useState(false);
+  const abrirPanel = useCallback(() => {
+    const activo = document.activeElement;
+    focoAlAbrir.current = activo instanceof HTMLElement && activo !== document.body ? activo : null;
+    setEnfocarElPanel(true);
+    cambiarPanel({ abierto: true });
+  }, [cambiarPanel]);
   const cerrarPanel = useCallback(() => {
     cambiarPanel({ abierto: false });
-    // El foco vuelve al botón que lo abrió.
-    window.setTimeout(() => botonDelPanel.current?.focus(), 0);
+    const volver = focoAlAbrir.current;
+    focoAlAbrir.current = null;
+    window.setTimeout(() => (volver?.isConnected ? volver : botonDelPanel.current)?.focus(), 0);
   }, [cambiarPanel]);
   const panelAbierto = panel.abierto;
   useEffect(() => {
@@ -324,11 +336,11 @@ export function MarcoDelArea<C extends string>({
       if (!esAtajoDelPanel(e)) return;
       e.preventDefault();
       if (panelAbierto) cerrarPanel();
-      else cambiarPanel({ abierto: true });
+      else abrirPanel();
     };
     window.addEventListener('keydown', alTeclear);
     return () => window.removeEventListener('keydown', alTeclear);
-  }, [conContexto, panelAbierto, cerrarPanel, cambiarPanel]);
+  }, [conContexto, panelAbierto, cerrarPanel, abrirPanel]);
   // ED-02: «Volver a la ficha» pasa por la guardia de la salida.
   // TB-07: se llegó desde el Espacio (una ficha de «Tu semana», un verbo de «Te toca a vos» o el cajón).
   const desdeElEspacio = useSearchParams().get('origen') === 'espacio';
@@ -385,7 +397,7 @@ export function MarcoDelArea<C extends string>({
                   aria-expanded={panel.abierto}
                   aria-keyshortcuts="Alt+C"
                   title={`${COPY_CONTEXTO.boton(nombre)} (${COPY_CONTEXTO.atajo})`}
-                  onClick={() => (panel.abierto ? cerrarPanel() : cambiarPanel({ abierto: true }))}
+                  onClick={() => (panel.abierto ? cerrarPanel() : abrirPanel())}
                 >
                   <Icono nombre="persona" tamano={18} />
                   {COPY_CONTEXTO.boton(nombre)}
@@ -454,6 +466,7 @@ export function MarcoDelArea<C extends string>({
           pestana={panel.pestana}
           onPestana={(p) => cambiarPanel({ pestana: p })}
           onCerrar={cerrarPanel}
+          enfocarAlAbrir={enfocarElPanel}
           sesionPerdida={sesionPerdida}
           actualizacion={version}
         />

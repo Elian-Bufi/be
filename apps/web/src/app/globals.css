@@ -18996,29 +18996,31 @@ html:has(.estacion:not([data-en-el-asistente])) {
   gap: 0.25rem;
 }
 
-/* Las cinco pestañas en una fila de cinco columnas iguales: una etiqueta larga pasa a dos renglones en lugar de esconder
-   la última pestaña o partir la fila. */
+/* Las cinco pestañas en un renglón, cada etiqueta entera (revisión del PR: con cinco columnas iguales, «Lo importante» se
+   partía en dos renglones). Cada una ocupa lo que dice su etiqueta y reparten el resto; en un cajón más angosto que 440 px,
+   la fila se desplaza en lugar de partir una etiqueta o esconder la última. */
 .panel-de-contexto__pestanas {
-  display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  display: flex;
   gap: 0.1rem;
-  padding: 0.4rem 0.25rem 0;
+  padding: 0.4rem 0.5rem 0;
   border-bottom: 1px solid var(--borde);
+  overflow-x: auto;
+  scrollbar-width: thin;
 }
 
 .panel-de-contexto__pestana {
-  min-width: 0;
-  padding: 0.4rem 0.2rem;
+  flex: 1 0 auto;
+  padding: 0.45rem 0.4rem;
   border: 0;
   border-bottom: 3px solid transparent;
   background: none;
   color: var(--tenue);
   font: inherit;
-  font-size: 0.8rem;
+  font-size: 0.85rem;
   font-weight: 600;
   line-height: 1.2;
   text-align: center;
-  hyphens: auto;
+  white-space: nowrap;
   cursor: pointer;
 }
 

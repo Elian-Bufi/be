@@ -14,11 +14,15 @@ export interface ReceptorDeCitas {
   /** El área de lo que se escribe: la evaluación cita solo las de su área (DL-102, DL-179). */
   readonly area: 'ENTRENAMIENTO' | 'NUTRICION';
   readonly destino: 'evaluacion' | 'objetivo';
-  /** Las claves (`claveDeCita`) que ya están citadas, para mostrar «Citada». */
+  /**
+   * Las claves con la versión vista (`claveDeCitaVista`) de lo que ya está citado, para mostrar «Citada». Con la versión: si
+   * la persona corrigió y el panel se volvió a leer, «Citar» vuelve a aparecer y reemplaza la cita vieja.
+   */
   readonly citadas: ReadonlySet<string>;
   /** El tope de citas (20 en la evaluación), o `null` sin tope (el fundamento del objetivo). */
   readonly maximo: number | null;
-  readonly citar: (c: CitaPosible) => ResultadoDeCitar;
+  /** Las citas de un renglón (la respuesta y su detalle), juntas: entran todas o ninguna (`sumarCitas`). */
+  readonly citar: (citas: readonly CitaPosible[]) => ResultadoDeCitar;
 }
 
 interface ContextoDeCitas {

@@ -42,7 +42,7 @@ import type { AlcanceDelArea } from '../marco-del-area';
 import { areaDelPedido, areasDelPanel, lineaDelPlan, tarjetaDeOtraArea, trasPedirVerElPlan } from '../seguimiento/otras-areas';
 import { TextosDeNotasPropias } from '../notas-propias';
 import { useReceptorActual } from './citas';
-import { avisoDeCitar, claveDeCita, pestanaPorTecla, PESTANAS, TEXTO_DE_PESTANA, type ModoDelPanel, type Pestana } from './panel-de-contexto';
+import { avisoDeCitar, citasAdmitidas, claveDeCitaVista, pestanaPorTecla, PESTANAS, TEXTO_DE_PESTANA, type ModoDelPanel, type Pestana } from './panel-de-contexto';
 
 type Lectura<T> = { readonly tipo: 'cargando' } | { readonly tipo: 'listo'; readonly datos: T } | { readonly tipo: 'no-disponible' } | { readonly tipo: 'error'; readonly razon: string };
 
@@ -84,12 +84,14 @@ export interface PropsDelPanel {
   readonly pestana: Pestana;
   readonly onPestana: (p: Pestana) => void;
   readonly onCerrar: () => void;
+  /** Si lo abrió la persona (el botón o Alt + C): el foco va al título. Reabierto por lo que se recuerda, no se mueve. */
+  readonly enfocarAlAbrir?: boolean;
   readonly sesionPerdida: (r: Resultado<unknown>) => boolean;
   /** Sube con «Actualizar» del marco: el panel vuelve a leer lo que muestra (CTX-D02). */
   readonly actualizacion?: number;
 }
 
-export function PanelDeContexto({ area, asesoradoId, token, nombre, modo, pestana, onPestana, onCerrar, sesionPerdida, actualizacion = 0 }: PropsDelPanel) {
+export function PanelDeContexto({ area, asesoradoId, token, nombre, modo, pestana, onPestana, onCerrar, enfocarAlAbrir = true, sesionPerdida, actualizacion = 0 }: PropsDelPanel) {
   const titulo = COPY_CONTEXTO.boton(nombre);
   const idTitulo = useId();
   const idPanel = useId();
@@ -98,9 +100,10 @@ export function PanelDeContexto({ area, asesoradoId, token, nombre, modo, pestan
   const encabezado = useRef<HTMLHeadingElement>(null);
   const pestanas = useRef<Partial<Record<Pestana, HTMLButtonElement | null>>>({});
 
-  // Al abrirse, el foco va al título del panel: el lector de pantalla dice dónde está.
+  // Al abrirlo la persona, el foco va al título del panel: el lector de pantalla dice dónde está. Solo al montarse.
+  const enfocar = useRef(enfocarAlAbrir);
   useEffect(() => {
-    encabezado.current?.focus();
+    if (enfocar.current) encabezado.current?.focus();
   }, []);
 
   const alTeclear = (e: KeyboardEvent<HTMLElement>) => {
@@ -198,18 +201,13 @@ function BotonDeCitar({ citas }: { citas: readonly CitaPosible[] }) {
   const receptor = useReceptorActual();
   const [aviso, setAviso] = useState<string | null>(null);
   if (!receptor || citas.length === 0) return null;
-  const admitidas = receptor.destino === 'objetivo' ? citas : citas.filter((c) => c.area === receptor.area);
+  // La evaluación, las de su área; el objetivo, nunca lo de salud (viaja con el plan compartido).
+  const admitidas = citasAdmitidas(receptor, citas);
   if (admitidas.length === 0) return null;
-  const todas = admitidas.every((c) => receptor.citadas.has(claveDeCita(c)));
-  const citar = () => {
-    let resultado: ReturnType<typeof receptor.citar> = 'ya';
-    for (const c of admitidas) {
-      const r = receptor.citar(c);
-      if (r === 'citada' || resultado === 'ya') resultado = r;
-      if (r === 'tope') break;
-    }
-    setAviso(avisoDeCitar(resultado, receptor.destino, receptor.maximo ?? 0));
-  };
+  // «Citada» solo si lo citado es la versión que se ve: si cambió, se puede volver a citar.
+  const todas = admitidas.every((c) => receptor.citadas.has(claveDeCitaVista(c)));
+  // Las del renglón van juntas: entran todas o ninguna (el tope de 20).
+  const citar = () => setAviso(avisoDeCitar(receptor.citar(admitidas), receptor.destino, receptor.maximo ?? 0));
   return (
     <span className="panel-de-contexto__citar">
       <button type="button" className="boton boton--quieto boton--compacto" onClick={citar} disabled={todas} aria-label={`${receptor.destino === 'evaluacion' ? COPY_CONTEXTO.citarEnLaEvaluacion : COPY_CONTEXTO.citarEnElObjetivo}: ${admitidas[0]!.pregunta}`}>
@@ -225,7 +223,7 @@ function BotonDeCitar({ citas }: { citas: readonly CitaPosible[] }) {
 
 function AyudaDeCitar() {
   const receptor = useReceptorActual();
-  return <p className="nota panel-de-contexto__ayuda-de-citar">{receptor ? (receptor.destino === 'evaluacion' ? COPY_CONTEXTO.citarEnLaEvaluacion : COPY_CONTEXTO.citarEnElObjetivo) + ': tocá «Citar» al lado de cada respuesta.' : COPY_CONTEXTO.sinDondeCitar}</p>;
+  return <p className="nota panel-de-contexto__ayuda-de-citar">{receptor ? (receptor.destino === 'evaluacion' ? COPY_CONTEXTO.ayudaDeCitarEnLaEvaluacion : COPY_CONTEXTO.ayudaDeCitarEnElObjetivo) : COPY_CONTEXTO.sinDondeCitar}</p>;
 }
 
 // ─── Lo importante ──────────────────────────────────────────────────────────────────────────────
@@ -268,6 +266,8 @@ function LoImportante({ area, asesoradoId, token, vuelta, sesionPerdida }: Props
   const formularios = useLecturaDelPanel(`${asesoradoId}|f|${vuelta}`, () => api.respuestasDelContexto(token, asesoradoId), sesionPerdida);
   const habitos = useLecturaDelPanel<HabitosCompartidosResponse>(`${asesoradoId}|h|${vuelta}`, () => api.habitosDeLaPersona(token, asesoradoId), sesionPerdida);
   const cuerpo = useLecturaDelPanel<CuerpoDelContextoResponse>(area === 'ANTROPOMETRIA' ? `${asesoradoId}|c|${vuelta}` : null, () => api.cuerpoDelContexto(token, asesoradoId), sesionPerdida);
+  // «Ocultar nombres»: quien tomó la medida, como lo muestra la pantalla.
+  const { delProfesional } = useNombres();
   return (
     <EstadoDelPanel lectura={formularios} que="los formularios" noDisponible={<p className="nota">{COPY_CONTEXTO.sinNadaImportante}</p>}>
       {(f: RespuestasDelContextoResponse) => {
@@ -278,7 +278,7 @@ function LoImportante({ area, asesoradoId, token, vuelta, sesionPerdida }: Props
             habitos: habitos.tipo === 'listo' && habitos.datos.data.current ? { answers: habitos.datos.data.current.answers, recordedAt: habitos.datos.data.current.recordedAt } : null,
             cuerpo: cuerpo.tipo === 'listo' ? cuerpo.datos.data : null,
           },
-          { fecha: fechaCorta, hora },
+          { fecha: fechaCorta, hora, nombre: delProfesional },
         );
         const pedir = FORMULARIO_PARA_PEDIR[area];
         return (

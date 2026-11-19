@@ -104,6 +104,76 @@ export function fundamentoConCita(fundamento: string, linea: string): { readonly
   return { texto: base ? `${base}\n${linea}` : linea, resultado: 'citada' };
 }
 
+// ─── Revisión del PR: qué recibe cada destino, el tope y la versión vista ─────────────────────
+
+/**
+ * Lo que recibe cada destino de las citas de un renglón:
+ * - la evaluación, solo las de su área (DL-102, DL-179);
+ * - el fundamento del objetivo, nunca lo de salud: el objetivo viaja con el plan que la persona comparte (API-RES-06), y el
+ *   texto que aceptó promete que lo compartido nunca incluye «lo de salud de tus formularios».
+ */
+export function citasAdmitidas(destino: { readonly area: 'ENTRENAMIENTO' | 'NUTRICION'; readonly destino: 'evaluacion' | 'objetivo' }, citas: readonly CitaPosible[]): CitaPosible[] {
+  return citas.filter((c) => (destino.destino === 'objetivo' ? !c.deSalud : c.area === destino.area));
+}
+
+/** Suma al fundamento un renglón por cita, salvo lo de salud (que no llega acá); `citada` si sumó alguno. */
+export function fundamentoConCitas(fundamento: string, citas: readonly CitaPosible[], fecha: (iso: string) => string): { readonly texto: string; readonly resultado: ResultadoDeCitar } {
+  let texto = fundamento;
+  let resultado: ResultadoDeCitar = 'ya';
+  for (const c of citas) {
+    if (c.deSalud) continue;
+    const r = fundamentoConCita(texto, lineaParaElFundamento(c, fecha));
+    if (r.resultado === 'citada') {
+      texto = r.texto;
+      resultado = 'citada';
+    }
+  }
+  return { texto, resultado };
+}
+
+/** Lo mínimo de una cita en una evaluación: la respuesta, el campo y la versión que se vio. */
+export interface ReferenciaCitada {
+  readonly formResponseId: string;
+  readonly fieldCode: string;
+  readonly expectedVersion: string;
+}
+
+/** La clave con la versión vista: «Citada» solo si lo citado es lo que se ve ahora en el panel. */
+export const claveDeCitaVista = (c: ReferenciaCitada): string => `${claveDeCita(c)}@${c.expectedVersion}`;
+
+/**
+ * Suma a la lista de una evaluación las citas de un renglón (la respuesta y su detalle), todas o ninguna:
+ * - la que ya está con la misma versión no cambia nada;
+ * - la que está con otra versión (la persona la corrigió y se volvió a leer, o después de un 409) se reemplaza en su lugar
+ *   y no cuenta para el tope;
+ * - las nuevas van al final si entran todas; si no, no se suma ninguna (`tope`).
+ * Revisión del PR: el receptor decidía cita por cita con la lista de antes de citar; con 19, un renglón con detalle dejaba
+ * 21 y la API respondía un 400. Y una cita que cambió no se podía volver a citar: el botón decía «Citada».
+ */
+export function sumarCitas<T extends ReferenciaCitada>(lista: readonly T[], nuevas: readonly T[], maximo: number): { readonly lista: readonly T[]; readonly resultado: ResultadoDeCitar } {
+  const reemplazos = new Map<string, T>();
+  const agregadas: T[] = [];
+  for (const c of nuevas) {
+    const clave = claveDeCita(c);
+    const antes = lista.find((x) => claveDeCita(x) === clave);
+    if (antes) {
+      if (antes.expectedVersion !== c.expectedVersion) reemplazos.set(clave, c);
+    } else if (!agregadas.some((x) => claveDeCita(x) === clave)) agregadas.push(c);
+  }
+  if (lista.length + agregadas.length > maximo) return { lista, resultado: 'tope' };
+  if (reemplazos.size === 0 && agregadas.length === 0) return { lista, resultado: 'ya' };
+  return { lista: [...lista.map((x) => reemplazos.get(claveDeCita(x)) ?? x), ...agregadas], resultado: 'citada' };
+}
+
+/** Las citas que la API dice que cambiaron (409 `VERSION_CONFLICT`, `formResponseReferences[i].expectedVersion`), por su clave. */
+export function citasQueCambiaron(enviadas: readonly { readonly formResponseId: string; readonly fieldCode: string }[], issues: readonly { readonly path?: string | null }[]): string[] {
+  return issues.flatMap((x) => {
+    const m = /^formResponseReferences\[(\d+)\]/.exec(x.path ?? '');
+    const c = m ? enviadas[Number(m[1])] : undefined;
+    return c ? [claveDeCita(c)] : [];
+  });
+}
+
 /** Lo que dice el panel después de citar. */
 export function avisoDeCitar(r: ResultadoDeCitar, destino: 'evaluacion' | 'objetivo', maximo: number): string {
   if (r === 'tope') return COPY_CONTEXTO.topeDeCitas(maximo);
