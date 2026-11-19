@@ -193,11 +193,46 @@ detalle con sus versiones, después de guardar la 2) y la 21 (el plan de Diego S
 
 - **Ratificar PLT-D01 a PLT-D18.**
 - **Lo siguiente, declarado:** el historial con diferencias, el conflicto con un diff y «usar una versión vieja como base».
-- **El aviso al salir con cambios sin guardar** (baja): el editor de la plantilla dice «el plan en preparación», porque
-  esa línea del editor del plan la vigila una prueba tal cual. Casi nunca se ve: antes de salir, el editor guarda solo.
 - **Fuera del paquete (media):** la nota de origen del plan de **Nutrición** (`NotaDeOrigenNutricional`) tiene el mismo
   error que tenía la de Entrenamiento: dice el número de la versión vigente. El arreglo es el mismo, con una lectura de
   versiones que Nutrición todavía no tiene.
 - **Prueba manual pendiente:** el editor de la plantilla con el teclado y un lector de pantalla, y una prueba con
   profesionales que no conocen la función (la que propuso ChatGPT: crear, dejar a medias, retomar, guardar y hacer una
   variante).
+
+## 7. La revisión adversaria (2026-11-19)
+
+**Corregido en la rama**, cada cosa con una prueba que queda en rojo sin el arreglo:
+- **«Sin cambios» (PLT-D10) no se cumplía con una plantilla guardada como llegó** (media). API-TPL-01 y 04 guardan la
+  estructura tal como llega (sin los campos omitidos y, a veces, sin el identificador de una fase o de un ejercicio); la
+  preparación la guarda normalizada y con los identificadores que pone el servidor. Comparadas tal cual, una plantilla
+  hecha con «Guardar como plantilla» podía no quedar nunca «sin cambios», y «Guardar nueva versión» sin tocar nada
+  creaba una versión igual. Ahora las dos se normalizan y se comparan sin los identificadores de nodo
+  (`sinCambiosFrenteALaBase`); un cambio real (repeticiones, calentamiento, un ejercicio, una fase, un bloque «En
+  vueltas») sigue siéndolo. Prueba del dominio y de integración (API-TPL-01 → revisar y guardar: `TEMPLATE_UNCHANGED`).
+- **El detalle con sus versiones ocupaba una columna angosta** a 1920 (pedido de Dirección): con una plantilla abierta,
+  la sección toma el ancho de «Plantillas y habituales» y el detalle se reparte en dos: la estructura a la izquierda; las
+  versiones, «Usar con una persona», el nombre y la descripción a la derecha.
+- **El propósito del plan de Diego en el editor de la plantilla** (escena 18). En el producto, lo único que lleva el plan
+  de una persona a una plantilla es «Guardar como plantilla», que muestra cada nota de texto libre (propósitos,
+  instrucciones, notas) para confirmarla o vaciarla (D-3 de DL-108), y las cargas no van sin el interruptor (D-2). La
+  herramienta de capturas armaba la plantilla por la API, sin ese paso: ahora vacía las notas como lo haría el
+  profesional, y la escena 18 verifica que ninguna nota del plan de Diego aparezca en el editor.
+- **El aviso al salir** decía «el plan en preparación» en la plantilla: ahora dice «la plantilla». La prueba que lo
+  vigila mira cada texto en su editor (el de Nutrición sigue tal cual).
+- **El panel de la plantilla era una pestaña sin pestañas** (`role="tabpanel"` con un rótulo que apuntaba a un elemento
+  que no está): en la plantilla se rotula solo.
+
+**Lo que queda, de severidad baja:**
+- **Lo que D-3 no muestra** (fuera del paquete, de DL-108): los parámetros del profesional de cada ejercicio, la
+  referencia del %RM y los nombres (de fases, sesiones y bloques) viajan a la plantilla sin pasar por la lista de notas.
+  Un nombre como «Diego · piernas» llegaría a la plantilla. Propuesta: sumarlos a la lista de «Guardar como plantilla».
+- **«Lo que cambia» en «Antes de guardar»** compara por identificador: con una versión de base guardada sin
+  identificadores (vieja, o mandada así por la API), lo que no los tenía aparece como quitado y agregado, aunque la API
+  diga «sin cambios». Con lo que guarda el website casi no pasa (manda los identificadores del plan).
+- **Las preparaciones nuevas que nunca se guardan quedan** hasta que su profesional las descarta: no vencen. Solo las
+  ve y las lista su profesional (API-TPL-08), y se descartan desde el editor.
+- **En el editor de la plantilla, un lugar sin estructura dice «Plan»** (el nombre, «ninguna sesión»): diría «Plantilla».
+- **El pie de la galería de presets** dice «Se escribe en el borrador: la persona no ve nada» también en la plantilla.
+- **Un 404 de cualquier pedido del editor** (por ejemplo, resolver un candidato de wger vencido) se lee como «lo
+  preparado ya no está», como el plan lo lee como «sin acceso». Es la regla de siempre, ahora también acá.

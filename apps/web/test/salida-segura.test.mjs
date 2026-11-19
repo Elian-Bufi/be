@@ -181,13 +181,15 @@ test('TEST-EDP-003 · cada enlace interno pasa por la guardia: la barra, las pes
   // El centro de novedades lleva a la pantalla de una novedad por la guardia.
   assert.match(leer('components/centro-de-novedades.tsx'), /antesDeSalir\(\(\) => router\.push\(destino\)\);/);
   // Los dos editores de planes se guardan antes de salir, si se puede: nada a medio escribir ni un conflicto.
-  for (const ruta of ['app/pro/advisees/training/editor.tsx', 'app/pro/advisees/nutrition/editor.tsx']) {
-    assert.match(
-      leer(ruta),
-      /useCambiosSinGuardar\(sucio, 'el plan en preparación', \{ sePuede: puedeGuardar && !conflicto, ocupado: guardando, guardar: async \(\) => \(await guardar\(\)\) !== null \}\);/,
-      ruta,
-    );
-  }
+  // Cada uno dice lo que edita: el de Entrenamiento edita también una plantilla (PLT, DL-182), y entonces dice «la
+  // plantilla»; con una persona, «el plan en preparación». Lo que se guarda antes de salir es lo mismo en los dos casos.
+  const guardia = (que) =>
+    new RegExp(`useCambiosSinGuardar\\(sucio, ${que}, \\{ sePuede: puedeGuardar && !conflicto, ocupado: guardando, guardar: async \\(\\) => \\(await guardar\\(\\)\\) !== null \\}\\);`);
+  assert.match(leer('app/pro/advisees/training/editor.tsx'), guardia(`plantilla \\? 'la plantilla' : 'el plan en preparación'`), 'training/editor.tsx');
+  assert.match(leer('app/pro/advisees/nutrition/editor.tsx'), guardia(`'el plan en preparación'`), 'nutrition/editor.tsx');
+  // La plantilla nunca se llama «el plan en preparación» al salir, ni el plan de una persona «la plantilla».
+  assert.doesNotMatch(leer('app/pro/advisees/training/editor.tsx'), /useCambiosSinGuardar\(sucio, 'el plan en preparación'/);
+  assert.equal(S.COPY_SALIDA_SEGURA.queSePierde(['la plantilla']), 'Si salís ahora, se pierde lo que escribiste en la plantilla y todavía no se guardó.');
   // El marco del área deja la guardia (y el aviso de recargar) en un solo lugar.
   assert.match(leer('app/pro/advisees/marco-del-area.tsx'), /useCambiosParaSalir\(hay, que, guardarAntes\);/);
 });

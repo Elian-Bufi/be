@@ -233,3 +233,29 @@ test('Los textos de la plantilla ubican y no califican: sin «asesorado», sin �
   assert.ok(revision.length > 0);
   assert.doesNotMatch(revision, /activar/, 'la revisión de la plantilla no habla de activar');
 });
+
+// ─── Revisión adversaria del 2026-11-19 ──────────────────────────────────────────────────────────────────────────
+
+test('El detalle usa el ancho: con una plantilla abierta, la sección toma las dos columnas y el detalle se reparte en dos', () => {
+  const CSS = fuente('../src/app/globals.css');
+  // Solo con una abierta que está en la lista: sin ninguna, «Plantillas y habituales» sigue en dos columnas.
+  assert.match(COLECCION, /const conDetalle = lista\.estado\.tipo === 'listo' && lista\.estado\.items\.some\(\(p\) => p\.templateId === abiertaId\);/);
+  assert.match(COLECCION, /<section className=\{conDetalle \? 'seccion seccion--con-detalle' : 'seccion'\} aria-labelledby="titulo-plantillas"/);
+  // La estructura a la izquierda; las versiones, «Usar con una persona», el nombre y la descripción a la derecha.
+  const detalle = COLECCION.slice(COLECCION.indexOf('function DetalleDePlantilla('), COLECCION.indexOf('// ─── PLT (DL-182): lo que está en preparación'));
+  const estructura = detalle.indexOf('detalle-de-la-plantilla-abierta__estructura');
+  const lateral = detalle.indexOf('detalle-de-la-plantilla-abierta__lateral');
+  assert.ok(estructura > 0 && lateral > estructura, 'la estructura y lo lateral, en ese orden');
+  assert.ok(detalle.indexOf('<EstructuraAgrupada') > estructura && detalle.indexOf('<EstructuraAgrupada') < lateral);
+  for (const pieza of ['<VersionesDeLaPlantilla', 'data-usar-con-una-persona', 'Nombre y descripción', 'COPY_PLANTILLAS.archivar']) assert.ok(detalle.indexOf(pieza) > lateral, pieza);
+  // El reparte: a todo el ancho desde 1.280 (las dos columnas de la página) y en dos columnas desde 1.024.
+  assert.match(CSS, /@media \(min-width: 80rem\) \{\n  \.plantillas-y-habituales > \.seccion--con-detalle \{\n    grid-column: 1 \/ -1;/);
+  assert.match(CSS, /@media \(min-width: 64rem\) \{\n  \.detalle-de-la-plantilla-abierta \{\n    display: grid;\n    grid-template-columns: minmax\(0, 3fr\) minmax\(20rem, 2fr\);/);
+});
+
+test('En la plantilla, el panel no es una pestaña sin pestañas: su rótulo no apunta a nada que no esté', () => {
+  // Las pestañas no están en la plantilla (PLT-D12): el panel se rotula solo, sin `role="tabpanel"` ni `aria-labelledby` colgados.
+  assert.match(EDITOR, /\{plantilla \? null : \(\n\s*<div\n\s*className="estacion__pestanas"\n\s*role="tablist"/);
+  assert.match(EDITOR, /<div role=\{plantilla \? undefined : 'tabpanel'\} id="panel-antes" aria-labelledby=\{plantilla \? undefined : 'pestana-antes'\} aria-label=\{plantilla \? COPY_REVISION_DE_LA_PLANTILLA\.titulo : undefined\} data-panel-en-vivo>/);
+  assert.doesNotMatch(EDITOR, /<div role="tabpanel" id="panel-antes" aria-labelledby="pestana-antes"/);
+});

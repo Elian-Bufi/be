@@ -303,7 +303,13 @@ async function prepararLasPlantillas(ids, nota) {
   const borrador = lista.data.find((v) => v.state === 'DRAFT');
   if (!borrador) throw new Error('Diego Sosa no tiene una versión en preparación de la que tomar la estructura.');
   const detalle = (await op('GET', `/training/plans/${borrador.planId}/detail`)).data;
-  const fases = dominio.estructuraConObjetivosComoEntrada(detalle);
+  // Lo de Diego no viaja a la plantilla (D-3 de DL-108, revisión del 2026-11-19): como en «Guardar como plantilla», cada
+  // nota de texto libre (el propósito de la fase, «Consolidar: 135 kg de sentadilla…», las instrucciones y las notas) se
+  // vacía antes de guardarla; las cargas no van (D-2). La escena 18 verifica que ninguna aparezca en el editor.
+  const conNotas = { blocks: dominio.estructuraConObjetivosComoEntrada(detalle) };
+  const notasDeDiego = dominio.notasDeLaEstructura(conNotas).map((n) => n.texto);
+  const fases = dominio.notasDeLaEstructura(conNotas).reduce((e, n) => dominio.vaciarNota(e, n.lugar), conNotas).blocks;
+  plantillas.notasDeDiego = notasDeDiego;
   // 1. La plantilla, en blanco y sin persona: la estructura, el nombre y la descripción; guardada, es la versión 1.
   const nueva = (await op('POST', '/training/plan-template-drafts', {})).data;
   const preparada = (
@@ -705,7 +711,16 @@ function pantallas(ids, lugar) {
         });
         await pausa(300);
       },
-      verificar: async (page) => [...(await sinPersonaEnPantalla(page)), ...((await page.$('[data-sin-dias-en-la-plantilla]')) ? [] : ['no dice que una plantilla no tiene días'])],
+      verificar: async (page) => [
+        ...(await sinPersonaEnPantalla(page)),
+        ...((await page.$('[data-sin-dias-en-la-plantilla]')) ? [] : ['no dice que una plantilla no tiene días']),
+        // Nada escrito para Diego llega a la plantilla: ni el propósito de su fase ni sus notas (D-3 de DL-108).
+        ...(await page.evaluate((notas) => {
+          const texto = document.querySelector('main')?.innerText ?? '';
+          const valores = [...document.querySelectorAll('main input, main textarea')].map((x) => x.value).join(' ');
+          return notas.filter((n) => texto.includes(n) || valores.includes(n)).map((n) => `aparece una nota del plan de Diego: «${n}»`);
+        }, plantillas.notasDeDiego)),
+      ],
     },
     {
       // «Antes de guardar»: lo que impide, lo que queda para completar al usarla, lo que cambia frente a la versión 1.
@@ -756,7 +771,7 @@ function pantallas(ids, lugar) {
 }
 
 /** Lo que arma la escena 16 para las que siguen. */
-const plantillas = { datos: null };
+const plantillas = { datos: null, notasDeDiego: [] };
 
 /** Lo que conviene anotar de cada captura: desbordes a lo ancho, el alto de la página y si algún menú queda cortado. */
 const medir = (page) =>

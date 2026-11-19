@@ -734,7 +734,7 @@ export function EditorDePlan({
   });
   // ED-02: un enlace interno con cambios guarda antes de salir (si se puede: nada a medio escribir ni un conflicto) o
   // pregunta; recargar o cerrar la pestaña, también pregunta.
-  useCambiosSinGuardar(sucio, 'el plan en preparación', { sePuede: puedeGuardar && !conflicto, ocupado: guardando, guardar: async () => (await guardar()) !== null });
+  useCambiosSinGuardar(sucio, plantilla ? 'la plantilla' : 'el plan en preparación', { sePuede: puedeGuardar && !conflicto, ocupado: guardando, guardar: async () => (await guardar()) !== null });
   // C7: lo escrito en la escritura rápida y sin aplicar no es parte del plan (no se guarda): salir o recargar pregunta.
   const lineasSinAplicar = lineasPendientes(lineas, bloques);
   useCambiosSinGuardar(lineasSinAplicar.length > 0, COPY_ESCRITURA_RAPIDA.alSalir);
@@ -2874,7 +2874,8 @@ export function EditorDePlan({
           </div>
           )}
           {pestana === 'antes' ? (
-            <div role="tabpanel" id="panel-antes" aria-labelledby="pestana-antes" data-panel-en-vivo>
+            // PLT (DL-182): sin pestañas en la plantilla, el panel no es una pestaña (su rótulo apuntaría a nada).
+            <div role={plantilla ? undefined : 'tabpanel'} id="panel-antes" aria-labelledby={plantilla ? undefined : 'pestana-antes'} aria-label={plantilla ? COPY_REVISION_DE_LA_PLANTILLA.titulo : undefined} data-panel-en-vivo>
               {/* Un título que no afirma nada: «⚠ Impide activar» quedaba arriba de «✓ … no se encontraron impedimentos». */}
               {plantilla ? (
                 <h3 data-revision-para-guardar>
