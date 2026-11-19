@@ -136,9 +136,11 @@ Sesión
   siendo Ctrl+D en cada celda, y «Quitar», el de cada serie: en la barra **no** están (§7).
 
 **D. El tramo 2** (rama `wp-entrenamiento-planificacion-2`, sobre esta)
-- **ENP-D17 · Una sesión nueva nace con su identificador.** «Agregar sesión», el asistente y «Sesiones vacías» le ponen a
-  la sesión un identificador de nodo (`crypto.randomUUID()`), como ya hacía «Duplicar el día»: el contrato lo admite
-  (`IdDeNodoSchema`) y el servidor lo conserva al normalizar. Sus días se eligen enseguida, sin esperar al guardado, y lo
+- **ENP-D17 · Una sesión nueva nace con su identificador.** «Agregar sesión», el asistente, «Sesiones vacías» y, desde la
+  revisión adversaria del tramo, «Duplicar sesión» y una sesión habitual insertada le ponen a la sesión un identificador
+  de nodo (`crypto.randomUUID()`), como ya hacía «Duplicar el día»: el contrato lo admite (`IdDeNodoSchema`) y el
+  servidor lo conserva al normalizar (rechaza uno repetido dentro del plan, `DUPLICATE_NODE_ID`; las copias no llevan el
+  de su origen). Sus días se eligen enseguida, sin esperar al guardado, y lo
   que la pantalla le ata la sigue aunque se mueva o se quite otra. Nada cambia en el contrato ni en lo que recibe la APK.
 - **ENP-D18 · El preset con la sesión vacía vive en la pantalla, atado a la sesión, y lo dice.** Se recuerda por el
   `sessionId` (no por la posición: quitar o mover otra sesión le pasaba la etiqueta a la que quedaba en su lugar); una
@@ -175,11 +177,11 @@ Sesión
   a armar el ejercicio y lo borraba): plegar, ir a otra sesión o al paso 4 del asistente no lo borra, y plegado se dice
   («Escritura rápida sin aplicar: «…»»). No es parte del plan: no se guarda ni impide guardar. Pero el panel y «Antes de
   activar» lo listan con «Ir a…» a su línea, y no se activa sin resolverlo (aplicarlo o borrarlo); salir del editor o
-  recargar pregunta.
+  recargar pregunta. Por su lugar, sigue a su ejercicio cuando la sesión se reordena (revisión adversaria del tramo).
 - **ENP-D25 · Cambiar de criterio dice qué se quita y se puede deshacer** (C7; `cambio-de-criterio.ts`): «Al pasar a % RM
   se quitaron el objetivo RIR 2 y el RIR propio de 3 series. Falta escribir el objetivo de % RM.», con «Deshacer», que
   devuelve el criterio, el objetivo y el RIR de cada serie («Sin objetivo» incluido) y se ofrece mientras siga el criterio
-  elegido (un guardado en el medio no lo retira). Sin nada que perder no se dice nada: no se suma una confirmación.
+  elegido (un guardado en el medio no lo retira, si el ejercicio ya estaba guardado: ver §6). Sin nada que perder no se dice nada: no se suma una confirmación.
 - **ENP-D26 · Los días se eligen en un solo lugar: los chips junto a cada sesión** (C5). Antes aparecían también en la
   tabla de «Días de entrenamiento», en la tira de la semana arriba de la sesión, en el renglón de cada sesión y en el
   selector de la sesión. Ahora el renglón dice solo lo que tiene la sesión y, al pie de la lista, «Desde el …» con «Ver
@@ -221,6 +223,7 @@ Sesión
 | Lo que corrigió la revisión adversaria en el editor (§7) | `apps/web/test/entrenamiento-planificacion.test.mjs` («Revisión · …») |
 | La sesión de respaldo de la APK conserva el tipo de serie y los bloques | `apps/mobile/src/sesion-de-respaldo.test.ts` |
 | Tramo 2: el preset atado a la sesión, el tope de bloques, las lecturas agrupadas y C5 a C9 y C11 | `apps/web/test/entrenamiento-planificacion-2.test.mjs` |
+| Lo que corrigió la revisión adversaria del tramo 2 (§6), y lo que la herramienta de capturas verifica en pantalla | `apps/web/test/entrenamiento-planificacion-2.test.mjs` («Revisión · …») y `EVIDENCIA/ENTRENAMIENTO-PLANIFICACION/herramientas/capturas.mjs` (`verificar`) |
 
 ## 5. Cómo se ve
 
@@ -247,18 +250,61 @@ pruebas en `apps/web/test/entrenamiento-planificacion-2.test.mjs` y al menos una
 Las capturas de la CI suman una escena por cada punto que cambia la pantalla (§5).
 
 **Lo que corrigieron las capturas:** a 1536 × 730 el pie del catálogo, con los elegidos en varias filas, tapaba todos los
-resultados: van en una sola fila compacta que se desplaza de costado. La fila «Común» se partía en cuatro renglones por
-su detalle («a todas las series»), que ahora lo oye solo el lector. Y el aviso de los objetivos por serie decía «tu
-asesorado» en el editor (venía de antes): el editor lo dice con «la persona», como el del calentamiento. El texto del
-dominio no cambia, porque es también el mensaje del 409 de la API, que cambia en su ventana (ED-08, etapa 2; la excepción
-contada en `scripts/copy-pantallas.test.cjs`).
+resultados. La fila «Común» se partía en cuatro renglones por su detalle («a todas las series»), que ahora lo oye solo el
+lector. Y el aviso de los objetivos por serie decía «tu asesorado» en el editor (venía de antes): el editor lo dice con
+«la persona», como el del calentamiento. El texto del dominio no cambia, porque es también el mensaje del 409 de la API,
+que cambia en su ventana (ED-08, etapa 2; la excepción contada en `scripts/copy-pantallas.test.cjs`).
+
+**La revisión adversaria del tramo 2 (2026-11-19)** corrigió, cada cosa con su prueba en
+`entrenamiento-planificacion-2.test.mjs` («Revisión · …») y, lo que se ve, con una verificación de la herramienta de
+capturas que hace fallar el paso (`verificar`, en cada tamaño y tema):
+- **El pie del catálogo (escena 11).** La fila única que se desplazaba de costado cortaba la tercera ficha contra el borde
+  sin que se notara que seguía: las fichas bajan de renglón, dos renglones a la vista y, con más, la lista se desplaza
+  hacia abajo con su barra (el título dice cuántos son); un nombre largo se recorta con «…» adentro de su ficha. El campo
+  «Prescripción para todos» no tenía estilo y se veía como una línea finita: tiene el alto y el borde de los campos del
+  cajón, en un renglón con su rótulo; la nota del catálogo comparte renglón con el principal, para que el pie no crezca.
+- **«Común» (escena 09)** se pisaba con «en cada serie»: la columna «Serie» pasa de 3 a 4 rem (de 2,5 a 3,5 entre 40 y 46).
+- **«Las próximas dos semanas» (escena 10)** dibujaba las sesiones en sus días, pero la escena quedaba arriba y las
+  cortaba: va al calendario y verifica que alguna sesión quede a la vista.
+- **«estación» en pantalla:** «Cómo se usa el editor», «El editor tiene tres zonas», «Saltos del editor»; el armazón
+  común del asistente («Seguir en el plan», «Corregirlo en el plan», «Lo que llevás armado») lleva el mismo cambio que
+  NUP-14 en `wp-nutricion-planificacion`, línea por línea, para que las dos ramas se integren sin chocar. Los textos
+  propios de Nutrición los cambia esa rama. Una prueba recorre los textos del website del profesional (sin Nutrición).
+- **«asesorado» en pantalla:** no queda ninguno en Entrenamiento ni en Nutrición del website, ni en la APK (una prueba
+  recorre sus textos). Quedan las dos excepciones contadas de ED-06: el 409 (en pantalla, con «la persona») y la
+  referencia neutral de quien no tiene nombre.
+- **Lo escrito sin aplicar sigue a su ejercicio** al quitar, duplicar, subir, bajar, pasar a un bloque o sumar
+  ejercicios en la sesión (`lineasTrasReordenar`). El caso que había quedado abierto no duraba «un segundo»: mientras algo
+  impide guardar (un valor que no se entiende, un conflicto), los ejercicios nuevos siguen sin identificador.
+- **ENP-D17 también al duplicar una sesión o insertar una habitual:** quedaban sin identificador hasta el guardado y sus
+  chips decían que primero había que guardar.
+- **«Próximas fechas» se cierra** cuando ninguna sesión tiene días (volvía a abrirse sola con el próximo día elegido), y
+  **«Ocultar» la vuelta a la revisión** deja el foco en la sesión (desaparecía con la barra y el foco quedaba en ningún lado).
 
 **Lo que queda abierto del tramo 2:**
 - **Guardar de verdad el preset de la sesión vacía** (ENP-D18): propuesta para Dirección; necesita un campo opcional en
   la sesión del contrato, con su capacidad de cliente. Mientras tanto, la pantalla dice que vive en ella.
-- **Lo escrito sin aplicar en un ejercicio que todavía no se guardó** se recuerda por su lugar hasta que el guardado le da
-  el identificador (un segundo, más o menos). Si en ese rato se sube o se quita otro ejercicio nuevo de la misma sesión, lo
-  escrito puede quedar en el ejercicio que pasó a ese lugar (se ve: la línea lo muestra y el panel lo lista).
+- **Lo escrito sin aplicar en un ejercicio que todavía no tiene identificador** (baja) sigue a su ejercicio dentro de la
+  sesión, pero no en lo que mueve sesiones enteras: quitar o mover una sesión o una fase, «Organizar por microciclos» o
+  «Cargar la versión guardada» tras un conflicto, mientras algún ejercicio nuevo no se guardó. Se ve (la línea lo muestra y
+  el panel lo lista) y aplicarlo pide un gesto. Propuesta: que los ejercicios nazcan con su identificador, como las
+  sesiones (ENP-D17); cierra el caso entero, pero toca todo lo que crea ejercicios y conviene probarlo con la API.
+- **«Deshacer» del cambio de criterio** (ENP-D25, baja) vive en el ejercicio: se pierde al plegarlo y en el primer guardado
+  de un ejercicio nuevo (la pieza se vuelve a armar con su identificador), así que «un guardado en el medio no lo retira»
+  vale para los ya guardados. Y devuelve el RIR de cada serie por su lugar: si en el medio se quitó una serie, el de las de
+  abajo vuelve corrido.
+- **Dos nombres para el mismo estado** (baja): el editor dice «Sin indicar» (ENP-D28) y la lectura de la versión activa y
+  del plan compartido sigue con «Sin objetivo» (el del dominio, que también lee la APK). Decidir si la lectura del website
+  pasa a «Sin indicar».
+- **«Copiar la sesión» y «Copiar a otra semana»** (baja) dejan la copia sin identificador hasta el guardado (como antes
+  «Duplicar sesión»): sus chips dicen que primero hay que guardar.
+- **«Quitar los días»** (baja) cierra «Próximas fechas» y, sin días, no queda «Ver próximas fechas» para devolverle el foco.
+- **«Volver a la revisión» desde el paso 6 del asistente** (baja) vuelve al panel, no al paso del asistente.
+- **Las lecturas agrupadas para el lector** (baja): en la versión activa cada bloque es una región con nombre
+  (`<section aria-label>`), y en lo compartido el nombre va en un `<li>`. Verificarlo con un lector de pantalla.
+- **Fuera del paquete (preexistente, baja):** un 409 por las series de calentamiento llega con el mismo código que el de
+  los objetivos por serie, y el editor dice el texto de los objetivos por serie; casi siempre lo ataja antes el aviso del
+  calentamiento, que el editor ve solo.
 - **«Duplicar el día» quedó dentro de «Ver próximas fechas»** (ENP-D26): no se perdió, pero se ve a pedido. Si en la
   prueba con profesionales no se encuentra, puede ir también al menú de la sesión.
 - **El plan compartido agrupado por bloque** (ENP-D19) está probado en su fuente y con la misma regla que la versión
