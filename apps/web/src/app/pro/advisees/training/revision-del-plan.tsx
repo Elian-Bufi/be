@@ -156,7 +156,7 @@ export function RevisionDelPlan({
           {/* C9: el motivo a la vista, no solo para el lector: con el autoguardado en curso, la revisión sigue sola. */}
           {motivoSinRevisar ? (
             <p id={motivoId} className="nota" data-motivo-sin-revisar>
-              {guardando ? T.seRevisaAlGuardar : motivoSinRevisar}
+              {guardando ? COPY_REVISION_DEL_PLAN.seRevisaAlGuardar : motivoSinRevisar}
             </p>
           ) : null}
         </>

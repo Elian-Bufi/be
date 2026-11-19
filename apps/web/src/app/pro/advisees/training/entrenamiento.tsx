@@ -67,8 +67,14 @@ export function useEntrenamiento(): ContextoDeEntrenamiento {
  * persona (`asesoradoId: null`): lo que depende de la persona (la fuerza estimada, «La vez pasada», lo que hizo en el
  * buscador) no se pide.
  */
-export interface ContextoDelEditorDeEntrenamiento extends Omit<ContextoDeEntrenamiento, 'asesoradoId' | 'irA'> {
+export interface ContextoDelEditorDeEntrenamiento {
+  readonly token: string;
+  /** La persona del plan; `null` en el editor de una plantilla. */
   readonly asesoradoId: string | null;
+  readonly sesionPerdida: ContextoDeEntrenamiento['sesionPerdida'];
+  readonly accesoRetirado: ContextoDeEntrenamiento['accesoRetirado'];
+  readonly parametros: ContextoDeEntrenamiento['parametros'];
+  readonly ir: ContextoDeEntrenamiento['ir'];
 }
 
 const ContextoSinPersona = createContext<ContextoDelEditorDeEntrenamiento | null>(null);

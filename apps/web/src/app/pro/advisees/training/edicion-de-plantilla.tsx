@@ -105,7 +105,7 @@ export function CabeceraDeLaPlantilla({
   cargasEscritas,
   estadoDeGuardado,
   onRevisarYGuardar,
-  onDescartar,
+  alDescartar,
   panelAbierto,
   onPanel,
   textosDelPanel,
@@ -118,7 +118,7 @@ export function CabeceraDeLaPlantilla({
   /** El estado del guardado y «Guardar ahora», los mismos del editor del plan. */
   estadoDeGuardado: ReactNode;
   onRevisarYGuardar: () => void;
-  onDescartar: () => void;
+  alDescartar: () => void;
   panelAbierto: boolean;
   onPanel: () => void;
   textosDelPanel: { readonly abrir: string; readonly cerrar: string };
@@ -160,7 +160,7 @@ export function CabeceraDeLaPlantilla({
           <MenuDeAcciones
             id="mas-de-la-plantilla"
             rotulo={P.masDeLaPlantilla}
-            acciones={[{ clave: 'descartar', texto: nueva ? P.descartarLaNueva : P.descartarLosCambios, alElegir: onDescartar }]}
+            acciones={[{ clave: 'descartar', texto: nueva ? P.descartarLaNueva : P.descartarLosCambios, alElegir: alDescartar }]}
           />
           <button type="button" className="boton boton--quieto estacion__abrir-panel" aria-expanded={panelAbierto} aria-controls="zona-panel" onClick={onPanel} data-abrir-panel>
             <Icono nombre="menu" tamano={18} />
@@ -414,5 +414,17 @@ export function DescartarLaPreparacion({
     >
       <p data-consecuencia-del-descarte>{nueva ? P.confirmarDescarteNueva : P.confirmarDescarteCambios(preparacion.baseVersionNumber ?? 1)}</p>
     </DialogoDeConfirmacion>
+  );
+}
+
+/** Lo preparado ya no está (se guardó o se descartó, quizás en otra pestaña): se dice y se vuelve a «Mis plantillas». */
+export function PreparacionQueYaNoEsta({ volver }: { volver: string }) {
+  return (
+    <div className="aviso aviso--info" role="status" data-preparacion-que-ya-no-esta>
+      <p>{P.noDisponible}</p>
+      <p>
+        <Enlace href={volver}>{P.irAMisPlantillas}</Enlace>
+      </p>
+    </div>
   );
 }

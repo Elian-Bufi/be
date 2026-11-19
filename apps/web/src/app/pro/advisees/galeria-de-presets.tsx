@@ -32,7 +32,7 @@ import {
   type PresetDePrescripcion,
   type SesionHabitual,
 } from '@be/domain';
-import { COPY_PLANTILLAS } from '@be/domain';
+import { COPY_PLANTILLAS, COPY_PREPARACION_DE_PLANTILLA } from '@be/domain';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { CuadroEnfocado } from '../../../components/cuadro-enfocado';
 import { BloqueDeEstado, Cargando } from '../../../components/estados';
@@ -266,7 +266,7 @@ export function GaleriaDePresets({
               ) : lecturaDePlantillas.datos.length === 0 ? (
                 <>
                   <p>{COPY_PLANTILLAS.sinPlantillasActivas}</p>
-                  <p className="nota">{COPY_PLANTILLAS.dondeSeArman}</p>
+                  <p className="nota">{COPY_PREPARACION_DE_PLANTILLA.dondeSeArmanEntrenamiento}</p>
                 </>
               ) : (
                 <ul className="galeria__tarjetas" role="list">

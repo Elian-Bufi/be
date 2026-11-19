@@ -91,6 +91,8 @@ export const COPY_PREPARACION_DE_PLANTILLA = {
   editar: 'Editar',
   crearOtraDesdeEsta: 'Crear otra desde esta',
   ningunaEnPreparacion: 'No tenés plantillas en preparación.',
+  sinPlantillasDeEntrenamiento: 'Todavía no tenés plantillas de entrenamiento. Creá la primera con «Nueva plantilla», o guardala desde una versión de plan con «Guardar como plantilla».',
+  sinIndicar: 'Sin indicar',
   noSeLeyeronLasEnPreparacion: 'No pudimos leer tus plantillas en preparación.',
   // El editor
   queEs: 'Plantilla de entrenamiento',
