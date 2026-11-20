@@ -370,11 +370,13 @@ async function abrirLaEvaluacion(page, ruta) {
   await visible(page, '[data-elegir-formularios] [data-formulario-para-vincular]');
 }
 
-/** Elige el primer formulario, abre sus respuestas y deja la lista a la vista. */
-async function elegirElPrimero(page) {
-  const casilla = await visible(page, '[data-elegir-formularios] [data-formulario-para-vincular] input[type="checkbox"]');
+/** Elige el formulario con ese nombre, abre sus respuestas y deja la lista a la vista. */
+async function elegir(page, nombre) {
+  const fila = await visible(page, '[data-elegir-formularios] [data-formulario-para-vincular]', nombre);
+  const casilla = await fila.$('input[type="checkbox"]');
   if (!(await casilla.evaluate((x) => x.checked))) await casilla.click();
-  await clic(page, '[data-elegir-formularios] [data-formulario-para-vincular] button', 'Ver respuestas');
+  await (await fila.$('button')).click();
+  await asentar(page);
   await (await visible(page, '[data-elegir-formularios]')).evaluate((x) => x.scrollIntoView({ block: 'start' }));
   await pausa(300);
 }
@@ -403,7 +405,7 @@ function pantallas(ids) {
         nombre: '01-nutricion-evaluacion-inicial-elegir',
         llegar: async (page) => {
           await abrirLaEvaluacion(page, area('nutrition', ids.camila));
-          await elegirElPrimero(page);
+          await elegir(page, 'Cómo comés hoy');
         },
       },
       {
@@ -450,7 +452,7 @@ function pantallas(ids) {
         nombre: '06-entrenamiento-evaluacion-inicial-elegir',
         llegar: async (page) => {
           await abrirLaEvaluacion(page, area('training', ids.hector));
-          await elegirElPrimero(page);
+          await elegir(page, 'Antes de entrenar');
         },
       },
       {

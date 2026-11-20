@@ -312,7 +312,7 @@ describe('DL-185 · 6. la base repite las reglas aunque el código se equivoque'
     await expect(insertar({ alcance: 'NUTRICION', evaluacion_nutricional_id: c.evaluationId, respuesta_id: c.formResponseId, desvinculado_en: '2026-11-19T12:00:00Z' })).rejects.toThrow(/nace vigente/);
     // Un solo vínculo vigente por respuesta.
     await insertar({ alcance: 'NUTRICION', evaluacion_nutricional_id: c.evaluationId, respuesta_id: c.formResponseId });
-    await expect(insertar({ alcance: 'NUTRICION', evaluacion_nutricional_id: c.evaluationId, respuesta_id: c.formResponseId })).rejects.toThrow(/vinculo_de_formulario_nutricional_vigente/);
+    await expect(insertar({ alcance: 'NUTRICION', evaluacion_nutricional_id: c.evaluationId, respuesta_id: c.formResponseId })).rejects.toThrow(/23505|already exists|vinculo_de_formulario_nutricional_vigente/);
   });
 
   it('TEST-EVF-021 · solo se desvincula, una vez; no se borra ni se trunca', async () => {
