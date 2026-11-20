@@ -71,7 +71,7 @@ Sin migraciones, sin operaciones nuevas en la API y sin cambios en la APK.
 | GPF-D10 | Las series y la carga × repeticiones se calculan en el website desde el comparador, sin operación nueva de API; el volumen de la proyección (`entrenamiento.volumen-carga-externa`, `TRAINING_VOLUME_BY_EXERCISE`) sigue sin ofrecerse. Por eso «Volumen de carga» no aparecía para la sentadilla en «Armá tu gráfico»: no aparecía para ningún ejercicio (estado `PIDE_DL`, sin convención) | Lo mismo que ya leen GR-03 y GR-05, con la misma autorización |
 | GPF-D11 | Por grupo muscular, no en este paquete: pide los grupos de cada ejercicio en la lectura del comparador | No era barato |
 | GPF-D12 | «Patrones» abre con el básico (la lista de la v1 del 1RM estimado) con más sesiones del período; si no hay, el de más sesiones. No se filtra «del plan vigente»: el índice del período no lo dice. Un ejercicio fijo de un enfoque se respeta; un gráfico de la carga no toma un ejercicio sin carga. La elección vive en la pantalla y no se guarda | Lo más útil sin una lectura más |
-| GPF-D13 | En el cuadro del ejercicio, la franja dura la vigencia de cada versión; en «Patrones» y «Analizar», que no tienen las vigencias a mano, va del primer al último día con sesiones de esa versión | Una lectura menos donde no hace falta |
+| GPF-D13 | En el cuadro del ejercicio y en «Patrones», la franja dura la vigencia de cada versión (las vigencias ya leídas); en «Analizar», y con una versión cuya vigencia no se leyó, va del primer al último día con sesiones de esa versión | Una lectura menos donde no hace falta |
 
 ## 4. Lo que queda
 

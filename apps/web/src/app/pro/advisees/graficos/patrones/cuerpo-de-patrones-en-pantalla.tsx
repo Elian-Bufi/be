@@ -303,6 +303,9 @@ function GraficoDeEntrenamiento(p: PropsDeLaTarjeta & { t: TarjetaSugerida }) {
       medida={p.t.medida}
       bandas={p.t.grafico.id === 'entrenamiento.fuerza-estimada' ? bandas.delEjercicio : bandas.deLaSerie}
       acceso={p.acceso}
+      // GPF-05: con las vigencias que ya leyó «Patrones», la franja dura lo que rigió cada versión (no del primer al
+      // último día con sesiones, que dejaba huecos entre versiones).
+      vigencias={p.vigencias.entrenamiento}
     />
   );
 }

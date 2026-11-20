@@ -2711,7 +2711,8 @@ html:has(.acciones--fijas) {
 .periodo-del-seguimiento__pasos {
   display: inline-flex;
   flex-wrap: wrap;
-  gap: 0.25rem;
+  /* «La anterior» y «La siguiente» son dos enlaces: con poco aire se leían como una sola frase. */
+  gap: 1.25rem;
   margin-left: 0.5rem;
   vertical-align: middle;
 }
