@@ -36,7 +36,7 @@ hay una versión más nueva si la persona corrigió, vincular la más nueva o de
 | Demostrable | Cómo se ve |
 |---|---|
 | Elegir al registrar | En «Empezar el plan» → «Registrar la evaluación» (y en «Nueva evaluación» de Resumen): «Formularios que respondió (opcional)», con cada formulario, su fecha, «Ver respuestas» y la casilla «Vincular». |
-| Lo vinculado | Debajo de «Registrada el …» (y en la última evaluación de Resumen): «Formularios vinculados», con «Respondido el …», «vinculado el …», «Ver respuestas» y «Desvincular». «Vincular un formulario» suma otros. |
+| Lo vinculado | Debajo de «Registrada el …» (y en la evaluación más reciente de Resumen): «Formularios vinculados», con «Respondido el …», «vinculado el …», «Ver respuestas» y «Desvincular». «Vincular un formulario» suma otros. |
 | La versión más nueva | Si la persona corrigió después: «La persona registró una versión más nueva el …. La evaluación conserva la que vinculaste.» y «Vincular la más nueva». «Ver respuestas» sigue mostrando la vinculada. |
 | La persona | No ve nada nuevo: la APK no cambia y ninguna lectura suya trae los vínculos. |
 
@@ -92,7 +92,7 @@ límite de consultas protegidas; las escrituras llevan `Idempotency-Key` y queda
 | EVF-D09 | **Desvincular no borra.** La fila queda con la fecha (historia por adición, 06 §4.4); uno desvinculado no se abre (404) y volver a vincular es una fila nueva. | Saber qué se usó y cuándo sirve después (auditoría, una revisión). | Borrar (pierde la historia). |
 | EVF-D10 | **Los errores:** el 422 es el de la evaluación del área (`NUTRITION_EVALUATION_INVALID`, `TRAINING_EVALUATION_INVALID`) con el issue `FORM_RESPONSE_LINK_INVALID`, neutral; el 409 es `VERSION_CONFLICT` con `FORM_RESPONSE_VERSION_CHANGED`; la ruta lleva `{area}`. | Los mismos códigos que la cita; una sola familia para las dos áreas. | Un código propio (`EVALUATION_FORM_LINK_INVALID`): un enum más sin ganancia. |
 | EVF-D11 | **Sin un hecho propio en la línea de tiempo.** Queda la auditoría (operación y recurso) y la decisión del PDP. | Un tipo de evento nuevo exige un enum y su migración; no se pidió verlo en la línea de tiempo. | Sumarlo a la línea de tiempo de la ficha (DL-127) si Dirección quiere verlo. |
-| EVF-D12 | **Dónde se ve.** En «Empezar el plan», dentro del paso 1, al registrar y debajo de «Registrada el …»; en Resumen, al registrar una evaluación nueva, en la última evaluación de Nutrición y en cada evaluación de Entrenamiento. | Es donde el profesional mira la evaluación hoy; no hace falta una pantalla nueva. | — |
+| EVF-D12 | **Dónde se ve.** En «Empezar el plan», dentro del paso 1, al registrar y debajo de «Registrada el …»; en Resumen, al registrar una evaluación nueva, en la evaluación más reciente de cada área («Última evaluación» en Nutrición; la más reciente de la lista en Entrenamiento). | Es donde el profesional mira la evaluación hoy; no hace falta una pantalla nueva. Una sola lectura por pantalla: con una por evaluación, una persona con muchas evaluaciones gastaría el límite de consultas protegidas. | Mostrarlo en cada evaluación de la lista, plegado y leído al abrirlo. |
 | EVF-D13 | **Vincular no reemplaza a citar.** «Citar» sigue sirviendo para traer una respuesta puntual como dato de la evaluación; vincular trae el formulario entero, como referencia. | Son dos usos: la pregunta que fundó un dato y el formulario que se consultó. | Unificarlos (cambia DL-102 y DL-179). |
 
 ## 6. Oráculos

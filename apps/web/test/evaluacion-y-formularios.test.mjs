@@ -89,7 +89,8 @@ test('TEST-EVF-034 · se monta en la evaluación de las dos áreas, en «Empezar
   const entrenamiento = leer('training/resumen.tsx');
   assert.match(entrenamiento, /<ElegirFormularios area="training"/);
   assert.match(entrenamiento, /api\.crearEvaluacionDeEntrenamiento\([\s\S]*vincularAlRegistrar\(token, 'training', r\.datos\.data\.evaluationId, vinculos\);[\s\S]*onRegistrada\(\)/);
-  assert.match(entrenamiento, /<FormulariosDeLaEvaluacion area="training"[^>]*evaluationId=\{e\.evaluationId\}/);
+  // En la evaluación más reciente: una lectura por pantalla, no una por evaluación (el límite de consultas protegidas).
+  assert.match(entrenamiento, /e\.evaluationId === evaluacionMasReciente\(evaluaciones\.datos\) \? \(\s*<FormulariosDeLaEvaluacion key=\{e\.evaluationId\} area="training"/);
   assert.match(leer('nutrition/resumen.tsx'), /<FormulariosDeLaEvaluacion key=\{lista\[0\]\.evaluationId\} area="nutrition"/);
   for (const [archivo, area] of [
     ['nutrition/plan.tsx', 'nutrition'],

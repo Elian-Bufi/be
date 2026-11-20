@@ -227,8 +227,11 @@ export function VistaDeResumen() {
                     ))}
                   </dl>
                   {e.formResponseReferences.length > 0 ? <ContextoCitado citas={e.formResponseReferences} /> : null}
-                  {/* DL-185 (EVF-05): los formularios vinculados a esta evaluación. */}
-                  <FormulariosDeLaEvaluacion area="training" token={token} asesoradoId={asesoradoId} sesionPerdida={sesionPerdida} evaluationId={e.evaluationId} />
+                  {/* DL-185 (EVF-05, EVF-D12): los formularios vinculados, en la evaluación más reciente (como «Última evaluación» en
+                      Nutrición): una lectura por pantalla, no una por evaluación. */}
+                  {e.evaluationId === evaluacionMasReciente(evaluaciones.datos) ? (
+                    <FormulariosDeLaEvaluacion key={e.evaluationId} area="training" token={token} asesoradoId={asesoradoId} sesionPerdida={sesionPerdida} evaluationId={e.evaluationId} />
+                  ) : null}
                   {e.context ? <p className="nota">Contexto: {e.context}</p> : null}
                   {e.professionalNotes ? <p className="nota">{e.professionalNotes}</p> : null}
                 </li>
