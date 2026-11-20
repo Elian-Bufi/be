@@ -404,6 +404,22 @@ async function capturasDeGraficos({ page, ir, idDe, asentar, indice }) {
       for (const [sufijo, periodo] of [['12s', VENTANAS.valeria], ['365', 'p=365']]) {
         await ir(`/pro/advisees?id=${valeria}&vista=analizar&pregunta=ver-la-relacion&${periodo}`);
         await sinCargando();
+        // En una ventana corta, el ejercicio por omisión puede ser otro: se elige la sentadilla trasera, como en el año.
+        const ejercicio = await page.evaluate(() => {
+          for (const sel of document.querySelectorAll('main select')) {
+            const op = [...sel.options].find((o) => /^Sentadilla trasera/i.test(o.textContent.trim()));
+            if (!op) continue;
+            if (sel.value !== op.value) {
+              Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value').set.call(sel, op.value);
+              sel.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+            return op.textContent.trim();
+          }
+          return 'sin sentadilla en la lista';
+        });
+        indice.push(`| — | SP-01 ${sufijo}: ${ejercicio} | Valeria Q. |`);
+        await pausa(1500);
+        await sinCargando();
         await recortar('article[data-grafico]', `a-valeria-relacion-{g}-${sufijo}__${ancho}.png`, `«Ver la relación» (SP-01 y SP-02), ${periodo}`, 'Valeria Q.');
       }
     }
