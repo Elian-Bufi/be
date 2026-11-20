@@ -184,6 +184,7 @@
 | DL-178 | Decisión de Dirección · 2026-11-18 (las series de calentamiento) | 06 REG-06-105 · 09v10 (comparación serie por serie) · DL-122 · DL-152 · DL-161 · DL-171 (BE-E1RM, Epley v1) | El plan y el registro no tenían un tipo de serie: un calentamiento entraba en la cuenta de series, en la barra de la sesión, en «La vez pasada», en el historial, en Analizar y en el 1RM estimado | **DECIDIDA por Dirección el 2026-11-18 · PROGRAMADA en `wp-series-de-calentamiento` (PR abierto, sin integrar), a ratificar D-1 a D-6**: `setKind` (`WORKING` por omisión, `WARM_UP`) en la serie indicada y en la registrada, sin reescribir nada (la ausencia es efectiva); explícito solo para el cliente que declara `training-set-kinds-1`; el calentamiento arriba, con «C», fuera de todo cálculo; las lecturas nuevas de la APK se congelan con la próxima candidata (DL-152) |
 | DL-180 | Decisión de Dirección · 2026-11-16 (el segundo tramo de la planificación de Nutrición: los alimentos del catálogo) | REG-06-99 a 101 · REG-06-135 · RF-027 · RF-060 · DL-119 y DL-120 (el patrón de las recetas) · DL-141 (D-1, D-6) · DL-155 (WP-ADMINISTRACION) · DL-169 (UF-09) | Un alimento cargado a mano con un error no se podía corregir ni retirar; el buscador no distinguía lo verificado de lo cargado por cualquiera; Administración no tenía cómo revisar lo cargado a mano; los alimentos no tenían ícono por grupo; la imagen de la receta recién se ofrecía después del primer guardado | **PROGRAMADA en `wp-nutricion-alimentos` (PR en borrador contra `wp-nutricion-planificacion`, sin integrar) · NUA-D01 a NUA-D23 a ratificar** (NUA-D05 y D13, sin efecto por la decisión de Dirección del 2026-11-19): corregir emite una versión nueva y retirar una versión RETIRADO, en la cadena de siempre; **lo cargado a mano es de quien lo cargó** (segundo tramo, `wp-nutricion-alimentos-2`, PR en borrador contra `wp-nutricion-alimentos`); «Verificado» (la tabla oficial, el canon o lo certificado) y «Tuyo» en el buscador; Administración ve todas las cargas con el nombre de quien las cargó, las agrupa por nombre parecido, certifica con una fuente, marca equivalentes y **suma al canon**; un ícono por grupo; la imagen de la receta al crearla; los campos del asistente; las **medidas caseras** (NUA-08, en el website). Familia propia ALI (API-ALI-01 a 09), cinco migraciones aditivas. Micronutrientes y platos argentinos (NUA-09 y 10), declarados como el tramo siguiente (`docs/paquetes/WP-NUTRICION-ALIMENTOS.md`) |
 | DL-183 | Decisión de Dirección · 2026-11-19 (terminar e integrar la rama E de los gráficos: «Patrones» y los enfoques) | RF-053 · RF-054 · RF-034 · RF-045 · 08 §12.2 · RNF-PRI-002 · DL-126 · DL-128 · DL-152 · DL-163 (TB-16, TB-25) · DL-174 (GR-27, GR-T01 a GR-T19) · DL-175 · DL-176 | La entrega (00, 03, 09, 10, 12, 17 y «Cómo probar BE») describe «Patrones» y los enfoques como hechos, pero solo estaba la API, en una rama sin integrar; la ficha tenía «Resumen», «Línea de tiempo» y «Analizar» | **PROGRAMADA en `wp-graficos-patrones-y-enfoques` (#277, en borrador, sin integrar) · GR-T60 a GR-T64 y GR-VE01 a GR-VE14 a ratificar**: «Patrones» como segunda vista de la ficha (la cinta fija, «En el tiempo» con un solo cursor, «Comparaciones», «Ver la relación» a pedido, «Agregar un gráfico» y «Lo que falta»), el menú del enfoque con «Deshacer», la edición con el aviso de los otros lugares, «Guardar lo que ves como enfoque…», «Mis enfoques» y la pestaña «Patrones» de los editores de Entrenamiento y Nutrición. Sin operaciones nuevas: usa la familia GRF de DL-174 (API-GRF-01 a 07, una migración que solo agrega). Lee solo con el acceso propio, nunca lo compartido de otras áreas (DL-176). Detalle: `docs/paquetes/WP-GRAFICOS.md` §13.6 |
+| DL-186 | Pedido de Dirección · 2026-11-19 (el objetivo con una toma de Antropometría de referencia y el calculador de macros) | REG-06-123 · INV-06-133 · B05:312-318 · REG-06-157 · REG-06-205 · RNF-PRI-002 · DL-111 · DL-163 (D-17, TB-39) · DL-176 · la decisión de Dirección del 2026-11-13 («Último peso, guardado en gramos») · DL-185 (en paralelo) | El objetivo no se relacionaba con ninguna toma; el profesional calculaba el gasto y los macros fuera de BE y los copiaba; el texto del objetivo decía «BE no calcula requerimientos»; los rangos de cada comida se escribían uno por uno | **PROGRAMADA en `wp-objetivo-y-calculador` (PR en borrador, sin integrar) · OBC-D01 a OBC-D17 a ratificar**: el calculador en «Nueva versión de objetivo» (cinco métodos del gasto en reposo con su fórmula, sus datos y su cita; el factor, con otro para el día de descanso; el ajuste; los macros en g/kg con los carbohidratos por diferencia); el objetivo guardado con su toma y su cálculo (familia propia OBC, API-OBC-01 a 03, una migración que solo agrega), con el aviso de una toma más nueva; la propuesta de rangos por día y por comida, volcada por API-PLN-03 sin pisar lo escrito. Detalle: `docs/paquetes/WP-OBJETIVO-Y-CALCULADOR.md` |
 
 ---
 
@@ -8908,3 +8909,33 @@ verosimilitud y de la matriz de los gráficos (que bloquea la carga con una sola
 - Ratificar TUT-D01 a TUT-D14; cargar en test con Elián (el comando está en el paquete).
 - Lo escrito que todavía no se carga (formularios, coordinación, recetas, medidas caseras, habituales, vistas) y las
   fotos. Detalle completo: `docs/paquetes/WP-ENTORNO-DEL-TUTOR.md`.
+
+## DL-186 — El objetivo con una toma de referencia y el calculador de macros
+
+**Prioridad:** alta (Elián prueba la planificación de los profesionales de punta a punta) · REG-06-123 · INV-06-133 ·
+B05:312-318 · REG-06-157 · REG-06-205 · RNF-PRI-002 · DL-111 · DL-163 (D-17, TB-39) · DL-176 · **Estado:** PEDIDO por
+Dirección el 2026-11-19 · PROGRAMADA en `wp-objetivo-y-calculador` (PR en borrador, sin integrar) · OBC-D01 a OBC-D17,
+**a ratificar**. Si al integrar el número choca con otro paquete, se renumera.
+
+**Qué pidió Dirección.** Vincular el objetivo a una toma de Antropometría de referencia; conectarlo con un calculador de
+macros que estime el gasto con su método a la vista y proponga los rangos por día y por comida; y mantener aparte el
+rango de referencia de cada comida, que dice si una receta entra en esos rangos aproximados.
+
+**Qué dice el legajo.** El objetivo es una decisión profesional con fundamento obligatorio y BE no lo calcula (REG-06-123;
+INV-06-133); B05:312-318 no quería un botón de «Calcular» en el objetivo. BE no impone una fórmula: ofrece varias, con su
+fuente, y elige el profesional (REG-06-157; DL-111).
+
+**Cómo se lo enmienda sin romperlo.** El calculador es una estimación a pedido, con el método, los datos y la cita a la
+vista; el profesional elige el método y lo que se guarda en el objetivo lo escribe él, con su fundamento (lo calculado
+queda aparte, como trazabilidad). B05:312-318 queda enmendado por este pedido; INV-06-133 sigue: BE no decide el
+objetivo. No se edita el legajo.
+
+**Lo programado.** El cálculo puro en el dominio (`calculador-de-macros.ts`), con sus pruebas sobre los coeficientes
+publicados; la familia OBC (API-OBC-01 a 03) con la frontera de Antropometría (sin permiso, ninguna toma por ningún
+camino, y el intento registrado) y la toma retenida si se revoca el acceso; una tabla nueva, append-only; el calculador,
+la referencia en el resumen y la propuesta de rangos en el website; las capturas en la CI.
+
+**Lo que queda.**
+- Ratificar OBC-D01 a OBC-D17.
+- Sumar el cálculo del objetivo a la exportación de los datos de la persona.
+- La prueba con un lector de pantalla. Detalle completo: `docs/paquetes/WP-OBJETIVO-Y-CALCULADOR.md`.

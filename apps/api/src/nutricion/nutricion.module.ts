@@ -12,6 +12,8 @@ import { HabitualesNutricionalesService } from './habituales.service';
 import { ImportacionNutricionalService } from './importacion.service';
 import { IngestasService } from './ingestas.service';
 import { NutricionController } from './nutricion.controller';
+import { ObjetivoYCalculadorController } from './objetivo-y-calculador.controller';
+import { ObjetivoYCalculadorService } from './objetivo-y-calculador.service';
 import { PlanesService } from './planes.service';
 import { PlantillasNutricionalesService } from './plantillas.service';
 import { RangosDeNutricionService } from './rangos.service';
@@ -29,7 +31,7 @@ import { RevisionesService } from './revisiones.service';
  */
 @Module({
   imports: [SesionModule, IntegracionesModule, MediosModule],
-  controllers: [NutricionController, HabitualesNutricionalesController, RecetasController, RegistroDeComidasController, AlimentosController],
+  controllers: [NutricionController, HabitualesNutricionalesController, RecetasController, RegistroDeComidasController, AlimentosController, ObjetivoYCalculadorController],
   providers: [
     EjecutorNutricional,
     CatalogoService,
@@ -45,6 +47,8 @@ import { RevisionesService } from './revisiones.service';
     RegistroDeComidasService,
     AlimentosService,
     RevisionDeAlimentosService,
+    // DL-186 (WP-OBJETIVO-Y-CALCULADOR): el objetivo con una toma de referencia y el calculador de macros.
+    ObjetivoYCalculadorService,
   ],
   // DL-163 D-13, ampliada (TB-52): el plan compartido (API-RES-06) se lee con la misma lectura que usa la persona.
   // DL-180 (NUA-04): Administración revisa los alimentos cargados a mano desde su controlador, como las incidencias.

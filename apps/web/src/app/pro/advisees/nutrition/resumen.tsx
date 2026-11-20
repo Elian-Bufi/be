@@ -27,6 +27,7 @@ import { datosDe, fallo, LecturasParciales, SegunLectura, type Lectura } from '.
 import { useNutricion } from './nutricion';
 import { numerosDeVersion } from './plan';
 import { FormularioDeEvaluacion, FormularioDeObjetivo } from './formularios';
+import { ReferenciaDelObjetivo } from './referencia-del-objetivo';
 import { ContextoCitado } from '../training/resumen';
 import { useNombres } from '../../../../lib/nombres-ocultos';
 
@@ -272,6 +273,8 @@ function Resumen({
                 <dd>{dia(efectivo.effectiveFrom)}</dd>
               </div>
             </dl>
+            {/* DL-186 (OBC-06): la toma de referencia y el cálculo con los que se escribió, si los hay. */}
+            <ReferenciaDelObjetivo versionId={efectivo.versionId} />
             {objetivos.datos.length > 1 ? (
               <details>
                 <summary>Historia del objetivo ({objetivos.datos.length} versiones)</summary>

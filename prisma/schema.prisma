@@ -1521,9 +1521,34 @@ model VersionDeObjetivoNutricional {
   evaluacion       EvaluacionNutricional         @relation(fields: [evaluacionId], references: [id], onDelete: Restrict, onUpdate: Restrict)
   revisionDeOrigen RevisionNutricional?          @relation("ObjetivoDeRevision", fields: [revisionDeOrigenId], references: [id], onDelete: Restrict, onUpdate: Restrict)
   versionesDePlan  VersionDePlanNutricional[]
+  calculo          CalculoDelObjetivoNutricional?
 
   @@index([objetivoId])
   @@map("version_de_objetivo_nutricional")
+}
+
+/// DL-186 (WP-OBJETIVO-Y-CALCULADOR) — La referencia y el cálculo con los que el profesional escribió una versión del
+/// objetivo: una toma de Antropometría (o datos a mano), los valores usados en ese momento, los parámetros que eligió y el
+/// resultado del calculador. Uno por versión, escrito en la misma transacción que la versión. Append-only: nada se
+/// recalcula; una toma más nueva se avisa al leer.
+model CalculoDelObjetivoNutricional {
+  id                         String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  versionDeObjetivoId        String   @unique @map("version_de_objetivo_id") @db.Uuid
+  profesionalId              String   @map("profesional_id") @db.Uuid
+  asesoradoId                String   @map("asesorado_id") @db.Uuid
+  /// La toma de referencia, si la hay; nula si la referencia es a mano.
+  evaluacionAntropometricaId String?  @map("evaluacion_antropometrica_id") @db.Uuid
+  /// { reference, data, parameters, result }: lo que se usó y lo que dio, tal cual.
+  contenido                  Json
+  procedencia                Json
+  momentoDeRegistro          DateTime @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+
+  versionDeObjetivo        VersionDeObjetivoNutricional @relation(fields: [versionDeObjetivoId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  evaluacionAntropometrica EvaluacionAntropometrica?    @relation(fields: [evaluacionAntropometricaId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@index([profesionalId, asesoradoId])
+  @@index([evaluacionAntropometricaId])
+  @@map("calculo_del_objetivo_nutricional")
 }
 
 /// T-06-28 — Plan: uno por (profesional, asesorado). `versionEfectivaId` es la relación explícita a la versión efectiva
@@ -1865,6 +1890,7 @@ model EvaluacionAntropometrica {
   asesorado   Identidad                @relation("EvaluacionAntropometricaDelAsesorado", fields: [asesoradoId], references: [id], onDelete: Restrict, onUpdate: Restrict)
   mediciones  MedicionAntropometrica[]
   ejecuciones EjecucionDeCalculo[]
+  calculosDeObjetivo CalculoDelObjetivoNutricional[]
 
   @@index([asesoradoId, profesionalId, estado])
   @@index([profesionalId, estado])
