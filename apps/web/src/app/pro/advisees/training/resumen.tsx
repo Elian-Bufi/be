@@ -58,6 +58,7 @@ import { ConceptosFrecuentes, lugarDelConcepto } from '../conceptos-frecuentes';
 import { evaluacionMasReciente } from '../evaluacion-reciente';
 import { useReceptorDeCitas, type ReceptorDeCitas } from '../contexto/citas';
 import { claveDeCitaVista, fundamentoConCitas, sumarCitas } from '../contexto/panel-de-contexto';
+import { ElegirFormularios, FormulariosDeLaEvaluacion, vincularAlRegistrar, type VinculosElegidos } from '../evaluacion/formularios-de-la-evaluacion';
 
 interface Lecturas {
   readonly evaluaciones: Lectura<readonly EvaluacionDeEntrenamiento[]>;
@@ -226,6 +227,8 @@ export function VistaDeResumen() {
                     ))}
                   </dl>
                   {e.formResponseReferences.length > 0 ? <ContextoCitado citas={e.formResponseReferences} /> : null}
+                  {/* DL-185 (EVF-05): los formularios vinculados a esta evaluación. */}
+                  <FormulariosDeLaEvaluacion area="training" token={token} asesoradoId={asesoradoId} sesionPerdida={sesionPerdida} evaluationId={e.evaluationId} />
                   {e.context ? <p className="nota">Contexto: {e.context}</p> : null}
                   {e.professionalNotes ? <p className="nota">{e.professionalNotes}</p> : null}
                 </li>
@@ -411,6 +414,8 @@ export function FormularioDeEvaluacion({ onRegistrada, onCancelar, conTitulo = t
   const [topeAvisado, setTopeAvisado] = useState(false);
   const [conflicto, setConflicto] = useState(false);
   const [cambiadas, setCambiadas] = useState<readonly string[]>([]);
+  // DL-185 (EVF-04): los formularios que se vinculan al registrar, con la versión que se vio.
+  const [vinculos, setVinculos] = useState<VinculosElegidos>([]);
   const plantillas = useRef(new Map());
   const cambiar = (i: number, cambio: Partial<Dato>) => setDatos((ds) => ds.map((d, j) => (j === i ? { ...d, ...cambio } : d)));
   function elegirConcepto(c: ConceptoFrecuente) {
@@ -565,6 +570,10 @@ export function FormularioDeEvaluacion({ onRegistrada, onCancelar, conTitulo = t
       return;
     }
     if (!r.ok) return setFallo(mensajeDeFallo(r));
+    // DL-185 (EVF-D08): la evaluación ya quedó; si los vínculos no se guardan, la evaluación registrada lo avisa.
+    setEnviando(true);
+    await vincularAlRegistrar(token, 'training', r.datos.data.evaluationId, vinculos);
+    setEnviando(false);
     onRegistrada();
   }
 
@@ -604,6 +613,7 @@ export function FormularioDeEvaluacion({ onRegistrada, onCancelar, conTitulo = t
           Agregar dato
         </button>
       </fieldset>
+      <ElegirFormularios area="training" token={token} asesoradoId={asesoradoId} sesionPerdida={sesionPerdida} onCambio={setVinculos} />
       <fieldset className="grupo" id="trn-contexto">
         <legend>{COPY_ENTRENAMIENTO.contextoDeclarado}</legend>
         {/* Sin respuestas que citar, el bloque es una línea: lo que se explica sirve cuando hay algo para marcar. */}

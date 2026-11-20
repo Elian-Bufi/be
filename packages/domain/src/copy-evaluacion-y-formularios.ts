@@ -10,6 +10,7 @@ export const COPY_EVALUACION_Y_FORMULARIOS = {
     'Vinculá los que usás para esta evaluación. Queda la referencia a lo que respondió, con su fecha: sus respuestas no se copian y la persona no ve nada nuevo en su app.',
   ningunoParaVincular: 'Todavía no respondió ningún formulario que le hayas pedido en esta área.',
   noSePudieronLeer: 'No se pudieron leer sus formularios. La evaluación se puede registrar igual.',
+  noSePudoLeer: 'No se pudo leer.',
   volverALeer: 'Volver a leer',
   vincularEste: (nombre: string): string => `Vincular «${nombre}»`,
   /** En la evaluación registrada. */
