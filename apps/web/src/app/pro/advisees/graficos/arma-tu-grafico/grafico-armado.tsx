@@ -20,12 +20,14 @@ import type { PeriodoDelGrafico } from '../eje-de-fechas';
 import { PanelesAlineados, type DensidadDelGrafico } from '../paneles-alineados';
 import { leerLaFuerza } from '../cruces/lecturas-de-los-cruces';
 import {
+  carrilesConLasParejas,
   ejercicioDeLaClave,
   escalaDeLaSerie,
   esLoIndicado,
   lecturaDelPunto,
   leyendaDeLasSeries,
   motivoDeSuperpuestas,
+  NOMBRE_DE_LA_PAREJA,
   NOMBRE_DEL_MODO,
   serieConAcceso,
   serieElegidaDe,
@@ -43,6 +45,7 @@ export interface GraficoArmado {
 }
 
 interface SerieLeida {
+  readonly ref: ReferenciaDeMetrica;
   readonly carril: CarrilDePuntos;
   readonly nombreCorto: string;
   readonly elegida: SerieElegida;
@@ -102,7 +105,7 @@ async function leerUna(
       cobertura: [],
       descripcion: `${numero(f.puntos.length, 0)} ${f.puntos.length === 1 ? 'sesión' : 'sesiones'} con una estimación.`,
     };
-    return { tipo: 'lista', serie: { carril, nombreCorto: catalogo.definicion.nombreCorto, elegida: { serie: catalogo, unidad } } };
+    return { tipo: 'lista', serie: { ref, carril, nombreCorto: catalogo.definicion.nombreCorto, elegida: { serie: catalogo, unidad } } };
   }
   const grano = catalogo.definicion.area === 'NUTRICION' ? 'DAY' : 'ORIGINAL';
   const leida = await leerSerieDelCatalogo(p, ref, grano);
@@ -121,7 +124,7 @@ async function leerUna(
   });
   // GR-T59: lo indicado (el RIR indicado) va suelto, sin línea, como en «Analizar».
   const carril: CarrilDePuntos = { ...delCatalogo, unir: unirLaSerie(elegida.serie) };
-  return { tipo: 'lista', serie: { carril, nombreCorto: elegida.serie.definicion.nombreCorto, elegida } };
+  return { tipo: 'lista', serie: { ref, carril, nombreCorto: elegida.serie.definicion.nombreCorto, elegida } };
 }
 
 export function GraficoArmadoEnPantalla({
@@ -194,5 +197,7 @@ export function GraficoArmadoEnPantalla({
   }
   const frase = fraseDeLaCoincidencia(elegidas, 'PANELS', elegidas.length);
   const motivo = superposicion && superposicion.motivo && !sinTodas ? `${NOMBRE_DEL_MODO.OVERLAY}: ${motivoDeSuperpuestas(superposicion.motivo, superposicion.grupos, nombres).replace(/^«Superpuestas» /, '')}` : null;
-  return <PanelesAlineados titulo={grafico.title} periodo={periodo} carriles={carriles} densidad={densidad} leyenda={leyenda} notas={[...(motivo ? [motivo] : []), ...(frase ? [frase] : []), ...(estado.sinDatos ? [estado.sinDatos] : [])]} />;
+  // Lo indicado y lo hecho de un mismo ejercicio van en un solo panel, con la misma escala (como GPF-06).
+  const alineados = carrilesConLasParejas(estado.series, (indicada, hecha) => nombreDe(hecha, NOMBRE_DE_LA_PAREJA[indicada.metricId] ?? indicada.metricId, ejercicios));
+  return <PanelesAlineados titulo={grafico.title} periodo={periodo} carriles={alineados} densidad={densidad} leyenda={leyenda} notas={[...(motivo ? [motivo] : []), ...(frase ? [frase] : []), ...(estado.sinDatos ? [estado.sinDatos] : [])]} />;
 }

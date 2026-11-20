@@ -32,9 +32,10 @@ export function SelectorDePeriodo({ vista }: { vista: VistaDelSeguimiento }) {
 }
 
 function SelectorDePeriodoDeLosGraficos() {
-  const { periodo, ir, token, asesoradoId, sesionPerdida, acompanamiento } = useSeguimiento();
+  const { periodo, ir, token, asesoradoId, sesionPerdida, acompanamiento, versionDeAcceso } = useSeguimiento();
   const hoy = useMemo(() => hoyEn(), []);
-  const lectura = useEtapasDeLaPersona(token, asesoradoId, sesionPerdida, hoy);
+  // La misma lectura que «Analizar» usa para las etapas (`leerLasVersionesDelAno`): no se pide dos veces.
+  const lectura = useEtapasDeLaPersona(token, asesoradoId, sesionPerdida, hoy, undefined, versionDeAcceso);
   const etapas = lectura.tipo === 'lista' ? lectura.etapas : SIN_ETAPAS;
   const porArea = [etapasElegibles(etapas.TRAINING, acompanamiento.inicio), etapasElegibles(etapas.NUTRITION, acompanamiento.inicio)];
   // La versión se nombra solo si el período de la dirección es el suyo (su vigencia, o sus últimos 366 días): una

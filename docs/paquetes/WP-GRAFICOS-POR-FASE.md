@@ -42,7 +42,7 @@ La «Fase» del plan (DL-181) no tiene fechas: el período por fase se elige por
 | GPF-10 | Capturas en la CI del entorno del tutor: «Patrones» de Tomás en 12 semanas, el selector abierto, una versión elegida y la anterior, la franja en la sentadilla y las series y la carga × repeticiones en «Armá tu gráfico» (trae `capturasDeGraficos` de `capturas-graficos-para-max`) | `scripts/entorno-del-tutor/ci.mjs` |
 | GPF-11 | Lenguaje: nada de «asesorado», «cumplimiento», «adherencia», «racha», «puntaje», «estación» ni «volumen» en pantalla; «Sin indicar» | la guardia `terminosProhibidosEnUnGrafico` en TEST-GPF-007, 010, 011 y 013 |
 
-Sin migraciones, sin operaciones nuevas en la API y sin cambios en la APK.
+Sin migraciones, sin operaciones nuevas en la API y sin cambios en la APK. (El pulido, §5, amplía de forma aditiva el período de las vistas guardadas.)
 
 ## 2. Las lecturas y la autorización (GPF-04, GPF-07)
 
@@ -50,7 +50,7 @@ Sin migraciones, sin operaciones nuevas en la API y sin cambios en la APK.
   `NUTRITION_PRESCRIBED_VS_RECORDED`, que ya devuelven `planVersions`) en el último año, que es su tope (366 días). Lo
   indicado y lo hecho salen del comparador que ya leen GR-03 y GR-05: API-TRN-21 en tramos de 92 días (su tope) y API-SER-01
   por versión. La API decide con el PDP en cada lectura: un área que este profesional no acompaña responde 404 y no ofrece
-  versiones ni series; no hay caché de datos de salud en el navegador.
+  versiones ni series; no hay caché de datos de salud en el navegador (las versiones del año se reutilizan en memoria hasta 30 segundos entre dos piezas de la misma pantalla: §5, GPF-P05).
 - **Lo anterior al vínculo no se dibuja** (TB-16): todo período lleva el día del vínculo y el eje empieza ahí.
 - **Ningún tope se amplía.** Un período a medida tiene hasta 366 días; una versión más larga se ve en sus últimos 366, y se
   dice; «desde que la acompañás» con más de un año es el último año, y se dice.
@@ -80,3 +80,18 @@ Sin migraciones, sin operaciones nuevas en la API y sin cambios en la APK.
 - Llevar el gráfico de series y carga × repeticiones a «Patrones» como sugerido (hoy está en el cuadro del ejercicio y,
   armado, en «Armá tu gráfico»).
 - La prueba con un lector de pantalla del selector abierto y de «La anterior» / «La siguiente».
+
+## 5. Pulido (después de integrar #304)
+
+Rama `wp-graficos-por-fase-pulido`, desde `main` (206c42ff). Sigue en **DL-187**; sin migraciones y sin operaciones nuevas.
+
+| ID | Qué | Dónde |
+|---|---|---|
+| GPF-P01 | **Lo indicado y lo hecho, en un solo panel.** En «Armá tu gráfico» (vista previa y gráficos propios de «Patrones»), si se eligen la serie indicada y la hecha del mismo ejercicio («Series indicadas» con «Series registradas», «Carga × repeticiones indicada» con «… hecha», «RIR indicado» con el RIR de la misma serie), en «Alineadas» van en un panel, con la misma escala: hueco lo indicado y lleno lo hecho, como GPF-06. Se unen solo con el mismo ejercicio, la misma serie y la misma unidad (kg y lb nunca). En «Superpuestas» ya compartían el eje. El selector ofrece el par en un clic: «Indicado y hecho» | `arma-tu-grafico/compositor.ts` (`carrilesConLasParejas`, `parejaDeLaSerie`), `grafico-armado.tsx`, `compositor-en-pantalla.tsx` |
+| GPF-P02 | **Lo cargado después, una vez.** Debajo de GR-03 salía «1 de 12 días cargados después.» una vez por carril. Ahora va una sola línea si todos los carriles lo cuentan igual, y una por carril (con su nombre) si difieren; y dice qué es: «1 de 12 días se cargó en un día posterior (muesca arriba de la marca)» | `carriles.ts` (`lineasDeLoCargadoTarde`), `paneles-alineados.tsx` |
+| GPF-P03 | **Las vistas guardadas siguen siendo relativas.** El contrato del período de una vista (`PeriodoDeLaVistaSchema`) suma, aditivo, 28, 84 y 182 días a `LAST_DAYS` y el tipo `SINCE_RELATIONSHIP` («Desde que la acompañás», sin días). Antes, 4 o 12 semanas o 6 meses se guardaban con las fechas del día. Una versión del plan y un rango a medida se siguen guardando con sus fechas. Las vistas viejas valen tal cual; la columna es JSON, sin migración. OpenAPI regenerado | `packages/domain/src/contratos-analisis.ts`, `seguimiento/estado.ts` (`periodoParaGuardar`, `parametrosDelPeriodoGuardado`), `vistas-guardadas.tsx`, `docs/api/openapi.json` |
+| GPF-P04 | **Un solo redondeo.** El número de un punto en el dibujo redondea con los decimales de su lectura (el rótulo decía «1.472,5» y la lectura «1.473») | `carriles.ts` (`textoDelRotulo`, `decimales`), `adaptadores.ts`, `programado-y-hecho.ts` |
+| GPF-P05 | **API-PRJ-01 una vez.** Con «Comparar etapas» (o «Cambio desde el plan», o las etapas a la vista) en «Analizar», las versiones del año se pedían dos veces: para el selector de período y para la pregunta. Ahora las dos usan `leerLasVersionesDelAno`: se comparte la respuesta en vuelo y se reutiliza en memoria hasta 30 segundos. Una falla no se reutiliza y la clave lleva la sesión y la versión del acceso: si cambió un permiso, se pide de nuevo y la API decide. Nada se guarda en el navegador | `graficos/etapas-de-la-persona.ts`, `seguimiento/preguntas.tsx`, `seguimiento/barra.tsx` |
+| GPF-P06 | Pruebas: TEST-GPF-019 a 023 (web), la del período en `comprension-del-dashboard.test.ts` (dominio) y la de integración de API-VAN con 28, 84, 182 y `SINCE_RELATIONSHIP` (`test/integration/analisis.int-spec.ts`); ajustes de TEST-GRF-012 y TEST-GRVD-006 al texto y al rótulo nuevos | `apps/web/test/graficos-por-fase.test.mjs`, `graficos-base.test.mjs`, `graficos-cruces.test.mjs` |
+
+Lo que queda del pulido: en «Analizar» (el lienzo de la ficha, que dibuja con otra pieza) lo indicado y lo hecho elegidos a mano siguen en paneles separados en «Alineadas»; en «Superpuestas» ya comparten el eje. Llevarlo a un panel ahí pide tocar el lienzo de «Analizar», y no es barato.

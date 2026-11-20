@@ -677,6 +677,25 @@ export type ParametrosDePregunta = z.infer<typeof ParametrosDePreguntaSchema>;
 export const PreguntaElegidaSchema = z.strictObject({ id: IdDePreguntaSchema, params: ParametrosDePreguntaSchema });
 export type PreguntaElegida = z.infer<typeof PreguntaElegidaSchema>;
 
+/**
+ * Los días de un período relativo de una vista guardada: los atajos de la ficha (7, 30, 90 días y un año) y, extensión
+ * aditiva del pulido de WP-GRAFICOS-POR-FASE (DL-187), los de los gráficos (4 y 12 semanas y 6 meses: 28, 84 y 182).
+ */
+export const DIAS_DE_UN_PERIODO_RELATIVO = [7, 28, 30, 84, 90, 182, 365] as const;
+export type DiasDeUnPeriodoRelativo = (typeof DIAS_DE_UN_PERIODO_RELATIVO)[number];
+
+/**
+ * El período de una vista guardada: relativo a hoy (`LAST_DAYS`), desde el día del vínculo con la persona a la que se
+ * aplica (`SINCE_RELATIONSHIP`, «Desde que la acompañás»: extensión aditiva del pulido de WP-GRAFICOS-POR-FASE; con un
+ * acompañamiento de más de un año, el último año) o fijo (`RANGE`). Las vistas viejas siguen valiendo tal cual.
+ */
+export const PeriodoDeLaVistaSchema = z.discriminatedUnion('kind', [
+  z.strictObject({ kind: z.literal('LAST_DAYS'), days: z.union([z.literal(7), z.literal(28), z.literal(30), z.literal(84), z.literal(90), z.literal(182), z.literal(365)]) }),
+  z.strictObject({ kind: z.literal('SINCE_RELATIONSHIP') }),
+  z.strictObject({ kind: z.literal('RANGE'), start: FechaLocalSchema, end: FechaLocalSchema }),
+]);
+export type PeriodoDeLaVista = z.infer<typeof PeriodoDeLaVistaSchema>;
+
 export const ConfiguracionDeAnalisisSchema = z.strictObject({
   schemaVersion: z.literal(1),
   /**
@@ -687,10 +706,7 @@ export const ConfiguracionDeAnalisisSchema = z.strictObject({
   metrics: z.array(ReferenciaDeMetricaSchema).min(1).max(3),
   mode: z.enum(['PANELS', 'OVERLAY', 'RELATIVE']),
   grain: GranoSchema,
-  period: z.discriminatedUnion('kind', [
-    z.strictObject({ kind: z.literal('LAST_DAYS'), days: z.union([z.literal(7), z.literal(30), z.literal(90), z.literal(365)]) }),
-    z.strictObject({ kind: z.literal('RANGE'), start: FechaLocalSchema, end: FechaLocalSchema }),
-  ]),
+  period: PeriodoDeLaVistaSchema,
   layers: z.strictObject({ planBands: z.boolean(), events: z.boolean() }),
   /** La referencia del cambio relativo, explícita (DL-126). */
   reference: ReferenciaDelCambioSchema,

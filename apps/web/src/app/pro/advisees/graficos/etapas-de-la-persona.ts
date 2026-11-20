@@ -7,7 +7,7 @@
  * en un año que termina hoy (el tope de la operación). La API decide con el acceso de este momento: un área que no
  * acompaña este profesional responde «no disponible» y no ofrece versiones. Nada se guarda en el navegador.
  */
-import { etapasDelArea, type EtapaDePlanificacion } from '@be/domain';
+import { etapasDelArea, type EtapaDePlanificacion, type ProyeccionResponse } from '@be/domain';
 import { api, type Resultado } from '../../../../lib/api';
 import { limitarLectura } from '../seguimiento/contexto';
 import { restarDias } from '../seguimiento/estado';
@@ -18,13 +18,50 @@ export type LecturaDeLasEtapas =
   | { readonly tipo: 'cargando' }
   | { readonly tipo: 'lista'; readonly etapas: Readonly<Record<DominioDeLaEtapa, readonly EtapaDePlanificacion[]>>; readonly fallo: boolean };
 
+/** Cuánto se reutiliza en memoria una lectura de las versiones del año: lo que tarda en armarse una pantalla. */
+const REUTILIZAR_MS = 30_000;
+const versionesLeidas = new Map<string, { readonly en: number; readonly respuesta: Promise<Resultado<ProyeccionResponse>> }>();
+
+/**
+ * Las versiones de un área en el último año (API-PRJ-01): la misma lectura para el selector de período de la ficha y
+ * para «Comparar etapas» y «Cambio desde el plan» en «Analizar» (pulido de WP-GRAFICOS-POR-FASE: antes se pedía dos
+ * veces). Se comparte la respuesta en vuelo y se reutiliza en memoria hasta 30 segundos; nada se guarda en el navegador.
+ * Una falla no se reutiliza (reintentar pide de nuevo), y la clave lleva la sesión y la versión del acceso: si cambió un
+ * permiso, se pide de nuevo y la API vuelve a decidir.
+ */
+export function leerLasVersionesDelAno(token: string, asesoradoId: string, dominio: DominioDeLaEtapa, hoy: string, versionDeAcceso = 0): Promise<Resultado<ProyeccionResponse>> {
+  const clave = `${token}|${asesoradoId}|${hoy}|${dominio}|${versionDeAcceso}`;
+  const ahora = Date.now();
+  for (const [k, v] of versionesLeidas) if (ahora - v.en >= REUTILIZAR_MS) versionesLeidas.delete(k);
+  const ya = versionesLeidas.get(clave);
+  if (ya) return ya.respuesta;
+  const base = { periodStart: restarDias(hoy, DIAS_MAXIMOS_DE_LOS_GRAFICOS - 1), periodEnd: hoy };
+  const respuesta = dominio === 'TRAINING' ? api.proyeccion(token, asesoradoId, 'TRAINING_PROGRESSION_BY_EXERCISE', base) : api.proyeccion(token, asesoradoId, 'NUTRITION_PRESCRIBED_VS_RECORDED', { ...base, metric: 'RECORDS' });
+  const entrada = { en: ahora, respuesta };
+  versionesLeidas.set(clave, entrada);
+  void respuesta.then(
+    (r) => {
+      if (!r.ok && versionesLeidas.get(clave) === entrada) versionesLeidas.delete(clave);
+    },
+    () => {
+      if (versionesLeidas.get(clave) === entrada) versionesLeidas.delete(clave);
+    },
+  );
+  return respuesta;
+}
+
 export const SIN_ETAPAS: Readonly<Record<DominioDeLaEtapa, readonly EtapaDePlanificacion[]>> = { TRAINING: [], NUTRITION: [] };
 
-export function useEtapasDeLaPersona(token: string, asesoradoId: string, sesionPerdida: (r: Resultado<unknown>) => boolean, hoy: string, areas: readonly DominioDeLaEtapa[] = ['TRAINING', 'NUTRITION']): LecturaDeLasEtapas {
-  const { leido } = useLeido(`etapas-de-la-persona|${asesoradoId}|${hoy}|${areas.join(',')}`, async (): Promise<LecturaDeLasEtapas> => {
-    const base = { periodStart: restarDias(hoy, DIAS_MAXIMOS_DE_LOS_GRAFICOS - 1), periodEnd: hoy };
-    const leer = (d: DominioDeLaEtapa) =>
-      limitarLectura(() => (d === 'TRAINING' ? api.proyeccion(token, asesoradoId, 'TRAINING_PROGRESSION_BY_EXERCISE', base) : api.proyeccion(token, asesoradoId, 'NUTRITION_PRESCRIBED_VS_RECORDED', { ...base, metric: 'RECORDS' })));
+export function useEtapasDeLaPersona(
+  token: string,
+  asesoradoId: string,
+  sesionPerdida: (r: Resultado<unknown>) => boolean,
+  hoy: string,
+  areas: readonly DominioDeLaEtapa[] = ['TRAINING', 'NUTRITION'],
+  versionDeAcceso = 0,
+): LecturaDeLasEtapas {
+  const { leido } = useLeido(`etapas-de-la-persona|${asesoradoId}|${hoy}|${areas.join(',')}|${versionDeAcceso}`, async (): Promise<LecturaDeLasEtapas> => {
+    const leer = (d: DominioDeLaEtapa) => limitarLectura(() => leerLasVersionesDelAno(token, asesoradoId, d, hoy, versionDeAcceso));
     const respuestas = await Promise.all(areas.map(async (d) => [d, await leer(d)] as const));
     if (respuestas.some(([, r]) => sesionPerdida(r))) return { tipo: 'cargando' };
     const ahora = new Date().toISOString();

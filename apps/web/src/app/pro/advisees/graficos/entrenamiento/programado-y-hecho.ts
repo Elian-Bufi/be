@@ -209,6 +209,8 @@ export function carrilesDeProgramadoYHecho(filas: readonly ProgramadoYHecho[], u
     cobertura: [],
     descripcion: `Series hechas e indicadas en ${filas.length === 1 ? '1 punto' : `${filas.length} puntos`}.`,
     porSesion: true,
+    // Enteros, como su lectura: el rótulo no dice «1.472,5» si la lectura dice «1.473».
+    decimales: 0,
   };
   const u = `${unidad}·rep`;
   const volumen: CarrilDePuntos = {
@@ -231,6 +233,8 @@ export function carrilesDeProgramadoYHecho(filas: readonly ProgramadoYHecho[], u
     cobertura: [],
     descripcion: `Carga × repeticiones, hecha e indicada, en ${filas.length === 1 ? '1 punto' : `${filas.length} puntos`}.`,
     porSesion: true,
+    // Enteros, como su lectura: el rótulo no dice «1.472,5» si la lectura dice «1.473».
+    decimales: 0,
   };
   return [series, volumen];
 }

@@ -368,3 +368,98 @@ test('TEST-GPF-018 · la tabla y «Lo último» no repiten «indicado: indicado:
   const [, c2] = PH.carrilesDeProgramadoYHecho(PH.programadoYHecho([sinCarga], 'kg', 'SESION'), 'kg');
   assert.match(c2.puntos[0].lectura, /indicado: Sin indicar/);
 });
+
+// ─── Pulido de WP-GRAFICOS-POR-FASE ──────────────────────────────────────────────────────────────
+
+const CMP = await import('../src/app/pro/advisees/graficos/arma-tu-grafico/compositor.ts');
+const CAR = await import('../src/app/pro/advisees/graficos/carriles.ts');
+const SENTADILLA_K = 'e:00000000-0000-4000-8000-000000000001';
+const PRESS_K = 'e:00000000-0000-4000-8000-000000000002';
+const ref = (metricId, exerciseKey = SENTADILLA_K, setIndex = null, unit = null) => ({ metricId, exerciseKey, setIndex, unit });
+const punto = (fecha, valor, extra = {}) => ({ clave: `${fecha}:${valor}`, fecha, hasta: null, en: null, valor, rango: null, tramo: 't', marca: 'LLENA', tarde: false, lectura: `${valor} series`, ...extra });
+const carril = (id, unidad, puntos, extra = {}) => ({ tipo: 'PUNTOS', id, nombre: id, unidad, metodo: null, indice: 0, puntos, indicado: [], escalones: [], unir: true, escala: { enteros: true }, cobertura: [], descripcion: `${puntos.length} observaciones con valor.`, ...extra });
+
+test('TEST-GPF-019 · lo indicado y lo hecho del mismo ejercicio van en un solo panel, hueco lo indicado (mutación: dejarlos en dos paneles o unir ejercicios distintos)', () => {
+  const indicadas = { ref: ref('entrenamiento.series-indicadas'), carril: carril('entrenamiento.series-indicadas|0', 'series', [punto('2026-11-03', 4, { marca: 'HUECA' }), punto('2026-11-06', 4, { marca: 'HUECA' })]) };
+  const hechas = { ref: ref('entrenamiento.series-registradas'), carril: carril('entrenamiento.series-registradas|1', 'series', [punto('2026-11-03', 4), punto('2026-11-06', 3)]) };
+  const cargaHecha = { ref: ref('entrenamiento.carga-por-repeticiones-hecha', SENTADILLA_K, null, 'kg'), carril: carril('entrenamiento.carga-por-repeticiones-hecha|2', 'kg·rep', [punto('2026-11-06', 1300)]) };
+  const nombre = (i, h) => `${CMP.NOMBRE_DE_LA_PAREJA[i.metricId]} · ${h.exerciseKey}`;
+  const juntos = CMP.carrilesConLasParejas([indicadas, hechas, cargaHecha], nombre);
+  assert.equal(juntos.length, 2, 'las series indicadas y hechas, un panel; la carga × repeticiones, otro');
+  const [series, carga] = juntos;
+  assert.equal(series.id, 'entrenamiento.series-registradas|1');
+  assert.equal(series.nombre, `Series indicadas y hechas · ${SENTADILLA_K}`);
+  assert.deepEqual(series.puntos.map((p) => p.valor), [4, 3], 'lo hecho, lleno');
+  assert.deepEqual(series.indicado.map((p) => [p.valor, p.marca, p.sentido]), [[4, 'HUECA', 'INDICADO'], [4, 'HUECA', 'INDICADO']], 'lo indicado, hueco y en la misma escala');
+  assert.equal(carga, cargaHecha.carril);
+  // Otro ejercicio, otra serie del RIR u otra unidad: cada una en su panel.
+  const deOtro = { ...indicadas, ref: ref('entrenamiento.series-indicadas', PRESS_K) };
+  assert.equal(CMP.carrilesConLasParejas([deOtro, hechas], nombre).length, 2);
+  const rirIndicado = { ref: ref('entrenamiento.rir-indicado', SENTADILLA_K, 2), carril: carril('entrenamiento.rir-indicado|0', 'RIR', [punto('2026-11-06', 2)]) };
+  const rir1 = { ref: ref('entrenamiento.rir', SENTADILLA_K, 1), carril: carril('entrenamiento.rir|1', 'RIR', [punto('2026-11-06', 1)]) };
+  assert.equal(CMP.carrilesConLasParejas([rirIndicado, rir1], nombre).length, 2, 'el RIR indicado de la serie 2 no va con el registrado de la serie 1');
+  assert.equal(CMP.carrilesConLasParejas([rirIndicado, { ...rir1, ref: ref('entrenamiento.rir', SENTADILLA_K, 2) }], nombre).length, 1);
+  const cargaIndicadaLb = { ref: ref('entrenamiento.carga-por-repeticiones-indicada', SENTADILLA_K, null, 'lb'), carril: carril('x|0', 'lb·rep', [punto('2026-11-06', 2800)]) };
+  assert.equal(CMP.carrilesConLasParejas([cargaIndicadaLb, cargaHecha], nombre).length, 2, 'kg y lb nunca van juntas');
+  // El par de un clic.
+  assert.deepEqual(CMP.parejaDeLaSerie('entrenamiento.series-registradas'), ['entrenamiento.series-indicadas', 'entrenamiento.series-registradas']);
+  assert.deepEqual(CMP.parejaDeLaSerie('entrenamiento.carga-por-repeticiones-indicada'), ['entrenamiento.carga-por-repeticiones-indicada', 'entrenamiento.carga-por-repeticiones-hecha']);
+  assert.equal(CMP.parejaDeLaSerie('entrenamiento.carga'), null);
+  for (const t of [...Object.values(CMP.NOMBRE_DE_LA_PAREJA), ...Object.values(CMP.COPY_DE_LA_PAREJA)]) assert.deepEqual(terminosProhibidosEnUnGrafico(t, ['ENTRENAMIENTO']), [], t);
+  const armado = leer('graficos/arma-tu-grafico/grafico-armado.tsx');
+  assert.match(armado, /const alineados = carrilesConLasParejas\(estado\.series,/);
+  assert.match(armado, /carriles=\{alineados\}/);
+  const compositor = leer('graficos/arma-tu-grafico/compositor-en-pantalla.tsx');
+  assert.match(compositor, /data-par-indicado-y-hecho onClick=\{agregarElPar\}/);
+  assert.match(compositor, /parejaDeLaSerie\(serie\.id\)/);
+});
+
+test('TEST-GPF-020 · lo cargado después va una sola vez si los carriles lo cuentan igual, y dice qué es (mutación: una línea por carril repetida)', () => {
+  const tarde = (fecha, valor) => punto(fecha, valor, { tarde: true });
+  const conUno = (id) => carril(id, 'kg', [tarde('2026-11-03', 100), ...Array.from({ length: 11 }, (_, i) => punto(`2026-10-${String(i + 1).padStart(2, '0')}`, 100))]);
+  const tres = [conUno('Carga'), conUno('Repeticiones'), conUno('RIR')];
+  assert.deepEqual(CAR.lineasDeLoCargadoTarde(tres), ['1 de 12 días se cargó en un día posterior (muesca arriba de la marca)']);
+  const distinto = carril('Peso', 'kg', [tarde('2026-11-03', 80), tarde('2026-11-05', 80), punto('2026-11-07', 80)]);
+  assert.deepEqual(CAR.lineasDeLoCargadoTarde([conUno('Carga'), distinto]), [
+    'Carga: 1 de 12 días se cargó en un día posterior (muesca arriba de la marca)',
+    'Peso: 2 de 3 días se cargaron en un día posterior (muesca arriba de la marca)',
+  ]);
+  assert.deepEqual(CAR.lineasDeLoCargadoTarde([carril('x', 'kg', [punto('2026-11-03', 1)])]), []);
+  assert.match(leer('graficos/paneles-alineados.tsx'), /const tarde = lineasDeLoCargadoTarde\(carriles\);/);
+});
+
+test('TEST-GPF-021 · una vista guardada con 4 o 12 semanas, 6 meses o «Desde que la acompañás» sigue siendo relativa (mutación: guardar las fechas de hoy)', () => {
+  assert.deepEqual(ESTADO.periodoParaGuardar({ preset: 28, desde: '2026-10-24', hasta: '2026-11-20' }), { kind: 'LAST_DAYS', days: 28 });
+  assert.deepEqual(ESTADO.periodoParaGuardar({ preset: 84, desde: '2026-08-29', hasta: '2026-11-20' }), { kind: 'LAST_DAYS', days: 84 });
+  assert.deepEqual(ESTADO.periodoParaGuardar({ preset: 182, desde: '2026-05-23', hasta: '2026-11-20' }), { kind: 'LAST_DAYS', days: 182 });
+  assert.deepEqual(ESTADO.periodoParaGuardar({ preset: 90, desde: '2026-08-23', hasta: '2026-11-20' }), { kind: 'LAST_DAYS', days: 90 });
+  assert.deepEqual(ESTADO.periodoParaGuardar({ preset: null, desde: '2026-07-01', hasta: '2026-11-20', vinculo: true }), { kind: 'SINCE_RELATIONSHIP' });
+  assert.deepEqual(ESTADO.periodoParaGuardar({ preset: null, desde: '2026-09-15', hasta: '2026-10-26' }), { kind: 'RANGE', start: '2026-09-15', end: '2026-10-26' }, 'a medida o una versión: sus fechas');
+  // Al abrirla, la dirección vuelve a ser relativa.
+  assert.deepEqual(ESTADO.parametrosDelPeriodoGuardado({ kind: 'LAST_DAYS', days: 84 }), { p: '84', desde: null, hasta: null, etapa: null });
+  assert.deepEqual(ESTADO.parametrosDelPeriodoGuardado({ kind: 'SINCE_RELATIONSHIP' }), { p: 'vinculo', desde: null, hasta: null, etapa: null });
+  assert.deepEqual(ESTADO.parametrosDelPeriodoGuardado({ kind: 'RANGE', start: '2026-09-15', end: '2026-10-26' }), { p: null, desde: '2026-09-15', hasta: '2026-10-26', etapa: null });
+  const vistas = leer('seguimiento/vistas-guardadas.tsx');
+  assert.match(vistas, /period: periodoParaGuardar\(periodo\)/);
+  assert.match(vistas, /\.\.\.parametrosDelPeriodoGuardado\(c\.period\)/);
+});
+
+test('TEST-GPF-022 · el rótulo de un punto redondea como su lectura (mutación: «1.472,5» en el dibujo y «1.473» en la lectura)', () => {
+  const [series, carga] = PH.carrilesDeProgramadoYHecho(PH.programadoYHecho(OBS, 'kg', 'SESION'), 'kg');
+  assert.equal(series.decimales, 0);
+  assert.equal(carga.decimales, 0);
+  assert.equal(CAR.textoDelRotulo(1472.5, carga), '1.473');
+  assert.match(leer('graficos/adaptadores.ts'), /decimales: serie\.definicion\.decimales,/);
+  assert.equal(serieDisponible('entrenamiento.carga-por-repeticiones-hecha').definicion.decimales, 0);
+});
+
+test('TEST-GPF-023 · «Analizar» con «Comparar etapas» no pide dos veces las versiones del año (mutación: volver a llamar a API-PRJ-01 desde la pregunta)', () => {
+  const etapas = leer('graficos/etapas-de-la-persona.ts');
+  assert.equal((etapas.match(/api\.proyeccion\(/g) ?? []).length, 2, 'una por área, solo en `leerLasVersionesDelAno`');
+  assert.match(etapas, /if \(!r\.ok && versionesLeidas\.get\(clave\) === entrada\) versionesLeidas\.delete\(clave\);/, 'una falla no se reutiliza');
+  assert.match(etapas, /\|\$\{versionDeAcceso\}`;/, 'la versión del acceso en la clave');
+  const preguntas = leer('seguimiento/preguntas.tsx');
+  assert.doesNotMatch(preguntas, /api\.proyeccion\(/);
+  assert.equal((preguntas.match(/leerLasVersionesDelAno\(token, asesoradoId, '(NUTRITION|TRAINING)', hoy, versionDeAcceso\)/g) ?? []).length, 2);
+  assert.match(leer('seguimiento/barra.tsx'), /useEtapasDeLaPersona\(token, asesoradoId, sesionPerdida, hoy, undefined, versionDeAcceso\)/);
+});

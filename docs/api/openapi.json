@@ -142628,11 +142628,23 @@
                                               },
                                               {
                                                 "type": "number",
+                                                "const": 28
+                                              },
+                                              {
+                                                "type": "number",
                                                 "const": 30
                                               },
                                               {
                                                 "type": "number",
+                                                "const": 84
+                                              },
+                                              {
+                                                "type": "number",
                                                 "const": 90
+                                              },
+                                              {
+                                                "type": "number",
+                                                "const": 182
                                               },
                                               {
                                                 "type": "number",
@@ -142644,6 +142656,19 @@
                                         "required": [
                                           "kind",
                                           "days"
+                                        ],
+                                        "additionalProperties": false
+                                      },
+                                      {
+                                        "type": "object",
+                                        "properties": {
+                                          "kind": {
+                                            "type": "string",
+                                            "const": "SINCE_RELATIONSHIP"
+                                          }
+                                        },
+                                        "required": [
+                                          "kind"
                                         ],
                                         "additionalProperties": false
                                       },
@@ -143238,11 +143263,23 @@
                                       },
                                       {
                                         "type": "number",
+                                        "const": 28
+                                      },
+                                      {
+                                        "type": "number",
                                         "const": 30
                                       },
                                       {
                                         "type": "number",
+                                        "const": 84
+                                      },
+                                      {
+                                        "type": "number",
                                         "const": 90
+                                      },
+                                      {
+                                        "type": "number",
+                                        "const": 182
                                       },
                                       {
                                         "type": "number",
@@ -143254,6 +143291,19 @@
                                 "required": [
                                   "kind",
                                   "days"
+                                ],
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "kind": {
+                                    "type": "string",
+                                    "const": "SINCE_RELATIONSHIP"
+                                  }
+                                },
+                                "required": [
+                                  "kind"
                                 ],
                                 "additionalProperties": false
                               },
@@ -143714,11 +143764,23 @@
                                             },
                                             {
                                               "type": "number",
+                                              "const": 28
+                                            },
+                                            {
+                                              "type": "number",
                                               "const": 30
                                             },
                                             {
                                               "type": "number",
+                                              "const": 84
+                                            },
+                                            {
+                                              "type": "number",
                                               "const": 90
+                                            },
+                                            {
+                                              "type": "number",
+                                              "const": 182
                                             },
                                             {
                                               "type": "number",
@@ -143730,6 +143792,19 @@
                                       "required": [
                                         "kind",
                                         "days"
+                                      ],
+                                      "additionalProperties": false
+                                    },
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "kind": {
+                                          "type": "string",
+                                          "const": "SINCE_RELATIONSHIP"
+                                        }
+                                      },
+                                      "required": [
+                                        "kind"
                                       ],
                                       "additionalProperties": false
                                     },
@@ -144354,11 +144429,23 @@
                                       },
                                       {
                                         "type": "number",
+                                        "const": 28
+                                      },
+                                      {
+                                        "type": "number",
                                         "const": 30
                                       },
                                       {
                                         "type": "number",
+                                        "const": 84
+                                      },
+                                      {
+                                        "type": "number",
                                         "const": 90
+                                      },
+                                      {
+                                        "type": "number",
+                                        "const": 182
                                       },
                                       {
                                         "type": "number",
@@ -144370,6 +144457,19 @@
                                 "required": [
                                   "kind",
                                   "days"
+                                ],
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "kind": {
+                                    "type": "string",
+                                    "const": "SINCE_RELATIONSHIP"
+                                  }
+                                },
+                                "required": [
+                                  "kind"
                                 ],
                                 "additionalProperties": false
                               },
@@ -144810,11 +144910,23 @@
                                             },
                                             {
                                               "type": "number",
+                                              "const": 28
+                                            },
+                                            {
+                                              "type": "number",
                                               "const": 30
                                             },
                                             {
                                               "type": "number",
+                                              "const": 84
+                                            },
+                                            {
+                                              "type": "number",
                                               "const": 90
+                                            },
+                                            {
+                                              "type": "number",
+                                              "const": 182
                                             },
                                             {
                                               "type": "number",
@@ -144826,6 +144938,19 @@
                                       "required": [
                                         "kind",
                                         "days"
+                                      ],
+                                      "additionalProperties": false
+                                    },
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "kind": {
+                                          "type": "string",
+                                          "const": "SINCE_RELATIONSHIP"
+                                        }
+                                      },
+                                      "required": [
+                                        "kind"
                                       ],
                                       "additionalProperties": false
                                     },

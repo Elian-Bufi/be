@@ -32,13 +32,13 @@ import { useId, useMemo, useState, type FormEvent, type ReactNode } from 'react'
 import { Cargando } from '../../../../components/estados';
 import { Aviso } from '../../../../components/formulario';
 import { Icono } from '../../../../components/icono';
-import { api } from '../../../../lib/api';
 import { diaCivil } from '../../../../lib/formato';
 import { textoDeFalla, useLectura, useSeguimiento } from './contexto';
 import { LA_PREGUNTA_DE_LA_COMPOSICION, PREGUNTA_DE_LA_COMPOSICION } from './composicion-en-analizar';
 import { LA_PREGUNTA_DE_LA_FUERZA, PREGUNTA_DE_LA_FUERZA } from '../fuerza/fuerza-en-analizar';
 import { PREGUNTAS_CON_GRAFICOS, type PreguntaConGraficos } from '../graficos/cruces/preguntas-con-graficos';
-import { hoyEn, parametrosDePregunta, restarDias } from './estado';
+import { leerLasVersionesDelAno } from '../graficos/etapas-de-la-persona';
+import { hoyEn, parametrosDePregunta } from './estado';
 import type { Disponibles } from './series';
 
 /** El período más largo que lee la ficha: un año y un día (DL-126). */
@@ -56,12 +56,12 @@ export function useEtapasDelAno(activo: boolean): {
   readonly fallaDe: Readonly<Record<'NUTRITION' | 'TRAINING', boolean>>;
   readonly reintentar: () => void;
 } {
-  const { token, asesoradoId } = useSeguimiento();
+  const { token, asesoradoId, versionDeAcceso } = useSeguimiento();
   const hoy = hoyEn();
-  const desde = restarDias(hoy, DIAS_MAXIMOS_DEL_ANALISIS_WEB - 1);
-  const base = { periodStart: desde, periodEnd: hoy };
-  const { lectura: n, recargar: recargarN } = useLectura<ProyeccionResponse>(activo ? `etapas|NUT|${asesoradoId}|${hoy}` : null, () => api.proyeccion(token, asesoradoId, 'NUTRITION_PRESCRIBED_VS_RECORDED', { ...base, metric: 'RECORDS' }), 'NUTRITION');
-  const { lectura: t, recargar: recargarT } = useLectura<ProyeccionResponse>(activo ? `etapas|TRN|${asesoradoId}|${hoy}` : null, () => api.proyeccion(token, asesoradoId, 'TRAINING_PROGRESSION_BY_EXERCISE', base), 'TRAINING');
+  // Las mismas que lee el selector de período de la ficha (`leerLasVersionesDelAno`, pulido de WP-GRAFICOS-POR-FASE):
+  // con «Comparar etapas», API-PRJ-01 se pide una vez por área y no dos.
+  const { lectura: n, recargar: recargarN } = useLectura<ProyeccionResponse>(activo ? `etapas|NUT|${asesoradoId}|${hoy}` : null, () => leerLasVersionesDelAno(token, asesoradoId, 'NUTRITION', hoy, versionDeAcceso), 'NUTRITION');
+  const { lectura: t, recargar: recargarT } = useLectura<ProyeccionResponse>(activo ? `etapas|TRN|${asesoradoId}|${hoy}` : null, () => leerLasVersionesDelAno(token, asesoradoId, 'TRAINING', hoy, versionDeAcceso), 'TRAINING');
   return useMemo(() => {
     const vigencias = (l: typeof n) => (l.tipo === 'listo' && l.datos.data.result && l.datos.data.result.kind !== 'ANTHROPOMETRY_LONGITUDINAL' ? l.datos.data.result.planVersions : []);
     const ahora = n.tipo === 'listo' ? n.datos.data.generatedAt : t.tipo === 'listo' ? t.datos.data.generatedAt : new Date().toISOString();

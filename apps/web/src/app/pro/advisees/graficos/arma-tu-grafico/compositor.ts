@@ -378,3 +378,90 @@ export function lecturaDelPunto(p: PuntoAnalitico, definicion: Pick<DefinicionDe
   if (p.dateEnd) partes.push(`semana del ${textoDeLaMarca(p.date)} al ${textoDeLaMarca(p.dateEnd)}`);
   return partes.join(' · ');
 }
+
+// ─── Lo indicado y lo hecho en un solo panel (WP-GRAFICOS-POR-FASE, pulido) ───────────────────────
+
+/**
+ * Las parejas de lo indicado y lo hecho del catálogo: la serie indicada y la registrada que se leen juntas, como en el
+ * historial del ejercicio (GPF-06). Con las dos elegidas, del mismo ejercicio, la misma serie y la misma unidad, van en
+ * **un solo panel**, con la misma escala: hueco lo indicado y lleno lo hecho (también en «Alineadas»).
+ */
+export const LO_HECHO_DE_LO_INDICADO: Readonly<Record<string, string>> = {
+  'entrenamiento.series-indicadas': 'entrenamiento.series-registradas',
+  'entrenamiento.carga-por-repeticiones-indicada': 'entrenamiento.carga-por-repeticiones-hecha',
+  'entrenamiento.rir-indicado': 'entrenamiento.rir',
+};
+
+/** El nombre del panel de una pareja, por la serie indicada. */
+export const NOMBRE_DE_LA_PAREJA: Readonly<Record<string, string>> = {
+  'entrenamiento.series-indicadas': 'Series indicadas y hechas',
+  'entrenamiento.carga-por-repeticiones-indicada': 'Carga × repeticiones indicada y hecha',
+  'entrenamiento.rir-indicado': 'RIR indicado y registrado',
+};
+
+/** El botón de un clic del selector: suma la pareja entera. */
+export const COPY_DE_LA_PAREJA = {
+  boton: 'Indicado y hecho',
+  pista: 'Suma las dos series de este ejercicio en un solo panel: hueco lo indicado, lleno lo hecho.',
+  sinLugar: 'Para sumar lo indicado y lo hecho hacen falta dos lugares: quitá una serie.',
+} as const;
+
+/** La pareja de una serie (la indicada o la hecha): `[indicada, hecha]`, o `null` si no tiene. */
+export function parejaDeLaSerie(metricId: string): readonly [string, string] | null {
+  if (LO_HECHO_DE_LO_INDICADO[metricId]) return [metricId, LO_HECHO_DE_LO_INDICADO[metricId] as string];
+  const indicada = Object.keys(LO_HECHO_DE_LO_INDICADO).find((k) => LO_HECHO_DE_LO_INDICADO[k] === metricId);
+  return indicada ? [indicada, metricId] : null;
+}
+
+/**
+ * Qué serie indicada va en el panel de qué serie hecha: posición de la indicada → posición de la hecha. Se unen si son
+ * pareja, del mismo ejercicio, de la misma serie (si la piden) y con la misma unidad de los datos; cada hecha recibe una
+ * sola indicada. Si no, cada una sigue en su panel.
+ */
+export function parejasDeLasElegidas(series: readonly { readonly ref: ReferenciaDeMetrica; readonly unidad: string }[]): ReadonlyMap<number, number> {
+  const parejas = new Map<number, number>();
+  const usadas = new Set<number>();
+  series.forEach((s, i) => {
+    const hecha = LO_HECHO_DE_LO_INDICADO[s.ref.metricId];
+    if (!hecha) return;
+    const j = series.findIndex(
+      (h, k) =>
+        !usadas.has(k) &&
+        h.ref.metricId === hecha &&
+        h.ref.exerciseKey === s.ref.exerciseKey &&
+        (h.ref.setIndex === null || s.ref.setIndex === null || h.ref.setIndex === s.ref.setIndex) &&
+        h.unidad === s.unidad,
+    );
+    if (j < 0) return;
+    usadas.add(j);
+    parejas.set(i, j);
+  });
+  return parejas;
+}
+
+/**
+ * Los carriles de «Alineadas» con cada pareja en un solo panel: el de lo hecho lleva lo indicado como marcas huecas (el
+ * campo `indicado` del carril, el mismo de GR-03 y GPF-06), con su nombre de pareja; el de lo indicado no se dibuja
+ * aparte. La tabla y «Lo último» lo leen como «4 series · indicado: 4 series».
+ */
+export function carrilesConLasParejas(
+  series: readonly { readonly ref: ReferenciaDeMetrica; readonly carril: CarrilDePuntos }[],
+  nombreDeLaPareja: (indicada: ReferenciaDeMetrica, hecha: ReferenciaDeMetrica) => string,
+): CarrilDePuntos[] {
+  const parejas = parejasDeLasElegidas(series.map((s) => ({ ref: s.ref, unidad: s.carril.unidad })));
+  const indicadaDe = new Map([...parejas].map(([i, j]) => [j, i] as const));
+  return series.flatMap((s, j) => {
+    if (parejas.has(j)) return [];
+    const i = indicadaDe.get(j);
+    if (i === undefined) return [s.carril];
+    const indicada = series[i] as (typeof series)[number];
+    return [
+      {
+        ...s.carril,
+        nombre: nombreDeLaPareja(indicada.ref, s.ref),
+        indicado: indicada.carril.puntos.map((p) => ({ ...p, marca: 'HUECA' as const, sentido: 'INDICADO' as const, tarde: false })),
+        descripcion: `${s.carril.descripcion} Lo indicado, en marcas huecas: ${indicada.carril.descripcion.charAt(0).toLowerCase()}${indicada.carril.descripcion.slice(1)}`,
+      },
+    ];
+  });
+}
