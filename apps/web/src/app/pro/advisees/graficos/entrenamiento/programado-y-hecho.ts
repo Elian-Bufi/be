@@ -201,7 +201,8 @@ export function carrilesDeProgramadoYHecho(filas: readonly ProgramadoYHecho[], u
           : `${seriesEnTexto(f.seriesHechas)} hechas · ${f.seriesIndicadas === null ? `indicadas: ${COPY_PROGRAMADO_Y_HECHO.sinIndicar}` : diferenciaDeSeries(f.seriesHechas, f.seriesIndicadas)}${cuantas(f)}`,
       ),
     ),
-    indicado: filas.flatMap((f) => indicadoDe(f, 'series', f.seriesIndicadas, null, f.seriesIndicadas === null ? COPY_PROGRAMADO_Y_HECHO.sinIndicar : `${seriesEnTexto(f.seriesIndicadas)} indicadas`)),
+    // La lectura de lo indicado va sin «indicado:»: la tabla y «Lo último» se lo anteponen (`tabla-equivalente.ts`).
+    indicado: filas.flatMap((f) => indicadoDe(f, 'series', f.seriesIndicadas, null, f.seriesIndicadas === null ? COPY_PROGRAMADO_Y_HECHO.sinIndicar : seriesEnTexto(f.seriesIndicadas))),
     escalones: [],
     unir: true,
     escala: { enteros: true, desdeCero: true, minimoDelMaximo: 4 },
@@ -218,11 +219,12 @@ export function carrilesDeProgramadoYHecho(filas: readonly ProgramadoYHecho[], u
     metodo: null,
     indice: 1,
     puntos: filas.map((f) => {
-      const indicado = f.volumenIndicado === null ? `indicado: ${COPY_PROGRAMADO_Y_HECHO.sinIndicar}` : `indicado: ${rangoEnTexto(f.volumenIndicado, u)}`;
+      // Lo indicado, con número, lo agrega la tabla desde su marca hueca («indicado: …»); acá solo si no hay marca.
+      const indicado = f.volumenIndicado === null ? ` · indicado: ${COPY_PROGRAMADO_Y_HECHO.sinIndicar}` : '';
       const fuera = f.seriesSinVolumen > 0 ? ` · ${seriesEnTexto(f.seriesSinVolumen)} sin carga o sin repeticiones, no entran` : '';
-      return punto(f, 'volumen', f.volumenHecho, `${f.volumenHecho === null ? 'sin dato de lo hecho' : `${enteros(f.volumenHecho)} ${u} hechos`} · ${indicado}${fuera}${cuantas(f)}`);
+      return punto(f, 'volumen', f.volumenHecho, `${f.volumenHecho === null ? 'sin dato de lo hecho' : `${enteros(f.volumenHecho)} ${u} hechos`}${indicado}${fuera}${cuantas(f)}`);
     }),
-    indicado: filas.flatMap((f) => indicadoDe(f, 'volumen', null, f.volumenIndicado, f.volumenIndicado === null ? COPY_PROGRAMADO_Y_HECHO.sinIndicar : `indicado: ${rangoEnTexto(f.volumenIndicado, u)}`)),
+    indicado: filas.flatMap((f) => indicadoDe(f, 'volumen', null, f.volumenIndicado, f.volumenIndicado === null ? COPY_PROGRAMADO_Y_HECHO.sinIndicar : rangoEnTexto(f.volumenIndicado, u))),
     escalones: [],
     unir: true,
     escala: { enteros: true, desdeCero: true },

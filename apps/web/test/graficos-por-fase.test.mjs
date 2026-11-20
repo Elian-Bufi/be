@@ -357,3 +357,14 @@ test('TEST-GPF-017 · «Armá tu gráfico» dice qué serie elegida no tiene obs
   const texto = 'Sin observaciones en el período: «Carga × rep. indicada». Lo indicado con un rango de repeticiones es un rango y no se dibuja como un número.';
   assert.deepEqual(terminosProhibidosEnUnGrafico(texto, ['ENTRENAMIENTO']), []);
 });
+
+test('TEST-GPF-018 · la tabla y «Lo último» no repiten «indicado: indicado:» (mutación: la lectura hueca con su propio «indicado:»)', () => {
+  const [series, carga] = PH.carrilesDeProgramadoYHecho(PH.programadoYHecho(OBS, 'kg', 'SESION'), 'kg');
+  for (const p of [...series.indicado, ...carga.indicado]) assert.doesNotMatch(p.lectura, /^indicado/, p.lectura);
+  assert.equal(carga.indicado[2].lectura, '1.800 kg·rep');
+  assert.doesNotMatch(carga.puntos[2].lectura, /indicado/);
+  // Sin lo indicado no hay marca hueca: la lectura de lo hecho lo dice.
+  const sinCarga = obs('e6', 'v2', '2026-11-03', [fila(1, { value: 5 }, { reps: 5, kg: 100 })], { cargaSugerida: null });
+  const [, c2] = PH.carrilesDeProgramadoYHecho(PH.programadoYHecho([sinCarga], 'kg', 'SESION'), 'kg');
+  assert.match(c2.puntos[0].lectura, /indicado: Sin indicar/);
+});
