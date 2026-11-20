@@ -37,22 +37,30 @@ export interface FuenteDeLaPropuesta {
   readonly descanso: (GramosDelDia & { readonly kcal: number }) | null;
 }
 
-/** La fuente, si la hay: primero el cálculo guardado con el objetivo; si no tiene macros, los gramos del objetivo. */
+/**
+ * La fuente, si la hay. Lo que rige es el objetivo que escribió el profesional (OBC-D11): si está en gramos por día, el día
+ * sale de sus gramos. El cálculo guardado suma el día de descanso solo si el objetivo quedó con los mismos números que el
+ * cálculo (si el profesional los cambió, el descanso del cálculo ya no corresponde a lo que escribió). Si el objetivo no
+ * está en gramos por día, el cálculo con macros, si lo hay.
+ */
 export function fuenteDeLaPropuesta(objetivo: VersionDeObjetivo | null, calculo: ReferenciaYCalculo | null): FuenteDeLaPropuesta | null {
-  const m = calculo?.result?.macros;
-  if (m) {
-    const g = (x: typeof m.day) => ({ protein: x.protein.grams, carbohydrate: x.carbohydrate.grams, fat: x.fat.grams, kcal: x.energyKcal });
-    return { origen: 'calculo', texto: 'Desde el cálculo guardado con el objetivo vigente', dia: g(m.day), descanso: m.restDay ? g(m.restDay) : null };
+  const m = calculo?.result?.macros ?? null;
+  const g = (x: NonNullable<typeof m>['day']) => ({ protein: x.protein.grams, carbohydrate: x.carbohydrate.grams, fat: x.fat.grams, kcal: x.energyKcal });
+  const d = objetivo?.macronutrientDistribution;
+  if (objetivo && d && d.protein.unit === 'g/day' && d.carbohydrate.unit === 'g/day' && d.fat.unit === 'g/day') {
+    const dia = { protein: d.protein.value, carbohydrate: d.carbohydrate.value, fat: d.fat.value, kcal: objetivo.estimatedEnergyRequirement.value };
+    const delCalculo = m ? g(m.day) : null;
+    const igual = !!delCalculo && delCalculo.protein === dia.protein && delCalculo.carbohydrate === dia.carbohydrate && delCalculo.fat === dia.fat && delCalculo.kcal === dia.kcal;
+    if (igual && m?.restDay) return { origen: 'calculo', texto: 'Desde el objetivo vigente y su cálculo (con el día de descanso)', dia, descanso: g(m.restDay) };
+    return {
+      origen: 'objetivo',
+      texto: m && !igual ? 'Desde los gramos del objetivo vigente (los escribiste distintos del cálculo: rigen los tuyos)' : 'Desde los gramos del objetivo vigente',
+      dia,
+      descanso: null,
+    };
   }
-  if (!objetivo) return null;
-  const d = objetivo.macronutrientDistribution;
-  if (d.protein.unit !== 'g/day' || d.carbohydrate.unit !== 'g/day' || d.fat.unit !== 'g/day') return null;
-  return {
-    origen: 'objetivo',
-    texto: 'Desde los gramos del objetivo vigente (no tiene un cálculo con macros guardado)',
-    dia: { protein: d.protein.value, carbohydrate: d.carbohydrate.value, fat: d.fat.value, kcal: objetivo.estimatedEnergyRequirement.value },
-    descanso: null,
-  };
+  if (m) return { origen: 'calculo', texto: 'Desde el cálculo guardado con el objetivo vigente (el objetivo no está en gramos por día)', dia: g(m.day), descanso: m.restDay ? g(m.restDay) : null };
+  return null;
 }
 
 /** Un día tipo del plan, con sus comidas ya guardadas (con identidad). */
@@ -168,7 +176,7 @@ export const COPY_PROPUESTA = {
   titulo: 'Proponer rangos desde el cálculo del objetivo',
   queEs: 'Una propuesta para los rangos de referencia del día y de cada comida, a partir del cálculo de macros del objetivo. Es una estimación: revisala y guardala. Después, cada receta u opción se ubica frente al rango de su comida.',
   sinFuente: 'El objetivo vigente no tiene un cálculo con macros ni gramos por día para proponer. Escribí una versión nueva del objetivo con el calculador.',
-  tolerancia: 'Margen alrededor de cada número (± puntos)',
+  tolerancia: 'Margen alrededor de cada número (± %)',
   toleranciaAyuda: (g: number, min: number, max: number) => `Por ejemplo, con 10, ${numero(g, 0)} g de proteínas dan un rango de ${numero(min, 0)} a ${numero(max, 0)} g.`,
   variante: 'Qué día usa',
   parejo: 'Repartir parejo',

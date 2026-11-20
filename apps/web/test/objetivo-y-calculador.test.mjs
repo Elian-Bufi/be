@@ -60,7 +60,7 @@ test('con una toma: los datos con su origen, lo que falta a mano, y la edad que 
   // La masa libre de grasa del % de grasa, con su base y su número.
   const delPorcentaje = K.datosUsados({ ...base, corridaId: 'c-g' }, [TOMA]);
   assert.deepEqual(delPorcentaje.leanMassKg, { value: 47.6, origin: 'FROM_BODY_FAT', method: 'Grasa corporal (Faulkner)', bodyFatValue: 30 });
-  assert.equal(K.masaEnPalabras(delPorcentaje.leanMassKg, 68), '47,6 kg · el peso menos la grasa de Grasa corporal (Faulkner): 30 % de los 68 kg');
+  assert.equal(K.masaEnPalabras(delPorcentaje.leanMassKg, 68), '47,6 kg · el peso menos la grasa: 30 % de los 68 kg (Grasa corporal (Faulkner))');
   // Lo que se manda: la toma, la corrida y lo agregado a mano.
   assert.deepEqual(K.referenciaDelCalculador({ ...base, edadAgregada: '45' }, HOY), { source: 'RECORDED', evaluationId: 'ev-1', leanMassCalculationId: 'c-mlg', additions: { heightCm: null, ageYears: 45 } });
 });
@@ -138,6 +138,21 @@ test('la propuesta: el día con su margen y cada comida con el reparto sugerido;
   const objetivo = { estimatedEnergyRequirement: { value: 2000 }, macronutrientDistribution: { protein: { value: 100, unit: 'g/day' }, carbohydrate: { value: 250, unit: 'g/day' }, fat: { value: 65, unit: 'g/day' } } };
   assert.equal(P.fuenteDeLaPropuesta(objetivo, null).origen, 'objetivo');
   assert.equal(P.fuenteDeLaPropuesta({ ...objetivo, macronutrientDistribution: { ...objetivo.macronutrientDistribution, fat: { value: 30, unit: 'energy_share' } } }, null), null);
+  // Rige lo que escribió el profesional: si cambió los gramos del cálculo, la propuesta usa los suyos y no ofrece el descanso.
+  const cambiado = P.fuenteDeLaPropuesta(objetivo, CALCULO);
+  assert.deepEqual([cambiado.origen, cambiado.dia.protein, cambiado.descanso], ['objetivo', 100, null]);
+  assert.match(cambiado.texto, /rigen los tuyos/);
+  // Con el objetivo igual al cálculo, el día y el descanso del cálculo.
+  const igual = { estimatedEnergyRequirement: { value: 1725 }, macronutrientDistribution: { protein: { value: 122, unit: 'g/day' }, carbohydrate: { value: 172, unit: 'g/day' }, fat: { value: 61, unit: 'g/day' } } };
+  assert.deepEqual([P.fuenteDeLaPropuesta(igual, CALCULO).origen, P.fuenteDeLaPropuesta(igual, CALCULO).descanso.carbohydrate], ['calculo', 123]);
+  // Las comidas suman exactamente el rango del día.
+  for (const m of ['protein', 'carbohydrate', 'fat']) {
+    assert.equal(p.comidas.reduce((s, c) => s + c[m].min, 0), p.dia[m].min);
+    assert.equal(p.comidas.reduce((s, c) => s + c[m].max, 0), p.dia[m].max);
+  }
+  // Lo que va al objetivo: solo el método; con la energía no positiva, nada.
+  assert.doesNotMatch(K.declaracionParaElObjetivo({ restingMethod: 'KATCH_MCARDLE', macros: { base: 'LEAN_MASS', proteinPerKg: 2, fatPerKg: 1 } }), /toma|g\/kg|factor/);
+  assert.equal(K.valoresParaElObjetivo({ energy: { day: -273, restDay: null }, macros: null }), null);
 });
 
 test('las pantallas: el calculador separado de los rangos de cada comida, sin palabras de juicio y con el «%» con su base', () => {

@@ -427,7 +427,7 @@ export function CalculadorDelObjetivo({
           disabled={!vivo || !paraElObjetivo}
           onClick={() => {
             if (!vivo || !paraElObjetivo) return;
-            onUsar({ ...paraElObjetivo, metodo: declaracionParaElObjetivo(valores, lista, vivo.parametros, vivo.resultado) });
+            onUsar({ ...paraElObjetivo, metodo: declaracionParaElObjetivo(vivo.parametros) });
             setUsado(true);
           }}
         >

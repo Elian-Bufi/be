@@ -10,7 +10,7 @@
  */
 import {
   calcularObjetivo,
-  declaracionDelCalculo,
+  declaracionCompartible,
   FICHA_DEL_METODO_DE_REPOSO,
   leerNumero,
   NOMBRE_DEL_DATO,
@@ -237,7 +237,7 @@ export function datoEnPalabras(d: { readonly value: number; readonly origin: str
 /** La masa libre de grasa usada, con su método o su cuenta. */
 export function masaEnPalabras(m: DatosUsados['leanMassKg'], pesoKg: number | null = null): string {
   if (!m) return 'Sin indicar';
-  if (m.origin === 'FROM_BODY_FAT') return `${numero(m.value, 1)} kg · el peso menos la grasa de ${m.method ?? 'la toma'}: ${numero(m.bodyFatValue ?? 0, 1)} % de los ${numero(pesoKg ?? 0, 2)} kg`;
+  if (m.origin === 'FROM_BODY_FAT') return `${numero(m.value, 1)} kg · el peso menos la grasa: ${numero(m.bodyFatValue ?? 0, 1)} % de los ${numero(pesoKg ?? 0, 2)} kg (${m.method ?? 'de la toma'})`;
   if (m.origin === 'CALCULATION') return `${numero(m.value, 1)} kg · ${m.method ?? 'de la toma'}`;
   return `${numero(m.value, 1)} kg · a mano${m.method ? ` (${m.method})` : ''}`;
 }
@@ -263,16 +263,21 @@ export const PROBLEMA_DEL_CALCULO: Readonly<Record<ResultadoDelCalculo['issues']
   LEAN_MASS_MISSING: 'Los macros por masa libre de grasa necesitan ese dato: elegí una corrida de la toma, escribilo a mano o usá el peso.',
   WEIGHT_MISSING: 'Los macros por kilo necesitan el peso.',
   CARBOHYDRATE_NEGATIVE: 'La proteína y la grasa ya pasan la energía del día: los carbohidratos quedan en 0 g. Revisá los g/kg o el ajuste.',
+  ENERGY_NOT_POSITIVE: 'Con este ajuste, la energía del día queda en cero o menos: el déficit es mayor que el gasto total. Revisá el ajuste o el factor.',
 };
 
-/** La declaración para el objetivo, con la fuente de los datos. */
-export function declaracionParaElObjetivo(v: ValoresDelCalculador, tomas: readonly TomaDeReferencia[], parametros: ParametrosDelCalculo, resultado: ResultadoDelCalculo): string {
-  return declaracionDelCalculo(parametros, fuenteEnPalabras(v, tomas), resultado);
+/**
+ * La declaración para el objetivo: solo el método. El objetivo lo ven también los profesionales con los que la persona
+ * comparte Nutrición; la toma, el factor, el ajuste y los g/kg quedan con el cálculo, detrás del permiso de Antropometría.
+ */
+export function declaracionParaElObjetivo(parametros: ParametrosDelCalculo): string {
+  return declaracionCompartible(parametros);
 }
 
 /** Lo que se lleva al objetivo: las kcal y los gramos del día (el de entrenamiento si hay dos). */
 export function valoresParaElObjetivo(resultado: ResultadoDelCalculo): { readonly kcal: string; readonly proteina: string; readonly carbohidratos: string; readonly grasas: string } | null {
-  if (!resultado.energy) return null;
+  // Sin energía positiva no hay nada que llevar: el objetivo pide kcal mayores que cero.
+  if (!resultado.energy || !(resultado.energy.day > 0)) return null;
   const m = resultado.macros?.day ?? null;
   const t = (x: number) => String(x);
   return { kcal: t(resultado.energy.day), proteina: m ? t(m.protein.grams) : '', carbohidratos: m ? t(m.carbohydrate.grams) : '', grasas: m ? t(m.fat.grams) : '' };
@@ -339,7 +344,7 @@ export const COPY_CALCULADOR = {
   diaDeDescanso: 'Día de descanso',
   elDia: 'El día',
   usar: 'Usar estos valores en el objetivo',
-  usados: 'Listo: las kcal, los gramos y la declaración del método quedaron en el objetivo. Revisalos antes de guardar.',
+  usados: 'Listo: las kcal, los gramos y el método quedaron en el objetivo. Revisalos antes de guardar. La toma, el factor, el ajuste y los g/kg quedan con el cálculo, solo para vos: el objetivo lo pueden ver otros profesionales con los que la persona comparte Nutrición.',
   seGuardaCon: (fuente: string) => `Al guardar, el objetivo queda vinculado a la referencia (${fuente}) y al cálculo.`,
   sinCalculo: 'Completá los datos de arriba para ver el cálculo.',
 } as const;
