@@ -50,7 +50,8 @@ export const COPY_NUTRICION = {
   sinPlanActivo: 'Todavía no hay un plan activo.',
   sinObjetivo: 'Todavía no hay un objetivo definido.',
   objetivoDeclarado: 'Objetivo declarado por el profesional',
-  noCalcula: 'BE no calcula requerimientos: el objetivo es una decisión profesional con su fundamento.',
+  // DL-186: el calculador del objetivo es una estimación de partida; lo que se guarda lo escribe el profesional.
+  noCalcula: 'El objetivo es una decisión profesional con su fundamento. El calculador da una estimación de partida: lo que se guarda es lo que escribís vos.',
   nuevaEvaluacion: 'Nueva evaluación',
   evaluacionRegistrada: 'Evaluación registrada',
   definirObjetivo: 'Definir objetivo',

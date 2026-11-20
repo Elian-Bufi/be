@@ -5,7 +5,9 @@
  * - La evaluación marca la fuente de cada dato: informado, observado o calculado (REG-06-109; DL-048). Un dato
  *   calculado declara su método: BE no calcula.
  * - El objetivo es «Nueva versión de objetivo», nunca «Editar objetivo actual» (B05:267-297): una decisión profesional
- *   con fundamento obligatorio. No hay botón de «Calcular» (B05:312-318; INV-06-133).
+ *   con fundamento obligatorio. DL-186 (pedido de Dirección del 2026-11-19) suma el calculador de macros a pedido: una
+ *   estimación con su método a la vista que el profesional revisa; lo que se guarda lo escribe él (B05:312-318 queda
+ *   enmendado por DL-186; INV-06-133 sigue: BE no decide el objetivo).
  * - Adenda de formularios: etiqueta persistente, unidad visible, errores junto al campo y «requerido» solo si lo es.
  */
 import {
@@ -35,6 +37,9 @@ import { ConceptosFrecuentes, lugarDelConcepto } from '../conceptos-frecuentes';
 import { RepartosHabituales } from './repartos-habituales';
 import { KcalDelObjetivo } from './suma-de-los-rangos';
 import { evaluacionMasReciente } from '../evaluacion-reciente';
+import { hoyEn } from '../seguimiento/estado';
+import { CalculadorDelObjetivo, useTomasDelCalculador, type LoQueVaAlObjetivo } from './calculador';
+import { COPY_CALCULADOR, fuenteEnPalabras, parametrosDelCalculador, pedidoConReferencia, type ValoresDelCalculador } from './calculador-del-objetivo';
 
 type Fuente = 'REPORTED' | 'OBSERVED' | 'CALCULATED';
 interface Dato {
@@ -457,14 +462,20 @@ export function FormularioDeObjetivo({
   const errores = avisos.errores;
   const [enviando, setEnviando] = useState(false);
   const [fallo, setFallo] = useState<string | null>(null);
+  // DL-186 (OBC-03 y OBC-04): el calculador, abierto a pedido. Con él, el objetivo se guarda con su referencia y su cálculo.
+  const [conCalculador, setConCalculador] = useState(false);
+  const [calculo, setCalculo] = useState<ValoresDelCalculador | null>(null);
 
   async function enviar(e: FormEvent) {
     e.preventDefault();
     const problemas = avisos.alEnviar();
     if (problemas.length > 0) return;
+    const hoy = hoyEn();
+    const pedido = conCalculador && calculo ? pedidoConReferencia(aObjetivo(valores), calculo, hoy, parametrosDelCalculador(calculo, hoy) !== null) : null;
+    if (conCalculador && calculo && !pedido) return setFallo('Revisá los datos de referencia del calculador (están marcados) o quitá el calculador.');
     setEnviando(true);
     setFallo(null);
-    const r = await api.crearObjetivo(token, asesoradoId, aObjetivo(valores), intento.actual());
+    const r = pedido ? await api.crearObjetivoConReferencia(token, asesoradoId, pedido, intento.actual()) : await api.crearObjetivo(token, asesoradoId, aObjetivo(valores), intento.actual());
     intento.registrar(r);
     setEnviando(false);
     // Una escritura denegada retira el contenido de la pestaña entera (B10-06:1145-1148).
@@ -485,6 +496,13 @@ export function FormularioDeObjetivo({
       <h3>{COPY_NUTRICION.nuevaVersionDeObjetivo}</h3>
       <ResumenDeErrores titulo="Revisá estos datos:" errores={errores} intento={avisos.envios} />
       <AnuncioDeLosAvisos texto={avisos.anuncio(COPY_AVISOS_VIVOS.listoParaGuardar)} />
+      <SeccionDelCalculador
+        abierta={conCalculador}
+        onAbrir={setConCalculador}
+        valores={calculo}
+        onCambiar={setCalculo}
+        onUsar={(x: LoQueVaAlObjetivo) => setValores((v) => ({ ...v, kcal: x.kcal, proteina: x.proteina || v.proteina, carbohidratos: x.carbohidratos || v.carbohidratos, grasas: x.grasas || v.grasas, metodo: x.metodo }))}
+      />
       <CamposDeObjetivo valores={valores} onCambiar={setValores} evaluaciones={evaluaciones} prefijo="objetivo" errores={erroresPorCampo(errores)} />
       {fallo ? (
         <Aviso tipo="error" enfocar>
@@ -500,5 +518,56 @@ export function FormularioDeObjetivo({
         </button>
       </div>
     </form>
+  );
+}
+
+/**
+ * DL-186 (OBC-03): el calculador dentro de «Nueva versión de objetivo», abierto a pedido. Cerrado, el objetivo se guarda
+ * como siempre (API-NUT-04); abierto, con su referencia y su cálculo (API-OBC-02).
+ */
+function SeccionDelCalculador({
+  abierta,
+  onAbrir,
+  valores,
+  onCambiar,
+  onUsar,
+}: {
+  abierta: boolean;
+  onAbrir: (abierta: boolean) => void;
+  valores: ValoresDelCalculador | null;
+  onCambiar: (v: ValoresDelCalculador | null) => void;
+  onUsar: (x: LoQueVaAlObjetivo) => void;
+}) {
+  return (
+    <section className="calculador-del-objetivo" aria-labelledby="titulo-del-calculador" data-seccion-del-calculador>
+      <div className="calculador-del-objetivo__cabecera">
+        <h4 id="titulo-del-calculador">{COPY_CALCULADOR.titulo}</h4>
+        <button
+          type="button"
+          className="boton boton--secundario boton--compacto"
+          aria-expanded={abierta}
+          data-abrir-el-calculador
+          onClick={() => {
+            if (abierta) onCambiar(null);
+            onAbrir(!abierta);
+          }}
+        >
+          {abierta ? 'Quitar el calculador' : 'Abrir el calculador'}
+        </button>
+      </div>
+      <p className="nota">{COPY_CALCULADOR.resumen}</p>
+      {abierta ? <CalculadorConSusTomas valores={valores} onCambiar={onCambiar} onUsar={onUsar} /> : null}
+    </section>
+  );
+}
+
+function CalculadorConSusTomas({ valores, onCambiar, onUsar }: { valores: ValoresDelCalculador | null; onCambiar: (v: ValoresDelCalculador | null) => void; onUsar: (x: LoQueVaAlObjetivo) => void }) {
+  const { tomas, releer } = useTomasDelCalculador();
+  const lista = tomas.estado === 'listo' && tomas.habilitada ? tomas.tomas : [];
+  return (
+    <>
+      <CalculadorDelObjetivo tomas={tomas} valores={valores} onCambiar={onCambiar} onUsar={onUsar} onReleer={releer} />
+      {valores ? <p className="nota" data-se-guarda-con>{COPY_CALCULADOR.seGuardaCon(fuenteEnPalabras(valores, lista))}</p> : null}
+    </>
   );
 }

@@ -139,8 +139,10 @@ test('los topes de lo que se escribe', () => {
 test('la declaración del método, para que quede con la versión del objetivo', () => {
   assert.equal(
     declaracionDelCalculo(PARAMETROS, 'con la toma del 10/11'),
-    'Estimación: Mifflin-St Jeor (1990) con la toma del 10/11 · factor de actividad 1,55 (descanso 1,4) · −300 kcal · proteína 1,8 g/kg y grasa 0,9 g/kg del peso, carbohidratos por diferencia.',
+    'Estimación: Mifflin-St Jeor (1990) con la toma del 10/11 · factor de actividad 1,55 (descanso 1,4) · ajuste −300 kcal · proteína 1,8 g/kg y grasa 0,9 g/kg del peso, carbohidratos por diferencia.',
   );
+  const enPorcentaje = { ...PARAMETROS, adjustment: { kind: 'PERCENT', value: -15 } } as const;
+  assert.match(declaracionDelCalculo(enPorcentaje, 'a mano', calcularObjetivo(usados(MUJER), enPorcentaje)), /ajuste −15 % de las 2.025 kcal del gasto total/);
 });
 
 test('la propuesta de rangos: el día con su tolerancia y cada comida con el reparto que elige el profesional', () => {

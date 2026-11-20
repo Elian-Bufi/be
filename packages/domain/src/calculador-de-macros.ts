@@ -251,9 +251,14 @@ export function calcularObjetivo(datos: DatosUsados, p: ParametrosDelCalculo): R
  * La declaración del método para el objetivo, en una línea, para que quede con la versión: «Mifflin-St Jeor (1990) con la
  * toma del 10/11 · factor 1,55 · −300 kcal · proteína 1,8 g/kg y grasa 0,9 g/kg del peso».
  */
-export function declaracionDelCalculo(p: ParametrosDelCalculo, fuente: string): string {
+export function declaracionDelCalculo(p: ParametrosDelCalculo, fuente: string, resultado: ResultadoDelCalculo | null = null): string {
   const partes = [`${FICHA_DEL_METODO_DE_REPOSO[p.restingMethod].nombre} ${fuente}`, `factor de actividad ${numero(p.activity.factor, 2)}${p.activity.restDayFactor === null ? '' : ` (descanso ${numero(p.activity.restDayFactor, 2)})`}`];
-  if (p.adjustment) partes.push(p.adjustment.kind === 'KCAL' ? `${p.adjustment.value > 0 ? '+' : ''}${numero(p.adjustment.value, 0)} kcal` : `${p.adjustment.value > 0 ? '+' : ''}${numero(p.adjustment.value, 1)} %`);
+  if (p.adjustment?.kind === 'KCAL') partes.push(`ajuste ${p.adjustment.value > 0 ? '+' : ''}${numero(p.adjustment.value, 0)} kcal`);
+  // El «%» con su base y su número: de las kcal del gasto total del día.
+  if (p.adjustment?.kind === 'PERCENT') {
+    const base = resultado?.totals?.day;
+    partes.push(`ajuste ${p.adjustment.value > 0 ? '+' : ''}${numero(p.adjustment.value, 1)} %${base ? ` de las ${numero(base, 0)} kcal del gasto total` : ' del gasto total'}`);
+  }
   if (p.macros) partes.push(`proteína ${numero(p.macros.proteinPerKg, 2)} g/kg y grasa ${numero(p.macros.fatPerKg, 2)} g/kg ${p.macros.base === 'LEAN_MASS' ? 'de la masa libre de grasa' : 'del peso'}, carbohidratos por diferencia`);
   return `Estimación: ${partes.join(' · ')}.`.slice(0, 1000);
 }
