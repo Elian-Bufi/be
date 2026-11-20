@@ -23,7 +23,8 @@
     "deepmerge-ts": "8.0.2",
     "next": {
       "postcss": "8.5.28"
-    }
+    },
+    "effect": "3.22.4"
   },
   "scripts": {
     "prisma:generate": "prisma generate",
