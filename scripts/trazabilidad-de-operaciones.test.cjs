@@ -155,6 +155,14 @@ FAMILIAS_DE_BE.GRF = 'DL-174';
  */
 FAMILIAS_DE_BE.EVF = 'DL-185';
 
+/**
+ * OBC (DL-186, WP-OBJETIVO-Y-CALCULADOR; pedido de Dirección del 2026-11-19): el objetivo nutricional con una toma de
+ * Antropometría de referencia y el calculador de macros del profesional. El 09 no la tiene: no es NUT (API-NUT-04 sigue
+ * igual, sin referencia ni cálculo) ni ANT (que lee las tomas para el área). Se declara aparte para que se integre sin pisar
+ * a otra familia que se sume en paralelo.
+ */
+FAMILIAS_DE_BE.OBC = 'DL-186';
+
 test('el inventario del 09 tiene 122 operaciones y de cada una se lee su ruta', () => {
   assert.equal(inventario.size, 122);
   const sinRuta = [...inventario].filter((id) => !del09.has(id));

@@ -29,6 +29,7 @@
  * - WP-PULIDO-GRANDES (DL-173): API-TRN-25 y sus variantes LISTA y PROPIA (PG-15) y la familia NPP (PG-16).
  * - WP-PLANTILLAS-DE-ENTRENAMIENTO (DL-182): API-TPL-06 a 14, la preparación de una plantilla sin persona.
  * - WP-EVALUACION-Y-FORMULARIOS (DL-185): API-EVF-01 a 04, los formularios vinculados a la evaluación inicial.
+ * - WP-OBJETIVO-Y-CALCULADOR (DL-186): la familia OBC, el objetivo con una toma de referencia y el calculador de macros.
  * Un observador registra cada respuesta real (método, ruta, status, código). Después se exige que todo par
  * (status, código) esté declarado para esa operación en `OPERACIONES`, la misma fuente que genera
  * `docs/api/openapi.json` (09v7 T21).
@@ -3072,6 +3073,43 @@ it('TEST-CT (DL-180): ALI-01 a 09 — los alimentos cargados a mano y su revisi�
   await adm(app, a.token).post('/admin/foods/canon').set('Idempotency-Key', claveDeIdempotencia()).send({ ...canon, source: undefined }).expect(400); // INVALID_REQUEST: sin fuente
   await adm(app, a.token).post('/admin/foods/canon').set('Idempotency-Key', claveDeIdempotencia()).send({ ...canon, fromCatalogItemId: randomUUID() }).expect(422); // VALIDATION_FAILED
   await adm(app, pro.token).post('/admin/foods/canon').set('Idempotency-Key', claveDeIdempotencia()).send(canon).expect(403); // ACTION_FORBIDDEN
+});
+
+it('TEST-CT (WP-OBJETIVO-Y-CALCULADOR, DL-186): OBC-01 a 03 — el objetivo con una toma de referencia y el calculador, con éxitos y errores declarados', async () => {
+  const servidor = app.getHttpServer();
+  const ajeno = randomUUID();
+  const hoy = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Argentina/Buenos_Aires', year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date());
+  const n = await circuitoListoParaPlanificar(app, 'ct-objetivo-y-calculador');
+  const pn = conSesion(app, n.pro.token);
+  // OBC-01 (este profesional no tiene Antropometría: ninguna toma).
+  const tomas = `/api/v1/advisees/${n.ase.id}/nutrition/objective-reference/measurements`;
+  await pn.get(tomas).expect(200);
+  await pn.get(`${tomas}?x=1`).expect(400); // INVALID_REQUEST
+  await pn.get(`/api/v1/advisees/${ajeno}/nutrition/objective-reference/measurements`).expect(404);
+  await request(servidor).get(tomas).expect(401);
+  // OBC-02
+  const conReferencia = `/api/v1/advisees/${n.ase.id}/nutrition/objectives/with-reference`;
+  const cuerpo = {
+    objective: cuerpoDeObjetivo(n.evaluationId, 1800),
+    reference: { source: 'MANUAL', measuredOn: hoy, weightKg: 70, heightCm: 175, ageYears: 30, leanMassKg: null, leanMassNote: null },
+    parameters: { sex: 'MALE', restingMethod: 'MIFFLIN_ST_JEOR', activity: { factor: 1.4, restDayFactor: null }, adjustment: null, macros: { base: 'BODY_WEIGHT', proteinPerKg: 1.6, fatPerKg: 0.8 } },
+  };
+  const clave = claveDeIdempotencia();
+  const creado = await pn.post(conReferencia, clave).send(cuerpo).expect(201);
+  await pn.post(conReferencia, clave).send({ ...cuerpo, parameters: null }).expect(409); // IDEMPOTENCY_KEY_REUSED
+  await pn.post(conReferencia).send({ ...cuerpo, extra: 1 }).expect(400); // UNKNOWN_FIELD
+  await pn.post(conReferencia).send({ ...cuerpo, reference: { source: 'RECORDED', evaluationId: ajeno, leanMassCalculationId: null, additions: { heightCm: null, ageYears: null } } }).expect(422); // VALIDATION_FAILED
+  await pn.post(conReferencia).send({ ...cuerpo, objective: cuerpoDeObjetivo(ajeno) }).expect(422); // EVALUATION_NOT_COMPATIBLE
+  await pn.post(`/api/v1/advisees/${ajeno}/nutrition/objectives/with-reference`).send(cuerpo).expect(404);
+  await request(servidor).post(conReferencia).set('Idempotency-Key', claveDeIdempotencia()).send(cuerpo).expect(401);
+  // OBC-03
+  const referencia = (versionId: string) => `/api/v1/nutrition/objective-versions/${versionId}/reference`;
+  await pn.get(referencia(creado.body.data.objective.versionId as string)).expect(200);
+  await pn.get(referencia(n.objectiveVersionId)).expect(200);
+  await pn.get(`${referencia(n.objectiveVersionId)}?x=1`).expect(400);
+  await pn.get(referencia(ajeno)).expect(404);
+  await conSesion(app, n.ase.token).get(referencia(n.objectiveVersionId)).expect(404);
+  await request(servidor).get(referencia(n.objectiveVersionId)).expect(401);
 });
 
 it('TEST-CT: todo (status, código) observado está declarado para su operación; los éxitos coinciden con el contrato', () => {

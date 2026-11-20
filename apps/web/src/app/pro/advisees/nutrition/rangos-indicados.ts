@@ -209,7 +209,7 @@ export function rangoDelFormulario(f: FormularioDelRango): RangoEntrada | null {
 }
 
 /** Un rango guardado, como lo pide la API para volver a escribirlo igual (con el peso retenido, en gramos). */
-function entradaDesde(r: Rango): RangoEntrada {
+export function entradaDesde(r: Rango): RangoEntrada {
   const salida: { -readonly [M in MacroDelRango]?: RangoEntrada[M] } = {};
   for (const m of MACROS_DEL_RANGO) {
     const v = r[m];

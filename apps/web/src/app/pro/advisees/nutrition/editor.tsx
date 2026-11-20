@@ -126,6 +126,7 @@ import { ContextoDeLosAlimentos, datosDelAlimento, type DatosDelAlimento } from 
 import { COPY_RANGOS_INDICADOS } from './rangos-indicados';
 import { CuadroDelRangoIndicado, rangoIndicadoDe, RangosIndicados, sePuedeIndicar, useRangosIndicados, type DiaParaLosRangos } from './rangos-indicados-del-plan';
 import { KcalDelObjetivo, SumaDeLosRangosIndicados } from './suma-de-los-rangos';
+import { PropuestaDeRangos } from './propuesta-de-rangos-del-plan';
 import { pasoQueSigueEnNutricion } from './asistente-de-nutricion';
 import { pasoPedido } from '../asistente/paso-que-sigue';
 import { opcionAlGuardar, opcionNueva, subtituloDelCuadro, tituloDelCuadro } from './opcion-en-un-cuadro';
@@ -215,6 +216,11 @@ const esDelEditor = (codigo: string): boolean => codigo === PROBLEMA_DEL_EDITOR.
 type NombreQueSeCambia = { readonly de: 'dia'; readonly i: number } | { readonly de: 'comida'; readonly i: number; readonly j: number } | { readonly de: 'opcion'; readonly i: number; readonly j: number; readonly k: number } | null;
 
 /** API-PLN-02 y 03: un día tipo para la lista de rangos indicados, con sus identidades (las tiene si ya se guardó). */
+/** DL-186 (OBC-07): los días tipo y las comidas ya guardados (con identidad), para la propuesta de rangos. */
+function diasParaLaPropuesta(e: Estructura): { dayTypeId: string; nombre: string; comidas: { mealId: string; nombre: string }[] }[] {
+  return e.flatMap((d, i) => (d.dayTypeId ? [{ dayTypeId: d.dayTypeId, nombre: nombreDelDiaTipo(d, i), comidas: d.meals.flatMap((m, j) => (m.mealId ? [{ mealId: m.mealId, nombre: nombreDeLaComida(m, j) }] : [])) }] : []));
+}
+
 function paraLosRangos(d: Estructura[number], i: number): DiaParaLosRangos {
   return { dayTypeId: d.dayTypeId, nombre: nombreDelDiaTipo(d, i), comidas: d.meals.map((m, j) => ({ mealId: m.mealId, nombre: nombreDeLaComida(m, j) })) };
 }
@@ -1213,7 +1219,12 @@ export function EditorDeBorrador({
             return onObjetivoNuevo();
           }}
           onRevisarYActivar={abrirAntesDeActivar}
-          rangosIndicados={<RangosIndicados rangos={rangosIndicados} dias={estructura.map(paraLosRangos)} titulo={false} />}
+          rangosIndicados={
+            <>
+              <RangosIndicados rangos={rangosIndicados} dias={estructura.map(paraLosRangos)} titulo={false} />
+              <PropuestaDeRangos token={token} planId={planId} objetivo={objetivo} dias={diasParaLaPropuesta(estructura)} rangos={rangosIndicados} />
+            </>
+          }
           rangoDe={rangoParaIndicar}
           onAgregarReceta={(di, j) => setEligiendoReceta({ i: di, j })}
           onCopiarDesdeOtra={(di, j) => setOtraComida({ que: 'copiar', i: di, j })}
@@ -1502,6 +1513,8 @@ export function EditorDeBorrador({
               <p className="nota">{COPY_RANGOS.comoSeLee}</p>
               <p className="nota">{COPY_RANGOS.estimacion}</p>
               <RangosIndicados rangos={rangosIndicados} dias={[paraLosRangos(dia!, i)]} />
+              {/* DL-186 (OBC-07): la propuesta de rangos desde el cálculo del objetivo, para todos los días tipo guardados. */}
+              <PropuestaDeRangos token={token} planId={planId} objetivo={objetivo} dias={diasParaLaPropuesta(estructura)} rangos={rangosIndicados} />
             </>
           ) : (
             <p className="nota">{COPY_RANGOS.sinDiaTipo}</p>

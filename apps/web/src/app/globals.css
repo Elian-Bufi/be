@@ -20649,3 +20649,114 @@ html:has(.estacion:not([data-en-el-asistente])) {
 .parecidos__grupo > .decidir-sobre-alimento {
   margin-top: 0.5rem;
 }
+
+/* ─── WP-OBJETIVO-Y-CALCULADOR (DL-186): el calculador del objetivo, su referencia y la propuesta de rangos ─── */
+.calculador-del-objetivo {
+  border: 1px solid var(--borde);
+  border-radius: 12px;
+  padding: 0.85rem 1.1rem 0.5rem;
+  margin: 0 0 1rem;
+  background: var(--fondo-suave);
+}
+.calculador-del-objetivo__cabecera {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+}
+.calculador-del-objetivo__cabecera h4 {
+  margin: 0;
+}
+.calculador .grupo {
+  min-width: 0;
+}
+.grupo--anidado {
+  background: transparent;
+  padding: 0.5rem 0.85rem 0.6rem;
+  margin: 0.5rem 0;
+}
+.opciones-en-linea {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 1.25rem;
+  margin: 0.25rem 0 0.5rem;
+}
+.datos--en-fila {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 2rem;
+}
+.datos--en-fila dt {
+  min-width: 0;
+}
+.calculador__metodo {
+  border-left: 3px solid var(--borde);
+  padding: 0.25rem 0 0.25rem 0.85rem;
+  margin: 0.5rem 0;
+}
+.calculador__metodo [data-formula-aplicada] {
+  font-variant-numeric: tabular-nums;
+}
+.calculador__cita {
+  font-size: 0.85rem;
+  overflow-wrap: anywhere;
+}
+.calculador__cita span {
+  font-weight: 600;
+}
+.calculador__datos summary,
+.referencia-del-objetivo__calculo summary {
+  cursor: pointer;
+}
+.calculador__tabla {
+  margin: 0.5rem 0;
+  font-variant-numeric: tabular-nums;
+}
+.calculador__tabla caption {
+  text-align: left;
+  font-weight: 600;
+  padding-bottom: 0.25rem;
+}
+.campo--corto input {
+  max-width: 6rem;
+}
+.referencia-del-objetivo {
+  border-top: 1px solid var(--borde);
+  margin-top: 0.75rem;
+  padding-top: 0.5rem;
+}
+.referencia-del-objetivo h3 {
+  font-size: 1rem;
+  margin: 0 0 0.25rem;
+}
+.propuesta-de-rangos__dia {
+  margin: 0.75rem 0;
+}
+.propuesta-de-rangos__dia h4 {
+  margin: 0.25rem 0;
+}
+.propuesta-de-rangos__tabla {
+  font-variant-numeric: tabular-nums;
+}
+.propuesta-de-rangos__tabla td {
+  vertical-align: top;
+}
+.propuesta-de-rangos__parte {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  white-space: nowrap;
+}
+.propuesta-de-rangos__parte input {
+  width: 3.5rem;
+}
+.propuesta-de-rangos__rango {
+  display: block;
+  margin-top: 0.2rem;
+  font-weight: 600;
+}
+[data-proponer-rangos] {
+  margin-top: 0.5rem;
+}
