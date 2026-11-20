@@ -185,7 +185,7 @@ export class ObjetivoYCalculadorService {
           weightKg: aMano(r.weightKg),
           heightCm: aMano(r.heightCm),
           ageYears: aMano(r.ageYears),
-          leanMassKg: r.leanMassKg === null ? null : { value: r.leanMassKg, origin: 'MANUAL', method: r.leanMassNote, fatPercent: null },
+          leanMassKg: r.leanMassKg === null ? null : { value: r.leanMassKg, origin: 'MANUAL', method: r.leanMassNote, bodyFatValue: null },
         },
         evaluacionId: null,
         habilitada: true,
@@ -206,7 +206,7 @@ export class ObjetivoYCalculadorService {
         heightCm: oAMano(toma.heightCm, r.additions.heightCm),
         ageYears: oAMano(toma.ageYears, r.additions.ageYears),
         leanMassKg: corrida
-          ? { value: corrida.leanMassKg as number, origin: corrida.unit === 'kg' ? 'CALCULATION' : 'FROM_FAT_PERCENT', method: corrida.label, fatPercent: corrida.unit === '%' ? corrida.value : null }
+          ? { value: corrida.leanMassKg as number, origin: corrida.unit === 'kg' ? 'CALCULATION' : 'FROM_BODY_FAT', method: corrida.label, bodyFatValue: corrida.unit === '%' ? corrida.value : null }
           : null,
       },
       evaluacionId: toma.evaluationId,

@@ -108,15 +108,15 @@ export type DatoUsado = z.infer<typeof DatoUsadoSchema>;
 
 /**
  * La masa libre de grasa usada: de una corrida de la toma en kg (`CALCULATION`), derivada del % de grasa de una corrida
- * con el peso de la toma (`FROM_FAT_PERCENT`: peso × (1 − %G/100)), o escrita a mano.
+ * con el peso de la toma (`FROM_BODY_FAT`: peso × (1 − %G/100)), o escrita a mano.
  */
 export const MasaLibreUsadaSchema = z.strictObject({
   value: z.number().positive(),
-  origin: z.enum(['CALCULATION', 'FROM_FAT_PERCENT', 'MANUAL']),
+  origin: z.enum(['CALCULATION', 'FROM_BODY_FAT', 'MANUAL']),
   /** El método de la toma («Masa libre de grasa (Durnin y Womersley)») o la nota escrita a mano. */
   method: z.string().nullable(),
-  /** Con `FROM_FAT_PERCENT`, el % de grasa del que sale. */
-  fatPercent: z.number().nullable(),
+  /** Con `FROM_BODY_FAT`, el % de grasa del que sale. */
+  bodyFatValue: z.number().nullable(),
 });
 export type MasaLibreUsada = z.infer<typeof MasaLibreUsadaSchema>;
 

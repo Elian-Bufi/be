@@ -168319,7 +168319,7 @@
                                               "type": "string",
                                               "enum": [
                                                 "CALCULATION",
-                                                "FROM_FAT_PERCENT",
+                                                "FROM_BODY_FAT",
                                                 "MANUAL"
                                               ]
                                             },
@@ -168329,7 +168329,7 @@
                                                 "null"
                                               ]
                                             },
-                                            "fatPercent": {
+                                            "bodyFatValue": {
                                               "type": [
                                                 "number",
                                                 "null"
@@ -168340,7 +168340,7 @@
                                             "value",
                                             "origin",
                                             "method",
-                                            "fatPercent"
+                                            "bodyFatValue"
                                           ],
                                           "additionalProperties": false
                                         },
@@ -169312,7 +169312,7 @@
                                                   "type": "string",
                                                   "enum": [
                                                     "CALCULATION",
-                                                    "FROM_FAT_PERCENT",
+                                                    "FROM_BODY_FAT",
                                                     "MANUAL"
                                                   ]
                                                 },
@@ -169322,7 +169322,7 @@
                                                     "null"
                                                   ]
                                                 },
-                                                "fatPercent": {
+                                                "bodyFatValue": {
                                                   "type": [
                                                     "number",
                                                     "null"
@@ -169333,7 +169333,7 @@
                                                 "value",
                                                 "origin",
                                                 "method",
-                                                "fatPercent"
+                                                "bodyFatValue"
                                               ],
                                               "additionalProperties": false
                                             },

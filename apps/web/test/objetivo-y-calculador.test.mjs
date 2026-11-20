@@ -59,7 +59,7 @@ test('con una toma: los datos con su origen, lo que falta a mano, y la edad que 
   assert.deepEqual(K.valoresParaElObjetivo(conEdad.resultado), { kcal: '2025', proteina: '122', carbohidratos: '247', grasas: '61' });
   // La masa libre de grasa del % de grasa, con su base y su número.
   const delPorcentaje = K.datosUsados({ ...base, corridaId: 'c-g' }, [TOMA]);
-  assert.deepEqual(delPorcentaje.leanMassKg, { value: 47.6, origin: 'FROM_FAT_PERCENT', method: 'Grasa corporal (Faulkner)', fatPercent: 30 });
+  assert.deepEqual(delPorcentaje.leanMassKg, { value: 47.6, origin: 'FROM_BODY_FAT', method: 'Grasa corporal (Faulkner)', bodyFatValue: 30 });
   assert.equal(K.masaEnPalabras(delPorcentaje.leanMassKg, 68), '47,6 kg · el peso menos la grasa de Grasa corporal (Faulkner): 30 % de los 68 kg');
   // Lo que se manda: la toma, la corrida y lo agregado a mano.
   assert.deepEqual(K.referenciaDelCalculador({ ...base, edadAgregada: '45' }, HOY), { source: 'RECORDED', evaluationId: 'ev-1', leanMassCalculationId: 'c-mlg', additions: { heightCm: null, ageYears: 45 } });

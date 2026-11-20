@@ -107,7 +107,8 @@ describe('API-OBC-01 a 03 · el objetivo con una toma de referencia y el calcula
     expect(lista.measurements.map((t) => t.evaluationId)).toEqual([toma.evaluacionId, vieja.evaluacionId]);
     expect(lista.measurements[0]).toMatchObject({ measuredOn: toma.fecha, weightKg: 68, heightCm: 162, ageYears: 45 });
     // La masa libre de grasa: la de la corrida en kg, y la que sale del % de grasa con el peso de la toma (68 × 0,7).
-    expect(lista.measurements[0]!.composition.map((x) => [x.calculationId, x.unit, x.value, x.leanMassKg])).toEqual([
+    // Las dos corridas, en cualquier orden (se registraron en el mismo milisegundo, quizás).
+    expect(lista.measurements[0]!.composition.map((x) => [x.calculationId, x.unit, x.value, x.leanMassKg]).sort((x, y) => String(y[1]).localeCompare(String(x[1])))).toEqual([
       [toma.corridas.mlg, 'kg', 46.5, 46.5],
       [toma.corridas.grasa, '%', 30, 47.6],
     ]);
@@ -124,7 +125,7 @@ describe('API-OBC-01 a 03 · el objetivo con una toma de referencia y el calcula
       weightKg: { value: 68, origin: 'MEASUREMENT' },
       heightCm: { value: 162, origin: 'MEASUREMENT' },
       ageYears: { value: 45, origin: 'MEASUREMENT' },
-      leanMassKg: { value: 46.5, origin: 'CALCULATION', method: 'Masa libre de grasa (Durnin y Womersley)', fatPercent: null },
+      leanMassKg: { value: 46.5, origin: 'CALCULATION', method: 'Masa libre de grasa (Durnin y Womersley)', bodyFatValue: null },
     });
     // El servidor rehace el cálculo con la misma función del dominio: 1.306,5 kcal en reposo, × 1,55 − 300 = 1.725.
     expect(r.calculation.result).toEqual(calcularObjetivo(r.calculation.data!, PARAMETROS));

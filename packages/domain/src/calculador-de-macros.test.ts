@@ -75,7 +75,7 @@ const usados = (d: typeof MUJER): DatosUsados => ({
   weightKg: { value: d.weightKg, origin: 'MEASUREMENT' },
   heightCm: { value: d.heightCm, origin: 'MEASUREMENT' },
   ageYears: { value: d.ageYears, origin: 'MANUAL' },
-  leanMassKg: { value: d.leanMassKg, origin: 'CALCULATION', method: 'Masa libre de grasa (Durnin y Womersley)', fatPercent: null },
+  leanMassKg: { value: d.leanMassKg, origin: 'CALCULATION', method: 'Masa libre de grasa (Durnin y Womersley)', bodyFatValue: null },
 });
 const PARAMETROS: ParametrosDelCalculo = {
   sex: 'FEMALE',

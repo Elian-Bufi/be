@@ -165,7 +165,7 @@ function CuadroDeLaPropuesta({
             <div className="campo campo--corto">
               <label htmlFor={`${id}-tolerancia`}>{C.tolerancia}</label>
               <p id={`${id}-tolerancia-ayuda`} className="campo__ayuda">
-                {C.toleranciaAyuda}
+                {C.toleranciaAyuda(fuente.dia.protein, Math.max(0, Math.floor(fuente.dia.protein * 0.9 + 0.5)), Math.floor(fuente.dia.protein * 1.1 + 0.5))}
               </p>
               <input ref={primero} id={`${id}-tolerancia`} inputMode="decimal" size={4} aria-describedby={`${id}-tolerancia-ayuda`} aria-invalid={toleranciaValida ? undefined : true} value={tolerancia} onChange={(e) => (setTolerancia(e.target.value), setCambiado(true))} />
             </div>

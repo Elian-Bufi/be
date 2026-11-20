@@ -99,7 +99,7 @@ export function datosUsados(v: ValoresDelCalculador, tomas: readonly TomaDeRefer
       weightKg: aMano(enRango(num(v.peso), T.pesoKg)),
       heightCm: aMano(enRango(num(v.talla), T.tallaCm)),
       ageYears: aMano(enRango(num(v.edad), T.edadAnios)),
-      leanMassKg: masa !== null && masa > 0 && masa <= T.pesoKg.maximo ? { value: masa, origin: 'MANUAL', method: v.notaDeLaMasa.trim() || null, fatPercent: null } : null,
+      leanMassKg: masa !== null && masa > 0 && masa <= T.pesoKg.maximo ? { value: masa, origin: 'MANUAL', method: v.notaDeLaMasa.trim() || null, bodyFatValue: null } : null,
     };
   }
   const toma = tomas.find((t) => t.evaluationId === v.evaluationId);
@@ -115,7 +115,7 @@ export function datosUsados(v: ValoresDelCalculador, tomas: readonly TomaDeRefer
     weightKg: deLaToma(toma.weightKg),
     heightCm: oAMano(toma.heightCm, v.tallaAgregada, T.tallaCm),
     ageYears: oAMano(toma.ageYears, v.edadAgregada, T.edadAnios),
-    leanMassKg: corrida ? { value: corrida.leanMassKg as number, origin: corrida.unit === 'kg' ? 'CALCULATION' : 'FROM_FAT_PERCENT', method: corrida.label, fatPercent: corrida.unit === '%' ? corrida.value : null } : null,
+    leanMassKg: corrida ? { value: corrida.leanMassKg as number, origin: corrida.unit === 'kg' ? 'CALCULATION' : 'FROM_BODY_FAT', method: corrida.label, bodyFatValue: corrida.unit === '%' ? corrida.value : null } : null,
   };
 }
 
@@ -237,7 +237,7 @@ export function datoEnPalabras(d: { readonly value: number; readonly origin: str
 /** La masa libre de grasa usada, con su método o su cuenta. */
 export function masaEnPalabras(m: DatosUsados['leanMassKg'], pesoKg: number | null = null): string {
   if (!m) return 'Sin indicar';
-  if (m.origin === 'FROM_FAT_PERCENT') return `${numero(m.value, 1)} kg · el peso menos la grasa de ${m.method ?? 'la toma'}: ${numero(m.fatPercent ?? 0, 1)} % de los ${numero(pesoKg ?? 0, 2)} kg`;
+  if (m.origin === 'FROM_BODY_FAT') return `${numero(m.value, 1)} kg · el peso menos la grasa de ${m.method ?? 'la toma'}: ${numero(m.bodyFatValue ?? 0, 1)} % de los ${numero(pesoKg ?? 0, 2)} kg`;
   if (m.origin === 'CALCULATION') return `${numero(m.value, 1)} kg · ${m.method ?? 'de la toma'}`;
   return `${numero(m.value, 1)} kg · a mano${m.method ? ` (${m.method})` : ''}`;
 }
