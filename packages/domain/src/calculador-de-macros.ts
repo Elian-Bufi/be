@@ -234,6 +234,8 @@ export function calcularObjetivo(datos: DatosUsados, p: ParametrosDelCalculo): R
   const totals = { day: entero(reposo * p.activity.factor), restDay: p.activity.restDayFactor === null ? null : entero(reposo * p.activity.restDayFactor) };
   const energy = { day: conAjuste(totals.day, p.adjustment), restDay: totals.restDay === null ? null : conAjuste(totals.restDay, p.adjustment) };
   let macros: ResultadoDelCalculo['macros'] = null;
+  // Un déficit mayor que el gasto total deja la energía en cero o menos: se dice, y no se reparten macros sobre eso.
+  if (!(energy.day > 0) || (energy.restDay !== null && !(energy.restDay > 0))) return { resting, totals, energy, macros: null, issues: ['ENERGY_NOT_POSITIVE'] };
   if (p.macros) {
     const baseKg = p.macros.base === 'LEAN_MASS' ? d.leanMassKg : d.weightKg;
     if (baseKg === null || !(baseKg > 0)) issues.push(p.macros.base === 'LEAN_MASS' ? 'LEAN_MASS_MISSING' : 'WEIGHT_MISSING');
@@ -261,6 +263,17 @@ export function declaracionDelCalculo(p: ParametrosDelCalculo, fuente: string, r
   }
   if (p.macros) partes.push(`proteína ${numero(p.macros.proteinPerKg, 2)} g/kg y grasa ${numero(p.macros.fatPerKg, 2)} g/kg ${p.macros.base === 'LEAN_MASS' ? 'de la masa libre de grasa' : 'del peso'}, carbohidratos por diferencia`);
   return `Estimación: ${partes.join(' · ')}.`.slice(0, 1000);
+}
+
+/**
+ * Lo que «Usar estos valores» escribe en la declaración del método del objetivo: solo el método, sin la toma, su fecha,
+ * el factor, el ajuste ni los g/kg. La versión del objetivo la leen también los profesionales con los que la persona
+ * comparte Nutrición (API-RES-06), que pueden no tener Antropometría: con los g/kg y los gramos del objetivo se deduce el
+ * peso (o la masa libre de grasa), y con el factor y el ajuste, el gasto en reposo de una ecuación de un solo dato. El
+ * detalle queda con el cálculo (API-OBC-03), detrás del permiso de Antropometría.
+ */
+export function declaracionCompartible(p: Pick<ParametrosDelCalculo, 'restingMethod' | 'macros'>): string {
+  return `Estimación de partida con el calculador de BE: gasto en reposo por ${FICHA_DEL_METODO_DE_REPOSO[p.restingMethod].nombre}${p.macros ? ', carbohidratos por diferencia' : ''}.`;
 }
 
 // ─── La propuesta de rangos ─────────────────────────────────────────────────────────────────────
@@ -291,12 +304,43 @@ export function problemasDelReparto(reparto: readonly RepartoDeUnaComida[]): { r
   });
 }
 
-/** La propuesta para un día tipo: el rango del día y el de cada comida, en gramos. `null` si el reparto no suma 100 %. */
+/**
+ * Un total entero repartido en enteros según los pesos, por el resto mayor: la suma da exactamente el total (con pesos
+ * 1, 1 y 1, 10 g son 4, 3 y 3). Sin pesos positivos, todo en cero.
+ */
+export function repartirEnteros(total: number, pesos: readonly number[]): number[] {
+  const suma = pesos.reduce((s, x) => s + Math.max(0, x), 0);
+  if (!(suma > 0) || pesos.length === 0) return pesos.map(() => 0);
+  const crudos = pesos.map((x) => (Math.max(0, x) / suma) * total);
+  const base = crudos.map((x) => Math.floor(x + 1e-9));
+  let falta = total - base.reduce((s, x) => s + x, 0);
+  const orden = crudos.map((x, i) => ({ i, resto: x - Math.floor(x + 1e-9) })).sort((a, b) => b.resto - a.resto || a.i - b.i);
+  for (const { i } of orden) {
+    if (falta <= 0) break;
+    base[i] = base[i]! + 1;
+    falta -= 1;
+  }
+  return base;
+}
+
+/**
+ * La propuesta para un día tipo: el rango del día y el de cada comida, en gramos. `null` si el reparto no suma 100 %.
+ * Los mínimos y los máximos de las comidas salen de repartir los del día por el resto mayor: sumados, dan exactamente el
+ * rango del día (lo que se ve por comida y lo que se ve por día no se contradicen por un redondeo).
+ */
 export function propuestaDeRangos(gramos: GramosDelDia, tolerancia: number, reparto: readonly RepartoDeUnaComida[]): { readonly dia: RangoPropuesto; readonly comidas: readonly RangoPropuesto[] } | null {
   if (reparto.length > 0 && problemasDelReparto(reparto).length > 0) return null;
   const t = Math.min(TOPES_DE_LA_TOLERANCIA.maximo, Math.max(TOPES_DE_LA_TOLERANCIA.minimo, tolerancia));
-  const rango = (f: (m: MacroDeLaPropuesta) => number): RangoPropuesto => ({ protein: alrededor(f('protein'), t), carbohydrate: alrededor(f('carbohydrate'), t), fat: alrededor(f('fat'), t) });
-  return { dia: rango((m) => gramos[m]), comidas: reparto.map((c) => rango((m) => (gramos[m] * c[m]) / 100)) };
+  const dia: RangoPropuesto = { protein: alrededor(gramos.protein, t), carbohydrate: alrededor(gramos.carbohydrate, t), fat: alrededor(gramos.fat, t) };
+  const columnas = Object.fromEntries(
+    MACROS_DE_LA_PROPUESTA.map((m) => {
+      const pesos = reparto.map((c) => c[m]);
+      const minimos = repartirEnteros(dia[m].min, pesos);
+      const maximos = repartirEnteros(dia[m].max, pesos);
+      return [m, minimos.map((min, i) => ({ min, max: Math.max(min, maximos[i]!) }))];
+    }),
+  ) as Record<MacroDeLaPropuesta, { min: number; max: number }[]>;
+  return { dia, comidas: reparto.map((_, i) => ({ protein: columnas.protein[i]!, carbohydrate: columnas.carbohydrate[i]!, fat: columnas.fat[i]! })) };
 }
 
 /** Enteros que suman exactamente 100, por el resto mayor: [1, 1, 1] es 34, 33 y 33. */

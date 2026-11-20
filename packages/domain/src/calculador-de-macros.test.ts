@@ -15,12 +15,14 @@ import { test } from 'node:test';
 import {
   calcularObjetivo,
   datosQueFaltan,
+  declaracionCompartible,
   declaracionDelCalculo,
   gastoEnReposo,
   macrosDelDia,
   porcentajesQueSuman100,
   problemasDelReparto,
   propuestaDeRangos,
+  repartirEnteros,
   repartoParejo,
   repartoSugerido,
 } from './calculador-de-macros';
@@ -145,6 +147,19 @@ test('la declaración del método, para que quede con la versión del objetivo',
   assert.match(declaracionDelCalculo(enPorcentaje, 'a mano', calcularObjetivo(usados(MUJER), enPorcentaje)), /ajuste −15 % de las 2.025 kcal del gasto total/);
 });
 
+test('lo que va al objetivo no deja deducir datos de Antropometría: ni la toma, ni el factor, ni el ajuste, ni los g/kg', () => {
+  const d = declaracionCompartible(PARAMETROS);
+  assert.equal(d, 'Estimación de partida con el calculador de BE: gasto en reposo por Mifflin-St Jeor (1990), carbohidratos por diferencia.');
+  assert.doesNotMatch(d, /toma|factor|ajuste|g\/kg|\d+,\d/);
+});
+
+test('un déficit mayor que el gasto total: la energía no positiva se dice y no hay macros', () => {
+  // Mifflin, mujer de 50 kg, 150 cm y 80 años: 500 + 937,5 − 400 − 161 = 876,5; × 1,4 = 1.227; − 1.500 = −273.
+  const r = calcularObjetivo(usados({ ...MUJER, weightKg: 50, heightCm: 150, ageYears: 80 }), { ...PARAMETROS, activity: { factor: 1.4, restDayFactor: null }, adjustment: { kind: 'KCAL', value: -1500 } });
+  ResultadoDelCalculoSchema.parse(r);
+  assert.deepEqual([r.energy, r.macros, r.issues], [{ day: -273, restDay: null }, null, ['ENERGY_NOT_POSITIVE']]);
+});
+
 test('la propuesta de rangos: el día con su tolerancia y cada comida con el reparto que elige el profesional', () => {
   assert.deepEqual(porcentajesQueSuman100([1, 1, 1]), [34, 33, 33]);
   assert.deepEqual(repartoParejo(4).map((c) => c.protein), [25, 25, 25, 25]);
@@ -160,8 +175,16 @@ test('la propuesta de rangos: el día con su tolerancia y cada comida con el rep
   const p = propuestaDeRangos({ protein: 122, carbohydrate: 172, fat: 61 }, 10, reparto);
   assert.ok(p);
   assert.deepEqual(p.dia, { protein: { min: 110, max: 134 }, carbohydrate: { min: 155, max: 189 }, fat: { min: 55, max: 67 } });
-  // Desayuno: 122 × 22 % = 26,84 → 24 a 30 g; 172 × 32 % = 55,04 → 50 a 61 g; 61 × 20 % = 12,2 → 11 a 13 g.
-  assert.deepEqual(p.comidas[0], { protein: { min: 24, max: 30 }, carbohydrate: { min: 50, max: 61 }, fat: { min: 11, max: 13 } });
+  // Cada comida, su parte del mínimo y del máximo del día, por el resto mayor. Desayuno: proteínas 110 × 22 % = 24,2 → 24
+  // y 134 × 22 % = 29,48 → 29 (los tres 34,84 del resto se llevan el gramo que falta); carbohidratos 155 × 32 % = 49,6 → 50
+  // y 189 × 32 % = 60,48 → 61; grasas 55 × 20 % = 11 y 67 × 20 % = 13,4 → 13.
+  assert.deepEqual(p.comidas[0], { protein: { min: 24, max: 29 }, carbohydrate: { min: 50, max: 61 }, fat: { min: 11, max: 13 } });
+  // Sumadas, las comidas dan exactamente el rango del día.
+  for (const m of ['protein', 'carbohydrate', 'fat'] as const) {
+    assert.equal(p.comidas.reduce((s, c) => s + c[m].min, 0), p.dia[m].min);
+    assert.equal(p.comidas.reduce((s, c) => s + c[m].max, 0), p.dia[m].max);
+  }
+  assert.deepEqual(repartirEnteros(10, [1, 1, 1]), [4, 3, 3]);
   // Un reparto que no suma 100 % no propone nada, y dice qué macro y cuánto suma.
   const malo = [...reparto.slice(0, 3), { protein: 26, carbohydrate: 10, fat: 24 }];
   assert.deepEqual(problemasDelReparto(malo), [{ macro: 'carbohydrate', suma: 91 }]);

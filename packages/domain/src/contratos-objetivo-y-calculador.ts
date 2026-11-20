@@ -164,9 +164,11 @@ export type MacrosDelDia = z.infer<typeof MacrosDelDiaSchema>;
  * Lo que no deja cerrar una parte del cálculo, sin inventar nada:
  * - `LEAN_MASS_MISSING`: los macros por masa libre de grasa sin ese dato;
  * - `WEIGHT_MISSING`: los macros por peso sin el peso;
- * - `CARBOHYDRATE_NEGATIVE`: la proteína y la grasa ya superan la energía del día (los carbohidratos quedan en 0 g).
+ * - `CARBOHYDRATE_NEGATIVE`: la proteína y la grasa ya superan la energía del día (los carbohidratos quedan en 0 g);
+ * - `ENERGY_NOT_POSITIVE`: con el ajuste, la energía de un día queda en cero o menos (un déficit mayor que el gasto
+ *   total): no hay macros ni valores para el objetivo.
  */
-export const ProblemaDelCalculoSchema = z.enum(['LEAN_MASS_MISSING', 'WEIGHT_MISSING', 'CARBOHYDRATE_NEGATIVE']);
+export const ProblemaDelCalculoSchema = z.enum(['LEAN_MASS_MISSING', 'WEIGHT_MISSING', 'CARBOHYDRATE_NEGATIVE', 'ENERGY_NOT_POSITIVE']);
 export type ProblemaDelCalculo = z.infer<typeof ProblemaDelCalculoSchema>;
 
 export const ResultadoDelCalculoSchema = z.strictObject({

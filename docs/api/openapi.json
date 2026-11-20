@@ -168958,7 +168958,8 @@
                                         "enum": [
                                           "LEAN_MASS_MISSING",
                                           "WEIGHT_MISSING",
-                                          "CARBOHYDRATE_NEGATIVE"
+                                          "CARBOHYDRATE_NEGATIVE",
+                                          "ENERGY_NOT_POSITIVE"
                                         ]
                                       }
                                     }
@@ -169951,7 +169952,8 @@
                                             "enum": [
                                               "LEAN_MASS_MISSING",
                                               "WEIGHT_MISSING",
-                                              "CARBOHYDRATE_NEGATIVE"
+                                              "CARBOHYDRATE_NEGATIVE",
+                                              "ENERGY_NOT_POSITIVE"
                                             ]
                                           }
                                         }
