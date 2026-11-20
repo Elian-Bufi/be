@@ -390,74 +390,75 @@ async function capturasDeGraficos({ page, ir, idDe, asentar, indice }) {
       await sinCargando();
       await recortar('article[data-grafico]', `a-valeria-relacion-{g}__${ancho}.png`, '«Ver la relación» (SP-01 y SP-02)', 'Valeria Q.');
     }
-    // b. «Armá tu gráfico» con Tomás: 1RM estimado de la sentadilla, proteína por kilo y peso.
-    if (tomas) {
+    // b. «Armá tu gráfico» con Tomás: cada escena, sus tres series (a 1440 solo la primera).
+    const ENT = (serie) => [['Área', 'Entrenamiento'], ['Ejercicio', 'Sentadilla trasera'], ['Serie', serie]];
+    const ESCENAS = [
+      ['fuerza-proteina-peso', 'Fuerza, proteína y peso', [ENT('1RM'), [['Área', 'Nutrici'], ['Serie', 'prote.*(kilo|kg)']], [['Área', 'Antropometr'], ['Medida', '^\\s*Peso']]]],
+      ['sentadilla-carga-reps-rir', 'Sentadilla: carga, repeticiones y RIR', [ENT('^Carga registrada'), ENT('^Repeticiones registradas'), ENT('^RIR registrado')]],
+      ['sentadilla-rir-indicado', 'Sentadilla: lo indicado y lo hecho', [ENT('^RIR indicado'), ENT('^RIR registrado'), ENT('1RM')]],
+      ['volumen-y-energia', 'Volumen de sentadilla y calorías', [ENT('^Series registradas'), ENT('^Volumen de carga'), [['Área', 'Nutrici'], ['Serie', '^(Calor|Energ).*registrad']]]],
+      ['fuerza-carbohidratos-proteina', 'Fuerza y macros', [ENT('1RM'), [['Área', 'Nutrici'], ['Serie', '^Carbohidratos registrados$|^Carbohidratos registrados']], [['Área', 'Nutrici'], ['Serie', '^Prote[ií]nas registradas$|^Prote[ií]nas registradas \\(']]]],
+    ];
+    for (const [clave, titulo, grupos] of tomas ? (ancho === 1920 ? ESCENAS : ESCENAS.slice(0, 1)) : []) {
+      await ir('/pro/advisees');
       await ir(`/pro/advisees?id=${tomas}&vista=patrones&p=365`);
       await sinCargando();
       const boton = await page.$('[data-arma-tu-grafico]');
-      if (boton) {
-        await boton.evaluate((x) => x.scrollIntoView({ block: 'center' }));
-        await boton.click();
-        await page.waitForSelector('.compositor', { timeout: 15_000 });
-        await pausa(500);
-        const elegir = (etiqueta, patron) =>
-          page.evaluate(
-            (et, pa) => {
-              const raiz = document.querySelector('.compositor');
-              const label = [...raiz.querySelectorAll('label')].find((l) => l.textContent.trim().startsWith(et));
-              const sel = label ? document.getElementById(label.htmlFor) : null;
-              if (!sel) return `sin ${et}`;
-              const re = new RegExp(pa, 'i');
-              const op = [...sel.options].find((o) => re.test(o.textContent)) ?? null;
-              if (!op) return `sin opción ${pa} en ${et}: ${[...sel.options].map((o) => o.textContent).join(' / ')}`;
-              Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value').set.call(sel, op.value);
-              sel.dispatchEvent(new Event('change', { bubbles: true }));
-              return op.textContent;
-            },
-            etiqueta,
-            patron,
-          );
-        const agregar = async () => {
-          await page.evaluate(() => [...document.querySelectorAll('.compositor__agregar button')].find((b) => b.textContent.trim() === 'Agregar')?.click());
-          await pausa(600);
-        };
-        const pasos = [];
-        await page.type('.compositor input[type="text"]', 'Fuerza, proteína y peso');
-        pasos.push(await elegir('Área', 'Entrenamiento'));
-        await pausa(300);
-        pasos.push(await elegir('Ejercicio', 'Sentadilla trasera|Sentadilla'));
-        await pausa(300);
-        pasos.push(await elegir('Serie', '1RM|fuerza'));
+      if (!boton) {
+        indice.push('| — | sin «Armá tu gráfico» en Patrones | Tomás M. |');
+        break;
+      }
+      await boton.evaluate((x) => x.scrollIntoView({ block: 'center' }));
+      await boton.click();
+      await page.waitForSelector('.compositor', { timeout: 15_000 });
+      await pausa(500);
+      const elegir = (etiqueta, patron) =>
+        page.evaluate(
+          (et, pa) => {
+            const raiz = document.querySelector('.compositor');
+            const label = [...raiz.querySelectorAll('label')].find((l) => l.textContent.trim().startsWith(et));
+            const sel = label ? document.getElementById(label.htmlFor) : null;
+            if (!sel) return `sin ${et}`;
+            const re = new RegExp(pa, 'i');
+            const op = [...sel.options].find((o) => re.test(o.textContent.trim())) ?? null;
+            if (!op) return `sin opción ${pa} en ${et}: ${[...sel.options].map((o) => o.textContent).join(' / ')}`;
+            Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value').set.call(sel, op.value);
+            sel.dispatchEvent(new Event('change', { bubbles: true }));
+            return op.textContent;
+          },
+          etiqueta,
+          patron,
+        );
+      const agregar = async () => {
+        await page.evaluate(() => [...document.querySelectorAll('.compositor__agregar button')].find((b) => b.textContent.trim() === 'Agregar')?.click());
+        await pausa(600);
+      };
+      const pasos = [];
+      await page.type('.compositor input[type="text"]', titulo);
+      for (const grupo of grupos) {
+        for (const [et, pa] of grupo) {
+          pasos.push(await elegir(et, pa));
+          await pausa(300);
+        }
         await agregar();
-        pasos.push(await elegir('Área', 'Nutrici'));
-        await pausa(300);
-        pasos.push(await elegir('Serie', 'prote.*(kilo|kg)'));
-        await agregar();
-        pasos.push(await elegir('Área', 'Antropometr'));
-        await pausa(300);
-        pasos.push(await elegir('Medida', '^\\s*Peso'));
-        await agregar();
-        console.log('compositor:', pasos.join(' | '));
-        indice.push(`| — | compositor: ${pasos.join(' · ')} | Tomás M. |`);
-        await sinCargando();
-        await pausa(1500);
-        await page.evaluate(() => {
-          const raiz = document.querySelector('.compositor');
-          const cuadro = raiz.closest('[role="dialog"], dialog') ?? raiz;
-          cuadro.setAttribute('data-captura', 'compositor');
-        });
-        await recortar('[data-captura="compositor"]', `b-tomas-arma-tu-grafico-selector__${ancho}.png`, '«Armá tu gráfico»: las tres series elegidas y la vista previa', 'Tomás M.');
-        await recortar('.compositor__vista-previa', `b-tomas-arma-tu-grafico-vista-previa__${ancho}.png`, '«Armá tu gráfico»: la vista previa', 'Tomás M.');
-        // «Agregar al enfoque»: el gráfico armado queda en «Patrones», a todo el ancho.
-        await page.evaluate(() => {
-          const raiz = document.querySelector('.compositor');
-          const cuadro = raiz.closest('[role="dialog"], dialog') ?? document;
-          [...cuadro.querySelectorAll('button')].find((b) => b.textContent.trim() === 'Agregar al enfoque')?.click();
-        });
-        await sinCargando();
-        await pausa(1500);
-        await recortar('article[data-grafico="armado"]', `b-tomas-arma-tu-grafico-en-patrones__${ancho}.png`, '«Armá tu gráfico» ya en «Patrones»', 'Tomás M.');
-      } else indice.push('| — | sin «Armá tu gráfico» en Patrones | Tomás M. |');
+      }
+      console.log(`compositor ${clave}:`, pasos.join(' | '));
+      indice.push(`| — | compositor ${clave}: ${pasos.join(' · ')} | Tomás M. |`);
+      await sinCargando();
+      await pausa(1500);
+      await page.evaluate(() => {
+        const raiz = document.querySelector('.compositor');
+        const cuadro = raiz.closest('[role="dialog"], dialog') ?? raiz;
+        cuadro.setAttribute('data-captura', 'compositor');
+      });
+      if (clave === 'fuerza-proteina-peso') await recortar('[data-captura="compositor"]', `b-tomas-arma-tu-grafico-selector__${ancho}.png`, '«Armá tu gráfico»: las tres series elegidas', 'Tomás M.');
+      await recortar('.compositor__vista-previa', `b-tomas-${clave}__${ancho}.png`, `«Armá tu gráfico»: ${titulo}`, 'Tomás M.');
+      await page.evaluate(() => {
+        const raiz = document.querySelector('.compositor');
+        const cuadro = raiz.closest('[role="dialog"], dialog') ?? document;
+        [...cuadro.querySelectorAll('button')].find((b) => b.textContent.trim() === 'Cancelar')?.click();
+      });
+      await pausa(800);
     }
     // c, d y e. «Patrones» de cada una: cada tarjeta, con los cruces a pedido abiertos.
     for (const [clave, pid, nombre] of [
