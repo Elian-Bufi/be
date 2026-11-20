@@ -28,6 +28,7 @@
  * - RF-068 y RF-004: las familias INC y MET, las incidencias y los métodos de acceso de la cuenta propia (DL-172).
  * - WP-PULIDO-GRANDES (DL-173): API-TRN-25 y sus variantes LISTA y PROPIA (PG-15) y la familia NPP (PG-16).
  * - WP-PLANTILLAS-DE-ENTRENAMIENTO (DL-182): API-TPL-06 a 14, la preparación de una plantilla sin persona.
+ * - WP-EVALUACION-Y-FORMULARIOS (DL-185): API-EVF-01 a 04, los formularios vinculados a la evaluación inicial.
  * - WP-OBJETIVO-Y-CALCULADOR (DL-186): la familia OBC, el objetivo con una toma de referencia y el calculador de macros.
  * Un observador registra cada respuesta real (método, ruta, status, código). Después se exige que todo par
  * (status, código) esté declarado para esa operación en `OPERACIONES`, la misma fuente que genera
@@ -2843,6 +2844,53 @@ it('TEST-CT (WP-CONTEXTO-DE-LA-PERSONA, DL-179): CTX-01 y CTX-02 — el contexto
   await conSesion(app, ant.pro.token).get(`${cuerpo}?x=1`).expect(400);
   await pro.get(`/api/v1/advisees/${c.ase.id}/person-context/body`).expect(404);
   await request(servidor).get(cuerpo).expect(401);
+});
+
+it('TEST-CT (WP-EVALUACION-Y-FORMULARIOS, DL-185): EVF-01 a 04 — los formularios vinculados a la evaluación, con éxitos y errores declarados', async () => {
+  const c = await circuitoV2(app, prisma, 'ct-evf', 'NUTRICION');
+  const formResponseId = (await fri(app, c.ase.token).responder(c.formRequestId, { answers: RESPUESTAS_V2, fromProposal: null }).expect(201)).body.data.formResponseId as string;
+  const pro = conSesion(app, c.pro.token);
+  const ase = conSesion(app, c.ase.token);
+  const ajeno = randomUUID();
+  const servidor = app.getHttpServer();
+  const evaluationId = (await pro.post(`/api/v1/advisees/${c.ase.id}/nutrition/evaluations`).send(cuerpoDeEvaluacion()).expect(201)).body.data.evaluationId as string;
+  const vinculados = `/api/v1/nutrition/evaluations/${evaluationId}/linked-forms`;
+  // EVF-02
+  const clave = claveDeIdempotencia();
+  const links = [{ formResponseId, expectedVersion: 'v1' }];
+  const linkId = (await pro.post(vinculados, clave).send({ links }).expect(201)).body.data.links[0].linkId as string;
+  await pro.post(vinculados, clave).send({ links: [{ formResponseId: ajeno, expectedVersion: 'v1' }] }).expect(409); // IDEMPOTENCY_KEY_REUSED
+  await pro.post(vinculados).send({ links }).expect(200); // ya vinculado en esa versión
+  await pro.post(vinculados).send({ links: [{ formResponseId, expectedVersion: 'v9' }] }).expect(409); // VERSION_CONFLICT
+  await pro.post(vinculados).send({ links: [{ formResponseId: ajeno, expectedVersion: 'v1' }] }).expect(422); // NUTRITION_EVALUATION_INVALID
+  await pro.post(vinculados).send({ links, extra: 1 }).expect(400); // UNKNOWN_FIELD
+  await pro.post(vinculados).send({ links: [] }).expect(400); // INVALID_REQUEST
+  await ase.post(vinculados).send({ links }).expect(404);
+  await request(servidor).post(vinculados).set('Idempotency-Key', claveDeIdempotencia()).send({ links }).expect(401);
+  // TRN: el 422 de Entrenamiento.
+  const t = await circuitoV2(app, prisma, 'ct-evf-trn', 'ENTRENAMIENTO');
+  const evaluacionDeEntrenamiento = (await conSesion(app, t.pro.token).post(`/api/v1/advisees/${t.ase.id}/training/evaluations`).send(cuerpoDeEvaluacionDeEntrenamiento()).expect(201)).body.data.evaluationId as string;
+  await conSesion(app, t.pro.token).post(`/api/v1/training/evaluations/${evaluacionDeEntrenamiento}/linked-forms`).send({ links: [{ formResponseId: ajeno, expectedVersion: 'v1' }] }).expect(422); // TRAINING_EVALUATION_INVALID
+  // EVF-01
+  await pro.get(vinculados).expect(200);
+  await pro.get(`${vinculados}?x=1`).expect(400);
+  await ase.get(vinculados).expect(404);
+  await pro.get(`/api/v1/nutrition/evaluations/${ajeno}/linked-forms`).expect(404);
+  await request(servidor).get(vinculados).expect(401);
+  // EVF-04
+  await pro.get(`${vinculados}/${linkId}`).expect(200);
+  await pro.get(`${vinculados}/${linkId}?x=1`).expect(400);
+  await pro.get(`${vinculados}/${ajeno}`).expect(404);
+  await request(servidor).get(`${vinculados}/${linkId}`).expect(401);
+  // EVF-03
+  const quitar = `${vinculados}/${linkId}/removal`;
+  const claveDeQuitar = claveDeIdempotencia();
+  await pro.post(quitar, claveDeQuitar).send({}).expect(200);
+  await pro.post(quitar, claveDeQuitar).send({ extra: 1 }).expect(400);
+  await pro.post(quitar).send({}).expect(200);
+  await ase.post(quitar).send({}).expect(404);
+  await pro.post(`${vinculados}/${ajeno}/removal`).send({}).expect(404);
+  await request(servidor).post(quitar).set('Idempotency-Key', claveDeIdempotencia()).send({}).expect(401);
 });
 
 it('TEST-CT (WP-HISTORIA-ANTERIOR, DL-175): HIA-01 a 04 — la historia anterior de un área, para el profesional nuevo, con éxitos y errores declarados', async () => {

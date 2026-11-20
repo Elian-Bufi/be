@@ -60,6 +60,7 @@ import { DialogoEmpezarDesdePlantilla, type PlantillaParaEmpezar } from '../empe
 import { COPY_PLANTILLAS_EN_LA_GALERIA } from '../galeria-de-presets';
 import { AvisoDeLoQueFalta, seRetiro } from '../lecturas-parciales';
 import { PrimerPlan } from '../primer-plan';
+import { FormulariosDeLaEvaluacion } from '../evaluacion/formularios-de-la-evaluacion';
 import { HistorialDelPlan, MenuDePlantillas, SelectorDeVersion, type VersionMostrada } from '../versiones-del-plan';
 import { resumenDeLaAgenda, sesionesParaLaAgenda } from './agenda-del-plan';
 import { EditorDePlan } from './editor';
@@ -682,6 +683,7 @@ function PrimerPlanDeEntrenamiento({
             onCancelar={() => setAbierto(null)}
           />
         }
+        detalleDeLaEvaluacion={ultima ? <FormulariosDeLaEvaluacion key={ultima.evaluationId} area="training" token={token} asesoradoId={asesoradoId} sesionPerdida={sesionPerdida} evaluationId={ultima.evaluationId} /> : null}
         formularioDeObjetivo={
           <FormularioDeObjetivo
             evaluaciones={evaluaciones}

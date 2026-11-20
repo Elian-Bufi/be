@@ -1451,6 +1451,8 @@ model EvaluacionNutricional {
   objetivos   VersionDeObjetivoNutricional[]
   /// DL-179: las respuestas de formulario que cita (como DL-102 en Entrenamiento).
   citas       CitaDeRespuestaEnEvaluacionNutricional[]
+  /// DL-185: los formularios vinculados, enteros y por referencia.
+  formulariosVinculados VinculoDeFormularioEnEvaluacion[]
 
   @@index([asesoradoId, profesionalId, momentoDeRegistro])
   @@map("evaluacion_nutricional")
@@ -1477,6 +1479,35 @@ model CitaDeRespuestaEnEvaluacionNutricional {
   @@unique([evaluacionId, respuestaId, codigoDeCampo], map: "cita_nutricional_respuesta_y_campo_unicos")
   @@index([respuestaId])
   @@map("cita_de_respuesta_en_evaluacion_nutricional")
+}
+
+/// DL-185 (WP-EVALUACION-Y-FORMULARIOS): un formulario que la persona respondió, vinculado entero a una evaluación inicial
+/// de Nutrición o de Entrenamiento. Referencia, no copia: la respuesta y la versión vigente al vincular (la original o una
+/// rectificación), así una corrección posterior no cambia lo que se vinculó. Desvincular es la única escritura después del
+/// alta (`desvinculadoEn`, una sola vez); la fila no se borra. La base repite la pertenencia: la evaluación del área, una
+/// Solicitud de su mismo profesional y de ese Alcance, de la misma persona; un solo vínculo vigente por respuesta.
+model VinculoDeFormularioEnEvaluacion {
+  id                          String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  /// NUTRICION o ENTRENAMIENTO: dice cuál de las dos evaluaciones lleva (la otra es NULL).
+  alcance                     Alcance
+  evaluacionNutricionalId     String?   @map("evaluacion_nutricional_id") @db.Uuid
+  evaluacionDeEntrenamientoId String?   @map("evaluacion_de_entrenamiento_id") @db.Uuid
+  respuestaId                 String    @map("respuesta_id") @db.Uuid
+  /// La rectificación vigente al vincular; `null` si lo vigente era la respuesta original.
+  rectificacionId             String?   @map("rectificacion_id") @db.Uuid
+  vinculadoEn                 DateTime  @default(now()) @map("vinculado_en") @db.Timestamptz(3)
+  desvinculadoEn              DateTime? @map("desvinculado_en") @db.Timestamptz(3)
+
+  evaluacionNutricional     EvaluacionNutricional?                @relation(fields: [evaluacionNutricionalId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  evaluacionDeEntrenamiento EvaluacionDeEntrenamiento?            @relation(fields: [evaluacionDeEntrenamientoId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  respuesta                 RespuestaDeFormulario                 @relation(fields: [respuestaId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  rectificacion             RectificacionDeRespuestaDeFormulario? @relation(fields: [rectificacionId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@index([evaluacionNutricionalId, vinculadoEn])
+  @@index([evaluacionDeEntrenamientoId, vinculadoEn])
+  @@index([respuestaId])
+  @@index([rectificacionId])
+  @@map("vinculo_de_formulario_en_evaluacion")
 }
 
 /// T-06-27 — Objetivo: uno por (profesional, asesorado); sus versiones forman una sucesión lineal y la efectiva es la
@@ -2216,6 +2247,8 @@ model EvaluacionDeEntrenamiento {
   asesorado   Identidad                                    @relation("EvaluacionDeEntrenamientoDelAsesorado", fields: [asesoradoId], references: [id], onDelete: Restrict, onUpdate: Restrict)
   objetivos   VersionDeObjetivoDeEntrenamiento[]
   citas       CitaDeRespuestaEnEvaluacionDeEntrenamiento[]
+  /// DL-185: los formularios vinculados, enteros y por referencia.
+  formulariosVinculados VinculoDeFormularioEnEvaluacion[]
 
   @@index([asesoradoId, profesionalId, momentoDeRegistro])
   @@map("evaluacion_de_entrenamiento")
@@ -2629,6 +2662,8 @@ model RespuestaDeFormulario {
   rectificaciones RectificacionDeRespuestaDeFormulario[]
   citas           CitaDeRespuestaEnEvaluacionDeEntrenamiento[]
   citasNutricionales CitaDeRespuestaEnEvaluacionNutricional[]
+  /// DL-185: las evaluaciones a las que está vinculada.
+  vinculosEnEvaluaciones VinculoDeFormularioEnEvaluacion[]
   /// DL-165 D-9: la versión de los hábitos que agregó esta Respuesta, si su versión traía la parte «Tus hábitos».
   habitos         HabitosDeLaPersona[]
 
@@ -2653,6 +2688,8 @@ model RectificacionDeRespuestaDeFormulario {
   siguiente        RectificacionDeRespuestaDeFormulario?        @relation("SucesionDeRectificacionDeFormulario")
   citas            CitaDeRespuestaEnEvaluacionDeEntrenamiento[]
   citasNutricionales CitaDeRespuestaEnEvaluacionNutricional[]
+  /// DL-185: los vínculos que fijaron esta versión.
+  vinculosEnEvaluaciones VinculoDeFormularioEnEvaluacion[]
 
   @@index([respuestaId])
   @@map("rectificacion_de_respuesta_de_formulario")

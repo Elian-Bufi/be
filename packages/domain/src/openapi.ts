@@ -383,6 +383,7 @@ import {
 import { EvidenciaDeRevisionResponseSchema } from './contratos-evidencia-de-revision';
 import { ObjetivoConReferenciaRequestSchema, ObjetivoConReferenciaResponseSchema, ReferenciaDelObjetivoResponseSchema, TomasDeReferenciaResponseSchema } from './contratos-objetivo-y-calculador';
 import { CuerpoDelContextoResponseSchema, RespuestasDelContextoResponseSchema } from './contratos-contexto-de-la-persona';
+import { FormulariosVinculadosResponseSchema, FormularioVinculadoConRespuestasResponseSchema, VincularFormulariosRequestSchema } from './contratos-evaluacion-y-formularios';
 import { AccesoAMedioResponseSchema, IntencionDeSubidaRequestSchema, IntencionDeSubidaResponseSchema, LIMITES_DE_MEDIO, MedioResponseSchema, TipoDeImagenSchema } from './contratos-medios';
 import {
   AsociarImagenDeRecetaRequestSchema,
@@ -5032,6 +5033,64 @@ const DEFINIDAS: readonly Operacion[] = [
     errores: { ...SESION, 400: ['INVALID_REQUEST'], 404: ['RESOURCE_NOT_FOUND'] },
     fuente: 'WP-CONTEXTO-DE-LA-PERSONA · ID propio de BE (familia CTX) · el texto de «resumen» aceptado (DL-163 D-13) · DEUDA_LEGAJO DL-179',
   },
+  // ─── WP-EVALUACION-Y-FORMULARIOS (DL-185): los formularios vinculados a la evaluación inicial ──────────
+  {
+    id: 'API-EVF-01',
+    metodo: 'get',
+    ruta: '/{area}/evaluations/{evaluationId}/linked-forms',
+    resumen:
+      'Los formularios vinculados a una evaluación propia (`area`: nutrition o training), en el orden en que se vincularon: la referencia a la versión de la respuesta que quedó vinculada, con su fecha, y si la persona registró una versión más nueva después (`laterVersion`). Nunca las respuestas. Una evaluación de otro profesional, inexistente o sin el PDP del área: el mismo 404.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    exitos: [{ status: 200, schema: FormulariosVinculadosResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST'], 404: ['RESOURCE_NOT_FOUND'] },
+    fuente: 'WP-EVALUACION-Y-FORMULARIOS (pedido de Dirección del 2026-11-19) · ID propio de BE (familia EVF) · DEUDA_LEGAJO DL-185',
+  },
+  {
+    id: 'API-EVF-02',
+    metodo: 'post',
+    ruta: '/{area}/evaluations/{evaluationId}/linked-forms',
+    resumen:
+      'Vincular a una evaluación propia uno o varios formularios que la persona respondió a Solicitudes de quien vincula, del área de la evaluación, cada uno con la versión que se vio (`expectedVersion`, la de API-CTX-01). Todos o ninguno: una versión que cambió da 409 VERSION_CONFLICT; una respuesta ajena, de otra área o inexistente, el mismo 422 neutral. Si ya estaba vinculado en esa versión queda igual (200); si estaba en una anterior, la nueva lo reemplaza. Responde los vinculados. Hasta 20 por evaluación.',
+    autenticacion: 'SESSION',
+    idempotencia: true,
+    request: VincularFormulariosRequestSchema,
+    exitos: [
+      { status: 201, schema: FormulariosVinculadosResponseSchema },
+      { status: 200, schema: FormulariosVinculadosResponseSchema },
+    ],
+    errores: {
+      ...ESCRITURA_REVELABLE,
+      409: ['IDEMPOTENCY_KEY_REUSED', 'VERSION_CONFLICT'],
+      422: ['NUTRITION_EVALUATION_INVALID', 'TRAINING_EVALUATION_INVALID'],
+    },
+    fuente: 'WP-EVALUACION-Y-FORMULARIOS (pedido de Dirección del 2026-11-19) · ID propio de BE (familia EVF) · DEUDA_LEGAJO DL-185',
+  },
+  {
+    id: 'API-EVF-03',
+    metodo: 'post',
+    ruta: '/{area}/evaluations/{evaluationId}/linked-forms/{linkId}/removal',
+    resumen:
+      'Desvincular un formulario de una evaluación propia: deja de verse entre los vinculados y la fila queda con la fecha en que se desvinculó; nunca se borra. Desvincular uno ya desvinculado responde 200 sin cambiar nada. Un vínculo de otra evaluación, ajeno o inexistente: el mismo 404. Responde los vinculados.',
+    autenticacion: 'SESSION',
+    idempotencia: true,
+    request: CuerpoVacioSchema,
+    exitos: [{ status: 200, schema: FormulariosVinculadosResponseSchema }],
+    errores: { ...ESCRITURA_REVELABLE, 409: ['IDEMPOTENCY_KEY_REUSED'] },
+    fuente: 'WP-EVALUACION-Y-FORMULARIOS (pedido de Dirección del 2026-11-19) · ID propio de BE (familia EVF) · DEUDA_LEGAJO DL-185',
+  },
+  {
+    id: 'API-EVF-04',
+    metodo: 'get',
+    ruta: '/{area}/evaluations/{evaluationId}/linked-forms/{linkId}',
+    resumen:
+      'Abrir un formulario vinculado: el vínculo y lo que respondió la persona en la versión vinculada (no en la vigente), por sección, en palabras, con la misma forma que API-CTX-01. Con los mismos permisos que la evaluación: si se pierden (B2, A3, vínculo en pausa o terminado), el mismo 404 que lo inexistente. Uno desvinculado, también 404.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    exitos: [{ status: 200, schema: FormularioVinculadoConRespuestasResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST'], 404: ['RESOURCE_NOT_FOUND'] },
+    fuente: 'WP-EVALUACION-Y-FORMULARIOS (pedido de Dirección del 2026-11-19) · ID propio de BE (familia EVF) · DEUDA_LEGAJO DL-185',
+  },
   // ─── WP-OBJETIVO-Y-CALCULADOR (DL-186): el objetivo con una toma de referencia y el calculador de macros ───
   {
     id: 'API-OBC-01',
@@ -5164,6 +5223,9 @@ const LECTURAS_PROTEGIDAS: ReadonlySet<string> = new Set([
   // WP-CONTEXTO-DE-LA-PERSONA (DL-179).
   'API-CTX-01',
   'API-CTX-02',
+  // WP-EVALUACION-Y-FORMULARIOS (DL-185).
+  'API-EVF-01',
+  'API-EVF-04',
 ]);
 // API-MED-02 escribe sin Idempotency-Key: la ruta firmada identifica la subida, y repetirla responde el mismo medio.
 // API-TIE-01 tampoco: cada evento trae su identificador, y repetirlo responde lo mismo sin sumar.

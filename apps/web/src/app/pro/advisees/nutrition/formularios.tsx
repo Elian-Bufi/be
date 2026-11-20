@@ -37,6 +37,7 @@ import { ConceptosFrecuentes, lugarDelConcepto } from '../conceptos-frecuentes';
 import { RepartosHabituales } from './repartos-habituales';
 import { KcalDelObjetivo } from './suma-de-los-rangos';
 import { evaluacionMasReciente } from '../evaluacion-reciente';
+import { ElegirFormularios, vincularAlRegistrar, type VinculosElegidos } from '../evaluacion/formularios-de-la-evaluacion';
 import { hoyEn } from '../seguimiento/estado';
 import { CalculadorDelObjetivo, useTomasDelCalculador, type LoQueVaAlObjetivo } from './calculador';
 import { COPY_CALCULADOR, falloDeLaReferencia, fuenteEnPalabras, parametrosDelCalculador, pedidoConReferencia, type ValoresDelCalculador } from './calculador-del-objetivo';
@@ -78,6 +79,8 @@ export function FormularioDeEvaluacion({ onRegistrada, onCancelar, conTitulo = t
   const [citaCambiada, setCitaCambiada] = useState(false);
   // Revisión del PR: cuáles cambiaron, según el 409, para señalarlas en la lista hasta que se vuelvan a citar.
   const [cambiadas, setCambiadas] = useState<readonly string[]>([]);
+  // DL-185 (EVF-04): los formularios que se vinculan al registrar, con la versión que se vio.
+  const [vinculos, setVinculos] = useState<VinculosElegidos>([]);
   const receptor = useMemo<ReceptorDeCitas>(
     () => ({
       area: 'NUTRICION',
@@ -155,6 +158,10 @@ export function FormularioDeEvaluacion({ onRegistrada, onCancelar, conTitulo = t
       return setCitaCambiada(true);
     }
     if (!r.ok) return setFallo(mensajeDeFallo(r));
+    // DL-185 (EVF-D08): la evaluación ya quedó; si los vínculos no se guardan, la evaluación registrada lo avisa.
+    setEnviando(true);
+    await vincularAlRegistrar(token, 'nutrition', r.datos.data.evaluationId, vinculos);
+    setEnviando(false);
     onRegistrada(r.datos.data.evaluationId);
   }
 
@@ -199,6 +206,7 @@ export function FormularioDeEvaluacion({ onRegistrada, onCancelar, conTitulo = t
           Agregar dato
         </button>
       </fieldset>
+      <ElegirFormularios area="nutrition" token={token} asesoradoId={asesoradoId} sesionPerdida={sesionPerdida} onCambio={setVinculos} />
       <fieldset className="grupo respuestas-citadas">
         <legend>Respuestas citadas (opcional)</legend>
         <p className="campo__ayuda">

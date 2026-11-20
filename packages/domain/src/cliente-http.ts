@@ -123,6 +123,14 @@ import {
 } from './contratos-notas-propias';
 import { CuerpoDelContextoResponseSchema, RespuestasDelContextoResponseSchema, type CuerpoDelContextoResponse, type RespuestasDelContextoResponse } from './contratos-contexto-de-la-persona';
 import {
+  FormulariosVinculadosResponseSchema,
+  FormularioVinculadoConRespuestasResponseSchema,
+  type AreaDeLaEvaluacion,
+  type FormulariosVinculadosResponse,
+  type FormularioVinculadoConRespuestasResponse,
+  type VincularFormulariosRequest,
+} from './contratos-evaluacion-y-formularios';
+import {
   LineaDeTiempoResponseSchema,
   ListaDeVistasResponseSchema,
   ProyeccionResponseSchema,
@@ -1902,6 +1910,23 @@ export function crearClienteBe(opciones: OpcionesDeCliente) {
     /** API-CTX-02: la última toma y la anterior (enteras por mi área, o el peso y la composición por el resumen compartido). */
     cuerpoDelContexto(token: string, asesoradoId: string): Promise<Resultado<CuerpoDelContextoResponse>> {
       return llamar('GET', `/advisees/${encodeURIComponent(asesoradoId)}/person-context/body`, { token, esquema: CuerpoDelContextoResponseSchema });
+    },
+    // ─── WP-EVALUACION-Y-FORMULARIOS (DL-185): los formularios vinculados a una evaluación ─────────────
+    /** API-EVF-01: los formularios vinculados a una evaluación propia, con la versión vinculada y si hay una más nueva. */
+    formulariosVinculados(token: string, area: AreaDeLaEvaluacion, evaluationId: string): Promise<Resultado<FormulariosVinculadosResponse>> {
+      return llamar('GET', `/${area}/evaluations/${encodeURIComponent(evaluationId)}/linked-forms`, { token, esquema: FormulariosVinculadosResponseSchema });
+    },
+    /** API-EVF-02: vincular uno o varios, con la versión que se vio; todos o ninguno. */
+    vincularFormularios(token: string, area: AreaDeLaEvaluacion, evaluationId: string, cuerpo: VincularFormulariosRequest, claveDeIdempotencia: string): Promise<Resultado<FormulariosVinculadosResponse>> {
+      return llamar('POST', `/${area}/evaluations/${encodeURIComponent(evaluationId)}/linked-forms`, { token, cuerpo, claveDeIdempotencia, esquema: FormulariosVinculadosResponseSchema });
+    },
+    /** API-EVF-03: desvincular uno. */
+    desvincularFormulario(token: string, area: AreaDeLaEvaluacion, evaluationId: string, linkId: string, claveDeIdempotencia: string): Promise<Resultado<FormulariosVinculadosResponse>> {
+      return llamar('POST', `/${area}/evaluations/${encodeURIComponent(evaluationId)}/linked-forms/${encodeURIComponent(linkId)}/removal`, { token, cuerpo: {}, claveDeIdempotencia, esquema: FormulariosVinculadosResponseSchema });
+    },
+    /** API-EVF-04: abrir uno vinculado: lo que respondió la persona en la versión vinculada. */
+    formularioVinculado(token: string, area: AreaDeLaEvaluacion, evaluationId: string, linkId: string): Promise<Resultado<FormularioVinculadoConRespuestasResponse>> {
+      return llamar('GET', `/${area}/evaluations/${encodeURIComponent(evaluationId)}/linked-forms/${encodeURIComponent(linkId)}`, { token, esquema: FormularioVinculadoConRespuestasResponseSchema });
     },
     /** API-NPP-03: archivar una nota propia; queda en la historia. */
     archivarNotaPropia(token: string, noteId: string, claveDeIdempotencia: string): Promise<Resultado<NotaPropiaResponse>> {

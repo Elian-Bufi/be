@@ -148,6 +148,12 @@ const del09 = rutasDel09();
  * arriba para que se integre sin pisar a otra familia que se sume en paralelo.
  */
 FAMILIAS_DE_BE.GRF = 'DL-174';
+/**
+ * EVF (DL-185, WP-EVALUACION-Y-FORMULARIOS; pedido de Dirección del 2026-11-19): los formularios que la persona respondió,
+ * vinculados por referencia a la evaluación inicial de Nutrición o de Entrenamiento. El 09 no la tiene, y no es CTX (el
+ * panel, que solo lee) ni FRI (los formularios para la persona). Se declara aparte para no pisar a otra familia en paralelo.
+ */
+FAMILIAS_DE_BE.EVF = 'DL-185';
 
 /**
  * OBC (DL-186, WP-OBJETIVO-Y-CALCULADOR; pedido de Dirección del 2026-11-19): el objetivo nutricional con una toma de

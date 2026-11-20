@@ -30,6 +30,7 @@ import { FormularioDeEvaluacion, FormularioDeObjetivo } from './formularios';
 import { ReferenciaDelObjetivo } from './referencia-del-objetivo';
 import { ContextoCitado } from '../training/resumen';
 import { useNombres } from '../../../../lib/nombres-ocultos';
+import { FormulariosDeLaEvaluacion } from '../evaluacion/formularios-de-la-evaluacion';
 
 interface Lecturas {
   readonly evaluaciones: Lectura<EvaluacionNutricional[]>;
@@ -144,6 +145,7 @@ function Resumen({
   pedirInformacion: string;
 }) {
   const { delProfesional } = useNombres();
+  const { token, asesoradoId, sesionPerdida } = useNutricion();
   const { evaluaciones, objetivos, planes, contexto } = lecturas;
   const efectivo = objetivos?.ok ? (objetivos.datos.find((o) => o.isEffective) ?? null) : null;
   const borrador = planes?.ok ? (planes.datos.find((p) => p.state === 'DRAFT') ?? null) : null;
@@ -215,6 +217,8 @@ function Resumen({
                       {dia(lista[0].occurredAt)}
                       {/* DL-179: lo que cita la última evaluación, como en Entrenamiento. */}
                       {lista[0].formResponseReferences.length > 0 ? <ContextoCitado citas={lista[0].formResponseReferences} /> : null}
+                      {/* DL-185 (EVF-05): los formularios vinculados a la última evaluación. */}
+                      <FormulariosDeLaEvaluacion key={lista[0].evaluationId} area="nutrition" token={token} asesoradoId={asesoradoId} sesionPerdida={sesionPerdida} evaluationId={lista[0].evaluationId} />
                     </>
                   ) : (
                     'Sin evaluaciones registradas.'

@@ -45,6 +45,7 @@ import { COPY_RESULTADO_DE_ACTIVAR } from '../resultado-de-activar';
 import { DialogoEmpezarDesdePlantilla, type PlantillaParaEmpezar } from '../empezar-desde-plantilla';
 import { AvisoDeLoQueFalta, seRetiro } from '../lecturas-parciales';
 import { PrimerPlan } from '../primer-plan';
+import { FormulariosDeLaEvaluacion } from '../evaluacion/formularios-de-la-evaluacion';
 import { TiraDelObjetivo } from '../seguimiento/tira-del-objetivo';
 import { HistorialDelPlan, MenuDePlantillas, SelectorDeVersion, type VersionMostrada } from '../versiones-del-plan';
 import { EditorDeBorrador } from './editor';
@@ -579,6 +580,7 @@ function PrimerPlanDeNutricion({ objetivoDesde, accionesDelPlan, onObjetivo }: {
             onCancelar={() => setAbierto(null)}
           />
         }
+        detalleDeLaEvaluacion={ultima ? <FormulariosDeLaEvaluacion key={ultima.evaluationId} area="nutrition" token={token} asesoradoId={asesoradoId} sesionPerdida={sesionPerdida} evaluationId={ultima.evaluationId} /> : null}
         formularioDeObjetivo={
           <FormularioDeObjetivo
             evaluaciones={evaluaciones}

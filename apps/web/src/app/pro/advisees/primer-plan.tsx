@@ -29,6 +29,8 @@ export interface PrimerPlanProps {
   readonly abierto: Paso | null;
   readonly onAbrir: (paso: Paso) => void;
   readonly formularioDeEvaluacion: ReactNode;
+  /** DL-185 (EVF-05): lo que se muestra de la evaluación registrada, debajo de «Registrada el …» (los formularios vinculados). */
+  readonly detalleDeLaEvaluacion?: ReactNode;
   readonly formularioDeObjetivo: ReactNode;
   /** Crear el plan o empezarlo desde una plantilla: las acciones del área, cuando ya hay un objetivo. */
   readonly accionesDelPlan: ReactNode;
@@ -50,6 +52,7 @@ export function PrimerPlan(p: PrimerPlanProps) {
         <PasoDelPlan numero={1} titulo={C.pasoEvaluacion} estado={p.evaluacion === null ? 'despues' : estados.evaluacion}>
           {p.evaluacion === null ? <p className="nota">Cargando…</p> : null}
           {typeof p.evaluacion === 'string' ? <p className="nota">{C.evaluacionLista(p.evaluacion)}</p> : null}
+          {typeof p.evaluacion === 'string' ? p.detalleDeLaEvaluacion : null}
           {p.evaluacion === false && !p.objetivoDesde ? (
             p.abierto === 'evaluacion' ? (
               p.formularioDeEvaluacion

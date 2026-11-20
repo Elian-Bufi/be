@@ -20136,6 +20136,110 @@ html:has(.estacion:not([data-en-el-asistente])) {
   border-top: 1px solid var(--borde);
 }
 
+/* DL-185 (WP-EVALUACION-Y-FORMULARIOS): los formularios que la persona respondió, vinculados a la evaluación inicial. Una
+   lista de renglones con la casilla o las acciones a la derecha; las respuestas, plegadas debajo de cada renglón, con un
+   ancho de lectura. Sin colores de alerta: la versión más nueva se ubica, no se califica. */
+.formularios-de-la-evaluacion--registrada {
+  margin-top: 0.75rem;
+}
+
+.formularios-de-la-evaluacion__lista {
+  margin: 0.25rem 0 0.5rem;
+  padding: 0;
+  list-style: none;
+}
+
+.formularios-de-la-evaluacion__item {
+  padding: 0.5rem 0;
+  border-top: 1px solid var(--borde);
+}
+
+.formularios-de-la-evaluacion__cabecera {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.25rem 1rem;
+}
+
+.formularios-de-la-evaluacion__eleccion {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  cursor: pointer;
+}
+
+.formularios-de-la-evaluacion__eleccion input {
+  flex: none;
+  inline-size: 1.1rem;
+  block-size: 1.1rem;
+  margin: 0;
+  transform: translateY(0.15rem);
+}
+
+.formularios-de-la-evaluacion__acciones {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 1rem;
+}
+
+.formularios-de-la-evaluacion__mas-nueva {
+  margin: 0.35rem 0 0;
+}
+
+.formularios-de-la-evaluacion__respuestas {
+  max-inline-size: 72ch;
+  margin: 0.5rem 0 0 1.6rem;
+}
+
+.formularios-de-la-evaluacion__seccion {
+  margin-top: 0.75rem;
+}
+
+.formularios-de-la-evaluacion__seccion h4 {
+  margin: 0 0 0.25rem;
+  font-size: 0.9rem;
+}
+
+.formularios-de-la-evaluacion__seccion dl {
+  margin: 0;
+}
+
+.formularios-de-la-evaluacion__dato {
+  display: grid;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+  gap: 0.15rem 1rem;
+  padding: 0.35rem 0;
+  border-top: 1px solid var(--borde);
+}
+
+.formularios-de-la-evaluacion__dato dt {
+  color: var(--tenue);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.formularios-de-la-evaluacion__dato dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+  white-space: pre-line;
+}
+
+.formularios-de-la-evaluacion__dato summary {
+  color: var(--tenue);
+  cursor: pointer;
+}
+
+@media (max-width: 640px) {
+  .formularios-de-la-evaluacion__dato {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .formularios-de-la-evaluacion__respuestas {
+    margin-inline-start: 0;
+  }
+}
+
 /* ═══ PLT (DL-182) · La plantilla en el editor (`training/edicion-de-plantilla.tsx`) y en «Mis plantillas» ══════════════
    La cabecera de la plantilla es la barra de comandos del editor, con lo que es de la plantilla: de dónde parte, su
    nombre (el de una nueva se escribe acá), la descripción y el interruptor de las cargas, en una franja compacta debajo.
