@@ -63,7 +63,7 @@ export interface FichaDeLaLeyenda {
    * Las de la barra semanal (rama D, GR-VC13; un cambio que solo agrega): la semana con los siete días en la media, la que
    * tiene algún día afuera, la que tiene días pero no media y la que no tiene ningún día con valor.
    */
-  readonly glifo: 'TIRA' | 'LINEA_CORTADA' | 'SEMANA_ENTERA' | 'SEMANA_HUECA' | 'SEMANA_SIN_MEDIA' | 'SEMANA_SIN_DIAS';
+  readonly glifo: 'TIRA' | 'LINEA_CORTADA' | 'FRANJA' | 'SEMANA_ENTERA' | 'SEMANA_HUECA' | 'SEMANA_SIN_MEDIA' | 'SEMANA_SIN_DIAS';
   readonly corto: string;
   readonly largo: string;
   /** El color del carril de la marca (la línea cortada va en el color de su carril). */
@@ -93,6 +93,12 @@ function GlifoDeLaFicha({ ficha, indice }: { ficha: FichaDeLaLeyenda; indice: nu
           <rect x={1} y={5} width={5} height={6} fill="var(--tenue)" />
           <rect x={8} y={8} width={5} height={3} fill="var(--tenue)" />
           <rect x={15} y={9.5} width={5} height={1.5} fill="var(--grafico-hueco)" />
+        </svg>
+      ) : ficha.glifo === 'FRANJA' ? (
+        <svg width={22} height={14} viewBox="0 0 22 14" aria-hidden="true">
+          <rect x={1} y={3} width={20} height={8} fill="var(--grafico-hueco)" fillOpacity={0.22} />
+          <line x1={1} x2={21} y1={3} y2={3} stroke="var(--grafico-hueco)" strokeWidth={1} strokeDasharray="4 3" />
+          <line x1={1} x2={21} y1={11} y2={11} stroke="var(--grafico-hueco)" strokeWidth={1} strokeDasharray="4 3" />
         </svg>
       ) : (
         <svg width={22} height={14} viewBox="0 0 22 14" aria-hidden="true">

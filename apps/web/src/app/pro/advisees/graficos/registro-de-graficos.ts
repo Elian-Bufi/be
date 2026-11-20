@@ -6,7 +6,7 @@
  *
  * Es puro: lo prueba `apps/web/test/graficos-base.test.mjs`.
  */
-import type { AccesoDeLaPersona, AreaDelGrafico, EjercicioDelPeriodo, IdDeGrafico, UbicacionDelGrafico } from '@be/domain';
+import type { AccesoDeLaPersona, AreaDelGrafico, EjercicioDelPeriodo, IdDeGrafico, UbicacionDelGrafico, VigenciaDePlan } from '@be/domain';
 import type { ComponentType } from 'react';
 import type { BandaDeVersion } from './carriles';
 import type { PeriodoDelGrafico } from './eje-de-fechas';
@@ -40,6 +40,11 @@ export interface PropsDelGrafico {
   readonly medida: string | null;
   /** Las versiones del plan del área del gráfico, de fondo. */
   readonly bandas: readonly BandaDeVersion[];
+  /**
+   * WP-GRAFICOS-POR-FASE (GPF-05): las vigencias de las versiones, para que la franja de lo indicado dure lo que rigió
+   * cada versión. Sin ellas, la franja va del primer al último día con sesiones de esa versión.
+   */
+  readonly vigencias?: readonly VigenciaDePlan[];
   /**
    * Lo que el PDP dejó leer con esta persona: el mismo `acceso` con que el registro lo ofreció. Un gráfico que elige qué
    * área leer (GR-24 sin un ejercicio) lo usa para no pedir un área sin acceso; sin él, ese gráfico no lee nada (rama D;

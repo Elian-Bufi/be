@@ -186,6 +186,7 @@
 | DL-183 | Decisión de Dirección · 2026-11-19 (terminar e integrar la rama E de los gráficos: «Patrones» y los enfoques) | RF-053 · RF-054 · RF-034 · RF-045 · 08 §12.2 · RNF-PRI-002 · DL-126 · DL-128 · DL-152 · DL-163 (TB-16, TB-25) · DL-174 (GR-27, GR-T01 a GR-T19) · DL-175 · DL-176 | La entrega (00, 03, 09, 10, 12, 17 y «Cómo probar BE») describe «Patrones» y los enfoques como hechos, pero solo estaba la API, en una rama sin integrar; la ficha tenía «Resumen», «Línea de tiempo» y «Analizar» | **PROGRAMADA en `wp-graficos-patrones-y-enfoques` (#277, en borrador, sin integrar) · GR-T60 a GR-T64 y GR-VE01 a GR-VE14 a ratificar**: «Patrones» como segunda vista de la ficha (la cinta fija, «En el tiempo» con un solo cursor, «Comparaciones», «Ver la relación» a pedido, «Agregar un gráfico» y «Lo que falta»), el menú del enfoque con «Deshacer», la edición con el aviso de los otros lugares, «Guardar lo que ves como enfoque…», «Mis enfoques» y la pestaña «Patrones» de los editores de Entrenamiento y Nutrición. Sin operaciones nuevas: usa la familia GRF de DL-174 (API-GRF-01 a 07, una migración que solo agrega). Lee solo con el acceso propio, nunca lo compartido de otras áreas (DL-176). Detalle: `docs/paquetes/WP-GRAFICOS.md` §13.6 |
 | DL-185 | Pedido de Dirección · 2026-11-19 («En la evaluación inicial: poder vincular los formularios que la persona ya respondió») | RF-026 · RF-036 · RF-071 · REG-06-97 · 06 §4.4 · 08 §11 y §19.7 · DL-057 · DL-102 · DL-137 D-7 · DL-145 · DL-152 · DL-179 (CTX-D09, CTX-D10) | La evaluación inicial solo podía citar respuestas sueltas; no había forma de dejar constancia de qué formularios de la persona se usaron, ni de saber si ella los corrigió después | **PROGRAMADA en `wp-evaluacion-y-formularios` (PR en borrador, sin integrar) · EVF-D01 a EVF-D13 a ratificar**: la familia EVF (API-EVF-01 a 04), una tabla que solo agrega, y el website en «Empezar el plan» y en Resumen de Nutrición y de Entrenamiento. Por referencia, nunca por copia; la persona no ve nada nuevo. Detalle: `docs/paquetes/WP-EVALUACION-Y-FORMULARIOS.md` |
 | DL-186 | Pedido de Dirección · 2026-11-19 (el objetivo con una toma de Antropometría de referencia y el calculador de macros) | REG-06-123 · INV-06-133 · B05:312-318 · REG-06-157 · REG-06-205 · RNF-PRI-002 · DL-111 · DL-163 (D-17, TB-39) · DL-176 · la decisión de Dirección del 2026-11-13 («Último peso, guardado en gramos») · DL-185 (en paralelo) | El objetivo no se relacionaba con ninguna toma; el profesional calculaba el gasto y los macros fuera de BE y los copiaba; el texto del objetivo decía «BE no calcula requerimientos»; los rangos de cada comida se escribían uno por uno | **PROGRAMADA en `wp-objetivo-y-calculador` (PR en borrador, sin integrar) · OBC-D01 a OBC-D17 a ratificar**: el calculador en «Nueva versión de objetivo» (cinco métodos del gasto en reposo con su fórmula, sus datos y su cita; el factor, con otro para el día de descanso; el ajuste; los macros en g/kg con los carbohidratos por diferencia); el objetivo guardado con su toma y su cálculo (familia propia OBC, API-OBC-01 a 03, una migración que solo agrega), con el aviso de una toma más nueva; la propuesta de rangos por día y por comida, volcada por API-PLN-03 sin pisar lo escrito. Detalle: `docs/paquetes/WP-OBJETIVO-Y-CALCULADOR.md` |
+| DL-187 | Pedido de Dirección · 2026-11-20 (los gráficos por período corto o por versión del plan, la franja de lo indicado y lo indicado frente a lo hecho del volumen) | DL-174 · DL-181 · DL-122 · DL-178 · TB-16 (DL-163 D-7) · 09v10:356 · 09v10:1285-1295 · B10-06 (la lista de términos de Entrenamiento) · B05 | El historial del ejercicio ofrecía 12 semanas, 6 meses o desde el vínculo; la ficha, 7, 30 y 90 días o un año; ningún gráfico elegía una versión del plan; el rango de repeticiones indicado no se dibujaba; BE no calculaba volumen y la palabra estaba prohibida en pantalla; «Patrones» tomaba siempre el ejercicio más registrado | **PROGRAMADA en `wp-graficos-por-fase` (PR en borrador, sin integrar) · GPF-D01 a GPF-D13 a ratificar**: un solo selector de período en los gráficos (4 y 12 semanas, 6 meses, un año, desde que la acompañás, a medida y por versión del plan con «La anterior» y «La siguiente»); la franja de lo indicado en GR-03; series y carga × repeticiones indicadas y hechas por sesión o semana (en el historial y en «Armá tu gráfico»), con una convención declarada; el ejercicio elegible en «Patrones». Sin operaciones nuevas en la API. Detalle: `docs/paquetes/WP-GRAFICOS-POR-FASE.md` |
 
 ---
 
@@ -8973,3 +8974,35 @@ la referencia en el resumen y la propuesta de rangos en el website; las capturas
 - Ratificar OBC-D01 a OBC-D17.
 - Sumar el cálculo del objetivo a la exportación de los datos de la persona.
 - La prueba con un lector de pantalla. Detalle completo: `docs/paquetes/WP-OBJETIVO-Y-CALCULADOR.md`.
+
+## DL-187 — Los gráficos por período corto o por versión del plan, la franja y lo indicado frente a lo hecho
+
+**Prioridad:** alta (Elián mostró los gráficos a un profesor de powerlifting) · DL-174 · DL-181 · DL-122 · DL-178 · TB-16 ·
+09v10:356 · 09v10:1285-1295 · B10-06 · B05 · **Estado:** PEDIDO por Dirección el 2026-11-20 · PROGRAMADA en
+`wp-graficos-por-fase` (PR en borrador, sin integrar) · GPF-D01 a GPF-D13, **a ratificar**. Si al integrar el número choca
+con otro paquete, se renumera.
+
+**Qué pidió Dirección.** Que un año no sea la única manera de mirar: períodos de unas semanas o por los ciclos o fases del
+plan, con un tamaño que se pueda elegir; la franja de lo indicado (si el plan dice de 8 a 10 repeticiones, pintar el rango
+y marcar lo hecho); y lo planificado frente a lo realizado del volumen.
+
+**Qué dice el legajo.** La comparación de entrenamiento no calcula volumen, marcas, promedios ni sumas (09v10:1285-1295)
+y «volumen» está entre los términos prohibidos de Entrenamiento (B10-06); un % RM no se convierte a kg (09v10:356). La
+«Fase» de DL-181 es la etapa del contenido del plan, sin fechas propias.
+
+**Cómo se lo enmienda sin romperlo.** El período por fase se elige por la **versión** del plan, que sí tiene vigencia
+(GPF-D01). La franja y la ubicación de cada punto describen sin calificar (GPF-D06). Lo indicado y lo hecho del volumen
+se calculan con una convención declarada (GPF-D08): carga × repeticiones de las series efectivas, con la carga como se
+registró y en una unidad, sin completar lo que falta; en pantalla se nombra «carga × repeticiones» y no «volumen», que
+sigue prohibido hasta que Dirección lo ratifique (GPF-D09). 09v10:1285-1295 queda enmendado por este pedido solo para
+esta suma, a la vista con su método. No se edita el legajo.
+
+**Lo programado.** Lo puro en el website (el período, la franja, lo indicado y lo hecho) con sus pruebas (TEST-GPF-001 a
+013); el selector único en el cuadro del ejercicio, «Patrones» y «Analizar»; tres series nuevas del catálogo (dominio)
+para «Armá tu gráfico», leídas del comparador con la misma autorización que GR-03 y GR-05; el ejercicio elegible en
+«Patrones»; las capturas en la CI del entorno del tutor. Sin migraciones ni operaciones nuevas en la API.
+
+**Lo que queda.**
+- Ratificar GPF-D01 a GPF-D13 (sobre todo la fase sin fechas y la palabra «volumen»).
+- Por grupo muscular; el gráfico de series y carga × repeticiones como sugerido de «Patrones».
+- La prueba con un lector de pantalla. Detalle completo: `docs/paquetes/WP-GRAFICOS-POR-FASE.md`.

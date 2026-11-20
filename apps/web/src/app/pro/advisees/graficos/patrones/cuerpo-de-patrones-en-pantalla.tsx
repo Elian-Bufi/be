@@ -30,7 +30,7 @@ import { ProveedorDelComparador } from '../entrenamiento/lecturas-del-ejercicio'
 import type { DisponiblesLeidos, ParametrosDeLectura } from '../lecturas';
 import type { DensidadDelGrafico } from '../paneles-alineados';
 import { REGISTRO_DE_GRAFICOS } from '../registros';
-import { COPY_DE_PATRONES as C, crucesDeLaRelacion, enlaceEnAnalizar, loQueFalta, sugeridosQueFaltan, tarjetasDelEnfoque, vecinasEnLaSeccion, type Tarjeta, type TarjetaSugerida, type VecinasDeLaTarjeta } from './patrones';
+import { COPY_DE_PATRONES as C, crucesDeLaRelacion, ejercicioPorDefectoDePatrones, ejerciciosParaElegir, enlaceEnAnalizar, loQueFalta, sugeridosQueFaltan, tarjetasDelEnfoque, vecinasEnLaSeccion, type Tarjeta, type TarjetaSugerida, type VecinasDeLaTarjeta } from './patrones';
 
 /** Lo que la pantalla deja hacer con las tarjetas mientras se edita un enfoque. */
 export interface EdicionDeLasTarjetas {
@@ -56,8 +56,13 @@ export interface PropsDelCuerpo {
 
 export function CuerpoDePatrones({ lectura, periodo, disponibles, acceso, charts, densidad, fondo, edicion, agregar }: PropsDelCuerpo) {
   const contexto = useMemo(() => contextoDelRegistro(acceso, disponibles), [acceso, disponibles]);
-  const tarjetas = useMemo(() => tarjetasDelEnfoque(charts, contexto, REGISTRO_DE_GRAFICOS), [charts, contexto]);
-  const relacion = useMemo(() => crucesDeLaRelacion(tarjetas.relacion, contexto, REGISTRO_DE_GRAFICOS), [tarjetas.relacion, contexto]);
+  // GPF-08: el ejercicio de los gráficos lo elige el profesional; abre en el básico con más sesiones (GPF-D08).
+  const idDelEjercicio = useId();
+  const paraElegir = useMemo(() => ejerciciosParaElegir(disponibles.ejercicios), [disponibles.ejercicios]);
+  const [elegido, setElegido] = useState<string | null>(null);
+  const preferido = elegido !== null && paraElegir.some((x) => x.exerciseKey === elegido) ? elegido : ejercicioPorDefectoDePatrones(disponibles.ejercicios);
+  const tarjetas = useMemo(() => tarjetasDelEnfoque(charts, contexto, REGISTRO_DE_GRAFICOS, preferido), [charts, contexto, preferido]);
+  const relacion = useMemo(() => crucesDeLaRelacion(tarjetas.relacion, contexto, REGISTRO_DE_GRAFICOS, preferido), [tarjetas.relacion, contexto, preferido]);
   const faltan = useMemo(() => (agregar ? sugeridosQueFaltan(charts, contexto, REGISTRO_DE_GRAFICOS) : []), [agregar, charts, contexto]);
   const vigencias = useMemo(
     () => ({
@@ -74,8 +79,25 @@ export function CuerpoDePatrones({ lectura, periodo, disponibles, acceso, charts
   const vecinas = useMemo(() => new Map([...vecinasEnLaSeccion(tarjetas.enElTiempo), ...vecinasEnLaSeccion(tarjetas.comparaciones)]), [tarjetas]);
   const props = { lectura, periodo, densidad, acceso, nombres, vigencias, asesoradoId: lectura.asesoradoId, edicion };
 
+  const elegirElEjercicio =
+    conEntrenamiento && paraElegir.length > 1 ? (
+      <div className="campo campo--en-linea patrones__ejercicio" data-ejercicio-de-patrones>
+        <label htmlFor={idDelEjercicio}>{C.ejercicioDeLosGraficos}</label>
+        <select id={idDelEjercicio} value={preferido ?? ''} onChange={(e) => setElegido(e.target.value)} aria-describedby={`${idDelEjercicio}-nota`}>
+          {paraElegir.map((x) => (
+            <option key={x.exerciseKey} value={x.exerciseKey}>
+              {x.name} · {C.sesionesDelEjercicio(x.sessions)}
+            </option>
+          ))}
+        </select>
+        <span id={`${idDelEjercicio}-nota`} className="nota">
+          {C.ejercicioDeLosGraficosNota}
+        </span>
+      </div>
+    ) : null;
   const contenido = (
     <ProveedorDelCursor>
+      {elegirElEjercicio}
       <CintaQueSePega densidad={densidad}>
         <CintaDelTiempoLeida lectura={lectura} alcances={acceso.alcances} vigencias={[...vigencias.nutricion, ...vigencias.entrenamiento]} periodo={periodo} densidad={densidad} />
       </CintaQueSePega>
@@ -281,6 +303,9 @@ function GraficoDeEntrenamiento(p: PropsDeLaTarjeta & { t: TarjetaSugerida }) {
       medida={p.t.medida}
       bandas={p.t.grafico.id === 'entrenamiento.fuerza-estimada' ? bandas.delEjercicio : bandas.deLaSerie}
       acceso={p.acceso}
+      // GPF-05: con las vigencias que ya leyó «Patrones», la franja dura lo que rigió cada versión (no del primer al
+      // último día con sesiones, que dejaba huecos entre versiones).
+      vigencias={p.vigencias.entrenamiento}
     />
   );
 }

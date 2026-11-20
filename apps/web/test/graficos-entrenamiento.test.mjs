@@ -818,7 +818,8 @@ test('TEST-GRVB-002 · la tira de cada sesión va en la leyenda de GR-02, GR-03 
   assert.equal(TX.FICHAS_DE_ENTRENAMIENTO.escalon.glifo, 'LINEA_CORTADA');
   // Las pantallas las pasan a la leyenda de la base, que las dibuja en la misma línea que las marcas.
   assert.match(leer('graficos/entrenamiento/fuerza-estimada-en-pantalla.tsx'), /fichas=\{conTira \? \[FICHA_DE_LA_TIRA\.fuerza\] : \[\]\}/);
-  assert.match(leer('graficos/entrenamiento/carga-repeticiones-y-rir-en-pantalla.tsx'), /fichas=\{conTira \? \[FICHA_DE_LA_TIRA\.serie\] : \[\]\}/);
+  // GPF-05 (WP-GRAFICOS-POR-FASE): GR-03 suma la ficha de la franja de lo indicado, antes de la tira.
+  assert.match(leer('graficos/entrenamiento/carga-repeticiones-y-rir-en-pantalla.tsx'), /fichas=\{\[\.\.\.\(conFranja \? \[FICHAS_DE_ENTRENAMIENTO\.franja\] : \[\]\), \.\.\.\(conTira \? \[FICHA_DE_LA_TIRA\.serie\] : \[\]\)\]\}/);
   assert.match(leer('graficos/entrenamiento/rir-indicado-y-registrado-en-pantalla.tsx'), /\.\.\.\(carril\.escalones\.length > 0 \? \[\{ \.\.\.FICHAS_DE_ENTRENAMIENTO\.escalon, indice: carril\.indice \}\] : \[\]\)/);
   const marcas = leer('graficos/marcas.tsx');
   assert.match(marcas, /\{fichas\.map\(\(f\) => \(\n\s*<li key=\{`\$\{f\.glifo\}-\$\{f\.corto\}`\} data-ficha=\{f\.glifo\}>/);
@@ -875,7 +876,8 @@ test('TEST-GRVB-004 · lo que pide §5 queda a la vista y lo que aclara va a un 
   assert.match(rir, /aLaVista=\{loQueSeVeALaVista\}/);
   assert.match(rir, /aclaraciones=\{aclaraciones\}/);
   const carga = leer('graficos/entrenamiento/carga-repeticiones-y-rir-en-pantalla.tsx');
-  assert.match(carga, /const notas = comparador\.tipo === 'error' \? \[C\.sinIndicado\] : \[\];/, 'a la vista, lo que falta');
+  // GPF-05: a la vista, también que la carga indicada respecto del RM no va como franja.
+  assert.match(carga, /const notas = \[\.\.\.\(comparador\.tipo === 'error' \? \[C\.sinIndicado\] : \[\]\), \.\.\.\(conPorcentajeRm \? \[C\.porcentajeRmSinFranja\] : \[\]\)\];/, 'a la vista, lo que falta');
   // Un solo «Cómo leerlo» por gráfico: el de la base; ningún desplegable propio.
   for (const ruta of ['fuerza-estimada-en-pantalla.tsx', 'rir-indicado-y-registrado-en-pantalla.tsx', 'carga-repeticiones-y-rir-en-pantalla.tsx', 'perfil-carga-repeticiones-en-pantalla.tsx']) {
     const fuente = leer(`graficos/entrenamiento/${ruta}`);

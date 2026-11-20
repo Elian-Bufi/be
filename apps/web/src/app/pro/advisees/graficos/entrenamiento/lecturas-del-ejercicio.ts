@@ -46,7 +46,7 @@ function fallaDe(r: Resultado<unknown>, sesionPerdida: (r: Resultado<unknown>) =
  * Una lectura que se repite cuando cambia lo que se pide (`clave`) o con `recargar`; `null` mientras lee. Una respuesta
  * de un pedido anterior no pisa la del actual. `clave` `null`: no lee.
  */
-function useLeido<T>(clave: string | null, leer: () => Promise<T>): { readonly leido: T | null; readonly recargar: () => void } {
+export function useLeido<T>(clave: string | null, leer: () => Promise<T>): { readonly leido: T | null; readonly recargar: () => void } {
   const [estado, setEstado] = useState<{ readonly pedido: string; readonly valor: T } | null>(null);
   const [vuelta, setVuelta] = useState(0);
   const pedido = clave === null ? null : `${clave}#${vuelta}`;

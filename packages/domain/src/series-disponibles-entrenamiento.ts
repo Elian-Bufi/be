@@ -121,6 +121,85 @@ const UNO_RM_ESTIMADO: SerieDisponible = (() => {
   };
 })();
 
+/**
+ * WP-GRAFICOS-POR-FASE (GPF-07; DL-187): lo indicado y lo hecho del volumen de un ejercicio, para sumarlo en «Armá tu
+ * gráfico». Salen del comparador, como el RIR indicado (API-TRN-21 en tramos de 92 días y API-SER-01 por versión): las
+ * calcula el website con la convención de DL-187 (`graficos/entrenamiento/programado-y-hecho.ts`). El volumen de la
+ * proyección (`entrenamiento.volumen-carga-externa`, API-PRJ-01) sigue sin ofrecerse: cuando la API lo calcule con esta
+ * convención, reemplaza a `entrenamiento.carga-por-repeticiones-hecha`. En pantalla no se dice «volumen» (es un término
+ * prohibido de Entrenamiento, B10-06): se dice «carga × repeticiones» (GPF-D09).
+ */
+function delComparador(id: string, base: string, cambios: Partial<DefinicionDeMetrica>, marca: 'REGISTRADO' | 'INDICADO'): SerieDisponible {
+  const definicion: DefinicionDeMetrica = { ...delDiccionario(base), id, clase: 'DERIVABLE', implementada: true, ...cambios };
+  return {
+    id,
+    definicion,
+    ejeX: 'SESION',
+    granos: ['ORIGINAL'],
+    unirPuntos: true,
+    fuente: { tipo: 'CONTEXTO_DE_REVISION', operaciones: ['API-TRN-21', 'API-SER-01'], diasPorLectura: 92 },
+    acceso: ACCESO,
+    metodo: null,
+    marca,
+    requiere: { ejercicio: true, serie: false, listaV1: false },
+    rangoMinimoDelEje: null,
+    estado: 'OFRECIDA',
+    graficos: ['GPF-06'],
+  };
+}
+
+const VOLUMEN = {
+  unidad: 'kg·rep',
+  escala: 'RATIO',
+  parametro: 'LOAD',
+  granos: [{ grano: 'ORIGINAL', agregacion: 'SUM' }],
+  cambioRelativo: false,
+  decimales: 0,
+  limites: ['Es carga × repeticiones con la carga como se registró (con mancuernas, por mancuerna).', 'No equivale a trabajo mecánico, gasto energético ni estímulo.', 'kg y lb nunca van juntas.'],
+} as const satisfies Partial<DefinicionDeMetrica>;
+
+const SERIES_INDICADAS = delComparador(
+  'entrenamiento.series-indicadas',
+  'entrenamiento.series-registradas',
+  {
+    nombre: 'Series indicadas del ejercicio',
+    nombreCorto: 'Series indicadas',
+    explicacion: 'Cuántas series efectivas planificaba para el ejercicio la versión del plan que rigió cada sesión.',
+    comoSeCalcula: 'Se cuentan las series planificadas de la prescripción en la instantánea de la sesión. El calentamiento no cuenta.',
+    ausencias: 'Una sesión sustituida por otro ejercicio no tiene series indicadas de este.',
+    limites: ['Es lo que indicaba el plan, no lo que hizo la persona.'],
+  },
+  'INDICADO',
+);
+
+const VOLUMEN_HECHO = delComparador(
+  'entrenamiento.carga-por-repeticiones-hecha',
+  'entrenamiento.series-registradas',
+  {
+    ...VOLUMEN,
+    nombre: 'Carga × repeticiones hecha',
+    nombreCorto: 'Carga × rep. hecha',
+    explicacion: 'La suma de carga × repeticiones de las series efectivas registradas del ejercicio en cada sesión.',
+    comoSeCalcula: 'Con la carga como se registró y en una sola unidad (DL-187). Una serie sin carga o sin repeticiones no entra; una sesión «no realizada» aporta 0.',
+    ausencias: 'Un registro resumido o un ejercicio sin registrar en la sesión no tienen este dato: no es 0.',
+  },
+  'REGISTRADO',
+);
+
+const VOLUMEN_INDICADO = delComparador(
+  'entrenamiento.carga-por-repeticiones-indicada',
+  'entrenamiento.series-registradas',
+  {
+    ...VOLUMEN,
+    nombre: 'Carga × repeticiones indicada',
+    nombreCorto: 'Carga × rep. indicada',
+    explicacion: 'La suma de carga sugerida × repeticiones indicadas de las series planificadas, en la versión que rigió cada sesión.',
+    comoSeCalcula: 'Con un rango de repeticiones, lo indicado es un rango, que no se dibuja como un número (DL-187). Si a alguna serie le falta la carga sugerida o las repeticiones, la sesión queda sin indicar.',
+    ausencias: 'Un % RM no se convierte a kg: esa sesión queda sin indicar.',
+  },
+  'INDICADO',
+);
+
 export const SERIES_DE_ENTRENAMIENTO: readonly SerieDisponible[] = [
   deEntrenamiento('entrenamiento.carga', 'OFRECIDA', ['GR-03']),
   deEntrenamiento('entrenamiento.repeticiones', 'OFRECIDA', ['GR-03']),
@@ -128,6 +207,9 @@ export const SERIES_DE_ENTRENAMIENTO: readonly SerieDisponible[] = [
   deEntrenamiento('entrenamiento.series-registradas', 'OFRECIDA', [], true),
   RIR_INDICADO,
   UNO_RM_ESTIMADO,
+  SERIES_INDICADAS,
+  VOLUMEN_HECHO,
+  VOLUMEN_INDICADO,
   // GR-09 y GR-D2: el nombre y el método piden una DL (fase 3); la entrada del diccionario sigue sin ofrecerse.
   deEntrenamiento('entrenamiento.volumen-carga-externa', 'PIDE_DL', ['GR-09'], true),
   // No implementada en el diccionario: los tiempos de la sesión (API-TIE-03) todavía no entran en los gráficos.

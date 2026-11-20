@@ -48,7 +48,19 @@ interface SerieLeida {
   readonly elegida: SerieElegida;
 }
 
-type EstadoDelArmado = EstadoDelGrafico | { readonly tipo: 'LISTA'; readonly series: readonly SerieLeida[] };
+type EstadoDelArmado = EstadoDelGrafico | { readonly tipo: 'LISTA'; readonly series: readonly SerieLeida[]; readonly sinDatos?: string | null };
+
+/**
+ * WP-GRAFICOS-POR-FASE: una serie elegida que no tiene observaciones en el período no se dibuja, pero se dice (antes
+ * desaparecía sin aviso, y «Carga × repeticiones indicada y hecha» mostraba solo lo hecho). Un área sin acceso, no.
+ */
+function notaDeLasSinDatos(refs: readonly ReferenciaDeMetrica[], leidas: readonly { readonly tipo: string }[]): string | null {
+  const sinDatos = refs.filter((_, i) => leidas[i]?.tipo === 'sin-datos');
+  if (sinDatos.length === 0) return null;
+  const nombres = sinDatos.map((r) => `«${serieDisponible(r.metricId)?.definicion.nombreCorto ?? r.metricId}»`).join(', ');
+  const rango = sinDatos.some((r) => r.metricId === 'entrenamiento.carga-por-repeticiones-indicada') ? ' Lo indicado con un rango de repeticiones es un rango y no se dibuja como un número.' : '';
+  return `Sin observaciones en el período: ${nombres}.${rango}`;
+}
 
 /** El nombre de una serie con su ejercicio, si lo tiene: «Carga · Sentadilla · serie 1 (kg)». */
 function nombreDe(ref: ReferenciaDeMetrica, nombre: string, ejercicios: ReadonlyMap<string, string>): string {
@@ -148,7 +160,7 @@ export function GraficoArmadoEnPantalla({
       const listas = leidas.flatMap((l) => (l.tipo === 'lista' ? [l.serie] : []));
       // Una serie de un área sin acceso no se dibuja ni deja un hueco; si no queda ninguna, el gráfico no está.
       if (listas.length === 0) return setEstado(leidas.every((l) => l.tipo === 'sin-acceso') ? { tipo: 'SIN_ACCESO' } : { tipo: 'SIN_DATOS', texto: 'Sin observaciones de estas series en el período.' });
-      setEstado({ tipo: 'LISTA', series: listas });
+      setEstado({ tipo: 'LISTA', series: listas, sinDatos: notaDeLasSinDatos(grafico.series, leidas) });
     });
     return () => {
       vigente = false;
@@ -176,11 +188,11 @@ export function GraficoArmadoEnPantalla({
         nombresCortos={nombres}
         densidad={densidad}
         leyenda={leyenda}
-        frase={fraseDeLaCoincidencia(elegidas, 'OVERLAY', superposicion.composicion?.ejesY.length ?? 1)}
+        frase={[fraseDeLaCoincidencia(elegidas, 'OVERLAY', superposicion.composicion?.ejesY.length ?? 1), estado.sinDatos].filter(Boolean).join(' ') || null}
       />
     );
   }
   const frase = fraseDeLaCoincidencia(elegidas, 'PANELS', elegidas.length);
   const motivo = superposicion && superposicion.motivo && !sinTodas ? `${NOMBRE_DEL_MODO.OVERLAY}: ${motivoDeSuperpuestas(superposicion.motivo, superposicion.grupos, nombres).replace(/^«Superpuestas» /, '')}` : null;
-  return <PanelesAlineados titulo={grafico.title} periodo={periodo} carriles={carriles} densidad={densidad} leyenda={leyenda} notas={[...(motivo ? [motivo] : []), ...(frase ? [frase] : [])]} />;
+  return <PanelesAlineados titulo={grafico.title} periodo={periodo} carriles={carriles} densidad={densidad} leyenda={leyenda} notas={[...(motivo ? [motivo] : []), ...(frase ? [frase] : []), ...(estado.sinDatos ? [estado.sinDatos] : [])]} />;
 }

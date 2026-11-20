@@ -21,16 +21,17 @@ import { diaYMes, inicioDelEje } from '../eje-de-fechas';
 import { EstadoDelGraficoEnPantalla } from '../estado-del-grafico';
 import { PanelesAlineados } from '../paneles-alineados';
 import type { PropsDelGrafico } from '../registro-de-graficos';
-import { carrilesDeCargaRepeticionesYRir, indicadoDeLasSesionesHechas } from './carga-repeticiones-y-rir';
+import { carrilesDeCargaRepeticionesYRir, conLoIndicadoDeFondo, indicadoDeLasSesionesHechas } from './carga-repeticiones-y-rir';
 import { cargadasDespues, ejecucionesConElEjercicio, fechasCargadasDespues, fechasConElEjercicio, observacionesDelPeriodo } from './comparador';
-import { COPY_CARGA_REPETICIONES_Y_RIR as C, FICHA_DE_LA_TIRA } from './copy';
+import { COPY_CARGA_REPETICIONES_Y_RIR as C, FICHA_DE_LA_TIRA, FICHAS_DE_ENTRENAMIENTO } from './copy';
+import { indicaPorcentajeRm } from './franja-de-lo-indicado';
 import { useComparador, useLecturaDeLaSerie } from './lecturas-del-ejercicio';
 
 const LEYENDA: readonly SentidoDeLaMarca[] = ['REGISTRADO', 'INDICADO', 'CARGA_RAPIDA'];
 
 const serieDe = (e: EstadoDeSerie) => (e.tipo === 'lista' ? e.serie : null);
 
-export function CargaRepeticionesYRir({ lectura, periodo, densidad, ejercicio, bandas }: PropsDelGrafico) {
+export function CargaRepeticionesYRir({ lectura, periodo, densidad, ejercicio, bandas, vigencias = [] }: PropsDelGrafico) {
   const exerciseKey = ejercicio?.exerciseKey ?? null;
   const numero = ejercicio?.serie ?? 1;
   const { serie: leida, recargar } = useLecturaDeLaSerie(lectura, periodo, exerciseKey, numero, ejercicio?.unidad ?? null);
@@ -46,12 +47,19 @@ export function CargaRepeticionesYRir({ lectura, periodo, densidad, ejercicio, b
     const todoLoIndicado = lista ? puntosDeLoIndicado(lista.ejecuciones, lista.objetivosPorVersion, { exerciseKey, serie: numero, medida: { variable: 'rir' }, desde, hasta: periodo.hasta }) : [];
     const indicado = indicadoDeLasSesionesHechas(todoLoIndicado, ejecucionesConElEjercicio(observaciones));
     const tardias = lista ? cargadasDespues(lista.ejecuciones) : new Set<string>();
-    return carrilesDeCargaRepeticionesYRir(
+    const base = carrilesDeCargaRepeticionesYRir(
       { carga: serieDe(leida.carga), repeticiones: serieDe(leida.repeticiones), rir: serieDe(leida.rir) },
       // Las tres tiras marcan las mismas sesiones: cada una, con su raya baja donde a su panel le falta el dato.
       { serie: numero, indicado, cargadoTarde: fechasCargadasDespues(observaciones, tardias), sesiones: fechasConElEjercicio(observaciones) },
     );
-  }, [leida, exerciseKey, comparador, periodo, numero]);
+    // GPF-05: la franja de lo indicado de fondo (repeticiones y carga), y cada punto ubicado respecto de ella.
+    return conLoIndicadoDeFondo(base, observaciones, { serie: numero, unidad: ejercicio?.unidad ?? null, vigencias, desde, hasta: periodo.hasta });
+  }, [leida, exerciseKey, comparador, periodo, numero, ejercicio?.unidad, vigencias]);
+  const conPorcentajeRm = useMemo(() => {
+    if (comparador.tipo !== 'lista' || !exerciseKey || !ejercicio?.unidad) return false;
+    const observaciones = observacionesDelPeriodo(comparador.ejecuciones, exerciseKey, comparador.objetivosPorVersion, inicioDelEje(periodo), periodo.hasta);
+    return indicaPorcentajeRm(observaciones, numero, { variable: 'carga', unidad: ejercicio.unidad });
+  }, [comparador, exerciseKey, ejercicio?.unidad, periodo, numero]);
 
   if (!exerciseKey) return null;
   if (!leida) return <EstadoDelGraficoEnPantalla estado={{ tipo: 'CARGANDO' }} />;
@@ -63,7 +71,8 @@ export function CargaRepeticionesYRir({ lectura, periodo, densidad, ejercicio, b
   if (estados.some((e) => e.tipo === 'cargando')) return <EstadoDelGraficoEnPantalla estado={{ tipo: 'CARGANDO' }} />;
   if (carriles.every((c) => c.puntos.every((p) => p.valor === null))) return <EstadoDelGraficoEnPantalla estado={{ tipo: 'SIN_DATOS', texto: C.sinDatos(numero) }} />;
   // A la vista, solo lo que falta (el RIR indicado, si el comparador no se leyó); lo que aclara cada marca, en «Cómo leerlo».
-  const notas = comparador.tipo === 'error' ? [C.sinIndicado] : [];
+  const notas = [...(comparador.tipo === 'error' ? [C.sinIndicado] : []), ...(conPorcentajeRm ? [C.porcentajeRmSinFranja] : [])];
+  const conFranja = carriles.some((c) => (c.franjas ?? []).length > 0);
   const aclaraciones = [C.sinRirEscrito, C.rirDelPlan, ...(comparador.tipo === 'error' ? [] : [C.indicadoHueco]), ...(comparador.tipo === 'lista' && comparador.enTramos ? [G.leidoEnTramos] : [])];
   const conTira = carriles.some((c) => c.cobertura.length > 0);
   return (
@@ -75,7 +84,7 @@ export function CargaRepeticionesYRir({ lectura, periodo, densidad, ejercicio, b
         bandas={bandas}
         densidad={densidad}
         leyenda={LEYENDA}
-        fichas={conTira ? [FICHA_DE_LA_TIRA.serie] : []}
+        fichas={[...(conFranja ? [FICHAS_DE_ENTRENAMIENTO.franja] : []), ...(conTira ? [FICHA_DE_LA_TIRA.serie] : [])]}
         detalle={C.detalle(G.periodo(diaYMes(inicioDelEje(periodo), periodo.hoy), periodo.hasta >= periodo.hoy ? null : diaYMes(periodo.hasta, periodo.hoy)))}
         notas={notas}
         aclaraciones={aclaraciones}

@@ -20,6 +20,7 @@ import {
   DIAS_MAXIMOS_DE_LAS_NOTAS_DE_LAS_SESIONES,
   definicionDeMetrica,
   fechaCivil,
+  observacionesDelEjercicio,
   serieDisponible,
   type Alcance,
   type DominioDeAnalisis,
@@ -44,6 +45,7 @@ import { ejercicioDeLaEstimacion, objetivosDelPlanLeido, serieDeLaFuerza, serieD
 import { ESTADOS_DE_LA_CINTA, TIPOS_DE_HITO_DE_LA_CINTA, tramosDeLaCinta, ZONA_POR_DEFECTO, type NotaDeLaSesionDeLaCinta } from './cinta-del-tiempo';
 import { inicioDelEje, tramosDe, type PeriodoDelGrafico } from './eje-de-fechas';
 import { leerSeriePorKilo } from './nutricion/lecturas-de-nutricion';
+import { esSerieDelVolumen, serieDelVolumen } from './entrenamiento/programado-y-hecho';
 
 export interface ParametrosDeLectura {
   readonly token: string;
@@ -207,6 +209,7 @@ function medidaDeLoIndicado(serie: SerieDisponible, ref: ReferenciaDeMetrica): M
 
 /** Lo indicado del entrenamiento como serie del catálogo (fuente CONTEXTO_DE_REVISION): GR-03 y GR-05. */
 async function leerLoIndicado(p: ParametrosDeLectura, ref: ReferenciaDeMetrica, serie: SerieDisponible): Promise<EstadoDeSerie> {
+  if (esSerieDelVolumen(serie.id)) return leerElVolumen(p, ref, serie.id, serie.definicion.nombre);
   const medida = medidaDeLoIndicado(serie, ref);
   if (!ref.exerciseKey || ref.setIndex === null || medida === null) return { tipo: 'error', motivo: 'OTRO' };
   const sesiones = await leerLasSesionesEnTramos(p);
@@ -225,6 +228,25 @@ async function leerLoIndicado(p: ParametrosDeLectura, ref: ReferenciaDeMetrica, 
     nombre: serie.definicion.nombre,
     escala: serie.definicion.escala,
   });
+  if (s.points.length === 0) return { tipo: 'sin-datos' };
+  return { tipo: 'lista', serie: s, observaciones: s, bandas: [], objetivo: [], escalones: [], indicado: null, parcial: false, generada: new Date().toISOString(), zona: sesiones.zona };
+}
+
+/**
+ * GPF-07 (DL-187): las series indicadas y el volumen indicado y hecho, del mismo comparador que lo indicado, para «Armá
+ * tu gráfico». Las sesiones del período, en tramos de 92 días, y los objetivos de cada versión: nada más que eso.
+ */
+async function leerElVolumen(p: ParametrosDeLectura, ref: ReferenciaDeMetrica, metricId: Parameters<typeof serieDelVolumen>[1]['metricId'], nombre: string): Promise<EstadoDeSerie> {
+  if (!ref.exerciseKey) return { tipo: 'error', motivo: 'OTRO' };
+  const sesiones = await leerLasSesionesEnTramos(p);
+  if (sesiones === null) return { tipo: 'cargando' };
+  if (sesiones.tipo !== 'lista') return sesiones;
+  const objetivos = await leerLosObjetivosDeLasVersiones(p, sesiones.ejecuciones.map((x) => x.planId));
+  if (objetivos === null) return { tipo: 'cargando' };
+  if (objetivos.tipo === 'error') return objetivos;
+  const desde = inicioDelEje(p.periodo);
+  const observaciones = observacionesDelEjercicio(sesiones.ejecuciones, ref.exerciseKey, sesiones.ejecuciones, objetivos.objetivos).filter((o) => o.comparacion.fecha >= desde && o.comparacion.fecha <= p.periodo.hasta);
+  const s = serieDelVolumen(observaciones, { metricId, nombre, unidad: ref.unit ?? 'kg' });
   if (s.points.length === 0) return { tipo: 'sin-datos' };
   return { tipo: 'lista', serie: s, observaciones: s, bandas: [], objetivo: [], escalones: [], indicado: null, parcial: false, generada: new Date().toISOString(), zona: sesiones.zona };
 }

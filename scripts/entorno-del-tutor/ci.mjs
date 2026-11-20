@@ -326,7 +326,272 @@ async function capturas() {
     await ir(ruta);
     await foto(archivo, que);
   }
+  // Los gráficos que cruzan áreas, recortados al gráfico, en Claro a 1440 y a 1920 (para mostrarlos fuera de BE).
+  try {
+    await capturasDeGraficos({ page, ir, idDe, asentar, indice });
+  } catch (e) {
+    indice.push('', `Las capturas de los gráficos se cortaron: ${String(e?.message ?? e).slice(0, 300)}`);
+    console.log('capturas de gráficos: falla', e);
+  }
   indice.push('', `Errores de la página: ${errores.length ? errores.slice(0, 10).join(' | ') : 'ninguno'}.`, '', `La historia: ${historia.personas.length} personas.`);
   fs.writeFileSync(path.join(salida, 'indice.md'), `${indice.join('\n')}\n`);
   await navegador.close();
+}
+
+/**
+ * Los gráficos que cruzan áreas, para mostrar qué se ve cuando se cargan datos: SP-01 con Valeria, «Armá tu gráfico» con
+ * Tomás (fuerza, proteína y peso), y «Patrones» de cada persona con lo indicado frente a lo registrado. Cada gráfico se
+ * recorta a su tarjeta, en Claro, a 1440 y a 1920, con el doble de densidad para que se lea en un teléfono.
+ */
+async function capturasDeGraficos({ page, ir, idDe, asentar, indice }) {
+  const carpeta = path.join(salida, 'graficos');
+  fs.mkdirSync(carpeta, { recursive: true });
+  page.on('dialog', (d) => void d.accept().catch(() => {}));
+  indice.push('', '## Gráficos que cruzan áreas (recortados)', '', '| Archivo | Gráfico | Persona |', '|---|---|---|');
+  const claro = async (ancho) => {
+    await page.evaluate(() => {
+      document.documentElement.dataset.tema = 'claro';
+      try {
+        localStorage.setItem('be-apariencia', 'claro');
+      } catch {}
+    });
+    await page.setViewport({ width: ancho, height: ancho === 1920 ? 1080 : 900, deviceScaleFactor: 2 });
+    await pausa(700);
+  };
+  const sinCargando = async () => {
+    await page.waitForFunction(() => ![...document.querySelectorAll('[aria-busy="true"], .cargando')].some((n) => n.offsetParent !== null), { timeout: 20_000 }).catch(() => {});
+    await asentar();
+  };
+  const recortar = async (selector, archivo, que, quien) => {
+    const els = await page.$$(selector);
+    let n = 0;
+    for (const [i, el] of els.entries()) {
+      await el.evaluate((x) => x.scrollIntoView({ block: 'start' }));
+      await sinCargando();
+      const caja = await el.boundingBox();
+      if (!caja || caja.width < 50 || caja.height < 50) continue;
+      const grafico = (await el.evaluate((x) => x.dataset.grafico ?? 'x')).replace(/[^a-z0-9.-]/gi, '_');
+      const nombre = archivo.replace('{i}', String(i + 1).padStart(2, '0')).replace('{g}', grafico);
+      await el.screenshot({ path: path.join(carpeta, nombre), captureBeyondViewport: true });
+      indice.push(`| \`graficos/${nombre}\` | ${que} | ${quien} |`);
+      n++;
+    }
+    console.log(`gráficos: ${archivo} → ${n}`);
+    return n;
+  };
+  const valeria = await idDe('valeria').catch(() => null);
+  const tomas = await idDe('tomas').catch(() => null);
+  const carolina = await idDe('carolina').catch(() => null);
+  // Ventanas cortas (unas 12 semanas) alrededor de una fase del plan, para que se lean pocos puntos: la semana `w` de la
+  // historia de cada persona es `origen + (w - semanas) × 7` (las semanas cuentan hacia atrás desde el origen).
+  const semanaDe = (clave, w) => constantes.masDias(origen, (w - PERSONAS.find((x) => x.clave === clave).semanas) * 7);
+  const ventana = (clave, w0, w1) => `desde=${semanaDe(clave, w0)}&hasta=${w1 === null ? hoy : semanaDe(clave, w1)}`;
+  const VENTANAS = {
+    // Valeria: seis semanas antes y seis después de «Más carbohidratos» (semana 51, la misma de «Fuerza 4-6»).
+    valeria: ventana('valeria', 45, 57),
+    // Tomás: el final de «Hipertrofia 3» y todo «Fuerza 2» (semana 55), hasta hoy.
+    fuerzaFinal: ventana('tomas', 49, null),
+    // Tomás: el viaje de nueve días y el ajuste de calorías (semana 30).
+    viaje: ventana('tomas', 24, 36),
+    // Tomás: «Fuerza» (semana 14), la descarga (20) y la vuelta a «Hipertrofia 2» (21).
+    primeraFuerza: ventana('tomas', 12, 24),
+  };
+  indice.push('', `Ventanas: ${Object.entries(VENTANAS).map(([k, v]) => `${k} ${v}`).join(' · ')}`, '');
+  for (const ancho of [1920]) {
+    await claro(ancho);
+    // f. WP-GRAFICOS-POR-FASE (GPF-01 a GPF-08) con Tomás: «Patrones» en 12 semanas con el ejercicio por omisión (la
+    // sentadilla, el básico con más sesiones), el selector abierto, una versión del plan elegida (y la anterior), y la
+    // franja de lo indicado en GR-03. Las series y la carga × repeticiones van con «Armá tu gráfico» (escenas de b).
+    if (tomas) {
+      try {
+        await porFase({ page, ir, asentar, sinCargando, recortar, carpeta, indice, ancho, tomas });
+      } catch (e) {
+        indice.push(`| — | las escenas por fase se cortaron: ${String(e?.message ?? e).slice(0, 200)} | Tomás M. |`);
+        console.log('escenas por fase: falla', e);
+      }
+    }
+    // a. SP-01 con Valeria, desde «Analizar» → «Ver la relación»: la ventana corta y, para contrastar, el año.
+    if (valeria) {
+      for (const [sufijo, periodo] of [['12s', VENTANAS.valeria], ['365', 'p=365']]) {
+        await ir(`/pro/advisees?id=${valeria}&vista=analizar&pregunta=ver-la-relacion&${periodo}`);
+        await sinCargando();
+        // En una ventana corta, el ejercicio por omisión puede ser otro: se elige la sentadilla trasera, como en el año.
+        const ejercicio = await page.evaluate(() => {
+          for (const sel of document.querySelectorAll('main select')) {
+            const op = [...sel.options].find((o) => /^Sentadilla trasera/i.test(o.textContent.trim()));
+            if (!op) continue;
+            if (sel.value !== op.value) {
+              Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value').set.call(sel, op.value);
+              sel.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+            return op.textContent.trim();
+          }
+          return 'sin sentadilla en la lista';
+        });
+        indice.push(`| — | SP-01 ${sufijo}: ${ejercicio} | Valeria Q. |`);
+        await pausa(1500);
+        await sinCargando();
+        await recortar('article[data-grafico]', `a-valeria-relacion-{g}-${sufijo}__${ancho}.png`, `«Ver la relación» (SP-01 y SP-02), ${periodo}`, 'Valeria Q.');
+      }
+    }
+    // b. «Armá tu gráfico» con Tomás: cada escena, sus tres series (a 1440 solo la primera).
+    const ENT = (serie) => [['Área', 'Entrenamiento'], ['Ejercicio', 'Sentadilla trasera'], ['Serie', serie]];
+    const ESCENAS = [
+      ['fuerza-proteina-peso', 'Fuerza, proteína y peso', VENTANAS.fuerzaFinal, [ENT('1RM'), [['Área', 'Nutrici'], ['Serie', 'prote.*(kilo|kg)']], [['Área', 'Antropometr'], ['Medida', '^\\s*Peso']]]],
+      ['fuerza-proteina-peso-365', 'Fuerza, proteína y peso', 'p=365', [ENT('1RM'), [['Área', 'Nutrici'], ['Serie', 'prote.*(kilo|kg)']], [['Área', 'Antropometr'], ['Medida', '^\\s*Peso']]]],
+      ['sentadilla-carga-reps-rir', 'Sentadilla: carga, repeticiones y RIR', VENTANAS.fuerzaFinal, [ENT('^Carga registrada'), ENT('^Repeticiones registradas'), ENT('^RIR registrado')]],
+      ['sentadilla-rir-indicado', 'Sentadilla: lo indicado y lo hecho', VENTANAS.fuerzaFinal, [ENT('^RIR indicado'), ENT('^RIR registrado'), ENT('1RM')]],
+      // GPF-07: las series indicadas y las hechas, y la carga × repeticiones indicada y hecha (DL-187), en 12 semanas.
+      ['series-indicadas-y-hechas', 'Sentadilla: series indicadas y hechas', 'p=84', [ENT('^Series indicadas'), ENT('^Series registradas'), ENT('^Carga × repeticiones hecha')]],
+      ['carga-por-repeticiones', 'Sentadilla: carga × repeticiones indicada y hecha', 'p=84', [ENT('^Carga × repeticiones indicada'), ENT('^Carga × repeticiones hecha')]],
+      // GPF-D09: «volumen» no se dice en pantalla, tampoco en el nombre de un gráfico de ejemplo; y la serie de la proyección
+      // («Volumen de carga») nunca se ofreció: la escena usa la carga × repeticiones hecha del comparador (DL-187).
+      ['volumen-y-energia', 'Sentadilla: carga × repeticiones y calorías', VENTANAS.viaje, [ENT('^Series registradas'), ENT('^Carga × repeticiones hecha'), [['Área', 'Nutrici'], ['Serie', '^(Calor|Energ).*registrad']]]],
+      ['fuerza-carbohidratos-proteina', 'Fuerza y macros', VENTANAS.primeraFuerza, [ENT('1RM'), [['Área', 'Nutrici'], ['Serie', '^Carbohidratos registrados$|^Carbohidratos registrados']], [['Área', 'Nutrici'], ['Serie', '^Prote[ií]nas registradas$|^Prote[ií]nas registradas \\(']]]],
+    ];
+    for (const [clave, titulo, periodo, grupos] of tomas ? ESCENAS : []) {
+      await ir('/pro/advisees');
+      await ir(`/pro/advisees?id=${tomas}&vista=patrones&${periodo}`);
+      await sinCargando();
+      const boton = await page.$('[data-arma-tu-grafico]');
+      if (!boton) {
+        indice.push('| — | sin «Armá tu gráfico» en Patrones | Tomás M. |');
+        break;
+      }
+      await boton.evaluate((x) => x.scrollIntoView({ block: 'center' }));
+      await boton.click();
+      await page.waitForSelector('.compositor', { timeout: 15_000 });
+      await pausa(500);
+      const elegir = (etiqueta, patron) =>
+        page.evaluate(
+          (et, pa) => {
+            const raiz = document.querySelector('.compositor');
+            const label = [...raiz.querySelectorAll('label')].find((l) => l.textContent.trim().startsWith(et));
+            const sel = label ? document.getElementById(label.htmlFor) : null;
+            if (!sel) return `sin ${et}`;
+            const re = new RegExp(pa, 'i');
+            const op = [...sel.options].find((o) => re.test(o.textContent.trim())) ?? null;
+            if (!op) return `sin opción ${pa} en ${et}: ${[...sel.options].map((o) => o.textContent).join(' / ')}`;
+            Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value').set.call(sel, op.value);
+            sel.dispatchEvent(new Event('change', { bubbles: true }));
+            return op.textContent;
+          },
+          etiqueta,
+          patron,
+        );
+      const agregar = async () => {
+        await page.evaluate(() => [...document.querySelectorAll('.compositor__agregar button')].find((b) => b.textContent.trim() === 'Agregar')?.click());
+        await pausa(600);
+      };
+      const pasos = [];
+      await page.type('.compositor input[type="text"]', titulo);
+      for (const grupo of grupos) {
+        for (const [et, pa] of grupo) {
+          pasos.push(await elegir(et, pa));
+          await pausa(300);
+        }
+        await agregar();
+      }
+      console.log(`compositor ${clave}:`, pasos.join(' | '));
+      indice.push(`| — | compositor ${clave}: ${pasos.join(' · ')} | Tomás M. |`);
+      await sinCargando();
+      await pausa(1500);
+      await page.evaluate(() => {
+        const raiz = document.querySelector('.compositor');
+        const cuadro = raiz.closest('[role="dialog"], dialog') ?? raiz;
+        cuadro.setAttribute('data-captura', 'compositor');
+      });
+      if (clave === 'fuerza-proteina-peso') await recortar('[data-captura="compositor"]', `b-tomas-arma-tu-grafico-selector__${ancho}.png`, '«Armá tu gráfico»: las tres series elegidas', 'Tomás M.');
+      await recortar('.compositor__vista-previa', `b-tomas-${clave}__${ancho}.png`, `«Armá tu gráfico»: ${titulo}`, 'Tomás M.');
+      await page.evaluate(() => {
+        const raiz = document.querySelector('.compositor');
+        const cuadro = raiz.closest('[role="dialog"], dialog') ?? document;
+        [...cuadro.querySelectorAll('button')].find((b) => b.textContent.trim() === 'Cancelar')?.click();
+      });
+      await pausa(800);
+    }
+    // c, d y e. «Patrones» de cada una: cada tarjeta, con los cruces a pedido abiertos.
+    for (const [clave, pid, nombre] of [
+      ['tomas', tomas, 'Tomás M.'],
+      ['valeria', valeria, 'Valeria Q.'],
+      ['carolina', carolina, 'Carolina R.'],
+    ]) {
+      if (!pid) continue;
+      await ir(`/pro/advisees?id=${pid}&vista=patrones&p=365`);
+      await sinCargando();
+      for (const b of await page.$$('[data-ver-el-cruce]')) {
+        await b.evaluate((x) => x.scrollIntoView({ block: 'center' }));
+        await b.click().catch(() => {});
+        await pausa(400);
+      }
+      await sinCargando();
+      await recortar('article[data-grafico]', `e-${clave}-patrones-{i}-{g}__${ancho}.png`, '«Patrones»: una tarjeta', nombre);
+    }
+  }
+  await page.setViewport({ width: 1920, height: 1080, deviceScaleFactor: 1 });
+}
+
+/**
+ * WP-GRAFICOS-POR-FASE: las escenas del período y de la franja con Tomás, en Claro. Cada una deja su captura en
+ * `graficos/` y su renglón en el índice: lo que eligió (el ejercicio, la versión) queda escrito.
+ */
+async function porFase({ page, ir, asentar, sinCargando, recortar, carpeta, indice, ancho, tomas }) {
+  const renglon = (archivo, que) => indice.push('| `graficos/' + archivo + '` | ' + que + ' | Tomás M. |');
+  const vista = async (archivo, que) => {
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await pausa(400);
+    await page.screenshot({ path: path.join(carpeta, archivo) });
+    renglon(archivo, que);
+  };
+  const gr03 = 'article:has(section[data-grafico="GR-03"])';
+  // f1. 12 semanas, con el ejercicio que abre «Patrones».
+  await ir('/pro/advisees');
+  await ir(`/pro/advisees?id=${tomas}&vista=patrones&p=84`);
+  await sinCargando();
+  const ejercicio = await page.evaluate(() => {
+    const sel = document.querySelector('[data-ejercicio-de-patrones] select');
+    return sel ? (sel.options[sel.selectedIndex]?.textContent?.trim() ?? '—') : 'sin selector de ejercicio';
+  });
+  indice.push(`| — | «Patrones» en 12 semanas abre con: ${ejercicio} | Tomás M. |`);
+  await vista(`f1-tomas-patrones-12-semanas__${ancho}.png`, '«Patrones» en 12 semanas: el período y el ejercicio elegido');
+  await recortar(gr03, `f1-tomas-franja-12-semanas-{i}__${ancho}.png`, 'GR-03 con la franja de lo indicado, 12 semanas', 'Tomás M.');
+  // f2. El selector abierto: las duraciones, «Desde que la acompañás», a medida y por versión del plan.
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await pausa(300);
+  await page.click('[data-selector-de-periodo] .periodo-del-seguimiento__boton');
+  await pausa(600);
+  const panel = await page.$('[data-selector-de-periodo] .periodo-del-seguimiento__panel');
+  if (panel) {
+    const archivo = `f2-tomas-selector-abierto__${ancho}.png`;
+    await panel.screenshot({ path: path.join(carpeta, archivo) });
+    renglon(archivo, 'El selector de período de los gráficos, abierto');
+  }
+  // f3. Una versión del plan de Entrenamiento: la segunda más nueva (la anterior a la vigente), y después «La anterior».
+  const version = await page.evaluate(() => {
+    const sel = document.querySelector('[data-por-version] select');
+    const grupo = sel ? [...sel.querySelectorAll('optgroup')].find((g) => g.label === 'Entrenamiento') : null;
+    const op = grupo ? (grupo.querySelectorAll('option')[1] ?? grupo.querySelectorAll('option')[0]) : null;
+    if (!sel || !op) return `sin versiones: ${sel ? [...sel.options].map((o) => o.textContent).join(' / ') : 'sin selector'}`;
+    Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value').set.call(sel, op.value);
+    sel.dispatchEvent(new Event('change', { bubbles: true }));
+    return op.textContent.trim();
+  });
+  indice.push(`| — | versión elegida: ${version} | Tomás M. |`);
+  await asentar();
+  await sinCargando();
+  await pausa(1200);
+  await vista(`f3-tomas-una-version__${ancho}.png`, `«Patrones» en una versión del plan (${version})`);
+  await recortar(gr03, `f3-tomas-franja-una-version-{i}__${ancho}.png`, `GR-03 con la franja, en la versión ${version}`, 'Tomás M.');
+  const anterior = await page.evaluate(() => {
+    const b = [...document.querySelectorAll('[data-pasos-entre-versiones] button')][0];
+    if (!b || b.disabled) return 'sin anterior';
+    b.click();
+    return b.textContent.trim();
+  });
+  indice.push(`| — | «La anterior»: ${anterior} | Tomás M. |`);
+  await asentar();
+  await sinCargando();
+  await pausa(1200);
+  await vista(`f4-tomas-la-version-anterior__${ancho}.png`, '«La anterior»: la versión de antes, con su vigencia');
+  await recortar(gr03, `f4-tomas-franja-version-anterior-{i}__${ancho}.png`, 'GR-03 con la franja, en la versión anterior', 'Tomás M.');
 }

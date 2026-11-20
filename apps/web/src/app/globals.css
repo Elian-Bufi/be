@@ -2707,6 +2707,16 @@ html:has(.acciones--fijas) {
   position: relative;
 }
 
+/* WP-GRAFICOS-POR-FASE (GPF-03): con una versión del plan elegida, «La anterior» y «La siguiente» al lado del botón. */
+.periodo-del-seguimiento__pasos {
+  display: inline-flex;
+  flex-wrap: wrap;
+  /* «La anterior» y «La siguiente» son dos enlaces: con poco aire se leían como una sola frase. */
+  gap: 1.25rem;
+  margin-left: 0.5rem;
+  vertical-align: middle;
+}
+
 .periodo-del-seguimiento__boton {
   display: inline-flex;
   align-items: center;

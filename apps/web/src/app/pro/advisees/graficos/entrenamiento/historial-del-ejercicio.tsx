@@ -22,7 +22,6 @@ import { Enlace } from '../../../../../components/enlace';
 import { Icono } from '../../../../../components/icono';
 import type { Resultado } from '../../../../../lib/api';
 import { ICONO_DE_FALLA } from '../../../../../lib/fallas';
-import { hoyEn } from '../../seguimiento/estado';
 import { bandasDeVersion } from '../adaptadores';
 import { CintaDelTiempoLeida } from '../cinta-del-tiempo-en-pantalla';
 import { ProveedorDelCursor } from '../cursor-de-fechas';
@@ -30,12 +29,15 @@ import { inicioDelEje, type PeriodoDelGrafico } from '../eje-de-fechas';
 import type { ParametrosDeLectura } from '../lecturas';
 import type { EjercicioDelGraficoElegido, PropsDelGrafico } from '../registro-de-graficos';
 import { CargaRepeticionesYRir } from './carga-repeticiones-y-rir-en-pantalla';
-import { COPY_CARGA_REPETICIONES_Y_RIR, COPY_DEL_HISTORIAL as C, COPY_RIR_INDICADO_Y_REGISTRADO, type OpcionDePeriodo, type PasoDelHistorial as Paso } from './copy';
+import { COPY_CARGA_REPETICIONES_Y_RIR, COPY_DEL_HISTORIAL as C, COPY_RIR_INDICADO_Y_REGISTRADO, type PasoDelHistorial as Paso } from './copy';
 import { FuerzaEstimada } from './fuerza-estimada-en-pantalla';
 import { bandasConElCambio, observacionesDelPeriodo } from './comparador';
 import { ProveedorDelComparador, useComparador, useIndiceDelPeriodo, useInicioDelAcompanamiento } from './lecturas-del-ejercicio';
 import { PerfilCargaRepeticiones } from './perfil-carga-repeticiones-en-pantalla';
-import { haciaElProgresoEnAnalizar, haciaLaFuerzaEnAnalizar, haciaLoIndicadoEnAnalizar, OPCIONES_DE_PERIODO, periodoDelHistorial } from './periodo-del-historial';
+import { ProgramadoYHechoEnPantalla } from './programado-y-hecho-en-pantalla';
+import { haciaElProgresoEnAnalizar, haciaLaFuerzaEnAnalizar, haciaLoIndicadoEnAnalizar } from './periodo-del-historial';
+import { enElPeriodo } from '../periodo-de-los-graficos';
+import { SelectorDePeriodoDeGraficos, useEleccionDePeriodo } from '../selector-de-periodo-de-graficos';
 import { RirIndicadoYRegistrado } from './rir-indicado-y-registrado-en-pantalla';
 
 /**
@@ -120,6 +122,10 @@ function GraficosDelHistorial({
         <RirIndicadoYRegistrado {...conBandasDeLaSerie} densidad="COMPLETA" />
         <AbrirEnAnalizar href={haciaLoIndicadoEnAnalizar(asesoradoId, exerciseKey, periodo)} que={COPY_RIR_INDICADO_Y_REGISTRADO.titulo(serie)} />
       </div>
+      {/* GPF-06: las series y el volumen, lo indicado y lo hecho, por sesión o por semana. */}
+      <div className="historial-del-ejercicio__grafico">
+        <ProgramadoYHechoEnPantalla {...props} bandas={bandas.delEjercicio} densidad="COMPACTA" />
+      </div>
       <div className="historial-del-ejercicio__grafico">
         <CintaDelEjercicio lectura={lectura} periodo={periodo} vigencias={vigencias} exerciseKey={exerciseKey} />
       </div>
@@ -157,14 +163,14 @@ export function PasoDelHistorial({
   nombre: string;
 }) {
   const id = useId();
-  const [opcion, setOpcion] = useState<OpcionDePeriodo>('DOCE_SEMANAS');
   const [serieElegida, setSerieElegida] = useState<number | null>(null);
   const [unidadElegida, setUnidadElegida] = useState<'kg' | 'lb' | null>(null);
   const [orientativas, setOrientativas] = useState(false);
-  const hoy = useMemo(() => hoyEn(), []);
   const lectura = useMemo(() => ({ token, asesoradoId, sesionPerdida }), [token, asesoradoId, sesionPerdida]);
   const inicio = useInicioDelAcompanamiento(token, asesoradoId, sesionPerdida);
-  const periodo = useMemo(() => (inicio.tipo === 'listo' ? periodoDelHistorial(opcion, hoy, inicio.inicio) : null), [inicio, opcion, hoy]);
+  // WP-GRAFICOS-POR-FASE (GPF-01): el mismo selector que el resto de los gráficos, con las versiones del plan.
+  const eleccion = useEleccionDePeriodo(token, asesoradoId, sesionPerdida, inicio);
+  const periodo = eleccion.periodo;
   const { indice, recargar } = useIndiceDelPeriodo(lectura, periodo);
   const exerciseKey = `e:${exerciseId}`;
   const enLaLista = entraEnLaEstimacion(exerciseId);
@@ -183,7 +189,7 @@ export function PasoDelHistorial({
     if (!ej) {
       cuerpo = (
         <BloqueDeEstado tipo="vacio" icono="informacion">
-          {opcion === 'DESDE_EL_VINCULO' ? C.sinSesiones : C.sinSesionesEnElPeriodo(C.enElPeriodo[opcion])}
+          {eleccion.eleccion.tipo === 'DESDE_EL_VINCULO' && !periodo.recortado ? C.sinSesiones : C.sinSesionesEnElPeriodo(enElPeriodo(eleccion.eleccion, periodo))}
         </BloqueDeEstado>
       );
     } else {
@@ -192,7 +198,7 @@ export function PasoDelHistorial({
       const unidades = ej.loadUnits;
       const unidad = unidadElegida !== null && unidades.includes(unidadElegida) ? unidadElegida : (unidades[0] ?? null);
       const ejercicio: EjercicioDelGraficoElegido = { exerciseKey, nombre, unidad, serie };
-      const props: PropsDelGrafico = { lectura, periodo, densidad: 'COMPACTA', ejercicio, medida: null, bandas: bandasDeVersion(indice.vigencias, 'ENTRENAMIENTO') };
+      const props: PropsDelGrafico = { lectura, periodo, densidad: 'COMPACTA', ejercicio, medida: null, bandas: bandasDeVersion(indice.vigencias, 'ENTRENAMIENTO'), vigencias: indice.vigencias };
       cuerpo = (
         <>
           {(paso === 'historial' && series.length > 1) || unidades.length > 1 ? (
@@ -247,16 +253,9 @@ export function PasoDelHistorial({
   return (
     <div className="historial-del-ejercicio" data-historial-del-ejercicio={paso}>
       <p className="nota">{C.queEs}</p>
-      <fieldset className="capas historial-del-ejercicio__periodo">
-        <legend>{C.periodo}</legend>
-        {OPCIONES_DE_PERIODO.map((o) => (
-          <label key={o} className="capa">
-            <input type="radio" name={`${id}-periodo`} value={o} checked={opcion === o} onChange={() => setOpcion(o)} />
-            {C.opciones[o]}
-          </label>
-        ))}
-      </fieldset>
-      {periodo && opcion === 'DESDE_EL_VINCULO' && periodo.recortado ? <p className="nota">{inicio.tipo === 'listo' && inicio.fallo ? C.sinInicio : C.hastaUnAnio}</p> : null}
+      <div className="historial-del-ejercicio__periodo">
+        <SelectorDePeriodoDeGraficos leida={eleccion} inicio={inicio} />
+      </div>
       {cuerpo}
     </div>
   );

@@ -64,7 +64,7 @@ import { DialogoDeNota } from './nota-de-coordinacion';
 import { areaParaAbrir, hrefDeLaHistoriaAnterior } from './previous-history/historia-anterior';
 import { PestanasDelSeguimiento, SelectorDePeriodo } from './seguimiento/barra';
 import { motivoDeFalla, ProveedorDelSeguimiento, type PanelDelResumen, type PedidoDeNota } from './seguimiento/contexto';
-import { conRetorno, hoyEn, inicioDelAcompanamiento, leerPeriodo, leerVista, periodoDesdeElVinculo, periodoEnInstantes, sinPeriodoEnLaUrl, valorDeRetorno, type Acompanamiento, type Periodo } from './seguimiento/estado';
+import { conRetorno, hoyEn, inicioDelAcompanamiento, leerVista, periodoDeLaFicha, periodoEnInstantes, valorDeRetorno, type Acompanamiento, type Periodo } from './seguimiento/estado';
 import { LineaDeTiempo } from './seguimiento/linea-de-tiempo';
 import { ResumenDelSeguimiento } from './seguimiento/resumen';
 import { Pista } from '../../../components/pista';
@@ -97,7 +97,7 @@ export function Workspace() {
   const antesDeSalir = useAntesDeSalir();
   const id = parametros.get('id') ?? '';
   const vista = leerVista(parametros.get('vista'));
-  const claveDelPeriodo = `${parametros.get('p') ?? ''}|${parametros.get('desde') ?? ''}|${parametros.get('hasta') ?? ''}`;
+  const claveDelPeriodo = `${parametros.get('p') ?? ''}|${parametros.get('desde') ?? ''}|${parametros.get('hasta') ?? ''}|${parametros.get('etapa') ?? ''}`;
   const { token, sesionPerdida, yo, cargarYo } = useEspacioProfesional(`/pro/advisees?id=${id}`);
   const [panel, setPanel] = useState<PanelDelResumen>({ tipo: 'cargando' });
   const [encabezado, setEncabezado] = useState<Encabezado>({ tipo: 'cargando' });
@@ -110,7 +110,7 @@ export function Workspace() {
   const acompanamiento: Acompanamiento = acompanamientoLeido?.id === id ? acompanamientoLeido.valor : SIN_ACOMPANAMIENTO;
   const periodoEfectivo = (inicio: string | null): Periodo => {
     const url = new URLSearchParams(parametros.toString());
-    return periodoDesdeElVinculo(leerPeriodo(url), sinPeriodoEnLaUrl(url), inicio);
+    return periodoDeLaFicha(url, inicio);
   };
   const enPalabras = (p: Periodo) => `${p.preset ?? ''}|${p.desde}|${p.hasta}`;
   const claveDelEfectivo = enPalabras(periodoEfectivo(acompanamiento.inicio));
@@ -395,7 +395,7 @@ export function Workspace() {
             <div className="marco-de-la-ficha__derecha">
               {/* La ayuda corta de la vista que se está mirando: una sola, siempre en el mismo lugar (C-04; DL-146). */}
               <ComoSeLeeEstaVista vista={vista} />
-              <SelectorDePeriodo />
+              <SelectorDePeriodo vista={vista} />
             </div>
           </div>,
         )}
