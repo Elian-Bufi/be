@@ -428,6 +428,8 @@ function pantallas(ids) {
           const formResponseId = await page.$eval('[data-formulario-vinculado]', (x) => x.getAttribute('data-formulario-vinculado'));
           await corregir(sesiones.camila, formResponseId, 'FRM-NUTRICION-INICIO', COMO_COMES_HOY, { fieldCode: 'nut_no_negociable', answer: texto('El asado del domingo y el helado del sábado') });
           nota('Camila Ortiz corrigió «Cómo comés hoy» después de vincularlo');
+          // Ir a otra vista y volver: el plan se monta de nuevo y vuelve a leer lo vinculado (empujar la misma ruta no remonta).
+          await ir(page, `/pro/advisees/nutrition?id=${ids.camila}&vista=resumen`);
           await ir(page, area('nutrition', ids.camila));
           await visible(page, '[data-version-mas-nueva]', null, 45_000);
           await aLaVista(page, '[data-formularios-de-la-evaluacion]');
