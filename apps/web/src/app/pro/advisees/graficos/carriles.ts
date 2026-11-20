@@ -51,6 +51,20 @@ export interface EscalonDelCarril {
   readonly rotulo: string;
 }
 
+/**
+ * WP-GRAFICOS-POR-FASE (GPF-05): lo indicado como **franja**, en escalones según la versión que rige: de `minimo` a
+ * `maximo` (un valor fijo es una franja de alto cero, que se dibuja como una raya), de `desde` a `hasta`. Va de fondo,
+ * en gris, sin color de juicio: lo registrado se marca encima.
+ */
+export interface FranjaDelCarril {
+  readonly desde: string;
+  readonly hasta: string;
+  readonly minimo: number;
+  readonly maximo: number;
+  /** «8 a 10 rep · v3», para la lectura y la tabla. */
+  readonly rotulo: string;
+}
+
 export interface EscalaDelCarril {
   readonly rangoMinimo?: number;
   readonly enteros: boolean;
@@ -88,6 +102,8 @@ export interface CarrilDePuntos {
    * leyenda se ve en el dibujo). Sin esto, la marca sigue al ancho del día, como siempre.
    */
   readonly porSesion?: boolean;
+  /** GPF-05: la franja de lo indicado, de fondo (solo si comparte la unidad). */
+  readonly franjas?: readonly FranjaDelCarril[];
 }
 
 export interface SemanaDelCarril {
@@ -166,6 +182,8 @@ export type GeometriaDelCarril =
       readonly marcas: readonly MarcaUbicada[];
       readonly indicado: readonly MarcaUbicada[];
       readonly escalones: readonly { readonly x1: number; readonly x2: number; readonly y: number; readonly rotulo: string }[];
+      /** GPF-05: la franja de lo indicado, de fondo; ausente si el carril no la tiene. */
+      readonly franjas?: readonly { readonly x1: number; readonly x2: number; readonly y1: number; readonly y2: number; readonly rotulo: string }[];
       /** Lo que no entra en la escala: lleva su muesca y la cuenta en el pie. */
       readonly fueraDeLaEscala: number;
     }
@@ -265,6 +283,7 @@ export function geometriaDelCarril(c: Carril, escala: EscalaDeFechas, alto: numb
     ...puntos.filter(conValor).map((p) => p.valor),
     ...indicado.flatMap((p) => (p.rango ? [p.rango.desde, p.rango.hasta] : conValor(p) ? [p.valor] : [])),
     ...c.escalones.map((e) => e.valor),
+    ...(c.franjas ?? []).filter((f) => f.hasta >= escala.desde && f.desde <= escala.hasta).flatMap((f) => [f.minimo, f.maximo]),
   ];
   const extremos = extremosDelCarril(valores, c.unidad, c.escala);
   const y = (v: number): number => AIRE_DEL_CARRIL + util - ((v - extremos.abajo) / (extremos.arriba - extremos.abajo || 1)) * util;
@@ -283,9 +302,18 @@ export function geometriaDelCarril(c: Carril, escala: EscalaDeFechas, alto: numb
     y: acotada(e.valor),
     rotulo: e.rotulo,
   }));
+  const franjas = (c.franjas ?? [])
+    .filter((f) => f.hasta >= escala.desde && f.desde <= escala.hasta)
+    .map((f) => ({
+      x1: escala.x(f.desde < escala.desde ? escala.desde : f.desde) - escala.porDia / 2,
+      x2: escala.x(f.hasta > escala.hasta ? escala.hasta : f.hasta) + escala.porDia / 2,
+      y1: acotada(f.maximo),
+      y2: acotada(f.minimo),
+      rotulo: f.rotulo,
+    }));
   // De 3 a 5 marcas redondas, sin un número repetido: la grilla tenue va en cada una (DISENO-VISUAL §1, principio 4).
   const marcasY = extremos.valores.map((valor) => ({ valor, y: y(valor) }));
-  return { tipo: 'PUNTOS', extremos, marcasY, lineas, marcas, indicado: indicadoUbicado, escalones, fueraDeLaEscala: puntos.filter((p) => conValor(p) && fuera(p.valor)).length };
+  return { tipo: 'PUNTOS', extremos, marcasY, lineas, marcas, indicado: indicadoUbicado, escalones, ...(c.franjas ? { franjas } : {}), fueraDeLaEscala: puntos.filter((p) => conValor(p) && fuera(p.valor)).length };
 }
 
 /**

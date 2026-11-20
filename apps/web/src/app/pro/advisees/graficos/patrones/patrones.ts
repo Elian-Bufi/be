@@ -95,6 +95,9 @@ export const COPY_DE_PATRONES = {
   volverALosSugeridos: 'Volver a los sugeridos',
   usarElDeLaPersona: 'Usar el de la persona',
   nadaSeEscribeEnElPlan: 'Lo que ves acá no escribe en el plan.',
+  ejercicioDeLosGraficos: 'Ejercicio',
+  ejercicioDeLosGraficosNota: 'Los gráficos de un ejercicio muestran este, salvo los que tu enfoque fija en otro.',
+  sesionesDelEjercicio: (n: number) => (n === 1 ? '1 sesión' : `${n} sesiones`),
 } as const;
 
 // ─── El ejercicio de un gráfico ──────────────────────────────────────────────────────────────────────────────
@@ -109,9 +112,15 @@ const unidadDe = (e: Pick<EjercicioDelPeriodo, 'loadUnits'>): 'kg' | 'lb' | null
  * Para un gráfico que pide la lista de la v1 (el 1RM estimado), «el más registrado» se cuenta entre los de esa lista
  * (GR-VE03): así un enfoque «Foco en fuerza» sirve con cualquier persona que haga alguno.
  */
-export function ejercicioResuelto(e: EjercicioDelGrafico | null, ejercicios: readonly EjercicioDelPeriodo[] | null, soloListaV1: boolean, soloConCarga = false): EjercicioResuelto {
+export function ejercicioResuelto(e: EjercicioDelGrafico | null, ejercicios: readonly EjercicioDelPeriodo[] | null, soloListaV1: boolean, soloConCarga = false, preferido: string | null = null): EjercicioResuelto {
   if (e === null) return null;
   const candidatos = soloListaV1 ? ejerciciosDeLaListaV1(ejercicios) : [...(ejercicios ?? [])].filter((x) => x.sessions > 0).sort((a, b) => b.sessions - a.sessions);
+  // GPF-08: «el más registrado» (el 1.º) es el ejercicio que eligió el profesional en «Patrones», si el gráfico lo admite
+  // (con carga, si dibuja la carga; de la lista de la v1, si es el 1RM estimado). Uno fijo del enfoque se respeta.
+  if (e.kind === 'MOST_RECORDED' && e.rank === 1 && preferido) {
+    const x = candidatos.find((c) => c.exerciseKey.toLowerCase() === preferido.toLowerCase() && (!soloConCarga || c.loadUnits.length > 0));
+    if (x) return { exerciseKey: x.exerciseKey, nombre: x.name, unidad: unidadDe(x), serie: null };
+  }
   if (e.kind === 'MOST_RECORDED' && soloConCarga) {
     // GR-VE13: para un gráfico de la carga, «el más registrado» es el más registrado con carga (unas dominadas sin lastre
     // dejarían el panel de la carga vacío). Uno fijo se respeta: lo eligió el profesional.
@@ -125,6 +134,19 @@ export function ejercicioResuelto(e: EjercicioDelGrafico | null, ejercicios: rea
   }
   const x = candidatos[e.rank - 1];
   return x ? { exerciseKey: x.exerciseKey, nombre: x.name, unidad: unidadDe(x), serie: null } : 'NO_APLICA';
+}
+
+/** GPF-08: los ejercicios que se pueden elegir en «Patrones»: los que tienen sesiones en el período, de más a menos. */
+export const ejerciciosParaElegir = (ejercicios: readonly EjercicioDelPeriodo[] | null): EjercicioDelPeriodo[] =>
+  [...(ejercicios ?? [])].filter((x) => x.sessions > 0).sort((a, b) => b.sessions - a.sessions || a.name.localeCompare(b.name, 'es'));
+
+/**
+ * GPF-08 (GPF-D08): el ejercicio con que abre «Patrones»: el básico (de la lista de la v1: sentadilla, press de banca,
+ * peso muerto…) con más sesiones en el período; si no hay ninguno, el de más sesiones. Antes era siempre el de más
+ * sesiones, y salían accesorios.
+ */
+export function ejercicioPorDefectoDePatrones(ejercicios: readonly EjercicioDelPeriodo[] | null): string | null {
+  return ejerciciosDeLaListaV1(ejercicios)[0]?.exerciseKey ?? ejerciciosParaElegir(ejercicios)[0]?.exerciseKey ?? null;
 }
 
 /** Los gráficos que dibujan la carga: su «más registrado» se busca entre los ejercicios con carga registrada. */
@@ -185,7 +207,7 @@ function areasQueSeVen(chartId: string, c: ContextoDelRegistro): boolean {
  * website no conoce, uno que no se elige suelto y uno de un área sin acceso no aparecen y no se cuentan; uno de un área
  * que se ve, pero sin lo que pide en el período (un ejercicio, sesiones, tomas), se cuenta en `noAplican`.
  */
-export function tarjetasDelEnfoque(charts: readonly GraficoDelEnfoque[], c: ContextoDelRegistro, registro: RegistroDeGraficos): TarjetasDePatrones {
+export function tarjetasDelEnfoque(charts: readonly GraficoDelEnfoque[], c: ContextoDelRegistro, registro: RegistroDeGraficos, preferido: string | null = null): TarjetasDePatrones {
   const enElTiempo: Tarjeta[] = [];
   const comparaciones: Tarjeta[] = [];
   const relacion: TarjetaSugerida[] = [];
@@ -208,7 +230,7 @@ export function tarjetasDelEnfoque(charts: readonly GraficoDelEnfoque[], c: Cont
       noAplican++;
       return;
     }
-    const ejercicio = ejercicioResuelto(ref.exercise, c.ejercicios, grafico.requiere.listaV1, conCarga(grafico.id));
+    const ejercicio = ejercicioResuelto(ref.exercise, c.ejercicios, grafico.requiere.listaV1, conCarga(grafico.id), preferido);
     if (ejercicio === 'NO_APLICA' || (ejercicio === null && grafico.requiere.ejercicio)) {
       noAplican++;
       return;
@@ -235,13 +257,13 @@ export function tarjetasDelEnfoque(charts: readonly GraficoDelEnfoque[], c: Cont
  * «Ver la relación»: los cruces preparados que existen en el caso del profesional (SP-01 y SP-02 en el caso 1), los
  * nombre o no el enfoque. Sin las dos áreas con planes o tomas propios, ninguno: la sección no está.
  */
-export function crucesDeLaRelacion(enElEnfoque: readonly TarjetaSugerida[], c: ContextoDelRegistro, registro: RegistroDeGraficos): TarjetaSugerida[] {
+export function crucesDeLaRelacion(enElEnfoque: readonly TarjetaSugerida[], c: ContextoDelRegistro, registro: RegistroDeGraficos, preferido: string | null = null): TarjetaSugerida[] {
   const ofrecidos = registro.ofrecidos(c).filter((g) => g.ubicacion === 'RELACION');
   const extra = ofrecidos
     .filter((g) => !enElEnfoque.some((t) => t.grafico.id === g.id))
     .flatMap((g): TarjetaSugerida[] => {
       const referencia: GraficoDelEnfoque = { kind: 'SUGGESTED', chartId: g.id, exercise: g.requiere.ejercicio ? { kind: 'MOST_RECORDED', rank: 1 } : null, bodyMetric: null };
-      const ejercicio = ejercicioResuelto(referencia.kind === 'SUGGESTED' ? referencia.exercise : null, c.ejercicios, g.requiere.listaV1, conCarga(g.id));
+      const ejercicio = ejercicioResuelto(referencia.kind === 'SUGGESTED' ? referencia.exercise : null, c.ejercicios, g.requiere.listaV1, conCarga(g.id), preferido);
       if (ejercicio === 'NO_APLICA') return [];
       return [{ tipo: 'SUGERIDO', indice: -1, clave: `relacion-${g.id}`, titulo: g.titulo, referencia, grafico: g, ejercicio, medida: null }];
     });

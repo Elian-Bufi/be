@@ -34,6 +34,7 @@ import { FuerzaEstimada } from './fuerza-estimada-en-pantalla';
 import { bandasConElCambio, observacionesDelPeriodo } from './comparador';
 import { ProveedorDelComparador, useComparador, useIndiceDelPeriodo, useInicioDelAcompanamiento } from './lecturas-del-ejercicio';
 import { PerfilCargaRepeticiones } from './perfil-carga-repeticiones-en-pantalla';
+import { ProgramadoYHechoEnPantalla } from './programado-y-hecho-en-pantalla';
 import { haciaElProgresoEnAnalizar, haciaLaFuerzaEnAnalizar, haciaLoIndicadoEnAnalizar } from './periodo-del-historial';
 import { enElPeriodo } from '../periodo-de-los-graficos';
 import { SelectorDePeriodoDeGraficos, useEleccionDePeriodo } from '../selector-de-periodo-de-graficos';
@@ -121,6 +122,10 @@ function GraficosDelHistorial({
         <RirIndicadoYRegistrado {...conBandasDeLaSerie} densidad="COMPLETA" />
         <AbrirEnAnalizar href={haciaLoIndicadoEnAnalizar(asesoradoId, exerciseKey, periodo)} que={COPY_RIR_INDICADO_Y_REGISTRADO.titulo(serie)} />
       </div>
+      {/* GPF-06: las series y el volumen, lo indicado y lo hecho, por sesión o por semana. */}
+      <div className="historial-del-ejercicio__grafico">
+        <ProgramadoYHechoEnPantalla {...props} bandas={bandas.delEjercicio} densidad="COMPACTA" />
+      </div>
       <div className="historial-del-ejercicio__grafico">
         <CintaDelEjercicio lectura={lectura} periodo={periodo} vigencias={vigencias} exerciseKey={exerciseKey} />
       </div>
@@ -193,7 +198,7 @@ export function PasoDelHistorial({
       const unidades = ej.loadUnits;
       const unidad = unidadElegida !== null && unidades.includes(unidadElegida) ? unidadElegida : (unidades[0] ?? null);
       const ejercicio: EjercicioDelGraficoElegido = { exerciseKey, nombre, unidad, serie };
-      const props: PropsDelGrafico = { lectura, periodo, densidad: 'COMPACTA', ejercicio, medida: null, bandas: bandasDeVersion(indice.vigencias, 'ENTRENAMIENTO') };
+      const props: PropsDelGrafico = { lectura, periodo, densidad: 'COMPACTA', ejercicio, medida: null, bandas: bandasDeVersion(indice.vigencias, 'ENTRENAMIENTO'), vigencias: indice.vigencias };
       cuerpo = (
         <>
           {(paso === 'historial' && series.length > 1) || unidades.length > 1 ? (

@@ -14,10 +14,11 @@
  *
  * Es puro: lo prueba `apps/web/test/graficos-entrenamiento.test.mjs`.
  */
-import { DETALLE_DE_SERIE, esPuntoDeCargaRapida, numero, serieDisponible, type PuntoAnalitico, type SerieAnalitica } from '@be/domain';
+import { DETALLE_DE_SERIE, esPuntoDeCargaRapida, numero, serieDisponible, type Medida, type ObservacionDeEvolucion, type PuntoAnalitico, type SerieAnalitica, type VigenciaDePlan } from '@be/domain';
 import { carrilDeSerie } from '../adaptadores';
 import type { CarrilDePuntos, EscalaDelCarril, PuntoDelCarril } from '../carriles';
 import { COPY_CARGA_REPETICIONES_Y_RIR as C } from './copy';
+import { conLaUbicacion, franjasDeLoIndicado } from './franja-de-lo-indicado';
 
 export const ESCALA_DE_LA_CARGA: EscalaDelCarril = { enteros: false };
 export const ESCALA_DE_LAS_REPETICIONES: EscalaDelCarril = { enteros: true, desdeCero: true };
@@ -134,4 +135,22 @@ export function carrilesDeCargaRepeticionesYRir(
     );
   }
   return carriles;
+}
+
+/**
+ * WP-GRAFICOS-POR-FASE (GPF-05): la franja de lo indicado de fondo en el panel de las repeticiones y, si la unidad es la
+ * de lo sugerido, en el de la carga; y en cada punto registrado, dónde queda respecto de lo indicado en su sesión
+ * («dentro de lo indicado (8 a 10)», «2 por encima…»), sin calificar. El panel del RIR sigue con lo indicado hueco.
+ */
+export function conLoIndicadoDeFondo(
+  carriles: readonly CarrilDePuntos[],
+  observaciones: readonly ObservacionDeEvolucion[],
+  o: { readonly serie: number; readonly unidad: 'kg' | 'lb' | null; readonly vigencias: readonly VigenciaDePlan[]; readonly desde: string; readonly hasta: string },
+): CarrilDePuntos[] {
+  return carriles.map((c) => {
+    const medida: Medida | null = c.id === 'repeticiones' ? { variable: 'repeticiones' } : c.id === 'carga' && o.unidad ? { variable: 'carga', unidad: o.unidad } : null;
+    if (!medida) return c;
+    const franjas = franjasDeLoIndicado(observaciones, { serie: o.serie, medida, vigencias: o.vigencias, desde: o.desde, hasta: o.hasta });
+    return franjas.length === 0 ? c : { ...c, franjas, puntos: conLaUbicacion(c.puntos, observaciones, o.serie, medida) };
+  });
 }

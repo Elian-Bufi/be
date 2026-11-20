@@ -99,6 +99,11 @@ export const FICHAS_DE_ENTRENAMIENTO = {
     corto: 'Cada sesión',
     largo: 'La tira de abajo de cada panel, una marca por sesión: entera con el dato escrito, a media altura con algo que falta y una raya baja sin el dato',
   },
+  franja: {
+    glifo: 'FRANJA',
+    corto: 'Lo indicado',
+    largo: 'Franja gris de fondo: lo que indicaba cada versión del plan para esta serie (el rango de repeticiones o la carga sugerida); lo registrado va encima',
+  },
   escalon: {
     glifo: 'LINEA_CORTADA',
     corto: 'Indicado por versión',
@@ -111,6 +116,8 @@ export const FICHA_DE_LA_TIRA = { fuerza: FICHAS_DE_ENTRENAMIENTO.tiraDeLaFuerza
 
 /** GR-03: carga, repeticiones y RIR de la misma serie, en tres paneles alineados. */
 export const COPY_CARGA_REPETICIONES_Y_RIR = {
+  /** GPF-05: un % RM no se convierte a kg (09v10:356). */
+  porcentajeRmSinFranja: 'La carga se indica respecto del RM: BE no la convierte a kg, así que no va como franja en el panel de la carga.',
   titulo: (serie: number) => `Carga, repeticiones y RIR de la serie ${serie}`,
   /** La línea tenue: cada panel tiene su unidad, así que dice qué es cada punto y el período. */
   detalle: (periodo: string) => `un punto por sesión, sin promediar · ${periodo}`,

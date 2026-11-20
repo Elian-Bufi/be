@@ -219,6 +219,14 @@ function DibujoDelCarril({
           : null}
         {g && g.tipo === 'PUNTOS' ? (
           <>
+            {/* GPF-05: la franja de lo indicado, de fondo y en gris (sin color de juicio); lo registrado va encima. */}
+            {(g.franjas ?? []).map((f, i) => (
+              <g key={`f${i}`} className="grafico-base__franja" data-franja-de-lo-indicado="">
+                <rect x={f.x1} y={f.y1 - (f.y2 - f.y1 < 3 ? 1.5 : 0)} width={Math.max(1, f.x2 - f.x1)} height={Math.max(3, f.y2 - f.y1)} fill="var(--grafico-hueco)" fillOpacity={0.22} />
+                <line x1={f.x1} x2={f.x2} y1={f.y1} y2={f.y1} stroke="var(--grafico-hueco)" strokeWidth={1} strokeDasharray="4 3" />
+                {f.y2 - f.y1 >= 3 ? <line x1={f.x1} x2={f.x2} y1={f.y2} y2={f.y2} stroke="var(--grafico-hueco)" strokeWidth={1} strokeDasharray="4 3" /> : null}
+              </g>
+            ))}
             {g.escalones.map((e, i) => (
               <line key={`e${i}`} x1={e.x1} x2={e.x2} y1={e.y} y2={e.y} stroke={color} strokeWidth={1.5} strokeDasharray="6 4" />
             ))}
