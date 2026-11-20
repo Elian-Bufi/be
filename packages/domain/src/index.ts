@@ -204,3 +204,6 @@ export * from './presets-de-be';
 export * from './la-vez-pasada';
 export * from './historial-del-buscador';
 export * from './desde-el-inicio';
+// WP-OBJETIVO-Y-CALCULADOR (DL-186): el objetivo con una toma de referencia y el calculador de macros del profesional.
+export * from './contratos-objetivo-y-calculador';
+export * from './calculador-de-macros';

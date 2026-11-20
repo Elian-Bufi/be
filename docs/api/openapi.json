@@ -167171,6 +167171,2956 @@
           }
         }
       }
+    },
+    "/advisees/{adviseeId}/nutrition/objective-reference/measurements": {
+      "get": {
+        "operationId": "API-OBC-01",
+        "summary": "Las tomas de Antropometría que el profesional de Nutrición puede usar de referencia para el objetivo: sus evaluaciones registradas de la persona, de la más nueva a la más vieja (hasta 12), con el peso, la talla y la edad vigentes (con su corrección; lo anulado no) y las corridas vigentes de la toma de las que sale la masa libre de grasa (en kg, o el % de grasa con el peso), con su método. Solo con el PDP de Antropometría: si la persona no se lo habilitó, anthropometryEnabled en false y ninguna toma (ni sus valores, ni que existen); la decisión denegada queda registrada. Sin Nutrición con la persona, el 404 de lo inexistente.",
+        "description": "Fuente: WP-OBJETIVO-Y-CALCULADOR OBC-02 (pedido de Dirección del 2026-11-19) · ID propio de BE (familia OBC) · DEUDA_LEGAJO DL-186. AuthN: SESSION.",
+        "security": [
+          {
+            "sesion": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "adviseeId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-BE-Surface",
+            "in": "header",
+            "required": false,
+            "description": "Superficie declarada (procedencia). Nunca autoriza (DEUDA_LEGAJO DL-022).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "WEB",
+                "APK"
+              ]
+            }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Éxito",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$schema": "https://json-schema.org/draft/2020-12/schema",
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "anthropometryEnabled": {
+                          "type": "boolean"
+                        },
+                        "measurements": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "evaluationId": {
+                                "type": "string",
+                                "minLength": 1
+                              },
+                              "measuredOn": {
+                                "type": "string",
+                                "format": "date",
+                                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                              },
+                              "occurredAt": {
+                                "type": "string",
+                                "format": "date-time",
+                                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                              },
+                              "weightKg": {
+                                "type": [
+                                  "number",
+                                  "null"
+                                ]
+                              },
+                              "heightCm": {
+                                "type": [
+                                  "number",
+                                  "null"
+                                ]
+                              },
+                              "ageYears": {
+                                "type": [
+                                  "number",
+                                  "null"
+                                ]
+                              },
+                              "composition": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "calculationId": {
+                                      "type": "string",
+                                      "minLength": 1
+                                    },
+                                    "metric": {
+                                      "type": "string"
+                                    },
+                                    "label": {
+                                      "type": "string"
+                                    },
+                                    "value": {
+                                      "type": "number"
+                                    },
+                                    "unit": {
+                                      "type": "string",
+                                      "enum": [
+                                        "kg",
+                                        "%"
+                                      ]
+                                    },
+                                    "leanMassKg": {
+                                      "type": [
+                                        "number",
+                                        "null"
+                                      ]
+                                    }
+                                  },
+                                  "required": [
+                                    "calculationId",
+                                    "metric",
+                                    "label",
+                                    "value",
+                                    "unit",
+                                    "leanMassKg"
+                                  ],
+                                  "additionalProperties": false
+                                }
+                              }
+                            },
+                            "required": [
+                              "evaluationId",
+                              "measuredOn",
+                              "occurredAt",
+                              "weightKg",
+                              "heightCm",
+                              "ageYears",
+                              "composition"
+                            ],
+                            "additionalProperties": false
+                          }
+                        }
+                      },
+                      "required": [
+                        "anthropometryEnabled",
+                        "measurements"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "ErrorEnvelope: INVALID_REQUEST",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "ErrorEnvelope: AUTHENTICATION_REQUIRED | SESSION_INVALID | SESSION_EXPIRED | SESSION_REVOKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "ErrorEnvelope: RESOURCE_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "ErrorEnvelope: RATE_LIMITED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "ErrorEnvelope: INTERNAL_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "ErrorEnvelope: DB_UNAVAILABLE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/advisees/{adviseeId}/nutrition/objectives/with-reference": {
+      "post": {
+        "operationId": "API-OBC-02",
+        "summary": "Emitir una versión nueva del objetivo (lo mismo que API-NUT-04, con su fundamento obligatorio) junto con su referencia y, si se usó, su cálculo, en una sola transacción. La referencia es una toma registrada (solo con Antropometría habilitada; el servidor lee sus valores vigentes y la corrida elegida para la masa libre de grasa) o datos a mano con su fecha. El servidor rehace el cálculo con la misma función del dominio (gasto en reposo con el método elegido, factor de actividad, ajuste, macros en g/kg y carbohidratos por diferencia) y guarda los datos usados, los parámetros y el resultado: nada se recalcula después. Lo que el objetivo guarda como requerimiento y macros es lo que escribió el profesional. Sin Antropometría habilitada, una toma inexistente o de otro profesional, o una corrida que no es de esa toma: 422 MEASUREMENT_NOT_AVAILABLE, el mismo para todos (el motivo real queda solo en la auditoría).",
+        "description": "Fuente: WP-OBJETIVO-Y-CALCULADOR OBC-02 a OBC-05 (pedido de Dirección del 2026-11-19) · 09v9:405-444 (API-NUT-04) · ID propio de BE (familia OBC) · DEUDA_LEGAJO DL-186. AuthN: SESSION.",
+        "security": [
+          {
+            "sesion": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "adviseeId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "Idempotency-Key",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^[A-Za-z0-9._:-]{8,128}$"
+            }
+          },
+          {
+            "name": "X-BE-Surface",
+            "in": "header",
+            "required": false,
+            "description": "Superficie declarada (procedencia). Nunca autoriza (DEUDA_LEGAJO DL-022).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "WEB",
+                "APK"
+              ]
+            }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "type": "object",
+                "properties": {
+                  "objective": {
+                    "type": "object",
+                    "properties": {
+                      "evaluationId": {
+                        "type": "string",
+                        "minLength": 1
+                      },
+                      "effectiveFrom": {
+                        "type": "string",
+                        "format": "date-time",
+                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                      },
+                      "effectiveUntil": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "estimatedEnergyRequirement": {
+                        "type": "object",
+                        "properties": {
+                          "value": {
+                            "type": "number",
+                            "exclusiveMinimum": 0
+                          },
+                          "unit": {
+                            "type": "string",
+                            "const": "kcal/day"
+                          }
+                        },
+                        "required": [
+                          "value",
+                          "unit"
+                        ],
+                        "additionalProperties": false
+                      },
+                      "macronutrientDistribution": {
+                        "type": "object",
+                        "properties": {
+                          "protein": {
+                            "type": "object",
+                            "properties": {
+                              "value": {
+                                "type": "number",
+                                "minimum": 0
+                              },
+                              "unit": {
+                                "type": "string",
+                                "enum": [
+                                  "g/day",
+                                  "energy_share"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "value",
+                              "unit"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "carbohydrate": {
+                            "type": "object",
+                            "properties": {
+                              "value": {
+                                "type": "number",
+                                "minimum": 0
+                              },
+                              "unit": {
+                                "type": "string",
+                                "enum": [
+                                  "g/day",
+                                  "energy_share"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "value",
+                              "unit"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "fat": {
+                            "type": "object",
+                            "properties": {
+                              "value": {
+                                "type": "number",
+                                "minimum": 0
+                              },
+                              "unit": {
+                                "type": "string",
+                                "enum": [
+                                  "g/day",
+                                  "energy_share"
+                                ]
+                              }
+                            },
+                            "required": [
+                              "value",
+                              "unit"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "required": [
+                          "protein",
+                          "carbohydrate",
+                          "fat"
+                        ],
+                        "additionalProperties": false
+                      },
+                      "mealDistribution": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "maxLength": 1000
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "rationale": {
+                        "type": "string",
+                        "minLength": 1,
+                        "maxLength": 4000
+                      },
+                      "methodStatement": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "maxLength": 1000
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      }
+                    },
+                    "required": [
+                      "evaluationId",
+                      "effectiveFrom",
+                      "effectiveUntil",
+                      "estimatedEnergyRequirement",
+                      "macronutrientDistribution",
+                      "mealDistribution",
+                      "rationale",
+                      "methodStatement"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "reference": {
+                    "oneOf": [
+                      {
+                        "type": "object",
+                        "properties": {
+                          "source": {
+                            "type": "string",
+                            "const": "RECORDED"
+                          },
+                          "evaluationId": {
+                            "type": "string",
+                            "minLength": 1
+                          },
+                          "leanMassCalculationId": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "minLength": 1
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "additions": {
+                            "type": "object",
+                            "properties": {
+                              "heightCm": {
+                                "anyOf": [
+                                  {
+                                    "type": "number",
+                                    "minimum": 100,
+                                    "maximum": 250
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "ageYears": {
+                                "anyOf": [
+                                  {
+                                    "type": "number",
+                                    "minimum": 18,
+                                    "maximum": 110
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
+                            },
+                            "required": [
+                              "heightCm",
+                              "ageYears"
+                            ],
+                            "additionalProperties": false
+                          }
+                        },
+                        "required": [
+                          "source",
+                          "evaluationId",
+                          "leanMassCalculationId",
+                          "additions"
+                        ],
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "object",
+                        "properties": {
+                          "source": {
+                            "type": "string",
+                            "const": "MANUAL"
+                          },
+                          "measuredOn": {
+                            "type": "string",
+                            "format": "date",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                          },
+                          "weightKg": {
+                            "anyOf": [
+                              {
+                                "type": "number",
+                                "minimum": 20,
+                                "maximum": 350
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "heightCm": {
+                            "anyOf": [
+                              {
+                                "type": "number",
+                                "minimum": 100,
+                                "maximum": 250
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "ageYears": {
+                            "anyOf": [
+                              {
+                                "type": "number",
+                                "minimum": 18,
+                                "maximum": 110
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "leanMassKg": {
+                            "anyOf": [
+                              {
+                                "type": "number",
+                                "exclusiveMinimum": 0,
+                                "maximum": 350
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "leanMassNote": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "maxLength": 200
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          }
+                        },
+                        "required": [
+                          "source",
+                          "measuredOn",
+                          "weightKg",
+                          "heightCm",
+                          "ageYears",
+                          "leanMassKg",
+                          "leanMassNote"
+                        ],
+                        "additionalProperties": false
+                      }
+                    ]
+                  },
+                  "parameters": {
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "properties": {
+                          "sex": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "enum": [
+                                  "FEMALE",
+                                  "MALE"
+                                ]
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "restingMethod": {
+                            "type": "string",
+                            "enum": [
+                              "MIFFLIN_ST_JEOR",
+                              "HARRIS_BENEDICT_REVISED",
+                              "FAO_WHO_UNU_1985",
+                              "KATCH_MCARDLE",
+                              "CUNNINGHAM_1980"
+                            ]
+                          },
+                          "activity": {
+                            "type": "object",
+                            "properties": {
+                              "factor": {
+                                "type": "number",
+                                "minimum": 1,
+                                "maximum": 2.5
+                              },
+                              "restDayFactor": {
+                                "anyOf": [
+                                  {
+                                    "type": "number",
+                                    "minimum": 1,
+                                    "maximum": 2.5
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
+                            },
+                            "required": [
+                              "factor",
+                              "restDayFactor"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "adjustment": {
+                            "anyOf": [
+                              {
+                                "oneOf": [
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "kind": {
+                                        "type": "string",
+                                        "const": "KCAL"
+                                      },
+                                      "value": {
+                                        "type": "number",
+                                        "minimum": -1500,
+                                        "maximum": 1500
+                                      }
+                                    },
+                                    "required": [
+                                      "kind",
+                                      "value"
+                                    ],
+                                    "additionalProperties": false
+                                  },
+                                  {
+                                    "type": "object",
+                                    "properties": {
+                                      "kind": {
+                                        "type": "string",
+                                        "const": "PERCENT"
+                                      },
+                                      "value": {
+                                        "type": "number",
+                                        "minimum": -40,
+                                        "maximum": 40
+                                      }
+                                    },
+                                    "required": [
+                                      "kind",
+                                      "value"
+                                    ],
+                                    "additionalProperties": false
+                                  }
+                                ]
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          },
+                          "macros": {
+                            "anyOf": [
+                              {
+                                "type": "object",
+                                "properties": {
+                                  "base": {
+                                    "type": "string",
+                                    "enum": [
+                                      "BODY_WEIGHT",
+                                      "LEAN_MASS"
+                                    ]
+                                  },
+                                  "proteinPerKg": {
+                                    "type": "number",
+                                    "minimum": 0,
+                                    "maximum": 5
+                                  },
+                                  "fatPerKg": {
+                                    "type": "number",
+                                    "minimum": 0,
+                                    "maximum": 3
+                                  }
+                                },
+                                "required": [
+                                  "base",
+                                  "proteinPerKg",
+                                  "fatPerKg"
+                                ],
+                                "additionalProperties": false
+                              },
+                              {
+                                "type": "null"
+                              }
+                            ]
+                          }
+                        },
+                        "required": [
+                          "sex",
+                          "restingMethod",
+                          "activity",
+                          "adjustment",
+                          "macros"
+                        ],
+                        "additionalProperties": false
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  }
+                },
+                "required": [
+                  "objective",
+                  "reference",
+                  "parameters"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Éxito",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$schema": "https://json-schema.org/draft/2020-12/schema",
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "objective": {
+                          "type": "object",
+                          "properties": {
+                            "objectiveId": {
+                              "type": "string",
+                              "minLength": 1
+                            },
+                            "versionId": {
+                              "type": "string",
+                              "minLength": 1
+                            },
+                            "predecessorVersionId": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "minLength": 1
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "adviseeId": {
+                              "type": "string",
+                              "minLength": 1
+                            },
+                            "evaluationId": {
+                              "type": "string",
+                              "minLength": 1
+                            },
+                            "effectiveFrom": {
+                              "type": "string",
+                              "format": "date-time",
+                              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                            },
+                            "effectiveUntil": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "format": "date-time",
+                                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "estimatedEnergyRequirement": {
+                              "type": "object",
+                              "properties": {
+                                "value": {
+                                  "type": "number",
+                                  "exclusiveMinimum": 0
+                                },
+                                "unit": {
+                                  "type": "string",
+                                  "const": "kcal/day"
+                                }
+                              },
+                              "required": [
+                                "value",
+                                "unit"
+                              ],
+                              "additionalProperties": false
+                            },
+                            "macronutrientDistribution": {
+                              "type": "object",
+                              "properties": {
+                                "protein": {
+                                  "type": "object",
+                                  "properties": {
+                                    "value": {
+                                      "type": "number",
+                                      "minimum": 0
+                                    },
+                                    "unit": {
+                                      "type": "string",
+                                      "enum": [
+                                        "g/day",
+                                        "energy_share"
+                                      ]
+                                    }
+                                  },
+                                  "required": [
+                                    "value",
+                                    "unit"
+                                  ],
+                                  "additionalProperties": false
+                                },
+                                "carbohydrate": {
+                                  "type": "object",
+                                  "properties": {
+                                    "value": {
+                                      "type": "number",
+                                      "minimum": 0
+                                    },
+                                    "unit": {
+                                      "type": "string",
+                                      "enum": [
+                                        "g/day",
+                                        "energy_share"
+                                      ]
+                                    }
+                                  },
+                                  "required": [
+                                    "value",
+                                    "unit"
+                                  ],
+                                  "additionalProperties": false
+                                },
+                                "fat": {
+                                  "type": "object",
+                                  "properties": {
+                                    "value": {
+                                      "type": "number",
+                                      "minimum": 0
+                                    },
+                                    "unit": {
+                                      "type": "string",
+                                      "enum": [
+                                        "g/day",
+                                        "energy_share"
+                                      ]
+                                    }
+                                  },
+                                  "required": [
+                                    "value",
+                                    "unit"
+                                  ],
+                                  "additionalProperties": false
+                                }
+                              },
+                              "required": [
+                                "protein",
+                                "carbohydrate",
+                                "fat"
+                              ],
+                              "additionalProperties": false
+                            },
+                            "mealDistribution": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "rationale": {
+                              "type": "string"
+                            },
+                            "methodStatement": {
+                              "type": [
+                                "string",
+                                "null"
+                              ]
+                            },
+                            "authoredBy": {
+                              "type": "object",
+                              "properties": {
+                                "identityId": {
+                                  "type": "string",
+                                  "minLength": 1
+                                },
+                                "displayName": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "identityId",
+                                "displayName"
+                              ],
+                              "additionalProperties": false
+                            },
+                            "createdAt": {
+                              "type": "string",
+                              "format": "date-time",
+                              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                            },
+                            "isEffective": {
+                              "type": "boolean"
+                            }
+                          },
+                          "required": [
+                            "objectiveId",
+                            "versionId",
+                            "predecessorVersionId",
+                            "adviseeId",
+                            "evaluationId",
+                            "effectiveFrom",
+                            "effectiveUntil",
+                            "estimatedEnergyRequirement",
+                            "macronutrientDistribution",
+                            "mealDistribution",
+                            "rationale",
+                            "methodStatement",
+                            "authoredBy",
+                            "createdAt",
+                            "isEffective"
+                          ],
+                          "additionalProperties": false
+                        },
+                        "calculation": {
+                          "type": "object",
+                          "properties": {
+                            "calculationId": {
+                              "type": "string",
+                              "minLength": 1
+                            },
+                            "createdAt": {
+                              "type": "string",
+                              "format": "date-time",
+                              "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                            },
+                            "reference": {
+                              "type": "object",
+                              "properties": {
+                                "source": {
+                                  "type": "string",
+                                  "enum": [
+                                    "RECORDED",
+                                    "MANUAL"
+                                  ]
+                                },
+                                "evaluationId": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string",
+                                      "minLength": 1
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "measuredOn": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string",
+                                      "format": "date",
+                                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "source",
+                                "evaluationId",
+                                "measuredOn"
+                              ],
+                              "additionalProperties": false
+                            },
+                            "anthropometryWithheld": {
+                              "type": "boolean"
+                            },
+                            "restingMethod": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "enum": [
+                                    "MIFFLIN_ST_JEOR",
+                                    "HARRIS_BENEDICT_REVISED",
+                                    "FAO_WHO_UNU_1985",
+                                    "KATCH_MCARDLE",
+                                    "CUNNINGHAM_1980"
+                                  ]
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "data": {
+                              "anyOf": [
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "weightKg": {
+                                      "anyOf": [
+                                        {
+                                          "type": "object",
+                                          "properties": {
+                                            "value": {
+                                              "type": "number"
+                                            },
+                                            "origin": {
+                                              "type": "string",
+                                              "enum": [
+                                                "MEASUREMENT",
+                                                "MANUAL"
+                                              ]
+                                            }
+                                          },
+                                          "required": [
+                                            "value",
+                                            "origin"
+                                          ],
+                                          "additionalProperties": false
+                                        },
+                                        {
+                                          "type": "null"
+                                        }
+                                      ]
+                                    },
+                                    "heightCm": {
+                                      "anyOf": [
+                                        {
+                                          "type": "object",
+                                          "properties": {
+                                            "value": {
+                                              "type": "number"
+                                            },
+                                            "origin": {
+                                              "type": "string",
+                                              "enum": [
+                                                "MEASUREMENT",
+                                                "MANUAL"
+                                              ]
+                                            }
+                                          },
+                                          "required": [
+                                            "value",
+                                            "origin"
+                                          ],
+                                          "additionalProperties": false
+                                        },
+                                        {
+                                          "type": "null"
+                                        }
+                                      ]
+                                    },
+                                    "ageYears": {
+                                      "anyOf": [
+                                        {
+                                          "type": "object",
+                                          "properties": {
+                                            "value": {
+                                              "type": "number"
+                                            },
+                                            "origin": {
+                                              "type": "string",
+                                              "enum": [
+                                                "MEASUREMENT",
+                                                "MANUAL"
+                                              ]
+                                            }
+                                          },
+                                          "required": [
+                                            "value",
+                                            "origin"
+                                          ],
+                                          "additionalProperties": false
+                                        },
+                                        {
+                                          "type": "null"
+                                        }
+                                      ]
+                                    },
+                                    "leanMassKg": {
+                                      "anyOf": [
+                                        {
+                                          "type": "object",
+                                          "properties": {
+                                            "value": {
+                                              "type": "number",
+                                              "exclusiveMinimum": 0
+                                            },
+                                            "origin": {
+                                              "type": "string",
+                                              "enum": [
+                                                "CALCULATION",
+                                                "FROM_FAT_PERCENT",
+                                                "MANUAL"
+                                              ]
+                                            },
+                                            "method": {
+                                              "type": [
+                                                "string",
+                                                "null"
+                                              ]
+                                            },
+                                            "fatPercent": {
+                                              "type": [
+                                                "number",
+                                                "null"
+                                              ]
+                                            }
+                                          },
+                                          "required": [
+                                            "value",
+                                            "origin",
+                                            "method",
+                                            "fatPercent"
+                                          ],
+                                          "additionalProperties": false
+                                        },
+                                        {
+                                          "type": "null"
+                                        }
+                                      ]
+                                    }
+                                  },
+                                  "required": [
+                                    "weightKg",
+                                    "heightCm",
+                                    "ageYears",
+                                    "leanMassKg"
+                                  ],
+                                  "additionalProperties": false
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "parameters": {
+                              "anyOf": [
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "sex": {
+                                      "anyOf": [
+                                        {
+                                          "type": "string",
+                                          "enum": [
+                                            "FEMALE",
+                                            "MALE"
+                                          ]
+                                        },
+                                        {
+                                          "type": "null"
+                                        }
+                                      ]
+                                    },
+                                    "restingMethod": {
+                                      "type": "string",
+                                      "enum": [
+                                        "MIFFLIN_ST_JEOR",
+                                        "HARRIS_BENEDICT_REVISED",
+                                        "FAO_WHO_UNU_1985",
+                                        "KATCH_MCARDLE",
+                                        "CUNNINGHAM_1980"
+                                      ]
+                                    },
+                                    "activity": {
+                                      "type": "object",
+                                      "properties": {
+                                        "factor": {
+                                          "type": "number",
+                                          "minimum": 1,
+                                          "maximum": 2.5
+                                        },
+                                        "restDayFactor": {
+                                          "anyOf": [
+                                            {
+                                              "type": "number",
+                                              "minimum": 1,
+                                              "maximum": 2.5
+                                            },
+                                            {
+                                              "type": "null"
+                                            }
+                                          ]
+                                        }
+                                      },
+                                      "required": [
+                                        "factor",
+                                        "restDayFactor"
+                                      ],
+                                      "additionalProperties": false
+                                    },
+                                    "adjustment": {
+                                      "anyOf": [
+                                        {
+                                          "oneOf": [
+                                            {
+                                              "type": "object",
+                                              "properties": {
+                                                "kind": {
+                                                  "type": "string",
+                                                  "const": "KCAL"
+                                                },
+                                                "value": {
+                                                  "type": "number",
+                                                  "minimum": -1500,
+                                                  "maximum": 1500
+                                                }
+                                              },
+                                              "required": [
+                                                "kind",
+                                                "value"
+                                              ],
+                                              "additionalProperties": false
+                                            },
+                                            {
+                                              "type": "object",
+                                              "properties": {
+                                                "kind": {
+                                                  "type": "string",
+                                                  "const": "PERCENT"
+                                                },
+                                                "value": {
+                                                  "type": "number",
+                                                  "minimum": -40,
+                                                  "maximum": 40
+                                                }
+                                              },
+                                              "required": [
+                                                "kind",
+                                                "value"
+                                              ],
+                                              "additionalProperties": false
+                                            }
+                                          ]
+                                        },
+                                        {
+                                          "type": "null"
+                                        }
+                                      ]
+                                    },
+                                    "macros": {
+                                      "anyOf": [
+                                        {
+                                          "type": "object",
+                                          "properties": {
+                                            "base": {
+                                              "type": "string",
+                                              "enum": [
+                                                "BODY_WEIGHT",
+                                                "LEAN_MASS"
+                                              ]
+                                            },
+                                            "proteinPerKg": {
+                                              "type": "number",
+                                              "minimum": 0,
+                                              "maximum": 5
+                                            },
+                                            "fatPerKg": {
+                                              "type": "number",
+                                              "minimum": 0,
+                                              "maximum": 3
+                                            }
+                                          },
+                                          "required": [
+                                            "base",
+                                            "proteinPerKg",
+                                            "fatPerKg"
+                                          ],
+                                          "additionalProperties": false
+                                        },
+                                        {
+                                          "type": "null"
+                                        }
+                                      ]
+                                    }
+                                  },
+                                  "required": [
+                                    "sex",
+                                    "restingMethod",
+                                    "activity",
+                                    "adjustment",
+                                    "macros"
+                                  ],
+                                  "additionalProperties": false
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "result": {
+                              "anyOf": [
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "resting": {
+                                      "oneOf": [
+                                        {
+                                          "type": "object",
+                                          "properties": {
+                                            "state": {
+                                              "type": "string",
+                                              "const": "CALCULATED"
+                                            },
+                                            "method": {
+                                              "type": "string",
+                                              "enum": [
+                                                "MIFFLIN_ST_JEOR",
+                                                "HARRIS_BENEDICT_REVISED",
+                                                "FAO_WHO_UNU_1985",
+                                                "KATCH_MCARDLE",
+                                                "CUNNINGHAM_1980"
+                                              ]
+                                            },
+                                            "kcal": {
+                                              "type": "integer",
+                                              "minimum": -9007199254740991,
+                                              "maximum": 9007199254740991
+                                            },
+                                            "equation": {
+                                              "type": "string"
+                                            },
+                                            "applied": {
+                                              "type": "string"
+                                            }
+                                          },
+                                          "required": [
+                                            "state",
+                                            "method",
+                                            "kcal",
+                                            "equation",
+                                            "applied"
+                                          ],
+                                          "additionalProperties": false
+                                        },
+                                        {
+                                          "type": "object",
+                                          "properties": {
+                                            "state": {
+                                              "type": "string",
+                                              "const": "MISSING_DATA"
+                                            },
+                                            "method": {
+                                              "type": "string",
+                                              "enum": [
+                                                "MIFFLIN_ST_JEOR",
+                                                "HARRIS_BENEDICT_REVISED",
+                                                "FAO_WHO_UNU_1985",
+                                                "KATCH_MCARDLE",
+                                                "CUNNINGHAM_1980"
+                                              ]
+                                            },
+                                            "missing": {
+                                              "minItems": 1,
+                                              "type": "array",
+                                              "items": {
+                                                "type": "string",
+                                                "enum": [
+                                                  "weightKg",
+                                                  "heightCm",
+                                                  "ageYears",
+                                                  "sex",
+                                                  "leanMassKg"
+                                                ]
+                                              }
+                                            }
+                                          },
+                                          "required": [
+                                            "state",
+                                            "method",
+                                            "missing"
+                                          ],
+                                          "additionalProperties": false
+                                        },
+                                        {
+                                          "type": "object",
+                                          "properties": {
+                                            "state": {
+                                              "type": "string",
+                                              "const": "OUT_OF_RANGE"
+                                            },
+                                            "method": {
+                                              "type": "string",
+                                              "enum": [
+                                                "MIFFLIN_ST_JEOR",
+                                                "HARRIS_BENEDICT_REVISED",
+                                                "FAO_WHO_UNU_1985",
+                                                "KATCH_MCARDLE",
+                                                "CUNNINGHAM_1980"
+                                              ]
+                                            },
+                                            "reason": {
+                                              "type": "string"
+                                            }
+                                          },
+                                          "required": [
+                                            "state",
+                                            "method",
+                                            "reason"
+                                          ],
+                                          "additionalProperties": false
+                                        }
+                                      ]
+                                    },
+                                    "totals": {
+                                      "anyOf": [
+                                        {
+                                          "type": "object",
+                                          "properties": {
+                                            "day": {
+                                              "type": "integer",
+                                              "minimum": -9007199254740991,
+                                              "maximum": 9007199254740991
+                                            },
+                                            "restDay": {
+                                              "anyOf": [
+                                                {
+                                                  "type": "integer",
+                                                  "minimum": -9007199254740991,
+                                                  "maximum": 9007199254740991
+                                                },
+                                                {
+                                                  "type": "null"
+                                                }
+                                              ]
+                                            }
+                                          },
+                                          "required": [
+                                            "day",
+                                            "restDay"
+                                          ],
+                                          "additionalProperties": false
+                                        },
+                                        {
+                                          "type": "null"
+                                        }
+                                      ]
+                                    },
+                                    "energy": {
+                                      "anyOf": [
+                                        {
+                                          "type": "object",
+                                          "properties": {
+                                            "day": {
+                                              "type": "integer",
+                                              "minimum": -9007199254740991,
+                                              "maximum": 9007199254740991
+                                            },
+                                            "restDay": {
+                                              "anyOf": [
+                                                {
+                                                  "type": "integer",
+                                                  "minimum": -9007199254740991,
+                                                  "maximum": 9007199254740991
+                                                },
+                                                {
+                                                  "type": "null"
+                                                }
+                                              ]
+                                            }
+                                          },
+                                          "required": [
+                                            "day",
+                                            "restDay"
+                                          ],
+                                          "additionalProperties": false
+                                        },
+                                        {
+                                          "type": "null"
+                                        }
+                                      ]
+                                    },
+                                    "macros": {
+                                      "anyOf": [
+                                        {
+                                          "type": "object",
+                                          "properties": {
+                                            "base": {
+                                              "type": "string",
+                                              "enum": [
+                                                "BODY_WEIGHT",
+                                                "LEAN_MASS"
+                                              ]
+                                            },
+                                            "baseKg": {
+                                              "type": "number",
+                                              "exclusiveMinimum": 0
+                                            },
+                                            "day": {
+                                              "type": "object",
+                                              "properties": {
+                                                "energyKcal": {
+                                                  "type": "integer",
+                                                  "minimum": -9007199254740991,
+                                                  "maximum": 9007199254740991
+                                                },
+                                                "protein": {
+                                                  "type": "object",
+                                                  "properties": {
+                                                    "grams": {
+                                                      "type": "integer",
+                                                      "minimum": 0,
+                                                      "maximum": 9007199254740991
+                                                    },
+                                                    "perKg": {
+                                                      "type": "number",
+                                                      "minimum": 0
+                                                    },
+                                                    "kcal": {
+                                                      "type": "integer",
+                                                      "minimum": 0,
+                                                      "maximum": 9007199254740991
+                                                    },
+                                                    "energyShare": {
+                                                      "type": "number",
+                                                      "minimum": 0
+                                                    }
+                                                  },
+                                                  "required": [
+                                                    "grams",
+                                                    "perKg",
+                                                    "kcal",
+                                                    "energyShare"
+                                                  ],
+                                                  "additionalProperties": false
+                                                },
+                                                "carbohydrate": {
+                                                  "type": "object",
+                                                  "properties": {
+                                                    "grams": {
+                                                      "type": "integer",
+                                                      "minimum": 0,
+                                                      "maximum": 9007199254740991
+                                                    },
+                                                    "perKg": {
+                                                      "type": "number",
+                                                      "minimum": 0
+                                                    },
+                                                    "kcal": {
+                                                      "type": "integer",
+                                                      "minimum": 0,
+                                                      "maximum": 9007199254740991
+                                                    },
+                                                    "energyShare": {
+                                                      "type": "number",
+                                                      "minimum": 0
+                                                    }
+                                                  },
+                                                  "required": [
+                                                    "grams",
+                                                    "perKg",
+                                                    "kcal",
+                                                    "energyShare"
+                                                  ],
+                                                  "additionalProperties": false
+                                                },
+                                                "fat": {
+                                                  "type": "object",
+                                                  "properties": {
+                                                    "grams": {
+                                                      "type": "integer",
+                                                      "minimum": 0,
+                                                      "maximum": 9007199254740991
+                                                    },
+                                                    "perKg": {
+                                                      "type": "number",
+                                                      "minimum": 0
+                                                    },
+                                                    "kcal": {
+                                                      "type": "integer",
+                                                      "minimum": 0,
+                                                      "maximum": 9007199254740991
+                                                    },
+                                                    "energyShare": {
+                                                      "type": "number",
+                                                      "minimum": 0
+                                                    }
+                                                  },
+                                                  "required": [
+                                                    "grams",
+                                                    "perKg",
+                                                    "kcal",
+                                                    "energyShare"
+                                                  ],
+                                                  "additionalProperties": false
+                                                }
+                                              },
+                                              "required": [
+                                                "energyKcal",
+                                                "protein",
+                                                "carbohydrate",
+                                                "fat"
+                                              ],
+                                              "additionalProperties": false
+                                            },
+                                            "restDay": {
+                                              "anyOf": [
+                                                {
+                                                  "type": "object",
+                                                  "properties": {
+                                                    "energyKcal": {
+                                                      "type": "integer",
+                                                      "minimum": -9007199254740991,
+                                                      "maximum": 9007199254740991
+                                                    },
+                                                    "protein": {
+                                                      "type": "object",
+                                                      "properties": {
+                                                        "grams": {
+                                                          "type": "integer",
+                                                          "minimum": 0,
+                                                          "maximum": 9007199254740991
+                                                        },
+                                                        "perKg": {
+                                                          "type": "number",
+                                                          "minimum": 0
+                                                        },
+                                                        "kcal": {
+                                                          "type": "integer",
+                                                          "minimum": 0,
+                                                          "maximum": 9007199254740991
+                                                        },
+                                                        "energyShare": {
+                                                          "type": "number",
+                                                          "minimum": 0
+                                                        }
+                                                      },
+                                                      "required": [
+                                                        "grams",
+                                                        "perKg",
+                                                        "kcal",
+                                                        "energyShare"
+                                                      ],
+                                                      "additionalProperties": false
+                                                    },
+                                                    "carbohydrate": {
+                                                      "type": "object",
+                                                      "properties": {
+                                                        "grams": {
+                                                          "type": "integer",
+                                                          "minimum": 0,
+                                                          "maximum": 9007199254740991
+                                                        },
+                                                        "perKg": {
+                                                          "type": "number",
+                                                          "minimum": 0
+                                                        },
+                                                        "kcal": {
+                                                          "type": "integer",
+                                                          "minimum": 0,
+                                                          "maximum": 9007199254740991
+                                                        },
+                                                        "energyShare": {
+                                                          "type": "number",
+                                                          "minimum": 0
+                                                        }
+                                                      },
+                                                      "required": [
+                                                        "grams",
+                                                        "perKg",
+                                                        "kcal",
+                                                        "energyShare"
+                                                      ],
+                                                      "additionalProperties": false
+                                                    },
+                                                    "fat": {
+                                                      "type": "object",
+                                                      "properties": {
+                                                        "grams": {
+                                                          "type": "integer",
+                                                          "minimum": 0,
+                                                          "maximum": 9007199254740991
+                                                        },
+                                                        "perKg": {
+                                                          "type": "number",
+                                                          "minimum": 0
+                                                        },
+                                                        "kcal": {
+                                                          "type": "integer",
+                                                          "minimum": 0,
+                                                          "maximum": 9007199254740991
+                                                        },
+                                                        "energyShare": {
+                                                          "type": "number",
+                                                          "minimum": 0
+                                                        }
+                                                      },
+                                                      "required": [
+                                                        "grams",
+                                                        "perKg",
+                                                        "kcal",
+                                                        "energyShare"
+                                                      ],
+                                                      "additionalProperties": false
+                                                    }
+                                                  },
+                                                  "required": [
+                                                    "energyKcal",
+                                                    "protein",
+                                                    "carbohydrate",
+                                                    "fat"
+                                                  ],
+                                                  "additionalProperties": false
+                                                },
+                                                {
+                                                  "type": "null"
+                                                }
+                                              ]
+                                            }
+                                          },
+                                          "required": [
+                                            "base",
+                                            "baseKg",
+                                            "day",
+                                            "restDay"
+                                          ],
+                                          "additionalProperties": false
+                                        },
+                                        {
+                                          "type": "null"
+                                        }
+                                      ]
+                                    },
+                                    "issues": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "string",
+                                        "enum": [
+                                          "LEAN_MASS_MISSING",
+                                          "WEIGHT_MISSING",
+                                          "CARBOHYDRATE_NEGATIVE"
+                                        ]
+                                      }
+                                    }
+                                  },
+                                  "required": [
+                                    "resting",
+                                    "totals",
+                                    "energy",
+                                    "macros",
+                                    "issues"
+                                  ],
+                                  "additionalProperties": false
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            }
+                          },
+                          "required": [
+                            "calculationId",
+                            "createdAt",
+                            "reference",
+                            "anthropometryWithheld",
+                            "restingMethod",
+                            "data",
+                            "parameters",
+                            "result"
+                          ],
+                          "additionalProperties": false
+                        }
+                      },
+                      "required": [
+                        "objective",
+                        "calculation"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "ErrorEnvelope: INVALID_REQUEST | UNKNOWN_FIELD",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "ErrorEnvelope: AUTHENTICATION_REQUIRED | SESSION_INVALID | SESSION_EXPIRED | SESSION_REVOKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "ErrorEnvelope: RESOURCE_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "ErrorEnvelope: IDEMPOTENCY_KEY_REUSED | RESOURCE_CONFLICT",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "ErrorEnvelope: NUTRITION_OBJECTIVE_INVALID | EVALUATION_NOT_COMPATIBLE | VALIDATION_FAILED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "ErrorEnvelope: INTERNAL_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "ErrorEnvelope: DB_UNAVAILABLE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/nutrition/objective-versions/{versionId}/reference": {
+      "get": {
+        "operationId": "API-OBC-03",
+        "summary": "La referencia y el cálculo guardados con una versión del objetivo, tal cual (calculation en null si se escribió sin ellos), y cómo está hoy la toma: si hay una registrada más nueva (newerMeasurement) y si los datos usados cambiaron (referenceState CHANGED: una corrección, una anulación o una corrida reemplazada). Avisarlo no cambia lo guardado. Si la referencia es una toma y Antropometría ya no está habilitada para este profesional, anthropometryWithheld en true: sin la toma, los datos, los parámetros ni el resultado (de ellos se deduciría el peso); queda el método. Solo el profesional del objetivo; la persona, otro profesional o lo inexistente: el mismo 404.",
+        "description": "Fuente: WP-OBJETIVO-Y-CALCULADOR OBC-02 y OBC-06 (pedido de Dirección del 2026-11-19) · ID propio de BE (familia OBC) · DEUDA_LEGAJO DL-186. AuthN: SESSION.",
+        "security": [
+          {
+            "sesion": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "versionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-BE-Surface",
+            "in": "header",
+            "required": false,
+            "description": "Superficie declarada (procedencia). Nunca autoriza (DEUDA_LEGAJO DL-022).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "WEB",
+                "APK"
+              ]
+            }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Éxito",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$schema": "https://json-schema.org/draft/2020-12/schema",
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "objectiveVersionId": {
+                          "type": "string",
+                          "minLength": 1
+                        },
+                        "calculation": {
+                          "anyOf": [
+                            {
+                              "type": "object",
+                              "properties": {
+                                "calculationId": {
+                                  "type": "string",
+                                  "minLength": 1
+                                },
+                                "createdAt": {
+                                  "type": "string",
+                                  "format": "date-time",
+                                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                                },
+                                "reference": {
+                                  "type": "object",
+                                  "properties": {
+                                    "source": {
+                                      "type": "string",
+                                      "enum": [
+                                        "RECORDED",
+                                        "MANUAL"
+                                      ]
+                                    },
+                                    "evaluationId": {
+                                      "anyOf": [
+                                        {
+                                          "type": "string",
+                                          "minLength": 1
+                                        },
+                                        {
+                                          "type": "null"
+                                        }
+                                      ]
+                                    },
+                                    "measuredOn": {
+                                      "anyOf": [
+                                        {
+                                          "type": "string",
+                                          "format": "date",
+                                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                                        },
+                                        {
+                                          "type": "null"
+                                        }
+                                      ]
+                                    }
+                                  },
+                                  "required": [
+                                    "source",
+                                    "evaluationId",
+                                    "measuredOn"
+                                  ],
+                                  "additionalProperties": false
+                                },
+                                "anthropometryWithheld": {
+                                  "type": "boolean"
+                                },
+                                "restingMethod": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string",
+                                      "enum": [
+                                        "MIFFLIN_ST_JEOR",
+                                        "HARRIS_BENEDICT_REVISED",
+                                        "FAO_WHO_UNU_1985",
+                                        "KATCH_MCARDLE",
+                                        "CUNNINGHAM_1980"
+                                      ]
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "data": {
+                                  "anyOf": [
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "weightKg": {
+                                          "anyOf": [
+                                            {
+                                              "type": "object",
+                                              "properties": {
+                                                "value": {
+                                                  "type": "number"
+                                                },
+                                                "origin": {
+                                                  "type": "string",
+                                                  "enum": [
+                                                    "MEASUREMENT",
+                                                    "MANUAL"
+                                                  ]
+                                                }
+                                              },
+                                              "required": [
+                                                "value",
+                                                "origin"
+                                              ],
+                                              "additionalProperties": false
+                                            },
+                                            {
+                                              "type": "null"
+                                            }
+                                          ]
+                                        },
+                                        "heightCm": {
+                                          "anyOf": [
+                                            {
+                                              "type": "object",
+                                              "properties": {
+                                                "value": {
+                                                  "type": "number"
+                                                },
+                                                "origin": {
+                                                  "type": "string",
+                                                  "enum": [
+                                                    "MEASUREMENT",
+                                                    "MANUAL"
+                                                  ]
+                                                }
+                                              },
+                                              "required": [
+                                                "value",
+                                                "origin"
+                                              ],
+                                              "additionalProperties": false
+                                            },
+                                            {
+                                              "type": "null"
+                                            }
+                                          ]
+                                        },
+                                        "ageYears": {
+                                          "anyOf": [
+                                            {
+                                              "type": "object",
+                                              "properties": {
+                                                "value": {
+                                                  "type": "number"
+                                                },
+                                                "origin": {
+                                                  "type": "string",
+                                                  "enum": [
+                                                    "MEASUREMENT",
+                                                    "MANUAL"
+                                                  ]
+                                                }
+                                              },
+                                              "required": [
+                                                "value",
+                                                "origin"
+                                              ],
+                                              "additionalProperties": false
+                                            },
+                                            {
+                                              "type": "null"
+                                            }
+                                          ]
+                                        },
+                                        "leanMassKg": {
+                                          "anyOf": [
+                                            {
+                                              "type": "object",
+                                              "properties": {
+                                                "value": {
+                                                  "type": "number",
+                                                  "exclusiveMinimum": 0
+                                                },
+                                                "origin": {
+                                                  "type": "string",
+                                                  "enum": [
+                                                    "CALCULATION",
+                                                    "FROM_FAT_PERCENT",
+                                                    "MANUAL"
+                                                  ]
+                                                },
+                                                "method": {
+                                                  "type": [
+                                                    "string",
+                                                    "null"
+                                                  ]
+                                                },
+                                                "fatPercent": {
+                                                  "type": [
+                                                    "number",
+                                                    "null"
+                                                  ]
+                                                }
+                                              },
+                                              "required": [
+                                                "value",
+                                                "origin",
+                                                "method",
+                                                "fatPercent"
+                                              ],
+                                              "additionalProperties": false
+                                            },
+                                            {
+                                              "type": "null"
+                                            }
+                                          ]
+                                        }
+                                      },
+                                      "required": [
+                                        "weightKg",
+                                        "heightCm",
+                                        "ageYears",
+                                        "leanMassKg"
+                                      ],
+                                      "additionalProperties": false
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "parameters": {
+                                  "anyOf": [
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "sex": {
+                                          "anyOf": [
+                                            {
+                                              "type": "string",
+                                              "enum": [
+                                                "FEMALE",
+                                                "MALE"
+                                              ]
+                                            },
+                                            {
+                                              "type": "null"
+                                            }
+                                          ]
+                                        },
+                                        "restingMethod": {
+                                          "type": "string",
+                                          "enum": [
+                                            "MIFFLIN_ST_JEOR",
+                                            "HARRIS_BENEDICT_REVISED",
+                                            "FAO_WHO_UNU_1985",
+                                            "KATCH_MCARDLE",
+                                            "CUNNINGHAM_1980"
+                                          ]
+                                        },
+                                        "activity": {
+                                          "type": "object",
+                                          "properties": {
+                                            "factor": {
+                                              "type": "number",
+                                              "minimum": 1,
+                                              "maximum": 2.5
+                                            },
+                                            "restDayFactor": {
+                                              "anyOf": [
+                                                {
+                                                  "type": "number",
+                                                  "minimum": 1,
+                                                  "maximum": 2.5
+                                                },
+                                                {
+                                                  "type": "null"
+                                                }
+                                              ]
+                                            }
+                                          },
+                                          "required": [
+                                            "factor",
+                                            "restDayFactor"
+                                          ],
+                                          "additionalProperties": false
+                                        },
+                                        "adjustment": {
+                                          "anyOf": [
+                                            {
+                                              "oneOf": [
+                                                {
+                                                  "type": "object",
+                                                  "properties": {
+                                                    "kind": {
+                                                      "type": "string",
+                                                      "const": "KCAL"
+                                                    },
+                                                    "value": {
+                                                      "type": "number",
+                                                      "minimum": -1500,
+                                                      "maximum": 1500
+                                                    }
+                                                  },
+                                                  "required": [
+                                                    "kind",
+                                                    "value"
+                                                  ],
+                                                  "additionalProperties": false
+                                                },
+                                                {
+                                                  "type": "object",
+                                                  "properties": {
+                                                    "kind": {
+                                                      "type": "string",
+                                                      "const": "PERCENT"
+                                                    },
+                                                    "value": {
+                                                      "type": "number",
+                                                      "minimum": -40,
+                                                      "maximum": 40
+                                                    }
+                                                  },
+                                                  "required": [
+                                                    "kind",
+                                                    "value"
+                                                  ],
+                                                  "additionalProperties": false
+                                                }
+                                              ]
+                                            },
+                                            {
+                                              "type": "null"
+                                            }
+                                          ]
+                                        },
+                                        "macros": {
+                                          "anyOf": [
+                                            {
+                                              "type": "object",
+                                              "properties": {
+                                                "base": {
+                                                  "type": "string",
+                                                  "enum": [
+                                                    "BODY_WEIGHT",
+                                                    "LEAN_MASS"
+                                                  ]
+                                                },
+                                                "proteinPerKg": {
+                                                  "type": "number",
+                                                  "minimum": 0,
+                                                  "maximum": 5
+                                                },
+                                                "fatPerKg": {
+                                                  "type": "number",
+                                                  "minimum": 0,
+                                                  "maximum": 3
+                                                }
+                                              },
+                                              "required": [
+                                                "base",
+                                                "proteinPerKg",
+                                                "fatPerKg"
+                                              ],
+                                              "additionalProperties": false
+                                            },
+                                            {
+                                              "type": "null"
+                                            }
+                                          ]
+                                        }
+                                      },
+                                      "required": [
+                                        "sex",
+                                        "restingMethod",
+                                        "activity",
+                                        "adjustment",
+                                        "macros"
+                                      ],
+                                      "additionalProperties": false
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "result": {
+                                  "anyOf": [
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "resting": {
+                                          "oneOf": [
+                                            {
+                                              "type": "object",
+                                              "properties": {
+                                                "state": {
+                                                  "type": "string",
+                                                  "const": "CALCULATED"
+                                                },
+                                                "method": {
+                                                  "type": "string",
+                                                  "enum": [
+                                                    "MIFFLIN_ST_JEOR",
+                                                    "HARRIS_BENEDICT_REVISED",
+                                                    "FAO_WHO_UNU_1985",
+                                                    "KATCH_MCARDLE",
+                                                    "CUNNINGHAM_1980"
+                                                  ]
+                                                },
+                                                "kcal": {
+                                                  "type": "integer",
+                                                  "minimum": -9007199254740991,
+                                                  "maximum": 9007199254740991
+                                                },
+                                                "equation": {
+                                                  "type": "string"
+                                                },
+                                                "applied": {
+                                                  "type": "string"
+                                                }
+                                              },
+                                              "required": [
+                                                "state",
+                                                "method",
+                                                "kcal",
+                                                "equation",
+                                                "applied"
+                                              ],
+                                              "additionalProperties": false
+                                            },
+                                            {
+                                              "type": "object",
+                                              "properties": {
+                                                "state": {
+                                                  "type": "string",
+                                                  "const": "MISSING_DATA"
+                                                },
+                                                "method": {
+                                                  "type": "string",
+                                                  "enum": [
+                                                    "MIFFLIN_ST_JEOR",
+                                                    "HARRIS_BENEDICT_REVISED",
+                                                    "FAO_WHO_UNU_1985",
+                                                    "KATCH_MCARDLE",
+                                                    "CUNNINGHAM_1980"
+                                                  ]
+                                                },
+                                                "missing": {
+                                                  "minItems": 1,
+                                                  "type": "array",
+                                                  "items": {
+                                                    "type": "string",
+                                                    "enum": [
+                                                      "weightKg",
+                                                      "heightCm",
+                                                      "ageYears",
+                                                      "sex",
+                                                      "leanMassKg"
+                                                    ]
+                                                  }
+                                                }
+                                              },
+                                              "required": [
+                                                "state",
+                                                "method",
+                                                "missing"
+                                              ],
+                                              "additionalProperties": false
+                                            },
+                                            {
+                                              "type": "object",
+                                              "properties": {
+                                                "state": {
+                                                  "type": "string",
+                                                  "const": "OUT_OF_RANGE"
+                                                },
+                                                "method": {
+                                                  "type": "string",
+                                                  "enum": [
+                                                    "MIFFLIN_ST_JEOR",
+                                                    "HARRIS_BENEDICT_REVISED",
+                                                    "FAO_WHO_UNU_1985",
+                                                    "KATCH_MCARDLE",
+                                                    "CUNNINGHAM_1980"
+                                                  ]
+                                                },
+                                                "reason": {
+                                                  "type": "string"
+                                                }
+                                              },
+                                              "required": [
+                                                "state",
+                                                "method",
+                                                "reason"
+                                              ],
+                                              "additionalProperties": false
+                                            }
+                                          ]
+                                        },
+                                        "totals": {
+                                          "anyOf": [
+                                            {
+                                              "type": "object",
+                                              "properties": {
+                                                "day": {
+                                                  "type": "integer",
+                                                  "minimum": -9007199254740991,
+                                                  "maximum": 9007199254740991
+                                                },
+                                                "restDay": {
+                                                  "anyOf": [
+                                                    {
+                                                      "type": "integer",
+                                                      "minimum": -9007199254740991,
+                                                      "maximum": 9007199254740991
+                                                    },
+                                                    {
+                                                      "type": "null"
+                                                    }
+                                                  ]
+                                                }
+                                              },
+                                              "required": [
+                                                "day",
+                                                "restDay"
+                                              ],
+                                              "additionalProperties": false
+                                            },
+                                            {
+                                              "type": "null"
+                                            }
+                                          ]
+                                        },
+                                        "energy": {
+                                          "anyOf": [
+                                            {
+                                              "type": "object",
+                                              "properties": {
+                                                "day": {
+                                                  "type": "integer",
+                                                  "minimum": -9007199254740991,
+                                                  "maximum": 9007199254740991
+                                                },
+                                                "restDay": {
+                                                  "anyOf": [
+                                                    {
+                                                      "type": "integer",
+                                                      "minimum": -9007199254740991,
+                                                      "maximum": 9007199254740991
+                                                    },
+                                                    {
+                                                      "type": "null"
+                                                    }
+                                                  ]
+                                                }
+                                              },
+                                              "required": [
+                                                "day",
+                                                "restDay"
+                                              ],
+                                              "additionalProperties": false
+                                            },
+                                            {
+                                              "type": "null"
+                                            }
+                                          ]
+                                        },
+                                        "macros": {
+                                          "anyOf": [
+                                            {
+                                              "type": "object",
+                                              "properties": {
+                                                "base": {
+                                                  "type": "string",
+                                                  "enum": [
+                                                    "BODY_WEIGHT",
+                                                    "LEAN_MASS"
+                                                  ]
+                                                },
+                                                "baseKg": {
+                                                  "type": "number",
+                                                  "exclusiveMinimum": 0
+                                                },
+                                                "day": {
+                                                  "type": "object",
+                                                  "properties": {
+                                                    "energyKcal": {
+                                                      "type": "integer",
+                                                      "minimum": -9007199254740991,
+                                                      "maximum": 9007199254740991
+                                                    },
+                                                    "protein": {
+                                                      "type": "object",
+                                                      "properties": {
+                                                        "grams": {
+                                                          "type": "integer",
+                                                          "minimum": 0,
+                                                          "maximum": 9007199254740991
+                                                        },
+                                                        "perKg": {
+                                                          "type": "number",
+                                                          "minimum": 0
+                                                        },
+                                                        "kcal": {
+                                                          "type": "integer",
+                                                          "minimum": 0,
+                                                          "maximum": 9007199254740991
+                                                        },
+                                                        "energyShare": {
+                                                          "type": "number",
+                                                          "minimum": 0
+                                                        }
+                                                      },
+                                                      "required": [
+                                                        "grams",
+                                                        "perKg",
+                                                        "kcal",
+                                                        "energyShare"
+                                                      ],
+                                                      "additionalProperties": false
+                                                    },
+                                                    "carbohydrate": {
+                                                      "type": "object",
+                                                      "properties": {
+                                                        "grams": {
+                                                          "type": "integer",
+                                                          "minimum": 0,
+                                                          "maximum": 9007199254740991
+                                                        },
+                                                        "perKg": {
+                                                          "type": "number",
+                                                          "minimum": 0
+                                                        },
+                                                        "kcal": {
+                                                          "type": "integer",
+                                                          "minimum": 0,
+                                                          "maximum": 9007199254740991
+                                                        },
+                                                        "energyShare": {
+                                                          "type": "number",
+                                                          "minimum": 0
+                                                        }
+                                                      },
+                                                      "required": [
+                                                        "grams",
+                                                        "perKg",
+                                                        "kcal",
+                                                        "energyShare"
+                                                      ],
+                                                      "additionalProperties": false
+                                                    },
+                                                    "fat": {
+                                                      "type": "object",
+                                                      "properties": {
+                                                        "grams": {
+                                                          "type": "integer",
+                                                          "minimum": 0,
+                                                          "maximum": 9007199254740991
+                                                        },
+                                                        "perKg": {
+                                                          "type": "number",
+                                                          "minimum": 0
+                                                        },
+                                                        "kcal": {
+                                                          "type": "integer",
+                                                          "minimum": 0,
+                                                          "maximum": 9007199254740991
+                                                        },
+                                                        "energyShare": {
+                                                          "type": "number",
+                                                          "minimum": 0
+                                                        }
+                                                      },
+                                                      "required": [
+                                                        "grams",
+                                                        "perKg",
+                                                        "kcal",
+                                                        "energyShare"
+                                                      ],
+                                                      "additionalProperties": false
+                                                    }
+                                                  },
+                                                  "required": [
+                                                    "energyKcal",
+                                                    "protein",
+                                                    "carbohydrate",
+                                                    "fat"
+                                                  ],
+                                                  "additionalProperties": false
+                                                },
+                                                "restDay": {
+                                                  "anyOf": [
+                                                    {
+                                                      "type": "object",
+                                                      "properties": {
+                                                        "energyKcal": {
+                                                          "type": "integer",
+                                                          "minimum": -9007199254740991,
+                                                          "maximum": 9007199254740991
+                                                        },
+                                                        "protein": {
+                                                          "type": "object",
+                                                          "properties": {
+                                                            "grams": {
+                                                              "type": "integer",
+                                                              "minimum": 0,
+                                                              "maximum": 9007199254740991
+                                                            },
+                                                            "perKg": {
+                                                              "type": "number",
+                                                              "minimum": 0
+                                                            },
+                                                            "kcal": {
+                                                              "type": "integer",
+                                                              "minimum": 0,
+                                                              "maximum": 9007199254740991
+                                                            },
+                                                            "energyShare": {
+                                                              "type": "number",
+                                                              "minimum": 0
+                                                            }
+                                                          },
+                                                          "required": [
+                                                            "grams",
+                                                            "perKg",
+                                                            "kcal",
+                                                            "energyShare"
+                                                          ],
+                                                          "additionalProperties": false
+                                                        },
+                                                        "carbohydrate": {
+                                                          "type": "object",
+                                                          "properties": {
+                                                            "grams": {
+                                                              "type": "integer",
+                                                              "minimum": 0,
+                                                              "maximum": 9007199254740991
+                                                            },
+                                                            "perKg": {
+                                                              "type": "number",
+                                                              "minimum": 0
+                                                            },
+                                                            "kcal": {
+                                                              "type": "integer",
+                                                              "minimum": 0,
+                                                              "maximum": 9007199254740991
+                                                            },
+                                                            "energyShare": {
+                                                              "type": "number",
+                                                              "minimum": 0
+                                                            }
+                                                          },
+                                                          "required": [
+                                                            "grams",
+                                                            "perKg",
+                                                            "kcal",
+                                                            "energyShare"
+                                                          ],
+                                                          "additionalProperties": false
+                                                        },
+                                                        "fat": {
+                                                          "type": "object",
+                                                          "properties": {
+                                                            "grams": {
+                                                              "type": "integer",
+                                                              "minimum": 0,
+                                                              "maximum": 9007199254740991
+                                                            },
+                                                            "perKg": {
+                                                              "type": "number",
+                                                              "minimum": 0
+                                                            },
+                                                            "kcal": {
+                                                              "type": "integer",
+                                                              "minimum": 0,
+                                                              "maximum": 9007199254740991
+                                                            },
+                                                            "energyShare": {
+                                                              "type": "number",
+                                                              "minimum": 0
+                                                            }
+                                                          },
+                                                          "required": [
+                                                            "grams",
+                                                            "perKg",
+                                                            "kcal",
+                                                            "energyShare"
+                                                          ],
+                                                          "additionalProperties": false
+                                                        }
+                                                      },
+                                                      "required": [
+                                                        "energyKcal",
+                                                        "protein",
+                                                        "carbohydrate",
+                                                        "fat"
+                                                      ],
+                                                      "additionalProperties": false
+                                                    },
+                                                    {
+                                                      "type": "null"
+                                                    }
+                                                  ]
+                                                }
+                                              },
+                                              "required": [
+                                                "base",
+                                                "baseKg",
+                                                "day",
+                                                "restDay"
+                                              ],
+                                              "additionalProperties": false
+                                            },
+                                            {
+                                              "type": "null"
+                                            }
+                                          ]
+                                        },
+                                        "issues": {
+                                          "type": "array",
+                                          "items": {
+                                            "type": "string",
+                                            "enum": [
+                                              "LEAN_MASS_MISSING",
+                                              "WEIGHT_MISSING",
+                                              "CARBOHYDRATE_NEGATIVE"
+                                            ]
+                                          }
+                                        }
+                                      },
+                                      "required": [
+                                        "resting",
+                                        "totals",
+                                        "energy",
+                                        "macros",
+                                        "issues"
+                                      ],
+                                      "additionalProperties": false
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "calculationId",
+                                "createdAt",
+                                "reference",
+                                "anthropometryWithheld",
+                                "restingMethod",
+                                "data",
+                                "parameters",
+                                "result"
+                              ],
+                              "additionalProperties": false
+                            },
+                            {
+                              "type": "null"
+                            }
+                          ]
+                        },
+                        "anthropometry": {
+                          "type": "object",
+                          "properties": {
+                            "anthropometryEnabled": {
+                              "type": "boolean"
+                            },
+                            "newerMeasurement": {
+                              "anyOf": [
+                                {
+                                  "type": "object",
+                                  "properties": {
+                                    "evaluationId": {
+                                      "type": "string",
+                                      "minLength": 1
+                                    },
+                                    "measuredOn": {
+                                      "type": "string",
+                                      "format": "date",
+                                      "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                                    }
+                                  },
+                                  "required": [
+                                    "evaluationId",
+                                    "measuredOn"
+                                  ],
+                                  "additionalProperties": false
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            },
+                            "referenceState": {
+                              "anyOf": [
+                                {
+                                  "type": "string",
+                                  "enum": [
+                                    "CURRENT",
+                                    "CHANGED"
+                                  ]
+                                },
+                                {
+                                  "type": "null"
+                                }
+                              ]
+                            }
+                          },
+                          "required": [
+                            "anthropometryEnabled",
+                            "newerMeasurement",
+                            "referenceState"
+                          ],
+                          "additionalProperties": false
+                        }
+                      },
+                      "required": [
+                        "objectiveVersionId",
+                        "calculation",
+                        "anthropometry"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "ErrorEnvelope: INVALID_REQUEST",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "ErrorEnvelope: AUTHENTICATION_REQUIRED | SESSION_INVALID | SESSION_EXPIRED | SESSION_REVOKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "ErrorEnvelope: RESOURCE_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "ErrorEnvelope: RATE_LIMITED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "ErrorEnvelope: INTERNAL_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "ErrorEnvelope: DB_UNAVAILABLE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   }
 }

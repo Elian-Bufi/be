@@ -381,6 +381,7 @@ import {
   ReemplazarEnfoqueRequestSchema,
 } from './contratos-enfoques';
 import { EvidenciaDeRevisionResponseSchema } from './contratos-evidencia-de-revision';
+import { ObjetivoConReferenciaRequestSchema, ObjetivoConReferenciaResponseSchema, ReferenciaDelObjetivoResponseSchema, TomasDeReferenciaResponseSchema } from './contratos-objetivo-y-calculador';
 import { CuerpoDelContextoResponseSchema, RespuestasDelContextoResponseSchema } from './contratos-contexto-de-la-persona';
 import { AccesoAMedioResponseSchema, IntencionDeSubidaRequestSchema, IntencionDeSubidaResponseSchema, LIMITES_DE_MEDIO, MedioResponseSchema, TipoDeImagenSchema } from './contratos-medios';
 import {
@@ -5031,6 +5032,44 @@ const DEFINIDAS: readonly Operacion[] = [
     errores: { ...SESION, 400: ['INVALID_REQUEST'], 404: ['RESOURCE_NOT_FOUND'] },
     fuente: 'WP-CONTEXTO-DE-LA-PERSONA · ID propio de BE (familia CTX) · el texto de «resumen» aceptado (DL-163 D-13) · DEUDA_LEGAJO DL-179',
   },
+  // ─── WP-OBJETIVO-Y-CALCULADOR (DL-186): el objetivo con una toma de referencia y el calculador de macros ───
+  {
+    id: 'API-OBC-01',
+    metodo: 'get',
+    ruta: '/advisees/{adviseeId}/nutrition/objective-reference/measurements',
+    resumen:
+      'Las tomas de Antropometría que el profesional de Nutrición puede usar de referencia para el objetivo: sus evaluaciones registradas de la persona, de la más nueva a la más vieja (hasta 12), con el peso, la talla y la edad vigentes (con su corrección; lo anulado no) y las corridas vigentes de la toma de las que sale la masa libre de grasa (en kg, o el % de grasa con el peso), con su método. Solo con el PDP de Antropometría: si la persona no se lo habilitó, anthropometryEnabled en false y ninguna toma (ni sus valores, ni que existen); la decisión denegada queda registrada. Sin Nutrición con la persona, el 404 de lo inexistente.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    exitos: [{ status: 200, schema: TomasDeReferenciaResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST'], 404: ['RESOURCE_NOT_FOUND'] },
+    fuente: 'WP-OBJETIVO-Y-CALCULADOR OBC-02 (pedido de Dirección del 2026-11-19) · ID propio de BE (familia OBC) · DEUDA_LEGAJO DL-186',
+  },
+  {
+    id: 'API-OBC-02',
+    metodo: 'post',
+    ruta: '/advisees/{adviseeId}/nutrition/objectives/with-reference',
+    resumen:
+      'Emitir una versión nueva del objetivo (lo mismo que API-NUT-04, con su fundamento obligatorio) junto con su referencia y, si se usó, su cálculo, en una sola transacción. La referencia es una toma registrada (solo con Antropometría habilitada; el servidor lee sus valores vigentes y la corrida elegida para la masa libre de grasa) o datos a mano con su fecha. El servidor rehace el cálculo con la misma función del dominio (gasto en reposo con el método elegido, factor de actividad, ajuste, macros en g/kg y carbohidratos por diferencia) y guarda los datos usados, los parámetros y el resultado: nada se recalcula después. Lo que el objetivo guarda como requerimiento y macros es lo que escribió el profesional. Sin Antropometría habilitada, una toma inexistente o de otro profesional, o una corrida que no es de esa toma: 422 MEASUREMENT_NOT_AVAILABLE, el mismo para todos (el motivo real queda solo en la auditoría).',
+    autenticacion: 'SESSION',
+    idempotencia: true,
+    request: ObjetivoConReferenciaRequestSchema,
+    exitos: [{ status: 201, schema: ObjetivoConReferenciaResponseSchema }],
+    errores: { ...ESCRITURA_REVELABLE, 409: ['IDEMPOTENCY_KEY_REUSED'], 422: ['NUTRITION_OBJECTIVE_INVALID', 'EVALUATION_NOT_COMPATIBLE', 'VALIDATION_FAILED'] },
+    fuente: 'WP-OBJETIVO-Y-CALCULADOR OBC-02 a OBC-05 (pedido de Dirección del 2026-11-19) · 09v9:405-444 (API-NUT-04) · ID propio de BE (familia OBC) · DEUDA_LEGAJO DL-186',
+  },
+  {
+    id: 'API-OBC-03',
+    metodo: 'get',
+    ruta: '/nutrition/objective-versions/{versionId}/reference',
+    resumen:
+      'La referencia y el cálculo guardados con una versión del objetivo, tal cual (calculation en null si se escribió sin ellos), y cómo está hoy la toma: si hay una registrada más nueva (newerMeasurement) y si los datos usados cambiaron (referenceState CHANGED: una corrección, una anulación o una corrida reemplazada). Avisarlo no cambia lo guardado. Si la referencia es una toma y Antropometría ya no está habilitada para este profesional, anthropometryWithheld en true: sin la toma, los datos, los parámetros ni el resultado (de ellos se deduciría el peso); queda el método. Solo el profesional del objetivo; la persona, otro profesional o lo inexistente: el mismo 404.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    exitos: [{ status: 200, schema: ReferenciaDelObjetivoResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST'], 404: ['RESOURCE_NOT_FOUND'] },
+    fuente: 'WP-OBJETIVO-Y-CALCULADOR OBC-02 y OBC-06 (pedido de Dirección del 2026-11-19) · ID propio de BE (familia OBC) · DEUDA_LEGAJO DL-186',
+  },
 ];
 
 /**
@@ -5040,6 +5079,8 @@ const DEFINIDAS: readonly Operacion[] = [
  * - las lecturas de un recurso protegido comparten un límite por actor: 429 RATE_LIMITED.
  */
 const LECTURAS_PROTEGIDAS: ReadonlySet<string> = new Set([
+  'API-OBC-01',
+  'API-OBC-03',
   'API-ADM-10',
   'API-ADM-11',
   'API-ADM-12',

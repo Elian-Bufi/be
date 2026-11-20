@@ -234,6 +234,7 @@ import {
 } from './contratos-fuerza';
 import { EstimacionDeLasOpcionesResponseSchema } from './contratos-totales-del-plan';
 import { RangosDelPlanResponseSchema, type EscribirRangosRequest } from './contratos-rangos-de-nutricion';
+import { ObjetivoConReferenciaResponseSchema, ReferenciaDelObjetivoResponseSchema, TomasDeReferenciaResponseSchema, type ObjetivoConReferenciaRequest } from './contratos-objetivo-y-calculador';
 import {
   ActivacionDePlanResponseSchema,
   AplicarRevisionResponseSchema,
@@ -1168,6 +1169,18 @@ export function crearClienteBe(opciones: OpcionesDeCliente) {
     /** API-NUT-04. Una versión nueva: la anterior se conserva. */
     crearObjetivo(token: string, asesoradoId: string, cuerpo: CrearObjetivoRequest, claveDeIdempotencia: string) {
       return llamar('POST', `/advisees/${encodeURIComponent(asesoradoId)}/nutrition/objectives`, { token, claveDeIdempotencia, esquema: ObjetivoResponseSchema, cuerpo });
+    },
+    /** API-OBC-01 (DL-186): las tomas de Antropometría que se pueden usar de referencia para el objetivo. */
+    tomasDeReferencia(token: string, asesoradoId: string) {
+      return llamar('GET', `/advisees/${encodeURIComponent(asesoradoId)}/nutrition/objective-reference/measurements`, { token, esquema: TomasDeReferenciaResponseSchema });
+    },
+    /** API-OBC-02 (DL-186): una versión nueva del objetivo con su referencia y su cálculo. */
+    crearObjetivoConReferencia(token: string, asesoradoId: string, cuerpo: ObjetivoConReferenciaRequest, claveDeIdempotencia: string) {
+      return llamar('POST', `/advisees/${encodeURIComponent(asesoradoId)}/nutrition/objectives/with-reference`, { token, claveDeIdempotencia, esquema: ObjetivoConReferenciaResponseSchema, cuerpo });
+    },
+    /** API-OBC-03 (DL-186): la referencia y el cálculo de una versión del objetivo, y si hay una toma más nueva. */
+    referenciaDelObjetivo(token: string, versionId: string) {
+      return llamar('GET', `/nutrition/objective-versions/${encodeURIComponent(versionId)}/reference`, { token, esquema: ReferenciaDelObjetivoResponseSchema });
     },
     /** API-NUT-05. */
     listarObjetivos(token: string, asesoradoId: string, filtro: { cursor?: string; limit?: string } = {}) {
