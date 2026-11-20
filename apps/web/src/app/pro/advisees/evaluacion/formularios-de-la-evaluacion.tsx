@@ -27,7 +27,7 @@ import { Aviso } from '../../../../components/formulario';
 import { api, nuevaClaveDeIdempotencia, type Resultado } from '../../../../lib/api';
 import { diaSinElAnioEnCurso } from '../../../../lib/formato';
 import { mensajeDeFallo, useClaveDeIntento } from '../../../../lib/intento';
-import { alternarElegido, dejarAvisoDeVinculos, formulariosParaVincular, tomarAvisoDeVinculos, vinculosAEnviar } from './formularios-vinculados';
+import { alternarElegido, avisoDelRegistroVigente, dejarAvisoDeVinculos, formulariosParaVincular, tomarAvisoDeVinculos, vinculosAEnviar } from './formularios-vinculados';
 
 type Lectura<T> = { readonly estado: 'cargando' } | { readonly estado: 'listo'; readonly datos: T } | { readonly estado: 'error' };
 
@@ -185,7 +185,7 @@ export async function vincularAlRegistrar(token: string, area: AreaDeLaEvaluacio
   if (vinculos.length === 0) return;
   const r = await api.vincularFormularios(token, area, evaluationId, { links: [...vinculos] }, nuevaClaveDeIdempotencia());
   if (r.ok) return;
-  dejarAvisoDeVinculos(evaluationId, r.tipo === 'API' && r.codigo === 'VERSION_CONFLICT' ? C.versionCambiada : C.noSeVincularon);
+  dejarAvisoDeVinculos(evaluationId, r.tipo === 'API' && r.codigo === 'VERSION_CONFLICT' ? C.noSeVincularonPorVersion : C.noSeVincularon);
 }
 
 // ─── En la evaluación registrada (EVF-05) ────────────────────────────────────────────────────────
@@ -248,10 +248,10 @@ export function FormulariosDeLaEvaluacion({ area, token, asesoradoId, sesionPerd
   const comun: Comun = { area, token, asesoradoId, sesionPerdida };
   const intento = useClaveDeIntento();
   const [lectura, setLectura] = useState<Lectura<FormulariosVinculadosResponse['data']['links']>>({ estado: 'cargando' });
-  const [aviso, setAviso] = useState<{ tipo: 'info' | 'error' | 'exito'; texto: string } | null>(() => {
-    const t = tomarAvisoDeVinculos(evaluationId);
-    return t ? { tipo: 'error', texto: t } : null;
-  });
+  const [aviso, setAviso] = useState<{ tipo: 'info' | 'error' | 'exito'; texto: string } | null>(null);
+  // EVF-D08: lo que dejó el registro de la evaluación si sus vínculos no se guardaron. Se muestra con la lista ya leída, y
+  // solo si la lista confirma que no quedó ninguno (revisión del PR: un corte de red puede perder la respuesta, no el vínculo).
+  const [avisoDelRegistro, setAvisoDelRegistro] = useState<string | null>(() => tomarAvisoDeVinculos(evaluationId));
   const [agregando, setAgregando] = useState(false);
   const [elegidos, setElegidos] = useState<readonly string[]>([]);
   const [tope, setTope] = useState(false);
@@ -261,6 +261,7 @@ export function FormulariosDeLaEvaluacion({ area, token, asesoradoId, sesionPerd
   const leer = useCallback(async () => {
     const r = await api.formulariosVinculados(token, area, evaluationId);
     if (sesionPerdida(r)) return;
+    if (r.ok) setAvisoDelRegistro((t) => avisoDelRegistroVigente(t, r.datos.data.links));
     setLectura(r.ok ? { estado: 'listo', datos: r.datos.data.links } : { estado: 'error' });
   }, [token, area, evaluationId, sesionPerdida]);
   useEffect(() => {
@@ -274,6 +275,7 @@ export function FormulariosDeLaEvaluacion({ area, token, asesoradoId, sesionPerd
   async function escribir(pedido: (clave: string) => Promise<Resultado<FormulariosVinculadosResponse>>, exito: string, que: string) {
     setOcupado(true);
     setAviso(null);
+    setAvisoDelRegistro(null);
     const r = await pedido(intento.actual(que));
     intento.registrar(r);
     setOcupado(false);
@@ -316,6 +318,10 @@ export function FormulariosDeLaEvaluacion({ area, token, asesoradoId, sesionPerd
       {aviso ? (
         <Aviso tipo={aviso.tipo} enfocar={aviso.tipo === 'error'}>
           <p>{aviso.texto}</p>
+        </Aviso>
+      ) : avisoDelRegistro && lectura.estado !== 'cargando' ? (
+        <Aviso tipo="error" enfocar>
+          <p>{avisoDelRegistro}</p>
         </Aviso>
       ) : null}
       {lectura.estado === 'cargando' ? <p className="nota">{C.cargando}</p> : null}

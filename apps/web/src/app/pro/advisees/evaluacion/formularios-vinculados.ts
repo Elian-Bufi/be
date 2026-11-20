@@ -52,3 +52,12 @@ export function tomarAvisoDeVinculos(evaluationId: string): string | null {
   avisosPendientes.delete(evaluationId);
   return t;
 }
+
+/**
+ * Revisión del PR (EVF-D08): el aviso de que los vínculos no se guardaron sigue en pie solo si la evaluación recién
+ * registrada no tiene ninguno. Vincular es todos o ninguno: si la lista trae alguno, el pedido llegó y lo que se perdió fue
+ * la respuesta (un corte de red), así que decir «no se vincularon» sería falso.
+ */
+export function avisoDelRegistroVigente(aviso: string | null, links: readonly unknown[]): string | null {
+  return links.length > 0 ? null : aviso;
+}

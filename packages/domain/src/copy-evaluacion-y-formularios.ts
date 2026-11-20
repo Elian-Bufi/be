@@ -35,9 +35,13 @@ export const COPY_EVALUACION_Y_FORMULARIOS = {
   /** Avisos. */
   vinculado: 'Formulario vinculado.',
   vinculadosVarios: (n: number): string => `${n} formularios vinculados.`,
-  desvinculado: 'Formulario desvinculado. La evaluación ya no lo cita.',
+  // Revisión del PR: «cita» es otra cosa en la evaluación (las respuestas citadas, DL-102): acá se dice «vinculado».
+  desvinculado: 'Formulario desvinculado.',
   versionCambiada: 'Un formulario cambió desde que lo viste: volvé a leer la lista y elegilo de nuevo. No se vinculó ninguno.',
   noSeVincularon: 'La evaluación quedó registrada, pero los formularios no se vincularon. Podés vincularlos desde acá.',
+  /** EVF-D08, revisión del PR: al registrar, la persona había corregido un formulario elegido; ninguno quedó vinculado. */
+  noSeVincularonPorVersion:
+    'La evaluación quedó registrada, pero un formulario elegido cambió desde que lo viste y no se vinculó ninguno. Podés vincularlos desde acá, con la versión de hoy.',
   tope: (n: number): string => `Se pueden vincular hasta ${n} formularios por evaluación.`,
   todosVinculados: 'Ya vinculaste todos los formularios que respondió en esta área.',
 } as const;

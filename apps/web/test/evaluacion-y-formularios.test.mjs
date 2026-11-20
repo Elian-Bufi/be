@@ -81,6 +81,18 @@ test('TEST-EVF-033 · el aviso de la evaluación recién registrada se toma una 
   assert.equal(V.tomarAvisoDeVinculos('e1'), null);
 });
 
+test('TEST-EVF-036 · revisión del PR (EVF-D08): el aviso del registro no queda en pie si la lista confirma que se vinculó', () => {
+  // Vincular es todos o ninguno: con alguno en la lista, el pedido llegó aunque se perdiera la respuesta.
+  assert.equal(V.avisoDelRegistroVigente('No se vincularon.', [{ linkId: 'l' }]), null);
+  assert.equal(V.avisoDelRegistroVigente('No se vincularon.', []), 'No se vincularon.');
+  assert.equal(V.avisoDelRegistroVigente(null, []), null);
+  const componente = leer('evaluacion/formularios-de-la-evaluacion.tsx');
+  // Se decide con la lista leída, y el 409 del registro tiene su propio texto (la evaluación ya quedó).
+  assert.ok(componente.includes('if (r.ok) setAvisoDelRegistro((t) => avisoDelRegistroVigente(t, r.datos.data.links));'));
+  assert.ok(componente.includes("avisoDelRegistro && lectura.estado !== 'cargando'"));
+  assert.ok(componente.includes('C.noSeVincularonPorVersion : C.noSeVincularon'));
+});
+
 test('TEST-EVF-034 · se monta en la evaluación de las dos áreas, en «Empezar el plan» y en Resumen, y vincula después de registrar', () => {
   const nutricion = leer('nutrition/formularios.tsx');
   assert.match(nutricion, /<ElegirFormularios area="nutrition"/);
