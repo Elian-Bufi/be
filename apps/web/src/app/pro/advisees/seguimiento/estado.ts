@@ -38,7 +38,19 @@ export const PRESETS_DE_PERIODO = [
   { dias: 90, texto: '90 días' },
   { dias: 365, texto: '1 año' },
 ] as const;
-export type DiasDePreset = (typeof PRESETS_DE_PERIODO)[number]['dias'];
+/**
+ * WP-GRAFICOS-POR-FASE (GPF-01): los atajos de los gráficos, en «Patrones» y «Analizar» (con «Desde que la acompañás» y
+ * «Por versión del plan»). La dirección acepta los de las dos listas: un período elegido en una vista sigue en la otra.
+ */
+export const PRESETS_DE_LOS_GRAFICOS = [
+  { dias: 28, texto: '4 semanas' },
+  { dias: 84, texto: '12 semanas' },
+  { dias: 182, texto: '6 meses' },
+  { dias: 365, texto: '1 año' },
+] as const;
+export type DiasDePreset = (typeof PRESETS_DE_PERIODO)[number]['dias'] | (typeof PRESETS_DE_LOS_GRAFICOS)[number]['dias'];
+/** Las vistas de la ficha que son gráficos: el período se elige con las opciones de los gráficos. */
+export const VISTAS_CON_GRAFICOS: readonly VistaDelSeguimiento[] = ['patrones', 'analizar'];
 export const PRESET_POR_DEFECTO: DiasDePreset = 90;
 
 export interface Periodo {
@@ -51,6 +63,12 @@ export interface Periodo {
    * «el de siempre», y elegir otro lo reemplaza.
    */
   readonly desdeElVinculo?: true;
+  /** GPF-01: «Desde que la acompañás», elegido (`p=vinculo`). */
+  readonly vinculo?: true;
+  /** GPF-01: «Desde que la acompañás» con un acompañamiento de más de un año: se ve el último año, y se dice. */
+  readonly recortado?: true;
+  /** GPF-03: la versión del plan elegida (`etapa=TRAINING:<id>`), con su vigencia en `desde` y `hasta`. */
+  readonly etapa?: { readonly dominio: 'TRAINING' | 'NUTRITION'; readonly planVersionId: string };
 }
 
 /** Las áreas de BE, como las nombra el alcance de un vínculo. */
@@ -119,14 +137,36 @@ export function leerPeriodo(params: URLSearchParams, hoy: string = hoyEn()): Per
   const hasta = params.get('hasta');
   if (fechaValida(desde) && fechaValida(hasta) && desde <= hasta && diasEntre(desde, hasta) <= 366) return { preset: null, desde, hasta };
   const p = Number(params.get('p'));
-  const preset = (PRESETS_DE_PERIODO.find((x) => x.dias === p)?.dias ?? PRESET_POR_DEFECTO) as DiasDePreset;
+  const preset = ([...PRESETS_DE_PERIODO, ...PRESETS_DE_LOS_GRAFICOS].find((x) => x.dias === p)?.dias ?? PRESET_POR_DEFECTO) as DiasDePreset;
   return { preset, desde: restarDias(hoy, preset - 1), hasta: hoy };
 }
 
 export function parametrosDePeriodo(p: Periodo): Record<string, string | null> {
   // El período desde el vínculo es el por omisión: no se escribe en la URL (TB-16).
-  if (p.desdeElVinculo) return { p: null, desde: null, hasta: null };
-  return p.preset ? { p: String(p.preset), desde: null, hasta: null } : { p: null, desde: p.desde, hasta: p.hasta };
+  if (p.desdeElVinculo) return { p: null, desde: null, hasta: null, etapa: null };
+  if (p.vinculo) return { p: 'vinculo', desde: null, hasta: null, etapa: null };
+  if (p.etapa && !p.preset) return { p: null, desde: p.desde, hasta: p.hasta, etapa: `${p.etapa.dominio}:${p.etapa.planVersionId}` };
+  return p.preset ? { p: String(p.preset), desde: null, hasta: null, etapa: null } : { p: null, desde: p.desde, hasta: p.hasta, etapa: null };
+}
+
+const ETAPA = /^(TRAINING|NUTRITION):([0-9a-f-]{8,64})$/i;
+
+/**
+ * El período de la ficha (WP-GRAFICOS-POR-FASE): el de la dirección (`leerPeriodo`), con «Desde que la acompañás»
+ * (`p=vinculo`: desde el día del vínculo si fue en el último año; si no, el último año) y la versión del plan elegida
+ * (`etapa`, con su vigencia en `desde` y `hasta`). Sin nada en la dirección, el por omisión acortado al vínculo (TB-16).
+ * Lo usan el marco (`workspace.tsx`) y el contexto de la ficha, así los dos leen el mismo período.
+ */
+export function periodoDeLaFicha(params: URLSearchParams, inicio: string | null, hoy: string = hoyEn()): Periodo {
+  if (params.get('p') === 'vinculo') {
+    const tope = restarDias(hoy, 364);
+    const dentro = inicio !== null && inicio >= tope;
+    return { preset: null, desde: dentro ? (inicio > hoy ? hoy : inicio) : tope, hasta: hoy, vinculo: true, ...(dentro ? {} : { recortado: true as const }) };
+  }
+  const leido = leerPeriodo(params, hoy);
+  const etapa = ETAPA.exec(params.get('etapa') ?? '');
+  const conEtapa: Periodo = etapa && leido.preset === null ? { ...leido, etapa: { dominio: etapa[1]!.toUpperCase() as 'TRAINING' | 'NUTRITION', planVersionId: etapa[2]! } } : leido;
+  return periodoDesdeElVinculo(conEtapa, sinPeriodoEnLaUrl(params), inicio, hoy);
 }
 
 /** El período como instantes para API-DSH-03, que lee `momento_de_ocurrencia` (UTC−3 en la demostración). */
@@ -373,7 +413,7 @@ export function retornoALaFicha(valor: string | null, id: string): string | null
     return null;
   }
   const vista = leerVista(p.get('vista'));
-  const periodo = p.get('p') || p.get('desde') ? parametrosDePeriodo(leerPeriodo(p)) : {};
+  const periodo = p.get('p') === 'vinculo' ? { p: 'vinculo' } : p.get('p') || p.get('desde') ? parametrosDePeriodo(periodoDeLaFicha(p, null)) : {};
   const corte = leerCorte(p);
   const cambios: Record<string, string | null> = {
     vista: vista === 'resumen' ? null : vista,

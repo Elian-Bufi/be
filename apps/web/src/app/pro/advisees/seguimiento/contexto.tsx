@@ -17,7 +17,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import type { DashboardResponse, DominioDeAnalisis } from '@be/domain';
 import type { Resultado } from '../../../../lib/api';
 import { motivoDeFalla, type MotivoDeFalla } from '../../../../lib/fallas';
-import { hrefConCambios, leerPeriodo, periodoDesdeElVinculo, sinPeriodoEnLaUrl, type Acompanamiento, type Periodo } from './estado';
+import { hrefConCambios, periodoDeLaFicha, type Acompanamiento, type Periodo } from './estado';
 
 // Las fallas de una lectura viven en `lib/fallas` (las usa también el Espacio profesional): acá se vuelven a exportar
 // para las vistas de la ficha.
@@ -122,8 +122,8 @@ export function ProveedorDelSeguimiento({
   const clave = params.toString();
   const parametros = useMemo(() => new URLSearchParams(clave), [clave]);
   // TB-16: el mismo período que lee el marco (workspace.tsx), por su valor.
-  const efectivo = periodoDesdeElVinculo(leerPeriodo(parametros), sinPeriodoEnLaUrl(parametros), acompanamiento.inicio);
-  const claveDelPeriodo = `${efectivo.preset ?? ''}|${efectivo.desde}|${efectivo.hasta}`;
+  const efectivo = periodoDeLaFicha(parametros, acompanamiento.inicio);
+  const claveDelPeriodo = `${efectivo.preset ?? ''}|${efectivo.desde}|${efectivo.hasta}|${efectivo.vinculo ? 'v' : ''}|${efectivo.etapa?.planVersionId ?? ''}`;
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const periodo = useMemo(() => efectivo, [claveDelPeriodo]);
   const href = useCallback((cambios: Readonly<Record<string, string | null>>) => hrefConCambios(ruta, parametros, cambios), [ruta, parametros]);

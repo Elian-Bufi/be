@@ -16,12 +16,9 @@ import { Icono } from '../../../../../components/icono';
 import type { Resultado } from '../../../../../lib/api';
 import { textoDeFalla } from '../../../../../lib/fallas';
 import { mensajeDeFallo } from '../../../../../lib/intento';
-import { hoyEn } from '../../seguimiento/estado';
 import { accesoDeLosDisponibles } from '../../seguimiento/selector';
-import { COPY_DEL_HISTORIAL } from '../entrenamiento/copy';
 import { useInicioDelAcompanamiento } from '../entrenamiento/lecturas-del-ejercicio';
-import { OPCIONES_DE_PERIODO, periodoDelHistorial } from '../entrenamiento/periodo-del-historial';
-import type { OpcionDePeriodo } from '../entrenamiento/copy';
+import { SelectorDePeriodoDeGraficos, useEleccionDePeriodo } from '../selector-de-periodo-de-graficos';
 import { contextoDelRegistro } from '../cruces/preguntas-con-graficos';
 import { REGISTRO_DE_GRAFICOS } from '../registros';
 import { CuerpoDePatrones } from './cuerpo-de-patrones-en-pantalla';
@@ -39,12 +36,12 @@ export interface PropsDePatronesDelPlan {
 
 export function PatronesDelPlan({ token, asesoradoId, sesionPerdida, area, planId }: PropsDePatronesDelPlan) {
   const id = useId();
-  const [opcion, setOpcion] = useState<OpcionDePeriodo>('DOCE_SEMANAS');
   const [aviso, setAviso] = useState<string | null>(null);
   const [ocupado, setOcupado] = useState(false);
   const inicio = useInicioDelAcompanamiento(token, asesoradoId, sesionPerdida);
-  const hoy = hoyEn();
-  const periodo = useMemo(() => (inicio.tipo === 'listo' ? periodoDelHistorial(opcion, hoy, inicio.inicio) : null), [inicio, opcion, hoy]);
+  // WP-GRAFICOS-POR-FASE (GPF-01): el mismo selector que el resto de los gráficos, con las versiones del plan.
+  const eleccion = useEleccionDePeriodo(token, asesoradoId, sesionPerdida, inicio);
+  const periodo = eleccion.periodo;
   const lectura = useMemo(() => ({ token, asesoradoId, sesionPerdida }), [token, asesoradoId, sesionPerdida]);
   const { estado, recargar } = useDisponiblesDelPeriodo(lectura, periodo);
   const enfoques = useEnfoques(token, sesionPerdida);
@@ -84,16 +81,7 @@ export function PatronesDelPlan({ token, asesoradoId, sesionPerdida, area, planI
   return (
     <div className="patrones-del-plan" data-patrones-del-plan>
       <div className="patrones-del-plan__arriba">
-        <div className="campo campo--en-linea">
-          <label htmlFor={`${id}-periodo`}>{COPY_DEL_HISTORIAL.periodo}</label>
-          <select id={`${id}-periodo`} value={opcion} onChange={(e) => setOpcion(e.target.value as OpcionDePeriodo)}>
-            {OPCIONES_DE_PERIODO.map((o) => (
-              <option key={o} value={o}>
-                {COPY_DEL_HISTORIAL.opciones[o]}
-              </option>
-            ))}
-          </select>
-        </div>
+        <SelectorDePeriodoDeGraficos leida={eleccion} inicio={inicio} />
         <p className="patrones-del-plan__enfoque" data-enfoque-que-rige={rige?.de ?? 'SUGERIDOS'}>
           <Icono nombre="separadas" tamano={18} />
           <span>
@@ -137,7 +125,6 @@ export function PatronesDelPlan({ token, asesoradoId, sesionPerdida, area, planI
         ) : null}
         <p className="nota">{C.nadaSeEscribeEnElPlan}</p>
       </div>
-      {periodo?.recortado && opcion === 'DESDE_EL_VINCULO' ? <p className="nota">{inicio.tipo === 'listo' && inicio.fallo ? COPY_DEL_HISTORIAL.sinInicio : COPY_DEL_HISTORIAL.hastaUnAnio}</p> : null}
       {estado.tipo === 'cargando' || elecciones.lectura.tipo === 'cargando' || (rige !== null && enfoques.lectura.tipo === 'cargando') || !periodo ? (
         <Cargando />
       ) : elecciones.lectura.tipo === 'error' ? (
