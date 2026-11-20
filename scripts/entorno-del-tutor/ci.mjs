@@ -444,7 +444,9 @@ async function capturasDeGraficos({ page, ir, idDe, asentar, indice }) {
       // GPF-07: las series indicadas y las hechas, y la carga × repeticiones indicada y hecha (DL-187), en 12 semanas.
       ['series-indicadas-y-hechas', 'Sentadilla: series indicadas y hechas', 'p=84', [ENT('^Series indicadas'), ENT('^Series registradas'), ENT('^Carga × repeticiones hecha')]],
       ['carga-por-repeticiones', 'Sentadilla: carga × repeticiones indicada y hecha', 'p=84', [ENT('^Carga × repeticiones indicada'), ENT('^Carga × repeticiones hecha')]],
-      ['volumen-y-energia', 'Volumen de sentadilla y calorías', VENTANAS.viaje, [ENT('^Series registradas'), ENT('^Volumen de carga'), [['Área', 'Nutrici'], ['Serie', '^(Calor|Energ).*registrad']]]],
+      // GPF-D09: «volumen» no se dice en pantalla, tampoco en el nombre de un gráfico de ejemplo; y la serie de la proyección
+      // («Volumen de carga») nunca se ofreció: la escena usa la carga × repeticiones hecha del comparador (DL-187).
+      ['volumen-y-energia', 'Sentadilla: carga × repeticiones y calorías', VENTANAS.viaje, [ENT('^Series registradas'), ENT('^Carga × repeticiones hecha'), [['Área', 'Nutrici'], ['Serie', '^(Calor|Energ).*registrad']]]],
       ['fuerza-carbohidratos-proteina', 'Fuerza y macros', VENTANAS.primeraFuerza, [ENT('1RM'), [['Área', 'Nutrici'], ['Serie', '^Carbohidratos registrados$|^Carbohidratos registrados']], [['Área', 'Nutrici'], ['Serie', '^Prote[ií]nas registradas$|^Prote[ií]nas registradas \\(']]]],
     ];
     for (const [clave, titulo, periodo, grupos] of tomas ? ESCENAS : []) {

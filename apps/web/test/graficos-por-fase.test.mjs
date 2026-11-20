@@ -341,3 +341,19 @@ test('TEST-GPF-015 · a medida y por versión respetan hoy y el vínculo (mutaci
   // La ficha nombra la versión solo si el período de la dirección es el suyo.
   assert.match(leer('seguimiento/barra.tsx'), /e\.ultimoDia === periodo\.hasta && e\.desde <= periodo\.desde/);
 });
+
+test('TEST-GPF-016 · en «Patrones» la franja dura la vigencia de cada versión (mutación: no pasarle las vigencias y dejar huecos entre versiones)', () => {
+  assert.match(leer('graficos/patrones/cuerpo-de-patrones-en-pantalla.tsx'), /vigencias=\{p\.vigencias\.entrenamiento\}/);
+  // Con la vigencia, la franja de v1 llega hasta el día anterior a v2, aunque la última sesión de v1 sea antes.
+  const franjas = FR.franjasDeLoIndicado(OBS, { serie: 1, medida: { variable: 'repeticiones' }, vigencias: VIGENCIAS, desde: '2026-09-20', hasta: '2026-11-20' });
+  assert.deepEqual(franjas.map((f) => [f.desde, f.hasta]), [['2026-09-20', '2026-10-14'], ['2026-10-15', '2026-11-20']]);
+});
+
+test('TEST-GPF-017 · «Armá tu gráfico» dice qué serie elegida no tiene observaciones (mutación: que la indicada desaparezca sin aviso)', () => {
+  const armado = leer('graficos/arma-tu-grafico/grafico-armado.tsx');
+  assert.match(armado, /sinDatos: notaDeLasSinDatos\(grafico\.series, leidas\)/);
+  assert.match(armado, /\.\.\.\(estado\.sinDatos \? \[estado\.sinDatos\] : \[\]\)/);
+  assert.match(armado, /Sin observaciones en el período: /);
+  const texto = 'Sin observaciones en el período: «Carga × rep. indicada». Lo indicado con un rango de repeticiones es un rango y no se dibuja como un número.';
+  assert.deepEqual(terminosProhibidosEnUnGrafico(texto, ['ENTRENAMIENTO']), []);
+});
