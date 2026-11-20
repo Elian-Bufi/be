@@ -98,8 +98,12 @@ const sumar = (fecha: string, dias: number): string => new Date(Date.parse(`${fe
 /**
  * Por semana (lunes a domingo): la suma de las sesiones. Una semana con una sesión sin dato no tiene total de lo hecho,
  * y una con una sesión «Sin indicar» no tiene total de lo indicado: no se completa con lo que falta.
+ *
+ * Con `limites` (el eje del gráfico), una semana partida por el borde del período va de su primer a su último día dentro
+ * del período: sin eso, la primera semana (con su lunes antes del eje) no se dibujaba, y la última decía días que no
+ * entran.
  */
-export function porSemana(sesiones: readonly ProgramadoYHecho[]): ProgramadoYHecho[] {
+export function porSemana(sesiones: readonly ProgramadoYHecho[], limites?: { readonly desde: string; readonly hasta: string }): ProgramadoYHecho[] {
   const semanas = new Map<string, ProgramadoYHecho[]>();
   for (const s of sesiones) semanas.set(lunesDe(s.fecha), [...(semanas.get(lunesDe(s.fecha)) ?? []), s]);
   const total = (xs: readonly (number | null)[]): number | null => (xs.some((x) => x === null) ? null : xs.reduce<number>((a, b) => a + (b ?? 0), 0));
@@ -107,8 +111,8 @@ export function porSemana(sesiones: readonly ProgramadoYHecho[]): ProgramadoYHec
     .sort(([a], [b]) => (a < b ? -1 : 1))
     .map(([lunes, xs]) => ({
       clave: lunes,
-      fecha: lunes,
-      hasta: sumar(lunes, 6),
+      fecha: limites && limites.desde > lunes ? limites.desde : lunes,
+      hasta: limites && limites.hasta < sumar(lunes, 6) ? limites.hasta : sumar(lunes, 6),
       en: null,
       planId: null,
       sesiones: xs.length,
@@ -122,9 +126,9 @@ export function porSemana(sesiones: readonly ProgramadoYHecho[]): ProgramadoYHec
     }));
 }
 
-export function programadoYHecho(observaciones: readonly ObservacionDeEvolucion[], unidad: 'kg' | 'lb', grano: GranoDelVolumen): ProgramadoYHecho[] {
+export function programadoYHecho(observaciones: readonly ObservacionDeEvolucion[], unidad: 'kg' | 'lb', grano: GranoDelVolumen, limites?: { readonly desde: string; readonly hasta: string }): ProgramadoYHecho[] {
   const sesiones = observaciones.flatMap((o) => programadoYHechoDeLaSesion(o, unidad) ?? []);
-  return grano === 'SEMANA' ? porSemana(sesiones) : sesiones;
+  return grano === 'SEMANA' ? porSemana(sesiones, limites) : sesiones;
 }
 
 const enteros = (v: number): string => numero(Math.round(v));
@@ -264,7 +268,7 @@ export function serieDelVolumen(observaciones: readonly ObservacionDeEvolucion[]
       planVersionIds: f.planId ? [f.planId] : [],
       coverage: null,
       missing: [],
-      detail: f.seriesSinVolumen > 0 && o.metricId === 'entrenamiento.carga-por-repeticiones-hecha' ? [{ label: 'Fuera del volumen', value: seriesEnTexto(f.seriesSinVolumen) + ' sin carga o sin repeticiones' }] : [],
+      detail: f.seriesSinVolumen > 0 && o.metricId === 'entrenamiento.carga-por-repeticiones-hecha' ? [{ label: 'No entran', value: seriesEnTexto(f.seriesSinVolumen) + ' sin carga o sin repeticiones' }] : [],
       sources: f.planId ? [{ type: 'TRAINING_PLAN_VERSION', id: f.planId }] : [],
       sourcesTruncated: false,
     });

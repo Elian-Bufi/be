@@ -106,7 +106,9 @@ export function escalaDeFechas(p: PeriodoDelGrafico, caja: { readonly izquierda:
   const porDia = ancho / ((fin - inicio) / DIA);
   const x = (fecha: string): number => deMs(mediodia(fecha));
   const xDePunto = (q: Pick<PuntoDelCarril, 'fecha' | 'hasta' | 'en'>): number => {
-    if (q.hasta) return deMs(mediodia(q.fecha) + 3 * DIA);
+    // Una semana (o un mes) va a los tres días de su inicio, como siempre; un tramo más corto (una semana partida por
+    // el borde del período, WP-GRAFICOS-POR-FASE) va a su mitad, para no caer fuera de sus propios días.
+    if (q.hasta) return deMs((mediodia(q.fecha) + Math.min(mediodia(q.hasta), mediodia(q.fecha) + 6 * DIA)) / 2);
     if (q.en) {
       const ms = Date.parse(q.en);
       if (Number.isFinite(ms) && Math.abs(ms - mediodia(q.fecha)) < DIA / 2) return deMs(ms);

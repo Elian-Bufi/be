@@ -27,7 +27,7 @@ export function ProgramadoYHechoEnPantalla({ lectura, periodo, densidad, ejercic
   const filas = useMemo(() => {
     if (comparador.tipo !== 'lista' || !exerciseKey) return null;
     const observaciones = observacionesDelPeriodo(comparador.ejecuciones, exerciseKey, comparador.objetivosPorVersion, inicioDelEje(periodo), periodo.hasta);
-    return programadoYHecho(observaciones, unidad, grano);
+    return programadoYHecho(observaciones, unidad, grano, { desde: inicioDelEje(periodo), hasta: periodo.hasta });
   }, [comparador, exerciseKey, periodo, unidad, grano]);
   const carriles = useMemo(() => (filas ? carrilesDeProgramadoYHecho(filas, unidad) : []), [filas, unidad]);
 
