@@ -174,6 +174,9 @@ export * from './contratos-notas-propias';
 // WP-CONTEXTO-DE-LA-PERSONA (DL-179): la familia CTX, la cita en Nutrición y la lógica del panel.
 export * from './contratos-contexto-de-la-persona';
 export * from './contexto-de-la-persona';
+// WP-EVALUACION-Y-FORMULARIOS (DL-185): los formularios vinculados a la evaluación inicial (familia EVF).
+export * from './contratos-evaluacion-y-formularios';
+export * from './copy-evaluacion-y-formularios';
 export * from './notas-propias';
 export * from './administracion';
 export * from './contratos-administracion';
