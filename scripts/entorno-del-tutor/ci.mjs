@@ -382,26 +382,44 @@ async function capturasDeGraficos({ page, ir, idDe, asentar, indice }) {
   const valeria = await idDe('valeria').catch(() => null);
   const tomas = await idDe('tomas').catch(() => null);
   const carolina = await idDe('carolina').catch(() => null);
-  for (const ancho of [1440, 1920]) {
+  // Ventanas cortas (unas 12 semanas) alrededor de una fase del plan, para que se lean pocos puntos: la semana `w` de la
+  // historia de cada persona es `origen + (w - semanas) × 7` (las semanas cuentan hacia atrás desde el origen).
+  const semanaDe = (clave, w) => constantes.masDias(origen, (w - PERSONAS.find((x) => x.clave === clave).semanas) * 7);
+  const ventana = (clave, w0, w1) => `desde=${semanaDe(clave, w0)}&hasta=${w1 === null ? hoy : semanaDe(clave, w1)}`;
+  const VENTANAS = {
+    // Valeria: seis semanas antes y seis después de «Más carbohidratos» (semana 51, la misma de «Fuerza 4-6»).
+    valeria: ventana('valeria', 45, 57),
+    // Tomás: el final de «Hipertrofia 3» y todo «Fuerza 2» (semana 55), hasta hoy.
+    fuerzaFinal: ventana('tomas', 49, null),
+    // Tomás: el viaje de nueve días y el ajuste de calorías (semana 30).
+    viaje: ventana('tomas', 24, 36),
+    // Tomás: «Fuerza» (semana 14), la descarga (20) y la vuelta a «Hipertrofia 2» (21).
+    primeraFuerza: ventana('tomas', 12, 24),
+  };
+  indice.push('', `Ventanas: ${Object.entries(VENTANAS).map(([k, v]) => `${k} ${v}`).join(' · ')}`, '');
+  for (const ancho of [1920]) {
     await claro(ancho);
-    // a. SP-01 con Valeria, desde «Analizar» → «Ver la relación».
+    // a. SP-01 con Valeria, desde «Analizar» → «Ver la relación»: la ventana corta y, para contrastar, el año.
     if (valeria) {
-      await ir(`/pro/advisees?id=${valeria}&vista=analizar&pregunta=ver-la-relacion&p=365`);
-      await sinCargando();
-      await recortar('article[data-grafico]', `a-valeria-relacion-{g}__${ancho}.png`, '«Ver la relación» (SP-01 y SP-02)', 'Valeria Q.');
+      for (const [sufijo, periodo] of [['12s', VENTANAS.valeria], ['365', 'p=365']]) {
+        await ir(`/pro/advisees?id=${valeria}&vista=analizar&pregunta=ver-la-relacion&${periodo}`);
+        await sinCargando();
+        await recortar('article[data-grafico]', `a-valeria-relacion-{g}-${sufijo}__${ancho}.png`, `«Ver la relación» (SP-01 y SP-02), ${periodo}`, 'Valeria Q.');
+      }
     }
     // b. «Armá tu gráfico» con Tomás: cada escena, sus tres series (a 1440 solo la primera).
     const ENT = (serie) => [['Área', 'Entrenamiento'], ['Ejercicio', 'Sentadilla trasera'], ['Serie', serie]];
     const ESCENAS = [
-      ['fuerza-proteina-peso', 'Fuerza, proteína y peso', [ENT('1RM'), [['Área', 'Nutrici'], ['Serie', 'prote.*(kilo|kg)']], [['Área', 'Antropometr'], ['Medida', '^\\s*Peso']]]],
-      ['sentadilla-carga-reps-rir', 'Sentadilla: carga, repeticiones y RIR', [ENT('^Carga registrada'), ENT('^Repeticiones registradas'), ENT('^RIR registrado')]],
-      ['sentadilla-rir-indicado', 'Sentadilla: lo indicado y lo hecho', [ENT('^RIR indicado'), ENT('^RIR registrado'), ENT('1RM')]],
-      ['volumen-y-energia', 'Volumen de sentadilla y calorías', [ENT('^Series registradas'), ENT('^Volumen de carga'), [['Área', 'Nutrici'], ['Serie', '^(Calor|Energ).*registrad']]]],
-      ['fuerza-carbohidratos-proteina', 'Fuerza y macros', [ENT('1RM'), [['Área', 'Nutrici'], ['Serie', '^Carbohidratos registrados$|^Carbohidratos registrados']], [['Área', 'Nutrici'], ['Serie', '^Prote[ií]nas registradas$|^Prote[ií]nas registradas \\(']]]],
+      ['fuerza-proteina-peso', 'Fuerza, proteína y peso', VENTANAS.fuerzaFinal, [ENT('1RM'), [['Área', 'Nutrici'], ['Serie', 'prote.*(kilo|kg)']], [['Área', 'Antropometr'], ['Medida', '^\\s*Peso']]]],
+      ['fuerza-proteina-peso-365', 'Fuerza, proteína y peso', 'p=365', [ENT('1RM'), [['Área', 'Nutrici'], ['Serie', 'prote.*(kilo|kg)']], [['Área', 'Antropometr'], ['Medida', '^\\s*Peso']]]],
+      ['sentadilla-carga-reps-rir', 'Sentadilla: carga, repeticiones y RIR', VENTANAS.fuerzaFinal, [ENT('^Carga registrada'), ENT('^Repeticiones registradas'), ENT('^RIR registrado')]],
+      ['sentadilla-rir-indicado', 'Sentadilla: lo indicado y lo hecho', VENTANAS.fuerzaFinal, [ENT('^RIR indicado'), ENT('^RIR registrado'), ENT('1RM')]],
+      ['volumen-y-energia', 'Volumen de sentadilla y calorías', VENTANAS.viaje, [ENT('^Series registradas'), ENT('^Volumen de carga'), [['Área', 'Nutrici'], ['Serie', '^(Calor|Energ).*registrad']]]],
+      ['fuerza-carbohidratos-proteina', 'Fuerza y macros', VENTANAS.primeraFuerza, [ENT('1RM'), [['Área', 'Nutrici'], ['Serie', '^Carbohidratos registrados$|^Carbohidratos registrados']], [['Área', 'Nutrici'], ['Serie', '^Prote[ií]nas registradas$|^Prote[ií]nas registradas \\(']]]],
     ];
-    for (const [clave, titulo, grupos] of tomas ? (ancho === 1920 ? ESCENAS : ESCENAS.slice(0, 1)) : []) {
+    for (const [clave, titulo, periodo, grupos] of tomas ? ESCENAS : []) {
       await ir('/pro/advisees');
-      await ir(`/pro/advisees?id=${tomas}&vista=patrones&p=365`);
+      await ir(`/pro/advisees?id=${tomas}&vista=patrones&${periodo}`);
       await sinCargando();
       const boton = await page.$('[data-arma-tu-grafico]');
       if (!boton) {
