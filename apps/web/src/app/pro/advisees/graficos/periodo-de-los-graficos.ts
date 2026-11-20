@@ -61,17 +61,22 @@ export const COPY_DEL_PERIODO = {
 } as const;
 
 const DIA = 86_400_000;
+const corto = (f: string): string => `${Number(f.slice(8, 10))}/${Number(f.slice(5, 7))}`;
 const restar = (fecha: string, dias: number): string => new Date(Date.parse(`${fecha}T12:00:00Z`) - dias * DIA).toISOString().slice(0, 10);
 /** Los días de un rango, contando los dos extremos. */
 export const diasDelRango = (desde: string, hasta: string): number => Math.round((Date.parse(`${hasta}T12:00:00Z`) - Date.parse(`${desde}T12:00:00Z`)) / DIA) + 1;
 
 export const duracion = (clave: DuracionDelPeriodo) => DURACIONES.find((d) => d.clave === clave) ?? DURACIONES[1]!;
 
-/** Lo que falta para que un rango a medida se pueda leer; `null` si se puede. */
-export function problemaDelRango(desde: string, hasta: string, hoy: string): string | null {
+/**
+ * Lo que falta para que un rango a medida se pueda leer; `null` si se puede. Un rango que termina antes del vínculo no
+ * tiene nada que dibujar (TB-16): se dice, en lugar de dejar el gráfico vacío.
+ */
+export function problemaDelRango(desde: string, hasta: string, hoy: string, inicioDelVinculo: string | null = null): string | null {
   if (!desde || !hasta) return 'Elegí las dos fechas.';
   if (desde > hasta) return 'La fecha de inicio tiene que ser anterior a la de fin.';
   if (hasta > hoy) return 'El período termina hoy como mucho.';
+  if (inicioDelVinculo !== null && hasta < inicioDelVinculo) return `El período termina antes del ${corto(inicioDelVinculo)}, el día en que empezaste a acompañarla.`;
   if (diasDelRango(desde, hasta) > DIAS_MAXIMOS_DE_LOS_GRAFICOS) return `El período puede tener hasta ${DIAS_MAXIMOS_DE_LOS_GRAFICOS} días.`;
   return null;
 }
@@ -107,7 +112,7 @@ export function periodoDeLaEleccion(e: EleccionDePeriodo, c: ContextoDelPeriodo)
       return { ...base, desde, hasta: c.hoy, recortado: !dentro };
     }
     case 'A_MEDIDA':
-      return problemaDelRango(e.desde, e.hasta, c.hoy) === null ? { ...base, desde: e.desde, hasta: e.hasta, recortado: false } : null;
+      return problemaDelRango(e.desde, e.hasta, c.hoy, c.inicioDelVinculo) === null ? { ...base, desde: e.desde, hasta: e.hasta, recortado: false } : null;
     case 'ETAPA': {
       const etapa = c.etapas[e.dominio].find((x) => x.planVersionId === e.planVersionId) ?? null;
       if (!etapa) return null;
@@ -124,7 +129,6 @@ export function etapaVecina(etapas: readonly EtapaDePlanificacion[], planVersion
   return i < 0 ? null : (etapas[i + paso] ?? null);
 }
 
-const corto = (f: string): string => `${Number(f.slice(8, 10))}/${Number(f.slice(5, 7))}`;
 
 /** «Entrenamiento v3 · del 2/9 al 13/10» o «… · desde el 14/10 (vigente)»: cómo se nombra una versión en el selector. */
 export function textoDeLaEtapa(e: EtapaDePlanificacion, conArea = true): string {
@@ -133,8 +137,12 @@ export function textoDeLaEtapa(e: EtapaDePlanificacion, conArea = true): string 
   return `${area}${e.etiqueta} · ${cuando}`;
 }
 
-/** Las versiones que se pueden elegir: las que tienen al menos un día entero (una reemplazada el mismo día no tiene período). */
-export const etapasElegibles = (etapas: readonly EtapaDePlanificacion[]): EtapaDePlanificacion[] => etapas.filter((e) => e.ultimoDia !== null);
+/**
+ * Las versiones que se pueden elegir: las que tienen al menos un día entero (una reemplazada el mismo día no tiene
+ * período) y algún día desde el vínculo (lo anterior no se dibuja, TB-16).
+ */
+export const etapasElegibles = (etapas: readonly EtapaDePlanificacion[], inicioDelVinculo: string | null = null): EtapaDePlanificacion[] =>
+  etapas.filter((e) => e.ultimoDia !== null && (inicioDelVinculo === null || e.ultimoDia >= inicioDelVinculo));
 
 /** Cómo se nombra el período en las frases («Sin sesiones … en las últimas 12 semanas»). */
 export function enElPeriodo(e: EleccionDePeriodo, p: PeriodoElegido | null): string {

@@ -20,6 +20,7 @@ import {
   ELECCION_POR_DEFECTO,
   etapasElegibles,
   periodoDeLaEleccion,
+  problemaDelRango,
   type EleccionDePeriodo,
   type PeriodoElegido,
 } from './periodo-de-los-graficos';
@@ -54,7 +55,8 @@ export function SelectorDePeriodoDeGraficos({ leida, inicio }: { leida: Eleccion
   const { eleccion, elegir, periodo, etapas } = leida;
   if (!periodo) return null;
   const control: PeriodoDelControl<DiasDeAtajo> = { preset: eleccion.tipo === 'DURACION' ? duracion(eleccion.duracion).dias : null, desde: periodo.desde, hasta: periodo.hasta };
-  const porArea = etapas.tipo === 'lista' ? [etapasElegibles(etapas.etapas.TRAINING), etapasElegibles(etapas.etapas.NUTRITION)] : [];
+  const vinculo = inicio.tipo === 'listo' ? inicio.inicio : null;
+  const porArea = etapas.tipo === 'lista' ? [etapasElegibles(etapas.etapas.TRAINING, vinculo), etapasElegibles(etapas.etapas.NUTRITION, vinculo)] : [];
   const nota =
     eleccion.tipo === 'DESDE_EL_VINCULO' && periodo.recortado
       ? inicio.tipo === 'listo' && inicio.fallo
@@ -69,6 +71,7 @@ export function SelectorDePeriodoDeGraficos({ leida, inicio }: { leida: Eleccion
         periodo={control}
         atajos={ATAJOS}
         maximoDeDias={DIAS_MAXIMOS_DE_LOS_GRAFICOS}
+        problemaDelRango={(desde, hasta) => problemaDelRango(desde, hasta, periodo.hoy, vinculo)}
         onElegir={(p) => {
           const d = DURACIONES.find((x) => x.dias === p.preset);
           elegir(d ? { tipo: 'DURACION', duracion: d.clave } : { tipo: 'A_MEDIDA', desde: p.desde, hasta: p.hasta });

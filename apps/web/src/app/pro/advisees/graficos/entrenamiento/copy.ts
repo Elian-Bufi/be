@@ -117,7 +117,7 @@ export const FICHA_DE_LA_TIRA = { fuerza: FICHAS_DE_ENTRENAMIENTO.tiraDeLaFuerza
 /** GR-03: carga, repeticiones y RIR de la misma serie, en tres paneles alineados. */
 export const COPY_CARGA_REPETICIONES_Y_RIR = {
   /** GPF-05: un % RM no se convierte a kg (09v10:356). */
-  porcentajeRmSinFranja: 'La carga se indica respecto del RM: BE no la convierte a kg, así que no va como franja en el panel de la carga.',
+  porcentajeRmSinFranja: 'La carga se indica respecto del RM: BE no la convierte a kg ni a lb, así que no va como franja en el panel de la carga.',
   titulo: (serie: number) => `Carga, repeticiones y RIR de la serie ${serie}`,
   /** La línea tenue: cada panel tiene su unidad, así que dice qué es cada punto y el período. */
   detalle: (periodo: string) => `un punto por sesión, sin promediar · ${periodo}`,

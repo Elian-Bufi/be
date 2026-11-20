@@ -51,10 +51,16 @@ export function ControlDePeriodo<D extends number>({
   maximoDeDias,
   onElegir,
   graficos,
+  problemaDelRango,
 }: {
   periodo: PeriodoDelControl<D>;
   /** WP-GRAFICOS-POR-FASE: «Desde que la acompañás» y «Por versión del plan», solo donde hay gráficos. */
   graficos?: OpcionesDeLosGraficos;
+  /**
+   * WP-GRAFICOS-POR-FASE (GPF-03): lo que le falta a un rango propio, además del tope de días (que no pase de hoy, que no
+   * termine antes del vínculo). Sin esto, un fin futuro se aceptaba y los gráficos volvían en silencio al por omisión.
+   */
+  problemaDelRango?: (desde: string, hasta: string) => string | null;
   atajos: readonly { readonly dias: D; readonly texto: string }[];
   /** Cuántos días puede tener un rango propio, contando los dos extremos. */
   maximoDeDias: number;
@@ -105,6 +111,8 @@ export function ControlDePeriodo<D extends number>({
     if (!desde || !hasta) return setProblema('Elegí las dos fechas.');
     if (desde > hasta) return setProblema('La fecha de inicio tiene que ser anterior a la de fin.');
     if (diasEntre(desde, hasta) > maximoDeDias) return setProblema(`El período puede tener hasta ${maximoDeDias} días.`);
+    const otro = problemaDelRango?.(desde, hasta) ?? null;
+    if (otro) return setProblema(otro);
     setProblema(null);
     elegir({ preset: null, desde, hasta });
   };
@@ -169,7 +177,7 @@ export function ControlDePeriodo<D extends number>({
               {graficos ? P.aMedida : 'Otro rango'}
             </p>
             <CampoDeFecha id={`${id}-desde`} etiqueta="Desde" value={desde} max={hasta || hoy} hoy={hoy} vaciable onChange={setDesde} />
-            <CampoDeFecha id={`${id}-hasta`} etiqueta="Hasta" value={hasta} min={desde || undefined} hoy={hoy} vaciable onChange={setHasta} />
+            <CampoDeFecha id={`${id}-hasta`} etiqueta="Hasta" value={hasta} min={desde || undefined} max={graficos ? hoy : undefined} hoy={hoy} vaciable onChange={setHasta} />
             <button type="button" className="boton boton--secundario" onClick={aplicar}>
               Aplicar
             </button>

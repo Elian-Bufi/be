@@ -296,3 +296,48 @@ test('TEST-GPF-013 · las pantallas usan el mismo selector y el gráfico nuevo (
   assert.match(leer('graficos/patrones/cuerpo-de-patrones-en-pantalla.tsx'), /data-ejercicio-de-patrones/);
   for (const t of Object.values(PER.COPY_DEL_PERIODO).flatMap((v) => (typeof v === 'string' ? [v] : Object.values(v)))) assert.deepEqual(terminosProhibidosEnUnGrafico(t, ['ENTRENAMIENTO', 'NUTRICION']), [], t);
 });
+
+test('TEST-GPF-014 · por semana en los bordes del período: la primera y la última semana partidas se dibujan con sus días (mutación: el lunes antes del eje, o «Fuera del volumen»)', async () => {
+  // Un período del miércoles 30/9 al miércoles 21/10: la primera y la última semana quedan partidas.
+  const limites = { desde: '2026-09-30', hasta: '2026-10-21' };
+  const semanas = PH.programadoYHecho(OBS, 'kg', 'SEMANA', limites);
+  assert.deepEqual(semanas.map((s) => [s.clave, s.fecha, s.hasta]), [
+    ['2026-09-28', '2026-09-30', '2026-10-04'],
+    ['2026-10-05', '2026-10-05', '2026-10-11'],
+    ['2026-10-19', '2026-10-19', '2026-10-21'],
+  ]);
+  // Ninguna semana cae antes del eje ni después de su fin: los carriles las dibujan todas.
+  for (const s of semanas) assert.ok(s.fecha >= limites.desde && s.hasta <= limites.hasta, s.clave);
+  // Una semana partida va a la mitad de sus días; una entera, a los tres días de su lunes, como siempre.
+  const EJE = await import('../src/app/pro/advisees/graficos/eje-de-fechas.ts');
+  const escala = EJE.escalaDeFechas({ desde: '2026-09-30', hasta: '2026-10-21', hoy: '2026-11-20', desdeElVinculo: null }, { izquierda: 0, derecha: 2200 });
+  assert.equal(Math.round(escala.xDePunto({ fecha: '2026-10-05', hasta: '2026-10-11', en: null })), Math.round(escala.x('2026-10-08')));
+  assert.equal(Math.round(escala.xDePunto({ fecha: '2026-10-19', hasta: '2026-10-21', en: null })), Math.round(escala.x('2026-10-20')));
+  // Un mes sigue a los tres días de su inicio (no cambia lo que ya se dibujaba).
+  assert.equal(Math.round(escala.xDePunto({ fecha: '2026-10-01', hasta: '2026-10-31', en: null })), Math.round(escala.x('2026-10-04')));
+  // «Armá tu gráfico»: el detalle de lo que no entra no dice la palabra prohibida.
+  const conFuera = obs('e7', 'v2', '2026-10-22', [fila(1, { value: 5 }, { reps: 5, kg: 120 }), fila(2, { value: 5 }, { reps: 5, kg: null })], { cargaSugerida: { value: 120, unit: 'kg' } });
+  const hecha = PH.serieDelVolumen([conFuera], { metricId: 'entrenamiento.carga-por-repeticiones-hecha', nombre: 'x', unidad: 'kg' });
+  const detalle = hecha.points.flatMap((p) => p.detail.flatMap((d) => [d.label, d.value]));
+  assert.ok(detalle.length > 0);
+  for (const t of [...detalle, ...hecha.notes]) assert.deepEqual(terminosProhibidosEnUnGrafico(t, ['ENTRENAMIENTO']), [], t);
+});
+
+test('TEST-GPF-015 · a medida y por versión respetan hoy y el vínculo (mutación: aceptar un fin futuro o una versión anterior al vínculo)', () => {
+  // Antes del vínculo no hay nada que dibujar: se dice, y la elección no vale.
+  assert.match(PER.problemaDelRango('2026-05-01', '2026-06-15', '2026-11-20', '2026-07-01'), /1\/7/);
+  assert.equal(PER.periodoDeLaEleccion({ tipo: 'A_MEDIDA', desde: '2026-05-01', hasta: '2026-06-15' }, CTX), null);
+  assert.equal(PER.problemaDelRango('2026-05-01', '2026-07-01', '2026-11-20', '2026-07-01'), null);
+  // Una versión que terminó antes del vínculo no se ofrece; una que lo cruza, sí.
+  const vieja = etapa('t0', 'TRAINING', 'v0', '2026-03-01', '2026-06-30');
+  const cruza = etapa('t05', 'TRAINING', 'v0b', '2026-06-01', '2026-07-31');
+  assert.deepEqual(PER.etapasElegibles([vieja, cruza, ...ETAPAS.TRAINING], '2026-07-01').map((e) => e.planVersionId), ['t05', 't1', 't2', 't3']);
+  assert.equal(PER.etapasElegibles([vieja], null).length, 1);
+  // El control de los gráficos no deja elegir un fin futuro y valida el rango con las reglas de los gráficos.
+  const control = leer('control-de-periodo.tsx');
+  assert.match(control, /max=\{graficos \? hoy : undefined\}/);
+  assert.match(control, /problemaDelRango\?\.\(desde, hasta\)/);
+  assert.match(leer('graficos/selector-de-periodo-de-graficos.tsx'), /problemaDelRango=\{\(desde, hasta\) => problemaDelRango\(desde, hasta, periodo\.hoy, vinculo\)\}/);
+  // La ficha nombra la versión solo si el período de la dirección es el suyo.
+  assert.match(leer('seguimiento/barra.tsx'), /e\.ultimoDia === periodo\.hasta && e\.desde <= periodo\.desde/);
+});

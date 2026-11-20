@@ -16,7 +16,7 @@ import { useMemo } from 'react';
 import { Pestanas } from '../../../../components/pestanas';
 import { ControlDePeriodo } from '../control-de-periodo';
 import { SIN_ETAPAS, useEtapasDeLaPersona } from '../graficos/etapas-de-la-persona';
-import { COPY_DEL_PERIODO as P, etapasElegibles } from '../graficos/periodo-de-los-graficos';
+import { COPY_DEL_PERIODO as P, etapasElegibles, problemaDelRango } from '../graficos/periodo-de-los-graficos';
 import { useSeguimiento } from './contexto';
 import { hoyEn, parametrosDePeriodo, PRESETS_DE_LOS_GRAFICOS, PRESETS_DE_PERIODO, VISTAS_CON_GRAFICOS, VISTAS_DEL_SEGUIMIENTO, type VistaDelSeguimiento } from './estado';
 
@@ -32,18 +32,23 @@ export function SelectorDePeriodo({ vista }: { vista: VistaDelSeguimiento }) {
 }
 
 function SelectorDePeriodoDeLosGraficos() {
-  const { periodo, ir, token, asesoradoId, sesionPerdida } = useSeguimiento();
+  const { periodo, ir, token, asesoradoId, sesionPerdida, acompanamiento } = useSeguimiento();
   const hoy = useMemo(() => hoyEn(), []);
   const lectura = useEtapasDeLaPersona(token, asesoradoId, sesionPerdida, hoy);
   const etapas = lectura.tipo === 'lista' ? lectura.etapas : SIN_ETAPAS;
-  const porArea = [etapasElegibles(etapas.TRAINING), etapasElegibles(etapas.NUTRITION)];
-  const elegida = periodo.etapa ? (etapas[periodo.etapa.dominio].find((e) => e.planVersionId === periodo.etapa?.planVersionId) ?? null) : null;
+  const porArea = [etapasElegibles(etapas.TRAINING, acompanamiento.inicio), etapasElegibles(etapas.NUTRITION, acompanamiento.inicio)];
+  // La versión se nombra solo si el período de la dirección es el suyo (su vigencia, o sus últimos 366 días): una
+  // dirección vieja o editada a mano con otras fechas no dice el nombre de una versión que no es lo que se ve.
+  const elegida = periodo.etapa
+    ? (etapas[periodo.etapa.dominio].find((e) => e.planVersionId === periodo.etapa?.planVersionId && e.ultimoDia === periodo.hasta && e.desde <= periodo.desde) ?? null)
+    : null;
   return (
     <div className="selector-de-periodo-de-graficos" data-selector-de-periodo>
       <ControlDePeriodo
         periodo={periodo}
         atajos={PRESETS_DE_LOS_GRAFICOS}
         maximoDeDias={366}
+        problemaDelRango={(desde, hasta) => problemaDelRango(desde, hasta, hoy, acompanamiento.inicio)}
         onElegir={(p) => ir(parametrosDePeriodo(p))}
         graficos={{
           vinculo: { elegido: periodo.vinculo === true, onElegir: () => ir(parametrosDePeriodo({ preset: null, desde: '', hasta: '', vinculo: true })) },
