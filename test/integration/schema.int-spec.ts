@@ -300,6 +300,8 @@ describe('08 §29 — historia por adición', () => {
     'rangos_de_plan_nutricional',
     // DL-179 (2026-11-18): las citas de la evaluación de Nutrición
     'cita_de_respuesta_en_evaluacion_nutricional',
+    // DL-185 (2026-11-19): los formularios vinculados a la evaluación (se desvinculan con UPDATE; no se borran ni se truncan)
+    'vinculo_de_formulario_en_evaluacion',
   ])(
     'TRUNCATE %s es rechazado (esquivaría los triggers de fila)',
     async (tabla) => {

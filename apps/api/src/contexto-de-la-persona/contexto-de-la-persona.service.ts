@@ -191,17 +191,24 @@ function formularioEnElContexto(s: FilaDeSolicitud): FormularioEnElContexto | nu
     version: api.version,
     rectified: rectificacion !== undefined,
     transcribedConfirmedAt: transcripcion?.confirmedAt ?? null,
-    // En el orden de la plantilla; una pregunta sin responder no aparece (un opcional omitido no es un «no», 09:1586).
-    sections: definicion.sections.map((sec) => ({
-      sectionCode: sec.sectionCode,
-      title: sec.title,
-      answers: sec.fields.flatMap((campo) => {
-        const a = porCodigo.get(campo.fieldCode);
-        if (!a) return [];
-        return [{ fieldCode: campo.fieldCode, label: campo.label, category: campo.category, dataType: campo.dataType, answer: a.answer, text: resumenDeValor(campo, a.answer) }];
-      }),
-    })),
+    sections: seccionesEnPalabras(definicion.sections, porCodigo),
   };
+}
+
+/**
+ * Las respuestas de una versión, por sección y en el orden de la plantilla; una pregunta sin responder no aparece (un
+ * opcional omitido no es un «no», 09:1586). La usa también la lectura de un formulario vinculado (DL-185, API-EVF-04).
+ */
+export function seccionesEnPalabras(secciones: ReturnType<typeof definicionV2>['sections'], porCodigo: ReadonlyMap<string, RespuestaDeCampoV2>): FormularioEnElContexto['sections'] {
+  return secciones.map((sec) => ({
+    sectionCode: sec.sectionCode,
+    title: sec.title,
+    answers: sec.fields.flatMap((campo) => {
+      const a = porCodigo.get(campo.fieldCode);
+      if (!a) return [];
+      return [{ fieldCode: campo.fieldCode, label: campo.label, category: campo.category, dataType: campo.dataType, answer: a.answer, text: resumenDeValor(campo, a.answer) }];
+    }),
+  }));
 }
 
 // ─── El cuerpo ──────────────────────────────────────────────────────────────────────────────────
