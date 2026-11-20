@@ -305,8 +305,9 @@ describe('DL-185 · 6. la base repite las reglas aunque el código se equivoque'
     };
     // Una respuesta de otra persona.
     await expect(insertar({ alcance: 'NUTRICION', evaluacion_nutricional_id: c.evaluationId, respuesta_id: otra.formResponseId })).rejects.toThrow(/misma persona/);
-    // Dos evaluaciones, o la del área que no es.
-    await expect(insertar({ alcance: 'ENTRENAMIENTO', evaluacion_nutricional_id: c.evaluationId, respuesta_id: c.formResponseId })).rejects.toThrow(/una_evaluacion_del_alcance/);
+    // La evaluación del área que no es, o las dos a la vez.
+    await expect(insertar({ alcance: 'ENTRENAMIENTO', evaluacion_nutricional_id: c.evaluationId, respuesta_id: c.formResponseId })).rejects.toThrow(/alcance ENTRENAMIENTO/);
+    await expect(insertar({ alcance: 'NUTRICION', evaluacion_nutricional_id: c.evaluationId, evaluacion_de_entrenamiento_id: randomUUID(), respuesta_id: c.formResponseId })).rejects.toThrow(/una_evaluacion_del_alcance/);
     // Nace vigente.
     await expect(insertar({ alcance: 'NUTRICION', evaluacion_nutricional_id: c.evaluationId, respuesta_id: c.formResponseId, desvinculado_en: '2026-11-19T12:00:00Z' })).rejects.toThrow(/nace vigente/);
     // Un solo vínculo vigente por respuesta.
