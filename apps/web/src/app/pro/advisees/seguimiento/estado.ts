@@ -143,7 +143,7 @@ export function leerPeriodo(params: URLSearchParams, hoy: string = hoyEn()): Per
 
 export function parametrosDePeriodo(p: Periodo): Record<string, string | null> {
   // El período desde el vínculo es el por omisión: no se escribe en la URL (TB-16).
-  if (p.desdeElVinculo) return { p: null, desde: null, hasta: null, etapa: null };
+  if (p.desdeElVinculo) return { p: null, desde: null, hasta: null };
   if (p.vinculo) return { p: 'vinculo', desde: null, hasta: null, etapa: null };
   if (p.etapa && !p.preset) return { p: null, desde: p.desde, hasta: p.hasta, etapa: `${p.etapa.dominio}:${p.etapa.planVersionId}` };
   return p.preset ? { p: String(p.preset), desde: null, hasta: null, etapa: null } : { p: null, desde: p.desde, hasta: p.hasta, etapa: null };
