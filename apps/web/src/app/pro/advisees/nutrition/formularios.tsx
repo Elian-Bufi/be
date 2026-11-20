@@ -39,7 +39,7 @@ import { KcalDelObjetivo } from './suma-de-los-rangos';
 import { evaluacionMasReciente } from '../evaluacion-reciente';
 import { hoyEn } from '../seguimiento/estado';
 import { CalculadorDelObjetivo, useTomasDelCalculador, type LoQueVaAlObjetivo } from './calculador';
-import { COPY_CALCULADOR, fuenteEnPalabras, parametrosDelCalculador, pedidoConReferencia, type ValoresDelCalculador } from './calculador-del-objetivo';
+import { COPY_CALCULADOR, falloDeLaReferencia, fuenteEnPalabras, parametrosDelCalculador, pedidoConReferencia, type ValoresDelCalculador } from './calculador-del-objetivo';
 
 type Fuente = 'REPORTED' | 'OBSERVED' | 'CALCULATED';
 interface Dato {
@@ -480,7 +480,7 @@ export function FormularioDeObjetivo({
     setEnviando(false);
     // Una escritura denegada retira el contenido de la pestaña entera (B10-06:1145-1148).
     if (sesionPerdida(r) || accesoRetirado(r)) return;
-    if (!r.ok) return setFallo(mensajeDeFallo(r));
+    if (!r.ok) return setFallo((pedido ? falloDeLaReferencia(r) : null) ?? mensajeDeFallo(r));
     onEmitido();
   }
 

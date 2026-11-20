@@ -153,6 +153,10 @@ test('la propuesta: el día con su margen y cada comida con el reparto sugerido;
   // Lo que va al objetivo: solo el método; con la energía no positiva, nada.
   assert.doesNotMatch(K.declaracionParaElObjetivo({ restingMethod: 'KATCH_MCARDLE', macros: { base: 'LEAN_MASS', proteinPerKg: 2, fatPerKg: 1 } }), /toma|g\/kg|factor/);
   assert.equal(K.valoresParaElObjetivo({ energy: { day: -273, restDay: null }, macros: null }), null);
+  // El rechazo de la referencia se dice sin elegir entre «sin permiso», «no existe» y «es de otro».
+  assert.match(K.falloDeLaReferencia({ ok: false, tipo: 'API', issues: [{ code: 'MEASUREMENT_NOT_AVAILABLE', path: 'reference.evaluationId' }] }), /ya no se puede usar de referencia/);
+  assert.doesNotMatch(K.falloDeLaReferencia({ ok: false, tipo: 'API', issues: [{ code: 'MEASUREMENT_NOT_AVAILABLE' }] }), /permiso|habilit|otro profesional|no existe/);
+  assert.equal(K.falloDeLaReferencia({ ok: false, tipo: 'API', issues: [] }), null);
 });
 
 test('las pantallas: el calculador separado de los rangos de cada comida, sin palabras de juicio y con el «%» con su base', () => {

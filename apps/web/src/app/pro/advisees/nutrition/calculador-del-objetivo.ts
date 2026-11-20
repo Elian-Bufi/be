@@ -301,6 +301,19 @@ export function avisosDeLaReferencia(c: ReferenciaYCalculo | null, a: EstadoDeLa
   return avisos;
 }
 
+/**
+ * Lo que dice el formulario cuando API-OBC-02 rechaza la referencia. `MEASUREMENT_NOT_AVAILABLE` es el mismo para «sin
+ * permiso», «no existe» y «es de otro» (OBC-D02): el texto no elige entre ellos. `null` si el rechazo es otro.
+ */
+export function falloDeLaReferencia(r: { readonly ok: boolean; readonly tipo?: string; readonly issues?: readonly { readonly code: string }[] }): string | null {
+  if (r.ok || r.tipo !== 'API') return null;
+  const codigos = new Set((r.issues ?? []).map((i) => i.code));
+  if (codigos.has('MEASUREMENT_NOT_AVAILABLE')) return 'La toma elegida ya no se puede usar de referencia. Quitá el calculador, abrilo de nuevo y elegí otra toma o los datos a mano.';
+  if (codigos.has('DATE_IN_FUTURE')) return 'La fecha de los datos a mano no puede ser posterior a hoy.';
+  if (codigos.has('LEAN_MASS_NOT_BELOW_WEIGHT')) return 'La masa libre de grasa tiene que ser menor que el peso.';
+  return null;
+}
+
 export const COPY_CALCULADOR = {
   titulo: 'Calcular con la antropometría',
   resumen: 'Opcional. Estima el gasto con el método que elijas, a la vista, y propone las kcal y los gramos del día. Vos decidís qué guardar.',
