@@ -6,6 +6,8 @@
 # - Nutrición (NUP-15, WP-NUTRICION-PLANIFICACION; WP-NUTRICION-ALIMENTOS, DL-180, y su segundo tramo): el editor del plan
 #   con los números donde se planifica, los alimentos del catálogo, la imagen de la receta, la consola, lo propio, el canon
 #   y las medidas caseras; a 1280 × 800, 1536 × 760 (Windows al 125 %) y 1920 × 950.
+# - El objetivo y el calculador (WP-OBJETIVO-Y-CALCULADOR, DL-186): el calculador con la toma, la fórmula y los macros, el
+#   objetivo con la toma vinculada, la propuesta de rangos y una opción frente al rango de su comida; a 1920, 1440 y 1280.
 # La cohorte sintética, la API y el website compilados, y las capturas en Claro y Azul noche. Esta PC no levanta los tres
 # juntos: lo hace la CI.
 # No es un check de la integración: no bloquea nada y no despliega nada. Corre en las ramas de los paquetes (y en la de la
@@ -23,10 +25,13 @@ on:
       - "integracion-planificacion"
       # Los ajustes de la ratificación del 19/11 (el catálogo a 1280 × 800, «Fase N», lo que viaja a la plantilla).
       - "wp-ajustes-de-la-ratificacion"
+      # WP-OBJETIVO-Y-CALCULADOR (DL-186): el objetivo con su toma de referencia, el calculador y la propuesta de rangos.
+      - "wp-objetivo-y-calculador"
     paths:
       - ".github/workflows/capturas-de-la-planificacion.yml"
       - "EVIDENCIA/ENTRENAMIENTO-PLANIFICACION/herramientas/**"
       - "EVIDENCIA/NUTRICION-PLANIFICACION/herramientas/**"
+      - "EVIDENCIA/OBJETIVO-Y-CALCULADOR/herramientas/**"
       - "apps/web/src/app/pro/advisees/training/**"
       # WP-PLANTILLAS-DE-ENTRENAMIENTO (DL-182): la colección, el detalle y el editor de una plantilla.
       - "apps/web/src/app/pro/templates/**"
@@ -60,6 +65,9 @@ jobs:
           - nombre: Nutrición
             herramienta: EVIDENCIA/NUTRICION-PLANIFICACION/herramientas/capturas.mjs
             salida: capturas-de-la-planificacion-nutricion
+          - nombre: Nutrición, objetivo y calculador
+            herramienta: EVIDENCIA/OBJETIVO-Y-CALCULADOR/herramientas/capturas.mjs
+            salida: capturas-del-objetivo-y-calculador
     services:
       postgres:
         image: postgres:16-alpine
