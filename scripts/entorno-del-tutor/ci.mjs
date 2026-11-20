@@ -326,7 +326,156 @@ async function capturas() {
     await ir(ruta);
     await foto(archivo, que);
   }
+  // Los gráficos que cruzan áreas, recortados al gráfico, en Claro a 1440 y a 1920 (para mostrarlos fuera de BE).
+  try {
+    await capturasDeGraficos({ page, ir, idDe, asentar, indice });
+  } catch (e) {
+    indice.push('', `Las capturas de los gráficos se cortaron: ${String(e?.message ?? e).slice(0, 300)}`);
+    console.log('capturas de gráficos: falla', e);
+  }
   indice.push('', `Errores de la página: ${errores.length ? errores.slice(0, 10).join(' | ') : 'ninguno'}.`, '', `La historia: ${historia.personas.length} personas.`);
   fs.writeFileSync(path.join(salida, 'indice.md'), `${indice.join('\n')}\n`);
   await navegador.close();
+}
+
+/**
+ * Los gráficos que cruzan áreas, para mostrar qué se ve cuando se cargan datos: SP-01 con Valeria, «Armá tu gráfico» con
+ * Tomás (fuerza, proteína y peso), y «Patrones» de cada persona con lo indicado frente a lo registrado. Cada gráfico se
+ * recorta a su tarjeta, en Claro, a 1440 y a 1920, con el doble de densidad para que se lea en un teléfono.
+ */
+async function capturasDeGraficos({ page, ir, idDe, asentar, indice }) {
+  const carpeta = path.join(salida, 'graficos');
+  fs.mkdirSync(carpeta, { recursive: true });
+  page.on('dialog', (d) => void d.accept().catch(() => {}));
+  indice.push('', '## Gráficos que cruzan áreas (recortados)', '', '| Archivo | Gráfico | Persona |', '|---|---|---|');
+  const claro = async (ancho) => {
+    await page.evaluate(() => {
+      document.documentElement.dataset.tema = 'claro';
+      try {
+        localStorage.setItem('be-apariencia', 'claro');
+      } catch {}
+    });
+    await page.setViewport({ width: ancho, height: ancho === 1920 ? 1080 : 900, deviceScaleFactor: 2 });
+    await pausa(700);
+  };
+  const sinCargando = async () => {
+    await page.waitForFunction(() => ![...document.querySelectorAll('[aria-busy="true"], .cargando')].some((n) => n.offsetParent !== null), { timeout: 20_000 }).catch(() => {});
+    await asentar();
+  };
+  const recortar = async (selector, archivo, que, quien) => {
+    const els = await page.$$(selector);
+    let n = 0;
+    for (const [i, el] of els.entries()) {
+      await el.evaluate((x) => x.scrollIntoView({ block: 'start' }));
+      await sinCargando();
+      const caja = await el.boundingBox();
+      if (!caja || caja.width < 50 || caja.height < 50) continue;
+      const grafico = (await el.evaluate((x) => x.dataset.grafico ?? 'x')).replace(/[^a-z0-9.-]/gi, '_');
+      const nombre = archivo.replace('{i}', String(i + 1).padStart(2, '0')).replace('{g}', grafico);
+      await el.screenshot({ path: path.join(carpeta, nombre), captureBeyondViewport: true });
+      indice.push(`| \`graficos/${nombre}\` | ${que} | ${quien} |`);
+      n++;
+    }
+    console.log(`gráficos: ${archivo} → ${n}`);
+    return n;
+  };
+  const valeria = await idDe('valeria').catch(() => null);
+  const tomas = await idDe('tomas').catch(() => null);
+  const carolina = await idDe('carolina').catch(() => null);
+  for (const ancho of [1440, 1920]) {
+    await claro(ancho);
+    // a. SP-01 con Valeria, desde «Analizar» → «Ver la relación».
+    if (valeria) {
+      await ir(`/pro/advisees?id=${valeria}&vista=analizar&pregunta=ver-la-relacion&p=365`);
+      await sinCargando();
+      await recortar('article[data-grafico]', `a-valeria-relacion-{g}__${ancho}.png`, '«Ver la relación» (SP-01 y SP-02)', 'Valeria Q.');
+    }
+    // b. «Armá tu gráfico» con Tomás: 1RM estimado de la sentadilla, proteína por kilo y peso.
+    if (tomas) {
+      await ir(`/pro/advisees?id=${tomas}&vista=patrones&p=365`);
+      await sinCargando();
+      const boton = await page.$('[data-arma-tu-grafico]');
+      if (boton) {
+        await boton.evaluate((x) => x.scrollIntoView({ block: 'center' }));
+        await boton.click();
+        await page.waitForSelector('.compositor', { timeout: 15_000 });
+        await pausa(500);
+        const elegir = (etiqueta, patron) =>
+          page.evaluate(
+            (et, pa) => {
+              const raiz = document.querySelector('.compositor');
+              const label = [...raiz.querySelectorAll('label')].find((l) => l.textContent.trim().startsWith(et));
+              const sel = label ? document.getElementById(label.htmlFor) : null;
+              if (!sel) return `sin ${et}`;
+              const re = new RegExp(pa, 'i');
+              const op = [...sel.options].find((o) => re.test(o.textContent)) ?? null;
+              if (!op) return `sin opción ${pa} en ${et}: ${[...sel.options].map((o) => o.textContent).join(' / ')}`;
+              Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value').set.call(sel, op.value);
+              sel.dispatchEvent(new Event('change', { bubbles: true }));
+              return op.textContent;
+            },
+            etiqueta,
+            patron,
+          );
+        const agregar = async () => {
+          await page.evaluate(() => [...document.querySelectorAll('.compositor__agregar button')].find((b) => b.textContent.trim() === 'Agregar')?.click());
+          await pausa(600);
+        };
+        const pasos = [];
+        await page.type('.compositor input[type="text"]', 'Fuerza, proteína y peso');
+        pasos.push(await elegir('Área', 'Entrenamiento'));
+        await pausa(300);
+        pasos.push(await elegir('Ejercicio', 'Sentadilla trasera|Sentadilla'));
+        await pausa(300);
+        pasos.push(await elegir('Serie', '1RM|fuerza'));
+        await agregar();
+        pasos.push(await elegir('Área', 'Nutrici'));
+        await pausa(300);
+        pasos.push(await elegir('Serie', 'prote.*(kilo|kg)'));
+        await agregar();
+        pasos.push(await elegir('Área', 'Antropometr'));
+        await pausa(300);
+        pasos.push(await elegir('Medida', '^\\s*Peso'));
+        await agregar();
+        console.log('compositor:', pasos.join(' | '));
+        indice.push(`| — | compositor: ${pasos.join(' · ')} | Tomás M. |`);
+        await sinCargando();
+        await pausa(1500);
+        await page.evaluate(() => {
+          const raiz = document.querySelector('.compositor');
+          const cuadro = raiz.closest('[role="dialog"], dialog') ?? raiz;
+          cuadro.setAttribute('data-captura', 'compositor');
+        });
+        await recortar('[data-captura="compositor"]', `b-tomas-arma-tu-grafico-selector__${ancho}.png`, '«Armá tu gráfico»: las tres series elegidas y la vista previa', 'Tomás M.');
+        await recortar('.compositor__vista-previa', `b-tomas-arma-tu-grafico-vista-previa__${ancho}.png`, '«Armá tu gráfico»: la vista previa', 'Tomás M.');
+        // «Agregar al enfoque»: el gráfico armado queda en «Patrones», a todo el ancho.
+        await page.evaluate(() => {
+          const raiz = document.querySelector('.compositor');
+          const cuadro = raiz.closest('[role="dialog"], dialog') ?? document;
+          [...cuadro.querySelectorAll('button')].find((b) => b.textContent.trim() === 'Agregar al enfoque')?.click();
+        });
+        await sinCargando();
+        await pausa(1500);
+        await recortar('article[data-grafico="armado"]', `b-tomas-arma-tu-grafico-en-patrones__${ancho}.png`, '«Armá tu gráfico» ya en «Patrones»', 'Tomás M.');
+      } else indice.push('| — | sin «Armá tu gráfico» en Patrones | Tomás M. |');
+    }
+    // c, d y e. «Patrones» de cada una: cada tarjeta, con los cruces a pedido abiertos.
+    for (const [clave, pid, nombre] of [
+      ['tomas', tomas, 'Tomás M.'],
+      ['valeria', valeria, 'Valeria Q.'],
+      ['carolina', carolina, 'Carolina R.'],
+    ]) {
+      if (!pid) continue;
+      await ir(`/pro/advisees?id=${pid}&vista=patrones&p=365`);
+      await sinCargando();
+      for (const b of await page.$$('[data-ver-el-cruce]')) {
+        await b.evaluate((x) => x.scrollIntoView({ block: 'center' }));
+        await b.click().catch(() => {});
+        await pausa(400);
+      }
+      await sinCargando();
+      await recortar('article[data-grafico]', `e-${clave}-patrones-{i}-{g}__${ancho}.png`, '«Patrones»: una tarjeta', nombre);
+    }
+  }
+  await page.setViewport({ width: 1920, height: 1080, deviceScaleFactor: 1 });
 }
