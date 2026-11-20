@@ -399,6 +399,17 @@ async function capturasDeGraficos({ page, ir, idDe, asentar, indice }) {
   indice.push('', `Ventanas: ${Object.entries(VENTANAS).map(([k, v]) => `${k} ${v}`).join(' · ')}`, '');
   for (const ancho of [1920]) {
     await claro(ancho);
+    // f. WP-GRAFICOS-POR-FASE (GPF-01 a GPF-08) con Tomás: «Patrones» en 12 semanas con el ejercicio por omisión (la
+    // sentadilla, el básico con más sesiones), el selector abierto, una versión del plan elegida (y la anterior), y la
+    // franja de lo indicado en GR-03. Las series y la carga × repeticiones van con «Armá tu gráfico» (escenas de b).
+    if (tomas) {
+      try {
+        await porFase({ page, ir, asentar, sinCargando, recortar, carpeta, indice, ancho, tomas });
+      } catch (e) {
+        indice.push(`| — | las escenas por fase se cortaron: ${String(e?.message ?? e).slice(0, 200)} | Tomás M. |`);
+        console.log('escenas por fase: falla', e);
+      }
+    }
     // a. SP-01 con Valeria, desde «Analizar» → «Ver la relación»: la ventana corta y, para contrastar, el año.
     if (valeria) {
       for (const [sufijo, periodo] of [['12s', VENTANAS.valeria], ['365', 'p=365']]) {
@@ -430,6 +441,9 @@ async function capturasDeGraficos({ page, ir, idDe, asentar, indice }) {
       ['fuerza-proteina-peso-365', 'Fuerza, proteína y peso', 'p=365', [ENT('1RM'), [['Área', 'Nutrici'], ['Serie', 'prote.*(kilo|kg)']], [['Área', 'Antropometr'], ['Medida', '^\\s*Peso']]]],
       ['sentadilla-carga-reps-rir', 'Sentadilla: carga, repeticiones y RIR', VENTANAS.fuerzaFinal, [ENT('^Carga registrada'), ENT('^Repeticiones registradas'), ENT('^RIR registrado')]],
       ['sentadilla-rir-indicado', 'Sentadilla: lo indicado y lo hecho', VENTANAS.fuerzaFinal, [ENT('^RIR indicado'), ENT('^RIR registrado'), ENT('1RM')]],
+      // GPF-07: las series indicadas y las hechas, y la carga × repeticiones indicada y hecha (DL-187), en 12 semanas.
+      ['series-indicadas-y-hechas', 'Sentadilla: series indicadas y hechas', 'p=84', [ENT('^Series indicadas'), ENT('^Series registradas'), ENT('^Carga × repeticiones hecha')]],
+      ['carga-por-repeticiones', 'Sentadilla: carga × repeticiones indicada y hecha', 'p=84', [ENT('^Carga × repeticiones indicada'), ENT('^Carga × repeticiones hecha')]],
       ['volumen-y-energia', 'Volumen de sentadilla y calorías', VENTANAS.viaje, [ENT('^Series registradas'), ENT('^Volumen de carga'), [['Área', 'Nutrici'], ['Serie', '^(Calor|Energ).*registrad']]]],
       ['fuerza-carbohidratos-proteina', 'Fuerza y macros', VENTANAS.primeraFuerza, [ENT('1RM'), [['Área', 'Nutrici'], ['Serie', '^Carbohidratos registrados$|^Carbohidratos registrados']], [['Área', 'Nutrici'], ['Serie', '^Prote[ií]nas registradas$|^Prote[ií]nas registradas \\(']]]],
     ];
@@ -513,4 +527,69 @@ async function capturasDeGraficos({ page, ir, idDe, asentar, indice }) {
     }
   }
   await page.setViewport({ width: 1920, height: 1080, deviceScaleFactor: 1 });
+}
+
+/**
+ * WP-GRAFICOS-POR-FASE: las escenas del período y de la franja con Tomás, en Claro. Cada una deja su captura en
+ * `graficos/` y su renglón en el índice: lo que eligió (el ejercicio, la versión) queda escrito.
+ */
+async function porFase({ page, ir, asentar, sinCargando, recortar, carpeta, indice, ancho, tomas }) {
+  const renglon = (archivo, que) => indice.push('| `graficos/' + archivo + '` | ' + que + ' | Tomás M. |');
+  const vista = async (archivo, que) => {
+    await page.evaluate(() => window.scrollTo(0, 0));
+    await pausa(400);
+    await page.screenshot({ path: path.join(carpeta, archivo) });
+    renglon(archivo, que);
+  };
+  const gr03 = 'article:has(section[data-grafico="GR-03"])';
+  // f1. 12 semanas, con el ejercicio que abre «Patrones».
+  await ir('/pro/advisees');
+  await ir(`/pro/advisees?id=${tomas}&vista=patrones&p=84`);
+  await sinCargando();
+  const ejercicio = await page.evaluate(() => {
+    const sel = document.querySelector('[data-ejercicio-de-patrones] select');
+    return sel ? (sel.options[sel.selectedIndex]?.textContent?.trim() ?? '—') : 'sin selector de ejercicio';
+  });
+  indice.push(`| — | «Patrones» en 12 semanas abre con: ${ejercicio} | Tomás M. |`);
+  await vista(`f1-tomas-patrones-12-semanas__${ancho}.png`, '«Patrones» en 12 semanas: el período y el ejercicio elegido');
+  await recortar(gr03, `f1-tomas-franja-12-semanas-{i}__${ancho}.png`, 'GR-03 con la franja de lo indicado, 12 semanas', 'Tomás M.');
+  // f2. El selector abierto: las duraciones, «Desde que la acompañás», a medida y por versión del plan.
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await pausa(300);
+  await page.click('[data-selector-de-periodo] .periodo-del-seguimiento__boton');
+  await pausa(600);
+  const panel = await page.$('[data-selector-de-periodo] .periodo-del-seguimiento__panel');
+  if (panel) {
+    const archivo = `f2-tomas-selector-abierto__${ancho}.png`;
+    await panel.screenshot({ path: path.join(carpeta, archivo) });
+    renglon(archivo, 'El selector de período de los gráficos, abierto');
+  }
+  // f3. Una versión del plan de Entrenamiento: la segunda más nueva (la anterior a la vigente), y después «La anterior».
+  const version = await page.evaluate(() => {
+    const sel = document.querySelector('[data-por-version] select');
+    const grupo = sel ? [...sel.querySelectorAll('optgroup')].find((g) => g.label === 'Entrenamiento') : null;
+    const op = grupo ? (grupo.querySelectorAll('option')[1] ?? grupo.querySelectorAll('option')[0]) : null;
+    if (!sel || !op) return `sin versiones: ${sel ? [...sel.options].map((o) => o.textContent).join(' / ') : 'sin selector'}`;
+    Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value').set.call(sel, op.value);
+    sel.dispatchEvent(new Event('change', { bubbles: true }));
+    return op.textContent.trim();
+  });
+  indice.push(`| — | versión elegida: ${version} | Tomás M. |`);
+  await asentar();
+  await sinCargando();
+  await pausa(1200);
+  await vista(`f3-tomas-una-version__${ancho}.png`, `«Patrones» en una versión del plan (${version})`);
+  await recortar(gr03, `f3-tomas-franja-una-version-{i}__${ancho}.png`, `GR-03 con la franja, en la versión ${version}`, 'Tomás M.');
+  const anterior = await page.evaluate(() => {
+    const b = [...document.querySelectorAll('[data-pasos-entre-versiones] button')][0];
+    if (!b || b.disabled) return 'sin anterior';
+    b.click();
+    return b.textContent.trim();
+  });
+  indice.push(`| — | «La anterior»: ${anterior} | Tomás M. |`);
+  await asentar();
+  await sinCargando();
+  await pausa(1200);
+  await vista(`f4-tomas-la-version-anterior__${ancho}.png`, '«La anterior»: la versión de antes, con su vigencia');
+  await recortar(gr03, `f4-tomas-franja-version-anterior-{i}__${ancho}.png`, 'GR-03 con la franja, en la versión anterior', 'Tomás M.');
 }
