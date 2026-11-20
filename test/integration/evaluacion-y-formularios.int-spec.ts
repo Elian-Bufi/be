@@ -9,7 +9,8 @@
  *      que lo inexistente en las cuatro operaciones; lo de otro profesional, de otra área o inexistente, el mismo 422;
  *      Administración no lee nada;
  *   5. la privacidad: vincular no escribe nada en la evaluación, ni en lo que lee la persona;
- *   6. la base repite la pertenencia, el «nace vigente», el «solo se desvincula una vez» y el solo agregar.
+ *   6. la base repite la pertenencia, el «nace vigente», el «solo se desvincula una vez» y el solo agregar;
+ *   7. en carrera (revisión del PR), sin pausas: dos pedidos sobre la misma evaluación se ordenan por su fila.
  */
 import type { INestApplication } from '@nestjs/common';
 import { EvaluacionResponseSchema, FormularioVinculadoConRespuestasResponseSchema, FormulariosVinculadosResponseSchema } from '@be/domain';
@@ -21,6 +22,7 @@ import { circuitoV2, conAgua, fri, pedirV2, RESPUESTAS_V2, sembrarPlantillaV2, t
 import { cuerpoDeEvaluacion } from './soporte-nutricion';
 import { cuerpoDeEvaluacionDeEntrenamiento } from './soporte-entrenamiento';
 import { pausar, prepararProfesional, revocarB2, versionDeVinculo, vinculoCompleto } from './soporte-vinculo';
+import { esperarQueEsperen } from './soporte-concurrencia';
 
 const prisma = new PrismaClient();
 let app: INestApplication;
@@ -323,5 +325,87 @@ describe('DL-185 · 6. la base repite las reglas aunque el código se equivoque'
     await expect(prisma.$executeRawUnsafe(`DELETE FROM ${tabla} WHERE "id" = '${v.linkId}'`)).rejects.toThrow(/append-only/);
     await prisma.$executeRawUnsafe(`UPDATE ${tabla} SET "desvinculado_en" = now() WHERE "id" = '${v.linkId}'`);
     await expect(prisma.$executeRawUnsafe(`UPDATE ${tabla} SET "desvinculado_en" = now() + interval '1 hour' WHERE "id" = '${v.linkId}'`)).rejects.toThrow(/append-only/);
+  });
+});
+
+// ─── 7. En carrera (revisión del PR) ────────────────────────────────────────────────────────────
+
+type RespuestaHttp = Awaited<ReturnType<typeof listar>>;
+
+/**
+ * Sin pausas (`soporte-concurrencia.ts`): una transacción de la prueba retiene la fila de la evaluación, dispara los pedidos
+ * y los suelta recién cuando la base dice que todos esperan ese cerrojo (`pg_stat_activity`). Si las escrituras no tomaran
+ * la fila de la evaluación, terminarían sin esperar y la prueba queda en rojo; sin el control dentro de la transacción, el
+ * segundo chocaría con el índice parcial o con el trigger (500).
+ */
+async function enCarrera(area: Area, evaluationId: string, pedidos: (() => PromiseLike<RespuestaHttp>)[], que: string): Promise<RespuestaHttp[]> {
+  let enCurso: Promise<RespuestaHttp>[] = [];
+  let terminados = 0;
+  await prisma.$transaction(
+    async (tx) => {
+      if (area === 'nutrition') await tx.$queryRaw`SELECT 1 FROM "evaluacion_nutricional" WHERE "id" = ${evaluationId}::uuid FOR UPDATE`;
+      else await tx.$queryRaw`SELECT 1 FROM "evaluacion_de_entrenamiento" WHERE "id" = ${evaluationId}::uuid FOR UPDATE`;
+      enCurso = pedidos.map((p) =>
+        new Promise<RespuestaHttp>((resolver, rechazar) => {
+          p().then(resolver, rechazar);
+        }).finally(() => {
+          terminados++;
+        }),
+      );
+      // Sin `bloqueadoPor`: el segundo que espera una fila queda detrás del primero que la espera, no del que la tiene.
+      await esperarQueEsperen(prisma, pedidos.length, { yaPaso: () => terminados > 0, que });
+      expect(terminados).toBe(0);
+    },
+    { timeout: 40_000, maxWait: 10_000 },
+  );
+  return Promise.all(enCurso);
+}
+
+describe('DL-185 · 7. revisión del PR: en carrera, un solo vínculo vigente y un solo desvincular', () => {
+  it.each<Area>(['nutrition', 'training'])('TEST-EVF-022 · %s: dos «vincular» del mismo formulario a la vez dejan uno (201 y 200); dos «desvincular», una sola fecha', async (area) => {
+    const c = await conEvaluacion(`carrera-${area}`, area);
+    const links = [{ formResponseId: c.formResponseId, expectedVersion: 'v1' }];
+    const vinculados = await enCarrera(
+      area,
+      c.evaluationId,
+      [() => vincular(c.pro.token, area, c.evaluationId, links), () => vincular(c.pro.token, area, c.evaluationId, links)],
+      'dos «vincular» esperando la evaluación',
+    );
+    expect(vinculados.map((r) => r.status).sort()).toEqual([200, 201]);
+    const filas = await prisma.vinculoDeFormularioEnEvaluacion.findMany({ where: { respuestaId: c.formResponseId } });
+    expect(filas).toHaveLength(1);
+    const [uno, dos] = vinculados.map((r) => FormulariosVinculadosResponseSchema.parse(r.body).data.links);
+    expect(uno).toEqual(dos);
+
+    const linkId = filas[0]!.id;
+    const desvinculados = await enCarrera(
+      area,
+      c.evaluationId,
+      [() => desvincular(c.pro.token, area, c.evaluationId, linkId), () => desvincular(c.pro.token, area, c.evaluationId, linkId)],
+      'dos «desvincular» esperando la evaluación',
+    );
+    expect(desvinculados.map((r) => r.status)).toEqual([200, 200]);
+    for (const r of desvinculados) expect(FormulariosVinculadosResponseSchema.parse(r.body).data.links).toEqual([]);
+    expect((await prisma.vinculoDeFormularioEnEvaluacion.findUniqueOrThrow({ where: { id: linkId } })).desvinculadoEn).not.toBeNull();
+    expect(await prisma.vinculoDeFormularioEnEvaluacion.count({ where: { respuestaId: c.formResponseId, desvinculadoEn: null } })).toBe(0);
+  });
+
+  it('TEST-EVF-023 · «Vincular la más nueva» dos veces a la vez: la anterior se desvincula una vez y la nueva queda una vez', async () => {
+    const c = await conEvaluacion('carrera-mas-nueva');
+    await vincular(c.pro.token, 'nutrition', c.evaluationId, [{ formResponseId: c.formResponseId, expectedVersion: 'v1' }]).expect(201);
+    await fri(app, c.ase.token).corregir(c.formResponseId, { expectedVersion: 'v1', reason: 'Tomo menos agua.', answers: conAgua(3) }).expect(201);
+    const links = [{ formResponseId: c.formResponseId, expectedVersion: 'v2' }];
+    const r = await enCarrera(
+      'nutrition',
+      c.evaluationId,
+      [() => vincular(c.pro.token, 'nutrition', c.evaluationId, links), () => vincular(c.pro.token, 'nutrition', c.evaluationId, links)],
+      'dos «vincular la más nueva» esperando la evaluación',
+    );
+    expect(r.map((x) => x.status).sort()).toEqual([200, 201]);
+    const filas = await prisma.vinculoDeFormularioEnEvaluacion.findMany({ where: { respuestaId: c.formResponseId }, orderBy: { vinculadoEn: 'asc' } });
+    expect(filas.map((f) => [f.rectificacionId === null, f.desvinculadoEn === null])).toEqual([
+      [true, false],
+      [false, true],
+    ]);
   });
 });
