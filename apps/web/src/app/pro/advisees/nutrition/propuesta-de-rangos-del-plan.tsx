@@ -64,6 +64,8 @@ const cifra = (x: { readonly min: number; readonly max: number }): string => (x.
 /**
  * El reparto por comida de un día tipo. `dia`: el día con sus comidas ya guardadas; `null` si el día todavía no se
  * guardó. `comidasSinGuardar`: cuántas comidas del día todavía no tienen identidad (reciben su parte al guardar).
+ * `nombreDelDia`: donde se listan los repartos de todos los días tipo (el paso de los rangos del asistente), el título dice
+ * de qué día es; dentro de un día tipo, su pestaña ya lo dice.
  */
 export function RepartoPorComida({
   token,
@@ -71,6 +73,7 @@ export function RepartoPorComida({
   objetivo,
   dia,
   comidasSinGuardar = 0,
+  nombreDelDia = null,
   rangos,
 }: {
   token: string;
@@ -78,6 +81,7 @@ export function RepartoPorComida({
   objetivo: VersionDeObjetivo | null;
   dia: DiaDeLaPropuesta | null;
   comidasSinGuardar?: number;
+  nombreDelDia?: string | null;
   rangos: RangosIndicadosHook;
 }) {
   const id = useId();
@@ -115,7 +119,7 @@ export function RepartoPorComida({
     <div className="reparto-por-comida__titulo">
       <h3 id={`${id}-titulo`}>
         <Icono nombre="objetivo" tamano={18} />
-        {C.titulo}
+        {nombreDelDia ? C.tituloDelDia(nombreDelDia) : C.titulo}
       </h3>
       <ExplicacionAPedido nombre={C.queEsNombre}>{C.queEs}</ExplicacionAPedido>
     </div>

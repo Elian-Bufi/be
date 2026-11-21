@@ -180,6 +180,11 @@ test('RP-06 · el reparto por comida, en el plan: una parte por comida que suma 
   // Revisión del PR: un día tipo sin comidas no muestra el reparto, y el texto no promete una propuesta que no se hace.
   assert.doesNotMatch(P.COPY_PROPUESTA.sinComidasGuardadas, /se propone/);
   assert.match(delPlan, /dia && comidasSinGuardar === 0 \? C\.sinComidasGuardadas : C\.sinDiaGuardado/);
+  // Revisión del PR: en el paso de los rangos del asistente se ven los repartos de todos los días tipo, uno debajo del
+  // otro; cada título dice de qué día es (con comidas que se llaman igual, eran cuadros idénticos con el mismo nombre).
+  assert.equal(P.COPY_PROPUESTA.tituloDelDia('Día de descanso'), 'Reparto por comida · Día de descanso');
+  assert.match(delPlan, /\{nombreDelDia \? C\.tituloDelDia\(nombreDelDia\) : C\.titulo\}/);
+  assert.match(leer('app/pro/advisees/nutrition/editor.tsx'), /estructura\.map\(\(d, n\) => \(\s*<RepartoPorComida [^\n]*nombreDelDia=\{nombreDelDiaTipo\(d, n\)\}/);
   // Si no suman 100, no se propone y se dice cuánto suman.
   const corto = P.conParteUnica(P.repartoInicialUnico(DIA, 'parejo'), 'm4', '20');
   assert.equal(P.parteUnica(corto, 'm4'), '20');

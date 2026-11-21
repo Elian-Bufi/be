@@ -1227,7 +1227,7 @@ export function EditorDeBorrador({
               <RangosIndicados rangos={rangosIndicados} dias={estructura.map(paraLosRangos)} titulo={false} />
               {/* RP-06 (DL-188): el reparto por comida de cada día tipo, a la vista. */}
               {estructura.map((d, n) => (
-                <RepartoPorComida key={d.dayTypeId ?? `nuevo-${n}`} token={token} planId={planId} objetivo={objetivo} dia={diaParaLaPropuesta(d, n)} comidasSinGuardar={d.meals.filter((m) => !m.mealId).length} rangos={rangosIndicados} />
+                <RepartoPorComida key={d.dayTypeId ?? `nuevo-${n}`} token={token} planId={planId} objetivo={objetivo} dia={diaParaLaPropuesta(d, n)} comidasSinGuardar={d.meals.filter((m) => !m.mealId).length} nombreDelDia={nombreDelDiaTipo(d, n)} rangos={rangosIndicados} />
               ))}
             </>
           }
