@@ -502,15 +502,29 @@ function ChipsDelAcceso({ titulo, alcance, vinculos, sePuedeLeer }: { titulo: st
       {grupos.map((g) => {
         const nombres = g.nombres.length <= 1 ? (g.nombres[0] ?? '') : `${g.nombres.slice(0, -1).join(', ')} y ${g.nombres[g.nombres.length - 1]}`;
         const pista = [g.e.detalle, pistaDelAcceso(g.e)].filter(Boolean).join(' ');
-        return <Chip key={nombres} texto={`${nombres}: ${g.e.estado}`} pista={pista || null} />;
+        return <Chip key={nombres} texto={`${nombres}: ${estadoEnElChip(g.e)}`} pista={pista || null} />;
       })}
     </>
   );
 }
 
+/**
+ * Revisión del PR: el chip no se parte, pero tampoco puede callar que el acceso no rige. Con el detalle en la pista,
+ * «Nutrición: Vínculo activo» se leía como un acceso vigente cuando la persona todavía no autorizó o el acceso no está
+ * disponible (antes, el detalle iba a la vista). El chip suma lo que falta, corto; el detalle entero sigue en la pista.
+ */
+export const estadoEnElChip = (e: { readonly estado: string; readonly detalle: string | null }): string =>
+  e.estado === COPY_VINCULO.vinculoActivoAccesoPendiente && e.detalle
+    ? `${e.estado} · ${e.detalle === COPY_VINCULO.accesoPendienteDelAsesorado ? 'acceso pendiente' : COPY_VINCULO.accesoNoDisponible.toLowerCase()}`
+    : e.estado;
+
+/**
+ * Con pista, el chip recibe el foco (`tabIndex`): la pista aparece al llegarle con el teclado (DL-146) y el lector de
+ * pantalla la lee como su descripción. Sin el foco, el detalle quedaba solo para el mouse.
+ */
 function Chip({ texto, pista }: { texto: string; pista: string | null }) {
   const chip = (
-    <span className="chip-del-acceso" data-chip-del-acceso>
+    <span className="chip-del-acceso" data-chip-del-acceso tabIndex={pista ? 0 : undefined}>
       <Icono nombre="acceso" tamano={15} />
       <span className="visualmente-oculto">Acceso actual: </span>
       {texto}

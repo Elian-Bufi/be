@@ -83,6 +83,11 @@ test('RP-01 · la cabecera: sin «Actualizar» ni «Consultado a las»; la vuelt
   // «Ver» pasa por la guardia de la salida: un borrador sin guardar no se pisa.
   assert.match(marco, /antesDeSalir\(\(\) => \{\s*setHayNuevos\(false\);/);
   assert.match(marco, /className="chip-del-acceso" data-chip-del-acceso/);
+  // Revisión del PR: con el detalle en la pista, «Nutrición: Vínculo activo» callaba que el acceso no rige. El chip suma
+  // lo que falta, corto, y con pista recibe el foco (la pista aparece con el teclado y el lector la lee).
+  assert.match(marco, /texto=\{`\$\{nombres\}: \$\{estadoEnElChip\(g\.e\)\}`\}/);
+  assert.match(marco, /e\.estado === COPY_VINCULO\.vinculoActivoAccesoPendiente && e\.detalle\s*\? `\$\{e\.estado\} · \$\{e\.detalle === COPY_VINCULO\.accesoPendienteDelAsesorado \? 'acceso pendiente' : COPY_VINCULO\.accesoNoDisponible\.toLowerCase\(\)\}`/);
+  assert.match(marco, /data-chip-del-acceso tabIndex=\{pista \? 0 : undefined\}/);
   const ficha = leer('app/pro/advisees/workspace.tsx');
   assert.doesNotMatch(ficha, /Consultado a las \{|horaDelDia/);
   assert.match(ficha, /void leer\(true, 'comparar'\)/);
