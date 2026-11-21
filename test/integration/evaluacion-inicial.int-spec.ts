@@ -17,6 +17,7 @@ import request from 'supertest';
 import { appDePrueba, conSesion } from './soporte-api';
 import { circuitoConPlanActivo, cuerpoDeEvaluacion } from './soporte-nutricion';
 import { circuitoConPlanDeEntrenamientoActivo, cuerpoDeEvaluacionDeEntrenamiento } from './soporte-entrenamiento';
+import { prepararProfesional, vinculoCompleto } from './soporte-vinculo';
 
 let app: INestApplication;
 
@@ -106,4 +107,58 @@ describe('DL-189 · RP-13 · «Anotaciones» no llega a ninguna lectura de la pe
     expect(archivo.length).toBeGreaterThan(0);
     expect(archivo).not.toContain(marca);
   }, 180_000);
+
+  /**
+   * Revisión del PR: «Solo para vos» vale también frente a los otros profesionales de la persona. Uno del mismo área y uno
+   * de otra, los dos con su vínculo y su B2 (lo que comparte la persona entre sus profesionales), y uno sin vínculo: al
+   * pedir la evaluación reciben el 404 de lo inexistente, y ninguna lectura suya del caso trae las anotaciones.
+   */
+  it.each(['nutrition', 'training'] as const)('TEST-EVI-011 · %s: los otros profesionales de la persona reciben el 404 de lo inexistente y no las ven en ninguna lectura del caso', async (area) => {
+    const etiqueta = `evi-otros-${area}-${randomUUID().slice(0, 8)}`;
+    const c = area === 'nutrition' ? await circuitoConPlanActivo(app, etiqueta) : await circuitoConPlanDeEntrenamientoActivo(app, etiqueta);
+    const marca = `Anotación privada ${randomUUID()}`;
+    const cuerpo = area === 'nutrition' ? cuerpoDeEvaluacion() : cuerpoDeEvaluacionDeEntrenamiento();
+    const ruta = area === 'nutrition' ? `/api/v1/advisees/${c.ase.id}/nutrition/evaluations` : `/api/v1/advisees/${c.ase.id}/training/evaluations`;
+    const creada = await conSesion(app, c.pro.token).post(ruta).send({ ...cuerpo, professionalNotes: marca }).expect(201);
+    const evaluationId = creada.body.data.evaluationId as string;
+
+    const delArea = area === 'nutrition' ? 'NUTRICION' : 'ENTRENAMIENTO';
+    const deOtra = area === 'nutrition' ? 'ENTRENAMIENTO' : 'NUTRICION';
+    const mismoArea = await prepararProfesional(app, `${etiqueta}-mismo`, [delArea]);
+    await vinculoCompleto(app, mismoArea, c.ase, delArea);
+    const otraArea = await prepararProfesional(app, `${etiqueta}-otra`, [deOtra]);
+    await vinculoCompleto(app, otraArea, c.ase, deOtra);
+    const sinVinculo = await prepararProfesional(app, `${etiqueta}-sin`, [delArea]);
+
+    for (const otro of [mismoArea, otraArea, sinVinculo]) {
+      const suya = await conSesion(app, otro.token).get(`/api/v1/${area}/evaluations/${evaluationId}`);
+      const inexistente = await conSesion(app, otro.token).get(`/api/v1/${area}/evaluations/${randomUUID()}`);
+      expect(suya.status).toBe(404);
+      expect(cuerpoDel404(suya)).toEqual(cuerpoDel404(inexistente));
+      // Tampoco sus formularios vinculados (EVF-01): el mismo 404.
+      const vinculados = await conSesion(app, otro.token).get(`/api/v1/${area}/evaluations/${evaluationId}/linked-forms`);
+      expect(vinculados.status).toBe(404);
+      expect(cuerpoDel404(vinculados)).toEqual(cuerpoDel404(await conSesion(app, otro.token).get(`/api/v1/${area}/evaluations/${randomUUID()}/linked-forms`)));
+      // Ninguna lectura suya del caso las trae, sea cual sea su respuesta.
+      for (const lectura of [
+        `/advisees/${c.ase.id}/nutrition/evaluations`,
+        `/advisees/${c.ase.id}/training/evaluations`,
+        `/advisees/${c.ase.id}/timeline`,
+        `/advisees/${c.ase.id}/dashboard`,
+        `/advisees/${c.ase.id}/person-context/answers`,
+        `/advisees/${c.ase.id}/person-context/body`,
+        `/advisees/${c.ase.id}/shared-summaries`,
+        `/advisees/${c.ase.id}/nutrition/review-context`,
+        `/advisees/${c.ase.id}/training/review-context`,
+        `/advisees/${c.ase.id}/professional-notes`,
+        `/advisees/${c.ase.id}/form-requests`,
+        '/me/portfolio',
+        '/me/review-queue',
+        '/me/news',
+      ]) {
+        const r = await conSesion(app, otro.token).get(`/api/v1${lectura}`);
+        expect({ lectura, contiene: (r.text ?? JSON.stringify(r.body)).includes(marca) }).toEqual({ lectura, contiene: false });
+      }
+    }
+  }, 240_000);
 });
