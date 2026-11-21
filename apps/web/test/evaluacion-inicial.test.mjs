@@ -231,3 +231,57 @@ test('TEST-EVI-026 · «Anotaciones», RP-02 y nada de la persona en el navegado
   assert.match(PLAN_DE_NUTRICION, /evaluacionAbierta\n\s*formularioDeEvaluacion=/);
   for (const fuente of [PIEZAS, leer('evaluacion/datos-de-la-evaluacion.ts'), EVALUACION_DE_NUTRICION]) assert.doesNotMatch(fuente, /localStorage|sessionStorage|indexedDB/);
 });
+
+test('TEST-EVI-027 · el calculador del objetivo arranca con lo que registró la evaluación, sin romper la toma ni lo escrito a mano', async () => {
+  const K = await import('../src/app/pro/advisees/nutrition/calculador-del-objetivo.ts');
+  const HOY = '2026-11-21';
+  const TOMA = { evaluationId: 'ev-1', measuredOn: '2026-11-17', occurredAt: '2026-11-17T12:00:00.000Z', weightKg: 68, heightCm: null, ageYears: null, composition: [] };
+  const registrada = (entries, occurredAt = '2026-11-20T15:00:00.000Z') => dominio.datosDelCalculoEnLaEvaluacion({ occurredAt, assessment: { entries } });
+  // Con una toma: sigue «Usar la toma del…» (la más nueva); de la evaluación, el sexo y lo que la toma no tiene, si es declarado.
+  const conToma = K.calculadorInicial(
+    [TOMA],
+    HOY,
+    registrada([
+      { concept: 'Peso', value: 70.2, source: 'REPORTED' },
+      { concept: 'Talla', value: 162, source: 'REPORTED' },
+      { concept: 'Edad', value: 45, source: 'OBSERVED' },
+      { concept: 'Sexo', value: 'Femenino', source: 'REPORTED' },
+      { concept: 'Nivel de actividad', value: 'Combino sentado y de pie', source: 'REPORTED' },
+    ]),
+  );
+  assert.deepEqual([conToma.fuente, conToma.evaluationId, conToma.sexo, conToma.tallaAgregada, conToma.edadAgregada, conToma.peso], ['toma', 'ev-1', 'FEMALE', '162', '', '']);
+  // Lo medido sale de la toma: el peso declarado no la pisa, y la edad que la evaluación tomó de una toma no se copia.
+  const usados = K.datosUsados(conToma, [TOMA]);
+  assert.deepEqual([usados.weightKg, usados.heightCm, usados.ageYears], [{ value: 68, origin: 'MEASUREMENT' }, { value: 162, origin: 'MANUAL' }, null]);
+  assert.deepEqual(conToma.deLaEvaluacion, { dia: '2026-11-20', usados: ['talla', 'sexo'], actividad: 'Combino sentado y de pie' });
+  assert.equal(K.loQueTomoDeLaEvaluacion(conToma.deLaEvaluacion), 'Arrancó con lo que registró la evaluación del 20/11: la talla y el sexo de la ecuación. Revisalo antes de usarlo.');
+  // El nivel de actividad se muestra junto al factor; el factor no cambia (lo elige el profesional).
+  assert.equal(K.actividadDeLaEvaluacion(conToma.deLaEvaluacion), 'Nivel de actividad en la evaluación del 20/11: Combino sentado y de pie.');
+  assert.equal(conToma.factor, '1,55');
+  // Sin toma: «Cargar a mano» con lo declarado y la fecha de la evaluación (su día en la Argentina, aunque en UTC ya sea el
+  // siguiente); lo que la evaluación tomó de una toma no se reusa sin la toma a la vista.
+  const sinToma = K.calculadorInicial(
+    [],
+    HOY,
+    registrada(
+      [
+        { concept: 'Peso', value: 68.4, source: 'OBSERVED' },
+        { concept: 'Talla', value: 162, source: 'REPORTED' },
+        { concept: 'Edad', value: 45, source: 'REPORTED' },
+      ],
+      '2026-11-21T02:30:00.000Z',
+    ),
+  );
+  assert.deepEqual([sinToma.fuente, sinToma.peso, sinToma.talla, sinToma.edad, sinToma.fecha], ['a-mano', '', '162', '45', '2026-11-20']);
+  assert.deepEqual(K.referenciaDelCalculador(sinToma, HOY), { source: 'MANUAL', measuredOn: '2026-11-20', weightKg: null, heightCm: 162, ageYears: 45, leanMassKg: null, leanMassNote: null });
+  // Un decimal declarado se escribe con coma, como lo lee el calculador.
+  assert.equal(K.calculadorInicial([], HOY, registrada([{ concept: 'Peso', value: 70.2, source: 'REPORTED' }])).peso, '70,2');
+  // Sin evaluación, o sin nada del cálculo en ella, el punto de partida de siempre.
+  assert.equal(K.calculadorInicial([TOMA], HOY, null).deLaEvaluacion, null);
+  assert.deepEqual(K.calculadorInicial([TOMA], HOY, null), K.calculadorInicial([TOMA], HOY));
+  assert.deepEqual(K.calculadorInicial([], HOY, registrada([{ concept: 'Comidas por día', value: 4, source: 'REPORTED' }])), K.calculadorInicial([], HOY));
+  // Montado: la evaluación con la que se relaciona el objetivo llega al calculador.
+  assert.match(NUTRICION, /const e = evaluaciones\.find\(\(x\) => x\.evaluationId === valores\.evaluacionId\) \?\? null;\n\s*return e \? datosDelCalculoEnLaEvaluacion\(e\) : null;/);
+  assert.match(NUTRICION, /evaluacion=\{datosDeLaEvaluacion\}/);
+  assert.match(leer('nutrition/calculador.tsx'), /calculadorInicial\(tomas\.habilitada \? tomas\.tomas : \[\], hoy, evaluacion\)/);
+});

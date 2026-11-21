@@ -19,6 +19,7 @@ import {
   COPY_NUTRICION,
   COPY_PRIMER_PLAN,
   candidatosDeLasRespuestas,
+  datosDelCalculoEnLaEvaluacion,
   entradasDelCalculo,
   ETIQUETA_DE_FUENTE,
   leerNumero,
@@ -29,6 +30,7 @@ import {
   type CrearEvaluacionRequest,
   type CrearObjetivoRequest,
   type DatoDeLaEvaluacionInicial,
+  type DatosDelCalculoDeLaEvaluacion,
   type EvaluacionNutricional,
 } from '@be/domain';
 import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
@@ -587,6 +589,11 @@ export function FormularioDeObjetivo({
   // DL-186 (OBC-03 y OBC-04): el calculador, abierto a pedido. Con él, el objetivo se guarda con su referencia y su cálculo.
   const [conCalculador, setConCalculador] = useState(false);
   const [calculo, setCalculo] = useState<ValoresDelCalculador | null>(null);
+  // DL-189 (EI-D15): el calculador arranca con lo que registró la evaluación con la que se relaciona el objetivo.
+  const datosDeLaEvaluacion = useMemo(() => {
+    const e = evaluaciones.find((x) => x.evaluationId === valores.evaluacionId) ?? null;
+    return e ? datosDelCalculoEnLaEvaluacion(e) : null;
+  }, [evaluaciones, valores.evaluacionId]);
 
   async function enviar(e: FormEvent) {
     e.preventDefault();
@@ -624,6 +631,7 @@ export function FormularioDeObjetivo({
         valores={calculo}
         onCambiar={setCalculo}
         onUsar={(x: LoQueVaAlObjetivo) => setValores((v) => ({ ...v, kcal: x.kcal, proteina: x.proteina || v.proteina, carbohidratos: x.carbohidratos || v.carbohidratos, grasas: x.grasas || v.grasas, metodo: x.metodo }))}
+        evaluacion={datosDeLaEvaluacion}
       />
       <CamposDeObjetivo valores={valores} onCambiar={setValores} evaluaciones={evaluaciones} prefijo="objetivo" errores={erroresPorCampo(errores)} />
       {fallo ? (
@@ -653,12 +661,14 @@ function SeccionDelCalculador({
   valores,
   onCambiar,
   onUsar,
+  evaluacion,
 }: {
   abierta: boolean;
   onAbrir: (abierta: boolean) => void;
   valores: ValoresDelCalculador | null;
   onCambiar: (v: ValoresDelCalculador | null) => void;
   onUsar: (x: LoQueVaAlObjetivo) => void;
+  evaluacion: DatosDelCalculoDeLaEvaluacion | null;
 }) {
   return (
     <section className="calculador-del-objetivo" aria-labelledby="titulo-del-calculador" data-seccion-del-calculador>
@@ -678,17 +688,27 @@ function SeccionDelCalculador({
         </button>
       </div>
       <p className="nota">{COPY_CALCULADOR.resumen}</p>
-      {abierta ? <CalculadorConSusTomas valores={valores} onCambiar={onCambiar} onUsar={onUsar} /> : null}
+      {abierta ? <CalculadorConSusTomas valores={valores} onCambiar={onCambiar} onUsar={onUsar} evaluacion={evaluacion} /> : null}
     </section>
   );
 }
 
-function CalculadorConSusTomas({ valores, onCambiar, onUsar }: { valores: ValoresDelCalculador | null; onCambiar: (v: ValoresDelCalculador | null) => void; onUsar: (x: LoQueVaAlObjetivo) => void }) {
+function CalculadorConSusTomas({
+  valores,
+  onCambiar,
+  onUsar,
+  evaluacion,
+}: {
+  valores: ValoresDelCalculador | null;
+  onCambiar: (v: ValoresDelCalculador | null) => void;
+  onUsar: (x: LoQueVaAlObjetivo) => void;
+  evaluacion: DatosDelCalculoDeLaEvaluacion | null;
+}) {
   const { tomas, releer } = useTomasDelCalculador();
   const lista = tomas.estado === 'listo' && tomas.habilitada ? tomas.tomas : [];
   return (
     <>
-      <CalculadorDelObjetivo tomas={tomas} valores={valores} onCambiar={onCambiar} onUsar={onUsar} onReleer={releer} />
+      <CalculadorDelObjetivo tomas={tomas} valores={valores} onCambiar={onCambiar} onUsar={onUsar} onReleer={releer} evaluacion={evaluacion} />
       {valores ? <p className="nota" data-se-guarda-con>{COPY_CALCULADOR.seGuardaCon(fuenteEnPalabras(valores, lista))}</p> : null}
     </>
   );

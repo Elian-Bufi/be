@@ -9073,13 +9073,13 @@ evaluación, que ninguna lectura de la persona devuelve. No se edita el legajo.
 
 **Lo programado.** Dominio: `evaluacion-inicial.ts` (los campos críticos por plantilla, lo que necesita el cálculo, lo que
 se registra, el punto de unión con el calculador y la corrección), con TEST-EVI-001 a 006. Website: la franja, la fecha, los
-tres bloques, «Completarlo ahora» y «Cargar con la persona» con lo crítico primero, con TEST-EVI-020 a 026. Integración:
-TEST-EVI-010 (las anotaciones no llegan a la persona). Sin migraciones, sin operaciones nuevas en la API y sin APK nueva:
+tres bloques, «Completarlo ahora» y «Cargar con la persona» con lo crítico primero, con TEST-EVI-020 a 026; el calculador
+del objetivo arranca con lo que registró la evaluación (TEST-EVI-027). Integración: TEST-EVI-010 y 011 (las anotaciones no
+llegan a la persona ni a sus otros profesionales). Sin migraciones, sin operaciones nuevas en la API y sin APK nueva:
 la APK ya deja completar lo que falta al confirmar una propuesta parcial.
 
 **Lo que queda.**
 - Ratificar EI-D01 a EI-D16 y la lista de campos críticos.
-- Que el calculador arranque con lo que registró la evaluación (`datosDelCalculoEnLaEvaluacion`; frente del objetivo).
 - Los tres bloques en Entrenamiento.
 - **Pendiente legal:** por la Ley 26.529 la persona es titular de su historia clínica; si la evaluación y sus anotaciones
   entran en lo que puede pedir (hoy la exportación no trae las evaluaciones), lo revisa el abogado. Detalle completo:

@@ -63,8 +63,9 @@
    `evidenceReferences`.
    - **El punto de unión con el calculador** es `datosDelCalculoEnLaEvaluacion` (dominio): de una evaluación registrada,
      los datos del cálculo con su fuente, también los de evaluaciones anteriores que usaron «Peso» y «Talla». El
-     calculador (DL-186) arranca hoy de la toma más nueva o de lo escrito a mano (`calculadorInicial`); sumar este punto de
-     partida es un cambio de una línea en el frente del objetivo, que no se tocó acá (EI-D15).
+     calculador (DL-186) arranca con él (`calculadorInicial`, EI-D15): lo medido sigue saliendo de la toma («Usar la toma
+     del…», la más nueva), y de la evaluación toma el sexo, lo que la toma no tiene y, sin toma, lo declarado para «Cargar a
+     mano», con su fecha; el nivel de actividad se muestra junto al factor, que sigue eligiendo el profesional.
 
 ## 3. Los campos críticos (RP-15)
 
@@ -90,7 +91,8 @@ necesitan el objetivo y el plan (a ratificar, EI-D10); el profesional no lo elig
 - Los archivos del frente `wp-recorrido-plan-pulido`: `marco-del-area.tsx`, `nutrition/calculador.tsx`,
   `calculador-del-objetivo.ts`, `referencia-del-objetivo.tsx`, la parte del objetivo de `nutrition/formularios.tsx`, el
   editor del plan, los rangos y los estilos de las filas de campos. Los estilos nuevos van en un bloque propio al final
-  de `globals.css`.
+  de `globals.css`. Después de integrar #306, el calculador se tocó en un solo punto: su arranque con lo que registró la
+  evaluación (EI-D15), sin cambiar «Usar la toma del…» ni «Cargar a mano».
 - Resumen: «Nueva evaluación» de Nutrición usa el mismo formulario nuevo; la evaluación más reciente se ve como hoy.
 
 ## 5. La confirmación en la APK (RP-15, verificado en `apps/mobile/src/pantallas/formularios.tsx`)
@@ -124,7 +126,7 @@ al confirmar.
 | EI-D12 | **«antes → después» solo cuando el antes quedó en la evaluación.** Al confirmar, la propuesta se borra (DL-164 D-6): el antes de una respuesta corregida no queda en ningún lado, salvo en la evaluación si el profesional lo registró (los datos del cálculo). Para el resto: «{nombre} corrigió «pregunta»: ahora dice …». | No guardar lo que la persona dijo que no era así. | Guardar el antes en la transcripción (cambia D-6 y la forma de API-FRI-03). |
 | EI-D13 | **RP-02 en Entrenamiento**: el editor deja de recibir `sinPlanActivo` desde el Plan, sin tocar el editor. | El editor es del otro frente. | — |
 | EI-D14 | **La fecha sin cambiar es la del registro**, no la de abrir el formulario. Con «cambiar», no puede ser posterior a ahora. | «El momento de la carga» es cuando se registra. | La de abrir el formulario. |
-| EI-D15 | **El punto de unión con el calculador** es una función del dominio, `datosDelCalculoEnLaEvaluacion`; el calculador no se tocó. | El calculador es del otro frente. | — |
+| EI-D15 | **El punto de unión con el calculador** es una función del dominio, `datosDelCalculoEnLaEvaluacion`, y el calculador arranca con ella (después de integrar #306): con una toma, sigue «Usar la toma del…» y de la evaluación toma el sexo y lo declarado que la toma no tiene; sin toma, «Cargar a mano» con lo declarado y la fecha de la evaluación. Lo que la evaluación tomó de una toma no se reusa sin la toma a la vista (el permiso de Antropometría). El nivel de actividad se muestra junto al factor. | Lo medido sale de la toma; la evaluación no lo copia por la puerta de atrás. | Arrancar siempre «a mano» con lo registrado. |
 | EI-D16 | **La franja:** un paso listo se abre tocándolo (muestra su resumen: la evaluación registrada con sus formularios vinculados y las correcciones; el objetivo vigente); el actual está abierto; los que vienen no se abren. | «Solo el paso actual queda abierto», sin perder lo que había debajo de «Registrada el …» (EVF-05). | Los pasos listos sin abrir. |
 
 ## 7. Pendiente legal
@@ -142,15 +144,16 @@ al confirmar.
   (el punto de unión con el calculador, también con evaluaciones anteriores), 005 (la corrección: antes → después y
   ahora dice), 006 (los textos sin el vocabulario prohibido).
 - **Integración** (`test/integration/evaluacion-inicial.int-spec.ts`): TEST-EVI-010 (las anotaciones no llegan a ninguna
-  lectura de la persona, en las dos áreas, y la persona recibe el 404 de lo inexistente).
+  lectura de la persona, en las dos áreas, y la persona recibe el 404 de lo inexistente) y TEST-EVI-011 (tampoco a sus otros
+  profesionales, del mismo área o de otra, con vínculo o sin él).
 - **Website** (`apps/web/test/evaluacion-inicial.test.mjs`): TEST-EVI-020 a 026 (la franja, la fecha, los tres bloques y
   dónde se montan, lo que se vincula al registrar, «Completarlo ahora», lo crítico primero en «Cargar con la persona», sin
-  «BE no calcula» ni «Todavía no hay un plan activo» de más, y nada de la persona en el navegador).
+  «BE no calcula» ni «Todavía no hay un plan activo» de más, y nada de la persona en el navegador) y 027 (el calculador
+  del objetivo arranca con lo que registró la evaluación).
 
 ## 9. Lo que queda
 
 - Ratificar EI-D01 a EI-D16, y la lista de críticos (§3).
-- Que el calculador arranque con `datosDelCalculoEnLaEvaluacion` (EI-D15, frente del objetivo).
 - Los tres bloques en Entrenamiento (EI-D01).
 - Las capturas en la CI (el trabajo «Evaluación y formularios» de `capturas-de-la-planificacion`) y la prueba con un
   lector de pantalla.

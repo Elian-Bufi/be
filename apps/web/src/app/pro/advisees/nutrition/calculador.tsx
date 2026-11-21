@@ -24,6 +24,7 @@ import {
   METODOS_DE_REPOSO,
   notaDeLaPoblacion,
   numero,
+  type DatosDelCalculoDeLaEvaluacion,
   type MacrosDelDia,
   type MetodoDeReposo,
   type TomaDeReferencia,
@@ -36,8 +37,10 @@ import { Aviso, Campo } from '../../../../components/formulario';
 import { api } from '../../../../lib/api';
 import { hoyEn } from '../seguimiento/estado';
 import {
+  actividadDeLaEvaluacion,
   calculadorInicial,
   calculoEnVivo,
+  loQueTomoDeLaEvaluacion,
   COPY_CALCULADOR as C,
   datoEnPalabras,
   declaracionParaElObjetivo,
@@ -91,12 +94,15 @@ export function CalculadorDelObjetivo({
   onCambiar,
   onUsar,
   onReleer,
+  evaluacion = null,
 }: {
   tomas: TomasDelCalculador;
   valores: ValoresDelCalculador | null;
   onCambiar: (v: ValoresDelCalculador) => void;
   onUsar: (v: LoQueVaAlObjetivo) => void;
   onReleer: () => void;
+  /** DL-189 (EI-D15): lo que registró la evaluación del objetivo, para arrancar con ello (`datosDelCalculoEnLaEvaluacion`). */
+  evaluacion?: DatosDelCalculoDeLaEvaluacion | null;
 }) {
   const id = useId();
   const hoy = hoyEn();
@@ -104,10 +110,10 @@ export function CalculadorDelObjetivo({
   const [usado, setUsado] = useState(false);
   // RP-05: después de abrir «Hacer una antropometría» (en otra pestaña), se ofrece volver a leer las tomas.
   const [fueAAntropometria, setFueAAntropometria] = useState(false);
-  // Al leer las tomas, el punto de partida: la más nueva, si hay.
+  // Al leer las tomas, el punto de partida: la más nueva, si hay, y lo que registró la evaluación (DL-189).
   useEffect(() => {
-    if (tomas.estado === 'listo' && !valores) onCambiar(calculadorInicial(tomas.habilitada ? tomas.tomas : [], hoy));
-  }, [tomas, valores, onCambiar, hoy]);
+    if (tomas.estado === 'listo' && !valores) onCambiar(calculadorInicial(tomas.habilitada ? tomas.tomas : [], hoy, evaluacion));
+  }, [tomas, valores, onCambiar, hoy, evaluacion]);
 
   if (tomas.estado === 'leyendo') return <p className="nota" role="status">Leyendo las tomas de Antropometría…</p>;
   if (tomas.estado === 'falla')
@@ -146,6 +152,12 @@ export function CalculadorDelObjetivo({
       <fieldset className="grupo" data-referencia-del-calculo>
         <legend>{C.referencia}</legend>
         {!tomas.habilitada ? <p className="nota">{C.sinAntropometria}</p> : lista.length === 0 ? <p className="nota">{C.sinTomas}</p> : null}
+        {/* DL-189 (EI-D15): de dónde arrancó lo que no es de la toma. */}
+        {valores.deLaEvaluacion && loQueTomoDeLaEvaluacion(valores.deLaEvaluacion) ? (
+          <p className="nota" data-arranco-con-la-evaluacion>
+            {loQueTomoDeLaEvaluacion(valores.deLaEvaluacion)}
+          </p>
+        ) : null}
         {masNueva ? (
           <fieldset className="segmentos">
             <legend className="visualmente-oculto">{C.referencia}</legend>
@@ -353,6 +365,12 @@ export function CalculadorDelObjetivo({
             {CITA_DEL_FACTOR_DE_ACTIVIDAD}
           </ExplicacionAPedido>
         </p>
+        {/* DL-189 (EI-D15): lo que dijo la evaluación del nivel de actividad, en palabras; el factor lo elige el profesional. */}
+        {valores.deLaEvaluacion && actividadDeLaEvaluacion(valores.deLaEvaluacion) ? (
+          <p className="nota" data-actividad-de-la-evaluacion>
+            {actividadDeLaEvaluacion(valores.deLaEvaluacion)}
+          </p>
+        ) : null}
         <div className="calculador__factores">
           <fieldset className="grupo grupo--anidado" data-factor-del-dia>
             <legend>{vivo?.parametros.activity.restDayFactor != null || valores.conFactorDeDescanso ? C.diaDeEntrenamiento : C.elDia}</legend>
