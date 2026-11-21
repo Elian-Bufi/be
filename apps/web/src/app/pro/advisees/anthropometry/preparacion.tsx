@@ -312,7 +312,10 @@ function Preparacion({
   const elegidas = useMemo(() => new Set(listaElegida), [claveDeLaEleccion]);
   const textoDeSueltas = parametros.get('sueltas') ?? '';
   const sueltas = useMemo(() => textoDeSueltas.split(',').filter(Boolean), [textoDeSueltas]);
-  const claveDeConDato = [...conDato].sort().join(',');
+  // Lo que tuvo dato en esta visita sigue a la vista aunque se borre para reescribirlo: el campo no se va mientras se tipea.
+  const conDatoEnLaVisita = useRef(new Set<string>());
+  for (const c of conDato) conDatoEnLaVisita.current.add(c);
+  const claveDeConDato = [...conDatoEnLaVisita.current].sort().join(',');
   /** Lo que se ve: lo que piden los métodos elegidos (o el protocolo entero), los puntos sueltos y todo lo que ya tiene dato. */
   const metricas = useMemo(() => {
     const conValor = claveDeConDato ? claveDeConDato.split(',') : [];
