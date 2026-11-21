@@ -93,7 +93,7 @@ export const NOTA_DEL_SITIO: Readonly<Record<string, string>> = {
   'masa-muscular-esqueletica-lee': 'Lee y col. miden el perímetro del muslo medio, a mitad de camino entre el pliegue inguinal y el borde de arriba de la rótula.',
   'masa-muscular-kerr':
     'Kerr corrige el perímetro del muslo tomado a 1 cm del pliegue glúteo (no el muslo medio de Lee) y el del pecho a nivel mesoesternal, como ISAK (D-3, DL-190).',
-  'masa-residual-kerr': 'Kerr usa la talla sentado, los dos diámetros del tórax (a nivel mesoesternal) y la cintura mínima corregida por el pliegue abdominal.',
+  'masa-residual-kerr': 'Kerr usa la talla sentado, los diámetros transverso y anteroposterior del tórax y la cintura mínima («31. Waist girth (min.)»), corregida por el pliegue abdominal.',
 };
 
 /** Las familias que se ven elegidas al empezar: las de los métodos que el profesional usó en su última toma. */
