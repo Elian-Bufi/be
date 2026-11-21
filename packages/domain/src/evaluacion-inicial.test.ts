@@ -123,6 +123,12 @@ test('TEST-EVI-003 · lo que se registra: un renglón por dato indicado, la toma
   assert.ok(evidencias.every((e) => e.length <= 200));
   // Sin nombres: el registro es del profesional.
   assert.ok(evidencias.every((e) => !/Ana|Sofía/.test(e)));
+  // Revisión del PR (EI-D07): lo que cambió el profesional deja en la evaluación qué reemplazó y de dónde salía.
+  const cambiado = entradasDelCalculo(loQueNecesitaElCalculo({ toma: TOMA, candidatos: [], cambiados: { peso: '70,2' } }), dia);
+  assert.deepEqual(cambiado.entries.find((e) => e.concept === 'Peso'), { concept: 'Peso', value: 70.2, unit: 'kg', source: 'REPORTED', methodStatement: null });
+  assert.equal(cambiado.evidencias.find((e) => e.startsWith('Peso:')), 'Peso: cargado por el profesional, en lugar de 68,4 kg (toma de Antropometría del 10/11/2026).');
+  // Sin nada antes, solo lo cargado.
+  assert.equal(entradasDelCalculo(loQueNecesitaElCalculo({ toma: null, candidatos: [], cambiados: { peso: '70,2' } }), dia).evidencias[0], 'Peso: cargado por el profesional.');
 });
 
 test('TEST-EVI-004 · el punto de unión con el calculador lee lo registrado, también evaluaciones anteriores', () => {
@@ -150,6 +156,12 @@ test('TEST-EVI-004 · el punto de unión con el calculador lee lo registrado, ta
 });
 
 test('TEST-EVI-005 · la corrección: «antes → después» solo con el antes en la evaluación; si no, lo que dice hoy', () => {
+  // Lo que se registró de lo cargado con la persona en «Tus hábitos», sin confirmar: su procedencia, como la escribe el dominio.
+  const cargado = entradasDelCalculo(
+    loQueNecesitaElCalculo({ toma: null, candidatos: candidatosDeLasRespuestas([{ respuestas: [HABITOS], origen: { tipo: 'CARGADO_SIN_CONFIRMAR', fecha: '2026-11-21T12:00:00.000Z', formulario: 'Tus hábitos' } }]) }),
+    dia,
+  );
+  const registrado = { entries: cargado.entries, evidenceReferences: cargado.evidencias, formulario: 'Tus hábitos' };
   const c = correccionesDeLaPersona({
     corregidos: ['nivel_de_actividad', 'nut_agua', 'nut_mate'],
     respuestas: [
@@ -157,14 +169,23 @@ test('TEST-EVI-005 · la corrección: «antes → después» solo con el antes e
       { fieldCode: 'nut_agua', label: '¿Cuánta agua tomás en un día?', text: 'Más de 2 litros' },
     ],
     etiquetas: new Map([['nut_mate', '¿Tomás mate?']]),
-    registrado: [{ concept: 'Nivel de actividad', value: 'Combino sentado y de pie' }],
+    registrado,
   });
   assert.deepEqual(c[0], { fieldCode: 'nivel_de_actividad', pregunta: '¿Cómo es tu día, en movimiento?', ahora: 'Mucho de pie o caminando', antes: 'Combino sentado y de pie' });
   assert.deepEqual(c[1], { fieldCode: 'nut_agua', pregunta: '¿Cuánta agua tomás en un día?', ahora: 'Más de 2 litros', antes: null });
   assert.deepEqual(c[2], { fieldCode: 'nut_mate', pregunta: '¿Tomás mate?', ahora: null, antes: null });
   assert.equal(COPY_EVALUACION_INICIAL.corrigio('Ana', c[0]!.antes!, c[0]!.ahora!), 'Ana corrigió: Combino sentado y de pie → Mucho de pie o caminando');
   // Si lo registrado es igual a lo de hoy, no hay antes que mostrar.
-  assert.equal(correccionesDeLaPersona({ corregidos: ['nivel_de_actividad'], respuestas: [{ fieldCode: 'nivel_de_actividad', text: 'X' }], registrado: [{ concept: 'Nivel de actividad', value: 'X' }] })[0]?.antes, null);
+  const igual = { entries: [{ concept: 'Nivel de actividad', value: 'X' }], evidenceReferences: ['Nivel de actividad: cargado con la persona en «Tus hábitos» el 21/11/2026, sin confirmar todavía.'], formulario: 'Tus hábitos' };
+  assert.equal(correccionesDeLaPersona({ corregidos: ['nivel_de_actividad'], respuestas: [{ fieldCode: 'nivel_de_actividad', text: 'X' }], registrado: igual })[0]?.antes, null);
+  // Revisión del PR: lo registrado que no salió de lo cargado en ese formulario no se le atribuye a la persona. Ni lo que
+  // escribió el profesional con «Cambiar», ni lo de otro formulario, ni lo que ya había respondido ella, ni una evaluación
+  // sin procedencia (las de antes de este paquete).
+  const corregir = (r: typeof registrado) => correccionesDeLaPersona({ corregidos: ['nivel_de_actividad'], respuestas: [{ fieldCode: 'nivel_de_actividad', text: 'Mucho de pie o caminando' }], registrado: r })[0]?.antes;
+  assert.equal(corregir({ ...registrado, evidenceReferences: ['Nivel de actividad: cargado por el profesional, en lugar de Combino sentado y de pie (cargado con la persona en «Tus hábitos» el 21/11/2026, sin confirmar todavía).'] }), null);
+  assert.equal(corregir({ ...registrado, formulario: 'Cómo comés hoy' }), null);
+  assert.equal(corregir({ ...registrado, evidenceReferences: [] }), null);
+  assert.equal(corregir({ ...registrado, evidenceReferences: ['Nivel de actividad: respondido por la persona en «Tus hábitos» el 12/11/2026.'] }), null);
 });
 
 test('TEST-EVI-006 · los textos ubican sin calificar y sin el vocabulario prohibido; «BE no calcula» ya no se dice', () => {

@@ -246,6 +246,10 @@ export function loQueNecesitaElCalculo(p: {
 
 // ─── Lo que se registra ─────────────────────────────────────────────────────────────────────────
 
+/** Cómo empieza y cómo termina la procedencia de lo cargado con la persona sin confirmar (RP-16 la busca en la evaluación). */
+const cargadoConLaPersonaEn = (formulario: string): string => `cargado con la persona en «${formulario}» el `;
+const SIN_CONFIRMAR_TODAVIA = ', sin confirmar todavía';
+
 /** La procedencia en palabras, como queda en la evaluación (sin el nombre de la persona: el registro es del profesional). */
 export function procedenciaParaRegistrar(o: OrigenDelDato, fecha: (isoODia: string) => string): string {
   switch (o.tipo) {
@@ -253,7 +257,7 @@ export function procedenciaParaRegistrar(o: OrigenDelDato, fecha: (isoODia: stri
     case 'RESPONDIDO': return `respondido por la persona en «${o.formulario}» el ${fecha(o.fecha)}`;
     case 'CONFIRMADO': return `cargado con la persona en «${o.formulario}» y confirmado por ella el ${fecha(o.fecha)}`;
     case 'CORREGIDO': return `corregido por la persona en «${o.formulario}» el ${fecha(o.fecha)}`;
-    case 'CARGADO_SIN_CONFIRMAR': return `cargado con la persona en «${o.formulario}» el ${fecha(o.fecha)}, sin confirmar todavía`;
+    case 'CARGADO_SIN_CONFIRMAR': return `${cargadoConLaPersonaEn(o.formulario)}${fecha(o.fecha)}${SIN_CONFIRMAR_TODAVIA}`;
     case 'COMPARTIDO': return `hábitos que compartió la persona, del ${fecha(o.fecha)}`;
     case 'CARGADO_POR_VOS': return 'cargado por el profesional';
   }
@@ -270,7 +274,9 @@ export interface RenglonDeLaEvaluacion {
 
 /**
  * Lo que se registra de lo que necesita el cálculo (EI-D04): un renglón por dato indicado, con su fuente (la toma,
- * observado; lo demás, informado), y su procedencia en palabras para `evidenceReferences` (hasta 200 caracteres).
+ * observado; lo demás, informado), y su procedencia en palabras para `evidenceReferences` (hasta 200 caracteres). Lo que
+ * cambió el profesional (EI-D07) dice también qué reemplazó y de dónde salía: el rastro queda en la evaluación, no solo en
+ * la pantalla.
  */
 export function entradasDelCalculo(datos: readonly DatoParaElCalculo[], fecha: (isoODia: string) => string): { readonly entries: RenglonDeLaEvaluacion[]; readonly evidencias: string[] } {
   const entries: RenglonDeLaEvaluacion[] = [];
@@ -278,7 +284,8 @@ export function entradasDelCalculo(datos: readonly DatoParaElCalculo[], fecha: (
   for (const d of datos) {
     if (d.valor === null || !d.origen) continue;
     entries.push({ concept: d.concepto, value: d.valor, unit: typeof d.valor === 'number' ? d.unidad : null, source: d.origen.tipo === 'TOMA' ? 'OBSERVED' : 'REPORTED', methodStatement: null });
-    evidencias.push(`${d.concepto}: ${procedenciaParaRegistrar(d.origen, fecha)}.`.slice(0, 200));
+    const reemplazo = d.origen.tipo === 'CARGADO_POR_VOS' && d.alLado ? `, en lugar de ${d.alLado.texto} (${procedenciaParaRegistrar(d.alLado.origen, fecha)})` : '';
+    evidencias.push(`${d.concepto}: ${procedenciaParaRegistrar(d.origen, fecha)}${reemplazo}.`.slice(0, 200));
   }
   return { entries, evidencias };
 }
@@ -345,21 +352,42 @@ export interface CorreccionDeLaPersona {
 }
 
 /**
+ * Si un dato registrado salió de lo que este profesional cargó con la persona en ese formulario y ella todavía no había
+ * confirmado: solo entonces lo registrado es lo que ella corrigió después. La procedencia es la que escribió
+ * `entradasDelCalculo` en `evidenceReferences` («Concepto: cargado con la persona en «…» el …, sin confirmar todavía.»).
+ */
+function salioDeLoCargadoEn(evidencias: readonly string[], concepto: string, formulario: string): boolean {
+  const prefijo = `${concepto}: ${cargadoConLaPersonaEn(formulario)}`;
+  // Si el concepto está dos veces, vale la última procedencia, como el último renglón.
+  const procedencia = [...evidencias].reverse().find((e) => e.startsWith(`${concepto}: `)) ?? null;
+  return procedencia !== null && procedencia.startsWith(prefijo) && procedencia.includes(SIN_CONFIRMAR_TODAVIA);
+}
+
+/**
  * Las correcciones de la persona (`correctedFieldCodes` de la transcripción), en ese orden, con lo que dice hoy. El antes
- * sale de la evaluación registrada, solo para las preguntas que alimentan un dato del cálculo (EI-D12).
+ * sale de la evaluación registrada, solo para las preguntas que alimentan un dato del cálculo y solo si ese dato se
+ * registró de lo cargado con la persona en ese mismo formulario, sin confirmar (EI-D12): lo que el profesional escribió a
+ * mano, lo de otro formulario o lo de la toma no es algo que la persona haya dicho, y no se le atribuye.
  */
 export function correccionesDeLaPersona(p: {
   readonly corregidos: readonly string[];
   readonly respuestas: readonly { readonly fieldCode: string; readonly label?: string; readonly text: string }[];
   readonly etiquetas?: ReadonlyMap<string, string>;
-  readonly registrado?: readonly { readonly concept: string; readonly value: string | number; readonly unit?: string | null }[];
+  readonly registrado?: {
+    readonly entries: readonly { readonly concept: string; readonly value: string | number; readonly unit?: string | null }[];
+    readonly evidenceReferences: readonly string[];
+    /** El nombre del formulario corregido, como lo nombra la evaluación. */
+    readonly formulario: string;
+  };
 }): CorreccionDeLaPersona[] {
   return p.corregidos.map((codigo) => {
     const r = p.respuestas.find((x) => x.fieldCode === codigo) ?? null;
     const pregunta = r?.label ?? p.etiquetas?.get(codigo) ?? null;
     const ahora = r ? r.text.trim() || null : null;
     const dato = DATOS_DE_LA_EVALUACION_INICIAL.find((d) => CAMPOS_DEL_CALCULO[d].includes(codigo)) ?? null;
-    const enLaEvaluacion = dato ? [...(p.registrado ?? [])].reverse().find((x) => normalizar(x.concept) === normalizar(CONCEPTO_DEL_DATO[dato].concepto)) ?? null : null;
+    const concepto = dato ? CONCEPTO_DEL_DATO[dato].concepto : null;
+    const deEsteFormulario = concepto !== null && p.registrado !== undefined && salioDeLoCargadoEn(p.registrado.evidenceReferences, concepto, p.registrado.formulario);
+    const enLaEvaluacion = deEsteFormulario && concepto ? [...(p.registrado?.entries ?? [])].reverse().find((x) => normalizar(x.concept) === normalizar(concepto)) ?? null : null;
     const antes = enLaEvaluacion ? conUnidad(enLaEvaluacion.value, typeof enLaEvaluacion.value === 'number' ? (enLaEvaluacion.unit ?? null) : null) : null;
     return { fieldCode: codigo, pregunta, ahora, antes: antes !== null && antes !== ahora ? antes : null };
   });

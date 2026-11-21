@@ -508,10 +508,17 @@ export function CorreccionesDespuesDeLaEvaluacion({
   asesoradoId,
   sesionPerdida,
   evaluacion,
-}: Comun & { evaluacion: { readonly recordedAt: string; readonly assessment: { readonly entries: readonly { readonly concept: string; readonly value: string | number; readonly unit?: string | null }[] } } }) {
+}: Comun & {
+  evaluacion: {
+    readonly recordedAt: string;
+    readonly assessment: { readonly entries: readonly { readonly concept: string; readonly value: string | number; readonly unit?: string | null }[] };
+    readonly evidenceReferences: readonly string[];
+  };
+}) {
   const nombre = usePersonaDelArea() ?? EI.persona;
   const alcance = ALCANCE_DE_LA_EVALUACION[area];
-  const registrado = evaluacion.assessment.entries;
+  const entradas = evaluacion.assessment.entries;
+  const evidencias = evaluacion.evidenceReferences;
   const desde = evaluacion.recordedAt;
   const [lineas, setLineas] = useState<readonly { readonly clave: string; readonly formulario: string; readonly texto: string }[]>([]);
   useEffect(() => {
@@ -525,6 +532,8 @@ export function CorreccionesDespuesDeLaEvaluacion({
         const v = await api.consultarVistaDeSolicitud(token, form.formRequestId);
         if (!vigente || sesionPerdida(v)) return;
         const corregidos = v.ok ? (v.datos.data.response?.transcription?.correctedFieldCodes ?? []) : [];
+        // El antes, solo si lo registrado salió de lo que se cargó con la persona en este formulario (EI-D12).
+        const registrado = { entries: entradas, evidenceReferences: evidencias, formulario: form.templateName };
         for (const c of correccionesDeLaPersona({ corregidos, respuestas: renglonesDelRespondido(form), registrado })) {
           todas.push({ clave: `${form.formResponseId}-${c.fieldCode}`, formulario: form.templateName, texto: correccionEnPalabras(c, nombre) });
         }
@@ -534,7 +543,7 @@ export function CorreccionesDespuesDeLaEvaluacion({
     return () => {
       vigente = false;
     };
-  }, [token, asesoradoId, sesionPerdida, alcance, desde, registrado, nombre]);
+  }, [token, asesoradoId, sesionPerdida, alcance, desde, entradas, evidencias, nombre]);
   if (lineas.length === 0) return null;
   return (
     <div className="correcciones-despues" data-correcciones-despues>
