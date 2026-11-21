@@ -21033,6 +21033,13 @@ html:has(.estacion:not([data-en-el-asistente])) {
   align-items: center;
   gap: 0.35rem;
   margin: 0 0 0.35rem;
+}
+
+.reparto-por-comida__titulo h3 {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin: 0;
   font-size: 1.05rem;
 }
 

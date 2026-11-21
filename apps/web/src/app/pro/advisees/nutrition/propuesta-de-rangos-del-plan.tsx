@@ -109,12 +109,15 @@ export function RepartoPorComida({
     setError(null);
   };
 
+  // El «?» va al lado del título y no adentro: el título nombra la sección, y la explicación no se le suma al abrirla.
   const encabezado = (
-    <h3 id={`${id}-titulo`} className="reparto-por-comida__titulo">
-      <Icono nombre="objetivo" tamano={18} />
-      {C.titulo}
+    <div className="reparto-por-comida__titulo">
+      <h3 id={`${id}-titulo`}>
+        <Icono nombre="objetivo" tamano={18} />
+        {C.titulo}
+      </h3>
       <ExplicacionAPedido nombre={C.queEsNombre}>{C.queEs}</ExplicacionAPedido>
-    </h3>
+    </div>
   );
   if (!dia || dia.comidas.length === 0) {
     return (
