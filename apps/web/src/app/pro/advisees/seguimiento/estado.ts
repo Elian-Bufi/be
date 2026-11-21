@@ -5,6 +5,7 @@
  */
 import {
   COPY_PISTAS,
+  DIAS_DE_UN_PERIODO_RELATIVO,
   CalidadDeEntradaSchema,
   DominioDeAnalisisSchema,
   EstadoDeEntradaSchema,
@@ -13,6 +14,7 @@ import {
   type CalidadDeEntrada,
   type DominioDeAnalisis,
   type EstadoDeEntrada,
+  type PeriodoDeLaVista,
   type PreguntaElegida,
   type ReferenciaDeMetrica,
   type ReferenciaDelCambio,
@@ -147,6 +149,25 @@ export function parametrosDePeriodo(p: Periodo): Record<string, string | null> {
   if (p.vinculo) return { p: 'vinculo', desde: null, hasta: null, etapa: null };
   if (p.etapa && !p.preset) return { p: null, desde: p.desde, hasta: p.hasta, etapa: `${p.etapa.dominio}:${p.etapa.planVersionId}` };
   return p.preset ? { p: String(p.preset), desde: null, hasta: null, etapa: null } : { p: null, desde: p.desde, hasta: p.hasta, etapa: null };
+}
+
+/**
+ * El período que guarda una vista (pulido de WP-GRAFICOS-POR-FASE): relativo si se eligió relativo. Los atajos de la
+ * ficha y de los gráficos (7, 30, 90 días, 4 y 12 semanas, 6 meses, un año) se guardan como `LAST_DAYS` y «Desde que la
+ * acompañás» como `SINCE_RELATIONSHIP`: al abrir la vista otro día, o con otra persona, el período se vuelve a calcular.
+ * Un rango a medida o una versión del plan se guardan con sus fechas.
+ */
+export function periodoParaGuardar(p: { readonly preset: number | null; readonly desde: string; readonly hasta: string; readonly vinculo?: true }): PeriodoDeLaVista {
+  if (p.vinculo) return { kind: 'SINCE_RELATIONSHIP' };
+  const dias = DIAS_DE_UN_PERIODO_RELATIVO.find((d) => d === p.preset);
+  return dias ? { kind: 'LAST_DAYS', days: dias } : { kind: 'RANGE', start: p.desde, end: p.hasta };
+}
+
+/** La dirección del período de una vista guardada: relativo a hoy, desde el vínculo con quien se está viendo, o fijo. */
+export function parametrosDelPeriodoGuardado(p: PeriodoDeLaVista): Record<string, string | null> {
+  if (p.kind === 'SINCE_RELATIONSHIP') return parametrosDePeriodo({ preset: null, desde: '', hasta: '', vinculo: true });
+  if (p.kind === 'LAST_DAYS') return parametrosDePeriodo({ preset: p.days, desde: '', hasta: '' });
+  return parametrosDePeriodo({ preset: null, desde: p.start, hasta: p.end });
 }
 
 const ETAPA = /^(TRAINING|NUTRITION):([0-9a-f-]{8,64})$/i;

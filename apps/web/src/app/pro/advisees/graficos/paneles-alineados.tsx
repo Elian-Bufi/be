@@ -41,7 +41,7 @@ import type { SentidoDeLaMarca } from '@be/domain';
 import { useId, useMemo, useState, type KeyboardEvent, type ReactNode } from 'react';
 import { useConPuntero } from '../../../../lib/graficos';
 import { LETRA_MINIMA } from '../seguimiento/geometria';
-import { fechasConObservacion, geometriaDelCarril, lineaDeLoCargadoTarde, sentidosQueSeVen, type BandaDeVersion, type Carril, type CarrilDePuntos, type GeometriaDelCarril } from './carriles';
+import { fechasConObservacion, geometriaDelCarril, lineasDeLoCargadoTarde, sentidosQueSeVen, textoDelRotulo, type BandaDeVersion, type Carril, type CarrilDePuntos, type GeometriaDelCarril } from './carriles';
 import { geometriaDeLaCinta, resumenDeLaCinta, type GeometriaDeLaCinta } from './cinta-del-tiempo';
 import { ComoLeerlo, FraseDeLaCoincidencia } from './como-leerlo';
 import { DibujoDeLaCinta } from './dibujo-de-la-cinta';
@@ -115,7 +115,6 @@ const LUGAR_DE_UNA_SESION = 8.75;
 
 /** Un valor de un punto, con sus decimales (hasta uno): «160,5», «1.850». */
 /** El número de un rótulo: las kcal, enteras (como su lectura); lo demás, con un decimal como mucho. */
-const valorCorto = (v: number, unidad = ''): string => v.toLocaleString('es-AR', { maximumFractionDigits: unidad === 'kcal' ? 0 : 1 });
 
 type Geometria = { readonly tipo: 'CARRIL'; readonly g: GeometriaDelCarril } | { readonly tipo: 'CINTA'; readonly g: GeometriaDeLaCinta };
 
@@ -187,7 +186,7 @@ function DibujoDelCarril({
     const { claves, minimo } = rotulosDeLoLleno(conValor, elegido);
     const candidatos = claves.flatMap((c) => {
       const p = conValor.find((x) => x.clave === c);
-      return p ? [{ clave: c, x: p.x, y: p.y, texto: valorCorto(p.valor, carril.unidad), abajo: c === minimo && c !== ultimoPunto }] : [];
+      return p ? [{ clave: c, x: p.x, y: p.y, texto: textoDelRotulo(p.valor, carril), abajo: c === minimo && c !== ultimoPunto }] : [];
     });
     const ejeY = g.marcasY.map((m) => ({ x1: 0, x2: MARGEN_IZQUIERDO - 4, y1: m.y - 8, y2: m.y + 8 }));
     return rotulosSinPisarse(candidatos, { izquierda: MARGEN_IZQUIERDO, derecha: escala.derecha + MARGEN_DERECHO - 2, arriba: 0, abajo: alto }, ejeY).map((r) => ({ ...r, fuerte: r.clave === elegido || r.clave === ultimoPunto }));
@@ -320,7 +319,8 @@ export function PanelesAlineados({ titulo, periodo, carriles, bandas = [], densi
     ...carriles.map((c) => (c.tipo === 'EVENTOS' ? `${c.nombre}: ${resumenDeLaCinta(c.eventos)}` : `${c.nombre} (${c.unidad}): ${c.descripcion}`)),
     ...(cambios.length > 0 ? [COPY_DE_LOS_GRAFICOS.cambiosDeLoIndicado(cambios)] : []),
   ].join(' ');
-  const tarde = carriles.flatMap((c) => (c.tipo === 'PUNTOS' ? [lineaDeLoCargadoTarde(c)] : [])).filter((t): t is string => t !== null);
+  // Lo cargado después, una sola vez si todos los carriles lo cuentan igual (pulido de WP-GRAFICOS-POR-FASE).
+  const tarde = lineasDeLoCargadoTarde(carriles);
   const fueraDeLaEscala = geometrias.reduce((n, x) => n + (x.tipo === 'CARRIL' && x.g.tipo === 'PUNTOS' ? x.g.fueraDeLaEscala : 0), 0);
   const unSoloCarril = conDatos.length === 1;
   // Todas las notas se ven (revisión del 15/11): la frase fija (también con algo agregado) en su línea tenue, las demás

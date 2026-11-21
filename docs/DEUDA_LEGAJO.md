@@ -9006,3 +9006,9 @@ para «Armá tu gráfico», leídas del comparador con la misma autorización qu
 - Ratificar GPF-D01 a GPF-D13 (sobre todo la fase sin fechas y la palabra «volumen»).
 - Por grupo muscular; el gráfico de series y carga × repeticiones como sugerido de «Patrones».
 - La prueba con un lector de pantalla. Detalle completo: `docs/paquetes/WP-GRAFICOS-POR-FASE.md`.
+
+**El pulido (rama `wp-graficos-por-fase-pulido`, sin integrar).** Lo indicado y lo hecho de un mismo ejercicio en un solo
+panel en «Armá tu gráfico», con el par «Indicado y hecho» en un clic; lo cargado después dicho una vez; las vistas
+guardadas con 4 o 12 semanas, 6 meses o «Desde que la acompañás» siguen siendo relativas (extensión aditiva del contrato
+de API-VAN, sin migración); un solo redondeo en el rótulo de un punto; y las versiones del año, pedidas una vez en
+«Analizar». Detalle: §5 del paquete.

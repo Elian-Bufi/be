@@ -16,18 +16,26 @@ import { Icono } from '../../../../components/icono';
 import { api, nuevaClaveDeIdempotencia } from '../../../../lib/api';
 import { diaCivil } from '../../../../lib/formato';
 import { motivoDeFalla, textoDeFalla, useSeguimiento, type MotivoDeFalla } from './contexto';
-import { parametrosDeAnalisis, parametrosDePeriodo, parametrosDePregunta, PRESETS_DE_PERIODO, type EstadoDeAnalisis } from './estado';
+import { parametrosDeAnalisis, parametrosDePregunta, parametrosDelPeriodoGuardado, periodoParaGuardar, type EstadoDeAnalisis } from './estado';
 
-function configuracionDe(estado: EstadoDeAnalisis, periodo: { preset: number | null; desde: string; hasta: string }, pregunta: PreguntaElegida | null): ConfiguracionDeAnalisis | null {
+/**
+ * La configuración que se guarda. El período relativo sigue siendo relativo (pulido de WP-GRAFICOS-POR-FASE): 4 y 12
+ * semanas, 6 meses y «Desde que la acompañás» se guardan como tales, y no con las fechas de hoy. Una versión del plan
+ * elegida se guarda con su vigencia (fechas fijas: es la de esa persona).
+ */
+function configuracionDe(
+  estado: EstadoDeAnalisis,
+  periodo: { readonly preset: number | null; readonly desde: string; readonly hasta: string; readonly vinculo?: true },
+  pregunta: PreguntaElegida | null,
+): ConfiguracionDeAnalisis | null {
   if (estado.metricas.length === 0) return null;
-  const preset = PRESETS_DE_PERIODO.find((p) => p.dias === periodo.preset)?.dias;
   return {
     schemaVersion: 1,
     ...(pregunta ? { question: pregunta } : {}),
     metrics: [...estado.metricas],
     mode: estado.modo,
     grain: estado.grano,
-    period: preset ? { kind: 'LAST_DAYS', days: preset } : { kind: 'RANGE', start: periodo.desde, end: periodo.hasta },
+    period: periodoParaGuardar(periodo),
     layers: { planBands: estado.bandas, events: estado.eventos },
     reference: estado.referencia,
     comparison: estado.comparacion ? { a: { start: estado.comparacion.a.desde, end: estado.comparacion.a.hasta }, b: { start: estado.comparacion.b.desde, end: estado.comparacion.b.hasta } } : null,
@@ -103,7 +111,7 @@ export function VistasGuardadas({ estado, pregunta, soloAbrir = false }: { estad
     const c = v.configuration;
     ir(
       {
-        ...(c.period.kind === 'LAST_DAYS' ? parametrosDePeriodo({ preset: c.period.days, desde: '', hasta: '' }) : parametrosDePeriodo({ preset: null, desde: c.period.start, hasta: c.period.end })),
+        ...parametrosDelPeriodoGuardado(c.period),
         ...parametrosDeAnalisis({
           metricas: c.metrics,
           modo: c.mode,

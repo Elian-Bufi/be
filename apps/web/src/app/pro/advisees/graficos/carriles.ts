@@ -8,7 +8,7 @@
  *
  * Es puro: lo prueba `apps/web/test/graficos-base.test.mjs`.
  */
-import { MARCA_SEGUN_EL_DATO, type AreaDeMetrica, type MarcaSemantica, type SentidoDeLaMarca } from '@be/domain';
+import { MARCA_SEGUN_EL_DATO, numero, type AreaDeMetrica, type MarcaSemantica, type SentidoDeLaMarca } from '@be/domain';
 import { escalaDeLaUnidad } from '../seguimiento/geometria';
 import type { EventoDeLaCinta } from './cinta-del-tiempo';
 import type { EscalaDeFechas } from './eje-de-fechas';
@@ -104,6 +104,11 @@ export interface CarrilDePuntos {
   readonly porSesion?: boolean;
   /** GPF-05: la franja de lo indicado, de fondo (solo si comparte la unidad). */
   readonly franjas?: readonly FranjaDelCarril[];
+  /**
+   * Los decimales de la lectura (los de la serie del catálogo): el número de un punto en el dibujo redondea igual que la
+   * lectura y la tabla (pulido de WP-GRAFICOS-POR-FASE: el rótulo decía «1.472,5» y la lectura «1.473»). Sin esto, uno.
+   */
+  readonly decimales?: number;
 }
 
 export interface SemanaDelCarril {
@@ -341,10 +346,47 @@ export function fechasConObservacion(carriles: readonly Carril[]): string[] {
   return [...fechas].sort();
 }
 
-/** «3 de 21 días cargados después»: la línea de la tira de cobertura, o `null` si no hay nada cargado después. */
-export function lineaDeLoCargadoTarde(c: CarrilDePuntos): string | null {
+/**
+ * Lo cargado después de un carril: cuántos de sus días con valor se cargaron en un día posterior al del hecho (la muesca
+ * chica arriba de la marca). «1 de 12 días se cargó en un día posterior (muesca arriba de la marca)», o `null` si nada.
+ */
+function cargadoTardeDe(c: CarrilDePuntos): { readonly tarde: number; readonly dias: number } | null {
   const dias = new Set(c.puntos.filter((p) => p.valor !== null).map((p) => p.fecha));
   const tarde = new Set(c.puntos.filter((p) => p.valor !== null && p.tarde).map((p) => p.fecha));
-  if (tarde.size === 0) return null;
-  return `${tarde.size} de ${dias.size} ${dias.size === 1 ? 'día cargado' : 'días cargados'} después`;
+  return tarde.size === 0 ? null : { tarde: tarde.size, dias: dias.size };
+}
+
+const textoDeLoCargadoTarde = (x: { readonly tarde: number; readonly dias: number }): string =>
+  `${x.tarde} de ${x.dias} ${x.dias === 1 ? 'día' : 'días'} ${x.tarde === 1 ? 'se cargó' : 'se cargaron'} en un día posterior (muesca arriba de la marca)`;
+
+export function lineaDeLoCargadoTarde(c: CarrilDePuntos): string | null {
+  const x = cargadoTardeDe(c);
+  return x ? textoDeLoCargadoTarde(x) : null;
+}
+
+/**
+ * Las líneas de lo cargado después de todos los carriles (pulido de WP-GRAFICOS-POR-FASE): **una sola** si todos los
+ * carriles que tienen algo lo cuentan igual (los carriles de una misma sesión, como la carga, las repeticiones y el RIR
+ * de GR-03, repiten los días); si difieren, una por carril, con su nombre adelante.
+ */
+export function lineasDeLoCargadoTarde(carriles: readonly Carril[]): string[] {
+  const conTarde = carriles.flatMap((c) => {
+    if (c.tipo !== 'PUNTOS') return [];
+    const x = cargadoTardeDe(c);
+    return x ? [{ nombre: c.nombre, ...x }] : [];
+  });
+  if (conTarde.length === 0) return [];
+  const primero = conTarde[0] as (typeof conTarde)[number];
+  if (conTarde.every((x) => x.tarde === primero.tarde && x.dias === primero.dias)) return [textoDeLoCargadoTarde(primero)];
+  return conTarde.map((x) => `${x.nombre}: ${textoDeLoCargadoTarde(x)}`);
+}
+
+/**
+ * El número de un punto en el dibujo (el elegido, el último, el máximo y el mínimo): con los decimales de la lectura del
+ * carril, así el rótulo y «Lo último» dicen lo mismo. Las kcal y la carga × repeticiones van en enteros; lo demás, con
+ * hasta un decimal si el carril no dice otra cosa.
+ */
+export function textoDelRotulo(valor: number, carril: Pick<CarrilDePuntos, 'unidad' | 'decimales'>): string {
+  const enteros = carril.unidad === 'kcal' || carril.unidad.endsWith('·rep');
+  return numero(valor, carril.decimales ?? (enteros ? 0 : 1));
 }

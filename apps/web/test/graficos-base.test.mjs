@@ -269,7 +269,7 @@ test('TEST-GRF-012 · la tabla dice lo mismo que el dibujo: los subtotales, lo i
   assert.deepEqual(t.sinRegistros, ['del 3/11 al 7/11, sin registros']);
   assert.deepEqual(T.lecturaDeLaFecha(t, '2026-11-08'), [{ nombre: 'Calorías registradas', texto: subtotal.texto }]);
   assert.deepEqual(T.lecturaDeLaFecha(t, '2026-11-05'), [{ nombre: 'Calorías registradas', texto: T.TEXTO_SIN_DATO }]);
-  assert.equal(C.lineaDeLoCargadoTarde(energia), '1 de 2 días cargados después');
+  assert.equal(C.lineaDeLoCargadoTarde(energia), '1 de 2 días se cargó en un día posterior (muesca arriba de la marca)');
 });
 
 test('TEST-GRF-013 · los tramos de 92 días cubren el período sin días repetidos ni perdidos (mutación: tramos de 93)', () => {

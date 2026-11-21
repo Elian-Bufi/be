@@ -19,10 +19,12 @@ import type { PeriodoDelGrafico } from '../eje-de-fechas';
 import type { ParametrosDeLectura } from '../lecturas';
 import {
   AREAS_DEL_SELECTOR,
+  COPY_DE_LA_PAREJA,
   modoDelCompositor,
   motivoDeSuperpuestas,
   NOMBRE_DEL_AREA,
   NOMBRE_DEL_MODO,
+  parejaDeLaSerie,
   pideUnidad,
   QUE_HACE_EL_MODO,
   referenciaDeEntrenamiento,
@@ -102,15 +104,31 @@ export function CompositorDeGraficos({ abierto, acceso, ejercicios, medidas, lec
   const numeros: readonly number[] = ej && ej.setNumbers.length > 0 ? ej.setNumbers : [1];
   const numeroElegido = numeros.includes(numero) ? numero : (numeros[0] ?? 1);
 
+  const deEntrenamiento = (s: SerieDisponible): Elegida | null => {
+    if (!ej) return null;
+    const ref = referenciaDeEntrenamiento(s, ej.exerciseKey, numeroElegido, unidadElegida);
+    const detalle = `${ej.name}${ref.setIndex !== null ? ` · serie ${ref.setIndex}` : ''}${ref.unit ? ` (${ref.unit})` : ''}`;
+    return { ref, nombre: `${s.definicion.nombreCorto} · ${detalle}`, unidad: ref.unit ?? s.definicion.unidad };
+  };
+  // El par de un clic (pulido de WP-GRAFICOS-POR-FASE): lo indicado y lo hecho de la serie elegida, si las dos se ofrecen.
+  const pareja = areaElegida === 'ENTRENAMIENTO' && serie ? parejaDeLaSerie(serie.id) : null;
+  const delPar = pareja ? pareja.map((x) => opciones.find((o) => o.id === x) ?? null) : null;
+  const parOfrecido = delPar !== null && delPar.every((x) => x !== null) ? (delPar as SerieDisponible[]) : null;
+  const agregarElPar = () => {
+    if (!parOfrecido) return;
+    const nuevas = parOfrecido.flatMap((s) => {
+      const c = deEntrenamiento(s);
+      return c && !elegidas.some((e) => claveDe(e.ref) === claveDe(c.ref)) ? [c] : [];
+    });
+    if (nuevas.length === 0) return setAviso(C.repetida);
+    if (elegidas.length + nuevas.length > MAXIMO_DE_SERIES_EN_UN_GRAFICO) return setAviso(COPY_DE_LA_PAREJA.sinLugar);
+    setAviso(null);
+    setElegidas([...elegidas, ...nuevas]);
+  };
   const candidata = (): Elegida | null => {
     if (areaElegida === 'ANTROPOMETRIA') return med ? { ref: { metricId: `antropometria.${med.metricCode}`, exerciseKey: null, setIndex: null, unit: null }, nombre: med.name, unidad: med.units[0] ?? '' } : null;
     if (!serie) return null;
-    if (areaElegida === 'ENTRENAMIENTO') {
-      if (!ej) return null;
-      const ref = referenciaDeEntrenamiento(serie, ej.exerciseKey, numeroElegido, unidadElegida);
-      const detalle = `${ej.name}${ref.setIndex !== null ? ` · serie ${ref.setIndex}` : ''}${ref.unit ? ` (${ref.unit})` : ''}`;
-      return { ref, nombre: `${serie.definicion.nombreCorto} · ${detalle}`, unidad: ref.unit ?? serie.definicion.unidad };
-    }
+    if (areaElegida === 'ENTRENAMIENTO') return deEntrenamiento(serie);
     return { ref: { metricId: serie.id, exerciseKey: null, setIndex: null, unit: null }, nombre: serie.definicion.nombreCorto, unidad: serie.definicion.unidad };
   };
   const agregar = () => {
@@ -251,6 +269,16 @@ export function CompositorDeGraficos({ abierto, acceso, ejercicios, medidas, lec
               <button type="button" className="boton boton--secundario" onClick={agregar} disabled={elegidas.length >= MAXIMO_DE_SERIES_EN_UN_GRAFICO}>
                 {C.agregar}
               </button>
+              {parOfrecido ? (
+                <>
+                  <button type="button" className="boton boton--secundario" data-par-indicado-y-hecho onClick={agregarElPar} disabled={elegidas.length >= MAXIMO_DE_SERIES_EN_UN_GRAFICO} aria-describedby={`${id}-par`}>
+                    {COPY_DE_LA_PAREJA.boton}
+                  </button>
+                  <p id={`${id}-par`} className="nota">
+                    {COPY_DE_LA_PAREJA.pista}
+                  </p>
+                </>
+              ) : null}
               {elegidas.length >= MAXIMO_DE_SERIES_EN_UN_GRAFICO ? <p className="nota">{C.tope}</p> : null}
               {aviso ? (
                 <p className="campo__error" role="alert">

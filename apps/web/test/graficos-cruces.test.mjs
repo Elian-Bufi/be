@@ -48,6 +48,7 @@ const SP2 = await import('../src/app/pro/advisees/graficos/cruces/energia-y-peso
 const TC = await import('../src/app/pro/advisees/graficos/cruces/lo-que-tambien-cambio.ts');
 const { COPY_DE_LOS_CRUCES } = await import('../src/app/pro/advisees/graficos/cruces/copy.ts');
 const A = await import('../src/app/pro/advisees/graficos/arma-tu-grafico/compositor.ts');
+const CARRILES = await import('../src/app/pro/advisees/graficos/carriles.ts');
 const S = await import('../src/app/pro/advisees/graficos/arma-tu-grafico/superpuestas.ts');
 const E = await import('../src/app/pro/advisees/graficos/eje-de-fechas.ts');
 const FC = await import('../src/app/pro/advisees/graficos/arma-tu-grafico/fecha-compartida.ts');
@@ -1127,8 +1128,12 @@ test('TEST-GRVD-006 · lo que mostraron las capturas: las tomas y las sesiones s
   const lienzo = leer(join(SEGUIMIENTO, 'lienzo.tsx'));
   assert.match(lienzo, /medidaDeMarca\(estadoDeMarca\(pt\), sinLinea\.has\(indice\) \? Math\.max\(espacioPorDia, LUGAR_DE_UN_PUNTO_SUELTO\) : espacioPorDia\)/, 'en «Analizar», un punto suelto (una toma) no queda de un píxel');
   const paneles = leer(join(GRAFICOS, 'paneles-alineados.tsx'));
-  assert.match(paneles, /maximumFractionDigits: unidad === 'kcal' \? 0 : 1/);
-  assert.match(paneles, /texto: valorCorto\(p\.valor, carril\.unidad\)/);
+  // Pulido de WP-GRAFICOS-POR-FASE: el rótulo redondea como la lectura del carril (`textoDelRotulo`).
+  assert.match(paneles, /texto: textoDelRotulo\(p\.valor, carril\)/);
+  assert.equal(CARRILES.textoDelRotulo(1924.8, { unidad: 'kcal' }), '1.925');
+  assert.equal(CARRILES.textoDelRotulo(122.5, { unidad: 'kg' }), '122,5');
+  assert.equal(CARRILES.textoDelRotulo(1472.5, { unidad: 'kg·rep' }), '1.473', 'el rótulo y la lectura dicen lo mismo');
+  assert.equal(CARRILES.textoDelRotulo(1472.5, { unidad: 'kg·rep', decimales: 0 }), '1.473');
   assert.doesNotMatch(leer(join(GRAFICOS, 'minigrafico-por-semana.tsx')), /<table className="visualmente-oculto"/);
 });
 

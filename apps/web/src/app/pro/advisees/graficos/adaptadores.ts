@@ -111,6 +111,8 @@ export function carrilDeSerie(s: SerieAnalitica, serie: SerieDisponible, o: Opci
     escala: o.escala.rangoMinimo === undefined && minimoDelCatalogo !== undefined ? { ...o.escala, rangoMinimo: minimoDelCatalogo } : o.escala,
     cobertura: fechas.map((fecha): CarrilDePuntos['cobertura'][number] => ({ fecha, estado: sin.has(fecha) && !conDato.has(fecha) ? 'sin' : hueco.has(fecha) ? 'hueco' : 'con' })),
     descripcion: o.descripcion,
+    // El rótulo de un punto redondea como su lectura (pulido de WP-GRAFICOS-POR-FASE).
+    decimales: serie.definicion.decimales,
   };
 }
 

@@ -6,6 +6,7 @@ import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import {
   ConfiguracionDeAnalisisSchema,
+  DIAS_DE_UN_PERIODO_RELATIVO,
   ParametrosDePreguntaSchema,
   type EjercicioDelPeriodo,
   type EntradaDeLineaDeTiempo,
@@ -522,6 +523,25 @@ test('los parámetros de una pregunta son identificadores: el texto libre y las 
   assert.equal(ConfiguracionDeAnalisisSchema.safeParse(vieja).success, true);
   assert.equal(ConfiguracionDeAnalisisSchema.safeParse({ ...vieja, question: { id: 'progreso-de-un-ejercicio', params: { exerciseKey: SENTADILLA, setIndex: 1, unit: 'kg' } } }).success, true);
   assert.equal(ConfiguracionDeAnalisisSchema.safeParse({ ...vieja, question: { id: 'otra-pregunta', params: {} } }).success, false);
+});
+
+test('el período de una vista: los atajos de los gráficos y «desde el vínculo» entran, aditivos; lo demás no (pulido de WP-GRAFICOS-POR-FASE)', () => {
+  const base = {
+    schemaVersion: 1,
+    metrics: [{ metricId: 'nutricion.energia', exerciseKey: null, setIndex: null, unit: null }],
+    mode: 'PANELS',
+    grain: 'DAY',
+    layers: { planBands: true, events: true },
+    reference: { kind: 'FIRST_DAYS', days: 7 },
+    comparison: null,
+  };
+  for (const days of [7, 28, 30, 84, 90, 182, 365]) assert.equal(ConfiguracionDeAnalisisSchema.safeParse({ ...base, period: { kind: 'LAST_DAYS', days } }).success, true, String(days));
+  assert.deepEqual([...DIAS_DE_UN_PERIODO_RELATIVO], [7, 28, 30, 84, 90, 182, 365]);
+  assert.equal(ConfiguracionDeAnalisisSchema.safeParse({ ...base, period: { kind: 'SINCE_RELATIONSHIP' } }).success, true);
+  for (const period of [{ kind: 'LAST_DAYS', days: 45 }, { kind: 'SINCE_RELATIONSHIP', days: 30 }, { kind: 'LAST_WEEKS', weeks: 4 }]) {
+    assert.equal(ConfiguracionDeAnalisisSchema.safeParse({ ...base, period }).success, false, JSON.stringify(period));
+  }
+  assert.equal(ConfiguracionDeAnalisisSchema.safeParse({ ...base, period: { kind: 'RANGE', start: '2026-09-01', end: '2026-11-20' } }).success, true);
 });
 
 // ─── Síntesis del Resumen (eje 1) ───────────────────────────────────────────────────────────────

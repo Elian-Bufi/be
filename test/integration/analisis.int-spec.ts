@@ -586,6 +586,22 @@ describe('API-VAN-01 a 04 · vistas de análisis guardadas', () => {
     expect((await s.post('/api/v1/me/analysis-views', claveDeIdempotencia()).send({ usage: 'SUMMARY_INDICATORS', name: 'Otros', configuration: indicadores }).expect(409)).body.error.code).toBe('RESOURCE_CONFLICT');
   });
 
+  it('el período relativo de los gráficos se guarda relativo: 4 y 12 semanas, 6 meses y desde el vínculo (pulido de WP-GRAFICOS-POR-FASE)', async () => {
+    const pro = await prepararProfesional(app, `ana-van-${++contador}`, ['NUTRICION']);
+    const s = conSesion(app, pro.token);
+    const periodos = [{ kind: 'LAST_DAYS', days: 28 }, { kind: 'LAST_DAYS', days: 84 }, { kind: 'LAST_DAYS', days: 182 }, { kind: 'SINCE_RELATIONSHIP' }] as const;
+    for (const [i, period] of periodos.entries()) {
+      const creada = VistaDeAnalisisResponseSchema.parse((await s.post('/api/v1/me/analysis-views', claveDeIdempotencia()).send({ usage: 'ANALYSIS', name: `Relativa ${i}`, configuration: configuracion({ period }) }).expect(201)).body).data;
+      expect(creada.configuration).toMatchObject({ period });
+    }
+    const guardadas = ListaDeVistasResponseSchema.parse((await s.get('/api/v1/me/analysis-views').expect(200)).body).data;
+    expect(guardadas.flatMap((v) => (v.usage === 'ANALYSIS' ? [v.configuration.period] : [])).sort((a, b) => JSON.stringify(a).localeCompare(JSON.stringify(b)))).toEqual([...periodos].sort((a, b) => JSON.stringify(a).localeCompare(JSON.stringify(b))));
+    // Lo que no es un atajo sigue sin entrar, y «desde el vínculo» no lleva días.
+    for (const period of [{ kind: 'LAST_DAYS', days: 45 }, { kind: 'SINCE_RELATIONSHIP', days: 30 }]) {
+      await s.post('/api/v1/me/analysis-views', claveDeIdempotencia()).send({ usage: 'ANALYSIS', name: 'Inválida', configuration: { ...configuracion(), period } }).expect(400);
+    }
+  });
+
   it('un asesorado no guarda vistas: 403', async () => {
     const ase = await prepararAsesorado(app, `ana-van-ase-${++contador}`, { a3: true });
     await conSesion(app, ase.token).get('/api/v1/me/analysis-views').expect(403);
