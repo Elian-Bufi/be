@@ -20770,3 +20770,22 @@ html:has(.estacion:not([data-en-el-asistente])) {
 [data-proponer-rangos] {
   margin-top: 0.5rem;
 }
+
+/* ─── RP-03 (WP-RECORRIDO-PLAN-PULIDO, DL-188): los errores en línea no desplazan los campos ─────── */
+/* Las filas de campos de /pro se alinean por arriba: el rótulo y el control de cada campo quedan a la altura de los de sus
+   vecinos, y el error va debajo del suyo sin mover a nadie. Alineadas por abajo, un error debajo de «Concepto» subía ese
+   campo y desalineaba «Concepto / Valor / Unidad». Con la regla global, `fila-de-dato--arriba` (NUP-10) ya no hace falta,
+   y queda por compatibilidad. */
+.fila-de-dato,
+.campos-del-ingrediente,
+.lo-general-del-editor__par,
+.medicion-libre {
+  align-items: start;
+}
+
+/* Un botón suelto en una fila de campos baja lo que ocupa un rótulo de una línea (el interlineado de 1,55 más la
+   separación del campo): queda a la altura de los controles, con un error debajo de un vecino o sin él. */
+.fila-de-dato > .boton,
+.fila-de-dato > .acciones {
+  margin-top: calc(1.55rem + 0.3rem);
+}
