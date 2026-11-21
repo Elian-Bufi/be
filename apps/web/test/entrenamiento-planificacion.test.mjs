@@ -184,9 +184,10 @@ test('ENP-D11 · los menús salen enteros: fijos a la ventana, abren arriba si a
   assert.match(MENU, /Math\.min\(Math\.max\(margen, deseadaIzquierda\), Math\.max\(margen, window\.innerWidth - margen - ancho\)\)/);
 });
 
-test('ENP-D12 · «Todavía no hay un plan activo», en una etiqueta de la cabecera', () => {
+test('ENP-D12 y RP-02 (DL-189) · «Todavía no hay un plan activo» no se dice con la versión en preparación a la vista', () => {
   assert.doesNotMatch(PLAN, /<p className="nota">\{COPY_ENTRENAMIENTO\.sinPlanActivo\}<\/p>/);
-  assert.match(PLAN, /sinPlanActivo=\{!activa\}/);
+  // RP-02: «Versión 1 en preparación» ya lo dice; el editor conserva la etiqueta, sin que el Plan la pida (EI-D13).
+  assert.doesNotMatch(PLAN, /sinPlanActivo=\{!activa\}/);
   assert.match(EDITOR, /data-sin-plan-activo/);
 });
 

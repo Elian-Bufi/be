@@ -319,7 +319,7 @@ export function VistaDePlan() {
                 {borrador ? (
                   // Queda montada aunque se mire la activa: lo escrito sin guardar sigue ahí al volver.
                   <div className="plan__preparacion" hidden={mostrada !== 'preparacion'}>
-                    {!activa ? <p className="nota">{COPY_NUTRICION.sinPlanActivo}</p> : null}
+                    {/* RP-02 (DL-189): sin «Todavía no hay un plan activo.»: la versión en preparación ya lo dice. */}
                     {/* PG-16 (DL-173): las notas propias del profesional, al lado de cada comida y en su menú. */}
                     <ProveedorDeNotasPropias token={token} asesoradoId={asesoradoId} sesionPerdida={sesionPerdida}>
                       <EditorDeBorrador
@@ -570,6 +570,8 @@ function PrimerPlanDeNutricion({ objetivoDesde, accionesDelPlan, onObjetivo }: {
         objetivoDesde={objetivoDesde ? diaSinElAnioEnCurso(objetivoDesde) : null}
         abierto={abierto}
         onAbrir={setAbierto}
+        // RP-12 (DL-189): la evaluación, abierta en su paso: es el pantallazo del caso, sin un botón antes.
+        evaluacionAbierta
         formularioDeEvaluacion={
           <FormularioDeEvaluacion
             conTitulo={false}
@@ -577,7 +579,6 @@ function PrimerPlanDeNutricion({ objetivoDesde, accionesDelPlan, onObjetivo }: {
               setAbierto('objetivo');
               void leer();
             }}
-            onCancelar={() => setAbierto(null)}
           />
         }
         detalleDeLaEvaluacion={ultima ? <FormulariosDeLaEvaluacion key={ultima.evaluationId} area="nutrition" token={token} asesoradoId={asesoradoId} sesionPerdida={sesionPerdida} evaluationId={ultima.evaluationId} /> : null}
