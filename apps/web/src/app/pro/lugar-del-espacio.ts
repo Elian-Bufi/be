@@ -6,8 +6,8 @@
  * - **Solo identificadores, nunca nombres:** el tipo, el área y el `identityId` de lo que se abrió y de lo que seguía, el
  *   filtro (los tipos y el área), el modo y el período. Si algo no es eso, no se guarda nada.
  * - **Vive en la pestaña** (`sessionStorage`), dos horas, y se usa una vez, como el lugar del cajón (TA-38). /pro sigue
- *   sin parámetros: el destino lleva `origen=espacio`, que el marco del área usa para ofrecer «Volver al Espacio
- *   profesional, donde estabas».
+ *   sin parámetros: el destino lleva `origen=espacio`, que el marco del área usa para ofrecer la vuelta: un botón
+ *   «Espacio profesional» (RP-01, DL-188; el lector de pantalla oye «Volver al Espacio profesional»).
  * - **Con el cajón prendido, manda el lugar del cajón:** si se salió por el cajón, al volver se abre el cajón, y este
  *   lugar se descarta.
  * Vive en el website hasta TB-20 (§8.2 del paquete), como `cajon.ts`.
@@ -44,7 +44,8 @@ const AREAS: readonly DominioDeCartera[] = ['nutrition', 'training', 'anthropome
 export const conOrigenEnElEspacio = (href: string): string => `${href}${href.includes('?') ? '&' : '?'}origen=espacio`;
 
 export const COPY_LUGAR = {
-  volver: 'Volver al Espacio profesional, donde estabas',
+  // RP-01 (DL-188): el botón fantasma de la cabecera del área dice adónde va; «Volver al» lo oye el lector de pantalla.
+  volver: 'Espacio profesional',
   yaNoEsta: 'Lo que abriste ya no está en la lista: quedaste en lo que seguía.',
   yaNoEstaNada: 'Lo que abriste ya no está en la lista.',
 } as const;

@@ -20880,3 +20880,111 @@ html:has(.estacion:not([data-en-el-asistente])) {
   flex: none;
   color: var(--tenue);
 }
+
+/* ─── RP-01 (WP-RECORRIDO-PLAN-PULIDO, DL-188): la cabecera de un área, en una sola franja ───────────────── */
+/* La vuelta, el área, la persona, el chip del acceso y, contra la derecha, el aviso de datos nuevos y el contexto. Si no
+   entra (una tablet de pie, un nombre largo), lo que sigue baja entero: nada se parte ni se corta. Debajo, las secciones. */
+.marco-del-area .marco-de-la-ficha__ancho {
+  display: flex;
+  flex-direction: column;
+  padding-top: 0;
+}
+
+@media (min-width: 87.5rem) {
+  .marco-del-area .marco-de-la-ficha__ancho {
+    display: flex;
+    padding-top: 0;
+  }
+}
+
+.marco-del-area__franja {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem 1rem;
+  min-height: 3.3125rem;
+  padding-block: 0.45rem 0.2rem;
+}
+
+.marco-del-area__franja h1 {
+  margin: 0;
+}
+
+.marco-del-area__franja > .retorno-a-la-ficha,
+.marco-del-area__franja > .marco-del-area__persona,
+.marco-del-area__acceso {
+  margin: 0;
+}
+
+.marco-del-area__acceso {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.marco-del-area__acciones {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem 0.75rem;
+  margin-inline-start: auto;
+}
+
+/* El botón fantasma: sin borde ni relleno hasta que se lo apunta; la flecha dice que vuelve. */
+.boton--fantasma {
+  background: transparent;
+  border-color: transparent;
+  color: var(--texto);
+  text-decoration: none;
+}
+
+.boton--fantasma:hover {
+  background: var(--fondo-suave);
+  border-color: var(--borde);
+}
+
+.marco-del-area__volver {
+  margin-inline-start: -0.6rem;
+  white-space: nowrap;
+}
+
+/* El acceso, en un chip que no se parte en ningún zoom. */
+.chip-del-acceso {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-height: 1.75rem;
+  padding: 0.1rem 0.7rem;
+  border: 1px solid var(--borde);
+  border-radius: 999px;
+  background: var(--fondo-suave);
+  color: var(--texto);
+  font-size: 0.9rem;
+  font-weight: 600;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.chip-del-acceso .icono {
+  flex: none;
+  color: var(--tenue);
+}
+
+.chip-del-acceso--falla {
+  font-weight: 500;
+}
+
+/* «Hay datos nuevos · Ver»: chico y discreto, al lado del contexto. */
+.aviso-de-datos-nuevos {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  color: var(--tenue);
+  font-size: 0.9rem;
+  white-space: nowrap;
+}
+
+.aviso-de-datos-nuevos .boton--enlace {
+  font-weight: 650;
+}

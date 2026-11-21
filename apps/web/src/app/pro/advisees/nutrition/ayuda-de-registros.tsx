@@ -55,7 +55,7 @@ export function AyudaDeRegistros() {
           <strong>Los registros que la persona deshizo</strong> no están acá: quedan en la línea de tiempo de la ficha, con su etiqueta.
         </Renglon>
         <Renglon muestra={<Icono nombre="calendario" tamano={20} />}>
-          <strong>El período</strong> admite hasta 92 días. Si no elegís ninguno, BE propone los últimos siete y lo dice arriba. El período, la vista y el registro abierto quedan en la dirección de la página: «Actualizar»
+          <strong>El período</strong> admite hasta 92 días. Si no elegís ninguno, BE propone los últimos siete y lo dice arriba. El período, la vista y el registro abierto quedan en la dirección de la página: recargarla
           y volver atrás los conservan.
         </Renglon>
       </ul>
