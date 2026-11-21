@@ -169532,7 +169532,9 @@
                               "HARRIS_BENEDICT_REVISED",
                               "FAO_WHO_UNU_1985",
                               "KATCH_MCARDLE",
-                              "CUNNINGHAM_1980"
+                              "CUNNINGHAM_1980",
+                              "TEN_HAAF_2014_WEIGHT",
+                              "TEN_HAAF_2014_LEAN_MASS"
                             ]
                           },
                           "activity": {
@@ -169948,7 +169950,9 @@
                                     "HARRIS_BENEDICT_REVISED",
                                     "FAO_WHO_UNU_1985",
                                     "KATCH_MCARDLE",
-                                    "CUNNINGHAM_1980"
+                                    "CUNNINGHAM_1980",
+                                    "TEN_HAAF_2014_WEIGHT",
+                                    "TEN_HAAF_2014_LEAN_MASS"
                                   ]
                                 },
                                 {
@@ -170125,7 +170129,9 @@
                                         "HARRIS_BENEDICT_REVISED",
                                         "FAO_WHO_UNU_1985",
                                         "KATCH_MCARDLE",
-                                        "CUNNINGHAM_1980"
+                                        "CUNNINGHAM_1980",
+                                        "TEN_HAAF_2014_WEIGHT",
+                                        "TEN_HAAF_2014_LEAN_MASS"
                                       ]
                                     },
                                     "activity": {
@@ -170275,7 +170281,9 @@
                                                 "HARRIS_BENEDICT_REVISED",
                                                 "FAO_WHO_UNU_1985",
                                                 "KATCH_MCARDLE",
-                                                "CUNNINGHAM_1980"
+                                                "CUNNINGHAM_1980",
+                                                "TEN_HAAF_2014_WEIGHT",
+                                                "TEN_HAAF_2014_LEAN_MASS"
                                               ]
                                             },
                                             "kcal": {
@@ -170313,7 +170321,9 @@
                                                 "HARRIS_BENEDICT_REVISED",
                                                 "FAO_WHO_UNU_1985",
                                                 "KATCH_MCARDLE",
-                                                "CUNNINGHAM_1980"
+                                                "CUNNINGHAM_1980",
+                                                "TEN_HAAF_2014_WEIGHT",
+                                                "TEN_HAAF_2014_LEAN_MASS"
                                               ]
                                             },
                                             "missing": {
@@ -170352,7 +170362,9 @@
                                                 "HARRIS_BENEDICT_REVISED",
                                                 "FAO_WHO_UNU_1985",
                                                 "KATCH_MCARDLE",
-                                                "CUNNINGHAM_1980"
+                                                "CUNNINGHAM_1980",
+                                                "TEN_HAAF_2014_WEIGHT",
+                                                "TEN_HAAF_2014_LEAN_MASS"
                                               ]
                                             },
                                             "reason": {
@@ -170942,7 +170954,9 @@
                                         "HARRIS_BENEDICT_REVISED",
                                         "FAO_WHO_UNU_1985",
                                         "KATCH_MCARDLE",
-                                        "CUNNINGHAM_1980"
+                                        "CUNNINGHAM_1980",
+                                        "TEN_HAAF_2014_WEIGHT",
+                                        "TEN_HAAF_2014_LEAN_MASS"
                                       ]
                                     },
                                     {
@@ -171119,7 +171133,9 @@
                                             "HARRIS_BENEDICT_REVISED",
                                             "FAO_WHO_UNU_1985",
                                             "KATCH_MCARDLE",
-                                            "CUNNINGHAM_1980"
+                                            "CUNNINGHAM_1980",
+                                            "TEN_HAAF_2014_WEIGHT",
+                                            "TEN_HAAF_2014_LEAN_MASS"
                                           ]
                                         },
                                         "activity": {
@@ -171269,7 +171285,9 @@
                                                     "HARRIS_BENEDICT_REVISED",
                                                     "FAO_WHO_UNU_1985",
                                                     "KATCH_MCARDLE",
-                                                    "CUNNINGHAM_1980"
+                                                    "CUNNINGHAM_1980",
+                                                    "TEN_HAAF_2014_WEIGHT",
+                                                    "TEN_HAAF_2014_LEAN_MASS"
                                                   ]
                                                 },
                                                 "kcal": {
@@ -171307,7 +171325,9 @@
                                                     "HARRIS_BENEDICT_REVISED",
                                                     "FAO_WHO_UNU_1985",
                                                     "KATCH_MCARDLE",
-                                                    "CUNNINGHAM_1980"
+                                                    "CUNNINGHAM_1980",
+                                                    "TEN_HAAF_2014_WEIGHT",
+                                                    "TEN_HAAF_2014_LEAN_MASS"
                                                   ]
                                                 },
                                                 "missing": {
@@ -171346,7 +171366,9 @@
                                                     "HARRIS_BENEDICT_REVISED",
                                                     "FAO_WHO_UNU_1985",
                                                     "KATCH_MCARDLE",
-                                                    "CUNNINGHAM_1980"
+                                                    "CUNNINGHAM_1980",
+                                                    "TEN_HAAF_2014_WEIGHT",
+                                                    "TEN_HAAF_2014_LEAN_MASS"
                                                   ]
                                                 },
                                                 "reason": {

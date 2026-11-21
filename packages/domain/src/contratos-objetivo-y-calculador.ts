@@ -22,8 +22,14 @@ import { CrearObjetivoRequestSchema, FechaLocalSchema, VersionDeObjetivoSchema }
 export const SexoDelCalculoSchema = z.enum(['FEMALE', 'MALE']);
 export type SexoDelCalculo = z.infer<typeof SexoDelCalculoSchema>;
 
-/** Los métodos del gasto en reposo que ofrece BE. Cada uno con su fórmula, sus datos y su cita (`calculador-de-macros.ts`). */
-export const METODOS_DE_REPOSO = ['MIFFLIN_ST_JEOR', 'HARRIS_BENEDICT_REVISED', 'FAO_WHO_UNU_1985', 'KATCH_MCARDLE', 'CUNNINGHAM_1980'] as const;
+/**
+ * Los métodos del gasto en reposo que ofrece BE. Cada uno con su fórmula, sus datos y su cita (`calculador-de-macros.ts`).
+ * RP-09 (WP-RECORRIDO-PLAN-PULIDO, DL-188) suma ten Haaf y Weijs (2014), la ecuación para deportistas, en sus dos
+ * variantes: con peso, talla, edad y sexo, y con la masa libre de grasa. Es un agregado al final: lo guardado antes sigue
+ * leyéndose igual. El método no viaja a la APK: la persona lee su objetivo sin la declaración del método
+ * (`ObjetivoParaAsesorado`), y el cálculo (API-OBC-03) es solo para el profesional.
+ */
+export const METODOS_DE_REPOSO = ['MIFFLIN_ST_JEOR', 'HARRIS_BENEDICT_REVISED', 'FAO_WHO_UNU_1985', 'KATCH_MCARDLE', 'CUNNINGHAM_1980', 'TEN_HAAF_2014_WEIGHT', 'TEN_HAAF_2014_LEAN_MASS'] as const;
 export const MetodoDeReposoSchema = z.enum(METODOS_DE_REPOSO);
 export type MetodoDeReposo = z.infer<typeof MetodoDeReposoSchema>;
 
@@ -42,6 +48,16 @@ export const TOPES_DEL_CALCULADOR = {
   ajustePorcentaje: { minimo: -40, maximo: 40 },
   proteinaPorKg: { minimo: 0, maximo: 5 },
   grasaPorKg: { minimo: 0, maximo: 3 },
+} as const;
+
+/**
+ * RP-05 (WP-RECORRIDO-PLAN-PULIDO, DL-188): lo que el calculador acepta para un cálculo nuevo, en g/kg, con su paso de
+ * 0,1. Fuera de estos límites, el calculador lo avisa junto al campo y no propone nada. Los topes de arriba siguen siendo
+ * los del contrato: un cálculo ya guardado con 3,5 g/kg de proteína (append-only) se sigue leyendo tal cual.
+ */
+export const LIMITES_DE_LOS_GRAMOS_POR_KG = {
+  proteina: { minimo: 0.6, maximo: 3, paso: 0.1 },
+  grasa: { minimo: 0.5, maximo: 2.5, paso: 0.1 },
 } as const;
 
 const TextoOpcional = (max: number) => z.string().trim().max(max).nullable();

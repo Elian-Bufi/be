@@ -1,7 +1,8 @@
 /**
  * WP-OBJETIVO-Y-CALCULADOR (DL-186) · El calculador de macros del profesional. Lo que fija esta prueba:
  * - cada ecuación del gasto en reposo da lo que dan sus coeficientes publicados (Mifflin-St Jeor 1990, Harris-Benedict
- *   revisada por Roza y Shizgal 1984, FAO/OMS/UNU 1985 por franja de edad, Katch-McArdle y Cunningham 1980), con la
+ *   revisada por Roza y Shizgal 1984, FAO/OMS/UNU 1985 por franja de edad, Katch-McArdle, Cunningham 1980 y, desde RP-09
+ *   de DL-188, ten Haaf y Weijs 2014 en sus dos variantes), con la
  *   fórmula y los números a la vista;
  * - si falta un dato, el método dice cuál, y no inventa nada; fuera de la población de la ecuación, lo dice;
  * - el gasto total, el ajuste del profesional, los macros en g/kg y los carbohidratos por diferencia, con el «%» sobre
@@ -15,10 +16,12 @@ import { test } from 'node:test';
 import {
   calcularObjetivo,
   datosQueFaltan,
+  FICHA_DEL_METODO_DE_REPOSO,
   declaracionCompartible,
   declaracionDelCalculo,
   gastoEnReposo,
   macrosDelDia,
+  notaDeLaPoblacion,
   porcentajesQueSuman100,
   problemasDelReparto,
   propuestaDeRangos,
@@ -26,11 +29,12 @@ import {
   repartoParejo,
   repartoSugerido,
 } from './calculador-de-macros';
-import { ObjetivoConReferenciaRequestSchema, ParametrosDelCalculoSchema, ResultadoDelCalculoSchema, type DatosUsados, type ParametrosDelCalculo } from './contratos-objetivo-y-calculador';
+import { LIMITES_DE_LOS_GRAMOS_POR_KG, METODOS_DE_REPOSO, ObjetivoConReferenciaRequestSchema, ParametrosDelCalculoSchema, ResultadoDelCalculoSchema, type DatosUsados, type ParametrosDelCalculo } from './contratos-objetivo-y-calculador';
 
 const MUJER = { weightKg: 68, heightCm: 162, ageYears: 45, sex: 'FEMALE' as const, leanMassKg: 46.5 };
 const HOMBRE = { weightKg: 70, heightCm: 175, ageYears: 30, sex: 'MALE' as const, leanMassKg: 55 };
 const kcal = (r: ReturnType<typeof gastoEnReposo>) => (r.state === 'CALCULATED' ? r.kcal : r.state);
+const PARAMETROS_DE_TEN_HAAF = { sex: 'MALE', restingMethod: 'TEN_HAAF_2014_WEIGHT', activity: { factor: 1.7, restDayFactor: null }, adjustment: null, macros: null } as const;
 
 test('Mifflin-St Jeor (1990): 10 × peso + 6,25 × talla − 5 × edad, +5 en hombres y −161 en mujeres', () => {
   const m = gastoEnReposo('MIFFLIN_ST_JEOR', MUJER);
@@ -64,6 +68,41 @@ test('Katch-McArdle y Cunningham (1980): con la masa libre de grasa, sin sexo ni
   assert.equal(kcal(gastoEnReposo('CUNNINGHAM_1980', { ...HOMBRE, sex: null, ageYears: null })), 1710); // 500 + 22 × 55
   const c = gastoEnReposo('CUNNINGHAM_1980', HOMBRE);
   assert.ok(c.state === 'CALCULATED' && c.applied === '500 + 22 × 55 = 1.710');
+});
+
+test('RP-09 · ten Haaf y Weijs (2014), con el peso: como se publicó, con la talla en metros y el sexo 1 o 0', () => {
+  const m = gastoEnReposo('TEN_HAAF_2014_WEIGHT', MUJER);
+  // 11,936 × 68 + 587,728 × 1,62 − 8,129 × 45 + 191,027 × 0 + 29,279 = 811,648 + 952,11936 − 365,805 + 0 + 29,279 = 1.427,24136
+  assert.equal(kcal(m), 1427);
+  assert.ok(m.state === 'CALCULATED');
+  assert.equal(m.equation, '11,936 × peso (kg) + 587,728 × talla (m) − 8,129 × edad (años) + 191,027 × sexo (1 hombre, 0 mujer) + 29,279');
+  assert.equal(m.applied, '11,936 × 68 + 587,728 × 1,62 − 8,129 × 45 + 191,027 × 0 + 29,279 = 1.427,2');
+  // 835,52 + 1.028,524 − 243,87 + 191,027 + 29,279 = 1.840,48
+  assert.equal(kcal(gastoEnReposo('TEN_HAAF_2014_WEIGHT', HOMBRE)), 1840);
+  assert.deepEqual(datosQueFaltan('TEN_HAAF_2014_WEIGHT', { ...MUJER, sex: null, heightCm: null }), ['heightCm', 'sex']);
+  // Fuera de la franja con que se publicó: se dice, sin bloquear; dentro, nada.
+  assert.match(notaDeLaPoblacion('TEN_HAAF_2014_WEIGHT', MUJER) ?? '', /18 a 35 años: con 45 años/);
+  assert.equal(notaDeLaPoblacion('TEN_HAAF_2014_WEIGHT', HOMBRE), null);
+  assert.equal(notaDeLaPoblacion('MIFFLIN_ST_JEOR', MUJER), null);
+});
+
+test('RP-09 · ten Haaf y Weijs (2014), con la masa libre de grasa: 22,771 × MLG + 484,264', () => {
+  const m = gastoEnReposo('TEN_HAAF_2014_LEAN_MASS', { ...MUJER, sex: null, ageYears: null });
+  // 22,771 × 46,5 + 484,264 = 1.058,8515 + 484,264 = 1.543,1155
+  assert.equal(kcal(m), 1543);
+  assert.ok(m.state === 'CALCULATED' && m.applied === '22,771 × 46,5 + 484,264 = 1.543,1');
+  assert.equal(kcal(gastoEnReposo('TEN_HAAF_2014_LEAN_MASS', HOMBRE)), 1737); // 1.252,405 + 484,264 = 1.736,669
+  assert.equal(gastoEnReposo('TEN_HAAF_2014_LEAN_MASS', { ...MUJER, leanMassKg: 70 }).state, 'OUT_OF_RANGE');
+  // Cada método dice para quién sirve, en pocas palabras, y su cita es la del artículo original.
+  for (const m of METODOS_DE_REPOSO) assert.ok(FICHA_DEL_METODO_DE_REPOSO[m].paraQuien.length > 0 && FICHA_DEL_METODO_DE_REPOSO[m].paraQuien.length <= 50, m);
+  assert.ok(FICHA_DEL_METODO_DE_REPOSO.TEN_HAAF_2014_WEIGHT.cita.includes('PLoS One. 2014;9(10):e108460'));
+  assert.equal(ParametrosDelCalculoSchema.safeParse({ ...PARAMETROS_DE_TEN_HAAF }).success, true);
+});
+
+test('RP-05 · los g/kg de un cálculo nuevo tienen sus límites con nombre; lo ya guardado se sigue leyendo', () => {
+  assert.deepEqual(LIMITES_DE_LOS_GRAMOS_POR_KG, { proteina: { minimo: 0.6, maximo: 3, paso: 0.1 }, grasa: { minimo: 0.5, maximo: 2.5, paso: 0.1 } });
+  // Un cálculo viejo con 3,5 g/kg de proteína (append-only) sigue pasando el contrato de lectura.
+  assert.equal(ParametrosDelCalculoSchema.safeParse({ ...PARAMETROS_DE_TEN_HAAF, macros: { base: 'BODY_WEIGHT', proteinPerKg: 3.5, fatPerKg: 2.8 } }).success, true);
 });
 
 test('si falta un dato, el método dice cuál; fuera de su población, lo dice; nunca inventa', () => {
