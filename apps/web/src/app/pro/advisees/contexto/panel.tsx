@@ -101,7 +101,7 @@ export interface PropsDelPanel {
   /** Si lo abrió la persona (el botón o Alt + C): el foco va al título. Reabierto por lo que se recuerda, no se mueve. */
   readonly enfocarAlAbrir?: boolean;
   readonly sesionPerdida: (r: Resultado<unknown>) => boolean;
-  /** Sube con «Actualizar» del marco: el panel vuelve a leer lo que muestra (CTX-D02). */
+  /** Sube con «Ver» en «Hay datos nuevos» del marco (RP-01): el panel vuelve a leer lo que muestra (CTX-D02). */
   readonly actualizacion?: number;
 }
 

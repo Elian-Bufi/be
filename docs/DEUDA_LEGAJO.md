@@ -187,6 +187,7 @@
 | DL-185 | Pedido de Dirección · 2026-11-19 («En la evaluación inicial: poder vincular los formularios que la persona ya respondió») | RF-026 · RF-036 · RF-071 · REG-06-97 · 06 §4.4 · 08 §11 y §19.7 · DL-057 · DL-102 · DL-137 D-7 · DL-145 · DL-152 · DL-179 (CTX-D09, CTX-D10) | La evaluación inicial solo podía citar respuestas sueltas; no había forma de dejar constancia de qué formularios de la persona se usaron, ni de saber si ella los corrigió después | **PROGRAMADA en `wp-evaluacion-y-formularios` (PR en borrador, sin integrar) · EVF-D01 a EVF-D13 a ratificar**: la familia EVF (API-EVF-01 a 04), una tabla que solo agrega, y el website en «Empezar el plan» y en Resumen de Nutrición y de Entrenamiento. Por referencia, nunca por copia; la persona no ve nada nuevo. Detalle: `docs/paquetes/WP-EVALUACION-Y-FORMULARIOS.md` |
 | DL-186 | Pedido de Dirección · 2026-11-19 (el objetivo con una toma de Antropometría de referencia y el calculador de macros) | REG-06-123 · INV-06-133 · B05:312-318 · REG-06-157 · REG-06-205 · RNF-PRI-002 · DL-111 · DL-163 (D-17, TB-39) · DL-176 · la decisión de Dirección del 2026-11-13 («Último peso, guardado en gramos») · DL-185 (en paralelo) | El objetivo no se relacionaba con ninguna toma; el profesional calculaba el gasto y los macros fuera de BE y los copiaba; el texto del objetivo decía «BE no calcula requerimientos»; los rangos de cada comida se escribían uno por uno | **PROGRAMADA en `wp-objetivo-y-calculador` (PR en borrador, sin integrar) · OBC-D01 a OBC-D17 a ratificar**: el calculador en «Nueva versión de objetivo» (cinco métodos del gasto en reposo con su fórmula, sus datos y su cita; el factor, con otro para el día de descanso; el ajuste; los macros en g/kg con los carbohidratos por diferencia); el objetivo guardado con su toma y su cálculo (familia propia OBC, API-OBC-01 a 03, una migración que solo agrega), con el aviso de una toma más nueva; la propuesta de rangos por día y por comida, volcada por API-PLN-03 sin pisar lo escrito. Detalle: `docs/paquetes/WP-OBJETIVO-Y-CALCULADOR.md` |
 | DL-187 | Pedido de Dirección · 2026-11-20 (los gráficos por período corto o por versión del plan, la franja de lo indicado y lo indicado frente a lo hecho del volumen) | DL-174 · DL-181 · DL-122 · DL-178 · TB-16 (DL-163 D-7) · 09v10:356 · 09v10:1285-1295 · B10-06 (la lista de términos de Entrenamiento) · B05 | El historial del ejercicio ofrecía 12 semanas, 6 meses o desde el vínculo; la ficha, 7, 30 y 90 días o un año; ningún gráfico elegía una versión del plan; el rango de repeticiones indicado no se dibujaba; BE no calculaba volumen y la palabra estaba prohibida en pantalla; «Patrones» tomaba siempre el ejercicio más registrado | **PROGRAMADA en `wp-graficos-por-fase` (PR en borrador, sin integrar) · GPF-D01 a GPF-D13 a ratificar**: un solo selector de período en los gráficos (4 y 12 semanas, 6 meses, un año, desde que la acompañás, a medida y por versión del plan con «La anterior» y «La siguiente»); la franja de lo indicado en GR-03; series y carga × repeticiones indicadas y hechas por sesión o semana (en el historial y en «Armá tu gráfico»), con una convención declarada; el ejercicio elegible en «Patrones». Sin operaciones nuevas en la API. Detalle: `docs/paquetes/WP-GRAFICOS-POR-FASE.md` |
+| DL-188 | Pedido de Dirección · 2026-11-21 (el recorrido de la planificación de Nutrición en el escritorio profesional: «ponete a solucionar todo, empezá ya») | DL-186 · DL-146 · DL-163 (TB-07) · ED-02 · NUP-06 a 08 · NUP-10 · B10-01 · B10-10 §6-§8 · REG-06-157 · la decisión de Dirección del 18/11 (el «%» con su base) | La cabecera de un área ocupaba tres renglones, con un enlace largo para volver, «Actualizar» y la hora de la consulta; el acceso se partía; un error en línea movía su campo; el calculador tenía textos largos, un desplegable cortado, el ajuste con signo y la distribución por comida en el objetivo; las cantidades no llevaban ícono; la cuenta de los gramos ocupaba dos renglones; no estaba ten Haaf (2014) | **PROGRAMADA en `wp-recorrido-plan-pulido` (frente 1; PR en borrador, sin integrar) · RP-D01 a RP-D17 a ratificar**: la cabecera en una franja con la vuelta como botón, el acceso en un chip y la revalidación al volver a la pestaña («Hay datos nuevos · Ver»); las filas de campos alineadas por arriba; el calculador más corto, con lo largo detrás de «?» y «Fuente», los g/kg con límites y paso 0,1 y el ajuste sin signo; el reparto por comida a la vista en cada día tipo; el ícono con el número y la abreviatura; la cuenta de los gramos detrás de un «?»; ten Haaf y Weijs (2014) en sus dos variantes. Sin operaciones nuevas ni migraciones. Detalle: `docs/paquetes/WP-RECORRIDO-PLAN-PULIDO.md` |
 
 ---
 
@@ -9012,3 +9013,36 @@ panel en «Armá tu gráfico», con el par «Indicado y hecho» en un clic; lo c
 guardadas con 4 o 12 semanas, 6 meses o «Desde que la acompañás» siguen siendo relativas (extensión aditiva del contrato
 de API-VAN, sin migración); un solo redondeo en el rótulo de un punto; y las versiones del año, pedidas una vez en
 «Analizar». Detalle: §5 del paquete.
+
+## DL-188 — El recorrido de la planificación: cabecera, calculador y reparto por comida
+
+**Prioridad:** alta (Dirección recorrió la planificación de Nutrición en su pantalla y pidió arreglarlo todo) · DL-186 ·
+DL-146 · DL-163 (TB-07) · ED-02 · NUP-06 a 08 · NUP-10 · B10-01 · B10-10 §6-§8 · REG-06-157 · **Estado:** PEDIDO por
+Dirección el 2026-11-21 · PROGRAMADA en `wp-recorrido-plan-pulido` (frente 1 del paquete; PR en borrador, sin integrar) ·
+RP-D01 a RP-D17, **a ratificar**. El frente 2 (`wp-evaluacion-inicial-2`) lleva el resto del paquete. Si al integrar el
+número choca con otro paquete, se renumera.
+
+**Qué pidió Dirección.** Que la cabecera de cada área ocupe una franja, sin «Actualizar» ni «Consultado a las», y avise si
+hay algo nuevo al volver; que un error no desalinee una fila de campos; que el calculador del objetivo sea más corto y claro
+(«Calcular», la toma con un toque, lo largo plegado, el desplegable entero, el día de descanso a la vista, los g/kg con
+límites, el ajuste sin signo, «Usar estos valores» como acción principal); que la distribución por comida salga del
+objetivo y pase al plan, en cada día tipo; el ícono del macro antes de cada cantidad; la cuenta de los gramos detrás de un
+«?»; y la ecuación de ten Haaf (2014) para deportistas.
+
+**Qué dice el legajo.** B10-01 pedía «Actualizar» con la hora de la consulta en el marco de la ficha; Dirección lo retira
+para las áreas y la ficha, y en su lugar la ficha y cada área se revalidan al recuperar el foco, sin pisar lo que se está
+escribiendo (ED-02). El método a la vista (REG-06-157) sigue: la fórmula y la cuenta con los números quedan a la vista; lo
+que se pliega es la explicación y la cita. El «%» va siempre con su base (decisión del 18/11). No se edita el legajo.
+
+**Lo programado.** El marco del área y la ficha (RP-01), la regla global de las filas de campos (RP-03), el calculador
+(RP-05) con `LIMITES_DE_LOS_GRAMOS_POR_KG` en el dominio, el reparto por comida a la vista que reemplaza al cuadro de la
+propuesta (RP-06), `CantidadDelMacro` (RP-07), el «?» del objetivo del día (RP-08) y ten Haaf y Weijs (2014) con sus
+coeficientes verificados en el artículo original (RP-09). El contrato no cambia: el enum de los métodos crece al final y
+la APK no lo lee. Pruebas: `calculador-de-macros.test.ts`, `objetivo-y-calculador.test.mjs` y
+`recorrido-plan-pulido.test.mjs`.
+
+**Lo que queda.**
+- Ratificar RP-D01 a RP-D17.
+- Los íconos con el número en la APK (RP-07).
+- Mirarlo en pantalla a 1920 × 1080 con Windows al 125 % y el navegador al 75 %, y con un lector de pantalla.
+- «Te toca a vos» sigue con «Actualizar» (otra pieza). Detalle completo: `docs/paquetes/WP-RECORRIDO-PLAN-PULIDO.md`.

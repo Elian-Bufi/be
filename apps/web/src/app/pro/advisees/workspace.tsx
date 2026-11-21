@@ -8,7 +8,9 @@
  *   no se listan: se avisa la vista parcial, sin «Datos ocultos: …» (10-B04 §41).
  * - 404 = no hay nada que mostrar: el mismo texto neutral para inexistente, ajeno, revocado o finalizado
  *   (UC-I02 E05; 10-B10:407). Es el estado que se ve cuando el asesorado revoca: el corte no espera a la sesión.
- * «Actualizar» vuelve a preguntar a la API y muestra la hora de la última consulta.
+ * RP-01 (WP-RECORRIDO-PLAN-PULIDO, DL-188): sin «Actualizar» ni «Consultado a las», como la cabecera de las áreas (es la
+ * misma pieza). Al volver a la pestaña del navegador, la ficha vuelve a leer en silencio; si cambió algo que no escribió
+ * quien mira (`datos-nuevos.ts`), avisa «Hay datos nuevos · Ver», y «Ver» repite las lecturas de la vista abierta.
  *
  * WP-DASHBOARD-PROFESIONAL: la ficha tiene tres vistas —Resumen, Línea de tiempo y Analizar— con el mismo período,
  * todo en la URL (`vista=`, `p=` o `desde`/`hasta`, y el estado de cada vista). WP-GRAFICOS rama E suma «Patrones»
@@ -35,7 +37,7 @@
  * Bloque 5 del encargo de consolidación (2026-10-19): la densidad del primer renglón. Sobre la maqueta 01 aprobada, va UNA
  * acción principal según el momento de la persona (`accionDeLaFicha`: preparar la revisión de la semana, seguir el borrador
  * o empezar el plan; con todo al día, ninguna), y lo de vez en cuando, «Pedir información» y «Nota de coordinación», en el
- * menú «Más». «Actualizar» y la hora de la consulta siguen a la vista (B10-01).
+ * menú «Más». Desde RP-01 (DL-188), sin «Actualizar» ni la hora de la consulta: la ficha se revalida al recuperar el foco.
  *
  * WP-TABLERO-ALTA-GAMA TB-05 (DL-163 D-2): el monograma de la persona va al lado de su nombre. Con «Ocultar nombres», el
  * título es la referencia neutral y el monograma lleva el ícono; el nombre que reciben las vistas (la exportación de
@@ -54,12 +56,12 @@ import { Retrato } from '../../../components/retrato';
 import { useAntesDeSalir } from '../../../components/salida-segura';
 import { referenciaDePersona } from '../../../lib/retrato';
 import { api } from '../../../lib/api';
-import { horaDelDia } from '../../../lib/formato';
 import { anotarNombrePropio, nombrePropioEn } from '../../../lib/nombre-propio';
 import { useNombres } from '../../../lib/nombres-ocultos';
 import { SinEspacioProfesional, useEspacioProfesional } from '../espacio-profesional';
 import { AccesoPorArea, CLAVE_DEL_DOMINIO, DOMINIO_DEL_ALCANCE, estadoDelArea, type LecturaPorArea } from './acceso-por-area';
 import { accionDeLaFicha, rutaDeLaAccion, type AccionDeLaFicha } from './accion-de-la-ficha';
+import { COPY_DATOS_NUEVOS, hayDatosNuevos, huellaDelArea, VOLVER_A_LEER_AL_VOLVER_MS } from './datos-nuevos';
 import { DialogoDeNota } from './nota-de-coordinacion';
 import { areaParaAbrir, hrefDeLaHistoriaAnterior } from './previous-history/historia-anterior';
 import { PestanasDelSeguimiento, SelectorDePeriodo } from './seguimiento/barra';
@@ -88,8 +90,6 @@ const lecturaSegun = (panel: PanelDelResumen): LecturaPorArea => (panel.tipo ===
 
 /** Cada cuánto, como mucho, se vuelve a preguntar el acceso por un aviso de «no disponible». */
 const ESPERA_ENTRE_REVALIDACIONES_MS = 5_000;
-/** Al volver a la pestaña del navegador, se vuelve a preguntar si pasó más que esto. */
-const VOLVER_A_PREGUNTAR_AL_VOLVER_MS = 60_000;
 
 export function Workspace() {
   const parametros = useSearchParams();
@@ -117,8 +117,10 @@ export function Workspace() {
   // El período, por su valor: si los vínculos no lo cambian (la cohorte, cualquiera con 90 días o más), nada se relee.
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const periodo = useMemo(() => periodoEfectivo(acompanamiento.inicio), [claveDelPeriodo, claveDelEfectivo]);
-  const [consultadoEn, setConsultadoEn] = useState<Date | null>(null);
-  // Sube cuando cambia lo que se puede leer, y cuando se pide «Actualizar»: las lecturas de la ficha se repiten.
+  // RP-01: lo que se ve, en una huella, para decir «Hay datos nuevos» al volver a la pestaña.
+  const huellaVista = useRef<string | null>(null);
+  const [hayNuevos, setHayNuevos] = useState(false);
+  // Sube cuando cambia lo que se puede leer, y con «Ver» en «Hay datos nuevos»: las lecturas de la ficha se repiten.
   const [versionDeAcceso, setVersionDeAcceso] = useState(0);
   const generacion = useRef(0);
   const ultimaConsulta = useRef(0);
@@ -145,7 +147,7 @@ export function Workspace() {
   }, [encabezado, yoId]);
 
   const leer = useCallback(
-    async (silencioso: boolean) => {
+    async (silencioso: boolean, conLaHuella: 'base' | 'comparar' | null = null) => {
       if (!token || !yoId) return;
       const esta = ++generacion.current;
       leyendo.current = true;
@@ -167,7 +169,13 @@ export function Workspace() {
       if (delVinculo) setAcompanamientoLeido({ id, valor: delVinculo });
       if (delVinculo && enPalabras(periodoEfectivo(delVinculo.inicio)) !== enPalabras(periodo)) return;
       ultimaConsulta.current = Date.now();
-      setConsultadoEn(new Date());
+      // RP-01: la huella de lo leído; una falla no se compara.
+      if (conLaHuella && vinculos && respuesta?.ok && yoId) {
+        const dominios = respuesta.datos.data.domains;
+        const huella = huellaDelArea(null, vinculos.map((v) => `${v.scope.code}:${JSON.stringify(estadoDelArea(v, (d) => dominios[CLAVE_DEL_DOMINIO[d]].available))}`), dominios, yoId);
+        if (conLaHuella === 'base' || huellaVista.current === null) huellaVista.current = huella;
+        else if (hayDatosNuevos(huellaVista.current, huella)) setHayNuevos(true);
+      }
       const nuevo: PanelDelResumen =
         !respuesta || (!respuesta.ok && respuesta.tipo === 'API' && respuesta.codigo === 'RESOURCE_NOT_FOUND')
           ? { tipo: 'no-disponible' }
@@ -192,15 +200,14 @@ export function Workspace() {
     },
     [token, yoId, id, sesionPerdida, periodo],
   );
-  const consultar = useCallback(() => void leer(false), [leer]);
-  // «Actualizar» vuelve a preguntar todo lo que la ficha muestra: el acceso y el resumen por área (`consultar`) y,
-  // subiendo la versión, las lecturas de la vista abierta. Antes se repetían solo las que se desmontaban mientras el
-  // resumen cargaba: la cobertura del período y lo que hay disponible quedaban con los datos de la consulta anterior,
-  // debajo de una hora nueva.
-  const actualizar = useCallback(() => {
+  const consultar = useCallback(() => void leer(false, 'base'), [leer]);
+  // RP-01: «Ver» en «Hay datos nuevos» repite todo lo que la ficha muestra: el acceso y el resumen por área y, subiendo la
+  // versión, las lecturas de la vista abierta. La ficha no edita nada: no hay nada sin guardar que cuidar.
+  const verLoNuevo = useCallback(() => {
+    setHayNuevos(false);
     setVersionDeAcceso((v) => v + 1);
-    consultar();
-  }, [consultar]);
+    void leer(true, 'base');
+  }, [leer]);
 
   useEffect(() => {
     consultar();
@@ -237,7 +244,7 @@ export function Workspace() {
   }, []);
   useEffect(() => {
     const alVolver = () => {
-      if (document.visibilityState === 'visible' && !leyendo.current && Date.now() - ultimaConsulta.current > VOLVER_A_PREGUNTAR_AL_VOLVER_MS) void leer(true);
+      if (document.visibilityState === 'visible' && !leyendo.current && Date.now() - ultimaConsulta.current > VOLVER_A_LEER_AL_VOLVER_MS) void leer(true, 'comparar');
     };
     document.addEventListener('visibilitychange', alVolver);
     return () => document.removeEventListener('visibilitychange', alVolver);
@@ -314,15 +321,17 @@ export function Workspace() {
               ]}
             />
           ) : null}
-          {/* «Actualizar» vuelve a preguntar todo lo de la ficha, no solo el acceso: va con la hora, a la derecha. */}
-          <div className="ficha__consulta">
-            <Pista texto={COPY_PISTAS.ficha.actualizar}>
-              <button type="button" className="boton boton--quieto boton--compacto" onClick={actualizar} disabled={panel.tipo === 'cargando'}>
-                <Icono nombre="actualizar" tamano={18} />
-                Actualizar
-              </button>
-            </Pista>
-            {consultadoEn ? <span className="nota">Consultado a las {horaDelDia(consultadoEn)}</span> : null}
+          {/* RP-01: sin «Actualizar» ni la hora; al volver a la pestaña, si cambió algo, el aviso. La región está siempre. */}
+          <div className="ficha__consulta" role="status">
+            {hayNuevos ? (
+              <span className="aviso-de-datos-nuevos" data-datos-nuevos>
+                <Icono nombre="actualizar" tamano={15} />
+                {COPY_DATOS_NUEVOS.hay} ·{' '}
+                <button type="button" className="boton boton--enlace" onClick={verLoNuevo} title={COPY_DATOS_NUEVOS.verDetalle}>
+                  {COPY_DATOS_NUEVOS.ver}
+                </button>
+              </span>
+            ) : null}
           </div>
         </div>
         <div className="marco-de-la-ficha__estado">
@@ -332,10 +341,15 @@ export function Workspace() {
               <strong>Acceso actual</strong>
             </p>
             {encabezado.tipo === 'cargando' ? <Cargando /> : null}
-            {/* Sin un «Reintentar» propio: es la misma lectura que la del cuerpo, y «Actualizar», arriba, la vuelve a pedir. */}
+            {/* RP-01: sin «Actualizar», el «Reintentar» vuelve a pedir el acceso con el resumen. */}
             {encabezado.tipo === 'error' ? (
               <Aviso tipo="error">
-                <p>{COPY_VINCULO.accesoNoSeLeyo}</p>
+                <p>
+                  No pudimos leer el acceso actual.{' '}
+                  <button type="button" className="boton boton--enlace" onClick={consultar}>
+                    Reintentar<span className="visualmente-oculto"> la lectura del acceso</span>
+                  </button>
+                </p>
               </Aviso>
             ) : null}
             {encabezado.tipo === 'listo' && encabezado.vinculos.length > 0 ? <AccesoPorArea vinculos={encabezado.vinculos} sePuedeLeer={lecturaSegun(panel)} /> : null}

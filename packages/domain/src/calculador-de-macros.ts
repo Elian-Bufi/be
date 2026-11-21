@@ -2,7 +2,8 @@
  * WP-OBJETIVO-Y-CALCULADOR (DL-186; pedido de Dirección del 2026-11-19) · El calculador de macros del profesional, sin
  * base ni pantalla: la misma cuenta la hace el website, en vivo, y la API, al guardarla con el objetivo.
  *
- * - **El gasto en reposo, con su método a la vista:** cinco ecuaciones publicadas, cada una con su fórmula, los datos que
+ * - **El gasto en reposo, con su método a la vista:** siete ecuaciones publicadas (ten Haaf y Weijs, 2014, en sus dos
+ *   variantes, desde RP-09 de DL-188), cada una con su fórmula, los datos que
  *   usa y su cita. Si falta un dato, el método dice cuál; si la persona queda fuera de la población de la ecuación, lo
  *   dice. Nunca inventa un dato ni elige un método por su cuenta (REG-06-157: BE no impone una fórmula).
  * - **El gasto total:** el de reposo por un factor de actividad que elige el profesional, con una variante para el día de
@@ -35,6 +36,8 @@ export interface FichaDelMetodoDeReposo {
   readonly necesita: readonly DatoDelCalculo[];
   /** Para qué población se publicó, en una línea. */
   readonly poblacion: string;
+  /** RP-09 (DL-188): para quién sirve, en pocas palabras, para el desplegable: «deportistas de 18 a 35 años». */
+  readonly paraQuien: string;
   readonly cita: string;
 }
 
@@ -44,6 +47,7 @@ export const FICHA_DEL_METODO_DE_REPOSO: Readonly<Record<MetodoDeReposo, FichaDe
     nombre: 'Mifflin-St Jeor (1990)',
     necesita: ['weightKg', 'heightCm', 'ageYears', 'sex'],
     poblacion: 'Adultos de 19 a 78 años, con peso habitual y con obesidad, medidos por calorimetría indirecta.',
+    paraQuien: 'adultos en general',
     cita: 'Mifflin MD, St Jeor ST, Hill LA, Scott BJ, Daugherty SA, Koh YO. A new predictive equation for resting energy expenditure in healthy individuals. Am J Clin Nutr. 1990;51(2):241-247. doi:10.1093/ajcn/51.2.241',
   },
   HARRIS_BENEDICT_REVISED: {
@@ -51,6 +55,7 @@ export const FICHA_DEL_METODO_DE_REPOSO: Readonly<Record<MetodoDeReposo, FichaDe
     nombre: 'Harris-Benedict revisada (Roza y Shizgal, 1984)',
     necesita: ['weightKg', 'heightCm', 'ageYears', 'sex'],
     poblacion: 'Adultos; los coeficientes de Harris y Benedict (1919) recalculados con sus datos y los de estudios posteriores.',
+    paraQuien: 'adultos en general',
     cita: 'Roza AM, Shizgal HM. The Harris Benedict equation reevaluated: resting energy requirements and the body cell mass. Am J Clin Nutr. 1984;40(1):168-182. doi:10.1093/ajcn/40.1.168',
   },
   FAO_WHO_UNU_1985: {
@@ -58,6 +63,7 @@ export const FICHA_DEL_METODO_DE_REPOSO: Readonly<Record<MetodoDeReposo, FichaDe
     nombre: 'FAO/OMS/UNU (1985), por peso y edad',
     necesita: ['weightKg', 'ageYears', 'sex'],
     poblacion: 'Ecuaciones de Schofield por sexo y franja de edad (18 a 29, 30 a 59 y 60 o más años); usan solo el peso.',
+    paraQuien: 'adultos, solo con el peso',
     cita: 'FAO/WHO/UNU. Energy and protein requirements. Report of a Joint FAO/WHO/UNU Expert Consultation. WHO Technical Report Series 724. Ginebra: OMS; 1985 (tabla 5).',
   },
   KATCH_MCARDLE: {
@@ -65,6 +71,7 @@ export const FICHA_DEL_METODO_DE_REPOSO: Readonly<Record<MetodoDeReposo, FichaDe
     nombre: 'Katch-McArdle',
     necesita: ['leanMassKg'],
     poblacion: 'Adultos; usa la masa libre de grasa, sin sexo ni edad. Depende de cómo se estimó la masa libre de grasa.',
+    paraQuien: 'adultos, con la masa libre de grasa',
     cita: 'Katch FI, McArdle WD. Nutrition, weight control, and exercise. Boston: Houghton Mifflin; 1977. McArdle WD, Katch FI, Katch VL. Exercise physiology: nutrition, energy, and human performance. 8.ª ed. Filadelfia: Wolters Kluwer; 2015.',
   },
   CUNNINGHAM_1980: {
@@ -72,7 +79,25 @@ export const FICHA_DEL_METODO_DE_REPOSO: Readonly<Record<MetodoDeReposo, FichaDe
     nombre: 'Cunningham (1980)',
     necesita: ['leanMassKg'],
     poblacion: 'Adultos, sobre los datos de Harris y Benedict; usa la masa libre de grasa. Suele usarse en personas que entrenan.',
+    paraQuien: 'personas que entrenan, con la masa libre de grasa',
     cita: 'Cunningham JJ. A reanalysis of the factors influencing basal metabolic rate in normal adults. Am J Clin Nutr. 1980;33(11):2372-2374. doi:10.1093/ajcn/33.11.2372',
+  },
+  // RP-09 (DL-188): los coeficientes, verificados en el artículo original (los resultados, «in kJ and kcal»), en kcal por día.
+  TEN_HAAF_2014_WEIGHT: {
+    metodo: 'TEN_HAAF_2014_WEIGHT',
+    nombre: 'ten Haaf y Weijs (2014), con el peso',
+    necesita: ['weightKg', 'heightCm', 'ageYears', 'sex'],
+    poblacion: 'Deportistas recreativos de 18 a 35 años (90 personas, 53 hombres y 37 mujeres, de los Países Bajos), medidos por calorimetría indirecta. Los autores la proponen para cuando no se puede medir la composición corporal.',
+    paraQuien: 'deportistas de 18 a 35 años',
+    cita: 'ten Haaf T, Weijs PJM. Resting energy expenditure prediction in recreational athletes of 18-35 years: confirmation of Cunningham equation and an improved weight-based alternative. PLoS One. 2014;9(10):e108460. doi:10.1371/journal.pone.0108460',
+  },
+  TEN_HAAF_2014_LEAN_MASS: {
+    metodo: 'TEN_HAAF_2014_LEAN_MASS',
+    nombre: 'ten Haaf y Weijs (2014), con la masa libre de grasa',
+    necesita: ['leanMassKg'],
+    poblacion: 'Deportistas recreativos de 18 a 35 años (90 personas, de los Países Bajos), con la masa libre de grasa medida por pletismografía. Depende de cómo se estimó la masa libre de grasa.',
+    paraQuien: 'deportistas, con la masa libre de grasa',
+    cita: 'ten Haaf T, Weijs PJM. Resting energy expenditure prediction in recreational athletes of 18-35 years: confirmation of Cunningham equation and an improved weight-based alternative. PLoS One. 2014;9(10):e108460. doi:10.1371/journal.pone.0108460',
   },
 };
 
@@ -117,9 +142,21 @@ const datosDe = (d: DatosUsados, sex: SexoDelCalculo | null): Datos => ({
   leanMassKg: d.leanMassKg?.value ?? null,
 });
 
-/** Un término de la ecuación: el coeficiente, su dato y cómo se lee. */
-type Termino = { readonly coef: number; readonly dato: 'weightKg' | 'heightCm' | 'ageYears' | 'leanMassKg' };
-const LETRA: Readonly<Record<Termino['dato'], string>> = { weightKg: 'peso (kg)', heightCm: 'talla (cm)', ageYears: 'edad (años)', leanMassKg: 'masa libre de grasa (kg)' };
+/**
+ * Un término de la ecuación: el coeficiente, su dato y cómo se lee. `heightM` es la talla en metros y `sexBinary`, el
+ * sexo como lo codifica ten Haaf (1 hombre, 0 mujer): salen de los datos, para escribir la ecuación como se publicó.
+ */
+type Termino = { readonly coef: number; readonly dato: 'weightKg' | 'heightCm' | 'heightM' | 'ageYears' | 'leanMassKg' | 'sexBinary' };
+const LETRA: Readonly<Record<Termino['dato'], string>> = {
+  weightKg: 'peso (kg)',
+  heightCm: 'talla (cm)',
+  heightM: 'talla (m)',
+  ageYears: 'edad (años)',
+  leanMassKg: 'masa libre de grasa (kg)',
+  sexBinary: 'sexo (1 hombre, 0 mujer)',
+};
+const valorDelTermino = (dato: Termino['dato'], d: Datos): number =>
+  dato === 'heightM' ? (d.heightCm as number) / 100 : dato === 'sexBinary' ? (d.sex === 'MALE' ? 1 : 0) : (d[dato] as number);
 
 /**
  * Una ecuación lineal: la constante y sus términos, escrita con letras y con números. Con `constanteAlFinal`, como la
@@ -127,12 +164,12 @@ const LETRA: Readonly<Record<Termino['dato'], string>> = { weightKg: 'peso (kg)'
  */
 function lineal(metodo: MetodoDeReposo, constante: number, terminos: readonly Termino[], d: Datos, constanteAlFinal = false): { readonly gasto: GastoEnReposo; readonly exacto: number | null } {
   const escribir = (conNumeros: boolean): string => {
-    const piezas: { valor: number; texto: string }[] = terminos.map((x) => ({ valor: x.coef, texto: `${n(Math.abs(x.coef))} × ${conNumeros ? n(d[x.dato] as number) : LETRA[x.dato]}` }));
+    const piezas: { valor: number; texto: string }[] = terminos.map((x) => ({ valor: x.coef, texto: `${n(Math.abs(x.coef))} × ${conNumeros ? n(valorDelTermino(x.dato, d)) : LETRA[x.dato]}` }));
     const c = { valor: constante, texto: n(Math.abs(constante)) };
     const orden = constante === 0 ? piezas : constanteAlFinal ? [...piezas, c] : [c, ...piezas];
     return orden.map((p, i) => (i === 0 ? `${p.valor < 0 ? '−' : ''}${p.texto}` : `${p.valor < 0 ? ' − ' : ' + '}${p.texto}`)).join('');
   };
-  const exacto = terminos.reduce((s, x) => s + x.coef * (d[x.dato] as number), constante);
+  const exacto = terminos.reduce((s, x) => s + x.coef * valorDelTermino(x.dato, d), constante);
   if (!(exacto > 0)) return { gasto: { state: 'OUT_OF_RANGE', method: metodo, reason: 'Con estos datos la ecuación da cero o menos: queda fuera de su dominio.' }, exacto: null };
   return { gasto: { state: 'CALCULATED', method: metodo, kcal: entero(exacto), equation: escribir(false), applied: `${escribir(true)} = ${numero(exacto, 1)}` }, exacto };
 }
@@ -184,7 +221,34 @@ function gastoEnReposoExacto(metodo: MetodoDeReposo, d: Datos): { readonly gasto
       return lineal(metodo, 370, [{ coef: 21.6, dato: 'leanMassKg' }], d);
     case 'CUNNINGHAM_1980':
       return lineal(metodo, 500, [{ coef: 22, dato: 'leanMassKg' }], d);
+    // ten Haaf y Weijs (2014), en kcal por día, con la constante al final, como se publicó.
+    case 'TEN_HAAF_2014_WEIGHT':
+      return lineal(
+        metodo,
+        29.279,
+        [
+          { coef: 11.936, dato: 'weightKg' },
+          { coef: 587.728, dato: 'heightM' },
+          { coef: -8.129, dato: 'ageYears' },
+          { coef: 191.027, dato: 'sexBinary' },
+        ],
+        d,
+        true,
+      );
+    case 'TEN_HAAF_2014_LEAN_MASS':
+      return lineal(metodo, 484.264, [{ coef: 22.771, dato: 'leanMassKg' }], d, true);
   }
+}
+
+/**
+ * RP-09 (DL-188): si la persona queda fuera de la población con que se publicó la ecuación, una nota en neutro; `null` si
+ * está dentro o si no se sabe. No bloquea: la ecuación se aplica igual, y el profesional decide.
+ */
+export function notaDeLaPoblacion(metodo: MetodoDeReposo, d: { readonly ageYears: number | null }): string | null {
+  if (metodo === 'TEN_HAAF_2014_WEIGHT' && d.ageYears !== null && d.ageYears > 35) {
+    return `La ecuación se publicó con deportistas de 18 a 35 años: con ${numero(d.ageYears, 0)} años, la persona queda fuera de esa franja.`;
+  }
+  return null;
 }
 
 /** El gasto en reposo con un método: calculado, con su fórmula y sus números; o lo que falta; o por qué no se aplica. */

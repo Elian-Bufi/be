@@ -8,10 +8,14 @@
  * - **Nunca pisa lo escrito sin confirmar:** por omisión completa solo lo que no tiene rango; reemplazar lo ya escrito es
  *   una casilla aparte, con la lista de lo que se reemplaza.
  * - Los rangos se guardan en gramos (los del día y los de cada comida), como cualquier rango escrito a mano.
+ * - **RP-06 (WP-RECORRIDO-PLAN-PULIDO, DL-188): el reparto por comida, en el plan.** Dejó de ser un cuadro aparte: es un
+ *   «Reparto por comida» a la vista en cada día tipo, con una parte del día por comida (la misma para las kcal y los tres
+ *   macros) que suma 100, y la opción de repartir cada macro por separado. Propone las kcal, P, C y G de cada comida.
  */
 import {
   MACROS_DE_LA_PROPUESTA,
   numero,
+  porcentajesQueSuman100,
   problemasDelReparto,
   propuestaDeRangos,
   repartoParejo,
@@ -83,6 +87,46 @@ export function repartoInicial(d: DiaDeLaPropuesta, modo: 'sugerido' | 'parejo' 
   const r = modo === 'parejo' ? repartoParejo(d.comidas.length) : repartoSugerido(d.comidas.map((c) => c.nombre));
   return { variante, comidas: Object.fromEntries(d.comidas.map((c, i) => [c.mealId, enTexto(r[i]!)])) };
 }
+
+/**
+ * RP-06: el punto de partida con una sola parte por comida (la misma para los tres macros): parejo, o sugerido por el
+ * nombre de cada comida (el promedio de lo que sugiere para cada macro, llevado a enteros que suman 100).
+ */
+export function repartoInicialUnico(d: DiaDeLaPropuesta, modo: 'sugerido' | 'parejo' = 'sugerido', variante: RepartoEscrito['variante'] = 'dia'): RepartoEscrito {
+  const porMacro = modo === 'parejo' ? repartoParejo(d.comidas.length) : repartoSugerido(d.comidas.map((c) => c.nombre));
+  const unicos = porcentajesQueSuman100(porMacro.map((r) => (r.protein + r.carbohydrate + r.fat) / 3));
+  return { variante, comidas: Object.fromEntries(d.comidas.map((c, i) => [c.mealId, enTexto({ protein: unicos[i]!, carbohydrate: unicos[i]!, fat: unicos[i]! })])) };
+}
+
+/** RP-06: la parte de una comida, si es la misma para los tres macros; `null` si se repartió cada macro por separado. */
+export function parteUnica(e: RepartoEscrito, mealId: string): string | null {
+  const c = e.comidas[mealId];
+  if (!c) return '';
+  return c.protein === c.carbohydrate && c.carbohydrate === c.fat ? c.protein : null;
+}
+
+/** RP-06: la misma parte para los tres macros de una comida. */
+export const conParteUnica = (e: RepartoEscrito, mealId: string, parte: string): RepartoEscrito => ({ ...e, comidas: { ...e.comidas, [mealId]: { protein: parte, carbohydrate: parte, fat: parte } } });
+
+/** RP-06: cuánto suman las partes escritas, por macro (con una parte única, las tres sumas son la misma). */
+export function sumaDeLasPartes(d: DiaDeLaPropuesta, e: RepartoEscrito): Readonly<Record<MacroDeLaPropuesta, number>> {
+  const r = reparto(d, e);
+  return Object.fromEntries(MACROS_DE_LA_PROPUESTA.map((m) => [m, r.reduce((s, x) => s + (Number.isFinite(x[m]) ? x[m] : 0), 0)])) as Record<MacroDeLaPropuesta, number>;
+}
+
+/**
+ * RP-06: la base de la parte de cada comida, en kcal: lo que suman los gramos del día, con 4, 4 y 9 kcal por gramo. La
+ * parte se aplica a los gramos de cada macro, y las kcal de cada comida salen de sus gramos (`kcalDelRango`): con un
+ * objetivo cuyos gramos no suman sus kcal (2.100 kcal escritas, gramos que suman 1.985), «46 % de las 2.100 kcal» al lado
+ * de 823 a 1.005 kcal se contradecía. El «%» va con esta base, que es la de la cuenta.
+ */
+export const kcalDeLosGramosDelDia = (g: GramosDelDia): number => 4 * g.protein + 4 * g.carbohydrate + 9 * g.fat;
+
+/** RP-06: las kcal de un rango propuesto, con 4, 4 y 9 kcal por gramo: lo menos y lo más. */
+export const kcalDelRango = (r: RangoPropuesto): { readonly min: number; readonly max: number } => ({
+  min: 4 * r.protein.min + 4 * r.carbohydrate.min + 9 * r.fat.min,
+  max: 4 * r.protein.max + 4 * r.carbohydrate.max + 9 * r.fat.max,
+});
 
 /** Lo escrito, como números; un campo que no se entiende cuenta como `NaN` y no deja proponer. */
 function reparto(d: DiaDeLaPropuesta, e: RepartoEscrito): RepartoDeUnaComida[] {
@@ -172,9 +216,22 @@ export const limitesEnPalabras = (x: { readonly min: number; readonly max: numbe
 export const NOMBRE_DEL_MACRO_DE_LA_PROPUESTA: Readonly<Record<MacroDeLaPropuesta, string>> = { protein: 'Proteínas', carbohydrate: 'Carbohidratos', fat: 'Grasas' };
 
 export const COPY_PROPUESTA = {
-  abrir: 'Proponer rangos desde el cálculo del objetivo',
-  titulo: 'Proponer rangos desde el cálculo del objetivo',
-  queEs: 'Una propuesta para los rangos de referencia del día y de cada comida, a partir del cálculo de macros del objetivo. Es una estimación: revisala y guardala. Después, cada receta u opción se ubica frente al rango de su comida.',
+  // RP-06 (DL-188): a la vista en cada día tipo, con este nombre.
+  titulo: 'Reparto por comida',
+  /** Revisión del PR: donde se ven los repartos de todos los días tipo, cada título dice de cuál es. */
+  tituloDelDia: (dia: string) => `Reparto por comida · ${dia}`,
+  queEs: 'Qué parte del objetivo del día lleva cada comida. Con eso, BE propone el rango de kcal y de cada macro de cada comida, para ubicar después cada receta u opción frente a él. Es una estimación: revisala y guardala.',
+  queEsNombre: 'Qué es el reparto por comida',
+  parte: 'Parte del día',
+  parteDe: (comida: string) => `Parte del día de ${comida}`,
+  porMacro: 'Repartir cada macro por separado',
+  suma: 'Suma',
+  /** El «%» de la parte de una comida, con su base: las kcal que suman los gramos del día (`kcalDeLosGramosDelDia`). */
+  deLasKcal: (kcal: number) => `% de las ${numero(kcal, 0)} kcal`,
+  sumaDeLasPartes: (suma: number, kcal: number) => `Suma: ${numero(suma, 1)} % de las ${numero(kcal, 0)} kcal que suman los gramos del día`,
+  proponer: 'Proponer estos rangos',
+  sinGuardar: 'Las comidas nuevas reciben su parte cuando se guarda el plan.',
+  sinDiaGuardado: 'Guardá el plan para repartir las comidas de este día tipo.',
   sinFuente: 'El objetivo vigente no tiene un cálculo con macros ni gramos por día para proponer. Escribí una versión nueva del objetivo con el calculador.',
   tolerancia: 'Margen alrededor de cada número (± %)',
   toleranciaAyuda: (g: number, min: number, max: number) => `Por ejemplo, con 10, ${numero(g, 0)} g de proteínas dan un rango de ${numero(min, 0)} a ${numero(max, 0)} g.`,
@@ -183,6 +240,7 @@ export const COPY_PROPUESTA = {
   sugerido: 'Sugerido por el nombre de cada comida',
   sugeridoAyuda: 'Un punto de partida: más carbohidratos en el desayuno y el almuerzo; la merienda, con más proteína y grasa. Cambialo a tu criterio.',
   noSuma: (macro: string, suma: number) => `${macro}: las partes suman ${numero(suma, 1)} de 100. Ajustalas para proponer.`,
+  noSumaUnica: (suma: number) => `Las partes suman ${numero(suma, 1)} de 100. Ajustalas para proponer.`,
   reemplazar: (n: number) => `Reemplazar también los ${n} rangos que ya escribiste`,
   reemplazarUno: 'Reemplazar también el rango que ya escribiste',
   seConservan: (lista: string) => `Se conservan como están: ${lista}.`,
@@ -191,6 +249,7 @@ export const COPY_PROPUESTA = {
   guardando: 'Guardando…',
   nadaQueGuardar: 'No hay nada nuevo para guardar: todo ya tiene un rango escrito.',
   guardado: (n: number) => (n === 1 ? 'Se guardó 1 rango de la propuesta.' : `Se guardaron ${n} rangos de la propuesta.`),
-  sinComidasGuardadas: 'Este día tipo todavía no tiene comidas guardadas: se propone solo el rango del día.',
+  // Revisión del PR: sin comidas no hay nada que repartir, y el reparto no propone el rango del día solo (antes decía que sí).
+  sinComidasGuardadas: 'Este día tipo todavía no tiene comidas: agregalas y guardá el plan para repartir el día entre ellas.',
   activada: 'La versión está activada: sus rangos quedan como se activaron.',
 } as const;
