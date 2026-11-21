@@ -20885,8 +20885,15 @@ html:has(.estacion:not([data-en-el-asistente])) {
 .evaluacion-inicial__bloques {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(19rem, 1fr));
+  /* Cada bloque con su alto: «Lo que contó» suele ser el más largo, y los otros no se estiran en vacío. */
+  align-items: start;
   gap: 1rem;
   margin: 0.75rem 0 1rem;
+}
+@media (min-width: 80rem) {
+  .evaluacion-inicial__bloques {
+    grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, 1.1fr);
+  }
 }
 .bloque-de-la-evaluacion {
   border: 1px solid var(--borde);
