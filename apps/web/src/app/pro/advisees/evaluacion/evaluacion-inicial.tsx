@@ -30,13 +30,13 @@ import {
   type Plantilla,
   type TomaDeReferencia,
 } from '@be/domain';
-import { useCallback, useEffect, useId, useState } from 'react';
+import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { Enlace } from '../../../../components/enlace';
 import { Aviso, Campo } from '../../../../components/formulario';
 import { Icono } from '../../../../components/icono';
 import { api, nuevaClaveDeIdempotencia, type Resultado } from '../../../../lib/api';
 import { dia, diaCivil, diaSinElAnioEnCurso, diaYMesCivil, horaDelDia } from '../../../../lib/formato';
-import { mensajeDeFallo } from '../../../../lib/intento';
+import { esIncierto, mensajeDeFallo } from '../../../../lib/intento';
 import { useSesion } from '../../../../lib/sesion';
 import { usePersonaDelArea } from '../marco-del-area';
 import { CargarLaSolicitud } from '../forms/cargar';
@@ -343,7 +343,7 @@ function LoQueContoListo({ nombre, datos, onCompletar, pedirHref, deshabilitado 
 
 // ─── RP-12 · «Lo medido» ────────────────────────────────────────────────────────────────────────
 
-export function LoMedido({ lectura, asesoradoId }: { lectura: Lectura<LoMedidoLeido>; asesoradoId: string }) {
+export function LoMedido({ lectura, asesoradoId, onReleer }: { lectura: Lectura<LoMedidoLeido>; asesoradoId: string; onReleer: () => void }) {
   const toma = lectura.estado === 'listo' ? lectura.datos.toma : null;
   const partes = toma
     ? [
@@ -359,7 +359,16 @@ export function LoMedido({ lectura, asesoradoId }: { lectura: Lectura<LoMedidoLe
         {EI.loMedido}
       </h4>
       {lectura.estado === 'leyendo' ? <p className="nota">{EI.leyendo}</p> : null}
-      {lectura.estado === 'error' || (lectura.estado === 'listo' && !toma) ? <p className="nota" data-sin-toma>{EI.sinToma}</p> : null}
+      {/* Una lectura que falla se dice como falla, nunca como «sin tomas»: si no, se registra sin el peso que había. */}
+      {lectura.estado === 'error' ? (
+        <p className="nota" data-toma-sin-leer>
+          {EI.noSePudoLeerLaToma}{' '}
+          <button type="button" className="boton boton--enlace" onClick={onReleer}>
+            {EI.volverALeer}
+          </button>
+        </p>
+      ) : null}
+      {lectura.estado === 'listo' && !toma ? <p className="nota" data-sin-toma>{EI.sinToma}</p> : null}
       {toma ? (
         <>
           <p className="nota">{EI.toma(diaCorto(toma.measuredOn))}</p>
@@ -610,7 +619,10 @@ export function CompletarAhora({
         }
         const proposito = p.key === claveDelArea ? propositoAlElegir('', null, p.key).proposito : p.key === CLAVE_DEL_FORMULARIO_DE_HABITOS ? COPY_HABITOS.web.propositoDelFormulario : '';
         const cuerpo = pedidoParaCompletar(v.datos.data, alcance, proposito || EI.propositoGenerico(ETIQUETA_DE_ALCANCE[alcance]));
-        const r = await api.crearSolicitudDeFormulario(token, asesoradoId, cuerpo, nuevaClaveDeIdempotencia());
+        // Un resultado incierto se reintenta una vez con la misma clave, como en «Pedir información»: no duplica el pedido.
+        const clave = nuevaClaveDeIdempotencia();
+        let r = await api.crearSolicitudDeFormulario(token, asesoradoId, cuerpo, clave);
+        if (esIncierto(r)) r = await api.crearSolicitudDeFormulario(token, asesoradoId, cuerpo, clave);
         if (sesionPerdida(r)) return;
         if (r.ok) cola.push({ id: r.datos.data.formRequestId, nombre: p.name });
         else malas.push(EI.noSePudoPreparar(p.name, mensajeDeFallo(r)));
@@ -622,11 +634,13 @@ export function CompletarAhora({
     [token, asesoradoId, sesionPerdida, alcance, claveDelArea],
   );
 
-  // Sin pendientes: el catálogo y lo que sabe de los hábitos (API-FRM-01 y API-HBT-07), para saber qué crear.
-  const [leido, setLeido] = useState(false);
+  // Sin pendientes: el catálogo y lo que sabe de los hábitos (API-FRM-01 y API-HBT-07), para saber qué crear. Una sola vez
+  // por apertura, con una referencia y no un estado: con el modo estricto de React el efecto corre dos veces al montarse, y
+  // con un estado las dos veían «sin leer» y pedían todo dos veces.
+  const leido = useRef(false);
   useEffect(() => {
-    if (estado.tipo !== 'leyendo' || leido) return;
-    setLeido(true);
+    if (estado.tipo !== 'leyendo' || leido.current) return;
+    leido.current = true;
     void (async () => {
       const [catalogo, habitos, pedidas] = await Promise.all([
         api.listarPlantillasDeFormulario(token),
@@ -643,7 +657,7 @@ export function CompletarAhora({
       if (r.paraTildar.length === 0) return void crear(r.fijos);
       setEstado({ tipo: 'eligiendo', fijos: r.fijos, paraTildar: r.paraTildar });
     })();
-  }, [estado.tipo, leido, token, asesoradoId, sesionPerdida, alcance, claveDelArea, crear]);
+  }, [estado.tipo, token, asesoradoId, sesionPerdida, alcance, claveDelArea, crear]);
 
   if (estado.tipo === 'leyendo' || estado.tipo === 'creando') return <p className="nota" role="status">{EI.preparando}</p>;
   if (estado.tipo === 'falla') {

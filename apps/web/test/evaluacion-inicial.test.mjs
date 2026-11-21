@@ -153,6 +153,13 @@ test('TEST-EVI-023 · lo que se registra sale del dominio y lo que se vincula es
   assert.match(EVALUACION_DE_NUTRICION, /await vincularAlRegistrar\(token, 'nutrition', r\.datos\.data\.evaluationId, vinculos\);/);
   // Sin ningún dato, no se registra: se dice.
   assert.match(EVALUACION_DE_NUTRICION, /if \(entries\.length === 0\) return setFallo\(EI\.nadaParaRegistrar\);/);
+  // Revisión del PR: mientras se lee lo que contó o lo medido no se registra (saldría sin vínculos ni datos del cálculo).
+  assert.match(EVALUACION_DE_NUTRICION, /const leyendo = lecturas\.conto\.estado === 'leyendo' \|\| lecturas\.medido\.estado === 'leyendo';/);
+  assert.match(EVALUACION_DE_NUTRICION, /if \(leyendo\) return setFallo\(EI\.esperandoLasLecturas\);\n\s*const problemas = avisos\.alEnviar\(\);/);
+  // Y una lectura de las tomas que falla se dice como falla, no como «sin tomas».
+  assert.match(PIEZAS, /lectura\.estado === 'error' \? \(\n\s*<p className="nota" data-toma-sin-leer>/);
+  assert.match(PIEZAS, /\{lectura\.estado === 'listo' && !toma \? <p className="nota" data-sin-toma>\{EI\.sinToma\}<\/p> : null\}/);
+  assert.match(EVALUACION_DE_NUTRICION, /<LoMedido lectura=\{lecturas\.medido\} asesoradoId=\{asesoradoId\} onReleer=\{lecturas\.releer\} \/>/);
 });
 
 test('TEST-EVI-024 · «Completarlo ahora»: el del área y «Tus hábitos» de un clic, lo demás para tildar', () => {
@@ -180,6 +187,10 @@ test('TEST-EVI-024 · «Completarlo ahora»: el del área y «Tus hábitos» de 
   assert.equal(cuerpo.purpose, 'Para tu plan');
   assert.ok(!cuerpo.requestedFieldCodes.includes('nut_embarazo'), 'el embarazo no viene pedido (DL-165 D-4)');
   assert.ok(cuerpo.requiredFieldCodes.every((c) => cuerpo.requestedFieldCodes.includes(c)), 'obligatorias ⊆ pedidas');
+  // Revisión del PR: se lee y se crea una sola vez por apertura (una referencia, no un estado: el modo estricto corre el
+  // efecto dos veces), y un resultado incierto se reintenta con la misma clave, sin duplicar el pedido.
+  assert.match(PIEZAS, /const leido = useRef\(false\);\n\s*useEffect\(\(\) => \{\n\s*if \(estado\.tipo !== 'leyendo' \|\| leido\.current\) return;\n\s*leido\.current = true;/);
+  assert.match(PIEZAS, /const clave = nuevaClaveDeIdempotencia\(\);\n\s*let r = await api\.crearSolicitudDeFormulario\(token, asesoradoId, cuerpo, clave\);\n\s*if \(esIncierto\(r\)\) r = await api\.crearSolicitudDeFormulario\(token, asesoradoId, cuerpo, clave\);/);
   // «Cargar con la persona» se abre ahí mismo, y al terminar vuelve a la evaluación y vuelve a leer.
   assert.match(PIEZAS, /<CargarLaSolicitud\n\s*key=\{actual\.id\}/);
   assert.match(PIEZAS, /textoDeVolver=\{EI\.volverALaEvaluacion\}/);

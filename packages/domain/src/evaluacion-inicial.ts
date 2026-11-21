@@ -447,6 +447,8 @@ export const COPY_EVALUACION_INICIAL = {
   toma: (dia: string): string => `Toma del ${dia}`,
   verToma: 'Ver toma',
   sinToma: 'Sin tomas de Antropometría que puedas usar para el cálculo.',
+  noSePudoLeerLaToma: 'No pudimos leer las tomas de Antropometría.',
+  esperandoLasLecturas: 'Esperá a que terminen de leerse lo que contó y lo medido: se registran con la evaluación.',
   pesoTallaEdad: { peso: 'Peso', talla: 'Talla', edad: 'Edad' },
   // Lo que necesita el cálculo
   ayudaDelCalculo: 'Con esto arranca el calculador del objetivo. Si cambiás un dato, queda como cargado por vos.',

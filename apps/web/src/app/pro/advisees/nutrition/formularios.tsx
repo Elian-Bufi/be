@@ -133,6 +133,9 @@ export function FormularioDeEvaluacion({ onRegistrada, onCancelar = null, conTit
 
   const conto = lecturas.conto.estado === 'listo' ? lecturas.conto.datos : null;
   const toma = lecturas.medido.estado === 'listo' ? lecturas.medido.datos.toma : null;
+  // Revisión del PR: mientras se lee lo que contó o lo medido (al abrir, o al volver de «Completarlo ahora»), no se registra:
+  // saldría sin los formularios vinculados ni los datos del cálculo que la pantalla muestra un momento después.
+  const leyendo = lecturas.conto.estado === 'leyendo' || lecturas.medido.estado === 'leyendo';
   const candidatos = useMemo(() => (conto ? candidatosDeLasRespuestas(fuentesDeLoQueConto(conto)) : []), [conto]);
   const delCalculo = useMemo(() => loQueNecesitaElCalculo({ toma, candidatos, cambiados }), [toma, candidatos, cambiados]);
   // DL-185 (EVF): lo que muestra «Lo que contó» se vincula al registrar, con la versión que se vio (EI-D05).
@@ -156,8 +159,15 @@ export function FormularioDeEvaluacion({ onRegistrada, onCancelar = null, conTit
     return problemas;
   }
 
+  // Lo que se dijo por esperar las lecturas deja de decirse cuando terminan.
+  useEffect(() => {
+    if (!leyendo) setFallo((f) => (f === EI.esperandoLasLecturas ? null : f));
+  }, [leyendo]);
+
   async function enviar(e: FormEvent) {
     e.preventDefault();
+    if (enviando) return;
+    if (leyendo) return setFallo(EI.esperandoLasLecturas);
     const problemas = avisos.alEnviar();
     if (problemas.length > 0) return;
     // Sin cambiar la fecha, la del registro; el reintento de un resultado incierto manda la misma.
@@ -260,7 +270,7 @@ export function FormularioDeEvaluacion({ onRegistrada, onCancelar = null, conTit
           pedirHref={pedirHref}
           deshabilitado={enviando}
         />
-        <LoMedido lectura={lecturas.medido} asesoradoId={asesoradoId} />
+        <LoMedido lectura={lecturas.medido} asesoradoId={asesoradoId} onReleer={lecturas.releer} />
         <LoQueNecesitaElCalculo
           datos={delCalculo}
           nombre={nombre}
