@@ -187,6 +187,7 @@
 | DL-185 | Pedido de Dirección · 2026-11-19 («En la evaluación inicial: poder vincular los formularios que la persona ya respondió») | RF-026 · RF-036 · RF-071 · REG-06-97 · 06 §4.4 · 08 §11 y §19.7 · DL-057 · DL-102 · DL-137 D-7 · DL-145 · DL-152 · DL-179 (CTX-D09, CTX-D10) | La evaluación inicial solo podía citar respuestas sueltas; no había forma de dejar constancia de qué formularios de la persona se usaron, ni de saber si ella los corrigió después | **PROGRAMADA en `wp-evaluacion-y-formularios` (PR en borrador, sin integrar) · EVF-D01 a EVF-D13 a ratificar**: la familia EVF (API-EVF-01 a 04), una tabla que solo agrega, y el website en «Empezar el plan» y en Resumen de Nutrición y de Entrenamiento. Por referencia, nunca por copia; la persona no ve nada nuevo. Detalle: `docs/paquetes/WP-EVALUACION-Y-FORMULARIOS.md` |
 | DL-186 | Pedido de Dirección · 2026-11-19 (el objetivo con una toma de Antropometría de referencia y el calculador de macros) | REG-06-123 · INV-06-133 · B05:312-318 · REG-06-157 · REG-06-205 · RNF-PRI-002 · DL-111 · DL-163 (D-17, TB-39) · DL-176 · la decisión de Dirección del 2026-11-13 («Último peso, guardado en gramos») · DL-185 (en paralelo) | El objetivo no se relacionaba con ninguna toma; el profesional calculaba el gasto y los macros fuera de BE y los copiaba; el texto del objetivo decía «BE no calcula requerimientos»; los rangos de cada comida se escribían uno por uno | **PROGRAMADA en `wp-objetivo-y-calculador` (PR en borrador, sin integrar) · OBC-D01 a OBC-D17 a ratificar**: el calculador en «Nueva versión de objetivo» (cinco métodos del gasto en reposo con su fórmula, sus datos y su cita; el factor, con otro para el día de descanso; el ajuste; los macros en g/kg con los carbohidratos por diferencia); el objetivo guardado con su toma y su cálculo (familia propia OBC, API-OBC-01 a 03, una migración que solo agrega), con el aviso de una toma más nueva; la propuesta de rangos por día y por comida, volcada por API-PLN-03 sin pisar lo escrito. Detalle: `docs/paquetes/WP-OBJETIVO-Y-CALCULADOR.md` |
 | DL-187 | Pedido de Dirección · 2026-11-20 (los gráficos por período corto o por versión del plan, la franja de lo indicado y lo indicado frente a lo hecho del volumen) | DL-174 · DL-181 · DL-122 · DL-178 · TB-16 (DL-163 D-7) · 09v10:356 · 09v10:1285-1295 · B10-06 (la lista de términos de Entrenamiento) · B05 | El historial del ejercicio ofrecía 12 semanas, 6 meses o desde el vínculo; la ficha, 7, 30 y 90 días o un año; ningún gráfico elegía una versión del plan; el rango de repeticiones indicado no se dibujaba; BE no calculaba volumen y la palabra estaba prohibida en pantalla; «Patrones» tomaba siempre el ejercicio más registrado | **PROGRAMADA en `wp-graficos-por-fase` (PR en borrador, sin integrar) · GPF-D01 a GPF-D13 a ratificar**: un solo selector de período en los gráficos (4 y 12 semanas, 6 meses, un año, desde que la acompañás, a medida y por versión del plan con «La anterior» y «La siguiente»); la franja de lo indicado en GR-03; series y carga × repeticiones indicadas y hechas por sesión o semana (en el historial y en «Armá tu gráfico»), con una convención declarada; el ejercicio elegible en «Patrones». Sin operaciones nuevas en la API. Detalle: `docs/paquetes/WP-GRAFICOS-POR-FASE.md` |
+| DL-189 | Pedido de Dirección · 2026-11-21 (la evaluación inicial «no le cierra»: un pantallazo del caso en lugar de la planilla) | RF-026 · RF-036 · RF-071 · REG-06-97 · REG-06-109 · DL-048 · DL-145 · DL-146 · DL-164 (D-3, D-4, D-6) · DL-165 (D-1, D-7) · DL-169 · DL-173 · DL-185 · DL-186 · Ley 26.529 art. 14 | La evaluación inicial era una planilla de «Concepto / Valor / Unidad / Fuente» con pastillas y el texto «BE no calcula»; los tres pasos de «Empezar el plan» ocupaban media pantalla; la fecha se escribía a mano; «Cargar con la persona» solo se abría desde una solicitud ya enviada y traía todas las preguntas a la vez | **PROGRAMADA en `wp-evaluacion-inicial-2` (PR en borrador, sin integrar) · EI-D01 a EI-D16 a ratificar**: la franja de los pasos, la fecha automática, la evaluación de Nutrición en tres bloques («Lo que contó», «Lo medido», «Lo que necesita el cálculo»), «Anotaciones» privadas, «Completarlo ahora con la persona» y lo crítico primero. Sin operaciones nuevas en la API ni cambios en la APK. Detalle: `docs/paquetes/WP-EVALUACION-INICIAL-2.md` |
 
 ---
 
@@ -9012,3 +9013,40 @@ panel en «Armá tu gráfico», con el par «Indicado y hecho» en un clic; lo c
 guardadas con 4 o 12 semanas, 6 meses o «Desde que la acompañás» siguen siendo relativas (extensión aditiva del contrato
 de API-VAN, sin migración); un solo redondeo en el rótulo de un punto; y las versiones del año, pedidas una vez en
 «Analizar». Detalle: §5 del paquete.
+
+## DL-189 — La evaluación inicial como pantallazo del caso
+
+**Prioridad:** alta (Dirección recorrió «Empezar el plan» de Nutrición y la evaluación «no le cierra») · RF-026 · RF-036 ·
+RF-071 · REG-06-97 · REG-06-109 · DL-048 · DL-145 · DL-146 · DL-164 · DL-165 · DL-169 · DL-173 · DL-185 · DL-186 ·
+**Estado:** PEDIDO por Dirección el 2026-11-21, con el rediseño ratificado · PROGRAMADA en `wp-evaluacion-inicial-2` (PR
+en borrador, sin integrar) · EI-D01 a EI-D16, **a ratificar**. Si al integrar el número choca con otro paquete, se
+renumera.
+
+**Qué pidió Dirección.** Que la evaluación inicial sea un pantallazo de lo fundamental del caso y no una planilla: lo que
+contó la persona, lo medido y lo que necesita el cálculo, con el origen y la fecha de cada dato; los pasos de «Empezar el
+plan» en una franja; la fecha automática; un espacio de anotaciones privado; completar el formulario con la persona en
+un clic, primero lo crítico; y que se vea lo que la persona corrigió.
+
+**Qué dice el legajo.** La evaluación registra cada dato con su fuente (REG-06-109; DL-048) y un dato calculado declara su
+método; la evaluación es un hecho que no se sobrescribe (REG-06-97). Lo cargado por el profesional es una transcripción
+que la persona confirma, y lo no confirmado se borra (DL-164 D-4 y D-6).
+
+**Cómo se lo cumple sin romperlo.** La forma de la evaluación no cambia: los tres bloques arman, al registrar, los mismos
+datos con su fuente (la toma, observado; lo demás, informado) y su procedencia en `evidenceReferences`; los formularios se
+vinculan por referencia (EVF, DL-185), sin copiar respuestas. «BE no calcula» deja de ser cierto desde DL-186 (el
+calculador, con su método a la vista): sale de la pantalla. «Anotaciones» es el campo de notas del profesional de la
+evaluación, que ninguna lectura de la persona devuelve. No se edita el legajo.
+
+**Lo programado.** Dominio: `evaluacion-inicial.ts` (los campos críticos por plantilla, lo que necesita el cálculo, lo que
+se registra, el punto de unión con el calculador y la corrección), con TEST-EVI-001 a 006. Website: la franja, la fecha, los
+tres bloques, «Completarlo ahora» y «Cargar con la persona» con lo crítico primero, con TEST-EVI-020 a 026. Integración:
+TEST-EVI-010 (las anotaciones no llegan a la persona). Sin migraciones, sin operaciones nuevas en la API y sin APK nueva:
+la APK ya deja completar lo que falta al confirmar una propuesta parcial.
+
+**Lo que queda.**
+- Ratificar EI-D01 a EI-D16 y la lista de campos críticos.
+- Que el calculador arranque con lo que registró la evaluación (`datosDelCalculoEnLaEvaluacion`; frente del objetivo).
+- Los tres bloques en Entrenamiento.
+- **Pendiente legal:** por la Ley 26.529 la persona es titular de su historia clínica; si la evaluación y sus anotaciones
+  entran en lo que puede pedir (hoy la exportación no trae las evaluaciones), lo revisa el abogado. Detalle completo:
+  `docs/paquetes/WP-EVALUACION-INICIAL-2.md`.
