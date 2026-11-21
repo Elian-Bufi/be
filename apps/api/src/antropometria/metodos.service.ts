@@ -55,6 +55,34 @@ export class MetodosService {
     });
   }
 
+  // ─── API-MHA-01 · el método habitual (RP-18, DL-190) ───────────────────────────────────────
+  /**
+   * Los métodos con los que el profesional calculó en su última toma, con cualquier persona: la toma suya registrada más
+   * recientemente en la que tiene una corrida propia. Es lo que viene elegido al empezar una toma nueva, sin guardar una
+   * preferencia aparte. Devuelve solo la identidad estable de cada método (la especificación), en el orden en que calculó:
+   * nada de la persona ni de la toma. Como API-MTH-01, la autorización es la capacidad antropométrica: no hay titular.
+   */
+  habituales(actor: ActorAutenticado, ctx: ContextoDeSolicitud): Promise<unknown> {
+    return this.ejecutor.leer({
+      operacion: 'API-MHA-01',
+      casoDeUso: 'UC-I09',
+      actor,
+      ctx,
+      recursoIntentado: null,
+      lectura: async (tx: Prisma.TransactionClient) => {
+        await exigirCapacidadAntropometrica(tx, actor.identidadId);
+        const propias = { autorId: actor.identidadId };
+        const ultima = await tx.evaluacionAntropometrica.findFirst({
+          where: { profesionalId: actor.identidadId, ejecuciones: { some: propias } },
+          orderBy: [{ momentoDeRegistro: 'desc' }, { id: 'desc' }],
+          select: { ejecuciones: { where: propias, orderBy: [{ momentoDeRegistro: 'asc' }, { id: 'asc' }], select: { metodoVersion: { select: { especificacionId: true } } } } },
+        });
+        const methodIds = [...new Set((ultima?.ejecuciones ?? []).map((e) => e.metodoVersion.especificacionId))];
+        return { data: { methodIds } };
+      },
+    });
+  }
+
   // ─── API-MTH-02 · consultar la versión exacta ──────────────────────────────────────────────
   /**
    * Devuelve la versión pedida, sea seleccionable o histórica: una corrida que la cita tiene que poder explicarse.

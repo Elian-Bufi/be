@@ -162,6 +162,13 @@ FAMILIAS_DE_BE.EVF = 'DL-185';
  * a otra familia que se sume en paralelo.
  */
 FAMILIAS_DE_BE.OBC = 'DL-186';
+/**
+ * MHA (DL-190, WP-ANTROPOMETRIA-METODO-Y-KERR; decisión de Dirección del 2026-11-21): el método habitual del profesional, el
+ * que usó para calcular en su última toma con cualquier persona, para que venga elegido al empezar una toma (RP-18). El 09
+ * no la tiene, y no es MTH (el catálogo, que no mira la práctica de nadie) ni CAL (las corridas de una persona). Se declara
+ * aparte para que se integre sin pisar a otra familia que se sume en paralelo.
+ */
+FAMILIAS_DE_BE.MHA = 'DL-190';
 
 test('el inventario del 09 tiene 122 operaciones y de cada una se lee su ruta', () => {
   assert.equal(inventario.size, 122);
@@ -194,6 +201,13 @@ test('un ID fuera del inventario es una extensión declarada de BE y cita su fue
     if (!declarada || !op.fuente || !op.fuente.trim()) sinDeclarar.push(op.id);
   }
   assert.deepEqual(sinDeclarar, [], `extensiones sin declarar: ${sinDeclarar.join(', ')}`);
+});
+
+test('RP-18 · la familia MHA es la lectura del método habitual, cita DL-190 y el 09 no la usa', () => {
+  const mha = OPERACIONES.filter((o) => o.id.startsWith('API-MHA-'));
+  assert.deepEqual(mha.map((o) => [o.id, o.metodo, o.ruta]), [['API-MHA-01', 'get', '/professional-methods/usual']]);
+  for (const o of mha) assert.ok(o.fuente.includes('DL-190'), `${o.id} no cita DL-190`);
+  assert.deepEqual([...del09.keys()].filter((id) => id.startsWith('API-MHA-')), []);
 });
 
 test('ningún ID de operación se repite', () => {

@@ -161,3 +161,16 @@ export const ReferenciaSchema = z.strictObject({
 export type ReferenciaApi = z.infer<typeof ReferenciaSchema>;
 
 export const ReferenciaResponseSchema = z.strictObject({ data: ReferenciaSchema });
+
+// ─── API-MHA-01 · el método habitual del profesional (RP-18, DL-190) ────────────────────────────
+
+/**
+ * Los métodos con los que el profesional calculó en su última toma, con cualquier persona: los que vienen elegidos al
+ * empezar una toma nueva (RP-18). Es la identidad estable del método (`methodId`, la especificación), no la versión: si
+ * el método tiene una versión nueva, se elige la vigente. Vacío si nunca calculó. No dice de qué persona ni de qué toma
+ * salen: son metadatos de su propia práctica, no datos de nadie (DL-190, AK-D07).
+ */
+export const MetodosHabitualesResponseSchema = z.strictObject({
+  data: z.strictObject({ methodIds: z.array(IdOpaco).max(60) }),
+});
+export type MetodosHabitualesApi = z.infer<typeof MetodosHabitualesResponseSchema>['data'];

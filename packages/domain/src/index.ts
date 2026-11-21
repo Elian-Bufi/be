@@ -46,6 +46,8 @@ export * from './calculo';
 export * from './formulas-antropometricas';
 export * from './contratos-calculo';
 export * from './seleccion-de-metodo';
+export * from './metodos-de-la-toma';
+export * from './fraccionamiento-de-kerr';
 export * from './nombres-de-metricas';
 export * from './resumen-de-la-toma';
 export * from './formularios';

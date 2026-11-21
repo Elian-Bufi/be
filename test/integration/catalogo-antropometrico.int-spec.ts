@@ -183,4 +183,24 @@ describe('DL-111 · el catálogo antropométrico de BE', () => {
     const vigentes = await pro.get('/api/v1/anthropometry/specifications?kind=METHOD&limit=50').expect(200);
     expect(vigentes.body.data.map((e: { versionId: string }) => e.versionId)).not.toContain(version);
   });
+
+  it('RP-18 (DL-190) · API-MHA-01: vienen elegidos los métodos de la última toma en la que el profesional calculó', async () => {
+    const pro = conSesion(app, c.pro.token);
+    const metodos = await metodosDeBE();
+    // La toma del cálculo completo: sus métodos, sin repetir. La de los retirados no tiene corridas: no cuenta.
+    const antes = await pro.get('/api/v1/professional-methods/usual').expect(200);
+    expect(new Set(antes.body.data.methodIds)).toEqual(new Set(metodos.map((m) => m.methodId)));
+    // Una toma más nueva con un solo cálculo: viene elegido ese, por su método y no por su versión.
+    const toma = await tomaRegistrada(new Date(Date.now() - 86_400_000).toISOString());
+    const imc = metodos.find((m) => m.key === 'MET-IMC')!;
+    const asignacion = asignacionAutomatica(datosDelMetodo(imc, toma.measurements));
+    await pro
+      .post(`/api/v1/advisees/${c.ase.id}/calculations`, claveDeIdempotencia())
+      .send({ purpose: 'ANTHROPOMETRIC_SUPPORT', methodVersionId: imc.methodVersionId, inputBindings: Object.entries(asignacion).map(([inputCode, sourceRef]) => ({ inputCode, sourceRef })) })
+      .expect(201);
+    const despues = await pro.get('/api/v1/professional-methods/usual').expect(200);
+    expect(despues.body.data).toEqual({ methodIds: [imc.methodId] });
+    // El asesorado no lo consulta: son metadatos de la práctica del profesional.
+    await conSesion(app, c.ase.token).get('/api/v1/professional-methods/usual').expect(403);
+  });
 });
