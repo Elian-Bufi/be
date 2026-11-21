@@ -35,6 +35,18 @@ async function elemento(p, selector, texto = null, timeout = ESPERA) {
   return h.asElement();
 }
 
+/**
+ * RP-01 (DL-188): la ficha y las áreas ya no tienen «Actualizar»; vuelven a leer al volver a la pestaña del navegador, si
+ * pasaron 15 segundos desde la última lectura. Se simula la vuelta: la página ve la pestaña visible otra vez.
+ */
+async function volverALaPestana(p) {
+  await pausa(16_000);
+  await p.evaluate(() => {
+    Object.defineProperty(document, 'visibilityState', { configurable: true, get: () => 'visible' });
+    document.dispatchEvent(new Event('visibilitychange'));
+  });
+}
+
 /** Un clic de verdad (el mouse va al centro del elemento), no un `click()` de JavaScript. */
 async function clic(p, selector, texto = null) {
   const e = await elemento(p, selector, texto);
@@ -182,14 +194,17 @@ async function sesion({ contexto, p, d }) {
   await p.waitForFunction((n) => document.querySelector('#titulo-asesorado')?.textContent?.includes(n), { timeout: ESPERA }, d.ase.nombre);
 }
 
-/** DL-146 y bloque 5: la pista de «Actualizar» con mouse, teclado, Escape, bordes, zoom, tacto y árbol de accesibilidad. */
+/**
+ * DL-146 y bloque 5: la pista con mouse, teclado, Escape, bordes, zoom, tacto y árbol de accesibilidad. Desde RP-01 (DL-188)
+ * el encabezado no tiene «Actualizar»: se prueba con la pista de «Pedir información», en el mismo renglón.
+ */
 async function pistas({ contexto, p, d, salida }) {
-  const TEXTO = dominio.COPY_PISTAS.ficha.actualizar;
+  const TEXTO = dominio.COPY_PISTAS.ficha.pedirInformacion;
   await entrar(p, d.pro.correo);
   await abrirFicha(p, d.ase.nombre);
-  const BOTON = '.ficha__consulta .pista > button';
-  const GLOBO = '.ficha__consulta .pista__globo';
-  const boton = await elemento(p, BOTON, 'Actualizar');
+  const BOTON = '.marco-de-la-ficha .pista > button[data-pedir-informacion]';
+  const GLOBO = '.marco-de-la-ficha .pista:has(> button[data-pedir-informacion]) .pista__globo';
+  const boton = await elemento(p, BOTON, 'Pedir información');
   const visible = () => p.$eval(GLOBO, (g) => !g.hidden && getComputedStyle(g).visibility !== 'hidden');
   const cajas = () =>
     p.evaluate(
@@ -208,9 +223,9 @@ async function pistas({ contexto, p, d, salida }) {
     assert.ok(!tapa, `${que}: la pista no tapa el control`);
   };
 
-  // El árbol de accesibilidad: el botón se llama «Actualizar» y la pista es su descripción, aunque no esté a la vista.
+  // El árbol de accesibilidad: el botón se llama «Pedir información» y la pista es su descripción, aunque no esté a la vista.
   const nodo = await p.accessibility.snapshot({ root: boton, interestingOnly: false });
-  assert.equal(nodo?.name, 'Actualizar');
+  assert.equal(nodo?.name, 'Pedir información');
   assert.equal(nodo?.description, TEXTO, 'la pista llega como descripción del control');
 
   // Mouse: aparece después de una pausa corta, se puede pasar por encima sin que se cierre y Escape la cierra.
@@ -230,10 +245,13 @@ async function pistas({ contexto, p, d, salida }) {
   await p.mouse.move(5, 5);
   await pausa(300);
 
-  // Teclado: al llegar con Tab aparece enseguida, el foco se ve y Escape la cierra sin mover el foco.
+  // Teclado: al llegar con el teclado aparece enseguida, el foco se ve y Escape la cierra sin mover el foco. «Pedir
+  // información» va justo antes de «Más».
   await p.focus('.marco-de-la-ficha .menu-de-acciones__boton');
+  await p.keyboard.down('Shift');
   await p.keyboard.press('Tab');
-  assert.ok(await p.$eval(BOTON, (b) => b === document.activeElement && b.matches(':focus-visible')), 'Tab llega a «Actualizar»');
+  await p.keyboard.up('Shift');
+  assert.ok(await p.$eval(BOTON, (b) => b === document.activeElement && b.matches(':focus-visible')), 'el teclado llega a «Pedir información»');
   await pausa(100);
   assert.ok(await visible(), 'con el teclado, la pista aparece');
   await dentroYSinTapar('teclado');
@@ -245,7 +263,7 @@ async function pistas({ contexto, p, d, salida }) {
   await p.keyboard.press('Escape');
   await pausa(150);
   assert.ok(!(await visible()), 'Escape la cierra');
-  assert.ok(await p.$eval(BOTON, (b) => b === document.activeElement), 'el foco sigue en «Actualizar»');
+  assert.ok(await p.$eval(BOTON, (b) => b === document.activeElement), 'el foco sigue en «Pedir información»');
 
   // Tablet con teclado (1024 × 768): «Más» se abre con Enter, sus acciones se recorren con Tab y Escape lo cierra y
   // devuelve el foco al botón.
@@ -272,7 +290,7 @@ async function pistas({ contexto, p, d, salida }) {
   await p.setViewport({ width: 720, height: 450 });
   await pausa(500);
   assert.ok(await p.evaluate(() => document.documentElement.scrollWidth <= innerWidth + 1), 'al 200 % no hay desplazamiento horizontal');
-  await (await elemento(p, BOTON, 'Actualizar')).hover();
+  await (await elemento(p, BOTON, 'Pedir información')).hover();
   await pausa(700);
   assert.ok(await visible(), 'al 200 %, la pista aparece');
   await dentroYSinTapar('zoom');
@@ -280,18 +298,18 @@ async function pistas({ contexto, p, d, salida }) {
   await p.mouse.move(5, 5);
   await pausa(300);
 
-  // Tacto: tocar «Actualizar» actualiza y no deja una pista pegada encima del contenido.
+  // Tacto: tocar «Pedir información» lleva al pedido y no deja una pista pegada encima del contenido.
   const tactil = await contexto.newPage();
   await tactil.setViewport({ width: 1024, height: 768, hasTouch: true, isMobile: true });
   await tactil.goto(p.url(), { waitUntil: 'networkidle2' });
-  await elemento(tactil, BOTON, 'Actualizar');
+  await elemento(tactil, BOTON, 'Pedir información');
   const centro = await tactil.$eval(BOTON, (b) => {
     const r = b.getBoundingClientRect();
     return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
   });
   await tactil.touchscreen.tap(centro.x, centro.y);
   await pausa(900);
-  assert.ok(!(await tactil.$eval(GLOBO, (g) => !g.hidden)), 'con el dedo, la pista no queda abierta');
+  assert.ok(!(await tactil.$$eval('.pista__globo', (gs) => gs.some((g) => !g.hidden && getComputedStyle(g).visibility !== 'hidden'))), 'con el dedo, la pista no queda abierta');
   await tactil.close();
 }
 
@@ -789,7 +807,7 @@ async function retorno({ p, d }) {
   assert.equal(area.get('vista'), 'revisiones');
   assert.equal(area.get('preparar'), '1');
   await elemento(p, 'section.paso-de-revision');
-  await clic(p, '.retorno-a-la-ficha a', 'Volver a la ficha, donde estabas');
+  await clic(p, '.retorno-a-la-ficha a', 'Ficha de');
   await esperarCamino(p, '/pro/advisees');
   const ficha = ruta(p).parametros;
   assert.equal(ficha.get('id'), d.ase.id);
@@ -886,7 +904,7 @@ async function sesionRevocada({ p, d }) {
   await abrirFicha(p, d.ase.nombre);
   const otra = await sesionPorApi(d.pro.correo);
   await pedir('DELETE', '/auth/sessions', { token: otra, clave: false });
-  await clic(p, '.ficha__consulta .pista > button', 'Actualizar');
+  await volverALaPestana(p);
   await esperarCamino(p, '/login');
   const aviso = ruta(p).parametros;
   assert.ok(['sesion-no-valida', 'sesion-vencida'].includes(aviso.get('aviso') ?? ''), `el login dice por qué (${aviso.get('aviso')})`);
@@ -895,14 +913,14 @@ async function sesionRevocada({ p, d }) {
   await esperarCamino(p, '/login');
 }
 
-/** Bloque 3: si la persona retira el consentimiento, la ficha lo dice al actualizar, y recargar no devuelve el acceso. */
+/** Bloque 3: si la persona retira el consentimiento, la ficha lo dice al volver a la pestaña, y recargar no devuelve el acceso. */
 async function accesoRevocado({ p, d }) {
   await entrar(p, d.pro.correo);
   await abrirFicha(p, d.ase.nombre);
   await elemento(p, '[data-accion-de-la-ficha="empezar"]');
   const ase = await sesionPorApi(d.ase.correo, 'APK');
   await pedir('POST', `/me/consents/${d.consentimientos.NUTRICION}/revoke`, { token: ase, superficie: 'APK', cuerpo: {} });
-  await clic(p, '.ficha__consulta .pista > button', 'Actualizar');
+  await volverALaPestana(p);
   await p.waitForFunction(() => !document.querySelector('[data-accion-de-la-ficha]'), { timeout: ESPERA });
   await esperarTexto(p, dominio.COPY_VINCULO.accesoNoDisponible);
   await p.reload({ waitUntil: 'networkidle2' });
