@@ -29,6 +29,8 @@ on:
       - "wp-ajustes-de-la-ratificacion"
       # DL-185: los formularios vinculados a la evaluación inicial.
       - "wp-evaluacion-y-formularios"
+      # DL-189: la evaluación inicial como pantallazo del caso (los tres bloques de Nutrición).
+      - "wp-evaluacion-inicial-2"
       # WP-OBJETIVO-Y-CALCULADOR (DL-186): el objetivo con su toma de referencia, el calculador y la propuesta de rangos.
       - "wp-objetivo-y-calculador"
     paths:

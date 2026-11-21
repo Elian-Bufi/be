@@ -370,6 +370,44 @@ async function abrirLaEvaluacion(page, ruta) {
   await visible(page, '[data-elegir-formularios] [data-formulario-para-vincular]');
 }
 
+/**
+ * WP-EVALUACION-INICIAL-2 (DL-189): en Nutrición la evaluación se abre sola en su paso, en tres bloques; lo que muestra
+ * «Lo que contó» se vincula al registrar, sin casillas. Espera el formulario respondido y abre «Ver todo».
+ */
+async function abrirLaEvaluacionDeNutricion(page, ruta, nombre) {
+  await ir(page, ruta);
+  const fila = await visible(page, '[data-evaluacion-inicial] [data-lo-que-conto] [data-formulario-respondido]', nombre, 45_000);
+  await (await fila.$('button')).click();
+  await asentar(page);
+  await (await visible(page, '[data-evaluacion-inicial]')).evaluate((x) => x.scrollIntoView({ block: 'start' }));
+  await pausa(300);
+}
+
+/**
+ * DL-189 (RP-10, EI-D16): con la evaluación registrada, el paso que toca es el objetivo y solo ese queda abierto; la
+ * evaluación, con sus formularios vinculados, se abre tocando «Evaluación inicial» en la franja.
+ */
+async function abrirLaEtapaDeLaEvaluacion(page) {
+  const boton = await visible(page, '[data-franja-de-pasos] [data-etapa="evaluacion"] button', null, 45_000);
+  if ((await boton.evaluate((x) => x.getAttribute('aria-expanded'))) !== 'true') await boton.click();
+  await asentar(page);
+}
+
+/** Nutrición (DL-189): elige el sexo en «Lo que necesita el cálculo» (no viene de ningún lado) y registra. */
+async function registrarLaDeNutricion(page) {
+  await clic(page, '[data-cambiar-dato="sexo"]');
+  await page.select('[data-dato-del-calculo="sexo"] select', 'FEMALE');
+  await clic(page, '[data-listo-dato="sexo"]');
+  // Mientras se lee lo que contó o lo medido, no se registra (revisión del PR): se espera a que terminen.
+  await visible(page, 'form[data-evaluacion-inicial][data-lecturas="listas"]', null, 45_000);
+  await clic(page, 'form[data-evaluacion-inicial] button[type="submit"]', 'Registrar la evaluación');
+  await visible(page, '[data-franja-de-pasos] [data-etapa="evaluacion"][data-estado="listo"]', null, 45_000);
+  await abrirLaEtapaDeLaEvaluacion(page);
+  await visible(page, '[data-formularios-de-la-evaluacion] [data-formulario-vinculado]', null, 45_000);
+  await (await visible(page, '[data-formularios-de-la-evaluacion]')).evaluate((x) => x.scrollIntoView({ block: 'center' }));
+  await pausa(300);
+}
+
 /** Elige el formulario con ese nombre, abre sus respuestas y deja la lista a la vista. */
 async function elegir(page, nombre) {
   const fila = await visible(page, '[data-elegir-formularios] [data-formulario-para-vincular]', nombre);
@@ -387,6 +425,8 @@ async function registrar(page, prefijo) {
   await concepto.type('Comidas por día');
   await (await visible(page, `#${prefijo}dato-0-valor`)).type('4');
   await clic(page, 'form.formulario button[type="submit"]', 'Registrar evaluación');
+  await visible(page, '[data-franja-de-pasos] [data-etapa="evaluacion"][data-estado="listo"]', null, 45_000);
+  await abrirLaEtapaDeLaEvaluacion(page);
   await visible(page, '[data-formularios-de-la-evaluacion] [data-formulario-vinculado]', null, 45_000);
   await (await visible(page, '[data-formularios-de-la-evaluacion]')).evaluate((x) => x.scrollIntoView({ block: 'center' }));
   await pausa(300);
@@ -402,15 +442,12 @@ function pantallas(ids) {
   return {
     PRO_N: [
       {
-        nombre: '01-nutricion-evaluacion-inicial-elegir',
-        llegar: async (page) => {
-          await abrirLaEvaluacion(page, area('nutrition', ids.camila));
-          await elegir(page, 'Cómo comés hoy');
-        },
+        nombre: '01-nutricion-evaluacion-inicial-tres-bloques',
+        llegar: (page) => abrirLaEvaluacionDeNutricion(page, area('nutrition', ids.camila), 'Cómo comés hoy'),
       },
       {
         nombre: '02-nutricion-evaluacion-registrada-con-lo-vinculado',
-        llegar: (page) => registrar(page, ''),
+        llegar: (page) => registrarLaDeNutricion(page),
         reponer: (page) => aLaVista(page, '[data-formularios-de-la-evaluacion]'),
       },
       {
@@ -425,12 +462,14 @@ function pantallas(ids) {
       {
         nombre: '04-nutricion-version-mas-nueva',
         llegar: async (page, nota) => {
-          const formResponseId = await page.$eval('[data-formulario-vinculado]', (x) => x.getAttribute('data-formulario-vinculado'));
+          // DL-189 (EI-D05): se vinculan todos los que mostró «Lo que contó» («Tus hábitos» también): se corrige el de «Cómo comés hoy».
+          const formResponseId = await page.$$eval('[data-formulario-vinculado]', (xs) => (xs.find((x) => x.textContent.includes('Cómo comés hoy')) ?? xs[0]).getAttribute('data-formulario-vinculado'));
           await corregir(sesiones.camila, formResponseId, 'FRM-NUTRICION-INICIO', COMO_COMES_HOY, { fieldCode: 'nut_no_negociable', answer: texto('El asado del domingo y el helado del sábado') });
           nota('Camila Ortiz corrigió «Cómo comés hoy» después de vincularlo');
           // Ir a otra vista y volver: el plan se monta de nuevo y vuelve a leer lo vinculado (empujar la misma ruta no remonta).
           await ir(page, `/pro/advisees/nutrition?id=${ids.camila}&vista=resumen`);
           await ir(page, area('nutrition', ids.camila));
+          await abrirLaEtapaDeLaEvaluacion(page);
           await visible(page, '[data-version-mas-nueva]', null, 45_000);
           await aLaVista(page, '[data-formularios-de-la-evaluacion]');
         },

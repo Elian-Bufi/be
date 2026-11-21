@@ -188,6 +188,7 @@
 | DL-186 | Pedido de Dirección · 2026-11-19 (el objetivo con una toma de Antropometría de referencia y el calculador de macros) | REG-06-123 · INV-06-133 · B05:312-318 · REG-06-157 · REG-06-205 · RNF-PRI-002 · DL-111 · DL-163 (D-17, TB-39) · DL-176 · la decisión de Dirección del 2026-11-13 («Último peso, guardado en gramos») · DL-185 (en paralelo) | El objetivo no se relacionaba con ninguna toma; el profesional calculaba el gasto y los macros fuera de BE y los copiaba; el texto del objetivo decía «BE no calcula requerimientos»; los rangos de cada comida se escribían uno por uno | **PROGRAMADA en `wp-objetivo-y-calculador` (PR en borrador, sin integrar) · OBC-D01 a OBC-D17 a ratificar**: el calculador en «Nueva versión de objetivo» (cinco métodos del gasto en reposo con su fórmula, sus datos y su cita; el factor, con otro para el día de descanso; el ajuste; los macros en g/kg con los carbohidratos por diferencia); el objetivo guardado con su toma y su cálculo (familia propia OBC, API-OBC-01 a 03, una migración que solo agrega), con el aviso de una toma más nueva; la propuesta de rangos por día y por comida, volcada por API-PLN-03 sin pisar lo escrito. Detalle: `docs/paquetes/WP-OBJETIVO-Y-CALCULADOR.md` |
 | DL-187 | Pedido de Dirección · 2026-11-20 (los gráficos por período corto o por versión del plan, la franja de lo indicado y lo indicado frente a lo hecho del volumen) | DL-174 · DL-181 · DL-122 · DL-178 · TB-16 (DL-163 D-7) · 09v10:356 · 09v10:1285-1295 · B10-06 (la lista de términos de Entrenamiento) · B05 | El historial del ejercicio ofrecía 12 semanas, 6 meses o desde el vínculo; la ficha, 7, 30 y 90 días o un año; ningún gráfico elegía una versión del plan; el rango de repeticiones indicado no se dibujaba; BE no calculaba volumen y la palabra estaba prohibida en pantalla; «Patrones» tomaba siempre el ejercicio más registrado | **PROGRAMADA en `wp-graficos-por-fase` (PR en borrador, sin integrar) · GPF-D01 a GPF-D13 a ratificar**: un solo selector de período en los gráficos (4 y 12 semanas, 6 meses, un año, desde que la acompañás, a medida y por versión del plan con «La anterior» y «La siguiente»); la franja de lo indicado en GR-03; series y carga × repeticiones indicadas y hechas por sesión o semana (en el historial y en «Armá tu gráfico»), con una convención declarada; el ejercicio elegible en «Patrones». Sin operaciones nuevas en la API. Detalle: `docs/paquetes/WP-GRAFICOS-POR-FASE.md` |
 | DL-188 | Pedido de Dirección · 2026-11-21 (el recorrido de la planificación de Nutrición en el escritorio profesional: «ponete a solucionar todo, empezá ya») | DL-186 · DL-146 · DL-163 (TB-07) · ED-02 · NUP-06 a 08 · NUP-10 · B10-01 · B10-10 §6-§8 · REG-06-157 · la decisión de Dirección del 18/11 (el «%» con su base) | La cabecera de un área ocupaba tres renglones, con un enlace largo para volver, «Actualizar» y la hora de la consulta; el acceso se partía; un error en línea movía su campo; el calculador tenía textos largos, un desplegable cortado, el ajuste con signo y la distribución por comida en el objetivo; las cantidades no llevaban ícono; la cuenta de los gramos ocupaba dos renglones; no estaba ten Haaf (2014) | **PROGRAMADA en `wp-recorrido-plan-pulido` (frente 1; PR en borrador, sin integrar) · RP-D01 a RP-D17 a ratificar**: la cabecera en una franja con la vuelta como botón, el acceso en un chip y la revalidación al volver a la pestaña («Hay datos nuevos · Ver»); las filas de campos alineadas por arriba; el calculador más corto, con lo largo detrás de «?» y «Fuente», los g/kg con límites y paso 0,1 y el ajuste sin signo; el reparto por comida a la vista en cada día tipo; el ícono con el número y la abreviatura; la cuenta de los gramos detrás de un «?»; ten Haaf y Weijs (2014) en sus dos variantes. Sin operaciones nuevas ni migraciones. Detalle: `docs/paquetes/WP-RECORRIDO-PLAN-PULIDO.md` |
+| DL-189 | Pedido de Dirección · 2026-11-21 (la evaluación inicial «no le cierra»: un pantallazo del caso en lugar de la planilla) | RF-026 · RF-036 · RF-071 · REG-06-97 · REG-06-109 · DL-048 · DL-145 · DL-146 · DL-164 (D-3, D-4, D-6) · DL-165 (D-1, D-7) · DL-169 · DL-173 · DL-185 · DL-186 · Ley 26.529 art. 14 | La evaluación inicial era una planilla de «Concepto / Valor / Unidad / Fuente» con pastillas y el texto «BE no calcula»; los tres pasos de «Empezar el plan» ocupaban media pantalla; la fecha se escribía a mano; «Cargar con la persona» solo se abría desde una solicitud ya enviada y traía todas las preguntas a la vez | **PROGRAMADA en `wp-evaluacion-inicial-2` (PR en borrador, sin integrar) · EI-D01 a EI-D16 a ratificar**: la franja de los pasos, la fecha automática, la evaluación de Nutrición en tres bloques («Lo que contó», «Lo medido», «Lo que necesita el cálculo»), «Anotaciones» privadas, «Completarlo ahora con la persona» y lo crítico primero. Sin operaciones nuevas en la API ni cambios en la APK. Detalle: `docs/paquetes/WP-EVALUACION-INICIAL-2.md` |
 | DL-190 | Decisión de Dirección · 2026-11-21 (Kerr de cinco componentes y elegir el método antes de medir; WP-ANTROPOMETRIA-METODO-Y-KERR) | DL-110 · DL-111 (decisiones 5 a 7) · DL-112 · REG-06-152 · REG-06-157 · REG-06-203/204/205 · RF-048 · RF-049 · ficha de métodos D-1 y D-3 · DL-152 | El método se elegía después de medir, sobre un único protocolo de 30 mediciones; Kerr quedaba en reserva (D-3 sin resolver) y faltaban siete mediciones para sus cinco masas | **PROGRAMADA en `wp-antropometria-metodo-y-kerr` (PR en borrador, sin integrar) · AK-D01 a AK-D14 a ratificar**: Kerr (1988) en seis métodos (la piel por sexo; adiposa, muscular, ósea y residual) con la tabla 4.3 y el apéndice A de la tesis, D-3 resuelta (muslo a 1 cm del pliegue glúteo, pecho mesoesternal, cintura mínima), siete mediciones nuevas en el catálogo del dominio (no en una versión del protocolo, que cortaría la comparabilidad), una migración que solo agrega y, en la toma, la suma frente al peso medido en kg y en %; elegir uno o varios métodos al empezar la toma, con la unión de lo que piden más peso, talla y edad, el habitual de la última toma (API-MHA-01, familia propia MHA, sin migración), «+ Otra medición» y la nota del suprailíaco de Jackson y Pollock (D-1). La APK 0.31 no se rompe. Detalle: `docs/paquetes/WP-ANTROPOMETRIA-METODO-Y-KERR.md` |
 
 ---
@@ -9047,6 +9048,43 @@ la APK no lo lee. Pruebas: `calculador-de-macros.test.ts`, `objetivo-y-calculado
 - Los íconos con el número en la APK (RP-07).
 - Mirarlo en pantalla a 1920 × 1080 con Windows al 125 % y el navegador al 75 %, y con un lector de pantalla.
 - «Te toca a vos» sigue con «Actualizar» (otra pieza). Detalle completo: `docs/paquetes/WP-RECORRIDO-PLAN-PULIDO.md`.
+
+## DL-189 — La evaluación inicial como pantallazo del caso
+
+**Prioridad:** alta (Dirección recorrió «Empezar el plan» de Nutrición y la evaluación «no le cierra») · RF-026 · RF-036 ·
+RF-071 · REG-06-97 · REG-06-109 · DL-048 · DL-145 · DL-146 · DL-164 · DL-165 · DL-169 · DL-173 · DL-185 · DL-186 ·
+**Estado:** PEDIDO por Dirección el 2026-11-21, con el rediseño ratificado · PROGRAMADA en `wp-evaluacion-inicial-2` (PR
+en borrador, sin integrar) · EI-D01 a EI-D16, **a ratificar**. Si al integrar el número choca con otro paquete, se
+renumera.
+
+**Qué pidió Dirección.** Que la evaluación inicial sea un pantallazo de lo fundamental del caso y no una planilla: lo que
+contó la persona, lo medido y lo que necesita el cálculo, con el origen y la fecha de cada dato; los pasos de «Empezar el
+plan» en una franja; la fecha automática; un espacio de anotaciones privado; completar el formulario con la persona en
+un clic, primero lo crítico; y que se vea lo que la persona corrigió.
+
+**Qué dice el legajo.** La evaluación registra cada dato con su fuente (REG-06-109; DL-048) y un dato calculado declara su
+método; la evaluación es un hecho que no se sobrescribe (REG-06-97). Lo cargado por el profesional es una transcripción
+que la persona confirma, y lo no confirmado se borra (DL-164 D-4 y D-6).
+
+**Cómo se lo cumple sin romperlo.** La forma de la evaluación no cambia: los tres bloques arman, al registrar, los mismos
+datos con su fuente (la toma, observado; lo demás, informado) y su procedencia en `evidenceReferences`; los formularios se
+vinculan por referencia (EVF, DL-185), sin copiar respuestas. «BE no calcula» deja de ser cierto desde DL-186 (el
+calculador, con su método a la vista): sale de la pantalla. «Anotaciones» es el campo de notas del profesional de la
+evaluación, que ninguna lectura de la persona devuelve. No se edita el legajo.
+
+**Lo programado.** Dominio: `evaluacion-inicial.ts` (los campos críticos por plantilla, lo que necesita el cálculo, lo que
+se registra, el punto de unión con el calculador y la corrección), con TEST-EVI-001 a 006. Website: la franja, la fecha, los
+tres bloques, «Completarlo ahora» y «Cargar con la persona» con lo crítico primero, con TEST-EVI-020 a 026; el calculador
+del objetivo arranca con lo que registró la evaluación (TEST-EVI-027). Integración: TEST-EVI-010 y 011 (las anotaciones no
+llegan a la persona ni a sus otros profesionales). Sin migraciones, sin operaciones nuevas en la API y sin APK nueva:
+la APK ya deja completar lo que falta al confirmar una propuesta parcial.
+
+**Lo que queda.**
+- Ratificar EI-D01 a EI-D16 y la lista de campos críticos.
+- Los tres bloques en Entrenamiento.
+- **Pendiente legal:** por la Ley 26.529 la persona es titular de su historia clínica; si la evaluación y sus anotaciones
+  entran en lo que puede pedir (hoy la exportación no trae las evaluaciones), lo revisa el abogado. Detalle completo:
+  `docs/paquetes/WP-EVALUACION-INICIAL-2.md`.
 
 ## DL-190 — Elegir el método antes de medir y Kerr de cinco componentes
 

@@ -21183,3 +21183,260 @@ html:has(.estacion:not([data-en-el-asistente])) {
   align-items: center;
   gap: 0.75rem;
 }
+
+/* ─── WP-EVALUACION-INICIAL-2 (DL-189) · la franja de los pasos y la evaluación inicial como pantallazo del caso ───
+   Bloque propio: no cambia las reglas de las filas de campos ni las de otros frentes. */
+
+/* RP-10 · «① Evaluación › ② Objetivo › ③ Plan», finita y arriba. Lo que toca, destacado; lo listo, con su tilde. */
+.primer-plan {
+  max-width: 76rem;
+}
+.primer-plan__franja {
+  list-style: none;
+  margin: 0 0 1rem;
+  padding: 0 0 0.75rem;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.5rem;
+  border-bottom: 1px solid var(--borde);
+}
+.primer-plan__etapa {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+.primer-plan__boton-de-etapa {
+  display: grid;
+  grid-template-columns: auto auto;
+  grid-template-rows: auto auto;
+  column-gap: 0.5rem;
+  align-items: center;
+  padding: 0.35rem 0.65rem;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  background: none;
+  color: var(--texto);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+.primer-plan__boton-de-etapa:disabled {
+  cursor: default;
+  color: var(--tenue);
+}
+.primer-plan__boton-de-etapa[aria-expanded='true'] {
+  border-color: var(--borde-control);
+  background: var(--fondo-suave);
+}
+.primer-plan__boton-de-etapa:focus-visible {
+  outline: 3px solid var(--foco);
+  outline-offset: 2px;
+}
+.primer-plan__boton-de-etapa .primer-plan__marca {
+  grid-row: 1 / span 2;
+  width: 1.7rem;
+  height: 1.7rem;
+  font-size: 0.9rem;
+}
+.primer-plan__etapa--ahora .primer-plan__marca {
+  background: var(--boton-fondo);
+  border-color: var(--boton-fondo);
+  color: var(--boton-texto);
+}
+.primer-plan__etapa--listo .primer-plan__marca {
+  background: var(--exito-fondo);
+  border-color: var(--exito);
+  color: var(--exito);
+}
+.primer-plan__nombre {
+  font-weight: 700;
+}
+.primer-plan__estado {
+  font-size: 0.82rem;
+  color: var(--tenue);
+}
+.primer-plan__etapa--listo .primer-plan__estado {
+  color: var(--exito);
+}
+.primer-plan__separador {
+  color: var(--tenue);
+  font-size: 1.2rem;
+}
+.primer-plan__titulo-del-paso {
+  margin: 0 0 0.4rem;
+  font-size: 1.1rem;
+}
+
+/* RP-12 · la evaluación en tres bloques, uno al lado del otro cuando entran. */
+.evaluacion-inicial__cabecera {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.25rem 1rem;
+  margin-bottom: 0.5rem;
+}
+.evaluacion-inicial__cabecera > h3 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+.fecha-de-la-evaluacion {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--tenue);
+}
+.fecha-de-la-evaluacion--abierta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.5rem 1rem;
+  width: 100%;
+}
+.evaluacion-inicial__bloques {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(19rem, 1fr));
+  /* Cada bloque con su alto: «Lo que contó» suele ser el más largo, y los otros no se estiran en vacío. */
+  align-items: start;
+  gap: 1rem;
+  margin: 0.75rem 0 1rem;
+}
+@media (min-width: 80rem) {
+  .evaluacion-inicial__bloques {
+    grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) minmax(0, 1.1fr);
+  }
+}
+.bloque-de-la-evaluacion {
+  border: 1px solid var(--borde);
+  border-radius: 12px;
+  padding: 0.85rem 1rem 1rem;
+  background: var(--superficie);
+  min-width: 0;
+}
+.bloque-de-la-evaluacion > h4 {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin: 0 0 0.5rem;
+  font-size: 1rem;
+}
+.lo-que-conto-en-la-evaluacion__lista {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.lo-que-conto-en-la-evaluacion__formulario + .lo-que-conto-en-la-evaluacion__formulario {
+  border-top: 1px solid var(--borde);
+  margin-top: 0.6rem;
+  padding-top: 0.6rem;
+}
+.lo-que-conto-en-la-evaluacion__formulario > h5,
+.lo-que-conto-en-la-evaluacion__compartidos > h5 {
+  margin: 0;
+  font-size: 0.95rem;
+}
+.lo-que-conto-en-la-evaluacion__respuestas {
+  margin: 0.35rem 0;
+}
+.lo-que-conto-en-la-evaluacion__respuestas > div {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 0.5rem;
+  padding: 0.15rem 0;
+}
+.lo-que-conto-en-la-evaluacion__respuestas dt {
+  color: var(--tenue);
+  font-size: 0.88rem;
+}
+.lo-que-conto-en-la-evaluacion__respuestas dd {
+  margin: 0;
+}
+.lo-que-conto-en-la-evaluacion__correcciones {
+  list-style: none;
+  margin: 0.35rem 0;
+  padding: 0;
+}
+.lo-que-conto-en-la-evaluacion__correcciones li {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+.lo-que-conto-en-la-evaluacion__compartidos {
+  margin-top: 0.75rem;
+  padding-top: 0.6rem;
+  border-top: 1px solid var(--borde);
+}
+.lo-medido__datos {
+  margin: 0.35rem 0 0.5rem;
+  padding-left: 1.1rem;
+}
+.datos-del-calculo {
+  display: grid;
+  gap: 0.45rem;
+}
+.dato-del-calculo {
+  display: grid;
+  grid-template-columns: 8.5rem minmax(0, 1fr) auto;
+  grid-template-areas:
+    'nombre valor cambiar'
+    'nombre origen cambiar'
+    'nombre al-lado cambiar';
+  column-gap: 0.6rem;
+  align-items: baseline;
+  padding: 0.35rem 0;
+  border-bottom: 1px solid var(--borde);
+}
+.dato-del-calculo:last-child {
+  border-bottom: 0;
+}
+.dato-del-calculo__nombre {
+  grid-area: nombre;
+  font-weight: 600;
+}
+.dato-del-calculo__valor {
+  grid-area: valor;
+  font-variant-numeric: tabular-nums;
+}
+.dato-del-calculo__origen {
+  grid-area: origen;
+  font-size: 0.82rem;
+  color: var(--tenue);
+}
+.dato-del-calculo__al-lado {
+  grid-area: al-lado;
+  font-size: 0.82rem;
+  color: var(--tenue);
+}
+.dato-del-calculo__cambiar {
+  grid-area: cambiar;
+}
+.dato-del-calculo__edicion {
+  grid-column: 2 / span 2;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem;
+}
+.dato-del-calculo__edicion input {
+  width: 9rem;
+}
+.dato-del-calculo[data-dato-del-calculo='actividad'] .dato-del-calculo__edicion input {
+  width: min(100%, 22rem);
+}
+.dato-del-calculo__unidad {
+  color: var(--tenue);
+}
+.evaluacion-inicial__anotaciones textarea {
+  width: 100%;
+  min-height: 8rem;
+}
+.completar-ahora {
+  margin-top: 0.5rem;
+}
+
+/* RP-15 · lo crítico primero, en «Cargar con la persona». */
+.formulario-de-inicio__criticas > h3 {
+  margin-top: 0;
+}
