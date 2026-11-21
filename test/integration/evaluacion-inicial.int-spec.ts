@@ -63,10 +63,7 @@ const LECTURAS_DE_LA_PERSONA = [
 const cuerpoDel404 = (r: { body: { error?: { code?: string; message?: string } } }) => ({ code: r.body.error?.code, message: r.body.error?.message });
 
 describe('DL-189 · RP-13 · «Anotaciones» no llega a ninguna lectura de la persona', () => {
-  it.each([
-    ['nutrition', 'NUTRICION'],
-    ['training', 'ENTRENAMIENTO'],
-  ] as const)('TEST-EVI-010 · %s: el autor las lee; la persona recibe el 404 de lo inexistente y no las ve en ninguna lectura ni en su exportación', async (area) => {
+  it.each(['nutrition', 'training'] as const)('TEST-EVI-010 · %s: el autor las lee; la persona recibe el 404 de lo inexistente y no las ve en ninguna lectura ni en su exportación', async (area) => {
     const etiqueta = `evi-anotaciones-${area}-${randomUUID().slice(0, 8)}`;
     const c = area === 'nutrition' ? await circuitoConPlanActivo(app, etiqueta) : await circuitoConPlanDeEntrenamientoActivo(app, etiqueta);
     const marca = `Anotación privada ${randomUUID()}`;
