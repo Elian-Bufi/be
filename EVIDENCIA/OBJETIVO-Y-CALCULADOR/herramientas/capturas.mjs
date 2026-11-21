@@ -261,8 +261,9 @@ function pantallas(norma) {
         await visible(page, '[data-calculador] [data-referencia-del-calculo]', null, 30_000);
         // La ecuación se elige por sexo: lo elige la profesional.
         await clic(page, '[data-metodo-del-calculo] label', 'Mujer');
-        await escribir(page, '[data-macros-del-calculo] input[id$="-proteina"]', '1,2');
-        await escribir(page, '[data-macros-del-calculo] input[id$="-grasa"]', '0,9');
+        // RP-05 (DL-188): los g/kg son campos numéricos de a 0,1: se escriben con punto.
+        await escribir(page, '[data-macros-del-calculo] input[id$="-proteina"]', '1.2');
+        await escribir(page, '[data-macros-del-calculo] input[id$="-grasa"]', '0.9');
         await (await visible(page, '[data-calculador]')).evaluate((x) => x.scrollIntoView({ block: 'start' }));
         await pausa(400);
         return {
@@ -276,10 +277,12 @@ function pantallas(norma) {
       nombre: '02-calculador-formula-factor-y-macros',
       entera: true,
       llegar: async (page) => {
-        await clic(page, '[data-actividad-del-calculo] label', 'Otro factor para el día de descanso');
-        const ajuste = await visible(page, '[data-actividad-del-calculo] select[id$="-ajuste"]');
-        await ajuste.select('KCAL');
-        await escribir(page, '[data-actividad-del-calculo] input[id$="-valor-ajuste"]', '-150');
+        await clic(page, '[data-actividad-del-calculo] label', 'Usar otro factor para el día de descanso');
+        // RP-05: el sentido se elige («Déficit») y la cantidad va sin signo.
+        await clic(page, '[data-sentido-del-ajuste] label', 'Déficit');
+        const unidad = await visible(page, '[data-actividad-del-calculo] select[id$="-unidad-ajuste"]');
+        await unidad.select('KCAL');
+        await escribir(page, '[data-actividad-del-calculo] input[id$="-valor-ajuste"]', '150');
         await (await visible(page, '[data-gasto-en-reposo]')).evaluate((x) => x.scrollIntoView({ block: 'start' }));
         await pausa(400);
         return {

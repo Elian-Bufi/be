@@ -65,21 +65,64 @@ test('con una toma: los datos con su origen, lo que falta a mano, y la edad que 
   assert.deepEqual(K.referenciaDelCalculador({ ...base, edadAgregada: '45' }, HOY), { source: 'RECORDED', evaluationId: 'ev-1', leanMassCalculationId: 'c-mlg', additions: { heightCm: null, ageYears: 45 } });
 });
 
-test('a mano: los topes, la fecha y la masa libre de grasa menor que el peso; el ajuste con su signo', () => {
-  const v = { ...K.calculadorInicial([], HOY), peso: '70', talla: '175', edad: '30', masaLibre: '80', sexo: 'MALE', ajuste: 'KCAL', valorDelAjuste: '−300', proteinaPorKg: '1,6', grasaPorKg: '0,8' };
+test('a mano: los topes, la fecha y la masa libre de grasa menor que el peso; el ajuste con su sentido (RP-05)', () => {
+  const v = { ...K.calculadorInicial([], HOY), peso: '70', talla: '175', edad: '30', masaLibre: '80', sexo: 'MALE', ajuste: 'deficit', unidadDelAjuste: 'KCAL', valorDelAjuste: '300', proteinaPorKg: '1,6', grasaPorKg: '0,8' };
   assert.equal(K.problemasDelCalculador(v, HOY).masaLibre, 'La masa libre de grasa es menor que el peso.');
   assert.equal(K.referenciaDelCalculador(v, HOY), null);
   assert.equal(K.problemasDelCalculador({ ...v, fecha: '2026-12-01' }, HOY).fecha, 'La fecha no puede ser posterior a hoy.');
   assert.equal(K.problemasDelCalculador({ ...v, peso: '1.850' }, HOY).peso, 'Escribí un número, por ejemplo 1,55.');
   const bien = { ...v, masaLibre: '' };
+  // RP-05: el sentido se elige y la cantidad va sin signo; por dentro, con su signo, como lo guarda el contrato.
   assert.deepEqual(K.parametrosDelCalculador(bien, HOY).adjustment, { kind: 'KCAL', value: -300 });
-  assert.deepEqual(K.parametrosDelCalculador({ ...bien, valorDelAjuste: '+250' }, HOY).adjustment, { kind: 'KCAL', value: 250 });
-  assert.equal(K.problemasDelCalculador({ ...bien, ajuste: 'PERCENT', valorDelAjuste: '-60' }, HOY).valorDelAjuste, 'Hasta 40 puntos, de más o de menos.');
+  assert.deepEqual(K.parametrosDelCalculador({ ...bien, ajuste: 'superavit', valorDelAjuste: '250' }, HOY).adjustment, { kind: 'KCAL', value: 250 });
+  assert.deepEqual(K.parametrosDelCalculador({ ...bien, ajuste: 'deficit', unidadDelAjuste: 'PERCENT', valorDelAjuste: '15' }, HOY).adjustment, { kind: 'PERCENT', value: -15 });
+  assert.equal(K.parametrosDelCalculador({ ...bien, ajuste: 'mantener', valorDelAjuste: '300' }, HOY).adjustment, null);
+  assert.equal(K.problemasDelCalculador({ ...bien, unidadDelAjuste: 'PERCENT', valorDelAjuste: '60' }, HOY).valorDelAjuste, 'Hasta 40 % del gasto total.');
+  assert.match(K.problemasDelCalculador({ ...bien, valorDelAjuste: '−300' }, HOY).valorDelAjuste, /sin signo: «Déficit» ya dice para qué lado/);
+  assert.match(K.problemasDelCalculador({ ...bien, valorDelAjuste: '0' }, HOY).valorDelAjuste, /mayor que cero/);
+  // RP-05: «De dónde sale» lo dice la fuente; la masa a mano no lleva una nota escrita.
+  assert.equal(K.deDondeSale(bien, []), 'Cargado a mano');
+  assert.equal(K.referenciaDelCalculador(bien, HOY).leanMassNote, null);
   const pedido = K.pedidoConReferencia({ rationale: 'x' }, bien, HOY, true);
   assert.equal(pedido.reference.source, 'MANUAL');
   assert.equal(pedido.parameters.restingMethod, 'MIFFLIN_ST_JEOR');
   // Mifflin, hombre: 10 × 70 + 6,25 × 175 − 5 × 30 + 5 = 1.648,75.
   assert.equal(K.calculoEnVivo(bien, [], HOY).resultado.resting.applied, '10 × 70 + 6,25 × 175 − 5 × 30 + 5 = 1.648,8');
+});
+
+test('RP-05 · la proteína y la grasa, dentro de sus límites con nombre y de a 0,1: fuera de ellos, se avisa y no se propone', () => {
+  const v = { ...K.calculadorInicial([], HOY), peso: '70', talla: '175', edad: '30', sexo: 'MALE', proteinaPorKg: '1,8', grasaPorKg: '0,9' };
+  assert.ok(K.parametrosDelCalculador(v, HOY));
+  for (const [campo, valor, aviso] of [
+    ['proteinaPorKg', '0,5', 'Entre 0,6 y 3 g/kg.'],
+    ['proteinaPorKg', '3.1', 'Entre 0,6 y 3 g/kg.'],
+    ['grasaPorKg', '0,4', 'Entre 0,5 y 2,5 g/kg.'],
+    ['grasaPorKg', '2.6', 'Entre 0,5 y 2,5 g/kg.'],
+  ]) {
+    const fuera = { ...v, [campo]: valor };
+    assert.equal(K.problemasDelCalculador(fuera, HOY)[campo], aviso, `${campo} ${valor}`);
+    assert.equal(K.parametrosDelCalculador(fuera, HOY), null, `${campo} ${valor} no propone`);
+    assert.equal(K.calculoEnVivo(fuera, [], HOY), null);
+  }
+  // En los bordes, sí (el número del campo llega con punto: «3.0», «0.5»).
+  assert.ok(K.parametrosDelCalculador({ ...v, proteinaPorKg: '3.0', grasaPorKg: '0.5' }, HOY));
+  assert.ok(K.parametrosDelCalculador({ ...v, proteinaPorKg: '0,6', grasaPorKg: '2,5' }, HOY));
+  // La toma, en palabras, para «De dónde sale» y para el renglón que la elige.
+  assert.equal(K.deDondeSale({ fuente: 'toma', evaluationId: 'ev-1' }, [TOMA]), 'Toma del 17/11');
+  assert.equal(K.COPY_CALCULADOR.titulo, 'Calcular');
+  assert.equal(K.COPY_CALCULADOR.usarLaToma('17/11'), 'Usar la toma del 17/11');
+});
+
+test('RP-09 · ten Haaf (2014) en el calculador: cada método dice para quién sirve, y fuera de su franja de edad se dice', () => {
+  const v = { ...K.calculadorInicial([], HOY), peso: '70', talla: '175', edad: '30', sexo: 'MALE', metodo: 'TEN_HAAF_2014_WEIGHT', proteinaPorKg: '1,8', grasaPorKg: '0,9' };
+  const vivo = K.calculoEnVivo(v, [], HOY);
+  assert.equal(vivo.resultado.resting.kcal, 1840);
+  assert.equal(vivo.resultado.resting.applied, '11,936 × 70 + 587,728 × 1,75 − 8,129 × 30 + 191,027 × 1 + 29,279 = 1.840,5');
+  assert.equal(K.fichaEnUnaLinea('TEN_HAAF_2014_WEIGHT'), 'ten Haaf y Weijs (2014), con el peso · deportistas de 18 a 35 años · usa peso, talla, edad y sexo');
+  assert.equal(K.fichaEnUnaLinea('TEN_HAAF_2014_LEAN_MASS'), 'ten Haaf y Weijs (2014), con la masa libre de grasa · deportistas, con la masa libre de grasa · usa masa libre de grasa');
+  assert.ok(K.fichaEnUnaLinea('MIFFLIN_ST_JEOR').startsWith('Mifflin-St Jeor (1990) · adultos en general · usa '));
+  // Lo que va al objetivo nombra solo el método.
+  assert.equal(K.declaracionParaElObjetivo(vivo.parametros), 'Estimación de partida con el calculador de BE: gasto en reposo por ten Haaf y Weijs (2014), con el peso, carbohidratos por diferencia.');
 });
 
 test('lo guardado con el objetivo: los avisos en neutro, sin tocar lo guardado', () => {

@@ -7,12 +7,17 @@
  *   tiene se puede escribir a mano y queda marcado así.
  * - **Ubica, no califica:** sin colores de juicio ni palabras de evaluación. Lo que falta se dice: no se inventa.
  * - **El «%» siempre con su base y su número** («28,3 % de las 1.725 kcal»).
+ * - **RP-05 (WP-RECORRIDO-PLAN-PULIDO, DL-188):** «De dónde sale» lo dice la fuente («Toma del 17/11» o «Cargado a mano»),
+ *   sin un texto libre; la proteína y la grasa, dentro de `LIMITES_DE_LOS_GRAMOS_POR_KG` (fuera de ellos se avisa y no se
+ *   propone); y el ajuste se elige como «Mantener», «Déficit» o «Superávit», con la cantidad siempre positiva. Por dentro
+ *   se guarda con su signo, como pide el contrato.
  */
 import {
   calcularObjetivo,
   declaracionCompartible,
   FICHA_DEL_METODO_DE_REPOSO,
   leerNumero,
+  LIMITES_DE_LOS_GRAMOS_POR_KG,
   NOMBRE_DEL_DATO,
   numero,
   TOPES_DEL_CALCULADOR,
@@ -41,13 +46,14 @@ export interface ValoresDelCalculador {
   readonly talla: string;
   readonly edad: string;
   readonly masaLibre: string;
-  readonly notaDeLaMasa: string;
   readonly sexo: '' | 'FEMALE' | 'MALE';
   readonly metodo: MetodoDeReposo;
   readonly factor: string;
   readonly conFactorDeDescanso: boolean;
   readonly factorDeDescanso: string;
-  readonly ajuste: 'ninguno' | 'KCAL' | 'PERCENT';
+  /** RP-05: el sentido del ajuste. La cantidad (`valorDelAjuste`) va siempre sin signo. */
+  readonly ajuste: 'mantener' | 'deficit' | 'superavit';
+  readonly unidadDelAjuste: 'KCAL' | 'PERCENT';
   readonly valorDelAjuste: string;
   readonly conMacros: boolean;
   readonly base: 'BODY_WEIGHT' | 'LEAN_MASS';
@@ -70,13 +76,13 @@ export function calculadorInicial(tomas: readonly TomaDeReferencia[], hoy: strin
     talla: '',
     edad: '',
     masaLibre: '',
-    notaDeLaMasa: '',
     sexo: '',
     metodo: 'MIFFLIN_ST_JEOR',
     factor: '1,55',
     conFactorDeDescanso: false,
     factorDeDescanso: '1,4',
-    ajuste: 'ninguno',
+    ajuste: 'mantener',
+    unidadDelAjuste: 'KCAL',
     valorDelAjuste: '',
     conMacros: true,
     base: 'BODY_WEIGHT',
@@ -99,7 +105,8 @@ export function datosUsados(v: ValoresDelCalculador, tomas: readonly TomaDeRefer
       weightKg: aMano(enRango(num(v.peso), T.pesoKg)),
       heightCm: aMano(enRango(num(v.talla), T.tallaCm)),
       ageYears: aMano(enRango(num(v.edad), T.edadAnios)),
-      leanMassKg: masa !== null && masa > 0 && masa <= T.pesoKg.maximo ? { value: masa, origin: 'MANUAL', method: v.notaDeLaMasa.trim() || null, bodyFatValue: null } : null,
+      // RP-05: de dónde sale lo dice el origen («a mano»): ya no hay una nota escrita.
+      leanMassKg: masa !== null && masa > 0 && masa <= T.pesoKg.maximo ? { value: masa, origin: 'MANUAL', method: null, bodyFatValue: null } : null,
     };
   }
   const toma = tomas.find((t) => t.evaluationId === v.evaluationId);
@@ -149,28 +156,32 @@ export function problemasDelCalculador(v: ValoresDelCalculador, hoy: string): Re
   }
   revisar('factor', v.factor, T.factor, '', true);
   if (v.conFactorDeDescanso) revisar('factorDeDescanso', v.factorDeDescanso, T.factor, '', true);
-  if (v.ajuste !== 'ninguno') {
-    const x = num(v.valorDelAjuste.trim().replace(/^[−+-]/, ''));
-    const t = v.ajuste === 'KCAL' ? T.ajusteKcal : T.ajustePorcentaje;
-    if (v.valorDelAjuste.trim() === '') p.valorDelAjuste = 'Escribí el ajuste, por ejemplo −300.';
-    else if (x === null) p.valorDelAjuste = 'Escribí un número, con un signo menos si es un déficit: −300.';
-    else if (x > t.maximo) p.valorDelAjuste = `Hasta ${numero(t.maximo)} ${v.ajuste === 'KCAL' ? 'kcal' : 'puntos'}, de más o de menos.`;
+  if (v.ajuste !== 'mantener') {
+    // RP-05: la cantidad va sin signo; el sentido ya está elegido.
+    const texto = v.valorDelAjuste.trim();
+    const x = num(texto);
+    const t = v.unidadDelAjuste === 'KCAL' ? T.ajusteKcal : T.ajustePorcentaje;
+    if (texto === '') p.valorDelAjuste = v.unidadDelAjuste === 'KCAL' ? 'Escribí cuánto, por ejemplo 300.' : 'Escribí cuánto, por ejemplo 15.';
+    else if (/^[−+-]/.test(texto)) p.valorDelAjuste = `Escribí la cantidad sin signo: «${v.ajuste === 'deficit' ? 'Déficit' : 'Superávit'}» ya dice para qué lado.`;
+    else if (x === null) p.valorDelAjuste = 'Escribí un número, por ejemplo 300.';
+    else if (!(x > 0)) p.valorDelAjuste = 'Escribí una cantidad mayor que cero, o elegí «Mantener».';
+    else if (x > t.maximo) p.valorDelAjuste = v.unidadDelAjuste === 'KCAL' ? `Hasta ${numero(t.maximo)} kcal por día.` : `Hasta ${numero(t.maximo)} % del gasto total.`;
   }
   if (v.conMacros) {
-    revisar('proteinaPorKg', v.proteinaPorKg, T.proteinaPorKg, 'g/kg', true);
-    revisar('grasaPorKg', v.grasaPorKg, T.grasaPorKg, 'g/kg', true);
+    // RP-05: para un cálculo nuevo valen los límites con nombre del dominio (los topes del contrato son más anchos).
+    const L = LIMITES_DE_LOS_GRAMOS_POR_KG;
+    revisar('proteinaPorKg', v.proteinaPorKg, L.proteina, 'g/kg', true);
+    revisar('grasaPorKg', v.grasaPorKg, L.grasa, 'g/kg', true);
   }
   return p;
 }
 
-/** El ajuste escrito, con su signo («−300» o «-300» es un déficit). */
-function ajusteEscrito(v: ValoresDelCalculador): ParametrosDelCalculo['adjustment'] {
-  if (v.ajuste === 'ninguno') return null;
-  const t = v.valorDelAjuste.trim();
-  const negativo = /^[−-]/.test(t);
-  const x = num(t.replace(/^[−+-]/, ''));
-  if (x === null) return null;
-  return { kind: v.ajuste, value: negativo ? -x : x } as ParametrosDelCalculo['adjustment'];
+/** RP-05: el ajuste como lo guarda el contrato, con su signo: un déficit de 300 es −300; mantener, ninguno. */
+export function ajusteEscrito(v: Pick<ValoresDelCalculador, 'ajuste' | 'unidadDelAjuste' | 'valorDelAjuste'>): ParametrosDelCalculo['adjustment'] {
+  if (v.ajuste === 'mantener') return null;
+  const x = num(v.valorDelAjuste.trim());
+  if (x === null || !(x > 0)) return null;
+  return { kind: v.unidadDelAjuste, value: v.ajuste === 'deficit' ? -x : x } as ParametrosDelCalculo['adjustment'];
 }
 
 /** Los parámetros, si todo lo necesario se entiende; `null` si falta algo (los problemas lo dicen en su campo). */
@@ -203,7 +214,8 @@ export function referenciaDelCalculador(v: ValoresDelCalculador, hoy: string): R
     return { source: 'RECORDED', evaluationId: v.evaluationId, leanMassCalculationId: v.corridaId || null, additions: { heightCm: num(v.tallaAgregada), ageYears: num(v.edadAgregada) } };
   }
   if (p.fecha || p.peso || p.talla || p.edad || p.masaLibre) return null;
-  return { source: 'MANUAL', measuredOn: v.fecha, weightKg: num(v.peso), heightCm: num(v.talla), ageYears: num(v.edad), leanMassKg: num(v.masaLibre), leanMassNote: v.notaDeLaMasa.trim() || null };
+  // RP-05: «De dónde sale» lo dice la fuente (a mano); el contrato no pide la nota, y no se manda.
+  return { source: 'MANUAL', measuredOn: v.fecha, weightKg: num(v.peso), heightCm: num(v.talla), ageYears: num(v.edad), leanMassKg: num(v.masaLibre), leanMassNote: null };
 }
 
 /** El cuerpo de API-OBC-02: el objetivo escrito, la referencia y, si se calculó, los parámetros. */
@@ -226,6 +238,13 @@ export function fuenteEnPalabras(v: Pick<ValoresDelCalculador, 'fuente' | 'fecha
   if (v.fuente === 'a-mano') return v.fecha ? `con datos a mano del ${diaYMes(v.fecha)}` : 'con datos a mano';
   const t = tomas.find((x) => x.evaluationId === v.evaluationId);
   return t ? `con la toma del ${diaYMes(t.measuredOn)}` : 'con una toma de Antropometría';
+}
+
+/** RP-05: de dónde salen los datos, para el renglón «De dónde sale»: «Toma del 17/11» o «Cargado a mano». */
+export function deDondeSale(v: Pick<ValoresDelCalculador, 'fuente' | 'evaluationId'>, tomas: readonly TomaDeReferencia[]): string {
+  if (v.fuente === 'a-mano') return 'Cargado a mano';
+  const t = tomas.find((x) => x.evaluationId === v.evaluationId);
+  return t ? `Toma del ${diaYMes(t.measuredOn)}` : 'Una toma de Antropometría';
 }
 
 /** Un dato usado, con su origen: «68 kg (toma)», «162 cm (a mano)». */
@@ -283,11 +302,14 @@ export function valoresParaElObjetivo(resultado: ResultadoDelCalculo): { readonl
   return { kcal: t(resultado.energy.day), proteina: m ? t(m.protein.grams) : '', carbohidratos: m ? t(m.carbohydrate.grams) : '', grasas: m ? t(m.fat.grams) : '' };
 }
 
-/** La ficha del método en una línea, para la lista: «Mifflin-St Jeor (1990) · usa peso, talla, edad y sexo». */
+/**
+ * La ficha del método en una línea, para la lista, con para quién sirve (RP-09): «Mifflin-St Jeor (1990) · adultos en
+ * general · usa peso, talla, edad y sexo».
+ */
 export function fichaEnUnaLinea(metodo: MetodoDeReposo): string {
   const f = FICHA_DEL_METODO_DE_REPOSO[metodo];
   const usa = f.necesita.map((d) => NOMBRE_DEL_DATO[d].replace(/^(el|la) /, '').replace('sexo de la ecuación', 'sexo'));
-  return `${f.nombre} · usa ${usa.length <= 1 ? usa.join('') : `${usa.slice(0, -1).join(', ')} y ${usa.at(-1)}`}`;
+  return `${f.nombre} · ${f.paraQuien} · usa ${usa.length <= 1 ? usa.join('') : `${usa.slice(0, -1).join(', ')} y ${usa.at(-1)}`}`;
 }
 
 // ─── Lo guardado con el objetivo (API-OBC-03) ────────────────────────────────────────────────────
@@ -315,7 +337,8 @@ export function falloDeLaReferencia(r: { readonly ok: boolean; readonly tipo?: s
 }
 
 export const COPY_CALCULADOR = {
-  titulo: 'Calcular con la antropometría',
+  // RP-05: el título es la acción; los datos pueden venir de una toma o escribirse a mano.
+  titulo: 'Calcular',
   resumen: 'Opcional. Estima el gasto con el método que elijas, a la vista, y propone las kcal y los gramos del día. Vos decidís qué guardar.',
   estimacion: 'Es una estimación: las ecuaciones describen poblaciones, no a esta persona. Sirve de punto de partida para tu criterio.',
   referencia: 'Datos de referencia',
@@ -324,6 +347,13 @@ export const COPY_CALCULADOR = {
   sinAntropometria: 'La persona no te habilitó Antropometría: los datos van a mano.',
   sinTomas: 'Todavía no registraste tomas de Antropometría con esta persona: los datos van a mano.',
   toma: 'Toma',
+  usarLaToma: (fecha: string) => `Usar la toma del ${fecha}`,
+  cargarAMano: 'Cargar a mano',
+  otraToma: 'Otra toma',
+  hacerUnaAntropometria: 'Hacer una antropometría',
+  seAbreEnOtraPestana: '(se abre en otra pestaña)',
+  releerLasTomas: 'Volver a leer las tomas',
+  deDondeSale: 'De dónde sale',
   masaLibre: 'Masa libre de grasa',
   sinMasa: 'No usar masa libre de grasa',
   loQueFalta: 'Lo que la toma no tiene, a mano (opcional)',
@@ -332,19 +362,26 @@ export const COPY_CALCULADOR = {
   mujer: 'Mujer',
   hombre: 'Hombre',
   metodo: 'Método del gasto en reposo',
+  poblacionDelMetodo: 'Para quién se publicó',
   formula: 'Fórmula',
   conLosDatos: 'Con los datos',
   fuente: 'Fuente',
   reposo: 'Gasto en reposo',
   factor: 'Factor de actividad',
   factorAyuda: 'Multiplica el gasto en reposo. Las franjas de la FAO/OMS/UNU (2004): 1,40 a 1,69 sedentario o liviano; 1,70 a 1,99 activo o moderado; 2,00 a 2,40 vigoroso.',
-  otroFactor: 'Otro factor para el día de descanso',
+  queEsElFactor: 'Qué es el factor de actividad',
+  otroFactor: 'Usar otro factor para el día de descanso',
   factorDeDescanso: 'Factor del día de descanso',
+  mismoFactor: 'Sin otro factor, el día de descanso usa el del día.',
   total: 'Gasto total',
-  ajuste: 'Ajuste (déficit o superávit)',
-  sinAjuste: 'Sin ajuste',
-  enKcal: 'En kcal por día',
-  enPorcentaje: 'En porcentaje del gasto total',
+  ajuste: 'Ajuste',
+  mantener: 'Mantener',
+  deficit: 'Déficit',
+  superavit: 'Superávit',
+  enKcal: 'kcal por día',
+  enPorcentaje: '% del gasto total',
+  unidadDelAjuste: 'En',
+  cuanto: (u: 'KCAL' | 'PERCENT') => (u === 'KCAL' ? 'Cuánto (kcal por día)' : 'Cuánto (% del gasto total)'),
   energia: 'Energía del día',
   macros: 'Macros',
   conMacros: 'Calcular los macros (proteína y grasa en g/kg, carbohidratos por diferencia)',
@@ -353,6 +390,7 @@ export const COPY_CALCULADOR = {
   deLaMasa: 'la masa libre de grasa',
   proteina: 'Proteína (g/kg)',
   grasa: 'Grasa (g/kg)',
+  entreLimites: (l: { readonly minimo: number; readonly maximo: number }) => `De ${numero(l.minimo, 1)} a ${numero(l.maximo, 1)}, de a 0,1.`,
   diaDeEntrenamiento: 'Día de entrenamiento',
   diaDeDescanso: 'Día de descanso',
   elDia: 'El día',

@@ -4,11 +4,15 @@
  * WP-OBJETIVO-Y-CALCULADOR (OBC-06; DL-186) · La referencia y el cálculo guardados con la versión vigente del objetivo
  * (API-OBC-03), en el resumen de Nutrición: de qué toma o de qué datos salió, con qué método, qué factor y qué ajuste, y
  * los macros. Lo guardado no se mueve: una toma más nueva o una corrección se avisan en neutro.
+ * RP-05 (DL-188): las citas, detrás de «Fuente»; la fórmula y la cuenta, a la vista. RP-07: las kcal y los gramos, con su
+ * ícono.
  */
 import { CITA_DEL_FACTOR_DE_ACTIVIDAD, FICHA_DEL_METODO_DE_REPOSO, numero, type ReferenciaDelObjetivoResponse } from '@be/domain';
 import { useEffect, useState } from 'react';
+import { ExplicacionAPedido } from '../../../../components/explicacion-a-pedido';
 import { api } from '../../../../lib/api';
 import { avisosDeLaReferencia, datoEnPalabras, diaYMes, masaEnPalabras, parteEnPalabras, PROBLEMA_DEL_CALCULO, reposoEnPalabras } from './calculador-del-objetivo';
+import { CantidadDelMacro } from './cantidad-del-macro';
 import { useNutricion } from './nutricion';
 
 type Lectura = { estado: 'leyendo' } | { estado: 'falla' } | { estado: 'listo'; datos: ReferenciaDelObjetivoResponse['data'] };
@@ -84,14 +88,22 @@ export function ReferenciaDelObjetivo({ versionId }: { versionId: string }) {
               </>
             ) : null}
             <div>
-              <dt>Fuente</dt>
-              <dd>{FICHA_DEL_METODO_DE_REPOSO[p.restingMethod].cita}</dd>
+              <dt>Método</dt>
+              <dd>
+                {FICHA_DEL_METODO_DE_REPOSO[p.restingMethod].nombre}{' '}
+                <ExplicacionAPedido boton="Fuente" nombre={`Fuente de ${FICHA_DEL_METODO_DE_REPOSO[p.restingMethod].nombre}`}>
+                  {FICHA_DEL_METODO_DE_REPOSO[p.restingMethod].cita}
+                </ExplicacionAPedido>
+              </dd>
             </div>
             <div>
               <dt>Factor de actividad</dt>
               <dd>
                 {numero(p.activity.factor, 2)}
-                {p.activity.restDayFactor !== null ? ` · día de descanso ${numero(p.activity.restDayFactor, 2)}` : ''} ({CITA_DEL_FACTOR_DE_ACTIVIDAD})
+                {p.activity.restDayFactor !== null ? ` · día de descanso ${numero(p.activity.restDayFactor, 2)}` : ''}{' '}
+                <ExplicacionAPedido boton="Fuente" nombre="Fuente de los niveles de actividad">
+                  {CITA_DEL_FACTOR_DE_ACTIVIDAD}
+                </ExplicacionAPedido>
               </dd>
             </div>
             <div>
@@ -120,7 +132,7 @@ export function ReferenciaDelObjetivo({ versionId }: { versionId: string }) {
                   {(['protein', 'carbohydrate', 'fat'] as const).map((m, i) => (
                     <span key={m}>
                       {i > 0 ? ' · ' : ''}
-                      {m === 'protein' ? 'Proteínas' : m === 'carbohydrate' ? 'Carbohidratos' : 'Grasas'} {numero(r.macros!.day[m].grams, 0)} g ({numero(r.macros!.day[m].perKg, 2)} g/kg, {parteEnPalabras(r.macros!.day[m].energyShare, r.macros!.day.energyKcal)})
+                      <CantidadDelMacro macro={m} cifra={numero(r.macros!.day[m].grams, 0)} /> ({numero(r.macros!.day[m].perKg, 2)} g/kg, {parteEnPalabras(r.macros!.day[m].energyShare, r.macros!.day.energyKcal)})
                     </span>
                   ))}
                 </dd>

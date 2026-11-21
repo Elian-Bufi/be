@@ -10,12 +10,19 @@
  * - «Usar estos valores» lleva las kcal, los gramos y la declaración del método al objetivo: el profesional los revisa y
  *   guarda. El objetivo sigue siendo su decisión, con su fundamento.
  * - Es una estimación, y se dice sin alarmismo. Ubica, no califica.
+ * - RP-05 (WP-RECORRIDO-PLAN-PULIDO, DL-188): «Usar la toma del…» o «Cargar a mano»; «Hacer una antropometría», opcional,
+ *   si el profesional tiene Antropometría con la persona; «De dónde sale», de la fuente; los textos largos (la población,
+ *   las franjas del factor, las citas) detrás de «?» o «Fuente», con la fórmula y la cuenta a la vista; el desplegable del
+ *   método entero; el día de descanso en su renglón; los g/kg con sus límites y paso de 0,1; el ajuste con su sentido y la
+ *   cantidad sin signo; «Usar estos valores en el objetivo», primario, al pie. RP-09: cada método dice para quién sirve.
  */
 import {
   CITA_DEL_FACTOR_DE_ACTIVIDAD,
   FACTORES_DE_ACTIVIDAD,
   FICHA_DEL_METODO_DE_REPOSO,
+  LIMITES_DE_LOS_GRAMOS_POR_KG,
   METODOS_DE_REPOSO,
+  notaDeLaPoblacion,
   numero,
   type MacrosDelDia,
   type MetodoDeReposo,
@@ -23,6 +30,7 @@ import {
 } from '@be/domain';
 import { useEffect, useId, useState } from 'react';
 import { CampoDeFecha } from '../../../../components/campo-de-fecha';
+import { ExplicacionAPedido } from '../../../../components/explicacion-a-pedido';
 import { Aviso, Campo } from '../../../../components/formulario';
 import { api } from '../../../../lib/api';
 import { hoyEn } from '../seguimiento/estado';
@@ -32,6 +40,7 @@ import {
   COPY_CALCULADOR as C,
   datoEnPalabras,
   declaracionParaElObjetivo,
+  deDondeSale,
   diaYMes,
   faltaEnPalabras,
   fichaEnUnaLinea,
@@ -42,6 +51,7 @@ import {
   valoresParaElObjetivo,
   type ValoresDelCalculador,
 } from './calculador-del-objetivo';
+import { CantidadDelMacro } from './cantidad-del-macro';
 import { useNutricion } from './nutricion';
 
 export type TomasDelCalculador = { readonly estado: 'leyendo' } | { readonly estado: 'falla' } | { readonly estado: 'listo'; readonly habilitada: boolean; readonly tomas: readonly TomaDeReferencia[] };
@@ -89,7 +99,10 @@ export function CalculadorDelObjetivo({
 }) {
   const id = useId();
   const hoy = hoyEn();
+  const { asesoradoId } = useNutricion();
   const [usado, setUsado] = useState(false);
+  // RP-05: después de abrir «Hacer una antropometría» (en otra pestaña), se ofrece volver a leer las tomas.
+  const [fueAAntropometria, setFueAAntropometria] = useState(false);
   // Al leer las tomas, el punto de partida: la más nueva, si hay.
   useEffect(() => {
     if (tomas.estado === 'listo' && !valores) onCambiar(calculadorInicial(tomas.habilitada ? tomas.tomas : [], hoy));
@@ -114,65 +127,91 @@ export function CalculadorDelObjetivo({
   const problemas = problemasDelCalculador(valores, hoy);
   const vivo = calculoEnVivo(valores, lista, hoy);
   const toma = lista.find((t) => t.evaluationId === valores.evaluationId) ?? null;
+  const masNueva = lista[0] ?? null;
   const ficha = FICHA_DEL_METODO_DE_REPOSO[valores.metodo];
   const err = (clave: string) => problemas[clave] ?? null;
   const paraElObjetivo = vivo ? valoresParaElObjetivo(vivo.resultado) : null;
+  const notaDeEdad = vivo ? notaDeLaPoblacion(valores.metodo, { ageYears: vivo.datos.ageYears?.value ?? null }) : null;
+  const usarLaToma = (t: TomaDeReferencia) => c({ fuente: 'toma', evaluationId: t.evaluationId, corridaId: t.composition.find((x) => x.leanMassKg !== null)?.calculationId ?? '' });
+  const L = LIMITES_DE_LOS_GRAMOS_POR_KG;
+  const numeroConPunto = (s: string) => s.replace(',', '.');
+  const factorDeReferencia = (escrito: string) => FACTORES_DE_ACTIVIDAD.find((f) => numero(f.valor, 2) === escrito || String(f.valor).replace('.', ',') === escrito)?.valor ?? '';
 
   return (
     <div className="calculador" data-calculador>
       <p className="nota">{C.estimacion}</p>
 
-      {/* ─── La referencia ─── */}
+      {/* ─── La referencia (RP-05: «Usar la toma del…» precarga; si no hay toma, a mano) ─── */}
       <fieldset className="grupo" data-referencia-del-calculo>
         <legend>{C.referencia}</legend>
         {!tomas.habilitada ? <p className="nota">{C.sinAntropometria}</p> : lista.length === 0 ? <p className="nota">{C.sinTomas}</p> : null}
-        {lista.length > 0 ? (
-          <div className="opciones-en-linea">
-            <label className="opcion-en-linea">
-              <input type="radio" name={`${id}-fuente`} checked={valores.fuente === 'toma'} onChange={() => c({ fuente: 'toma' })} /> {C.deUnaToma}
-            </label>
-            <label className="opcion-en-linea">
-              <input type="radio" name={`${id}-fuente`} checked={valores.fuente === 'a-mano'} onChange={() => c({ fuente: 'a-mano' })} /> {C.aMano}
-            </label>
-          </div>
-        ) : null}
-        {valores.fuente === 'toma' && lista.length > 0 ? (
-          <>
-            <div className="campo">
-              <label htmlFor={`${id}-toma`}>{C.toma}</label>
-              <select
-                id={`${id}-toma`}
-                value={valores.evaluationId}
-                onChange={(e) => {
-                  const t = lista.find((x) => x.evaluationId === e.target.value);
-                  c({ evaluationId: e.target.value, corridaId: t?.composition.find((x) => x.leanMassKg !== null)?.calculationId ?? '' });
-                }}
-              >
-                {lista.map((t, i) => (
-                  <option key={t.evaluationId} value={t.evaluationId}>
-                    Toma del {diaYMes(t.measuredOn)}
-                    {i === 0 ? ' · la más nueva' : ''}
-                  </option>
-                ))}
-              </select>
+        {masNueva ? (
+          <fieldset className="segmentos">
+            <legend className="visualmente-oculto">{C.referencia}</legend>
+            <div className="segmentos__fila">
+              <label className="segmento">
+                <input type="radio" name={`${id}-fuente`} checked={valores.fuente === 'toma'} onChange={() => usarLaToma(toma ?? masNueva)} />
+                {C.usarLaToma(diaYMes((toma ?? masNueva).measuredOn))}
+              </label>
+              <label className="segmento">
+                <input type="radio" name={`${id}-fuente`} checked={valores.fuente === 'a-mano'} onChange={() => c({ fuente: 'a-mano' })} />
+                {C.cargarAMano}
+              </label>
             </div>
-            {toma ? (
-              <dl className="datos datos--en-fila" data-datos-de-la-toma>
-                <div>
-                  <dt>Peso</dt>
-                  <dd>{toma.weightKg === null ? 'Sin indicar' : `${numero(toma.weightKg, 2)} kg`}</dd>
-                </div>
-                <div>
-                  <dt>Talla</dt>
-                  <dd>{toma.heightCm === null ? 'Sin indicar' : `${numero(toma.heightCm, 2)} cm`}</dd>
-                </div>
-                <div>
-                  <dt>Edad</dt>
-                  <dd>{toma.ageYears === null ? 'Sin indicar' : `${numero(toma.ageYears, 0)} años`}</dd>
-                </div>
-              </dl>
+          </fieldset>
+        ) : null}
+        {/* RP-05: a la toma, solo si el profesional tiene Antropometría con esta persona. Opcional, en otra pestaña: lo
+            escrito en el objetivo no se pierde. */}
+        {tomas.habilitada ? (
+          <p className="calculador__hacer-una-toma">
+            <a href={`/pro/advisees/anthropometry?id=${encodeURIComponent(asesoradoId)}&vista=preparacion`} target="_blank" rel="noopener" onClick={() => setFueAAntropometria(true)} data-hacer-una-antropometria>
+              {C.hacerUnaAntropometria}
+              <span className="visualmente-oculto"> {C.seAbreEnOtraPestana}</span>
+            </a>
+            {fueAAntropometria ? (
+              <>
+                {' · '}
+                <button type="button" className="boton boton--enlace" onClick={onReleer}>
+                  {C.releerLasTomas}
+                </button>
+              </>
             ) : null}
-            {toma && toma.composition.length > 0 ? (
+          </p>
+        ) : null}
+        {valores.fuente === 'toma' && toma ? (
+          <>
+            {lista.length > 1 ? (
+              <div className="campo campo--corto">
+                <label htmlFor={`${id}-toma`}>{C.otraToma}</label>
+                <select id={`${id}-toma`} value={valores.evaluationId} onChange={(e) => usarLaToma(lista.find((x) => x.evaluationId === e.target.value) ?? toma)}>
+                  {lista.map((t, i) => (
+                    <option key={t.evaluationId} value={t.evaluationId}>
+                      Toma del {diaYMes(t.measuredOn)}
+                      {i === 0 ? ' · la más nueva' : ''}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            ) : null}
+            <dl className="datos datos--en-fila" data-datos-de-la-toma>
+              <div>
+                <dt>Peso</dt>
+                <dd>{toma.weightKg === null ? 'Sin indicar' : `${numero(toma.weightKg, 2)} kg`}</dd>
+              </div>
+              <div>
+                <dt>Talla</dt>
+                <dd>{toma.heightCm === null ? 'Sin indicar' : `${numero(toma.heightCm, 2)} cm`}</dd>
+              </div>
+              <div>
+                <dt>Edad</dt>
+                <dd>{toma.ageYears === null ? 'Sin indicar' : `${numero(toma.ageYears, 0)} años`}</dd>
+              </div>
+              <div>
+                <dt>{C.deDondeSale}</dt>
+                <dd data-de-donde-sale>{deDondeSale(valores, lista)}</dd>
+              </div>
+            </dl>
+            {toma.composition.length > 0 ? (
               <div className="campo">
                 <label htmlFor={`${id}-masa`}>{C.masaLibre}</label>
                 <select id={`${id}-masa`} value={valores.corridaId} onChange={(e) => c({ corridaId: e.target.value })}>
@@ -187,10 +226,10 @@ export function CalculadorDelObjetivo({
                 </select>
               </div>
             ) : null}
-            {toma && (toma.heightCm === null || toma.ageYears === null) ? (
+            {toma.heightCm === null || toma.ageYears === null ? (
               <fieldset className="grupo grupo--anidado">
                 <legend>{C.loQueFalta}</legend>
-                <div className="fila-de-dato fila-de-dato--arriba">
+                <div className="fila-de-dato">
                   {toma.heightCm === null ? <Campo id={`${id}-talla-agregada`} etiqueta="Talla (cm)" inputMode="decimal" value={valores.tallaAgregada} onChange={(e) => c({ tallaAgregada: e.target.value })} error={err('tallaAgregada')} /> : null}
                   {toma.ageYears === null ? <Campo id={`${id}-edad-agregada`} etiqueta="Edad (años)" inputMode="decimal" value={valores.edadAgregada} onChange={(e) => c({ edadAgregada: e.target.value })} error={err('edadAgregada')} /> : null}
                 </div>
@@ -200,49 +239,52 @@ export function CalculadorDelObjetivo({
         ) : (
           <>
             <CampoDeFecha id={`${id}-fecha`} etiqueta="Fecha de los datos" max={hoy} hoy={hoy} value={valores.fecha} onChange={(fecha) => c({ fecha })} error={err('fecha')} required />
-            <div className="fila-de-dato fila-de-dato--arriba">
+            <div className="fila-de-dato">
               <Campo id={`${id}-peso`} etiqueta="Peso (kg)" inputMode="decimal" value={valores.peso} onChange={(e) => c({ peso: e.target.value })} error={err('peso')} />
               <Campo id={`${id}-talla`} etiqueta="Talla (cm)" inputMode="decimal" value={valores.talla} onChange={(e) => c({ talla: e.target.value })} error={err('talla')} />
               <Campo id={`${id}-edad`} etiqueta="Edad (años)" inputMode="decimal" value={valores.edad} onChange={(e) => c({ edad: e.target.value })} error={err('edad')} />
-            </div>
-            <div className="fila-de-dato fila-de-dato--arriba">
               <Campo id={`${id}-masa-a-mano`} etiqueta="Masa libre de grasa (kg, opcional)" inputMode="decimal" value={valores.masaLibre} onChange={(e) => c({ masaLibre: e.target.value })} error={err('masaLibre')} />
-              <Campo id={`${id}-nota-masa`} etiqueta="De dónde sale (opcional)" placeholder="Bioimpedancia del consultorio" value={valores.notaDeLaMasa} onChange={(e) => c({ notaDeLaMasa: e.target.value })} maxLength={200} />
             </div>
+            <p className="nota" data-de-donde-sale>
+              {C.deDondeSale}: {deDondeSale(valores, lista)}
+            </p>
           </>
         )}
       </fieldset>
 
-      {/* ─── El método ─── */}
+      {/* ─── El método (RP-05: el desplegable entero; RP-09: para quién sirve cada uno) ─── */}
       <fieldset className="grupo" data-metodo-del-calculo>
         <legend>{C.metodo}</legend>
-        <div className="fila-de-dato fila-de-dato--arriba">
-          <div className="campo">
+        <div className="campo calculador__metodo-elegido">
+          <span className="calculador__rotulo">
             <label htmlFor={`${id}-metodo`}>{C.metodo}</label>
-            <select id={`${id}-metodo`} value={valores.metodo} onChange={(e) => c({ metodo: e.target.value as MetodoDeReposo })}>
-              {METODOS_DE_REPOSO.map((m) => (
-                <option key={m} value={m}>
-                  {fichaEnUnaLinea(m)}
-                </option>
-              ))}
-            </select>
-          </div>
-          {ficha.necesita.includes('sex') ? (
-            <fieldset className="grupo grupo--anidado">
-              <legend>{C.sexo}</legend>
-              <p className="campo__ayuda">{C.sexoAyuda}</p>
-              <div className="opciones-en-linea">
-                <label className="opcion-en-linea">
-                  <input type="radio" name={`${id}-sexo`} checked={valores.sexo === 'FEMALE'} onChange={() => c({ sexo: 'FEMALE' })} /> {C.mujer}
-                </label>
-                <label className="opcion-en-linea">
-                  <input type="radio" name={`${id}-sexo`} checked={valores.sexo === 'MALE'} onChange={() => c({ sexo: 'MALE' })} /> {C.hombre}
-                </label>
-              </div>
-            </fieldset>
-          ) : null}
+            <ExplicacionAPedido nombre={C.poblacionDelMetodo}>{ficha.poblacion}</ExplicacionAPedido>
+            <ExplicacionAPedido boton="Fuente" nombre={`${C.fuente} de ${ficha.nombre}`}>
+              {ficha.cita}
+            </ExplicacionAPedido>
+          </span>
+          <select id={`${id}-metodo`} value={valores.metodo} onChange={(e) => c({ metodo: e.target.value as MetodoDeReposo })}>
+            {METODOS_DE_REPOSO.map((m) => (
+              <option key={m} value={m}>
+                {fichaEnUnaLinea(m)}
+              </option>
+            ))}
+          </select>
         </div>
-        <p className="nota">{ficha.poblacion}</p>
+        {ficha.necesita.includes('sex') ? (
+          <fieldset className="segmentos" data-sexo-de-la-ecuacion>
+            <legend>{C.sexo}</legend>
+            <div className="segmentos__fila">
+              <label className="segmento">
+                <input type="radio" name={`${id}-sexo`} checked={valores.sexo === 'FEMALE'} onChange={() => c({ sexo: 'FEMALE' })} /> {C.mujer}
+              </label>
+              <label className="segmento">
+                <input type="radio" name={`${id}-sexo`} checked={valores.sexo === 'MALE'} onChange={() => c({ sexo: 'MALE' })} /> {C.hombre}
+              </label>
+            </div>
+            <ExplicacionAPedido nombre={C.sexo}>{C.sexoAyuda}</ExplicacionAPedido>
+          </fieldset>
+        ) : null}
         {vivo ? (
           <div className="calculador__metodo" data-gasto-en-reposo>
             {vivo.resultado.resting.state === 'CALCULATED' ? (
@@ -258,7 +300,9 @@ export function CalculadorDelObjetivo({
                 <div>
                   <dt>{C.reposo}</dt>
                   <dd>
-                    <strong>{numero(vivo.resultado.resting.kcal, 0)} kcal por día</strong>
+                    <strong>
+                      <CantidadDelMacro macro="kcal" cifra={numero(vivo.resultado.resting.kcal, 0)} /> por día
+                    </strong>
                   </dd>
                 </div>
               </dl>
@@ -267,6 +311,11 @@ export function CalculadorDelObjetivo({
                 {vivo.resultado.resting.state === 'MISSING_DATA' ? faltaEnPalabras(vivo.resultado.resting.missing) : vivo.resultado.resting.reason}
               </p>
             )}
+            {notaDeEdad ? (
+              <p className="nota" data-fuera-de-la-poblacion>
+                {notaDeEdad}
+              </p>
+            ) : null}
             <details className="calculador__datos">
               <summary>Los datos que usa, con su origen</summary>
               <dl className="datos">
@@ -288,60 +337,86 @@ export function CalculadorDelObjetivo({
                 </div>
               </dl>
             </details>
-            <p className="nota calculador__cita">
-              <span>{C.fuente}: </span>
-              {ficha.cita}
-            </p>
           </div>
         ) : null}
       </fieldset>
 
-      {/* ─── Actividad y ajuste ─── */}
+      {/* ─── Actividad y ajuste (RP-05: el día de descanso, en su propio renglón, al lado del factor del día) ─── */}
       <fieldset className="grupo" data-actividad-del-calculo>
         <legend>{C.factor}</legend>
-        <p className="campo__ayuda">{C.factorAyuda}</p>
-        <div className="fila-de-dato fila-de-dato--arriba">
-          <div className="campo">
-            <label htmlFor={`${id}-factores`}>Factores de referencia</label>
-            <select id={`${id}-factores`} value={FACTORES_DE_ACTIVIDAD.find((f) => numero(f.valor, 2) === valores.factor || String(f.valor).replace('.', ',') === valores.factor)?.valor ?? ''} onChange={(e) => e.target.value && c({ factor: e.target.value.replace('.', ',') })}>
-              <option value="">Otro (escribilo al lado)</option>
-              {FACTORES_DE_ACTIVIDAD.map((f) => (
-                <option key={f.valor} value={f.valor}>
-                  {f.texto}
-                </option>
-              ))}
-            </select>
-          </div>
-          <Campo id={`${id}-factor`} etiqueta="Factor del día" inputMode="decimal" value={valores.factor} onChange={(e) => c({ factor: e.target.value })} error={err('factor')} />
-        </div>
-        <label className="opcion-en-linea">
-          <input type="checkbox" checked={valores.conFactorDeDescanso} onChange={(e) => c({ conFactorDeDescanso: e.target.checked })} /> {C.otroFactor}
-        </label>
-        {valores.conFactorDeDescanso ? (
-          <Campo id={`${id}-factor-descanso`} etiqueta={C.factorDeDescanso} inputMode="decimal" value={valores.factorDeDescanso} onChange={(e) => c({ factorDeDescanso: e.target.value })} error={err('factorDeDescanso')} />
-        ) : null}
-        <p className="nota calculador__cita">
-          <span>{C.fuente}: </span>
-          {CITA_DEL_FACTOR_DE_ACTIVIDAD}
+        <p className="calculador__a-pedido">
+          <ExplicacionAPedido nombre={C.queEsElFactor}>{C.factorAyuda}</ExplicacionAPedido>
+          <ExplicacionAPedido boton="Fuente" nombre={`${C.fuente} de los niveles de actividad`}>
+            {CITA_DEL_FACTOR_DE_ACTIVIDAD}
+          </ExplicacionAPedido>
         </p>
-        <div className="fila-de-dato fila-de-dato--arriba">
-          <div className="campo">
-            <label htmlFor={`${id}-ajuste`}>{C.ajuste}</label>
-            <select id={`${id}-ajuste`} value={valores.ajuste} onChange={(e) => c({ ajuste: e.target.value as ValoresDelCalculador['ajuste'] })}>
-              <option value="ninguno">{C.sinAjuste}</option>
-              <option value="KCAL">{C.enKcal}</option>
-              <option value="PERCENT">{C.enPorcentaje}</option>
-            </select>
-          </div>
-          {valores.ajuste !== 'ninguno' ? (
-            <Campo
-              id={`${id}-valor-ajuste`}
-              etiqueta={valores.ajuste === 'KCAL' ? 'Ajuste (kcal por día, − para un déficit)' : 'Ajuste (puntos, − para un déficit)'}
-              inputMode="text"
-              value={valores.valorDelAjuste}
-              onChange={(e) => c({ valorDelAjuste: e.target.value })}
-              error={err('valorDelAjuste')}
-            />
+        <div className="calculador__factores">
+          <fieldset className="grupo grupo--anidado" data-factor-del-dia>
+            <legend>{vivo?.parametros.activity.restDayFactor != null || valores.conFactorDeDescanso ? C.diaDeEntrenamiento : C.elDia}</legend>
+            <div className="fila-de-dato">
+              <div className="campo calculador__referencias">
+                <label htmlFor={`${id}-factores`}>Factores de referencia</label>
+                <select id={`${id}-factores`} value={factorDeReferencia(valores.factor)} onChange={(e) => e.target.value && c({ factor: e.target.value.replace('.', ',') })}>
+                  <option value="">Otro (escribilo al lado)</option>
+                  {FACTORES_DE_ACTIVIDAD.map((f) => (
+                    <option key={f.valor} value={f.valor}>
+                      {f.texto}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <Campo id={`${id}-factor`} etiqueta="Factor del día" inputMode="decimal" value={valores.factor} onChange={(e) => c({ factor: e.target.value })} error={err('factor')} />
+            </div>
+          </fieldset>
+          <fieldset className="grupo grupo--anidado" data-factor-del-descanso>
+            <legend>{C.diaDeDescanso}</legend>
+            <label className="opcion-en-linea">
+              <input type="checkbox" checked={valores.conFactorDeDescanso} onChange={(e) => c({ conFactorDeDescanso: e.target.checked })} /> {C.otroFactor}
+            </label>
+            {valores.conFactorDeDescanso ? (
+              <div className="fila-de-dato">
+                <div className="campo calculador__referencias">
+                  <label htmlFor={`${id}-factores-descanso`}>Factores de referencia</label>
+                  <select id={`${id}-factores-descanso`} value={factorDeReferencia(valores.factorDeDescanso)} onChange={(e) => e.target.value && c({ factorDeDescanso: e.target.value.replace('.', ',') })}>
+                    <option value="">Otro (escribilo al lado)</option>
+                    {FACTORES_DE_ACTIVIDAD.map((f) => (
+                      <option key={f.valor} value={f.valor}>
+                        {f.texto}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <Campo id={`${id}-factor-descanso`} etiqueta={C.factorDeDescanso} inputMode="decimal" value={valores.factorDeDescanso} onChange={(e) => c({ factorDeDescanso: e.target.value })} error={err('factorDeDescanso')} />
+              </div>
+            ) : (
+              <p className="nota">{C.mismoFactor}</p>
+            )}
+          </fieldset>
+        </div>
+        {/* RP-05: el sentido se elige; la cantidad va siempre sin signo. Por dentro se guarda con su signo. */}
+        <div className="calculador__ajuste">
+          <fieldset className="segmentos" data-sentido-del-ajuste>
+            <legend>{C.ajuste}</legend>
+            <div className="segmentos__fila">
+              {(['mantener', 'deficit', 'superavit'] as const).map((s) => (
+                <label key={s} className="segmento">
+                  <input type="radio" name={`${id}-ajuste`} checked={valores.ajuste === s} onChange={() => c({ ajuste: s })} />
+                  {s === 'mantener' ? C.mantener : s === 'deficit' ? C.deficit : C.superavit}
+                </label>
+              ))}
+            </div>
+          </fieldset>
+          {valores.ajuste !== 'mantener' ? (
+            <div className="fila-de-dato">
+              <div className="campo campo--corto">
+                <label htmlFor={`${id}-unidad-ajuste`}>{C.unidadDelAjuste}</label>
+                <select id={`${id}-unidad-ajuste`} value={valores.unidadDelAjuste} onChange={(e) => c({ unidadDelAjuste: e.target.value as ValoresDelCalculador['unidadDelAjuste'] })}>
+                  <option value="KCAL">{C.enKcal}</option>
+                  <option value="PERCENT">{C.enPorcentaje}</option>
+                </select>
+              </div>
+              <Campo id={`${id}-valor-ajuste`} etiqueta={C.cuanto(valores.unidadDelAjuste)} inputMode="decimal" value={valores.valorDelAjuste} onChange={(e) => c({ valorDelAjuste: e.target.value })} error={err('valorDelAjuste')} />
+            </div>
           ) : null}
         </div>
         {vivo?.resultado.totals && vivo.resultado.energy ? (
@@ -360,7 +435,9 @@ export function CalculadorDelObjetivo({
                   {numero(vivo.resultado.resting.state === 'CALCULATED' ? vivo.resultado.resting.kcal : 0, 0)} × {numero(vivo.parametros.activity.factor, 2)} = {numero(vivo.resultado.totals.day, 0)} kcal
                 </td>
                 <td>
-                  <strong>{numero(vivo.resultado.energy.day, 0)} kcal</strong>
+                  <strong>
+                    <CantidadDelMacro macro="kcal" cifra={numero(vivo.resultado.energy.day, 0)} />
+                  </strong>
                 </td>
               </tr>
               {vivo.resultado.totals.restDay !== null && vivo.resultado.energy.restDay !== null ? (
@@ -370,7 +447,9 @@ export function CalculadorDelObjetivo({
                     {numero(vivo.resultado.resting.state === 'CALCULATED' ? vivo.resultado.resting.kcal : 0, 0)} × {numero(vivo.parametros.activity.restDayFactor ?? 0, 2)} = {numero(vivo.resultado.totals.restDay, 0)} kcal
                   </td>
                   <td>
-                    <strong>{numero(vivo.resultado.energy.restDay, 0)} kcal</strong>
+                    <strong>
+                      <CantidadDelMacro macro="kcal" cifra={numero(vivo.resultado.energy.restDay, 0)} />
+                    </strong>
                   </td>
                 </tr>
               ) : null}
@@ -379,7 +458,7 @@ export function CalculadorDelObjetivo({
         ) : null}
       </fieldset>
 
-      {/* ─── Los macros ─── */}
+      {/* ─── Los macros (RP-05: g/kg con límites con nombre y paso de 0,1) ─── */}
       <fieldset className="grupo" data-macros-del-calculo>
         <legend>{C.macros}</legend>
         <label className="opcion-en-linea">
@@ -387,18 +466,44 @@ export function CalculadorDelObjetivo({
         </label>
         {valores.conMacros ? (
           <>
-            <div className="opciones-en-linea" role="radiogroup" aria-label={C.base}>
-              <span className="nota">{C.base}:</span>
-              <label className="opcion-en-linea">
-                <input type="radio" name={`${id}-base`} checked={valores.base === 'BODY_WEIGHT'} onChange={() => c({ base: 'BODY_WEIGHT' })} /> {C.delPeso}
-              </label>
-              <label className="opcion-en-linea">
-                <input type="radio" name={`${id}-base`} checked={valores.base === 'LEAN_MASS'} onChange={() => c({ base: 'LEAN_MASS' })} /> {C.deLaMasa}
-              </label>
-            </div>
-            <div className="fila-de-dato fila-de-dato--arriba">
-              <Campo id={`${id}-proteina`} etiqueta={C.proteina} inputMode="decimal" value={valores.proteinaPorKg} onChange={(e) => c({ proteinaPorKg: e.target.value })} error={err('proteinaPorKg')} />
-              <Campo id={`${id}-grasa`} etiqueta={C.grasa} inputMode="decimal" value={valores.grasaPorKg} onChange={(e) => c({ grasaPorKg: e.target.value })} error={err('grasaPorKg')} />
+            <fieldset className="segmentos">
+              <legend>{C.base}</legend>
+              <div className="segmentos__fila">
+                <label className="segmento">
+                  <input type="radio" name={`${id}-base`} checked={valores.base === 'BODY_WEIGHT'} onChange={() => c({ base: 'BODY_WEIGHT' })} /> {C.delPeso}
+                </label>
+                <label className="segmento">
+                  <input type="radio" name={`${id}-base`} checked={valores.base === 'LEAN_MASS'} onChange={() => c({ base: 'LEAN_MASS' })} /> {C.deLaMasa}
+                </label>
+              </div>
+            </fieldset>
+            <div className="fila-de-dato">
+              <Campo
+                id={`${id}-proteina`}
+                etiqueta={C.proteina}
+                type="number"
+                inputMode="decimal"
+                min={L.proteina.minimo}
+                max={L.proteina.maximo}
+                step={L.proteina.paso}
+                ayuda={C.entreLimites(L.proteina)}
+                value={numeroConPunto(valores.proteinaPorKg)}
+                onChange={(e) => c({ proteinaPorKg: e.target.value })}
+                error={err('proteinaPorKg')}
+              />
+              <Campo
+                id={`${id}-grasa`}
+                etiqueta={C.grasa}
+                type="number"
+                inputMode="decimal"
+                min={L.grasa.minimo}
+                max={L.grasa.maximo}
+                step={L.grasa.paso}
+                ayuda={C.entreLimites(L.grasa)}
+                value={numeroConPunto(valores.grasaPorKg)}
+                onChange={(e) => c({ grasaPorKg: e.target.value })}
+                error={err('grasaPorKg')}
+              />
             </div>
             {vivo?.resultado.macros ? (
               <>
@@ -419,10 +524,11 @@ export function CalculadorDelObjetivo({
       </fieldset>
 
       {!vivo ? <p className="nota">{C.sinCalculo}</p> : null}
-      <div className="acciones">
+      {/* RP-05: el paso que sigue, primario y al pie del resultado. */}
+      <div className="acciones calculador__usar">
         <button
           type="button"
-          className="boton boton--secundario"
+          className="boton boton--primario"
           data-usar-el-calculo
           disabled={!vivo || !paraElObjetivo}
           onClick={() => {
@@ -439,17 +545,17 @@ export function CalculadorDelObjetivo({
   );
 }
 
-/** Los macros de un día: gramos, g/kg, kcal y la parte de la energía con su base y su número. */
+/** Los macros de un día: gramos (con su ícono, RP-07), g/kg, kcal y la parte de la energía con su base y su número. */
 function TablaDeMacros({ titulo, m }: { titulo: string; m: MacrosDelDia }) {
   const filas = [
-    ['Proteínas', m.protein],
-    ['Carbohidratos', m.carbohydrate],
-    ['Grasas', m.fat],
+    ['Proteínas', 'protein', m.protein],
+    ['Carbohidratos', 'carbohydrate', m.carbohydrate],
+    ['Grasas', 'fat', m.fat],
   ] as const;
   return (
     <table className="tabla calculador__tabla" data-macros-del-dia>
       <caption>
-        {titulo} · {numero(m.energyKcal, 0)} kcal
+        {titulo} · <CantidadDelMacro macro="kcal" cifra={numero(m.energyKcal, 0)} />
       </caption>
       <thead>
         <tr>
@@ -461,10 +567,12 @@ function TablaDeMacros({ titulo, m }: { titulo: string; m: MacrosDelDia }) {
         </tr>
       </thead>
       <tbody>
-        {filas.map(([nombre, x]) => (
+        {filas.map(([nombre, macro, x]) => (
           <tr key={nombre}>
             <th scope="row">{nombre}</th>
-            <td>{numero(x.grams, 0)} g</td>
+            <td>
+              <CantidadDelMacro macro={macro} cifra={numero(x.grams, 0)} />
+            </td>
             <td>{numero(x.perKg, 2)}</td>
             <td>{numero(x.kcal, 0)}</td>
             <td>{parteEnPalabras(x.energyShare, m.energyKcal)}</td>
