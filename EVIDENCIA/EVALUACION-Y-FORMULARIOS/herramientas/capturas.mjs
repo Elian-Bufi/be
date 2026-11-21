@@ -398,6 +398,8 @@ async function registrarLaDeNutricion(page) {
   await clic(page, '[data-cambiar-dato="sexo"]');
   await page.select('[data-dato-del-calculo="sexo"] select', 'FEMALE');
   await clic(page, '[data-listo-dato="sexo"]');
+  // Mientras se lee lo que contó o lo medido, no se registra (revisión del PR): se espera a que terminen.
+  await visible(page, 'form[data-evaluacion-inicial][data-lecturas="listas"]', null, 45_000);
   await clic(page, 'form[data-evaluacion-inicial] button[type="submit"]', 'Registrar la evaluación');
   await visible(page, '[data-franja-de-pasos] [data-etapa="evaluacion"][data-estado="listo"]', null, 45_000);
   await abrirLaEtapaDeLaEvaluacion(page);

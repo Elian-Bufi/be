@@ -247,7 +247,7 @@ export function FormularioDeEvaluacion({ onRegistrada, onCancelar = null, conTit
   const porCampo = erroresPorCampo(errores);
   const nombresDePendientes = new Map((conto?.pendientes ?? []).map((p) => [p.solicitud.formRequestId, p.solicitud.templateName] as const));
   return (
-    <form className="formulario evaluacion-inicial" onSubmit={enviar} onBlur={avisos.alSalir} onKeyDown={avisos.alEnter} noValidate data-evaluacion-inicial>
+    <form className="formulario evaluacion-inicial" onSubmit={enviar} onBlur={avisos.alSalir} onKeyDown={avisos.alEnter} noValidate data-evaluacion-inicial data-lecturas={leyendo ? 'leyendo' : 'listas'}>
       <div className="evaluacion-inicial__cabecera">
         <h3>{titulo}</h3>
         <FechaDeLaEvaluacion id="evaluacion-ocurrencia" valor={ocurrencia} onCambiar={setOcurrencia} error={porCampo['evaluacion-ocurrencia'] ?? null} />

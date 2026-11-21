@@ -726,6 +726,8 @@ async function primerPlan({ p, d }) {
   await p.select('[data-dato-del-calculo="sexo"] select', 'FEMALE');
   await clic(p, '[data-listo-dato="sexo"]');
   await elemento(p, '[data-dato-del-calculo="sexo"][data-origen="CARGADO_POR_VOS"]', 'Femenino');
+  // Mientras se lee lo que contó o lo medido, no se registra (revisión del PR): se espera a que terminen.
+  await elemento(p, 'form[data-evaluacion-inicial][data-lecturas="listas"]');
   await clic(p, 'form[data-evaluacion-inicial] button[type="submit"]', 'Registrar la evaluación');
 
   // 2. El objetivo: se abre solo y propone la evaluación recién registrada.
