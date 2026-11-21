@@ -127,6 +127,8 @@ import { COPY_RANGOS_INDICADOS } from './rangos-indicados';
 import { CuadroDelRangoIndicado, rangoIndicadoDe, RangosIndicados, sePuedeIndicar, useRangosIndicados, type DiaParaLosRangos } from './rangos-indicados-del-plan';
 import { KcalDelObjetivo, SumaDeLosRangosIndicados } from './suma-de-los-rangos';
 import { PropuestaDeRangos } from './propuesta-de-rangos-del-plan';
+import { RotuloConIcono } from './cantidad-del-macro';
+import { MACRO_DEL_NUTRIENTE } from './abreviaturas-de-macros';
 import { pasoQueSigueEnNutricion } from './asistente-de-nutricion';
 import { pasoPedido } from '../asistente/paso-que-sigue';
 import { opcionAlGuardar, opcionNueva, subtituloDelCuadro, tituloDelCuadro } from './opcion-en-un-cuadro';
@@ -1471,7 +1473,7 @@ export function EditorDeBorrador({
                         <th scope="col">{COPY_RANGOS.comida}</th>
                         {NUTRIENTES_DEL_RANGO.map((n) => (
                           <th key={n} scope="col">
-                            {COPY_RANGOS.nutriente[n]}
+                            <RotuloConIcono macro={MACRO_DEL_NUTRIENTE[n]} texto={COPY_RANGOS.nutriente[n]} />
                           </th>
                         ))}
                       </tr>

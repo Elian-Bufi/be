@@ -42,12 +42,12 @@ import {
   problemasDelPesoAMano,
   problemasEnSuCampo,
   rangoEnPalabras,
-  rangoEnUnaLinea,
   usaGramosPorKilo,
   type DondeVaElRango,
   type FormularioDelRango,
   type PesoElegido,
 } from './rangos-indicados';
+import { RangoIndicadoConIconos } from './cantidad-del-macro';
 
 export type EstadoDeLosRangos = { readonly estado: 'leyendo' } | { readonly estado: 'falla' } | { readonly estado: 'listo'; readonly datos: RangosDelPlan };
 
@@ -131,7 +131,9 @@ export function RangosIndicados({ rangos, dias, titulo = true }: { rangos: Rango
         <span className="rangos-indicados__donde">{nombre}</span>{' '}
         {r ? (
           <span className="rangos-indicados__valor">
-            <span aria-hidden="true">{rangoEnUnaLinea(r)}</span>
+            <span aria-hidden="true">
+              <RangoIndicadoConIconos rango={r} />
+            </span>
             <span className="visualmente-oculto">{rangoEnPalabras(r)}</span>
           </span>
         ) : (

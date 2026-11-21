@@ -77,7 +77,7 @@ test('a mano: los topes, la fecha y la masa libre de grasa menor que el peso; el
   assert.deepEqual(K.parametrosDelCalculador({ ...bien, ajuste: 'superavit', valorDelAjuste: '250' }, HOY).adjustment, { kind: 'KCAL', value: 250 });
   assert.deepEqual(K.parametrosDelCalculador({ ...bien, ajuste: 'deficit', unidadDelAjuste: 'PERCENT', valorDelAjuste: '15' }, HOY).adjustment, { kind: 'PERCENT', value: -15 });
   assert.equal(K.parametrosDelCalculador({ ...bien, ajuste: 'mantener', valorDelAjuste: '300' }, HOY).adjustment, null);
-  assert.equal(K.problemasDelCalculador({ ...bien, unidadDelAjuste: 'PERCENT', valorDelAjuste: '60' }, HOY).valorDelAjuste, 'Hasta 40 % del gasto total.');
+  assert.equal(K.problemasDelCalculador({ ...bien, unidadDelAjuste: 'PERCENT', valorDelAjuste: '60' }, HOY).valorDelAjuste, 'Hasta 40, en porcentaje del gasto total.');
   assert.match(K.problemasDelCalculador({ ...bien, valorDelAjuste: '−300' }, HOY).valorDelAjuste, /sin signo: «Déficit» ya dice para qué lado/);
   assert.match(K.problemasDelCalculador({ ...bien, valorDelAjuste: '0' }, HOY).valorDelAjuste, /mayor que cero/);
   // RP-05: «De dónde sale» lo dice la fuente; la masa a mano no lleva una nota escrita.

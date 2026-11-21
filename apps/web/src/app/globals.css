@@ -20988,3 +20988,32 @@ html:has(.estacion:not([data-en-el-asistente])) {
 .aviso-de-datos-nuevos .boton--enlace {
   font-weight: 650;
 }
+
+/* ─── RP-08 (WP-RECORRIDO-PLAN-PULIDO, DL-188): la cuenta de los gramos, detrás de un «?» junto al objetivo del día ─── */
+/* Cerrado, el «?» va en el mismo renglón que la tira del objetivo; abierto, la cuenta ocupa su renglón. Si los gramos no
+   coinciden con las kcal, el aviso corto sigue a la vista, en un renglón propio. */
+.plan__objetivo .kcal-del-objetivo--compacto {
+  display: contents;
+}
+
+.plan__objetivo .kcal-del-objetivo--compacto > .a-pedido {
+  align-self: center;
+}
+
+.plan__objetivo .kcal-del-objetivo--compacto > .a-pedido:has(> .a-pedido__texto:not([hidden])) {
+  flex-basis: 100%;
+}
+
+.plan__objetivo .kcal-del-objetivo--compacto > .kcal-del-objetivo__aviso {
+  flex-basis: 100%;
+  order: 3;
+  margin: 0;
+}
+
+.kcal-del-objetivo__renglon {
+  margin: 0.1rem 0;
+}
+
+.cantidades-con-iconos {
+  display: inline;
+}

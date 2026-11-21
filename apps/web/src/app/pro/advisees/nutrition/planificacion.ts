@@ -141,6 +141,15 @@ export function loQueAportaLaComida(rango: RangoPorNutriente, opciones: number):
   }).join(' · ');
 }
 
+/**
+ * RP-07 (DL-188): las cifras de lo que aporta la comida, sin la unidad ni la inicial, para escribirlas con su ícono
+ * («[ícono] 520–700 kcal», «[ícono] 30–52 g P»). `null` en un nutriente: «Sin dato». `null` entero: la comida no tiene opciones.
+ */
+export function cifrasDeLoQueAporta(rango: RangoPorNutriente, opciones: number): Readonly<Record<NutrienteDelRango, string | null>> | null {
+  if (opciones === 0) return null;
+  return Object.fromEntries(NUTRIENTES_DEL_RANGO.map((n) => [n, deCuantoACuanto(rango[n], n)])) as Record<NutrienteDelRango, string | null>;
+}
+
 /** Lo mismo con los nombres completos, para el lector de pantalla: «Energía de 520 a 700 kcal · Proteínas …». */
 export function loQueAportaLaComidaEnPalabras(rango: RangoPorNutriente, opciones: number): string | null {
   if (opciones === 0) return null;
@@ -500,6 +509,9 @@ export const COPY_PLANIFICACION = {
   noCoinciden: (k: KcalDeLosGramos, indicadas: number) =>
     `No coinciden con las ${numero(indicadas, 0)} kcal indicadas: los gramos suman ${numero(Math.abs(k.frente!.diferencia), 0)} kcal ${k.frente!.diferencia > 0 ? 'más' : 'menos'}. Revisá los gramos o las kcal; se puede guardar igual.`,
   coinciden: (indicadas: number) => `Coinciden con las ${numero(indicadas, 0)} kcal indicadas.`,
+  /** RP-08 (DL-188): el aviso que queda a la vista junto al objetivo del día; la cuenta entera, detrás del «?». */
+  noCoincidenCorto: (k: KcalDeLosGramos, indicadas: number) => `Los gramos suman ${numero(k.kcal, 0)} kcal: no coinciden con las ${numero(indicadas, 0)} kcal indicadas.`,
+  cuentaDeLosGramos: 'Cómo suman los gramos del objetivo',
   /** En un renglón (el objetivo vigente, en el editor): «Los gramos suman 1.750 kcal (proteínas 79 g × 4 + …)». */
   kcalEnUnRenglon: (k: KcalDeLosGramos) => `Los gramos suman ${numero(k.kcal, 0)} kcal (${k.cuenta})`,
   conLosTres: 'Con los tres macros escritos se ve cuántas kcal suman, con 4, 4 y 9 kcal por gramo.',

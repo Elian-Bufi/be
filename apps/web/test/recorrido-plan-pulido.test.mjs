@@ -111,3 +111,32 @@ test('RP-07 · ícono, número y abreviatura, con la palabra completa para el le
   assert.match(pieza, /<span aria-hidden="true">\{cantidadAbreviada\(macro, cifra\)\}<\/span>/);
   assert.match(pieza, /<span className="visualmente-oculto">\{cantidadEnPalabras\(macro, cifra\)\}<\/span>/);
 });
+
+test('RP-08 · la cuenta de los gramos va detrás de un «?» junto al objetivo del día; si no coinciden, el aviso corto queda a la vista', () => {
+  const piezas = leer('app/pro/advisees/nutrition/suma-de-los-rangos.tsx');
+  const compacto = piezas.slice(piezas.indexOf('if (compacto) {'), piezas.indexOf('return (\n    <div className="kcal-del-objetivo" data-kcal-del-objetivo>'));
+  assert.match(compacto, /<ExplicacionAPedido nombre=\{C\.cuentaDeLosGramos\} como="div">/);
+  assert.match(compacto, /\{noCoinciden && kcal !== null \? \(\s*<p className="kcal-del-objetivo__aviso" data-no-coinciden>/);
+  assert.match(compacto, /C\.noCoincidenCorto\(k, kcal\)/);
+  // Lo largo (la cuenta con 4, 4 y 9 y la parte de cada macro) queda adentro del «?».
+  assert.ok(compacto.indexOf('C.kcalEnUnRenglon(k)') > compacto.indexOf('<ExplicacionAPedido'));
+  assert.ok(compacto.indexOf('data-porcentajes-del-objetivo') > compacto.indexOf('<ExplicacionAPedido'));
+});
+
+test('RP-07 · la pieza se usa en el calculador, las comidas, los rangos y «Rangos y totales»', () => {
+  for (const [archivo, pieza] of [
+    ['nutrition/calculador.tsx', '<CantidadDelMacro '],
+    ['nutrition/referencia-del-objetivo.tsx', '<CantidadDelMacro '],
+    ['nutrition/comida-del-editor.tsx', '<RangoIndicadoConIconos '],
+    ['nutrition/comida-del-editor.tsx', '<NutrientesConIconos cifras={cifrasDelTotal(total)}'],
+    ['nutrition/suma-de-los-rangos.tsx', '<RangoIndicadoConIconos '],
+    ['nutrition/rangos-indicados-del-plan.tsx', '<RangoIndicadoConIconos '],
+    ['nutrition/editor.tsx', '<RotuloConIcono macro={MACRO_DEL_NUTRIENTE[n]}'],
+  ]) {
+    assert.ok(leer(`app/pro/advisees/${archivo}`).includes(pieza), `${archivo}: ${pieza}`);
+  }
+  assert.equal(A.cifraDeLosLimites(125, 156), '125 a 156');
+  assert.equal(A.cifraDeLosLimites(30, null), 'desde 30');
+  assert.equal(A.cifraDeLosLimites(null, 1850), 'hasta 1.850');
+  assert.equal(A.cifraDeLosLimites(40, 40), '40');
+});

@@ -165,7 +165,7 @@ export function problemasDelCalculador(v: ValoresDelCalculador, hoy: string): Re
     else if (/^[−+-]/.test(texto)) p.valorDelAjuste = `Escribí la cantidad sin signo: «${v.ajuste === 'deficit' ? 'Déficit' : 'Superávit'}» ya dice para qué lado.`;
     else if (x === null) p.valorDelAjuste = 'Escribí un número, por ejemplo 300.';
     else if (!(x > 0)) p.valorDelAjuste = 'Escribí una cantidad mayor que cero, o elegí «Mantener».';
-    else if (x > t.maximo) p.valorDelAjuste = v.unidadDelAjuste === 'KCAL' ? `Hasta ${numero(t.maximo)} kcal por día.` : `Hasta ${numero(t.maximo)} % del gasto total.`;
+    else if (x > t.maximo) p.valorDelAjuste = v.unidadDelAjuste === 'KCAL' ? `Hasta ${numero(t.maximo)} kcal por día.` : `Hasta ${numero(t.maximo)}, en porcentaje del gasto total.`;
   }
   if (v.conMacros) {
     // RP-05: para un cálculo nuevo valen los límites con nombre del dominio (los topes del contrato son más anchos).
@@ -379,9 +379,9 @@ export const COPY_CALCULADOR = {
   deficit: 'Déficit',
   superavit: 'Superávit',
   enKcal: 'kcal por día',
-  enPorcentaje: '% del gasto total',
+  enPorcentaje: 'porcentaje del gasto total',
   unidadDelAjuste: 'En',
-  cuanto: (u: 'KCAL' | 'PERCENT') => (u === 'KCAL' ? 'Cuánto (kcal por día)' : 'Cuánto (% del gasto total)'),
+  cuanto: (u: 'KCAL' | 'PERCENT') => (u === 'KCAL' ? 'Cuánto (kcal por día)' : 'Cuánto (porcentaje del gasto total)'),
   energia: 'Energía del día',
   macros: 'Macros',
   conMacros: 'Calcular los macros (proteína y grasa en g/kg, carbohidratos por diferencia)',
