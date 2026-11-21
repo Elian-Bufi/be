@@ -31,6 +31,7 @@ import { ReferenciaDelObjetivo } from './referencia-del-objetivo';
 import { ContextoCitado } from '../training/resumen';
 import { useNombres } from '../../../../lib/nombres-ocultos';
 import { FormulariosDeLaEvaluacion } from '../evaluacion/formularios-de-la-evaluacion';
+import { CorreccionesDespuesDeLaEvaluacion } from '../evaluacion/evaluacion-inicial';
 
 interface Lecturas {
   readonly evaluaciones: Lectura<EvaluacionNutricional[]>;
@@ -218,7 +219,8 @@ function Resumen({
                       {/* DL-179: lo que cita la última evaluación, como en Entrenamiento. */}
                       {lista[0].formResponseReferences.length > 0 ? <ContextoCitado citas={lista[0].formResponseReferences} /> : null}
                       {/* DL-185 (EVF-05): los formularios vinculados a la última evaluación. */}
-                      <FormulariosDeLaEvaluacion key={lista[0].evaluationId} area="nutrition" token={token} asesoradoId={asesoradoId} sesionPerdida={sesionPerdida} evaluationId={lista[0].evaluationId} />
+                      {/* DL-189 (RP-16): al pie, lo que la persona corrigió al confirmar, después de esta evaluación. */}
+                      <FormulariosDeLaEvaluacion key={lista[0].evaluationId} area="nutrition" token={token} asesoradoId={asesoradoId} sesionPerdida={sesionPerdida} evaluationId={lista[0].evaluationId} pie={<CorreccionesDespuesDeLaEvaluacion area="nutrition" token={token} asesoradoId={asesoradoId} sesionPerdida={sesionPerdida} evaluacion={lista[0]} />} />
                     </>
                   ) : (
                     'Sin evaluaciones registradas.'

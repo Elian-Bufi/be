@@ -414,6 +414,7 @@ export const COPY_EVALUACION_INICIAL = {
   corrigioLaPregunta: (nombre: string, pregunta: string, ahora: string): string => `${nombre} corrigió «${pregunta}»: ahora dice ${ahora}`,
   quitoLaRespuesta: (nombre: string, pregunta: string): string => `${nombre} quitó la respuesta de «${pregunta}»`,
   corrigioOtra: (nombre: string): string => `${nombre} corrigió una respuesta`,
+  correccionesDespues: (nombre: string): string => `Lo que ${nombre} corrigió al confirmar, después de esta evaluación`,
   // Lo medido
   toma: (dia: string): string => `Toma del ${dia}`,
   verToma: 'Ver toma',

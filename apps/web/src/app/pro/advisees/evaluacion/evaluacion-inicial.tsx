@@ -38,6 +38,7 @@ import { api, nuevaClaveDeIdempotencia, type Resultado } from '../../../../lib/a
 import { dia, diaCivil, diaSinElAnioEnCurso, diaYMesCivil, horaDelDia } from '../../../../lib/formato';
 import { mensajeDeFallo } from '../../../../lib/intento';
 import { useSesion } from '../../../../lib/sesion';
+import { usePersonaDelArea } from '../marco-del-area';
 import { CargarLaSolicitud } from '../forms/cargar';
 import { propositoAlElegir } from '../forms/formulario-de-inicio';
 import { RespuestasDelFormulario } from './formularios-de-la-evaluacion';
@@ -491,6 +492,62 @@ export function LoQueNecesitaElCalculo({
         ))}
       </div>
     </section>
+  );
+}
+
+// ─── RP-16 · lo que corrigió después de la evaluación ───────────────────────────────────────────
+
+/**
+ * RP-16 · en la evaluación registrada: lo que la persona corrigió al confirmar lo que cargó este profesional, si lo
+ * confirmó después de registrarla. El antes es lo que quedó en la evaluación, cuando es un dato del cálculo (EI-D12).
+ * Lee API-CTX-01 y, de cada formulario confirmado después, API-FRI-03. Sin correcciones, no se muestra nada.
+ */
+export function CorreccionesDespuesDeLaEvaluacion({
+  area,
+  token,
+  asesoradoId,
+  sesionPerdida,
+  evaluacion,
+}: Comun & { evaluacion: { readonly recordedAt: string; readonly assessment: { readonly entries: readonly { readonly concept: string; readonly value: string | number; readonly unit?: string | null }[] } } }) {
+  const nombre = usePersonaDelArea() ?? EI.persona;
+  const alcance = ALCANCE_DE_LA_EVALUACION[area];
+  const registrado = evaluacion.assessment.entries;
+  const desde = evaluacion.recordedAt;
+  const [lineas, setLineas] = useState<readonly { readonly clave: string; readonly formulario: string; readonly texto: string }[]>([]);
+  useEffect(() => {
+    let vigente = true;
+    void (async () => {
+      const ctx = await api.respuestasDelContexto(token, asesoradoId);
+      if (!vigente || sesionPerdida(ctx) || !ctx.ok) return;
+      const despues = ctx.datos.data.forms.filter((f) => f.scope === alcance && f.transcribedConfirmedAt !== null && new Date(f.transcribedConfirmedAt).getTime() > new Date(desde).getTime());
+      const todas: { clave: string; formulario: string; texto: string }[] = [];
+      for (const form of despues) {
+        const v = await api.consultarVistaDeSolicitud(token, form.formRequestId);
+        if (!vigente || sesionPerdida(v)) return;
+        const corregidos = v.ok ? (v.datos.data.response?.transcription?.correctedFieldCodes ?? []) : [];
+        for (const c of correccionesDeLaPersona({ corregidos, respuestas: renglonesDelRespondido(form), registrado })) {
+          todas.push({ clave: `${form.formResponseId}-${c.fieldCode}`, formulario: form.templateName, texto: correccionEnPalabras(c, nombre) });
+        }
+      }
+      if (vigente) setLineas(todas);
+    })();
+    return () => {
+      vigente = false;
+    };
+  }, [token, asesoradoId, sesionPerdida, alcance, desde, registrado, nombre]);
+  if (lineas.length === 0) return null;
+  return (
+    <div className="correcciones-despues" data-correcciones-despues>
+      <p className="lista__titulo">{EI.correccionesDespues(nombre)}</p>
+      <ul className="lo-que-conto-en-la-evaluacion__correcciones">
+        {lineas.map((l) => (
+          <li key={l.clave}>
+            <Icono nombre="corregido" tamano={15} />
+            {l.texto} <span className="nota">· «{l.formulario}»</span>
+          </li>
+        ))}
+      </ul>
+    </div>
   );
 }
 

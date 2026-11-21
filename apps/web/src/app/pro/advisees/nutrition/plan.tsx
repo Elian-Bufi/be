@@ -46,6 +46,7 @@ import { DialogoEmpezarDesdePlantilla, type PlantillaParaEmpezar } from '../empe
 import { AvisoDeLoQueFalta, seRetiro } from '../lecturas-parciales';
 import { PrimerPlan } from '../primer-plan';
 import { FormulariosDeLaEvaluacion } from '../evaluacion/formularios-de-la-evaluacion';
+import { CorreccionesDespuesDeLaEvaluacion } from '../evaluacion/evaluacion-inicial';
 import { TiraDelObjetivo } from '../seguimiento/tira-del-objetivo';
 import { HistorialDelPlan, MenuDePlantillas, SelectorDeVersion, type VersionMostrada } from '../versiones-del-plan';
 import { EditorDeBorrador } from './editor';
@@ -581,7 +582,7 @@ function PrimerPlanDeNutricion({ objetivoDesde, accionesDelPlan, onObjetivo }: {
             }}
           />
         }
-        detalleDeLaEvaluacion={ultima ? <FormulariosDeLaEvaluacion key={ultima.evaluationId} area="nutrition" token={token} asesoradoId={asesoradoId} sesionPerdida={sesionPerdida} evaluationId={ultima.evaluationId} /> : null}
+        detalleDeLaEvaluacion={ultima ? <FormulariosDeLaEvaluacion key={ultima.evaluationId} area="nutrition" token={token} asesoradoId={asesoradoId} sesionPerdida={sesionPerdida} evaluationId={ultima.evaluationId} pie={<CorreccionesDespuesDeLaEvaluacion area="nutrition" token={token} asesoradoId={asesoradoId} sesionPerdida={sesionPerdida} evaluacion={ultima} />} /> : null}
         formularioDeObjetivo={
           <FormularioDeObjetivo
             evaluaciones={evaluaciones}

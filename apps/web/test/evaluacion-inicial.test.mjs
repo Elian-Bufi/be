@@ -138,8 +138,12 @@ test('TEST-EVI-022 · los tres bloques: lo que contó con su origen, lo medido y
   // La toma es la del calculador (API-OBC-01), y «Ver toma» abre esa toma en Antropometría.
   assert.match(PIEZAS, /api\.tomasDeReferencia\(token, asesoradoId\)/);
   assert.match(PIEZAS, /vista=evaluaciones&evaluacion=\$\{encodeURIComponent\(toma\.evaluationId\)\}/);
-  // RP-16: las correcciones salen de la transcripción (API-FRI-03).
+  // RP-16: las correcciones salen de la transcripción (API-FRI-03), al registrar y en la evaluación registrada, con el antes
+  // de lo que quedó en ella (en «Empezar el plan» y en Resumen).
   assert.match(PIEZAS, /v\.datos\.data\.response\?\.transcription\?\.correctedFieldCodes \?\? \[\]/);
+  assert.match(PIEZAS, /correccionesDeLaPersona\(\{ corregidos, respuestas: renglonesDelRespondido\(form\), registrado \}\)/);
+  assert.match(PLAN_DE_NUTRICION, /pie=\{<CorreccionesDespuesDeLaEvaluacion area="nutrition" [^\n]*evaluacion=\{ultima\} \/>\}/);
+  assert.match(leer('nutrition/resumen.tsx'), /pie=\{<CorreccionesDespuesDeLaEvaluacion area="nutrition" [^\n]*evaluacion=\{lista\[0\]\} \/>\}/);
 });
 
 test('TEST-EVI-023 · lo que se registra sale del dominio y lo que se vincula es lo que muestra «Lo que contó»', () => {
