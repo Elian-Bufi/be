@@ -123,13 +123,15 @@ export function medicionesDeLaEleccion(
 /**
  * Las métricas que muestra la toma para unas claves: la definición del protocolo si la declara; si no, la del catálogo de
  * mediciones de BE (las de Kerr que el perfil completo no tiene, DL-190 AK-D03). Una clave que BE no conoce no se
- * inventa: queda para la carga libre.
+ * inventa: queda para la carga libre. Las claves llegan también de la dirección (`sueltas=`): se miran solo las propias
+ * del catálogo, para que `__proto__` o `constructor` no se lean como una medición con la familia de un objeto.
  */
 export function metricasDeLaToma(protocolo: readonly MetricaDelProtocolo[], claves: readonly string[]): MetricaDelProtocolo[] {
   const delProtocolo = new Map(protocolo.map((m) => [m.clave, m]));
   return claves.flatMap((clave): MetricaDelProtocolo[] => {
     const declarada = delProtocolo.get(clave);
     if (declarada) return [declarada];
+    if (!Object.hasOwn(FAMILIA_DE_METRICA, clave) || !Object.hasOwn(UNIDAD_DE_METRICA, clave)) return [];
     const familia = FAMILIA_DE_METRICA[clave];
     const unidad = UNIDAD_DE_METRICA[clave];
     return familia && unidad ? [{ clave, nombre: nombreDeMetrica(clave), familia, unidades: [unidad] }] : [];

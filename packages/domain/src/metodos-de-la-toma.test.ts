@@ -107,6 +107,16 @@ test('una medición de Kerr que el protocolo no declara se arma con el catálogo
   assert.ok(!otras.some((m) => m.clave === 'peso'));
 });
 
+test('una clave de la dirección con el nombre de una propiedad de los objetos (`__proto__`, `constructor`) no arma un campo', () => {
+  // `?sueltas=__proto__` llegaba como una medición con familia, nombre y unidad que eran objetos o funciones: la figura le
+  // buscaba un sitio (`clave in sitios`) y la pantalla de la toma se caía al dibujar su nombre.
+  const raras = ['__proto__', 'constructor', 'toString', 'hasOwnProperty', 'valueOf'];
+  assert.deepEqual(metricasDeLaToma([], raras), []);
+  const claves = medicionesDeLaEleccion(familiasDeMetodos(METODOS), new Set(['imc']), { sueltas: raras });
+  assert.deepEqual(metricasDeLaToma([], claves).map((m) => m.clave), ['peso', 'talla', 'edad']);
+  assert.ok(otrasMediciones([], ['peso']).every((m) => typeof m.familia === 'string' && typeof m.nombre === 'string'));
+});
+
 test('viene elegido lo que el profesional usó en su última toma, por método y no por versión', () => {
   const familias = familiasDeMetodos(METODOS);
   assert.deepEqual(familiasHabituales(familias, ['id-MET-GRASA-JP7-H', 'id-que-ya-no-existe']), ['grasa-jackson-pollock-7']);
