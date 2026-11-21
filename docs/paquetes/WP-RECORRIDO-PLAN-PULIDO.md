@@ -109,6 +109,10 @@ Lo que se corrigió en la rama, con su prueba:
   guardar. El cuadro anterior sí proponía ese rango; si hace falta, es un agregado.
 - **En el paso de los rangos del asistente,** cada «Reparto por comida» dice de qué día tipo es.
 - **Renombrar una comida** ya no borra las partes escritas del reparto.
+- **El reparto va después de las comidas** (y de «Agregar comida») en el día tipo. Arriba, al llegar el cálculo del
+  objetivo crecía unos 450 px y corría las comidas bajo el puntero: un clic caía en la tabla del reparto (dos recorridos
+  de la CI fallaron así), y las comidas quedaban debajo del pliegue. Alternativa: arriba, leyendo el cálculo antes de
+  pintar el día.
 - **El chip del acceso (RP-01, RP-D01):** «Vínculo activo» solo se leía como acceso vigente; ahora dice «· acceso
   pendiente» o «· acceso no disponible». Con pista, el chip recibe el foco: la pista llega con el teclado.
 - **Los recorridos:** la pista al tacto volvía a mirarse después de navegar a otra página (pasaba sin probar nada); y

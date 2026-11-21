@@ -1296,9 +1296,6 @@ export function EditorDeBorrador({
           {/* NUP-06: la suma de los rangos indicados de las comidas, frente al objetivo del día. Otra cuenta que la de las
               opciones («Rangos y totales»): la tabla lo dice. */}
           <SumaDeLosRangosIndicados comidas={dia.meals.map((m, j) => ({ nombre: nombreDeLaComida(m, j), rango: rangoIndicadoDe(rangosIndicados.estado, dia.dayTypeId, m.mealId) }))} objetivo={objetivo} />
-          {/* RP-06 (DL-188): el reparto por comida del día tipo que se mira, a la vista (antes, un cuadro aparte para todos
-              los días). Propone los rangos de cada comida; solo llena los vacíos, o pide confirmar antes de reemplazar. */}
-          <RepartoPorComida key={dia.dayTypeId ?? `nuevo-${i}`} token={token} planId={planId} objetivo={objetivo} dia={diaParaLaPropuesta(dia, i)} comidasSinGuardar={dia.meals.filter((m) => !m.mealId).length} rangos={rangosIndicados} />
           {cambiandoElNombreDelDia || dia.label.trim() === '' ? (
             <CampoDeNombre
               id={`dia-${i}`}
@@ -1454,6 +1451,12 @@ export function EditorDeBorrador({
               </div>
             ) : null}
           </div>
+          {/* RP-06 (DL-188): el reparto por comida del día tipo que se mira, a la vista (antes, un cuadro aparte para todos
+              los días). Propone los rangos de cada comida; solo llena los vacíos, o pide confirmar antes de reemplazar.
+              Revisión del PR: va después de las comidas. Arriba, cuando llegaba el cálculo del objetivo (API-OBC-03) crecía
+              unos 450 px y corría las comidas y «Agregar comida» bajo el puntero (un clic caía en la tabla del reparto; en
+              la CI, dos recorridos fallaron por eso), y las dejaba debajo del pliegue. */}
+          <RepartoPorComida key={dia.dayTypeId ?? `nuevo-${i}`} token={token} planId={planId} objetivo={objetivo} dia={diaParaLaPropuesta(dia, i)} comidasSinGuardar={dia.meals.filter((m) => !m.mealId).length} rangos={rangosIndicados} />
         </div>
       ) : null}
       </div>

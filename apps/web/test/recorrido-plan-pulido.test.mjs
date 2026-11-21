@@ -209,6 +209,10 @@ test('RP-06 · el reparto por comida, en el plan: una parte por comida que suma 
   // La pantalla: a la vista en el día tipo (no en un cuadro), y la casilla para reemplazar.
   const editor = leer('app/pro/advisees/nutrition/editor.tsx');
   assert.match(editor, /<RepartoPorComida key=\{dia\.dayTypeId \?\? `nuevo-\$\{i\}`\}/);
+  // Revisión del PR: después de las comidas y de «Agregar comida». Arriba, al llegar el cálculo del objetivo, crecía y
+  // corría las comidas bajo el puntero.
+  assert.ok(editor.indexOf('<RepartoPorComida key={dia.dayTypeId') > editor.indexOf('id="agregar-comida"'), 'el reparto va después de «Agregar comida»');
+  assert.ok(editor.indexOf('<RepartoPorComida key={dia.dayTypeId') > editor.indexOf('<ComidaDelEditor'), 'el reparto va después de las comidas');
   assert.doesNotMatch(editor, /PropuestaDeRangos/);
   const pieza = leer('app/pro/advisees/nutrition/propuesta-de-rangos-del-plan.tsx');
   assert.doesNotMatch(pieza, /CuadroEnfocado/);
