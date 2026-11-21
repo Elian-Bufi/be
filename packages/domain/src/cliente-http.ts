@@ -322,6 +322,7 @@ import {
   ListaDeCorridasResponseSchema,
   ListaDeMetodosResponseSchema,
   MetodoResponseSchema,
+  MetodosHabitualesResponseSchema,
   ReferenciaResponseSchema,
 } from './contratos-calculo';
 import {
@@ -1507,6 +1508,10 @@ export function crearClienteBe(opciones: OpcionesDeCliente) {
     /** API-MTH-02: la versión exacta, seleccionable o histórica. */
     consultarMetodo(token: string, metodoId: string, versionId: string) {
       return llamar('GET', `/professional-methods/${encodeURIComponent(metodoId)}/versions/${encodeURIComponent(versionId)}`, { token, esquema: MetodoResponseSchema });
+    },
+    /** API-MHA-01 (DL-190): los métodos con los que el profesional calculó en su última toma, para elegirlos antes de medir. */
+    metodosHabituales(token: string) {
+      return llamar('GET', '/professional-methods/usual', { token, esquema: MetodosHabitualesResponseSchema });
     },
     /** API-CAL-01: ejecutar. No crea objetivo ni prescripción, y la respuesta no dice que lo haya hecho. */
     ejecutarCalculo(token: string, asesoradoId: string, cuerpo: z.input<typeof EjecutarCalculoRequestSchema>, claveDeIdempotencia: string) {

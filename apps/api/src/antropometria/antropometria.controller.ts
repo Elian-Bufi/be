@@ -191,6 +191,16 @@ export class AntropometriaController {
     return this.metodos.listar(actorDe(req), query, contextoDe(req));
   }
 
+  /**
+   * API-MHA-01 (RP-18, DL-190). Los métodos con los que el profesional calculó en su última toma, con cualquier persona: los
+   * que vienen elegidos al empezar una toma. Metadatos de su práctica, sin titular, como API-MTH-01.
+   */
+  @Get('professional-methods/usual')
+  metodosHabituales(@Query() query: Record<string, unknown>, @Req() req: Solicitud): Promise<unknown> {
+    sinParametrosDeQuery(query);
+    return this.metodos.habituales(actorDe(req), contextoDe(req));
+  }
+
   /** API-MTH-02. La versión exacta, seleccionable o histórica: una corrida que la cita tiene que poder explicarse. */
   @Get('professional-methods/:methodId/versions/:versionId')
   consultarMetodo(@Param('methodId') methodId: string, @Param('versionId') versionId: string, @Query() query: Record<string, unknown>, @Req() req: Solicitud): Promise<unknown> {

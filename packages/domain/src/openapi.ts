@@ -233,6 +233,7 @@ import {
   ListaDeCorridasResponseSchema,
   ListaDeMetodosResponseSchema,
   MetodoResponseSchema,
+  MetodosHabitualesResponseSchema,
   ReferenciaResponseSchema,
 } from './contratos-calculo';
 import {
@@ -1802,6 +1803,19 @@ const DEFINIDAS: readonly Operacion[] = [
     exitos: [{ status: 200, schema: MetodoResponseSchema }],
     errores: { ...SESION, 400: ['INVALID_REQUEST'], 403: ['ACTION_FORBIDDEN'], 404: ['RESOURCE_NOT_FOUND'] },
     fuente: '09v16 §21.2 · REG-06-203',
+  },
+  // ─── WP-ANTROPOMETRIA-METODO-Y-KERR (DL-190): el método habitual, para elegir antes de medir ───
+  {
+    id: 'API-MHA-01',
+    metodo: 'get',
+    ruta: '/professional-methods/usual',
+    resumen:
+      'Los métodos con los que el profesional calculó en su última toma, con cualquier persona (la más reciente en la que tiene una corrida propia): los que vienen elegidos al empezar una toma nueva. Devuelve la identidad estable de cada método (methodId), no la versión, y nada de la persona ni de la toma de la que salen. Vacío si nunca calculó. Como API-MTH-01, son metadatos de la capacidad: no acepta adviseeId ni parámetros, y el asesorado no la consulta.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    exitos: [{ status: 200, schema: MetodosHabitualesResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST'], 403: ['ACTION_FORBIDDEN'] },
+    fuente: 'WP-ANTROPOMETRIA-METODO-Y-KERR RP-18 (decisión de Dirección del 2026-11-21) · ID propio de BE (familia MHA) · DEUDA_LEGAJO DL-190',
   },
   {
     id: 'API-CAL-01',

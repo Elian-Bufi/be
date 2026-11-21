@@ -7687,6 +7687,31 @@ button.comida-del-dia__fila > .icono:last-child {
   list-style: none;
 }
 
+/* RP-17 (DL-190): Kerr, cinco componentes: lo medido arriba, las cinco masas, la suma y la diferencia. */
+.kerr-de-la-toma__tabla {
+  width: 100%;
+  border-collapse: collapse;
+  font-variant-numeric: tabular-nums;
+}
+
+.kerr-de-la-toma__tabla th,
+.kerr-de-la-toma__tabla td {
+  padding: 0.3rem 0.4rem;
+  border-bottom: 1px solid var(--borde);
+  text-align: left;
+  font-weight: 400;
+}
+
+.kerr-de-la-toma__tabla td {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.kerr-de-la-toma__suma th,
+.kerr-de-la-toma__suma td {
+  font-weight: 650;
+}
+
 .anteriores-sin-efecto {
   margin-top: 0.8rem;
   padding: 0.6rem 0.9rem 0.3rem;
@@ -11710,6 +11735,62 @@ button.comida-del-dia__fila > .icono:last-child {
 }
 
 .datos-de-la-carga__campos input {
+  width: 100%;
+}
+
+/* RP-18 (DL-190): «Qué vas a calcular», arriba de los datos de la toma. */
+.eleccion-de-metodos__elegidos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin: 0 0 0.4rem;
+  padding: 0;
+  list-style: none;
+}
+
+.eleccion-de-metodos__elegidos .etiqueta-de-dato {
+  white-space: normal;
+}
+
+.eleccion-de-metodos__quitar {
+  display: inline-flex;
+  min-width: 1.5rem;
+  min-height: 1.5rem;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.eleccion-de-metodos__lista {
+  margin-top: 0.5rem;
+}
+
+.eleccion-de-metodos__opciones {
+  flex-direction: column;
+}
+
+.eleccion-de-metodos__opciones li {
+  display: grid;
+  gap: 0 0.5rem;
+  padding: 0.15rem 0;
+}
+
+.eleccion-de-metodos__pide,
+.eleccion-de-metodos__sitio {
+  margin: 0;
+  padding-left: 1.6rem;
+  font-size: 0.88rem;
+}
+
+p.eleccion-de-metodos__sitio {
+  padding-left: 0;
+}
+
+.datos-de-la-carga__otra {
+  margin-top: 0.6rem;
+}
+
+.datos-de-la-carga__otra select {
   width: 100%;
 }
 

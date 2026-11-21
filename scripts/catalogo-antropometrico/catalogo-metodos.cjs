@@ -1,11 +1,11 @@
 // Fuente única de los métodos del catálogo de BE (DL-111): genera la migración SQL y alimenta los nombres del dominio
 // (catalogo-perfil-completo.cjs lo lee para NOMBRE_DE_METODO y los nombres de las salidas). Cada método sale de la ficha
 // docs/propuestas/METODOS-ANTROPOMETRICOS_ficha.md (MA-xx): fuente, población, sitios, fórmula y casos de prueba.
-// Uso (desde la raíz): node scripts/catalogo-antropometrico/catalogo-metodos.cjs prisma/migrations/20261001010000_metodos_antropometricos/migration.sql prisma/migrations/20261002000000_purga_del_catalogo_antropometrico/migration.sql
+// Uso (desde la raíz): node scripts/catalogo-antropometrico/catalogo-metodos.cjs prisma/migrations/20261001010000_metodos_antropometricos/migration.sql prisma/migrations/20261002000000_purga_del_catalogo_antropometrico/migration.sql prisma/migrations/20261121150000_kerr_cinco_componentes/migration.sql
 const fs = require('fs');
-const { METRICAS } = require('./catalogo-perfil-completo.cjs');
+const { CATALOGO_DE_MEDICIONES } = require('./catalogo-perfil-completo.cjs');
 
-const UNIDAD = Object.fromEntries(METRICAS.map((m) => [m.clave, m.unidades[0]]));
+const UNIDAD = Object.fromEntries(CATALOGO_DE_MEDICIONES.map((m) => [m.clave, m.unidades[0]]));
 const DE_LA_PERSONA = new Set(['peso', 'talla', 'edad']);
 const ADIMENSIONAL = 'adimensional';
 
@@ -41,6 +41,12 @@ const SALIDAS = {
   endomorfia: 'Endomorfia',
   mesomorfia: 'Mesomorfia',
   ectomorfia: 'Ectomorfia',
+  // DL-190 · Kerr (1988), cinco componentes: una métrica por masa.
+  'masa-piel-kerr': 'Masa de la piel (Kerr)',
+  'masa-adiposa-kerr': 'Masa adiposa (Kerr)',
+  'masa-muscular-kerr': 'Masa muscular (Kerr)',
+  'masa-osea-kerr': 'Masa ósea (Kerr)',
+  'masa-residual-kerr': 'Masa residual (Kerr)',
 };
 
 // ─── Sitios (ficha, §2) ───
@@ -227,7 +233,33 @@ const RETIRADOS = [
   ['MET-MME-LEE-PESO-H', MOTIVO.LEE_PESO],
   ['MET-MME-LEE-PESO-M', MOTIVO.LEE_PESO],
 ];
-const METODOS = [...METODOS_ORIGINALES, ...METODOS_NUEVOS];
+// ─── DL-190 (RP-17): Kerr (1988), cinco componentes (migración 20261121150000) ───
+// Ecuaciones de la tabla 4.3 de la tesis y sitios de su apéndice A. Cada masa es un método: un método da un resultado. La
+// piel es por sexo (la constante de la superficie corporal y el espesor de la piel); las otras cuatro, no (el Phantom es
+// unisex). El peso estructurado (la suma) y su diferencia con el peso medido se muestran al lado (`fraccionamientoDeKerr`),
+// sin ser un método.
+const KERR =
+  'Kerr DA. An anthropometric method for fractionation of skin, adipose, bone, muscle and residual tissue masses, in males and females age 6 to 77 years [tesis de maestría]. Burnaby: Simon Fraser University; 1988. Ecuaciones de la tabla 4.3 y sitios del apéndice A. https://summit.sfu.ca/item/5139. Ross WD, Kerr DA. Apunts Med Esport. 1991;28:175-188.';
+const POB_KERR =
+  'Un humano de referencia unisex (el Phantom de Ross y Wilson) probado en 1669 personas de 6 a 77 años, de 11 muestras: la suma de las cinco masas dio en promedio 1,1 kg (1,6 %) más que el peso medido, y quedó dentro del 4 % salvo en fisicoculturistas (8 %). La coherencia de cada masa se controló con la disección de 25 cadáveres.';
+const POB_KERR_PIEL = `${POB_KERR} Antes de los 12 años la constante de la superficie es la de chicos (70,691), la misma para los dos sexos; desde los 12, la de su sexo.`;
+const SUMA_DE_KERR = 'Es una de las cinco masas de Kerr: las cinco suman el peso estructurado, que se compara con el peso medido.';
+const METODOS_KERR = [
+  M(45, 'MET-KERR-PIEL-H', 'Masa de la piel (Kerr), hombres', 'MASAS', 'be/kerr-masa-piel-hombres@1', ['peso', 'talla', 'edad'], 'masa-piel-kerr', 'kg', 1,
+    `La superficie corporal (68,308 × peso^0,425 × talla^0,725 / 10 000, en m²; 70,691 antes de los 12 años) por el espesor de la piel (2,07 mm en hombres) y su densidad (1,05). ${SUMA_DE_KERR}`, KERR, POB_KERR_PIEL),
+  M(46, 'MET-KERR-PIEL-M', 'Masa de la piel (Kerr), mujeres', 'MASAS', 'be/kerr-masa-piel-mujeres@1', ['peso', 'talla', 'edad'], 'masa-piel-kerr', 'kg', 1,
+    `La superficie corporal (73,074 × peso^0,425 × talla^0,725 / 10 000, en m²; 70,691 antes de los 12 años) por el espesor de la piel (1,96 mm en mujeres) y su densidad (1,05). ${SUMA_DE_KERR}`, KERR, POB_KERR_PIEL),
+  M(47, 'MET-KERR-ADIPOSA', 'Masa adiposa (Kerr)', 'MASAS', 'be/kerr-masa-adiposa@1', ['talla', ...ISAK_6], 'masa-adiposa-kerr', 'kg', 1,
+    `Tejido adiposo, no solo lípido: da más que la masa grasa de las ecuaciones de densidad. Escala al Phantom, con la talla, la suma de 6 pliegues (tríceps, subescapular, supraespinal, abdominal, muslo frontal y pantorrilla). ${SUMA_DE_KERR}`, KERR, POB_KERR),
+  M(48, 'MET-KERR-MUSCULAR', 'Masa muscular (Kerr)', 'MASAS', 'be/kerr-masa-muscular@1',
+    ['talla', 'perimetro-brazo-relajado', 'pliegue-triceps', 'perimetro-antebrazo', 'perimetro-muslo-gluteo', 'pliegue-muslo-frontal', 'perimetro-pantorrilla', 'pliegue-pantorrilla', 'perimetro-pecho', 'pliegue-subescapular'], 'masa-muscular-kerr', 'kg', 1,
+    `Escala al Phantom, con la talla, la suma de cinco perímetros: brazo relajado, muslo a 1 cm del pliegue glúteo, pantorrilla y pecho mesoesternal, cada uno corregido por su pliegue (perímetro − π × pliegue / 10), y el antebrazo sin corregir. El muslo no es el muslo medio de Lee. ${SUMA_DE_KERR}`, KERR, POB_KERR),
+  M(49, 'MET-KERR-OSEA', 'Masa ósea (Kerr)', 'MASAS', 'be/kerr-masa-osea@1', ['talla', 'perimetro-cabeza', 'diametro-biacromial', 'diametro-biiliocrestal', 'diametro-humero', 'diametro-femur'], 'masa-osea-kerr', 'kg', 1,
+    `La de la cabeza, por su perímetro y sin escalar por la talla, más la del cuerpo, que escala al Phantom, con la talla, la suma de los diámetros biacromial y biiliocrestal y dos veces los del húmero y el fémur. ${SUMA_DE_KERR}`, KERR, POB_KERR),
+  M(50, 'MET-KERR-RESIDUAL', 'Masa residual (Kerr)', 'MASAS', 'be/kerr-masa-residual@1', ['talla-sentado', 'diametro-torax-transverso', 'diametro-torax-anteroposterior', 'perimetro-cintura', 'pliegue-abdominal'], 'masa-residual-kerr', 'kg', 1,
+    `Órganos, vísceras y lo demás del tronco: escala al Phantom, con la talla sentado, la suma de los diámetros transverso y anteroposterior del tórax y la cintura mínima corregida por el pliegue abdominal. ${SUMA_DE_KERR}`, KERR, POB_KERR),
+];
+const METODOS = [...METODOS_ORIGINALES, ...METODOS_NUEVOS, ...METODOS_KERR];
 
 const hex2 = (n) => n.toString(16).padStart(2, '0');
 const vistos = new Set();
@@ -261,11 +293,11 @@ const contenido = (m) => ({
 const RETIRADOS_POR_CLAVE = new Map(RETIRADOS);
 for (const [clave] of RETIRADOS) if (!METODOS.some((m) => m.clave === clave)) throw new Error(`retiro de una clave que no existe: ${clave}`);
 
-module.exports = { METODOS, METODOS_ORIGINALES, METODOS_NUEVOS, RETIRADOS, SALIDAS, contenido };
+module.exports = { METODOS, METODOS_ORIGINALES, METODOS_NUEVOS, METODOS_KERR, RETIRADOS, SALIDAS, contenido };
 
 if (require.main === module) {
-  // Uso: node catalogo-metodos.cjs <migración 20261001010000> [<migración 20261002000000>]
-  const [salidaSql, salidaSql2] = process.argv.slice(2);
+  // Uso: node catalogo-metodos.cjs <migración 20261001010000> [<migración 20261002000000>] [<migración 20261121150000>]
+  const [salidaSql, salidaSql2, salidaSql3] = process.argv.slice(2);
   const sqlTexto = (s) => `'${s.replace(/'/g, "''")}'`;
   const MOMENTO = "'2026-10-01T01:00:00.000Z'";
   // La migración 1 ya está aplicada en test: se genera solo con los 40 originales y tiene que quedar idéntica.
@@ -344,5 +376,32 @@ ${RETIRADOS.map(([clave, motivo]) => {
 `;
     fs.writeFileSync(salidaSql2, sql2);
     console.log(`migración 2: ${METODOS_NUEVOS.length} métodos nuevos y ${RETIRADOS.length} retiros`);
+  }
+
+  if (salidaSql3) {
+    const MOMENTO3 = "'2026-11-21T15:00:00.000Z'";
+    const sql3 = `-- DL-190 (RP-17) · Kerr (1988), cinco componentes: las masas de la piel (hombres y mujeres), adiposa, muscular, ósea y
+-- residual, con las ecuaciones de la tabla 4.3 de la tesis y los sitios de su apéndice A (el muslo a 1 cm del pliegue
+-- glúteo, el pecho mesoesternal, la cintura mínima). Las mediciones que el perfil completo no tiene (talla sentado,
+-- perímetro de la cabeza, muslo a 1 cm del pliegue glúteo y cuatro diámetros) entran al catálogo de mediciones del
+-- dominio, no a una versión nueva del protocolo, que cortaría la comparabilidad de las tomas viejas (AK-D03). Solo agrega:
+-- no toca ningún método publicado. Identificadores deterministas, iguales en todos los ambientes.
+-- Generado por scripts/catalogo-antropometrico/catalogo-metodos.cjs.
+
+INSERT INTO "especificacion_antropometrica" ("id", "clave", "tipo", "momento_de_registro") VALUES
+${METODOS_KERR.map((m) => `  ('${m.especificacionId}', '${m.clave}', 'METODO', ${MOMENTO3})`).join(',\n')};
+
+INSERT INTO "version_de_especificacion_antropometrica" ("id", "especificacion_id", "predecesora_id", "version", "nombre", "contenido", "procedencia", "momento_de_registro") VALUES
+${METODOS_KERR.map(
+  (m) => `  ('${m.versionId}', '${m.especificacionId}', NULL, '1',
+   ${sqlTexto(m.nombre)},
+   ${sqlTexto(JSON.stringify(contenido(m)))},
+   ${sqlTexto(JSON.stringify({ rotulo: 'Catálogo de BE (DL-111, DL-190): fórmula publicada, con su fuente y su población. La elige el profesional; BE no la impone.' }))},
+   ${MOMENTO3})`,
+).join(',\n')};
+`;
+    fs.mkdirSync(require('path').dirname(salidaSql3), { recursive: true });
+    fs.writeFileSync(salidaSql3, sql3);
+    console.log(`migración 3: ${METODOS_KERR.length} métodos de Kerr`);
   }
 }

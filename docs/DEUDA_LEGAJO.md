@@ -189,6 +189,7 @@
 | DL-187 | Pedido de Dirección · 2026-11-20 (los gráficos por período corto o por versión del plan, la franja de lo indicado y lo indicado frente a lo hecho del volumen) | DL-174 · DL-181 · DL-122 · DL-178 · TB-16 (DL-163 D-7) · 09v10:356 · 09v10:1285-1295 · B10-06 (la lista de términos de Entrenamiento) · B05 | El historial del ejercicio ofrecía 12 semanas, 6 meses o desde el vínculo; la ficha, 7, 30 y 90 días o un año; ningún gráfico elegía una versión del plan; el rango de repeticiones indicado no se dibujaba; BE no calculaba volumen y la palabra estaba prohibida en pantalla; «Patrones» tomaba siempre el ejercicio más registrado | **PROGRAMADA en `wp-graficos-por-fase` (PR en borrador, sin integrar) · GPF-D01 a GPF-D13 a ratificar**: un solo selector de período en los gráficos (4 y 12 semanas, 6 meses, un año, desde que la acompañás, a medida y por versión del plan con «La anterior» y «La siguiente»); la franja de lo indicado en GR-03; series y carga × repeticiones indicadas y hechas por sesión o semana (en el historial y en «Armá tu gráfico»), con una convención declarada; el ejercicio elegible en «Patrones». Sin operaciones nuevas en la API. Detalle: `docs/paquetes/WP-GRAFICOS-POR-FASE.md` |
 | DL-188 | Pedido de Dirección · 2026-11-21 (el recorrido de la planificación de Nutrición en el escritorio profesional: «ponete a solucionar todo, empezá ya») | DL-186 · DL-146 · DL-163 (TB-07) · ED-02 · NUP-06 a 08 · NUP-10 · B10-01 · B10-10 §6-§8 · REG-06-157 · la decisión de Dirección del 18/11 (el «%» con su base) | La cabecera de un área ocupaba tres renglones, con un enlace largo para volver, «Actualizar» y la hora de la consulta; el acceso se partía; un error en línea movía su campo; el calculador tenía textos largos, un desplegable cortado, el ajuste con signo y la distribución por comida en el objetivo; las cantidades no llevaban ícono; la cuenta de los gramos ocupaba dos renglones; no estaba ten Haaf (2014) | **PROGRAMADA en `wp-recorrido-plan-pulido` (frente 1; PR en borrador, sin integrar) · RP-D01 a RP-D17 a ratificar**: la cabecera en una franja con la vuelta como botón, el acceso en un chip y la revalidación al volver a la pestaña («Hay datos nuevos · Ver»); las filas de campos alineadas por arriba; el calculador más corto, con lo largo detrás de «?» y «Fuente», los g/kg con límites y paso 0,1 y el ajuste sin signo; el reparto por comida a la vista en cada día tipo; el ícono con el número y la abreviatura; la cuenta de los gramos detrás de un «?»; ten Haaf y Weijs (2014) en sus dos variantes. Sin operaciones nuevas ni migraciones. Detalle: `docs/paquetes/WP-RECORRIDO-PLAN-PULIDO.md` |
 | DL-189 | Pedido de Dirección · 2026-11-21 (la evaluación inicial «no le cierra»: un pantallazo del caso en lugar de la planilla) | RF-026 · RF-036 · RF-071 · REG-06-97 · REG-06-109 · DL-048 · DL-145 · DL-146 · DL-164 (D-3, D-4, D-6) · DL-165 (D-1, D-7) · DL-169 · DL-173 · DL-185 · DL-186 · Ley 26.529 art. 14 | La evaluación inicial era una planilla de «Concepto / Valor / Unidad / Fuente» con pastillas y el texto «BE no calcula»; los tres pasos de «Empezar el plan» ocupaban media pantalla; la fecha se escribía a mano; «Cargar con la persona» solo se abría desde una solicitud ya enviada y traía todas las preguntas a la vez | **PROGRAMADA en `wp-evaluacion-inicial-2` (PR en borrador, sin integrar) · EI-D01 a EI-D16 a ratificar**: la franja de los pasos, la fecha automática, la evaluación de Nutrición en tres bloques («Lo que contó», «Lo medido», «Lo que necesita el cálculo»), «Anotaciones» privadas, «Completarlo ahora con la persona» y lo crítico primero. Sin operaciones nuevas en la API ni cambios en la APK. Detalle: `docs/paquetes/WP-EVALUACION-INICIAL-2.md` |
+| DL-190 | Decisión de Dirección · 2026-11-21 (Kerr de cinco componentes y elegir el método antes de medir; WP-ANTROPOMETRIA-METODO-Y-KERR) | DL-110 · DL-111 (decisiones 5 a 7) · DL-112 · REG-06-152 · REG-06-157 · REG-06-203/204/205 · RF-048 · RF-049 · ficha de métodos D-1 y D-3 · DL-152 | El método se elegía después de medir, sobre un único protocolo de 30 mediciones; Kerr quedaba en reserva (D-3 sin resolver) y faltaban siete mediciones para sus cinco masas | **PROGRAMADA en `wp-antropometria-metodo-y-kerr` (PR en borrador, sin integrar) · AK-D01 a AK-D14 a ratificar**: Kerr (1988) en seis métodos (la piel por sexo; adiposa, muscular, ósea y residual) con la tabla 4.3 y el apéndice A de la tesis, D-3 resuelta (muslo a 1 cm del pliegue glúteo, pecho mesoesternal, cintura mínima), siete mediciones nuevas en el catálogo del dominio (no en una versión del protocolo, que cortaría la comparabilidad), una migración que solo agrega y, en la toma, la suma frente al peso medido en kg y en %; elegir uno o varios métodos al empezar la toma, con la unión de lo que piden más peso, talla y edad, el habitual de la última toma (API-MHA-01, familia propia MHA, sin migración), «+ Otra medición» y la nota del suprailíaco de Jackson y Pollock (D-1). La APK 0.31 no se rompe. Detalle: `docs/paquetes/WP-ANTROPOMETRIA-METODO-Y-KERR.md` |
 
 ---
 
@@ -9084,3 +9085,50 @@ la APK ya deja completar lo que falta al confirmar una propuesta parcial.
 - **Pendiente legal:** por la Ley 26.529 la persona es titular de su historia clínica; si la evaluación y sus anotaciones
   entran en lo que puede pedir (hoy la exportación no trae las evaluaciones), lo revisa el abogado. Detalle completo:
   `docs/paquetes/WP-EVALUACION-INICIAL-2.md`.
+
+## DL-190 — Elegir el método antes de medir y Kerr de cinco componentes
+
+**Prioridad:** alta (Dirección mide con Jackson y Pollock y usa Kerr con ISAK) · DL-110 · DL-111 · DL-112 · REG-06-152 ·
+REG-06-157 · REG-06-203/204/205 · RF-048 · RF-049 · ficha de métodos (D-1, D-3) · DL-152 · **Estado:** DECIDIDA por
+Dirección el 2026-11-21 · PROGRAMADA en `wp-antropometria-metodo-y-kerr` (PR en borrador, sin integrar) · AK-D01 a AK-D14,
+**a ratificar**. Si al integrar el número choca con otro paquete, se renumera.
+
+**Qué pidió Dirección.** Sumar el fraccionamiento de Kerr (1988) en cinco componentes, el cálculo que más se usa con ISAK en
+Argentina, y elegir el método antes de medir: que la toma pida solo lo que ese método necesita. Hasta acá había un único
+protocolo de 30 mediciones y el método se elegía después; Kerr estaba en reserva por D-3 (a qué nivel se mide el muslo y
+si el pecho es el mesoesternal) y le faltaban siete mediciones.
+
+**Qué dice el legajo.** Un método publicado no se edita: una corrección es una versión nueva (REG-06-203); BE ofrece varios
+métodos con su fuente y el profesional elige, sin que ninguno gane solo (REG-06-157 superado por DL-110 y DL-111;
+REG-06-205). La comparabilidad compara la versión del protocolo: por eso las mediciones de Kerr no van en una versión nueva
+del perfil completo, que cortaría todas las series (AK-D03). No se edita el legajo.
+
+**Lo programado.**
+- **RP-17 · Kerr (1988), cinco componentes.** Seis métodos en la migración `20261121150000_kerr_cinco_componentes`,
+  generada por `scripts/catalogo-antropometrico/` (las tres anteriores quedan idénticas): la masa de la piel (hombres y
+  mujeres), adiposa, muscular, ósea y residual, con las ecuaciones de la tabla 4.3 de la tesis (Simon Fraser University,
+  https://summit.sfu.ca/item/5139) y sus erratas resueltas. **D-3 resuelta con la fuente primaria:** el apéndice A de la
+  tesis tiene «33. Thigh girth (1 cm dist. glut.line)» y «30. Chest girth (mesosternale)», y el Phantom (muslo 55,82) cierra
+  la suma de referencia (207,20 frente a 207,21). Siete mediciones nuevas en el catálogo del dominio: talla sentado,
+  perímetro de la cabeza, del muslo a 1 cm del pliegue glúteo, y los diámetros biacromial, biiliocrestal, transverso y
+  anteroposterior del tórax. En la toma, `fraccionamientoDeKerr`: el peso medido primero, las cinco masas, su suma (el peso
+  estructurado) y la diferencia en kg y en % del peso, como valida Kerr. Pruebas a mano, con el Phantom y con las medias
+  de los 25 cadáveres de la tabla 5.5.
+- **RP-18 · Elegir el método antes de medir.** «Qué vas a calcular» en la carga de la toma: uno o varios métodos (por
+  familia, con las variantes por sexo juntas) o un conjunto de un toque; la figura y la lista piden la unión de lo que
+  piden, más peso, talla y edad; lo medido no se esconde; «+ Otra medición» suma un punto suelto; la nota de dónde mide BE
+  el suprailíaco de Jackson y Pollock (cresta ilíaca, D-1). Vienen elegidos los métodos con los que el profesional calculó
+  en su última toma, con cualquier persona: **API-MHA-01** (`GET /professional-methods/usual`), familia propia MHA, que
+  devuelve solo la identidad del método. Sin migración: la elección vive en la dirección (AK-D08). Al calcular con un
+  método al que le faltan medidas, BE las dice todas.
+
+**La APK publicada.** La 0.31 lee API-ANT-06 en su variante propia con `metricCode` como texto: las métricas nuevas no rompen
+su esquema y se publican; las nombra con el código legible hasta la próxima APK (AK-D12).
+
+**Lo que queda.**
+- Ratificar AK-D01 a AK-D14.
+- Que Dirección confirme que su práctica coincide con los sitios de Kerr y con la cresta ilíaca de Jackson y Pollock.
+- Mirarlo en pantalla y con un lector de pantalla; la evidencia en capturas.
+- Los nombres en la próxima APK, con sus lecturas congeladas (DL-152).
+- Calcular las cinco masas de un toque y partir el peso en las cinco masas en «Composición corporal» y en la lámina.
+  Detalle completo: `docs/paquetes/WP-ANTROPOMETRIA-METODO-Y-KERR.md`.

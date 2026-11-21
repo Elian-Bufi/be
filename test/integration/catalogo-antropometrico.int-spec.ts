@@ -1,6 +1,7 @@
 /**
  * DL-111 · el catálogo antropométrico de BE, sembrado por migración, contra PostgreSQL y por la API real:
- * - el protocolo «Perfil antropométrico completo» y sus 21 métodos vigentes se publican con su ficha (descripción,
+ * - el protocolo «Perfil antropométrico completo» y sus 27 métodos vigentes (21 de DL-111 y DL-112, 6 de Kerr de DL-190) se
+ *   publican con su ficha (descripción,
  *   fuente, población y categoría), seleccionables y con una regla que BE sabe aplicar; la ficha no califica (TEST-PRJ-009);
  * - DL-112: los 23 retirados no se ofrecen ni se ejecutan, y se siguen consultando como históricos;
  * - una toma completa con el perfil alcanza para ejecutar cada método, y cada resultado es el de la regla del dominio con
@@ -61,6 +62,14 @@ const TOMA: Record<string, [number, string]> = {
   'diametro-humero': [7, 'cm'],
   'diametro-biestiloideo': [5.8, 'cm'],
   'diametro-femur': [9.8, 'cm'],
+  // DL-190 · las de Kerr (1988) que el perfil completo no tiene: se miden en la misma toma, con el mismo protocolo.
+  'talla-sentado': [91, 'cm'],
+  'perimetro-cabeza': [57, 'cm'],
+  'perimetro-muslo-gluteo': [58, 'cm'],
+  'diametro-biacromial': [40, 'cm'],
+  'diametro-biiliocrestal': [28.5, 'cm'],
+  'diametro-torax-transverso': [29, 'cm'],
+  'diametro-torax-anteroposterior': [19.5, 'cm'],
 };
 
 const prisma = new PrismaClient();
@@ -99,9 +108,9 @@ async function tomaRegistrada(occurredAt: string): Promise<EvaluacionAntropometr
 }
 
 describe('DL-111 · el catálogo antropométrico de BE', () => {
-  it('publica los 21 métodos vigentes con su ficha, seleccionables, con una regla conocida y sin calificar', async () => {
+  it('publica los 27 métodos vigentes con su ficha, seleccionables, con una regla conocida y sin calificar', async () => {
     const metodos = await metodosDeBE();
-    expect(metodos).toHaveLength(21);
+    expect(metodos).toHaveLength(27);
     for (const m of metodos) {
       expect(m.status).toBe('SELECTABLE');
       expect(m.purposes).toEqual(['ANTHROPOMETRIC_SUPPORT']);
@@ -137,8 +146,8 @@ describe('DL-111 · el catálogo antropométrico de BE', () => {
     const r = await conSesion(app, c.ase.token).get('/api/v1/me/anthropometry/progress').expect(200);
     const datos = EvolucionResponseSchema.parse(r.body).data;
     const derivadas = datos.metrics.filter((s) => s.series.some((p) => p.dataClass === 'DERIVED'));
-    // 21 métodos y 15 familias: los métodos por sexo comparten la métrica de su familia.
-    expect(derivadas).toHaveLength(15);
+    // 27 métodos y 20 familias (15 y las cinco masas de Kerr): los métodos por sexo comparten la métrica de su familia.
+    expect(derivadas).toHaveLength(20);
     for (const s of derivadas) {
       expect(NOMBRE_DE_METRICA[s.metricCode]).toBeTruthy();
       // Dos métodos de la misma familia y el mismo día (el de hombres y el de mujeres): la API publica uno por día, y
@@ -148,7 +157,7 @@ describe('DL-111 · el catálogo antropométrico de BE', () => {
       expect(nombreDeMetodo(grupo.methodVersionId)).toBeTruthy();
     }
     expect(derivadas.map((s) => s.metricCode)).toEqual(
-      expect.arrayContaining(['imc', 'grasa-durnin-womersley', 'masa-grasa-durnin-womersley', 'masa-libre-de-grasa-durnin-womersley', 'endomorfia', 'mesomorfia', 'ectomorfia']),
+      expect.arrayContaining(['imc', 'grasa-durnin-womersley', 'masa-grasa-durnin-womersley', 'masa-libre-de-grasa-durnin-womersley', 'endomorfia', 'mesomorfia', 'ectomorfia', 'masa-piel-kerr', 'masa-adiposa-kerr', 'masa-muscular-kerr', 'masa-osea-kerr', 'masa-residual-kerr']),
     );
     expect(derivadas.map((s) => s.metricCode)).not.toContain('grasa-faulkner');
   });
@@ -173,5 +182,25 @@ describe('DL-111 · el catálogo antropométrico de BE', () => {
     expect(historicas.body.data.find((e: { versionId: string }) => e.versionId === version)?.status).toBe('HISTORICAL');
     const vigentes = await pro.get('/api/v1/anthropometry/specifications?kind=METHOD&limit=50').expect(200);
     expect(vigentes.body.data.map((e: { versionId: string }) => e.versionId)).not.toContain(version);
+  });
+
+  it('RP-18 (DL-190) · API-MHA-01: vienen elegidos los métodos de la última toma en la que el profesional calculó', async () => {
+    const pro = conSesion(app, c.pro.token);
+    const metodos = await metodosDeBE();
+    // La toma del cálculo completo: sus métodos, sin repetir. La de los retirados no tiene corridas: no cuenta.
+    const antes = await pro.get('/api/v1/professional-methods/usual').expect(200);
+    expect(new Set(antes.body.data.methodIds)).toEqual(new Set(metodos.map((m) => m.methodId)));
+    // Una toma más nueva con un solo cálculo: viene elegido ese, por su método y no por su versión.
+    const toma = await tomaRegistrada(new Date(Date.now() - 86_400_000).toISOString());
+    const imc = metodos.find((m) => m.key === 'MET-IMC')!;
+    const asignacion = asignacionAutomatica(datosDelMetodo(imc, toma.measurements));
+    await pro
+      .post(`/api/v1/advisees/${c.ase.id}/calculations`, claveDeIdempotencia())
+      .send({ purpose: 'ANTHROPOMETRIC_SUPPORT', methodVersionId: imc.methodVersionId, inputBindings: Object.entries(asignacion).map(([inputCode, sourceRef]) => ({ inputCode, sourceRef })) })
+      .expect(201);
+    const despues = await pro.get('/api/v1/professional-methods/usual').expect(200);
+    expect(despues.body.data).toEqual({ methodIds: [imc.methodId] });
+    // El asesorado no lo consulta: son metadatos de la práctica del profesional.
+    await conSesion(app, c.ase.token).get('/api/v1/professional-methods/usual').expect(403);
   });
 });

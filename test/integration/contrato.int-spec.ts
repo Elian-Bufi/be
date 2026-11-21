@@ -670,6 +670,11 @@ it('TEST-CT (WP-05): se ejercitan éxitos y errores de MTH y CAL', async () => {
   const claveDeCalculo = claveDeIdempotencia();
   const corrida = await pro.post(calculos, claveDeCalculo).send(ejecucion()).expect(201);
   await pro.post(calculos, claveDeCalculo).send(ejecucion({ purpose: 'NUTRITION_OBJECTIVE_SUPPORT' })).expect(409); // IDEMPOTENCY_KEY_REUSED
+  // MHA-01 (DL-190): vienen elegidos los métodos de la última toma en la que el profesional calculó.
+  const habitual = await pro.get('/api/v1/professional-methods/usual').expect(200);
+  expect(habitual.body.data).toEqual({ methodIds: [CATALOGO_DEMO.metodo.especificacionId] });
+  await pro.get('/api/v1/professional-methods/usual?x=1').expect(400); // INVALID_REQUEST
+  await ase.get('/api/v1/professional-methods/usual').expect(403); // ACTION_FORBIDDEN
   await pro.post(calculos).send(ejecucion({ methodVersionId: CATALOGO_DEMO.metodo.v1 })).expect(422); // METHOD_VERSION_NOT_SELECTABLE
   await pro.post(calculos).send(ejecucion({ inputBindings: [entradas[0]] })).expect(422); // CALCULATION_INPUTS_INSUFFICIENT
   await pro.post(calculos).send(ejecucion({ inputBindings: [{ inputCode: 'PESO', sourceRef: porMetrica.peso as string }, { inputCode: 'TALLA', sourceRef: porMetrica.peso as string }] })).expect(422);

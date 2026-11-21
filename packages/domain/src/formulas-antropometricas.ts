@@ -226,6 +226,94 @@ const ectomorfia: ReglaDeCalculo = (e) => {
   return 0.1;
 };
 
+// ─── Kerr (1988): cinco componentes (DL-190, RP-17) ──────────────────────────────────────────────
+
+/**
+ * El fraccionamiento de Kerr en cinco masas (tesis de maestría, Simon Fraser University, 1988; ecuaciones de la tabla 4.3,
+ * págs. 65-69; sitios del apéndice A, pág. 122). Cuatro de las cinco escalan una suma de medidas al humano de referencia
+ * unisex de Ross y Wilson (el Phantom: talla 170,18 cm, talla sentado 89,92 cm) y la vuelven a la persona con el cubo del
+ * factor de talla: Z = (Σ · k − media del Phantom) / desvío; masa = (Z · desvío de la masa + masa del Phantom) / k³. La piel
+ * sale de la superficie corporal. Cada masa es un método aparte, con un solo resultado; la suma (el peso estructurado) se
+ * compara con el peso medido al lado (`fraccionamientoDeKerr`).
+ *
+ * Erratas del original, y lo que se aplica: la tesis imprime «ZBODY = (SBODY * (170.18/HT)) - 98.88 / 5.33», que leído
+ * al pie de la letra da unos 117 kg de hueso; se aplica (Σ · k − 98,88) / 5,33, que es la forma de las otras masas y la
+ * que reproduce las medias de los cadáveres de la tabla 5.5. La superficie corporal se publica «en m²» sin el /10 000 que
+ * hace falta con la talla en cm. Ross y Kerr (1991) imprimen 73,704 para mujeres: la tesis dice 73,074.
+ */
+const PHANTOM = { talla: 170.18, tallaSentado: 89.92 } as const;
+
+/** Un perímetro corregido por su pliegue, como lo hace Kerr: perímetro − π · pliegue / 10 (el pliegue, de mm a cm). */
+const corregidoPorPliegue = (e: ValoresDeEntrada, perimetro: string, pliegue: string): number => val(e, perimetro) - (Math.PI * val(e, pliegue)) / 10;
+
+/** Escala una suma al Phantom y devuelve la masa de la persona. */
+function escaladaAlPhantom(suma: number, alturaDeReferencia: number, altura: number, media: number, desvio: number, masaDelPhantom: number, desvioDeLaMasa: number): number {
+  const k = alturaDeReferencia / altura;
+  const z = (suma * k - media) / desvio;
+  return (z * desvioDeLaMasa + masaDelPhantom) / k ** 3;
+}
+
+/**
+ * Piel: superficie corporal (m²) = C · peso^0,425 · talla^0,725 / 10 000, con C = 68,308 (hombres) o 73,074 (mujeres) desde
+ * los 12 años y 70,691 antes, para los dos sexos; masa = superficie · espesor (2,07 mm hombres, 1,96 mm mujeres) · 1,05 de
+ * densidad. La tesis dice «> 12» y «< 12» sin decir qué pasa con 12 justos: con 12 cumplidos va la constante de su sexo
+ * (AK-D05).
+ */
+const PIEL_DE_KERR = { HOMBRES: { constante: 68.308, espesor: 2.07 }, MUJERES: { constante: 73.074, espesor: 1.96 }, CHICOS: 70.691 } as const;
+
+function masaDeLaPielKerr(sexo: Sexo): ReglaDeCalculo {
+  return (e) => {
+    const malo = positivas(e, ['peso', 'talla', 'edad']);
+    if (malo) return malo;
+    const constante = val(e, 'edad') < 12 ? PIEL_DE_KERR.CHICOS : PIEL_DE_KERR[sexo].constante;
+    const superficie = (constante * val(e, 'peso') ** 0.425 * val(e, 'talla') ** 0.725) / 10_000;
+    return masa(superficie * PIEL_DE_KERR[sexo].espesor * 1.05);
+  };
+}
+
+/** Adiposa: Σ6 ISAK (mm) contra 116,41 ± 34,79 del Phantom; 25,6 ± 5,85 kg. */
+const masaAdiposaKerr: ReglaDeCalculo = (e) =>
+  positivas(e, ['talla', ...PLIEGUES_ISAK_6]) ?? masa(escaladaAlPhantom(suma(e, PLIEGUES_ISAK_6), PHANTOM.talla, val(e, 'talla'), 116.41, 34.79, 25.6, 5.85));
+
+/** Las entradas de la masa muscular de Kerr: el muslo es el de 1 cm del pliegue glúteo («33. Thigh girth (1 cm dist. glut.line)»). */
+export const ENTRADAS_MUSCULARES_DE_KERR = ['talla', 'perimetro-brazo-relajado', 'pliegue-triceps', 'perimetro-antebrazo', 'perimetro-muslo-gluteo', 'pliegue-muslo-frontal', 'perimetro-pantorrilla', 'pliegue-pantorrilla', 'perimetro-pecho', 'pliegue-subescapular'] as const;
+
+/** Muscular: brazo, muslo, pantorrilla y pecho corregidos, y el antebrazo sin corregir (cm), contra 207,21 ± 13,74; 24,5 ± 5,4 kg. */
+const masaMuscularKerr: ReglaDeCalculo = (e) => {
+  const malo = positivas(e, ENTRADAS_MUSCULARES_DE_KERR);
+  if (malo) return malo;
+  const perimetros =
+    corregidoPorPliegue(e, 'perimetro-brazo-relajado', 'pliegue-triceps') +
+    val(e, 'perimetro-antebrazo') +
+    corregidoPorPliegue(e, 'perimetro-muslo-gluteo', 'pliegue-muslo-frontal') +
+    corregidoPorPliegue(e, 'perimetro-pantorrilla', 'pliegue-pantorrilla') +
+    corregidoPorPliegue(e, 'perimetro-pecho', 'pliegue-subescapular');
+  return masa(escaladaAlPhantom(perimetros, PHANTOM.talla, val(e, 'talla'), 207.21, 13.74, 24.5, 5.4));
+};
+
+/**
+ * Ósea: la de la cabeza, ((perímetro − 56,0) / 1,44) · 0,18 + 1,20, sin escalar por la talla; más la del cuerpo, con
+ * biacromial + biiliocrestal + 2 · húmero + 2 · fémur (cm) contra 98,88 ± 5,33; 6,70 ± 1,34 kg.
+ */
+const masaOseaKerr: ReglaDeCalculo = (e) => {
+  const malo = positivas(e, ['talla', 'perimetro-cabeza', 'diametro-biacromial', 'diametro-biiliocrestal', 'diametro-humero', 'diametro-femur']);
+  if (malo) return malo;
+  const cabeza = ((val(e, 'perimetro-cabeza') - 56.0) / 1.44) * 0.18 + 1.2;
+  const diametros = val(e, 'diametro-biacromial') + val(e, 'diametro-biiliocrestal') + 2 * val(e, 'diametro-humero') + 2 * val(e, 'diametro-femur');
+  return masa(cabeza + escaladaAlPhantom(diametros, PHANTOM.talla, val(e, 'talla'), 98.88, 5.33, 6.7, 1.34));
+};
+
+/**
+ * Residual: tórax transverso + tórax anteroposterior + cintura mínima corregida por el pliegue abdominal (cm), con la talla
+ * sentado (89,92 cm en el Phantom), contra 109,35 ± 7,08; 6,10 ± 1,24 kg.
+ */
+const masaResidualKerr: ReglaDeCalculo = (e) => {
+  const malo = positivas(e, ['talla-sentado', 'diametro-torax-transverso', 'diametro-torax-anteroposterior', 'perimetro-cintura', 'pliegue-abdominal']);
+  if (malo) return malo;
+  const tronco = val(e, 'diametro-torax-transverso') + val(e, 'diametro-torax-anteroposterior') + corregidoPorPliegue(e, 'perimetro-cintura', 'pliegue-abdominal');
+  return masa(escaladaAlPhantom(tronco, PHANTOM.tallaSentado, val(e, 'talla-sentado'), 109.35, 7.08, 6.1, 1.24));
+};
+
 // ─── El registro ────────────────────────────────────────────────────────────────────────────────
 
 const cociente =
@@ -299,4 +387,11 @@ export const REGLAS_ANTROPOMETRICAS: Readonly<Record<string, ReglaDeCalculo>> = 
   'be/somatotipo-endomorfia@1': endomorfia,
   'be/somatotipo-mesomorfia@1': mesomorfia,
   'be/somatotipo-ectomorfia@1': ectomorfia,
+  // Kerr (1988), cinco componentes (DL-190)
+  'be/kerr-masa-piel-hombres@1': masaDeLaPielKerr('HOMBRES'),
+  'be/kerr-masa-piel-mujeres@1': masaDeLaPielKerr('MUJERES'),
+  'be/kerr-masa-adiposa@1': masaAdiposaKerr,
+  'be/kerr-masa-muscular@1': masaMuscularKerr,
+  'be/kerr-masa-osea@1': masaOseaKerr,
+  'be/kerr-masa-residual@1': masaResidualKerr,
 };

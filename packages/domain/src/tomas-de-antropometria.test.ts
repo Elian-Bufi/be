@@ -180,7 +180,7 @@ test('el resumen de una toma: su protocolo (el más frecuente), sus cuentas y la
 
 // ─── Las mediciones ─────────────────────────────────────────────────────────────────────────────
 
-test('el nombre corto saca la palabra de la familia y su preposición, en las 27 mediciones del catálogo que la llevan', () => {
+test('el nombre corto saca la palabra de la familia y su preposición, en las 33 mediciones del catálogo que la llevan', () => {
   const esperado: Record<string, string> = {
     'pliegue-pectoral': 'Pectoral',
     'pliegue-axilar-media': 'Axilar medio',
@@ -209,8 +209,15 @@ test('el nombre corto saca la palabra de la familia y su preposición, en las 27
     'diametro-humero': 'Biepicondíleo del húmero (codo)',
     'diametro-biestiloideo': 'Biestiloideo (muñeca)',
     'diametro-femur': 'Bicondíleo del fémur (rodilla)',
+    // DL-190 · las de Kerr (1988) que el perfil completo no tiene.
+    'perimetro-cabeza': 'Cabeza',
+    'perimetro-muslo-gluteo': 'Muslo a 1 cm del pliegue glúteo',
+    'diametro-biacromial': 'Biacromial (hombros)',
+    'diametro-biiliocrestal': 'Biiliocrestal (crestas ilíacas)',
+    'diametro-torax-transverso': 'Transverso del tórax',
+    'diametro-torax-anteroposterior': 'Anteroposterior del tórax',
   };
-  // Las 27 son todas las del catálogo con familia de pliegues, perímetros o diámetros: ni una más ni una menos.
+  // Las 33 son todas las del catálogo con familia de pliegues, perímetros o diámetros: ni una más ni una menos.
   const delCatalogo = Object.keys(FAMILIA_DE_METRICA).filter((c) => ['PLIEGUES', 'PERIMETROS', 'DIAMETROS'].includes(FAMILIA_DE_METRICA[c]!));
   assert.deepEqual(delCatalogo.sort(), Object.keys(esperado).sort());
   for (const [clave, corto] of Object.entries(esperado)) assert.equal(nombreCortoDeMetrica(clave), corto, clave);
