@@ -177,6 +177,9 @@ test('RP-06 · el reparto por comida, en el plan: una parte por comida que suma 
   assert.match(delPlan, /C\.deLasKcal\(base\)/);
   assert.match(delPlan, /C\.sumaDeLasPartes\(sumas\.protein, base\)/);
   assert.doesNotMatch(delPlan, /% de las \$\{numero\(gramos\.kcal/);
+  // Revisión del PR: un día tipo sin comidas no muestra el reparto, y el texto no promete una propuesta que no se hace.
+  assert.doesNotMatch(P.COPY_PROPUESTA.sinComidasGuardadas, /se propone/);
+  assert.match(delPlan, /dia && comidasSinGuardar === 0 \? C\.sinComidasGuardadas : C\.sinDiaGuardado/);
   // Si no suman 100, no se propone y se dice cuánto suman.
   const corto = P.conParteUnica(P.repartoInicialUnico(DIA, 'parejo'), 'm4', '20');
   assert.equal(P.parteUnica(corto, 'm4'), '20');

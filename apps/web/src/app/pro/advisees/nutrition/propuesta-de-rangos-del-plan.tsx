@@ -124,7 +124,8 @@ export function RepartoPorComida({
     return (
       <section className="reparto-por-comida" aria-labelledby={`${id}-titulo`} data-reparto-por-comida>
         {encabezado}
-        <p className="nota">{dia ? C.sinComidasGuardadas : C.sinDiaGuardado}</p>
+        {/* Con comidas nuevas todavía sin guardar, lo que falta es guardar; sin ninguna, agregarlas. */}
+        <p className="nota" data-reparto-sin-comidas>{dia && comidasSinGuardar === 0 ? C.sinComidasGuardadas : C.sinDiaGuardado}</p>
       </section>
     );
   }

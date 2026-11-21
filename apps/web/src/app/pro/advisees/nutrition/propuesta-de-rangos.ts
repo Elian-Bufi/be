@@ -247,6 +247,7 @@ export const COPY_PROPUESTA = {
   guardando: 'Guardando…',
   nadaQueGuardar: 'No hay nada nuevo para guardar: todo ya tiene un rango escrito.',
   guardado: (n: number) => (n === 1 ? 'Se guardó 1 rango de la propuesta.' : `Se guardaron ${n} rangos de la propuesta.`),
-  sinComidasGuardadas: 'Este día tipo todavía no tiene comidas guardadas: se propone solo el rango del día.',
+  // Revisión del PR: sin comidas no hay nada que repartir, y el reparto no propone el rango del día solo (antes decía que sí).
+  sinComidasGuardadas: 'Este día tipo todavía no tiene comidas: agregalas y guardá el plan para repartir el día entre ellas.',
   activada: 'La versión está activada: sus rangos quedan como se activaron.',
 } as const;
