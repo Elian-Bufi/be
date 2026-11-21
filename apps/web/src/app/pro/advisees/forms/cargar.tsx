@@ -27,13 +27,22 @@
  *   con lo que la Solicitud pide de ella, para preguntarle si siguen igual (`sus-habitos.ts`). Sin autorización (el 404) o
  *   con cualquier falla, no se precarga ni se dice nada: por esta vía nunca se ve lo que respondió en el formulario de otra
  *   área.
+ * - **RP-14 (DL-189) · también desde la evaluación:** `CargarLaSolicitud` es la misma pantalla sin depender de la pestaña
+ *   Información: «Completarlo ahora con {nombre}» la abre ahí mismo, en la evaluación inicial, y al terminar vuelve a ella.
+ *   `CargaConLaPersona` es la de la pestaña, con la solicitud en la dirección.
+ * - **RP-15 · primero lo crítico:** si la plantilla tiene campos críticos pedidos (`camposCriticos`, del dominio), arriba
+ *   dice «Primero lo necesario para planificar» y van solo esos; el resto, con sus partes, queda detrás de «Cargar también
+ *   el resto». Lo que no se carga, la persona lo responde en su app al confirmar. Si lo ya cargado tiene respuestas fuera de
+ *   lo crítico, se abre con las partes completas.
  */
 import {
   ayudaDeLaPregunta,
+  camposCriticos,
   camposVisibles,
   CODIGO_DE_LA_PARTE_DE_HABITOS,
   CODIGO_DE_PROBLEMA_V2,
   COPY,
+  COPY_EVALUACION_INICIAL as EI,
   COPY_HABITOS,
   COPY_FORMULARIOS as F,
   COPY_FORMULARIOS_V2 as V,
@@ -51,13 +60,14 @@ import {
   topeDesdeLaTabla,
   type DetalleDeSolicitudV2,
   type ParteDelFormulario,
+  type CampoDePlantillaV2,
   type ProblemaDeRespuestaV2,
   type RespuestaDeCampoV2Entrada,
   type SeccionDePlantillaV2,
   type ValorDeRespuestaV2,
   type VersionDePlantillaV2,
 } from '@be/domain';
-import { useCallback, useEffect, useId, useMemo, useRef, useState, type RefObject } from 'react';
+import { useCallback, useEffect, useId, useMemo, useRef, useState, type ReactNode, type RefObject } from 'react';
 import { Aviso } from '../../../../components/formulario';
 import { Icono } from '../../../../components/icono';
 import { api, type Resultado } from '../../../../lib/api';
@@ -66,7 +76,8 @@ import { esIncierto, mensajeDeFallo, useClaveDeIntento } from '../../../../lib/i
 import { useAvisarSinAcceso, useCambiosSinGuardar, usePersonaDelArea } from '../marco-del-area';
 import { CampoV2, ParaQueDeLaPregunta } from './campos-v2';
 import { conRespuesta, lineasDeValor, mensajesPorCampo, problemasDeLaApi, respuestaDe, respuestasParaEnviar, revisarAntesDeEnviar, sinRenglonesVacios } from './formulario-de-inicio';
-import { EstadoDeLectura, useFormularios } from './formularios';
+import { EstadoDeLecturaDelArea as EstadoDeLectura } from '../marco-del-area';
+import { useFormularios } from './formularios';
 import { precargaAlCargar, preguntaPorLosHabitosAlCargar } from './sus-habitos';
 
 /** Los textos propios de esta pantalla (los que comparte con la APK están en `COPY_FORMULARIOS_V2`). */
@@ -101,12 +112,45 @@ type Envio = { readonly tipo: 'editando' } | { readonly tipo: 'enviando' } | { r
 
 const idDe = (fieldCode: string) => `fri-${fieldCode}`;
 
+/** «Cargar con la persona» en la pestaña Información: la solicitud viene en la dirección y se vuelve a «Solicitudes». */
 export function CargaConLaPersona() {
   const { token, sesionPerdida, avisar, parametros, ir, yoId } = useFormularios();
+  return (
+    <CargarLaSolicitud
+      token={token}
+      yoId={yoId}
+      sesionPerdida={sesionPerdida}
+      solicitudId={parametros.get('solicitud')}
+      // El éxito lo dice la página de la solicitud, que se abre con lo cargado y «Esperando que lo confirme» (DL-113).
+      alEnviar={(texto) => {
+        avisar(texto);
+        ir({ vista: 'solicitudes' });
+      }}
+      alVolver={() => ir({ vista: 'solicitudes' })}
+    />
+  );
+}
+
+export interface PropsDeLaCarga {
+  readonly token: string;
+  /** El profesional con sesión: solo quien pidió la solicitud la carga. */
+  readonly yoId: string | null;
+  readonly sesionPerdida: (r: Resultado<unknown>) => boolean;
+  readonly solicitudId: string | null;
+  /** Lo cargado se envió: el texto del éxito, para quien lo muestre. */
+  readonly alEnviar: (texto: string) => void;
+  /** «Volver» (con lo escrito sin enviar, después de preguntar). */
+  readonly alVolver: () => void;
+  readonly textoDeVolver?: string;
+  /** RP-14: lo que se dice arriba, junto al formulario (por ejemplo, qué formulario sigue después). */
+  readonly aviso?: ReactNode;
+}
+
+/** «Cargar con la persona» sobre una solicitud pendiente propia, donde se la abra (la pestaña Información o la evaluación). */
+export function CargarLaSolicitud({ token, yoId, sesionPerdida, solicitudId, alEnviar, alVolver, textoDeVolver = T.volver, aviso = null }: PropsDeLaCarga) {
   const persona = usePersonaDelArea();
   const avisarSinAcceso = useAvisarSinAcceso();
   const intento = useClaveDeIntento();
-  const solicitudId = parametros.get('solicitud');
   const [lectura, setLectura] = useState<Resultado<Lectura> | null>(null);
   const [respuestas, setRespuestas] = useState<readonly RespuestaDeCampoV2Entrada[]>([]);
   /** La versión de lo cargado antes, si espera confirmación: se reemplaza con ella. `null` crea. */
@@ -195,6 +239,15 @@ export function CargaConLaPersona() {
     return m;
   }, [partes, sinResponder]);
   const porCodigo = useMemo(() => new Map(campos.map((c) => [c.fieldCode, c] as const)), [campos]);
+
+  // ─── RP-15 (DL-189) · primero lo necesario para planificar ────────────────────────────────────────────────
+  const clave = listo?.version.key ?? '';
+  const criticos = useMemo(() => (solicitud ? camposCriticos(clave, secciones, solicitud, respuestas) : []), [clave, secciones, solicitud, respuestas]);
+  /** El profesional pidió ver todo («Cargar también el resto») o volver a lo necesario; `null`: lo que corresponde al abrir. */
+  const [conTodo, setConTodo] = useState<boolean | null>(null);
+  // Si lo ya cargado tiene respuestas fuera de lo crítico, se abre con las partes: lo cargado tiene que estar a la vista.
+  const cargadoFueraDeLoCritico = (listo?.vista.proposal?.answers ?? []).some((r) => !criticos.includes(r.fieldCode));
+  const soloLoCritico = criticos.length > 0 && (conTodo === null ? !cargadoFueraDeLoCritico : !conTodo);
   const deLaParte = parte ? preguntasQueSeVen(parte, visibles).flatMap((codigo) => porCodigo.get(codigo) ?? []) : [];
   /** Al cambiar de parte, el foco va a su título: con el teclado, la parte nueva empieza ahí (no en el botón que se tocó). */
   const tituloDeLaParte = useRef<HTMLHeadingElement>(null);
@@ -268,9 +321,7 @@ export function CargaConLaPersona() {
     setTocado(false);
     tocadoRef.current = false;
     setEnvio({ tipo: 'editando' });
-    // El éxito lo dice la página de la solicitud, que se abre con lo cargado y «Esperando que lo confirme» (DL-113).
-    avisar(expectedVersion === null ? T.cargado : T.cambiosGuardados);
-    ir({ vista: 'solicitudes' });
+    alEnviar(expectedVersion === null ? T.cargado : T.cambiosGuardados);
   }
 
   /** Después de un conflicto: se vuelve a leer la solicitud; lo escrito queda. */
@@ -280,16 +331,16 @@ export function CargaConLaPersona() {
     setReleido(true);
   }
 
-  /** Vuelve a la solicitud abierta (`solicitud=` queda en la dirección). Lo escrito sin enviar se pierde: ya se preguntó. */
+  /** Vuelve a donde se abrió (la solicitud, o la evaluación). Lo escrito sin enviar se pierde: ya se preguntó. */
   const salir = () => {
     setTocado(false);
     tocadoRef.current = false;
-    ir({ vista: 'solicitudes' });
+    alVolver();
   };
   const volver = (
     <button type="button" className="boton boton--secundario" onClick={() => (tocado ? setSaliendo(true) : salir())} disabled={enviando}>
       <Icono nombre="volver" tamano={18} />
-      {T.volver}
+      {textoDeVolver}
     </button>
   );
 
@@ -299,6 +350,59 @@ export function CargaConLaPersona() {
   const pedidasVisibles = campos.filter((c) => pedidas.has(c.fieldCode) && visibles.has(c.fieldCode));
   const propuesta = listo?.vista.proposal ?? null;
   const esMia = solicitud !== null && solicitud.professional.identityId === yoId;
+
+  /** Una pregunta de la solicitud, con su ayuda, su tope, su «¿Para qué?» y lo que se marcó (en una parte o en lo crítico). */
+  const dibujarPregunta = (c: CampoDePlantillaV2) => {
+    if (!solicitud) return null;
+    const id = idDe(c.fieldCode);
+    const deEsta = mensajes.get(c.fieldCode) ?? [];
+    const falta = intentos > 0 && sinResponder.includes(c.fieldCode);
+    // DL-165 D-2: la ayuda a la vista es corta; en un texto, es su texto de muestra (y la lee el lector).
+    const ayuda = ayudaDeLaPregunta(c);
+    const conAyuda = ayuda.aLaVista !== null || ayuda.deMuestra !== null;
+    // DL-165 D-5: un número con su tope en una tabla dice cuánto admite con lo marcado.
+    const tope = topeDesdeLaTabla(c, secciones, respuestas);
+    const descripcion =
+      [conAyuda ? `${id}-ayuda` : null, tope ? `${id}-tope` : null, c.purpose ? `${id}-para-que` : null, ...deEsta.map((_, i) => `${id}-problema-${i}`), falta ? `${id}-falta` : null].filter(Boolean).join(' ') || undefined;
+    return (
+      <fieldset key={c.fieldCode} id={id} className="pregunta-de-inicio" data-pregunta={c.fieldCode} data-con-problema={deEsta.length > 0 ? 'si' : undefined} tabIndex={-1}>
+        <legend className="pregunta-de-inicio__pregunta">
+          <span id={`${id}-texto`}>{c.label}</span>{' '}
+          {/* DL-165 D-7: la obligatoria se distingue también por su forma, no solo por la palabra. */}
+          <span className="etiqueta-de-dato" data-obligatoria={solicitud.requiredFieldCodes.includes(c.fieldCode) ? 'si' : undefined}>
+            {solicitud.requiredFieldCodes.includes(c.fieldCode) ? V.obligatoria : V.opcional}
+          </span>
+        </legend>
+        {ayuda.aLaVista ? (
+          <p id={`${id}-ayuda`} className="campo__ayuda">
+            {ayuda.aLaVista}
+          </p>
+        ) : ayuda.deMuestra ? (
+          <span id={`${id}-ayuda`} className="visualmente-oculto">
+            {ayuda.deMuestra}
+          </span>
+        ) : null}
+        {tope ? (
+          <p id={`${id}-tope`} className="campo__ayuda">
+            {V.hastaLoMarcado(tope.tope, tope.tabla)}
+          </p>
+        ) : null}
+        <CampoV2 id={`${id}-control`} campo={c} valor={respuestaDe(respuestas, c.fieldCode)} onCambiar={(v) => cambiar(c.fieldCode, v)} deshabilitado={enviando} labelledBy={`${id}-texto`} describedBy={descripcion} />
+        {c.purpose ? <ParaQueDeLaPregunta idDelTexto={`${id}-para-que`} pregunta={c.label} texto={c.purpose} /> : null}
+        {deEsta.map((m, i) => (
+          <p key={m} id={`${id}-problema-${i}`} className="campo__error">
+            <span aria-hidden="true">⚠ </span>
+            {m}
+          </p>
+        ))}
+        {falta ? (
+          <p id={`${id}-falta`} className="nota pregunta-de-inicio__falta">
+            {MENSAJE_DE_PROBLEMA_V2[CODIGO_DE_PROBLEMA_V2.REQUIRED]} {T.laCompletaAlConfirmar}
+          </p>
+        ) : null}
+      </fieldset>
+    );
+  };
 
   return (
     <section className="registros formulario-de-inicio" aria-labelledby="titulo-carga">
@@ -386,134 +490,138 @@ export function CargaConLaPersona() {
                     ) : null}
                   </Aviso>
                 ) : null}
-                <ProblemasDeLaCarga problemas={resumenDeProblemas} intento={intentos} actual={actual} partes={partes} onIrAParte={irAlPaso} />
+                <ProblemasDeLaCarga
+                  problemas={resumenDeProblemas}
+                  intento={intentos}
+                  actual={actual}
+                  partes={partes}
+                  onIrAParte={(indice) => {
+                    // Un problema de otra parte, desde lo crítico: se abren las partes, en esa.
+                    if (soloLoCritico) setConTodo(true);
+                    irAlPaso(indice);
+                  }}
+                />
+                {aviso}
 
-                {/* DL-165 D-1 y D-7: las partes, con lo que le falta a cada una; desde acá se va a cualquiera, y al repaso. */}
-                <nav className="partes-del-formulario" aria-label={V.partesDelFormulario}>
-                  <ol>
-                    {partes.map((p) => {
-                      const faltan = faltanPorParte.get(p.indice) ?? 0;
-                      return (
-                        <li key={p.sectionCode}>
-                          <button type="button" className="partes-del-formulario__parte" aria-current={p.indice === actual ? 'step' : undefined} onClick={() => irAlPaso(p.indice)} disabled={enviando} data-parte={p.sectionCode}>
-                            <span className="partes-del-formulario__titulo">
-                              {p.indice + 1}. {p.titulo}
-                            </span>
-                            {faltan > 0 ? <span className="partes-del-formulario__faltan">{V.obligatoriasPorResponder(faltan)}</span> : null}
-                          </button>
-                        </li>
-                      );
-                    })}
-                    <li>
-                      <button type="button" className="partes-del-formulario__parte" aria-current={enRepaso ? 'step' : undefined} onClick={() => irAlPaso(repaso)} disabled={enviando} data-parte="repaso">
-                        <span className="partes-del-formulario__titulo">{V.repaso}</span>
-                      </button>
-                    </li>
-                  </ol>
-                </nav>
-                <p className="formulario-de-inicio__paso" aria-live="polite">
-                  {enRepaso ? V.repaso : V.parte(actual + 1, partes.length)}
-                </p>
-                {quedaron && !enRepaso ? (
-                  <Aviso tipo="info">
-                    <p>
-                      {V.quedaronSinResponder(quedaron.n, quedaron.titulo)}{' '}
-                      <button type="button" className="boton boton--enlace" onClick={() => irAlPaso(quedaron.indice)}>
-                        {V.volverALaParte(quedaron.titulo)}
-                      </button>
-                    </p>
-                  </Aviso>
-                ) : null}
-
-                {parte ? (
-                  <section key={parte.sectionCode} className="formulario-de-inicio__seccion" aria-labelledby={`fri-seccion-${parte.sectionCode}`} data-seccion={parte.sectionCode}>
-                    <h3 id={`fri-seccion-${parte.sectionCode}`} ref={tituloDeLaParte} tabIndex={-1}>
-                      {parte.titulo}
+                {soloLoCritico ? (
+                  // RP-15 (DL-189): primero lo necesario para planificar; el resto, detrás de «Cargar también el resto».
+                  <section className="formulario-de-inicio__seccion formulario-de-inicio__criticas" aria-labelledby="fri-criticas" data-seccion="criticas" data-lo-critico>
+                    <h3 id="fri-criticas" ref={tituloDeLaParte} tabIndex={-1}>
+                      {EI.primeroLoNecesario}
                     </h3>
-                    {parte.intro ? <p className="nota formulario-de-inicio__intro">{parte.intro}</p> : null}
-                    {/* FR-10: lo que la persona le comparte vino precargado; se le pregunta si sigue igual. */}
-                    {parte.sectionCode === CODIGO_DE_LA_PARTE_DE_HABITOS && habitosPrecargados ? (
-                      <Aviso tipo="info">
-                        <p data-habitos-precargados>{COPY_HABITOS.web.precargados(diaSinElAnioEnCurso(habitosPrecargados))}</p>
-                      </Aviso>
-                    ) : null}
-                    {deLaParte.length === 0 ? <p className="nota">{V.parteSinPreguntas}</p> : null}
-                    {deLaParte.map((c) => {
-                      const id = idDe(c.fieldCode);
-                      const deEsta = mensajes.get(c.fieldCode) ?? [];
-                      const falta = intentos > 0 && sinResponder.includes(c.fieldCode);
-                      // DL-165 D-2: la ayuda a la vista es corta; en un texto, es su texto de muestra (y la lee el lector).
-                      const ayuda = ayudaDeLaPregunta(c);
-                      const conAyuda = ayuda.aLaVista !== null || ayuda.deMuestra !== null;
-                      // DL-165 D-5: un número con su tope en una tabla dice cuánto admite con lo marcado.
-                      const tope = topeDesdeLaTabla(c, secciones, respuestas);
-                      const descripcion =
-                        [conAyuda ? `${id}-ayuda` : null, tope ? `${id}-tope` : null, c.purpose ? `${id}-para-que` : null, ...deEsta.map((_, i) => `${id}-problema-${i}`), falta ? `${id}-falta` : null].filter(Boolean).join(' ') || undefined;
-                      return (
-                        <fieldset key={c.fieldCode} id={id} className="pregunta-de-inicio" data-pregunta={c.fieldCode} data-con-problema={deEsta.length > 0 ? 'si' : undefined} tabIndex={-1}>
-                          <legend className="pregunta-de-inicio__pregunta">
-                            <span id={`${id}-texto`}>{c.label}</span>{' '}
-                            {/* DL-165 D-7: la obligatoria se distingue también por su forma, no solo por la palabra. */}
-                            <span className="etiqueta-de-dato" data-obligatoria={solicitud.requiredFieldCodes.includes(c.fieldCode) ? 'si' : undefined}>
-                              {solicitud.requiredFieldCodes.includes(c.fieldCode) ? V.obligatoria : V.opcional}
-                            </span>
-                          </legend>
-                          {ayuda.aLaVista ? (
-                            <p id={`${id}-ayuda`} className="campo__ayuda">
-                              {ayuda.aLaVista}
-                            </p>
-                          ) : ayuda.deMuestra ? (
-                            <span id={`${id}-ayuda`} className="visualmente-oculto">
-                              {ayuda.deMuestra}
-                            </span>
-                          ) : null}
-                          {tope ? (
-                            <p id={`${id}-tope`} className="campo__ayuda">
-                              {V.hastaLoMarcado(tope.tope, tope.tabla)}
-                            </p>
-                          ) : null}
-                          <CampoV2 id={`${id}-control`} campo={c} valor={respuestaDe(respuestas, c.fieldCode)} onCambiar={(v) => cambiar(c.fieldCode, v)} deshabilitado={enviando} labelledBy={`${id}-texto`} describedBy={descripcion} />
-                          {c.purpose ? <ParaQueDeLaPregunta idDelTexto={`${id}-para-que`} pregunta={c.label} texto={c.purpose} /> : null}
-                          {deEsta.map((m, i) => (
-                            <p key={m} id={`${id}-problema-${i}`} className="campo__error">
-                              <span aria-hidden="true">⚠ </span>
-                              {m}
-                            </p>
-                          ))}
-                          {falta ? (
-                            <p id={`${id}-falta`} className="nota pregunta-de-inicio__falta">
-                              {MENSAJE_DE_PROBLEMA_V2[CODIGO_DE_PROBLEMA_V2.REQUIRED]} {T.laCompletaAlConfirmar}
-                            </p>
-                          ) : null}
-                        </fieldset>
-                      );
-                    })}
+                    <p className="nota formulario-de-inicio__intro">{EI.primeroBajada(persona ?? EI.persona)}</p>
+                    {criticos.flatMap((codigo) => porCodigo.get(codigo) ?? []).map((c) => dibujarPregunta(c))}
                   </section>
                 ) : (
-                  <RepasoDeLoCargado secciones={secciones} partes={partes} respuestas={respuestas} visibles={visibles} obligatorias={solicitud.requiredFieldCodes} onCambiar={irAlPaso} tituloRef={tituloDeLaParte} />
+                  <>
+                    {/* DL-165 D-1 y D-7: las partes, con lo que le falta a cada una; desde acá se va a cualquiera, y al repaso. */}
+                    <nav className="partes-del-formulario" aria-label={V.partesDelFormulario}>
+                      <ol>
+                        {partes.map((p) => {
+                          const faltan = faltanPorParte.get(p.indice) ?? 0;
+                          return (
+                            <li key={p.sectionCode}>
+                              <button type="button" className="partes-del-formulario__parte" aria-current={p.indice === actual ? 'step' : undefined} onClick={() => irAlPaso(p.indice)} disabled={enviando} data-parte={p.sectionCode}>
+                                <span className="partes-del-formulario__titulo">
+                                  {p.indice + 1}. {p.titulo}
+                                </span>
+                                {faltan > 0 ? <span className="partes-del-formulario__faltan">{V.obligatoriasPorResponder(faltan)}</span> : null}
+                              </button>
+                            </li>
+                          );
+                        })}
+                        <li>
+                          <button type="button" className="partes-del-formulario__parte" aria-current={enRepaso ? 'step' : undefined} onClick={() => irAlPaso(repaso)} disabled={enviando} data-parte="repaso">
+                            <span className="partes-del-formulario__titulo">{V.repaso}</span>
+                          </button>
+                        </li>
+                      </ol>
+                    </nav>
+                    <p className="formulario-de-inicio__paso" aria-live="polite">
+                      {enRepaso ? V.repaso : V.parte(actual + 1, partes.length)}
+                    </p>
+                    {quedaron && !enRepaso ? (
+                      <Aviso tipo="info">
+                        <p>
+                          {V.quedaronSinResponder(quedaron.n, quedaron.titulo)}{' '}
+                          <button type="button" className="boton boton--enlace" onClick={() => irAlPaso(quedaron.indice)}>
+                            {V.volverALaParte(quedaron.titulo)}
+                          </button>
+                        </p>
+                      </Aviso>
+                    ) : null}
+
+                    {parte ? (
+                      <section key={parte.sectionCode} className="formulario-de-inicio__seccion" aria-labelledby={`fri-seccion-${parte.sectionCode}`} data-seccion={parte.sectionCode}>
+                        <h3 id={`fri-seccion-${parte.sectionCode}`} ref={tituloDeLaParte} tabIndex={-1}>
+                          {parte.titulo}
+                        </h3>
+                        {parte.intro ? <p className="nota formulario-de-inicio__intro">{parte.intro}</p> : null}
+                        {/* FR-10: lo que la persona le comparte vino precargado; se le pregunta si sigue igual. */}
+                        {parte.sectionCode === CODIGO_DE_LA_PARTE_DE_HABITOS && habitosPrecargados ? (
+                          <Aviso tipo="info">
+                            <p data-habitos-precargados>{COPY_HABITOS.web.precargados(diaSinElAnioEnCurso(habitosPrecargados))}</p>
+                          </Aviso>
+                        ) : null}
+                        {deLaParte.length === 0 ? <p className="nota">{V.parteSinPreguntas}</p> : null}
+                        {deLaParte.map((c) => dibujarPregunta(c))}
+                      </section>
+                    ) : (
+                      <RepasoDeLoCargado secciones={secciones} partes={partes} respuestas={respuestas} visibles={visibles} obligatorias={solicitud.requiredFieldCodes} onCambiar={irAlPaso} tituloRef={tituloDeLaParte} />
+                    )}
+                  </>
                 )}
 
                 {/* Moverse entre las partes; en el repaso, enviar. Lo que hay que saber antes de enviar queda junto al botón. */}
                 <div className="acciones acciones--fijas formulario-de-inicio__pie">
-                  {actual > 0 ? (
-                    <button type="button" className="boton boton--secundario" onClick={() => irAlPaso(actual - 1)} disabled={enviando} data-anterior>
-                      <Icono nombre="volver" tamano={18} />
-                      {V.anterior}
-                    </button>
-                  ) : null}
-                  {enRepaso ? (
-                    <button type="button" className="boton boton--primario" onClick={() => void enviar()} disabled={enviando} aria-busy={enviando} data-enviar>
-                      <Icono nombre="solicitar" tamano={18} />
-                      {enviando ? C.enviando : envio.tipo === 'error' && envio.incierto ? COPY.reintentar : propuesta ? V.web.reemplazar : V.web.enviar}
-                    </button>
+                  {soloLoCritico ? (
+                    <>
+                      <button
+                        type="button"
+                        className="boton boton--secundario"
+                        onClick={() => {
+                          cambioDeParte.current = false;
+                          setConTodo(true);
+                          setPaso(0);
+                        }}
+                        disabled={enviando}
+                        data-cargar-el-resto
+                      >
+                        {EI.cargarElResto}
+                      </button>
+                      <button type="button" className="boton boton--primario" onClick={() => void enviar()} disabled={enviando} aria-busy={enviando} data-enviar>
+                        <Icono nombre="solicitar" tamano={18} />
+                        {enviando ? C.enviando : envio.tipo === 'error' && envio.incierto ? COPY.reintentar : propuesta ? V.web.reemplazar : V.web.enviar}
+                      </button>
+                    </>
                   ) : (
-                    <button type="button" className="boton boton--primario" onClick={() => irAlPaso(actual + 1)} disabled={enviando} data-siguiente>
-                      {actual === partes.length - 1 ? V.repasar : V.siguiente}
-                      <Icono nombre="derecha" tamano={18} />
-                    </button>
+                    <>
+                      {criticos.length > 0 ? (
+                        <button type="button" className="boton boton--enlace" onClick={() => setConTodo(false)} disabled={enviando} data-solo-lo-necesario>
+                          {EI.soloLoNecesario}
+                        </button>
+                      ) : null}
+                      {actual > 0 ? (
+                        <button type="button" className="boton boton--secundario" onClick={() => irAlPaso(actual - 1)} disabled={enviando} data-anterior>
+                          <Icono nombre="volver" tamano={18} />
+                          {V.anterior}
+                        </button>
+                      ) : null}
+                      {enRepaso ? (
+                        <button type="button" className="boton boton--primario" onClick={() => void enviar()} disabled={enviando} aria-busy={enviando} data-enviar>
+                          <Icono nombre="solicitar" tamano={18} />
+                          {enviando ? C.enviando : envio.tipo === 'error' && envio.incierto ? COPY.reintentar : propuesta ? V.web.reemplazar : V.web.enviar}
+                        </button>
+                      ) : (
+                        <button type="button" className="boton boton--primario" onClick={() => irAlPaso(actual + 1)} disabled={enviando} data-siguiente>
+                          {actual === partes.length - 1 ? V.repasar : V.siguiente}
+                          <Icono nombre="derecha" tamano={18} />
+                        </button>
+                      )}
+                    </>
                   )}
                   <p className="acciones__estado">
-                    <span aria-live="polite">{T.respondidas(respuestas.length, pedidasVisibles.length)}</span> · {T.noQuedaHastaConfirmar}
+                    <span aria-live="polite">{T.respondidas(respuestas.length, pedidasVisibles.length)}</span> · {soloLoCritico ? EI.primeroBajada(persona ?? EI.persona) : T.noQuedaHastaConfirmar}
                   </p>
                 </div>
               </div>
