@@ -19,6 +19,10 @@ export function AyudaDeLaCarga() {
           <strong>Una toma en preparación es un borrador.</strong> {C.borradorNoEsHistoria} «Guardar» la deja guardada para seguir después; «Registrar toma» la vuelve parte de la historia, guarda antes lo que está
           en pantalla y pide confirmación: después no se edita.
         </Renglon>
+        <Renglon esencial muestra={<Icono nombre="lista" tamano={20} />}>
+          <strong>Primero, qué vas a calcular.</strong> Con uno o varios métodos elegidos, la figura y la lista piden solo lo que necesitan, más peso, talla y edad; «+ Otra medición» suma un punto suelto. Vienen
+          elegidos los de tu última toma. Sin ninguno, se ve todo el protocolo. Lo que ya tiene dato nunca se esconde.
+        </Renglon>
         <Renglon muestra={<Icono nombre="protocolo" tamano={20} />}>
           <strong>Qué se mide lo declara el protocolo.</strong> Lo que tiene sitio en la figura se carga en la figura; lo demás que declara (peso, talla, diámetros…), en «Fuera de la figura». Cambiar de protocolo no
           pierde nada: lo que el nuevo no declara pasa a fuera del protocolo. BE no convierte unidades.
