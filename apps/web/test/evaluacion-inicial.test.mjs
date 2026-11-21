@@ -206,6 +206,12 @@ test('TEST-EVI-025 · lo crítico primero en «Cargar con la persona», y el res
   assert.match(CARGAR, /\{EI\.cargarElResto\}/);
   // Lo ya cargado fuera de lo crítico se abre con las partes, para que se vea.
   assert.match(CARGAR, /const soloLoCritico = criticos\.length > 0 && \(conTodo === null \? !cargadoFueraDeLoCritico : !conTodo\);/);
+  // Revisión del PR: también lo precargado de sus hábitos (FR-10), que si no viajaba sin que el profesional lo viera ni se
+  // lo preguntara; y un problema en una pregunta fuera de lo crítico abre las partes, para que se vea dónde está.
+  assert.match(CARGAR, /setCargadasAlAbrir\(alAbrir\.map\(\(r\) => r\.fieldCode\)\);/);
+  assert.match(CARGAR, /const alAbrir = proposal \? sinRespuestasOcultas\(secciones, proposal\.answers\) : \(precarga\?\.respuestas \?\? \[\]\);/);
+  assert.match(CARGAR, /const cargadoFueraDeLoCritico = cargadasAlAbrir\.some\(\(codigo\) => !criticos\.includes\(codigo\)\);/);
+  assert.match(CARGAR, /if \(soloLoCritico && problemas\.some\(\(p\) => !criticos\.includes\(p\.fieldCode\)\)\) setConTodo\(true\);/);
   // La pestaña Información sigue igual: la solicitud en la dirección y la vuelta a «Solicitudes».
   assert.match(CARGAR, /export function CargaConLaPersona\(\) \{\n\s*const \{ token, sesionPerdida, avisar, parametros, ir, yoId \} = useFormularios\(\);/);
   assert.match(CARGAR, /alEnviar\(expectedVersion === null \? T\.cargado : T\.cambiosGuardados\);/);

@@ -168,6 +168,11 @@ export function CargarLaSolicitud({ token, yoId, sesionPerdida, solicitudId, alE
    * para decirlo en esa parte. `null` si no se precargó nada.
    */
   const [habitosPrecargados, setHabitosPrecargados] = useState<string | null>(null);
+  /**
+   * RP-15 · las preguntas que ya vinieron con respuesta al abrir: lo cargado antes que espera confirmación o lo que precargó
+   * «Tus hábitos» de lo que la persona le comparte (FR-10). Si alguna queda fuera de lo crítico, se abre con las partes.
+   */
+  const [cargadasAlAbrir, setCargadasAlAbrir] = useState<readonly string[]>([]);
   /** «Volver» con algo cargado y sin enviar pregunta antes, en la página: nada se descarta en silencio. */
   const [saliendo, setSaliendo] = useState(false);
   const preguntaDeSalida = useRef<HTMLParagraphElement>(null);
@@ -202,7 +207,9 @@ export function CargarLaSolicitud({ token, yoId, sesionPerdida, solicitudId, alE
     // solo se toma la versión nueva.
     setExpectedVersion(proposal?.version ?? null);
     if (!tocadoRef.current) {
-      setRespuestas(proposal ? sinRespuestasOcultas(secciones, proposal.answers) : (precarga?.respuestas ?? []));
+      const alAbrir = proposal ? sinRespuestasOcultas(secciones, proposal.answers) : (precarga?.respuestas ?? []);
+      setRespuestas(alAbrir);
+      setCargadasAlAbrir(alAbrir.map((r) => r.fieldCode));
       setHabitosPrecargados(proposal ? null : (precarga?.declaradosEl ?? null));
     }
   }, [token, solicitudId, sesionPerdida]);
@@ -245,8 +252,9 @@ export function CargarLaSolicitud({ token, yoId, sesionPerdida, solicitudId, alE
   const criticos = useMemo(() => (solicitud ? camposCriticos(clave, secciones, solicitud, respuestas) : []), [clave, secciones, solicitud, respuestas]);
   /** El profesional pidió ver todo («Cargar también el resto») o volver a lo necesario; `null`: lo que corresponde al abrir. */
   const [conTodo, setConTodo] = useState<boolean | null>(null);
-  // Si lo ya cargado tiene respuestas fuera de lo crítico, se abre con las partes: lo cargado tiene que estar a la vista.
-  const cargadoFueraDeLoCritico = (listo?.vista.proposal?.answers ?? []).some((r) => !criticos.includes(r.fieldCode));
+  // Si lo ya cargado (o lo precargado de sus hábitos, FR-10) tiene respuestas fuera de lo crítico, se abre con las partes:
+  // lo que va a viajar tiene que estar a la vista, y lo precargado se le pregunta a la persona si sigue igual.
+  const cargadoFueraDeLoCritico = cargadasAlAbrir.some((codigo) => !criticos.includes(codigo));
   const soloLoCritico = criticos.length > 0 && (conTodo === null ? !cargadoFueraDeLoCritico : !conTodo);
   const deLaParte = parte ? preguntasQueSeVen(parte, visibles).flatMap((codigo) => porCodigo.get(codigo) ?? []) : [];
   /** Al cambiar de parte, el foco va a su título: con el teclado, la parte nueva empieza ahí (no en el botón que se tocó). */
@@ -266,8 +274,13 @@ export function CargarLaSolicitud({ token, yoId, sesionPerdida, solicitudId, alE
     cambioDeParte.current = siguiente !== actual;
     setPaso(siguiente);
   };
-  /** Un problema al enviar lleva a la primera parte que tiene una pregunta marcada. */
+  /**
+   * Un problema al enviar lleva a la primera parte que tiene una pregunta marcada. Si una marcada no está en lo crítico (lo
+   * cargado en «Cargar también el resto» antes de volver a lo necesario, o lo que rechazó la API), se abren las partes:
+   * si no, el problema quedaba en una pregunta que no se ve.
+   */
   const irAlProblema = (problemas: readonly ProblemaDeRespuestaV2[]) => {
+    if (soloLoCritico && problemas.some((p) => !criticos.includes(p.fieldCode))) setConTodo(true);
     const destino = primeraParteCon(partes, problemas.map((p) => p.fieldCode));
     setQuedaron(null);
     if (destino !== null && destino !== actual) {
