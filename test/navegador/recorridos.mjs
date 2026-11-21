@@ -47,11 +47,23 @@ async function volverALaPestana(p) {
   });
 }
 
-/** Un clic de verdad (el mouse va al centro del elemento), no un `click()` de JavaScript. */
+/**
+ * Un clic de verdad (el mouse va al centro del elemento), no un `click()` de JavaScript. Revisión del PR de RP-06 (DL-188):
+ * lo que llega después de pintarse la página (el «Reparto por comida», que lee el cálculo del objetivo, arriba de las
+ * comidas) puede correr el elemento fuera de la ventana entre el desplazamiento y el clic. Puppeteer lo dice antes de
+ * mover el mouse («Node is either not clickable…»): no hubo clic, y se busca de nuevo, ya quieta la página.
+ */
 async function clic(p, selector, texto = null) {
-  const e = await elemento(p, selector, texto);
-  await e.click();
-  return e;
+  for (let intento = 1; ; intento++) {
+    const e = await elemento(p, selector, texto);
+    try {
+      await e.click();
+      return e;
+    } catch (error) {
+      if (intento >= 3 || !/not clickable|detached/i.test(String(error?.message ?? error))) throw error;
+      await pausa(400);
+    }
+  }
 }
 
 const ruta = (p) => {
@@ -298,18 +310,23 @@ async function pistas({ contexto, p, d, salida }) {
   await p.mouse.move(5, 5);
   await pausa(300);
 
-  // Tacto: tocar «Pedir información» lleva al pedido y no deja una pista pegada encima del contenido.
+  // Tacto: tocar «Pedir información» no deja una pista pegada encima del contenido. El botón lleva al pedido: para mirar
+  // la pista en la misma página, el clic se corta antes de llegar a React (la pista escucha el puntero y el foco, no el
+  // clic). Si el toque navegara, la ficha ya no estaría y la prueba no probaría nada (revisión del PR de RP-01).
   const tactil = await contexto.newPage();
   await tactil.setViewport({ width: 1024, height: 768, hasTouch: true, isMobile: true });
   await tactil.goto(p.url(), { waitUntil: 'networkidle2' });
   await elemento(tactil, BOTON, 'Pedir información');
+  await hidratado(tactil, BOTON);
+  await tactil.$eval(BOTON, (b) => b.addEventListener('click', (e) => e.stopPropagation()));
   const centro = await tactil.$eval(BOTON, (b) => {
     const r = b.getBoundingClientRect();
     return { x: r.left + r.width / 2, y: r.top + r.height / 2 };
   });
   await tactil.touchscreen.tap(centro.x, centro.y);
   await pausa(900);
-  assert.ok(!(await tactil.$$eval('.pista__globo', (gs) => gs.some((g) => !g.hidden && getComputedStyle(g).visibility !== 'hidden'))), 'con el dedo, la pista no queda abierta');
+  assert.equal(ruta(tactil).camino, '/pro/advisees', 'el toque no salió de la ficha: la pista se mira donde se tocó');
+  assert.ok(!(await tactil.$eval(GLOBO, (g) => !g.hidden && getComputedStyle(g).visibility !== 'hidden')), 'con el dedo, la pista no queda abierta');
   await tactil.close();
 }
 
