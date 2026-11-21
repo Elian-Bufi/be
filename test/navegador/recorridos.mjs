@@ -683,12 +683,15 @@ async function primerPlan({ p, d }) {
   await esperarCamino(p, '/pro/advisees/nutrition');
   await elemento(p, '[data-primer-plan]');
 
-  // 1. La evaluación.
-  await clic(p, '[data-paso-evaluacion]');
-  await hidratado(p, '#dato-0-concepto');
-  await p.type('#dato-0-concepto', 'Comidas por día');
-  await p.type('#dato-0-valor', '4');
-  await clic(p, 'form button[type="submit"]', 'Registrar evaluación');
+  // 1. La evaluación (RP-12, DL-189): abierta en su paso, en tres bloques. Un dato de «Lo que necesita el cálculo» alcanza
+  // para registrarla; el sexo no viene de ningún lado (EI-D02), así que se elige.
+  await elemento(p, 'form[data-evaluacion-inicial] [data-lo-que-conto]');
+  await hidratado(p, '[data-cambiar-dato="sexo"]');
+  await clic(p, '[data-cambiar-dato="sexo"]');
+  await p.select('[data-dato-del-calculo="sexo"] select', 'FEMALE');
+  await clic(p, '[data-listo-dato="sexo"]');
+  await elemento(p, '[data-dato-del-calculo="sexo"][data-origen="CARGADO_POR_VOS"]', 'Femenino');
+  await clic(p, 'form[data-evaluacion-inicial] button[type="submit"]', 'Registrar la evaluación');
 
   // 2. El objetivo: se abre solo y propone la evaluación recién registrada.
   await hidratado(p, '#objetivo-kcal');

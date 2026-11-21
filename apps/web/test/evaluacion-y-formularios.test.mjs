@@ -95,7 +95,9 @@ test('TEST-EVF-036 · revisión del PR (EVF-D08): el aviso del registro no queda
 
 test('TEST-EVF-034 · se monta en la evaluación de las dos áreas, en «Empezar el plan» y en Resumen, y vincula después de registrar', () => {
   const nutricion = leer('nutrition/formularios.tsx');
-  assert.match(nutricion, /<ElegirFormularios area="nutrition"/);
+  // RP-12 (DL-189; EI-D05): en Nutrición se vincula, sin casillas, lo que muestra «Lo que contó», con la versión vista.
+  assert.match(nutricion, /<LoQueConto\n/);
+  assert.match(nutricion, /conto\.respondidos\.slice\(0, MAXIMO_DE_FORMULARIOS_VINCULADOS\)\.map\(\(r\) => \(\{ formResponseId: r\.form\.formResponseId, expectedVersion: r\.form\.version \}\)\)/);
   // Primero se registra la evaluación (API-NUT-01 sin cambios) y después se vincula, antes de avisar que quedó.
   assert.match(nutricion, /api\.crearEvaluacion\([\s\S]*vincularAlRegistrar\(token, 'nutrition', r\.datos\.data\.evaluationId, vinculos\);[\s\S]*onRegistrada\(r\.datos\.data\.evaluationId\)/);
   const entrenamiento = leer('training/resumen.tsx');

@@ -370,6 +370,30 @@ async function abrirLaEvaluacion(page, ruta) {
   await visible(page, '[data-elegir-formularios] [data-formulario-para-vincular]');
 }
 
+/**
+ * WP-EVALUACION-INICIAL-2 (DL-189): en Nutrición la evaluación se abre sola en su paso, en tres bloques; lo que muestra
+ * «Lo que contó» se vincula al registrar, sin casillas. Espera el formulario respondido y abre «Ver todo».
+ */
+async function abrirLaEvaluacionDeNutricion(page, ruta, nombre) {
+  await ir(page, ruta);
+  const fila = await visible(page, '[data-evaluacion-inicial] [data-lo-que-conto] [data-formulario-respondido]', nombre, 45_000);
+  await (await fila.$('button')).click();
+  await asentar(page);
+  await (await visible(page, '[data-evaluacion-inicial]')).evaluate((x) => x.scrollIntoView({ block: 'start' }));
+  await pausa(300);
+}
+
+/** Nutrición (DL-189): elige el sexo en «Lo que necesita el cálculo» (no viene de ningún lado) y registra. */
+async function registrarLaDeNutricion(page) {
+  await clic(page, '[data-cambiar-dato="sexo"]');
+  await page.select('[data-dato-del-calculo="sexo"] select', 'FEMALE');
+  await clic(page, '[data-listo-dato="sexo"]');
+  await clic(page, 'form[data-evaluacion-inicial] button[type="submit"]', 'Registrar la evaluación');
+  await visible(page, '[data-formularios-de-la-evaluacion] [data-formulario-vinculado]', null, 45_000);
+  await (await visible(page, '[data-formularios-de-la-evaluacion]')).evaluate((x) => x.scrollIntoView({ block: 'center' }));
+  await pausa(300);
+}
+
 /** Elige el formulario con ese nombre, abre sus respuestas y deja la lista a la vista. */
 async function elegir(page, nombre) {
   const fila = await visible(page, '[data-elegir-formularios] [data-formulario-para-vincular]', nombre);
@@ -402,15 +426,12 @@ function pantallas(ids) {
   return {
     PRO_N: [
       {
-        nombre: '01-nutricion-evaluacion-inicial-elegir',
-        llegar: async (page) => {
-          await abrirLaEvaluacion(page, area('nutrition', ids.camila));
-          await elegir(page, 'Cómo comés hoy');
-        },
+        nombre: '01-nutricion-evaluacion-inicial-tres-bloques',
+        llegar: (page) => abrirLaEvaluacionDeNutricion(page, area('nutrition', ids.camila), 'Cómo comés hoy'),
       },
       {
         nombre: '02-nutricion-evaluacion-registrada-con-lo-vinculado',
-        llegar: (page) => registrar(page, ''),
+        llegar: (page) => registrarLaDeNutricion(page),
         reponer: (page) => aLaVista(page, '[data-formularios-de-la-evaluacion]'),
       },
       {
