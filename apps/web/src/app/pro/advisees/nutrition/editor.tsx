@@ -126,7 +126,7 @@ import { ContextoDeLosAlimentos, datosDelAlimento, type DatosDelAlimento } from 
 import { COPY_RANGOS_INDICADOS } from './rangos-indicados';
 import { CuadroDelRangoIndicado, rangoIndicadoDe, RangosIndicados, sePuedeIndicar, useRangosIndicados, type DiaParaLosRangos } from './rangos-indicados-del-plan';
 import { KcalDelObjetivo, SumaDeLosRangosIndicados } from './suma-de-los-rangos';
-import { PropuestaDeRangos } from './propuesta-de-rangos-del-plan';
+import { RepartoPorComida } from './propuesta-de-rangos-del-plan';
 import { RotuloConIcono } from './cantidad-del-macro';
 import { MACRO_DEL_NUTRIENTE } from './abreviaturas-de-macros';
 import { pasoQueSigueEnNutricion } from './asistente-de-nutricion';
@@ -219,8 +219,9 @@ type NombreQueSeCambia = { readonly de: 'dia'; readonly i: number } | { readonly
 
 /** API-PLN-02 y 03: un día tipo para la lista de rangos indicados, con sus identidades (las tiene si ya se guardó). */
 /** DL-186 (OBC-07): los días tipo y las comidas ya guardados (con identidad), para la propuesta de rangos. */
-function diasParaLaPropuesta(e: Estructura): { dayTypeId: string; nombre: string; comidas: { mealId: string; nombre: string }[] }[] {
-  return e.flatMap((d, i) => (d.dayTypeId ? [{ dayTypeId: d.dayTypeId, nombre: nombreDelDiaTipo(d, i), comidas: d.meals.flatMap((m, j) => (m.mealId ? [{ mealId: m.mealId, nombre: nombreDeLaComida(m, j) }] : [])) }] : []));
+/** RP-06: un día tipo para su reparto por comida, con las comidas ya guardadas; `null` si el día todavía no se guardó. */
+function diaParaLaPropuesta(d: Estructura[number], i: number): { dayTypeId: string; nombre: string; comidas: { mealId: string; nombre: string }[] } | null {
+  return d.dayTypeId ? { dayTypeId: d.dayTypeId, nombre: nombreDelDiaTipo(d, i), comidas: d.meals.flatMap((m, j) => (m.mealId ? [{ mealId: m.mealId, nombre: nombreDeLaComida(m, j) }] : [])) } : null;
 }
 
 function paraLosRangos(d: Estructura[number], i: number): DiaParaLosRangos {
@@ -1224,7 +1225,10 @@ export function EditorDeBorrador({
           rangosIndicados={
             <>
               <RangosIndicados rangos={rangosIndicados} dias={estructura.map(paraLosRangos)} titulo={false} />
-              <PropuestaDeRangos token={token} planId={planId} objetivo={objetivo} dias={diasParaLaPropuesta(estructura)} rangos={rangosIndicados} />
+              {/* RP-06 (DL-188): el reparto por comida de cada día tipo, a la vista. */}
+              {estructura.map((d, n) => (
+                <RepartoPorComida key={d.dayTypeId ?? `nuevo-${n}`} token={token} planId={planId} objetivo={objetivo} dia={diaParaLaPropuesta(d, n)} comidasSinGuardar={d.meals.filter((m) => !m.mealId).length} rangos={rangosIndicados} />
+              ))}
             </>
           }
           rangoDe={rangoParaIndicar}
@@ -1292,6 +1296,9 @@ export function EditorDeBorrador({
           {/* NUP-06: la suma de los rangos indicados de las comidas, frente al objetivo del día. Otra cuenta que la de las
               opciones («Rangos y totales»): la tabla lo dice. */}
           <SumaDeLosRangosIndicados comidas={dia.meals.map((m, j) => ({ nombre: nombreDeLaComida(m, j), rango: rangoIndicadoDe(rangosIndicados.estado, dia.dayTypeId, m.mealId) }))} objetivo={objetivo} />
+          {/* RP-06 (DL-188): el reparto por comida del día tipo que se mira, a la vista (antes, un cuadro aparte para todos
+              los días). Propone los rangos de cada comida; solo llena los vacíos, o pide confirmar antes de reemplazar. */}
+          <RepartoPorComida key={dia.dayTypeId ?? `nuevo-${i}`} token={token} planId={planId} objetivo={objetivo} dia={diaParaLaPropuesta(dia, i)} comidasSinGuardar={dia.meals.filter((m) => !m.mealId).length} rangos={rangosIndicados} />
           {cambiandoElNombreDelDia || dia.label.trim() === '' ? (
             <CampoDeNombre
               id={`dia-${i}`}
@@ -1515,8 +1522,8 @@ export function EditorDeBorrador({
               <p className="nota">{COPY_RANGOS.comoSeLee}</p>
               <p className="nota">{COPY_RANGOS.estimacion}</p>
               <RangosIndicados rangos={rangosIndicados} dias={[paraLosRangos(dia!, i)]} />
-              {/* DL-186 (OBC-07): la propuesta de rangos desde el cálculo del objetivo, para todos los días tipo guardados. */}
-              <PropuestaDeRangos token={token} planId={planId} objetivo={objetivo} dias={diasParaLaPropuesta(estructura)} rangos={rangosIndicados} />
+              {/* RP-06 (DL-188): la propuesta de rangos desde el objetivo ya no es un cuadro de este panel: es el «Reparto por
+                  comida», a la vista en el día tipo. */}
             </>
           ) : (
             <p className="nota">{COPY_RANGOS.sinDiaTipo}</p>

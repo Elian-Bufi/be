@@ -316,25 +316,24 @@ function pantallas(norma) {
       },
     },
     {
-      // OBC-07: la propuesta de rangos desde el cálculo, con el reparto sugerido por el nombre de cada comida.
+      // OBC-07 y RP-06 (DL-188): el reparto por comida, a la vista en el día tipo, con la parte sugerida por el nombre.
       nombre: '05-propuesta-de-rangos',
       llegar: async (page) => {
         await borradorConElObjetivoNuevo(norma);
         await ir(page, plan);
-        await clic(page, '[data-proponer-rangos]');
-        await visible(page, 'dialog[open] [data-reparto-por-comida]', null, 30_000);
-        await page.$eval('dialog[open] [data-propuesta-de-rangos]', (e) => e.scrollIntoView({ block: 'start' }));
+        const reparto = await visible(page, '[data-reparto-por-comida] [data-tabla-del-reparto]', null, 30_000);
+        await reparto.evaluate((e) => e.closest('[data-reparto-por-comida]').scrollIntoView({ block: 'start' }));
         await pausa(400);
-        return { fuente: await page.$eval('dialog[open] [data-fuente-de-la-propuesta]', (e) => e.innerText).catch(() => null) };
+        return { fuente: await page.$eval('[data-reparto-por-comida] [data-fuente-de-la-propuesta]', (e) => e.innerText).catch(() => null) };
       },
     },
     {
       // OBC-08: lo que ya estaba escrito no se pisa sin la casilla; la lista de lo que se conserva.
       nombre: '06-propuesta-lo-que-se-conserva',
       llegar: async (page) => {
-        const casilla = await page.$('dialog[open] [data-reemplazar-rangos]');
+        const casilla = await page.$('[data-reparto-por-comida] [data-reemplazar-rangos]');
         if (casilla) await casilla.evaluate((x) => x.scrollIntoView({ block: 'center' }));
-        else await page.$eval('dialog[open] [data-reparto-por-comida]', (e) => e.scrollIntoView({ block: 'end' }));
+        else await page.$eval('[data-reparto-por-comida]', (e) => e.scrollIntoView({ block: 'end' }));
         await pausa(300);
         return { conRangosYaEscritos: !!casilla };
       },
@@ -343,8 +342,7 @@ function pantallas(norma) {
       // Guardada la propuesta: los rangos indicados del día y de cada comida, en la lista del panel.
       nombre: '07-rangos-guardados-desde-la-propuesta',
       llegar: async (page) => {
-        await clic(page, 'dialog[open] [data-principal-del-cuadro]', 'Guardar la propuesta como rangos');
-        await page.waitForFunction(() => !document.querySelector('dialog[open] [data-propuesta-de-rangos]'), { timeout: 30_000 });
+        await clic(page, '[data-reparto-por-comida] [data-proponer-rangos]', 'Proponer estos rangos');
         await asentar(page);
         await (await visible(page, '[data-rangos-indicados]')).evaluate((x) => x.scrollIntoView({ block: 'start' }));
         await pausa(400);

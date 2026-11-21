@@ -140,3 +140,49 @@ test('RP-07 · la pieza se usa en el calculador, las comidas, los rangos y «Ran
   assert.equal(A.cifraDeLosLimites(null, 1850), 'hasta 1.850');
   assert.equal(A.cifraDeLosLimites(40, 40), '40');
 });
+
+test('RP-06 · el reparto por comida, en el plan: una parte por comida que suma 100 y propone kcal, P, C y G', async () => {
+  const P = await import('../src/app/pro/advisees/nutrition/propuesta-de-rangos.ts');
+  const DIA = { dayTypeId: 'd1', nombre: 'Día habitual', comidas: [{ mealId: 'm1', nombre: 'Desayuno' }, { mealId: 'm2', nombre: 'Almuerzo' }, { mealId: 'm3', nombre: 'Merienda' }, { mealId: 'm4', nombre: 'Cena' }] };
+  const objetivo = { estimatedEnergyRequirement: { value: 2500 }, macronutrientDistribution: { protein: { value: 112, unit: 'g/day' }, carbohydrate: { value: 335, unit: 'g/day' }, fat: { value: 80, unit: 'g/day' } } };
+  const fuente = P.fuenteDeLaPropuesta(objetivo, null);
+  // El punto de partida: una sola parte por comida, la misma para los tres macros, que suma exactamente 100.
+  for (const modo of ['sugerido', 'parejo']) {
+    const r = P.repartoInicialUnico(DIA, modo);
+    for (const c of DIA.comidas) assert.notEqual(P.parteUnica(r, c.mealId), null, `${modo} ${c.mealId}`);
+    assert.deepEqual(P.sumaDeLasPartes(DIA, r), { protein: 100, carbohydrate: 100, fat: 100 }, modo);
+  }
+  assert.deepEqual(DIA.comidas.map((c) => P.parteUnica(P.repartoInicialUnico(DIA, 'parejo'), c.mealId)), ['25', '25', '25', '25']);
+  // 25 % de cada macro por comida, sin margen: 28 g de proteínas, 84 de carbohidratos y 20 de grasas, con sus kcal.
+  const parejo = P.propuestaDelDia(DIA, P.repartoInicialUnico(DIA, 'parejo'), fuente, 0);
+  assert.ok(parejo.ok);
+  assert.deepEqual(parejo.comidas[0].protein, { min: 28, max: 28 });
+  assert.deepEqual(parejo.comidas[0].carbohydrate, { min: 84, max: 84 });
+  assert.deepEqual(parejo.comidas[0].fat, { min: 20, max: 20 });
+  assert.deepEqual(P.kcalDelRango(parejo.comidas[0]), { min: 4 * 28 + 4 * 84 + 9 * 20, max: 4 * 28 + 4 * 84 + 9 * 20 });
+  // Las comidas suman exactamente el día.
+  for (const m of ['protein', 'carbohydrate', 'fat']) assert.equal(parejo.comidas.reduce((s, c) => s + c[m].min, 0), parejo.dia[m].min);
+  // Si no suman 100, no se propone y se dice cuánto suman.
+  const corto = P.conParteUnica(P.repartoInicialUnico(DIA, 'parejo'), 'm4', '20');
+  assert.equal(P.parteUnica(corto, 'm4'), '20');
+  assert.equal(P.sumaDeLasPartes(DIA, corto).protein, 95);
+  assert.equal(P.propuestaDelDia(DIA, corto, fuente, 10).ok, false);
+  assert.equal(P.COPY_PROPUESTA.noSumaUnica(95), 'Las partes suman 95 de 100. Ajustalas para proponer.');
+  // Repartir cada macro por separado sigue disponible: entonces la parte única no existe.
+  const porMacro = P.repartoInicial(DIA, 'sugerido');
+  assert.equal(P.parteUnica(porMacro, 'm3'), null);
+  // Solo llena lo vacío: lo ya escrito se conserva sin la casilla, como antes.
+  const datos = { revision: 2, bodyWeight: null, dayTypes: [{ dayTypeId: 'd1', day: null, meals: [{ mealId: 'm2', range: { protein: { unit: 'g', perKg: null, grams: { min: 30, max: 40 } } } }] }] };
+  const propuesto = { dayTypeId: 'd1', dia: parejo.dia, comidas: DIA.comidas.map((c, j) => ({ mealId: c.mealId, rango: parejo.comidas[j] })) };
+  const nombre = (_d, m) => (m === null ? 'todo el día' : DIA.comidas.find((c) => c.mealId === m).nombre);
+  assert.deepEqual(P.cuerpoConLaPropuesta(datos, [propuesto], nombre, false).conservados, ['Almuerzo']);
+  // La pantalla: a la vista en el día tipo (no en un cuadro), y la casilla para reemplazar.
+  const editor = leer('app/pro/advisees/nutrition/editor.tsx');
+  assert.match(editor, /<RepartoPorComida key=\{dia\.dayTypeId \?\? `nuevo-\$\{i\}`\}/);
+  assert.doesNotMatch(editor, /PropuestaDeRangos/);
+  const pieza = leer('app/pro/advisees/nutrition/propuesta-de-rangos-del-plan.tsx');
+  assert.doesNotMatch(pieza, /CuadroEnfocado/);
+  assert.match(pieza, /data-reemplazar-rangos/);
+  // La distribución por comida salió del objetivo.
+  assert.doesNotMatch(leer('app/pro/advisees/nutrition/formularios.tsx'), /Distribución por comidas \(opcional\)/);
+});

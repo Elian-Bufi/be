@@ -21017,3 +21017,81 @@ html:has(.estacion:not([data-en-el-asistente])) {
 .cantidades-con-iconos {
   display: inline;
 }
+
+/* ─── RP-06 (WP-RECORRIDO-PLAN-PULIDO, DL-188): el reparto por comida, a la vista en cada día tipo ─────────── */
+.reparto-por-comida {
+  margin: 0.75rem 0 1rem;
+  padding: 0.75rem 1rem 0.5rem;
+  border: 1px solid var(--borde);
+  border-radius: 12px;
+  background: var(--superficie);
+}
+
+.reparto-por-comida__titulo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+  margin: 0 0 0.35rem;
+  font-size: 1.05rem;
+}
+
+.reparto-por-comida__titulo .a-pedido__texto:not([hidden]) {
+  flex-basis: 100%;
+}
+
+.reparto-por-comida__controles {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  margin: 0.35rem 0 0.5rem;
+}
+
+.reparto-por-comida__margen {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.reparto-por-comida__margen input,
+.reparto-por-comida__parte input {
+  font: inherit;
+  min-height: 36px;
+  width: 4.5rem;
+  padding: 0.25rem 0.5rem;
+  border: 1px solid var(--borde-control);
+  border-radius: 8px;
+  background: var(--superficie);
+  color: var(--texto);
+}
+
+.reparto-por-comida__tabla {
+  font-variant-numeric: tabular-nums;
+}
+
+.reparto-por-comida__tabla td {
+  vertical-align: middle;
+}
+
+.reparto-por-comida__parte {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  white-space: nowrap;
+}
+
+.reparto-por-comida__rango {
+  display: block;
+}
+
+.reparto-por-comida__fila-del-dia th,
+.reparto-por-comida__fila-del-dia td {
+  border-top: 2px solid var(--borde);
+  font-weight: 600;
+}
+
+.reparto-por-comida__acciones {
+  align-items: center;
+  gap: 0.75rem;
+}
