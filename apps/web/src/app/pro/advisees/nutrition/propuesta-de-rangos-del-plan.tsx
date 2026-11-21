@@ -27,6 +27,7 @@ import {
   COPY_PROPUESTA as C,
   cuerpoConLaPropuesta,
   fuenteDeLaPropuesta,
+  kcalDeLosGramosDelDia,
   kcalDelRango,
   NOMBRE_DEL_MACRO_DE_LA_PROPUESTA,
   parteUnica,
@@ -130,6 +131,8 @@ export function RepartoPorComida({
   if (!r) return null;
   const gramos = fuente ? (r.variante === 'descanso' && fuente.descanso ? fuente.descanso : fuente.dia) : null;
   const sumas = sumaDeLasPartes(dia, r);
+  // La base del «%»: lo que suman los gramos del día, de donde salen las kcal de cada comida.
+  const base = gramos ? kcalDeLosGramosDelDia(gramos) : 0;
   const listo = p?.ok ? { dayTypeId: dia.dayTypeId, dia: p.dia, comidas: dia.comidas.map((c, j) => ({ mealId: c.mealId, rango: p.comidas[j]! })) } : null;
   const nombre = (_: string, mealId: string | null) => (mealId === null ? 'todo el día' : (dia.comidas.find((c) => c.mealId === mealId)?.nombre ?? 'una comida'));
   const vistaPrevia = listo ? cuerpoConLaPropuesta(datos, [listo], nombre, reemplazar) : null;
@@ -248,7 +251,7 @@ export function RepartoPorComida({
                               onChange={(e) => cambiar(conParteUnica(r, comida.mealId, e.target.value))}
                               data-parte-de-la-comida
                             />
-                            <span className="nota">{`% de las ${numero(gramos.kcal, 0)} kcal`}</span>
+                            <span className="nota">{C.deLasKcal(base)}</span>
                           </span>
                         </td>
                       )}
@@ -281,7 +284,7 @@ export function RepartoPorComida({
                 })}
                 <tr className="reparto-por-comida__fila-del-dia">
                   <th scope="row">Todo el día</th>
-                  {porMacro ? null : <td data-suma-de-las-partes>{`${C.suma}: ${numero(sumas.protein, 1)} % de las ${numero(gramos.kcal, 0)} kcal`}</td>}
+                  {porMacro ? null : <td data-suma-de-las-partes>{C.sumaDeLasPartes(sumas.protein, base)}</td>}
                   <td>
                     <CantidadDelMacro macro="kcal" cifra={p?.ok ? cifra(kcalDelRango(p.dia)) : numero(gramos.kcal, 0)} />
                   </td>

@@ -162,6 +162,21 @@ test('RP-06 · el reparto por comida, en el plan: una parte por comida que suma 
   assert.deepEqual(P.kcalDelRango(parejo.comidas[0]), { min: 4 * 28 + 4 * 84 + 9 * 20, max: 4 * 28 + 4 * 84 + 9 * 20 });
   // Las comidas suman exactamente el día.
   for (const m of ['protein', 'carbohydrate', 'fat']) assert.equal(parejo.comidas.reduce((s, c) => s + c[m].min, 0), parejo.dia[m].min);
+  // Revisión del PR: el «%» de cada parte va con la base de la cuenta, lo que suman los gramos del día (4, 4 y 9), no las
+  // kcal escritas en el objetivo. Con 2.100 kcal escritas y gramos que suman 1.985, «46 % de las 2.100 kcal» quedaba al
+  // lado de 823 a 1.005 kcal, que es el 46 % de 1.985 con el margen.
+  assert.equal(P.kcalDeLosGramosDelDia({ protein: 130, carbohydrate: 220, fat: 65 }), 1985);
+  assert.equal(P.COPY_PROPUESTA.deLasKcal(1985), '% de las 1.985 kcal');
+  const DOS = { ...DIA, comidas: DIA.comidas.slice(0, 2) };
+  const conOtrasKcal = P.fuenteDeLaPropuesta({ estimatedEnergyRequirement: { value: 2100 }, macronutrientDistribution: { protein: { value: 130, unit: 'g/day' }, carbohydrate: { value: 220, unit: 'g/day' }, fat: { value: 65, unit: 'g/day' } } }, null);
+  const dos = P.propuestaDelDia(DOS, P.conParteUnica(P.conParteUnica(P.repartoInicialUnico(DOS, 'parejo'), 'm1', '46'), 'm2', '54'), conOtrasKcal, 0);
+  assert.ok(dos.ok);
+  const delDesayuno = P.kcalDelRango(dos.comidas[0]).min;
+  assert.ok(Math.abs(delDesayuno - 0.46 * P.kcalDeLosGramosDelDia(conOtrasKcal.dia)) < 10, `las kcal del desayuno (${delDesayuno}) son el 46 % de lo que suman los gramos`);
+  const delPlan = leer('app/pro/advisees/nutrition/propuesta-de-rangos-del-plan.tsx');
+  assert.match(delPlan, /C\.deLasKcal\(base\)/);
+  assert.match(delPlan, /C\.sumaDeLasPartes\(sumas\.protein, base\)/);
+  assert.doesNotMatch(delPlan, /% de las \$\{numero\(gramos\.kcal/);
   // Si no suman 100, no se propone y se dice cuánto suman.
   const corto = P.conParteUnica(P.repartoInicialUnico(DIA, 'parejo'), 'm4', '20');
   assert.equal(P.parteUnica(corto, 'm4'), '20');

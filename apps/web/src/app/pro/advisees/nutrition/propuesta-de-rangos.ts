@@ -114,6 +114,14 @@ export function sumaDeLasPartes(d: DiaDeLaPropuesta, e: RepartoEscrito): Readonl
   return Object.fromEntries(MACROS_DE_LA_PROPUESTA.map((m) => [m, r.reduce((s, x) => s + (Number.isFinite(x[m]) ? x[m] : 0), 0)])) as Record<MacroDeLaPropuesta, number>;
 }
 
+/**
+ * RP-06: la base de la parte de cada comida, en kcal: lo que suman los gramos del día, con 4, 4 y 9 kcal por gramo. La
+ * parte se aplica a los gramos de cada macro, y las kcal de cada comida salen de sus gramos (`kcalDelRango`): con un
+ * objetivo cuyos gramos no suman sus kcal (2.100 kcal escritas, gramos que suman 1.985), «46 % de las 2.100 kcal» al lado
+ * de 823 a 1.005 kcal se contradecía. El «%» va con esta base, que es la de la cuenta.
+ */
+export const kcalDeLosGramosDelDia = (g: GramosDelDia): number => 4 * g.protein + 4 * g.carbohydrate + 9 * g.fat;
+
 /** RP-06: las kcal de un rango propuesto, con 4, 4 y 9 kcal por gramo: lo menos y lo más. */
 export const kcalDelRango = (r: RangoPropuesto): { readonly min: number; readonly max: number } => ({
   min: 4 * r.protein.min + 4 * r.carbohydrate.min + 9 * r.fat.min,
@@ -216,6 +224,9 @@ export const COPY_PROPUESTA = {
   parteDe: (comida: string) => `Parte del día de ${comida}`,
   porMacro: 'Repartir cada macro por separado',
   suma: 'Suma',
+  /** El «%» de la parte de una comida, con su base: las kcal que suman los gramos del día (`kcalDeLosGramosDelDia`). */
+  deLasKcal: (kcal: number) => `% de las ${numero(kcal, 0)} kcal`,
+  sumaDeLasPartes: (suma: number, kcal: number) => `Suma: ${numero(suma, 1)} % de las ${numero(kcal, 0)} kcal que suman los gramos del día`,
   proponer: 'Proponer estos rangos',
   sinGuardar: 'Las comidas nuevas reciben su parte cuando se guarda el plan.',
   sinDiaGuardado: 'Guardá el plan para repartir las comidas de este día tipo.',
