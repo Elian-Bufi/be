@@ -22,13 +22,22 @@ import {
   COPY_GUARDADO,
   ETIQUETA_DE_FAMILIA,
   ETIQUETA_DE_ORIGEN,
+  FAMILIA_DE_METRICA,
+  familiasDeMetodos,
+  familiasHabituales,
+  leerEleccion,
   leerNumero,
+  medicionesDeLaEleccion,
+  metricasDeLaToma,
   metricasDelProtocolo,
   metricasPorFamilia,
   motivoDeNumeroIlegible,
+  otrasMediciones,
   repartirEnElProtocolo,
+  todasLasPaginas,
   type Especificacion,
   type MedicionEscrita,
+  type MetodoApi,
   type MetricaDelProtocolo,
   type SexoDeLaLamina,
 } from '@be/domain';
@@ -44,6 +53,7 @@ import { mensajeDeFallo, useClaveDeIntento } from '../../../../lib/intento';
 import { useCambiosSinGuardar } from '../marco-del-area';
 import { EstadoDeLectura, useAntropometria } from './antropometria';
 import { clavesConSitio, clavesDeLaFamilia, type FamiliaDeLaCarga } from './composicion-de-la-carga';
+import { EleccionDeMetodos } from './eleccion-de-metodos';
 import { CampoDeMedicion, FiguraDeLaCarga, idDelValor, type CampoDeLaCarga } from './figura-de-la-carga';
 import { esFechaFutura, FECHA_DE_TOMA_FUTURA, motivoDelRechazo } from './rechazos-de-antropometria';
 
@@ -132,28 +142,46 @@ const firma = (x: LoEscrito): string =>
     x.libres.map((f) => [f.metric.trim(), f.value.trim(), f.unit.trim()]),
   ]);
 
+/**
+ * Todo lo que la toma puede guardar en un campo: lo que declara el protocolo y, después, las demás mediciones del catálogo
+ * de BE (las de Kerr que el perfil completo no tiene, DL-190 AK-D03), con su nombre, su familia y su unidad. Qué se ve lo
+ * deciden los métodos elegidos (RP-18); esto dice dónde va cada valor escrito, para que nada caiga en la carga libre.
+ */
+const universoDe = (delProtocolo: readonly MetricaDelProtocolo[]): MetricaDelProtocolo[] =>
+  metricasDeLaToma(delProtocolo, [...new Set([...delProtocolo.map((m) => m.clave), ...Object.keys(FAMILIA_DE_METRICA)])]);
+
+/** Los métodos del catálogo y los de la última toma del profesional (API-MTH-01, API-MHA-01). Sin ellos, se ve todo el protocolo. */
+interface MetodosDeLaCarga {
+  readonly metodos: readonly MetodoApi[] | null;
+  readonly habituales: readonly string[];
+}
+
 /** @param vuelta el enlace a «Tomas»: mientras se lee va arriba; con la toma a la vista, en su cabecera (maqueta 23). */
 export function VistaDePreparacion({ vuelta }: { vuelta: ReactNode }) {
   const { token, asesoradoId, sesionPerdida, irA, avisarEnTomas } = useAntropometria();
-  const [r, setR] = useState<Resultado<{ borrador: Borrador | null; especificaciones: Especificacion[] }> | null>(null);
+  const [r, setR] = useState<Resultado<{ borrador: Borrador | null; especificaciones: Especificacion[] } & MetodosDeLaCarga> | null>(null);
   const [aviso, setAviso] = useState<AvisoDeLaToma | null>(null);
 
   const cargar = useCallback(async () => {
     setR(null);
-    const [borradores, especificaciones] = await Promise.all([
+    const [borradores, especificaciones, metodos, habituales] = await Promise.all([
       api.listarBorradoresAntropometricos(token, asesoradoId),
       api.listarEspecificaciones(token, { kind: 'PROTOCOL' }),
+      todasLasPaginas((f) => api.listarMetodos(token, f)),
+      api.metodosHabituales(token),
     ]);
     if (sesionPerdida(borradores) || sesionPerdida(especificaciones)) return;
     if (!borradores.ok) return setR(borradores as Resultado<never>);
     if (!especificaciones.ok) return setR(especificaciones as Resultado<never>);
+    // RP-18: si los métodos no se leen, la carga sigue, con el protocolo entero, como antes de poder elegir.
+    const deLaCarga: MetodosDeLaCarga = { metodos: metodos.ok ? metodos.datos.data : null, habituales: habituales.ok ? habituales.datos.data.methodIds : [] };
     const resumen = borradores.datos.data[0];
-    if (!resumen) return setR({ ok: true, datos: { borrador: null, especificaciones: especificaciones.datos.data } });
+    if (!resumen) return setR({ ok: true, datos: { borrador: null, especificaciones: especificaciones.datos.data, ...deLaCarga } });
     // El borrador se lee en su propia colección (API-ANT-09): la de las registradas no lo devuelve (09v16:1718).
     const completo = await api.consultarBorradorAntropometrico(token, resumen.evaluationId);
     if (sesionPerdida(completo)) return;
     if (!completo.ok) return setR(completo as Resultado<never>);
-    setR({ ok: true, datos: { borrador: completo.datos.data as Borrador, especificaciones: especificaciones.datos.data } });
+    setR({ ok: true, datos: { borrador: completo.datos.data as Borrador, especificaciones: especificaciones.datos.data, ...deLaCarga } });
   }, [token, asesoradoId, sesionPerdida]);
 
   useEffect(() => {
@@ -169,6 +197,8 @@ export function VistaDePreparacion({ vuelta }: { vuelta: ReactNode }) {
           vuelta={vuelta}
           borrador={r.datos.borrador}
           especificaciones={r.datos.especificaciones}
+          metodos={r.datos.metodos}
+          habituales={r.datos.habituales}
           aviso={aviso}
           onAviso={setAviso}
           onCambio={cargar}
@@ -189,6 +219,8 @@ function Preparacion({
   vuelta,
   borrador,
   especificaciones,
+  metodos,
+  habituales,
   aviso,
   onAviso,
   onCambio,
@@ -197,6 +229,8 @@ function Preparacion({
   vuelta: ReactNode;
   borrador: Borrador | null;
   especificaciones: Especificacion[];
+  metodos: readonly MetodoApi[] | null;
+  habituales: readonly string[];
   aviso: AvisoDeLaToma | null;
   onAviso: (a: AvisoDeLaToma | null) => void;
   onCambio: () => Promise<void>;
@@ -227,8 +261,10 @@ function Preparacion({
   const momentoActual = useRef(momento);
   momentoActual.current = momento;
 
-  /** Las métricas que declara el protocolo elegido (B10-07 §18): lo que la figura y la lista ofrecen. */
-  const metricas = useMemo(() => metricasDelProtocolo(especificaciones.find((e) => e.versionId === protocolo)?.content), [especificaciones, protocolo]);
+  /** Las métricas que declara el protocolo elegido (B10-07 §18). */
+  const delProtocolo = useMemo(() => metricasDelProtocolo(especificaciones.find((e) => e.versionId === protocolo)?.content), [especificaciones, protocolo]);
+  /** Todo lo que la toma puede guardar en un campo: el protocolo y el resto del catálogo de mediciones de BE (DL-190). */
+  const universo = useMemo(() => universoDe(delProtocolo), [delProtocolo]);
 
   useEffect(() => {
     setProtocolo((p) => p || protocoloPorDefecto);
@@ -247,7 +283,7 @@ function Preparacion({
     // El valor se muestra como lo lee una persona, con coma decimal; `leerNumero` lo vuelve a aceptar (DL-091 punto 4).
     const { enSuCampo, fuera } = repartirEnElProtocolo(
       borrador.measurements.map((m): MedicionConFila => ({ fila: m.measurementId, metrica: m.metric, valor: numeroEnCampo(m.magnitude.value), unidad: m.magnitude.unit })),
-      metricasDelProtocolo(especificaciones.find((e) => e.versionId === protocoloDelBorrador)?.content),
+      universoDe(metricasDelProtocolo(especificaciones.find((e) => e.versionId === protocoloDelBorrador)?.content)),
     );
     const enLosCampos = aLosCampos(enSuCampo);
     const deFuera = fuera.map(aLaFila);
@@ -263,7 +299,29 @@ function Preparacion({
   }, [borrador, protocoloPorDefecto, especificaciones]);
 
   const escritoDe = useCallback((m: MetricaDelProtocolo): Escrito => escritos[m.clave] ?? { valor: '', unidad: m.unidades[0]! }, [escritos]);
-  const conDato = new Set(metricas.filter((m) => leerNumero(escritoDe(m).valor) !== null).map((m) => m.clave));
+  const conDato = new Set(universo.filter((m) => leerNumero(escritoDe(m).valor) !== null).map((m) => m.clave));
+
+  // ── RP-18: qué métodos se eligieron y, con eso, qué mide la toma ──────────────────────────────────────────────────
+  // Viven en la dirección (`metodos=`, `sueltas=`), como la figura y la familia. Sin `metodos=`, vienen los de la última
+  // toma del profesional (API-MHA-01); `metodos=ninguno` es no filtrar. Sin ninguno elegido, se ve el protocolo entero.
+  const familiasDeMetodo = useMemo(() => (metodos ? familiasDeMetodos(metodos) : []), [metodos]);
+  const enLaDireccion = parametros.get('metodos');
+  const listaElegida = enLaDireccion === null ? familiasHabituales(familiasDeMetodo, habituales) : enLaDireccion === 'ninguno' ? [] : leerEleccion(enLaDireccion, familiasDeMetodo);
+  const claveDeLaEleccion = listaElegida.join(',');
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const elegidas = useMemo(() => new Set(listaElegida), [claveDeLaEleccion]);
+  const textoDeSueltas = parametros.get('sueltas') ?? '';
+  const sueltas = useMemo(() => textoDeSueltas.split(',').filter(Boolean), [textoDeSueltas]);
+  const claveDeConDato = [...conDato].sort().join(',');
+  /** Lo que se ve: lo que piden los métodos elegidos (o el protocolo entero), los puntos sueltos y todo lo que ya tiene dato. */
+  const metricas = useMemo(() => {
+    const conValor = claveDeConDato ? claveDeConDato.split(',') : [];
+    const claves = elegidas.size === 0 ? [...new Set([...delProtocolo.map((m) => m.clave), ...sueltas, ...conValor])] : medicionesDeLaEleccion(familiasDeMetodo, elegidas, { sueltas, conDato: conValor });
+    return metricasDeLaToma(universo, claves);
+  }, [elegidas, familiasDeMetodo, sueltas, delProtocolo, universo, claveDeConDato]);
+  const otras = otrasMediciones(delProtocolo, metricas.map((m) => m.clave));
+  const elegirMetodos = (lista: readonly string[]) => ir({ metodos: lista.length > 0 ? lista.join(',') : 'ninguno' });
+  const sumarSuelta = (clave: string) => ir({ sueltas: [...new Set([...sueltas, clave])].join(',') });
   const libresConValor = libres.filter((f) => f.metric.trim() && leerNumero(f.value) !== null).length;
   const algoEscrito = Object.values(escritos).some((e) => e.valor.trim() !== '') || libres.length > 0 || contexto.trim() !== '';
   const hayCambios = borrador ? guardadoComo !== null && firma({ momento, protocolo, origen, contexto, escritos, libres }) !== guardadoComo : algoEscrito;
@@ -297,7 +355,7 @@ function Preparacion({
       .map(([clave, e]): MedicionConFila => ({ fila: filaNueva().clave, metrica: clave, valor: e.valor, unidad: e.unidad }));
     const { enSuCampo, fuera } = repartirEnElProtocolo(
       [...deLosCampos, ...libres.map(deLaFila)],
-      metricasDelProtocolo(especificaciones.find((e) => e.versionId === nuevo)?.content),
+      universoDe(metricasDelProtocolo(especificaciones.find((e) => e.versionId === nuevo)?.content)),
     );
     // Las filas que ya estaban fuera del protocolo conservan su lugar; las que salen de un campo se suman al final.
     const salen = new Set(deLosCampos.map((m) => m.fila));
@@ -316,7 +374,7 @@ function Preparacion({
     // Una fecha futura la rechaza la API; dicha acá, va a su campo antes de escribir nada (antes decía «El servicio no
     // está disponible»).
     if (esFechaFutura(momento)) problemas['ant-momento'] = FECHA_DE_TOMA_FUTURA;
-    for (const m of metricas) {
+    for (const m of universo) {
       const texto = escritoDe(m).valor;
       // `leerNumero` acepta coma o punto y devuelve `null` si no es un número (DL-091 punto 4).
       if (texto.trim() !== '' && leerNumero(texto) === null) problemas[idDelValor(m.clave)] = motivoDeNumeroIlegible(texto);
@@ -333,7 +391,7 @@ function Preparacion({
 
   /** Los campos con algo para corregir, en el orden del protocolo, con su nombre y qué les pasa. */
   function camposDelAviso(problemas: Record<string, string>): { id: string; texto: string }[] {
-    const deLosCampos = metricasPorFamilia(metricas)
+    const deLosCampos = metricasPorFamilia(universo)
       .flatMap((g) => g.metricas)
       .filter((m) => problemas[idDelValor(m.clave)])
       .map((m) => ({ id: idDelValor(m.clave), texto: `${m.nombre}: ${problemas[idDelValor(m.clave)]}` }));
@@ -356,7 +414,7 @@ function Preparacion({
     specificationVersionId: protocolo,
     source: { type: origen },
     directMeasurements: [
-      ...metricas
+      ...universo
         .filter((m) => leerNumero(escritoDe(m).valor) !== null)
         .map((m) => ({ metricCode: m.clave, value: leerNumero(escritoDe(m).valor)!, unit: escritoDe(m).unidad })),
       ...libres
@@ -447,7 +505,7 @@ function Preparacion({
     setCampoPendiente(null);
   });
   function irAlCampo(id: string) {
-    const clave = metricas.find((m) => idDelValor(m.clave) === id)?.clave;
+    const clave = universo.find((m) => idDelValor(m.clave) === id)?.clave;
     const suFamilia = clave ? (['PERIMETROS', 'PLIEGUES'] as const).find((f) => clavesDeLaFamilia(sexo, f, [clave]).length > 0) : undefined;
     if (suFamilia && suFamilia !== familia) elegirFamilia(suFamilia);
     setCampoPendiente(id);
@@ -469,7 +527,7 @@ function Preparacion({
   }
 
   const escribir = (clave: string, cambio: Partial<Escrito>) => {
-    const m = metricas.find((x) => x.clave === clave);
+    const m = universo.find((x) => x.clave === clave);
     if (m) setEscritos((xs) => ({ ...xs, [clave]: { ...(xs[clave] ?? { valor: '', unidad: m.unidades[0]! }), ...cambio } }));
   };
   const ultimo = borrador ? ultimoGuardado(borrador) : null;
@@ -608,6 +666,8 @@ function Preparacion({
         ) : null}
 
         <div className="carga-de-la-toma__datos">
+          {/* RP-18: los métodos se eligen antes de medir; la figura y la lista piden lo que necesitan. */}
+          <EleccionDeMetodos familias={familiasDeMetodo} elegidas={elegidas} deLaUltimaToma={enLaDireccion === null && elegidas.size > 0} leidos={metodos !== null} onCambiar={elegirMetodos} />
           {/* El momento, el protocolo y el origen son de la toma entera: una evaluación es una toma (09v11 §6). */}
           <section className="tarjeta datos-de-la-carga" aria-labelledby="titulo-datos-de-la-toma">
             <h3 id="titulo-datos-de-la-toma">Datos de la toma</h3>
@@ -702,13 +762,31 @@ function Preparacion({
               </div>
             ))}
             {libres.length === 0 && metricas.length === 0 && !(borrador && borrador.measurements.length > 0) ? <p className="nota">{COPY_ANTROPOMETRIA.sinBorrador}</p> : null}
-            {/* Una medición fuera del protocolo es la excepción: va junto a los campos, no entre los actos de la toma. */}
+            {/* RP-18: un punto suelto que ningún método elegido pide, del protocolo o del catálogo de BE. */}
+            {otras.length > 0 ? (
+              <div className="campo datos-de-la-carga__otra">
+                <label htmlFor="ant-otra-medicion">+ Otra medición</label>
+                <select id="ant-otra-medicion" value="" onChange={(e) => (e.target.value ? sumarSuelta(e.target.value) : undefined)}>
+                  <option value="">Elegí qué más medir</option>
+                  {metricasPorFamilia(otras).map((g) => (
+                    <optgroup key={g.familia} label={ETIQUETA_DE_FAMILIA[g.familia]}>
+                      {g.metricas.map((m) => (
+                        <option key={m.clave} value={m.clave}>
+                          {m.nombre}
+                        </option>
+                      ))}
+                    </optgroup>
+                  ))}
+                </select>
+              </div>
+            ) : null}
+            {/* Una medición fuera del catálogo es la excepción: va junto a los campos, no entre los actos de la toma. */}
             <p className="datos-de-la-carga__agregar">
               <button type="button" className="boton boton--enlace" onClick={() => setLibres((xs) => [...xs, filaNueva()])} disabled={!protocolo}>
                 <Icono nombre="mas" tamano={18} />
-                {metricas.length > 0 ? 'Agregar otra medición' : COPY_ANTROPOMETRIA.agregarMedicion}
+                {metricas.length > 0 ? 'Agregar una que no está en la lista' : COPY_ANTROPOMETRIA.agregarMedicion}
               </button>
-              <span className="nota">Lo que el protocolo no declara, con qué se midió y su unidad.</span>
+              <span className="nota">Lo que ni el protocolo ni el catálogo de BE declaran, con qué se midió y su unidad.</span>
             </p>
           </section>
         </div>

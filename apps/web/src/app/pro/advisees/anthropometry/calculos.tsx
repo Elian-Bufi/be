@@ -29,14 +29,17 @@ import {
   datosDelMetodo,
   ETIQUETA_DE_CLASE_DE_DATO,
   ETIQUETA_DE_CONDICION,
+  fraccionamientoDeKerr,
   marcaDeLaClase,
   metodosParaLaToma,
   nombreDeMetrica,
   resultadosDeLaToma,
+  textoDeDiferenciaAntropometrica,
   todasLasPaginas,
   valorDelResultado,
   type CorridaDeCalculoApi,
   type EvaluacionAntropometricaApi,
+  type FraccionamientoDeKerr,
   type MetodoApi,
 } from '@be/domain';
 import { useCallback, useEffect, useState } from 'react';
@@ -98,6 +101,59 @@ function Valor({ corrida }: { corrida: CorridaDeCalculoApi }) {
   );
 }
 
+/**
+ * RP-17 (DL-190) · Kerr (1988), cinco componentes, en la toma: lo medido primero (el peso de la balanza), después cada masa
+ * con su método, su suma (el peso estructurado) y la diferencia con el peso medido, en kg y en % del peso, que es como Kerr
+ * valida el modelo. La suma no es un método: es la cuenta de los resultados registrados, a la vista. Una diferencia es una
+ * resta con signo: no califica.
+ */
+function KerrEnLaToma({ f, onAbrir }: { f: FraccionamientoDeKerr; onAbrir: (corridaId: string) => void }) {
+  return (
+    <section className="categoria-de-resultados kerr-de-la-toma" aria-labelledby="titulo-kerr-de-la-toma">
+      <h4 id="titulo-kerr-de-la-toma">Kerr (1988) · cinco componentes</h4>
+      <table className="kerr-de-la-toma__tabla">
+        <tbody>
+          <tr>
+            <th scope="row">Peso medido</th>
+            <td>{f.pesoMedido !== null ? cantidad(f.pesoMedido, 'kg') : 'Sin peso en kg en esta toma'}</td>
+          </tr>
+          {f.componentes.map((c) => (
+            <tr key={c.metrica}>
+              <th scope="row">{nombreDeMetrica(c.metrica)}</th>
+              <td>
+                {c.valor !== null && c.corridaId ? (
+                  <button type="button" className="boton boton--enlace" onClick={() => onAbrir(c.corridaId!)} aria-label={`${c.metodo ?? nombreDeMetrica(c.metrica)}: ${cantidad(c.valor, 'kg')}`}>
+                    {cantidad(c.valor, 'kg')}
+                  </button>
+                ) : (
+                  'Sin calcular'
+                )}
+              </td>
+            </tr>
+          ))}
+          <tr className="kerr-de-la-toma__suma">
+            <th scope="row">Peso estructurado (la suma de las cinco)</th>
+            <td>{f.pesoEstructurado !== null ? cantidad(f.pesoEstructurado, 'kg') : '—'}</td>
+          </tr>
+          <tr>
+            <th scope="row">Diferencia con el peso medido</th>
+            <td>
+              {f.diferenciaKg !== null && f.diferenciaPorcentaje !== null
+                ? `${textoDeDiferenciaAntropometrica({ delta: f.diferenciaKg, unidad: 'kg' })} (${textoDeDiferenciaAntropometrica({ delta: f.diferenciaPorcentaje, unidad: '%' })} del peso)`
+                : '—'}
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      {f.faltan.length > 0 ? <p className="nota">Para la suma falta calcular {f.faltan.map((n) => n.toLocaleLowerCase('es-AR')).join(', ')}, con «{C.nuevoCalculo}».</p> : null}
+      <p className="nota">
+        La suma de las cinco masas con los valores de cada resultado, frente a la balanza: así valida Kerr el modelo. En 1669 personas dio en promedio 1,1 kg (1,6 %) más
+        que el peso medido.
+      </p>
+    </section>
+  );
+}
+
 export function ResultadosDeLaToma({
   toma,
   calculos,
@@ -118,6 +174,8 @@ export function ResultadosDeLaToma({
   // Por categoría del catálogo y por método: el orden neutral del dominio, el mismo de la lámina.
   const secciones = calculos.tipo === 'listo' ? agruparPorCategoria(resultadosDeLaToma(calculos.corridas, calculos.metodos, toma.evaluationId)) : [];
   const anteriores = deLaToma.filter((c) => !corridaVigente(c));
+  // RP-17: si la toma tiene alguna masa de Kerr calculada, las cinco, su suma y la diferencia con el peso medido.
+  const kerr = calculos.tipo === 'listo' ? fraccionamientoDeKerr(calculos.corridas, toma.evaluationId, toma.measurements) : null;
 
   return (
     <section className="resultados-de-la-toma" aria-labelledby="titulo-resultados">
@@ -187,6 +245,7 @@ export function ResultadosDeLaToma({
                 </ul>
               </section>
             ))}
+            {kerr ? <KerrEnLaToma f={kerr} onAbrir={onAbrir} /> : null}
           </div>
           {verAnteriores ? (
             <div className="anteriores-sin-efecto" id="anteriores-sin-efecto">
@@ -409,6 +468,8 @@ export function NuevoCalculo({
   }
 
   const completo = metodo.requiredInputs.every((e) => entradas[e.inputCode]);
+  // RP-18: lo que le falta a este método de esta toma, dicho de una vez arriba de la lista (cada dato lo marca también).
+  const faltantes = datos.filter((d) => !entradas[d.codigo]).map((d) => nombreDeMetrica(d.metrica));
   // DL-113 · las variantes por sexo de un método dan la misma métrica (DL-112): si la toma ya la tiene calculada con
   // otro método, las dos corridas conviven. La evolución muestra las dos, cada una con su método, pero «Tu última toma»
   // de la APK muestra una sola por métrica: la registrada al final (`ultimaToma`). Se avisa antes de calcular, sin
@@ -442,6 +503,14 @@ export function NuevoCalculo({
         <p>
           <strong>{C.metodoDa}:</strong> {nombreDeMetrica(metodo.output.metric)} ({metodo.output.unit})
         </p>
+        {faltantes.length > 0 ? (
+          <Aviso tipo="info">
+            <p>
+              {faltantes.length === 1 ? 'A este método le falta una medida de esta toma' : `A este método le faltan ${faltantes.length} medidas de esta toma`}: {faltantes.join(', ')}. Una
+              toma registrada no se completa: elegí este método antes de medir la próxima y la figura las va a pedir.
+            </p>
+          </Aviso>
+        ) : null}
         <p>
           <strong>{C.metodoPide}:</strong>
         </p>
