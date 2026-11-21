@@ -34,7 +34,26 @@ const METRICAS = [
   M('diametro-biestiloideo', 'Diámetro biestiloideo (muñeca)', 'DIAMETROS', 'cm', 1),
   M('diametro-femur', 'Diámetro bicondíleo del fémur (rodilla)', 'DIAMETROS', 'cm', 1),
 ];
-module.exports = { METRICAS };
+/**
+ * DL-190 (RP-17) · las mediciones de Kerr (1988) que el perfil completo no tiene, en el catálogo de mediciones de BE
+ * (nombre, familia y unidad). No van en una versión nueva del protocolo: la comparabilidad compara la versión del
+ * protocolo (`evaluarComparabilidad`), y una versión nueva cortaría todas las series de las tomas viejas (AK-D03). La
+ * migración del perfil completo (20261001000000) queda idéntica. Los sitios salen del apéndice A de la tesis
+ * («30. Chest girth (mesosternale)», «31. Waist girth (min.)», «33. Thigh girth (1 cm dist. glut.line)»): el muslo de
+ * Kerr no es el muslo medio de Lee.
+ */
+const METRICAS_COMPLEMENTARIAS = [
+  M('talla-sentado', 'Talla sentado', 'MASA_Y_ESTATURA', 'cm', 1),
+  M('perimetro-cabeza', 'Perímetro de la cabeza', 'PERIMETROS', 'cm', 1),
+  M('perimetro-muslo-gluteo', 'Perímetro del muslo a 1 cm del pliegue glúteo', 'PERIMETROS', 'cm', 1),
+  M('diametro-biacromial', 'Diámetro biacromial (hombros)', 'DIAMETROS', 'cm', 1),
+  M('diametro-biiliocrestal', 'Diámetro biiliocrestal (crestas ilíacas)', 'DIAMETROS', 'cm', 1),
+  M('diametro-torax-transverso', 'Diámetro transverso del tórax', 'DIAMETROS', 'cm', 1),
+  M('diametro-torax-anteroposterior', 'Diámetro anteroposterior del tórax', 'DIAMETROS', 'cm', 1),
+];
+/** Todas las mediciones que BE conoce, en el orden del catálogo: las del perfil completo y después las complementarias. */
+const CATALOGO_DE_MEDICIONES = [...METRICAS, ...METRICAS_COMPLEMENTARIAS];
+module.exports = { METRICAS, METRICAS_COMPLEMENTARIAS, CATALOGO_DE_MEDICIONES };
 // Los métodos del catálogo (DL-111), si ya están: sus versiones dan nombre a los grupos de la evolución.
 if (require.main === module) {
   const { METODOS = [], SALIDAS = {} } = fs.existsSync(__dirname + '/catalogo-metodos.cjs') ? require(__dirname + '/catalogo-metodos.cjs') : {};
@@ -62,18 +81,30 @@ INSERT INTO "version_de_especificacion_antropometrica" ("id", "especificacion_id
 /**
  * Los nombres de las mediciones del catálogo de BE y de los resultados de sus métodos, para mostrar una métrica sin su
  * código interno (la APK lee la evolución, que trae solo \`metricCode\`). Generado desde el catálogo «Perfil
- * antropométrico completo» y sus métodos (DL-111); una métrica que no está acá se muestra con su código legible
- * (\`nombreDeMetrica\`). El orden es el del catálogo: primero las mediciones, después los resultados.
+ * antropométrico completo», las mediciones complementarias de Kerr (DL-190) y sus métodos (DL-111); una métrica que no
+ * está acá se muestra con su código legible (\`nombreDeMetrica\`). El orden es el del catálogo: primero las mediciones,
+ * después los resultados.
  */
 export const NOMBRE_DE_METRICA: Readonly<Record<string, string>> = {
-${METRICAS.map((m) => `  '${m.clave}': '${m.nombre}',`).join('\n')}
+${CATALOGO_DE_MEDICIONES.map((m) => `  '${m.clave}': '${m.nombre}',`).join('\n')}
 ${Object.entries(SALIDAS).map(([clave, nombre]) => `  '${clave}': '${nombre}',`).join('\n')}
 };
 
 /** La familia de cada medición del catálogo (B10-07 §15): agrupa la lista de la toma. */
 export const FAMILIA_DE_METRICA: Readonly<Record<string, FamiliaDeMedicion>> = {
-${METRICAS.map((m) => `  '${m.clave}': '${m.familia}',`).join('\n')}
+${CATALOGO_DE_MEDICIONES.map((m) => `  '${m.clave}': '${m.familia}',`).join('\n')}
 };
+
+/**
+ * La unidad de cada medición del catálogo, la única que admiten sus métodos. Con ella la toma arma el campo de una
+ * medición que el protocolo no declara y un método elegido pide (las de Kerr, DL-190).
+ */
+export const UNIDAD_DE_METRICA: Readonly<Record<string, string>> = {
+${CATALOGO_DE_MEDICIONES.map((m) => `  '${m.clave}': '${m.unidades[0]}',`).join('\n')}
+};
+
+/** Las mediciones del catálogo que el «Perfil antropométrico completo» no declara: las de Kerr (1988), DL-190. */
+export const MEDICIONES_COMPLEMENTARIAS: readonly string[] = [${METRICAS_COMPLEMENTARIAS.map((m) => `'${m.clave}'`).join(', ')}];
 
 /** El nombre de una métrica, o su código sin guiones si BE no la conoce (nunca el código crudo). */
 export function nombreDeMetrica(clave: string): string {
@@ -105,5 +136,5 @@ ${METODOS.map((m) => `  '${m.versionId}': '${m.categoria}',`).join('\n')}
 };
 `;
   fs.writeFileSync(salidaTs, ts);
-  console.log(`catálogo: ${METRICAS.length} métricas`);
+  console.log(`catálogo: ${METRICAS.length} métricas del perfil y ${METRICAS_COMPLEMENTARIAS.length} complementarias`);
 }

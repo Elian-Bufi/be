@@ -3,8 +3,9 @@ import type { FamiliaDeMedicion } from './figura-antropometrica';
 /**
  * Los nombres de las mediciones del catálogo de BE y de los resultados de sus métodos, para mostrar una métrica sin su
  * código interno (la APK lee la evolución, que trae solo `metricCode`). Generado desde el catálogo «Perfil
- * antropométrico completo» y sus métodos (DL-111); una métrica que no está acá se muestra con su código legible
- * (`nombreDeMetrica`). El orden es el del catálogo: primero las mediciones, después los resultados.
+ * antropométrico completo», las mediciones complementarias de Kerr (DL-190) y sus métodos (DL-111); una métrica que no
+ * está acá se muestra con su código legible (`nombreDeMetrica`). El orden es el del catálogo: primero las mediciones,
+ * después los resultados.
  */
 export const NOMBRE_DE_METRICA: Readonly<Record<string, string>> = {
   'peso': 'Peso',
@@ -37,6 +38,13 @@ export const NOMBRE_DE_METRICA: Readonly<Record<string, string>> = {
   'diametro-humero': 'Diámetro biepicondíleo del húmero (codo)',
   'diametro-biestiloideo': 'Diámetro biestiloideo (muñeca)',
   'diametro-femur': 'Diámetro bicondíleo del fémur (rodilla)',
+  'talla-sentado': 'Talla sentado',
+  'perimetro-cabeza': 'Perímetro de la cabeza',
+  'perimetro-muslo-gluteo': 'Perímetro del muslo a 1 cm del pliegue glúteo',
+  'diametro-biacromial': 'Diámetro biacromial (hombros)',
+  'diametro-biiliocrestal': 'Diámetro biiliocrestal (crestas ilíacas)',
+  'diametro-torax-transverso': 'Diámetro transverso del tórax',
+  'diametro-torax-anteroposterior': 'Diámetro anteroposterior del tórax',
   'imc': 'Índice de masa corporal',
   'indice-cintura-cadera': 'Índice cintura/cadera',
   'indice-cintura-talla': 'Índice cintura/talla',
@@ -67,6 +75,11 @@ export const NOMBRE_DE_METRICA: Readonly<Record<string, string>> = {
   'endomorfia': 'Endomorfia',
   'mesomorfia': 'Mesomorfia',
   'ectomorfia': 'Ectomorfia',
+  'masa-piel-kerr': 'Masa de la piel (Kerr)',
+  'masa-adiposa-kerr': 'Masa adiposa (Kerr)',
+  'masa-muscular-kerr': 'Masa muscular (Kerr)',
+  'masa-osea-kerr': 'Masa ósea (Kerr)',
+  'masa-residual-kerr': 'Masa residual (Kerr)',
 };
 
 /** La familia de cada medición del catálogo (B10-07 §15): agrupa la lista de la toma. */
@@ -101,7 +114,61 @@ export const FAMILIA_DE_METRICA: Readonly<Record<string, FamiliaDeMedicion>> = {
   'diametro-humero': 'DIAMETROS',
   'diametro-biestiloideo': 'DIAMETROS',
   'diametro-femur': 'DIAMETROS',
+  'talla-sentado': 'MASA_Y_ESTATURA',
+  'perimetro-cabeza': 'PERIMETROS',
+  'perimetro-muslo-gluteo': 'PERIMETROS',
+  'diametro-biacromial': 'DIAMETROS',
+  'diametro-biiliocrestal': 'DIAMETROS',
+  'diametro-torax-transverso': 'DIAMETROS',
+  'diametro-torax-anteroposterior': 'DIAMETROS',
 };
+
+/**
+ * La unidad de cada medición del catálogo, la única que admiten sus métodos. Con ella la toma arma el campo de una
+ * medición que el protocolo no declara y un método elegido pide (las de Kerr, DL-190).
+ */
+export const UNIDAD_DE_METRICA: Readonly<Record<string, string>> = {
+  'peso': 'kg',
+  'talla': 'cm',
+  'edad': 'años',
+  'pliegue-pectoral': 'mm',
+  'pliegue-axilar-media': 'mm',
+  'pliegue-triceps': 'mm',
+  'pliegue-subescapular': 'mm',
+  'pliegue-biceps': 'mm',
+  'pliegue-cresta-iliaca': 'mm',
+  'pliegue-supraespinal': 'mm',
+  'pliegue-abdominal': 'mm',
+  'pliegue-muslo-frontal': 'mm',
+  'pliegue-pantorrilla': 'mm',
+  'pliegue-antebrazo': 'mm',
+  'perimetro-cuello': 'cm',
+  'perimetro-hombros': 'cm',
+  'perimetro-pecho': 'cm',
+  'perimetro-brazo-relajado': 'cm',
+  'perimetro-brazo-flexionado': 'cm',
+  'perimetro-antebrazo': 'cm',
+  'perimetro-muneca': 'cm',
+  'perimetro-cintura': 'cm',
+  'perimetro-abdomen': 'cm',
+  'perimetro-cadera': 'cm',
+  'perimetro-muslo': 'cm',
+  'perimetro-pantorrilla': 'cm',
+  'perimetro-tobillo': 'cm',
+  'diametro-humero': 'cm',
+  'diametro-biestiloideo': 'cm',
+  'diametro-femur': 'cm',
+  'talla-sentado': 'cm',
+  'perimetro-cabeza': 'cm',
+  'perimetro-muslo-gluteo': 'cm',
+  'diametro-biacromial': 'cm',
+  'diametro-biiliocrestal': 'cm',
+  'diametro-torax-transverso': 'cm',
+  'diametro-torax-anteroposterior': 'cm',
+};
+
+/** Las mediciones del catálogo que el «Perfil antropométrico completo» no declara: las de Kerr (1988), DL-190. */
+export const MEDICIONES_COMPLEMENTARIAS: readonly string[] = ['talla-sentado', 'perimetro-cabeza', 'perimetro-muslo-gluteo', 'diametro-biacromial', 'diametro-biiliocrestal', 'diametro-torax-transverso', 'diametro-torax-anteroposterior'];
 
 /** El nombre de una métrica, o su código sin guiones si BE no la conoce (nunca el código crudo). */
 export function nombreDeMetrica(clave: string): string {
@@ -161,6 +228,12 @@ export const NOMBRE_DE_METODO: Readonly<Record<string, string>> = {
   '3e0b1b56-6e0a-4d1a-8f1a-6a6d2b6a4f2a': 'Masa grasa (Durnin y Womersley), mujeres',
   '3e0b1b56-6e0a-4d1a-8f1a-6a6d2b6a4f2b': 'Masa libre de grasa (Durnin y Womersley), hombres',
   '3e0b1b56-6e0a-4d1a-8f1a-6a6d2b6a4f2c': 'Masa libre de grasa (Durnin y Womersley), mujeres',
+  '3e0b1b56-6e0a-4d1a-8f1a-6a6d2b6a4f2d': 'Masa de la piel (Kerr), hombres',
+  '3e0b1b56-6e0a-4d1a-8f1a-6a6d2b6a4f2e': 'Masa de la piel (Kerr), mujeres',
+  '3e0b1b56-6e0a-4d1a-8f1a-6a6d2b6a4f2f': 'Masa adiposa (Kerr)',
+  '3e0b1b56-6e0a-4d1a-8f1a-6a6d2b6a4f30': 'Masa muscular (Kerr)',
+  '3e0b1b56-6e0a-4d1a-8f1a-6a6d2b6a4f31': 'Masa ósea (Kerr)',
+  '3e0b1b56-6e0a-4d1a-8f1a-6a6d2b6a4f32': 'Masa residual (Kerr)',
 };
 
 /** El nombre del método de una versión, o `null` si BE no la conoce. */
@@ -216,4 +289,10 @@ export const CATEGORIA_DE_METODO: Readonly<Record<string, 'INDICES' | 'SUMAS_DE_
   '3e0b1b56-6e0a-4d1a-8f1a-6a6d2b6a4f2a': 'MASAS',
   '3e0b1b56-6e0a-4d1a-8f1a-6a6d2b6a4f2b': 'MASAS',
   '3e0b1b56-6e0a-4d1a-8f1a-6a6d2b6a4f2c': 'MASAS',
+  '3e0b1b56-6e0a-4d1a-8f1a-6a6d2b6a4f2d': 'MASAS',
+  '3e0b1b56-6e0a-4d1a-8f1a-6a6d2b6a4f2e': 'MASAS',
+  '3e0b1b56-6e0a-4d1a-8f1a-6a6d2b6a4f2f': 'MASAS',
+  '3e0b1b56-6e0a-4d1a-8f1a-6a6d2b6a4f30': 'MASAS',
+  '3e0b1b56-6e0a-4d1a-8f1a-6a6d2b6a4f31': 'MASAS',
+  '3e0b1b56-6e0a-4d1a-8f1a-6a6d2b6a4f32': 'MASAS',
 };

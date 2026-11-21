@@ -67,9 +67,9 @@ const falla = (id: string, valores: ValoresDeEntrada, contiene: string) => {
   assert.match((r as { error: string }).error, new RegExp(contiene));
 };
 
-test('las 44 reglas del catálogo de BE están registradas en el cálculo', () => {
+test('las 50 reglas del catálogo de BE están registradas en el cálculo (44 de DL-111 y DL-112, 6 de Kerr de DL-190)', () => {
   for (const id of Object.keys(REGLAS_ANTROPOMETRICAS)) assert.ok(REGLAS_CONOCIDAS.includes(id), id);
-  assert.equal(Object.keys(REGLAS_ANTROPOMETRICAS).length, 44);
+  assert.equal(Object.keys(REGLAS_ANTROPOMETRICAS).length, 50);
 });
 
 test('índices (MA-01 a MA-04): IMC, cintura/cadera, cintura/talla y conicidad', () => {
