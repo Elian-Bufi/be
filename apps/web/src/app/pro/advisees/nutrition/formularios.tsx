@@ -2,8 +2,12 @@
 
 /**
  * Formularios de evaluación (NUT-02 de B10-05; API-NUT-01) y de objetivo (NUT-03; API-NUT-04).
- * - La evaluación marca la fuente de cada dato: informado, observado o calculado (REG-06-109; DL-048). Un dato
- *   calculado declara su método: BE no calcula.
+ * - **La evaluación inicial es un pantallazo del caso** (WP-EVALUACION-INICIAL-2, DL-189; Dirección, 2026-11-21): en
+ *   tres bloques, «Lo que contó {nombre}», «Lo medido» y «Lo que necesita el cálculo», sin «Concepto / Valor / Unidad»
+ *   ni los atajos «Para empezar». Cada dato sigue registrándose con su fuente (REG-06-109; DL-048): la toma, observado;
+ *   lo demás, informado; y su procedencia queda en `evidenceReferences`. La fecha es la del registro, salvo que se cambie
+ *   (RP-11); «Anotaciones» es el texto libre del profesional, que la persona no lee (RP-13). Lo que no está en la lista va
+ *   en «+ Agregar otro dato», con las filas de siempre. Las piezas están en `../evaluacion/evaluacion-inicial.tsx`.
  * - El objetivo es «Nueva versión de objetivo», nunca «Editar objetivo actual» (B05:267-297): una decisión profesional
  *   con fundamento obligatorio. DL-186 (pedido de Dirección del 2026-11-19) suma el calculador de macros a pedido: una
  *   estimación con su método a la vista que el profesional revisa; lo que se guarda lo escribe él (B05:312-318 queda
@@ -11,19 +15,23 @@
  * - Adenda de formularios: etiqueta persistente, unidad visible, errores junto al campo y «requerido» solo si lo es.
  */
 import {
-  CONCEPTOS_FRECUENTES_DE_NUTRICION,
-  COPY_DE_LA_EVALUACION,
-  type ConceptoFrecuente,
+  COPY_EVALUACION_INICIAL as EI,
   COPY_NUTRICION,
+  COPY_PRIMER_PLAN,
+  candidatosDeLasRespuestas,
+  entradasDelCalculo,
   ETIQUETA_DE_FUENTE,
   leerNumero,
+  loQueNecesitaElCalculo,
   MAXIMO_DE_CITAS_POR_EVALUACION,
+  MAXIMO_DE_FORMULARIOS_VINCULADOS,
   motivoDeNumeroIlegible,
   type CrearEvaluacionRequest,
   type CrearObjetivoRequest,
+  type DatoDeLaEvaluacionInicial,
   type EvaluacionNutricional,
 } from '@be/domain';
-import { useEffect, useMemo, useState, type FormEvent } from 'react';
+import { useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import type { CitaPosible } from '@be/domain';
 import { useReceptorDeCitas, type ReceptorDeCitas } from '../contexto/citas';
 import { citasQueCambiaron, claveDeCita, claveDeCitaVista, fundamentoConCitas, sumarCitas } from '../contexto/panel-de-contexto';
@@ -33,11 +41,13 @@ import { api } from '../../../../lib/api';
 import { dia } from '../../../../lib/formato';
 import { mensajeDeFallo, useClaveDeIntento } from '../../../../lib/intento';
 import { useNutricion } from './nutricion';
-import { ConceptosFrecuentes, lugarDelConcepto } from '../conceptos-frecuentes';
 import { RepartosHabituales } from './repartos-habituales';
 import { KcalDelObjetivo } from './suma-de-los-rangos';
 import { evaluacionMasReciente } from '../evaluacion-reciente';
-import { ElegirFormularios, vincularAlRegistrar, type VinculosElegidos } from '../evaluacion/formularios-de-la-evaluacion';
+import { vincularAlRegistrar, type VinculosElegidos } from '../evaluacion/formularios-de-la-evaluacion';
+import { CompletarAhora, diaConAnio, FechaDeLaEvaluacion, LoMedido, LoQueConto, LoQueNecesitaElCalculo, useLoQueSabeDeLaPersona } from '../evaluacion/evaluacion-inicial';
+import { fuentesDeLoQueConto, momentoDeLaEvaluacion } from '../evaluacion/datos-de-la-evaluacion';
+import { usePersonaDelArea } from '../marco-del-area';
 import { hoyEn } from '../seguimiento/estado';
 import { CalculadorDelObjetivo, useTomasDelCalculador, type LoQueVaAlObjetivo } from './calculador';
 import { COPY_CALCULADOR, falloDeLaReferencia, fuenteEnPalabras, parametrosDelCalculador, pedidoConReferencia, type ValoresDelCalculador } from './calculador-del-objetivo';
@@ -58,16 +68,33 @@ const ahoraLocal = (): string => {
 };
 
 /**
- * DL-146: dentro de «Empezar el plan», el paso ya se llama «Evaluación inicial» (`conTitulo={false}`). Los conceptos
- * frecuentes llenan el primer dato vacío; el contexto y las notas, opcionales, van plegados después de los datos.
+ * La evaluación de Nutrición (RP-12, DL-189). Dentro de «Empezar el plan» va abierta en su paso, con el título del paso
+ * (`conTitulo={false}`); en Resumen, como «Nueva evaluación», con «Cancelar».
+ * - **«Lo que contó»:** al registrar, sus formularios respondidos quedan vinculados con EVF (hasta 20, con la versión
+ *   vista; EI-D05). «Completarlo ahora con {nombre}» abre «Cargar con la persona» ahí mismo (RP-14) y, al volver, se
+ *   vuelve a leer todo: lo cargado aparece como «falta que lo confirme».
+ * - **«Lo que necesita el cálculo»:** lo que se registra sale del dominio (`entradasDelCalculo`); un dato sin indicar no
+ *   se registra.
+ * - **La fecha:** sin cambiarla, la del momento en que se registra; si el resultado quedó incierto, el reintento manda la
+ *   misma (la clave del intento no cambia de cuerpo).
+ * - DL-179: las respuestas citadas desde «Contexto de la persona» (Alt + C) siguen, plegadas al pie.
  */
-export function FormularioDeEvaluacion({ onRegistrada, onCancelar, conTitulo = true }: { onRegistrada: (evaluationId: string) => void; onCancelar: () => void; conTitulo?: boolean }) {
+export function FormularioDeEvaluacion({ onRegistrada, onCancelar = null, conTitulo = true }: { onRegistrada: (evaluationId: string) => void; onCancelar?: (() => void) | null; conTitulo?: boolean }) {
   const { token, asesoradoId, sesionPerdida, accesoRetirado } = useNutricion();
+  const nombre = usePersonaDelArea() ?? EI.persona;
   const intento = useClaveDeIntento();
-  const [datos, setDatos] = useState<Dato[]>([datoVacio()]);
+  // RP-12: lo que contó, lo medido y lo que necesita el cálculo (sin escribir nada).
+  const lecturas = useLoQueSabeDeLaPersona({ area: 'nutrition', token, asesoradoId, sesionPerdida });
+  // RP-14: «Completarlo ahora», con las solicitudes pendientes a cargar (o `null`: crear las que correspondan).
+  const [completando, setCompletando] = useState<{ readonly pendientes: readonly { readonly id: string; readonly nombre: string }[] | null } | null>(null);
+  const [avisoDeLaCarga, setAvisoDeLaCarga] = useState<string | null>(null);
+  const [cambiados, setCambiados] = useState<Partial<Record<DatoDeLaEvaluacionInicial, string>>>({});
+  const [datos, setDatos] = useState<Dato[]>([]);
   const [contexto, setContexto] = useState('');
   const [notas, setNotas] = useState('');
-  const [ocurrencia, setOcurrencia] = useState(ahoraLocal());
+  // RP-11: `null` es la fecha automática (la del registro); con «cambiar», lo escrito en el campo.
+  const [ocurrencia, setOcurrencia] = useState<string | null>(null);
+  const momentoDelIntento = useRef<string | null>(null);
   // ED-04: los avisos se muestran al enviar y se actualizan al salir de cada campo.
   const avisos = useAvisosVivos(loQueFaltaEnLaEvaluacion);
   const errores = avisos.errores;
@@ -79,8 +106,6 @@ export function FormularioDeEvaluacion({ onRegistrada, onCancelar, conTitulo = t
   const [citaCambiada, setCitaCambiada] = useState(false);
   // Revisión del PR: cuáles cambiaron, según el 409, para señalarlas en la lista hasta que se vuelvan a citar.
   const [cambiadas, setCambiadas] = useState<readonly string[]>([]);
-  // DL-185 (EVF-04): los formularios que se vinculan al registrar, con la versión que se vio.
-  const [vinculos, setVinculos] = useState<VinculosElegidos>([]);
   const receptor = useMemo<ReceptorDeCitas>(
     () => ({
       area: 'NUTRICION',
@@ -106,16 +131,23 @@ export function FormularioDeEvaluacion({ onRegistrada, onCancelar, conTitulo = t
   );
   useReceptorDeCitas(receptor);
 
+  const conto = lecturas.conto.estado === 'listo' ? lecturas.conto.datos : null;
+  const toma = lecturas.medido.estado === 'listo' ? lecturas.medido.datos.toma : null;
+  const candidatos = useMemo(() => (conto ? candidatosDeLasRespuestas(fuentesDeLoQueConto(conto)) : []), [conto]);
+  const delCalculo = useMemo(() => loQueNecesitaElCalculo({ toma, candidatos, cambiados }), [toma, candidatos, cambiados]);
+  // DL-185 (EVF): lo que muestra «Lo que contó» se vincula al registrar, con la versión que se vio (EI-D05).
+  const vinculos = useMemo<VinculosElegidos>(
+    () => (conto ? conto.respondidos.slice(0, MAXIMO_DE_FORMULARIOS_VINCULADOS).map((r) => ({ formResponseId: r.form.formResponseId, expectedVersion: r.form.version })) : []),
+    [conto],
+  );
+
   const cambiar = (i: number, cambio: Partial<Dato>) => setDatos((ds) => ds.map((d, j) => (j === i ? { ...d, ...cambio } : d)));
-  function elegirConcepto(c: ConceptoFrecuente) {
-    const i = lugarDelConcepto(datos);
-    setDatos((ds) => (i < ds.length ? ds.map((d, j) => (j === i ? { ...d, concepto: c.concepto, unidad: c.unidad } : d)) : [...ds, { ...datoVacio(), concepto: c.concepto, unidad: c.unidad }]));
-    window.setTimeout(() => document.getElementById(`dato-${i}-valor`)?.focus(), 0);
-  }
 
   /** Lo que falta en la evaluación, ahora (ED-04: se recalcula al enviar y al salir de cada campo). */
   function loQueFaltaEnLaEvaluacion(): { id: string; texto: string }[] {
     const problemas: { id: string; texto: string }[] = [];
+    const momento = momentoDeLaEvaluacion(ocurrencia, new Date());
+    if (!momento.ok) problemas.push({ id: 'evaluacion-ocurrencia', texto: momento.problema });
     datos.forEach((d, i) => {
       if (!d.concepto.trim()) problemas.push({ id: `dato-${i}-concepto`, texto: `Dato ${i + 1}: falta el concepto.` });
       if (!d.valor.trim()) problemas.push({ id: `dato-${i}-valor`, texto: `Dato ${i + 1}: falta el valor.` });
@@ -128,26 +160,32 @@ export function FormularioDeEvaluacion({ onRegistrada, onCancelar, conTitulo = t
     e.preventDefault();
     const problemas = avisos.alEnviar();
     if (problemas.length > 0) return;
+    // Sin cambiar la fecha, la del registro; el reintento de un resultado incierto manda la misma.
+    const momento = ocurrencia === null && intento.quedoIncierto() && momentoDelIntento.current ? { ok: true as const, iso: momentoDelIntento.current } : momentoDeLaEvaluacion(ocurrencia, new Date());
+    if (!momento.ok) return;
+    const { entries: delCalculoParaRegistrar, evidencias } = entradasDelCalculo(delCalculo, diaConAnio);
+    const libres = datos.map((d) => ({
+      concept: d.concepto.trim(),
+      // Un valor que es un número se guarda como número, escrito con coma o con punto (DL-091 punto 4).
+      value: leerNumero(d.valor) ?? d.valor.trim(),
+      unit: d.unidad.trim() || null,
+      source: d.fuente,
+      methodStatement: d.fuente === 'CALCULATED' ? d.metodo.trim() : null,
+    }));
+    const entries = [...delCalculoParaRegistrar, ...libres];
+    if (entries.length === 0) return setFallo(EI.nadaParaRegistrar);
     const cuerpo: CrearEvaluacionRequest = {
-      occurredAt: new Date(ocurrencia).toISOString(),
+      occurredAt: momento.iso,
       context: contexto.trim() || null,
-      assessment: {
-        entries: datos.map((d) => ({
-          concept: d.concepto.trim(),
-          // Un valor que es un número se guarda como número, escrito con coma o con punto (DL-091 punto 4).
-          value: leerNumero(d.valor) ?? d.valor.trim(),
-          unit: d.unidad.trim() || null,
-          source: d.fuente,
-          methodStatement: d.fuente === 'CALCULATED' ? d.metodo.trim() : null,
-        })),
-      },
-      evidenceReferences: [],
+      assessment: { entries: entries.slice(0, 100) },
+      evidenceReferences: evidencias.slice(0, 20),
       professionalNotes: notas.trim() || null,
       ...(citas.length > 0 ? { formResponseReferences: citas.map((c) => ({ formResponseId: c.formResponseId, fieldCode: c.fieldCode, expectedVersion: c.expectedVersion })) } : {}),
     };
+    momentoDelIntento.current = momento.iso;
     setEnviando(true);
     setFallo(null);
-    const r = await api.crearEvaluacion(token, asesoradoId, cuerpo, intento.actual(JSON.stringify(cuerpo.formResponseReferences ?? [])));
+    const r = await api.crearEvaluacion(token, asesoradoId, cuerpo, intento.actual(JSON.stringify(cuerpo)));
     intento.registrar(r);
     setEnviando(false);
     // Una escritura denegada retira el contenido de la pestaña entera (B10-06:1145-1148).
@@ -165,86 +203,152 @@ export function FormularioDeEvaluacion({ onRegistrada, onCancelar, conTitulo = t
     onRegistrada(r.datos.data.evaluationId);
   }
 
+  const titulo = conTitulo ? COPY_NUTRICION.nuevaEvaluacion : COPY_PRIMER_PLAN.pasoEvaluacion;
+  const pedirHref = `/pro/advisees/forms?id=${encodeURIComponent(asesoradoId)}&vista=pedir&plantilla=FRM-NUTRICION-INICIO&volver=nutricion`;
+
+  // RP-14: «Cargar con la persona», ahí mismo. Lo escrito en la evaluación queda: este formulario sigue montado.
+  if (completando) {
+    return (
+      <div className="evaluacion-inicial" data-evaluacion-inicial>
+        <div className="evaluacion-inicial__cabecera">
+          <h3>{titulo}</h3>
+        </div>
+        <CompletarAhora
+          area="nutrition"
+          claveDelArea="FRM-NUTRICION-INICIO"
+          nombre={nombre}
+          token={token}
+          asesoradoId={asesoradoId}
+          sesionPerdida={sesionPerdida}
+          pendientes={completando.pendientes}
+          onTerminar={(aviso) => {
+            setCompletando(null);
+            setAvisoDeLaCarga(aviso);
+            lecturas.releer();
+          }}
+        />
+      </div>
+    );
+  }
+
   // El mismo error va al resumen y al campo (B10-10:164-165).
   const porCampo = erroresPorCampo(errores);
+  const nombresDePendientes = new Map((conto?.pendientes ?? []).map((p) => [p.solicitud.formRequestId, p.solicitud.templateName] as const));
   return (
-    <form className="formulario" onSubmit={enviar} onBlur={avisos.alSalir} onKeyDown={avisos.alEnter} noValidate>
-      {conTitulo ? <h3>{COPY_NUTRICION.nuevaEvaluacion}</h3> : null}
+    <form className="formulario evaluacion-inicial" onSubmit={enviar} onBlur={avisos.alSalir} onKeyDown={avisos.alEnter} noValidate data-evaluacion-inicial>
+      <div className="evaluacion-inicial__cabecera">
+        <h3>{titulo}</h3>
+        <FechaDeLaEvaluacion id="evaluacion-ocurrencia" valor={ocurrencia} onCambiar={setOcurrencia} error={porCampo['evaluacion-ocurrencia'] ?? null} />
+      </div>
       <ResumenDeErrores titulo="Revisá estos datos:" errores={errores} intento={avisos.envios} />
       <AnuncioDeLosAvisos texto={avisos.anuncio(COPY_AVISOS_VIVOS.listoParaGuardar)} />
-      <Campo id="evaluacion-ocurrencia" etiqueta="Fecha y hora de la evaluación" type="datetime-local" value={ocurrencia} onChange={(e) => setOcurrencia(e.target.value)} required />
-      <fieldset className="grupo">
-        <legend>Datos de la evaluación</legend>
-        <p className="campo__ayuda">Cada dato indica de dónde sale. Un dato calculado declara el método: BE no calcula.</p>
-        <ConceptosFrecuentes conceptos={CONCEPTOS_FRECUENTES_DE_NUTRICION} usados={datos.map((d) => d.concepto)} etiqueta={COPY_DE_LA_EVALUACION.paraEmpezar} onElegir={elegirConcepto} />
-        {datos.map((d, i) => (
-          <div key={i} className="fila-de-dato">
-            <Campo id={`dato-${i}-concepto`} etiqueta="Concepto" value={d.concepto} onChange={(e) => cambiar(i, { concepto: e.target.value })} maxLength={120} error={porCampo[`dato-${i}-concepto`] ?? null} />
-            <Campo id={`dato-${i}-valor`} etiqueta="Valor" value={d.valor} onChange={(e) => cambiar(i, { valor: e.target.value })} maxLength={500} error={porCampo[`dato-${i}-valor`] ?? null} />
-            <Campo id={`dato-${i}-unidad`} etiqueta="Unidad (opcional)" value={d.unidad} onChange={(e) => cambiar(i, { unidad: e.target.value })} maxLength={30} />
-            <div className="campo">
-              <label htmlFor={`dato-${i}-fuente`}>Fuente</label>
-              <select id={`dato-${i}-fuente`} value={d.fuente} onChange={(e) => cambiar(i, { fuente: e.target.value as Fuente })}>
-                {(Object.keys(ETIQUETA_DE_FUENTE) as Fuente[]).map((f) => (
-                  <option key={f} value={f}>
-                    {ETIQUETA_DE_FUENTE[f]}
-                  </option>
-                ))}
-              </select>
-            </div>
-            {d.fuente === 'CALCULATED' ? (
-              <Campo id={`dato-${i}-metodo`} etiqueta="Método declarado" value={d.metodo} onChange={(e) => cambiar(i, { metodo: e.target.value })} maxLength={500} error={porCampo[`dato-${i}-metodo`] ?? null} />
-            ) : null}
-            {datos.length > 1 ? (
+      {avisoDeLaCarga ? (
+        <Aviso tipo="exito">
+          <p>{avisoDeLaCarga}</p>
+        </Aviso>
+      ) : null}
+
+      <div className="evaluacion-inicial__bloques">
+        <LoQueConto
+          nombre={nombre}
+          lectura={lecturas.conto}
+          onReleer={lecturas.releer}
+          onCompletar={(pendientes) => {
+            setAvisoDeLaCarga(null);
+            setCompletando({ pendientes: pendientes ? pendientes.map((id) => ({ id, nombre: nombresDePendientes.get(id) ?? '' })) : null });
+          }}
+          pedirHref={pedirHref}
+          deshabilitado={enviando}
+        />
+        <LoMedido lectura={lecturas.medido} asesoradoId={asesoradoId} />
+        <LoQueNecesitaElCalculo
+          datos={delCalculo}
+          nombre={nombre}
+          cambiados={cambiados}
+          onCambiar={(dato, valor) =>
+            setCambiados((c) => {
+              const nuevo = { ...c };
+              if (valor === undefined) delete nuevo[dato];
+              else nuevo[dato] = valor;
+              return nuevo;
+            })
+          }
+        />
+      </div>
+
+      {/* Al pie, plegado: lo que no está en la lista, con las filas libres de siempre; el contexto y las citas (DL-179). */}
+      <details className="campos-opcionales evaluacion-inicial__otros" open={datos.length > 0 || citas.length > 0 || contexto !== '' ? true : undefined}>
+        <summary>{EI.agregarOtroDato}</summary>
+        <fieldset className="grupo">
+          <legend>Otros datos de la evaluación</legend>
+          {datos.map((d, i) => (
+            <div key={i} className="fila-de-dato">
+              <Campo id={`dato-${i}-concepto`} etiqueta="Concepto" value={d.concepto} onChange={(e) => cambiar(i, { concepto: e.target.value })} maxLength={120} error={porCampo[`dato-${i}-concepto`] ?? null} />
+              <Campo id={`dato-${i}-valor`} etiqueta="Valor" value={d.valor} onChange={(e) => cambiar(i, { valor: e.target.value })} maxLength={500} error={porCampo[`dato-${i}-valor`] ?? null} />
+              <Campo id={`dato-${i}-unidad`} etiqueta="Unidad (opcional)" value={d.unidad} onChange={(e) => cambiar(i, { unidad: e.target.value })} maxLength={30} />
+              <div className="campo">
+                <label htmlFor={`dato-${i}-fuente`}>Fuente</label>
+                <select id={`dato-${i}-fuente`} value={d.fuente} onChange={(e) => cambiar(i, { fuente: e.target.value as Fuente })}>
+                  {(Object.keys(ETIQUETA_DE_FUENTE) as Fuente[]).map((f) => (
+                    <option key={f} value={f}>
+                      {ETIQUETA_DE_FUENTE[f]}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              {d.fuente === 'CALCULATED' ? (
+                <Campo id={`dato-${i}-metodo`} etiqueta="Método declarado" value={d.metodo} onChange={(e) => cambiar(i, { metodo: e.target.value })} maxLength={500} error={porCampo[`dato-${i}-metodo`] ?? null} />
+              ) : null}
               <button type="button" className="boton boton--enlace" onClick={() => setDatos((ds) => ds.filter((_, j) => j !== i))}>
                 Quitar dato {i + 1}
               </button>
-            ) : null}
-          </div>
-        ))}
-        <button type="button" className="boton boton--secundario" onClick={() => setDatos((ds) => [...ds, datoVacio()])}>
-          Agregar dato
-        </button>
-      </fieldset>
-      <ElegirFormularios area="nutrition" token={token} asesoradoId={asesoradoId} sesionPerdida={sesionPerdida} onCambio={setVinculos} />
-      <fieldset className="grupo respuestas-citadas">
-        <legend>Respuestas citadas (opcional)</legend>
-        <p className="campo__ayuda">
-          Lo que respondió la persona en tus formularios, como evidencia. Se cita desde «Contexto de la persona» (Alt + C), con «Citar». Hasta {MAXIMO_DE_CITAS_POR_EVALUACION}.
-        </p>
-        {citas.length === 0 ? <p className="nota">Todavía no citaste ninguna.</p> : null}
-        {citaCambiada ? (
-          <Aviso tipo="error" enfocar>
-            <p>Una respuesta citada cambió desde que la viste: tocá «Volver a leer» en el contexto y citala de nuevo. No se registró nada.</p>
-          </Aviso>
-        ) : null}
-        {citas.length > 0 ? (
-          <ul className="lista-de-citas">
-            {citas.map((c) => (
-              <li key={claveDeCita(c)}>
-                <span>
-                  <strong>{c.pregunta}:</strong> {c.respuesta} <span className="nota">· {c.fuente.nombre} · {dia(c.fuente.fecha)}</span>
-                  {cambiadas.includes(claveDeCita(c)) ? <span className="nota"> · Cambió desde que la viste: volvé a leer el contexto y citala de nuevo.</span> : null}
-                </span>
-                <button type="button" className="boton boton--enlace" aria-label={`Quitar la cita: ${c.pregunta}`} onClick={() => setCitas((xs) => xs.filter((x) => claveDeCita(x) !== claveDeCita(c)))}>
-                  Quitar
-                </button>
-              </li>
-            ))}
-          </ul>
-        ) : null}
-      </fieldset>
-      <details className="campos-opcionales" open={contexto !== '' || notas !== '' ? true : undefined}>
-        <summary>{COPY_DE_LA_EVALUACION.contextoYNotas}</summary>
+            </div>
+          ))}
+          <button type="button" className="boton boton--secundario" onClick={() => setDatos((ds) => [...ds, datoVacio()])} data-agregar-dato>
+            Agregar dato
+          </button>
+        </fieldset>
+        <fieldset className="grupo respuestas-citadas">
+          <legend>Respuestas citadas (opcional)</legend>
+          <p className="campo__ayuda">
+            Lo que respondió la persona en tus formularios, como evidencia. Se cita desde «Contexto de la persona» (Alt + C), con «Citar». Hasta {MAXIMO_DE_CITAS_POR_EVALUACION}.
+          </p>
+          {citas.length === 0 ? <p className="nota">Todavía no citaste ninguna.</p> : null}
+          {citaCambiada ? (
+            <Aviso tipo="error" enfocar>
+              <p>Una respuesta citada cambió desde que la viste: tocá «Volver a leer» en el contexto y citala de nuevo. No se registró nada.</p>
+            </Aviso>
+          ) : null}
+          {citas.length > 0 ? (
+            <ul className="lista-de-citas">
+              {citas.map((c) => (
+                <li key={claveDeCita(c)}>
+                  <span>
+                    <strong>{c.pregunta}:</strong> {c.respuesta} <span className="nota">· {c.fuente.nombre} · {dia(c.fuente.fecha)}</span>
+                    {cambiadas.includes(claveDeCita(c)) ? <span className="nota"> · Cambió desde que la viste: volvé a leer el contexto y citala de nuevo.</span> : null}
+                  </span>
+                  <button type="button" className="boton boton--enlace" aria-label={`Quitar la cita: ${c.pregunta}`} onClick={() => setCitas((xs) => xs.filter((x) => claveDeCita(x) !== claveDeCita(c)))}>
+                    Quitar
+                  </button>
+                </li>
+              ))}
+            </ul>
+          ) : null}
+        </fieldset>
         <div className="campo">
           <label htmlFor="evaluacion-contexto">Contexto (opcional)</label>
           <textarea id="evaluacion-contexto" rows={2} value={contexto} onChange={(e) => setContexto(e.target.value)} maxLength={1000} />
         </div>
-        <div className="campo">
-          <label htmlFor="evaluacion-notas">Notas del profesional (opcional)</label>
-          <textarea id="evaluacion-notas" rows={3} value={notas} onChange={(e) => setNotas(e.target.value)} maxLength={4000} />
-        </div>
       </details>
+
+      {/* RP-13: un espacio amplio y privado del profesional; ninguna lectura de la persona lo devuelve (TEST-EVI-010). */}
+      <div className="campo evaluacion-inicial__anotaciones">
+        <label htmlFor="evaluacion-notas">{EI.anotaciones}</label>
+        <p id="evaluacion-notas-ayuda" className="campo__ayuda">
+          {EI.ayudaDeLasAnotaciones(nombre)}
+        </p>
+        <textarea id="evaluacion-notas" rows={6} aria-describedby="evaluacion-notas-ayuda" value={notas} onChange={(e) => setNotas(e.target.value)} maxLength={4000} data-anotaciones />
+      </div>
       {fallo ? (
         <Aviso tipo="error" enfocar>
           <p>{fallo}</p>
@@ -252,11 +356,13 @@ export function FormularioDeEvaluacion({ onRegistrada, onCancelar, conTitulo = t
       ) : null}
       <div className="acciones">
         <button type="submit" className="boton boton--primario" disabled={enviando} aria-busy={enviando}>
-          {enviando ? 'Registrando…' : 'Registrar evaluación'}
+          {enviando ? EI.registrando : EI.registrar}
         </button>
-        <button type="button" className="boton boton--secundario" onClick={onCancelar} disabled={enviando}>
-          Cancelar
-        </button>
+        {onCancelar ? (
+          <button type="button" className="boton boton--secundario" onClick={onCancelar} disabled={enviando}>
+            Cancelar
+          </button>
+        ) : null}
       </div>
     </form>
   );

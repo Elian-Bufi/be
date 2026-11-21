@@ -451,6 +451,7 @@ export const COPY_EVALUACION_INICIAL = {
   volverALaEvaluacion: 'Volver a la evaluación',
   despuesSigue: (formulario: string): string => `Después sigue «${formulario}».`,
   propositoGenerico: (area: string): string => `Para la evaluación inicial de ${area}.`,
+  sinFormularioDelArea: 'No hay un formulario de inicio del área que puedas pedir ahora. Probá con «Enviárselo».',
   // RP-15 · lo crítico primero
   primeroLoNecesario: 'Primero lo necesario para planificar',
   primeroBajada: (nombre: string): string => `Lo que no cargues, ${nombre} lo responde en su app al confirmar.`,
