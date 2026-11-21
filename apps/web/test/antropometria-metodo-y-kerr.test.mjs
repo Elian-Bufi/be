@@ -54,6 +54,9 @@ test('RP-17 · Kerr en la toma: lo medido primero, las cinco masas, la suma y la
   assert.ok(tabla.indexOf('Peso medido') < tabla.indexOf('f.componentes.map'), 'el peso de la balanza va primero');
   assert.match(tabla, /Peso estructurado \(la suma de las cinco\)/);
   assert.match(tabla, /del peso\)/);
+  // Lo inferido, con su ecuación a la vista: la piel tiene una por sexo y la suma cuenta la última registrada, así que la
+  // fila dice con cuál se calculó («Masa de la piel (Kerr), mujeres»), no solo «Masa de la piel (Kerr)».
+  assert.match(tabla, /<th scope="row">\{c\.metodo \?\? nombreDeMetrica\(c\.metrica\)\}<\/th>/);
 });
 
 test('las palabras de las piezas nuevas no califican ni usan lo prohibido', () => {

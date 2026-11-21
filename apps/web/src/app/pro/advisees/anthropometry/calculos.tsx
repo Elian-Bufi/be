@@ -119,7 +119,8 @@ function KerrEnLaToma({ f, onAbrir }: { f: FraccionamientoDeKerr; onAbrir: (corr
           </tr>
           {f.componentes.map((c) => (
             <tr key={c.metrica}>
-              <th scope="row">{nombreDeMetrica(c.metrica)}</th>
+              {/* Lo inferido, con su ecuación: la piel tiene una por sexo, y la fila dice con cuál se calculó la que suma. */}
+              <th scope="row">{c.metodo ?? nombreDeMetrica(c.metrica)}</th>
               <td>
                 {c.valor !== null && c.corridaId ? (
                   <button type="button" className="boton boton--enlace" onClick={() => onAbrir(c.corridaId!)} aria-label={`${c.metodo ?? nombreDeMetrica(c.metrica)}: ${cantidad(c.valor, 'kg')}`}>
