@@ -8,9 +8,12 @@
  * - El objetivo es «Nueva versión de objetivo», nunca «Editar objetivo actual» (B10-06:253-259).
  * - PF-02 (DL-102): la evaluación cita respuestas de formulario **por referencia**. Lo citado se muestra como declarado
  *   por la persona, con su fecha, y nunca como un dato observado por el profesional (CA-FOR-04).
+ * - WP-EVALUACION-INICIAL-2 (DL-189): la fecha de la evaluación es la del registro, con «cambiar» para una hecha antes
+ *   (RP-11), y «Anotaciones» es el texto libre del profesional, a la vista, que la persona no lee (RP-13).
  */
 import {
   CONCEPTOS_FRECUENTES_DE_ENTRENAMIENTO,
+  COPY_EVALUACION_INICIAL as EI,
   COPY_DE_LA_EVALUACION,
   type ConceptoFrecuente,
   COPY_PRIMER_PLAN,
@@ -59,6 +62,9 @@ import { evaluacionMasReciente } from '../evaluacion-reciente';
 import { useReceptorDeCitas, type ReceptorDeCitas } from '../contexto/citas';
 import { claveDeCitaVista, fundamentoConCitas, sumarCitas } from '../contexto/panel-de-contexto';
 import { ElegirFormularios, FormulariosDeLaEvaluacion, vincularAlRegistrar, type VinculosElegidos } from '../evaluacion/formularios-de-la-evaluacion';
+import { FechaDeLaEvaluacion } from '../evaluacion/evaluacion-inicial';
+import { momentoDeLaEvaluacion } from '../evaluacion/datos-de-la-evaluacion';
+import { usePersonaDelArea } from '../marco-del-area';
 
 interface Lecturas {
   readonly evaluaciones: Lectura<readonly EvaluacionDeEntrenamiento[]>;
@@ -399,11 +405,14 @@ const ahoraLocal = (): string => {
  */
 export function FormularioDeEvaluacion({ onRegistrada, onCancelar, conTitulo = true }: { onRegistrada: () => void; onCancelar: () => void; conTitulo?: boolean }) {
   const { token, asesoradoId, sesionPerdida, accesoRetirado } = useEntrenamiento();
+  const nombre = usePersonaDelArea() ?? EI.persona;
   const intento = useClaveDeIntento();
   const [datos, setDatos] = useState<Dato[]>([datoVacio()]);
   const [notas, setNotas] = useState('');
   const [contexto, setContexto] = useState('');
-  const [ocurrencia, setOcurrencia] = useState(ahoraLocal());
+  // RP-11 (DL-189): `null` es la fecha automática, la del registro; con «cambiar», lo escrito en el campo.
+  const [ocurrencia, setOcurrencia] = useState<string | null>(null);
+  const momentoDelIntento = useRef<string | null>(null);
   const [errores, setErrores] = useState<{ id: string; texto: string }[]>([]);
   const [envios, setEnvios] = useState(0);
   const [enviando, setEnviando] = useState(false);
@@ -526,8 +535,10 @@ export function FormularioDeEvaluacion({ onRegistrada, onCancelar, conTitulo = t
   async function enviar(e: FormEvent) {
     e.preventDefault();
     const problemas: { id: string; texto: string }[] = [];
-    // Una fecha vacía o a medio escribir se avisa acá: si no, `new Date('')` rompía el envío sin ningún mensaje.
-    if (!ocurrencia || Number.isNaN(new Date(ocurrencia).getTime())) problemas.push({ id: 'trn-evaluacion-ocurrencia', texto: 'Falta la fecha y hora de la evaluación.' });
+    // Una fecha vacía, a medio escribir o posterior a ahora se avisa acá. Sin cambiarla, la del registro; el reintento de un
+    // resultado incierto manda la misma, para que la clave del intento no cambie de cuerpo.
+    const momento = ocurrencia === null && intento.quedoIncierto() && momentoDelIntento.current ? { ok: true as const, iso: momentoDelIntento.current } : momentoDeLaEvaluacion(ocurrencia, new Date());
+    if (!momento.ok) problemas.push({ id: 'trn-evaluacion-ocurrencia', texto: momento.problema });
     datos.forEach((d, i) => {
       if (!d.concepto.trim()) problemas.push({ id: `trn-dato-${i}-concepto`, texto: `Dato ${i + 1}: falta el concepto.` });
       if (!d.valor.trim()) problemas.push({ id: `trn-dato-${i}-valor`, texto: `Dato ${i + 1}: falta el valor.` });
@@ -538,14 +549,15 @@ export function FormularioDeEvaluacion({ onRegistrada, onCancelar, conTitulo = t
     if (conflicto) problemas.push({ id: 'trn-contexto', texto: COPY_ENTRENAMIENTO.actualizaAntesDeRegistrar });
     setErrores(problemas);
     setEnvios((n) => n + 1);
-    if (problemas.length > 0) return;
+    if (problemas.length > 0 || !momento.ok) return;
+    momentoDelIntento.current = momento.iso;
     setEnviando(true);
     setFallo(null);
     const r = await api.crearEvaluacionDeEntrenamiento(
       token,
       asesoradoId,
       {
-        occurredAt: new Date(ocurrencia).toISOString(),
+        occurredAt: momento.iso,
         assessment: {
           entries: datos.map((d) => ({
             concept: d.concepto.trim(),
@@ -584,7 +596,7 @@ export function FormularioDeEvaluacion({ onRegistrada, onCancelar, conTitulo = t
     <form className="formulario" onSubmit={enviar} noValidate>
       {conTitulo ? <h3>{COPY_ENTRENAMIENTO.nuevaEvaluacion}</h3> : null}
       <ResumenDeErrores titulo="Revisá estos datos:" errores={errores} intento={envios} />
-      <Campo id="trn-evaluacion-ocurrencia" etiqueta="Fecha y hora de la evaluación" type="datetime-local" value={ocurrencia} onChange={(e) => setOcurrencia(e.target.value)} required />
+      <FechaDeLaEvaluacion id="trn-evaluacion-ocurrencia" valor={ocurrencia} onCambiar={setOcurrencia} error={errores.find((e) => e.id === 'trn-evaluacion-ocurrencia')?.texto ?? null} />
       <fieldset className="grupo">
         <legend>Datos de la evaluación</legend>
         <p className="campo__ayuda">Cada dato indica de dónde sale: lo que informa la persona no es un diagnóstico.</p>
@@ -679,18 +691,22 @@ export function FormularioDeEvaluacion({ onRegistrada, onCancelar, conTitulo = t
           </button>
         ) : null}
       </fieldset>
-      <details className="campos-opcionales" open={contexto !== '' || notas !== '' ? true : undefined}>
-        <summary>{COPY_DE_LA_EVALUACION.contextoYNotas}</summary>
+      <details className="campos-opcionales" open={contexto !== '' ? true : undefined}>
+        <summary>Contexto (opcional)</summary>
         <div className="campo">
           <label htmlFor="trn-evaluacion-contexto">Contexto (opcional)</label>
           <p className="campo__ayuda">En qué situación se hizo la evaluación: consulta inicial, cambio de bloque, vuelta de una lesión.</p>
           <textarea id="trn-evaluacion-contexto" rows={2} value={contexto} onChange={(e) => setContexto(e.target.value)} maxLength={1000} />
         </div>
-        <div className="campo">
-          <label htmlFor="trn-evaluacion-notas">Notas del profesional (opcional)</label>
-          <textarea id="trn-evaluacion-notas" rows={2} value={notas} onChange={(e) => setNotas(e.target.value)} maxLength={4000} />
-        </div>
       </details>
+      {/* RP-13: un espacio amplio y privado del profesional; ninguna lectura de la persona lo devuelve (TEST-EVI-010). */}
+      <div className="campo evaluacion-inicial__anotaciones">
+        <label htmlFor="trn-evaluacion-notas">{EI.anotaciones}</label>
+        <p id="trn-evaluacion-notas-ayuda" className="campo__ayuda">
+          {EI.ayudaDeLasAnotaciones(nombre)}
+        </p>
+        <textarea id="trn-evaluacion-notas" rows={6} aria-describedby="trn-evaluacion-notas-ayuda" value={notas} onChange={(e) => setNotas(e.target.value)} maxLength={4000} data-anotaciones />
+      </div>
       {fallo ? (
         <Aviso tipo="error" enfocar>
           <p>{fallo}</p>

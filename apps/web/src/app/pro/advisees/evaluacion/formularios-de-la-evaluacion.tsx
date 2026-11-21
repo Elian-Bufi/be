@@ -22,7 +22,7 @@ import {
   type FormularioVinculado,
   type FormulariosVinculadosResponse,
 } from '@be/domain';
-import { useCallback, useEffect, useId, useState } from 'react';
+import { useCallback, useEffect, useId, useState, type ReactNode } from 'react';
 import { Aviso } from '../../../../components/formulario';
 import { api, nuevaClaveDeIdempotencia, type Resultado } from '../../../../lib/api';
 import { diaSinElAnioEnCurso } from '../../../../lib/formato';
@@ -244,7 +244,7 @@ function Vinculado({ v, comun, evaluationId, ocupado, onDesvincular, onVincularL
  * «Formularios vinculados» de una evaluación registrada. `conTitulo={false}` cuando el lugar ya lo titula. Lee los
  * vinculados al montarse y, solo al tocar «Vincular un formulario», los que se pueden sumar.
  */
-export function FormulariosDeLaEvaluacion({ area, token, asesoradoId, sesionPerdida, evaluationId }: Comun & { readonly evaluationId: string }) {
+export function FormulariosDeLaEvaluacion({ area, token, asesoradoId, sesionPerdida, evaluationId, pie = null }: Comun & { readonly evaluationId: string; readonly pie?: ReactNode }) {
   const comun: Comun = { area, token, asesoradoId, sesionPerdida };
   const intento = useClaveDeIntento();
   const [lectura, setLectura] = useState<Lectura<FormulariosVinculadosResponse['data']['links']>>({ estado: 'cargando' });
@@ -399,6 +399,8 @@ export function FormulariosDeLaEvaluacion({ area, token, asesoradoId, sesionPerd
           </div>
         </div>
       ) : null}
+      {/* DL-189 (RP-16): lo que la persona corrigió después, si el área lo muestra. */}
+      {pie}
     </div>
   );
 }

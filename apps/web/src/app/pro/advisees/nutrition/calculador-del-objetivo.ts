@@ -30,6 +30,7 @@ import {
   type ResultadoDelCalculo,
   type ReferenciaYCalculo,
   type EstadoDeLaReferencia,
+  type DatosDelCalculoDeLaEvaluacion,
   type TomaDeReferencia,
 } from '@be/domain';
 
@@ -59,24 +60,63 @@ export interface ValoresDelCalculador {
   readonly base: 'BODY_WEIGHT' | 'LEAN_MASS';
   readonly proteinaPorKg: string;
   readonly grasaPorKg: string;
+  /**
+   * DL-189 (EI-D15): si el calculador arrancó con lo que registró la evaluación, de qué día es, qué datos tomó de ella y el
+   * nivel de actividad que dijo (se muestra junto al factor: BE no elige el factor). `null` o ausente: nada de la evaluación.
+   */
+  readonly deLaEvaluacion?: { readonly dia: string; readonly usados: readonly DatoDeLaEvaluacionUsado[]; readonly actividad: string | null } | null;
 }
 
-/** El punto de partida: la toma más nueva si hay, Mifflin-St Jeor, factor 1,55 y los macros sin escribir. */
-export function calculadorInicial(tomas: readonly TomaDeReferencia[], hoy: string): ValoresDelCalculador {
+/** Lo que el calculador puede tomar de la evaluación para arrancar. */
+export type DatoDeLaEvaluacionUsado = 'peso' | 'talla' | 'edad' | 'sexo';
+
+/** El día de un instante en la zona de la persona (`AAAA-MM-DD`), como `hoyEn`. */
+const diaEnLaZona = (iso: string, zona = 'America/Argentina/Buenos_Aires'): string => new Intl.DateTimeFormat('en-CA', { timeZone: zona, year: 'numeric', month: '2-digit', day: '2-digit' }).format(new Date(iso));
+
+/**
+ * El punto de partida: la toma más nueva si hay, Mifflin-St Jeor, factor 1,55 y los macros sin escribir.
+ *
+ * DL-189 (EI-D15) · con `evaluacion` (lo que registró la evaluación del objetivo, `datosDelCalculoEnLaEvaluacion`), arranca
+ * también con lo que ella dice, sin romper «Usar la toma del…» ni «Cargar a mano»:
+ * - **lo medido sale de la toma**, siempre: con una toma, la referencia sigue siendo «Usar la toma del…» (la más nueva), y
+ *   de la evaluación solo se completa lo que esa toma no tiene (la talla o la edad, si la evaluación las tiene declaradas);
+ * - sin toma, «Cargar a mano» arranca con el peso, la talla y la edad **declarados** en la evaluación y con su fecha. Lo
+ *   que la evaluación registró de una toma no se reusa: sin toma a la vista (sin el permiso de Antropometría, o con la toma
+ *   anulada) el dato medido no está disponible, y no se copia por la puerta de atrás;
+ * - el sexo de la ecuación, si la evaluación lo indicó (lo eligió el profesional, DL-186);
+ * - el nivel de actividad no elige el factor: se muestra a su lado, en palabras.
+ */
+export function calculadorInicial(tomas: readonly TomaDeReferencia[], hoy: string, evaluacion: DatosDelCalculoDeLaEvaluacion | null = null): ValoresDelCalculador {
   const toma = tomas[0];
   const masa = toma?.composition.find((c) => c.leanMassKg !== null);
+  const declarado = (d: { readonly valor: number; readonly medido: boolean } | null | undefined): string => (d && !d.medido ? String(d.valor).replace('.', ',') : '');
+  const peso = toma ? '' : declarado(evaluacion?.pesoKg);
+  const talla = toma ? '' : declarado(evaluacion?.tallaCm);
+  const edad = toma ? '' : declarado(evaluacion?.edadAnios);
+  const tallaAgregada = toma && toma.heightCm === null ? declarado(evaluacion?.tallaCm) : '';
+  const edadAgregada = toma && toma.ageYears === null ? declarado(evaluacion?.edadAnios) : '';
+  const sexo = evaluacion?.sexo ?? '';
+  const usados: DatoDeLaEvaluacionUsado[] = [
+    ...(peso ? (['peso'] as const) : []),
+    ...(talla || tallaAgregada ? (['talla'] as const) : []),
+    ...(edad || edadAgregada ? (['edad'] as const) : []),
+    ...(sexo ? (['sexo'] as const) : []),
+  ];
+  const dia = evaluacion ? diaEnLaZona(evaluacion.occurredAt) : null;
+  // «Fecha de los datos»: la de la evaluación, si de ella salen el peso, la talla o la edad (nunca posterior a hoy).
+  const fecha = dia && (peso || talla || edad) && dia <= hoy ? dia : hoy;
   return {
     fuente: toma ? 'toma' : 'a-mano',
     evaluationId: toma?.evaluationId ?? '',
     corridaId: masa?.calculationId ?? '',
-    tallaAgregada: '',
-    edadAgregada: '',
-    fecha: hoy,
-    peso: '',
-    talla: '',
-    edad: '',
+    tallaAgregada,
+    edadAgregada,
+    fecha,
+    peso,
+    talla,
+    edad,
     masaLibre: '',
-    sexo: '',
+    sexo,
     metodo: 'MIFFLIN_ST_JEOR',
     factor: '1,55',
     conFactorDeDescanso: false,
@@ -88,8 +128,20 @@ export function calculadorInicial(tomas: readonly TomaDeReferencia[], hoy: strin
     base: 'BODY_WEIGHT',
     proteinaPorKg: '',
     grasaPorKg: '',
+    deLaEvaluacion: dia && (usados.length > 0 || evaluacion?.nivelDeActividad) ? { dia, usados, actividad: evaluacion?.nivelDeActividad ?? null } : null,
   };
 }
+
+/** DL-189: lo que tomó de la evaluación, en una frase: «Arrancó con lo que registró la evaluación del 21/11: la talla y el sexo de la ecuación.» */
+export function loQueTomoDeLaEvaluacion(d: NonNullable<ValoresDelCalculador['deLaEvaluacion']>): string | null {
+  if (d.usados.length === 0) return null;
+  const nombres = d.usados.map((u) => ({ peso: 'el peso', talla: 'la talla', edad: 'la edad', sexo: 'el sexo de la ecuación' })[u]);
+  const lista = nombres.length <= 1 ? nombres.join('') : `${nombres.slice(0, -1).join(', ')} y ${nombres.at(-1)}`;
+  return `Arrancó con lo que registró la evaluación del ${diaYMes(d.dia)}: ${lista}. Revisalo antes de usarlo.`;
+}
+
+/** DL-189: el nivel de actividad de la evaluación, junto al factor: BE no elige el factor por él. */
+export const actividadDeLaEvaluacion = (d: NonNullable<ValoresDelCalculador['deLaEvaluacion']>): string | null => (d.actividad ? `Nivel de actividad en la evaluación del ${diaYMes(d.dia)}: ${d.actividad}.` : null);
 
 /** Un número escrito, o `null` si está vacío o no se entiende (nunca cero ni NaN). */
 const num = (s: string): number | null => leerNumero(s);

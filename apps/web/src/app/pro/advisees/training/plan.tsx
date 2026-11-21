@@ -345,8 +345,7 @@ export function VistaDePlan() {
                         key={borrador.planId}
                         planId={borrador.planId}
                         numero={numeroDelBorrador(historial)}
-                        // ENP-D12: «Todavía no hay un plan activo», compacto, en la cabecera de la versión.
-                        sinPlanActivo={!activa}
+                        // RP-02 (DL-189; EI-D13): sin «Todavía no hay un plan activo» en la cabecera: «Versión 1 en preparación» ya lo dice.
                         objetivoVigente={objetivo}
                         vigente={activa && activa.activatedAt ? { numero: numeroDeLaActiva ?? 1, desde: activa.activatedAt, plan: activa } : null}
                         // ED-07: el mismo texto en las dos áreas, con el número y el nombre, y «Ver lo que recibe».

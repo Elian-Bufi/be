@@ -250,14 +250,15 @@ test('TEST-PG-013 · ningún campo de fecha nativo en el website del profesional
   assert.deepEqual(nativos, [], 'cada campo de fecha es CampoDeFecha');
   // PG-T40 (a ratificar; revisión de la tanda A): los cinco campos de fecha Y HORA siguen nativos hasta que CampoDeFecha
   // tenga la hora en 24 h. La lista es cerrada: uno nuevo, o uno en otro archivo, pone la prueba en rojo.
+  // RP-11 (DL-189): la fecha de la evaluación de Nutrición y de Entrenamiento es una sola pieza, «Hoy, 12:12 · cambiar»
+  // (`evaluacion/evaluacion-inicial.tsx`): quedan cuatro, con los dos «Vigente desde» del objetivo.
   const conHora = pro.flatMap((r) => [...readFileSync(r, 'utf8').matchAll(/type=["']datetime-local["']|type=\{["']datetime-local["']\}/g)].map(() => nombre(r)));
   assert.deepEqual(conHora.sort(), [
     'src/app/pro/advisees/anthropometry/preparacion.tsx',
-    'src/app/pro/advisees/nutrition/formularios.tsx',
+    'src/app/pro/advisees/evaluacion/evaluacion-inicial.tsx',
     'src/app/pro/advisees/nutrition/formularios.tsx',
     'src/app/pro/advisees/training/resumen.tsx',
-    'src/app/pro/advisees/training/resumen.tsx',
-  ], 'los campos de fecha y hora nativos que quedan son los cinco declarados en PG-T40');
+  ], 'los campos de fecha y hora nativos que quedan son los cuatro declarados en PG-T40 y RP-11');
   const usos = pro.flatMap((r) => [...readFileSync(r, 'utf8').matchAll(/<CampoDeFecha\b/g)].map(() => nombre(r)));
   assert.ok(usos.length >= 14, `se esperaban los catorce campos y hay ${usos.length}`);
   for (const r of ['src/app/pro/advisees/control-de-periodo.tsx', 'src/app/pro/advisees/cuando-la-revisas.tsx', 'src/app/pro/advisees/fuerza/serie-observada.tsx', 'src/app/pro/advisees/periodo.tsx', 'src/app/pro/advisees/seguimiento/analizar.tsx', 'src/app/pro/advisees/training/agenda-del-plan.tsx']) {

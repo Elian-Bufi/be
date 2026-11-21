@@ -210,3 +210,5 @@ export * from './desde-el-inicio';
 // WP-OBJETIVO-Y-CALCULADOR (DL-186): el objetivo con una toma de referencia y el calculador de macros del profesional.
 export * from './contratos-objetivo-y-calculador';
 export * from './calculador-de-macros';
+// WP-EVALUACION-INICIAL-2 (DL-189): la evaluación inicial como pantallazo del caso (los críticos, lo que necesita el cálculo).
+export * from './evaluacion-inicial';
