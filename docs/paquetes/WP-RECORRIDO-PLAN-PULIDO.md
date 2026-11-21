@@ -95,3 +95,21 @@ límites nuevos valen para lo que escribe el website (RP-D07).
 - Probar con un lector de pantalla el chip, «Hay datos nuevos · Ver», los «?» y el reparto.
 - `COPY_VINCULO.accesoNoSeLeyo` y `COPY_PISTAS.ficha.actualizar` quedaron sin uso en el website (siguen en el dominio).
 - «Te toca a vos» sigue con «Actualizar» y «Consultado a las» (RP-D06).
+
+## 6. Revisión adversaria del PR (21/11)
+
+Lo que se corrigió en la rama, con su prueba:
+
+- **La CI:** «Hacer una antropometría» era un `<a>` suelto (lo rechaza `scripts/enlaces-del-website.test.cjs`); pasa a ser
+  un `Enlace` con `target="_blank"`, como «Ir a Mis alimentos».
+- **El «%» del reparto (RP-06):** la base es lo que suman los gramos del día (4, 4 y 9), de donde salen las kcal de cada
+  comida. Con un objetivo cuyos gramos no suman sus kcal, «46 % de las 2.100 kcal» quedaba al lado de 823 a 1.005 kcal
+  (el 46 % de 1.985). Matiza RP-D12: la parte sigue siendo del objetivo del día; su base en kcal es la de la cuenta.
+- **Un día tipo sin comidas** ya no dice «se propone solo el rango del día» (no se proponía nada): pide agregarlas y
+  guardar. El cuadro anterior sí proponía ese rango; si hace falta, es un agregado.
+- **En el paso de los rangos del asistente,** cada «Reparto por comida» dice de qué día tipo es.
+- **Renombrar una comida** ya no borra las partes escritas del reparto.
+- **El chip del acceso (RP-01, RP-D01):** «Vínculo activo» solo se leía como acceso vigente; ahora dice «· acceso
+  pendiente» o «· acceso no disponible». Con pista, el chip recibe el foco: la pista llega con el teclado.
+- **Los recorridos:** la pista al tacto volvía a mirarse después de navegar a otra página (pasaba sin probar nada); y
+  `clic` repite si el «Reparto por comida», que llega tarde arriba de las comidas, corre el elemento fuera de la ventana.
