@@ -5,7 +5,7 @@
  *  1. el lugar guarda identificadores, nunca nombres, y solo valores conocidos; viejo, roto o del futuro no se retoma;
  *  2. al volver, el foco va a lo que se abrió o, si ya no está, a lo que seguía;
  *  3. cada ficha de «Tu semana», cada verbo de «Te toca a vos» y cada salida del cajón guardan el lugar y llevan
- *     `origen=espacio`, y el marco del área ofrece «Volver al Espacio profesional, donde estabas»;
+ *     `origen=espacio`, y el marco del área ofrece la vuelta al «Espacio profesional» (RP-01, DL-188);
  *  4. el lugar se lee antes que la cartera: el período del último registro no hace leerla dos veces.
  *
  * Uso: npm run test -w @be/web (después de construir @be/domain).
@@ -78,7 +78,7 @@ test('TEST-TAG-035 · cada ficha, cada verbo y cada salida del cajón guardan el
   // El marco del área ofrece volver al Espacio: /pro, sin parámetros.
   const marco = leer('advisees/marco-del-area.tsx');
   assert.match(marco, /useSearchParams\(\)\.get\('origen'\) === 'espacio'/);
-  assert.match(marco, /\{ href: '\/pro', texto: COPY_LUGAR\.volver \}/);
+  assert.match(marco, /\{ href: '\/pro', texto: COPY_LUGAR\.volver, antes: 'Volver al ' \}/);
   assert.doesNotMatch(espacio, /router\.(push|replace)\(['`]\/pro\?/);
 });
 

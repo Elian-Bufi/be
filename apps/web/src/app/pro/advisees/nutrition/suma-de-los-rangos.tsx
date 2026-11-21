@@ -13,9 +13,11 @@
 import { MACROS_DEL_RANGO, type MacroDelRango, type Rango, type VersionDeObjetivo } from '@be/domain';
 import { useId, type CSSProperties } from 'react';
 import { EnPartes } from '../../../../components/en-partes';
+import { ExplicacionAPedido } from '../../../../components/explicacion-a-pedido';
 import { Icono } from '../../../../components/icono';
 import { COPY_PLANIFICACION as C, kcalDeLosGramos, objetivoDelDia, porcentajeDeLasKcal, porcentajeEnUnaParte, sinLasKcalDeLosGramos, sumaDeLosRangos, sumaFrenteAlObjetivo, type GramosDelObjetivo } from './planificacion';
-import { COPY_RANGOS_INDICADOS, NOMBRE_DEL_MACRO, rangoEnPalabras, rangoEnUnaLinea } from './rangos-indicados';
+import { COPY_RANGOS_INDICADOS, NOMBRE_DEL_MACRO, rangoEnPalabras } from './rangos-indicados';
+import { RangoIndicadoConIconos, RotuloConIcono } from './cantidad-del-macro';
 
 /** NUP-06: la tabla de la suma. `comidas`: cada comida del día tipo con su rango indicado (o `null`). */
 export function SumaDeLosRangosIndicados({ comidas, objetivo }: { comidas: readonly { readonly nombre: string; readonly rango: Rango | null }[]; objetivo: VersionDeObjetivo | null }) {
@@ -59,7 +61,9 @@ export function SumaDeLosRangosIndicados({ comidas, objetivo }: { comidas: reado
               <tbody>
                 {filas.map((f) => (
                   <tr key={f.clave} data-fila-de-la-suma={f.clave}>
-                    <th scope="row">{f.nombre}</th>
+                    <th scope="row">
+                      <RotuloConIcono macro={f.clave} texto={f.nombre} />
+                    </th>
                     <td className="suma-de-los-rangos__cifra">{f.suma}</td>
                     {/* La franja: la suma como una banda y el objetivo como una marca, en la misma escala. Sin color de juicio:
                         el texto de al lado es el que dice dónde queda. */}
@@ -114,32 +118,33 @@ export function KcalDelObjetivo({ kcal, gramos, enProporcion = [], compacto = fa
     const p = porcentajeDeLasKcal(m, gramos[m], kcal);
     return p ? [[m, p] as const] : [];
   });
-  // El objetivo vigente, arriba de las comidas: dos renglones, para que las comidas sigan a la vista.
+  // El objetivo vigente, arriba de las comidas. RP-08 (DL-188): la cuenta de los gramos y la parte de cada macro, detrás
+  // de un «?» junto al objetivo del día: las comidas quedan a la vista. Si no coinciden, el aviso corto sigue a la vista.
   if (compacto) {
     const partes = MACROS_DEL_RANGO.flatMap((m) => {
       const p = porcentajeEnUnaParte(m, gramos[m], kcal);
       return p ? [p] : [];
     });
+    const noCoinciden = !!k.frente && kcal !== null && !k.frente.coinciden;
     return (
       <div className="kcal-del-objetivo kcal-del-objetivo--compacto" data-kcal-del-objetivo>
-        {k.frente && kcal !== null && !k.frente.coinciden ? (
+        {noCoinciden && kcal !== null ? (
           <p className="kcal-del-objetivo__aviso" data-no-coinciden>
             <Icono nombre="aviso" tamano={18} />
-            <span>
-              {C.kcalEnUnRenglon(k)}. {C.noCoinciden(k, kcal)}
-            </span>
-          </p>
-        ) : (
-          <p className="nota">
-            {C.kcalEnUnRenglon(k)}
-            {k.frente && kcal !== null ? ` · ${C.coinciden(kcal)}` : '.'}
-          </p>
-        )}
-        {partes.length > 0 ? (
-          <p className="nota" data-porcentajes-del-objetivo>
-            <EnPartes texto={partes.join(' · ')} />
+            <span>{C.noCoincidenCorto(k, kcal)}</span>
           </p>
         ) : null}
+        <ExplicacionAPedido nombre={C.cuentaDeLosGramos} como="div">
+          <p className="kcal-del-objetivo__renglon">
+            {C.kcalEnUnRenglon(k)}
+            {k.frente && kcal !== null ? (k.frente.coinciden ? ` · ${C.coinciden(kcal)}` : `. ${C.noCoinciden(k, kcal)}`) : '.'}
+          </p>
+          {partes.length > 0 ? (
+            <p className="kcal-del-objetivo__renglon" data-porcentajes-del-objetivo>
+              <EnPartes texto={partes.join(' · ')} />
+            </p>
+          ) : null}
+        </ExplicacionAPedido>
       </div>
     );
   }
@@ -189,7 +194,7 @@ export function RangoEnUnRenglon({ de, rango, soloElBoton = false }: { de: strin
       {soloElBoton && rango.indicado ? null : rango.indicado ? (
         <>
           <span aria-hidden="true">
-            {C.rangoDeLaComida(de)}: {rangoEnUnaLinea(rango.indicado)}
+            {C.rangoDeLaComida(de)}: <RangoIndicadoConIconos rango={rango.indicado} />
           </span>
           <span className="visualmente-oculto">
             {C.rangoDeLaComida(de)}: {rangoEnPalabras(rango.indicado)}

@@ -170,7 +170,7 @@ test('TEST-EDP-003 · cada enlace interno pasa por la guardia: la barra, las pes
   assert.match(leer('components/navegacion.tsx'), /<Enlace href=\{e\.href\} /);
   // Las pestañas de un área reemplazan la entrada del historial, también después de guardar.
   assert.match(leer('components/pestanas.tsx'), /<Enlace href=\{href\(v\.clave\)\} [^>]*replace>/);
-  assert.match(leer('app/pro/advisees/marco-del-area.tsx'), /<Enlace href=\{camino\.href\}>/);
+  assert.match(leer('app/pro/advisees/marco-del-area.tsx'), /<Enlace className="boton boton--fantasma boton--compacto marco-del-area__volver" href=\{camino\.href\}>/);
   // Los del encabezado, de a uno: la marca, la campana y el menú de la cuenta.
   assert.match(leer('components/encabezado.tsx'), /<Enlace href="\/" className="encabezado__marca"/);
   assert.match(leer('components/campana-de-novedades.tsx'), /<Enlace href=\{destino\} className="campana-de-novedades"/);

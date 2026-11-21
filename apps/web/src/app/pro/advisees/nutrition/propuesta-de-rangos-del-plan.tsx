@@ -1,274 +1,340 @@
 'use client';
 
 /**
- * WP-OBJETIVO-Y-CALCULADOR (OBC-07; DL-186) · «Proponer rangos desde el cálculo del objetivo», en el editor del plan. La
- * lógica y los textos están en `propuesta-de-rangos.ts`.
+ * WP-OBJETIVO-Y-CALCULADOR (OBC-07; DL-186) y RP-06 (WP-RECORRIDO-PLAN-PULIDO, DL-188) · «Reparto por comida», a la vista
+ * en cada día tipo del editor del plan. La lógica y los textos están en `propuesta-de-rangos.ts`.
  *
- * - Lee el cálculo guardado con el objetivo vigente (API-OBC-03); si no tiene macros, usa los gramos del objetivo.
- * - Por día tipo: qué día usa (el de entrenamiento o el de descanso, si el cálculo tiene los dos) y el reparto por comida
- *   que elige el profesional, con «Repartir parejo» y «Sugerido por el nombre de cada comida».
- * - Muestra lo que se propone y lo que se reemplaza; guarda con API-PLN-03, como un rango escrito a mano. Nunca pisa un
- *   rango escrito sin la casilla de reemplazar.
+ * - Lo que se reparte es lo que rige: los gramos por día del objetivo vigente o, si no los tiene, el cálculo guardado con
+ *   él (API-OBC-03); con el día de descanso del cálculo, si corresponde, para elegir cuál usa este día tipo.
+ * - Una tabla con cada comida del día tipo y su parte del día, que suma 100; al lado, el rango que se propone de kcal, P,
+ *   C y G de cada comida (con su margen), y el del día. Por omisión, la misma parte para las kcal y los tres macros; a
+ *   pedido, cada macro por separado (el reparto de antes). «Repartir parejo» y «Sugerido por el nombre de cada comida».
+ * - Guarda con API-PLN-03, como un rango escrito a mano. Igual que antes: solo llena los rangos vacíos, y reemplazar lo ya
+ *   escrito es una casilla aparte con la lista de lo que se reemplaza.
+ * - Antes era un cuadro detrás de «Proponer rangos desde el cálculo del objetivo», para todos los días a la vez: el mismo
+ *   cálculo, ahora visible y día por día, sin duplicarlo.
  */
 import { MACROS_DE_LA_PROPUESTA, numero, type RangosDelPlan, type ReferenciaYCalculo, type VersionDeObjetivo } from '@be/domain';
-import { useEffect, useId, useMemo, useRef, useState } from 'react';
-import { CuadroEnfocado } from '../../../../components/cuadro-enfocado';
+import { useEffect, useId, useMemo, useState } from 'react';
+import { ExplicacionAPedido } from '../../../../components/explicacion-a-pedido';
 import { Aviso } from '../../../../components/formulario';
+import { Icono } from '../../../../components/icono';
 import { api } from '../../../../lib/api';
 import { mensajeDeFallo } from '../../../../lib/intento';
+import { CantidadDelMacro, RotuloConIcono } from './cantidad-del-macro';
 import {
+  conParteUnica,
   COPY_PROPUESTA as C,
   cuerpoConLaPropuesta,
   fuenteDeLaPropuesta,
-  limitesEnPalabras,
+  kcalDeLosGramosDelDia,
+  kcalDelRango,
   NOMBRE_DEL_MACRO_DE_LA_PROPUESTA,
+  parteUnica,
   propuestaDelDia,
   repartoInicial,
+  repartoInicialUnico,
+  sumaDeLasPartes,
   type DiaDeLaPropuesta,
-  type DiaPropuesto,
   type RepartoEscrito,
 } from './propuesta-de-rangos';
 import type { RangosIndicadosHook } from './rangos-indicados-del-plan';
 
-/** El botón que abre la propuesta. Aparece con la versión en preparación y los rangos ya leídos. */
-export function PropuestaDeRangos({ token, planId, objetivo, dias, rangos }: { token: string; planId: string; objetivo: VersionDeObjetivo | null; dias: readonly DiaDeLaPropuesta[]; rangos: RangosIndicadosHook }) {
-  const [abierta, setAbierta] = useState(false);
-  if (rangos.estado.estado !== 'listo' || rangos.estado.datos.state === 'ACTIVATED' || !objetivo || dias.length === 0) return null;
-  return (
-    <>
-      <button type="button" className="boton boton--secundario boton--compacto" data-proponer-rangos onClick={() => setAbierta(true)}>
-        {C.abrir}
-      </button>
-      {abierta ? (
-        <CuadroDeLaPropuesta
-          token={token}
-          planId={planId}
-          objetivo={objetivo}
-          dias={dias}
-          datos={rangos.estado.datos}
-          onGuardado={(nuevos, texto) => {
-            rangos.setDatos(nuevos);
-            rangos.setAviso(texto);
-            setAbierta(false);
-          }}
-          onReleer={() => rangos.recargar()}
-          onCerrar={() => setAbierta(false)}
-        />
-      ) : null}
-    </>
-  );
-}
+type LecturaDelCalculo = { estado: 'leyendo' } | { estado: 'listo'; calculo: ReferenciaYCalculo | null } | { estado: 'falla' };
 
-function CuadroDeLaPropuesta({
-  token,
-  planId,
-  objetivo,
-  dias,
-  datos,
-  onGuardado,
-  onReleer,
-  onCerrar,
-}: {
-  token: string;
-  planId: string;
-  objetivo: VersionDeObjetivo;
-  dias: readonly DiaDeLaPropuesta[];
-  datos: RangosDelPlan;
-  onGuardado: (datos: RangosDelPlan, texto: string) => void;
-  onReleer: () => Promise<void>;
-  onCerrar: () => void;
-}) {
-  const id = useId();
-  const primero = useRef<HTMLInputElement>(null);
-  const [calculo, setCalculo] = useState<{ estado: 'leyendo' } | { estado: 'listo'; calculo: ReferenciaYCalculo | null } | { estado: 'falla' }>({ estado: 'leyendo' });
+/** API-OBC-03: el cálculo guardado con el objetivo vigente, una vez por objetivo. */
+function useCalculoDelObjetivo(token: string, versionId: string | null): LecturaDelCalculo {
+  const [lectura, setLectura] = useState<LecturaDelCalculo>({ estado: 'leyendo' });
   useEffect(() => {
+    if (!versionId) return;
     let vigente = true;
-    void api.referenciaDelObjetivo(token, objetivo.versionId).then((r) => {
-      if (vigente) setCalculo(r.ok ? { estado: 'listo', calculo: r.datos.data.calculation } : { estado: 'falla' });
+    setLectura({ estado: 'leyendo' });
+    void api.referenciaDelObjetivo(token, versionId).then((r) => {
+      if (vigente) setLectura(r.ok ? { estado: 'listo', calculo: r.datos.data.calculation } : { estado: 'falla' });
     });
     return () => {
       vigente = false;
     };
-  }, [token, objetivo.versionId]);
+  }, [token, versionId]);
+  return lectura;
+}
+
+const cifra = (x: { readonly min: number; readonly max: number }): string => (x.min === x.max ? numero(x.min, 0) : `${numero(x.min, 0)} a ${numero(x.max, 0)}`);
+
+/**
+ * El reparto por comida de un día tipo. `dia`: el día con sus comidas ya guardadas; `null` si el día todavía no se
+ * guardó. `comidasSinGuardar`: cuántas comidas del día todavía no tienen identidad (reciben su parte al guardar).
+ * `nombreDelDia`: donde se listan los repartos de todos los días tipo (el paso de los rangos del asistente), el título dice
+ * de qué día es; dentro de un día tipo, su pestaña ya lo dice.
+ */
+export function RepartoPorComida({
+  token,
+  planId,
+  objetivo,
+  dia,
+  comidasSinGuardar = 0,
+  nombreDelDia = null,
+  rangos,
+}: {
+  token: string;
+  planId: string;
+  objetivo: VersionDeObjetivo | null;
+  dia: DiaDeLaPropuesta | null;
+  comidasSinGuardar?: number;
+  nombreDelDia?: string | null;
+  rangos: RangosIndicadosHook;
+}) {
+  const id = useId();
+  const calculo = useCalculoDelObjetivo(token, objetivo?.versionId ?? null);
   const [tolerancia, setTolerancia] = useState('10');
-  const [repartos, setRepartos] = useState<Readonly<Record<string, RepartoEscrito>>>(() => Object.fromEntries(dias.map((d) => [d.dayTypeId, repartoInicial(d)])));
+  const [escrito, setEscrito] = useState<RepartoEscrito | null>(null);
+  const [porMacro, setPorMacro] = useState(false);
   const [reemplazar, setReemplazar] = useState(false);
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [cambiado, setCambiado] = useState(false);
+  // El reparto escrito es de este día tipo: con otras comidas, vuelve al punto de partida. Revisión del PR: la clave son
+  // las comidas, no sus nombres; con el nombre, cambiarle el nombre a una comida borraba las partes que se habían escrito.
+  const claveDelDia = dia ? `${dia.dayTypeId}|${dia.comidas.map((c) => c.mealId).join(',')}` : '';
+  useEffect(() => {
+    setEscrito(null);
+    setPorMacro(false);
+    setReemplazar(false);
+    setError(null);
+  }, [claveDelDia]);
 
   const fuente = calculo.estado === 'listo' ? fuenteDeLaPropuesta(objetivo, calculo.calculo) : null;
+  const r = escrito ?? (dia ? repartoInicialUnico(dia) : null);
   const t = Number(tolerancia.replace(',', '.'));
   const toleranciaValida = /^\d+([.,]\d+)?$/.test(tolerancia.trim()) && t >= 0 && t <= 50;
-  const propuestas = useMemo(() => (fuente && toleranciaValida ? dias.map((d) => ({ d, p: propuestaDelDia(d, repartos[d.dayTypeId] ?? repartoInicial(d), fuente, t) })) : []), [dias, repartos, fuente, toleranciaValida, t]);
-  const listos: DiaPropuesto[] = propuestas.flatMap(({ d, p }) => (p.ok ? [{ dayTypeId: d.dayTypeId, dia: p.dia, comidas: d.comidas.map((c, j) => ({ mealId: c.mealId, rango: p.comidas[j]! })) }] : []));
-  const nombre = (dayTypeId: string, mealId: string | null) => {
-    const d = dias.find((x) => x.dayTypeId === dayTypeId);
-    const lugar = mealId === null ? 'todo el día' : (d?.comidas.find((c) => c.mealId === mealId)?.nombre ?? 'una comida');
-    return dias.length > 1 ? `${lugar} (${d?.nombre ?? ''})` : lugar;
-  };
-  const vistaPrevia = cuerpoConLaPropuesta(datos, listos, nombre, reemplazar);
-  const conReemplazo = cuerpoConLaPropuesta(datos, listos, nombre, true);
-  const yaEscritos = conReemplazo.reemplazados.length;
-  const todosListos = propuestas.length > 0 && propuestas.every(({ p }) => p.ok);
-  const nadaQueGuardar = todosListos && vistaPrevia.nuevos + vistaPrevia.reemplazados.length === 0;
+  const p = useMemo(() => (dia && r && fuente && toleranciaValida ? propuestaDelDia(dia, r, fuente, t) : null), [dia, r, fuente, toleranciaValida, t]);
 
-  const cambiarReparto = (dayTypeId: string, cambio: RepartoEscrito) => {
-    setRepartos((r) => ({ ...r, [dayTypeId]: cambio }));
-    setCambiado(true);
+  if (rangos.estado.estado !== 'listo' || rangos.estado.datos.state === 'ACTIVATED' || !objetivo) return null;
+  const datos: RangosDelPlan = rangos.estado.datos;
+  const cambiar = (e: RepartoEscrito) => {
+    setEscrito(e);
+    setError(null);
   };
 
-  async function guardar() {
-    if (!todosListos || nadaQueGuardar) return;
+  // El «?» va al lado del título y no adentro: el título nombra la sección, y la explicación no se le suma al abrirla.
+  const encabezado = (
+    <div className="reparto-por-comida__titulo">
+      <h3 id={`${id}-titulo`}>
+        <Icono nombre="objetivo" tamano={18} />
+        {nombreDelDia ? C.tituloDelDia(nombreDelDia) : C.titulo}
+      </h3>
+      <ExplicacionAPedido nombre={C.queEsNombre}>{C.queEs}</ExplicacionAPedido>
+    </div>
+  );
+  if (!dia || dia.comidas.length === 0) {
+    return (
+      <section className="reparto-por-comida" aria-labelledby={`${id}-titulo`} data-reparto-por-comida>
+        {encabezado}
+        {/* Con comidas nuevas todavía sin guardar, lo que falta es guardar; sin ninguna, agregarlas. */}
+        <p className="nota" data-reparto-sin-comidas>{dia && comidasSinGuardar === 0 ? C.sinComidasGuardadas : C.sinDiaGuardado}</p>
+      </section>
+    );
+  }
+  if (!r) return null;
+  const gramos = fuente ? (r.variante === 'descanso' && fuente.descanso ? fuente.descanso : fuente.dia) : null;
+  const sumas = sumaDeLasPartes(dia, r);
+  // La base del «%»: lo que suman los gramos del día, de donde salen las kcal de cada comida.
+  const base = gramos ? kcalDeLosGramosDelDia(gramos) : 0;
+  const listo = p?.ok ? { dayTypeId: dia.dayTypeId, dia: p.dia, comidas: dia.comidas.map((c, j) => ({ mealId: c.mealId, rango: p.comidas[j]! })) } : null;
+  const nombre = (_: string, mealId: string | null) => (mealId === null ? 'todo el día' : (dia.comidas.find((c) => c.mealId === mealId)?.nombre ?? 'una comida'));
+  const vistaPrevia = listo ? cuerpoConLaPropuesta(datos, [listo], nombre, reemplazar) : null;
+  const conReemplazo = listo ? cuerpoConLaPropuesta(datos, [listo], nombre, true) : null;
+  const yaEscritos = conReemplazo?.reemplazados.length ?? 0;
+  const nuevos = vistaPrevia ? vistaPrevia.nuevos + vistaPrevia.reemplazados.length : 0;
+
+  async function proponer() {
+    if (!vistaPrevia || nuevos === 0) return;
     setEnviando(true);
     setError(null);
-    const r = await api.escribirRangosDelPlan(token, planId, vistaPrevia.cuerpo);
+    const respuesta = await api.escribirRangosDelPlan(token, planId, vistaPrevia.cuerpo);
     setEnviando(false);
-    if (r.ok) return onGuardado(r.datos.data, C.guardado(vistaPrevia.nuevos + vistaPrevia.reemplazados.length));
-    if (r.tipo === 'API' && (r.codigo === 'VERSION_CONFLICT' || r.issues.some((i) => i.code === 'RANGE_TARGET_NOT_IN_PLAN'))) {
-      await onReleer();
-      return setError('Los rangos o el plan cambiaron mientras mirabas la propuesta: se volvieron a leer. Cerrá y abrí la propuesta otra vez.');
+    if (respuesta.ok) {
+      rangos.setDatos(respuesta.datos.data);
+      rangos.setAviso(C.guardado(nuevos));
+      setReemplazar(false);
+      return;
     }
-    setError(mensajeDeFallo(r));
+    if (respuesta.tipo === 'API' && (respuesta.codigo === 'VERSION_CONFLICT' || respuesta.issues.some((i) => i.code === 'RANGE_TARGET_NOT_IN_PLAN'))) {
+      await rangos.recargar();
+      return setError('Los rangos o el plan cambiaron mientras repartías: se volvieron a leer. Revisá el reparto y proponé otra vez.');
+    }
+    setError(mensajeDeFallo(respuesta));
   }
 
+  const noSePuede = !fuente ? null : !toleranciaValida ? 'Revisá el margen: un número de 0 a 50.' : p && !p.ok ? 'Las partes no suman 100: ajustalas para proponer.' : nuevos === 0 ? C.nadaQueGuardar : null;
+
   return (
-    <CuadroEnfocado
-      abierto
-      forma="dialogo"
-      ancho
-      titulo={C.titulo}
-      focoInicial={primero}
-      ocupado={enviando}
-      conCambios={cambiado}
-      principal={{
-        texto: C.guardar,
-        alTocar: () => void guardar(),
-        apagado: !fuente ? C.sinFuente : !toleranciaValida ? 'Revisá el margen: un número de 0 a 50.' : !todosListos ? 'Hay un reparto que no suma 100: ajustalo para guardar.' : nadaQueGuardar ? C.nadaQueGuardar : null,
-        enviando,
-        textoEnviando: C.guardando,
-      }}
-      onCerrar={onCerrar}
-    >
-      <div className="propuesta-de-rangos" data-propuesta-de-rangos>
-        <p className="nota">{C.queEs}</p>
-        {error ? <Aviso tipo="error">{error}</Aviso> : null}
-        {calculo.estado === 'leyendo' ? <p className="nota" role="status">Leyendo el cálculo del objetivo…</p> : null}
-        {calculo.estado === 'falla' ? <Aviso tipo="error">No se pudo leer el cálculo del objetivo. Cerrá y probá de nuevo.</Aviso> : null}
-        {calculo.estado === 'listo' && !fuente ? <Aviso tipo="info">{C.sinFuente}</Aviso> : null}
-        {fuente ? (
-          <>
-            <p data-fuente-de-la-propuesta>
-              <strong>{fuente.texto}:</strong> {numero(fuente.dia.kcal, 0)} kcal · proteínas {numero(fuente.dia.protein, 0)} g · carbohidratos {numero(fuente.dia.carbohydrate, 0)} g · grasas {numero(fuente.dia.fat, 0)} g
-              {fuente.descanso ? ` (día de descanso: ${numero(fuente.descanso.kcal, 0)} kcal · carbohidratos ${numero(fuente.descanso.carbohydrate, 0)} g)` : ''}.
-            </p>
-            <div className="campo campo--corto">
-              <label htmlFor={`${id}-tolerancia`}>{C.tolerancia}</label>
-              <p id={`${id}-tolerancia-ayuda`} className="campo__ayuda">
-                {C.toleranciaAyuda(fuente.dia.protein, Math.max(0, Math.floor(fuente.dia.protein * 0.9 + 0.5)), Math.floor(fuente.dia.protein * 1.1 + 0.5))}
-              </p>
-              <input ref={primero} id={`${id}-tolerancia`} inputMode="decimal" size={4} aria-describedby={`${id}-tolerancia-ayuda`} aria-invalid={toleranciaValida ? undefined : true} value={tolerancia} onChange={(e) => (setTolerancia(e.target.value), setCambiado(true))} />
-            </div>
-            {propuestas.map(({ d, p }) => {
-              const r = repartos[d.dayTypeId] ?? repartoInicial(d);
-              const gramos = r.variante === 'descanso' && fuente.descanso ? fuente.descanso : fuente.dia;
-              return (
-                <section key={d.dayTypeId} className="propuesta-de-rangos__dia" aria-label={d.nombre} data-propuesta-del-dia>
-                  {dias.length > 1 ? <h4>{d.nombre}</h4> : null}
-                  {fuente.descanso ? (
-                    <fieldset className="grupo grupo--anidado">
-                      <legend>{C.variante}</legend>
-                      <div className="opciones-en-linea">
-                        <label className="opcion-en-linea">
-                          <input type="radio" name={`${id}-${d.dayTypeId}-variante`} checked={r.variante === 'dia'} onChange={() => cambiarReparto(d.dayTypeId, { ...r, variante: 'dia' })} /> Día de entrenamiento ({numero(fuente.dia.kcal, 0)} kcal)
-                        </label>
-                        <label className="opcion-en-linea">
-                          <input type="radio" name={`${id}-${d.dayTypeId}-variante`} checked={r.variante === 'descanso'} onChange={() => cambiarReparto(d.dayTypeId, { ...r, variante: 'descanso' })} /> Día de descanso ({numero(fuente.descanso.kcal, 0)} kcal)
-                        </label>
-                      </div>
-                    </fieldset>
-                  ) : null}
-                  {d.comidas.length === 0 ? <p className="nota">{C.sinComidasGuardadas}</p> : null}
-                  {d.comidas.length > 0 ? (
-                    <>
-                      <div className="acciones acciones--en-linea">
-                        <button type="button" className="boton boton--enlace" onClick={() => cambiarReparto(d.dayTypeId, repartoInicial(d, 'parejo', r.variante))}>
-                          {C.parejo}
-                        </button>
-                        <button type="button" className="boton boton--enlace" onClick={() => cambiarReparto(d.dayTypeId, repartoInicial(d, 'sugerido', r.variante))}>
-                          {C.sugerido}
-                        </button>
-                      </div>
-                      <p className="nota">{C.sugeridoAyuda}</p>
-                    </>
-                  ) : null}
-                  <div className="desplazable-x">
-                    <table className="tabla propuesta-de-rangos__tabla" data-reparto-por-comida>
-                      <caption className="visualmente-oculto">Reparto y rangos propuestos de {d.nombre}</caption>
-                      <thead>
-                        <tr>
-                          <th scope="col">Dónde</th>
-                          {MACROS_DE_LA_PROPUESTA.map((m) => (
-                            <th key={m} scope="col">
-                              {NOMBRE_DEL_MACRO_DE_LA_PROPUESTA[m]}
-                            </th>
-                          ))}
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {d.comidas.map((comida, j) => (
-                          <tr key={comida.mealId}>
-                            <th scope="row">{comida.nombre}</th>
-                            {MACROS_DE_LA_PROPUESTA.map((m) => (
-                              <td key={m}>
-                                <span className="propuesta-de-rangos__parte">
-                                  <input
-                                    inputMode="decimal"
-                                    size={3}
-                                    aria-label={`${NOMBRE_DEL_MACRO_DE_LA_PROPUESTA[m]} de ${comida.nombre}, parte del día`}
-                                    value={r.comidas[comida.mealId]?.[m] ?? ''}
-                                    onChange={(e) => cambiarReparto(d.dayTypeId, { ...r, comidas: { ...r.comidas, [comida.mealId]: { ...(r.comidas[comida.mealId] ?? { protein: '', carbohydrate: '', fat: '' }), [m]: e.target.value } } })}
-                                  />
-                                  <span className="nota">{`% de los ${numero(gramos[m], 0)} g`}</span>
-                                </span>
-                                {p.ok ? <span className="propuesta-de-rangos__rango" data-rango-propuesto>{limitesEnPalabras(p.comidas[j]![m])}</span> : null}
-                              </td>
-                            ))}
-                          </tr>
-                        ))}
-                        <tr className="panel-de-nutricion__fila-del-dia">
-                          <th scope="row">Todo el día</th>
-                          {MACROS_DE_LA_PROPUESTA.map((m) => (
-                            <td key={m} data-rango-del-dia-propuesto>
-                              {p.ok ? limitesEnPalabras(p.dia[m]) : `${numero(gramos[m], 0)} g`}
-                            </td>
-                          ))}
-                        </tr>
-                      </tbody>
-                    </table>
-                  </div>
-                  {!p.ok
-                    ? p.sumas.map((s) => (
-                        <p key={s.macro} className="campo__error" role="status">
-                          {C.noSuma(NOMBRE_DEL_MACRO_DE_LA_PROPUESTA[s.macro], s.suma)}
-                        </p>
-                      ))
-                    : null}
-                </section>
-              );
-            })}
-            {yaEscritos > 0 ? (
-              <fieldset className="grupo grupo--anidado" data-reemplazar-rangos>
-                <legend>Lo que ya escribiste</legend>
-                <label className="opcion-en-linea">
-                  <input type="checkbox" checked={reemplazar} onChange={(e) => (setReemplazar(e.target.checked), setCambiado(true))} /> {yaEscritos === 1 ? C.reemplazarUno : C.reemplazar(yaEscritos)}
-                </label>
-                <p className="nota">{reemplazar ? C.seReemplazan(conReemplazo.reemplazados.join(', ')) : C.seConservan(vistaPrevia.conservados.join(', '))}</p>
+    <section className="reparto-por-comida" aria-labelledby={`${id}-titulo`} data-reparto-por-comida>
+      {encabezado}
+      {calculo.estado === 'leyendo' ? <p className="nota" role="status">Leyendo el objetivo…</p> : null}
+      {calculo.estado === 'falla' ? <p className="nota">No se pudo leer el cálculo del objetivo. Se vuelve a intentar al abrir de nuevo el editor.</p> : null}
+      {calculo.estado === 'listo' && !fuente ? <p className="nota">{C.sinFuente}</p> : null}
+      {fuente && gramos ? (
+        <>
+          <p className="nota" data-fuente-de-la-propuesta>
+            {fuente.texto}: <CantidadDelMacro macro="kcal" cifra={numero(gramos.kcal, 0)} /> · <CantidadDelMacro macro="protein" cifra={numero(gramos.protein, 0)} /> ·{' '}
+            <CantidadDelMacro macro="carbohydrate" cifra={numero(gramos.carbohydrate, 0)} /> · <CantidadDelMacro macro="fat" cifra={numero(gramos.fat, 0)} />
+          </p>
+          <div className="reparto-por-comida__controles">
+            {fuente.descanso ? (
+              <fieldset className="segmentos">
+                <legend>{C.variante}</legend>
+                <div className="segmentos__fila">
+                  <label className="segmento">
+                    <input type="radio" name={`${id}-variante`} checked={r.variante === 'dia'} onChange={() => cambiar({ ...r, variante: 'dia' })} /> Día de entrenamiento ({numero(fuente.dia.kcal, 0)} kcal)
+                  </label>
+                  <label className="segmento">
+                    <input type="radio" name={`${id}-variante`} checked={r.variante === 'descanso'} onChange={() => cambiar({ ...r, variante: 'descanso' })} /> Día de descanso ({numero(fuente.descanso.kcal, 0)} kcal)
+                  </label>
+                </div>
               </fieldset>
             ) : null}
-          </>
-        ) : null}
-      </div>
-    </CuadroEnfocado>
+            <button type="button" className="boton boton--quieto boton--compacto" onClick={() => cambiar(porMacro ? repartoInicial(dia, 'parejo', r.variante) : repartoInicialUnico(dia, 'parejo', r.variante))}>
+              {C.parejo}
+            </button>
+            <button type="button" className="boton boton--quieto boton--compacto" onClick={() => cambiar(porMacro ? repartoInicial(dia, 'sugerido', r.variante) : repartoInicialUnico(dia, 'sugerido', r.variante))}>
+              {C.sugerido}
+            </button>
+            <ExplicacionAPedido nombre={C.sugerido}>{C.sugeridoAyuda}</ExplicacionAPedido>
+            <span className="reparto-por-comida__margen">
+              <label htmlFor={`${id}-tolerancia`}>{C.tolerancia}</label>
+              <input id={`${id}-tolerancia`} inputMode="decimal" size={3} aria-invalid={toleranciaValida ? undefined : true} value={tolerancia} onChange={(e) => (setTolerancia(e.target.value), setError(null))} />
+            </span>
+            <label className="opcion-en-linea">
+              <input
+                type="checkbox"
+                checked={porMacro}
+                onChange={(e) => {
+                  setPorMacro(e.target.checked);
+                  // Al volver a una parte por comida, cada comida toma la de sus proteínas si los macros diferían.
+                  if (!e.target.checked) cambiar(dia.comidas.reduce((x, c) => conParteUnica(x, c.mealId, parteUnica(x, c.mealId) ?? x.comidas[c.mealId]?.protein ?? ''), r));
+                }}
+              />{' '}
+              {C.porMacro}
+            </label>
+          </div>
+          <div className="desplazable-x">
+            <table className="tabla reparto-por-comida__tabla" data-tabla-del-reparto>
+              <caption className="visualmente-oculto">
+                {C.titulo}: {dia.nombre}
+              </caption>
+              <thead>
+                <tr>
+                  <th scope="col">Comida</th>
+                  {porMacro ? null : <th scope="col">{C.parte}</th>}
+                  <th scope="col">
+                    <RotuloConIcono macro="kcal" texto="kcal" />
+                  </th>
+                  {MACROS_DE_LA_PROPUESTA.map((m) => (
+                    <th key={m} scope="col">
+                      <RotuloConIcono macro={m} texto={NOMBRE_DEL_MACRO_DE_LA_PROPUESTA[m]} />
+                    </th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {dia.comidas.map((comida, j) => {
+                  const rango = p?.ok ? p.comidas[j]! : null;
+                  const unica = parteUnica(r, comida.mealId);
+                  return (
+                    <tr key={comida.mealId}>
+                      <th scope="row">{comida.nombre}</th>
+                      {porMacro ? null : (
+                        <td>
+                          <span className="reparto-por-comida__parte">
+                            <input
+                              type="number"
+                              min={0}
+                              max={100}
+                              step={1}
+                              inputMode="numeric"
+                              aria-label={C.parteDe(comida.nombre)}
+                              value={unica ?? ''}
+                              onChange={(e) => cambiar(conParteUnica(r, comida.mealId, e.target.value))}
+                              data-parte-de-la-comida
+                            />
+                            <span className="nota">{C.deLasKcal(base)}</span>
+                          </span>
+                        </td>
+                      )}
+                      <td data-kcal-propuestas>{rango ? <CantidadDelMacro macro="kcal" cifra={cifra(kcalDelRango(rango))} /> : '—'}</td>
+                      {MACROS_DE_LA_PROPUESTA.map((m) => (
+                        <td key={m}>
+                          {porMacro ? (
+                            <span className="reparto-por-comida__parte">
+                              <input
+                                inputMode="decimal"
+                                size={3}
+                                aria-label={`${NOMBRE_DEL_MACRO_DE_LA_PROPUESTA[m]} de ${comida.nombre}, parte del día`}
+                                value={r.comidas[comida.mealId]?.[m] ?? ''}
+                                onChange={(e) => cambiar({ ...r, comidas: { ...r.comidas, [comida.mealId]: { ...(r.comidas[comida.mealId] ?? { protein: '', carbohydrate: '', fat: '' }), [m]: e.target.value } } })}
+                              />
+                              <span className="nota">{`% de los ${numero(gramos[m], 0)} g`}</span>
+                            </span>
+                          ) : null}
+                          {rango ? (
+                            <span className="reparto-por-comida__rango" data-rango-propuesto>
+                              <CantidadDelMacro macro={m} cifra={cifra(rango[m])} />
+                            </span>
+                          ) : porMacro ? null : (
+                            '—'
+                          )}
+                        </td>
+                      ))}
+                    </tr>
+                  );
+                })}
+                <tr className="reparto-por-comida__fila-del-dia">
+                  <th scope="row">Todo el día</th>
+                  {porMacro ? null : <td data-suma-de-las-partes>{C.sumaDeLasPartes(sumas.protein, base)}</td>}
+                  <td>
+                    <CantidadDelMacro macro="kcal" cifra={p?.ok ? cifra(kcalDelRango(p.dia)) : numero(gramos.kcal, 0)} />
+                  </td>
+                  {MACROS_DE_LA_PROPUESTA.map((m) => (
+                    <td key={m} data-rango-del-dia-propuesto>
+                      <CantidadDelMacro macro={m} cifra={p?.ok ? cifra(p.dia[m]) : numero(gramos[m], 0)} />
+                    </td>
+                  ))}
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          {p && !p.ok ? (
+            porMacro ? (
+              p.sumas.map((s) => (
+                <p key={s.macro} className="campo__error" role="status">
+                  {C.noSuma(NOMBRE_DEL_MACRO_DE_LA_PROPUESTA[s.macro], s.suma)}
+                </p>
+              ))
+            ) : (
+              <p className="campo__error" role="status" data-no-suma-100>
+                {C.noSumaUnica(sumas.protein)}
+              </p>
+            )
+          ) : null}
+          {comidasSinGuardar > 0 ? <p className="nota">{C.sinGuardar}</p> : null}
+          {yaEscritos > 0 && conReemplazo && vistaPrevia ? (
+            <fieldset className="grupo grupo--anidado" data-reemplazar-rangos>
+              <legend>Lo que ya escribiste</legend>
+              <label className="opcion-en-linea">
+                <input type="checkbox" checked={reemplazar} onChange={(e) => setReemplazar(e.target.checked)} /> {yaEscritos === 1 ? C.reemplazarUno : C.reemplazar(yaEscritos)}
+              </label>
+              <p className="nota">{reemplazar ? C.seReemplazan(conReemplazo.reemplazados.join(', ')) : C.seConservan(vistaPrevia.conservados.join(', '))}</p>
+            </fieldset>
+          ) : null}
+          {error ? <Aviso tipo="error">{error}</Aviso> : null}
+          <div className="acciones reparto-por-comida__acciones">
+            <button type="button" className="boton boton--secundario" data-proponer-rangos disabled={enviando || noSePuede !== null} aria-busy={enviando} onClick={() => void proponer()}>
+              {enviando ? C.guardando : C.proponer}
+            </button>
+            {noSePuede ? <span className="nota">{noSePuede}</span> : null}
+          </div>
+        </>
+      ) : null}
+    </section>
   );
 }

@@ -5,7 +5,7 @@
  * en un área de la persona con otro profesional, antes del acompañamiento de quien lee, si la persona lo autorizó desde
  * su app. Solo lectura. Las decisiones están en `historia-anterior.ts`, con su prueba (TEST-HA-050 a 056).
  *
- * - **El marco es el de un área** (`MarcoDelArea`): la vuelta a la ficha, el acceso actual de esa área y «Actualizar».
+ * - **El marco es el de un área** (`MarcoDelArea`): la vuelta a la ficha, el acceso actual de esa área y, desde RP-01 (DL-188), el aviso de datos nuevos al volver a la pestaña.
  *   Las pestañas son las tres áreas.
  * - **Con la autorización:** el aviso fijo («Lo que sigue pasó con otro profesional, antes de tu acompañamiento. Solo
  *   lectura»), el tramo con sus vecinos y las secciones del área: las versiones de los planes con sus fechas, lo

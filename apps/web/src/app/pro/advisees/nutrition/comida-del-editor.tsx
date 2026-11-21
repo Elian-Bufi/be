@@ -64,9 +64,10 @@ import { conNumero, conUnidad, iconoDeLaFila, numeroDelCampo, opcionesDeUnidad, 
 import { COPY_DE_LOS_EDITORES as E } from '../editar-la-estructura';
 import { COPY_DE_OTRA_COMIDA, MAXIMO_DE_OPCIONES } from './opcion-de-otra-comida';
 import { COPY_VERSION_NUEVA } from './version-nueva-de-la-receta';
-import { aporteDelItem, aporteEnPalabras, aporteEnUnaLinea, comidaVacia, composicionEnLaPista, COPY_PLANIFICACION as CP, diaFrenteAlRango, loQueAportaLaComida, loQueAportaLaComidaEnPalabras, numerosDeLaOpcion, opcionFrenteAlRango, type LineaFrenteAlRango } from './planificacion';
-import { faltantesDeLaOpcion, queFaltaEnPalabras, totalEnPalabras, totalEnUnaLinea, type ComposicionConocida, type RangoPorNutriente, type TotalDeLaOpcion } from './rangos';
-import { rangoEnPalabras, rangoEnUnaLinea } from './rangos-indicados';
+import { aporteDelItem, aporteEnPalabras, aporteEnUnaLinea, cifrasDeLoQueAporta, comidaVacia, composicionEnLaPista, COPY_PLANIFICACION as CP, diaFrenteAlRango, loQueAportaLaComida, loQueAportaLaComidaEnPalabras, numerosDeLaOpcion, opcionFrenteAlRango, type LineaFrenteAlRango } from './planificacion';
+import { cifrasDelTotal, COPY_RANGOS, faltantesDeLaOpcion, queFaltaEnPalabras, totalEnPalabras, type ComposicionConocida, type RangoPorNutriente, type TotalDeLaOpcion } from './rangos';
+import { rangoEnPalabras } from './rangos-indicados';
+import { NutrientesConIconos, RangoIndicadoConIconos } from './cantidad-del-macro';
 import { RangoEnUnRenglon, type RangoParaIndicar } from './suma-de-los-rangos';
 import { NotasAlLado, useNotasPropias } from '../notas-propias';
 
@@ -223,8 +224,9 @@ export function ComidaDelEditor({
               {/* NUP-02: de la opción que menos aporta a la que más; las iniciales a la vista, los nombres para el lector. */}
               {aporta ? (
                 <span className="comida-del-editor__aporta" data-aporta-la-comida>
+                  {/* RP-07 (DL-188): cada cantidad con el ícono de su macro. */}
                   <span aria-hidden="true">
-                    <EnPartes texto={aporta} />
+                    <NutrientesConIconos cifras={cifrasDeLoQueAporta(rangoDeOpciones!, comida.options.length)!} sinDato={COPY_RANGOS.sinDato} />
                   </span>
                   <span className="visualmente-oculto">{aportaEnPalabras}</span>
                 </span>
@@ -232,7 +234,7 @@ export function ComidaDelEditor({
               {rango.indicado ? (
                 <span className="comida-del-editor__indicado" data-rango-indicado-de-la-comida>
                   <span aria-hidden="true">
-                    {CP.indicado}: {rangoEnUnaLinea(rango.indicado)}
+                    {CP.indicado}: <RangoIndicadoConIconos rango={rango.indicado} />
                   </span>
                   <span className="visualmente-oculto">Rango indicado: {rangoEnPalabras(rango.indicado)}</span>
                 </span>
@@ -433,7 +435,9 @@ export function ComidaDelEditor({
                                   <p>
                                     <strong>
                                       {/* Las iniciales a la vista; el lector de pantalla lee los nombres completos. */}
-                                      <span aria-hidden="true">{totalEnUnaLinea(total)}</span>
+                                      <span aria-hidden="true">
+                                        <NutrientesConIconos cifras={cifrasDelTotal(total)} sinDato={COPY_RANGOS.sinDato} />
+                                      </span>
                                       <span className="visualmente-oculto">{totalEnPalabras(total)}</span>
                                     </strong>{' '}
                                     <span className="nota">· {COPY_OPCIONES.estimacion}</span>

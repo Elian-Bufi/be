@@ -82,7 +82,7 @@ export function AyudaDelPlanDeEntrenamiento() {
           <strong>Varias series a la vez:</strong> marcá las series, elegí el campo y escribí el valor una vez. <strong>Ctrl+D</strong> (o Cmd+D) copia en la celda el valor de la serie de arriba.
         </Renglon>
         <Renglon muestra={<Icono nombre="actualizar" tamano={20} />}>
-          <strong>Lo que elegís queda en la dirección de la página</strong> (la versión, el bloque, la sesión y los ejercicios abiertos): «Actualizar» y volver atrás lo conservan.
+          <strong>Lo que elegís queda en la dirección de la página</strong> (la versión, el bloque, la sesión y los ejercicios abiertos): recargar la página y volver atrás lo conservan.
         </Renglon>
       </ul>
     </AyudaDeVista>

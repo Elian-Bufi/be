@@ -48,7 +48,7 @@ export function AyudaDelPlan() {
           <strong>Con una versión en preparación,</strong> arriba se elige cuál mirar. La persona no ve la que está en preparación, y guardar no la activa. Pasar a la activa no pierde lo que escribiste sin guardar.
         </Renglon>
         <Renglon muestra={<Icono nombre="actualizar" tamano={20} />}>
-          <strong>Lo que elegís queda en la dirección de la página</strong> (la versión, el día tipo y las comidas abiertas): «Actualizar» y volver atrás lo conservan.
+          <strong>Lo que elegís queda en la dirección de la página</strong> (la versión, el día tipo y las comidas abiertas): recargar la página y volver atrás lo conservan.
         </Renglon>
       </ul>
     </AyudaDeVista>

@@ -300,6 +300,11 @@ export function totalEnUnaLinea(t: TotalDeLaOpcion): string {
   }).join(' · ');
 }
 
+/** RP-07 (DL-188): las cifras del total de una opción, sin la unidad, para escribirlas con su ícono; `null`: «Sin dato». */
+export function cifrasDelTotal(t: TotalDeLaOpcion): Readonly<Record<NutrienteDelRango, string | null>> {
+  return Object.fromEntries(NUTRIENTES_DEL_RANGO.map((n) => [n, t[n].exacto === null ? null : numeroDe(t[n].exacto, n)])) as Record<NutrienteDelRango, string | null>;
+}
+
 /** ED-31: lo mismo, con los nombres completos: «Energía 107 kcal · Proteínas 1,3 g · …». Es lo que lee un lector de pantalla. */
 export function totalEnPalabras(t: TotalDeLaOpcion): string {
   return NUTRIENTES_DEL_RANGO.map((n) => {

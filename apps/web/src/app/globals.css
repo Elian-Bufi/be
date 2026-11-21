@@ -20771,6 +20771,338 @@ html:has(.estacion:not([data-en-el-asistente])) {
   margin-top: 0.5rem;
 }
 
+/* ─── RP-03 (WP-RECORRIDO-PLAN-PULIDO, DL-188): los errores en línea no desplazan los campos ─────── */
+/* Las filas de campos de /pro se alinean por arriba: el rótulo y el control de cada campo quedan a la altura de los de sus
+   vecinos, y el error va debajo del suyo sin mover a nadie. Alineadas por abajo, un error debajo de «Concepto» subía ese
+   campo y desalineaba «Concepto / Valor / Unidad». Con la regla global, `fila-de-dato--arriba` (NUP-10) ya no hace falta,
+   y queda por compatibilidad. */
+.fila-de-dato,
+.campos-del-ingrediente,
+.lo-general-del-editor__par,
+.medicion-libre {
+  align-items: start;
+}
+
+/* Un botón suelto en una fila de campos baja lo que ocupa un rótulo de una línea (el interlineado de 1,55 más la
+   separación del campo): queda a la altura de los controles, con un error debajo de un vecino o sin él. */
+.fila-de-dato > .boton,
+.fila-de-dato > .acciones {
+  margin-top: calc(1.55rem + 0.3rem);
+}
+
+/* ─── RP-05 y RP-07 (WP-RECORRIDO-PLAN-PULIDO, DL-188): el calculador, lo plegado y las cantidades con su ícono ─── */
+/* Lo largo a un toque: el botón chico al lado de su rótulo y, abierto, el texto debajo, en un renglón propio. */
+.a-pedido {
+  display: inline;
+}
+
+.a-pedido__boton {
+  min-height: 2rem;
+  min-width: 2rem;
+  margin-inline-start: 0.35rem;
+  padding: 0.1rem 0.55rem;
+  font-size: 0.85rem;
+  vertical-align: middle;
+}
+
+.a-pedido__texto:not([hidden]) {
+  display: block;
+  margin: 0.35rem 0 0.5rem;
+  padding: 0.5rem 0.75rem;
+  border-left: 3px solid var(--borde);
+  background: var(--fondo-suave);
+  color: var(--texto);
+  font-size: 0.9rem;
+  font-weight: 400;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+}
+
+.calculador__rotulo {
+  display: block;
+}
+
+.calculador__rotulo label {
+  font-weight: 600;
+}
+
+/* El desplegable del método va a todo el ancho: cada opción se lee entera («Harris-Benedict revisada…», no
+   «Harris-Benedi»). */
+.calculador__metodo-elegido select {
+  width: 100%;
+}
+
+.calculador__a-pedido {
+  margin: 0 0 0.25rem;
+}
+
+.calculador__hacer-una-toma {
+  margin: 0.35rem 0 0.25rem;
+}
+
+/* El factor del día y el del día de descanso, uno al lado del otro, cada uno con su título. */
+.calculador__factores {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(22rem, 100%), 1fr));
+  gap: 0 1rem;
+}
+
+.calculador__referencias {
+  flex: 2 1 16rem;
+}
+
+.calculador__ajuste {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin: 0.5rem 0;
+}
+
+.calculador .segmentos {
+  margin: 0.25rem 0 0.5rem;
+}
+
+.calculador__usar {
+  justify-content: flex-end;
+  margin-top: 0.5rem;
+}
+
+/* RP-07: el ícono del macro antes del número, y la cantidad nunca se parte. */
+.cantidad-del-macro {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.cantidad-del-macro .icono {
+  flex: none;
+  color: var(--tenue);
+}
+
+/* ─── RP-01 (WP-RECORRIDO-PLAN-PULIDO, DL-188): la cabecera de un área, en una sola franja ───────────────── */
+/* La vuelta, el área, la persona, el chip del acceso y, contra la derecha, el aviso de datos nuevos y el contexto. Si no
+   entra (una tablet de pie, un nombre largo), lo que sigue baja entero: nada se parte ni se corta. Debajo, las secciones. */
+.marco-del-area .marco-de-la-ficha__ancho {
+  display: flex;
+  flex-direction: column;
+  padding-top: 0;
+}
+
+@media (min-width: 87.5rem) {
+  .marco-del-area .marco-de-la-ficha__ancho {
+    display: flex;
+    padding-top: 0;
+  }
+}
+
+.marco-del-area__franja {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem 1rem;
+  min-height: 3.3125rem;
+  padding-block: 0.45rem 0.2rem;
+}
+
+.marco-del-area__franja h1 {
+  margin: 0;
+}
+
+.marco-del-area__franja > .retorno-a-la-ficha,
+.marco-del-area__franja > .marco-del-area__persona,
+.marco-del-area__acceso {
+  margin: 0;
+}
+
+.marco-del-area__acceso {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.marco-del-area__acciones {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem 0.75rem;
+  margin-inline-start: auto;
+}
+
+/* El botón fantasma: sin borde ni relleno hasta que se lo apunta; la flecha dice que vuelve. */
+.boton--fantasma {
+  background: transparent;
+  border-color: transparent;
+  color: var(--texto);
+  text-decoration: none;
+}
+
+.boton--fantasma:hover {
+  background: var(--fondo-suave);
+  border-color: var(--borde);
+}
+
+.marco-del-area__volver {
+  margin-inline-start: -0.6rem;
+  white-space: nowrap;
+}
+
+/* El acceso, en un chip que no se parte en ningún zoom. */
+.chip-del-acceso {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-height: 1.75rem;
+  padding: 0.1rem 0.7rem;
+  border: 1px solid var(--borde);
+  border-radius: 999px;
+  background: var(--fondo-suave);
+  color: var(--texto);
+  font-size: 0.9rem;
+  font-weight: 600;
+  line-height: 1.2;
+  white-space: nowrap;
+}
+
+.chip-del-acceso .icono {
+  flex: none;
+  color: var(--tenue);
+}
+
+.chip-del-acceso--falla {
+  font-weight: 500;
+}
+
+/* «Hay datos nuevos · Ver»: chico y discreto, al lado del contexto. */
+.aviso-de-datos-nuevos {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  color: var(--tenue);
+  font-size: 0.9rem;
+  white-space: nowrap;
+}
+
+.aviso-de-datos-nuevos .boton--enlace {
+  font-weight: 650;
+}
+
+/* ─── RP-08 (WP-RECORRIDO-PLAN-PULIDO, DL-188): la cuenta de los gramos, detrás de un «?» junto al objetivo del día ─── */
+/* Cerrado, el «?» va en el mismo renglón que la tira del objetivo; abierto, la cuenta ocupa su renglón. Si los gramos no
+   coinciden con las kcal, el aviso corto sigue a la vista, en un renglón propio. */
+.plan__objetivo .kcal-del-objetivo--compacto {
+  display: contents;
+}
+
+.plan__objetivo .kcal-del-objetivo--compacto > .a-pedido {
+  align-self: center;
+}
+
+.plan__objetivo .kcal-del-objetivo--compacto > .a-pedido:has(> .a-pedido__texto:not([hidden])) {
+  flex-basis: 100%;
+}
+
+.plan__objetivo .kcal-del-objetivo--compacto > .kcal-del-objetivo__aviso {
+  flex-basis: 100%;
+  order: 3;
+  margin: 0;
+}
+
+.kcal-del-objetivo__renglon {
+  margin: 0.1rem 0;
+}
+
+.cantidades-con-iconos {
+  display: inline;
+}
+
+/* ─── RP-06 (WP-RECORRIDO-PLAN-PULIDO, DL-188): el reparto por comida, a la vista en cada día tipo ─────────── */
+.reparto-por-comida {
+  margin: 0.75rem 0 1rem;
+  padding: 0.75rem 1rem 0.5rem;
+  border: 1px solid var(--borde);
+  border-radius: 12px;
+  background: var(--superficie);
+}
+
+.reparto-por-comida__titulo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+  margin: 0 0 0.35rem;
+}
+
+.reparto-por-comida__titulo h3 {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.reparto-por-comida__titulo .a-pedido__texto:not([hidden]) {
+  flex-basis: 100%;
+}
+
+.reparto-por-comida__controles {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  margin: 0.35rem 0 0.5rem;
+}
+
+.reparto-por-comida__margen {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.reparto-por-comida__margen input,
+.reparto-por-comida__parte input {
+  font: inherit;
+  min-height: 36px;
+  width: 4.5rem;
+  padding: 0.25rem 0.5rem;
+  border: 1px solid var(--borde-control);
+  border-radius: 8px;
+  background: var(--superficie);
+  color: var(--texto);
+}
+
+.reparto-por-comida__tabla {
+  font-variant-numeric: tabular-nums;
+}
+
+.reparto-por-comida__tabla td {
+  vertical-align: middle;
+}
+
+.reparto-por-comida__parte {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  white-space: nowrap;
+}
+
+.reparto-por-comida__rango {
+  display: block;
+}
+
+.reparto-por-comida__fila-del-dia th,
+.reparto-por-comida__fila-del-dia td {
+  border-top: 2px solid var(--borde);
+  font-weight: 600;
+}
+
+.reparto-por-comida__acciones {
+  align-items: center;
+  gap: 0.75rem;
+}
+
 /* ─── WP-EVALUACION-INICIAL-2 (DL-189) · la franja de los pasos y la evaluación inicial como pantallazo del caso ───
    Bloque propio: no cambia las reglas de las filas de campos ni las de otros frentes. */
 

@@ -517,10 +517,8 @@ export function CamposDeObjetivo({
         {/* ED-13: usar un reparto habitual escribe sus gramos; el que se escribió se puede guardar como habitual. */}
         <RepartosHabituales gramos={valores} onUsar={(g) => c(g)} />
       </fieldset>
-      <div className="campo">
-        <label htmlFor={`${prefijo}-distribucion`}>Distribución por comidas (opcional)</label>
-        <textarea id={`${prefijo}-distribucion`} rows={2} value={valores.distribucion} onChange={(e) => c({ distribucion: e.target.value })} maxLength={1000} />
-      </div>
+      {/* RP-05 (DL-188): la distribución por comida salió del objetivo: es prematura sin días tipo. Vive en el plan, en cada
+          día tipo, como «Reparto por comida» (RP-06). Lo que una versión vieja guardó en ese texto queda con ella. */}
       <div className={`campo${errorDeFundamento ? ' campo--error' : ''}`}>
         <label htmlFor={`${prefijo}-fundamento`}>Fundamento</label>
         <p id={`${prefijo}-fundamento-ayuda`} className="campo__ayuda">
