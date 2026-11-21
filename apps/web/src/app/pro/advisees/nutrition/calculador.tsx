@@ -30,6 +30,7 @@ import {
 } from '@be/domain';
 import { useEffect, useId, useState } from 'react';
 import { CampoDeFecha } from '../../../../components/campo-de-fecha';
+import { Enlace } from '../../../../components/enlace';
 import { ExplicacionAPedido } from '../../../../components/explicacion-a-pedido';
 import { Aviso, Campo } from '../../../../components/formulario';
 import { api } from '../../../../lib/api';
@@ -164,10 +165,12 @@ export function CalculadorDelObjetivo({
             escrito en el objetivo no se pierde. */}
         {tomas.habilitada ? (
           <p className="calculador__hacer-una-toma">
-            <a href={`/pro/advisees/anthropometry?id=${encodeURIComponent(asesoradoId)}&vista=preparacion`} target="_blank" rel="noopener" onClick={() => setFueAAntropometria(true)} data-hacer-una-antropometria>
+            {/* Un `Enlace` (el `Link` de Next), no un ancla suelta: con `target="_blank"` el navegador abre la otra pestaña, que
+                reanuda la sesión con su cookie (DL-147), y esta no se recarga (scripts/enlaces-del-website.test.cjs). */}
+            <Enlace href={`/pro/advisees/anthropometry?id=${encodeURIComponent(asesoradoId)}&vista=preparacion`} target="_blank" rel="noopener" onClick={() => setFueAAntropometria(true)} data-hacer-una-antropometria>
               {C.hacerUnaAntropometria}
               <span className="visualmente-oculto"> {C.seAbreEnOtraPestana}</span>
-            </a>
+            </Enlace>
             {fueAAntropometria ? (
               <>
                 {' · '}
