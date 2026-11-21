@@ -92,8 +92,9 @@ export function RepartoPorComida({
   const [reemplazar, setReemplazar] = useState(false);
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  // El reparto escrito es de este día tipo: con otras comidas, vuelve al punto de partida.
-  const claveDelDia = dia ? `${dia.dayTypeId}|${dia.comidas.map((c) => `${c.mealId}:${c.nombre}`).join(',')}` : '';
+  // El reparto escrito es de este día tipo: con otras comidas, vuelve al punto de partida. Revisión del PR: la clave son
+  // las comidas, no sus nombres; con el nombre, cambiarle el nombre a una comida borraba las partes que se habían escrito.
+  const claveDelDia = dia ? `${dia.dayTypeId}|${dia.comidas.map((c) => c.mealId).join(',')}` : '';
   useEffect(() => {
     setEscrito(null);
     setPorMacro(false);

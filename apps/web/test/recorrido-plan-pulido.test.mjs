@@ -185,6 +185,8 @@ test('RP-06 · el reparto por comida, en el plan: una parte por comida que suma 
   // Revisión del PR: un día tipo sin comidas no muestra el reparto, y el texto no promete una propuesta que no se hace.
   assert.doesNotMatch(P.COPY_PROPUESTA.sinComidasGuardadas, /se propone/);
   assert.match(delPlan, /dia && comidasSinGuardar === 0 \? C\.sinComidasGuardadas : C\.sinDiaGuardado/);
+  // Revisión del PR: lo escrito vuelve al punto de partida si cambian las comidas, no si cambia el nombre de una.
+  assert.match(delPlan, /const claveDelDia = dia \? `\$\{dia\.dayTypeId\}\|\$\{dia\.comidas\.map\(\(c\) => c\.mealId\)\.join\(','\)\}` : '';/);
   // Revisión del PR: en el paso de los rangos del asistente se ven los repartos de todos los días tipo, uno debajo del
   // otro; cada título dice de qué día es (con comidas que se llaman igual, eran cuadros idénticos con el mismo nombre).
   assert.equal(P.COPY_PROPUESTA.tituloDelDia('Día de descanso'), 'Reparto por comida · Día de descanso');
