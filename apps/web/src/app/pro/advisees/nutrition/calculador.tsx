@@ -543,12 +543,13 @@ export function CalculadorDelObjetivo({
                 error={err('grasaPorKg')}
               />
             </div>
-            {/* RP-19: la nota y las tablas de los macros, siempre que se pidan; sin cálculo, con «—» en cada celda. */}
+            {/* RP-19: la nota y las tablas de los macros, siempre que se pidan; sin cálculo, con «—» en cada celda (y en los
+                kilos de la nota, para que tenga el mismo largo y no cambie de renglones). */}
             <p className="nota">
               Por kilo de{' '}
               {valores.base === 'LEAN_MASS'
-                ? `masa libre de grasa${macrosDelCalculo ? ` (${numero(macrosDelCalculo.baseKg, 1)} kg)` : ''}`
-                : `peso${macrosDelCalculo ? ` (${numero(macrosDelCalculo.baseKg, 2)} kg)` : ''}`}
+                ? `masa libre de grasa (${macrosDelCalculo ? numero(macrosDelCalculo.baseKg, 1) : '—'} kg)`
+                : `peso (${macrosDelCalculo ? numero(macrosDelCalculo.baseKg, 2) : '—'} kg)`}
               ; los carbohidratos, por diferencia, con 4, 4 y 9 kcal por gramo.
             </p>
             <TablaDeMacros titulo={conDescanso ? C.diaDeEntrenamiento : C.elDia} m={macrosDelCalculo?.day ?? null} />
