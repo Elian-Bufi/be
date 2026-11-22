@@ -381,8 +381,6 @@ export const NOMBRE_DEL_MACRO_DE_LA_PROPUESTA: Readonly<Record<MacroDeLaPropuest
 export const COPY_PROPUESTA = {
   // RP-06 (DL-188): a la vista en cada día tipo, con este nombre.
   titulo: 'Reparto por comida',
-  /** Revisión del PR: donde se ven los repartos de todos los días tipo, cada título dice de cuál es. */
-  tituloDelDia: (dia: string) => `Reparto por comida · ${dia}`,
   queEs: 'Qué parte del objetivo del día lleva cada comida. Con eso, BE propone el rango de kcal y de cada macro de cada comida, para ubicar después cada receta u opción frente a él. Es una estimación: revisala y guardala.',
   queEsNombre: 'Qué es el reparto por comida',
   parte: 'Parte del día',

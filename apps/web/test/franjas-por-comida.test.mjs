@@ -391,12 +391,12 @@ test('RP-21 · lo largo, detrás de un «?»: cómo se lee, cómo se suma, las k
     assert.ok(pedido.includes(`{${t}}`), `${t}, detrás del «?»`);
     assert.equal(PANEL.split(`{${t}}`).length - 1, 1, `${t}: una sola vez, a pedido`);
   }
-  // «Rangos indicados», en el panel: su explicación, detrás de un «?» junto al título; en el paso del asistente (sin
-  // título propio), sigue a la vista.
+  // «Rangos indicados», en el panel: su explicación, detrás de un «?» junto al título. La lista sin título (el paso del
+  // asistente de Nutrición) se retiró con DL-193.
   const DEL_PLAN = leer('app/pro/advisees/nutrition/rangos-indicados-del-plan.tsx');
   const lista = DEL_PLAN.slice(DEL_PLAN.indexOf('export function RangosIndicados'), DEL_PLAN.indexOf('export function CuadroDelRangoIndicado'));
   assert.match(lista, /<div className="rangos-indicados__titulo">\n\s*<h3>\{C\.titulo\}<\/h3>\n\s*<ExplicacionAPedido nombre=\{C\.queSon\}>\{C\.ayuda\}<\/ExplicacionAPedido>/);
-  assert.equal(lista.split('{C.ayuda}').length - 1, 2, 'una a pedido (con título) y otra a la vista (sin título)');
+  assert.equal(lista.split('{C.ayuda}').length - 1, 1, 'una sola vez, a pedido');
   for (const t of [F.COPY_FRANJAS.comoSeLeeLaFranja, F.COPY_FRANJAS.comoSeLeeElPanel, F.COPY_FRANJAS.kcalDeLosGramosCorto]) {
     assert.deepEqual(d.terminosProhibidosEn(t), [], t);
     assert.doesNotMatch(t, /%/, t);

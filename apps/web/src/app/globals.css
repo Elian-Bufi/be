@@ -16326,12 +16326,6 @@ p.cifra-del-espacio__desglose {
   gap: 0.25rem;
 }
 
-/* WP-NUTRICION-ALIMENTOS · NUA-07: el nombre de cada comida en el paso 4 usa el campo común (`.campo`: la letra, el
-   borde y el alto de BE, en Claro y en Azul noche). La tarjeta ya separa con `gap`: el margen del campo sobra. */
-.campo.asistente__nombre {
-  margin: 0;
-}
-
 .asistente__acciones,
 .asistente__pie {
   display: flex;
@@ -17473,15 +17467,6 @@ p.cifra-del-espacio__desglose {
   margin-top: 0.75rem;
 }
 
-/* NUP-13: en el paso 5 del asistente, las cuatro formas de sumar una opción, en un renglón que baja si no entra. */
-.asistente__formas-de-sumar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.25rem 1rem;
-  margin: 0.25rem 0 0;
-}
-
 /* Dos renglones reservados: el total y lo que falta. Cuando llega la composición y «leyendo» se va, lo de abajo no salta. */
 .opcion-del-editor__total {
   min-height: 3.2em;
@@ -17871,46 +17856,6 @@ p.cifra-del-espacio__desglose {
 
 .parecidos-del-catalogo__lista li:first-child {
   border-top: 0;
-}
-
-/* ═══ ED-30 · El asistente de Nutrición: la estación queda montada detrás, oculta ═══════════════════════════════════ */
-.editor-de-nutricion__zonas[hidden] {
-  display: none;
-}
-
-.asistente__comida {
-  margin: 0.75rem 0;
-}
-
-.asistente__opciones {
-  margin: 0.25rem 0;
-  padding: 0;
-  list-style: none;
-  display: grid;
-  gap: 0.35rem;
-}
-
-.asistente__opciones li {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem;
-  padding: 0.4rem 0.6rem;
-  border: 1px solid var(--borde);
-  border-radius: 8px;
-}
-
-.asistente__objetivo {
-  padding: 0.75rem 1rem;
-  border: 1px solid var(--borde);
-  border-radius: 12px;
-  margin-bottom: 0.75rem;
-}
-
-.asistente__objetivo h4,
-.asistente__revisar h4 {
-  margin: 0 0 0.4rem;
 }
 
 /* ═══ §5.8 · La fuerza estimada (ED-72 a ED-76; maquetas 14 a 18) ═════════════════════════════════════════════════════
@@ -18674,23 +18619,6 @@ html:has(.estacion:not([data-en-el-asistente])) {
   grid-template-columns: repeat(auto-fit, minmax(11.5rem, 1fr));
 }
 
-/* Paso 5 de Nutrición: cada opción con su texto a la izquierda y «Armar …» siempre a la derecha. */
-.asistente__opciones li {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: center;
-}
-
-@media (max-width: 48rem) {
-  .asistente__opciones li {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .asistente__opciones li > .boton {
-    justify-self: start;
-  }
-}
-
 /* «Pedir información»: «Para qué lo necesitás» a todo el ancho del cajón y el área debajo; «Enviar solicitud», a la
    derecha del pie, como en la maqueta. */
 .pedido__dos-campos {
@@ -19151,7 +19079,7 @@ html:has(.estacion:not([data-en-el-asistente])) {
   padding-inline-start: 1.1rem;
 }
 
-/* API-PLN-02 y 03 (ED-34): los rangos indicados por el profesional, en el panel y en el paso 6 del asistente. Sin color
+/* API-PLN-02 y 03 (ED-34): los rangos indicados por el profesional, en el panel del editor. Sin color
    por valor: se describe, no se califica. */
 .rangos-indicados {
   margin-top: 1rem;

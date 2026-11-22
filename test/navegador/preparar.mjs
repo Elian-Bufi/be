@@ -29,8 +29,9 @@ export const RECORRIDOS = {
   sesion: { habilitado: ['NUTRICION'], datos: [] },
   pistas: { habilitado: ['NUTRICION'], datos: [] },
   primerPlan: { habilitado: ['NUTRICION'], datos: [] },
-  // ED-30 (WP-EDITORES-PROFESIONAL, §5.5): el asistente de Nutrición de punta a punta, con el objetivo ya escrito.
-  asistenteDeNutricion: { habilitado: ['NUTRICION'], datos: ['objetivo'] },
+  // DL-193 (WP-SIN-ASISTENTE-DE-NUTRICION): el plan de Nutrición de punta a punta sin el asistente, con el objetivo ya
+  // escrito (reemplaza a `asistenteDeNutricion`).
+  planDeNutricionSinAsistente: { habilitado: ['NUTRICION'], datos: ['objetivo'] },
   borrador: { habilitado: ['NUTRICION'], datos: ['borrador'] },
   conflicto: { habilitado: ['NUTRICION'], datos: ['borrador'] },
   // ED-01 (WP-EDITORES-PROFESIONAL): descartar la versión en preparación.

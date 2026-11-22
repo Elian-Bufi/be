@@ -1077,6 +1077,11 @@ Un flujo de pequeñas decisiones, de a una, como «Ya la hice» en la APK: el ca
 
 Dos caminos sobre el mismo borrador y las mismas operaciones: **el asistente** para crear y para quien empieza, y
 **la estación** para ajustar, revisar y para el experto. Ningún camino escribe algo que el otro no pueda abrir.
+
+> **DL-193 (2026-11-22, Dirección):** el asistente de Nutrición se retiró («engorroso»; la forma normal quedó muy bien y lo
+> hacía anticuado). **Solo Entrenamiento tiene asistente.** En Nutrición se empieza en la vista del plan («Crear nuevo
+> plan» o «Nueva versión del plan», «Empezar en blanco» con una activa, o desde una plantilla) y se sigue en el editor.
+> Lo que el asistente ofrecía y el editor no, pasó al editor (WP-SIN-ASISTENTE-DE-NUTRICION, SAN-03 a SAN-05).
 - **El asistente:** los siete pasos a la vista, el sugerido marcado y cualquiera elegible; «Paso N de 7», una decisión
   por paso con el título que la dice, y abajo «Atrás», «Seguir en la estación» y una sola acción principal.
   «Siguiente» guarda y espera la respuesta: si falla, no avanza y lo escrito sigue ahí, con «Reintentar». El paso que
