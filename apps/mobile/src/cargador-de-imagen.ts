@@ -20,13 +20,13 @@
  *   DL-191 rechaza el parámetro con un 400), se pide como siempre, sin variante, y la app no la vuelve a pedir en el
  *   proceso. A una foto de una comida o a la imagen de un ejercicio la API le da lo guardado, con variante o sin ella.
  */
-import type { AccesoAMedioResponse, Resultado } from '@be/domain';
+import type { AccesoAMedioResponse, Resultado, VarianteDeMedio } from '@be/domain';
 
 /** Un acceso que vence en menos de esto no se usa: se pide otro. */
 export const MARGEN_DEL_ACCESO_MS = 60_000;
 
-/** DL-191 · las dos medidas de la imagen de una receta (`VarianteDeMedio` del dominio de DL-191). */
-export type VarianteDeImagen = 'thumbnail' | 'large';
+/** DL-191 · las dos medidas de la imagen de una receta: las del contrato de API-MED-03 (`VarianteDeMedio`). */
+export type VarianteDeImagen = VarianteDeMedio;
 
 /** DL-191 · el lado mayor de la miniatura, en píxeles (`LIMITES_DE_MEDIO.ladoDeLaMiniatura` de DL-191). */
 export const LADO_DE_LA_MINIATURA = 400;

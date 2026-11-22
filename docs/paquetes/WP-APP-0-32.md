@@ -126,6 +126,6 @@ emulador.
 
 - Ratificar A32-D01 a A32-D15.
 - Armar y publicar la APK 0.32 (`expo-image-manipulator` entra con la compilación) y congelar sus lecturas (§5).
-- Si #314 entra a `main`, cambiar la copia de la regla de achique por `medidasAlAchicar` del dominio (la prueba ya las
-  compara).
+- Hecho al unir `main` con #314 (DL-191, 126e1ab9): la app usa `medidasAlAchicar` y `LIMITES_DE_MEDIO` del dominio, sin
+  copia local (A32-D12), y pide `?variant=` por el cliente del dominio (TEST-A32-015 lo fija con la URL que sale).
 - Mirarlo en el teléfono y con TalkBack (§6).

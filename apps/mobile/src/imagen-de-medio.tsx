@@ -45,13 +45,11 @@ export const RESPALDO_DE_COMIDA: RespaldoDeImagen = {
 };
 
 /**
- * API-MED-03 con la variante (DL-191). Con el dominio de antes de DL-191 el cliente no la manda (el tercer argumento se
- * ignora) y la API da lo guardado; con el de DL-191, `?variant=`. Así la app no depende de que DL-191 esté integrado.
+ * Un solo acceso por proceso, compartido por todas las imágenes. API-MED-03 con la variante: el cliente del dominio
+ * (DL-191) la manda como `?variant=thumbnail|large`, y sin ella pide lo guardado. Con una API de antes de DL-191, el 400
+ * por el parámetro hace que se pida sin variante (`crearAccesoAMedios`).
  */
-const accederAMedio: (token: string, mediaId: string, variante?: VarianteDeImagen) => ReturnType<typeof api.accederAMedio> = api.accederAMedio;
-
-/** Un solo acceso por proceso, compartido por todas las imágenes. */
-const accesoAMedios = crearAccesoAMedios({ acceder: (token, mediaId, variante) => (variante ? accederAMedio(token, mediaId, variante) : accederAMedio(token, mediaId)), urlDe: (ruta) => api.urlDe(ruta), ahoraMs: () => relojDelServidor.ahora() });
+const accesoAMedios = crearAccesoAMedios({ acceder: (token, mediaId, variante) => api.accederAMedio(token, mediaId, variante), urlDe: (ruta) => api.urlDe(ruta), ahoraMs: () => relojDelServidor.ahora() });
 
 export function ImagenDeMedio({
   token,

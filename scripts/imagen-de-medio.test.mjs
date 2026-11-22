@@ -33,7 +33,7 @@ const gancho = `export async function resolve(especificador, contexto, siguiente
 register('data:text/javascript,' + encodeURIComponent(gancho), import.meta.url);
 
 const { crearAccesoAMedios, crearCargadorDeImagen, MARGEN_DEL_ACCESO_MS } = await import('../apps/mobile/src/cargador-de-imagen.ts');
-const { COPY_REGISTRO_DE_COMIDAS, COPY_ENTRENAMIENTO_POR_SERIE } = await import('@be/domain');
+const { COPY_REGISTRO_DE_COMIDAS, COPY_ENTRENAMIENTO_POR_SERIE, LIMITES_DE_MEDIO, crearClienteBe } = await import('@be/domain');
 
 const RAIZ = resolve(dirname(fileURLToPath(import.meta.url)), '..');
 const AHORA = Date.parse('2026-10-06T16:00:00.000Z');
@@ -172,7 +172,7 @@ test('4 · el acceso se recuerda mientras vale, y dos imágenes del mismo medio 
 // ─── 5. Imágenes livianas (DL-191, en la app con DL-194, A32-05) ──────────────────────────────────────────────────
 
 const { varianteParaElMarco, rechazaLaVariante, LADO_DE_LA_MINIATURA } = await import('../apps/mobile/src/cargador-de-imagen.ts');
-const { fotoParaSubir, medidasParaSubir, LADO_AL_ACHICAR, CALIDAD_AL_ACHICAR } = await import('../apps/mobile/src/achicar-la-foto.ts');
+const { fotoParaSubir } = await import('../apps/mobile/src/achicar-la-foto.ts');
 
 /** API-MED-03 de DL-191: anota la variante pedida. Con `sinVariantes`, como una API de antes: un 400 si llega `variant`. */
 function apiConVariantes({ sinVariantes = false } = {}) {
@@ -229,6 +229,32 @@ test('5 · TEST-A32-012 · tolerante: si la API no conoce la variante, se pide c
   assert.equal(rechazaLaVariante({ ok: false, tipo: 'RED' }), false);
 });
 
+test('5 · TEST-A32-015 · con el dominio de DL-191, la app pide `?variant=` de verdad, y la API la valida con su contrato', async () => {
+  // El cliente es el mismo de la APK (`api.ts`): se mira la URL que sale, sin teléfono.
+  const urls = [];
+  const fetchFalso = async (url) => {
+    urls.push(String(url));
+    return new Response(JSON.stringify({ data: { mediaId: 'receta-1', path: '/media/content/x', expiresAt: new Date(AHORA + 60_000).toISOString() } }), { status: 200, headers: { 'Content-Type': 'application/json' } });
+  };
+  const cliente = crearClienteBe({ baseUrl: 'https://api.test/api/v1', superficie: 'APK', fetch: fetchFalso });
+  const acceso = crearAccesoAMedios({ acceder: (t, m, v) => cliente.accederAMedio(t, m, v), urlDe: (r) => `https://api.test${r}`, ahoraMs: () => AHORA });
+  await acceso.url('token', 'receta-1', false, sinPerdida, 'thumbnail');
+  await acceso.url('token', 'receta-1', false, sinPerdida, 'large');
+  await acceso.url('token', 'receta-1', false, sinPerdida);
+  assert.deepEqual(
+    urls.map((u) => new URL(u).pathname + new URL(u).search),
+    ['/api/v1/media/receta-1/access?variant=thumbnail', '/api/v1/media/receta-1/access?variant=large', '/api/v1/media/receta-1/access'],
+  );
+  // Las dos medidas de la app son exactamente las del contrato de API-MED-03.
+  const { VarianteDeMedioSchema } = await import('@be/domain');
+  assert.deepEqual([...VarianteDeMedioSchema.options].sort(), ['large', 'thumbnail']);
+  for (const v of ['thumbnail', 'large']) assert.equal(VarianteDeMedioSchema.safeParse(varianteParaElMarco(v === 'thumbnail' ? 72 : 340, 2.625)).success, true);
+  // La pantalla le pasa la variante al cliente del dominio, sin la vuelta de cuando DL-191 no estaba.
+  const IMAGEN = readFileSync(resolve(RAIZ, 'apps/mobile/src/imagen-de-medio.tsx'), 'utf8');
+  assert.match(IMAGEN, /acceder: \(token, mediaId, variante\) => api\.accederAMedio\(token, mediaId, variante\)/);
+  assert.match(readFileSync(resolve(RAIZ, 'apps/mobile/src/cargador-de-imagen.ts'), 'utf8'), /export type VarianteDeImagen = VarianteDeMedio;/);
+});
+
 test('5 · TEST-A32-013 · la pantalla: las imágenes de Nutrición son livianas, la de un ejercicio no, y la liviana espera a medir', () => {
   const IMAGEN = readFileSync(resolve(RAIZ, 'apps/mobile/src/imagen-de-medio.tsx'), 'utf8');
   assert.match(IMAGEN, /const listaParaPedir = cargar && \(!liviana \|\| ladoMayor !== null\);/);
@@ -247,20 +273,14 @@ test('5 · TEST-A32-013 · la pantalla: las imágenes de Nutrición son livianas
 });
 
 test('5 · TEST-A32-014 · la foto de una comida se achica una vez, al elegirla, a 1600 px en JPEG; si no se puede, la original', async () => {
-  assert.equal(LADO_AL_ACHICAR, 1600);
-  assert.equal(CALIDAD_AL_ACHICAR, 0.85);
-  assert.deepEqual(medidasParaSubir(4000, 3000), { ancho: 1600, alto: 1200, achicar: true });
-  assert.deepEqual(medidasParaSubir(3000, 4000), { ancho: 1200, alto: 1600, achicar: true }, 'vertical');
-  assert.deepEqual(medidasParaSubir(1600, 900), { ancho: 1600, alto: 900, achicar: false }, 'sin agrandar');
-  assert.deepEqual(medidasParaSubir(9000, 1), { ancho: 1600, alto: 1, achicar: true }, 'nunca 0 px');
-  assert.throws(() => medidasParaSubir(0, 10), RangeError);
-  // Si el dominio ya trae `medidasAlAchicar` (DL-191), la regla es la misma.
-  const dominio = await import('@be/domain');
-  if (typeof dominio.medidasAlAchicar === 'function') {
-    for (const [a, b] of [[4000, 3000], [3000, 4000], [1600, 900], [9000, 1], [1601, 1601]]) assert.deepEqual(medidasParaSubir(a, b), dominio.medidasAlAchicar(a, b), `${a} × ${b}`);
-    assert.equal(LADO_AL_ACHICAR, dominio.LIMITES_DE_MEDIO.ladoAlAchicarEnElCliente);
-    assert.equal(CALIDAD_AL_ACHICAR, dominio.LIMITES_DE_MEDIO.calidadAlAchicarEnElCliente);
-  }
+  // A32-D12 · la regla es la única del dominio (DL-191), la misma del website: la app ya no tiene una copia.
+  const ACHICAR = readFileSync(resolve(RAIZ, 'apps/mobile/src/achicar-la-foto.ts'), 'utf8');
+  assert.match(ACHICAR, /import \{ LIMITES_DE_MEDIO, medidasAlAchicar \} from '@be\/domain';/);
+  assert.match(ACHICAR, /const medidas = medidasAlAchicar\(imagen\.width, imagen\.height\);/);
+  assert.match(ACHICAR, /LIMITES_DE_MEDIO\.calidadAlAchicarEnElCliente\)/);
+  assert.doesNotMatch(ACHICAR, /function medidasParaSubir|LADO_AL_ACHICAR|CALIDAD_AL_ACHICAR|Math\.round/, 'sin la copia local de la regla');
+  assert.equal(LIMITES_DE_MEDIO.ladoAlAchicarEnElCliente, 1600);
+  assert.equal(LIMITES_DE_MEDIO.calidadAlAchicarEnElCliente, 0.85);
   const llamadas = [];
   const achicar = async (uri, medidas, calidad) => {
     llamadas.push({ uri, ...medidas, calidad });
@@ -269,6 +289,9 @@ test('5 · TEST-A32-014 · la foto de una comida se achica una vez, al elegirla,
   const grande = { uri: 'file:///dcim/foto.heic', mimeType: 'image/heic', fileName: 'foto.heic', fileSize: 4_000_000, width: 4032, height: 3024 };
   assert.deepEqual(await fotoParaSubir(grande, achicar), { uri: 'file:///cache/achicada.jpg', mimeType: 'image/jpeg', fileName: null, fileSize: null, width: 1600, height: 1200 });
   assert.deepEqual(llamadas, [{ uri: 'file:///dcim/foto.heic', ancho: 1600, alto: 1200, calidad: 0.85 }]);
+  // Vertical: la misma regla del dominio, con el lado mayor en el alto.
+  assert.deepEqual(await fotoParaSubir({ ...grande, width: 3024, height: 4032 }, achicar), { uri: 'file:///cache/achicada.jpg', mimeType: 'image/jpeg', fileName: null, fileSize: null, width: 1200, height: 1600 });
+  llamadas.pop();
   const chica = { uri: 'file:///dcim/chica.jpg', mimeType: 'image/jpeg', width: 1200, height: 900 };
   assert.equal(await fotoParaSubir(chica, achicar), chica, 'una foto chica no se toca');
   const sinMedidas = { uri: 'file:///dcim/x.jpg' };
