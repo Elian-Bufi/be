@@ -12,7 +12,7 @@
  * vueltas», «Alterná estos 2 ejercicios · 3 vueltas · descansá 90 s…»): se agregan, se quitan y cambian como cualquier
  * parte. Sin esto, cambiar solo el descanso de las vueltas decía «No cambia nada frente a la vigente».
  */
-import { descansoEnPalabras, nombreDeLaFase, nombreDelBloqueDeLaSesion, resumenDelBloque, type TipoDeBloque } from '@be/domain';
+import { COPY_NOTACION_DEL_ESFUERZO, descansoEnPalabras, nombreDeLaFase, nombreDelBloqueDeLaSesion, resumenDelBloque, type NotacionDelEsfuerzo, type TipoDeBloque } from '@be/domain';
 /**
  * Los identificadores que el servidor pone a cada parte de un plan. Es la misma lista que la de `es-lo-que-mande.ts` (una
  * prueba lo cuida): este módulo no importa a sus vecinos, para que la prueba lo cargue solo.
@@ -172,6 +172,11 @@ export function compararEntrenamiento<P extends PrescripcionParaComparar>(
     readonly renglon: (p: P) => string;
     /** Los días de entrenamiento de cada versión (DL-137), si los tiene. */
     readonly agendas?: { readonly vigente: unknown; readonly borrador: unknown };
+    /**
+     * DL-192: cómo se escribe el esfuerzo en cada versión (RIR o RPE). Cambiarla cambia cómo pregunta y muestra la app de
+     * la persona, aunque ningún número cambie: se dice como un cambio más.
+     */
+    readonly notaciones?: { readonly vigente: NotacionDelEsfuerzo; readonly borrador: NotacionDelEsfuerzo };
   },
 ): CambiosFrenteALaVigente {
   const c = cambios();
@@ -231,6 +236,9 @@ export function compararEntrenamiento<P extends PrescripcionParaComparar>(
     },
   });
   if (como.agendas && !igualConIdentificadores(como.agendas.vigente, como.agendas.borrador)) c.modificado('Días de entrenamiento: cambiaron');
+  if (como.notaciones && como.notaciones.vigente !== como.notaciones.borrador) {
+    c.modificado(`${COPY_NOTACION_DEL_ESFUERZO.titulo}: ${COPY_NOTACION_DEL_ESFUERZO.etiqueta[como.notaciones.vigente]} → ${COPY_NOTACION_DEL_ESFUERZO.etiqueta[como.notaciones.borrador]}`);
+  }
   return c.resultado();
 }
 

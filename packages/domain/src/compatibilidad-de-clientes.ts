@@ -63,7 +63,23 @@ export const CAPACIDAD_TIPOS_DE_SERIE = 'training-set-kinds-1';
  */
 export const CAPACIDAD_BLOQUES_DE_LA_SESION = 'training-session-groups-1';
 
-export const CAPACIDADES_CONOCIDAS = [CAPACIDAD_OBJETIVOS_POR_SERIE, CAPACIDAD_FORMULARIOS_FORMATO_3, CAPACIDAD_TEXTOS_VIGENTES, CAPACIDAD_TIPOS_DE_SERIE, CAPACIDAD_BLOQUES_DE_LA_SESION] as const;
+/**
+ * DL-192 (WP-RPE-Y-MAXIMO-ESTIMADO, RPE-D08) · el cliente sabe preguntar y mostrar el esfuerzo en la notación del plan (RIR
+ * o RPE): lee `effortNotation` de la versión (API-TRN-09) y de la sesión para registrar (API-SER-02), y sigue mandando el
+ * RIR, que es el valor de las dos. Solo a quien la declara le sale el campo; a quien no, la forma de siempre (su esquema
+ * estricto lo rechazaría). Nada se retiene ni se bloquea: una APK que pregunta en RIR guarda lo mismo que una que pregunta
+ * en RPE. Por eso no se registra. La declara la APK 0.32 (DL-194).
+ */
+export const CAPACIDAD_NOTACION_DEL_ESFUERZO = 'training-effort-notation-1';
+
+export const CAPACIDADES_CONOCIDAS = [
+  CAPACIDAD_OBJETIVOS_POR_SERIE,
+  CAPACIDAD_FORMULARIOS_FORMATO_3,
+  CAPACIDAD_TEXTOS_VIGENTES,
+  CAPACIDAD_TIPOS_DE_SERIE,
+  CAPACIDAD_BLOQUES_DE_LA_SESION,
+  CAPACIDAD_NOTACION_DEL_ESFUERZO,
+] as const;
 export type CapacidadDeCliente = (typeof CAPACIDADES_CONOCIDAS)[number];
 
 /** Un valor de cabecera más largo que esto no se lee: ninguna lista válida lo necesita. */

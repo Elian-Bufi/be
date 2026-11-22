@@ -31,6 +31,7 @@
 import {
   cantidad,
   componerLasSesiones,
+  textoDelEsfuerzo,
   contarLasVistasDeSesiones,
   COPY_COMPARACION,
   COPY_ENTRENAMIENTO,
@@ -81,6 +82,7 @@ import { hoyEn } from '../seguimiento/estado';
 import { ICONO_DEL_RASGO } from '../seguimiento/hecho-en-un-renglon';
 import { EstadoDeLectura, useEntrenamiento } from './entrenamiento';
 import { LineasDePrescripcion, numerosDeVersion } from './plan';
+import { useNotacionDelEsfuerzo } from '../notacion-del-esfuerzo';
 import { DescansosYDuracion, TiemposDeLaSesion, useTiemposDeLaSesion } from './series-y-tiempos';
 import { useNombres } from '../../../../lib/nombres-ocultos';
 
@@ -216,7 +218,9 @@ function Sesiones({
   const ejecuciones = contexto.registeredExecutions;
   const objetivosPorVersion = useMemo(() => new Map([...planes].map(([planId, plan]) => [planId, plan ? objetivosDe(plan) : null] as const)), [planes]);
   const identidad = useMemo(() => identidadDeVersiones(ejecuciones), [ejecuciones]);
-  const todas = useMemo(() => componerLasSesiones(ejecuciones, objetivosPorVersion), [ejecuciones, objetivosPorVersion]);
+  // DL-192: lo indicado y lo registrado, en la notación del plan de la persona (RIR o RPE); lo guardado es el RIR.
+  const notacion = useNotacionDelEsfuerzo();
+  const todas = useMemo(() => componerLasSesiones(ejecuciones, objetivosPorVersion, notacion), [ejecuciones, objetivosPorVersion, notacion]);
   const sinLeer = [...planes].filter(([, plan]) => plan === null).length;
 
   // Los filtros de siempre. El ejercicio se elige por su identidad en el catálogo, no por su nombre: dos ejercicios con
@@ -780,6 +784,8 @@ function SesionEnElPlan({ ejecucion: x, version }: { ejecucion: EjecucionDeEntre
  * también la ficha, para mostrar el registro original de una sesión.
  */
 export function Registro({ registro, planificado = [] }: { registro: RegistroDeEjecucion; planificado?: readonly Prescripcion[] }) {
+  // DL-192: el RIR registrado, en la notación del plan («RPE 8»); el esfuerzo percibido es otra medida y no cambia.
+  const notacion = useNotacionDelEsfuerzo();
   return (
     <>
       <p className="nota">
@@ -811,7 +817,7 @@ export function Registro({ registro, planificado = [] }: { registro: RegistroDeE
                           calentamiento se nombra así y las efectivas llevan su número efectivo. */}
                       {rotulo.largo}: {s.load ? cantidad(s.load.value, s.load.unit) : 'carga no registrada'} ×{' '}
                       {s.completedRepetitions === null ? '—' : numero(s.completedRepetitions)} {COPY_ENTRENAMIENTO.reps.toLowerCase()}
-                      {s.rir !== null ? ` · ${COPY_ENTRENAMIENTO.rir} ${numero(s.rir)}` : ''}
+                      {s.rir !== null ? ` · ${textoDelEsfuerzo(s.rir, notacion) ?? `${COPY_ENTRENAMIENTO.rir} ${numero(s.rir)}`}` : ''}
                       {s.perceivedExertion !== null ? ` · esfuerzo percibido ${numero(s.perceivedExertion)}` : ''}
                       {planificadasPara(planificado, e.prescriptionId, s.setIndex)}
                       {/* DL-161: cómo se cargó y cuánto duró, si la serie lo trae. */}

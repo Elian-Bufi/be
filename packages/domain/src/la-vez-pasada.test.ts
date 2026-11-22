@@ -152,7 +152,7 @@ test('TEST-GR-001 · las últimas tres veces, de la más reciente a la más viej
   const ultima = veces[0]!;
   assert.equal(ultima.comparable, true);
   assert.equal(ultima.sesion, 'Piernas A');
-  assert.deepEqual(ultima.como.tipo === 'series' ? ultima.como.series.map(textoDeLaSerie) : null, ['20 kg × 8 · RIR 2', '20 kg × 8 · RIR 2', '22 kg × 6 · RIR 1']);
+  assert.deepEqual(ultima.como.tipo === 'series' ? ultima.como.series.map((s) => textoDeLaSerie(s)) : null, ['20 kg × 8 · RIR 2', '20 kg × 8 · RIR 2', '22 kg × 6 · RIR 1']);
   assert.equal(lineaDeLaVezPasada(ultima, HOY, 'persona'), 'La vez pasada, mar 3 nov: 20 kg × 8 · RIR 2, 20 kg × 8 · RIR 2, 22 kg × 6 · RIR 1');
   // La APK muestra una sola: la última.
   assert.deepEqual(fechas(vecesPasadas(historia, SENTADILLA.exerciseId, { cuantas: 1 })), ['2026-11-03']);

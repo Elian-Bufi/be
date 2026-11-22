@@ -1,4 +1,15 @@
-import { bloquesComoSalen, CONDICION_DE_SESION_API, estadoDeVersionDePlanApi, GRANULARIDAD_API, serieConTipo, sesionesDelPlan, tipoDeSerie, type FuenteExterna } from '@be/domain';
+import {
+  bloquesComoSalen,
+  CONDICION_DE_SESION_API,
+  estadoDeVersionDePlanApi,
+  GRANULARIDAD_API,
+  notacionDe,
+  serieConTipo,
+  sesionesDelPlan,
+  tipoDeSerie,
+  type FuenteExterna,
+  type NotacionDelEsfuerzo,
+} from '@be/domain';
 import type {
   Bloque,
   CondicionDeSesion,
@@ -216,6 +227,15 @@ export function contenidoDeLaVersion(
   return instantanea
     ? { contenido: instantanea.contenido, resolver: resolverDeInstantanea(instantanea) }
     : { contenido: v.contenido as unknown as ContenidoDePlanDeEntrenamiento, resolver: resolverDeCatalogo(catalogoDeBorrador) };
+}
+
+/**
+ * DL-192 (RPE-D01): la notación del esfuerzo de una versión: la de su instantánea si está activada (no cambia más), la del
+ * contenido si es un borrador. Ausente es RIR.
+ */
+export function notacionDeLaVersion(v: VersionConPlan): NotacionDelEsfuerzo {
+  const instantanea = v.estado === 'ACTIVADA' && v.instantanea ? (v.instantanea.contenido as unknown as InstantaneaDeEntrenamiento) : null;
+  return notacionDe((instantanea?.contenido ?? (v.contenido as unknown as ContenidoDePlanDeEntrenamiento)).effortNotation);
 }
 
 export function versionDePlanApi(

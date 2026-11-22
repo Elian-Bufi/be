@@ -26,6 +26,7 @@ import { esElMismoEjercicio, observacionesDelEjercicio, type ObservacionDeEvoluc
 import { CAMPOS_CON_ORIGEN, type CampoConOrigen, type EjecucionDeEntrenamiento } from './contratos-entrenamiento';
 import { cantidad, numero } from './formato-numeros';
 import { registradoTarde } from './linea-de-tiempo';
+import { textoDelEsfuerzo, type NotacionDelEsfuerzo } from './notacion-del-esfuerzo';
 import { duracionParaMostrar } from './tiempos-de-entrenamiento';
 
 /** Cuántas veces muestra el editor del profesional (GR-01, fase 1). La APK muestra una sola (PG-11). */
@@ -196,14 +197,15 @@ const NOMBRE_DEL_VALOR: Readonly<Record<CampoConOrigen, string>> = { load: 'la c
 /**
  * La serie como se escribe en GR-01: «20 kg × 8 · RIR 2». Sin carga, «8 rep. · RIR 2»; sin repeticiones, «20 kg». Sin
  * carga ni repeticiones, el tiempo, si quedó registrado («tiempo 00:45», el mismo formato de la tabla de la sesión): una
- * plancha no es «sin dato». El RIR va solo si se informó. Nada se completa: lo que no se registró no aparece.
+ * plancha no es «sin dato». El RIR va solo si se informó. Nada se completa: lo que no se registró no aparece. DL-192: en
+ * un plan en RPE, el RIR registrado se lee en RPE («20 kg × 8 · RPE 8»), como en el editor que lo muestra.
  */
-export function textoDeLaSerie(s: Pick<SerieDeLaVezPasada, 'carga' | 'repeticiones' | 'rir'> & { readonly duracion?: number | null }): string {
+export function textoDeLaSerie(s: Pick<SerieDeLaVezPasada, 'carga' | 'repeticiones' | 'rir'> & { readonly duracion?: number | null }, notacion: NotacionDelEsfuerzo = 'RIR'): string {
   const carga = s.carga ? cantidad(s.carga.value, s.carga.unit) : null;
   const repeticiones = s.repeticiones === null ? null : numero(s.repeticiones);
   const tiempo = s.duracion === null || s.duracion === undefined ? null : duracionParaMostrar(s.duracion * 1000);
   const base = carga && repeticiones ? `${carga} × ${repeticiones}` : (carga ?? (repeticiones ? `${repeticiones} rep.` : tiempo ? `tiempo ${tiempo}` : 'sin dato'));
-  return s.rir === null ? base : `${base} · RIR ${numero(s.rir)}`;
+  return s.rir === null ? base : `${base} · ${textoDelEsfuerzo(s.rir, notacion) ?? `RIR ${numero(s.rir)}`}`;
 }
 
 /**

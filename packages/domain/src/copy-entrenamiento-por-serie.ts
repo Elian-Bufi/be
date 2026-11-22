@@ -7,6 +7,7 @@
 import type { BaseDeCarga, BaseDeRepeticiones, CargaSchema } from './contratos-entrenamiento';
 import type { CalidadDeTiempoApi, DescansoRegistrado, DuracionApi, LicenciaDeImagen, ObjetivoDeSerie, RevisionTecnica } from './contratos-entrenamiento-por-serie';
 import { cantidad, numero } from './formato-numeros';
+import { textoDelEsfuerzo, type NotacionDelEsfuerzo } from './notacion-del-esfuerzo';
 import type { RelacionConElObjetivo } from './relacion-con-el-objetivo';
 import { diferenciaParaMostrar, duracionParaMostrar } from './tiempos-de-entrenamiento';
 import type { z } from 'zod';
@@ -192,12 +193,15 @@ export function textoDeRepeticiones(r: Repeticiones | null): string | null {
 /** «16 kg» o «0 kg»: el cero se muestra, no se esconde. `null` si no hay carga. */
 export const textoDeCarga = (c: Carga | null): string | null => (c ? cantidad(c.value, c.unit) : null);
 
-/** «RIR 2,5»; `null` si no hay RIR. */
-export const textoDeRir = (rir: number | null): string | null => (rir === null ? null : `RIR ${numero(rir)}`);
+/**
+ * «RIR 2,5»; `null` si no hay RIR. DL-192: en un plan en RPE, el mismo valor escrito así («RPE 7,5», «RPE 6 o menos»);
+ * sin notación, RIR, como siempre.
+ */
+export const textoDeRir = (rir: number | null, notacion: NotacionDelEsfuerzo = 'RIR'): string | null => (rir === null ? null : textoDelEsfuerzo(rir, notacion));
 
-/** «16 kg · 12–16 rep. · RIR 3», o «Sin indicar» si la serie no tiene ninguno. El descanso va aparte. */
-export function textoDelPlanDeLaSerie(o: ObjetivoDeSerie): string {
-  const partes = [textoDeCarga(o.suggestedLoad), textoDeRepeticiones(o.repetitions), textoDeRir(o.rir)].filter((p): p is string => p !== null);
+/** «16 kg · 12–16 rep. · RIR 3», o «Sin indicar» si la serie no tiene ninguno. El descanso va aparte. DL-192: el RIR, en la notación. */
+export function textoDelPlanDeLaSerie(o: ObjetivoDeSerie, notacion: NotacionDelEsfuerzo = 'RIR'): string {
+  const partes = [textoDeCarga(o.suggestedLoad), textoDeRepeticiones(o.repetitions), textoDeRir(o.rir, notacion)].filter((p): p is string => p !== null);
   return partes.length > 0 ? partes.join(' · ') : COPY_ENTRENAMIENTO_POR_SERIE.sinObjetivo;
 }
 

@@ -45,6 +45,10 @@ import {
   COPY_TIPOS_DE_SERIE,
   esDeCalentamiento,
   rotulosDeLasSeries,
+  COPY_NOTACION_DEL_ESFUERZO,
+  esfuerzoEnCampo,
+  leerRpeEscrito,
+  type NotacionDelEsfuerzo,
 } from '@be/domain';
 import { useEffect, useId, useState, type ComponentProps, type KeyboardEvent } from 'react';
 import { EnPartes } from '../../../../components/en-partes';
@@ -84,6 +88,7 @@ import {
   type ObjetivoDeLaSerie,
 } from './planilla-de-series';
 import { NotasAlLado, useNotasPropias } from '../notas-propias';
+import { useNotacionDelEsfuerzo } from '../notacion-del-esfuerzo';
 
 export type Bloques = EstructuraDePlanDeEntrenamientoEntrada['blocks'];
 export type BloqueE = Bloques[number];
@@ -184,6 +189,15 @@ function leerValor(s: string): number | null {
 }
 const escribirNumero = (n: number | null): string => (n === null || Number.isNaN(n) ? '' : numeroEnCampo(n));
 const mismoNumero = (a: number | null, b: number | null): boolean => Object.is(a, b);
+
+/**
+ * DL-192 · el RIR guardado, como se escribe en la notación del plan: «2» en RIR; «8», «8,5» o «6 o menos» en RPE. Lo que
+ * se escribe en RPE se guarda como su RIR (`leerRpeEscrito`): «8» es RIR 2. El número guardado nunca cambia solo.
+ */
+const rirEnCampo = (notacion: NotacionDelEsfuerzo) => (n: number): string => (notacion === 'RIR' ? numeroEnCampo(n) : esfuerzoEnCampo(n, notacion));
+const leerElRir = (notacion: NotacionDelEsfuerzo) => (s: string): number | null => (notacion === 'RIR' ? leerNumero(s) : leerRpeEscrito(s));
+/** DL-192: el rango del campo, dicho en la notación. */
+const RANGO_DEL_ESFUERZO: Readonly<Record<NotacionDelEsfuerzo, string>> = { RIR: '0 a 10', RPE: '6 o menos a 10' };
 /** El descanso general: vacío → null; «02:30» o los segundos; lo demás → NaN. */
 const leerElDescanso = (s: string): number | null => (s.trim() === '' ? null : (leerDescansoDeLaPlanilla(s, leerDescanso) ?? Number.NaN));
 /** RP-22: la carga común: vacío → null; un número desde 0; lo demás (también lo negativo) → NaN. */
@@ -276,7 +290,9 @@ export function EjercicioDelEditor({
   // PG-16 (DL-173): «Anotar sobre este ejercicio», si el editor tiene las notas propias y se sabe qué ejercicio es.
   const notasPropias = useNotasPropias();
   const propio = useId();
-  const plegado = ejercicioPlegadoDelEditor(p, problemas);
+  // DL-192: el renglón del ejercicio plegado, en la notación del plan.
+  const notacionDelPlan = useNotacionDelEsfuerzo();
+  const plegado = ejercicioPlegadoDelEditor(p, problemas, notacionDelPlan);
   // ED-75: el detalle con la fuerza estimada, solo en los ejercicios de la lista de la v1 (RM-16).
   const conFuerza = exerciseId !== null && entraEnLaEstimacion(exerciseId);
   // ED-76 (EDT-56): las series elegidas en la planilla para las que se calcula la carga; `null`, la fila general.
@@ -659,11 +675,14 @@ function SeriesDelEjercicio({
   onCalcularLaCarga?: ((elegidas: readonly number[]) => void) | null;
 }) {
   const conRir = (p.intensity?.criterion as Criterio | undefined) === 'RIR';
+  // DL-192: el RIR se escribe y se lee en la notación del plan; lo guardado sigue siendo el RIR.
+  const notacion = useNotacionDelEsfuerzo();
+  const esfuerzo = COPY_NOTACION_DEL_ESFUERZO.etiqueta[notacion];
   const unidad = unidadDe(p);
   const valido = (n: number | null | undefined): n is number => typeof n === 'number' && !Number.isNaN(n);
   // Lo que toma de lo general una serie que no tiene el suyo. Si lo general está mal escrito, todavía no hay qué tomar.
   const cargaGeneral = p.suggestedLoad && valido(p.suggestedLoad.value) ? numeroEnCampo(p.suggestedLoad.value) : null;
-  const rirGeneral = conRir && p.intensity && valido(p.intensity.target.value) ? numeroEnCampo(p.intensity.target.value) : null;
+  const rirGeneral = conRir && p.intensity && valido(p.intensity.target.value) ? rirEnCampo(notacion)(p.intensity.target.value) : null;
   const descansoGeneral = valido(p.restSeconds) ? textoDeSegundos(p.restSeconds) : null;
   // DL-178: las efectivas se numeran 1, 2, 3 como siempre; las de calentamiento llevan «C» y van arriba.
   const rotulos = rotulosDeLasSeries(p.sets);
@@ -703,7 +722,7 @@ function SeriesDelEjercicio({
     }
     // RP-22: con los mismos límites que las celdas (la carga desde 0; el descanso, hasta 60:00). Antes, «Escribir en 3
     // series» dejaba pasar una carga negativa o un descanso de más de una hora, que el contrato rechaza al guardar.
-    const leido = campo === 'restSeconds' ? leerDescansoDeLaSerie(valor) : campo === 'suggestedLoad' ? leerCargaDeLaSerie(valor) : leerNumero(valor);
+    const leido = campo === 'restSeconds' ? leerDescansoDeLaSerie(valor) : campo === 'suggestedLoad' ? leerCargaDeLaSerie(valor) : campo === 'rir' ? leerElRir(notacion)(valor) : leerNumero(valor);
     if (leido === null) return setNoSeEntiende(true);
     setNoSeEntiende(false);
     onCambiar({ sets: escribirEnLasSeries(p.sets, elegidas, campo, campo === 'suggestedLoad' ? { value: leido, unit: unidad } : leido) });
@@ -768,7 +787,7 @@ function SeriesDelEjercicio({
                 <option value="repetitions">{COPY_SELECCION.repeticiones}</option>
                 <option value="restSeconds">{COPY_ENTRENAMIENTO.descanso}</option>
                 <option value="suggestedLoad">{C.cargaSugerida}</option>
-                {conRir ? <option value="rir">{COPY_ENTRENAMIENTO_POR_SERIE.columnaRir}</option> : null}
+                {conRir ? <option value="rir">{esfuerzo}</option> : null}
               </select>
             </label>
             <label>
@@ -833,7 +852,7 @@ function SeriesDelEjercicio({
               </th>
               {conRir ? (
                 <th scope="col">
-                  {COPY_ENTRENAMIENTO_POR_SERIE.columnaRir} <span className="nota">0 a 10</span>
+                  {esfuerzo} <span className="nota">{RANGO_DEL_ESFUERZO[notacion]}</span>
                 </th>
               ) : null}
               <th scope="col">
@@ -871,7 +890,7 @@ function SeriesDelEjercicio({
                 />
               </td>
               {conRir ? (
-                <td data-etiqueta={COPY_ENTRENAMIENTO_POR_SERIE.columnaRir}>
+                <td data-etiqueta={esfuerzo}>
                   {/* El RIR común es el objetivo del criterio, que se escribe arriba de la tabla (ENP-D14). */}
                   <span data-rir-general>{rirGeneral ?? '—'}</span> <span className="nota">{PL.rirDeLaIntensidad}</span>
                 </td>
@@ -929,15 +948,15 @@ function SeriesDelEjercicio({
                   />
                 </td>
                 {conRir ? (
-                  <td data-etiqueta={COPY_ENTRENAMIENTO_POR_SERIE.columnaRir}>
+                  <td data-etiqueta={esfuerzo}>
                     <CeldaDeObjetivo
                       id={`${id}-serie-${n}-rir`}
-                      rotulo={`${rotulos[n]!.largo}: RIR objetivo (0 a 10)`}
-                      queEs={`el RIR de ${cual(n)}`}
+                      rotulo={`${rotulos[n]!.largo}: ${esfuerzo} objetivo (${RANGO_DEL_ESFUERZO[notacion]})`}
+                      queEs={`el ${esfuerzo} de ${cual(n)}`}
                       valor={s.rir}
                       deLoGeneral={rirGeneral}
-                      escribir={numeroEnCampo}
-                      leer={leerNumero}
+                      escribir={rirEnCampo(notacion)}
+                      leer={leerElRir(notacion)}
                       onCambiar={(v) => cambiarElObjetivo(n, 'rir', v)}
                       aviso={aviso}
                     />
@@ -1055,6 +1074,9 @@ const COPY_CRITERIO_ARRIBA = {
 function CriterioDelEjercicio({ id, prescripcion: p, onCambiar }: { id: string; prescripcion: PrescripcionE; onCambiar: (c: Partial<PrescripcionE>) => void }) {
   const criterio = (p.intensity?.criterion as Criterio | undefined) ?? '';
   const unidad = unidadDe(p);
+  // DL-192: en un plan en RPE, el criterio RIR se elige y se escribe como RPE; lo guardado sigue siendo el RIR.
+  const notacion = useNotacionDelEsfuerzo();
+  const nombreDelCriterio = (c: Criterio): string => (c === 'RIR' ? COPY_NOTACION_DEL_ESFUERZO.etiqueta[notacion] : ETIQUETA_DE_CRITERIO[c]);
   // C7: lo que se quitó al cambiar de criterio, con «Deshacer», mientras siga el criterio elegido.
   const [cambio, setCambio] = useState<CambioDeCriterio<PrescripcionE['intensity']> | null>(null);
   const avisoDelCambio = cambio && sigueElCambio(p, cambio) ? cambio : null;
@@ -1081,7 +1103,7 @@ function CriterioDelEjercicio({ id, prescripcion: p, onCambiar }: { id: string; 
               <option value="">{COPY_ENTRENAMIENTO.sinCriterio}</option>
               {(Object.keys(ETIQUETA_DE_CRITERIO) as Criterio[]).map((c) => (
                 <option key={c} value={c}>
-                  {ETIQUETA_DE_CRITERIO[c]}
+                  {nombreDelCriterio(c)}
                 </option>
               ))}
             </select>
@@ -1089,16 +1111,17 @@ function CriterioDelEjercicio({ id, prescripcion: p, onCambiar }: { id: string; 
           {p.intensity ? (
             <CampoInterpretado
               id={`${id}-objetivo`}
-              etiqueta={`${COPY_ENTRENAMIENTO.objetivoDeIntensidad} (${ETIQUETA_DE_CRITERIO[criterio as Criterio]})`}
+              etiqueta={`${COPY_ENTRENAMIENTO.objetivoDeIntensidad} (${nombreDelCriterio(criterio as Criterio)})`}
               // Con un criterio elegido, el objetivo no es opcional: vacío no es cero.
-              ayuda={criterio === 'RIR' ? 'Necesario, de 0 a 10' : 'Necesario, hasta 100'}
+              ayuda={criterio === 'RIR' ? `Necesario, de ${RANGO_DEL_ESFUERZO[notacion]}` : 'Necesario, hasta 100'}
               inputMode="decimal"
               valor={p.intensity.target.value}
               clave={String(p.intensity.target.value)}
-              formatear={escribirNumero}
-              interpretar={(t) => leerValor(t) ?? Number.NaN}
+              // DL-192: en RPE, «8» se guarda como RIR 2; «6 o menos», como RIR 4.
+              formatear={criterio === 'RIR' && notacion === 'RPE' ? (v) => (v === null || Number.isNaN(v) ? '' : esfuerzoEnCampo(v, 'RPE')) : escribirNumero}
+              interpretar={(t) => (criterio === 'RIR' && notacion === 'RPE' ? (t.trim() === '' ? Number.NaN : (leerRpeEscrito(t) ?? Number.NaN)) : (leerValor(t) ?? Number.NaN))}
               mismo={mismoNumero}
-              noSeEntiende="No se entiende: va un número."
+              noSeEntiende={criterio === 'RIR' && notacion === 'RPE' ? 'No se entiende: va un RPE de 6 a 10, de a medio punto, o «6 o menos».' : 'No se entiende: va un número.'}
               avisoAparte={{ id: `${id}-objetivo-aviso`, onMal: setObjetivoMal }}
               onCambiar={(v) => onCambiar({ intensity: { ...p.intensity!, target: { ...p.intensity!.target, value: v } } })}
             />

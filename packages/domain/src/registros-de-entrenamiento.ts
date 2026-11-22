@@ -42,15 +42,34 @@ import { cantidad, numero } from './formato-numeros';
 import type { NombreDeIcono } from './iconos';
 import { nivelDeDetalleDelRegistro, seCargoComoElPlan, textoDelNivelDeDetalle, type NivelDeDetalle } from './registro-por-niveles';
 import { relacionDeCarga, relacionDeRepeticiones, relacionDeRir, type RelacionConElObjetivo } from './relacion-con-el-objetivo';
+import { COPY_NOTACION_DEL_ESFUERZO, enElPisoDelRpe, textoDelEsfuerzo, type NotacionDelEsfuerzo } from './notacion-del-esfuerzo';
+
+/**
+ * DL-192: la relación del RIR, dicha en la notación. Más en reserva es menos RPE: «RIR: por debajo» se lee «RPE: por
+ * encima». Lo demás (igual, sin dato, sin objetivo) no cambia.
+ */
+const relacionEnLaNotacion = (r: RelacionConElObjetivo, notacion: NotacionDelEsfuerzo): RelacionConElObjetivo =>
+  notacion === 'RPE' && r === 'DEBAJO' ? 'ENCIMA' : notacion === 'RPE' && r === 'ENCIMA' ? 'DEBAJO' : r;
+
+/**
+ * DL-192 (RPE-D03): en RPE, lo indicado y lo registrado con 4 o más en reserva se leen los dos «RPE 6 o menos». Decir
+ * «RPE: por debajo» al lado de dos «6 o menos» sería una diferencia que la pantalla no muestra: en esa notación es igual.
+ * En RIR, el número se compara tal cual.
+ */
+const rirEnLaNotacion = (r: RelacionConElObjetivo, objetivo: number | null, realizado: number | null, notacion: NotacionDelEsfuerzo): RelacionConElObjetivo =>
+  notacion === 'RPE' && FUERA.includes(r) && objetivo !== null && realizado !== null && enElPisoDelRpe(objetivo) && enElPisoDelRpe(realizado) ? 'IGUAL' : r;
 
 // ─── Una serie ──────────────────────────────────────────────────────────────────────────────────────────────
 
-/** «62,5 kg · 8 rep. · RIR 2», con lo que no se registró dicho como tal. El esfuerzo percibido va si vino. */
-export function serieRegistradaEnPalabras(s: SerieEjecutadaApi): string {
+/**
+ * «62,5 kg · 8 rep. · RIR 2», con lo que no se registró dicho como tal. El esfuerzo percibido va si vino. DL-192: en un
+ * plan en RPE, el RIR registrado se lee en RPE («RPE 8»); el esfuerzo percibido (otra medida) no cambia.
+ */
+export function serieRegistradaEnPalabras(s: SerieEjecutadaApi, notacion: NotacionDelEsfuerzo = 'RIR'): string {
   return [
     s.load ? cantidad(s.load.value, s.load.unit) : 'carga no registrada',
     s.completedRepetitions === null ? 'repeticiones no registradas' : `${numero(s.completedRepetitions)} rep.`,
-    s.rir === null ? null : `RIR ${numero(s.rir)}`,
+    s.rir === null ? null : (textoDelEsfuerzo(s.rir, notacion) ?? `RIR ${numero(s.rir)}`),
     s.perceivedExertion === null ? null : `esfuerzo percibido ${numero(s.perceivedExertion)}`,
   ]
     .filter((p): p is string => p !== null)
@@ -77,22 +96,24 @@ const FUERA: readonly RelacionConElObjetivo[] = ['DEBAJO', 'ENCIMA'];
 
 /**
  * Una serie registrada frente a su objetivo. De las repeticiones y del RIR dice lo que no quedó dentro de lo indicado,
- * dato por dato. Lo de la carga va aparte, y dice contra qué se compara: la sugerida no es una obligación.
+ * dato por dato. Lo de la carga va aparte, y dice contra qué se compara: la sugerida no es una obligación. DL-192: la
+ * comparación es la del RIR guardado; en un plan en RPE se dice en RPE, con el sentido al revés.
  */
-export function relacionDeUnaSerie(objetivo: Pick<ObjetivoDeSerie, 'repetitions' | 'rir' | 'suggestedLoad'>, s: SerieEjecutadaApi): RelacionDeUnaSerie {
+export function relacionDeUnaSerie(objetivo: Pick<ObjetivoDeSerie, 'repetitions' | 'rir' | 'suggestedLoad'>, s: SerieEjecutadaApi, notacion: NotacionDelEsfuerzo = 'RIR'): RelacionDeUnaSerie {
   const reps = relacionDeRepeticiones(objetivo.repetitions, s.completedRepetitions);
-  const rir = relacionDeRir(objetivo.rir, s.rir);
+  const rir = rirEnLaNotacion(relacionDeRir(objetivo.rir, s.rir), objetivo.rir, s.rir, notacion);
   const carga = relacionDeCarga(objetivo.suggestedLoad, s.load);
   const partes: string[] = [];
+  const esfuerzo = COPY_NOTACION_DEL_ESFUERZO.etiqueta[notacion];
   if (reps !== 'SIN_OBJETIVO' && reps !== 'DENTRO') partes.push(`Rep.: ${ETIQUETA_DE_RELACION[reps]}`);
-  if (rir !== 'SIN_OBJETIVO' && rir !== 'IGUAL') partes.push(`RIR: ${ETIQUETA_DE_RELACION[rir]}`);
+  if (rir !== 'SIN_OBJETIVO' && rir !== 'IGUAL') partes.push(`${esfuerzo}: ${ETIQUETA_DE_RELACION[relacionEnLaNotacion(rir, notacion)]}`);
   const sinObjetivo = reps === 'SIN_OBJETIVO' && rir === 'SIN_OBJETIVO' && carga === 'SIN_OBJETIVO';
   const sinObjetivoDeRepsNiDeRir = reps === 'SIN_OBJETIVO' && rir === 'SIN_OBJETIVO';
   return {
     conDiferencia: FUERA.includes(reps) || FUERA.includes(rir),
     conDatoSinRegistrar: reps === 'SIN_DATO' || rir === 'SIN_DATO',
     sinObjetivo,
-    texto: sinObjetivo ? 'Sin indicar: no se compara' : sinObjetivoDeRepsNiDeRir ? 'Repeticiones y RIR sin indicar' : partes.length === 0 ? 'Dentro de lo indicado' : partes.join(' · '),
+    texto: sinObjetivo ? 'Sin indicar: no se compara' : sinObjetivoDeRepsNiDeRir ? `Repeticiones y ${esfuerzo} sin indicar` : partes.length === 0 ? 'Dentro de lo indicado' : partes.join(' · '),
     carga:
       carga === 'DEBAJO' || carga === 'ENCIMA'
         ? `Carga: ${ETIQUETA_DE_RELACION[carga]} de la ${COPY_COMPARACION.sugerida}`
@@ -164,7 +185,7 @@ const NO_SE_COMPARA_POR_IDENTIDAD: Readonly<Partial<Record<IdentidadDelRegistro,
   desconocida: `No se compara: ${COPY_COMPARACION.noSeSabeSiEsElMismo}`,
 };
 
-function serieDeSesion(c: ComparacionDeEjercicio, f: FilaDeSerie, seLeyoLoIndicado: boolean): SerieDeSesion {
+function serieDeSesion(c: ComparacionDeEjercicio, f: FilaDeSerie, seLeyoLoIndicado: boolean, notacion: NotacionDelEsfuerzo): SerieDeSesion {
   const planificada = f.planificada.tipo === 'planificada' ? f.planificada : null;
   const objetivo = planificada?.objetivo ?? null;
   const serie = f.registrada.tipo === 'registrada' ? f.registrada.serie : null;
@@ -183,21 +204,21 @@ function serieDeSesion(c: ComparacionDeEjercicio, f: FilaDeSerie, seLeyoLoIndica
 
   let indicado: string;
   if (!planificada) indicado = 'Adicional: no estaba indicada';
-  else if (seLeyoLoIndicado && objetivo) indicado = textoDelPlanDeLaSerie({ repetitions: planificada.repeticiones, rir: objetivo.rir, suggestedLoad: objetivo.carga, restSeconds: null });
+  else if (seLeyoLoIndicado && objetivo) indicado = textoDelPlanDeLaSerie({ repetitions: planificada.repeticiones, rir: objetivo.rir, suggestedLoad: objetivo.carga, restSeconds: null }, notacion);
   else if (seLeyoLoIndicado) indicado = textoDeRepeticiones(planificada.repeticiones) ?? COPY_ENTRENAMIENTO_POR_SERIE.sinObjetivo;
-  else indicado = `${textoDeRepeticiones(planificada.repeticiones) ?? 'Repeticiones sin indicar'} · la carga y el RIR no se pudieron leer`;
+  else indicado = `${textoDeRepeticiones(planificada.repeticiones) ?? 'Repeticiones sin indicar'} · la carga y el ${COPY_NOTACION_DEL_ESFUERZO.etiqueta[notacion]} no se pudieron leer`;
 
   const sinComparar = { frenteDeLaCarga: null, conDiferencia: false, conDatoSinRegistrar: false, comparada: false };
   if (!serie) {
     return { ...base, indicado, registrado: resumida ? 'Registro resumido' : COPY_ENTRENAMIENTO_POR_SERIE.sinRegistrar, frente: resumida ? 'No se compara serie por serie' : 'Sin registro: no se compara', ...sinComparar };
   }
-  const registrado = serieRegistradaEnPalabras(serie);
+  const registrado = serieRegistradaEnPalabras(serie, notacion);
   if (!planificada) return { ...base, indicado, registrado, frente: 'Adicional: no se compara', ...sinComparar };
   // DL-161: tildada sin escribir, con los valores del plan a la vista. Compararla sería comparar el plan consigo mismo.
   if (seCargoComoElPlan(serie)) return { ...base, indicado, registrado, frente: COPY_REGISTRO_POR_NIVELES.noSeComparaTildada, ...sinComparar };
   if (!esElMismoEjercicio(c.identidad)) return { ...base, indicado, registrado, frente: NO_SE_COMPARA_POR_IDENTIDAD[c.identidad] ?? 'No se compara', ...sinComparar };
   if (!seLeyoLoIndicado) return { ...base, indicado, registrado, frente: 'No se pudo leer lo indicado', ...sinComparar };
-  const r = relacionDeUnaSerie({ repetitions: planificada.repeticiones, rir: objetivo?.rir ?? null, suggestedLoad: objetivo?.carga ?? null }, serie);
+  const r = relacionDeUnaSerie({ repetitions: planificada.repeticiones, rir: objetivo?.rir ?? null, suggestedLoad: objetivo?.carga ?? null }, serie, notacion);
   return { ...base, indicado, registrado, frente: r.texto, frenteDeLaCarga: r.carga, conDiferencia: r.conDiferencia, conDatoSinRegistrar: r.conDatoSinRegistrar, comparada: !r.sinObjetivo };
 }
 
@@ -210,8 +231,9 @@ const deCalentamiento = (c: ComparacionDeEjercicio): string => {
 };
 const adicionales = (n: number): string => (n === 0 ? '' : ` · ${numero(n)} ${n === 1 ? 'adicional' : 'adicionales'}`);
 
-function ejercicioDeSesion(c: ComparacionDeEjercicio, seLeyoLoIndicado: boolean): EjercicioDeSesion {
-  const series = c.filas.map((f) => serieDeSesion(c, f, seLeyoLoIndicado));
+function ejercicioDeSesion(c: ComparacionDeEjercicio, seLeyoLoIndicado: boolean, notacion: NotacionDelEsfuerzo): EjercicioDeSesion {
+  const series = c.filas.map((f) => serieDeSesion(c, f, seLeyoLoIndicado, notacion));
+  const esfuerzo = COPY_NOTACION_DEL_ESFUERZO.etiqueta[notacion];
   const planificadas = c.filas.filter((f) => f.planificada.tipo === 'planificada').length;
   const registradas = series.filter((s) => s.estado === 'REGISTRADA').length;
   const deMas = series.filter((s) => s.estado === 'ADICIONAL').length;
@@ -227,7 +249,7 @@ function ejercicioDeSesion(c: ComparacionDeEjercicio, seLeyoLoIndicado: boolean)
     aviso: NOTA_DE_IDENTIDAD[c.identidad] ?? null,
     resumen: c.resumen,
     cuenta: c.resumen !== null ? 'Registro resumido' : `${seriesRegistradas(registradas, planificadas, c.calentamiento.length > 0)}${adicionales(deMas)}${deCalentamiento(c)}`,
-    notaDeLoIndicado: !seLeyoLoIndicado ? null : sinCarga && sinRir ? 'sin carga ni RIR indicados' : sinCarga ? 'sin carga indicada' : sinRir ? 'sin RIR indicado' : null,
+    notaDeLoIndicado: !seLeyoLoIndicado ? null : sinCarga && sinRir ? `sin carga ni ${esfuerzo} indicados` : sinCarga ? 'sin carga indicada' : sinRir ? `sin ${esfuerzo} indicado` : null,
     registradas,
     planificadas,
     series,
@@ -281,8 +303,11 @@ export interface FilaDeSesion {
 const mayuscula = (t: string): string => t.charAt(0).toUpperCase() + t.slice(1);
 const todasLasSeries = (ejercicios: readonly EjercicioDeSesion[]): SerieDeSesion[] => ejercicios.flatMap((e) => e.series);
 
-/** Una sesión registrada, con lo que dice su fila y su detalle. `objetivos`: los de su versión del plan, o `null` si no se pudieron leer. */
-export function filaDeLaSesion(x: EjecucionDeEntrenamiento, objetivos: ObjetivosDeLaVersion | null, versiones = identidadDeVersiones([x])): FilaDeSesion {
+/**
+ * Una sesión registrada, con lo que dice su fila y su detalle. `objetivos`: los de su versión del plan, o `null` si no se
+ * pudieron leer. DL-192: `notacion`, la del plan de la persona (`notacionDeLasVersiones`): todo el historial se lee en ella.
+ */
+export function filaDeLaSesion(x: EjecucionDeEntrenamiento, objetivos: ObjetivosDeLaVersion | null, versiones = identidadDeVersiones([x]), notacion: NotacionDelEsfuerzo = 'RIR'): FilaDeSesion {
   const comparaciones = compararEjecucion(x, versiones, objetivos ?? undefined);
   const fuente: FuenteDelRegistro = comparaciones[0]?.fuente ?? (x.effectiveView.kind === 'NOT_RESOLVABLE' ? { tipo: 'no-resoluble' } : { tipo: 'original', registradoEl: x.recordedAt });
   const rige = fuente.tipo === 'no-resoluble' ? null : registroVigente(x);
@@ -310,7 +335,7 @@ export function filaDeLaSesion(x: EjecucionDeEntrenamiento, objetivos: Objetivos
   const sinContar = { registradas: null, planificadas: null, sinRegistrar: 0, conDiferencias: seLeyoLoIndicado ? 0 : null };
   if (clase === 'SIN_REGISTRO_VIGENTE') return { ...base, ...sinContar, series: 'El registro vigente no se puede determinar', frente: 'No se compara', ejercicios: [] };
   if (clase === 'NO_REALIZADA') return { ...base, ...sinContar, series: 'Sin series: la sesión se registró así', frente: 'No hay series que comparar', ejercicios: [] };
-  const ejercicios = comparaciones.map((c) => ejercicioDeSesion(c, seLeyoLoIndicado));
+  const ejercicios = comparaciones.map((c) => ejercicioDeSesion(c, seLeyoLoIndicado, notacion));
   if (clase === 'RESUMIDA') return { ...base, ...sinContar, series: 'Registro resumido: sin series', frente: 'No se compara serie por serie', ejercicios };
 
   const series = todasLasSeries(ejercicios);
@@ -347,12 +372,17 @@ export function filaDeLaSesion(x: EjecucionDeEntrenamiento, objetivos: Objetivos
 
 /**
  * Las sesiones registradas del período, de la más nueva a la más vieja. `objetivosPorVersion`: los objetivos por serie
- * de cada versión del plan que aparece en el período; una versión que falta, o con `null`, no se pudo leer.
+ * de cada versión del plan que aparece en el período; una versión que falta, o con `null`, no se pudo leer. DL-192:
+ * `notacion`, la del plan de la persona; ausente, RIR.
  */
-export function componerLasSesiones(ejecuciones: readonly EjecucionDeEntrenamiento[], objetivosPorVersion: ReadonlyMap<string, ObjetivosDeLaVersion | null>): FilaDeSesion[] {
+export function componerLasSesiones(
+  ejecuciones: readonly EjecucionDeEntrenamiento[],
+  objetivosPorVersion: ReadonlyMap<string, ObjetivosDeLaVersion | null>,
+  notacion: NotacionDelEsfuerzo = 'RIR',
+): FilaDeSesion[] {
   const versiones = identidadDeVersiones(ejecuciones);
   return ejecuciones
-    .map((x) => filaDeLaSesion(x, objetivosPorVersion.get(x.planId) ?? null, versiones))
+    .map((x) => filaDeLaSesion(x, objetivosPorVersion.get(x.planId) ?? null, versiones, notacion))
     .sort((a, b) => b.ocurrio.localeCompare(a.ocurrio) || b.registradoEl.localeCompare(a.registradoEl) || b.id.localeCompare(a.id));
 }
 

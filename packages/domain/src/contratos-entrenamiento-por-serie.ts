@@ -28,6 +28,7 @@ import {
   CargaSchema,
   IdDeNodoSchema,
   IntensidadSchema,
+  NotacionDelEsfuerzoSchema,
   ParametroProfesionalSchema,
   RepeticionesPrescriptasSchema,
   TipoDeSerieSchema,
@@ -213,6 +214,12 @@ export const PlanConObjetivosSchema = VersionDePlanDeEntrenamientoSchema.omit({ 
   setKindsDelivery: EntregaDeObjetivosPorSerieSchema,
   /** DL-137: la agenda de la versión (los días de cada sesión, desde cuándo y lo movido), o `null` si no tiene. */
   agenda: AgendaDeEntrenamientoSchema.nullable(),
+  /**
+   * DL-192 (RPE-D01): cómo se escribe el esfuerzo en esta versión. La API lo manda siempre (esta lectura es solo del
+   * profesional); el esquema lo deja opcional, y ausente es `RIR`, para que un website y una API de despliegues distintos
+   * se sigan entendiendo.
+   */
+  effortNotation: NotacionDelEsfuerzoSchema.optional(),
 });
 export type PlanConObjetivos = z.infer<typeof PlanConObjetivosSchema>;
 export const PlanConObjetivosResponseSchema = z.strictObject({ data: PlanConObjetivosSchema });
@@ -227,6 +234,12 @@ export const SesionParaRegistrarSchema = z.strictObject({
   /** A qué momento corresponden las imágenes: el registro de la ejecución si ya existe; si no, el de la lectura. */
   imagesAsOf: Instante,
   session: SesionConObjetivosSchema,
+  /**
+   * DL-192 (RPE-D08): en qué notación pregunta y muestra el esfuerzo la app (la de la versión de la ocurrencia). Solo para
+   * el cliente que declara `training-effort-notation-1`; la APK instalada no la conoce, sigue preguntando el RIR, y lo que
+   * manda se guarda igual: el RIR es el valor de las dos notaciones.
+   */
+  effortNotation: NotacionDelEsfuerzoSchema.optional(),
 });
 export type SesionParaRegistrar = z.infer<typeof SesionParaRegistrarSchema>;
 export const SesionParaRegistrarResponseSchema = z.strictObject({ data: SesionParaRegistrarSchema });
