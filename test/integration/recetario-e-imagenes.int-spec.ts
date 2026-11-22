@@ -107,6 +107,8 @@ describe('DL-191 · las imágenes livianas', () => {
     expect(await prisma.varianteGuardadaDeMedio.count({ where: { medioId } })).toBe(1);
     await conSesion(app, pro.token).get(`/api/v1/media/${mediaId}/access?variant=enorme`).expect(400);
     await conSesion(app, pro.token).get(`/api/v1/media/${mediaId}/access?tamano=chico`).expect(400);
+    // La variante va firmada en la ruta: pedirla en los bytes, por fuera de la firma, no cambia nada y es 400.
+    await leerContenido(app, `${miniatura.path}?variant=large`).expect(400);
   });
 
   it('TEST-REC-011 · un medio de antes: sin variante, el JPEG de siempre (la APK publicada); con variante, se genera una vez y queda', async () => {
@@ -319,6 +321,8 @@ describe('DL-191 · el Recetario de BE', () => {
     expect([porLaLista.headers['content-type'], porLaLista.headers['cache-control']]).toEqual(['image/webp', expect.stringMatching(/^private, max-age=/)]);
     // La persona y otra área no la leen por ser del recetario.
     await conSesion(app, persona.token).get(`/api/v1/media/${mediaId}/access`).expect(404);
+    const deEntrenamiento = await prepararProfesional(app, 'rec-entrena-imagen', ['ENTRENAMIENTO']);
+    await conSesion(app, deEntrenamiento.token).get(`/api/v1/media/${mediaId}/access?variant=thumbnail`).expect(404);
     // Copiarla: la copia reusa el mismo medio, sin duplicar bytes.
     const mediosAntes = await prisma.medio.count();
     const copia = (await conSesion(app, b.token).post(`/api/v1/nutrition/recipe-book/${sumada.recipeBookRecipeId}/copies`).send({}).expect(201)).body.data;

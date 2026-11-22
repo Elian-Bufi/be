@@ -154,7 +154,7 @@ Lo que le falta, exactamente, para DL-194:
 - **API, unitarias** (`procesamiento-de-imagen.spec.ts`, `rutas-firmadas.spec.ts`, `semilla-del-recetario.spec.ts`;
   TEST-REC-001 a 007): las variantes en WebP y sus medidas, la foto de una comida en JPEG, las variantes desde lo guardado,
   la variante y la caché firmadas, el vencimiento redondeado, las 66 recetas con la forma de API-REC-01 y la base local.
-- **API, integración en la CI** (`test/integration/recetario-e-imagenes.int-spec.ts`, TEST-REC-010 a 019): variantes y
+- **API, integración en la CI** (`test/integration/recetario-e-imagenes.int-spec.ts`, TEST-REC-008 y 010 a 019): variantes y
   WebP; los medios de antes sin variante (como la APK) y con variante (generadas una vez); la foto de una comida sin
   cambios; la huella sin filtrar entre dueños; la semilla dos veces; el recetario para Nutrición y no para la persona ni
   para otra área; copiar con la misma imagen y sin bytes nuevos; proponer con la cesión registrada; lo cargado a mano;
@@ -179,8 +179,11 @@ Lo que le falta, exactamente, para DL-194:
 - **Cargar el recetario en test:** lo decide Dirección (REC-D11). Las 66 entran sin foto; las fotos del paquete de
   generación (`EVIDENCIA/RECETAS-AMPLIACION/`) todavía no existen.
 - La APK (§4, DL-194).
-- Las miniaturas de «Mis recetas» y del cajón piden un acceso cada una (privadas, auditadas, con la memoria de la pestaña):
-  con muchas recetas con foto, firmarlas en la lista como el recetario.
+- ~~Las miniaturas de «Mis recetas» y del cajón piden un acceso cada una~~ **Resuelto en la revisión:** API-REC-02 trae
+  las rutas ya firmadas de cada imagen (`rutasDeLaListaPropia`): la propia, privada (15 minutos, sin caché) y con su fila de
+  auditoría de API-MED-03 (motivo `RUTA_EN_LA_LISTA`); la de una copia del recetario, con las del recetario. Con muchas
+  fotos, la lista ya no llega al límite de 120 consultas por minuto (TEST-REC-008). Las variantes de los medios de antes se
+  generan de a dos por proceso y una sola vez por medio.
 - Retirar una receta del recetario y cambiar su foto desde Administración (REC-D16); las variantes de la imagen de un
   ejercicio.
 - Mirarlo en pantalla (1920 × 1080, Windows al 125 %, navegador al 75 %) y con un lector de pantalla: por la memoria del
