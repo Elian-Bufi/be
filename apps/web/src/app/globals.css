@@ -21676,10 +21676,27 @@ html:has(.estacion:not([data-en-el-asistente])) {
   box-shadow: 0 0 0 1px var(--error);
 }
 
-/* El renglón de lo que no se entiende, debajo de la tabla de series: su alto aunque esté vacío. */
+/* El renglón de lo que no se entiende, debajo de la tabla de series: un renglón de alto fijo, vacío o lleno. Con dos
+   avisos el texto pasaba a dos renglones y bajaba «Agregar serie» (la CI, a 1440 con el panel abierto); el texto es
+   corto y, si en un ancho muy justo igual no entra, se corta con «…» (el entero va en el título y al lector). */
 .ejercicio-del-editor__series > .renglon-del-aviso {
+  height: 1.55rem;
+  min-height: 0;
   margin: -0.25rem 0 0.35rem;
+  overflow: hidden;
   font-size: 0.9rem;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* Angosto (cada serie es un bloque, como en una tableta de pie): el aviso puede ocupar dos renglones; ahí no hay una fila
+   de campos alineados que se corra. */
+@container ejercicios (max-width: 40rem) {
+  .ejercicio-del-editor__series > .renglon-del-aviso {
+    height: auto;
+    min-height: 1.55rem;
+    white-space: normal;
+  }
 }
 
 /* En la barra de las series elegidas, el aviso ocupa su propio renglón, siempre. */

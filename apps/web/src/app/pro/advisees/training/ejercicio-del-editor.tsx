@@ -762,6 +762,7 @@ function SeriesDelEjercicio({
   // marca en su lugar. Antes, el aviso de la fila Común aparecía dentro de la celda y alargaba la fila mientras se escribía.
   const aviso = `${id}-no-se-entiende`;
   const queNoSeEntiende = loQueNoSeEntiendeEnLasSeries(id, p, p.sets.map((_, n) => cual(n)));
+  const textoDelAviso = textoDeLoQueNoSeEntiende(queNoSeEntiende);
   return (
     <div className="ejercicio-del-editor__series" data-seleccionando={seleccionando ? '' : undefined}>
       {p.sets.length === 0 ? <p className="nota">{C.sinSeries}</p> : null}
@@ -1007,8 +1008,10 @@ function SeriesDelEjercicio({
         </table>
         {/* RP-22: siempre en la página; vacío, ocupa lo mismo. Lo que se marca en una celda no corre las filas ni el pie. */}
         {p.sets.length > 0 || queNoSeEntiende.length > 0 ? (
-          <RenglonDelAviso id={aviso} tipo={queNoSeEntiende.length > 0 ? 'error' : 'nota'} anunciar data-lo-que-no-se-entiende={queNoSeEntiende.length}>
-            {textoDeLoQueNoSeEntiende(queNoSeEntiende)}
+          // Un solo renglón, de alto fijo: si en un ancho muy justo no entra, se corta con «…» y el texto entero queda en el
+          // título (y el lector lo lee entero, también desde la celda, por `aria-describedby`).
+          <RenglonDelAviso id={aviso} tipo={queNoSeEntiende.length > 0 ? 'error' : 'nota'} anunciar title={textoDelAviso ?? undefined} data-lo-que-no-se-entiende={queNoSeEntiende.length}>
+            {textoDelAviso}
           </RenglonDelAviso>
         ) : null}
       </>

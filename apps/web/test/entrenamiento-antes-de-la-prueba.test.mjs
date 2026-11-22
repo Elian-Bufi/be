@@ -98,12 +98,20 @@ test('RP-22 · lo que no se entiende en la planilla se dice en un renglón, con 
   assert.equal(P.textoDeLoQueNoSeEntiende([]), null);
   const una = P.loQueNoSeEntiendeEnLasSeries('e', { ...bien, restSeconds: Number.NaN }, rotulos);
   assert.deepEqual(una.map((c) => c.id), ['e-descanso']);
-  assert.equal(P.textoDeLoQueNoSeEntiende(una), 'No se entiende el descanso común: va como 02:30, o en segundos, hasta 60:00. No se guarda hasta corregirlo.');
+  assert.equal(P.textoDeLoQueNoSeEntiende(una), 'No se entiende el descanso común: va como 02:30 o en segundos, hasta 60:00.');
   const dos = P.loQueNoSeEntiendeEnLasSeries('e', { ...bien, sets: [{ repetitions: { value: Number.NaN } }, { repetitions: null, suggestedLoad: { value: Number.NaN } }] }, rotulos);
   assert.deepEqual(dos.map((c) => c.id), ['e-serie-0', 'e-serie-1-carga']);
-  assert.equal(P.textoDeLoQueNoSeEntiende(dos), 'No se entienden las repeticiones de la serie 1: va un número de 1 a 1000 o un rango, como 8-12. También la carga de la serie 2. No se guarda hasta corregirlo.');
+  assert.equal(P.textoDeLoQueNoSeEntiende(dos), 'No se entienden las repeticiones de la serie 1: va de 1 a 1000, o un rango como 8-12. Y 1 más, marcada.');
   const tres = P.loQueNoSeEntiendeEnLasSeries('e', { suggestedLoad: { value: Number.NaN }, restSeconds: Number.NaN, sets: [{ repetitions: null, rir: Number.NaN }] }, rotulos);
-  assert.match(P.textoDeLoQueNoSeEntiende(tres), /Y 2 celdas más, marcadas\./);
+  assert.match(P.textoDeLoQueNoSeEntiende(tres), /\. Y 2 más, marcadas\.$/);
+  // Corto, para que entre en un renglón a 1440 con el panel abierto (la tabla, de unos 680 px): con dos avisos, el de antes
+  // pasaba a dos renglones y bajaba «Agregar serie» 20 px (la CI). Con uno, dos o tres avisos, hasta 75 caracteres.
+  const comun = { suggestedLoad: { value: Number.NaN }, restSeconds: Number.NaN, sets: [{ repetitions: { value: Number.NaN } }, { repetitions: null }] };
+  for (const n of [1, 2, 3]) assert.ok(P.textoDeLoQueNoSeEntiende(P.loQueNoSeEntiendeEnLasSeries('e', comun, rotulos).slice(0, n)).length <= 75, `${n} aviso(s)`);
+  // El renglón tiene alto fijo y es uno: si en un ancho muy justo no entra, «…», con el texto entero en el título.
+  const renglon = RP22.slice(RP22.indexOf('.ejercicio-del-editor__series > .renglon-del-aviso {'));
+  assert.match(renglon.slice(0, renglon.indexOf('}')), /height: 1\.55rem;[\s\S]*white-space: nowrap;\n\s*text-overflow: ellipsis;/);
+  assert.match(EJERCICIO, /anunciar title=\{textoDelAviso \?\? undefined\} data-lo-que-no-se-entiende/);
 });
 
 test('RP-22 · la planilla de series: ningún aviso dentro de una fila; el renglón reservado debajo de la tabla y el de la barra', () => {

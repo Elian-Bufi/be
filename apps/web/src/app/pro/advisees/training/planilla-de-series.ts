@@ -225,10 +225,10 @@ export interface CeldaQueNoSeEntiende {
 }
 
 const COMO_SE_ESCRIBE = {
-  repetitions: 'un número de 1 a 1000 o un rango, como 8-12',
+  repetitions: 'de 1 a 1000, o un rango como 8-12',
   suggestedLoad: 'un número desde 0',
   rir: 'un número',
-  restSeconds: 'como 02:30, o en segundos, hasta 60:00',
+  restSeconds: 'como 02:30 o en segundos, hasta 60:00',
 } as const;
 
 type PrescripcionDeLaPlanilla = {
@@ -260,11 +260,16 @@ export function loQueNoSeEntiendeEnLasSeries(prefijo: string, p: PrescripcionDeL
   return celdas;
 }
 
-/** El renglón: la primera celda con cómo se escribe y, si hay más, cuántas. Vacío (`null`) si todo se entiende. */
+/**
+ * El renglón: la primera celda con cómo se escribe y, si hay más, cuántas («Y 1 más, marcada.»). Vacío (`null`) si todo
+ * se entiende. RP-22 (revisión): corto, para que entre en un renglón también a 1440 con el panel abierto. Con dos avisos
+ * («También el descanso común.» y «No se guarda hasta corregirlo.») pasaba a dos renglones y bajaba «Agregar serie» 20 px
+ * (la CI). Que no se guarda ya lo dicen la barra («Pendiente de guardar: falta completar algo») y «Antes de activar».
+ */
 export function textoDeLoQueNoSeEntiende(celdas: readonly CeldaQueNoSeEntiende[]): string | null {
   const [primera, ...resto] = celdas;
   if (!primera) return null;
-  const mas = resto.length === 0 ? '' : resto.length === 1 ? ` También ${resto[0]!.que}.` : ` Y ${resto.length} celdas más, marcadas.`;
-  const verbo = /^las /.test(primera.que) ? "No se entienden" : "No se entiende";
-  return `${verbo} ${primera.que}: va ${primera.como}.${mas} No se guarda hasta corregirlo.`;
+  const mas = resto.length === 0 ? '' : resto.length === 1 ? ' Y 1 más, marcada.' : ` Y ${resto.length} más, marcadas.`;
+  const verbo = /^las /.test(primera.que) ? 'No se entienden' : 'No se entiende';
+  return `${verbo} ${primera.que}: va ${primera.como}.${mas}`;
 }
