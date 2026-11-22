@@ -7,7 +7,7 @@
  * - **Intensidad: % RM o RIR, o ninguno;** nunca los dos (B10-06:398-410). Con un criterio elegido, su objetivo no es
  *   opcional. La carga sugerida va aparte y no es el criterio (B10-06:463-477).
  * - **Cada objetivo de una serie tiene tres estados (DL-122),** en una sola celda: vacía, la serie toma el de lo
- *   general, que se lee en gris; con un valor, tiene el suyo; y con «Sin objetivo», que se elige con el botón de la
+ *   general, que se lee en gris; con un valor, tiene el suyo; y con «Sin indicar en esta serie», que se elige con el botón de la
  *   celda, no tiene ninguno aunque lo general lo tenga. Lo que se ve es lo que recibe el asesorado: por eso ya no hace
  *   falta la tabla «Así lo ve tu asesorado». El RIR de una serie existe solo con el criterio RIR: al cambiar de
  *   criterio, se quita.
@@ -52,7 +52,9 @@ import {
 } from '@be/domain';
 import { useEffect, useId, useState, type ComponentProps, type KeyboardEvent } from 'react';
 import { EnPartes } from '../../../../components/en-partes';
-import { Campo } from '../../../../components/formulario';
+import { Campo, RenglonDelAviso } from '../../../../components/formulario';
+import { ExplicacionAPedido } from '../../../../components/explicacion-a-pedido';
+import { ConFlechas } from '../../../../components/flechas-del-numero';
 import { Icono } from '../../../../components/icono';
 import { MenuDeAcciones, type AccionDelMenu } from '../../../../components/menu-de-acciones';
 import { numeroEnCampo } from '../../../../lib/formato';
@@ -68,7 +70,23 @@ import { COPY_CARGA_DESDE_LA_ESTIMACION } from '../fuerza/carga-desde-la-estimac
 import type { PrescripcionParaLaCarga } from '../fuerza/fuerza';
 import { COPY_COPIAR } from './copiar-a';
 import { COPY_LA_VEZ_PASADA_EN_EL_EDITOR, CuadroDeLaVezPasada } from './la-vez-pasada';
-import { celdaDeLaPlanilla, copiarHaciaAbajo, COPY_PLANILLA as PL, escribirEnLasSeries, leerRepeticiones, loQueSePierdeAlQuitarLaSerie, origenDeLaCelda, volverALoGeneral, type ObjetivoDeLaSerie } from './planilla-de-series';
+import {
+  celdaDeLaPlanilla,
+  conUnPaso,
+  copiarHaciaAbajo,
+  COPY_PLANILLA as PL,
+  escribirEnLasSeries,
+  LIMITES_DE_LA_PLANILLA,
+  leerCargaDeLaPlanilla,
+  leerDescansoDeLaPlanilla,
+  leerRepeticiones,
+  loQueNoSeEntiendeEnLasSeries,
+  loQueSePierdeAlQuitarLaSerie,
+  origenDeLaCelda,
+  textoDeLoQueNoSeEntiende,
+  volverALoGeneral,
+  type ObjetivoDeLaSerie,
+} from './planilla-de-series';
 import { NotasAlLado, useNotasPropias } from '../notas-propias';
 import { useNotacionDelEsfuerzo } from '../notacion-del-esfuerzo';
 
@@ -83,7 +101,7 @@ type Repeticiones = Serie['repetitions'];
 /**
  * Lo escrito en un campo que se interpreta (un número, un rango, un tiempo). El campo guarda el texto tal como se
  * escribe y propaga lo interpretado: si mostrara siempre el valor interpretado, «6-» o «62.» se borrarían a mitad de
- * camino. Si el valor cambia desde afuera (al guardar, al quitar un ejercicio, al elegir «Sin objetivo»), el texto se
+ * camino. Si el valor cambia desde afuera (al guardar, al quitar un ejercicio, al elegir «Sin indicar en esta serie»), el texto se
  * resincroniza; lo mal escrito queda a la vista mientras el valor siga siendo ese. Al salir del campo, lo que se
  * entendió puede pasar a su forma de mostrarse («150» → «02:30»).
  */
@@ -129,6 +147,7 @@ function CampoInterpretado<T>({
   onCambiar,
   normalizarAlSalir,
   noSeEntiende,
+  avisoAparte,
   ...campo
 }: Omit<ComponentProps<typeof Campo>, 'value' | 'onChange' | 'onBlur' | 'error'> & {
   valor: T;
@@ -140,10 +159,24 @@ function CampoInterpretado<T>({
   normalizarAlSalir?: boolean;
   /** El aviso del campo cuando hay algo escrito que no se entiende. */
   noSeEntiende?: string;
+  /**
+   * RP-22: el aviso no va debajo del campo sino en un renglón reservado de quien lo muestra (`id`): en una fila de campos
+   * alineados por abajo, el renglón de uno solo los desalineaba. El campo se marca y avisa si lo escrito se entiende.
+   */
+  avisoAparte?: { readonly id: string; readonly onMal: (mal: boolean) => void };
 }) {
   const { texto, alEscribir, alSalir } = useTextoInterpretado(valor, { clave, formatear, interpretar, mismo, alCambiar: onCambiar, normalizarAlSalir });
   const mal = !!noSeEntiende && texto.trim() !== '' && formatear(interpretar(texto)) === '';
-  return <Campo {...campo} value={texto} error={mal ? noSeEntiende : null} onChange={(e) => alEscribir(e.target.value)} onBlur={alSalir} />;
+  const onMal = avisoAparte?.onMal;
+  useEffect(() => {
+    onMal?.(mal);
+  }, [mal, onMal]);
+  if (avisoAparte) {
+    const descripcion = [campo.ayuda ? `${campo.id}-ayuda` : null, mal ? avisoAparte.id : null].filter(Boolean).join(' ') || undefined;
+    return <Campo {...campo} value={texto} aria-invalid={mal || undefined} aria-describedby={descripcion} onChange={(e) => alEscribir(e.target.value)} onBlur={alSalir} />;
+  }
+  // RP-22: solo el campo que puede avisar recibe `error` (y con él, su renglón reservado dentro de `.avisos-con-lugar`).
+  return <Campo {...campo} value={texto} error={noSeEntiende ? (mal ? noSeEntiende : null) : undefined} onChange={(e) => alEscribir(e.target.value)} onBlur={alSalir} />;
 }
 
 /**
@@ -166,7 +199,21 @@ const leerElRir = (notacion: NotacionDelEsfuerzo) => (s: string): number | null 
 /** DL-192: el rango del campo, dicho en la notación. */
 const RANGO_DEL_ESFUERZO: Readonly<Record<NotacionDelEsfuerzo, string>> = { RIR: '0 a 10', RPE: '6 o menos a 10' };
 /** El descanso general: vacío → null; «02:30» o los segundos; lo demás → NaN. */
-const leerElDescanso = (s: string): number | null => (s.trim() === '' ? null : (leerDescanso(s) ?? Number.NaN));
+const leerElDescanso = (s: string): number | null => (s.trim() === '' ? null : (leerDescansoDeLaPlanilla(s, leerDescanso) ?? Number.NaN));
+/** RP-22: la carga común: vacío → null; un número desde 0; lo demás (también lo negativo) → NaN. */
+const leerLaCarga = (s: string): number | null => (s.trim() === '' ? null : (leerCargaDeLaPlanilla(s, leerNumero) ?? Number.NaN));
+const leerCargaDeLaSerie = (s: string): number | null => leerCargaDeLaPlanilla(s, leerNumero);
+const leerDescansoDeLaSerie = (s: string): number | null => leerDescansoDeLaPlanilla(s, leerDescanso);
+const PASOS = { leerNumero, leerDescanso } as const;
+type CampoConPaso = 'repetitions' | 'restSeconds' | 'suggestedLoad';
+/** RP-22: ↑ y ↓ dan un paso en la celda (con Mayúsculas, cuatro); `null` si no es una flecha o no hay paso que dar. */
+function pasoConLaFlecha(e: KeyboardEvent<HTMLInputElement>, campo: CampoConPaso, desde: number | null, unidad?: 'kg' | 'lb'): number | null {
+  if ((e.key !== 'ArrowUp' && e.key !== 'ArrowDown') || e.ctrlKey || e.metaKey || e.altKey) return null;
+  e.preventDefault();
+  return conUnPaso(campo, e.currentTarget.value, desde, e.key === 'ArrowUp', { ...PASOS, unidad, grande: e.shiftKey });
+}
+/** RP-22: el paso de las flechitas a la vista (`ConFlechas`), desde lo escrito. */
+const pasoConElMouse = (campo: CampoConPaso, texto: string, sube: boolean, unidad?: 'kg' | 'lb'): number | null => conUnPaso(campo, texto, null, sube, { ...PASOS, unidad });
 const escribirElDescanso = (n: number | null): string => (n === null || Number.isNaN(n) ? '' : (textoDeSegundos(n) ?? ''));
 
 /** La unidad de las cargas de una prescripción: la de su carga sugerida, o kg. Las series usan la misma (DL-122). */
@@ -438,6 +485,8 @@ function CeldaDeObjetivo({
   leer,
   entero = false,
   onCambiar,
+  paso = null,
+  aviso,
 }: {
   id: string;
   /** El nombre del campo: «Serie 2: carga sugerida (kg)». */
@@ -452,6 +501,10 @@ function CeldaDeObjetivo({
   leer: (t: string) => number | null;
   entero?: boolean;
   onCambiar: (v: number | null | undefined) => void;
+  /** RP-22: el paso de las flechas (la carga y el descanso; el RIR es del criterio de intensidad y no lo tiene). */
+  paso?: { readonly campo: 'restSeconds' | 'suggestedLoad'; readonly unidad?: 'kg' | 'lb' } | null;
+  /** RP-22: el renglón reservado debajo de la tabla, que dice qué no se entiende. */
+  aviso?: string;
 }) {
   const celda = celdaDeObjetivoDelEditor(valor, deLoGeneral);
   // C8: de dónde sale el valor, dicho en la celda («común», «propio» o «Sin indicar») y para el lector.
@@ -471,11 +524,17 @@ function CeldaDeObjetivo({
       <input
         id={id}
         aria-label={rotulo}
-        aria-describedby={`${id}-estado`}
+        aria-describedby={celda.estado === 'no-se-entiende' && aviso ? `${id}-estado ${aviso}` : `${id}-estado`}
         aria-invalid={celda.estado === 'no-se-entiende' || undefined}
         inputMode={entero ? 'numeric' : 'decimal'}
         autoComplete="off"
         value={texto}
+        title={paso ? COPY_DE_LOS_NUMEROS.flechas(paso.campo, paso.unidad) : undefined}
+        onKeyDown={(e) => {
+          if (!paso) return;
+          const n = pasoConLaFlecha(e, paso.campo, deLoGeneral === null ? null : leer(deLoGeneral), paso.unidad);
+          if (n !== null) alEscribir(escribir(n));
+        }}
         placeholder={origen.placeholder}
         data-en-gris={celda.enGris ? '' : undefined}
         // «Sin indicar» es un texto: se acomoda distinto que un número.
@@ -507,7 +566,8 @@ function CeldaGeneral({
   formatear,
   interpretar,
   onCambiar,
-  noSeEntiende,
+  paso,
+  aviso,
 }: {
   id: string;
   rotulo: string;
@@ -515,39 +575,86 @@ function CeldaGeneral({
   formatear: (n: number | null) => string;
   interpretar: (t: string) => number | null;
   onCambiar: (v: number | null) => void;
-  /** Lo que se dice, a la vista y asociado al campo, cuando lo escrito no se entiende (WCAG 3.3.1), como en lo general de antes. */
-  noSeEntiende: string;
+  /** RP-22: el paso de las flechas. */
+  paso: { readonly campo: 'restSeconds' | 'suggestedLoad'; readonly unidad?: 'kg' | 'lb' };
+  /**
+   * RP-22: el `id` del renglón reservado debajo de la tabla, donde se dice qué no se entiende y cómo se escribe (WCAG
+   * 3.3.1): antes el aviso iba dentro de la celda y alargaba la fila mientras se escribía.
+   */
+  aviso: string;
 }) {
   const { texto, alEscribir, alSalir } = useTextoInterpretado(valor, { clave: String(valor), formatear, interpretar, mismo: mismoNumero, alCambiar: onCambiar, normalizarAlSalir: true });
   const mal = texto.trim() !== '' && Number.isNaN(interpretar(texto));
+  const paso1 = (sube: boolean) => {
+    const n = pasoConElMouse(paso.campo, texto, sube, paso.unidad);
+    if (n !== null) alEscribir(formatear(n));
+  };
   return (
-    <>
+    <ConFlechas que={rotulo.toLowerCase()} alSubir={() => paso1(true)} alBajar={() => paso1(false)}>
       <input
         id={id}
         className="celda-de-serie"
         aria-label={rotulo}
         aria-invalid={mal || undefined}
-        aria-describedby={mal ? `${id}-no-se-entiende` : undefined}
+        aria-describedby={mal ? aviso : undefined}
         inputMode="decimal"
         autoComplete="off"
         value={texto}
+        title={COPY_DE_LOS_NUMEROS.flechas(paso.campo, paso.unidad)}
+        data-celda-general-no-se-entiende={mal ? '' : undefined}
         onChange={(e) => alEscribir(e.target.value)}
+        onKeyDown={(e) => {
+          const n = pasoConLaFlecha(e, paso.campo, null, paso.unidad);
+          if (n !== null) alEscribir(formatear(n));
+        }}
         onBlur={alSalir}
       />
-      {mal ? (
-        <span id={`${id}-no-se-entiende`} className="campo__error" data-celda-general-no-se-entiende>
-          {noSeEntiende}
-        </span>
-      ) : null}
-    </>
+    </ConFlechas>
   );
 }
 
 /** Las repeticiones de una serie: un número o un rango. No se toman de lo general: son de cada serie. */
-function CeldaDeRepeticiones({ id, rotulo, valor, onCambiar }: { id: string; rotulo: string; valor: Repeticiones; onCambiar: (r: Repeticiones) => void }) {
+function CeldaDeRepeticiones({ id, rotulo, valor, onCambiar, aviso }: { id: string; rotulo: string; valor: Repeticiones; onCambiar: (r: Repeticiones) => void; aviso: string }) {
   const { texto, alEscribir, alSalir } = useTextoInterpretado(valor, { clave: JSON.stringify(valor), formatear: reps, interpretar: leerReps, mismo: mismasReps, alCambiar: onCambiar, normalizarAlSalir: true });
-  return <input id={id} className="celda-de-serie" aria-label={rotulo} aria-invalid={noSeEntiendenLasReps(valor) || undefined} autoComplete="off" value={texto} onChange={(e) => alEscribir(e.target.value)} onBlur={alSalir} />;
+  const mal = noSeEntiendenLasReps(valor);
+  const paso1 = (sube: boolean) => {
+    const n = pasoConElMouse('repetitions', texto, sube);
+    if (n !== null) alEscribir(String(n));
+  };
+  return (
+    <ConFlechas que={rotulo.toLowerCase()} alSubir={() => paso1(true)} alBajar={() => paso1(false)}>
+    <input
+      id={id}
+      className="celda-de-serie"
+      aria-label={rotulo}
+      aria-invalid={mal || undefined}
+      aria-describedby={mal ? aviso : undefined}
+      autoComplete="off"
+      value={texto}
+      title={COPY_DE_LOS_NUMEROS.flechas('repetitions')}
+      onChange={(e) => alEscribir(e.target.value)}
+      onKeyDown={(e) => {
+        const n = pasoConLaFlecha(e, 'repetitions', null);
+        if (n !== null) alEscribir(String(n));
+      }}
+      onBlur={alSalir}
+    />
+    </ConFlechas>
+  );
 }
+
+/** RP-22: lo que dicen los números de la planilla sobre sus límites y sus flechas. */
+const COPY_DE_LOS_NUMEROS = {
+  flechas: (campo: 'repetitions' | 'restSeconds' | 'suggestedLoad', unidad: 'kg' | 'lb' = 'kg'): string => {
+    const L = LIMITES_DE_LA_PLANILLA;
+    if (campo === 'repetitions') return `De ${L.repeticiones.minimo} a ${L.repeticiones.maximo}, o un rango como 8-12. ↑ y ↓ suman o restan 1.`;
+    if (campo === 'restSeconds') return 'De 00:00 a 60:00, como 02:30 o en segundos. ↑ y ↓ suman o restan 15 segundos.';
+    return `Desde 0 ${unidad}. ↑ y ↓ suman o restan ${numeroEnCampo(L.carga.paso[unidad])} ${unidad}.`;
+  },
+  // El pie de la tabla, detrás de un «?» (RP-05 y RP-08: lo largo, a un toque).
+  comoSeLeeLaTabla: 'Cómo se lee la tabla y sus atajos',
+  flechasEnLaTabla: 'Con ↑ y ↓ un número da un paso (con Mayúsculas, cuatro): 1 repetición, 15 segundos de descanso o 2,5 kg de carga (5 lb).',
+} as const;
 
 /**
  * Las series, una por fila: sus repeticiones, sus objetivos (la carga sugerida, el RIR si ese es el criterio, y el
@@ -613,7 +720,9 @@ function SeriesDelEjercicio({
       setNoSeEntiende(false);
       return onCambiar({ sets: p.sets.map((x, m) => (elegidas.has(m) ? { ...x, repetitions: r } : x)) });
     }
-    const leido = campo === 'restSeconds' ? leerDescanso(valor) : campo === 'rir' ? leerElRir(notacion)(valor) : leerNumero(valor);
+    // RP-22: con los mismos límites que las celdas (la carga desde 0; el descanso, hasta 60:00). Antes, «Escribir en 3
+    // series» dejaba pasar una carga negativa o un descanso de más de una hora, que el contrato rechaza al guardar.
+    const leido = campo === 'restSeconds' ? leerDescansoDeLaSerie(valor) : campo === 'suggestedLoad' ? leerCargaDeLaSerie(valor) : campo === 'rir' ? leerElRir(notacion)(valor) : leerNumero(valor);
     if (leido === null) return setNoSeEntiende(true);
     setNoSeEntiende(false);
     onCambiar({ sets: escribirEnLasSeries(p.sets, elegidas, campo, campo === 'suggestedLoad' ? { value: leido, unit: unidad } : leido) });
@@ -649,6 +758,11 @@ function SeriesDelEjercicio({
     setSeleccionando(false);
     setNoSeEntiende(false);
   };
+  // RP-22 (RP-19): lo que no se entiende en las celdas se dice en un renglón reservado debajo de la tabla; cada celda se
+  // marca en su lugar. Antes, el aviso de la fila Común aparecía dentro de la celda y alargaba la fila mientras se escribía.
+  const aviso = `${id}-no-se-entiende`;
+  const queNoSeEntiende = loQueNoSeEntiendeEnLasSeries(id, p, p.sets.map((_, n) => cual(n)));
+  const textoDelAviso = textoDeLoQueNoSeEntiende(queNoSeEntiende);
   return (
     <div className="ejercicio-del-editor__series" data-seleccionando={seleccionando ? '' : undefined}>
       {p.sets.length === 0 ? <p className="nota">{C.sinSeries}</p> : null}
@@ -711,11 +825,10 @@ function SeriesDelEjercicio({
             <button type="button" className="boton boton--enlace" onClick={soltar} data-terminar-la-seleccion>
               {COPY_SELECCION.listo}
             </button>
-            {noSeEntiende ? (
-              <p id={`${id}-elegidas-no-se-entiende`} className="campo__error" role="alert">
-                {campo === 'repetitions' ? COPY_SELECCION.repeticionesNoSeEntienden : PL.noSeEntiende}
-              </p>
-            ) : null}
+            {/* RP-22: el aviso tiene su renglón en la barra: al tocar «Escribir» con algo que no se entiende, la tabla no baja. */}
+            <RenglonDelAviso id={`${id}-elegidas-no-se-entiende`} tipo={noSeEntiende ? 'error' : 'nota'} className="aviso-de-las-elegidas" role="alert">
+              {noSeEntiende ? (campo === 'repetitions' ? COPY_SELECCION.repeticionesNoSeEntienden : campo === 'suggestedLoad' ? COPY_SELECCION.cargaNoSeEntiende : campo === 'restSeconds' ? COPY_SELECCION.descansoNoSeEntiende : PL.noSeEntiende) : null}
+            </RenglonDelAviso>
           </div>
         ) : null}
         <table className="tabla series-del-editor" onKeyDown={alTeclear}>
@@ -771,9 +884,10 @@ function SeriesDelEjercicio({
                   rotulo={`${PL.general}: ${C.cargaSugerida.toLowerCase()} (${unidad})`}
                   valor={p.suggestedLoad ? p.suggestedLoad.value : null}
                   formatear={escribirNumero}
-                  interpretar={leerValor}
+                  interpretar={leerLaCarga}
                   onCambiar={(v) => onCambiar({ suggestedLoad: v === null ? null : { value: v, unit: unidad } })}
-                  noSeEntiende="No se entiende: va un número."
+                  paso={{ campo: 'suggestedLoad', unidad }}
+                  aviso={aviso}
                 />
               </td>
               {conRir ? (
@@ -790,7 +904,8 @@ function SeriesDelEjercicio({
                   formatear={escribirElDescanso}
                   interpretar={leerElDescanso}
                   onCambiar={(v) => onCambiar({ restSeconds: v })}
-                  noSeEntiende="No se entiende: va como 02:30, o en segundos enteros."
+                  paso={{ campo: 'restSeconds' }}
+                  aviso={aviso}
                 />
               </td>
               <td className="series-del-editor__nota">
@@ -817,7 +932,7 @@ function SeriesDelEjercicio({
                   </label>
                 </th>
                 <td data-etiqueta="Repeticiones">
-                  <CeldaDeRepeticiones id={`${id}-serie-${n}`} rotulo={`${rotulos[n]!.largo}: repeticiones (un número o un rango, 8-12)`} valor={s.repetitions} onCambiar={(r) => cambiarLaSerie(n, (x) => ({ ...x, repetitions: r }))} />
+                  <CeldaDeRepeticiones id={`${id}-serie-${n}`} rotulo={`${rotulos[n]!.largo}: repeticiones (un número o un rango, 8-12)`} valor={s.repetitions} onCambiar={(r) => cambiarLaSerie(n, (x) => ({ ...x, repetitions: r }))} aviso={aviso} />
                 </td>
                 <td data-etiqueta={`${C.cargaSugerida} (${unidad})`}>
                   <CeldaDeObjetivo
@@ -827,8 +942,10 @@ function SeriesDelEjercicio({
                     valor={s.suggestedLoad === undefined ? undefined : s.suggestedLoad === null ? null : s.suggestedLoad.value}
                     deLoGeneral={cargaGeneral}
                     escribir={numeroEnCampo}
-                    leer={leerNumero}
+                    leer={leerCargaDeLaSerie}
                     onCambiar={(v) => cambiarElObjetivo(n, 'suggestedLoad', v === undefined || v === null ? v : { value: v, unit: unidad })}
+                    paso={{ campo: 'suggestedLoad', unidad }}
+                    aviso={aviso}
                   />
                 </td>
                 {conRir ? (
@@ -842,6 +959,7 @@ function SeriesDelEjercicio({
                       escribir={rirEnCampo(notacion)}
                       leer={leerElRir(notacion)}
                       onCambiar={(v) => cambiarElObjetivo(n, 'rir', v)}
+                      aviso={aviso}
                     />
                   </td>
                 ) : null}
@@ -853,9 +971,11 @@ function SeriesDelEjercicio({
                     valor={s.restSeconds}
                     deLoGeneral={descansoGeneral}
                     escribir={(v) => textoDeSegundos(v) ?? ''}
-                    leer={leerDescanso}
+                    leer={leerDescansoDeLaSerie}
                     entero
                     onCambiar={(v) => cambiarElObjetivo(n, 'restSeconds', v)}
+                    paso={{ campo: 'restSeconds' }}
+                    aviso={aviso}
                   />
                 </td>
                 <td data-etiqueta={C.nota} className="series-del-editor__nota">
@@ -886,6 +1006,14 @@ function SeriesDelEjercicio({
             ))}
           </tbody>
         </table>
+        {/* RP-22: siempre en la página; vacío, ocupa lo mismo. Lo que se marca en una celda no corre las filas ni el pie. */}
+        {p.sets.length > 0 || queNoSeEntiende.length > 0 ? (
+          // Un solo renglón, de alto fijo: si en un ancho muy justo no entra, se corta con «…» y el texto entero queda en el
+          // título (y el lector lo lee entero, también desde la celda, por `aria-describedby`).
+          <RenglonDelAviso id={aviso} tipo={queNoSeEntiende.length > 0 ? 'error' : 'nota'} anunciar title={textoDelAviso ?? undefined} data-lo-que-no-se-entiende={queNoSeEntiende.length}>
+            {textoDelAviso}
+          </RenglonDelAviso>
+        ) : null}
       </>
       {/* TEST-EDP-056: lo que se pierde se dice antes, con «Cancelar» enfocado; cancelar no toca nada. */}
       <CuadroEnfocado
@@ -905,10 +1033,16 @@ function SeriesDelEjercicio({
           <Icono nombre="mas" tamano={18} />
           Agregar serie
         </button>
-        {p.sets.length > 0 ? <p className="nota">{PL.atajo}</p> : null}
-        {p.sets.length > 0 ? <p className="nota" data-ayuda-del-calentamiento>{COPY_TIPOS_DE_SERIE.ayudaDelEditor}</p> : null}
-        {/* C8: cómo se lee cada valor; la celda lo dice sola («común», «propio» o «Sin indicar»). */}
-        {p.sets.length > 0 ? <p className="nota" data-como-se-lee-cada-valor>{PL.comoSeLee}</p> : null}
+        {/* RP-22: cómo se lee cada valor (C8), el calentamiento (DL-178) y los atajos, detrás de un «?»: Dirección no quiere
+            párrafos a la vista. La celda ya dice sola «común», «propio» o «Sin indicar». */}
+        {p.sets.length > 0 ? (
+          <ExplicacionAPedido nombre={COPY_DE_LOS_NUMEROS.comoSeLeeLaTabla} como="div">
+            <p className="nota" data-como-se-lee-cada-valor>{PL.comoSeLee}</p>
+            <p className="nota" data-ayuda-del-calentamiento>{COPY_TIPOS_DE_SERIE.ayudaDelEditor}</p>
+            <p className="nota">{PL.atajo}</p>
+            <p className="nota">{COPY_DE_LOS_NUMEROS.flechasEnLaTabla}</p>
+          </ExplicacionAPedido>
+        ) : null}
       </div>
     </div>
   );
@@ -924,6 +1058,9 @@ const COPY_SELECCION = {
   escribirEn: (n: number) => (n === 1 ? 'Escribir en 1 serie' : `Escribir en ${n} series`),
   listo: 'Listo',
   repeticionesNoSeEntienden: 'No se entiende: va un número o un rango, como 8-12.',
+  // RP-22: los mismos límites que las celdas.
+  cargaNoSeEntiende: 'No se entiende: va un número desde 0.',
+  descansoNoSeEntiende: 'No se entiende: va como 02:30, o en segundos, hasta 60:00.',
 } as const;
 
 /** ENP-D14: los textos del criterio arriba de las series. */
@@ -946,6 +1083,9 @@ function CriterioDelEjercicio({ id, prescripcion: p, onCambiar }: { id: string; 
   // C7: lo que se quitó al cambiar de criterio, con «Deshacer», mientras siga el criterio elegido.
   const [cambio, setCambio] = useState<CambioDeCriterio<PrescripcionE['intensity']> | null>(null);
   const avisoDelCambio = cambio && sigueElCambio(p, cambio) ? cambio : null;
+  // RP-22 (RP-19): el aviso del objetivo que no se entiende va al pie del recuadro, en su renglón reservado: debajo del
+  // campo desalineaba la fila (los campos se alinean por abajo) y bajaba las series mientras se escribía.
+  const [objetivoMal, setObjetivoMal] = useState(false);
   return (
     <div className="criterio-del-ejercicio" role="group" aria-label={COPY_CRITERIO_ARRIBA.titulo} data-criterio-del-ejercicio>
         <div className="lo-general-del-editor__par">
@@ -985,6 +1125,7 @@ function CriterioDelEjercicio({ id, prescripcion: p, onCambiar }: { id: string; 
               interpretar={(t) => (criterio === 'RIR' && notacion === 'RPE' ? (t.trim() === '' ? Number.NaN : (leerRpeEscrito(t) ?? Number.NaN)) : (leerValor(t) ?? Number.NaN))}
               mismo={mismoNumero}
               noSeEntiende={criterio === 'RIR' && notacion === 'RPE' ? 'No se entiende: va un RPE de 6 a 10, de a medio punto, o «6 o menos».' : 'No se entiende: va un número.'}
+              avisoAparte={{ id: `${id}-objetivo-aviso`, onMal: setObjetivoMal }}
               onCambiar={(v) => onCambiar({ intensity: { ...p.intensity!, target: { ...p.intensity!.target, value: v } } })}
             />
           ) : null}
@@ -1078,6 +1219,13 @@ function CriterioDelEjercicio({ id, prescripcion: p, onCambiar }: { id: string; 
               </select>
             </div>
           </div>
+        {/* RP-22: con un criterio elegido, el renglón del aviso de su objetivo está siempre, al pie del recuadro. Dice de qué
+            campo es: ya no va debajo de él. */}
+        {p.intensity ? (
+          <RenglonDelAviso id={`${id}-objetivo-aviso`} tipo={objetivoMal ? 'error' : 'nota'} className="criterio-del-ejercicio__aviso-del-objetivo" data-objetivo-no-se-entiende={objetivoMal ? '' : undefined}>
+            {objetivoMal ? 'No se entiende el objetivo: va un número.' : null}
+          </RenglonDelAviso>
+        ) : null}
     </div>
   );
 }

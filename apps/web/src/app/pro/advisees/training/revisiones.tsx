@@ -361,7 +361,7 @@ function FormularioDeRevision({
   const errorDelObjetivo = porCampo['trn-revision-objetivo'] ?? null;
 
   return (
-    <form className="revision-nueva__formulario" onSubmit={enviar} onBlur={avisos.alSalir} onKeyDown={avisos.alEnter} noValidate data-periodo={periodoLeido}>
+    <form className="revision-nueva__formulario avisos-con-lugar" onSubmit={enviar} onBlur={avisos.alSalir} onKeyDown={avisos.alEnter} noValidate data-periodo={periodoLeido}>
       <ResumenDeErrores titulo="Para registrar la revisión falta:" errores={errores} intento={avisos.envios} />
       <AnuncioDeLosAvisos texto={avisos.anuncio(COPY_AVISOS_VIVOS.listoParaRegistrar)} />
       <div className="revision-nueva__columnas">

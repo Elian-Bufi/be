@@ -25,6 +25,7 @@ import {
 } from '@be/domain';
 import type { ReactNode } from 'react';
 import { DialogoDeConfirmacion } from '../../../../components/dialogo';
+import { ExplicacionAPedido } from '../../../../components/explicacion-a-pedido';
 import { Enlace } from '../../../../components/enlace';
 import { Campo } from '../../../../components/formulario';
 import { Icono } from '../../../../components/icono';
@@ -70,8 +71,9 @@ export function CabeceraDeLaPlantilla({
       <div className="editor-del-plan__cabecera estacion__barra" data-barra-de-la-plantilla>
         <div className="editor-de-la-plantilla__titulo">
           <p className="nota editor-de-la-plantilla__que-es">
-            <Enlace href={preparacion.templateId ? `/pro/templates?plantilla=${encodeURIComponent(preparacion.templateId)}` : '/pro/templates'} className="boton boton--enlace" data-volver-a-plantillas>
-              <Icono nombre="izquierda" tamano={15} />
+            {/* RP-22 (RP-01): la vuelta como botón fantasma con flecha, como en la cabecera de las áreas: no un enlace subrayado. */}
+            <Enlace href={preparacion.templateId ? `/pro/templates?plantilla=${encodeURIComponent(preparacion.templateId)}` : '/pro/templates'} className="boton boton--fantasma boton--compacto marco-del-area__volver" data-volver-a-plantillas>
+              <Icono nombre="volver" tamano={18} />
               {P.volver}
             </Enlace>
             <span aria-hidden="true"> · </span>
@@ -128,11 +130,14 @@ export function CabeceraDeLaPlantilla({
             {base !== null ? <p className="nota" data-la-version-sigue>{P.laVersionSigue(base)}</p> : null}
           </div>
         )}
-        <div className="campo editor-de-la-plantilla__cargas" data-cargas-de-la-plantilla>
+        <div className="campo editor-de-la-plantilla__cargas titulo-con-ayuda" data-cargas-de-la-plantilla>
           <label>
             <input type="checkbox" checked={metadatos.conCargas} onChange={(e) => onMetadatos({ ...metadatos, conCargas: e.target.checked })} /> {COPY_PLANTILLAS.cargas}
           </label>
-          <p className="nota">{COPY_PLANTILLAS.cargasAyuda}</p>
+          {/* RP-22: qué pasa con las cargas, detrás de un «?»; lo que hay escrito en esta plantilla sigue a la vista, abajo. */}
+          <ExplicacionAPedido nombre="Qué pasa con las cargas sugeridas" como="div">
+            <p className="nota">{COPY_PLANTILLAS.cargasAyuda}</p>
+          </ExplicacionAPedido>
           {cargasEscritas > 0 ? (
             <p className="nota" data-cargas-escritas>
               <Icono nombre={metadatos.conCargas ? 'tilde' : 'aviso'} tamano={15} />

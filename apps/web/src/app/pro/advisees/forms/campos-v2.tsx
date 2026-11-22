@@ -16,7 +16,7 @@
  */
 import { ayudaDeLaPregunta, COPY_FORMULARIOS as F, COPY_FORMULARIOS_V2 as V, LARGO_MAXIMO_DE_ALIMENTO, LARGO_MAXIMO_DE_OTRO, leerNumero, motivoDeNumeroIlegible, type CampoDePlantillaV2, type LimitesNumericos, type SubcampoDeLista, type ValorDeRespuestaV2, type ValorDeSubcampo } from '@be/domain';
 import { useEffect, useRef, useState } from 'react';
-import { Campo } from '../../../../components/formulario';
+import { Campo, RenglonDelAviso } from '../../../../components/formulario';
 import { numeroEnCampo } from '../../../../lib/formato';
 import { alternarOpcionMultiple } from './formulario-de-inicio';
 
@@ -176,12 +176,11 @@ function EntradaNumerica({
         />
         {unidad ? <span className="campo-de-inicio__unidad">{unidad}</span> : null}
       </span>
-      {ilegible ? (
-        <p id={`${id}-ilegible`} className="campo__error">
-          <span aria-hidden="true">⚠ </span>
-          {ilegible}
-        </p>
-      ) : null}
+      {/* RP-22 (RP-19): el aviso de un número que no se entiende tiene su renglón reservado: aparece mientras se escribe y no
+          corre las preguntas de abajo. */}
+      <RenglonDelAviso id={`${id}-ilegible`} tipo={ilegible ? 'error' : 'nota'} data-numero-ilegible={ilegible ? '' : undefined}>
+        {ilegible}
+      </RenglonDelAviso>
     </div>
   );
 }

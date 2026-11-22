@@ -24,6 +24,7 @@ import {
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Enlace } from '../../../components/enlace';
+import { ExplicacionAPedido } from '../../../components/explicacion-a-pedido';
 import { Icono } from '../../../components/icono';
 import { tomarAvisoPara } from '../../../lib/aviso-al-llegar';
 import { useClaveDeIntento } from '../../../lib/intento';
@@ -111,20 +112,23 @@ export function MisPlantillas() {
       ) : null}
       {sinArea ? null : (
       <section className={conDetalle ? 'seccion seccion--con-detalle' : 'seccion'} aria-labelledby="titulo-plantillas" data-con-detalle={conDetalle ? '' : undefined}>
-        <div className="plantillas-y-habituales__cabecera">
+        <div className="plantillas-y-habituales__cabecera titulo-con-ayuda">
           <h2 id="titulo-plantillas">{COPY_PLANTILLAS.plantillasDeEntrenamiento}</h2>
+          {/* RP-22 (DL-188): lo que explica la sección, detrás de un «?» al lado del título: Dirección no quiere párrafos a la vista. */}
+          <ExplicacionAPedido nombre="Qué es una plantilla y quién la ve" como="div">
+            <p className="nota">{PLT.queSeHaceAca}</p>
+            <p className="nota">{COPY_PLANTILLAS.soloTuya}</p>
+          </ExplicacionAPedido>
           {/* PLT (DL-182): una plantilla nueva, sin persona: abre el editor en blanco, sin pedir nada antes. */}
           <button type="button" className="boton boton--primario" data-nueva-plantilla disabled={abrirElEditor.abriendo} onClick={() => void abrirElEditor.nueva()}>
             <Icono nombre="mas" tamano={18} />
             {abrirElEditor.abriendo ? PLT.creandoLaPlantilla : PLT.nuevaPlantilla}
           </button>
         </div>
-        <p className="nota">{PLT.queSeHaceAca}</p>
-        <p className="nota">{COPY_PLANTILLAS.soloTuya}</p>
         <EnPreparacion preparaciones={preparaciones} />
         {/* Sin plantillas y sin filtro, el filtro no tiene nada que filtrar: aparece cuando hay alguna. */}
         {estado === '' && lista.estado.tipo === 'listo' && lista.estado.items.length === 0 ? null : (
-        <div className="campo">
+        <div className="campo campo--filtro-angosto">
           <label htmlFor="plantillas-estado">Estado</label>
           <select
             ref={filtroDeEstado}
