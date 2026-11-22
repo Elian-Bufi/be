@@ -85,6 +85,7 @@ import { CampoDeNombre } from '../../../../components/campo-de-nombre';
 import { EnPartes } from '../../../../components/en-partes';
 import { Cargando, ErrorConReintento } from '../../../../components/estados';
 import { Aviso } from '../../../../components/formulario';
+import { ExplicacionAPedido } from '../../../../components/explicacion-a-pedido';
 import { CuadroEnfocado } from '../../../../components/cuadro-enfocado';
 import { Icono } from '../../../../components/icono';
 import { MenuDeAcciones } from '../../../../components/menu-de-acciones';
@@ -2312,11 +2313,14 @@ export function EditorDePlan({
       {esDelPlan(version) && version.templateOrigin ? <NotaDeOrigen token={token} origen={version.templateOrigin} /> : null}
       {bloqueadoPorLaApp ? (
         <Aviso tipo="info">
-          <div id="motivo-sin-activar">
+          {/* RP-22 (DL-188): a la vista, el título y qué hacer; el porqué, detrás de un «?». */}
+          <div id="motivo-sin-activar" data-motivo-sin-activar>
             <p>
-              <strong>{COPY_COMPATIBILIDAD_DE_CLIENTES.activacionBloqueadaTitulo}</strong>
+              <strong>{COPY_COMPATIBILIDAD_DE_CLIENTES.activacionBloqueadaTitulo}</strong>{' '}
+              <ExplicacionAPedido nombre="Por qué todavía no se puede activar">
+                {ACTIVACION_BLOQUEADA_POR_LA_APP}
+              </ExplicacionAPedido>
             </p>
-            <p>{ACTIVACION_BLOQUEADA_POR_LA_APP}</p>
             <p>{COPY_COMPATIBILIDAD_DE_CLIENTES.queHacer}</p>
           </div>
         </Aviso>
@@ -2329,9 +2333,11 @@ export function EditorDePlan({
         <Aviso tipo="info">
           <div id="motivo-sin-activar-calentamiento" data-calentamiento-bloqueado>
             <p>
-              <strong>{COPY_CALENTAMIENTO_Y_LA_APP.activacionBloqueadaTitulo}</strong>
+              <strong>{COPY_CALENTAMIENTO_Y_LA_APP.activacionBloqueadaTitulo}</strong>{' '}
+              <ExplicacionAPedido nombre="Por qué todavía no se puede activar">
+                {COPY_CALENTAMIENTO_Y_LA_APP.activacionBloqueada}
+              </ExplicacionAPedido>
             </p>
-            <p>{COPY_CALENTAMIENTO_Y_LA_APP.activacionBloqueada}</p>
             <p>{COPY_CALENTAMIENTO_Y_LA_APP.queHacer}</p>
           </div>
         </Aviso>
