@@ -30,7 +30,7 @@ const leerElDescanso = (t: string): number | null => (t.trim() === '' ? null : (
 /** RP-22: un paso del descanso (15 s, o un minuto con Mayúsculas), desde lo escrito. */
 const conUnPasoDelDescanso = (t: string, sube: boolean, grande = false): number | null => conUnPaso('restSeconds', t, null, sube, { leerNumero: () => null, leerDescanso, grande });
 const COPY_DEL_DESCANSO = {
-  noSeEntiende: 'No se entiende el descanso al terminar la vuelta: va como 01:30, o en segundos, hasta 60:00.',
+  noSeEntiende: 'Descanso: va como 01:30 o en segundos, hasta 60:00.',
   flechas: `De 00:00 a 60:00, como 01:30 o en segundos. ↑ y ↓ suman o restan ${LIMITES_DE_LA_PLANILLA.descanso.paso} segundos.`,
 } as const;
 const escribirElDescanso = (s: number | null | undefined): string => (typeof s === 'number' && !Number.isNaN(s) ? (textoDeSegundos(s) ?? '') : '');

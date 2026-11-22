@@ -21675,6 +21675,8 @@ html:has(.estacion:not([data-en-el-asistente])) {
 
 .bloque-del-editor__campo .con-flechas {
   display: inline-block;
+  justify-self: start;
+  width: fit-content;
 }
 
 .con-flechas > input {
