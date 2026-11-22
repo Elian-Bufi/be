@@ -1647,6 +1647,7 @@ async function franjasPorComida({ p, d, salida }) {
   assert.equal(await p.$$eval(`${comida} [data-franjas-de-la-comida] .franja`, (fs) => fs.length), 4, 'kcal, P, C y G');
   await p.waitForFunction((s) => document.querySelectorAll(`${s} [data-franjas-de-la-comida] .franja[data-renglon="protein"] .franja__marca:not([data-espera])`).length === 2, { timeout: ESPERA, polling: 100 }, comida);
   assert.ok(await p.$(`${comida} [data-franjas-de-la-comida] .franja[data-renglon="protein"] .franja__promedio`), 'el promedio de las dos opciones');
+  await p.$eval(comida, (e) => e.scrollIntoView({ block: 'center' }));
   await captura(p, salida, 'franjas-comida-plegada-1440');
 
   // La opción del arroz, abierta: su franja, sola.
@@ -1674,9 +1675,14 @@ async function franjasPorComida({ p, d, salida }) {
   const antes = await medir();
   for (const lugar of ['opcion', 'comida', 'panel']) assert.equal(antes[lugar].marcas.length, 4, `${lugar}: una marca del arroz por renglón`);
 
-  // Bajar la cantidad: la marca se mueve con cada tecla, en los tres lugares, sin que cambie el alto.
-  await campo.click({ clickCount: 3 });
+  // Bajar la cantidad: la marca se mueve con cada tecla, en los tres lugares, sin que cambie el alto. Lo escrito
+  // reemplaza lo que había (todo elegido), sin pasar por el campo vacío.
+  await campo.focus();
+  await p.keyboard.down('Control');
+  await p.keyboard.press('KeyA');
+  await p.keyboard.up('Control');
   await p.keyboard.type('75');
+  assert.equal(await p.$eval('#item-0-1-0-0-cantidad', (e) => e.value), '75', 'la cantidad nueva reemplaza la anterior');
   await p.waitForFunction(
     (s, k, previo) => document.querySelector(`${s} [data-franjas-de-la-opcion] .franja__marca[data-marca="${k}"]`)?.style.getPropertyValue('--en') !== previo,
     { timeout: ESPERA, polling: 100 },
@@ -1692,6 +1698,7 @@ async function franjasPorComida({ p, d, salida }) {
   // Las tres dicen lo mismo: la comida y el panel toman lo que está en pantalla, no lo guardado.
   assert.deepEqual(despues.comida.marcas, despues.opcion.marcas, 'la comida y la opción ubican igual al arroz');
   assert.deepEqual(despues.panel.marcas, despues.opcion.marcas, 'el panel y la opción ubican igual al arroz');
+  await p.$eval(`${comida} [data-franjas-de-la-opcion]`, (e) => e.scrollIntoView({ block: 'center' }));
   await captura(p, salida, 'franjas-opcion-abierta-1440');
   const panel = await p.$('[data-panel-de-nutricion]');
   if (salida) for (const tema of ['azul-noche', 'claro']) {
@@ -1712,6 +1719,7 @@ async function franjasPorComida({ p, d, salida }) {
     });
     assert.ok(desborde.panel !== null && desborde.panel <= 1, `a ${ancho}: el panel no se desplaza de costado (${desborde.panel} px de más)`);
     assert.equal(desborde.fuera, 0, `a ${ancho}: ninguna franja se sale de su lugar`);
+    await p.$eval(comida, (e) => e.scrollIntoView({ block: 'start' }));
     if (ancho !== 1440) await captura(p, salida, `franjas-${ancho}`);
   }
 }
