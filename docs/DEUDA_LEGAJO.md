@@ -190,6 +190,7 @@
 | DL-188 | Pedido de Dirección · 2026-11-21 (el recorrido de la planificación de Nutrición en el escritorio profesional: «ponete a solucionar todo, empezá ya») | DL-186 · DL-146 · DL-163 (TB-07) · ED-02 · NUP-06 a 08 · NUP-10 · B10-01 · B10-10 §6-§8 · REG-06-157 · la decisión de Dirección del 18/11 (el «%» con su base) | La cabecera de un área ocupaba tres renglones, con un enlace largo para volver, «Actualizar» y la hora de la consulta; el acceso se partía; un error en línea movía su campo; el calculador tenía textos largos, un desplegable cortado, el ajuste con signo y la distribución por comida en el objetivo; las cantidades no llevaban ícono; la cuenta de los gramos ocupaba dos renglones; no estaba ten Haaf (2014) | **PROGRAMADA en `wp-recorrido-plan-pulido` (frente 1; PR en borrador, sin integrar) · RP-D01 a RP-D17 a ratificar · RP-19 «Sin saltos» (22/11) en `wp-recorrido-sin-saltos`, RP-D18 a RP-D26 a ratificar**: la cabecera en una franja con la vuelta como botón, el acceso en un chip y la revalidación al volver a la pestaña («Hay datos nuevos · Ver»); las filas de campos alineadas por arriba; el calculador más corto, con lo largo detrás de «?» y «Fuente», los g/kg con límites y paso 0,1 y el ajuste sin signo; el reparto por comida a la vista en cada día tipo; el ícono con el número y la abreviatura; la cuenta de los gramos detrás de un «?»; ten Haaf y Weijs (2014) en sus dos variantes. Sin operaciones nuevas ni migraciones. Detalle: `docs/paquetes/WP-RECORRIDO-PLAN-PULIDO.md` |
 | DL-189 | Pedido de Dirección · 2026-11-21 (la evaluación inicial «no le cierra»: un pantallazo del caso en lugar de la planilla) | RF-026 · RF-036 · RF-071 · REG-06-97 · REG-06-109 · DL-048 · DL-145 · DL-146 · DL-164 (D-3, D-4, D-6) · DL-165 (D-1, D-7) · DL-169 · DL-173 · DL-185 · DL-186 · Ley 26.529 art. 14 | La evaluación inicial era una planilla de «Concepto / Valor / Unidad / Fuente» con pastillas y el texto «BE no calcula»; los tres pasos de «Empezar el plan» ocupaban media pantalla; la fecha se escribía a mano; «Cargar con la persona» solo se abría desde una solicitud ya enviada y traía todas las preguntas a la vez | **PROGRAMADA en `wp-evaluacion-inicial-2` (PR en borrador, sin integrar) · EI-D01 a EI-D16 a ratificar**: la franja de los pasos, la fecha automática, la evaluación de Nutrición en tres bloques («Lo que contó», «Lo medido», «Lo que necesita el cálculo»), «Anotaciones» privadas, «Completarlo ahora con la persona» y lo crítico primero. Sin operaciones nuevas en la API ni cambios en la APK. Detalle: `docs/paquetes/WP-EVALUACION-INICIAL-2.md` |
 | DL-190 | Decisión de Dirección · 2026-11-21 (Kerr de cinco componentes y elegir el método antes de medir; WP-ANTROPOMETRIA-METODO-Y-KERR) | DL-110 · DL-111 (decisiones 5 a 7) · DL-112 · REG-06-152 · REG-06-157 · REG-06-203/204/205 · RF-048 · RF-049 · ficha de métodos D-1 y D-3 · DL-152 | El método se elegía después de medir, sobre un único protocolo de 30 mediciones; Kerr quedaba en reserva (D-3 sin resolver) y faltaban siete mediciones para sus cinco masas | **PROGRAMADA en `wp-antropometria-metodo-y-kerr` (PR en borrador, sin integrar) · AK-D01 a AK-D14 a ratificar**: Kerr (1988) en seis métodos (la piel por sexo; adiposa, muscular, ósea y residual) con la tabla 4.3 y el apéndice A de la tesis, D-3 resuelta (muslo a 1 cm del pliegue glúteo, pecho mesoesternal, cintura mínima), siete mediciones nuevas en el catálogo del dominio (no en una versión del protocolo, que cortaría la comparabilidad), una migración que solo agrega y, en la toma, la suma frente al peso medido en kg y en %; elegir uno o varios métodos al empezar la toma, con la unión de lo que piden más peso, talla y edad, el habitual de la última toma (API-MHA-01, familia propia MHA, sin migración), «+ Otra medición» y la nota del suprailíaco de Jackson y Pollock (D-1). La APK 0.31 no se rompe. Detalle: `docs/paquetes/WP-ANTROPOMETRIA-METODO-Y-KERR.md` |
+| DL-191 | Decisión de Dirección · 2026-11-22 («tus recomendaciones me parecieron perfectas, aplicalas así»; WP-RECETARIO-E-IMAGENES) | DL-119 · DL-120 · DL-180 (el patrón del canon) · DL-152 · REG-06-135 inciso 2 · 08 §21 · Ley 25.326 · Ley 11.723 | Cada foto de una receta se bajaba entera (un JPEG de 1600 px, unos 300 kB) aunque se mostrara en una miniatura; la imagen solo se cargaba en «Mis recetas»; no había recetas de BE para todos ni una forma de proponer una con su foto | **PROGRAMADA en `wp-recetario-e-imagenes` (PR en borrador, sin integrar) · REC-D01 a REC-D17 a ratificar**: la imagen de una receta en dos WebP de calidad 78 (1200 y 400 px), pedidas por variante; los medios de antes, con sus variantes perezosas e idempotentes, y sin variante lo guardado (la APK publicada sigue igual); una sola copia por huella del mismo dueño; el website achica antes de subir; el Recetario de BE (familia propia RCT): lista con rutas firmadas guardables de 6 a 7 horas, copiar con el mismo medio, proponer con la cesión de la foto versionada y registrada, Administración con autor y parecidas; la semilla de las 66 como comando (no se corrió en test); la imagen desde el cajón del plan. Una migración que solo agrega. Pendiente legal: la cesión, con el abogado. Detalle: `docs/paquetes/WP-RECETARIO-E-IMAGENES.md` |
 | DL-193 | Decisión de Dirección · 2026-11-22 (sacar el asistente de 7 pasos de Nutrición; WP-SIN-ASISTENTE-DE-NUTRICION) | RF-030 · RF-031 · UC-P10 · UC-P11 · B10-05 §12 · DL-145 · DL-167 (ED-30) · EDC-11 · EDC-12 | El asistente de Nutrición (ED-30) repetía, en siete pasos, lo que el editor ya hacía; Dirección lo encontró engorroso y anticuado frente a la forma normal | **PROGRAMADA en `wp-sin-asistente-de-nutricion` (PR en borrador, sin integrar) · SAN-D01 a SAN-D10 a ratificar**: sin el asistente de Nutrición (el de Entrenamiento no se toca); todo camino que llevaba a él va a la vista del plan o al editor, y una dirección vieja con `asistente=N` abre la misma vista sin ese parámetro; lo que solo tenía el asistente pasa al editor: «Empezar en blanco» con una versión activa, el objetivo con su versión y su fecha y lo que está en proporción, y «Usarla ahora» para pasar al objetivo vigente. Sin cambios en la API ni en la base: el asistente no guardaba estado propio. Detalle: `docs/paquetes/WP-SIN-ASISTENTE-DE-NUTRICION.md` |
 
 ---
@@ -9166,6 +9167,53 @@ su esquema y se publican; las nombra con el código legible hasta la próxima AP
 - Los nombres en la próxima APK, con sus lecturas congeladas (DL-152).
 - Calcular las cinco masas de un toque y partir el peso en las cinco masas en «Composición corporal» y en la lámina.
   Detalle completo: `docs/paquetes/WP-ANTROPOMETRIA-METODO-Y-KERR.md`.
+
+## DL-191 — El Recetario de BE e imágenes livianas
+
+**Prioridad:** alta (Dirección, licenciado en nutrición: «tus recomendaciones me parecieron perfectas, aplicalas así») ·
+DL-119 · DL-120 · DL-180 (el patrón del canon) · DL-152 · REG-06-135 · 08 §21 · Ley 25.326 · Ley 11.723 ·
+**Estado:** DECIDIDA por Dirección el 2026-11-22 · PROGRAMADA en `wp-recetario-e-imagenes` (PR en borrador, sin integrar)
+· REC-D01 a REC-D17, **a ratificar**. Si al integrar el número choca con otro paquete, se renumera.
+
+**Qué pidió Dirección.** Que las imágenes pesen menos (dos medidas, pedidas según dónde se muestran, y achicadas antes de
+subir); que la imagen de una receta se cargue donde la receta se crea o se agrega; y un **Recetario de BE**: recetas
+curadas por Administración, a la vista de todos los profesionales de Nutrición y de solo lectura, que se usan tal cual o se
+copian a «Mis recetas», con el camino para que un profesional proponga una suya cediendo su foto, y las 66 del repertorio
+del 2026-10-28 como semilla.
+
+**Qué dice el legajo.** La receta es una preparación propia del profesional con sus recursos visuales en su ámbito
+(REG-06-135, inciso 2); los medios son privados, con rutas firmadas de 15 minutos como máximo y cada acceso auditado (08
+§21). El recetario no cambia eso para lo propio: suma una receta de BE, sin profesional, como el alimento de BE de DL-180,
+cuya foto se lee por la cesión que aceptó quien la propuso. La foto de una comida de la persona no cambia de régimen. No se
+edita el legajo.
+
+**Lo programado.**
+- **Imágenes livianas (REC-01 a REC-04):** la imagen de una receta en dos WebP de calidad 78 (la grande de 1200 px, lo
+  guardado, y la miniatura de 400 px; medidas, 146-178 kB y 24-29 kB); API-MED-03 con `?variant=thumbnail|large`, firmada en
+  la ruta; los medios de antes, con sus variantes generadas la primera vez (perezosas e idempotentes, REC-D02); sin variante,
+  lo guardado, como lo pide la APK publicada; una sola copia por huella del mismo dueño (nunca entre dueños); el website
+  achica a 1600 px antes de subir.
+- **El Recetario de BE (REC-05 a REC-09), familia propia RCT:** la lista con las rutas ya firmadas y guardables de 6 a 7
+  horas (REC-D10: sin un acceso ni un registro por miniatura; lo privado sigue igual), copiar con el mismo medio, proponer
+  con la cesión versionada (`REC-CESION-FOTO-1`: versión, SHA-256 y momento), y Administración en `/admin/recipes` con el
+  autor, la cesión y las parecidas, que suma o rechaza con motivo. La semilla de las 66 es un comando idempotente
+  (`comando-del-recetario.js`), solo contra una base local salvo autorización explícita; **no se corrió contra test**.
+- **La imagen donde se agrega una receta (REC-10):** la miniatura y «Cargar la imagen» en el cajón de recetas del editor del
+  plan, con el recuadro de siempre; el recetario también en el cajón. Las plantillas no llevan recetas (DL-119) y el
+  asistente de 7 pasos no se tocó (DL-193).
+- Una migración que solo agrega (`20261122120000_recetario_e_imagenes`): cuatro tablas de solo agregar, la de las variantes,
+  dos columnas que admiten NULL solo en una receta del recetario y sus guardias.
+
+**La APK publicada.** No se toca y no se rompe (REC-D03, REC-D12): pide sin variante y recibe lo guardado; la foto de una
+comida sigue en JPEG. Lo que le falta va en DL-194 (APK 0.32): la miniatura en el carrusel y las listas, la grande en el
+detalle y achicar antes de subir.
+
+**Lo que queda.**
+- Ratificar REC-D01 a REC-D17.
+- **Pendiente legal:** que el abogado valide el texto de la cesión de la foto y diga si hace falta poder retirarla (la
+  pregunta, en el §6 del paquete; el legajo legal vive fuera del repositorio público).
+- Cargar el recetario en test (lo decide Dirección) y las fotos de las 66.
+- DL-194. Mirarlo en pantalla y con un lector de pantalla. Detalle completo: `docs/paquetes/WP-RECETARIO-E-IMAGENES.md`.
 
 ## DL-192 — El RPE como otra forma de escribir el RIR, y el máximo estimado en esa notación
 

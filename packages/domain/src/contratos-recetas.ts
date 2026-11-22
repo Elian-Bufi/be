@@ -12,7 +12,7 @@
 import { z } from 'zod';
 import { IdOpaco, Instante } from './contratos';
 import { METODO_DE_CALCULO_NUTRICIONAL, NUTRIENTES_CALCULADOS, type ResultadoNutricional } from './calculo-nutricional';
-import { ProcedenciaDeMedioSchema } from './contratos-medios';
+import { ProcedenciaDeMedioSchema, RutaDeLecturaDeMedioSchema } from './contratos-medios';
 import { EstadoDePreparacionSchema } from './contratos-nutricion';
 import { PaginaSchema, TokenDeVersionSchema } from './contratos-vinculo';
 
@@ -115,6 +115,17 @@ export const IngredienteDeRecetaSchema = z.strictObject({
 });
 export type IngredienteDeReceta = z.infer<typeof IngredienteDeRecetaSchema>;
 
+/**
+ * DL-191 (REC-D10) · las rutas de lectura ya firmadas de la imagen de una receta del Recetario de BE: la miniatura para la
+ * lista y la grande para el detalle. Vienen con la receta, así una lista de 50 no pide 50 accesos. Vencen juntas.
+ */
+export const RutasDeLaImagenSchema = z.strictObject({
+  thumbnail: RutaDeLecturaDeMedioSchema,
+  large: RutaDeLecturaDeMedioSchema,
+  expiresAt: Instante,
+});
+export type RutasDeLaImagen = z.infer<typeof RutasDeLaImagenSchema>;
+
 /** La imagen de referencia: no mide la porción ni demuestra un consumo. */
 export const ImagenDeRecetaSchema = z.strictObject({
   mediaId: IdOpaco,
@@ -123,8 +134,37 @@ export const ImagenDeRecetaSchema = z.strictObject({
   width: z.number().int().positive(),
   height: z.number().int().positive(),
   attachedAt: Instante,
+  /**
+   * DL-191: las rutas ya firmadas, en una receta del Recetario de BE, en la lista de las propias (API-REC-02, 15 minutos y
+   * sin caché las privadas) y en lo que revisa Administración. Sin ellas, se pide API-MED-03.
+   */
+  paths: RutasDeLaImagenSchema.optional(),
 });
 export type ImagenDeReceta = z.infer<typeof ImagenDeRecetaSchema>;
+
+/**
+ * DL-191 (REC-05) · de quién es la receta: propia del profesional («Mis recetas») o del Recetario de BE (de todos los
+ * profesionales de Nutrición, de solo lectura).
+ */
+export const OrigenDeRecetaSchema = z.enum(['OWN', 'BE_RECIPE_BOOK']);
+export type OrigenDeReceta = z.infer<typeof OrigenDeRecetaSchema>;
+
+/** DL-191 (REC-07, REC-08) · en qué está una propuesta al Recetario de BE. */
+export const EstadoDePropuestaSchema = z.enum(['PENDING', 'ADDED', 'REJECTED']);
+export type EstadoDePropuesta = z.infer<typeof EstadoDePropuestaSchema>;
+
+/** DL-191 · la última propuesta de una receta propia al Recetario de BE, para decirla en «Mis recetas». */
+export const PropuestaDeLaRecetaSchema = z.strictObject({
+  proposalId: IdOpaco,
+  status: EstadoDePropuestaSchema,
+  /** La versión de la receta que se propuso. */
+  versionNumber: z.number().int().positive(),
+  proposedAt: Instante,
+  decidedAt: Instante.nullable(),
+  /** El motivo, si Administración la rechazó y lo escribió. */
+  reason: z.string().nullable(),
+});
+export type PropuestaDeLaReceta = z.infer<typeof PropuestaDeLaRecetaSchema>;
 
 export const RecetaSchema = z.strictObject({
   recipeId: IdOpaco,
@@ -142,6 +182,12 @@ export const RecetaSchema = z.strictObject({
   image: ImagenDeRecetaSchema.nullable(),
   createdAt: Instante,
   updatedAt: Instante,
+  /** DL-191: propia o del Recetario de BE (de solo lectura). */
+  origin: OrigenDeRecetaSchema,
+  /** DL-191: si es una copia propia de una receta del Recetario de BE, cuál. */
+  copiedFrom: z.strictObject({ recipeId: IdOpaco, name: z.string() }).nullable(),
+  /** DL-191: la última propuesta de esta receta propia al Recetario de BE, si la hay. */
+  proposal: PropuestaDeLaRecetaSchema.nullable(),
 });
 export type Receta = z.infer<typeof RecetaSchema>;
 export const RecetaResponseSchema = z.strictObject({ data: RecetaSchema });

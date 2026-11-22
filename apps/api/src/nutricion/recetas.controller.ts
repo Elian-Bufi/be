@@ -57,6 +57,26 @@ export class RecetasController {
     return responder(res, await this.recetas.retirarImagen(actorDe(req), recipeId, query, cuerpo, clave, contextoDe(req)));
   }
 
+  /** API-RCT-01 (DL-191): el Recetario de BE. */
+  @Get('nutrition/recipe-book')
+  recetario(@Query() query: Record<string, unknown>, @Req() req: Solicitud): Promise<unknown> {
+    return this.recetas.recetario(actorDe(req), query, contextoDe(req));
+  }
+
+  /** API-RCT-02 (DL-191): «Copiar a Mis recetas». */
+  @Post('nutrition/recipe-book/:recipeId/copies')
+  async copiar(@Param('recipeId') recipeId: string, @Body() cuerpo: unknown, @Headers(HEADER_IDEMPOTENCY_KEY) clave: string | undefined, @Query() query: Record<string, unknown>, @Req() req: Solicitud, @Res({ passthrough: true }) res: Response): Promise<unknown> {
+    sinParametrosDeQuery(query);
+    return responder(res, await this.recetas.copiar(actorDe(req), recipeId, cuerpo, clave, contextoDe(req)));
+  }
+
+  /** API-RCT-03 (DL-191): proponer una receta propia al Recetario de BE. */
+  @Post('nutrition/recipes/:recipeId/proposals')
+  async proponer(@Param('recipeId') recipeId: string, @Body() cuerpo: unknown, @Headers(HEADER_IDEMPOTENCY_KEY) clave: string | undefined, @Query() query: Record<string, unknown>, @Req() req: Solicitud, @Res({ passthrough: true }) res: Response): Promise<unknown> {
+    sinParametrosDeQuery(query);
+    return responder(res, await this.recetas.proponer(actorDe(req), recipeId, cuerpo, clave, contextoDe(req)));
+  }
+
   /** API-REC-07: calcula sin guardar; no lleva Idempotency-Key. */
   @Post('nutrition/recipe-calculations')
   calcular(@Body() cuerpo: unknown, @Query() query: Record<string, unknown>, @Req() req: Solicitud, @Res({ passthrough: true }) res: Response): Promise<unknown> {

@@ -7,9 +7,12 @@ import {
   type CalculoDeReceta,
   type ComposicionParaCalcular,
   type ImagenDeReceta,
+  type EstadoDePropuesta,
   type IngredienteDeReceta,
+  type PropuestaDeLaReceta,
   type Receta,
   type RecetaDeOpcion,
+  type RutasDeLaImagen,
 } from '@be/domain';
 import type { Prisma, Receta as FilaDeReceta, VersionDeReceta } from '@prisma/client';
 import { errores } from '../http/errores';
@@ -76,7 +79,74 @@ export async function versionesVigentes(tx: Tx, recetaIds: readonly string[]): P
   return new Map(filas.map((v) => [v.recetaId, v]));
 }
 
-export function recetaApi(r: FilaDeReceta, v: VersionDeReceta, imagen: ImagenDeReceta | null): Receta {
+/** DL-191: lo que el Recetario de BE suma a una receta: de quién es, de cuál se copió y su última propuesta. */
+export interface DatosDelRecetario {
+  readonly origen: Receta['origin'];
+  readonly copiaDe: Receta['copiedFrom'];
+  readonly propuesta: PropuestaDeLaReceta | null;
+}
+
+const SIN_RECETARIO: DatosDelRecetario = { origen: 'OWN', copiaDe: null, propuesta: null };
+const ESTADO_DE_LA_DECISION: Readonly<Record<'SUMADA' | 'RECHAZADA', EstadoDePropuesta>> = { SUMADA: 'ADDED', RECHAZADA: 'REJECTED' };
+
+/** DL-191 · de cada receta: si es del recetario, de cuál se copió (con el nombre de su versión vigente) y su última propuesta. */
+export async function datosDelRecetario(tx: Tx, recetaIds: readonly string[]): Promise<Map<string, DatosDelRecetario>> {
+  const ids = [...new Set(recetaIds)];
+  if (ids.length === 0) return new Map();
+  // Una consulta después de la otra: van por la conexión de la transacción.
+  const delRecetario = await tx.recetaDelRecetario.findMany({ where: { recetaId: { in: ids } }, select: { recetaId: true } });
+  const copias = await tx.$queryRaw<{ recetaId: string; origenId: string; nombre: string }[]>`
+      SELECT c."receta_id"::text AS "recetaId", c."origen_id"::text AS "origenId", v."nombre"
+        FROM "copia_de_receta_del_recetario" c
+        JOIN "version_de_receta" v ON v."receta_id" = c."origen_id"
+       WHERE c."receta_id" = ANY(${ids}::uuid[])
+         AND NOT EXISTS (SELECT 1 FROM "version_de_receta" s WHERE s."predecesora_id" = v."id")`;
+  const propuestas = await tx.$queryRaw<{ recetaId: string; propuestaId: string; numero: number; propuesta: Date; resultado: 'SUMADA' | 'RECHAZADA' | null; decidida: Date | null; motivo: string | null }[]>`
+      SELECT DISTINCT ON (p."receta_id") p."receta_id"::text AS "recetaId", p."id"::text AS "propuestaId", v."numero",
+             p."momento_de_registro" AS "propuesta", d."resultado"::text AS "resultado", d."momento_de_registro" AS "decidida", d."motivo"
+        FROM "propuesta_al_recetario" p
+        JOIN "version_de_receta" v ON v."id" = p."version_de_receta_id"
+        LEFT JOIN "decision_sobre_propuesta_al_recetario" d ON d."propuesta_id" = p."id"
+       WHERE p."receta_id" = ANY(${ids}::uuid[])
+       ORDER BY p."receta_id", p."momento_de_registro" DESC, p."id" DESC`;
+  const canon = new Set(delRecetario.map((f) => f.recetaId));
+  const copiaDe = new Map(copias.map((c) => [c.recetaId, { recipeId: c.origenId, name: c.nombre }]));
+  const ultima = new Map(
+    propuestas.map((p) => [
+      p.recetaId,
+      {
+        proposalId: p.propuestaId,
+        status: p.resultado ? ESTADO_DE_LA_DECISION[p.resultado] : ('PENDING' as const),
+        versionNumber: p.numero,
+        proposedAt: p.propuesta.toISOString(),
+        decidedAt: p.decidida?.toISOString() ?? null,
+        reason: p.motivo,
+      } satisfies PropuestaDeLaReceta,
+    ]),
+  );
+  return new Map<string, DatosDelRecetario>(ids.map((id) => [id, { origen: canon.has(id) ? 'BE_RECIPE_BOOK' : 'OWN', copiaDe: copiaDe.get(id) ?? null, propuesta: ultima.get(id) ?? null }]));
+}
+
+/**
+ * Las recetas completas, en el orden de `filas`: versión vigente, imagen y lo del recetario. `rutasDelRecetario`, si se
+ * pasa, firma la miniatura y la grande de la imagen de las recetas del recetario (DL-191, REC-D10).
+ */
+export async function leerRecetas(tx: Tx, filas: readonly FilaDeReceta[], rutasDelRecetario?: (medioId: string) => RutasDeLaImagen): Promise<Receta[]> {
+  const ids = filas.map((r) => r.id);
+  const versiones = await versionesVigentes(tx, ids);
+  const imagenes = await imagenesVigentes(tx, ids);
+  const datos = await datosDelRecetario(tx, ids);
+  return filas.map((r) => {
+    const v = versiones.get(r.id);
+    if (!v) throw errores.interno();
+    const d = datos.get(r.id) ?? SIN_RECETARIO;
+    const imagen = imagenes.get(r.id) ?? null;
+    const conRutas = imagen && rutasDelRecetario && d.origen === 'BE_RECIPE_BOOK' ? { ...imagen, paths: rutasDelRecetario(imagen.mediaId) } : imagen;
+    return recetaApi(r, v, conRutas, d);
+  });
+}
+
+export function recetaApi(r: FilaDeReceta, v: VersionDeReceta, imagen: ImagenDeReceta | null, datos: DatosDelRecetario = SIN_RECETARIO): Receta {
   return {
     recipeId: r.id,
     version: token(r.version),
@@ -91,15 +161,17 @@ export function recetaApi(r: FilaDeReceta, v: VersionDeReceta, imagen: ImagenDeR
     image: imagen,
     createdAt: r.momentoDeRegistro.toISOString(),
     updatedAt: r.momentoDeActualizacion.toISOString(),
+    origin: datos.origen,
+    copiedFrom: datos.copiaDe,
+    proposal: datos.propuesta,
   };
 }
 
 /** La receta completa por su identidad, para responder después de escribir. */
-export async function leerReceta(tx: Tx, recetaId: string): Promise<Receta> {
+export async function leerReceta(tx: Tx, recetaId: string, rutasDelRecetario?: (medioId: string) => RutasDeLaImagen): Promise<Receta> {
   const r = await tx.receta.findUniqueOrThrow({ where: { id: recetaId } });
-  const v = (await versionesVigentes(tx, [r.id])).get(r.id);
-  if (!v) throw errores.interno();
-  return recetaApi(r, v, (await imagenesVigentes(tx, [r.id])).get(r.id) ?? null);
+  const [receta] = await leerRecetas(tx, [r], rutasDelRecetario);
+  return receta!;
 }
 
 /** Lo que la opción de un plan guarda de una versión de receta: la referencia, más descripción y pasos para el detalle. */

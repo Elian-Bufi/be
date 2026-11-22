@@ -21352,6 +21352,87 @@ html:has(.estacion:not([data-en-el-asistente])) {
   margin: 0;
 }
 
+/* ─── DL-191 · el Recetario de BE y las imágenes en el cajón del plan (WP-RECETARIO-E-IMAGENES) ───────────────── */
+
+/* «Tus recetas» o «Recetario de BE», y los estados de las propuestas en Administración: dos o tres botones en fila. */
+.selector-de-origen {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0.5rem 0 0.75rem;
+}
+
+/* Las acciones de una tarjeta: juntas, y bajan de renglón si no entran. */
+.acciones--compactas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.75rem;
+  align-items: center;
+}
+
+/* RP-19 · el renglón de un aviso ocupa su lugar desde el principio: que aparezca no corre nada. */
+.recetario__lugar-del-aviso {
+  min-height: 1.5em;
+  margin: 0.25rem 0;
+}
+
+.nota--error {
+  color: var(--error);
+  font-weight: 600;
+}
+
+/* Una receta en el cajón: la miniatura a la izquierda y lo demás al lado; al cargar la imagen, el recuadro abajo. */
+.receta-en-el-cajon {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 0.85rem;
+  align-items: flex-start;
+}
+
+.receta-en-el-cajon > div:last-child {
+  flex: 1 1 14rem;
+  min-width: 0;
+}
+
+.receta-en-el-cajon__imagen {
+  display: grid;
+  justify-items: start;
+  gap: 0.25rem;
+}
+
+.receta-en-el-cajon__imagen .imagen-de-receta--chica {
+  width: 4.5rem;
+}
+
+.receta-en-el-cajon__carga {
+  flex-basis: 100%;
+  max-width: 34rem;
+}
+
+/* La cesión de la foto, entera, dentro del cuadro de proponer. */
+.cesion-de-la-foto {
+  border: 1px solid var(--borde);
+  border-radius: 10px;
+  padding: 0.75rem 1rem;
+  background: var(--fondo-suave);
+}
+
+/* Administración: cada propuesta, con su foto, su autor, la receta, las parecidas y la decisión. */
+.propuestas-al-recetario {
+  display: grid;
+  gap: 1rem;
+}
+
+.propuesta-al-recetario__cabecera {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+.propuesta-al-recetario__parecidas {
+  margin: 0.5rem 0;
+}
+
 /* ═══ RP-19 (WP-RECORRIDO-PLAN-PULIDO, DL-188) · Sin saltos ══════════════════════════════════════════════════════════
    La regla: lo que aparece o se va mientras se escribe o se elige tiene su lugar reservado; vacío, ocupa lo mismo. Un
    error no corre los campos ni los botones. Tres piezas, una sola regla:

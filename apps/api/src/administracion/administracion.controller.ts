@@ -10,6 +10,7 @@ import {
   type HistorialAdministrativoResponse,
   type ListaAdministrativaDeIncidenciasResponse,
   type ListaDeAlimentosParaRevisarResponse,
+  type ListaDePropuestasParaRevisarResponse,
   type ListaDeParecidosResponse,
   type ListaDeVerificadosResponse,
   type ListaAdministrativaDePedidosDeDerechoResponse,
@@ -25,6 +26,7 @@ import { sinParametrosDeQuery } from '../http/validacion';
 import { borrarCookieDeReanudacion, PERFIL_ADMINISTRATIVO } from '../sesion/reanudacion.service';
 import { DerechosService } from '../derechos/derechos.service';
 import { IncidenciasService } from '../incidencias/incidencias.service';
+import { PropuestasAlRecetarioService } from '../nutricion/propuestas-al-recetario.service';
 import { RevisionDeAlimentosService } from '../nutricion/revision-de-alimentos.service';
 import { RecuperacionService } from '../recuperacion/recuperacion.service';
 import { AccesoAdministrativoService } from './acceso-administrativo.service';
@@ -37,7 +39,8 @@ type Solicitud = SolicitudAdministrativa & SolicitudConContexto;
  * WP-ADMINISTRACION (DL-155): la familia ADM, API-ADM-01 a 13; desde UF-04 de WP-USO-FINAL (DL-169), también API-ADM-14
  * (incorporar un profesional) y 15 (cambiar su nombre profesional); desde UF-06, 16 y 17 (los pedidos de derechos), y desde
  * UF-03, 18 (la recuperación asistida). Desde RF-068 (DL-172), las incidencias: API-INC-03 a 05. Desde DL-180, la revisión
- * de los alimentos cargados a mano: API-ALI-05 a 09. Prefijo global /api/v1.
+ * de los alimentos cargados a mano: API-ALI-05 a 09; desde DL-191, las propuestas al Recetario de BE: API-RCT-04 y 05.
+ * Prefijo global /api/v1.
  * - Sin guard: abrir y reanudar la sesión (el primer factor y la cookie) y cerrarla (idempotente).
  * - `SesionAdministrativaGuard`: una sesión administrativa válida, con el rol vigente. Alcanza solo para el segundo factor
  *   y para el estado de la propia sesión.
@@ -53,6 +56,7 @@ export class AdministracionController {
     private readonly recuperacion: RecuperacionService,
     private readonly incidencias: IncidenciasService,
     private readonly alimentos: RevisionDeAlimentosService,
+    private readonly propuestas: PropuestasAlRecetarioService,
   ) {}
 
   /** API-ADM-01 — PUBLIC. */
@@ -358,6 +362,36 @@ export class AdministracionController {
   ): Promise<unknown> {
     sinParametrosDeQuery(query);
     const r = await this.alimentos.sumarAlCanon(actorAdministrativoDe(req), cuerpo, clave, contextoDe(req));
+    res.status(r.estadoHttp);
+    return r.cuerpo;
+  }
+
+  // ─── DL-191 (WP-RECETARIO-E-IMAGENES, REC-08): las propuestas al Recetario de BE ─────────────────────────────────
+
+  /** API-RCT-04 — SESSION_MFA. El estado y la página van en el cuerpo. */
+  @Post('recipe-proposals/query')
+  @HttpCode(200)
+  @OperacionAdministrativa('API-RCT-04')
+  @UseGuards(SesionAdministrativaGuard, SegundoFactorGuard)
+  consultarPropuestas(@Body() cuerpo: unknown, @Query() query: Record<string, unknown>, @Req() req: Solicitud): Promise<ListaDePropuestasParaRevisarResponse> {
+    sinParametrosDeQuery(query);
+    return this.propuestas.consultar(actorAdministrativoDe(req), cuerpo, contextoDe(req));
+  }
+
+  /** API-RCT-05 — SESSION_MFA, Idempotency-Key requerida. Sumar o no sumar una propuesta. */
+  @Post('recipe-proposals/:proposalId/decisions')
+  @OperacionAdministrativa('API-RCT-05')
+  @UseGuards(SesionAdministrativaGuard, SegundoFactorGuard)
+  async decidirPropuesta(
+    @Param('proposalId') proposalId: string,
+    @Body() cuerpo: unknown,
+    @Headers(HEADER_IDEMPOTENCY_KEY) clave: string | undefined,
+    @Query() query: Record<string, unknown>,
+    @Req() req: Solicitud,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<unknown> {
+    sinParametrosDeQuery(query);
+    const r = await this.propuestas.decidir(actorAdministrativoDe(req), proposalId, cuerpo, clave, contextoDe(req));
     res.status(r.estadoHttp);
     return r.cuerpo;
   }

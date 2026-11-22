@@ -1,6 +1,6 @@
 import sharp from 'sharp';
 import { ErrorDeApi } from '../http/errores';
-import { procesarImagen, tipoAdmitido } from './procesamiento-de-imagen';
+import { procesarImagen, tipoAdmitido, variantesDesdeLoGuardado } from './procesamiento-de-imagen';
 
 /** Una imagen sintética de color liso, generada en la prueba (ninguna foto real). */
 const imagen = (ancho: number, alto: number, formato: 'jpeg' | 'png' | 'webp' | 'gif', alfa = false) =>
@@ -71,5 +71,37 @@ describe('DL-120 · validación y recodificación de una imagen', () => {
     expect(await codigo(procesarImagen(await imagen(63, 200, 'png'), 'image/png'))).toBe('FILE_CONTENT_INVALID');
     expect(await codigo(procesarImagen(await imagen(8001, 64, 'png'), 'image/png'))).toBe('FILE_CONTENT_INVALID');
     expect(await codigo(procesarImagen(await imagen(64, 64, 'png'), 'image/png'))).toBe('SIN ERROR');
+  });
+});
+
+describe('DL-191 · TEST-REC-001 a 003: la imagen de una receta en dos variantes WebP', () => {
+  it('TEST-REC-001 · guarda la grande de 1200 px y la miniatura de 400 px, en WebP, sin agrandar y sin metadatos', async () => {
+    const r = await procesarImagen(await imagen(3000, 2000, 'png'), 'image/png', 'VARIANTES_WEBP');
+    expect(r.procesada).toMatchObject({ tipo: 'image/webp', ancho: 1200, alto: 800 });
+    expect(r.miniatura).toMatchObject({ tipo: 'image/webp', ancho: 400, alto: 267 });
+    for (const v of [r.procesada, r.miniatura!]) {
+      const m = await sharp(v.contenido).metadata();
+      expect(m.format).toBe('webp');
+      expect(m.exif).toBeUndefined();
+      expect(v.bytes).toBe(v.contenido.length);
+      expect(v.sha256).toMatch(/^[0-9a-f]{64}$/);
+    }
+    // Una imagen más chica que la miniatura no se agranda.
+    const chica = await procesarImagen(await imagen(300, 200, 'jpeg'), 'image/jpeg', 'VARIANTES_WEBP');
+    expect(chica.procesada).toMatchObject({ ancho: 300, alto: 200 });
+    expect(chica.miniatura).toMatchObject({ ancho: 300, alto: 200 });
+  });
+
+  it('TEST-REC-002 · la foto de una comida y la imagen de un ejercicio siguen en JPEG de 1600 px, sin miniatura', async () => {
+    const r = await procesarImagen(await imagen(3000, 2000, 'png'), 'image/png');
+    expect(r.procesada).toMatchObject({ tipo: 'image/jpeg', ancho: 1600 });
+    expect(r.miniatura).toBeNull();
+  });
+
+  it('TEST-REC-003 · las variantes de un medio de antes salen de lo guardado (el JPEG de 1600 px)', async () => {
+    const guardado = (await procesarImagen(await imagen(2400, 1600, 'png'), 'image/png')).procesada.contenido;
+    const v = await variantesDesdeLoGuardado(guardado);
+    expect(v.grande).toMatchObject({ tipo: 'image/webp', ancho: 1200, alto: 800 });
+    expect(v.miniatura).toMatchObject({ tipo: 'image/webp', ancho: 400, alto: 267 });
   });
 });

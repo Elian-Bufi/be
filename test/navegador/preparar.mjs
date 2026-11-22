@@ -74,6 +74,9 @@ export const RECORRIDOS = {
   sinSaltos: { habilitado: ['NUTRICION', 'ENTRENAMIENTO'], datos: ['borrador', 'borrador-de-entrenamiento-sin-saltos'] },
   // RP-20 y RP-21 (DL-188): un borrador con el almuerzo en dos opciones y su rango indicado, para las franjas por comida.
   franjasPorComida: { habilitado: ['NUTRICION'], datos: ['franjas'] },
+  // DL-191 (WP-RECETARIO-E-IMAGENES): el recetario, copiar y cargar la imagen desde el cajón del plan; la semilla del
+  // recetario la carga correr.mjs en la base local.
+  recetario: { habilitado: ['NUTRICION'], datos: ['borrador'] },
 };
 const vinculosDe = (r) => r.vinculos ?? r.habilitado;
 

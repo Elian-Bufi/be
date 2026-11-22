@@ -62,15 +62,24 @@ export class RutasFirmadasController {
    * API-MED-04: los bytes, sin caché (`no-store` ya va en toda respuesta, bootstrap.ts). La ruta firmada es la
    * autorización, así que la imagen se puede mostrar desde el website, que está en otro origen: la política de recursos
    * de origen cruzado de esta respuesta lo permite (las demás siguen en `same-origin`).
+   * DL-191: el tipo es el de lo servido (JPEG o WebP). La imagen de una receta del Recetario de BE (la ruta lo dice, firmado)
+   * se puede guardar en el navegador hasta que vence su ruta (`private`: nunca en una caché compartida); lo demás sigue sin
+   * caché.
    */
   @Get('media/content/:token')
   async contenido(@Param('token') token: string, @Query() query: Record<string, unknown>, @Res() res: Response): Promise<void> {
-    const bytes = await this.medios.contenido(token, query);
+    const { bytes, tipo, guardableHasta } = await this.medios.contenido(token, query);
     res.status(200);
-    res.setHeader('Content-Type', 'image/jpeg');
+    res.setHeader('Content-Type', tipo);
     res.setHeader('Content-Length', String(bytes.length));
     res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
-    res.setHeader('Pragma', 'no-cache');
+    const segundos = guardableHasta ? Math.floor((guardableHasta.getTime() - Date.now()) / 1000) : 0;
+    if (segundos > 0) {
+      res.setHeader('Cache-Control', `private, max-age=${segundos}, immutable`);
+      res.removeHeader('Pragma');
+    } else {
+      res.setHeader('Pragma', 'no-cache');
+    }
     res.end(bytes);
   }
 }

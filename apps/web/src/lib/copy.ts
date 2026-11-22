@@ -23,7 +23,8 @@ export function avisoDe(valor: string | null): string | null {
 }
 
 /** Rutas propias a las que se puede volver después del login. */
-const RUTAS_DE_RETORNO: ReadonlySet<string> = new Set(['/account', '/account/relationships', '/account/privacy', '/account/news', '/pro', '/pro/templates', '/pro/recipes', '/pro/foods', '/pro/exercises', '/pro/news']);
+// DL-191: también el Recetario de BE, la otra pestaña de las recetas.
+const RUTAS_DE_RETORNO: ReadonlySet<string> = new Set(['/account', '/account/relationships', '/account/privacy', '/account/news', '/pro', '/pro/templates', '/pro/recipes', '/pro/recipes?vista=recetario', '/pro/foods', '/pro/exercises', '/pro/news']);
 /** Rutas que llevan un identificador opaco en el query (el export estático no admite segmentos dinámicos, DL-041). */
 const RUTAS_CON_ID: ReadonlySet<string> = new Set([
   '/account/relationships/detail',
@@ -51,6 +52,8 @@ const VISTAS_DEL_RETORNO: Readonly<Record<string, ReadonlySet<string>>> = {
   '/pro/advisees/training': new Set(['resumen', 'plan', 'ejecuciones', 'revisiones']),
   '/pro/advisees/anthropometry': new Set(['evaluaciones', 'evolucion', 'composicion', 'lamina']),
   '/pro/advisees/forms': new Set(['solicitudes']),
+  // DL-191: una receta del Recetario de BE se abre con `?receta=…&vista=recetario`.
+  '/pro/recipes': new Set(['recetario']),
 };
 const DIAS_DE_UN_ATAJO: ReadonlySet<string> = new Set(['7', '30', '90', '365']);
 const FECHA = /^\d{4}-\d{2}-\d{2}$/;

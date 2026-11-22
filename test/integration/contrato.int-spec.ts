@@ -30,12 +30,13 @@
  * - WP-PLANTILLAS-DE-ENTRENAMIENTO (DL-182): API-TPL-06 a 14, la preparación de una plantilla sin persona.
  * - WP-EVALUACION-Y-FORMULARIOS (DL-185): API-EVF-01 a 04, los formularios vinculados a la evaluación inicial.
  * - WP-OBJETIVO-Y-CALCULADOR (DL-186): la familia OBC, el objetivo con una toma de referencia y el calculador de macros.
+ * - WP-RECETARIO-E-IMAGENES (DL-191): la familia RCT, el Recetario de BE, y MED-03 con la variante.
  * Un observador registra cada respuesta real (método, ruta, status, código). Después se exige que todo par
  * (status, código) esté declarado para esa operación en `OPERACIONES`, la misma fuente que genera
  * `docs/api/openapi.json` (09v7 T21).
  */
 import type { INestApplication } from '@nestjs/common';
-import { VERSION_VIGENTE, codificarOcurrencia } from '@be/domain';
+import { CESION_DE_LA_FOTO, VERSION_VIGENTE, codificarOcurrencia } from '@be/domain';
 import { PrismaClient } from '@prisma/client';
 import type { NextFunction, Request, Response } from 'express';
 import request from 'supertest';
@@ -3115,6 +3116,69 @@ it('TEST-CT (WP-OBJETIVO-Y-CALCULADOR, DL-186): OBC-01 a 03 — el objetivo con 
   await pn.get(referencia(ajeno)).expect(404);
   await conSesion(app, n.ase.token).get(referencia(n.objectiveVersionId)).expect(404);
   await request(servidor).get(referencia(n.objectiveVersionId)).expect(401);
+});
+
+it('TEST-CT (WP-RECETARIO-E-IMAGENES, DL-191): RCT-01 a 05 y MED-03 con la variante, con éxitos y errores declarados', async () => {
+  const servidor = app.getHttpServer();
+  const autora = await prepararProfesional(app, `ct-rct-${randomUUID().slice(0, 6)}`, ['NUTRICION']);
+  const otra = await prepararProfesional(app, `ct-rct-otra-${randomUUID().slice(0, 6)}`, ['NUTRICION']);
+  const persona = await prepararAsesorado(app, 'ct-rct');
+  const yo = conSesion(app, autora.token);
+  const ajeno = randomUUID();
+  const receta = (await yo.post('/api/v1/nutrition/recipes').send({ ...cuerpoDeReceta(RECETAS[0]!, await alimentosUsda(app, autora)), name: 'Receta del contrato del recetario' }).expect(201)).body.data;
+  const imagen = await subirImagen(app, autora, FOTOS[2]!);
+  const conImagen = (await yo.put(`/api/v1/nutrition/recipes/${receta.recipeId}/image`).send({ mediaId: imagen.mediaId, expectedVersion: receta.version }).expect(200)).body.data;
+  // MED-03 con la variante.
+  await yo.get(`/api/v1/media/${imagen.mediaId}/access?variant=thumbnail`).expect(200);
+  await yo.get(`/api/v1/media/${imagen.mediaId}/access?variant=large`).expect(200);
+  await yo.get(`/api/v1/media/${imagen.mediaId}/access?variant=enorme`).expect(400); // INVALID_REQUEST
+  // RCT-03.
+  const cesion = { textVersion: CESION_DE_LA_FOTO.version, accepted: true };
+  const proponer = (cuerpo: Record<string, unknown>, token = autora.token, clave = claveDeIdempotencia()) =>
+    request(servidor).post(`/api/v1/nutrition/recipes/${receta.recipeId}/proposals`).set('Authorization', `Bearer ${token}`).set('Idempotency-Key', clave).send(cuerpo);
+  await proponer({ expectedVersion: conImagen.version, photoAssignment: null }).expect(422); // VALIDATION_FAILED: falta la cesión
+  await proponer({ expectedVersion: receta.version, photoAssignment: cesion }).expect(409); // VERSION_CONFLICT
+  await proponer({ expectedVersion: conImagen.version, photoAssignment: cesion, extra: 1 }).expect(400); // UNKNOWN_FIELD
+  await proponer({ expectedVersion: conImagen.version, photoAssignment: cesion }, otra.token).expect(404); // ajena
+  await proponer({ expectedVersion: conImagen.version, photoAssignment: cesion }, persona.token).expect(403);
+  const claveDePropuesta = claveDeIdempotencia();
+  const propuesta = (await proponer({ expectedVersion: conImagen.version, photoAssignment: cesion }, autora.token, claveDePropuesta).expect(201)).body.data;
+  await proponer({ expectedVersion: conImagen.version, photoAssignment: null }, autora.token, claveDePropuesta).expect(409); // IDEMPOTENCY_KEY_REUSED
+  await proponer({ expectedVersion: conImagen.version, photoAssignment: cesion }).expect(422); // INVALID_STATE_TRANSITION: ya espera
+  await request(servidor).post(`/api/v1/nutrition/recipes/${receta.recipeId}/proposals`).set('Idempotency-Key', claveDeIdempotencia()).send({}).expect(401);
+  // RCT-04.
+  const a = await administradorListo(app, prisma, `ct-rct-${randomUUID().slice(0, 6)}`);
+  await adm(app, a.token).post('/admin/recipe-proposals/query').send({ state: 'PENDING', limit: 5 }).expect(200);
+  await adm(app, a.token).post('/admin/recipe-proposals/query').send({ extra: 1 }).expect(400); // UNKNOWN_FIELD
+  await adm(app, a.token).post('/admin/recipe-proposals/query').send({ cursor: '###' }).expect(400); // INVALID_CURSOR
+  await adm(app, autora.token).post('/admin/recipe-proposals/query').send({}).expect(403); // ACTION_FORBIDDEN
+  // RCT-05.
+  const decidir = (id: string, cuerpo: Record<string, unknown>, clave = claveDeIdempotencia()) => adm(app, a.token).post(`/admin/recipe-proposals/${id}/decisions`).set('Idempotency-Key', clave).send(cuerpo);
+  await decidir(propuesta.proposalId, { decision: 'ADD', reason: 'Sobra' }).expect(422); // VALIDATION_FAILED
+  await decidir(propuesta.proposalId, { decision: 'ADD', extra: 1 }).expect(400); // UNKNOWN_FIELD
+  await decidir(ajeno, { decision: 'ADD' }).expect(404);
+  const claveDeDecision = claveDeIdempotencia();
+  const sumada = (await decidir(propuesta.proposalId, { decision: 'ADD' }, claveDeDecision).expect(200)).body.data;
+  await decidir(propuesta.proposalId, { decision: 'REJECT' }, claveDeDecision).expect(409); // IDEMPOTENCY_KEY_REUSED
+  await decidir(propuesta.proposalId, { decision: 'REJECT' }).expect(422); // INVALID_STATE_TRANSITION
+  // RCT-01.
+  const deOtra = conSesion(app, otra.token);
+  await deOtra.get('/api/v1/nutrition/recipe-book?limit=5').expect(200);
+  await deOtra.get(`/api/v1/nutrition/recipe-book?q=${encodeURIComponent('contrato del recetario')}`).expect(200);
+  await deOtra.get('/api/v1/nutrition/recipe-book?orden=asc').expect(400); // INVALID_REQUEST
+  await deOtra.get('/api/v1/nutrition/recipe-book?cursor=basura!').expect(400); // INVALID_CURSOR
+  await conSesion(app, persona.token).get('/api/v1/nutrition/recipe-book').expect(403);
+  await request(servidor).get('/api/v1/nutrition/recipe-book').expect(401);
+  // RCT-02.
+  const copiar = (id: string, cuerpo: Record<string, unknown>, token = otra.token, clave = claveDeIdempotencia()) =>
+    request(servidor).post(`/api/v1/nutrition/recipe-book/${id}/copies`).set('Authorization', `Bearer ${token}`).set('Idempotency-Key', clave).send(cuerpo);
+  const claveDeCopia = claveDeIdempotencia();
+  await copiar(sumada.recipeBookRecipeId as string, {}, otra.token, claveDeCopia).expect(201);
+  await copiar(receta.recipeId as string, {}, otra.token, claveDeCopia).expect(409); // IDEMPOTENCY_KEY_REUSED: otra receta con la misma clave
+  await copiar(sumada.recipeBookRecipeId as string, { extra: 1 }).expect(400); // UNKNOWN_FIELD
+  await copiar(receta.recipeId as string, {}).expect(404); // una propia no es del recetario
+  await copiar(sumada.recipeBookRecipeId as string, {}, persona.token).expect(403);
+  await request(servidor).post(`/api/v1/nutrition/recipe-book/${sumada.recipeBookRecipeId}/copies`).set('Authorization', `Bearer ${otra.token}`).send({}).expect(400); // sin clave
 });
 
 it('TEST-CT: todo (status, código) observado está declarado para su operación; los éxitos coinciden con el contrato', () => {
