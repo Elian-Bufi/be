@@ -1704,9 +1704,9 @@ async function sinSaltos({ p, d, salida }) {
   await elemento(p, `${R} [data-tabla-del-reparto]`, null, 60_000);
   await hidratado(p, `${R} [data-parte-de-la-comida]`);
   await p.waitForNetworkIdle({ idleTime: 500, timeout: ESPERA }).catch(() => {});
-  const partes = await p.$(`${R} [data-parte-de-la-comida]`);
+  const partes = await p.$$(`${R} [data-parte-de-la-comida]`);
   assert.equal(partes.length, 2, 'el borrador tiene dos comidas guardadas');
-  const valores = await p.$eval(`${R} [data-parte-de-la-comida]`, (xs) => xs.map((x) => Number(x.value)));
+  const valores = await p.$$eval(`${R} [data-parte-de-la-comida]`, (xs) => xs.map((x) => Number(x.value)));
   assert.equal(valores[0] + valores[1], 100, 'el punto de partida suma 100');
   const QUIETOS = [`${R} [data-parte-de-la-comida]`, `${R} [data-kcal-propuestas]`, `${R} [data-rango-del-dia-propuesto]`, `${R} [data-margen-del-reparto]`, `${R} [data-proponer-rangos]`];
   const alPrincipio = await fotoDeLugares(p, QUIETOS);
@@ -1718,7 +1718,7 @@ async function sinSaltos({ p, d, salida }) {
   await p.waitForFunction((s) => document.querySelector(`${s} [data-suma-de-las-partes] [data-lo-que-falta]`)?.textContent.includes('faltan 20 kcal'), { timeout: ESPERA, polling: 100 }, R);
   assert.match(await p.$eval(`${R} [data-suma-de-las-partes] .reparto-por-comida__suma-cifra`, (e) => e.textContent), /^99 %$/);
   nadaSeMovio(alPrincipio, await fotoDeLugares(p, QUIETOS), 'las partes suman 99');
-  assert.equal(await p.$eval(`${R} [data-kcal-propuestas] [data-sin-rango]`, (xs) => xs.length), 0, 'con 99, cada comida conserva su rango');
+  assert.equal(await p.$$eval(`${R} [data-kcal-propuestas] [data-sin-rango]`, (xs) => xs.length), 0, 'con 99, cada comida conserva su rango');
   assert.ok(await p.$eval(`${R} [data-proponer-rangos]`, (b) => b.disabled), 'con 99 no se propone');
   assert.match(await p.$eval(`${R} [data-por-que-no-se-propone]`, (e) => e.textContent), /Las partes no suman 100/);
   assert.equal(await p.$(`${R} .campo__error`), null, 'ningún párrafo de error debajo de la tabla');
@@ -1753,6 +1753,8 @@ async function sinSaltos({ p, d, salida }) {
 
   // 2. El objetivo: un envío con errores y, al corregir un campo, los demás y el botón quedan donde estaban.
   await p.goto(`${WEB}/pro/advisees/nutrition?id=${encodeURIComponent(d.ase.id)}&vista=resumen`, { waitUntil: 'networkidle2' });
+  // El botón se enciende cuando llegaron las evaluaciones y los objetivos: se espera a que esté encendido.
+  await p.waitForFunction(() => [...document.querySelectorAll('.acciones button')].some((b) => b.textContent.includes('Nueva versión de objetivo') && !b.disabled), { timeout: ESPERA, polling: 100 });
   await clic(p, '.acciones button', 'Nueva versión de objetivo');
   await hidratado(p, '#objetivo-kcal');
   await clic(p, 'form button[type="submit"]', 'Guardar nueva versión');
