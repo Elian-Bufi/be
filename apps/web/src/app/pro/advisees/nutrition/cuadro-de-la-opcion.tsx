@@ -67,7 +67,7 @@ import {
 } from './opcion-en-un-cuadro';
 import { useNumeroDelObjetivo } from './pasos-del-asistente';
 import { FrenteALosRangos } from './comida-del-editor';
-import { diaFrenteAlRango, origenBreve } from './planificacion';
+import { COPY_PLANIFICACION, diaFrenteAlRango, origenBreve } from './planificacion';
 import { COPY_FRANJAS, franjasDeLaComida } from './franjas-por-comida';
 import { FranjasDeLaComida } from './franjas-de-la-comida';
 import { COPY_RANGOS, faltantesDeLaOpcion, fibraDeLaOpcion, itemsParaElTotal, NUTRIENTES_DEL_RANGO, queFaltaEnPalabras, rangoDeLaComida, rangoDelDia, rangoEnUnaCelda, totalDeLaOpcion, type Composiciones, type RangoPorNutriente, type TotalDeLaOpcion } from './rangos';
@@ -344,7 +344,8 @@ export function CuadroDeLaOpcion({
             ) : null}
             {franjas || frenteDelDia.length > 0 ? (
               <section className="cuadro-de-la-opcion__tarjeta" aria-labelledby="opcion-frente-al-rango" data-frente-en-el-cuadro>
-                <h3 id="opcion-frente-al-rango">{COPY_FRANJAS.frenteAlRangoDe(comida)}</h3>
+                {/* Sin rango en la comida, la tarjeta solo ubica el día: no se titula con el rango que no tiene. */}
+                <h3 id="opcion-frente-al-rango">{franjas ? COPY_FRANJAS.frenteAlRangoDe(comida) : COPY_PLANIFICACION.frenteAlRango}</h3>
                 {franjas ? <FranjasDeLaComida franjas={franjas} comida={comida} variante="opcion" /> : null}
                 {frenteDelDia.length > 0 ? <FrenteALosRangos lineas={frenteDelDia} titulo={COPY_FRANJAS.elDiaFrenteAlSuyo} /> : null}
               </section>

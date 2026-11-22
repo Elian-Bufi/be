@@ -14,9 +14,14 @@
  *   demás que falta (una cantidad, una composición), en una sola nota al pie.
  * - Todo sale del borrador en pantalla (`rangosDelDia`, en cada render): se mueve con cada tecla. Lo calcula el editor; no
  *   viaja al guardar y la persona no lo ve.
+ * - **Lo largo, detrás de un «?»** (pedido de Dirección para todo el recorrido): cómo se lee una franja, cómo se suma el
+ *   día, de dónde salen las kcal del rango, con qué porción va una receta y que es una estimación del editor.
+ * - **Sin saltos:** el bloque del día tiene siempre su renglón de ayuda y sus cuatro renglones; sin dato, «—» y el porqué
+ *   en el renglón de ayuda. Así no se achica cada vez que una cantidad queda vacía mientras se escribe.
  */
 import type { Rango } from '@be/domain';
 import { useId } from 'react';
+import { ExplicacionAPedido } from '../../../../components/explicacion-a-pedido';
 import { Icono } from '../../../../components/icono';
 import { FranjasDeLaComida, TramosDelDia } from './franjas-de-la-comida';
 import { armarFranjas, COPY_FRANJAS, loQueFaltaEnElDia, tramosDelDia } from './franjas-por-comida';
@@ -49,22 +54,31 @@ export function RangosYTotales({
   return (
     <div className="rangos-y-totales">
       <section className="rangos-y-totales__dia" aria-labelledby={`${id}-dia`} data-rango-del-dia>
-        <h3 id={`${id}-dia`} className="rangos-y-totales__titulo">
-          <Icono nombre="calendario" tamano={18} />
-          {COPY_RANGOS.elDia}
-          <span className="rangos-y-totales__del-dia"> · {nombreDelDia}</span>
-        </h3>
+        {/* El «?» va al lado del título y no adentro: el título nombra la sección (como en el «Reparto por comida»). */}
+        <div className="rangos-y-totales__encabezado">
+          <h3 id={`${id}-dia`} className="rangos-y-totales__titulo">
+            <Icono nombre="calendario" tamano={18} />
+            {COPY_RANGOS.elDia}
+            <span className="rangos-y-totales__del-dia"> · {nombreDelDia}</span>
+          </h3>
+          <ExplicacionAPedido nombre={COPY_FRANJAS.comoSeLeeElPanel} como="div">
+            <p>{COPY_FRANJAS.comoSeLeeLaFranja}</p>
+            <p>{COPY_RANGOS.comoSeLee}</p>
+            <p>{COPY_FRANJAS.kcalDeLosGramos}</p>
+            {conRecetas ? <p>{COPY_FRANJAS.recetasGuardadas}</p> : null}
+            <p>{COPY_RANGOS.estimacion}</p>
+          </ExplicacionAPedido>
+        </div>
         {rangos.comidas.length === 0 ? (
           <p className="nota">{COPY_RANGOS_Y_TOTALES.sinComidas}</p>
-        ) : diaConDato ? (
+        ) : (
           <>
-            <p className="nota rangos-y-totales__ayuda">{COPY_FRANJAS.segunLoQueElija}</p>
+            {/* Un renglón, siempre: cómo se lee el día o, si no se puede sumar, por qué (lo que falta va abajo). */}
+            <p className="nota rangos-y-totales__ayuda" data-dia-sin-dato={diaConDato ? undefined : ''}>
+              {diaConDato ? COPY_FRANJAS.segunLoQueElija : leyendo > 0 ? COPY_RANGOS_Y_TOTALES.diaLeyendo : COPY_RANGOS_Y_TOTALES.diaSinDato}
+            </p>
             <TramosDelDia tramos={tramosDelDia(rangos.dia, rangoDelDia)} />
           </>
-        ) : (
-          <p className="nota" data-dia-sin-dato>
-            {leyendo > 0 ? COPY_RANGOS_Y_TOTALES.diaLeyendo : COPY_RANGOS_Y_TOTALES.diaSinDato}
-          </p>
         )}
       </section>
       {rangos.comidas.length > 0 ? (
@@ -100,17 +114,15 @@ export function RangosYTotales({
           {COPY_RANGOS.leyendo(leyendo)}
         </p>
       ) : null}
-      <p className="nota rangos-y-totales__como-se-lee">{COPY_RANGOS.comoSeLee}</p>
-      {conRecetas ? <p className="nota">{COPY_FRANJAS.recetasGuardadas}</p> : null}
-      <p className="nota rangos-y-totales__como-se-lee">{COPY_RANGOS.estimacion}</p>
     </div>
   );
 }
 
 export const COPY_RANGOS_Y_TOTALES = {
   sinComidas: 'Este día tipo todavía no tiene comidas.',
-  diaSinDato: 'El día se suma cuando cada opción tenga alimentos con su cantidad.',
-  diaLeyendo: 'El día se suma cuando termine de leerse la composición de los alimentos.',
+  /** Cortos: van en el renglón de ayuda del día, que no se parte (el bloque del día no cambia de alto). */
+  diaSinDato: 'Todavía no se suma: abajo dice qué falta.',
+  diaLeyendo: 'Se suma al terminar de leer los alimentos.',
   sinAlimentos: 'sin alimentos',
   vacias: (n: number) => (n === 1 ? '1 sin alimentos' : `${n} sin alimentos`),
   paraSumar: 'Para sumar falta:',

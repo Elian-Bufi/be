@@ -88,17 +88,18 @@ test('RP-20 · cada opción, en su lugar: adentro llena, afuera con su diferenci
   }
 });
 
-test('RP-20 · el promedio y el conteo: «1 de 3 opciones adentro · promedio 28 g P»; con una sola, su valor y dónde queda', () => {
+test('RP-20 · el promedio y el conteo: «1 de 3 adentro · promedio 28 g P» (el lector oye «opciones»); con una sola, su valor y dónde queda', () => {
   const tres = F.franjasDeLaComida(ALMUERZO, [opcion('a', total(520, 28, 65, 17)), opcion('b', total(610, 34, 70, 18)), opcion('c', total(400, 22, 50, 12))]);
   const p = renglon(tres, 'protein');
   assert.equal(p.adentro, 1);
   assert.deepEqual([p.promedio.valor, p.promedio.posicion, p.promedio.ubicacion.tipo], [28, 50, 'dentro']);
-  assert.equal(p.resumen, '1 de 3 opciones adentro · promedio 28 g P');
+  assert.equal(p.resumen, '1 de 3 adentro · promedio 28 g P');
+  assert.match(p.enPalabras, /1 de 3 opciones adentro$/);
   // Un promedio afuera dice cuánto.
   const c = renglon(tres, 'carbohydrate');
-  assert.equal(c.resumen, '2 de 3 opciones adentro · promedio 61,7 g C');
+  assert.equal(c.resumen, '2 de 3 adentro · promedio 61,7 g C');
   const grasas = renglon(F.franjasDeLaComida(ALMUERZO, [opcion('a', total(520, 28, 65, 24)), opcion('b', total(610, 34, 70, 22))]), 'fat');
-  assert.equal(grasas.resumen, '0 de 2 opciones adentro · promedio 23 g G (por encima, 4 g)');
+  assert.equal(grasas.resumen, '0 de 2 adentro · promedio 23 g G (por encima, 4 g)');
   // Con una sola opción no hay promedio: su valor y dónde queda.
   const una = renglon(F.franjasDeLaComida(ALMUERZO, [opcion('a', total(520, 34, 65, 17))]), 'protein');
   assert.equal(una.promedio, null);
@@ -251,7 +252,7 @@ test('RP-20 · la franja va debajo del encabezado de la comida (plegada también
 
 test('RP-20 · la pieza: lo dibujado para la vista, el texto entero para el lector, y la marca que se lee queda donde estaba', () => {
   assert.match(PIEZA, /<div className="franjas__renglones" aria-hidden="true">/);
-  assert.match(PIEZA, /<p className="visualmente-oculto">\{franjasEnPalabras\(franjas, comida\)\}<\/p>/);
+  assert.match(PIEZA, /<p className="visualmente-oculto">\{franjasEnPalabras\(franjas, comida, variante\)\}<\/p>/);
   assert.match(PIEZA, /recordadas\.current\.set\(`\$\{r\.renglon\}\|\$\{m\.clave\}`, m\.posicion\)/);
   assert.match(PIEZA, /data-espera=\{e\.motivo\}/);
   // Cada marca dice de qué opción es en su pista.
@@ -266,7 +267,7 @@ test('RP-20 (F) · sin saltos: cada renglón tiene su alto fijo, en todas sus fo
   assert.match(bloque, /\.franja \{\n\s*display: grid;[\s\S]*?height: 1\.6rem;/);
   assert.match(bloque, /\.franjas\[data-variante='panel'\] \.franja \{[\s\S]*?height: 1\.45rem;/);
   assert.match(bloque, /\.franjas\[data-variante='receta'\] \.franja \{[\s\S]*?height: 1\.45rem;/);
-  assert.match(bloque, /@container \(max-width: 36rem\) \{[\s\S]*?height: 2\.55rem;/);
+  assert.match(bloque, /@container \(max-width: 46rem\) \{[\s\S]*?height: 2\.55rem;/);
   assert.doesNotMatch(bloque, /--error|--exito|--peligro/);
   // La banda en el color de acento; las marcas, en el del texto.
   assert.match(bloque, /\.franja__banda \{[\s\S]*?var\(--azul\)/);
@@ -299,4 +300,109 @@ test('RP-20 (C) · al elegir una receta: la porción de la lista, sin un pedido 
   assert.equal(elegir.match(/api\./g)?.length, 1);
   assert.match(elegir, /data-primero-las-que-entran/);
   assert.match(EDITOR, /rango=\{eligiendoReceta && comidaDeLaReceta \? rangoIndicadoDe\(rangosIndicados\.estado, estructura\[eligiendoReceta\.i\]\?\.dayTypeId, comidaDeLaReceta\.mealId\) : null\}/);
+});
+
+// ─── Revisión adversaria (22/11): casos raros, lo que oye el lector, sin saltos en el panel y lo largo a pedido ─────
+
+test('RP-20 · casos raros: mín = máx, un solo lado, ceros y un total que no es un número', () => {
+  // Mín = máx: la banda es una raya; lo que coincide como se muestra queda adentro, y una décima de más, por encima.
+  const fijo = F.franjasDeLaComida(rango([30, 30], [60, 60], [10, 10]), [opcion('a', total(450, 30.04, 60, 10)), opcion('b', total(460, 30.06, 60, 10.2))]);
+  const p = renglon(fijo, 'protein');
+  assert.deepEqual(p.banda, { desde: 50, hasta: 50, sinTope: false });
+  assert.deepEqual(p.marcas.map((m) => m.ubicacion), [{ tipo: 'dentro' }, { tipo: 'encima', diferencia: 0.1 }]);
+  assert.deepEqual(renglon(fijo, 'kcal').limites, { min: 450, max: 450 });
+  // Solo mínimos: las kcal no tienen tope; solo máximos: no tienen piso.
+  assert.deepEqual(F.limitesDelRenglon(rango([30, null], [60, null], [10, null]), 'kcal'), { min: 450, max: null });
+  assert.deepEqual(F.limitesDelRenglon(rango([null, 30], [null, 60], [null, 10]), 'kcal'), { min: null, max: 450 });
+  const soloMaximo = renglon(F.franjasDeLaComida(rango([null, 30], [null, 60], [null, 10]), [opcion('a', total(450, 20, 80, 10))]), 'carbohydrate');
+  assert.deepEqual([soloMaximo.banda.desde, soloMaximo.banda.hasta], [0, 50]);
+  assert.equal(soloMaximo.resumen, '80 g C · por encima, 20 g');
+  // Un rango en cero: la escala sale de los valores y nada se divide por cero.
+  const ceros = renglon(F.franjasDeLaComida(rango([0, 0], [0, 0], [0, 0]), [opcion('a', total(0, 0, 0, 0)), opcion('b', total(10, 1, 0, 0))]), 'protein');
+  assert.ok(Number.isFinite(ceros.tope) && ceros.tope > 0);
+  assert.deepEqual(
+    ceros.marcas.map((m) => [m.ubicacion.tipo, Number.isFinite(m.posicion)]),
+    [
+      ['dentro', true],
+      ['encima', true],
+    ],
+  );
+  // Un total que no es un número no queda «adentro» por descarte: es un dato que falta, en la comida y en el día.
+  const raro = renglon(F.franjasDeLaComida(ALMUERZO, [opcion('a', total('NaN', 28, 65, 17))]), 'kcal');
+  assert.deepEqual(raro.marcas, []);
+  assert.equal(raro.resumen, 'Sin dato');
+  const sinDato = { tipo: 'sin-dato', faltan: [] };
+  const [kcalDelDia] = F.tramosDelDia({ energyKcal: { tipo: 'rango', min: 'x', max: '2000' }, proteinG: sinDato, carbohydrateG: sinDato, fatG: sinDato }, null);
+  assert.deepEqual([kcalDelDia.cifra, kcalDelDia.tramo], [null, null]);
+});
+
+test('RP-20 · el resumen que se ve entra entero: con el promedio afuera por tres cifras de kcal, 57 caracteres', () => {
+  // A 1440 la columna del resumen tiene unos 400 px (1,6 partes contra 1 de la pista): unas 58 letras de 0,88 rem. El
+  // recorrido de navegador lo mide en pantalla; esto cuida que el texto no crezca.
+  const f = F.franjasDeLaComida(ALMUERZO, [opcion('a', total(700, 40, 85, 25)), opcion('b', total(760, 44, 90, 27))]);
+  for (const r of f.renglones) assert.ok(r.resumen.length <= 57, `${r.renglon}: «${r.resumen}» (${r.resumen.length})`);
+  assert.equal(renglon(f, 'kcal').resumen, '0 de 2 adentro · promedio 730 kcal (por encima, 139 kcal)');
+  assert.match(ESTILOS, /\.franja \{\n\s*display: grid;\n\s*grid-template-columns: 3\.4rem 8rem minmax\(7rem, 1fr\) minmax\(0, 1\.6fr\);/);
+  // Más angosto que 46 rem (la comida a 1280), el resumen va debajo de la pista, con todo el ancho.
+  assert.match(ESTILOS, /@container \(max-width: 46rem\) \{\n\s*\.franjas:is\(\[data-variante='comida'\], \[data-variante='opcion'\]\) \.franja \{\n\s*grid-template-columns: 2\.9rem minmax\(0, auto\) minmax\(0, 1fr\);/);
+  // Sin alimentos, el renglón de las kcal dice una sola cosa, corta.
+  assert.ok(F.COPY_FRANJAS.sinAlimentos.length <= 57, F.COPY_FRANJAS.sinAlimentos);
+});
+
+test('RP-20 · lo que oye el lector dice dónde está la franja y de dónde salen las kcal del rango', () => {
+  const una = F.franjasDeLaComida(ALMUERZO, [opcion('a', total(520, 28, 65, 17), 'Opción 1')]);
+  assert.match(F.franjasEnPalabras(una, 'Almuerzo'), /^Las opciones de Almuerzo frente a su rango indicado\. /);
+  assert.match(F.franjasEnPalabras(una, 'Almuerzo', 'opcion'), /^Esta opción frente al rango de Almuerzo\. /);
+  assert.match(F.franjasEnPalabras(una, 'Almuerzo', 'receta'), /^Una porción, frente al rango de Almuerzo\. /);
+  assert.match(F.franjasEnPalabras(F.armarFranjas(null, [opcion('a', total(520, 28, 65, 17))]), 'Desayuno', 'panel'), /^Lo que aportan las opciones de Desayuno\. Energía: sin rango indicado\. a: 520 kcal/);
+  // RP-D41: el renglón de las kcal dice que su rango sale de los gramos (a la vista, solo en el «?» del panel).
+  assert.match(renglon(una, 'kcal').enPalabras, /^Energía: rango indicado 475 a 591 kcal, sale de los gramos, con 4, 4 y 9 kcal por gramo\. Opción 1: 520 kcal · adentro/);
+  assert.doesNotMatch(renglon(una, 'protein').enPalabras, /4, 4 y 9/);
+  // Sin alimentos, la opción sola no habla de «cada opción».
+  const sola = F.franjasDeLaComida(ALMUERZO, [opcion('a', vacia())]);
+  assert.equal(F.franjasEnPalabras(sola, 'Almuerzo', 'opcion'), `Esta opción frente al rango de Almuerzo. ${F.COPY_FRANJAS.sinAlimentosLaOpcion}`);
+  assert.match(PIEZA, /\{franjasEnPalabras\(franjas, comida, variante\)\}/);
+});
+
+test('RP-21 · sin saltos en el panel: el día tiene siempre su renglón de ayuda y sus cuatro renglones, con dato o sin él', () => {
+  const sinDato = { tipo: 'sin-dato', faltan: [] };
+  const tramos = F.tramosDelDia({ energyKcal: sinDato, proteinG: sinDato, carbohydrateG: sinDato, fatG: sinDato }, rango([90, 120], [180, 280], [50, 70]));
+  assert.equal(tramos.length, 4);
+  for (const t of tramos) {
+    assert.deepEqual([t.cifra, t.tramo], [null, null]);
+    assert.ok(t.banda, `${t.renglon}: la banda del rango del día sigue a la vista`);
+  }
+  // En el panel, el día se dibuja igual con dato o sin él: ninguna rama lo cambia por una nota de otro alto.
+  const dia = PANEL.slice(PANEL.indexOf('data-rango-del-dia'), PANEL.indexOf('data-rangos-por-comida'));
+  assert.equal(dia.match(/<TramosDelDia /g)?.length, 1);
+  assert.match(dia, /<p className="nota rangos-y-totales__ayuda" data-dia-sin-dato=\{diaConDato \? undefined : ''\}>/);
+  assert.match(PIEZA, /<CifraConIcono macro=\{t\.renglon\} cifra=\{t\.cifra\} sinDato="—" \/>/);
+  // El porqué es corto: entra en el renglón de ayuda del panel (24 rem), que no se parte.
+  const textoDe = (clave) => PANEL.match(new RegExp(`${clave}: '([^']+)'`))[1];
+  for (const t of [F.COPY_FRANJAS.segunLoQueElija, textoDe('diaSinDato'), textoDe('diaLeyendo')]) assert.ok(t.length <= 46, t);
+  assert.match(ESTILOS, /\.rangos-y-totales__ayuda \{[\s\S]*?white-space: nowrap;/);
+});
+
+test('RP-21 · lo largo, detrás de un «?»: cómo se lee, cómo se suma, las kcal de los gramos, las recetas, la estimación y los rangos indicados', () => {
+  // El «?» va al lado del título del día, y lo largo no queda además a la vista.
+  assert.ok(PANEL.indexOf('<div className="rangos-y-totales__encabezado">') < PANEL.indexOf('<ExplicacionAPedido nombre={COPY_FRANJAS.comoSeLeeElPanel} como="div">'));
+  const pedido = PANEL.slice(PANEL.indexOf('<ExplicacionAPedido'), PANEL.indexOf('</ExplicacionAPedido>'));
+  for (const t of ['COPY_FRANJAS.comoSeLeeLaFranja', 'COPY_RANGOS.comoSeLee', 'COPY_FRANJAS.kcalDeLosGramos', 'COPY_FRANJAS.recetasGuardadas', 'COPY_RANGOS.estimacion']) {
+    assert.ok(pedido.includes(`{${t}}`), `${t}, detrás del «?»`);
+    assert.equal(PANEL.split(`{${t}}`).length - 1, 1, `${t}: una sola vez, a pedido`);
+  }
+  // «Rangos indicados», en el panel: su explicación, detrás de un «?» junto al título; en el paso del asistente (sin
+  // título propio), sigue a la vista.
+  const DEL_PLAN = leer('app/pro/advisees/nutrition/rangos-indicados-del-plan.tsx');
+  const lista = DEL_PLAN.slice(DEL_PLAN.indexOf('export function RangosIndicados'), DEL_PLAN.indexOf('export function CuadroDelRangoIndicado'));
+  assert.match(lista, /<div className="rangos-indicados__titulo">\n\s*<h3>\{C\.titulo\}<\/h3>\n\s*<ExplicacionAPedido nombre=\{C\.queSon\}>\{C\.ayuda\}<\/ExplicacionAPedido>/);
+  assert.equal(lista.split('{C.ayuda}').length - 1, 2, 'una a pedido (con título) y otra a la vista (sin título)');
+  for (const t of [F.COPY_FRANJAS.comoSeLeeLaFranja, F.COPY_FRANJAS.comoSeLeeElPanel, F.COPY_FRANJAS.kcalDeLosGramosCorto]) {
+    assert.deepEqual(d.terminosProhibidosEn(t), [], t);
+    assert.doesNotMatch(t, /%/, t);
+  }
+});
+
+test('RP-20 · el cuadro de la opción no se titula con un rango que la comida no tiene', () => {
+  assert.match(CUADRO, /<h3 id="opcion-frente-al-rango">\{franjas \? COPY_FRANJAS\.frenteAlRangoDe\(comida\) : COPY_PLANIFICACION\.frenteAlRango\}<\/h3>/);
 });

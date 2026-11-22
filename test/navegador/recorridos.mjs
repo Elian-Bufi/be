@@ -1660,7 +1660,7 @@ async function franjasPorComida({ p, d, salida }) {
   const medir = () =>
     p.evaluate(
       (s, k) => {
-        const lugares = { opcion: `${s} [data-franjas-de-la-opcion]`, comida: `${s} [data-franjas-de-la-comida]`, panel: '[data-rangos-por-comida] [data-comida-del-panel="2"]' };
+        const lugares = { opcion: `${s} [data-franjas-de-la-opcion]`, comida: `${s} [data-franjas-de-la-comida]`, panel: '[data-rangos-por-comida] [data-comida-del-panel="2"]', dia: '[data-panel-de-nutricion] [data-rango-del-dia]' };
         return Object.fromEntries(
           Object.entries(lugares).map(([lugar, selector]) => {
             const caja = document.querySelector(selector);
@@ -1675,23 +1675,41 @@ async function franjasPorComida({ p, d, salida }) {
   const antes = await medir();
   for (const lugar of ['opcion', 'comida', 'panel']) assert.equal(antes[lugar].marcas.length, 4, `${lugar}: una marca del arroz por renglón`);
 
-  // Bajar la cantidad: la marca se mueve con cada tecla, en los tres lugares, sin que cambie el alto. Lo escrito
-  // reemplaza lo que había (todo elegido), sin pasar por el campo vacío.
+  // Borrar la cantidad, como al reescribirla a mano: el arroz queda un momento sin dato. Su marca se va de la opción, de
+  // la comida y del panel, el día no se puede sumar, y nada cambia de alto: ni las franjas ni el bloque del día.
   await campo.focus();
   await p.keyboard.down('Control');
   await p.keyboard.press('KeyA');
   await p.keyboard.up('Control');
+  await p.keyboard.press('Backspace');
+  assert.equal(await p.$eval('#item-0-1-0-0-cantidad', (e) => e.value), '', 'la cantidad quedó vacía');
+  await p.waitForFunction(
+    (s, k) => !document.querySelector(`${s} [data-franjas-de-la-opcion] .franja__marca[data-marca="${k}"]`) && !!document.querySelector('[data-panel-de-nutricion] [data-rango-del-dia] [data-dia-sin-dato]'),
+    { timeout: ESPERA, polling: 100 },
+    comida,
+    clave,
+  );
+  const vacio = await medir();
+  for (const lugar of ['opcion', 'comida', 'panel']) assert.deepEqual(vacio[lugar].marcas, [], `${lugar}: sin cantidad, el arroz no se ubica`);
+  for (const lugar of ['opcion', 'comida', 'panel', 'dia']) assert.equal(vacio[lugar].alto, antes[lugar].alto, `${lugar}: el alto no cambia con la cantidad vacía`);
+
+  // Escribir la cantidad nueva: la marca vuelve en otro lugar, en los tres lugares, sin que cambie el alto.
   await p.keyboard.type('75');
   assert.equal(await p.$eval('#item-0-1-0-0-cantidad', (e) => e.value), '75', 'la cantidad nueva reemplaza la anterior');
   await p.waitForFunction(
-    (s, k, previo) => document.querySelector(`${s} [data-franjas-de-la-opcion] .franja__marca[data-marca="${k}"]`)?.style.getPropertyValue('--en') !== previo,
+    (s, k, previo) => {
+      const marca = document.querySelector(`${s} [data-franjas-de-la-opcion] .franja__marca[data-marca="${k}"]`);
+      return !!marca && marca.style.getPropertyValue('--en') !== previo && !document.querySelector('[data-panel-de-nutricion] [data-rango-del-dia] [data-dia-sin-dato]');
+    },
     { timeout: ESPERA, polling: 100 },
     comida,
     clave,
     antes.opcion.marcas[0],
   );
   const despues = await medir();
+  assert.equal(despues.dia.alto, antes.dia.alto, 'dia: el alto no cambia');
   for (const lugar of ['opcion', 'comida', 'panel']) {
+    assert.equal(despues[lugar].marcas.length, 4, `${lugar}: el arroz vuelve a tener una marca por renglón`);
     assert.notDeepEqual(despues[lugar].marcas, antes[lugar].marcas, `${lugar}: la marca del arroz se movió`);
     assert.equal(despues[lugar].alto, antes[lugar].alto, `${lugar}: el alto no cambia`);
   }
@@ -1715,10 +1733,15 @@ async function franjasPorComida({ p, d, salida }) {
     const desborde = await p.evaluate(() => {
       const panel = document.querySelector('[data-panel-de-nutricion]');
       const fuera = [...document.querySelectorAll('.franjas')].filter((f) => f.scrollWidth > f.clientWidth + 1).length;
-      return { panel: panel ? panel.scrollWidth - panel.clientWidth : null, fuera };
+      // Lo que se corta con «…»: los límites y el resumen de la comida y de la opción, y el renglón de ayuda del día.
+      const cortados = [...document.querySelectorAll(".franjas:is([data-variante='comida'], [data-variante='opcion']) :is(.franja__izquierda, .franja__derecha), .rangos-y-totales__ayuda")]
+        .filter((x) => x.clientWidth > 0 && x.scrollWidth > x.clientWidth + 1)
+        .map((x) => x.textContent);
+      return { panel: panel ? panel.scrollWidth - panel.clientWidth : null, fuera, cortados };
     });
     assert.ok(desborde.panel !== null && desborde.panel <= 1, `a ${ancho}: el panel no se desplaza de costado (${desborde.panel} px de más)`);
     assert.equal(desborde.fuera, 0, `a ${ancho}: ninguna franja se sale de su lugar`);
+    assert.deepEqual(desborde.cortados, [], `a ${ancho}: ningún resumen ni límite se corta`);
     await p.$eval(comida, (e) => e.scrollIntoView({ block: 'start' }));
     if (ancho !== 1440) await captura(p, salida, `franjas-${ancho}`);
   }

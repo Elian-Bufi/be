@@ -335,6 +335,8 @@ export function pesoInicial(datos: Pick<RangosDelPlan, 'bodyWeight' | 'anthropom
 export const COPY_RANGOS_INDICADOS = {
   titulo: 'Rangos indicados',
   ayuda: 'Lo que indicás para el día o para una comida, en gramos o en gramos por kilo. Se guardan los gramos. Las kcal de cada opción siguen saliendo de cada alimento.',
+  /** El nombre del «?» que despliega `ayuda` en el panel del editor (RP-21). */
+  queSon: 'Qué son los rangos indicados',
   elDia: 'Todo el día',
   sinRango: 'Sin rango indicado',
   escribir: (donde: string) => `Indicar el rango de ${donde}`,

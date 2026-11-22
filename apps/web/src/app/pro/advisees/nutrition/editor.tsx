@@ -1937,7 +1937,10 @@ function ElegirReceta({ comida, rango, onElegir, alCrearNueva }: { comida: strin
                   </p>
                   {frente ? (
                     <div className="recetas-para-elegir__frente" data-receta-frente-al-rango>
-                      <p className="nota">{COPY_FRANJAS.unaPorcionFrenteAlRangoDe(comida)}</p>
+                      {/* El lector oye esta frase al empezar la franja (`franjasEnPalabras`, variante «receta»): no dos veces. */}
+                      <p className="nota" aria-hidden="true">
+                        {COPY_FRANJAS.unaPorcionFrenteAlRangoDe(comida)}
+                      </p>
                       <FranjasDeLaComida franjas={frente} comida={comida} variante="receta" />
                     </div>
                   ) : null}

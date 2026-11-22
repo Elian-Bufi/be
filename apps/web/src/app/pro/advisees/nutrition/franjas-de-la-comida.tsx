@@ -6,7 +6,7 @@
  *
  * - **Una pista por renglón:** la banda del rango en el color de acento, un punto por opción (lleno adentro, hueco afuera)
  *   y una raya para el promedio. Lo que la escala no alcanza se fija al borde, con una flecha. A la derecha, en corto,
- *   «3 de 4 opciones adentro · promedio 28 g P».
+ *   «3 de 4 adentro · promedio 28 g P» (el lector de pantalla oye «opciones»).
  * - **Lo dibujado es para la vista** (`aria-hidden`): el lector de pantalla oye el texto entero, con cada opción.
  * - **Sin saltos (RP-D47):** cada renglón tiene su alto fijo, aparezcan o no sus marcas; una opción que se está leyendo
  *   queda donde estaba, punteada, hasta que llega su composición; mientras se leen los rangos, la franja guarda su lugar.
@@ -28,8 +28,11 @@ import {
   type FranjasDeLaComida as Franjas,
   type RenglonDeLaFranja,
   type TramoDelDia,
+  type VarianteDeLaFranja,
 } from './franjas-por-comida';
 import { COPY_RANGOS } from './rangos';
+
+export type { VarianteDeLaFranja };
 
 /** La letra de cada renglón, junto a su ícono. */
 const LETRA: Readonly<Record<RenglonDeLaFranja, string>> = { kcal: 'kcal', protein: 'P', carbohydrate: 'C', fat: 'G' };
@@ -42,21 +45,14 @@ const en = (desde: number, hasta?: number): CSSProperties => {
   return estilo as CSSProperties;
 };
 
-/**
- * - `comida`: todas sus opciones, con los límites a la izquierda y el resumen a la derecha.
- * - `opcion`: una sola opción (la abierta o la del cuadro), igual.
- * - `panel`: compacta, con lo que aportan las opciones a la izquierda y sin resumen.
- * - `receta`: una porción, con su valor a la izquierda y dónde queda a la derecha.
- */
-export type VarianteDeLaFranja = 'comida' | 'opcion' | 'panel' | 'receta';
-
+/** Las cuatro formas (`VarianteDeLaFranja`) están descritas en `franjas-por-comida.ts`. */
 export function FranjasDeLaComida({ franjas, comida, variante = 'comida' }: { franjas: Franjas; comida: string; variante?: VarianteDeLaFranja }) {
   // Dónde estaba la marca de cada opción, por renglón y por su identidad: una opción que se vuelve a leer no salta.
   const recordadas = useRef(new Map<string, number>());
   for (const r of franjas.renglones) for (const m of r.marcas) recordadas.current.set(`${r.renglon}|${m.clave}`, m.posicion);
   return (
     <div className="franjas" data-variante={variante} data-franjas={variante} data-sin-alimentos={franjas.sinAlimentos ? '' : undefined}>
-      <p className="visualmente-oculto">{franjasEnPalabras(franjas, comida)}</p>
+      <p className="visualmente-oculto">{franjasEnPalabras(franjas, comida, variante)}</p>
       <div className="franjas__renglones" aria-hidden="true">
         {franjas.renglones.map((r, i) => {
           const limites = r.limites ? `${cifraDeLosLimites(r.limites.min, r.limites.max)} ${UNIDAD[r.renglon]}` : 'sin rango';
@@ -114,13 +110,13 @@ export function FranjasQueSeLeen({ variante = 'comida' }: { variante?: VarianteD
   );
 }
 
-/** Una cantidad con su ícono («[ícono] 520–700 kcal»); sin cifra, «Sin dato», sin la unidad. */
-function CifraConIcono({ macro, cifra }: { macro: RenglonDeLaFranja; cifra: string | null }) {
+/** Una cantidad con su ícono («[ícono] 520–700 kcal»); sin cifra, «Sin dato» (o «—»), sin la unidad. */
+function CifraConIcono({ macro, cifra, sinDato = COPY_RANGOS.sinDato }: { macro: RenglonDeLaFranja; cifra: string | null; sinDato?: string }) {
   if (cifra !== null) return <CantidadDelMacro macro={macro} cifra={cifra} />;
   return (
     <span className="cantidad-del-macro" data-sin-dato>
       <Icono nombre={ICONO_DEL_MACRO[macro]} tamano={15} />
-      {COPY_RANGOS.sinDato}
+      {sinDato}
     </span>
   );
 }
@@ -169,7 +165,10 @@ function Pista({ r, recordadas }: { r: FranjaDelRenglon; recordadas: ReadonlyMap
   );
 }
 
-/** RP-21: el día en el panel: lo que va según lo que se elija, con su tramo frente al rango del día si lo hay. */
+/**
+ * RP-21: el día en el panel: lo que va según lo que se elija, con su tramo frente al rango del día si lo hay. Los cuatro
+ * renglones están siempre: sin dato, «—» y la banda sola (el porqué lo dice el renglón de arriba, una vez).
+ */
 export function TramosDelDia({ tramos }: { tramos: readonly TramoDelDia[] }) {
   return (
     <div className="franjas" data-variante="panel" data-franjas="dia">
@@ -179,7 +178,7 @@ export function TramosDelDia({ tramos }: { tramos: readonly TramoDelDia[] }) {
           <div key={t.renglon} className="franja" data-renglon={t.renglon} data-sin-rango={t.limites ? undefined : ''}>
             <span className="franja__rotulo" />
             <span className="franja__izquierda">
-              <CifraConIcono macro={t.renglon} cifra={t.cifra} />
+              <CifraConIcono macro={t.renglon} cifra={t.cifra} sinDato="—" />
             </span>
             <span className="franja__pista" data-pista={t.renglon}>
               {t.banda ? <Banda b={t.banda} /> : null}

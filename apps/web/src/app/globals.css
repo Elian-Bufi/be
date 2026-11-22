@@ -21379,10 +21379,12 @@ html:has(.estacion:not([data-en-el-asistente])) {
   gap: 0.1rem;
 }
 
-/* Un renglón: el ícono con su letra, los límites del rango, la pista y el resumen. */
+/* Un renglón: el ícono con su letra, los límites del rango, la pista y el resumen. El resumen se lleva la parte mayor:
+   «1 de 2 adentro · promedio 6,9 g C (por debajo, 4,1 g)» entra entero a 1440 y a 1536; más angosto, va debajo de la
+   pista (el `@container` de abajo). La pista no baja de 7 rem. */
 .franja {
   display: grid;
-  grid-template-columns: 3.4rem 8rem minmax(8rem, 1.2fr) minmax(0, 1fr);
+  grid-template-columns: 3.4rem 8rem minmax(7rem, 1fr) minmax(0, 1.6fr);
   grid-template-areas: 'rotulo izquierda pista derecha';
   align-items: center;
   column-gap: 0.75rem;
@@ -21555,8 +21557,9 @@ html:has(.estacion:not([data-en-el-asistente])) {
   opacity: 0.55;
 }
 
-/* En un lugar angosto (el cuadro de la opción, una tableta): la pista arriba y, debajo, los límites y el resumen. */
-@container (max-width: 36rem) {
+/* En un lugar angosto (el cuadro de la opción, una tableta, la comida a 1280): la pista arriba y, debajo, los límites y
+   el resumen, que así no se corta. */
+@container (max-width: 46rem) {
   .franjas:is([data-variante='comida'], [data-variante='opcion']) .franja {
     grid-template-columns: 2.9rem minmax(0, auto) minmax(0, 1fr);
     grid-template-areas:
@@ -21657,6 +21660,48 @@ html:has(.estacion:not([data-en-el-asistente])) {
   color: var(--tenue);
 }
 
+/* El título del día y su «?», en un renglón; abierto, la explicación ocupa el suyo debajo (como el «Reparto por comida»). */
+.rangos-y-totales__encabezado,
+.rangos-indicados__titulo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.rangos-y-totales__encabezado > .a-pedido,
+.rangos-indicados__titulo > .a-pedido {
+  display: contents;
+}
+
+.rangos-y-totales__encabezado .a-pedido__boton,
+.rangos-indicados__titulo .a-pedido__boton {
+  margin-inline-start: 0;
+}
+
+.rangos-y-totales__encabezado .a-pedido__texto:not([hidden]),
+.rangos-indicados__titulo .a-pedido__texto:not([hidden]) {
+  flex-basis: 100%;
+  margin: 0.15rem 0 0.2rem;
+  font-size: 0.85rem;
+}
+
+.rangos-y-totales__encabezado .a-pedido__texto p {
+  margin: 0 0 0.4rem;
+}
+
+.rangos-y-totales__encabezado .a-pedido__texto p:last-child {
+  margin-bottom: 0;
+}
+
+.rangos-indicados__titulo {
+  margin: 0.75rem 0 0.4rem;
+}
+
+.panel-de-nutricion .rangos-indicados__titulo h3 {
+  margin: 0;
+}
+
 .rangos-y-totales__del-dia {
   color: var(--tenue);
   font-weight: 400;
@@ -21675,8 +21720,12 @@ html:has(.estacion:not([data-en-el-asistente])) {
   --franja-fondo: var(--fondo-suave);
 }
 
+/* Un solo renglón, siempre (el porqué cuando el día no se suma es corto): el bloque del día no cambia de alto. */
 .rangos-y-totales__ayuda {
+  overflow: hidden;
   font-size: 0.8rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .rangos-y-totales__comidas {
@@ -21735,7 +21784,6 @@ html:has(.estacion:not([data-en-el-asistente])) {
   margin: -0.325rem 0 0 -0.325rem;
 }
 
-.rangos-y-totales__falta,
-.rangos-y-totales__como-se-lee {
+.rangos-y-totales__falta {
   font-size: 0.8rem;
 }
