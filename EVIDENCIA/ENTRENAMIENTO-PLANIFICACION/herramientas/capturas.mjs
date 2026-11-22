@@ -40,10 +40,14 @@ const salida = path.resolve(process.argv[2] ?? 'capturas-de-la-planificacion');
 const API = 'http://localhost:3001';
 const WEB = 'http://localhost:3000';
 const CHROME = process.env.CHROME ?? (process.platform === 'win32' ? 'C:/Program Files/Google/Chrome/Application/chrome.exe' : '/usr/bin/google-chrome');
+// RP-22 (DL-188): además, 1440 × 900 y 2048 × 1000 (1920 × 1080 con Windows al 125 % y el navegador al 75 %), las
+// pantallas en que Dirección recorre el escritorio.
 const TAMANOS = [
   [1280, 800],
+  [1440, 900],
   [1536, 730],
   [1920, 950],
+  [2048, 1000],
 ];
 const TEMAS = ['claro', 'azul-noche'];
 
@@ -291,6 +295,24 @@ async function prepararLosBloques(ids, nota) {
   return lugar;
 }
 
+// ─── RP-22 · «Empezar el plan», con una persona sin nada en Entrenamiento ───────────────────────────────────────────
+
+/**
+ * Prof. Martín Acosta se vincula con Héctor Funes en Entrenamiento (Héctor, en la cohorte, solo tiene Nutrición y
+ * Antropometría): la pestaña Plan muestra «Empezar el plan» con la franja de los tres pasos. Todo sintético.
+ */
+async function prepararElPrimerPlan(ids, nota) {
+  const c = cuentas();
+  const martin = await cliente.sesion(c.PRO_T_CORREO, c.PRO_T_CLAVE, 'WEB');
+  const hector = await cliente.sesion(c.ASE_HECTOR_CORREO, c.ASE_HECTOR_CLAVE, 'APK');
+  const solicitud = await cliente.pedir('POST', '/relationship-requests', { token: martin, cuerpo: { target: { type: 'ADVISEE', identityId: ids.hector }, scope: { code: 'ENTRENAMIENTO' }, purpose: dominio.FINALIDAD_DE_ALCANCE.ENTRENAMIENTO } });
+  const aceptada = await cliente.pedir('POST', `/relationship-requests/${solicitud.data.relationshipRequestId}/accept`, { token: hector, superficie: 'APK', cuerpo: { expectedVersion: solicitud.data.version ?? 'v1' } });
+  const vinculoId = aceptada.data.relationshipId;
+  const requisitos = await cliente.pedir('GET', `/relationships/${vinculoId}/consent-requirements`, { token: hector, superficie: 'APK' });
+  await cliente.pedir('POST', `/relationships/${vinculoId}/consents`, { token: hector, superficie: 'APK', cuerpo: { consentVersionId: requisitos.data.consentVersion.id } });
+  nota('Prof. Martín Acosta con Héctor Funes, en Entrenamiento, sin evaluación ni plan');
+}
+
 // ─── Las plantillas, sin persona (DL-182) ────────────────────────────────────────────────────────────────────────
 
 /**
@@ -370,6 +392,38 @@ function pantallas(ids, lugar) {
   const editor = `/pro/advisees/training?id=${ids.diego}&vista=plan&${pedido}`;
   return [
     {
+      // RP-22: la cabecera del área en una franja y «Empezar el plan» con los tres pasos, la evaluación primero.
+      nombre: '00-empezar-el-plan',
+      llegar: async (page, nota) => {
+        if (!ids.hector) throw new Error('La cohorte no dejó a Héctor Funes en estado.json.');
+        await prepararElPrimerPlan(ids, nota);
+        await ir(page, `/pro/advisees/training?id=${ids.hector}&vista=plan`);
+        await visible(page, '[data-franja-de-pasos]');
+        await asentar(page);
+        await page.evaluate(() => window.scrollTo(0, 0));
+      },
+      verificar: (page) =>
+        page.evaluate(() => {
+          const problemas = [];
+          const texto = document.querySelector('main')?.innerText ?? '';
+          if (/Actualizar|Consultado a las/.test(texto)) problemas.push('la cabecera dice «Actualizar» o «Consultado a las»');
+          if (texto.includes('Todavía no hay un plan activo')) problemas.push('dice «Todavía no hay un plan activo»');
+          const franja = document.querySelector('[data-franja-de-pasos]')?.getBoundingClientRect();
+          if (franja && franja.height > 90) problemas.push(`la franja de los pasos mide ${Math.round(franja.height)} px de alto`);
+          return problemas;
+        }),
+    },
+    {
+      // RP-22: la evaluación abierta en su paso, con la fecha automática («Hoy, 13:06 · cambiar»).
+      nombre: '00b-empezar-el-plan-evaluacion',
+      llegar: async (page) => {
+        await clic(page, '[data-paso-evaluacion]');
+        await visible(page, '[data-evaluacion-de-entrenamiento] [data-fecha-automatica]');
+        await page.evaluate(() => document.querySelector('[data-franja-de-pasos]')?.scrollIntoView({ block: 'start' }));
+        await pausa(300);
+      },
+    },
+    {
       nombre: '01-sesion-con-bloques',
       llegar: async (page) => {
         await ir(page, editor);
@@ -380,6 +434,29 @@ function pantallas(ids, lugar) {
         // El bloque a la vista, arriba del centro (que se desplaza solo).
         await page.evaluate(() => document.querySelector('.bloque-del-editor')?.scrollIntoView({ block: 'start' }));
         await pausa(300);
+      },
+    },
+    {
+      // RP-22 (RP-19): un descanso del bloque que no se entiende se dice en el renglón de la indicación, sin alargar la
+      // cabecera del bloque ni correr los ejercicios.
+      nombre: '01b-descanso-del-bloque-sin-entender',
+      llegar: async (page) => {
+        const ejercicio = () => page.evaluate(() => Math.round(document.querySelector('.bloque-del-editor .ejercicio-del-editor')?.getBoundingClientRect().top ?? -1));
+        const antes = await ejercicio();
+        const campo = await visible(page, '[data-descanso-del-bloque]');
+        await vaciar(page, campo);
+        await page.keyboard.type('1:3x');
+        await visible(page, '[data-indicacion-del-bloque="no-se-entiende"]');
+        const despues = await ejercicio();
+        if (Math.abs(despues - antes) > 1) throw new Error(`el primer ejercicio del bloque se corrió ${despues - antes} px`);
+      },
+      despues: async (page) => {
+        const campo = await page.$('[data-descanso-del-bloque]');
+        if (campo) {
+          await vaciar(page, campo);
+          await page.keyboard.type('01:30');
+        }
+        await asentar(page);
       },
     },
     {
@@ -419,6 +496,27 @@ function pantallas(ids, lugar) {
         // El ejercicio abierto desde su título: el criterio arriba, la barra y las series.
         await page.evaluate(() => document.querySelector('.bloque-del-editor [data-abierta]')?.scrollIntoView({ block: 'start' }));
         await pausa(300);
+      },
+    },
+    {
+      // RP-22: la carga común que no se entiende: la celda se marca y el renglón debajo de la tabla lo dice.
+      nombre: '04b-carga-comun-sin-entender',
+      llegar: async (page) => {
+        const campo = await visible(page, '[data-fila-general] input.celda-de-serie');
+        cargaComunDeLaEscena.valor = await campo.evaluate((e) => e.value);
+        await vaciar(page, campo);
+        await page.keyboard.type('sesenta');
+        await visible(page, '[data-lo-que-no-se-entiende="1"]');
+        await page.evaluate(() => document.querySelector('.series-del-editor')?.scrollIntoView({ block: 'center' }));
+        await pausa(300);
+      },
+      despues: async (page) => {
+        const campo = await page.$('[data-fila-general] input.celda-de-serie');
+        if (campo) {
+          await vaciar(page, campo);
+          if (cargaComunDeLaEscena.valor) await page.keyboard.type(cargaComunDeLaEscena.valor);
+        }
+        await asentar(page);
       },
     },
     {
@@ -853,6 +951,8 @@ function pantallas(ids, lugar) {
 }
 
 /** Lo que arma la escena 16 para las que siguen. */
+/** RP-22: la carga común de antes de la escena 04b, para dejarla como estaba. */
+const cargaComunDeLaEscena = { valor: '' };
 const plantillas = { datos: null, notasDeDiego: [] };
 
 /** Lo que conviene anotar de cada captura: desbordes a lo ancho, el alto de la página y si algún menú queda cortado. */
@@ -885,7 +985,7 @@ const medir = (page) =>
 
 async function capturarTodo() {
   const estado = JSON.parse(fs.readFileSync(path.join(TRABAJO, 'estado.json'), 'utf8'));
-  const ids = { diego: estado.personas?.diego?.aseId };
+  const ids = { diego: estado.personas?.diego?.aseId, hector: estado.personas?.hector?.aseId };
   if (!ids.diego) throw new Error('La cohorte no dejó a Diego Sosa en estado.json.');
   const notasDeLaPreparacion = [];
   const lugar = await prepararLosBloques(ids, (t) => notasDeLaPreparacion.push(t));

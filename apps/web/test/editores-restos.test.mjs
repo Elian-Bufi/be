@@ -208,10 +208,12 @@ test('ED-23 · la fila «General» está dentro de la tabla, arriba de las serie
   // Y una sola vez en el archivo: lo general de abajo ya no los repite.
   assert.equal(editor.match(/id=\{`\$\{id\}-carga`\}/g).length, 1);
   assert.equal(editor.match(/id=\{`\$\{id\}-descanso`\}/g).length, 1);
-  // Lo general que no se entiende lo dice a la vista y asociado al campo (WCAG 3.3.1), como antes de la planilla.
-  assert.match(editor, /aria-describedby=\{mal \? `\$\{id\}-no-se-entiende` : undefined\}/);
-  assert.match(tabla, /noSeEntiende="No se entiende: va un número\."/);
-  assert.match(tabla, /noSeEntiende="No se entiende: va como 02:30, o en segundos enteros\."/);
+  // Lo general que no se entiende lo dice a la vista y asociado al campo (WCAG 3.3.1). RP-22 (RP-19): ya no dentro de la
+  // celda, que alargaba la fila mientras se escribía, sino en el renglón reservado debajo de la tabla, con cómo se escribe.
+  assert.match(editor, /aria-describedby=\{mal \? aviso : undefined\}/);
+  assert.equal((tabla.match(/aviso=\{aviso\}/g) ?? []).length >= 2, true, 'la carga y el descanso comunes nombran el renglón');
+  const pie = editor.slice(editor.indexOf('</table>'), editor.indexOf('</table>') + 600);
+  assert.match(pie, /<RenglonDelAviso id=\{aviso\}/);
   // La tabla se ve también sin series: la fila «General» es donde se escribe la carga general.
   assert.doesNotMatch(editor, /p\.sets\.length === 0 \? \(\n\s+<p className="nota">\{C\.sinSeries\}<\/p>\n\s+\) : \(/);
 });

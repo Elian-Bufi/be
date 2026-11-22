@@ -10,17 +10,29 @@
  * - **El descanso** se escribe como en las series («01:30», o en segundos); vacío, sin indicar. Lo que no se entiende queda
  *   marcado y no deja guardar.
  * - Lo de vez en cuando (el nombre, subir, bajar, quitar) va en su «⋯».
+ * - **RP-22 (RP-19, sin saltos):** el aviso del descanso que no se entiende ya no aparece dentro de la cabecera (la
+ *   alargaba mientras se escribía): va en el renglón de la indicación, que en un bloque «En vueltas» está siempre, con su
+ *   alto. El descanso tiene sus flechitas y ↑ ↓ (15 s; con Mayúsculas, un minuto), de 00:00 a 60:00.
  */
 import { COPY_BLOQUES_DE_LA_SESION as B, indicacionDeVueltas, leerDescanso, nombreDelBloqueDeLaSesion, textoDeSegundos, type BloqueDeLaSesionEntrada, type TipoDeBloque } from '@be/domain';
 import { useEffect, useState, type ReactNode } from 'react';
 import { CampoDeNombre } from '../../../../components/campo-de-nombre';
+import { ConFlechas } from '../../../../components/flechas-del-numero';
+import { RenglonDelAviso } from '../../../../components/formulario';
+import { conUnPaso, leerDescansoDeLaPlanilla, LIMITES_DE_LA_PLANILLA } from './planilla-de-series';
 import { Icono } from '../../../../components/icono';
 import { MenuDeAcciones } from '../../../../components/menu-de-acciones';
 
 const VUELTAS = Array.from({ length: 20 }, (_, n) => n + 1);
 
 /** Lo escrito en el descanso: vacío es «sin indicar»; lo que no se entiende viaja como NaN y no deja guardar. */
-const leerElDescanso = (t: string): number | null => (t.trim() === '' ? null : (leerDescanso(t) ?? Number.NaN));
+const leerElDescanso = (t: string): number | null => (t.trim() === '' ? null : (leerDescansoDeLaPlanilla(t, leerDescanso) ?? Number.NaN));
+/** RP-22: un paso del descanso (15 s, o un minuto con Mayúsculas), desde lo escrito. */
+const conUnPasoDelDescanso = (t: string, sube: boolean, grande = false): number | null => conUnPaso('restSeconds', t, null, sube, { leerNumero: () => null, leerDescanso, grande });
+const COPY_DEL_DESCANSO = {
+  noSeEntiende: 'No se entiende el descanso al terminar la vuelta: va como 01:30, o en segundos, hasta 60:00.',
+  flechas: `De 00:00 a 60:00, como 01:30 o en segundos. ↑ y ↓ suman o restan ${LIMITES_DE_LA_PLANILLA.descanso.paso} segundos.`,
+} as const;
 const escribirElDescanso = (s: number | null | undefined): string => (typeof s === 'number' && !Number.isNaN(s) ? (textoDeSegundos(s) ?? '') : '');
 
 export function BloqueDelEditor({
@@ -73,6 +85,14 @@ export function BloqueDelEditor({
     setDescanso((t) => (Object.is(leerElDescanso(t), valorDelDescanso ?? null) ? t : escribirElDescanso(valorDelDescanso)));
   }, [valorDelDescanso]);
   const descansoMal = typeof valorDelDescanso === 'number' && Number.isNaN(valorDelDescanso);
+  const escribirDescanso = (t: string) => {
+    setDescanso(t);
+    onCambiarDescanso(leerElDescanso(t));
+  };
+  const unPaso = (sube: boolean, grande = false) => {
+    const n = conUnPasoDelDescanso(descanso, sube, grande);
+    if (n !== null) escribirDescanso(escribirElDescanso(n));
+  };
   return (
     <section className="bloque-del-editor" data-bloque={posicion + 1} data-tipo={bloque.kind} aria-labelledby={`${id}-titulo`}>
       <div className="bloque-del-editor__cabecera">
@@ -104,24 +124,29 @@ export function BloqueDelEditor({
             </label>
             <label className="bloque-del-editor__campo">
               <span>{B.descansoAlTerminarLaVuelta}</span>
-              <input
-                id={`${id}-descanso`}
-                className="celda-de-serie"
-                inputMode="numeric"
-                autoComplete="off"
-                placeholder="01:30"
-                value={descanso}
-                aria-invalid={descansoMal || undefined}
-                aria-describedby={`${id}-descanso-ayuda`}
-                onChange={(e) => {
-                  setDescanso(e.target.value);
-                  onCambiarDescanso(leerElDescanso(e.target.value));
-                }}
-                onBlur={() => setDescanso(escribirElDescanso(valorDelDescanso) || (descansoMal ? descanso : ''))}
-                data-descanso-del-bloque
-              />
-              <span id={`${id}-descanso-ayuda`} className={descansoMal ? 'campo__error' : 'visualmente-oculto'}>
-                {descansoMal ? 'No se entiende: va como 01:30, o en segundos enteros.' : B.descansoAyuda}
+              <ConFlechas que={B.descansoAlTerminarLaVuelta.toLowerCase()} alSubir={() => unPaso(true)} alBajar={() => unPaso(false)}>
+                <input
+                  id={`${id}-descanso`}
+                  className="celda-de-serie"
+                  inputMode="numeric"
+                  autoComplete="off"
+                  placeholder="01:30"
+                  value={descanso}
+                  title={COPY_DEL_DESCANSO.flechas}
+                  aria-invalid={descansoMal || undefined}
+                  aria-describedby={descansoMal ? `${id}-descanso-ayuda ${id}-indicacion` : `${id}-descanso-ayuda`}
+                  onChange={(e) => escribirDescanso(e.target.value)}
+                  onKeyDown={(e) => {
+                    if ((e.key !== 'ArrowUp' && e.key !== 'ArrowDown') || e.ctrlKey || e.metaKey || e.altKey) return;
+                    e.preventDefault();
+                    unPaso(e.key === 'ArrowUp', e.shiftKey);
+                  }}
+                  onBlur={() => setDescanso(escribirElDescanso(valorDelDescanso) || (descansoMal ? descanso : ''))}
+                  data-descanso-del-bloque
+                />
+              </ConFlechas>
+              <span id={`${id}-descanso-ayuda`} className="visualmente-oculto">
+                {B.descansoAyuda}
               </span>
             </label>
           </>
@@ -141,11 +166,23 @@ export function BloqueDelEditor({
         <CampoDeNombre id={`${id}-nombre`} etiqueta={B.nombreDelBloque} valor={bloque.label} maximo={120} enfocar={renombrando} despues={`${id}-menu`} alEmpezar={onRenombrar} alCambiar={onCambiarNombre} alTerminar={onTerminarDeRenombrar} />
       ) : null}
       {/* Lo que ve la persona, en una línea: así se lee en la app. */}
-      {enVueltas && ejercicios > 0 ? (
-        <p className="bloque-del-editor__indicacion" data-indicacion-del-bloque>
-          <Icono nombre="ordenar" tamano={15} />
-          {indicacionDeVueltas({ ...bloque, restAfterRoundSeconds: descansoMal ? null : bloque.restAfterRoundSeconds }, ejercicios)}
-        </p>
+      {/* RP-22: en un bloque «En vueltas», el renglón está siempre: la indicación o, si el descanso no se entiende, el aviso.
+          Escribir el descanso no corre los ejercicios de abajo. */}
+      {enVueltas ? (
+        descansoMal ? (
+          <RenglonDelAviso id={`${id}-indicacion`} tipo="error" className="bloque-del-editor__indicacion" data-indicacion-del-bloque="no-se-entiende">
+            {COPY_DEL_DESCANSO.noSeEntiende}
+          </RenglonDelAviso>
+        ) : (
+          <RenglonDelAviso id={`${id}-indicacion`} className="bloque-del-editor__indicacion" data-indicacion-del-bloque={ejercicios > 0 ? '' : 'vacia'}>
+            {ejercicios > 0 ? (
+              <>
+                <Icono nombre="ordenar" tamano={15} />
+                {indicacionDeVueltas(bloque, ejercicios)}
+              </>
+            ) : null}
+          </RenglonDelAviso>
+        )
       ) : null}
       {ejercicios === 0 ? <p className="nota">{B.sinEjercicios}</p> : enVueltas && ejercicios < 2 ? <p className="nota">{B.enVueltasPideDos}</p> : null}
       <div className="bloque-del-editor__ejercicios">{children}</div>

@@ -15,6 +15,7 @@ import type { EtapaDePlanificacion } from '@be/domain';
 import { useEffect, useId, useRef, useState } from 'react';
 import { CampoDeFecha } from '../../../components/campo-de-fecha';
 import { Icono } from '../../../components/icono';
+import { RenglonDelAviso } from '../../../components/formulario';
 import { diaYMesCivil, rangoCivil } from '../../../lib/formato';
 import { COPY_DEL_PERIODO as P, etapaVecina, textoDeLaEtapa } from './graficos/periodo-de-los-graficos';
 import { diasEntre, hoyEn } from './seguimiento/estado';
@@ -182,11 +183,11 @@ export function ControlDePeriodo<D extends number>({
               Aplicar
             </button>
           </div>
-          {problema ? (
-            <p className="campo__error" role="alert">
-              {problema}
-            </p>
-          ) : null}
+          {/* RP-22 (RP-19): el aviso de un rango que no sirve tiene su renglón reservado al pie del panel: al tocar «Aplicar»
+              el panel no crece ni corre lo que está debajo. */}
+          <RenglonDelAviso tipo={problema ? 'error' : 'nota'} role="alert" data-problema-del-periodo={problema ? '' : undefined}>
+            {problema}
+          </RenglonDelAviso>
         </div>
       ) : null}
     </div>
