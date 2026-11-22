@@ -21606,6 +21606,8 @@ html:has(.estacion:not([data-en-el-asistente])) {
 .avisos-con-lugar .campo-de-fecha__boton[aria-invalid='true'] {
   border-width: 1px;
   box-shadow: 0 0 0 1px var(--error);
+}
+
 /* ─── RP-20 y RP-21 (WP-RECORRIDO-PLAN-PULIDO, DL-188): las franjas por comida y «Rangos y totales» ───────────
    Cada opción frente al rango indicado de su comida, un renglón por kcal, P, C y G. Ubica, no califica: la banda va en
    el color de acento; las marcas, en el color del texto (llenas adentro, huecas afuera); nada en rojo ni en verde. Cada
