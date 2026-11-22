@@ -58,6 +58,18 @@ test('una prescripción exige objetivos por serie solo si alguna serie tiene un 
   assert.equal(prescripcionExigeObjetivosPorSerie({ ...general, suggestedLoad: null, sets: [{ repetitions: { value: 5 }, suggestedLoad: kg(10) }] }), true);
 });
 
+test('RP-22 · lo que no se entiende (NaN, en el editor) todavía no es un objetivo distinto por serie', () => {
+  // La carga común mal escrita: las series la toman de lo general, también NaN. Antes, NaN !== NaN la volvía «distinta» y
+  // aparecía el aviso de la app de la persona arriba del editor mientras se escribía.
+  assert.equal(prescripcionExigeObjetivosPorSerie({ ...general, suggestedLoad: kg(Number.NaN) }), false, 'la carga común mal escrita');
+  assert.equal(prescripcionExigeObjetivosPorSerie(conSerie(1, { suggestedLoad: kg(Number.NaN) })), false, 'la carga de una serie mal escrita');
+  assert.equal(prescripcionExigeObjetivosPorSerie(conSerie(1, { rir: Number.NaN })), false, 'el RIR de una serie mal escrito');
+  assert.equal(prescripcionExigeObjetivosPorSerie({ ...general, intensity: { criterion: 'RIR', target: { value: Number.NaN } } }), false, 'el objetivo del criterio mal escrito');
+  // Lo que sí se entiende y es distinto sigue contando, aunque otra celda no se entienda.
+  assert.equal(prescripcionExigeObjetivosPorSerie({ ...conSerie(1, { suggestedLoad: kg(18) }), restSeconds: Number.NaN }), true, 'otra carga, con el descanso mal escrito');
+  assert.equal(prescripcionExigeObjetivosPorSerie({ ...general, suggestedLoad: kg(Number.NaN), sets: [{ repetitions: { value: 5 }, suggestedLoad: null }] }), true, 'una serie «Sin indicar» frente a una común mal escrita');
+});
+
 test('«Piernas A» del paquete exige objetivos por serie; un plan con los mismos objetivos en todas las series, no', () => {
   // A y B cambian el RIR y la carga por serie (sesion_demo.json); C solo cambia el descanso de la última serie.
   const A = conSerie(2, { rir: 1, suggestedLoad: kg(20), restSeconds: 150 });

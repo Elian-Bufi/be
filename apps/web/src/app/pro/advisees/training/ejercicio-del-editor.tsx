@@ -701,7 +701,9 @@ function SeriesDelEjercicio({
       setNoSeEntiende(false);
       return onCambiar({ sets: p.sets.map((x, m) => (elegidas.has(m) ? { ...x, repetitions: r } : x)) });
     }
-    const leido = campo === 'restSeconds' ? leerDescanso(valor) : leerNumero(valor);
+    // RP-22: con los mismos límites que las celdas (la carga desde 0; el descanso, hasta 60:00). Antes, «Escribir en 3
+    // series» dejaba pasar una carga negativa o un descanso de más de una hora, que el contrato rechaza al guardar.
+    const leido = campo === 'restSeconds' ? leerDescansoDeLaSerie(valor) : campo === 'suggestedLoad' ? leerCargaDeLaSerie(valor) : leerNumero(valor);
     if (leido === null) return setNoSeEntiende(true);
     setNoSeEntiende(false);
     onCambiar({ sets: escribirEnLasSeries(p.sets, elegidas, campo, campo === 'suggestedLoad' ? { value: leido, unit: unidad } : leido) });
@@ -805,7 +807,7 @@ function SeriesDelEjercicio({
             </button>
             {/* RP-22: el aviso tiene su renglón en la barra: al tocar «Escribir» con algo que no se entiende, la tabla no baja. */}
             <RenglonDelAviso id={`${id}-elegidas-no-se-entiende`} tipo={noSeEntiende ? 'error' : 'nota'} className="aviso-de-las-elegidas" role="alert">
-              {noSeEntiende ? (campo === 'repetitions' ? COPY_SELECCION.repeticionesNoSeEntienden : PL.noSeEntiende) : null}
+              {noSeEntiende ? (campo === 'repetitions' ? COPY_SELECCION.repeticionesNoSeEntienden : campo === 'suggestedLoad' ? COPY_SELECCION.cargaNoSeEntiende : campo === 'restSeconds' ? COPY_SELECCION.descansoNoSeEntiende : PL.noSeEntiende) : null}
             </RenglonDelAviso>
           </div>
         ) : null}
@@ -1034,6 +1036,9 @@ const COPY_SELECCION = {
   escribirEn: (n: number) => (n === 1 ? 'Escribir en 1 serie' : `Escribir en ${n} series`),
   listo: 'Listo',
   repeticionesNoSeEntienden: 'No se entiende: va un número o un rango, como 8-12.',
+  // RP-22: los mismos límites que las celdas.
+  cargaNoSeEntiende: 'No se entiende: va un número desde 0.',
+  descansoNoSeEntiende: 'No se entiende: va como 02:30, o en segundos, hasta 60:00.',
 } as const;
 
 /** ENP-D14: los textos del criterio arriba de las series. */

@@ -84,6 +84,11 @@ test('RP-22 · lo que sale de los límites del contrato no se entiende: una carg
   assert.match(EJERCICIO, /leer=\{leerCargaDeLaSerie\}/);
   assert.match(EJERCICIO, /leer=\{leerDescansoDeLaSerie\}/);
   assert.match(EJERCICIO, /interpretar=\{leerLaCarga\}/);
+  // «Escribir en N series» lee con los mismos límites: antes dejaba pasar «-5» o «61:00», que el contrato rechaza al
+  // guardar (el autoguardado fallaba con lo escrito a la vista y sin marca).
+  const elegidas = EJERCICIO.slice(EJERCICIO.indexOf('const escribirEnLasElegidas'), EJERCICIO.indexOf('const pedirQuitar'));
+  assert.match(elegidas, /campo === 'restSeconds' \? leerDescansoDeLaSerie\(valor\) : campo === 'suggestedLoad' \? leerCargaDeLaSerie\(valor\)/);
+  assert.doesNotMatch(elegidas, /leerDescanso\(valor\)/);
 });
 
 test('RP-22 · lo que no se entiende en la planilla se dice en un renglón, con la celda, cómo se escribe y cuántas más', () => {
@@ -126,10 +131,12 @@ test('RP-22 · el pie de la tabla: lo largo detrás de un «?», con las flechas
   assert.equal((pie.slice(0, pie.indexOf('<ExplicacionAPedido')).match(/<p className="nota"/g) ?? []).length, 0, 'ningún párrafo a la vista antes del «?»');
 });
 
-test('RP-22 · las flechitas: reservan su lugar, no reciben el foco y no le sacan el foco al campo', () => {
+test('RP-22 · las flechitas: reservan su lugar, no reciben el foco, no le sacan el foco al campo y el lector no las recorre', () => {
   const F = leer('components/flechas-del-numero.tsx');
   assert.equal((F.match(/tabIndex=\{-1\} className/g) ?? []).length, 2);
   assert.equal((F.match(/onMouseDown=\{\(e\) => e\.preventDefault\(\)\}/g) ?? []).length, 2);
+  // El lector no las recorre: el campo ya da el paso con ↑ y ↓ (y en una tabla serían dos botones más por celda).
+  assert.match(F, /<span className="con-flechas__flechas" aria-hidden="true">/);
   assert.match(RP22, /\.con-flechas > input \{\n\s*padding-inline-end: 1\.5rem;/);
   assert.match(RP22, /\.con-flechas:focus-within > \.con-flechas__flechas/);
   // Donde van: las repeticiones, la carga y el descanso comunes y el descanso del bloque. El RIR y el % RM son del
@@ -207,4 +214,12 @@ test('RP-22 · desplegables legibles y los avisos con su lugar en la revisión y
   assert.match(RP22, /\.criterio-del-ejercicio \.campo:has\(select\[id\$='-unidad'\]\) \{\n\s*flex: 0 1 7rem;/);
   assert.match(leer('app/pro/advisees/training/revisiones.tsx'), /<form className="revision-nueva__formulario avisos-con-lugar"/);
   assert.match(leer('app/pro/advisees/training/resumen.tsx'), /<form className="formulario avisos-con-lugar" onSubmit=\{enviar\} noValidate data-objetivo-de-entrenamiento>/);
+});
+
+test('RP-22 · a 1440 con el panel abierto (la tabla entre 40 y 46 rem), las repeticiones con flechitas entran y los rótulos no se pisan', () => {
+  const angosta = CSS.slice(CSS.indexOf('@container ejercicios (40rem < width <= 46rem) {'));
+  const bloque = angosta.slice(0, angosta.indexOf('\n}\n'));
+  // Con 4 rem y la flechita (1,5 rem), «8-12» no entraba; «Repeticiones» pisaba «Carga sugerida» (la captura de la CI).
+  assert.match(bloque, /\.series-del-editor thead th:nth-child\(2\) \{\n\s*width: 5rem;/);
+  assert.match(bloque, /\.series-del-editor thead th \{\n\s*hyphens: auto;/);
 });

@@ -1843,6 +1843,24 @@ async function sinSaltos({ p, d, salida }) {
   await p.waitForFunction((e) => e.value === '62,5', { timeout: ESPERA, polling: 100 }, cargaComun);
   nadaSeMovio(quieta, await fotoDeLugares(p, DE_LA_TABLA), 'Entrenamiento: las flechas');
   await captura(p, salida, 'sin-saltos-entrenamiento-flechas');
+  // Lo mismo a los anchos en que Dirección recorre el escritorio (1280, 1536, 2048 y, al final, 1440, el de siempre):
+  // una carga negativa marca la celda y escribe el renglón sin correr nada, y corregirla tampoco.
+  for (const ancho of [1280, 1536, 2048, 1440]) {
+    await p.setViewport({ width: ancho, height: 900 });
+    await pausa(300);
+    // Con el autoguardado de lo anterior ya hecho: la foto es la de la pantalla quieta.
+    await p.waitForNetworkIdle({ idleTime: 500, timeout: ESPERA }).catch(() => {});
+    await p.evaluate(() => document.querySelector('.series-del-editor')?.scrollIntoView({ block: 'center' }));
+    await pausa(300);
+    const aEsteAncho = await fotoDeLugares(p, DE_LA_TABLA);
+    await reemplazarTexto(p, cargaComun, '-5');
+    await p.waitForFunction((s) => document.querySelector(`${s} [data-lo-que-no-se-entiende="1"]`)?.textContent.includes('la carga común'), { timeout: ESPERA, polling: 100 }, E);
+    nadaSeMovio(aEsteAncho, await fotoDeLugares(p, DE_LA_TABLA), `Entrenamiento a ${ancho}: la carga negativa`);
+    if (ancho !== 1440) await captura(p, salida, `sin-saltos-entrenamiento-${ancho}`);
+    await reemplazarTexto(p, cargaComun, '62,5');
+    await p.waitForFunction((s) => document.querySelector(`${s} [data-lo-que-no-se-entiende]`)?.dataset.renglonDelAviso === 'vacio', { timeout: ESPERA, polling: 100 }, E);
+    nadaSeMovio(aEsteAncho, await fotoDeLugares(p, DE_LA_TABLA), `Entrenamiento a ${ancho}: la carga corregida`);
+  }
 }
 
 /**

@@ -10936,12 +10936,18 @@ button.comida-del-dia__fila > .icono:last-child {
 
 /* La planilla de series entre 40 y 46 rem (el centro de la estación a 1440): tabla, con columnas más justas. */
 @container ejercicios (40rem < width <= 46rem) {
+  /* RP-22: un rótulo que no entra se corta con guion («Repeti-ciones») en vez de pisar el de al lado. */
+  .series-del-editor thead th {
+    hyphens: auto;
+  }
+
   .series-del-editor thead th:first-child {
     width: 2.5rem;
   }
 
+  /* RP-22: las repeticiones llevan sus flechitas (1,5 rem a la derecha): con 4 rem, «8-12» no entraba. */
   .series-del-editor thead th:nth-child(2) {
-    width: 4rem;
+    width: 5rem;
   }
 
   .series-del-editor thead th:not(:first-child):not(:nth-child(2)):not(.series-del-editor__columna-nota):not(.series-del-editor__columna-quitar) {

@@ -88,7 +88,16 @@ export function capacidadesDeclaradas(valor: string | readonly string[] | null |
 /** El valor de la cabecera para un cliente que declara estas capacidades. */
 export const valorDeCapacidades = (capacidades: readonly CapacidadDeCliente[]): string => [...new Set(capacidades)].join(',');
 
-const mismaCarga = (a: Carga | null, b: Carga | null): boolean => (a === null || b === null ? a === b : a.value === b.value && a.unit === b.unit);
+/**
+ * RP-22 (DL-188): lo que no se entiende todavía no es un objetivo distinto. En el editor, un número mal escrito viaja como
+ * NaN (no se guarda: `loQueNoDejaGuardarElEntrenamiento`), y las series que lo toman de lo general también lo tienen; con
+ * `===`, NaN nunca es igual a NaN, y una carga común mal escrita pasaba por «objetivos distintos por serie»: aparecía
+ * arriba el aviso de la app de la persona y corría el editor mientras se escribía.
+ */
+const sinLeer = (n: number | null | undefined): boolean => typeof n === 'number' && Number.isNaN(n);
+const mismaCarga = (a: Carga | null, b: Carga | null): boolean =>
+  a === null || b === null ? a === b : (a.value === b.value && a.unit === b.unit) || sinLeer(a.value) || sinLeer(b.value);
+const mismoRir = (a: number | null, b: number | null): boolean => a === b || sinLeer(a) || sinLeer(b);
 
 /**
  * Si una prescripción exige un cliente que muestre los objetivos por serie: alguna serie tiene un RIR o una carga
@@ -97,7 +106,7 @@ const mismaCarga = (a: Carga | null, b: Carga | null): boolean => (a === null ||
 export function prescripcionExigeObjetivosPorSerie(prescripcion: PrescripcionParaResolver): boolean {
   const rirGeneral = esCriterioRir(prescripcion.intensity) ? prescripcion.intensity!.target.value : null;
   const cargaGeneral = prescripcion.suggestedLoad ?? null;
-  return objetivosEfectivos(prescripcion).some((o) => o.rir !== rirGeneral || !mismaCarga(o.suggestedLoad, cargaGeneral));
+  return objetivosEfectivos(prescripcion).some((o) => !mismoRir(o.rir, rirGeneral) || !mismaCarga(o.suggestedLoad, cargaGeneral));
 }
 
 interface SesionConPrescripciones {
