@@ -12,6 +12,9 @@ import {
   evaluarTransicionDePlanDeEntrenamiento,
   normalizarEstructuraDeEntrenamiento,
   agendaPodada,
+  conLaNotacion,
+  notacionDe,
+  notacionInicial,
   problemasDeAgenda,
   problemasDeCompletitud,
   problemasDeReferencias,
@@ -23,6 +26,7 @@ import {
   type EjercicioCitable,
   type EstadoDeVersionConDescarte,
   type EstructuraDePlanDeEntrenamientoEntrada,
+  type NotacionDelEsfuerzo,
   type OrigenDePlanEnPlantilla,
   type Procedencia,
   type ValidationIssue,
@@ -50,13 +54,14 @@ import {
   CompatibilidadDeClientesService,
   entregaRetenida,
   exigeObjetivosPorSerie,
+  muestraLaNotacionDelEsfuerzo,
   seRetieneLaEntrega,
   tieneSeriesDeCalentamiento,
 } from './compatibilidad-de-clientes';
 import { EjecutorDeEntrenamiento, esUuid, exigirA3Vigente } from './ejecutor';
 import { EvaluacionesDeEntrenamientoService } from './evaluaciones.service';
 import { registrarEventoDeEntrenamiento } from './eventos';
-import { contenidoDeLaVersion, INCLUIR_PLAN_DE_ENTRENAMIENTO, nombreVisibleDe, seguimientoAbierto, versionDePlanApi, type VersionConPlan } from './lectura-entrenamiento';
+import { contenidoDeLaVersion, INCLUIR_PLAN_DE_ENTRENAMIENTO, nombreVisibleDe, notacionDeLaVersion, seguimientoAbierto, versionDePlanApi, type VersionConPlan } from './lectura-entrenamiento';
 
 type Tx = Prisma.TransactionClient;
 
@@ -159,6 +164,7 @@ export class PlanesDeEntrenamientoService {
           proximaRevision: pedido.nextReviewAt ?? null,
           revisionDeOrigenId: null,
           procedencia,
+          notacion: pedido.effortNotation ?? null,
         });
         return { estadoHttp: 201, cuerpo: { data: await this.leerVersion(tx, version, true) }, sujetoId: asesoradoId, recurso: { tipo: RECURSO, id: version } };
       },
@@ -183,6 +189,11 @@ export class PlanesDeEntrenamientoService {
       proximaRevision: string | null;
       revisionDeOrigenId: string | null;
       procedencia: Procedencia;
+      /**
+       * DL-192 (RPE-D01): la notación del esfuerzo que pidió el profesional. Sin ella, la de la versión de la que parte; si
+       * no parte de una, la última que usó con cualquier persona; si nunca eligió, RIR.
+       */
+      notacion?: NotacionDelEsfuerzo | null;
     },
   ): Promise<string> {
     await this.exigirObjetivoEfectivo(tx, p.profesionalId, p.asesoradoId, p.objetivoVersionId);
@@ -214,6 +225,13 @@ export class PlanesDeEntrenamientoService {
     } else {
       contenido = await this.normalizarYVerificar(tx, p.profesionalId, p.estructura ?? { blocks: [] });
     }
+    // DL-192 (RPE-D01): la notación con la que nace. La sucesora trae la de su base en el contenido copiado; lo demás toma
+    // la última que usó el profesional, leída antes de crear esta versión.
+    const ultimaDelProfesional = p.notacion || p.basadaEn ? null : await this.ultimaNotacionDelProfesional(tx, p.profesionalId);
+    contenido = conLaNotacion(
+      contenido,
+      notacionInicial({ pedida: p.notacion ?? null, deLaBase: p.basadaEn ? notacionDe(contenido.effortNotation) : null, ultimaDelProfesional }),
+    );
     const sucesion = evaluarSucesion(
       versiones.map((v) => ({ id: v.id, objetoId: v.planId, predecesoraId: v.predecesoraId })),
       { objetoId: plan.id, predecesoraId: plan.versionEfectivaId },
@@ -277,7 +295,12 @@ export class PlanesDeEntrenamientoService {
         const abierto = await seguimientoAbierto(tx, actor.identidadId, asesoradoId);
         return {
           data: pagina.map((v) => {
-            const { blocks: _b, ...resumen } = { ...versionDePlanApi(v, nombre, new Map(), abierto), templateOrigin: (v.origenDePlantilla as OrigenDePlanEnPlantilla | null) ?? null };
+            // DL-192: con la notación de cada versión, para leer el historial en la del plan vigente.
+            const { blocks: _b, ...resumen } = {
+              ...versionDePlanApi(v, nombre, new Map(), abierto),
+              templateOrigin: (v.origenDePlantilla as OrigenDePlanEnPlantilla | null) ?? null,
+              effortNotation: notacionDeLaVersion(v),
+            };
             return resumen;
           }),
           page,
@@ -322,7 +345,8 @@ export class PlanesDeEntrenamientoService {
           await this.decidir(tx, 'API-TRN-09', actor, actor.identidadId, titular, recurso, ctx);
           if (v.plan.profesionalId !== actor.identidadId) throw this.ejecutor.noRevelable({ operacion: 'API-TRN-09', actorId: actor.identidadId, recurso, sujetoId: titular }, ctx);
         }
-        return { data: await this.leerVersion(tx, v.id, titular !== actor.identidadId) };
+        // DL-192 (RPE-D08): al titular, la notación solo si su cliente la declara.
+        return { data: await this.leerVersion(tx, v.id, titular !== actor.identidadId, titular !== actor.identidadId || muestraLaNotacionDelEsfuerzo(ctx)) };
       },
     });
   }
@@ -348,7 +372,9 @@ export class PlanesDeEntrenamientoService {
         const estructura = await this.normalizarYVerificar(tx, v.profesionalId, pedido.changes);
         // DL-137: sin el campo, la agenda que había sigue, sin las sesiones que ya no están; `null` la quita.
         const agenda = pedido.agenda === undefined ? agendaPodada(v.contenido.agenda, sesionesDe(estructura)) : agendaValida(pedido.agenda, estructura);
-        const contenido: ContenidoDePlanDeEntrenamiento = agenda ? { ...estructura, agenda } : estructura;
+        // DL-192 (RPE-D01): sin el campo, la notación que tenía el borrador sigue.
+        const notacion = pedido.effortNotation ?? notacionDe(v.contenido.effortNotation);
+        const contenido: ContenidoDePlanDeEntrenamiento = conLaNotacion(agenda ? { ...estructura, agenda } : estructura, notacion);
         const evaluacion = evaluarTransicionDePlanDeEntrenamiento(v.estado, { transicion: 'GuardarBorrador', cambiosValidosComoBorrador: true });
         if (!evaluacion.permitida) throw noEditable();
         await tx.versionDePlanDeEntrenamiento.update({
@@ -554,15 +580,29 @@ export class PlanesDeEntrenamientoService {
 
   // ─── Auxiliares ─────────────────────────────────────────────────────────────────────────────
 
-  async leerVersion(tx: Tx, id: string, incluirOrigen = false): Promise<VersionDePlanDeEntrenamiento> {
+  /**
+   * `incluirOrigen`: es una lectura del profesional. `conNotacion` (DL-192): suma `effortNotation`; por omisión, en las del
+   * profesional, y al titular solo si su cliente declara `training-effort-notation-1`.
+   */
+  async leerVersion(tx: Tx, id: string, incluirOrigen = false, conNotacion = incluirOrigen): Promise<VersionDePlanDeEntrenamiento> {
     const v = (await tx.versionDePlanDeEntrenamiento.findUniqueOrThrow({ where: { id }, include: INCLUIR_PLAN_DE_ENTRENAMIENTO })) as VersionConPlan;
     const catalogo =
       v.estado === 'BORRADOR'
         ? await this.catalogo.citables(tx, v.plan.profesionalId, 'PROFESIONAL', referenciasDeEjercicio(v.contenido as unknown as ContenidoDePlanDeEntrenamiento))
         : new Map();
     const api = versionDePlanApi(v, await nombreVisibleDe(tx, v.plan.profesionalId), aCitables(catalogo), await seguimientoAbierto(tx, v.plan.profesionalId, v.plan.asesoradoId));
+    const notacion = conNotacion ? { effortNotation: notacionDeLaVersion(v) } : {};
     // El origen de plantilla solo lo ve el profesional: la APK instalada valida con esquemas estrictos que no lo conocen.
-    return incluirOrigen ? { ...api, templateOrigin: (v.origenDePlantilla as OrigenDePlanEnPlantilla | null) ?? null } : api;
+    return incluirOrigen ? { ...api, templateOrigin: (v.origenDePlantilla as OrigenDePlanEnPlantilla | null) ?? null, ...notacion } : { ...api, ...notacion };
+  }
+
+  /** DL-192 (RPE-D01): la notación de la versión más nueva que escribió este profesional, con cualquier persona; `null` si no hay. */
+  private async ultimaNotacionDelProfesional(tx: Tx, profesionalId: string): Promise<string | null> {
+    const filas = await tx.$queryRaw<{ notacion: string | null }[]>`
+      SELECT "contenido"->>'effortNotation' AS "notacion" FROM "version_de_plan_de_entrenamiento"
+       WHERE "autor_id" = ${profesionalId}::uuid AND "estado" <> 'DESCARTADA'
+       ORDER BY "momento_de_registro" DESC LIMIT 1`;
+    return filas[0]?.notacion ?? null;
   }
 
   /**

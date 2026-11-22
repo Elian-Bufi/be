@@ -9,9 +9,20 @@
  * La cuenta sale de las entradas del punto, no de un valor guardado: con una versión nueva del método, sigue dando lo
  * mismo (RM-18).
  */
-import { COPY_FUERZA, estimacionALaVista, estimacionConLaDecima, laCuentaDeLaEstimacion, type PuntoDeFuerza } from '@be/domain';
+import {
+  conQueSeEstimo,
+  copyDeLaEstimacion,
+  COPY_FUERZA,
+  COPY_NOTACION_DEL_ESFUERZO,
+  esfuerzoEnCampo,
+  estimacionALaVista,
+  estimacionConLaDecima,
+  laCuentaDeLaEstimacion,
+  type PuntoDeFuerza,
+} from '@be/domain';
 import { Enlace } from '../../../../components/enlace';
 import { useNombres } from '../../../../lib/nombres-ocultos';
+import { useNotacionDelEsfuerzo } from '../notacion-del-esfuerzo';
 import { COPY_SUCESION, estimacionDelPunto, haciaLaSesion, loQueNoEntroEnLaSesion, type SerieQueNoEntro } from './fuerza';
 
 const DIAS = ['domingo', 'lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado'];
@@ -65,7 +76,9 @@ export function ComoSeCalculo({
   const autor = useNombres().deQuien(p.writtenBy, asesoradoId);
   const quien = p.source === 'OBSERVED' ? `${autor}, que la observó` : `${autor}, en la app`;
   const sesion = haciaLaSesion(asesoradoId, p);
-  const fuera = loQueNoEntroEnLaSesion(p, noEntraron);
+  // DL-192: el esfuerzo, la regla y los motivos, en la notación del plan; la cuenta de Epley usa el RIR, que se muestra al lado.
+  const notacion = useNotacionDelEsfuerzo();
+  const fuera = loQueNoEntroEnLaSesion(p, noEntraron, notacion);
   const banda = COPY_FUERZA.banda[e.banda];
   return (
     <div className="como-se-calculo" data-como-se-calculo>
@@ -100,9 +113,10 @@ export function ComoSeCalculo({
             <td>{quien}</td>
           </tr>
           <tr>
-            <th scope="row">{C.rir}</th>
+            <th scope="row">{COPY_NOTACION_DEL_ESFUERZO.etiqueta[notacion]}</th>
             <td>
-              <strong>{String(e.rir).replace('.', ',')}</strong>
+              <strong>{notacion === 'RIR' ? String(e.rir).replace('.', ',') : esfuerzoEnCampo(e.rir, notacion)}</strong>
+              {notacion === 'RPE' ? <span className="nota"> (RIR {String(e.rir).replace('.', ',')})</span> : null}
             </td>
             <td>{quien}</td>
           </tr>
@@ -121,6 +135,8 @@ export function ComoSeCalculo({
         </tbody>
       </table>
       <div className="como-se-calculo__cuenta" data-cuenta>
+        {/* RPE-04: con qué serie salió, en la notación del plan. */}
+        <p data-con-que-se-estimo>{conQueSeEstimo(e, notacion)}</p>
         <p>
           <strong>{laCuentaDeLaEstimacion(e)}</strong>
         </p>
@@ -136,7 +152,7 @@ export function ComoSeCalculo({
             {banda.slice(1)}. {COPY_FUERZA.metodo}, la especificación de BE en su versión 1.
           </p>
           <p className="nota" data-regla-del-rir>
-            {COPY_FUERZA.reglaDelRir}
+            {copyDeLaEstimacion(notacion).reglaDelRir}
           </p>
         </div>
         <div className="como-se-calculo__caja">

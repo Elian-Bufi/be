@@ -9155,3 +9155,59 @@ su esquema y se publican; las nombra con el código legible hasta la próxima AP
 - Los nombres en la próxima APK, con sus lecturas congeladas (DL-152).
 - Calcular las cinco masas de un toque y partir el peso en las cinco masas en «Composición corporal» y en la lámina.
   Detalle completo: `docs/paquetes/WP-ANTROPOMETRIA-METODO-Y-KERR.md`.
+
+## DL-192 — El RPE como otra forma de escribir el RIR, y el máximo estimado en esa notación
+
+**Prioridad:** media (Dirección, licenciado, prescribe por RPE y quiere que la persona responda en esa escala) · REG-06-128 ·
+REG-06-129 · INV-06-138/139 · INV-06-152 · REG-06-182 · REG-06-203 · B10-08 · DL-122 · DL-152 · DL-161 · DL-171 · DL-178 ·
+**Estado:** DECIDIDA por Dirección el 2026-11-22 · PROGRAMADA en `wp-rpe-y-maximo-estimado` (PR en borrador, sin integrar) ·
+RPE-D01 a RPE-D11, **a ratificar**. La parte de la APK va en la 0.32 (DL-194). Si al integrar el número choca con otro
+paquete, se renumera.
+
+**Qué pidió Dirección.** «Estábamos haciendo RPE, escala de esfuerzo percibido, dentro de cada serie? ¿Hay forma de
+relacionarlo con el RIR técnicamente?» Aprobó la propuesta: una sola medida, dos notaciones, con la escala de RPE basada en
+RIR (Zourdos y colaboradores, 2016; la que usan Helms y el powerlifting), RPE = 10 − RIR de 6 a 10 con medios puntos; lo
+guardado sigue siendo el RIR; el profesional elige la notación y la persona responde y ve todo en ella; y el máximo
+estimado de cada serie, dicho en esa notación y separado del máximo probado. El RPE de la sesión (Foster, CR-10 × minutos)
+queda afuera, con «registrar otro deporte».
+
+**Qué dice el legajo.** El criterio de intensidad es exactamente uno de dos, % RM o RIR (REG-06-128), y el esfuerzo
+percibido es dato de la ejecución, nunca un tercer criterio (REG-06-129; INV-06-139): un `criterion: "RPE"` es
+`INTENSITY_CRITERION_INVALID`. «RPE prescripto» es un término prohibido en los textos de Entrenamiento. La estimación de
+la repetición máxima es Epley v1 (DL-171), un método con versión inmutable (REG-06-203), que nunca es una marca (REG-06-182;
+B10-08). No se edita el legajo.
+
+**Cómo se lo cumple sin romperlo.** El RPE de este paquete no es el esfuerzo percibido: es otra forma de escribir el RIR.
+La prescripción sigue con el criterio RIR y su valor en RIR («RPE 8» es RIR 2), y el RPE como criterio sigue siendo un 422.
+La notación vive en la versión del plan (`effortNotation`), no en la prescripción; `perceivedExertion` (de 0 a 10, del 09)
+no se toca y no se mezcla. Ningún texto dice «RPE prescripto». El método de la estimación no cambia: Epley v1, RIR de 0 a 2
+(RPE 8 a 10) y hasta 12 repeticiones equivalentes.
+
+**Lo programado.**
+- **RPE-01 · La notación en la versión del plan:** `effortNotation` opcional en API-TRN-07 y 10, en las lecturas del
+  profesional (API-TRN-07 a 10 y API-SER-01) y en el contenido de la versión, solo cuando es RPE (lo que no existe no se
+  guarda); se congela con la instantánea y la sucesora la hereda. Sin migración.
+- **RPE-02 · La conversión** (`notacion-del-esfuerzo.ts`): RPE = 10 − RIR; «6 o menos» se guarda como RIR 4 y todo RIR de 4
+  o más se lee así en RPE; lo escrito se lee como el RIR que se guarda.
+- **RPE-03 · Prescribir en RPE** en el editor: el selector al pie de las sesiones (lo largo y las fuentes detrás del «?»);
+  el criterio, el objetivo, cada serie y la escritura en varias series, en la notación.
+- **RPE-04 · Leer en la notación** el plan, los registros (con el sentido de la comparación al revés: menos RIR es más
+  RPE) y la fuerza estimada. Los gráficos siguen en RIR (RPE-D04).
+- **RPE-05 · El máximo estimado** dice con qué serie salió («estimado con 5 reps a RPE 8 · 100 kg» o «a RIR 2»), con la
+  regla y los motivos en la notación. BE no guarda todavía un máximo probado (D-V3-03): la estimación no entra en las marcas
+  ni se llama máximo, y cuando exista el probado, va en su renglón.
+- **RPE-06 · Para la app:** la capacidad `training-effort-notation-1`; con ella, el titular recibe `effortNotation` en
+  API-TRN-09 y API-SER-02. Sin ella, la forma de siempre; la API acepta el RIR de la APK actual tal cual, y un plan en RPE no
+  se retiene ni bloquea su activación (RPE-D08).
+- **RPE-07 · El valor inicial:** la pedida; si no, la de la versión de la que parte; si no, la última del profesional con
+  cualquier persona; si nunca eligió, RIR.
+- Pruebas: TEST-RPE-001 a 012 (dominio), 020 a 025 (integración, en la CI), 030 (navegador) y 040 a 045 (website).
+
+**La APK publicada.** No cambia: pregunta el RIR, lo manda y se guarda igual. La última APK congelada lee y registra con un
+plan en RPE sin un rechazo (TEST-RPE-024).
+
+**Lo que queda.**
+- Ratificar RPE-D01 a RPE-D11.
+- DL-194 (APK 0.32): declarar la capacidad, preguntar y mostrar en la notación y mandar el RIR; congelar sus lecturas.
+- Mirarlo en pantalla y con un lector de pantalla; la escritura rápida en RPE; si Dirección lo pide, `BE-E1RM` v2 con RPE 6
+  a 7,5; el RPE de la sesión con «registrar otro deporte». Detalle completo: `docs/paquetes/WP-RPE-Y-MAXIMO-ESTIMADO.md`.

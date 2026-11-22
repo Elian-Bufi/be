@@ -104,6 +104,17 @@ export interface ContenidoDePlanDeEntrenamiento {
   readonly blocks: readonly BloqueGuardado[];
   /** DL-137: la agenda de la versión. Ausente en los planes de antes y en los que no la usan. */
   readonly agenda?: AgendaDeEntrenamiento | null;
+  /**
+   * DL-192 (RPE-D01): la notación del esfuerzo. Se guarda solo `RPE`; ausente es RIR, como en todos los planes de antes:
+   * lo que no existe no se guarda. Los valores siguen siendo RIR (`notacion-del-esfuerzo.ts`).
+   */
+  readonly effortNotation?: 'RPE';
+}
+
+/** DL-192: el contenido con su notación del esfuerzo: `RPE` se guarda, RIR (lo de siempre) se quita. */
+export function conLaNotacion<T extends { readonly effortNotation?: 'RPE' }>(contenido: T, notacion: 'RIR' | 'RPE'): T {
+  const { effortNotation: _antes, ...resto } = contenido;
+  return (notacion === 'RPE' ? { ...resto, effortNotation: 'RPE' } : resto) as T;
 }
 
 /**

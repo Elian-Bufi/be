@@ -42,7 +42,7 @@
  * Como la composición (TA-25), la pregunta vive en el website y no se guarda como vista: su identificador no entra en
  * `ID_DE_PREGUNTAS`, que valida la API. El período es el de la ficha, que la API recorta al inicio del acompañamiento.
  */
-import { COPY_FUERZA, estimacionALaVista, EJERCICIOS_DE_LA_ESTIMACION_V1, numero, rotuloDeLaEstimacion, serieDisponible, type PuntoDeFuerza } from '@be/domain';
+import { copyDeLaEstimacion, COPY_FUERZA, estimacionALaVista, EJERCICIOS_DE_LA_ESTIMACION_V1, numero, rotuloDeLaEstimacion, serieDisponible, type PuntoDeFuerza } from '@be/domain';
 import { useId, useMemo, useState, type KeyboardEvent } from 'react';
 import { CuadroEnfocado } from '../../../../components/cuadro-enfocado';
 import { BloqueDeEstado, Cargando, EstadoVacio } from '../../../../components/estados';
@@ -85,6 +85,7 @@ import {
   type VersionDelPlanEnElPeriodo,
 } from './fuerza';
 import { useLecturaDeFuerza, type LineaDeFuerza } from './lectura-de-fuerza';
+import { ConLaNotacionDeLaPersona, useNotacionDelEsfuerzo } from '../notacion-del-esfuerzo';
 
 export const LA_PREGUNTA_DE_LA_FUERZA = {
   pregunta: '¿Cómo evolucionó la fuerza estimada en un ejercicio?',
@@ -135,7 +136,17 @@ const C = LA_PREGUNTA_DE_LA_FUERZA;
 /** Cuántas filas de la tabla de origen se ven de entrada: las más recientes. Las demás, a un toque. */
 const FILAS_A_LA_VISTA = 8;
 
+/** DL-192: la evolución se lee en la notación del plan de la persona (RIR o RPE); los valores guardados son RIR. */
 export function FuerzaEnAnalizar({ tituloId }: { tituloId: string }) {
+  const { token, asesoradoId } = useSeguimiento();
+  return (
+    <ConLaNotacionDeLaPersona token={token} asesoradoId={asesoradoId}>
+      <FuerzaEnAnalizarEnLaNotacion tituloId={tituloId} />
+    </ConLaNotacionDeLaPersona>
+  );
+}
+
+function FuerzaEnAnalizarEnLaNotacion({ tituloId }: { tituloId: string }) {
   const { token, asesoradoId, periodo, parametros, sesionPerdida, ir } = useSeguimiento();
   const id = useId();
   const ejercicio = parametros.get('ejercicio');
@@ -352,6 +363,7 @@ function Grafico({
 }) {
   const [ref, ancho] = useAnchoDelGrafico();
   const [encima, setEncima] = useState<string | null>(null);
+  const notacion = useNotacionDelEsfuerzo();
   const puntos = linea?.puntos ?? [];
   const unidad = linea?.unidad ?? 'kg';
   const geo = useMemo(() => {
@@ -374,7 +386,7 @@ function Grafico({
     return { x, y, eje, derecha };
   }, [puntos, unidad, desde, hasta, ancho]);
   if (!linea || puntos.length === 0) {
-    const falta = loQueHaceFalta(linea?.noEntraron ?? []);
+    const falta = loQueHaceFalta(linea?.noEntraron ?? [], notacion);
     return (
       <div className="fuerza-en-analizar__vacio">
         <p>
@@ -575,10 +587,11 @@ function Globo({ x, y, texto, ancho }: { x: number; y: number; texto: string; an
  */
 function ComoLeerLaFuerza({ linea, soloOrientativas }: { linea: LineaDeFuerza; soloOrientativas: readonly PuntoDeFuerza[] }) {
   const noEntra = loQueNoEntraPorFecha(linea.puntos, linea.noEntraron, soloOrientativas);
+  const notacion = useNotacionDelEsfuerzo();
   return (
     <ComoLeerlo className="fuerza-en-analizar__como-leerlo">
       <p>{C.metodo}</p>
-      <p>{COPY_FUERZA.reglaDelRir}</p>
+      <p>{copyDeLaEstimacion(notacion).reglaDelRir}</p>
       <p>{C.versiones}</p>
       <h4>{C.loQueNoEntra}</h4>
       {noEntra.lineas.length > 0 ? (
@@ -622,6 +635,7 @@ function TablaDeOrigen({
   const nombres = useNombres();
   const [ref, ancho] = useAnchoDelGrafico();
   const [todas, setTodas] = useState(false);
+  const notacion = useNotacionDelEsfuerzo();
   if (!linea) return null;
   const filas = filasConLosMotivosSeguidos(filasDeLaEvolucion(linea.puntos, linea.noEntraron, soloOrientativas));
   if (filas.length === 0) return null;
@@ -727,7 +741,7 @@ function TablaDeOrigen({
                     <span className="visualmente-oculto">: {C.leerEsta}</span>
                   </button>
                 </th>
-                <td>{laSerie(p)}</td>
+                <td>{laSerie(p, notacion)}</td>
                 {conQuien ? <td>{p.source === 'OBSERVED' ? 'La observaste vos' : `${nombres.deQuien(p.writtenBy, asesoradoId)}, en la app`}</td> : null}
                 {conEquivalentes ? (
                   <td>
@@ -793,6 +807,7 @@ function Lectura({
   porVersion: readonly LecturaDeLaVersion[];
 }) {
   const nombres = useNombres();
+  const notacion = useNotacionDelEsfuerzo();
   if (!linea || !elegido) return null;
   const puntos = linea.puntos;
   const i = puntos.findIndex((p) => p.pointId === elegido.pointId);
@@ -823,7 +838,7 @@ function Lectura({
       </p>
       <p className="nota">{rotuloDeLaEstimacion(e.banda)}</p>
       <p>
-        {laSerie(elegido)}
+        {laSerie(elegido, notacion)}
         <br />
         <span className="nota">{elegido.source === 'OBSERVED' ? 'la observaste vos' : `la escribió ${nombres.deQuien(elegido.writtenBy, asesoradoId)} en la app`}</span>
       </p>

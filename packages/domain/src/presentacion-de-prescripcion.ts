@@ -13,6 +13,7 @@
 import type { Prescripcion } from './contratos-entrenamiento';
 import { COPY_ENTRENAMIENTO, ETIQUETA_DE_CRITERIO } from './copy-entrenamiento';
 import { cantidad, numero } from './formato-numeros';
+import { textoDelEsfuerzo, type NotacionDelEsfuerzo } from './notacion-del-esfuerzo';
 import { COPY_TIPOS_DE_SERIE, seriesDeCalentamiento, seriesEfectivas, tieneCalentamiento } from './tipos-de-serie';
 
 type Serie = Prescripcion['sets'][number];
@@ -45,18 +46,22 @@ export function seriesPlanificadas(p: Pick<Prescripcion, 'sets'>): string[] {
   return p.sets.map((s) => `${COPY_ENTRENAMIENTO.serie} ${numero(s.setIndex)}: ${repeticionesPlanificadas(s) ?? COPY_ENTRENAMIENTO.sinRepeticionesFijadas}${s.note ? ` · ${s.note}` : ''}`);
 }
 
-/** «75 % RM (1RM estimado por el método que usaste)» o «RIR 2»; `null` si la prescripción no declara criterio. */
-export function intensidadPlanificada(p: Pick<Prescripcion, 'intensity'>): string | null {
+/**
+ * «75 % RM (1RM estimado por el método que usaste)» o «RIR 2»; `null` si la prescripción no declara criterio. DL-192: en
+ * un plan en RPE, el criterio RIR se escribe en RPE («RPE 8»); el valor guardado sigue siendo el RIR.
+ */
+export function intensidadPlanificada(p: Pick<Prescripcion, 'intensity'>, notacion: NotacionDelEsfuerzo = 'RIR'): string | null {
   if (!p.intensity) return null;
   const { criterion, target } = p.intensity;
-  const valor = criterion === 'PERCENT_RM' ? `${numero(target.value)} ${ETIQUETA_DE_CRITERIO.PERCENT_RM}` : `${ETIQUETA_DE_CRITERIO.RIR} ${numero(target.value)}`;
+  const valor =
+    criterion === 'PERCENT_RM' ? `${numero(target.value)} ${ETIQUETA_DE_CRITERIO.PERCENT_RM}` : (textoDelEsfuerzo(target.value, notacion) ?? `${ETIQUETA_DE_CRITERIO.RIR} ${numero(target.value)}`);
   return target.reference ? `${valor} (${target.reference.description})` : valor;
 }
 
 /** Las líneas de lo planificado, en orden: series, intensidad, carga sugerida, parámetros y nota. */
-export function lineasDePrescripcion(p: Prescripcion, opciones: { readonly sinCriterioExplicito?: boolean } = {}): string[] {
+export function lineasDePrescripcion(p: Prescripcion, opciones: { readonly sinCriterioExplicito?: boolean; readonly notacion?: NotacionDelEsfuerzo } = {}): string[] {
   const lineas = [...seriesPlanificadas(p)];
-  const intensidad = intensidadPlanificada(p);
+  const intensidad = intensidadPlanificada(p, opciones.notacion);
   if (intensidad) lineas.push(intensidad);
   // En el website, la ausencia de criterio se dice: es legítima (DL-088 punto 8), pero el profesional tiene que verla.
   else if (opciones.sinCriterioExplicito) lineas.push(COPY_ENTRENAMIENTO.sinCriterio);

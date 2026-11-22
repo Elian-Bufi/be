@@ -127,11 +127,11 @@ test('TEST-GRV-011 · GR-01 en fichas: una fila por sesión, las series que no s
   // Una serie que falta queda «—», sin dato: nunca un cero ni corrida al lugar de otra.
   assert.match(pieza, /la-vez-pasada__ficha--sin-dato/);
   // El lector de pantalla oye la serie entera, con su número, aunque la ficha sea corta.
-  assert.match(pieza, /<span className="visualmente-oculto">\{`\$\{C\.serie\(serie\.numero\)\}: \$\{textoDeLaSerie\(serie\)\}`\}<\/span>/);
+  assert.match(pieza, /<span className="visualmente-oculto">\{`\$\{C\.serie\(serie\.numero\)\}: \$\{textoDeLaSerie\(serie, notacion\)\}`\}<\/span>/);
   assert.match(pieza, /<ComoLeerlo>\n\s*<p>\{C\.queEs\(persona/);
   // Revisión del 15/11: la línea de arriba dice que es lo registrado, y la unidad sale de todas las veces, abierta o cerrada.
-  assert.match(pieza, /deDonde: \(persona: string, desde: string, unidad: string \| null\) => \`Lo registrado por \$\{persona\} en tus planes, desde el/);
-  assert.match(pieza, /\{C\.deDonde\(persona, fechaEnPocasPalabras\(lectura\.desde, lectura\.hoy\), unidadComun\(lectura\.veces\)\)\}/);
+  assert.match(pieza, /deDonde: \(persona: string, desde: string, unidad: string \| null, esfuerzo = 'RIR'\) => \`Lo registrado por \$\{persona\} en tus planes, desde el/);
+  assert.match(pieza, /\{C\.deDonde\(persona, fechaEnPocasPalabras\(lectura\.desde, lectura\.hoy\), unidadComun\(lectura\.veces\), COPY_NOTACION_DEL_ESFUERZO\.etiqueta\[notacion\]\)\}/);
   assert.match(pieza, /unidad=\{unidadComun\(lectura\.veces\)\} \/>/);
   assert.doesNotMatch(pieza, /unidadComun\(aLaVista\)/);
   assert.match(pieza, /\{C\.noSeComparan\}/);

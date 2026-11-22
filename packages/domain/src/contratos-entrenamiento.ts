@@ -57,6 +57,13 @@ export const IdDeNodoSchema = z.string().regex(/^[A-Za-z0-9_-]{1,64}$/);
 // ─── Tokens (CAND-09-TRN-B, C, D, F) ────────────────────────────────────────────────────────────
 /** REG-06-128: exactamente dos. Sin tercer criterio: ni RPE ni carga absoluta (REG-06-129; H-09-TRN-02). */
 export const CriterioDeIntensidadApiSchema = z.enum(['PERCENT_RM', 'RIR']);
+/**
+ * DL-192 (WP-RPE-Y-MAXIMO-ESTIMADO, RPE-D01): cómo se escribe el esfuerzo en una versión del plan. `RIR`: las repeticiones
+ * en reserva; `RPE`: la escala basada en RIR (RPE = 10 − RIR, de 6 a 10 con medios puntos). Es una **notación**, no un
+ * criterio: lo guardado sigue siendo el RIR (`notacion-del-esfuerzo.ts`) y el criterio de intensidad sigue siendo uno de
+ * dos (REG-06-128). Ausente es `RIR`: así se leen todos los planes de antes.
+ */
+export const NotacionDelEsfuerzoSchema = z.enum(['RIR', 'RPE']);
 /** REG-06-132: se conserva cuál se usó. */
 export const GranularidadApiSchema = z.enum(['SET', 'EXERCISE_OR_SESSION']);
 /** REG-06-131. `NOT_COMPLETED` registrada ≠ ausencia de registro (H-09-TRN-01). */
@@ -374,6 +381,11 @@ export const CrearPlanDeEntrenamientoRequestSchema = z.strictObject({
   nextReviewAt: FechaLocalSchema.nullable().optional(),
   /** PF-09 (DL-108): empezar desde una versión de plantilla propia; excluyente con `basedOnPlanId` e `initialStructure`. */
   fromTemplateVersionId: IdOpaco.optional(),
+  /**
+   * DL-192 (RPE-D01): la notación del esfuerzo del borrador. Ausente: la de la versión de la que parte (`basedOnPlanId`);
+   * si no parte de una, la última que usó este profesional con cualquier persona; si nunca eligió, `RIR`.
+   */
+  effortNotation: NotacionDelEsfuerzoSchema.optional(),
 });
 export type CrearPlanDeEntrenamientoRequest = z.infer<typeof CrearPlanDeEntrenamientoRequestSchema>;
 
@@ -420,6 +432,12 @@ export const VersionDePlanDeEntrenamientoSchema = z.strictObject({
    * valida con esquemas estrictos y no la conoce): ausente para el titular, `null` si no salió de una plantilla.
    */
   templateOrigin: z.strictObject({ templateId: IdOpaco, templateVersionId: IdOpaco }).nullable().optional(),
+  /**
+   * DL-192 (RPE-D01, RPE-D08): cómo se escribe el esfuerzo en esta versión. Va siempre en las lecturas del profesional; al
+   * titular, solo si su cliente declara `training-effort-notation-1` (la APK instalada valida con esquemas estrictos y no
+   * la conoce). Ausente es `RIR`.
+   */
+  effortNotation: NotacionDelEsfuerzoSchema.optional(),
   blocks: z.array(BloqueSchema),
 });
 export type VersionDePlanDeEntrenamiento = z.infer<typeof VersionDePlanDeEntrenamientoSchema>;
@@ -436,6 +454,8 @@ export const EditarPlanDeEntrenamientoRequestSchema = z.strictObject({
   nextReviewAt: FechaLocalSchema.nullable().optional(),
   /** DL-137: la agenda del borrador. Ausente, no cambia; `null`, se quita. */
   agenda: AgendaDeEntrenamientoSchema.nullable().optional(),
+  /** DL-192 (RPE-D01): la notación del esfuerzo del borrador. Ausente, no cambia. Lo guardado sigue siendo el RIR. */
+  effortNotation: NotacionDelEsfuerzoSchema.optional(),
 });
 export type EditarPlanDeEntrenamientoRequest = z.infer<typeof EditarPlanDeEntrenamientoRequestSchema>;
 
