@@ -401,7 +401,7 @@ Lo que se corrigió en la rama, con su prueba:
 > **El pedido:** Dirección prueba la planificación de Entrenamiento del profesional. Lo que marcó en el recorrido de
 > Nutrición (la cabecera, «Empezar el plan», los avisos que corren todo, lo largo a la vista, los números sin límites ni
 > paso, lo anotado del catálogo y del resumen) se lleva a Entrenamiento con las mismas piezas. Rama
-> `wp-entrenamiento-antes-de-la-prueba`, desde `wp-recorrido-sin-saltos` (RP-19). Decisiones **RP-D60 a RP-D70, a
+> `wp-entrenamiento-antes-de-la-prueba`, desde `wp-recorrido-sin-saltos` (RP-19). Decisiones **RP-D60 a RP-D72, a
 > ratificar**. No toca la lógica ni los textos de la intensidad (el frente del RPE, DL-192) ni `nutrition/**`.
 
 ### En criollo
@@ -438,6 +438,10 @@ calentamiento y los atajos) va detrás de un «?». El catálogo de ejercicios, 
 | La evaluación (`resumen.tsx`) | El exceso de citas y el conflicto llevaban el mismo `id` (`trn-contexto`): el resumen los junta por `id` y mostraba dos veces el texto del conflicto | `trn-contexto-limite` y `trn-contexto-conflicto`, cada uno lleva a su lugar; el formulario, con `.avisos-con-lugar` |
 | El período (`control-de-periodo.tsx`) y los números de los formularios (`forms/campos-v2.tsx`) | El aviso aparecía y corría lo de abajo | Su renglón reservado |
 | El catálogo de ejercicios (`agregar-ejercicio.tsx`) | A 1280 × 800 el pie tapaba los resultados; «Agregar» sin marcar sumaba un párrafo al pie | El cajón de 35 rem desde 1280 (como desde 1440): la línea de «Con historial» ocupa un renglón menos y tres elegidos entran en uno; el pie se aprieta con poca altura; el aviso va en el título de los elegidos |
+| Las bases de la carga y de las repeticiones (el recuadro del criterio) | Las opciones largas («una sola mancuerna o implemento») se cortaban en un desplegable de 12 rem y el rótulo «Qué cuentan las repeticiones» ocupaba dos renglones | 17 rem: se leen enteras |
+| La revisión y el objetivo de Entrenamiento (`revisiones.tsx`, `resumen.tsx`) | Los avisos de cada campo aparecían y corrían lo de abajo | `.avisos-con-lugar` |
+| Plantillas y habituales (`templates/mis-plantillas.tsx`, `templates/mis-habituales.tsx`) | Dos párrafos a la vista arriba de las plantillas y uno arriba de los habituales; el filtro «Estado» a todo el ancho de la columna | Los párrafos detrás de un «?»; el filtro, angosto |
+| El editor de una plantilla (`edicion-de-plantilla.tsx`) | «Plantillas y habituales» como enlace subrayado (lo que RP-01 sacó de las áreas); la ayuda de las cargas, a la vista | La vuelta como botón fantasma con flecha, como en las áreas; la ayuda de las cargas detrás de un «?» (lo escrito en esta plantilla sigue a la vista) |
 
 ### Decisiones de continuador (a ratificar)
 
@@ -454,6 +458,8 @@ calentamiento y los atajos) va detrás de un «?». El catálogo de ejercicios, 
 | RP-D68 | «Empezar el plan» de Entrenamiento conserva «Registrar la evaluación» y «Pedir información a la persona» antes de abrir la evaluación; Nutrición la abre directamente (RP-12) | La evaluación de Entrenamiento es una lista de datos libres, no el pantallazo del caso. Alternativa: abrirla directamente también |
 | RP-D69 | Cada problema del resumen de la evaluación de Entrenamiento con su `id`: el exceso de citas lleva al límite de citas y el conflicto a su aviso | — |
 | RP-D70 | El período (el panel de «Elegir el período») y los números de los formularios de la persona reservan el renglón de su aviso | Es la regla de RP-19 (RP-D24) en las piezas que la auditoría marcó |
+| RP-D71 | Plantillas y habituales: lo que explica cada sección, detrás de un «?»; en el editor de una plantilla, la vuelta como en las áreas (RP-01) y la ayuda de las cargas detrás de un «?» | Lo mismo que se pidió para las áreas. Alternativa: dejar los párrafos, más cortos |
+| RP-D72 | Ícono, número y abreviatura (RP-07) no se suman en Entrenamiento: el renglón de cada ejercicio ya dice «3 × 8 rep. · 60 kg · RIR 2» y la tabla lleva la unidad en el rótulo de la columna | Un ícono por cantidad no suma claridad donde las cantidades son de una sola clase. Alternativa: íconos en la versión activa |
 
 ### Lo que se probó
 
@@ -470,11 +476,11 @@ calentamiento y los atajos) va detrás de un «?». El catálogo de ejercicios, 
 
 ### Lo que queda
 
-- Ratificar RP-D60 a RP-D70.
+- Ratificar RP-D60 a RP-D72.
 - **El cambio de criterio** (C7): el aviso de lo que se quitó, con «Deshacer», aparece debajo del recuadro y baja las
   series. Responde a una elección y va debajo de ella; es del frente del RPE.
 - **La escritura rápida:** su lectura («Se lee: …», «Se pierde: …») cambia de largo mientras se escribe y, en una ventana
   angosta, puede pasar a dos renglones. Propuesta: reservar dos renglones.
 - `objetivos-por-serie.tsx` (`CampoHeredable`, `TablaDeObjetivos`) no se usa en ninguna pantalla: código muerto, que toca el
   frente del RPE.
-- `docs/DEUDA_LEGAJO.md` (DL-188) no se tocó: al integrar, sumarle RP-22 y RP-D60 a RP-D70.
+- `docs/DEUDA_LEGAJO.md` (DL-188) no se tocó: al integrar, sumarle RP-22 y RP-D60 a RP-D72.
