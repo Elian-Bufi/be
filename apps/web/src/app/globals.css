@@ -21484,7 +21484,7 @@ html:has(.estacion:not([data-en-el-asistente])) {
 
 /* Con un «?» adentro: el alto del botón chico, también cuando el renglón está vacío. */
 .renglon-del-aviso--con-boton {
-  min-height: 2.25rem;
+  min-height: 2.75rem;
 }
 
 /* Un formulario con los avisos en su lugar: cada campo que puede avisar reserva el renglón de su aviso. Sin aviso, un

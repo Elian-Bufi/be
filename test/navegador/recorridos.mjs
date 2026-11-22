@@ -1776,8 +1776,8 @@ async function sinSaltos({ p, d, salida }) {
   await reemplazarTexto(p, await campoDelRotulo(p, K, 'Talla (cm)'), '162');
   await reemplazarTexto(p, await campoDelRotulo(p, K, 'Edad (años)'), '45');
   await clic(p, `${K} [data-sexo-de-la-ecuacion] label.segmento`, 'Mujer');
-  await reemplazarTexto(p, await campoDelRotulo(p, K, 'Proteína (g/kg)'), '1.8');
-  await reemplazarTexto(p, await campoDelRotulo(p, K, 'Grasa (g/kg)'), '0.9');
+  await reemplazarTexto(p, await campoDelRotulo(p, K, 'Proteína (g/kg)'), '2');
+  await reemplazarTexto(p, await campoDelRotulo(p, K, 'Grasa (g/kg)'), '1');
   await elemento(p, `${K} [data-gasto-total="listo"]`);
   await elemento(p, `${K} [data-macros-del-dia="listo"]`);
   const factor = await campoDelRotulo(p, K, 'Factor del día');
