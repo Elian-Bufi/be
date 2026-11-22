@@ -9774,21 +9774,43 @@ button.comida-del-dia__fila > .icono:last-child {
   margin: 0;
 }
 
+/* RP-22: las acciones, ancladas a la derecha también cuando bajan a su propio renglón (en un renglón solas, el
+   `space-between` de la cabecera las dejaba a la izquierda). */
 .editor-del-plan__acciones {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
+  justify-content: flex-end;
   gap: 0.5rem 0.6rem;
+  margin-inline-start: auto;
 }
 
-/* El estado se dice con texto; el punto lo acompaña cuando hay algo sin guardar, no lo reemplaza. */
+/* El estado se dice con texto; el punto lo acompaña cuando hay algo sin guardar, no lo reemplaza.
+   RP-22: con un lugar de ancho propio, que no depende del texto: a 1280, pasar de «Guardado a las…» a «Pendiente de
+   guardar: falta completar algo» corría «Revisar y activar…» 159 px de costado (la CI). Lo que no entra se corta con «…»;
+   el texto entero queda en el título y para el lector. Vale para Nutrición, Entrenamiento y la edición de una plantilla. */
 .editor-del-plan__estado {
   display: inline-flex;
+  flex: 0 0 auto;
   align-items: center;
+  justify-content: flex-end;
   gap: 0.45rem;
+  width: clamp(12rem, 24vw, 23rem);
+  min-width: 0;
   margin: 0 0.4rem 0 0;
   font-weight: 600;
   white-space: nowrap;
+}
+
+.editor-del-plan__estado > .icono,
+.editor-del-plan__estado::before {
+  flex-shrink: 0;
+}
+
+.editor-del-plan__estado > .estado-de-guardado__texto {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .editor-del-plan__estado[data-estado="sin-guardar"]::before {
@@ -10378,6 +10400,8 @@ button.comida-del-dia__fila > .icono:last-child {
 @media (max-width: 56rem) {
   .editor-del-plan__estado {
     flex-basis: 100%;
+    justify-content: flex-start;
+    width: auto;
   }
 
   .items-del-editor thead {
