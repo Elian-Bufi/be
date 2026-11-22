@@ -22,6 +22,7 @@ import { createContext, useCallback, useContext, useMemo, useState } from 'react
 import type { Resultado } from '../../../../lib/api';
 import { useEspacioProfesional } from '../../espacio-profesional';
 import { EstadoDeLecturaDelArea, MarcoDelArea, NoDisponibleEnElArea } from '../marco-del-area';
+import { ConLaNotacionDeLaPersona } from '../notacion-del-esfuerzo';
 import { conVolver, useRetornoALaFicha } from '../retorno-y-preparacion';
 import { hrefConCambios } from '../seguimiento/estado';
 import { AyudaDeRevisiones } from '../ayuda-de-revisiones';
@@ -148,10 +149,13 @@ export function Entrenamiento() {
     >
       {contexto ? (
         <Contexto.Provider value={contexto}>
-          {vista === 'resumen' ? <VistaDeResumen /> : null}
-          {vista === 'plan' ? <VistaDePlan /> : null}
-          {vista === 'ejecuciones' ? <VistaDeEjecuciones /> : null}
-          {vista === 'revisiones' ? <VistaDeRevisiones /> : null}
+          {/* DL-192: lo de la persona se lee en la notación de su plan (RIR o RPE); el editor la cambia por la del borrador. */}
+          <ConLaNotacionDeLaPersona token={contexto.token} asesoradoId={contexto.asesoradoId}>
+            {vista === 'resumen' ? <VistaDeResumen /> : null}
+            {vista === 'plan' ? <VistaDePlan /> : null}
+            {vista === 'ejecuciones' ? <VistaDeEjecuciones /> : null}
+            {vista === 'revisiones' ? <VistaDeRevisiones /> : null}
+          </ConLaNotacionDeLaPersona>
         </Contexto.Provider>
       ) : null}
     </MarcoDelArea>

@@ -1629,9 +1629,44 @@ async function comparacionConOpciones({ p, d, salida }) {
   await enLosDosTemas(p, salida, 'comparacion-con-opciones-origen-1440');
 }
 
+/**
+ * DL-192 (WP-RPE-Y-MAXIMO-ESTIMADO; TEST-RPE-030): en el editor del plan de Entrenamiento, el profesional elige escribir el
+ * esfuerzo en RPE. El ejercicio a RIR 2 se lee «RPE 8» sin cambiar el número guardado, la notación se guarda sola con el
+ * borrador y sigue al recargar. Lo guardado lo confirma la API: la versión dice RPE y la intensidad sigue siendo RIR 2.
+ */
+async function notacionDelEsfuerzo({ p, d, salida }) {
+  await entrar(p, d.pro.correo);
+  await p.goto(`${WEB}/pro/advisees/training?id=${encodeURIComponent(d.ase.id)}&vista=plan`, { waitUntil: 'networkidle2' });
+  // Lo que se lee del ejercicio: plegado, su renglón («RIR 2», «RPE 8»); abierto, el valor común de la tabla («2», «8»).
+  const seLee = (etiqueta, valor) =>
+    p.waitForFunction((e, v) => document.body.innerText.includes(`${e} ${v}`) || document.querySelector('[data-rir-general]')?.textContent.trim() === v, { timeout: ESPERA, polling: 200 }, etiqueta, valor);
+  // Nace en RIR: el profesional nunca eligió otra.
+  await elemento(p, '[data-notacion-del-esfuerzo="RIR"]');
+  await hidratado(p, '[data-notacion="RPE"]');
+  await seLee('RIR', '2');
+  await clic(p, '[data-notacion="RPE"]');
+  await elemento(p, '[data-notacion-del-esfuerzo="RPE"]');
+  await seLee('RPE', '8');
+  await esperarGuardado(p);
+  await captura(p, salida, 'notacion-rpe-1440');
+  // La API: la versión dice RPE y lo guardado sigue siendo el RIR 2.
+  const token = await sesionPorApi(d.pro.correo);
+  const plan = (await pedir('GET', `/training/plans/${d.entrenamiento.planId}/detail`, { token })).data;
+  assert.equal(plan.effortNotation, 'RPE');
+  assert.deepEqual(plan.blocks[0].sessions[0].prescriptions[0].intensity.target.value, 2, 'el valor guardado sigue siendo el RIR');
+  // Al recargar, sigue en RPE.
+  await p.reload({ waitUntil: 'networkidle2' });
+  await elemento(p, '[data-notacion-del-esfuerzo="RPE"]');
+  await seLee('RPE', '8');
+  // El «?» abre lo largo y las fuentes en su lugar.
+  await clic(p, '.notacion-del-plan .a-pedido__boton');
+  await p.waitForFunction(() => document.querySelector('.notacion-del-plan .a-pedido__texto')?.hidden === false, { timeout: ESPERA, polling: 200 });
+  assert.ok(await p.evaluate(() => document.querySelector('.notacion-del-plan .a-pedido__texto')?.textContent.includes('Zourdos')), 'la fuente está detrás del «?»');
+}
+
 // ─── La corrida ──────────────────────────────────────────────────────────────────────────────────────────────────────
 
-export const TODOS = { sesion, pistas, borrador, conflicto, descartar, salidaSegura, irACorregir, respuestaPerdida, reintentar, salidaConFallas, primerPlan, asistenteDeNutricion, retorno, grafico, primeraInvitacion, areaSugerida, sesionRevocada, accesoRevocado, faltaUnaParte, completitud, evidencia, administracion, comparacion, comparacionConOpciones };
+export const TODOS = { sesion, pistas, borrador, conflicto, descartar, salidaSegura, irACorregir, respuestaPerdida, reintentar, salidaConFallas, primerPlan, asistenteDeNutricion, retorno, grafico, primeraInvitacion, areaSugerida, sesionRevocada, accesoRevocado, faltaUnaParte, completitud, evidencia, administracion, comparacion, comparacionConOpciones, notacionDelEsfuerzo };
 
 /** Errores de la página que no dicen nada del website (los del propio navegador). */
 const IGNORABLES = [/ResizeObserver loop/];

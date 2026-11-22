@@ -21440,3 +21440,35 @@ html:has(.estacion:not([data-en-el-asistente])) {
 .formulario-de-inicio__criticas > h3 {
   margin-top: 0;
 }
+
+/* DL-192 (WP-RPE-Y-MAXIMO-ESTIMADO, RPE-01): «Cómo se escribe el esfuerzo», al pie de la columna de las sesiones, como las
+   fechas. Dos chips (RIR y RPE) y la explicación corta, con lo largo detrás del «?». El lugar está siempre: abrir la ayuda
+   empuja solo lo de abajo de la columna, nunca la sesión del centro. */
+.notacion-del-plan {
+  display: grid;
+  gap: 0.35rem;
+  margin: 0.75rem 0 0;
+  padding: 0.6rem 0 0;
+  border: 0;
+  border-top: 1px solid var(--borde);
+  min-width: 0;
+}
+
+.notacion-del-plan > legend {
+  padding: 0;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.notacion-del-plan__opciones {
+  display: flex;
+  gap: 0.35rem;
+}
+
+.notacion-del-plan__opciones .estacion__chip {
+  min-width: 3rem;
+}
+
+.notacion-del-plan__que-es {
+  margin: 0;
+}

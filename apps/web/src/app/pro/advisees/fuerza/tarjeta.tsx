@@ -15,7 +15,8 @@ import { Enlace } from '../../../../components/enlace';
 import { Icono } from '../../../../components/icono';
 import { ICONO_DE_FALLA } from '../../../../lib/fallas';
 import { useNombres } from '../../../../lib/nombres-ocultos';
-import { diaDelPunto, estimacionDelPunto, haciaLaEvolucion, loQueHaceFalta, laSerie, quienLaEscribio, valorDeLaTarjeta } from './fuerza';
+import { conQueSeEstimoElPunto, diaDelPunto, estimacionDelPunto, haciaLaEvolucion, loQueHaceFalta, quienLaEscribio, valorDeLaTarjeta } from './fuerza';
+import { useNotacionDelEsfuerzo } from '../notacion-del-esfuerzo';
 import type { LecturaDeFuerza } from './lectura-de-fuerza';
 
 export const COPY_TARJETA_DE_FUERZA = {
@@ -55,6 +56,8 @@ export function TarjetaDeFuerza({
 }) {
   const C = COPY_TARJETA_DE_FUERZA;
   const nombres = useNombres();
+  // DL-192: con qué serie salió el valor y la regla, en la notación del plan (RIR o RPE).
+  const notacion = useNotacionDelEsfuerzo();
   const titulo = (
     <p className="tarjeta-de-fuerza__titulo">
       <Icono nombre="estimado" tamano={18} />
@@ -80,7 +83,7 @@ export function TarjetaDeFuerza({
   else {
     const p = valorDeLaTarjeta(lectura.apagado?.puntos ?? [], lectura.encendido?.puntos ?? []);
     if (!p) {
-      const falta = loQueHaceFalta(lectura.encendido?.noEntraron ?? []);
+      const falta = loQueHaceFalta(lectura.encendido?.noEntraron ?? [], notacion);
       cuerpo = (
         <div className="tarjeta-de-fuerza__vacia" data-sin-estimacion>
           <p>
@@ -105,8 +108,9 @@ export function TarjetaDeFuerza({
               {diaDelPunto(p)} · {rotuloDeLaEstimacion(e.banda)}
             </span>
           </p>
-          <p>
-            {laSerie(p)} · {quienLaEscribio(p, nombres.deQuien(p.writtenBy, asesoradoId))}
+          {/* RPE-04: «estimado con 5 reps a RPE 8 · 100 kg»; nunca se lee como una repetición máxima probada (RPE-D06). */}
+          <p data-con-que-se-estimo>
+            {conQueSeEstimoElPunto(p, notacion)} · {quienLaEscribio(p, nombres.deQuien(p.writtenBy, asesoradoId))}
           </p>
           {e.banda === 'ORIENTATIVA' ? <p className="nota">{p.source === 'OBSERVED' ? C.orientativaObservada : C.orientativaDeSesion}</p> : null}
           <p className="tarjeta-de-fuerza__acciones">

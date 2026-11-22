@@ -74,6 +74,7 @@ import { DialogoGuardarPlantilla } from './plantillas';
 import { ZonasDeLaSesion } from './zonas-de-la-sesion';
 import { Pista } from '../../../../components/pista';
 import { OtrasAreas } from '../seguimiento/otras-areas-en-pantalla';
+import { useNotacionDelEsfuerzo } from '../notacion-del-esfuerzo';
 
 /**
  * Número de versión para la persona: el orden de activación. El `version` del 09 es un token de concurrencia. Lo usa
@@ -480,9 +481,11 @@ export function VistaDePlan() {
  * de intensidad, el website lo dice: el profesional tiene que verlo.
  */
 export function LineasDePrescripcion({ prescripcion }: { prescripcion: Prescripcion }) {
+  // DL-192: el RIR de la intensidad, en la notación del plan de la persona.
+  const notacion = useNotacionDelEsfuerzo();
   return (
     <ul className="lista-compacta">
-      {lineasDePrescripcion(prescripcion, { sinCriterioExplicito: true }).map((l, i) => (
+      {lineasDePrescripcion(prescripcion, { sinCriterioExplicito: true, notacion }).map((l, i) => (
         <li key={i}>{l}</li>
       ))}
     </ul>

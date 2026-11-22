@@ -12,13 +12,14 @@
  * El formulario vive en quien abre el cuadro (`useSerieObservada`): el principal del cuadro es «Guardar la serie
  * observada», y el cuadro dibuja su pie.
  */
-import { COPY_FUERZA, estimacionALaVista, laCuentaDeLaEstimacion, rotuloDeLaEstimacion } from '@be/domain';
+import { conQueSeEstimo, copyDeLaEstimacion, estimacionALaVista, laCuentaDeLaEstimacion, numero, rotuloDeLaEstimacion, textoDelEsfuerzo, type NotacionDelEsfuerzo } from '@be/domain';
 import { useId, useState } from 'react';
 import { CampoDeFecha } from '../../../../components/campo-de-fecha';
 import { Icono } from '../../../../components/icono';
 import { api, nuevaClaveDeIdempotencia, type Resultado } from '../../../../lib/api';
 import { mensajeDeFallo } from '../../../../lib/intento';
-import { esLaFechaFutura, RIR_DEL_CUADRO, RIR_MAS_DE_2, serieObservadaEnVivo, type SerieObservadaEnVivo } from './fuerza';
+import { useNotacionDelEsfuerzo } from '../notacion-del-esfuerzo';
+import { esLaFechaFutura, opcionDelCuadro, RIR_DEL_CUADRO, RIR_MAS_DE_2, serieObservadaEnVivo, type SerieObservadaEnVivo } from './fuerza';
 
 export const COPY_SERIE_OBSERVADA = {
   titulo: 'Registrar una serie observada',
@@ -27,11 +28,14 @@ export const COPY_SERIE_OBSERVADA = {
   carga: 'Carga',
   repeticiones: 'Repeticiones',
   rir: 'RIR observado',
+  /** DL-192: en un plan en RPE, el mismo campo se escribe en RPE; se guarda el RIR. */
+  rpe: 'RPE observado',
   masDe2: 'Más de 2',
   nota: 'Nota',
   notaOpcional: 'Opcional',
   enVivo: 'La estimación, mientras escribís',
   cuandoNo: 'Con más de 12 repeticiones equivalentes, o con un RIR mayor que 2, no se estima: el cuadro lo dice y no guarda nada.',
+  cuandoNoEnRpe: 'Con más de 12 repeticiones equivalentes, o con un RPE menor que 8, no se estima: el cuadro lo dice y no guarda nada.',
   noSeEdita: 'No se edita: si hay un error, registrás otra que la reemplaza, con su motivo.',
   noLaVe: (persona: string) => `${persona} no la ve.`,
   guardar: 'Guardar la serie observada',
@@ -57,7 +61,9 @@ export function useSerieObservada(o: { token: string; asesoradoId: string; exerc
   const [falla, setFalla] = useState<string | null>(null);
   // Una sola clave por intento: reintentar el mismo envío no duplica la observación.
   const [clave, setClave] = useState(nuevaClaveDeIdempotencia);
-  const enVivo = serieObservadaEnVivo({ exerciseId: o.exerciseId, fecha: f.fecha, carga: f.carga, unidad: f.unidad, repeticiones: f.repeticiones, rir: f.rir });
+  // DL-192: lo que dice el cuadro, en la notación del plan; lo que se manda es el RIR.
+  const notacion = useNotacionDelEsfuerzo();
+  const enVivo = serieObservadaEnVivo({ exerciseId: o.exerciseId, fecha: f.fecha, carga: f.carga, unidad: f.unidad, repeticiones: f.repeticiones, rir: f.rir }, notacion);
   const futura = f.fecha > o.hoy;
   const cambiar = (c: Partial<FormularioDeSerieObservada>) => {
     setF((x) => ({ ...x, ...c }));
@@ -96,6 +102,7 @@ export function useSerieObservada(o: { token: string; asesoradoId: string; exerc
 export function SerieObservada({ persona, hoy, formulario: x }: { persona: string; hoy: string; formulario: ReturnType<typeof useSerieObservada> }) {
   const C = COPY_SERIE_OBSERVADA;
   const { f, cambiar, enVivo, falla } = x;
+  const notacion = useNotacionDelEsfuerzo();
   return (
     <div className="serie-observada" data-serie-observada>
       <p>{C.queEs(persona)}</p>
@@ -104,7 +111,7 @@ export function SerieObservada({ persona, hoy, formulario: x }: { persona: strin
       <ul className="serie-observada__reglas">
         <li>
           <Icono nombre="info" tamano={18} />
-          {C.cuandoNo}
+          {notacion === 'RPE' ? C.cuandoNoEnRpe : C.cuandoNo}
         </li>
         <li>
           <Icono nombre="candado" tamano={18} />
@@ -131,6 +138,10 @@ export function SerieObservada({ persona, hoy, formulario: x }: { persona: strin
 export function CamposDeLaSerie({ f, cambiar, hoy }: { f: FormularioDeSerieObservada; cambiar: (c: Partial<FormularioDeSerieObservada>) => void; hoy: string }) {
   const id = useId();
   const C = COPY_SERIE_OBSERVADA;
+  // DL-192: en un plan en RPE, las opciones se leen 10 a 8 y «Menos de 8»; lo elegido y lo guardado es el RIR.
+  const notacion = useNotacionDelEsfuerzo();
+  const regla = copyDeLaEstimacion(notacion);
+  const rotulo = notacion === 'RPE' ? C.rpe : C.rir;
   return (
     <div className="serie-observada__campos">
       <CampoDeFecha id={`${id}-fecha`} etiqueta={C.fecha} max={hoy} hoy={hoy} value={f.fecha} onChange={(fecha) => cambiar({ fecha })} required sinEnvoltorio />
@@ -148,24 +159,24 @@ export function CamposDeLaSerie({ f, cambiar, hoy }: { f: FormularioDeSerieObser
       <input id={`${id}-reps`} inputMode="numeric" autoComplete="off" className="serie-observada__numero" value={f.repeticiones} onChange={(e) => cambiar({ repeticiones: e.target.value })} />
 
       <span className="serie-observada__rotulo" aria-hidden="true">
-        {C.rir}
+        {rotulo}
       </span>
       <div className="serie-observada__rir">
         {/* De 0 a 2, de a medio (maqueta 17). «Más de 2» existe para que el cuadro lo diga: no se guarda (ED-D19). */}
         <fieldset className="segmentos" aria-describedby={`${id}-regla`}>
-          <legend className="visualmente-oculto">{C.rir}</legend>
+          <legend className="visualmente-oculto">{rotulo}</legend>
           <div className="segmentos__fila">
             {[...RIR_DEL_CUADRO, RIR_MAS_DE_2].map((r) => (
               <label key={r} className="segmento" data-rir={r}>
                 <input type="radio" name={`${id}-rir`} checked={f.rir === r} onChange={() => cambiar({ rir: r })} />
-                {r === RIR_MAS_DE_2 ? C.masDe2 : String(r).replace('.', ',')}
+                {opcionDelCuadro(r, notacion, C.masDe2)}
               </label>
             ))}
           </div>
         </fieldset>
-        <span className="nota">{COPY_FUERZA.campoDelRir}</span>
+        <span className="nota">{regla.campoDelRir}</span>
         <p id={`${id}-regla`} className="nota serie-observada__regla" data-regla-del-rir>
-          {COPY_FUERZA.reglaDelRir}
+          {regla.reglaDelRir}
         </p>
       </div>
 
@@ -178,6 +189,7 @@ export function CamposDeLaSerie({ f, cambiar, hoy }: { f: FormularioDeSerieObser
 }
 
 export function EnVivo({ enVivo }: { enVivo: SerieObservadaEnVivo }) {
+  const notacion = useNotacionDelEsfuerzo();
   return (
     <div className="serie-observada__en-vivo" aria-live="polite" data-en-vivo={enVivo.tipo}>
       <p className="tarjeta-de-fuerza__titulo">
@@ -190,11 +202,21 @@ export function EnVivo({ enVivo }: { enVivo: SerieObservadaEnVivo }) {
             <span className="tarjeta-de-fuerza__numero">{estimacionALaVista(enVivo.estimacion)}</span>
             <span className="nota">{rotuloDeLaEstimacion(enVivo.estimacion.banda)}</span>
           </p>
-          <p>{laCuentaDeLaEstimacion(enVivo.estimacion)}</p>
+          {/* DL-192 (RPE-04): con qué serie salió, en la notación; la cuenta es la de Epley, con el RIR. */}
+          <p data-con-que-se-estimo>{conQueSeEstimo(enVivo.estimacion, notacion)}</p>
+          <p>
+            {laCuentaDeLaEstimacion(enVivo.estimacion)}
+            {notacion === 'RPE' ? <span className="nota"> ({equivalencia(enVivo.estimacion.rir, notacion)})</span> : null}
+          </p>
         </>
       ) : (
         <p data-motivo>{enVivo.texto}</p>
       )}
     </div>
   );
+}
+
+/** DL-192: «RPE 8 = RIR 2», para leer la cuenta de Epley (que usa el RIR) desde la notación del plan. */
+function equivalencia(rir: number, notacion: NotacionDelEsfuerzo): string {
+  return `${textoDelEsfuerzo(rir, notacion) ?? ''} = RIR ${numero(rir)}`;
 }

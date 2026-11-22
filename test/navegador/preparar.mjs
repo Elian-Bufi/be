@@ -65,6 +65,8 @@ export const RECORRIDOS = {
   // DL-158: el objetivo del profesional, lo indicado en el plan y lo registrado en el mismo gráfico; con un plan de una
   // opción por comida (el día tiene indicado) y con uno que deja elegir el almuerzo (el día no tiene).
   comparacion: { habilitado: ['NUTRICION'], datos: ['comparacion'] },
+  // DL-192 (WP-RPE-Y-MAXIMO-ESTIMADO): un borrador de Entrenamiento con un ejercicio a RIR 2, para elegir la notación RPE.
+  notacionDelEsfuerzo: { habilitado: ['ENTRENAMIENTO'], datos: ['borrador-de-entrenamiento'] },
   comparacionConOpciones: { habilitado: ['NUTRICION'], datos: ['comparacion-con-opciones'] },
 };
 const vinculosDe = (r) => r.vinculos ?? r.habilitado;
@@ -202,6 +204,46 @@ async function evaluacionYObjetivo(pro, aseId) {
   return { evaluacion, objetivo: objetivo.versionId };
 }
 
+/**
+ * DL-192: la evaluación y el objetivo de Entrenamiento, y un borrador de plan con un ejercicio del catálogo de todos a RIR
+ * 2 (tres series de 8). Sin notación: el profesional nunca eligió, así que nace en RIR.
+ */
+async function borradorDeEntrenamiento(pro, aseId) {
+  const evaluacion = (
+    await pedir('POST', `/advisees/${aseId}/training/evaluations`, {
+      token: pro,
+      cuerpo: {
+        occurredAt: new Date(Date.now() - 2 * 3600_000).toISOString(),
+        assessment: { entries: [{ concept: 'Experiencia en entrenamiento de fuerza', value: 'Dos años', source: 'REPORTED' }] },
+        evidenceReferences: [],
+        professionalNotes: null,
+      },
+    })
+  ).data.evaluationId;
+  const objetivo = (
+    await pedir('POST', `/advisees/${aseId}/training/objectives`, {
+      token: pro,
+      cuerpo: { evaluationId: evaluacion, effectiveFrom: new Date(Date.now() - 3600_000).toISOString(), effectiveUntil: null, objective: { statement: 'Fuerza en los básicos.' }, rationale: 'Recorrido sintético.' },
+    })
+  ).data.versionId;
+  const ejercicio = (await pedir('GET', '/training/exercises', { token: pro })).data.find((x) => x.available);
+  const estructura = {
+    blocks: [
+      {
+        label: 'Fase 1',
+        sessions: [
+          {
+            label: 'Sesión A',
+            prescriptions: [{ exerciseVersionId: ejercicio.versionId, sets: [1, 2, 3].map(() => ({ repetitions: { value: 8 } })), intensity: { criterion: 'RIR', target: { value: 2 } } }],
+          },
+        ],
+      },
+    ],
+  };
+  const plan = (await pedir('POST', `/advisees/${aseId}/training/plans`, { token: pro, cuerpo: { objectiveVersionId: objetivo, initialStructure: estructura } })).data;
+  return { planId: plan.planId, ejercicio: ejercicio.name };
+}
+
 /** Una toma de peso por el flujo de la web (borrador y registro, API-ANT-07 y 11). */
 async function toma(pro, aseId, fecha, peso) {
   const creada = (
@@ -239,6 +281,7 @@ export async function datos(estado) {
     }
 
     if (r.datos.includes('objetivo')) await evaluacionYObjetivo(pro, e.ase.id);
+    if (r.datos.includes('borrador-de-entrenamiento')) e.entrenamiento = await borradorDeEntrenamiento(pro, e.ase.id);
     if (r.datos.includes('borrador')) {
       const { objetivo } = await evaluacionYObjetivo(pro, e.ase.id);
       const plan = (await pedir('POST', `/advisees/${e.ase.id}/nutrition/plans`, { token: pro, cuerpo: { objectiveVersionId: objetivo, initialStructure: await estructura(pro) } })).data;
