@@ -788,7 +788,7 @@ export function FormularioDeObjetivo({ evaluaciones, onEmitido, onCancelar }: { 
   }
 
   return (
-    <form className="formulario" onSubmit={enviar} noValidate>
+    <form className="formulario avisos-con-lugar" onSubmit={enviar} noValidate data-objetivo-de-entrenamiento>
       <h3>{COPY_ENTRENAMIENTO.nuevaVersionDeObjetivo}</h3>
       <ResumenDeErrores titulo="Para emitir el objetivo falta:" errores={errores} intento={envios} />
       <div className="campo">

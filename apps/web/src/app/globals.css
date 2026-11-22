@@ -21762,6 +21762,13 @@ html:has(.estacion:not([data-en-el-asistente])) {
   max-width: 16rem;
 }
 
+/* Desplegables legibles: las bases de la carga y de las repeticiones tienen opciones largas («una sola mancuerna o
+   implemento»): con 17 rem se leen enteras, y el rótulo «Qué cuentan las repeticiones» entra en un renglón. */
+.criterio-del-ejercicio .campo:has(select[id$='-base-carga']),
+.criterio-del-ejercicio .campo:has(select[id$='-base-reps']) {
+  flex: 0 1 17rem;
+}
+
 /* ─── RP-20 y RP-21 (WP-RECORRIDO-PLAN-PULIDO, DL-188): las franjas por comida y «Rangos y totales» ───────────
    Cada opción frente al rango indicado de su comida, un renglón por kcal, P, C y G. Ubica, no califica: la banda va en
    el color de acento; las marcas, en el color del texto (llenas adentro, huecas afuera); nada en rojo ni en verde. Cada
