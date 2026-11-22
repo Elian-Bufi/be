@@ -32,6 +32,8 @@ su ícono, y la cuenta de los gramos del objetivo del día queda detrás de un �
 | RP-07 | Ícono, número y abreviatura: «[rayo] 2.500 kcal», «[ícono] 112 g P», con el nombre completo para el lector de pantalla. Una pieza (`CantidadDelMacro` y sus compañeras), en el calculador, lo guardado con el objetivo, las comidas, los rangos, la suma frente al objetivo, el reparto y «Rangos y totales» | `abreviaturas-de-macros.ts`, `cantidad-del-macro.tsx` y sus usos |
 | RP-08 | La cuenta de los gramos detrás de un «?» junto al objetivo del día; si no coinciden con las kcal, el aviso corto sigue a la vista | `suma-de-los-rangos.tsx`, `planificacion.ts` |
 | RP-09 | ten Haaf y Weijs (2014) en el calculador, en sus dos variantes (con peso, talla, edad y sexo; y con la masa libre de grasa), con su fuente, población, fórmula a la vista y pruebas; cada método dice para quién sirve | `calculador-de-macros.ts`, `contratos-objetivo-y-calculador.ts`, `docs/api/openapi.json` |
+| RP-20 | Las franjas por comida (§7): en cada comida, plegada o abierta, un renglón por kcal, P, C y G con la banda del rango indicado, una marca por opción y la del promedio, y «3 de 4 opciones adentro · promedio 28 g P»; la misma franja con la opción abierta sola (en vivo, también en su cuadro) y una porción de cada receta al elegirla, con «Primero las que entran» | `franjas-por-comida.ts`, `franjas-de-la-comida.tsx`, `comida-del-editor.tsx`, `cuadro-de-la-opcion.tsx`, `editor.tsx` (`ElegirReceta`), `globals.css` |
+| RP-21 | «Rangos y totales» rediseñado (§7): el día arriba, con sus íconos y su tramo frente al rango del día; cada comida con lo que aportan sus opciones y su franja compacta; lo que no suma, una vez y en chico | `rangos-y-totales.tsx`, `franjas-de-la-comida.tsx`, `editor.tsx` (`rangos` del panel), `globals.css` |
 
 ## 2. ten Haaf y Weijs (2014), verificado en la fuente
 
@@ -117,3 +119,79 @@ Lo que se corrigió en la rama, con su prueba:
   pendiente» o «· acceso no disponible». Con pista, el chip recibe el foco: la pista llega con el teclado.
 - **Los recorridos:** la pista al tacto volvía a mirarse después de navegar a otra página (pasaba sin probar nada); y
   `clic` repite si el «Reparto por comida», que llega tarde arriba de las comidas, corre el elemento fuera de la ventana.
+
+## 7. RP-20 y RP-21 · Las franjas por comida y «Rangos y totales» (22/11)
+
+> **El pedido de Dirección (22/11),** probando el editor del plan de Nutrición: «estaría bueno que eso esté en cada comida
+> con cada uno de los macros. Así se ve cómo, sumando alimentos, se va llegando a los macros planteados para esa comida y
+> si entra dentro del margen». Lo crítico no es la suma del día frente al objetivo (da bien por construcción): es que cada
+> opción o receta caiga dentro del rango de su comida y que, en promedio, vaya por buen camino. Y del panel «Rangos y
+> totales»: «ponele más amor, que se vea mejor estéticamente, agregale íconos a los macros también». Más tarde, Dirección
+> confirmó que todo se mueve en tiempo real al cambiar los alimentos, no solo la opción abierta.
+>
+> Rama `wp-recorrido-barras-por-comida`, desde `main` (32142486). En paralelo, `wp-recorrido-sin-saltos` (RP-19, desde
+> RP-D18) es dueño de `propuesta-de-rangos*`, `suma-de-los-rangos.tsx` y su montaje en el editor: este frente no los toca.
+> Decisiones **RP-D40 a RP-D49, a ratificar**.
+
+### En criollo
+
+Cada comida muestra, debajo de su nombre y aunque esté plegada, cuatro renglones: kcal, proteínas, carbohidratos y grasas.
+En cada uno, una banda celeste es el rango indicado de la comida; cada opción es un punto (lleno si queda adentro, hueco si
+queda afuera) y una raya marca el promedio de las opciones. A la derecha dice, en corto, «3 de 4 opciones adentro ·
+promedio 28 g P». Adentro de la opción que se arma, lo mismo con esa opción sola, y el punto se corre con cada tecla de una
+cantidad; también en el cuadro de la opción. Al elegir una receta, cada una dice dónde queda una porción frente al rango
+de la comida, y se pueden ver primero las que entran. El panel «Rangos y totales» arranca con el día, sigue con cada comida
+(lo que aportan sus opciones, con su ícono, y su franja chica) y dice una sola vez lo que falta. No hay rojo ni verde: la
+franja ubica, no califica, y no bloquea nada.
+
+### Cómo se lee una franja
+
+- **La escala va de 0 al doble del centro del rango** (RP-D42). Con el mismo margen, la banda queda en el mismo lugar y con
+  el mismo ancho en los cuatro renglones: con ±10 %, entre el 45 y el 55 % de la pista. Una marca a la derecha de la banda
+  está por encima; a la izquierda, por debajo. Lo que pasa del borde se fija al borde, con una flecha.
+- **Las kcal del rango salen de sus gramos,** con 4, 4 y 9 kcal por gramo (RP-D41), como la suma de NUP-06: el rango del
+  plan no tiene kcal. Las kcal de cada opción siguen saliendo de la fuente de cada alimento.
+- **El texto ubica en gramos o kcal:** «adentro», «por encima, 6 g», «por debajo, 120 kcal». Nunca un «%» suelto ni las
+  palabras de juicio.
+- **El lector de pantalla** oye el renglón entero, con cada opción: «Proteínas: rango indicado 25 a 31 g P. Opción 1: 28 g
+  P · adentro. 2 · Pollo: 34 g P · por encima, 3 g. Promedio 28 g P, adentro. 1 de 2 opciones adentro». Lo dibujado va
+  oculto para él.
+
+### Decisiones de continuador (a ratificar)
+
+| ID | Decisión | Por qué / alternativa |
+|---|---|---|
+| RP-D40 | Las franjas de la comida van debajo de su encabezado, fuera del botón que la abre, plegada o abierta: cuatro renglones (kcal, P, C y G) con su ícono y su letra, los límites del rango, la pista y el resumen. Con la franja a la vista, el encabezado deja de repetir «Indicado: …» (los límites están en cada renglón); lo que aportan las opciones sigue ahí. Sin rango indicado no se dibuja nada: adentro queda el renglón para indicarlo (`RangoEnUnRenglon`) | Adentro del botón, su nombre accesible sería de varias oraciones. Alternativa: solo con la comida abierta |
+| RP-D41 | La banda de las kcal sale de los gramos indicados con 4, 4 y 9 kcal por gramo, y solo si los tres macros tienen rango: el piso, con un mínimo que falta como cero; el tope, si los tres tienen máximo. Las kcal de cada opción son las de la fuente: pueden diferir un poco de las del 4, 4 y 9 (la fibra, el redondeo de cada fuente). La pista del renglón lo dice | El rango del plan no tiene kcal (API-PLN-03). Alternativa: sumar un rango de kcal a API-PLN-03 (cambia el contrato) |
+| RP-D42 | La escala de cada renglón va de 0 al doble del centro del rango (con un solo lado, ese lado es el centro; un rango en cero, hasta un poco más que el mayor de los valores). Lo que pasa del borde se fija al borde con una flecha. Las cifras se comparan como se muestran: las kcal enteras y los gramos a un decimal | Es la que pidió Dirección como ejemplo: arranca en cero y la banda cae igual en los cuatro renglones. Alternativa: una escala de la mitad a 1,5 veces el centro, con el doble de detalle, que no arranca en cero |
+| RP-D43 | El promedio es la media simple de las opciones que tienen el dato, en una raya más alta que la pista; con una sola opción no hay promedio. «N de M opciones adentro» cuenta las que tienen el dato. Una opción sin alimentos no cuenta; las que se están leyendo, las recetas que se calculan al guardar y las que tienen un dato que falta se cuentan aparte («1 leyendo», «1 al guardar», «1 sin dato») | Las opciones pesan lo mismo (B05). Alternativa: la mediana |
+| RP-D44 | El día frente a su rango pasa al panel, como un tramo (de la opción que menos suma a la que más) sobre la banda del rango del día, si lo tiene. Adentro de la opción abierta del editor ya no se repite; en el cuadro de la opción sigue en líneas, porque el cuadro tapa el panel | Dirección: lo crítico es cada comida. Alternativa: el tramo también adentro de la opción |
+| RP-D45 | En el panel, lo que aportan las opciones de cada comida sale de las que tienen el dato; una opción sin alimentos se nombra en el renglón de su comida («· 1 sin alimentos»), y una comida entera sin alimentos ocupa un renglón, sin «Sin dato». Lo demás que falta (una cantidad, una composición) va en una sola nota al pie. El día sigue sin sumar a medias: con un hueco, una línea que dice qué falta | Antes, una opción vacía dejaba toda la comida en «Sin dato» y la lista se repetía al pie. Alternativa: dejar «Sin dato» en la comida |
+| RP-D46 | Al elegir una receta, la porción que trae la lista de «Mis recetas» (API-REC-02, `calculation.perServing` de su versión vigente) frente al rango de la comida, renglón por renglón: su valor y «adentro», «por encima, 6 g» o «por debajo, 4 g». «Primero las que entran en el rango de …» ordena: más renglones adentro primero; entre las que tienen los mismos, la más cercana (un dato que falta cuenta como lejos). No esconde ninguna. Sin rango, lo dice y no compara | La composición viene en la lista: ningún pedido por receta (nada de N+1). Alternativa: un filtro que esconda las que no entran |
+| RP-D47 | Sin saltos: cada renglón tiene su alto fijo (1,6 rem; 2,55 rem en un lugar angosto, con la pista arriba), y el resumen no se parte. Mientras se leen los rangos, la comida ya guardada reserva sus cuatro renglones. Una opción que se vuelve a leer queda donde estaba, punteada; una que nunca tuvo lugar no se dibuja y el resumen la cuenta. Nada se anima, como el vidrio (ED-18). RP-19 («Sin saltos») no estaba en `main` al cerrar: si su regla pide otra cosa, se alinea | Alternativa: una marca «leyendo» en el centro de la banda |
+| RP-D48 | Todo sale de lo que está en pantalla (`rangosDelDia` del borrador, en cada render): la franja de la comida, la de la opción y el panel se mueven con cada tecla, y ubican igual a cada opción. Una opción de receta se ubica con la porción que armó la API al guardar, la de la versión guardada; hasta el guardado, «al guardar». El panel lo dice en una nota corta | Lo pidió Dirección (22/11) |
+| RP-D49 | Los colores: la banda en el acento (`--azul` al 42 %, con su borde); las marcas en el color del texto, con un anillo del fondo; afuera, hueca. Sin `--error` ni `--exito`, y sin tokens nuevos: los dos temas de /pro (Claro y Azul noche) salen de los mismos | Ubica, no califica (NUP-D05) |
+
+### Lo que se probó
+
+- **Unitarias** (`apps/web/test/franjas-por-comida.test.mjs`): los límites de cada renglón y las kcal de los gramos; la
+  escala y la banda en el mismo lugar en los cuatro renglones; la posición de cada marca, adentro y afuera con su
+  diferencia; el promedio y el conteo; lo que se fija al borde; sin rango y con un renglón sin rango; sin alimentos (una
+  sola indicación); lo que se lee, lo que se calcula al guardar y lo que falta; el día; lo que falta en el día, una vez; la
+  receta frente al rango y «Primero las que entran»; los textos, sin «%» ni palabras prohibidas; y que la pieza, el panel,
+  el cajón de recetas y los estilos digan lo que este apartado describe.
+- **De navegador** (`franjasPorComida` en `test/navegador/recorridos.mjs`): la comida plegada con sus cuatro renglones,
+  dos marcas y el promedio; al bajar la cantidad del arroz en la opción abierta, su marca se mueve en la opción, en la
+  comida y en el panel, las tres en el mismo lugar y sin cambiar de alto; el panel no se desplaza de costado a 1280, 1440,
+  1536 y 2048 de ancho. Capturas con datos sintéticos.
+
+### Lo que queda
+
+- Ratificar RP-D40 a RP-D49.
+- Mirarlo en la pantalla de Dirección (1920 × 1080, Windows al 125 %, el navegador del 75 al 100 %), en Claro y en Azul
+  noche, y con un lector de pantalla real.
+- Los pasos del asistente (`pasos-del-asistente.tsx`) no muestran las franjas: el editor sí.
+- La porción de una receta en el cajón es la del cálculo guardado de su versión vigente; ya en el plan, la opción se
+  estima con la composición de hoy de cada alimento del catálogo: pueden diferir un poco.
+- `docs/DEUDA_LEGAJO.md` (DL-188) no se tocó en esta rama, para no chocar con el otro frente: al integrar, sumarle RP-20,
+  RP-21 y RP-D40 a RP-D49.
