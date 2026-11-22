@@ -7,6 +7,7 @@
  * estructuras en el paso 2.
  */
 import { useState } from 'react';
+import { RenglonDelAviso } from '../../../../components/formulario';
 import { ArmazonDelAsistente } from './asistente';
 import { COPY_ASISTENTE as C } from './paso-que-sigue';
 
@@ -51,11 +52,10 @@ export function PuntoDePartida({ hayVigente, creando, onElegir, onSalir }: { hay
           </label>
         ))}
       </fieldset>
-      {falta && !elegido ? (
-        <p id="falta-punto-de-partida" className="campo__error" role="alert">
-          {C.elegiUnPuntoDePartida}
-        </p>
-      ) : null}
+      {/* RP-19 (DL-188): el aviso tiene su renglón: al tocar «Siguiente» sin elegir, el botón no baja. */}
+      <RenglonDelAviso id="falta-punto-de-partida" tipo={falta && !elegido ? 'error' : 'nota'} role="alert">
+        {falta && !elegido ? C.elegiUnPuntoDePartida : null}
+      </RenglonDelAviso>
     </ArmazonDelAsistente>
   );
 }

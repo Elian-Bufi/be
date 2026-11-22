@@ -140,3 +140,136 @@ export function origenDeLaCelda(estado: 'de-lo-general' | 'propio' | 'sin-objeti
       return { placeholder: comun ?? P.sinIndicar, marca: null, descripcion: 'No se entiende lo escrito.' };
   }
 }
+
+// ─── RP-22 (WP-RECORRIDO-PLAN-PULIDO, DL-188) · los números de la planilla, con su mínimo, su máximo y su paso ─────────
+
+/**
+ * Los límites de lo que se escribe en las series, los del contrato: las repeticiones, de 1 a 1000 (`RepeticionesPrescriptasSchema`);
+ * el descanso, de 0 a una hora (`DescansoRecomendadoSchema`); la carga, desde 0 (`CargaSchema`). El paso es el de las
+ * flechas del teclado (↑ y ↓; con Mayúsculas, cuatro pasos): 1 repetición, 15 segundos y 2,5 kg (o 5 lb), lo que cambia
+ * de una serie a otra en una sala. El RIR y el % RM son del criterio de intensidad: no están acá.
+ */
+export const LIMITES_DE_LA_PLANILLA = {
+  repeticiones: { minimo: 1, maximo: TOPE_DE_REPETICIONES, paso: 1 },
+  descanso: { minimo: 0, maximo: 3600, paso: 15 },
+  carga: { minimo: 0, paso: { kg: 2.5, lb: 5 } },
+} as const;
+
+/** Con Mayúsculas, la flecha da cuatro pasos (10 kg, un minuto, 4 repeticiones). */
+const PASOS_CON_MAYUSCULAS = 4;
+
+/** La carga escrita: un número desde 0, con coma o con punto. Lo negativo o lo que no es un número, `null` (no se entiende). */
+export function leerCargaDeLaPlanilla(t: string, leer: (s: string) => number | null): number | null {
+  const n = leer(t);
+  return n === null || n < LIMITES_DE_LA_PLANILLA.carga.minimo ? null : n;
+}
+
+/** El descanso escrito: «02:30» o los segundos, hasta una hora. Más de una hora, `null` (no se entiende). */
+export function leerDescansoDeLaPlanilla(t: string, leer: (s: string) => number | null): number | null {
+  const n = leer(t);
+  return n === null || n > LIMITES_DE_LA_PLANILLA.descanso.maximo ? null : n;
+}
+
+const redondear = (n: number): number => Math.round(n * 1000) / 1000;
+const entre = (n: number, minimo: number, maximo: number): number => Math.min(maximo, Math.max(minimo, n));
+
+/**
+ * Un paso en la grilla: desde un valor de la grilla, uno más o uno menos; desde uno de afuera (62 con paso 2,5), el de la
+ * grilla más cercano en esa dirección (62,5 con ↑, 60 con ↓). Con varios pasos, los que faltan después.
+ */
+function pasoEnLaGrilla(actual: number, paso: number, veces: number): number {
+  const abajo = redondear(Math.floor(redondear(actual / paso)) * paso);
+  const enLaGrilla = abajo === redondear(actual);
+  if (enLaGrilla) return redondear(actual + veces * paso);
+  const primero = veces > 0 ? redondear(abajo + paso) : abajo;
+  return redondear(primero + (veces - Math.sign(veces)) * paso);
+}
+
+/**
+ * Un paso con las flechas en una celda de la planilla. Parte de lo escrito o, si la celda está vacía, del valor común que
+ * toma (`desde`); sin ninguno, de un valor con sentido (8 repeticiones, 01:00, 20 kg) con la primera flecha. Queda
+ * dentro de los límites. Lo que no se entiende, un rango o un valor ya en el borde no cambian (`null`).
+ */
+export function conUnPaso(
+  campo: 'repetitions' | 'restSeconds' | 'suggestedLoad',
+  escrito: string,
+  desde: number | null,
+  sube: boolean,
+  o: { readonly unidad?: 'kg' | 'lb'; readonly grande?: boolean; readonly leerNumero: (s: string) => number | null; readonly leerDescanso: (s: string) => number | null },
+): number | null {
+  const veces = (o.grande ? PASOS_CON_MAYUSCULAS : 1) * (sube ? 1 : -1);
+  const vacio = escrito.trim() === '';
+  const L = LIMITES_DE_LA_PLANILLA;
+  // Vacía y sin un valor común, la primera flecha escribe el valor de partida, sin sumarle nada.
+  const partida = { repetitions: 8, restSeconds: 60, suggestedLoad: 20 }[campo];
+  if (vacio && desde === null) return partida;
+  const actual = vacio ? desde : campo === 'repetitions' ? (/^\s*\d+\s*$/.test(escrito) ? Number(escrito.trim()) : null) : campo === 'restSeconds' ? o.leerDescanso(escrito) : o.leerNumero(escrito);
+  if (actual === null || actual < 0) return null;
+  const nuevo =
+    campo === 'repetitions'
+      ? entre(actual + veces, L.repeticiones.minimo, L.repeticiones.maximo)
+      : campo === 'restSeconds'
+        ? entre(pasoEnLaGrilla(actual, L.descanso.paso, veces), L.descanso.minimo, L.descanso.maximo)
+        : Math.max(L.carga.minimo, pasoEnLaGrilla(actual, L.carga.paso[o.unidad ?? 'kg'], veces));
+  return nuevo === actual ? null : nuevo;
+}
+
+/** Lo que hay que corregir en las series de un ejercicio, para decirlo en un renglón propio debajo de la tabla. */
+export interface CeldaQueNoSeEntiende {
+  /** El `id` de la celda (`…-carga`, `…-serie-1-descanso`). */
+  readonly id: string;
+  /** Qué es, en palabras: «la carga común», «el descanso de la serie 2». */
+  readonly que: string;
+  /** Cómo se escribe: «va un número desde 0». */
+  readonly como: string;
+}
+
+const COMO_SE_ESCRIBE = {
+  repetitions: 'de 1 a 1000, o un rango como 8-12',
+  suggestedLoad: 'un número desde 0',
+  rir: 'un número',
+  restSeconds: 'como 02:30 o en segundos, hasta 60:00',
+} as const;
+
+type PrescripcionDeLaPlanilla = {
+  readonly suggestedLoad?: { readonly value: number } | null;
+  readonly restSeconds?: number | null;
+  readonly sets: readonly Serie[];
+};
+
+const esNaN = (n: unknown): boolean => typeof n === 'number' && Number.isNaN(n);
+
+/**
+ * RP-22 · Las celdas de la planilla de un ejercicio que no se entienden, en el orden de la tabla: la fila Común y
+ * después cada serie. `rotulos` dice el nombre de cada serie («la serie 2», «el calentamiento»). Cada celda se marca
+ * en su lugar; el texto va a un renglón reservado debajo de la tabla (`textoDeLoQueNoSeEntiende`), para que la fila no
+ * crezca mientras se escribe.
+ */
+export function loQueNoSeEntiendeEnLasSeries(prefijo: string, p: PrescripcionDeLaPlanilla, rotulos: readonly string[]): readonly CeldaQueNoSeEntiende[] {
+  const celdas: CeldaQueNoSeEntiende[] = [];
+  if (esNaN(p.suggestedLoad?.value)) celdas.push({ id: `${prefijo}-carga`, que: 'la carga común', como: COMO_SE_ESCRIBE.suggestedLoad });
+  if (esNaN(p.restSeconds)) celdas.push({ id: `${prefijo}-descanso`, que: 'el descanso común', como: COMO_SE_ESCRIBE.restSeconds });
+  p.sets.forEach((s, n) => {
+    const de = rotulos[n] ?? `la serie ${n + 1}`;
+    const r = s.repetitions;
+    if (r && ('value' in r ? esNaN(r.value) : esNaN(r.min) || esNaN(r.max))) celdas.push({ id: `${prefijo}-serie-${n}`, que: `las repeticiones de ${de}`, como: COMO_SE_ESCRIBE.repetitions });
+    if (esNaN(s.suggestedLoad?.value)) celdas.push({ id: `${prefijo}-serie-${n}-carga`, que: `la carga de ${de}`, como: COMO_SE_ESCRIBE.suggestedLoad });
+    if (esNaN(s.rir)) celdas.push({ id: `${prefijo}-serie-${n}-rir`, que: `el RIR de ${de}`, como: COMO_SE_ESCRIBE.rir });
+    if (esNaN(s.restSeconds)) celdas.push({ id: `${prefijo}-serie-${n}-descanso`, que: `el descanso de ${de}`, como: COMO_SE_ESCRIBE.restSeconds });
+  });
+  return celdas;
+}
+
+/**
+ * El renglón: la primera celda con cómo se escribe y, si hay más, cuántas («Y 1 más, marcada.»). Vacío (`null`) si todo
+ * se entiende. RP-22 (revisión): corto, para que entre en un renglón también a 1440 con el panel abierto. Con dos avisos
+ * («También el descanso común.» y «No se guarda hasta corregirlo.») pasaba a dos renglones y bajaba «Agregar serie» 20 px
+ * (la CI). Que no se guarda ya lo dicen la barra («Pendiente de guardar: falta completar algo») y «Antes de activar».
+ */
+export function textoDeLoQueNoSeEntiende(celdas: readonly CeldaQueNoSeEntiende[]): string | null {
+  const [primera, ...resto] = celdas;
+  if (!primera) return null;
+  const mas = resto.length === 0 ? '' : resto.length === 1 ? ' Y 1 más, marcada.' : ` Y ${resto.length} más, marcadas.`;
+  const verbo = /^las /.test(primera.que) ? 'No se entienden' : 'No se entiende';
+  return `${verbo} ${primera.que}: va ${primera.como}.${mas}`;
+}

@@ -43244,7 +43244,7 @@
     "/advisees/{adviseeId}/training/plans": {
       "post": {
         "operationId": "API-TRN-07",
-        "summary": "Crear un borrador de plan de entrenamiento: estado DRAFT, no vigente, no abre proceso ni ocupa capacidad. El borrador es el mismo recurso del plan: no existe una colección de borradores de plan.",
+        "summary": "Crear un borrador de plan de entrenamiento: estado DRAFT, no vigente, no abre proceso ni ocupa capacidad. El borrador es el mismo recurso del plan: no existe una colección de borradores de plan. DL-192: `effortNotation` (RIR o RPE) es cómo se escribe el esfuerzo; sin el campo, la de la versión de la que parte o, si no, la última que usó el profesional, y si nunca eligió, RIR. Los valores siguen siendo RIR.",
         "description": "Fuente: 09v10:662-686 · REG-06-102 · DEUDA_LEGAJO DL-046, DL-047, DL-088. AuthN: SESSION.",
         "security": [
           {
@@ -44242,6 +44242,13 @@
                   "fromTemplateVersionId": {
                     "type": "string",
                     "minLength": 1
+                  },
+                  "effortNotation": {
+                    "type": "string",
+                    "enum": [
+                      "RIR",
+                      "RPE"
+                    ]
                   }
                 },
                 "required": [
@@ -44385,6 +44392,13 @@
                             {
                               "type": "null"
                             }
+                          ]
+                        },
+                        "effortNotation": {
+                          "type": "string",
+                          "enum": [
+                            "RIR",
+                            "RPE"
                           ]
                         },
                         "blocks": {
@@ -45475,6 +45489,13 @@
                                 "type": "null"
                               }
                             ]
+                          },
+                          "effortNotation": {
+                            "type": "string",
+                            "enum": [
+                              "RIR",
+                              "RPE"
+                            ]
                           }
                         },
                         "required": [
@@ -45606,7 +45627,7 @@
     "/training/plans/{planId}": {
       "get": {
         "operationId": "API-TRN-09",
-        "summary": "Una versión de plan con su jerarquía. Si está activada, se reconstruye desde la instantánea, no desde el catálogo actual. A un pedido del titular sin la capacidad training-set-targets-1 (X-BE-Capabilities), una versión con objetivos distintos por serie no se le entrega: 404 como lo inexistente (DL-122, precierre del 2026-10-06).",
+        "summary": "Una versión de plan con su jerarquía. Si está activada, se reconstruye desde la instantánea, no desde el catálogo actual. A un pedido del titular sin la capacidad training-set-targets-1 (X-BE-Capabilities), una versión con objetivos distintos por serie no se le entrega: 404 como lo inexistente (DL-122, precierre del 2026-10-06). DL-192: `effortNotation` va siempre al profesional, y al titular solo si declara training-effort-notation-1.",
         "description": "Fuente: 09v10:700-706 · REG-06-112. AuthN: SESSION.",
         "security": [
           {
@@ -45779,6 +45800,13 @@
                             {
                               "type": "null"
                             }
+                          ]
+                        },
+                        "effortNotation": {
+                          "type": "string",
+                          "enum": [
+                            "RIR",
+                            "RPE"
                           ]
                         },
                         "blocks": {
@@ -46660,7 +46688,7 @@
       },
       "patch": {
         "operationId": "API-TRN-10",
-        "summary": "Editar un borrador: bloque, microciclo opcional, sesión y prescripción. Valida la forma, no la calidad del programa: ni volumen, ni frecuencia, ni selección de ejercicios, ni progresión. DL-137: también la agenda (fecha de inicio, días de cada sesión y fechas movidas), que se valida contra las sesiones del plan; sin el campo se conserva, sin las sesiones que ya no están, y null la quita. La agenda se lee en API-SER-01.",
+        "summary": "Editar un borrador: bloque, microciclo opcional, sesión y prescripción. Valida la forma, no la calidad del programa: ni volumen, ni frecuencia, ni selección de ejercicios, ni progresión. DL-137: también la agenda (fecha de inicio, días de cada sesión y fechas movidas), que se valida contra las sesiones del plan; sin el campo se conserva, sin las sesiones que ya no están, y null la quita. La agenda se lee en API-SER-01. DL-192: `effortNotation` cambia la notación del esfuerzo del borrador; sin el campo se conserva.",
         "description": "Fuente: 09v10:710-754 · REG-06-111, 126, 127, 128, 129. AuthN: SESSION.",
         "security": [
           {
@@ -47732,6 +47760,13 @@
                         "type": "null"
                       }
                     ]
+                  },
+                  "effortNotation": {
+                    "type": "string",
+                    "enum": [
+                      "RIR",
+                      "RPE"
+                    ]
                   }
                 },
                 "required": [
@@ -47876,6 +47911,13 @@
                             {
                               "type": "null"
                             }
+                          ]
+                        },
+                        "effortNotation": {
+                          "type": "string",
+                          "enum": [
+                            "RIR",
+                            "RPE"
                           ]
                         },
                         "blocks": {
@@ -86690,6 +86732,13 @@
                                     "type": "null"
                                   }
                                 ]
+                              },
+                              "effortNotation": {
+                                "type": "string",
+                                "enum": [
+                                  "RIR",
+                                  "RPE"
+                                ]
                               }
                             },
                             "required": [
@@ -90224,7 +90273,7 @@
     "/training/plans/{planId}/detail": {
       "get": {
         "operationId": "API-SER-01",
-        "summary": "La versión de plan de API-TRN-09 con los objetivos por serie (RIR, carga sugerida y descanso, con herencia desde la prescripción), la base de carga y de repeticiones, la imagen de cada ejercicio y si el plan se le puede entregar a la app del titular (`setTargetsDelivery`). Solo para el profesional del plan: el titular lee API-SER-02.",
+        "summary": "La versión de plan de API-TRN-09 con los objetivos por serie (RIR, carga sugerida y descanso, con herencia desde la prescripción), la base de carga y de repeticiones, la imagen de cada ejercicio y si el plan se le puede entregar a la app del titular (`setTargetsDelivery`). Solo para el profesional del plan: el titular lee API-SER-02. DL-192: con la notación del esfuerzo de la versión (`effortNotation`, RIR o RPE).",
         "description": "Fuente: DEUDA_LEGAJO DL-122 · REG-06-111, 112, 128. AuthN: SESSION.",
         "security": [
           {
@@ -90397,6 +90446,13 @@
                             {
                               "type": "null"
                             }
+                          ]
+                        },
+                        "effortNotation": {
+                          "type": "string",
+                          "enum": [
+                            "RIR",
+                            "RPE"
                           ]
                         },
                         "blocks": {
@@ -92008,7 +92064,7 @@
     "/training/occurrences/{occurrenceId}/session": {
       "get": {
         "operationId": "API-SER-02",
-        "summary": "La sesión de una ocurrencia lista para registrarla serie por serie: el objetivo efectivo de cada serie desde la instantánea y la imagen de cada ejercicio (si ya se registró, la vigente al registrar). Solo para el titular; una ocurrencia que no puede ejecutar y sin registro es 404.",
+        "summary": "La sesión de una ocurrencia lista para registrarla serie por serie: el objetivo efectivo de cada serie desde la instantánea y la imagen de cada ejercicio (si ya se registró, la vigente al registrar). Solo para el titular; una ocurrencia que no puede ejecutar y sin registro es 404. DL-192: al cliente que declara training-effort-notation-1, la notación del esfuerzo de la versión (`effortNotation`); el RIR que manda se guarda igual en las dos.",
         "description": "Fuente: DEUDA_LEGAJO DL-122, DL-123 · REG-06-112. AuthN: SESSION.",
         "security": [
           {
@@ -92744,6 +92800,13 @@
                             "prescriptions"
                           ],
                           "additionalProperties": false
+                        },
+                        "effortNotation": {
+                          "type": "string",
+                          "enum": [
+                            "RIR",
+                            "RPE"
+                          ]
                         }
                       },
                       "required": [
@@ -118886,6 +118949,13 @@
                                         {
                                           "type": "null"
                                         }
+                                      ]
+                                    },
+                                    "effortNotation": {
+                                      "type": "string",
+                                      "enum": [
+                                        "RIR",
+                                        "RPE"
                                       ]
                                     },
                                     "blocks": {

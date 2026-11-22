@@ -187,10 +187,11 @@
 | DL-185 | Pedido de Dirección · 2026-11-19 («En la evaluación inicial: poder vincular los formularios que la persona ya respondió») | RF-026 · RF-036 · RF-071 · REG-06-97 · 06 §4.4 · 08 §11 y §19.7 · DL-057 · DL-102 · DL-137 D-7 · DL-145 · DL-152 · DL-179 (CTX-D09, CTX-D10) | La evaluación inicial solo podía citar respuestas sueltas; no había forma de dejar constancia de qué formularios de la persona se usaron, ni de saber si ella los corrigió después | **PROGRAMADA en `wp-evaluacion-y-formularios` (PR en borrador, sin integrar) · EVF-D01 a EVF-D13 a ratificar**: la familia EVF (API-EVF-01 a 04), una tabla que solo agrega, y el website en «Empezar el plan» y en Resumen de Nutrición y de Entrenamiento. Por referencia, nunca por copia; la persona no ve nada nuevo. Detalle: `docs/paquetes/WP-EVALUACION-Y-FORMULARIOS.md` |
 | DL-186 | Pedido de Dirección · 2026-11-19 (el objetivo con una toma de Antropometría de referencia y el calculador de macros) | REG-06-123 · INV-06-133 · B05:312-318 · REG-06-157 · REG-06-205 · RNF-PRI-002 · DL-111 · DL-163 (D-17, TB-39) · DL-176 · la decisión de Dirección del 2026-11-13 («Último peso, guardado en gramos») · DL-185 (en paralelo) | El objetivo no se relacionaba con ninguna toma; el profesional calculaba el gasto y los macros fuera de BE y los copiaba; el texto del objetivo decía «BE no calcula requerimientos»; los rangos de cada comida se escribían uno por uno | **PROGRAMADA en `wp-objetivo-y-calculador` (PR en borrador, sin integrar) · OBC-D01 a OBC-D17 a ratificar**: el calculador en «Nueva versión de objetivo» (cinco métodos del gasto en reposo con su fórmula, sus datos y su cita; el factor, con otro para el día de descanso; el ajuste; los macros en g/kg con los carbohidratos por diferencia); el objetivo guardado con su toma y su cálculo (familia propia OBC, API-OBC-01 a 03, una migración que solo agrega), con el aviso de una toma más nueva; la propuesta de rangos por día y por comida, volcada por API-PLN-03 sin pisar lo escrito. Detalle: `docs/paquetes/WP-OBJETIVO-Y-CALCULADOR.md` |
 | DL-187 | Pedido de Dirección · 2026-11-20 (los gráficos por período corto o por versión del plan, la franja de lo indicado y lo indicado frente a lo hecho del volumen) | DL-174 · DL-181 · DL-122 · DL-178 · TB-16 (DL-163 D-7) · 09v10:356 · 09v10:1285-1295 · B10-06 (la lista de términos de Entrenamiento) · B05 | El historial del ejercicio ofrecía 12 semanas, 6 meses o desde el vínculo; la ficha, 7, 30 y 90 días o un año; ningún gráfico elegía una versión del plan; el rango de repeticiones indicado no se dibujaba; BE no calculaba volumen y la palabra estaba prohibida en pantalla; «Patrones» tomaba siempre el ejercicio más registrado | **PROGRAMADA en `wp-graficos-por-fase` (PR en borrador, sin integrar) · GPF-D01 a GPF-D13 a ratificar**: un solo selector de período en los gráficos (4 y 12 semanas, 6 meses, un año, desde que la acompañás, a medida y por versión del plan con «La anterior» y «La siguiente»); la franja de lo indicado en GR-03; series y carga × repeticiones indicadas y hechas por sesión o semana (en el historial y en «Armá tu gráfico»), con una convención declarada; el ejercicio elegible en «Patrones». Sin operaciones nuevas en la API. Detalle: `docs/paquetes/WP-GRAFICOS-POR-FASE.md` |
-| DL-188 | Pedido de Dirección · 2026-11-21 (el recorrido de la planificación de Nutrición en el escritorio profesional: «ponete a solucionar todo, empezá ya») | DL-186 · DL-146 · DL-163 (TB-07) · ED-02 · NUP-06 a 08 · NUP-10 · B10-01 · B10-10 §6-§8 · REG-06-157 · la decisión de Dirección del 18/11 (el «%» con su base) | La cabecera de un área ocupaba tres renglones, con un enlace largo para volver, «Actualizar» y la hora de la consulta; el acceso se partía; un error en línea movía su campo; el calculador tenía textos largos, un desplegable cortado, el ajuste con signo y la distribución por comida en el objetivo; las cantidades no llevaban ícono; la cuenta de los gramos ocupaba dos renglones; no estaba ten Haaf (2014) | **PROGRAMADA en `wp-recorrido-plan-pulido` (frente 1; PR en borrador, sin integrar) · RP-D01 a RP-D17 a ratificar**: la cabecera en una franja con la vuelta como botón, el acceso en un chip y la revalidación al volver a la pestaña («Hay datos nuevos · Ver»); las filas de campos alineadas por arriba; el calculador más corto, con lo largo detrás de «?» y «Fuente», los g/kg con límites y paso 0,1 y el ajuste sin signo; el reparto por comida a la vista en cada día tipo; el ícono con el número y la abreviatura; la cuenta de los gramos detrás de un «?»; ten Haaf y Weijs (2014) en sus dos variantes. Sin operaciones nuevas ni migraciones. Detalle: `docs/paquetes/WP-RECORRIDO-PLAN-PULIDO.md` |
+| DL-188 | Pedido de Dirección · 2026-11-21 (el recorrido de la planificación de Nutrición en el escritorio profesional: «ponete a solucionar todo, empezá ya») | DL-186 · DL-146 · DL-163 (TB-07) · ED-02 · NUP-06 a 08 · NUP-10 · B10-01 · B10-10 §6-§8 · REG-06-157 · la decisión de Dirección del 18/11 (el «%» con su base) | La cabecera de un área ocupaba tres renglones, con un enlace largo para volver, «Actualizar» y la hora de la consulta; el acceso se partía; un error en línea movía su campo; el calculador tenía textos largos, un desplegable cortado, el ajuste con signo y la distribución por comida en el objetivo; las cantidades no llevaban ícono; la cuenta de los gramos ocupaba dos renglones; no estaba ten Haaf (2014) | **PROGRAMADA en `wp-recorrido-plan-pulido` (frente 1; PR en borrador, sin integrar) · RP-D01 a RP-D17 a ratificar · RP-19 «Sin saltos» (22/11) en `wp-recorrido-sin-saltos`, RP-D18 a RP-D26 a ratificar**: la cabecera en una franja con la vuelta como botón, el acceso en un chip y la revalidación al volver a la pestaña («Hay datos nuevos · Ver»); las filas de campos alineadas por arriba; el calculador más corto, con lo largo detrás de «?» y «Fuente», los g/kg con límites y paso 0,1 y el ajuste sin signo; el reparto por comida a la vista en cada día tipo; el ícono con el número y la abreviatura; la cuenta de los gramos detrás de un «?»; ten Haaf y Weijs (2014) en sus dos variantes. Sin operaciones nuevas ni migraciones. Detalle: `docs/paquetes/WP-RECORRIDO-PLAN-PULIDO.md` |
 | DL-189 | Pedido de Dirección · 2026-11-21 (la evaluación inicial «no le cierra»: un pantallazo del caso en lugar de la planilla) | RF-026 · RF-036 · RF-071 · REG-06-97 · REG-06-109 · DL-048 · DL-145 · DL-146 · DL-164 (D-3, D-4, D-6) · DL-165 (D-1, D-7) · DL-169 · DL-173 · DL-185 · DL-186 · Ley 26.529 art. 14 | La evaluación inicial era una planilla de «Concepto / Valor / Unidad / Fuente» con pastillas y el texto «BE no calcula»; los tres pasos de «Empezar el plan» ocupaban media pantalla; la fecha se escribía a mano; «Cargar con la persona» solo se abría desde una solicitud ya enviada y traía todas las preguntas a la vez | **PROGRAMADA en `wp-evaluacion-inicial-2` (PR en borrador, sin integrar) · EI-D01 a EI-D16 a ratificar**: la franja de los pasos, la fecha automática, la evaluación de Nutrición en tres bloques («Lo que contó», «Lo medido», «Lo que necesita el cálculo»), «Anotaciones» privadas, «Completarlo ahora con la persona» y lo crítico primero. Sin operaciones nuevas en la API ni cambios en la APK. Detalle: `docs/paquetes/WP-EVALUACION-INICIAL-2.md` |
 | DL-190 | Decisión de Dirección · 2026-11-21 (Kerr de cinco componentes y elegir el método antes de medir; WP-ANTROPOMETRIA-METODO-Y-KERR) | DL-110 · DL-111 (decisiones 5 a 7) · DL-112 · REG-06-152 · REG-06-157 · REG-06-203/204/205 · RF-048 · RF-049 · ficha de métodos D-1 y D-3 · DL-152 | El método se elegía después de medir, sobre un único protocolo de 30 mediciones; Kerr quedaba en reserva (D-3 sin resolver) y faltaban siete mediciones para sus cinco masas | **PROGRAMADA en `wp-antropometria-metodo-y-kerr` (PR en borrador, sin integrar) · AK-D01 a AK-D14 a ratificar**: Kerr (1988) en seis métodos (la piel por sexo; adiposa, muscular, ósea y residual) con la tabla 4.3 y el apéndice A de la tesis, D-3 resuelta (muslo a 1 cm del pliegue glúteo, pecho mesoesternal, cintura mínima), siete mediciones nuevas en el catálogo del dominio (no en una versión del protocolo, que cortaría la comparabilidad), una migración que solo agrega y, en la toma, la suma frente al peso medido en kg y en %; elegir uno o varios métodos al empezar la toma, con la unión de lo que piden más peso, talla y edad, el habitual de la última toma (API-MHA-01, familia propia MHA, sin migración), «+ Otra medición» y la nota del suprailíaco de Jackson y Pollock (D-1). La APK 0.31 no se rompe. Detalle: `docs/paquetes/WP-ANTROPOMETRIA-METODO-Y-KERR.md` |
 | DL-191 | Decisión de Dirección · 2026-11-22 («tus recomendaciones me parecieron perfectas, aplicalas así»; WP-RECETARIO-E-IMAGENES) | DL-119 · DL-120 · DL-180 (el patrón del canon) · DL-152 · REG-06-135 inciso 2 · 08 §21 · Ley 25.326 · Ley 11.723 | Cada foto de una receta se bajaba entera (un JPEG de 1600 px, unos 300 kB) aunque se mostrara en una miniatura; la imagen solo se cargaba en «Mis recetas»; no había recetas de BE para todos ni una forma de proponer una con su foto | **PROGRAMADA en `wp-recetario-e-imagenes` (PR en borrador, sin integrar) · REC-D01 a REC-D17 a ratificar**: la imagen de una receta en dos WebP de calidad 78 (1200 y 400 px), pedidas por variante; los medios de antes, con sus variantes perezosas e idempotentes, y sin variante lo guardado (la APK publicada sigue igual); una sola copia por huella del mismo dueño; el website achica antes de subir; el Recetario de BE (familia propia RCT): lista con rutas firmadas guardables de 6 a 7 horas, copiar con el mismo medio, proponer con la cesión de la foto versionada y registrada, Administración con autor y parecidas; la semilla de las 66 como comando (no se corrió en test); la imagen desde el cajón del plan. Una migración que solo agrega. Pendiente legal: la cesión, con el abogado. Detalle: `docs/paquetes/WP-RECETARIO-E-IMAGENES.md` |
+| DL-193 | Decisión de Dirección · 2026-11-22 (sacar el asistente de 7 pasos de Nutrición; WP-SIN-ASISTENTE-DE-NUTRICION) | RF-030 · RF-031 · UC-P10 · UC-P11 · B10-05 §12 · DL-145 · DL-167 (ED-30) · EDC-11 · EDC-12 | El asistente de Nutrición (ED-30) repetía, en siete pasos, lo que el editor ya hacía; Dirección lo encontró engorroso y anticuado frente a la forma normal | **PROGRAMADA en `wp-sin-asistente-de-nutricion` (PR en borrador, sin integrar) · SAN-D01 a SAN-D10 a ratificar**: sin el asistente de Nutrición (el de Entrenamiento no se toca); todo camino que llevaba a él va a la vista del plan o al editor, y una dirección vieja con `asistente=N` abre la misma vista sin ese parámetro; lo que solo tenía el asistente pasa al editor: «Empezar en blanco» con una versión activa, el objetivo con su versión y su fecha y lo que está en proporción, y «Usarla ahora» para pasar al objetivo vigente. Sin cambios en la API ni en la base: el asistente no guardaba estado propio. Detalle: `docs/paquetes/WP-SIN-ASISTENTE-DE-NUTRICION.md` |
 
 ---
 
@@ -9044,8 +9045,41 @@ coeficientes verificados en el artículo original (RP-09). El contrato no cambia
 la APK no lo lee. Pruebas: `calculador-de-macros.test.ts`, `objetivo-y-calculador.test.mjs` y
 `recorrido-plan-pulido.test.mjs`.
 
+**RP-19 · Sin saltos (pedido del 2026-11-22, con capturas).** «Cuando hay un error se mueve todo de lugar»: en el reparto
+por comida, con partes que suman 99, cada fila perdía su rango, la tabla se reacomodaba y un párrafo de error empujaba el
+botón; al proponer, el cuadro de la suma de los rangos aparecía arriba de las comidas. **INTEGRADA con el PR #310
+(`wp-recorrido-sin-saltos`) · RP-D18 a RP-D26, a ratificar.** La regla: lo que aparece o se va
+mientras se escribe tiene su lugar reservado (el renglón del aviso, `.avisos-con-lugar`, tablas con columnas fijas) y el
+resumen de errores no se achica al corregir. Cada fila del reparto muestra siempre su rango; «Todo el día» dice la suma y
+lo que falta; el chequeo de la suma de los rangos frente al objetivo es una línea del reparto. La misma regla en el
+calculador, el objetivo, la evaluación inicial, el paso 1 de los asistentes y el cuadro del rango. Sin operaciones nuevas
+ni migraciones; no toca la APK. Pruebas: `recorrido-plan-pulido.test.mjs` y el recorrido de navegador `sinSaltos`.
+
+**RP-20 y RP-21 · Las franjas por comida y «Rangos y totales» (pedido del 2026-11-22).** «Que esté en cada comida con cada
+uno de los macros, así se ve cómo sumando alimentos se va llegando a los macros planteados para esa comida»: lo crítico no
+es la suma del día frente al objetivo (da bien por construcción) sino que cada opción entre en el margen de su comida, y
+que en promedio vaya por buen camino. **INTEGRADA en main eadc32fb (PR #309) · RP-D40 a RP-D49, a ratificar.** En cada
+comida, una franja por kcal, P, C y G con la banda del rango indicado, una marca por opción (llena adentro, hueca afuera,
+sin rojo ni verde: ubica, no califica) y la del promedio; la misma franja con la opción abierta, en vivo; la porción de
+cada receta al elegirla, con «Primero las que entran». El panel «Rangos y totales» rediseñado con íconos, el día arriba y
+los textos largos detrás de «?». Sin operaciones nuevas ni migraciones; no toca la APK. Pruebas:
+`franjas-por-comida.test.mjs` y el recorrido de navegador `franjasPorComida`.
+
+**RP-22 · Entrenamiento antes de la prueba (pedido del 2026-11-22).** Lo aprendido en el recorrido de Nutrición, llevado a
+la planificación de Entrenamiento antes de que Dirección la recorra. **INTEGRADA con el PR #311 · RP-D60 a RP-D72, a
+ratificar.** La tabla de series marca lo que no se entiende sin cambiar de tamaño y lo dice en un renglón fijo debajo; las
+repeticiones, el descanso y la carga tienen mínimo, máximo y paso (1 rep, 15 s, 2,5 kg o 5 lb; ×4 con Mayúsculas) con
+flechitas; el bloque «En vueltas» y el criterio con su aviso en su lugar; el catálogo de 35 rem desde 1280; plantillas,
+habituales y «Todavía no podés activar» con lo largo detrás de «?»; un `id` por problema en el resumen; lo que no se entiende
+(NaN) ya no cuenta como objetivo distinto por serie en la compatibilidad de clientes. Sin operaciones nuevas ni
+migraciones; no toca la APK. Pruebas: `entrenamiento-antes-de-la-prueba.test.mjs` y el recorrido `sinSaltos` en
+Entrenamiento, a cuatro anchos.
+
 **Lo que queda.**
-- Ratificar RP-D01 a RP-D17.
+- Ratificar RP-D01 a RP-D17, RP-D18 a RP-D26, RP-D40 a RP-D49 y RP-D60 a RP-D72.
+- RP-19 anotado: la comida plegada suma el renglón «Indicado» al proponer y la cantidad de un alimento avisa en su fila
+  (`comida-del-editor.tsx`, de otro frente); el mismo patrón fuera de la planificación (Entrenamiento, Seguimiento,
+  formularios de la persona, recetas).
 - Los íconos con el número en la APK (RP-07).
 - Mirarlo en pantalla a 1920 × 1080 con Windows al 125 % y el navegador al 75 %, y con un lector de pantalla.
 - «Te toca a vos» sigue con «Actualizar» (otra pieza). Detalle completo: `docs/paquetes/WP-RECORRIDO-PLAN-PULIDO.md`.
@@ -9180,3 +9214,98 @@ detalle y achicar antes de subir.
   pregunta, en el §6 del paquete; el legajo legal vive fuera del repositorio público).
 - Cargar el recetario en test (lo decide Dirección) y las fotos de las 66.
 - DL-194. Mirarlo en pantalla y con un lector de pantalla. Detalle completo: `docs/paquetes/WP-RECETARIO-E-IMAGENES.md`.
+
+## DL-192 — El RPE como otra forma de escribir el RIR, y el máximo estimado en esa notación
+
+**Prioridad:** media (Dirección, licenciado, prescribe por RPE y quiere que la persona responda en esa escala) · REG-06-128 ·
+REG-06-129 · INV-06-138/139 · INV-06-152 · REG-06-182 · REG-06-203 · B10-08 · DL-122 · DL-152 · DL-161 · DL-171 · DL-178 ·
+**Estado:** DECIDIDA por Dirección el 2026-11-22 · PROGRAMADA en `wp-rpe-y-maximo-estimado` (PR en borrador, sin integrar) ·
+RPE-D01 a RPE-D11, **a ratificar**. La parte de la APK va en la 0.32 (DL-194). Si al integrar el número choca con otro
+paquete, se renumera.
+
+**Qué pidió Dirección.** «Estábamos haciendo RPE, escala de esfuerzo percibido, dentro de cada serie? ¿Hay forma de
+relacionarlo con el RIR técnicamente?» Aprobó la propuesta: una sola medida, dos notaciones, con la escala de RPE basada en
+RIR (Zourdos y colaboradores, 2016; la que usan Helms y el powerlifting), RPE = 10 − RIR de 6 a 10 con medios puntos; lo
+guardado sigue siendo el RIR; el profesional elige la notación y la persona responde y ve todo en ella; y el máximo
+estimado de cada serie, dicho en esa notación y separado del máximo probado. El RPE de la sesión (Foster, CR-10 × minutos)
+queda afuera, con «registrar otro deporte».
+
+**Qué dice el legajo.** El criterio de intensidad es exactamente uno de dos, % RM o RIR (REG-06-128), y el esfuerzo
+percibido es dato de la ejecución, nunca un tercer criterio (REG-06-129; INV-06-139): un `criterion: "RPE"` es
+`INTENSITY_CRITERION_INVALID`. «RPE prescripto» es un término prohibido en los textos de Entrenamiento. La estimación de
+la repetición máxima es Epley v1 (DL-171), un método con versión inmutable (REG-06-203), que nunca es una marca (REG-06-182;
+B10-08). No se edita el legajo.
+
+**Cómo se lo cumple sin romperlo.** El RPE de este paquete no es el esfuerzo percibido: es otra forma de escribir el RIR.
+La prescripción sigue con el criterio RIR y su valor en RIR («RPE 8» es RIR 2), y el RPE como criterio sigue siendo un 422.
+La notación vive en la versión del plan (`effortNotation`), no en la prescripción; `perceivedExertion` (de 0 a 10, del 09)
+no se toca y no se mezcla. Ningún texto dice «RPE prescripto». El método de la estimación no cambia: Epley v1, RIR de 0 a 2
+(RPE 8 a 10) y hasta 12 repeticiones equivalentes.
+
+**Lo programado.**
+- **RPE-01 · La notación en la versión del plan:** `effortNotation` opcional en API-TRN-07 y 10, en las lecturas del
+  profesional (API-TRN-07 a 10 y API-SER-01) y en el contenido de la versión, solo cuando es RPE (lo que no existe no se
+  guarda); se congela con la instantánea y la sucesora la hereda. Sin migración.
+- **RPE-02 · La conversión** (`notacion-del-esfuerzo.ts`): RPE = 10 − RIR; «6 o menos» se guarda como RIR 4 y todo RIR de 4
+  o más se lee así en RPE; lo escrito se lee como el RIR que se guarda.
+- **RPE-03 · Prescribir en RPE** en el editor: el selector al pie de las sesiones (lo largo y las fuentes detrás del «?»);
+  el criterio, el objetivo, cada serie y la escritura en varias series, en la notación.
+- **RPE-04 · Leer en la notación** el plan, los registros (con el sentido de la comparación al revés: menos RIR es más
+  RPE) y la fuerza estimada. Los gráficos siguen en RIR (RPE-D04).
+- **RPE-05 · El máximo estimado** dice con qué serie salió («estimado con 5 reps a RPE 8 · 100 kg» o «a RIR 2»), con la
+  regla y los motivos en la notación. BE no guarda todavía un máximo probado (D-V3-03): la estimación no entra en las marcas
+  ni se llama máximo, y cuando exista el probado, va en su renglón.
+- **RPE-06 · Para la app:** la capacidad `training-effort-notation-1`; con ella, el titular recibe `effortNotation` en
+  API-TRN-09 y API-SER-02. Sin ella, la forma de siempre; la API acepta el RIR de la APK actual tal cual, y un plan en RPE no
+  se retiene ni bloquea su activación (RPE-D08).
+- **RPE-07 · El valor inicial:** la pedida; si no, la de la versión de la que parte; si no, la última del profesional con
+  cualquier persona; si nunca eligió, RIR.
+- Pruebas: TEST-RPE-001 a 012 (dominio), 020 a 025 (integración, en la CI), 030 (navegador) y 040 a 045 (website).
+
+**La APK publicada.** No cambia: pregunta el RIR, lo manda y se guarda igual. La última APK congelada lee y registra con un
+plan en RPE sin un rechazo (TEST-RPE-024).
+
+**Lo que queda.**
+- Ratificar RPE-D01 a RPE-D11.
+- DL-194 (APK 0.32): declarar la capacidad, preguntar y mostrar en la notación y mandar el RIR; congelar sus lecturas.
+- Mirarlo en pantalla y con un lector de pantalla; la escritura rápida en RPE; si Dirección lo pide, `BE-E1RM` v2 con RPE 6
+  a 7,5; el RPE de la sesión con «registrar otro deporte». Detalle completo: `docs/paquetes/WP-RPE-Y-MAXIMO-ESTIMADO.md`.
+
+## DL-193 — El plan de Nutrición sin el asistente de 7 pasos
+
+**Prioridad:** media (Dirección, al probar la planificación de Nutrición) · RF-030 · RF-031 · UC-P10 · UC-P11 · B10-05 §12 ·
+DL-145 · DL-167 (ED-30, EDC-11 y EDC-12) ·
+**Estado:** DECIDIDA por Dirección el 2026-11-22 · PROGRAMADA en `wp-sin-asistente-de-nutricion` (PR en borrador, sin
+integrar) · SAN-D01 a SAN-D10, **a ratificar**. Si al integrar el número choca con otro paquete, se renumera.
+
+**Qué pidió Dirección.** «El asistente de 7 pasos la verdad que lo sacaría, porque está muy engorroso, y le pusimos tanto
+esfuerzo a la forma normal que quedó muy bien, y hace anticuado el asistente ya.» El asistente de Entrenamiento queda: no
+lo probó todavía.
+
+**Qué dice el legajo.** **Ningún documento del legajo nombra un asistente** (lo buscado en `docs/legajo`: «asistente»,
+«wizard», «paso a paso», «guiado»; la única mención de «asistentes» es la de los asistentes de código en 08 §556, sin
+relación). El asistente nació en WP-EDITORES-PROFESIONAL (ED-30, del pedido de Dirección de DL-167: «crear con un asistente
+de cuadros y presets»). Lo que el legajo pide del diseño del plan no cambia y lo sigue cumpliendo el editor:
+- **RF-030 y UC-P10** (crear y editar un plan nutricional en borrador): el borrador se guarda y se retoma, no es vigente y
+  las inconsistencias se informan antes de activar (el panel en vivo y «Antes de activar»).
+- **RF-031 y UC-P11** (validar, versionar y activar): «Revisar y activar…», sin cambios.
+- **B10-05 §12** (crear borrador): «Plan → Crear nuevo plan → elegir objetivo de referencia → crear estructura inicial →
+  editor». Sin el asistente, el flujo vuelve a ser ese: el objetivo es el vigente (o se escribe antes, en los pasos de
+  «Empezar el plan» de DL-145) y la versión se abre en el editor.
+
+**Qué cambia.**
+- Se retiran ED-30 y las partes de EDC-11 (los siete pasos de Nutrición) y de EDC-12 que eran del paso 2. El número de la
+  versión del objetivo (EDC-12) sigue: ahora lo dice el editor, además del cuadro de la opción.
+- «Empezar el plan» de la ficha de Nutrición va a la vista del plan (no a `asistente=1`); sin «Armar con el asistente» ni
+  «Seguir con el asistente»; una dirección vieja con `asistente=N` abre la vista del plan y se le quita el parámetro.
+- Lo que solo tenía el asistente pasa al editor: «Empezar en blanco» con una versión activa (SAN-03), el objetivo con su
+  versión y su fecha y lo que está en proporción de las kcal (SAN-04), y «Usarla ahora» para que la versión en preparación
+  pase al objetivo vigente sin esperar otro cambio (SAN-05).
+- **La API, la base y la APK no cambian.** El asistente no guardaba estado propio (el paso vivía en la dirección y se
+  deducía del borrador): un borrador armado con él se abre entero en el editor, y no queda ningún campo sin uso.
+
+**Lo que queda.**
+- Ratificar SAN-D01 a SAN-D10.
+- Mirarlo en pantalla; la vista de todos los días tipo a la vez, si se extraña (SAN-D07); y, en el repaso de la entrega,
+  los documentos de paquetes cerrados que describen el asistente de Nutrición, que quedan como registro de su momento.
+  Detalle completo: `docs/paquetes/WP-SIN-ASISTENTE-DE-NUTRICION.md`.

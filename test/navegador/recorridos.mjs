@@ -740,12 +740,15 @@ async function primerPlan({ p, d }) {
   await p.type('#objetivo-fundamento', 'Objetivo del recorrido de navegador.');
   await clic(p, 'form button[type="submit"]', 'Guardar nueva versión');
 
-  // 3. El plan. Se llegó con «Empezar el plan», que abre el asistente (ED-30): con el objetivo ya escrito, el paso 1
-  // ofrece desde dónde arrancar; «En blanco» y «Siguiente» crean la versión y siguen en el paso 2, el objetivo general.
-  await clic(p, '[data-punto-de-partida="blanco"]');
-  await clic(p, '[data-asistente-principal]');
+  // 3. El plan. «Empezar el plan» ya no abre el asistente (DL-193): con el objetivo escrito, el paso 3 de esta misma
+  // pantalla ofrece «Crear nuevo plan» (en blanco) o una plantilla, y la versión se abre en el editor de siempre.
+  assert.equal(ruta(p).parametros.get('asistente'), null, '«Empezar el plan» de Nutrición no pide el asistente');
+  assert.equal(await p.$('[data-asistente]'), null, 'sin el asistente de Nutrición');
+  await elemento(p, '[data-empezar-desde-plantilla]');
+  await clic(p, '[data-crear-version]', 'Crear nuevo plan');
   await elemento(p, '.editor-del-plan');
-  await elemento(p, '[data-objetivo-general]');
+  // El objetivo del día, con su versión y su fecha (SAN-04: lo decía el paso 2 del asistente).
+  await elemento(p, '[data-version-del-objetivo]', 'Versión 1, vigente desde el');
   // DJ-6: la primera versión en preparación lleva el número 1.
   await esperarTexto(p, 'Versión 1 · en preparación');
 
@@ -755,44 +758,57 @@ async function primerPlan({ p, d }) {
 }
 
 /**
- * ED-30 (WP-EDITORES-PROFESIONAL, §5.5): el asistente de Nutrición de punta a punta, con el objetivo ya escrito. Del paso
- * 1 al 7 sobre el mismo borrador: el día tipo de «En blanco», una comida con un alimento del catálogo base, y activar. Activada desde el
- * paso 7, se sale del asistente y se ve el plan activo (no el paso 1 de otra versión). En el paso 5, «Agregar una opción»
- * cancelado no deja una opción vacía en el borrador.
+ * DL-193 (WP-SIN-ASISTENTE-DE-NUTRICION): el plan de Nutrición de punta a punta sin el asistente de 7 pasos, con el
+ * objetivo ya escrito. Reemplaza al recorrido `asistenteDeNutricion` y prueba lo mismo que seguía vivo:
+ * - «Empezar el plan» de la ficha y una dirección vieja con `asistente=1` llevan a la vista del plan, sin el asistente;
+ *   ahí están los puntos de partida (crear en blanco y desde una plantilla).
+ * - Un borrador con una dirección vieja de un paso (`asistente=5`) se abre en el editor de siempre, entero.
+ * - En el editor: una comida, su opción con un alimento del catálogo base en su cuadro y activar.
+ * - Con una versión activa, la nueva puede empezar en blanco (SAN-03), además de copiarla o partir de una plantilla.
  */
-async function asistenteDeNutricion({ p, d }) {
+async function planDeNutricionSinAsistente({ p, d }) {
   await entrar(p, d.pro.correo);
   await abrirFicha(p, d.ase.nombre);
   await clic(p, '[data-accion-de-la-ficha="empezar"]', 'Empezar el plan');
   await esperarCamino(p, '/pro/advisees/nutrition');
+  assert.equal(ruta(p).parametros.get('vista'), 'plan');
+  assert.equal(ruta(p).parametros.get('asistente'), null, 'la ficha no pide el asistente de Nutrición');
+  await elemento(p, '[data-crear-version]', 'Crear nuevo plan');
+  await elemento(p, '[data-empezar-desde-plantilla]');
+  assert.equal(await p.$('[data-asistente]'), null, 'sin el asistente');
 
-  // 1 y 2. En blanco; el paso 2 muestra el objetivo general.
-  await clic(p, '[data-punto-de-partida="blanco"]');
-  await clic(p, '[data-asistente-principal]');
-  await elemento(p, '[data-objetivo-general]');
-  await clic(p, '[data-asistente-principal]', 'Siguiente: Días tipo');
+  // Una dirección vieja, con el paso 1 del asistente: la misma vista, y el parámetro se va.
+  const plan = `${WEB}/pro/advisees/nutrition?id=${encodeURIComponent(d.ase.id)}&vista=plan`;
+  await p.goto(`${plan}&asistente=1`, { waitUntil: 'networkidle2' });
+  await elemento(p, '[data-crear-version]', 'Crear nuevo plan');
+  await p.waitForFunction(() => !new URL(location.href).searchParams.has('asistente'), { timeout: ESPERA, polling: 100 });
+  assert.equal(await p.$('[data-punto-de-partida]'), null, 'no aparece el paso 1 del asistente');
 
-  // 3. «En blanco» ya trae un día tipo, «Día habitual»: se sigue con él.
-  await elemento(p, '[data-asistente-agregar-dia]');
-  assert.equal(await p.evaluate(() => document.querySelectorAll('li[data-dia-del-asistente]').length), 1, 'en blanco, un día tipo');
-  await clic(p, '[data-asistente-principal]', 'Siguiente: Comidas');
+  // Crear: el editor de siempre, con el objetivo y su versión.
+  await clic(p, '[data-crear-version]', 'Crear nuevo plan');
+  await elemento(p, '.editor-del-plan');
+  await esperarTexto(p, 'Versión 1 · en preparación');
+  await elemento(p, '[data-version-del-objetivo]');
 
-  // 4. Una comida, con su nombre (sin nombre no se puede guardar).
-  await clic(p, '[data-asistente-agregar-comida]');
-  const comida = await elemento(p, '[data-dia-del-asistente="1"] .asistente__sesiones input');
-  await comida.type('Almuerzo');
-  await clic(p, '[data-asistente-principal]', 'Siguiente: Opciones');
+  // Un borrador con la dirección vieja de un paso del asistente: el editor, entero y sin el asistente.
+  await p.goto(`${plan}&asistente=5`, { waitUntil: 'networkidle2' });
+  await elemento(p, '.editor-del-plan');
+  await p.waitForFunction(() => !new URL(location.href).searchParams.has('asistente'), { timeout: ESPERA, polling: 100 });
+  assert.equal(await p.$('[data-asistente]'), null, 'el borrador se abre en el editor, no en un paso del asistente');
+  assert.equal(await p.$eval('.editor-de-nutricion__zonas', (e) => e.hidden), false, 'el editor a la vista');
+  await elemento(p, '[data-revisar-y-activar]');
 
-  // 5. «Agregar una opción» y cancelar: el borrador sigue con una sola opción.
-  await elemento(p, '[data-opcion-del-asistente="1"]');
-  await clic(p, '[data-asistente-agregar-opcion]');
-  await elemento(p, '.cuadro-de-la-opcion [role="combobox"]');
-  await p.keyboard.press('Escape');
-  await p.waitForFunction(() => !document.querySelector('.cuadro-de-la-opcion [role="combobox"]'), { timeout: ESPERA });
-  assert.equal(await p.evaluate(() => document.querySelectorAll('[data-opcion-del-asistente]').length), 1, 'cancelar «Agregar una opción» no deja una opción vacía');
+  // Una comida vacía, con su nombre (sin nombre no se puede guardar): nace con el campo abierto.
+  await hidratado(p, '#agregar-comida');
+  await clic(p, '#agregar-comida', 'Agregar comida');
+  await clic(p, '.menu-de-acciones[data-abierto] .menu-de-acciones__accion', 'Una comida vacía');
+  await p.waitForFunction(() => document.activeElement instanceof HTMLInputElement, { timeout: ESPERA });
+  await p.keyboard.type('Almuerzo');
+  await p.keyboard.press('Enter');
 
-  // La opción 1, en su cuadro: buscar, Enter suma el marcado, la cantidad y el estado, y «Guardar la opción».
-  await clic(p, '[data-armar-la-opcion]');
+  // Su opción 1, en el cuadro: buscar, Enter suma el marcado, la cantidad y el estado, y «Guardar la opción».
+  await abrirComida(p, 1);
+  await clic(p, '.comida-del-editor[data-comida="1"] [data-agregar-item]');
   const buscador = await elemento(p, '.cuadro-de-la-opcion [role="combobox"]');
   await buscador.type('arroz');
   await elemento(p, '.cuadro-de-la-opcion [role="gridcell"][aria-selected="true"]');
@@ -802,21 +818,28 @@ async function asistenteDeNutricion({ p, d }) {
   await p.select('#cuadro-item-0-preparacion', 'COOKED');
   await clic(p, '.cuadro-de-la-opcion [data-principal-del-cuadro]', 'Guardar la opción');
   await p.waitForFunction(() => !document.querySelector('.cuadro-de-la-opcion [role="combobox"]'), { timeout: ESPERA });
-  await clic(p, '[data-asistente-principal]', 'Siguiente: Revisar');
+  await esperarGuardado(p);
 
-  // 6 y 7. Revisar y activar, sin fecha de revisión.
-  await clic(p, '[data-asistente-principal]', 'Siguiente: Activar');
-  await clic(p, '[data-asistente-principal]', 'Revisar y activar');
+  // Revisar y activar, sin fecha de revisión.
+  await clic(p, '[data-revisar-y-activar]');
   await elemento(p, 'dialog[open] [data-antes-de-activar]');
   await clic(p, 'dialog[open] .cuando-la-revisas input[value="sin-fecha"]');
   // El principal se enciende cuando la API terminó de revisar lo guardado y hay una fecha elegida.
   await p.waitForFunction(() => [...document.querySelectorAll('dialog[open] button.boton--primario')].some((b) => b.textContent.includes('Activar la versión 1') && !b.disabled), { timeout: ESPERA });
   await clic(p, 'dialog[open] button.boton--primario', 'Activar la versión 1');
 
-  // Activada: sin el asistente en la dirección y con el plan activo a la vista.
+  // Activada: el plan activo, y la versión nueva puede copiarla, partir de una plantilla o empezar en blanco (SAN-03).
   await elemento(p, '.plan__activo');
-  assert.equal(ruta(p).parametros.get('asistente'), null, 'activar desde el paso 7 sale del asistente');
-  assert.equal(await p.$('[data-punto-de-partida]'), null, 'no aparece el paso 1 de otra versión');
+  await elemento(p, '[data-crear-version]', 'Nueva versión del plan');
+  await elemento(p, '[data-empezar-en-blanco]', 'Empezar en blanco');
+  assert.equal(await p.$('[data-armar-con-el-asistente]'), null, 'sin «Armar con el asistente»');
+
+  // SAN-03 (revisión de DL-193): «Empezar en blanco» crea de verdad la versión 2 sin copiar la activa: el editor abre un
+  // día tipo vacío, sin el «Almuerzo» de la versión 1.
+  await clic(p, '[data-empezar-en-blanco]', 'Empezar en blanco');
+  await elemento(p, '[data-revisar-y-activar]');
+  await esperarTexto(p, 'Versión 2 · en preparación');
+  assert.equal(await p.$$eval('.editor-del-plan .comida-del-editor', (x) => x.length), 0, 'en blanco: sin las comidas de la activa');
 }
 
 /** Bloque 5: preparar la revisión desde la ficha y volver «donde estabas», con la vista y el período. */
@@ -1629,7 +1652,274 @@ async function comparacionConOpciones({ p, d, salida }) {
   await enLosDosTemas(p, salida, 'comparacion-con-opciones-origen-1440');
 }
 
+/**
+ * DL-192 (WP-RPE-Y-MAXIMO-ESTIMADO; TEST-RPE-030): en el editor del plan de Entrenamiento, el profesional elige escribir el
+ * esfuerzo en RPE. El ejercicio a RIR 2 se lee «RPE 8» sin cambiar el número guardado, la notación se guarda sola con el
+ * borrador y sigue al recargar. Lo guardado lo confirma la API: la versión dice RPE y la intensidad sigue siendo RIR 2.
+ */
+async function notacionDelEsfuerzo({ p, d, salida }) {
+  await entrar(p, d.pro.correo);
+  await p.goto(`${WEB}/pro/advisees/training?id=${encodeURIComponent(d.ase.id)}&vista=plan`, { waitUntil: 'networkidle2' });
+  // Lo que se lee del ejercicio: plegado, su renglón («RIR 2», «RPE 8»); abierto, el valor común de la tabla («2», «8»).
+  const seLee = (etiqueta, valor) =>
+    p.waitForFunction((e, v) => document.body.innerText.includes(`${e} ${v}`) || document.querySelector('[data-rir-general]')?.textContent.trim() === v, { timeout: ESPERA, polling: 200 }, etiqueta, valor);
+  // Nace en RIR: el profesional nunca eligió otra.
+  await elemento(p, '[data-notacion-del-esfuerzo="RIR"]');
+  await hidratado(p, '[data-notacion="RPE"]');
+  await seLee('RIR', '2');
+  await clic(p, '[data-notacion="RPE"]');
+  await elemento(p, '[data-notacion-del-esfuerzo="RPE"]');
+  await seLee('RPE', '8');
+  await esperarGuardado(p);
+  await captura(p, salida, 'notacion-rpe-1440');
+  // La API: la versión dice RPE y lo guardado sigue siendo el RIR 2.
+  const token = await sesionPorApi(d.pro.correo);
+  const plan = (await pedir('GET', `/training/plans/${d.entrenamiento.planId}/detail`, { token })).data;
+  assert.equal(plan.effortNotation, 'RPE');
+  assert.deepEqual(plan.blocks[0].sessions[0].prescriptions[0].intensity.target.value, 2, 'el valor guardado sigue siendo el RIR');
+  // Al recargar, sigue en RPE.
+  await p.reload({ waitUntil: 'networkidle2' });
+  await elemento(p, '[data-notacion-del-esfuerzo="RPE"]');
+  await seLee('RPE', '8');
+  // El «?» abre lo largo y las fuentes en su lugar.
+  await clic(p, '.notacion-del-plan .a-pedido__boton');
+  await p.waitForFunction(() => document.querySelector('.notacion-del-plan .a-pedido__texto')?.hidden === false, { timeout: ESPERA, polling: 200 });
+  assert.ok(await p.evaluate(() => document.querySelector('.notacion-del-plan .a-pedido__texto')?.textContent.includes('Zourdos')), 'la fuente está detrás del «?»');
+}
+
 // ─── La corrida ──────────────────────────────────────────────────────────────────────────────────────────────────────
+
+// ─── RP-19 (WP-RECORRIDO-PLAN-PULIDO, DL-188) · Sin saltos ─────────────────────────────────────────────────────────────
+
+/**
+ * Dónde está cada elemento que coincide con el selector, en la página (no en la ventana: desplazarse no es un salto), con
+ * su ancho y su alto.
+ */
+const lugares = (p, selector) =>
+  p.evaluate((s) => [...document.querySelectorAll(s)].map((e) => {
+    const r = e.getBoundingClientRect();
+    return { x: Math.round((r.left + scrollX) * 10) / 10, y: Math.round((r.top + scrollY) * 10) / 10, ancho: Math.round(r.width * 10) / 10 };
+  }), selector);
+
+/** Los lugares de varios selectores a la vez, con su nombre. */
+async function fotoDeLugares(p, selectores) {
+  const foto = {};
+  for (const s of selectores) foto[s] = await lugares(p, s);
+  return foto;
+}
+
+/** RP-19: nada se movió más de 1 px (ni de costado, ni hacia abajo, ni cambió de ancho). */
+function nadaSeMovio(antes, despues, momento) {
+  for (const [s, previos] of Object.entries(antes)) {
+    const ahora = despues[s];
+    assert.equal(ahora.length, previos.length, `${momento}: «${s}» tenía ${previos.length} elementos y ahora ${ahora.length}`);
+    previos.forEach((a, i) => {
+      const b = ahora[i];
+      const salto = Math.max(Math.abs(a.x - b.x), Math.abs(a.y - b.y), Math.abs(a.ancho - b.ancho));
+      assert.ok(salto <= 1, `${momento}: «${s}» [${i}] se movió ${salto} px (de ${JSON.stringify(a)} a ${JSON.stringify(b)})`);
+    });
+  }
+}
+
+/** Reemplaza lo escrito en un campo (vacío si `texto` es ''), con el teclado, como el profesional. */
+async function reemplazarTexto(p, campo, texto) {
+  await campo.click();
+  await p.keyboard.down('Control');
+  await p.keyboard.press('KeyA');
+  await p.keyboard.up('Control');
+  await p.keyboard.press('Backspace');
+  if (texto) await p.keyboard.type(texto);
+}
+
+/** El campo de un rótulo, dentro de `dentro` (los `id` de `useId` no se escriben a mano en un selector). */
+async function campoDelRotulo(p, dentro, rotulo) {
+  const h = await p.waitForFunction(
+    (d, t) => {
+      const l = [...document.querySelectorAll(`${d} label`)].find((x) => x.textContent.trim() === t);
+      return l ? document.getElementById(l.htmlFor) : null;
+    },
+    { timeout: ESPERA, polling: 100 },
+    dentro,
+    rotulo,
+  );
+  return h.asElement();
+}
+
+/**
+ * RP-19 · «Sin saltos» (pedido de Dirección del 22/11): con un error nada cambia de lugar. En el reparto por comida, unas
+ * partes que suman 99, una vacía y una que vuelve a sumar 100 no mueven los campos, las columnas ni «Proponer estos
+ * rangos»; cada fila conserva su rango y «Todo el día» dice lo que falta. Al proponer, nada aparece arriba de las comidas
+ * (antes, el cuadro de la suma de los rangos) y el chequeo queda en su renglón del reparto. En el objetivo, corregir un
+ * campo después de un envío con errores no corre los demás ni el botón (el aviso tiene su renglón y el resumen no se
+ * achica). En el calculador, vaciar el factor para escribir otro no mueve el factor, los g/kg ni «Usar estos valores».
+ */
+async function sinSaltos({ p, d, salida }) {
+  p.on('dialog', (dialogo) => void dialogo.accept());
+  await abrirElBorrador(p, d);
+
+  // 1. El reparto por comida, con el objetivo de 2.100 kcal en gramos (preparar.mjs) y las dos comidas del borrador.
+  const R = '[data-reparto-por-comida]';
+  await elemento(p, `${R} [data-tabla-del-reparto]`, null, 60_000);
+  await hidratado(p, `${R} [data-parte-de-la-comida]`);
+  await p.waitForNetworkIdle({ idleTime: 500, timeout: ESPERA }).catch(() => {});
+  // Revisión del PR: con la letra ya cargada, un cambio de letra no se cuenta como un salto.
+  await p.evaluate(() => document.fonts.ready.then(() => true));
+  const partes = await p.$$(`${R} [data-parte-de-la-comida]`);
+  assert.equal(partes.length, 2, 'el borrador tiene dos comidas guardadas');
+  const valores = await p.$$eval(`${R} [data-parte-de-la-comida]`, (xs) => xs.map((x) => Number(x.value)));
+  assert.equal(valores[0] + valores[1], 100, 'el punto de partida suma 100');
+  const QUIETOS = [`${R} [data-parte-de-la-comida]`, `${R} [data-kcal-propuestas]`, `${R} [data-rango-del-dia-propuesto]`, `${R} [data-margen-del-reparto]`, `${R} [data-proponer-rangos]`];
+  const alPrincipio = await fotoDeLugares(p, QUIETOS);
+  await captura(p, salida, 'sin-saltos-reparto-100');
+
+  // Las partes suman 99: cada fila sigue con su rango, «Todo el día» dice «99 %» y lo que falta (el 1 % de las 1.985 kcal
+  // que suman los gramos del objetivo, unas 20 kcal), y no se puede proponer.
+  await reemplazarTexto(p, partes[0], String(100 - valores[1] - 1));
+  await p.waitForFunction((s) => document.querySelector(`${s} [data-suma-de-las-partes] [data-lo-que-falta]`)?.textContent.includes('faltan 20 kcal'), { timeout: ESPERA, polling: 100 }, R);
+  assert.match(await p.$eval(`${R} [data-suma-de-las-partes] .reparto-por-comida__suma-cifra`, (e) => e.textContent), /^99 %$/);
+  nadaSeMovio(alPrincipio, await fotoDeLugares(p, QUIETOS), 'las partes suman 99');
+  assert.equal(await p.$$eval(`${R} [data-kcal-propuestas] [data-sin-rango]`, (xs) => xs.length), 0, 'con 99, cada comida conserva su rango');
+  assert.ok(await p.$eval(`${R} [data-proponer-rangos]`, (b) => b.disabled), 'con 99 no se propone');
+  assert.match(await p.$eval(`${R} [data-por-que-no-se-propone]`, (e) => e.textContent), /Las partes no suman 100/);
+  assert.equal(await p.$(`${R} .campo__error`), null, 'ningún párrafo de error debajo de la tabla');
+  await captura(p, salida, 'sin-saltos-reparto-99');
+
+  // Una parte vacía: su fila queda con «—», en el mismo lugar.
+  await reemplazarTexto(p, partes[0], '');
+  await p.waitForFunction((s) => document.querySelector(`${s} tbody tr [data-kcal-propuestas] [data-sin-rango]`), { timeout: ESPERA, polling: 100 }, R);
+  nadaSeMovio(alPrincipio, await fotoDeLugares(p, QUIETOS), 'una parte vacía');
+
+  // De nuevo 100: se puede proponer, y nada se movió.
+  await reemplazarTexto(p, partes[0], String(100 - valores[1]));
+  await p.waitForFunction((s) => document.querySelector(`${s} [data-proponer-rangos]`)?.disabled === false, { timeout: ESPERA, polling: 100 }, R);
+  nadaSeMovio(alPrincipio, await fotoDeLugares(p, QUIETOS), 'otra vez 100');
+
+  // Proponer: lo que se guardó se dice al lado del botón, el chequeo de la suma queda en su renglón y nada aparece arriba
+  // de las comidas (antes, el cuadro de la suma de los rangos aparecía ahí de golpe y corría toda la pantalla).
+  const comidas = await fotoDeLugares(p, ['.comida-del-editor[data-comida="1"]']);
+  const delReparto = () => p.evaluate((s) => {
+    const r = document.querySelector(s).getBoundingClientRect();
+    return ['[data-tabla-del-reparto]', '[data-chequeo-de-la-suma]', '[data-proponer-rangos]'].map((x) => Math.round((document.querySelector(`${s} ${x}`).getBoundingClientRect().top - r.top) * 10) / 10);
+  }, R);
+  const adentroAntes = await delReparto();
+  await clic(p, `${R} [data-proponer-rangos]`, 'Proponer estos rangos');
+  await p.waitForFunction((s) => document.querySelector(`${s} [data-por-que-no-se-propone]`)?.textContent.includes('Se guardaron'), { timeout: ESPERA, polling: 100 }, R);
+  await elemento(p, `${R} [data-chequeo-de-la-suma="contiene"]`);
+  assert.equal(await p.$('[data-suma-de-los-rangos=""]'), null, 'el cuadro de la suma ya no está arriba de las comidas');
+  nadaSeMovio(comidas, await fotoDeLugares(p, ['.comida-del-editor[data-comida="1"]']), 'al proponer, arriba de las comidas');
+  const adentroDespues = await delReparto();
+  adentroAntes.forEach((y, i) => assert.ok(Math.abs(y - adentroDespues[i]) <= 1, `al proponer, adentro del reparto [${i}] se movió de ${y} a ${adentroDespues[i]}`));
+  await captura(p, salida, 'sin-saltos-reparto-propuesto');
+
+  // 2. El objetivo: un envío con errores y, al corregir un campo, los demás y el botón quedan donde estaban.
+  await p.goto(`${WEB}/pro/advisees/nutrition?id=${encodeURIComponent(d.ase.id)}&vista=resumen`, { waitUntil: 'networkidle2' });
+  // El botón se enciende cuando llegaron las evaluaciones y los objetivos: se espera a que esté encendido.
+  await p.waitForFunction(() => [...document.querySelectorAll('.acciones button')].some((b) => b.textContent.includes('Nueva versión de objetivo') && !b.disabled), { timeout: ESPERA, polling: 100 });
+  await clic(p, '.acciones button', 'Nueva versión de objetivo');
+  await hidratado(p, '#objetivo-kcal');
+  await clic(p, 'form button[type="submit"]', 'Guardar nueva versión');
+  await elemento(p, '[data-resumen-de-errores]');
+  await p.waitForSelector('#objetivo-kcal[aria-invalid="true"]', { timeout: ESPERA });
+  const CAMPOS = ['#objetivo-proteina', '#objetivo-carbohidratos', '#objetivo-grasas', '#objetivo-fundamento', 'form button[type="submit"]'];
+  const conErrores = await fotoDeLugares(p, CAMPOS);
+  await p.click('#objetivo-kcal');
+  await p.keyboard.type('2100');
+  await p.keyboard.press('Tab');
+  await p.waitForSelector('#objetivo-kcal:not([aria-invalid])', { timeout: ESPERA });
+  await elemento(p, '[data-resumen-de-errores] li[data-corregido]');
+  nadaSeMovio(conErrores, await fotoDeLugares(p, CAMPOS), 'el objetivo, al corregir las kcal');
+  await captura(p, salida, 'sin-saltos-objetivo-corregido');
+
+  // 3. El calculador: con un cálculo completo, vaciar el factor para escribir otro no mueve nada.
+  await clic(p, '[data-abrir-el-calculador]');
+  const K = '[data-calculador]';
+  await elemento(p, `${K} [data-referencia-del-calculo]`);
+  await reemplazarTexto(p, await campoDelRotulo(p, K, 'Peso (kg)'), '68');
+  await reemplazarTexto(p, await campoDelRotulo(p, K, 'Talla (cm)'), '162');
+  await reemplazarTexto(p, await campoDelRotulo(p, K, 'Edad (años)'), '45');
+  await clic(p, `${K} [data-sexo-de-la-ecuacion] label.segmento`, 'Mujer');
+  await reemplazarTexto(p, await campoDelRotulo(p, K, 'Proteína (g/kg)'), '2');
+  await reemplazarTexto(p, await campoDelRotulo(p, K, 'Grasa (g/kg)'), '1');
+  await elemento(p, `${K} [data-gasto-total="listo"]`);
+  await elemento(p, `${K} [data-macros-del-dia="listo"]`);
+  const factor = await campoDelRotulo(p, K, 'Factor del día');
+  await p.evaluate((e) => e.setAttribute('data-factor-del-recorrido', ''), factor);
+  const DEL_CALCULO = [`${K} [data-factor-del-recorrido]`, `${K} [data-macros-del-calculo] input[type="number"]`, `${K} [data-usar-el-calculo]`];
+  const conCalculo = await fotoDeLugares(p, DEL_CALCULO);
+  await reemplazarTexto(p, factor, '');
+  await elemento(p, `${K} [data-gasto-total="sin-calculo"]`);
+  await elemento(p, `${K} [data-gasto-en-reposo="CALCULATED"]`);
+  nadaSeMovio(conCalculo, await fotoDeLugares(p, DEL_CALCULO), 'el calculador, sin factor');
+  assert.ok(await p.$eval(`${K} [data-usar-el-calculo]`, (b) => b.disabled), 'sin factor no se usa el cálculo');
+  await captura(p, salida, 'sin-saltos-calculador-sin-factor');
+
+  // 4. RP-22 · el editor de Entrenamiento (preparar.mjs: una sesión con un ejercicio de tres series, 60 kg y 90 s comunes).
+  // Escribir un valor que no se entiende en la fila Común o en una serie no corre las filas, el pie de la tabla ni
+  // «Revisar y activar…»: la celda se marca en su lugar y el renglón reservado debajo de la tabla dice qué corregir.
+  await p.goto(`${WEB}/pro/advisees/training?id=${encodeURIComponent(d.ase.id)}&vista=plan`, { waitUntil: 'networkidle2' });
+  await clic(p, '.ejercicio-del-editor [id^="abrir-ejercicio-"]');
+  await elemento(p, '[data-fila-general]');
+  await hidratado(p, '[data-fila-general] input.celda-de-serie');
+  await p.waitForNetworkIdle({ idleTime: 500, timeout: ESPERA }).catch(() => {});
+  await p.evaluate(() => document.fonts.ready.then(() => true));
+  await p.evaluate(() => document.querySelector('.series-del-editor')?.scrollIntoView({ block: 'center' }));
+  await pausa(300);
+  const E = '.ejercicio-del-editor[data-abierta]';
+  const DE_LA_TABLA = [`${E} [data-fila-general]`, `${E} tr[data-serie]`, `${E} tr[data-serie] input`, `${E} [data-agregar-serie]`, '[data-revisar-y-activar]'];
+  const quieta = await fotoDeLugares(p, DE_LA_TABLA);
+  assert.equal(await p.$eval(`${E} [data-lo-que-no-se-entiende]`, (e) => e.dataset.renglonDelAviso), 'vacio', 'el renglón del aviso está, vacío');
+  const [cargaComun, descansoComun] = await p.$$(`${E} [data-fila-general] input.celda-de-serie`);
+  // La carga común: «sesenta» no se entiende.
+  await reemplazarTexto(p, cargaComun, 'sesenta');
+  await p.waitForFunction((s) => document.querySelector(`${s} [data-lo-que-no-se-entiende="1"]`)?.textContent.includes('la carga común'), { timeout: ESPERA, polling: 100 }, E);
+  assert.equal(await cargaComun.evaluate((e) => e.getAttribute('aria-invalid')), 'true');
+  nadaSeMovio(quieta, await fotoDeLugares(p, DE_LA_TABLA), 'Entrenamiento: la carga común no se entiende');
+  await captura(p, salida, 'sin-saltos-entrenamiento-carga-comun');
+  // Una carga negativa tampoco (el contrato pide desde 0), y el descanso de más de una hora tampoco.
+  await reemplazarTexto(p, cargaComun, '-5');
+  await reemplazarTexto(p, descansoComun, '61:00');
+  await p.waitForFunction((s) => document.querySelector(`${s} [data-lo-que-no-se-entiende="2"]`), { timeout: ESPERA, polling: 100 }, E);
+  nadaSeMovio(quieta, await fotoDeLugares(p, DE_LA_TABLA), 'Entrenamiento: la carga negativa y el descanso de más de una hora');
+  // Las repeticiones de la serie 2, al revés: tres celdas marcadas, todo en su lugar.
+  const reps2 = await p.$(`${E} tr[data-serie="2"] td[data-etiqueta="Repeticiones"] input`);
+  await reemplazarTexto(p, reps2, '12-8');
+  await p.waitForFunction((s) => document.querySelector(`${s} [data-lo-que-no-se-entiende="3"]`), { timeout: ESPERA, polling: 100 }, E);
+  nadaSeMovio(quieta, await fotoDeLugares(p, DE_LA_TABLA), 'Entrenamiento: tres celdas que no se entienden');
+  await captura(p, salida, 'sin-saltos-entrenamiento-tres-celdas');
+  // Se corrige todo: el renglón queda vacío, con su alto, y nada se movió.
+  await reemplazarTexto(p, cargaComun, '60');
+  await reemplazarTexto(p, descansoComun, '01:30');
+  await reemplazarTexto(p, reps2, '8');
+  await p.waitForFunction((s) => document.querySelector(`${s} [data-lo-que-no-se-entiende]`)?.dataset.renglonDelAviso === 'vacio', { timeout: ESPERA, polling: 100 }, E);
+  nadaSeMovio(quieta, await fotoDeLugares(p, DE_LA_TABLA), 'Entrenamiento: todo corregido');
+  // ↑ en las repeticiones suma 1, y en la carga común, 2,5 kg (los números con su paso).
+  await reps2.click();
+  await p.keyboard.press('ArrowUp');
+  await p.waitForFunction((e) => e.value === '9', { timeout: ESPERA, polling: 100 }, reps2);
+  await cargaComun.click();
+  await p.keyboard.press('ArrowUp');
+  await p.waitForFunction((e) => e.value === '62,5', { timeout: ESPERA, polling: 100 }, cargaComun);
+  nadaSeMovio(quieta, await fotoDeLugares(p, DE_LA_TABLA), 'Entrenamiento: las flechas');
+  await captura(p, salida, 'sin-saltos-entrenamiento-flechas');
+  // Lo mismo a los anchos en que Dirección recorre el escritorio (1280, 1536, 2048 y, al final, 1440, el de siempre):
+  // una carga negativa marca la celda y escribe el renglón sin correr nada, y corregirla tampoco.
+  for (const ancho of [1280, 1536, 2048, 1440]) {
+    await p.setViewport({ width: ancho, height: 900 });
+    await pausa(300);
+    // Con el autoguardado de lo anterior ya hecho: la foto es la de la pantalla quieta.
+    await p.waitForNetworkIdle({ idleTime: 500, timeout: ESPERA }).catch(() => {});
+    await p.evaluate(() => document.querySelector('.series-del-editor')?.scrollIntoView({ block: 'center' }));
+    await pausa(300);
+    const aEsteAncho = await fotoDeLugares(p, DE_LA_TABLA);
+    await reemplazarTexto(p, cargaComun, '-5');
+    await p.waitForFunction((s) => document.querySelector(`${s} [data-lo-que-no-se-entiende="1"]`)?.textContent.includes('la carga común'), { timeout: ESPERA, polling: 100 }, E);
+    nadaSeMovio(aEsteAncho, await fotoDeLugares(p, DE_LA_TABLA), `Entrenamiento a ${ancho}: la carga negativa`);
+    if (ancho !== 1440) await captura(p, salida, `sin-saltos-entrenamiento-${ancho}`);
+    await reemplazarTexto(p, cargaComun, '62,5');
+    await p.waitForFunction((s) => document.querySelector(`${s} [data-lo-que-no-se-entiende]`)?.dataset.renglonDelAviso === 'vacio', { timeout: ESPERA, polling: 100 }, E);
+    nadaSeMovio(aEsteAncho, await fotoDeLugares(p, DE_LA_TABLA), `Entrenamiento a ${ancho}: la carga corregida`);
+  }
+}
 
 /**
  * RP-20 y RP-21 (WP-RECORRIDO-PLAN-PULIDO, DL-188): las franjas por comida, en vivo. Con el rango del almuerzo indicado,
@@ -1832,7 +2122,7 @@ async function recetario({ p, d, salida }) {
   assert.equal(delRecetario.image, null, 'la del recetario no cambia');
 }
 
-export const TODOS = { sesion, pistas, borrador, conflicto, descartar, salidaSegura, irACorregir, respuestaPerdida, reintentar, salidaConFallas, primerPlan, asistenteDeNutricion, retorno, grafico, primeraInvitacion, areaSugerida, sesionRevocada, accesoRevocado, faltaUnaParte, completitud, evidencia, administracion, comparacion, comparacionConOpciones, franjasPorComida, recetario };
+export const TODOS = { sesion, pistas, borrador, conflicto, descartar, salidaSegura, irACorregir, respuestaPerdida, reintentar, salidaConFallas, primerPlan, planDeNutricionSinAsistente, retorno, grafico, primeraInvitacion, areaSugerida, sesionRevocada, accesoRevocado, faltaUnaParte, completitud, evidencia, administracion, comparacion, comparacionConOpciones, sinSaltos, franjasPorComida, notacionDelEsfuerzo, recetario };
 
 /** Errores de la página que no dicen nada del website (los del propio navegador). */
 const IGNORABLES = [/ResizeObserver loop/];

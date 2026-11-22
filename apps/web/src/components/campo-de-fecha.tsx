@@ -269,7 +269,8 @@ export function CampoDeFecha({ id, etiqueta, etiquetaEnTexto, value, onChange, m
     );
   }
   return (
-    <div className={`campo${error ? ' campo--error' : ''}`}>
+    // RP-19 (DL-188): como `Campo`, con `error` (aunque sea `null`) puede avisar; en `.avisos-con-lugar`, con su renglón.
+    <div className={`campo${error ? ' campo--error' : ''}`} data-con-aviso={error !== undefined ? '' : undefined}>
       {etiquetaYAyuda}
       {campo}
       {mensaje}

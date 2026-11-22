@@ -1997,7 +1997,7 @@ const DEFINIDAS: readonly Operacion[] = [
     metodo: 'post',
     ruta: '/advisees/{adviseeId}/training/plans',
     resumen:
-      'Crear un borrador de plan de entrenamiento: estado DRAFT, no vigente, no abre proceso ni ocupa capacidad. El borrador es el mismo recurso del plan: no existe una colección de borradores de plan.',
+      'Crear un borrador de plan de entrenamiento: estado DRAFT, no vigente, no abre proceso ni ocupa capacidad. El borrador es el mismo recurso del plan: no existe una colección de borradores de plan. DL-192: `effortNotation` (RIR o RPE) es cómo se escribe el esfuerzo; sin el campo, la de la versión de la que parte o, si no, la última que usó el profesional, y si nunca eligió, RIR. Los valores siguen siendo RIR.',
     autenticacion: 'SESSION',
     idempotencia: true,
     request: CrearPlanDeEntrenamientoRequestSchema,
@@ -2025,7 +2025,7 @@ const DEFINIDAS: readonly Operacion[] = [
     id: 'API-TRN-09',
     metodo: 'get',
     ruta: '/training/plans/{planId}',
-    resumen: 'Una versión de plan con su jerarquía. Si está activada, se reconstruye desde la instantánea, no desde el catálogo actual. A un pedido del titular sin la capacidad training-set-targets-1 (X-BE-Capabilities), una versión con objetivos distintos por serie no se le entrega: 404 como lo inexistente (DL-122, precierre del 2026-10-06).',
+    resumen: 'Una versión de plan con su jerarquía. Si está activada, se reconstruye desde la instantánea, no desde el catálogo actual. A un pedido del titular sin la capacidad training-set-targets-1 (X-BE-Capabilities), una versión con objetivos distintos por serie no se le entrega: 404 como lo inexistente (DL-122, precierre del 2026-10-06). DL-192: `effortNotation` va siempre al profesional, y al titular solo si declara training-effort-notation-1.',
     autenticacion: 'SESSION',
     idempotencia: false,
     exitos: [{ status: 200, schema: PlanDeEntrenamientoResponseSchema }],
@@ -2037,7 +2037,7 @@ const DEFINIDAS: readonly Operacion[] = [
     metodo: 'patch',
     ruta: '/training/plans/{planId}',
     resumen:
-      'Editar un borrador: bloque, microciclo opcional, sesión y prescripción. Valida la forma, no la calidad del programa: ni volumen, ni frecuencia, ni selección de ejercicios, ni progresión. DL-137: también la agenda (fecha de inicio, días de cada sesión y fechas movidas), que se valida contra las sesiones del plan; sin el campo se conserva, sin las sesiones que ya no están, y null la quita. La agenda se lee en API-SER-01.',
+      'Editar un borrador: bloque, microciclo opcional, sesión y prescripción. Valida la forma, no la calidad del programa: ni volumen, ni frecuencia, ni selección de ejercicios, ni progresión. DL-137: también la agenda (fecha de inicio, días de cada sesión y fechas movidas), que se valida contra las sesiones del plan; sin el campo se conserva, sin las sesiones que ya no están, y null la quita. La agenda se lee en API-SER-01. DL-192: `effortNotation` cambia la notación del esfuerzo del borrador; sin el campo se conserva.',
     autenticacion: 'SESSION',
     idempotencia: false,
     request: EditarPlanDeEntrenamientoRequestSchema,
@@ -2873,7 +2873,7 @@ const DEFINIDAS: readonly Operacion[] = [
     metodo: 'get',
     ruta: '/training/plans/{planId}/detail',
     resumen:
-      'La versión de plan de API-TRN-09 con los objetivos por serie (RIR, carga sugerida y descanso, con herencia desde la prescripción), la base de carga y de repeticiones, la imagen de cada ejercicio y si el plan se le puede entregar a la app del titular (`setTargetsDelivery`). Solo para el profesional del plan: el titular lee API-SER-02.',
+      'La versión de plan de API-TRN-09 con los objetivos por serie (RIR, carga sugerida y descanso, con herencia desde la prescripción), la base de carga y de repeticiones, la imagen de cada ejercicio y si el plan se le puede entregar a la app del titular (`setTargetsDelivery`). Solo para el profesional del plan: el titular lee API-SER-02. DL-192: con la notación del esfuerzo de la versión (`effortNotation`, RIR o RPE).',
     autenticacion: 'SESSION',
     idempotencia: false,
     exitos: [{ status: 200, schema: PlanConObjetivosResponseSchema }],
@@ -2885,7 +2885,7 @@ const DEFINIDAS: readonly Operacion[] = [
     metodo: 'get',
     ruta: '/training/occurrences/{occurrenceId}/session',
     resumen:
-      'La sesión de una ocurrencia lista para registrarla serie por serie: el objetivo efectivo de cada serie desde la instantánea y la imagen de cada ejercicio (si ya se registró, la vigente al registrar). Solo para el titular; una ocurrencia que no puede ejecutar y sin registro es 404.',
+      'La sesión de una ocurrencia lista para registrarla serie por serie: el objetivo efectivo de cada serie desde la instantánea y la imagen de cada ejercicio (si ya se registró, la vigente al registrar). Solo para el titular; una ocurrencia que no puede ejecutar y sin registro es 404. DL-192: al cliente que declara training-effort-notation-1, la notación del esfuerzo de la versión (`effortNotation`); el RIR que manda se guarda igual en las dos.',
     autenticacion: 'SESSION',
     idempotencia: false,
     exitos: [{ status: 200, schema: SesionParaRegistrarResponseSchema }],

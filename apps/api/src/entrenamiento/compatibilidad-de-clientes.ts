@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import {
+  CAPACIDAD_NOTACION_DEL_ESFUERZO,
   CAPACIDAD_OBJETIVOS_POR_SERIE,
   CAPACIDAD_TIPOS_DE_SERIE,
   CodigoDeError,
@@ -52,6 +53,13 @@ export const distingueElCalentamiento = (ctx: ContextoDeSolicitud): boolean => c
 
 /** DL-178: si el contenido de una versión tiene alguna serie de calentamiento (de la activada se mira su instantánea). */
 export const tieneSeriesDeCalentamiento = (contenido: ContenidoDePlanDeEntrenamiento): boolean => planTieneCalentamiento(contenido);
+
+/**
+ * DL-192 (RPE-D08): si el pedido viene de un cliente que pregunta y muestra el esfuerzo en la notación del plan. Sin la
+ * cabecera, no: al titular no le sale `effortNotation`, y su app sigue preguntando el RIR, que se guarda igual. Nada se
+ * retiene ni se registra.
+ */
+export const muestraLaNotacionDelEsfuerzo = (ctx: ContextoDeSolicitud): boolean => ctx.capacidades.has(CAPACIDAD_NOTACION_DEL_ESFUERZO);
 
 /**
  * Si una versión no se le entrega a este pedido: exige objetivos por serie y el cliente no declara que los muestra, o

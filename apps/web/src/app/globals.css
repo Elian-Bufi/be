@@ -9774,21 +9774,43 @@ button.comida-del-dia__fila > .icono:last-child {
   margin: 0;
 }
 
+/* RP-22: las acciones, ancladas a la derecha también cuando bajan a su propio renglón (en un renglón solas, el
+   `space-between` de la cabecera las dejaba a la izquierda). */
 .editor-del-plan__acciones {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
+  justify-content: flex-end;
   gap: 0.5rem 0.6rem;
+  margin-inline-start: auto;
 }
 
-/* El estado se dice con texto; el punto lo acompaña cuando hay algo sin guardar, no lo reemplaza. */
+/* El estado se dice con texto; el punto lo acompaña cuando hay algo sin guardar, no lo reemplaza.
+   RP-22: con un lugar de ancho propio, que no depende del texto: a 1280, pasar de «Guardado a las…» a «Pendiente de
+   guardar: falta completar algo» corría «Revisar y activar…» 159 px de costado (la CI). Lo que no entra se corta con «…»;
+   el texto entero queda en el título y para el lector. Vale para Nutrición, Entrenamiento y la edición de una plantilla. */
 .editor-del-plan__estado {
   display: inline-flex;
+  flex: 0 0 auto;
   align-items: center;
+  justify-content: flex-end;
   gap: 0.45rem;
+  width: clamp(12rem, 24vw, 23rem);
+  min-width: 0;
   margin: 0 0.4rem 0 0;
   font-weight: 600;
   white-space: nowrap;
+}
+
+.editor-del-plan__estado > .icono,
+.editor-del-plan__estado::before {
+  flex-shrink: 0;
+}
+
+.editor-del-plan__estado > .estado-de-guardado__texto {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .editor-del-plan__estado[data-estado="sin-guardar"]::before {
@@ -10378,6 +10400,8 @@ button.comida-del-dia__fila > .icono:last-child {
 @media (max-width: 56rem) {
   .editor-del-plan__estado {
     flex-basis: 100%;
+    justify-content: flex-start;
+    width: auto;
   }
 
   .items-del-editor thead {
@@ -10936,12 +10960,18 @@ button.comida-del-dia__fila > .icono:last-child {
 
 /* La planilla de series entre 40 y 46 rem (el centro de la estación a 1440): tabla, con columnas más justas. */
 @container ejercicios (40rem < width <= 46rem) {
+  /* RP-22: un rótulo que no entra se corta con guion («Repeti-ciones») en vez de pisar el de al lado. */
+  .series-del-editor thead th {
+    hyphens: auto;
+  }
+
   .series-del-editor thead th:first-child {
     width: 2.5rem;
   }
 
+  /* RP-22: las repeticiones llevan sus flechitas (1,5 rem a la derecha): con 4 rem, «8-12» no entraba. */
   .series-del-editor thead th:nth-child(2) {
-    width: 4rem;
+    width: 5rem;
   }
 
   .series-del-editor thead th:not(:first-child):not(:nth-child(2)):not(.series-del-editor__columna-nota):not(.series-del-editor__columna-quitar) {
@@ -16326,12 +16356,6 @@ p.cifra-del-espacio__desglose {
   gap: 0.25rem;
 }
 
-/* WP-NUTRICION-ALIMENTOS · NUA-07: el nombre de cada comida en el paso 4 usa el campo común (`.campo`: la letra, el
-   borde y el alto de BE, en Claro y en Azul noche). La tarjeta ya separa con `gap`: el margen del campo sobra. */
-.campo.asistente__nombre {
-  margin: 0;
-}
-
 .asistente__acciones,
 .asistente__pie {
   display: flex;
@@ -17473,15 +17497,6 @@ p.cifra-del-espacio__desglose {
   margin-top: 0.75rem;
 }
 
-/* NUP-13: en el paso 5 del asistente, las cuatro formas de sumar una opción, en un renglón que baja si no entra. */
-.asistente__formas-de-sumar {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.25rem 1rem;
-  margin: 0.25rem 0 0;
-}
-
 /* Dos renglones reservados: el total y lo que falta. Cuando llega la composición y «leyendo» se va, lo de abajo no salta. */
 .opcion-del-editor__total {
   min-height: 3.2em;
@@ -17871,46 +17886,6 @@ p.cifra-del-espacio__desglose {
 
 .parecidos-del-catalogo__lista li:first-child {
   border-top: 0;
-}
-
-/* ═══ ED-30 · El asistente de Nutrición: la estación queda montada detrás, oculta ═══════════════════════════════════ */
-.editor-de-nutricion__zonas[hidden] {
-  display: none;
-}
-
-.asistente__comida {
-  margin: 0.75rem 0;
-}
-
-.asistente__opciones {
-  margin: 0.25rem 0;
-  padding: 0;
-  list-style: none;
-  display: grid;
-  gap: 0.35rem;
-}
-
-.asistente__opciones li {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.5rem;
-  padding: 0.4rem 0.6rem;
-  border: 1px solid var(--borde);
-  border-radius: 8px;
-}
-
-.asistente__objetivo {
-  padding: 0.75rem 1rem;
-  border: 1px solid var(--borde);
-  border-radius: 12px;
-  margin-bottom: 0.75rem;
-}
-
-.asistente__objetivo h4,
-.asistente__revisar h4 {
-  margin: 0 0 0.4rem;
 }
 
 /* ═══ §5.8 · La fuerza estimada (ED-72 a ED-76; maquetas 14 a 18) ═════════════════════════════════════════════════════
@@ -18674,23 +18649,6 @@ html:has(.estacion:not([data-en-el-asistente])) {
   grid-template-columns: repeat(auto-fit, minmax(11.5rem, 1fr));
 }
 
-/* Paso 5 de Nutrición: cada opción con su texto a la izquierda y «Armar …» siempre a la derecha. */
-.asistente__opciones li {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  align-items: center;
-}
-
-@media (max-width: 48rem) {
-  .asistente__opciones li {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .asistente__opciones li > .boton {
-    justify-self: start;
-  }
-}
-
 /* «Pedir información»: «Para qué lo necesitás» a todo el ancho del cajón y el área debajo; «Enviar solicitud», a la
    derecha del pie, como en la maqueta. */
 .pedido__dos-campos {
@@ -19151,7 +19109,7 @@ html:has(.estacion:not([data-en-el-asistente])) {
   padding-inline-start: 1.1rem;
 }
 
-/* API-PLN-02 y 03 (ED-34): los rangos indicados por el profesional, en el panel y en el paso 6 del asistente. Sin color
+/* API-PLN-02 y 03 (ED-34): los rangos indicados por el profesional, en el panel del editor. Sin color
    por valor: se describe, no se califica. */
 .rangos-indicados {
   margin-top: 1rem;
@@ -21362,85 +21320,506 @@ html:has(.estacion:not([data-en-el-asistente])) {
   margin-top: 0;
 }
 
-/* ─── DL-191 · el Recetario de BE y las imágenes en el cajón del plan (WP-RECETARIO-E-IMAGENES) ───────────────── */
+/* DL-192 (WP-RPE-Y-MAXIMO-ESTIMADO, RPE-01): «Cómo se escribe el esfuerzo», al pie de la columna de las sesiones, como las
+   fechas. Dos chips (RIR y RPE) y la explicación corta, con lo largo detrás del «?». El lugar está siempre: abrir la ayuda
+   empuja solo lo de abajo de la columna, nunca la sesión del centro. */
+.notacion-del-plan {
+  display: grid;
+  gap: 0.35rem;
+  margin: 0.75rem 0 0;
+  padding: 0.6rem 0 0;
+  border: 0;
+  border-top: 1px solid var(--borde);
+  min-width: 0;
+}
 
-/* «Tus recetas» o «Recetario de BE», y los estados de las propuestas en Administración: dos o tres botones en fila. */
-.selector-de-origen {
+.notacion-del-plan > legend {
+  padding: 0;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.notacion-del-plan__opciones {
   display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
-  margin: 0.5rem 0 0.75rem;
+  gap: 0.35rem;
 }
 
-/* Las acciones de una tarjeta: juntas, y bajan de renglón si no entran. */
-.acciones--compactas {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.25rem 0.75rem;
-  align-items: center;
+.notacion-del-plan__opciones .estacion__chip {
+  min-width: 3rem;
 }
 
-/* RP-19 · el renglón de un aviso ocupa su lugar desde el principio: que aparezca no corre nada. */
-.recetario__lugar-del-aviso {
-  min-height: 1.5em;
-  margin: 0.25rem 0;
+.notacion-del-plan__que-es {
+  margin: 0;
 }
 
-.nota--error {
+/* ═══ RP-19 (WP-RECORRIDO-PLAN-PULIDO, DL-188) · Sin saltos ══════════════════════════════════════════════════════════
+   La regla: lo que aparece o se va mientras se escribe o se elige tiene su lugar reservado; vacío, ocupa lo mismo. Un
+   error no corre los campos ni los botones. Tres piezas, una sola regla:
+   - el renglón del aviso (`RenglonDelAviso` en `components/formulario.tsx`): un renglón de alto fijo para un aviso, lo
+     que falta de una suma o por qué un botón está apagado;
+   - `.avisos-con-lugar` en un formulario: cada campo que puede avisar (`data-con-aviso`, que `Campo` y `CampoDeFecha`
+     ponen solos cuando reciben `error`) reserva el renglón de su aviso;
+   - las tablas que cambian en vivo, con columnas fijas (`table-layout: fixed`) y cada celda con su renglón siempre.
+   Bloque propio: no cambia las reglas de RP-03 ni las de otros frentes. */
+
+.renglon-del-aviso {
+  display: block;
+  min-height: 1.55rem;
+  margin: 0.2rem 0 0;
+  line-height: 1.55;
+}
+
+.renglon-del-aviso--nota {
+  color: var(--tenue);
+  font-size: 0.92rem;
+}
+
+.renglon-del-aviso--error {
   color: var(--error);
   font-weight: 600;
 }
 
-/* Una receta en el cajón: la miniatura a la izquierda y lo demás al lado; al cargar la imagen, el recuadro abajo. */
-.receta-en-el-cajon {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem 0.85rem;
+.renglon-del-aviso--exito {
+  color: var(--texto);
+  font-weight: 600;
+}
+
+/* Al lado de un botón: con el alto del botón, para que el botón no se mueva aunque el texto ocupe dos renglones. */
+.renglon-del-aviso--junto-al-boton {
+  display: inline-flex;
+  align-items: center;
+  flex: 1 1 16rem;
+  min-height: 44px;
+  margin: 0;
+}
+
+/* Con un «?» adentro: el alto del botón chico, también cuando el renglón está vacío. */
+.renglon-del-aviso--con-boton {
+  min-height: 2.75rem;
+}
+
+/* Un formulario con los avisos en su lugar: cada campo que puede avisar reserva el renglón de su aviso. Sin aviso, un
+   renglón vacío del mismo alto (el `::after`); con aviso, el aviso lo ocupa. Con un aviso de dos renglones crece uno. */
+.avisos-con-lugar .campo[data-con-aviso] > .campo__error {
+  min-height: 1.55rem;
+  margin: 0.2rem 0 0;
+  line-height: 1.55;
+}
+
+.avisos-con-lugar .campo[data-con-aviso]:not(:has(> .campo__error))::after {
+  content: '';
+  display: block;
+  height: 1.55rem;
+  margin-top: 0.2rem;
+}
+
+/* El «⚠» puede venir de otra letra, más alta: no agranda el renglón. */
+.avisos-con-lugar .campo__error > [aria-hidden='true'],
+.renglon-del-aviso > [aria-hidden='true'] {
+  line-height: 1;
+}
+
+/* El resumen de errores: lo corregido queda, tachado y con su tilde, hasta el envío siguiente. */
+.resumen-de-errores li[data-corregido] {
+  color: var(--tenue);
+}
+
+.resumen-de-errores li[data-corregido] a {
+  color: var(--tenue);
+  text-decoration-line: line-through;
+}
+
+.resumen-de-errores li[data-corregido] > .icono {
+  margin-inline-end: 0.3rem;
+  vertical-align: -0.15em;
+}
+
+/* ─── El reparto por comida (RP-06) sin saltos ─── */
+/* Columnas fijas: lo que se escribe no reacomoda la tabla. Los anchos alcanzan para «2.070 a 2.530 kcal» y «297 a 363 g
+   C» en un renglón; donde no entran, la tabla se desplaza de costado (`desplazable-x`), no se parte. */
+.reparto-por-comida__tabla {
+  table-layout: fixed;
+  width: 100%;
+  font-size: 0.92rem;
+}
+
+.reparto-por-comida__tabla th,
+.reparto-por-comida__tabla td {
+  padding-inline: 0.4rem;
+}
+
+.reparto-por-comida__col-comida {
+  width: 7rem;
+}
+
+.reparto-por-comida__col-parte {
+  width: 8.5rem;
+}
+
+.reparto-por-comida__col-kcal {
+  width: 10.5rem;
+}
+
+.reparto-por-comida__col-macro {
+  width: 8.5rem;
+}
+
+.reparto-por-comida__tabla tbody th {
+  overflow-wrap: anywhere;
+}
+
+.reparto-por-comida__tabla .cantidad-del-macro {
+  white-space: nowrap;
+}
+
+/* La base del «%», una vez, en el rótulo de su columna. */
+.reparto-por-comida__base {
+  display: block;
+  color: var(--tenue);
+  font-size: 0.82rem;
+  font-weight: 400;
+}
+
+.reparto-por-comida__sin-rango {
+  color: var(--tenue);
+}
+
+/* Revisión de RP-19: la parte o el margen que no se entiende se ve marcado («revisá la marcada» lo nombra), sin cambiar de
+   tamaño: el borde sigue de 1 px y el segundo píxel es una sombra, como en `.avisos-con-lugar`. */
+.reparto-por-comida__parte input[aria-invalid='true'],
+.reparto-por-comida__margen input[aria-invalid='true'] {
+  border-color: var(--error);
+  box-shadow: 0 0 0 1px var(--error);
+}
+
+/* «Todo el día»: la suma de las partes («99 %», marcada si no da 100) y, debajo, lo que falta o sobra, en su renglón. */
+.reparto-por-comida__suma {
+  display: block;
+  margin-bottom: 0.15rem;
+}
+
+.reparto-por-comida__suma-cifra {
+  display: block;
+  font-variant-numeric: tabular-nums;
+}
+
+.reparto-por-comida__suma:not([data-suma-bien]) .reparto-por-comida__suma-cifra {
+  color: var(--error);
+}
+
+.reparto-por-comida__suma .renglon-del-aviso {
+  margin: 0;
+  font-size: 0.85rem;
+}
+
+/* El chequeo de la suma de los rangos indicados frente al objetivo: un renglón propio, con su alto aunque esté vacío. */
+.reparto-por-comida__chequeo {
+  margin: 0.35rem 0 0;
+  font-size: 0.92rem;
+}
+
+.reparto-por-comida__chequeo-texto > .icono {
+  margin-inline-end: 0.3rem;
+  vertical-align: -0.15em;
+}
+
+.reparto-por-comida__iconos {
+  display: inline-flex;
+  gap: 0.25rem;
+  vertical-align: -0.15em;
+}
+
+.suma-de-los-rangos--en-detalle {
+  padding: 0;
+  border: 0;
+  background: none;
+}
+
+/* El botón queda arriba de su fila: el renglón de al lado puede crecer hacia abajo, el botón no se mueve. */
+.reparto-por-comida__acciones {
   align-items: flex-start;
 }
 
-.receta-en-el-cajon > div:last-child {
-  flex: 1 1 14rem;
+/* El calculador del objetivo: el gasto total y los macros, con columnas fijas; con «—» o con números, la tabla no cambia. */
+.calculador__tabla--total,
+.calculador__tabla--macros {
+  table-layout: fixed;
+}
+
+/* Una cantidad con su ícono y un «—» ocupan el mismo renglón. La cantidad es `inline-flex` con el ícono primero: su línea de
+   base es el borde de abajo del ícono, que queda centrado, y la caja asoma 1,9 px por encima del renglón; con «—» la fila
+   era 1,9 px más baja (lo encontró el recorrido `sinSaltos` al vaciar el factor: los g/kg subían). Alineada arriba, entra
+   en el renglón y el número queda donde estaba. */
+.calculador__tabla .cantidad-del-macro,
+.reparto-por-comida__tabla .cantidad-del-macro {
+  vertical-align: top;
+}
+
+.calculador__col-dia {
+  width: 30%;
+}
+
+.calculador__col-cuenta {
+  width: 42%;
+}
+
+.calculador__col-energia {
+  width: 28%;
+}
+
+.calculador__col-macro {
+  width: 22%;
+}
+
+.calculador__col-g {
+  width: 13%;
+}
+
+.calculador__col-parte {
+  width: 39%;
+}
+
+.calculador__usar {
+  align-items: flex-start;
+}
+
+/* La evaluación inicial: el aviso de un dato que se está cambiando va en su renglón, debajo del campo y de «Listo». */
+.dato-del-calculo__problema {
+  flex-basis: 100%;
+  margin: 0;
+}
+
+/* «Usar estos valores» sigue a la derecha; su porqué, a la izquierda, pegado a él. */
+.calculador__usar > .renglon-del-aviso--junto-al-boton {
+  justify-content: flex-end;
+  text-align: right;
+}
+
+/* Un campo con aviso no cambia de tamaño. El borde de 2 px del error (`.campo--error`) agrandaba el ancho propio del campo
+   y, en una fila de campos, corría al vecino 2 px (lo encontró el recorrido `sinSaltos` en el factor del calculador): en
+   un formulario con los avisos en su lugar, el borde sigue de 1 px y el segundo píxel es una sombra, que no ocupa lugar. */
+.avisos-con-lugar .campo--error input,
+.avisos-con-lugar .campo--error select,
+.avisos-con-lugar .campo--error textarea,
+.avisos-con-lugar .campo--error .campo-de-fecha__boton,
+.avisos-con-lugar .campo-de-fecha__boton[aria-invalid='true'] {
+  border-width: 1px;
+  box-shadow: 0 0 0 1px var(--error);
+}
+
+/* ═══ RP-22 (WP-RECORRIDO-PLAN-PULIDO, DL-188) · Entrenamiento antes de la prueba ════════════════════════════════════
+   La regla de RP-19 en el editor de Entrenamiento y lo que comparte: lo que no se entiende se marca en su celda sin
+   cambiarla de tamaño y se dice en un renglón reservado; los números que se escriben como texto (descanso, repeticiones,
+   carga) tienen sus flechitas. Bloque propio: no cambia las reglas de RP-19 ni las de otros frentes. */
+
+/* Una celda que no se entiende: el borde sigue de 1,5 px y el resto del rojo es una sombra (antes, 2 px corrían el valor). */
+.celda-de-objetivo[data-estado='no-se-entiende'],
+.ejercicio-del-editor__series .celda-de-serie[aria-invalid='true'],
+.bloque-del-editor__campo input[aria-invalid='true'],
+.agregar-ejercicio__para-todos > input[aria-invalid='true'] {
+  border-width: 1.5px;
+  border-color: var(--error);
+  box-shadow: 0 0 0 1px var(--error);
+}
+
+/* El número de los formularios de la persona: con aviso, del mismo tamaño. */
+.campo-de-inicio__numero.campo--error input {
+  border-width: 1px;
+  box-shadow: 0 0 0 1px var(--error);
+}
+
+/* El renglón de lo que no se entiende, debajo de la tabla de series: un renglón de alto fijo, vacío o lleno. Con dos
+   avisos el texto pasaba a dos renglones y bajaba «Agregar serie» (la CI, a 1440 con el panel abierto); el texto es
+   corto y, si en un ancho muy justo igual no entra, se corta con «…» (el entero va en el título y al lector). */
+.ejercicio-del-editor__series > .renglon-del-aviso {
+  height: 1.55rem;
+  min-height: 0;
+  margin: -0.25rem 0 0.35rem;
+  overflow: hidden;
+  font-size: 0.9rem;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+/* Angosto (cada serie es un bloque, como en una tableta de pie): el aviso puede ocupar dos renglones; ahí no hay una fila
+   de campos alineados que se corra. */
+@container ejercicios (max-width: 40rem) {
+  .ejercicio-del-editor__series > .renglon-del-aviso {
+    height: auto;
+    min-height: 1.55rem;
+    white-space: normal;
+  }
+}
+
+/* En la barra de las series elegidas, el aviso ocupa su propio renglón, siempre. */
+[data-series-elegidas] > .aviso-de-las-elegidas {
+  flex-basis: 100%;
+  margin: 0;
+}
+
+/* La indicación del bloque en vueltas es el renglón del aviso: con su ícono y su alto, esté llena o vacía. */
+.renglon-del-aviso.bloque-del-editor__indicacion {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 1.55rem;
+  margin: 0;
+}
+
+.renglon-del-aviso--nota.bloque-del-editor__indicacion {
+  color: var(--texto);
+  font-size: inherit;
+  font-weight: 600;
+}
+
+/* El pie de la tabla de series, con lo largo detrás de un «?». */
+.ejercicio-del-editor__pie-de-series {
+  align-items: center;
+}
+
+.ejercicio-del-editor__pie-de-series .a-pedido__texto p {
+  margin: 0.25rem 0 0;
+}
+
+/* Las flechitas de un número escrito como texto: a la derecha, adentro del campo, con su lugar reservado; se ven con el
+   mouse encima o con el foco, como las del campo numérico del navegador. */
+.con-flechas {
+  position: relative;
+  display: block;
   min-width: 0;
 }
 
-.receta-en-el-cajon__imagen {
+.bloque-del-editor__campo .con-flechas {
+  display: inline-block;
+  justify-self: start;
+  width: fit-content;
+}
+
+.con-flechas > input {
+  padding-inline-end: 1.5rem;
+}
+
+.ejercicio-del-editor__series .con-flechas > .celda-de-serie {
+  padding-inline-end: 1.5rem;
+}
+
+.con-flechas__flechas {
+  position: absolute;
+  inset-block: 3px;
+  inset-inline-end: 3px;
   display: grid;
-  justify-items: start;
-  gap: 0.25rem;
+  grid-template-rows: 1fr 1fr;
+  width: 1.2rem;
+  opacity: 0;
 }
 
-.receta-en-el-cajon__imagen .imagen-de-receta--chica {
-  width: 4.5rem;
+.con-flechas:hover > .con-flechas__flechas,
+.con-flechas:focus-within > .con-flechas__flechas {
+  opacity: 1;
 }
 
-.receta-en-el-cajon__carga {
-  flex-basis: 100%;
-  max-width: 34rem;
+.con-flechas__flecha {
+  display: grid;
+  place-items: center;
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  background: none;
+  color: var(--tenue);
+  cursor: pointer;
 }
 
-/* La cesión de la foto, entera, dentro del cuadro de proponer. */
-.cesion-de-la-foto {
-  border: 1px solid var(--borde);
-  border-radius: 10px;
-  padding: 0.75rem 1rem;
+.con-flechas__flecha:hover {
   background: var(--fondo-suave);
+  color: var(--texto);
 }
 
-/* Administración: cada propuesta, con su foto, su autor, la receta, las parecidas y la decisión. */
-.propuestas-al-recetario {
-  display: grid;
-  gap: 1rem;
+@media (hover: none) {
+  .con-flechas__flechas {
+    opacity: 1;
+  }
 }
 
-.propuesta-al-recetario__cabecera {
+/* El catálogo de ejercicios a 1280 × 800 (lo anotado en el recorrido de Nutrición): el pie tapaba los resultados. Desde
+   1280 px el cajón tiene el ancho que tenía desde 1440 (35 rem): la línea de «Con historial» ocupa un renglón menos y tres
+   elegidos entran en un renglón. Con poca altura de ventana, el pie se aprieta un poco. Los
+   elegidos siguen debajo de su título, hasta dos renglones de fichas, sin cortar ninguna. */
+@media (min-width: 80rem) and (max-width: 89.99rem) {
+  .cajon:has(.agregar-ejercicio) {
+    width: min(35rem, 100vw);
+  }
+}
+
+@media (max-height: 860px) {
+  .cajon:has(.agregar-ejercicio) .cajon__pie {
+    gap: 0.4rem 0.75rem;
+    padding-block: 0.6rem 0.7rem;
+  }
+}
+
+/* El aviso del objetivo de intensidad, al pie del recuadro del criterio, en su renglón; el campo se marca sin crecer. */
+.criterio-del-ejercicio > .criterio-del-ejercicio__aviso-del-objetivo {
+  flex: 1 1 100%;
+  margin: -0.3rem 0 0;
+  min-height: 1.4rem;
+  font-size: 0.9rem;
+}
+
+.criterio-del-ejercicio input[aria-invalid='true'] {
+  border-color: var(--error);
+  box-shadow: 0 0 0 1px var(--error);
+}
+
+/* Plantillas: el filtro por estado no ocupa todo el ancho de la columna (tres opciones cortas). */
+.campo--filtro-angosto select {
+  width: auto;
+  min-width: 10rem;
+  max-width: 16rem;
+}
+
+/* Desplegables legibles: las bases de la carga y de las repeticiones tienen opciones largas («una sola mancuerna o
+   implemento»): con 17 rem se leen enteras, y el rótulo «Qué cuentan las repeticiones» entra en un renglón. */
+.criterio-del-ejercicio .campo:has(select[id$='-base-carga']),
+.criterio-del-ejercicio .campo:has(select[id$='-base-reps']) {
+  flex: 0 1 17rem;
+}
+
+/* La unidad de la carga tiene dos opciones cortas (kg y lb): con 7 rem deja lugar a las bases en el mismo renglón. */
+.criterio-del-ejercicio .campo:has(select[id$='-unidad']) {
+  flex: 0 1 7rem;
+  min-width: 6rem;
+}
+
+/* El «?» al lado de un título (o de una casilla), y lo que abre en su propio renglón, debajo. */
+.titulo-con-ayuda {
   display: flex;
-  gap: 1rem;
-  align-items: flex-start;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.5rem;
 }
 
-.propuesta-al-recetario__parecidas {
-  margin: 0.5rem 0;
+.titulo-con-ayuda > h2 {
+  margin: 0;
+}
+
+.titulo-con-ayuda > .a-pedido {
+  display: contents;
+}
+
+.titulo-con-ayuda > .a-pedido > .a-pedido__boton {
+  margin-inline: 0 auto;
+}
+
+.titulo-con-ayuda > .a-pedido > .a-pedido__texto,
+.titulo-con-ayuda > p {
+  flex-basis: 100%;
+  order: 1;
+}
+
+.titulo-con-ayuda > .a-pedido > .a-pedido__texto p {
+  margin: 0.2rem 0 0;
 }
 
 /* ─── RP-20 y RP-21 (WP-RECORRIDO-PLAN-PULIDO, DL-188): las franjas por comida y «Rangos y totales» ───────────
@@ -21868,3 +22247,85 @@ html:has(.estacion:not([data-en-el-asistente])) {
 .rangos-y-totales__falta {
   font-size: 0.8rem;
 }
+
+/* ─── DL-191 · el Recetario de BE y las imágenes en el cajón del plan (WP-RECETARIO-E-IMAGENES) ───────────────── */
+
+/* «Tus recetas» o «Recetario de BE», y los estados de las propuestas en Administración: dos o tres botones en fila. */
+.selector-de-origen {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0.5rem 0 0.75rem;
+}
+
+/* Las acciones de una tarjeta: juntas, y bajan de renglón si no entran. */
+.acciones--compactas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.75rem;
+  align-items: center;
+}
+
+/* RP-19 · el renglón de un aviso ocupa su lugar desde el principio: que aparezca no corre nada. */
+.recetario__lugar-del-aviso {
+  min-height: 1.5em;
+  margin: 0.25rem 0;
+}
+
+.nota--error {
+  color: var(--error);
+  font-weight: 600;
+}
+
+/* Una receta en el cajón: la miniatura a la izquierda y lo demás al lado; al cargar la imagen, el recuadro abajo. */
+.receta-en-el-cajon {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 0.85rem;
+  align-items: flex-start;
+}
+
+.receta-en-el-cajon > div:last-child {
+  flex: 1 1 14rem;
+  min-width: 0;
+}
+
+.receta-en-el-cajon__imagen {
+  display: grid;
+  justify-items: start;
+  gap: 0.25rem;
+}
+
+.receta-en-el-cajon__imagen .imagen-de-receta--chica {
+  width: 4.5rem;
+}
+
+.receta-en-el-cajon__carga {
+  flex-basis: 100%;
+  max-width: 34rem;
+}
+
+/* La cesión de la foto, entera, dentro del cuadro de proponer. */
+.cesion-de-la-foto {
+  border: 1px solid var(--borde);
+  border-radius: 10px;
+  padding: 0.75rem 1rem;
+  background: var(--fondo-suave);
+}
+
+/* Administración: cada propuesta, con su foto, su autor, la receta, las parecidas y la decisión. */
+.propuestas-al-recetario {
+  display: grid;
+  gap: 1rem;
+}
+
+.propuesta-al-recetario__cabecera {
+  display: flex;
+  gap: 1rem;
+  align-items: flex-start;
+}
+
+.propuesta-al-recetario__parecidas {
+  margin: 0.5rem 0;
+}
+

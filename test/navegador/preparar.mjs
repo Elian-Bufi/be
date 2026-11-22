@@ -29,8 +29,9 @@ export const RECORRIDOS = {
   sesion: { habilitado: ['NUTRICION'], datos: [] },
   pistas: { habilitado: ['NUTRICION'], datos: [] },
   primerPlan: { habilitado: ['NUTRICION'], datos: [] },
-  // ED-30 (WP-EDITORES-PROFESIONAL, §5.5): el asistente de Nutrición de punta a punta, con el objetivo ya escrito.
-  asistenteDeNutricion: { habilitado: ['NUTRICION'], datos: ['objetivo'] },
+  // DL-193 (WP-SIN-ASISTENTE-DE-NUTRICION): el plan de Nutrición de punta a punta sin el asistente, con el objetivo ya
+  // escrito (reemplaza a `asistenteDeNutricion`).
+  planDeNutricionSinAsistente: { habilitado: ['NUTRICION'], datos: ['objetivo'] },
   borrador: { habilitado: ['NUTRICION'], datos: ['borrador'] },
   conflicto: { habilitado: ['NUTRICION'], datos: ['borrador'] },
   // ED-01 (WP-EDITORES-PROFESIONAL): descartar la versión en preparación.
@@ -65,7 +66,12 @@ export const RECORRIDOS = {
   // DL-158: el objetivo del profesional, lo indicado en el plan y lo registrado en el mismo gráfico; con un plan de una
   // opción por comida (el día tiene indicado) y con uno que deja elegir el almuerzo (el día no tiene).
   comparacion: { habilitado: ['NUTRICION'], datos: ['comparacion'] },
+  // DL-192 (WP-RPE-Y-MAXIMO-ESTIMADO): un borrador de Entrenamiento con un ejercicio a RIR 2, para elegir la notación RPE.
+  notacionDelEsfuerzo: { habilitado: ['ENTRENAMIENTO'], datos: ['borrador-de-entrenamiento'] },
   comparacionConOpciones: { habilitado: ['NUTRICION'], datos: ['comparacion-con-opciones'] },
+  // RP-19 (WP-RECORRIDO-PLAN-PULIDO, DL-188): con un error nada cambia de lugar, en el reparto, el objetivo y el calculador.
+  // RP-22: también en el editor de Entrenamiento, con un borrador de una sesión con un ejercicio.
+  sinSaltos: { habilitado: ['NUTRICION', 'ENTRENAMIENTO'], datos: ['borrador', 'borrador-de-entrenamiento-sin-saltos'] },
   // RP-20 y RP-21 (DL-188): un borrador con el almuerzo en dos opciones y su rango indicado, para las franjas por comida.
   franjasPorComida: { habilitado: ['NUTRICION'], datos: ['franjas'] },
   // DL-191 (WP-RECETARIO-E-IMAGENES): el recetario, copiar y cargar la imagen desde el cajón del plan; la semilla del
@@ -241,6 +247,46 @@ async function evaluacionYObjetivo(pro, aseId) {
   return { evaluacion, objetivo: objetivo.versionId };
 }
 
+/**
+ * DL-192: la evaluación y el objetivo de Entrenamiento, y un borrador de plan con un ejercicio del catálogo de todos a RIR
+ * 2 (tres series de 8). Sin notación: el profesional nunca eligió, así que nace en RIR.
+ */
+async function borradorDeEntrenamiento(pro, aseId) {
+  const evaluacion = (
+    await pedir('POST', `/advisees/${aseId}/training/evaluations`, {
+      token: pro,
+      cuerpo: {
+        occurredAt: new Date(Date.now() - 2 * 3600_000).toISOString(),
+        assessment: { entries: [{ concept: 'Experiencia en entrenamiento de fuerza', value: 'Dos años', source: 'REPORTED' }] },
+        evidenceReferences: [],
+        professionalNotes: null,
+      },
+    })
+  ).data.evaluationId;
+  const objetivo = (
+    await pedir('POST', `/advisees/${aseId}/training/objectives`, {
+      token: pro,
+      cuerpo: { evaluationId: evaluacion, effectiveFrom: new Date(Date.now() - 3600_000).toISOString(), effectiveUntil: null, objective: { statement: 'Fuerza en los básicos.' }, rationale: 'Recorrido sintético.' },
+    })
+  ).data.versionId;
+  const ejercicio = (await pedir('GET', '/training/exercises', { token: pro })).data.find((x) => x.available);
+  const estructura = {
+    blocks: [
+      {
+        label: 'Fase 1',
+        sessions: [
+          {
+            label: 'Sesión A',
+            prescriptions: [{ exerciseVersionId: ejercicio.versionId, sets: [1, 2, 3].map(() => ({ repetitions: { value: 8 } })), intensity: { criterion: 'RIR', target: { value: 2 } } }],
+          },
+        ],
+      },
+    ],
+  };
+  const plan = (await pedir('POST', `/advisees/${aseId}/training/plans`, { token: pro, cuerpo: { objectiveVersionId: objetivo, initialStructure: estructura } })).data;
+  return { planId: plan.planId, ejercicio: ejercicio.name };
+}
+
 /** Una toma de peso por el flujo de la web (borrador y registro, API-ANT-07 y 11). */
 async function toma(pro, aseId, fecha, peso) {
   const creada = (
@@ -278,6 +324,7 @@ export async function datos(estado) {
     }
 
     if (r.datos.includes('objetivo')) await evaluacionYObjetivo(pro, e.ase.id);
+    if (r.datos.includes('borrador-de-entrenamiento')) e.entrenamiento = await borradorDeEntrenamiento(pro, e.ase.id);
     if (r.datos.includes('borrador')) {
       const { objetivo } = await evaluacionYObjetivo(pro, e.ase.id);
       const plan = (await pedir('POST', `/advisees/${e.ase.id}/nutrition/plans`, { token: pro, cuerpo: { objectiveVersionId: objetivo, initialStructure: await estructura(pro) } })).data;
@@ -296,6 +343,28 @@ export async function datos(estado) {
         cuerpo: { expectedRevision: leidos.revision, bodyWeight: null, dayTypes: [{ dayTypeId: dia.dayTypeId, day: null, meals: [{ mealId: dia.meals[1].mealId, range: almuerzo }] }] },
       });
       e.borrador = { planId: plan.planId };
+    }
+    if (r.datos.includes('borrador-de-entrenamiento-sin-saltos')) {
+      // RP-22: la evaluación, el objetivo y un borrador con una sesión y un ejercicio creado a mano (no depende del catálogo
+      // sembrado): tres series de 8, 60 kg y 90 s comunes. Todo sintético. Tiene su propia clave: «borrador-de-entrenamiento»
+      // es el de `notacionDelEsfuerzo` (DL-192, arriba). Con la misma, cada uno de los dos escenarios armaba los dos
+      // borradores para su persona y el segundo recibía 409 «Ya hay un borrador de este plan».
+      const evaluacion = (
+        await pedir('POST', `/advisees/${e.ase.id}/training/evaluations`, {
+          token: pro,
+          cuerpo: { occurredAt: new Date(Date.now() - 2 * 3600_000).toISOString(), assessment: { entries: [{ concept: 'Días por semana', value: 3, unit: 'días', source: 'REPORTED' }] }, evidenceReferences: [], professionalNotes: 'Datos sintéticos del recorrido de navegador.' },
+        })
+      ).data.evaluationId;
+      const objetivo = (
+        await pedir('POST', `/advisees/${e.ase.id}/training/objectives`, {
+          token: pro,
+          cuerpo: { evaluationId: evaluacion, effectiveFrom: new Date(Date.now() - 3600_000).toISOString(), effectiveUntil: null, objective: { statement: 'Objetivo sintético del recorrido de navegador.' }, rationale: 'Datos sintéticos del recorrido de navegador.' },
+        })
+      ).data.versionId;
+      const ejercicio = (await pedir('POST', '/training/exercises', { token: pro, cuerpo: { name: 'Sentadilla del recorrido', muscleZones: [], didacticResources: [], provenance: { type: 'MANUAL_ENTRY' } } })).data.versionId;
+      const serie = { repetitions: { value: 8 } };
+      const estructura = { blocks: [{ label: 'Fase 1', sessions: [{ label: 'Piernas A', prescriptions: [{ exerciseVersionId: ejercicio, sets: [serie, serie, serie], intensity: null, suggestedLoad: { value: 60, unit: 'kg' }, restSeconds: 90 }] }] }] };
+      e.borradorDeEntrenamiento = (await pedir('POST', `/advisees/${e.ase.id}/training/plans`, { token: pro, cuerpo: { objectiveVersionId: objetivo, initialStructure: estructura } })).data.planId;
     }
     if (r.datos.includes('plan-con-revision')) {
       const { objetivo } = await evaluacionYObjetivo(pro, e.ase.id);

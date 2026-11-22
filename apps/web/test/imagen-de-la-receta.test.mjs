@@ -4,7 +4,7 @@
  *   carga sola al guardarla: se crea la receta (API-REC-01) y, con la versión que devuelve, se sube el medio y se asocia
  *   (API-REC-05). Si la receta se guardó y la imagen no, se dice, y el reintento carga solo la imagen. La carga se prueba
  *   sin React (`cargar-la-imagen.ts`), con las llamadas simuladas; las pantallas, leyendo el componente.
- * - NUA-07: el nombre de cada comida en el paso 4 del asistente usa el campo común del website.
+ * - NUA-07 (el nombre de cada comida en el paso 4 del asistente) se fue con el asistente de Nutrición (DL-193).
  *
  * El dominio se lee de este mismo repositorio (`packages/domain/dist`): en la CI es el mismo archivo que `@be/domain`, y
  * en una copia de trabajo que usa el `node_modules` de otra, es el de esta copia y no el de la otra.
@@ -246,31 +246,4 @@ test('NUA-06 · «Receta nueva» desde el plan no pide la imagen dos veces', () 
   assert.match(PLAN, /if \(res\.tipo === 'no-se-pudo'\) return setRecuperar\(\{ receta: r, motivo: res\.motivo, imagen \}\);/);
   assert.match(PLAN, /onClick=\{\(\) => agregarLaRecetaNueva\(recuperar\.receta, recuperar\.imagen\)\}/);
   assert.match(PLAN, /\{recuperar\.imagen\.tipo === 'pendiente' \? <p>\{COPY_RECETA_NUEVA\.imagenSinCargar\}<\/p> : null\}/);
-});
-
-// ─── NUA-07 · El paso 4 del asistente de Nutrición ───────────────────────────────────────────────────────────────
-
-const PASOS = leer('app/pro/advisees/nutrition/pasos-del-asistente.tsx');
-const ESTILOS = leer('app/globals.css');
-
-test('NUA-07 · el nombre de cada comida del paso 4 usa el campo común del website, con su etiqueta asociada', () => {
-  const paso4 = PASOS.slice(PASOS.indexOf('function PasoDeLasComidas('), PASOS.indexOf('function BotonConMotivo('));
-  assert.ok(paso4.length > 0);
-  assert.equal(paso4.split('<input').length - 1, 1, 'un solo campo de texto en el paso 4');
-  assert.match(
-    paso4,
-    /<div className="campo asistente__nombre">\n\s*<label htmlFor=\{`\$\{id\}-comida-\$\{j\}`\} className="visualmente-oculto">\n\s*\{C\.nombreDeLaComida\(nombreDelDia, j \+ 1\)\}\n\s*<\/label>\n\s*<input id=\{`\$\{id\}-comida-\$\{j\}`\} type="text" /,
-  );
-  assert.doesNotMatch(paso4, /className="asistente__campo"/, 'el campo suelto, sin la clase común, era el del borde negro y la letra chica');
-  // Lo que da la clase común: la letra del website, el borde y el fondo de los tokens (Claro y Azul noche) y 44 px.
-  assert.match(ESTILOS, /\.campo input,\n\.campo select,\n\.campo textarea \{\n\s*font: inherit;\n\s*color: var\(--texto\);\n\s*background: var\(--superficie\);\n\s*min-height: 44px;\n[^}]*border: 1px solid var\(--borde-control\);/);
-  // La tarjeta separa con `gap`: el margen del campo sobra, y la regla se limita a este campo.
-  assert.match(ESTILOS, /WP-NUTRICION-ALIMENTOS · NUA-07[^*]*\*\/\n\.campo\.asistente__nombre \{\n\s*margin: 0;\n\}/);
-});
-
-test('NUA-07 · el nombre de cada día tipo del paso 3 tenía el mismo campo suelto: también usa el común', () => {
-  const paso3 = PASOS.slice(PASOS.indexOf('{paso === 3 ? ('), PASOS.indexOf('{paso === 4'));
-  assert.ok(paso3.length > 0);
-  assert.match(paso3, /<div className="campo asistente__nombre">\n\s*<label htmlFor=\{`\$\{id\}-dia-\$\{i\}`\} className="visualmente-oculto">\n\s*\{C\.nombreDelDia\(i \+ 1\)\}\n\s*<\/label>\n\s*<input id=\{`\$\{id\}-dia-\$\{i\}`\} type="text" /);
-  assert.doesNotMatch(paso3, /className="asistente__campo"/);
 });

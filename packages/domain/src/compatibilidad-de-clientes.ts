@@ -63,7 +63,23 @@ export const CAPACIDAD_TIPOS_DE_SERIE = 'training-set-kinds-1';
  */
 export const CAPACIDAD_BLOQUES_DE_LA_SESION = 'training-session-groups-1';
 
-export const CAPACIDADES_CONOCIDAS = [CAPACIDAD_OBJETIVOS_POR_SERIE, CAPACIDAD_FORMULARIOS_FORMATO_3, CAPACIDAD_TEXTOS_VIGENTES, CAPACIDAD_TIPOS_DE_SERIE, CAPACIDAD_BLOQUES_DE_LA_SESION] as const;
+/**
+ * DL-192 (WP-RPE-Y-MAXIMO-ESTIMADO, RPE-D08) · el cliente sabe preguntar y mostrar el esfuerzo en la notación del plan (RIR
+ * o RPE): lee `effortNotation` de la versión (API-TRN-09) y de la sesión para registrar (API-SER-02), y sigue mandando el
+ * RIR, que es el valor de las dos. Solo a quien la declara le sale el campo; a quien no, la forma de siempre (su esquema
+ * estricto lo rechazaría). Nada se retiene ni se bloquea: una APK que pregunta en RIR guarda lo mismo que una que pregunta
+ * en RPE. Por eso no se registra. La declara la APK 0.32 (DL-194).
+ */
+export const CAPACIDAD_NOTACION_DEL_ESFUERZO = 'training-effort-notation-1';
+
+export const CAPACIDADES_CONOCIDAS = [
+  CAPACIDAD_OBJETIVOS_POR_SERIE,
+  CAPACIDAD_FORMULARIOS_FORMATO_3,
+  CAPACIDAD_TEXTOS_VIGENTES,
+  CAPACIDAD_TIPOS_DE_SERIE,
+  CAPACIDAD_BLOQUES_DE_LA_SESION,
+  CAPACIDAD_NOTACION_DEL_ESFUERZO,
+] as const;
 export type CapacidadDeCliente = (typeof CAPACIDADES_CONOCIDAS)[number];
 
 /** Un valor de cabecera más largo que esto no se lee: ninguna lista válida lo necesita. */
@@ -88,7 +104,16 @@ export function capacidadesDeclaradas(valor: string | readonly string[] | null |
 /** El valor de la cabecera para un cliente que declara estas capacidades. */
 export const valorDeCapacidades = (capacidades: readonly CapacidadDeCliente[]): string => [...new Set(capacidades)].join(',');
 
-const mismaCarga = (a: Carga | null, b: Carga | null): boolean => (a === null || b === null ? a === b : a.value === b.value && a.unit === b.unit);
+/**
+ * RP-22 (DL-188): lo que no se entiende todavía no es un objetivo distinto. En el editor, un número mal escrito viaja como
+ * NaN (no se guarda: `loQueNoDejaGuardarElEntrenamiento`), y las series que lo toman de lo general también lo tienen; con
+ * `===`, NaN nunca es igual a NaN, y una carga común mal escrita pasaba por «objetivos distintos por serie»: aparecía
+ * arriba el aviso de la app de la persona y corría el editor mientras se escribía.
+ */
+const sinLeer = (n: number | null | undefined): boolean => typeof n === 'number' && Number.isNaN(n);
+const mismaCarga = (a: Carga | null, b: Carga | null): boolean =>
+  a === null || b === null ? a === b : (a.value === b.value && a.unit === b.unit) || sinLeer(a.value) || sinLeer(b.value);
+const mismoRir = (a: number | null, b: number | null): boolean => a === b || sinLeer(a) || sinLeer(b);
 
 /**
  * Si una prescripción exige un cliente que muestre los objetivos por serie: alguna serie tiene un RIR o una carga
@@ -97,7 +122,7 @@ const mismaCarga = (a: Carga | null, b: Carga | null): boolean => (a === null ||
 export function prescripcionExigeObjetivosPorSerie(prescripcion: PrescripcionParaResolver): boolean {
   const rirGeneral = esCriterioRir(prescripcion.intensity) ? prescripcion.intensity!.target.value : null;
   const cargaGeneral = prescripcion.suggestedLoad ?? null;
-  return objetivosEfectivos(prescripcion).some((o) => o.rir !== rirGeneral || !mismaCarga(o.suggestedLoad, cargaGeneral));
+  return objetivosEfectivos(prescripcion).some((o) => !mismoRir(o.rir, rirGeneral) || !mismaCarga(o.suggestedLoad, cargaGeneral));
 }
 
 interface SesionConPrescripciones {

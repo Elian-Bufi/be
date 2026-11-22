@@ -182,24 +182,24 @@ test('RP-06 · el reparto por comida, en el plan: una parte por comida que suma 
   assert.ok(Math.abs(delDesayuno - 0.46 * P.kcalDeLosGramosDelDia(conOtrasKcal.dia)) < 10, `las kcal del desayuno (${delDesayuno}) son el 46 % de lo que suman los gramos`);
   const delPlan = leer('app/pro/advisees/nutrition/propuesta-de-rangos-del-plan.tsx');
   assert.match(delPlan, /C\.deLasKcal\(base\)/);
-  assert.match(delPlan, /C\.sumaDeLasPartes\(sumas\.protein, base\)/);
+  // RP-19: la frase entera con su base, para el lector de pantalla, en «Todo el día».
+  assert.match(delPlan, /C\.sumaDeLasPartes\(sumas\.protein\.suma, base\)/);
   assert.doesNotMatch(delPlan, /% de las \$\{numero\(gramos\.kcal/);
   // Revisión del PR: un día tipo sin comidas no muestra el reparto, y el texto no promete una propuesta que no se hace.
   assert.doesNotMatch(P.COPY_PROPUESTA.sinComidasGuardadas, /se propone/);
   assert.match(delPlan, /dia && comidasSinGuardar === 0 \? C\.sinComidasGuardadas : C\.sinDiaGuardado/);
   // Revisión del PR: lo escrito vuelve al punto de partida si cambian las comidas, no si cambia el nombre de una.
   assert.match(delPlan, /const claveDelDia = dia \? `\$\{dia\.dayTypeId\}\|\$\{dia\.comidas\.map\(\(c\) => c\.mealId\)\.join\(','\)\}` : '';/);
-  // Revisión del PR: en el paso de los rangos del asistente se ven los repartos de todos los días tipo, uno debajo del
-  // otro; cada título dice de qué día es (con comidas que se llaman igual, eran cuadros idénticos con el mismo nombre).
-  assert.equal(P.COPY_PROPUESTA.tituloDelDia('Día de descanso'), 'Reparto por comida · Día de descanso');
-  assert.match(delPlan, /\{nombreDelDia \? C\.tituloDelDia\(nombreDelDia\) : C\.titulo\}/);
-  assert.match(leer('app/pro/advisees/nutrition/editor.tsx'), /estructura\.map\(\(d, n\) => \(\s*<RepartoPorComida [^\n]*nombreDelDia=\{nombreDelDiaTipo\(d, n\)\}/);
-  // Si no suman 100, no se propone y se dice cuánto suman.
+  // El reparto va dentro de su día tipo, y la pestaña dice cuál es: la lista de todos los días tipo, cada uno con su
+  // título, era la del paso de los rangos del asistente de Nutrición, que se retiró (DL-193).
+  assert.match(delPlan, /<Icono nombre="objetivo" tamano=\{18\} \/>\n\s*\{C\.titulo\}/);
+  assert.equal(P.COPY_PROPUESTA.tituloDelDia, undefined);
+  // Si no suman 100, no se propone y se dice cuánto suman (RP-19: en «Todo el día», con lo que falta).
   const corto = P.conParteUnica(P.repartoInicialUnico(DIA, 'parejo'), 'm4', '20');
   assert.equal(P.parteUnica(corto, 'm4'), '20');
   assert.equal(P.sumaDeLasPartes(DIA, corto).protein, 95);
   assert.equal(P.propuestaDelDia(DIA, corto, fuente, 10).ok, false);
-  assert.equal(P.COPY_PROPUESTA.noSumaUnica(95), 'Las partes suman 95 de 100. Ajustalas para proponer.');
+  assert.equal(P.loQueFaltaDeLaSuma(P.sumasEnVivo(DIA, corto).protein, { cantidad: 2508, unidad: 'kcal' }), 'faltan 125 kcal');
   // Repartir cada macro por separado sigue disponible: entonces la parte única no existe.
   const porMacro = P.repartoInicial(DIA, 'sugerido');
   assert.equal(P.parteUnica(porMacro, 'm3'), null);
@@ -221,4 +221,221 @@ test('RP-06 · el reparto por comida, en el plan: una parte por comida que suma 
   assert.match(pieza, /data-reemplazar-rangos/);
   // La distribución por comida salió del objetivo.
   assert.doesNotMatch(leer('app/pro/advisees/nutrition/formularios.tsx'), /Distribución por comidas \(opcional\)/);
+});
+
+// ─── RP-19 · Sin saltos ──────────────────────────────────────────────────────────────────────────────────────────────
+
+const DIA_19 = { dayTypeId: 'd1', nombre: 'Día habitual', comidas: [{ mealId: 'm1', nombre: 'Desayuno' }, { mealId: 'm2', nombre: 'Almuerzo' }, { mealId: 'm3', nombre: 'Merienda' }, { mealId: 'm4', nombre: 'Cena' }] };
+const OBJETIVO_19 = { estimatedEnergyRequirement: { value: 2500 }, macronutrientDistribution: { protein: { value: 112, unit: 'g/day' }, carbohydrate: { value: 335, unit: 'g/day' }, fat: { value: 80, unit: 'g/day' } } };
+const conPartes = (P, partes) => DIA_19.comidas.reduce((e, c, i) => P.conParteUnica(e, c.mealId, partes[i]), P.repartoInicialUnico(DIA_19, 'parejo'));
+
+test('RP-19 · cada fila del reparto muestra su rango aunque las partes no sumen 100: no depende de las demás', async () => {
+  const P = await import('../src/app/pro/advisees/nutrition/propuesta-de-rangos.ts');
+  const fuente = P.fuenteDeLaPropuesta(OBJETIVO_19, null);
+  // El caso de Dirección: 24 + 28 + 24 + 23 = 99. No se propone, pero cada fila tiene su rango.
+  const noventaYNueve = conPartes(P, ['24', '28', '24', '23']);
+  assert.equal(P.propuestaDelDia(DIA_19, noventaYNueve, fuente, 10).ok, false);
+  const filas = P.rangosPorFila(DIA_19, noventaYNueve, fuente, 10);
+  assert.equal(filas.length, 4);
+  for (const f of filas) {
+    for (const m of ['protein', 'carbohydrate', 'fat']) assert.notEqual(f.macros[m], null);
+    assert.notEqual(f.kcal, null);
+  }
+  // El día, con su margen: 112 g ± 10 % es 101 a 123 g. La comida del 24 %: 24 a 30 g (cada una redondea lo suyo).
+  const dia = P.rangoDelDia(fuente, 'dia', 10);
+  assert.deepEqual(dia.protein, { min: 101, max: 123 });
+  assert.deepEqual(filas[0].macros.protein, { min: 24, max: 30 });
+  assert.deepEqual(filas[0].kcal, P.kcalDelRango(filas[0].macros));
+  // El rango de una comida no depende de las demás: cambiar la cena no toca el desayuno.
+  const otraCena = P.rangosPorFila(DIA_19, conPartes(P, ['24', '28', '24', '40']), fuente, 10);
+  assert.deepEqual(otraCena[0], filas[0]);
+  // Una parte vacía deja su fila sin rango («—», con el mismo alto); las otras siguen con el suyo.
+  const conVacia = P.rangosPorFila(DIA_19, conPartes(P, ['24', '', '24', '23']), fuente, 10);
+  assert.deepEqual(conVacia[1], { macros: { protein: null, carbohydrate: null, fat: null }, kcal: null });
+  assert.deepEqual(conVacia[0], filas[0]);
+  // Por macro, una parte que no es un número: ese macro sin rango y la fila sin kcal; los otros dos, con el suyo.
+  const porMacro = P.repartoInicial(DIA_19, 'parejo');
+  const ilegible = { ...porMacro, comidas: { ...porMacro.comidas, m1: { ...porMacro.comidas.m1, fat: '2x' } } };
+  const fila = P.rangosPorFila(DIA_19, ilegible, fuente, 10)[0];
+  assert.equal(fila.macros.fat, null);
+  assert.notEqual(fila.macros.protein, null);
+  assert.equal(fila.kcal, null);
+  assert.equal(P.parteEscrita('2x'), null);
+  assert.equal(P.parteEscrita('24,5'), 24.5);
+  assert.equal(P.parteEscrita(''), null);
+  // Con 100, es exactamente lo que se propone y se guarda (el resto mayor reparte los redondeos).
+  const cien = conPartes(P, ['24', '28', '24', '24']);
+  const propuesta = P.propuestaDelDia(DIA_19, cien, fuente, 10);
+  assert.ok(propuesta.ok);
+  assert.deepEqual(P.rangosPorFila(DIA_19, cien, fuente, 10).map((f) => f.macros), propuesta.comidas);
+  // El día no depende del reparto: el mismo con 99 que con 100.
+  assert.deepEqual(propuesta.dia, dia);
+});
+
+test('RP-19 · la suma de las partes en vivo: «99 %» con lo que falta, «103 %» con lo que sobra (en kcal o g), 100 sin nada', async () => {
+  const P = await import('../src/app/pro/advisees/nutrition/propuesta-de-rangos.ts');
+  const suma = (partes) => P.sumasEnVivo(DIA_19, conPartes(P, partes)).protein;
+  // Lo que falta o sobra, en la unidad de la base (sin un «%» suelto): 2.508 kcal son las que suman 112, 335 y 80 g.
+  const KCAL = { cantidad: 2508, unidad: 'kcal' };
+  const s99 = suma(['24', '28', '24', '23']);
+  assert.deepEqual(s99, { suma: 99, bien: false, hayIlegibles: false });
+  assert.equal(P.loQueFaltaDeLaSuma(s99, KCAL), 'faltan 25 kcal');
+  assert.equal(P.loQueFaltaDeLaSuma(suma(['25', '28', '25', '25']), KCAL), 'sobran 75 kcal');
+  assert.equal(P.loQueFaltaDeLaSuma(suma(['25', '25', '25', '20']), KCAL), 'faltan 125 kcal');
+  assert.equal(P.loQueFaltaDeLaSuma(s99, { cantidad: 130, unidad: 'g' }), 'faltan 1,3 g');
+  assert.equal(P.loQueFaltaDeLaSuma(suma(['25', '26', '25', '25']), { cantidad: 100, unidad: 'g' }), 'sobra 1 g');
+  assert.equal(P.COPY_PROPUESTA.baseDeLaSuma(1985, 'kcal'), 'de las 1.985 kcal');
+  assert.equal(P.COPY_PROPUESTA.baseDeLaSuma(130, 'g'), 'de los 130 g');
+  const cien = suma(['25', '25', '25', '25']);
+  assert.equal(cien.bien, true);
+  assert.equal(P.loQueFaltaDeLaSuma(cien, KCAL), '');
+  // El medio punto de redondeo de siempre (`problemasDelReparto`): 99,6 deja proponer y no dice nada.
+  assert.equal(P.loQueFaltaDeLaSuma(suma(['24,6', '25', '25', '25']), KCAL), '');
+  assert.equal(P.COPY_PROPUESTA.sumaEnVivo(99), '99 %');
+  // Por macro, una parte que no es un número: se marca y no deja proponer.
+  const porMacro = P.repartoInicial(DIA_19, 'parejo');
+  const s = P.sumasEnVivo(DIA_19, { ...porMacro, comidas: { ...porMacro.comidas, m2: { ...porMacro.comidas.m2, carbohydrate: 'abc' } } }).carbohydrate;
+  assert.equal(s.hayIlegibles, true);
+  assert.equal(P.loQueFaltaDeLaSuma(s, { cantidad: 335, unidad: 'g' }), 'revisá la marcada');
+  // El «%» de cada parte, con su base en el rótulo de la columna.
+  assert.equal(P.COPY_PROPUESTA.deLosGramos(130), '% de los 130 g');
+  for (const t of [P.COPY_PROPUESTA.noSuman, P.COPY_PROPUESTA.contieneElObjetivo, P.COPY_PROPUESTA.quedaAfuera, P.COPY_PROPUESTA.sinComparar(['grasas'])]) {
+    assert.doesNotMatch(t, /cumplimiento|adherencia|racha|puntaje|asesorad|estaci[oó]n/i);
+  }
+});
+
+test('RP-19 · la suma de los rangos indicados frente al objetivo, en una línea del reparto (pedido del 22/11)', async () => {
+  const P = await import('../src/app/pro/advisees/nutrition/propuesta-de-rangos.ts');
+  const rango = (p, c, g) => ({ protein: { unit: 'g', perKg: null, grams: p }, carbohydrate: { unit: 'g', perKg: null, grams: c }, fat: { unit: 'g', perKg: null, grams: g } });
+  // Sin rangos indicados, nada (el renglón queda vacío, con su alto).
+  assert.deepEqual(P.chequeoDeLaSuma(DIA_19.comidas.map((c) => ({ nombre: c.nombre, rango: null })), OBJETIVO_19), { estado: 'sin-rangos' });
+  assert.equal(P.chequeoEnPalabras({ estado: 'sin-rangos' }), '');
+  // Con los rangos que salen del reparto, la suma contiene el objetivo por construcción.
+  const fuente = P.fuenteDeLaPropuesta(OBJETIVO_19, null);
+  const propuesta = P.propuestaDelDia(DIA_19, conPartes(P, ['25', '25', '25', '25']), fuente, 10);
+  const delReparto = DIA_19.comidas.map((c, j) => ({ nombre: c.nombre, rango: rango(propuesta.comidas[j].protein, propuesta.comidas[j].carbohydrate, propuesta.comidas[j].fat) }));
+  const contiene = P.chequeoDeLaSuma(delReparto, OBJETIVO_19);
+  assert.deepEqual(contiene, { estado: 'contiene' });
+  assert.equal(P.chequeoEnPalabras(contiene), 'La suma de los rangos de las comidas contiene el objetivo del día');
+  // Escritos a mano: las proteínas suman 80 a 100 g y el objetivo es 112 g. Dice cuál, por cuánto y con su base.
+  const aMano = DIA_19.comidas.map((c) => ({ nombre: c.nombre, rango: rango({ min: 20, max: 25 }, { min: 80, max: 90 }, { min: 18, max: 22 }) }));
+  const afuera = P.chequeoDeLaSuma(aMano, OBJETIVO_19);
+  assert.equal(afuera.estado, 'afuera');
+  assert.deepEqual(afuera.afuera.find((f) => f.clave === 'protein'), { clave: 'protein', objetivo: 112, diferencia: 12, lado: 'encima' });
+  assert.match(P.chequeoEnPalabras(afuera), /^El objetivo del día queda afuera de la suma de los rangos de las comidas: .*proteínas, 12 g por encima del máximo \(objetivo 112 g\)/);
+  // 320 a 360 g de carbohidratos con 335 de objetivo: adentro, no se nombra.
+  assert.equal(afuera.afuera.some((f) => f.clave === 'carbohydrate'), false);
+  // Una comida sin máximo de proteínas: la suma no tiene tope y de ese lado no se compara.
+  const sinTope = aMano.map((x, i) => (i === 0 ? { ...x, rango: rango({ min: 30, max: null }, { min: 80, max: 90 }, { min: 18, max: 22 }) } : x));
+  const r = P.chequeoDeLaSuma(sinTope, OBJETIVO_19);
+  assert.equal(r.afuera?.some((f) => f.clave === 'protein') ?? false, false, 'sin tope, las proteínas no quedan «por encima»');
+});
+
+test('RP-19 · la pantalla del reparto: columnas fijas, renglones reservados y nada que aparezca arriba del botón', () => {
+  const pieza = leer('app/pro/advisees/nutrition/propuesta-de-rangos-del-plan.tsx');
+  const css = leer('app/globals.css');
+  const bloque = css.slice(css.indexOf('RP-19 (WP-RECORRIDO-PLAN-PULIDO, DL-188) · Sin saltos'));
+  assert.match(bloque, /\.reparto-por-comida__tabla \{\s*table-layout: fixed;/);
+  assert.match(pieza, /<colgroup>/);
+  assert.match(pieza, /<div className="desplazable-x">/);
+  // Ningún párrafo de error debajo de la tabla: la suma va en «Todo el día».
+  assert.doesNotMatch(pieza, /campo__error|C\.noSuma\(|noSumaUnica/);
+  assert.match(pieza, /<SumaEnVivo s=\{sumas\.protein\}/);
+  // Cada fila con su rango (o «—»), siempre.
+  assert.match(pieza, /const filas = fuente && toleranciaValida \? rangosPorFila\(dia, r, fuente, t\) : null;/);
+  assert.match(pieza, /<CantidadOGuion macro=\{m\} x=\{fila\?\.macros\[m\] \?\? null\} \/>/);
+  // El porqué del botón apagado, en su renglón reservado al lado; lo que llega después de proponer, debajo del botón.
+  const acciones = pieza.indexOf('data-proponer-rangos');
+  assert.match(pieza.slice(acciones), /<RenglonDelAviso juntoAlBoton anunciar /);
+  assert.ok(pieza.indexOf('data-reemplazar-rangos') > acciones, '«Lo que ya escribiste» va debajo del botón');
+  assert.ok(pieza.indexOf('{error ? <Aviso tipo="error">{error}</Aviso> : null}') > acciones, 'el error del servidor va debajo del botón');
+  // El chequeo de la suma de los rangos, en un renglón propio con su alto y el detalle detrás de un «?».
+  assert.match(pieza, /renglon-del-aviso renglon-del-aviso--con-boton reparto-por-comida__chequeo/);
+  assert.match(pieza, /<ExplicacionAPedido nombre=\{C\.detalleDeLaSuma\} como="div">\s*<SumaDeLosRangosIndicados comidas=\{comidasConRango\} objetivo=\{objetivo\} enDetalle \/>/);
+  // Revisión del PR: debajo del botón, no arriba. Cambia al proponer y, con el objetivo afuera, ocupa más de un renglón:
+  // arriba, bajaba el botón. Va antes de lo que aparece después de proponer, para no correrse cuando eso aparece.
+  const chequeoConTabla = pieza.indexOf('{renglonDelChequeo}', acciones);
+  assert.ok(chequeoConTabla > acciones, 'el chequeo va debajo del botón');
+  assert.ok(chequeoConTabla < pieza.indexOf('{error ? <Aviso tipo="error">{error}</Aviso> : null}') && chequeoConTabla < pieza.indexOf('data-reemplazar-rangos'), 'y arriba del error y de «Lo que ya escribiste»');
+  // Sin la tabla del reparto (sin gramos por día ni cálculo, o sin poder leer el cálculo), el chequeo igual se ve.
+  assert.match(pieza, /\{calculo\.estado !== 'leyendo' && !\(fuente && gramos\) \? renglonDelChequeo : null\}/);
+  // Solo la línea está en vivo: el detalle del «?» queda afuera de la región que se anuncia.
+  assert.match(pieza, /<span className="reparto-por-comida__chequeo-texto" aria-live="polite">/);
+  assert.doesNotMatch(pieza, /reparto-por-comida__chequeo" aria-live/);
+  // La parte o el margen que no se entiende se ve marcado, sin cambiar de tamaño («revisá la marcada» lo nombra).
+  assert.match(bloque, /\.reparto-por-comida__parte input\[aria-invalid='true'\],\s*\.reparto-por-comida__margen input\[aria-invalid='true'\] \{\s*border-color: var\(--error\);\s*box-shadow: 0 0 0 1px var\(--error\);/);
+  // El cuadro de la suma ya no va arriba de las comidas del editor.
+  assert.doesNotMatch(leer('app/pro/advisees/nutrition/editor.tsx'), /<SumaDeLosRangosIndicados/);
+  // Lo que se guardó, al lado del botón; ya no en el aviso de la lista de rangos, que corría lo de abajo.
+  assert.doesNotMatch(pieza, /rangos\.setAviso/);
+});
+
+test('RP-19 · la regla reutilizable: el renglón del aviso, los campos con su lugar y el resumen que no se achica', async () => {
+  const V = await import('../src/components/validacion-viva.ts');
+  const formulario = leer('components/formulario.tsx');
+  const css = leer('app/globals.css');
+  const bloque = css.slice(css.indexOf('RP-19 (WP-RECORRIDO-PLAN-PULIDO, DL-188) · Sin saltos'));
+  assert.match(formulario, /export function RenglonDelAviso\(/);
+  assert.match(formulario, /data-con-aviso=\{error !== undefined \? '' : undefined\}/);
+  assert.match(leer('components/campo-de-fecha.tsx'), /data-con-aviso=\{error !== undefined \? '' : undefined\}/);
+  assert.match(bloque, /\.renglon-del-aviso \{\s*display: block;\s*min-height: 1\.55rem;/);
+  assert.match(bloque, /\.avisos-con-lugar \.campo\[data-con-aviso\]:not\(:has\(> \.campo__error\)\)::after \{\s*content: '';\s*display: block;\s*height: 1\.55rem;\s*margin-top: 0\.2rem;/);
+  assert.match(bloque, /\.avisos-con-lugar \.campo\[data-con-aviso\] > \.campo__error \{\s*min-height: 1\.55rem;\s*margin: 0\.2rem 0 0;/);
+  // Un campo con aviso no cambia de tamaño: el segundo píxel del borde es una sombra (con 2 px, el factor del calculador
+  // se ensanchaba y corría al vecino 2 px).
+  assert.match(bloque, /\.avisos-con-lugar \.campo--error input,[\s\S]*?\{\s*border-width: 1px;\s*box-shadow: 0 0 0 1px var\(--error\);/);
+  // El resumen de errores: los renglones del envío quedan; lo corregido se marca y no se va hasta el envío siguiente.
+  const envio = [{ id: 'a', texto: 'Falta A' }, { id: 'b', texto: 'Falta B' }];
+  assert.deepEqual(V.renglonesDelResumen(envio, [{ id: 'b', texto: 'Falta B' }]), [{ id: 'a', texto: 'Falta A', corregido: true }, { id: 'b', texto: 'Falta B', corregido: false }]);
+  assert.deepEqual(V.renglonesDelResumen(envio, [{ id: 'b', texto: 'B, ahora' }, { id: 'c', texto: 'Falta C' }]).map((r) => [r.id, r.texto, r.corregido]), [['a', 'Falta A', true], ['b', 'B, ahora', false], ['c', 'Falta C', false]]);
+  assert.deepEqual(V.renglonesDelResumen([], []), []);
+  assert.match(formulario, /const renglones = renglonesDelResumen\(delEnvio\.intento === intento \? delEnvio\.lista : errores, errores\);/);
+  // Revisión del PR: el lector oye el resumen una vez por envío (se vuelve a montar con la clave del envío) y no a cada
+  // corrección (`aria-live="off"`: con el `role="alert"` solo, se releía entero al salir de cada campo corregido).
+  const resumen = formulario.slice(formulario.indexOf('export function ResumenDeErrores('), formulario.indexOf('export function Aviso('));
+  assert.match(resumen, /key=\{intento\}/);
+  assert.match(resumen, /role="alert"\s+aria-live="off"/);
+  // Y cada envío cuenta, también el que pasa la revisión: si no, el resumen quedaba con lo anterior tachado («Ya corregiste
+  // lo marcado.») después de un envío que salió bien (la consola de Administración y vincular Google).
+  for (const r of ['app/admin/access/recuperacion-asistida.tsx', 'app/admin/access/restablecer-segundo-factor.tsx', 'app/admin/incorporar.tsx', 'app/admin/professional/nombre.tsx']) {
+    assert.match(leer(r), /setErrores\(\{\}\);\n\s*setIntento\(\(n\) => n \+ 1\);/, r);
+  }
+  assert.match(leer('components/acceso-con-google.tsx'), /setError\(null\);\n\s*setIntento\(\(n\) => n \+ 1\);\n\s*setEnviando\(true\);/);
+  // Dónde se usa: el objetivo, la evaluación, el calculador, el paso 1 del asistente de Entrenamiento y el cuadro del rango
+  // (el paso 1 del de Nutrición se retiró con DL-193).
+  const formularios = leer('app/pro/advisees/nutrition/formularios.tsx');
+  assert.match(formularios, /<form className="formulario evaluacion-inicial avisos-con-lugar"/);
+  assert.match(formularios, /<form className="formulario avisos-con-lugar" onSubmit=\{enviar\}/);
+  assert.equal(formularios.match(/data-con-aviso>/g)?.length, 2, 'la evaluación de referencia y el fundamento, que no pasan por Campo');
+  assert.match(leer('app/pro/advisees/nutrition/calculador.tsx'), /<div className="calculador avisos-con-lugar" data-calculador>/);
+  assert.match(leer('app/pro/advisees/asistente/punto-de-partida.tsx'), /<RenglonDelAviso id="falta-punto-de-partida"/);
+  assert.equal(leer('app/pro/advisees/nutrition/rangos-indicados-del-plan.tsx').match(/<RenglonDelAviso id=/g)?.length, 3);
+  assert.match(leer('app/pro/advisees/evaluacion/evaluacion-inicial.tsx'), /<RenglonDelAviso id=\{`\$\{id\}-problema`\}/);
+});
+
+test('RP-19 · el calculador: el gasto en reposo y las tablas quedan en su lugar aunque un factor no se entienda', async () => {
+  const K = await import('../src/app/pro/advisees/nutrition/calculador-del-objetivo.ts');
+  const HOY = '2026-11-20';
+  const bien = { ...K.calculadorInicial([], HOY), peso: '70', talla: '175', edad: '30', sexo: 'MALE', factor: '1,55', proteinaPorKg: '1,8', grasaPorKg: '0,9' };
+  assert.ok(K.calculoEnVivo(bien, [], HOY));
+  // Vaciar el factor para escribir otro: no hay cálculo, pero el gasto en reposo sigue (no depende del factor).
+  const sinFactor = { ...bien, factor: '' };
+  assert.equal(K.calculoEnVivo(sinFactor, [], HOY), null);
+  const reposo = K.reposoEnVivo(sinFactor, []);
+  assert.equal(reposo.resting.state, 'CALCULATED');
+  assert.equal(reposo.resting.applied, K.calculoEnVivo(bien, [], HOY).resultado.resting.applied);
+  assert.equal(reposo.datos.weightKg.value, 70);
+  const calculador = leer('app/pro/advisees/nutrition/calculador.tsx');
+  assert.match(calculador, /const reposo = reposoEnVivo\(valores, lista\);/);
+  assert.match(calculador, /<div className="calculador__metodo" data-gasto-en-reposo=\{reposo\.resting\.state\}>/);
+  assert.doesNotMatch(calculador, /\{vivo \? \(\s*<div className="calculador__metodo"/);
+  assert.doesNotMatch(calculador, /\{vivo\?\.resultado\.totals && vivo\.resultado\.energy \? \(/);
+  assert.match(calculador, /<TablaDeMacros titulo=\{conDescanso \? C\.diaDeEntrenamiento : C\.elDia\} m=\{macrosDelCalculo\?\.day \?\? null\} \/>/);
+  // «Completá los datos de arriba» ya no aparece arriba del botón: va en su renglón, al lado.
+  assert.doesNotMatch(calculador, /\{!vivo \? <p className="nota">\{C\.sinCalculo\}<\/p> : null\}/);
+  assert.match(calculador, /<RenglonDelAviso juntoAlBoton anunciar data-por-que-no-se-usa>/);
+  // Una cantidad con su ícono y un «—» ocupan el mismo renglón: la cantidad, alineada arriba (si no, asoma 1,9 px y la fila
+  // con «—» es más baja: al vaciar el factor, los g/kg subían).
+  const css = leer('app/globals.css');
+  assert.match(css, /\.calculador__tabla \.cantidad-del-macro,\s*\.reparto-por-comida__tabla \.cantidad-del-macro \{\s*vertical-align: top;\s*\}/);
 });

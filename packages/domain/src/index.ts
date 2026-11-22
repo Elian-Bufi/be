@@ -216,3 +216,5 @@ export * from './contratos-objetivo-y-calculador';
 export * from './calculador-de-macros';
 // WP-EVALUACION-INICIAL-2 (DL-189): la evaluación inicial como pantallazo del caso (los críticos, lo que necesita el cálculo).
 export * from './evaluacion-inicial';
+// WP-RPE-Y-MAXIMO-ESTIMADO (DL-192): el RPE como segunda notación del RIR y el máximo estimado escrito en esa notación.
+export * from './notacion-del-esfuerzo';

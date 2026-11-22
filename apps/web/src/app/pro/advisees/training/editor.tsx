@@ -78,13 +78,19 @@ import {
   type PlanConObjetivos,
   type SesionHabitual,
   type ValidationIssue,
+  NOTACION_POR_OMISION,
+  notacionDe,
+  type NotacionDelEsfuerzo,
 } from '@be/domain';
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { ProveedorDeLaNotacion } from '../notacion-del-esfuerzo';
+import { NotacionDelPlan } from './notacion-del-plan';
 import { Ayuda, AvisoFlotante } from '../../../../components/ayuda';
 import { CampoDeNombre } from '../../../../components/campo-de-nombre';
 import { EnPartes } from '../../../../components/en-partes';
 import { Cargando, ErrorConReintento } from '../../../../components/estados';
 import { Aviso } from '../../../../components/formulario';
+import { ExplicacionAPedido } from '../../../../components/explicacion-a-pedido';
 import { CuadroEnfocado } from '../../../../components/cuadro-enfocado';
 import { Icono } from '../../../../components/icono';
 import { MenuDeAcciones } from '../../../../components/menu-de-acciones';
@@ -405,6 +411,8 @@ export function EditorDePlan({
   const [cuando, setCuando] = useState<EleccionDeLaProxima>(NADA_ELEGIDO);
   // La agenda (DL-137): los días de cada sesión, que se eligen junto a ella (C5). «Ver próximas fechas» abre lo que sale.
   const [agenda, setAgenda] = useState<AgendaDeEntrenamiento | null>(null);
+  // DL-192 (RPE-D01): cómo se escribe el esfuerzo en esta versión. Viaja con cada guardado, como la agenda.
+  const [notacion, setNotacion] = useState<NotacionDelEsfuerzo>(NOTACION_POR_OMISION);
   const [fechasAbiertas, setFechasAbiertas] = useState(false);
   const [sucio, setSucio] = useState(false);
   const [guardando, setGuardando] = useState(false);
@@ -541,6 +549,7 @@ export function EditorDePlan({
     setEjercicios(ejerciciosDe(r.datos.data));
     setProximaRevision(r.datos.data.nextReviewAt ?? '');
     setAgenda(r.datos.data.agenda);
+    setNotacion(notacionDe(r.datos.data.effortNotation));
     setSucio(false);
     setFallo(false);
     setConflicto(false);
@@ -549,7 +558,7 @@ export function EditorDePlan({
 
   useEffect(() => {
     ediciones.current += 1;
-  }, [bloques, agenda, proximaRevision, metadatos]);
+  }, [bloques, agenda, proximaRevision, metadatos, notacion]);
 
   useEffect(() => {
     void cargar();
@@ -617,6 +626,8 @@ export function EditorDePlan({
       changes: { blocks: bloquesEnviados },
       nextReviewAt: proximaRevision || null,
       agenda: agendaEnviada,
+      // DL-192: la notación viaja siempre; los valores de las series siguen siendo RIR.
+      effortNotation: notacion,
       ...actualizarObjetivo,
     });
     if (sesionPerdida(r) || accesoRetirado(r)) {
@@ -730,7 +741,7 @@ export function EditorDePlan({
   const puedeGuardar = loQueNoDejaGuardar(bloques).length === 0;
   // ED-03: por qué «Guardar ahora» está apagado, o `null`.
   const sinGuardarAhora = motivoSinGuardarAhora({ guardando, sucio, conflicto });
-  const cambiosParaGuardar = useMemo(() => [bloques, agenda, proximaRevision, metadatos], [bloques, agenda, proximaRevision, metadatos]);
+  const cambiosParaGuardar = useMemo(() => [bloques, agenda, proximaRevision, metadatos, notacion], [bloques, agenda, proximaRevision, metadatos, notacion]);
   const autoguardado = useAutoguardado({
     habilitado: !!version && sucio && puedeGuardar && !guardando && !conflicto && !confirmar && !activando && !guardarPlantilla && !descartar,
     cambios: cambiosParaGuardar,
@@ -1290,8 +1301,11 @@ export function EditorDePlan({
     confirmar && baseDeLaComparacion
       ? compararEntrenamiento(baseDeLaComparacion, bloques, {
           nombreDelEjercicio: (id) => nombres[id] ?? nombresDeLaVigente[id] ?? 'Ejercicio',
-          renglon: (p) => ejercicioPlegadoDelEditor(p, 0).resumen,
-          ...(vigente?.plan ? { agendas: { vigente: vigente.plan.agenda, borrador: agendaVisible } } : {}),
+          // DL-192: los dos renglones, en la notación del borrador (la que se lee en el editor); si cambió, se dice.
+          renglon: (p) => ejercicioPlegadoDelEditor(p, 0, notacion).resumen,
+          ...(vigente?.plan
+            ? { agendas: { vigente: vigente.plan.agenda, borrador: agendaVisible }, notaciones: { vigente: notacionDe(vigente.plan.effortNotation), borrador: notacion } }
+            : {}),
         })
       : null;
   // Lo que va a ver la persona: cada sesión, con sus días si los tiene, y lo que tiene.
@@ -2125,6 +2139,8 @@ export function EditorDePlan({
     : null;
 
   return (
+    // DL-192: todo lo de abajo (las series, la lectura de cada ejercicio, la fuerza estimada) va en la notación del borrador.
+    <ProveedorDeLaNotacion value={plantilla ? NOTACION_POR_OMISION : notacion}>
     <section className="seccion editor-del-plan editor-de-entrenamiento estacion" aria-labelledby="titulo-borrador" data-estacion data-panel-abierto={panelAbierto ? '' : undefined} data-en-el-asistente={pasoDelAsistente ? '' : undefined}>
       {/* ED-15 (DJ-6): la barra de comandos, fija, con cada acción siempre en el mismo lugar. El único botón lleno es
           «Revisar y activar…». «Guardar como preset» y lo demás van en el «⋯» (ED-12). */}
@@ -2312,11 +2328,14 @@ export function EditorDePlan({
       {esDelPlan(version) && version.templateOrigin ? <NotaDeOrigen token={token} origen={version.templateOrigin} /> : null}
       {bloqueadoPorLaApp ? (
         <Aviso tipo="info">
-          <div id="motivo-sin-activar">
+          {/* RP-22 (DL-188): a la vista, el título y qué hacer; el porqué, detrás de un «?». */}
+          <div id="motivo-sin-activar" data-motivo-sin-activar>
             <p>
-              <strong>{COPY_COMPATIBILIDAD_DE_CLIENTES.activacionBloqueadaTitulo}</strong>
+              <strong>{COPY_COMPATIBILIDAD_DE_CLIENTES.activacionBloqueadaTitulo}</strong>{' '}
+              <ExplicacionAPedido nombre="Por qué todavía no se puede activar">
+                {ACTIVACION_BLOQUEADA_POR_LA_APP}
+              </ExplicacionAPedido>
             </p>
-            <p>{ACTIVACION_BLOQUEADA_POR_LA_APP}</p>
             <p>{COPY_COMPATIBILIDAD_DE_CLIENTES.queHacer}</p>
           </div>
         </Aviso>
@@ -2329,9 +2348,11 @@ export function EditorDePlan({
         <Aviso tipo="info">
           <div id="motivo-sin-activar-calentamiento" data-calentamiento-bloqueado>
             <p>
-              <strong>{COPY_CALENTAMIENTO_Y_LA_APP.activacionBloqueadaTitulo}</strong>
+              <strong>{COPY_CALENTAMIENTO_Y_LA_APP.activacionBloqueadaTitulo}</strong>{' '}
+              <ExplicacionAPedido nombre="Por qué todavía no se puede activar">
+                {COPY_CALENTAMIENTO_Y_LA_APP.activacionBloqueada}
+              </ExplicacionAPedido>
             </p>
-            <p>{COPY_CALENTAMIENTO_Y_LA_APP.activacionBloqueada}</p>
             <p>{COPY_CALENTAMIENTO_Y_LA_APP.queHacer}</p>
           </div>
         </Aviso>
@@ -2557,6 +2578,18 @@ export function EditorDePlan({
               )}
             </section>
           ) : null}
+          {/* DL-192 (RPE-01): cómo se escribe el esfuerzo en esta versión. La plantilla no la lleva: el plan que sale de una
+              nace con la última que usó el profesional. */}
+          {plantilla ? null : (
+            <NotacionDelPlan
+              notacion={notacion}
+              onCambiar={(n) => {
+                setNotacion(n);
+                setSucio(true);
+                setMensaje(null);
+              }}
+            />
+          )}
         </div>
         <div id="zona-editor" className="estacion__zona estacion__centro" data-zona="editor" role="region" aria-label={CE.editor} tabIndex={-1}>
           {/* C9: después de «Ir a…», la vuelta a la revisión, fija arriba de la sesión mientras se corrige. */}
@@ -3197,6 +3230,7 @@ export function EditorDePlan({
         />
       )}
     </section>
+    </ProveedorDeLaNotacion>
   );
 }
 

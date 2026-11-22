@@ -8,10 +8,15 @@
  */
 import {
   COPY_FUERZA,
+  conQueSeEstimo,
+  copyDeLaEstimacion,
   diaDeLaEstimacion,
   estimarLaSerie,
   leerNumero,
+  motivoEnLaNotacion,
   motivoEnPalabras,
+  textoDelEsfuerzo,
+  type NotacionDelEsfuerzo,
   origenDeLaEstimacion,
   PASOS_DEL_REDONDEO,
   referenciaDeLaEstimacion,
@@ -59,10 +64,23 @@ export function estimacionDelPunto(p: PuntoDeFuerza, exerciseId: string): Estima
  */
 export const quienLaEscribio = (p: PuntoDeFuerza, nombre: string): string => origenDeLaEstimacion(p.source === 'OBSERVED' ? 'OBSERVADA' : 'PERSONA', nombre);
 
-/** «70 kg × 12 · RIR 0»: la serie de origen, como se escribió. */
-export function laSerie(p: PuntoDeFuerza): string {
+/**
+ * «70 kg × 12 · RIR 0»: la serie de origen, como se escribió. DL-192: en un plan en RPE, «70 kg × 12 · RPE 10»; el RIR
+ * guardado no cambia.
+ */
+export function laSerie(p: PuntoDeFuerza, notacion: NotacionDelEsfuerzo = 'RIR'): string {
   const e = p.estimate;
-  return `${numeroCorto(e.load.value)} ${e.load.unit} × ${e.completedRepetitions} · RIR ${numeroCorto(e.rir)}`;
+  const esfuerzo = notacion === 'RIR' ? `RIR ${numeroCorto(e.rir)}` : (textoDelEsfuerzo(e.rir, notacion) ?? `RIR ${numeroCorto(e.rir)}`);
+  return `${numeroCorto(e.load.value)} ${e.load.unit} × ${e.completedRepetitions} · ${esfuerzo}`;
+}
+
+/**
+ * DL-192 (RPE-04) · con qué serie salió el valor, en la notación: «estimado con 5 reps a RPE 8 · 100 kg» o «… a RIR 2 ·
+ * 100 kg». Va al lado del valor, para que nunca se lea como una repetición máxima probada (RPE-D06).
+ */
+export function conQueSeEstimoElPunto(p: PuntoDeFuerza, notacion: NotacionDelEsfuerzo): string {
+  const e = p.estimate;
+  return `${conQueSeEstimo({ repeticiones: e.completedRepetitions, rir: e.rir }, notacion)} · ${numeroCorto(e.load.value)} ${e.load.unit}`;
 }
 
 const numeroCorto = (n: number): string => String(n).replace('.', ',');
@@ -103,9 +121,9 @@ export function antiguedad(fecha: string, hoy: string): string {
  * En la sesión del punto, las series que no entraron y por qué: «Serie 3: el RIR es el del plan» (ED-73). Con otra
  * prescripción del mismo ejercicio en la sesión, el número solo no la ubica: sus series dicen de cuál son («Serie 1, de
  * la otra prescripción del ejercicio»; con más de una, numeradas en el orden en que aparecen). Primero las de la
- * prescripción del punto.
+ * prescripción del punto. DL-192: los motivos del esfuerzo, en la notación del plan («el RPE es menor que 8»).
  */
-export function loQueNoEntroEnLaSesion(p: PuntoDeFuerza, noEntraron: readonly SerieQueNoEntro[]): string[] {
+export function loQueNoEntroEnLaSesion(p: PuntoDeFuerza, noEntraron: readonly SerieQueNoEntro[], notacion: NotacionDelEsfuerzo = 'RIR'): string[] {
   if (p.origin.type !== 'TRAINING_EXECUTION') return [];
   const { id, prescriptionId } = p.origin;
   const deLaSesion = noEntraron.filter((s) => s.executionId === id);
@@ -115,23 +133,24 @@ export function loQueNoEntroEnLaSesion(p: PuntoDeFuerza, noEntraron: readonly Se
   const orden = (s: SerieQueNoEntro): number => (s.prescriptionId === prescriptionId ? 0 : otras.indexOf(s.prescriptionId) + 1);
   return [...deLaSesion]
     .sort((a, b) => orden(a) - orden(b) || a.setIndex - b.setIndex)
-    .map((s) => `Serie ${s.setIndex}${deCual(s)}: ${motivoEnPalabras({ entra: false, motivo: s.reason, campos: s.fields })}`);
+    .map((s) => `Serie ${s.setIndex}${deCual(s)}: ${motivoEnLaNotacion(s.reason, motivoEnPalabras({ entra: false, motivo: s.reason, campos: s.fields }), notacion)}`);
 }
 
 /**
  * Lo que hace falta para estimar, en palabras (ED-75, el estado vacío). Si hay series registradas que no entraron, la
- * regla del RIR va siempre, con el texto de ED-72; los motivos más frecuentes, en una línea.
+ * regla del RIR va siempre, con el texto de ED-72; los motivos más frecuentes, en una línea. DL-192: la regla y los
+ * motivos del esfuerzo, en la notación del plan («RPE 8 a 10»).
  */
-export function loQueHaceFalta(noEntraron: readonly SerieQueNoEntro[]): { readonly motivos: string | null; readonly regla: string } {
+export function loQueHaceFalta(noEntraron: readonly SerieQueNoEntro[], notacion: NotacionDelEsfuerzo = 'RIR'): { readonly motivos: string | null; readonly regla: string } {
   const cuenta = new Map<MotivoFueraDeLaEstimacion, number>();
   for (const s of noEntraron) cuenta.set(s.reason, (cuenta.get(s.reason) ?? 0) + 1);
   const motivos = [...cuenta.entries()]
     .sort((a, b) => b[1] - a[1])
     .slice(0, 3)
-    .map(([m]) => COPY_FUERZA.motivo[m]);
+    .map(([m]) => motivoEnLaNotacion(m, COPY_FUERZA.motivo[m], notacion));
   return {
     motivos: motivos.length === 0 ? null : `Las series registradas no entran: ${motivos.join('; ')}.`,
-    regla: COPY_FUERZA.reglaDelRir,
+    regla: copyDeLaEstimacion(notacion).reglaDelRir,
   };
 }
 
@@ -178,17 +197,19 @@ export type SerieObservadaEnVivo =
 
 const QUE_FALTA = { carga: 'Falta la carga: un número mayor que 0.', repeticiones: 'Faltan las repeticiones: un número entero, desde 1.' } as const;
 
-export function serieObservadaEnVivo(s: SerieObservadaEscrita): SerieObservadaEnVivo {
+/** DL-192: lo que dice el cuadro, en la notación del plan («Con un RPE menor que 8 no se estima»); el RIR guardado no cambia. */
+export function serieObservadaEnVivo(s: SerieObservadaEscrita, notacion: NotacionDelEsfuerzo = 'RIR'): SerieObservadaEnVivo {
   const carga = leerNumero(s.carga);
   const repeticiones = leerNumero(s.repeticiones);
   if (carga === null || !(carga > 0)) return { tipo: 'incompleta', texto: QUE_FALTA.carga };
   if (repeticiones === null || !Number.isInteger(repeticiones) || repeticiones < 1) return { tipo: 'incompleta', texto: QUE_FALTA.repeticiones };
   const r = estimarLaSerie({ exerciseId: s.exerciseId, fuente: 'OBSERVADA', load: { value: carga, unit: s.unidad }, completedRepetitions: repeticiones, rir: s.rir, fechaCivil: s.fecha });
+  const c = copyDeLaEstimacion(notacion);
   if (r.entra) return { tipo: 'estima', estimacion: r.estimacion, carga, repeticiones, rir: r.estimacion.rir };
-  if (r.motivo === 'SIN_RIR') return { tipo: 'no-se-estima', texto: COPY_FUERZA.sinRir };
-  if (r.motivo === 'RIR_MAYOR_QUE_2') return { tipo: 'no-se-estima', texto: COPY_FUERZA.rirMayorQue2 };
+  if (r.motivo === 'SIN_RIR') return { tipo: 'no-se-estima', texto: c.sinRir };
+  if (r.motivo === 'RIR_MAYOR_QUE_2') return { tipo: 'no-se-estima', texto: c.rirMayorQue2 };
   if (r.motivo === 'MAS_DE_12') return { tipo: 'no-se-estima', texto: COPY_FUERZA.masDe12 };
-  return { tipo: 'no-se-estima', texto: `No se estima: ${motivoEnPalabras(r)}.` };
+  return { tipo: 'no-se-estima', texto: `No se estima: ${motivoEnLaNotacion(r.motivo, motivoEnPalabras(r), notacion)}.` };
 }
 
 /**
@@ -203,6 +224,15 @@ export function esLaFechaFutura(r: { readonly ok: boolean; readonly tipo?: strin
 export const RIR_DEL_CUADRO: readonly number[] = [0, 0.5, 1, 1.5, 2];
 /** «Más de 2»: un RIR que se puede elegir para que el cuadro diga que no se estima (ED-72); nunca se guarda. */
 export const RIR_MAS_DE_2 = 3;
+
+/**
+ * DL-192 · cómo se lee cada opción del RIR del cuadro en la notación del plan: en RIR, «0» a «2» y «Más de 2»; en RPE,
+ * «10» a «8» y «Menos de 8». Lo que se elige y se guarda sigue siendo el RIR.
+ */
+export function opcionDelCuadro(rir: number, notacion: NotacionDelEsfuerzo, masDe2: string): string {
+  if (rir === RIR_MAS_DE_2) return notacion === 'RIR' ? masDe2 : 'Menos de 8';
+  return notacion === 'RIR' ? numeroCorto(rir) : numeroCorto(10 - rir);
+}
 
 // ─── ED-72 · corregir o anular una serie observada (API-FZA-03) ──────────────────────────────────────────────────
 
