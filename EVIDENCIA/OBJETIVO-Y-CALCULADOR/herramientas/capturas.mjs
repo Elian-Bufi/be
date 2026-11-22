@@ -350,7 +350,8 @@ function pantallas(norma) {
       },
     },
     {
-      // NUP-04 frente al rango propuesto: una opción (o receta) del almuerzo, ubicada frente al rango de su comida.
+      // NUP-04 frente al rango propuesto: una opción (o receta) del almuerzo, ubicada frente al rango de su comida, en las
+      // franjas de la opción (RP-20).
       nombre: '08-receta-frente-al-rango-de-su-comida',
       llegar: async (page) => {
         if (!(await page.$(`${comida(2)}[data-abierta]`))) await clic(page, `${comida(2)} .comida-del-plan__boton`);
@@ -360,10 +361,18 @@ function pantallas(norma) {
         const n = conReceta >= 0 ? conReceta + 1 : 1;
         const boton = `${comida(2)} [data-opcion-plegable="${n}"] .opcion-plegable__boton`;
         if (await page.$(`${boton}[aria-expanded="false"]`)) await clic(page, boton);
-        await visible(page, `${comida(2)} [data-frente-a-los-rangos]`, null, 30_000);
-        await page.$eval(`${comida(2)} [data-frente-a-los-rangos]`, (e) => e.scrollIntoView({ block: 'center' }));
+        // RP-20 (#309): la opción ya no se lee en las líneas de «Frente al rango» (`data-frente-a-los-rangos`, que la comida
+        // dejó de mostrar) sino en sus franjas, debajo del total de la opción abierta.
+        const franjas = `${comida(2)} [data-franjas-de-la-opcion]`;
+        await visible(page, franjas, null, 30_000);
+        await page.$eval(franjas, (e) => e.scrollIntoView({ block: 'center' }));
         await pausa(400);
-        return { conReceta: conReceta >= 0, frente: await page.$$eval(`${comida(2)} [data-frente-a-los-rangos] li`, (xs) => xs.map((x) => x.innerText)) };
+        return {
+          conReceta: conReceta >= 0,
+          // Lo que dicen las franjas, en palabras (el texto para el lector), y el resumen de cada renglón (kcal, P, C y G).
+          enPalabras: await page.$eval(franjas, (e) => e.querySelector('.franjas > .visualmente-oculto')?.textContent ?? ''),
+          franjas: await page.$eval(`${franjas} [data-resumen-de-la-franja]`, (xs) => xs.map((x) => `${x.dataset.resumenDeLaFranja}: ${x.textContent}`)),
+        };
       },
     },
   ];
