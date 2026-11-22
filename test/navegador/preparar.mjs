@@ -66,6 +66,8 @@ export const RECORRIDOS = {
   // opción por comida (el día tiene indicado) y con uno que deja elegir el almuerzo (el día no tiene).
   comparacion: { habilitado: ['NUTRICION'], datos: ['comparacion'] },
   comparacionConOpciones: { habilitado: ['NUTRICION'], datos: ['comparacion-con-opciones'] },
+  // RP-19 (WP-RECORRIDO-PLAN-PULIDO, DL-188): con un error nada cambia de lugar, en el reparto, el objetivo y el calculador.
+  sinSaltos: { habilitado: ['NUTRICION'], datos: ['borrador'] },
   // RP-20 y RP-21 (DL-188): un borrador con el almuerzo en dos opciones y su rango indicado, para las franjas por comida.
   franjasPorComida: { habilitado: ['NUTRICION'], datos: ['franjas'] },
 };

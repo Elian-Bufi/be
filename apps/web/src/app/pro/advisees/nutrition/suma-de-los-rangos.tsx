@@ -19,8 +19,12 @@ import { COPY_PLANIFICACION as C, kcalDeLosGramos, objetivoDelDia, porcentajeDeL
 import { COPY_RANGOS_INDICADOS, NOMBRE_DEL_MACRO, rangoEnPalabras } from './rangos-indicados';
 import { RangoIndicadoConIconos, RotuloConIcono } from './cantidad-del-macro';
 
-/** NUP-06: la tabla de la suma. `comidas`: cada comida del día tipo con su rango indicado (o `null`). */
-export function SumaDeLosRangosIndicados({ comidas, objetivo }: { comidas: readonly { readonly nombre: string; readonly rango: Rango | null }[]; objetivo: VersionDeObjetivo | null }) {
+/**
+ * NUP-06: la tabla de la suma. `comidas`: cada comida del día tipo con su rango indicado (o `null`). RP-19 (DL-188, pedido
+ * del 22/11): en el editor ya no va arriba de las comidas (aparecía de golpe al proponer y corría todo); su chequeo es una
+ * línea del «Reparto por comida» y esta tabla, `enDetalle`, queda detrás de su «?»: sin título ni recuadro propios.
+ */
+export function SumaDeLosRangosIndicados({ comidas, objetivo, enDetalle = false }: { comidas: readonly { readonly nombre: string; readonly rango: Rango | null }[]; objetivo: VersionDeObjetivo | null; enDetalle?: boolean }) {
   // Puede haber más de una (una por día tipo en el paso 4, y la del editor detrás del asistente): cada una con su id.
   const id = useId();
   if (comidas.length === 0) return null;
@@ -29,11 +33,18 @@ export function SumaDeLosRangosIndicados({ comidas, objetivo }: { comidas: reado
   const filas = sumaFrenteAlObjetivo(suma, objetivo ? objetivoDelDia(objetivo) : null);
   const notas = [...new Set(filas.flatMap((f) => (f.nota ? [f.clave === 'kcal' ? f.nota : `${f.nombre}: ${f.nota}`] : [])))];
   return (
-    <section className="suma-de-los-rangos" aria-labelledby={`${id}-titulo`} data-suma-de-los-rangos>
-      <h3 id={`${id}-titulo`} className="suma-de-los-rangos__titulo">
-        <Icono nombre="objetivo" tamano={18} />
-        {C.sumaTitulo}
-      </h3>
+    <section
+      className={`suma-de-los-rangos${enDetalle ? ' suma-de-los-rangos--en-detalle' : ''}`}
+      aria-labelledby={enDetalle ? undefined : `${id}-titulo`}
+      aria-label={enDetalle ? C.sumaTitulo : undefined}
+      data-suma-de-los-rangos={enDetalle ? 'en-detalle' : ''}
+    >
+      {enDetalle ? null : (
+        <h3 id={`${id}-titulo`} className="suma-de-los-rangos__titulo">
+          <Icono nombre="objetivo" tamano={18} />
+          {C.sumaTitulo}
+        </h3>
+      )}
       <p className="nota">{C.sumaAyuda}</p>
       {sinRangos ? (
         <p className="nota" data-sin-rangos>

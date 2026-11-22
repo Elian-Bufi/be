@@ -44,7 +44,9 @@ export function RecuperacionAsistida() {
     if (!correo.trim()) encontrados['asis-correo'] = A.problemas.INVALID_LOCAL_IDENTIFIER;
     if (!fundamento.trim()) encontrados['asis-fundamento'] = A.problemas.RATIONALE_REQUIRED;
     if (Object.keys(encontrados).length > 0) return mostrar(encontrados);
+    // RP-19: este envío también cuenta; si no, el resumen quedaría con lo del anterior tachado.
     setErrores({});
+    setIntento((n) => n + 1);
     setEnviando(true);
     const r = await apiAdministrativa.emitirRecuperacionAsistida(sesion.token, { email: correo, rationale: fundamento });
     setEnviando(false);

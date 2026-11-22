@@ -46,6 +46,21 @@ export function alSalirDelCampo(a: AvisosDelFormulario, campo: readonly string[]
   return { intentado: true, mostrados, huboAvisos: a.huboAvisos || mostrados.length > 0 };
 }
 
+/**
+ * RP-19 (WP-RECORRIDO-PLAN-PULIDO, DL-188) · «Sin saltos»: los renglones del resumen de errores. Quedan los del último
+ * envío, en su orden y con el texto de ahora; lo corregido se marca y no se va hasta el envío siguiente (si se fuera, el
+ * resumen se achicaría y el formulario entero subiría al pasar al campo siguiente). Al final, lo que apareció después, al
+ * salir de un campo que estaba bien.
+ */
+export function renglonesDelResumen(delEnvio: readonly ErrorDeCampo[], ahora: readonly ErrorDeCampo[]): readonly (ErrorDeCampo & { readonly corregido: boolean })[] {
+  const actuales = new Map(ahora.map((e) => [e.id, e] as const));
+  const delEnvioIds = new Set(delEnvio.map((e) => e.id));
+  return [
+    ...delEnvio.map((e) => ({ id: e.id, texto: actuales.get(e.id)?.texto ?? e.texto, corregido: !actuales.has(e.id) })),
+    ...ahora.filter((e) => !delEnvioIds.has(e.id)).map((e) => ({ id: e.id, texto: e.texto, corregido: false })),
+  ];
+}
+
 /** Los `id` de un elemento y de los que lo contienen, hasta el formulario (un casillero dentro de un grupo con su aviso). */
 export function idsDelCampo(elemento: { readonly id?: string; readonly parentElement: unknown } | null, hasta: unknown): string[] {
   const ids: string[] = [];
@@ -92,4 +107,8 @@ export const COPY_AVISOS_VIVOS = {
   listoParaRegistrar: 'Listo para registrar',
   listoParaGuardar: 'Listo para guardar',
   listoParaEnviar: 'Listo para enviar',
+  /** RP-19: el resumen, cuando ya se corrigió todo lo marcado (queda hasta el envío siguiente). */
+  todoCorregido: 'Ya corregiste lo marcado.',
+  /** RP-19: lo que oye el lector junto a un renglón corregido del resumen. */
+  corregido: 'corregido',
 } as const;

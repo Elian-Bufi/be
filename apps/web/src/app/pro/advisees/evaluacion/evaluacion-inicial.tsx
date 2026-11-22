@@ -32,7 +32,7 @@ import {
 } from '@be/domain';
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import { Enlace } from '../../../../components/enlace';
-import { Aviso, Campo } from '../../../../components/formulario';
+import { Aviso, Campo, RenglonDelAviso } from '../../../../components/formulario';
 import { Icono } from '../../../../components/icono';
 import { api, nuevaClaveDeIdempotencia, type Resultado } from '../../../../lib/api';
 import { dia, diaCivil, diaSinElAnioEnCurso, diaYMesCivil, horaDelDia } from '../../../../lib/formato';
@@ -465,12 +465,10 @@ function DatoDelCalculo({ d, nombre, cambiado, onCambiar }: { d: DatoParaElCalcu
           <button type="button" className="boton boton--secundario boton--compacto" onClick={listo} data-listo-dato={d.dato}>
             {EI.listo}
           </button>
-          {problema ? (
-            <span id={`${id}-problema`} className="campo__error">
-              <span aria-hidden="true">⚠ </span>
-              {problema}
-            </span>
-          ) : null}
+          {/* RP-19 (DL-188): el aviso tiene su renglón mientras se edita: al aparecer no corre los datos de abajo. */}
+          <RenglonDelAviso id={`${id}-problema`} tipo={problema ? 'error' : 'nota'} className="dato-del-calculo__problema">
+            {problema}
+          </RenglonDelAviso>
         </span>
       )}
     </div>

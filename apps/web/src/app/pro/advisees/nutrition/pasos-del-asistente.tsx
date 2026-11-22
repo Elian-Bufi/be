@@ -13,6 +13,7 @@
  */
 import { todasLasPaginas, type ComidaHabitual, type EvaluacionNutricional, type VersionDeObjetivo } from '@be/domain';
 import { useEffect, useId, useState, type ReactNode } from 'react';
+import { RenglonDelAviso } from '../../../../components/formulario';
 import { Icono } from '../../../../components/icono';
 import { Pista } from '../../../../components/pista';
 import { api } from '../../../../lib/api';
@@ -72,11 +73,10 @@ export function PuntoDePartidaDeNutricion({ hayVigente, creando, onElegir, onSal
           </label>
         ))}
       </fieldset>
-      {falta && !elegido ? (
-        <p id="falta-punto-de-partida" className="campo__error" role="alert">
-          {C.elegiUnPuntoDePartida}
-        </p>
-      ) : null}
+      {/* RP-19 (DL-188): el aviso tiene su renglón: al tocar «Siguiente» sin elegir, el botón no baja. */}
+      <RenglonDelAviso id="falta-punto-de-partida" tipo={falta && !elegido ? 'error' : 'nota'} role="alert">
+        {falta && !elegido ? C.elegiUnPuntoDePartida : null}
+      </RenglonDelAviso>
     </ArmazonDelAsistente>
   );
 }
