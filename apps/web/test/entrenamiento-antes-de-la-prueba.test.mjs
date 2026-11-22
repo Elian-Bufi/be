@@ -191,3 +191,20 @@ test('RP-22 · lo nuevo en pantalla no usa palabras prohibidas y cada «%» llev
   for (const palabra of [/cumplimiento/i, /adherencia/i, /racha/i, /puntaje/i, /asesorad/i, /estaci[oó]n/i, /volumen/i]) assert.doesNotMatch(nuevos, palabra);
   assert.doesNotMatch(nuevos, /%/);
 });
+
+test('RP-22 · plantillas y habituales sin párrafos a la vista; la vuelta del editor de una plantilla como en las áreas', () => {
+  const plantillas = leer('app/pro/templates/mis-plantillas.tsx');
+  assert.match(plantillas, /<ExplicacionAPedido nombre="Qué es una plantilla y quién la ve" como="div">\n\s*<p className="nota">\{PLT\.queSeHaceAca\}<\/p>/);
+  assert.match(plantillas, /className="campo campo--filtro-angosto"/);
+  assert.match(leer('app/pro/templates/mis-habituales.tsx'), /<ExplicacionAPedido nombre="Quién ve tus habituales" como="div">/);
+  const edicion = leer('app/pro/advisees/training/edicion-de-plantilla.tsx');
+  assert.match(edicion, /className="boton boton--fantasma boton--compacto marco-del-area__volver" data-volver-a-plantillas/);
+  assert.match(edicion, /<ExplicacionAPedido nombre="Qué pasa con las cargas sugeridas" como="div">/);
+});
+
+test('RP-22 · desplegables legibles y los avisos con su lugar en la revisión y el objetivo', () => {
+  assert.match(RP22, /\.criterio-del-ejercicio \.campo:has\(select\[id\$='-base-carga'\]\),\n\.criterio-del-ejercicio \.campo:has\(select\[id\$='-base-reps'\]\) \{\n\s*flex: 0 1 17rem;/);
+  assert.match(RP22, /\.criterio-del-ejercicio \.campo:has\(select\[id\$='-unidad'\]\) \{\n\s*flex: 0 1 7rem;/);
+  assert.match(leer('app/pro/advisees/training/revisiones.tsx'), /<form className="revision-nueva__formulario avisos-con-lugar"/);
+  assert.match(leer('app/pro/advisees/training/resumen.tsx'), /<form className="formulario avisos-con-lugar" onSubmit=\{enviar\} noValidate data-objetivo-de-entrenamiento>/);
+});
