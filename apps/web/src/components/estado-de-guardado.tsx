@@ -32,9 +32,12 @@ export function EstadoDeGuardado({
   const conFallo = tipo === 'fallo' && !entrada.conflicto;
   return (
     <>
-      <p className={['estado-de-guardado', className].filter(Boolean).join(' ')} data-estado={tipo} role="status" aria-live="polite">
+      {/* RP-22: el texto en su propio elemento, para que la barra le dé un lugar de ancho fijo y lo corte con «…» si no
+          entra (el entero queda en el título y para el lector). Si su ancho siguiera al texto, «Guardado a las 17:49» y
+          «Pendiente de guardar: falta completar algo» corrían los botones de al lado. */}
+      <p className={['estado-de-guardado', className].filter(Boolean).join(' ')} data-estado={tipo} role="status" aria-live="polite" title={texto}>
         <Icono nombre={ICONO[tipo]} tamano={15} />
-        {texto}
+        <span className="estado-de-guardado__texto">{texto}</span>
       </p>
       {conFallo && onReintentar ? (
         <button type="button" className="boton boton--quieto boton--compacto estado-de-guardado__reintentar" data-reintentar onClick={onReintentar}>

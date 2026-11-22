@@ -47,7 +47,9 @@ test('TEST-EDP-004 · el componente: texto con ícono, «Reintentar» y el detal
   const fuente = leer('components/estado-de-guardado.tsx');
   // El estado se anuncia, y el ícono acompaña al texto.
   assert.match(fuente, /role="status" aria-live="polite"/);
-  assert.match(fuente, /<Icono nombre=\{ICONO\[tipo\]\} tamano=\{15\} \/>\n\s*\{texto\}/);
+  assert.match(fuente, /<Icono nombre=\{ICONO\[tipo\]\} tamano=\{15\} \/>\n\s*<span className="estado-de-guardado__texto">\{texto\}<\/span>/);
+  // RP-22: el texto entero en el título (en la barra, si no entra, se corta con «…»).
+  assert.match(fuente, /role="status" aria-live="polite" title=\{texto\}>/);
   // Un fallo (que no es el conflicto) ofrece «Reintentar» y el detalle plegado.
   assert.match(fuente, /const conFallo = tipo === 'fallo' && !entrada\.conflicto;/);
   assert.match(fuente, /\{conFallo && onReintentar \? \([\s\S]*?onClick=\{onReintentar\}[\s\S]*?COPY_GUARDADO\.reintentar/);
@@ -57,6 +59,22 @@ test('TEST-EDP-004 · el componente: texto con ícono, «Reintentar» y el detal
     d.textoDelDetalleDelFallo(d.detalleDelFallo({ ok: false, tipo: 'API', status: 503, codigo: 'DB_UNAVAILABLE', issues: [] }, '10:44')),
     'guardar el borrador · sin respuesta · 503 DB_UNAVAILABLE · 10:44 · sin datos de la persona',
   );
+});
+
+test('RP-22 · la barra de los editores: el estado en un lugar de ancho propio y las acciones ancladas a la derecha', () => {
+  // A 1280, «Guardado a las…» contra «Pendiente de guardar: falta completar algo» corría «Revisar y activar…» 159 px (la
+  // CI). El ancho del estado ya no depende del texto, y las acciones van a la derecha también en su propio renglón. La
+  // regla es de las clases de la barra: vale para Nutrición, Entrenamiento y la edición de una plantilla.
+  const CSS = leer('app/globals.css');
+  const regla = (selector) => {
+    const i = CSS.indexOf(`${selector} {`);
+    return CSS.slice(i, CSS.indexOf('}', i));
+  };
+  assert.match(regla('.editor-del-plan__estado'), /flex: 0 0 auto;[\s\S]*width: clamp\(12rem, 24vw, 23rem\);/);
+  assert.match(regla('.editor-del-plan__estado > .estado-de-guardado__texto'), /overflow: hidden;\n\s*text-overflow: ellipsis;/);
+  assert.match(regla('.editor-del-plan__acciones'), /justify-content: flex-end;[\s\S]*margin-inline-start: auto;/);
+  for (const ruta of [...EDITORES, 'app/pro/advisees/training/edicion-de-plantilla.tsx']) assert.match(leer(ruta), /<div className="editor-del-plan__acciones">/, ruta);
+  for (const ruta of EDITORES) assert.match(leer(ruta), /<EstadoDeGuardado\n\s*className="editor-del-plan__estado"/, ruta);
 });
 
 test('TEST-EDP-004 · los dos editores: «Guardar ahora», fijo y secundario, con su motivo cuando no hay nada que guardar', () => {

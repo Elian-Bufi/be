@@ -9063,8 +9063,18 @@ cada receta al elegirla, con «Primero las que entran». El panel «Rangos y tot
 los textos largos detrás de «?». Sin operaciones nuevas ni migraciones; no toca la APK. Pruebas:
 `franjas-por-comida.test.mjs` y el recorrido de navegador `franjasPorComida`.
 
+**RP-22 · Entrenamiento antes de la prueba (pedido del 2026-11-22).** Lo aprendido en el recorrido de Nutrición, llevado a
+la planificación de Entrenamiento antes de que Dirección la recorra. **INTEGRADA con el PR #311 · RP-D60 a RP-D72, a
+ratificar.** La tabla de series marca lo que no se entiende sin cambiar de tamaño y lo dice en un renglón fijo debajo; las
+repeticiones, el descanso y la carga tienen mínimo, máximo y paso (1 rep, 15 s, 2,5 kg o 5 lb; ×4 con Mayúsculas) con
+flechitas; el bloque «En vueltas» y el criterio con su aviso en su lugar; el catálogo de 35 rem desde 1280; plantillas,
+habituales y «Todavía no podés activar» con lo largo detrás de «?»; un `id` por problema en el resumen; lo que no se entiende
+(NaN) ya no cuenta como objetivo distinto por serie en la compatibilidad de clientes. Sin operaciones nuevas ni
+migraciones; no toca la APK. Pruebas: `entrenamiento-antes-de-la-prueba.test.mjs` y el recorrido `sinSaltos` en
+Entrenamiento, a cuatro anchos.
+
 **Lo que queda.**
-- Ratificar RP-D01 a RP-D17, RP-D18 a RP-D26 y RP-D40 a RP-D49.
+- Ratificar RP-D01 a RP-D17, RP-D18 a RP-D26, RP-D40 a RP-D49 y RP-D60 a RP-D72.
 - RP-19 anotado: la comida plegada suma el renglón «Indicado» al proponer y la cantidad de un alimento avisa en su fila
   (`comida-del-editor.tsx`, de otro frente); el mismo patrón fuera de la planificación (Entrenamiento, Seguimiento,
   formularios de la persona, recetas).
