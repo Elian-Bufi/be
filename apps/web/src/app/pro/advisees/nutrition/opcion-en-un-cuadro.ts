@@ -101,12 +101,6 @@ export const esDeDemostracion = (a: Pick<AlimentoDelBuscador, 'provenance'>): bo
 /** El ítem que nace al elegir un alimento: sin cantidad ni estado, que se completan en su fila (REG-06-122). */
 export const itemNuevo = (catalogItemId: string) => ({ catalogItemId, quantity: null, preparationState: null, note: null });
 
-/**
- * La opción que abre «Agregar una opción» del asistente (ED-30): vive solo en el cuadro hasta «Guardar la opción». Si se
- * cancela, el borrador no recibe una opción vacía que después impida activar.
- */
-export const opcionNueva = (k: number): { label: string; items: never[] } => ({ label: `Opción ${k + 1}`, items: [] });
-
 /** Lo mínimo de una opción para compararla y ponerla en el borrador. */
 export interface OpcionDelCuadro {
   readonly optionId?: string | undefined;

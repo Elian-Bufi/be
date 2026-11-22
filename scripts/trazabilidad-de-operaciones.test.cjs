@@ -169,6 +169,13 @@ FAMILIAS_DE_BE.OBC = 'DL-186';
  * aparte para que se integre sin pisar a otra familia que se sume en paralelo.
  */
 FAMILIAS_DE_BE.MHA = 'DL-190';
+/**
+ * RCT (DL-191, WP-RECETARIO-E-IMAGENES; aprobado por Dirección el 2026-11-22): el Recetario de BE, curado por
+ * Administración y de solo lectura para Nutrición; copiarlo a Mis recetas, proponer una receta propia con la cesión de la
+ * foto y la revisión de Administración. El 09 no la tiene, y no es REC (las recetas propias, DL-119) ni ALI (el canon de
+ * alimentos, DL-180), aunque copia su patrón. Se declara aparte para que se integre sin pisar a otra familia en paralelo.
+ */
+FAMILIAS_DE_BE.RCT = 'DL-191';
 
 test('el inventario del 09 tiene 122 operaciones y de cada una se lee su ruta', () => {
   assert.equal(inventario.size, 122);

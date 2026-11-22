@@ -18,7 +18,8 @@ import { recetaEnInstantanea, referenciaDeReceta, type RecetaEnInstantanea } fro
 type Tx = Prisma.TransactionClient;
 
 /**
- * DL-119 · una opción de una comida del plan que nace de una versión de receta propia (API-NUT-07 y 10).
+ * DL-119 · una opción de una comida del plan que nace de una versión de receta propia (API-NUT-07 y 10) o, desde DL-191, de
+ * una del Recetario de BE.
  * - La entrada trae `{ label, items: [], recipeVersionId }`. Los ítems los arma el servidor: los ingredientes de esa versión
  *   escalados a **una porción** (`cantidadDeUnaPorcion`), con su elemento, la versión del catálogo que cita la receta, la
  *   unidad y el estado. Si la entrada trae ítems, se rechaza: no se descartan en silencio.
@@ -62,9 +63,10 @@ export async function conOpcionesDeReceta(tx: Tx, profesionalId: string, entrada
   const citadas = entrada.dayTypes.flatMap((d) => d.meals.flatMap((m) => m.options.flatMap((o) => (o.recipeVersionId ? [o.recipeVersionId] : []))));
   if (citadas.length === 0) return contenido;
   const validas = [...new Set(citadas)].filter((id) => /^[0-9a-f-]{36}$/i.test(id));
-  // Solo una receta propia: la de otro profesional (o una versión inexistente) es una referencia inválida, sin distinguir.
+  // Una receta propia o, desde DL-191, una del Recetario de BE, que se usa tal cual: la de otro profesional (o una versión
+  // inexistente) es una referencia inválida, sin distinguir.
   const versiones = new Map(
-    (validas.length ? await tx.versionDeReceta.findMany({ where: { id: { in: validas }, receta: { profesionalId } } }) : []).map((v) => [v.id, v]),
+    (validas.length ? await tx.versionDeReceta.findMany({ where: { id: { in: validas }, receta: { OR: [{ profesionalId }, { delRecetario: { isNot: null } }] } } }) : []).map((v) => [v.id, v]),
   );
   const issues: ValidationIssue[] = [];
   const resuelto: ContenidoDePlan = {

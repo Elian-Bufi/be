@@ -334,6 +334,11 @@ model Identidad {
   alimentosSumadosAlCanon   AlimentoDelCanon[]                 @relation("AlimentoDelCanonDelAdministrador")
   // DL-180, segundo tramo (NUA-08): las medidas caseras que definió para sus alimentos cargados a mano.
   medidasCaserasDefinidas   MedidasCaserasDeAlimento[]         @relation("MedidasCaserasDelAutor")
+  // DL-191 (WP-RECETARIO-E-IMAGENES): las recetas que propuso al Recetario de BE y, como administradora, las que sumó y
+  // lo que decidió sobre cada propuesta.
+  propuestasAlRecetario     PropuestaAlRecetario[]              @relation("PropuestaAlRecetarioDelProfesional")
+  recetasSumadasAlRecetario RecetaDelRecetario[]                @relation("RecetaDelRecetarioDelAdministrador")
+  decisionesSobrePropuestas DecisionSobrePropuestaAlRecetario[] @relation("DecisionSobrePropuestaDelAdministrador")
 
   @@map("identidad")
 }
@@ -3570,16 +3575,22 @@ enum CambioDeImagenDeReceta {
 /// DL-119 — Receta: una preparación propia del profesional (REG-06-135, inciso 2). La identidad es estable; el
 /// contenido vive en sus versiones inmutables y la imagen, en sus asociaciones. `version` es el token de concurrencia:
 /// avanza de a uno con cada versión nueva y con cada cambio de imagen (trigger).
+/// DL-191 (WP-RECETARIO-E-IMAGENES): una receta del Recetario de BE no tiene profesional (`profesionalId` NULL), como un
+/// alimento de BE; la base exige que tenga su fila en `receta_del_recetario` (trigger diferido).
 model Receta {
   id                     String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  profesionalId          String   @map("profesional_id") @db.Uuid
+  profesionalId          String?  @map("profesional_id") @db.Uuid
   version                Int      @default(1)
   momentoDeRegistro      DateTime @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
   momentoDeActualizacion DateTime @default(now()) @map("momento_de_actualizacion") @db.Timestamptz(3)
 
-  profesional Identidad                    @relation("RecetaDelProfesional", fields: [profesionalId], references: [id], onDelete: Restrict, onUpdate: Restrict)
-  versiones   VersionDeReceta[]
-  imagenes    AsociacionDeImagenDeReceta[]
+  profesional  Identidad?                   @relation("RecetaDelProfesional", fields: [profesionalId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  versiones    VersionDeReceta[]
+  imagenes     AsociacionDeImagenDeReceta[]
+  delRecetario RecetaDelRecetario?
+  copia        CopiaDeRecetaDelRecetario?   @relation("CopiaDeLaReceta")
+  copiasHechas CopiaDeRecetaDelRecetario[]  @relation("CopiaDeRecetaOrigen")
+  propuestas   PropuestaAlRecetario[]
 
   @@index([profesionalId, momentoDeActualizacion])
   @@map("receta")
@@ -3600,14 +3611,16 @@ model VersionDeReceta {
   ingredientes      Json
   metodoDeCalculo   MetodoDeCalculoNutricional @map("metodo_de_calculo")
   resultado         Json
-  autorId           String                     @map("autor_id") @db.Uuid
+  /// DL-191: NULL solo en una receta del Recetario de BE que sembró BE (sin persona que la escriba).
+  autorId           String?                    @map("autor_id") @db.Uuid
   procedencia       Json
   momentoDeRegistro DateTime                   @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
 
-  receta      Receta               @relation(fields: [recetaId], references: [id], onDelete: Restrict, onUpdate: Restrict)
-  predecesora VersionDeReceta?     @relation("CadenaDeReceta", fields: [predecesoraId], references: [id], onDelete: Restrict, onUpdate: Restrict)
-  sucesora    VersionDeReceta?     @relation("CadenaDeReceta")
+  receta      Receta                 @relation(fields: [recetaId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  predecesora VersionDeReceta?       @relation("CadenaDeReceta", fields: [predecesoraId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  sucesora    VersionDeReceta?       @relation("CadenaDeReceta")
   ingestas    IngestaNutricional[]
+  propuestas  PropuestaAlRecetario[]
 
   @@unique([recetaId, numero])
   @@map("version_de_receta")
@@ -3649,8 +3662,13 @@ model Medio {
   imagenDeRecetas    AsociacionDeImagenDeReceta[]
   evidenciaVisual    EvidenciaVisualDeIngesta?
   imagenDeEjercicios AsociacionDeImagenDeEjercicio[]
+  variantes          VarianteGuardadaDeMedio[]
+  propuestas         PropuestaAlRecetario[]
 
   @@index([propietarioId, finalidad, estado])
+  /// DL-191 (REC-D04): una sola copia por huella. La imagen de una receta que se sube de nuevo se busca por su dueño y el
+  /// SHA-256 de lo recibido.
+  @@index([propietarioId, sha256Original])
   @@map("medio")
 }
 
@@ -3664,6 +3682,115 @@ model ContenidoDeMedio {
   medio Medio @relation(fields: [medioId], references: [id], onDelete: Restrict, onUpdate: Restrict)
 
   @@map("contenido_de_medio")
+}
+
+/// DL-191 (WP-RECETARIO-E-IMAGENES, REC-01): las dos medidas de la imagen de una receta. MINIATURA, 400 px en el lado
+/// mayor, para listas, tarjetas y el carrusel; GRANDE, 1200 px, para el detalle.
+enum VarianteDeMedio {
+  MINIATURA
+  GRANDE
+}
+
+/// DL-191 (REC-01, REC-D01 a D03) — Una variante WebP de la imagen de una receta. En una subida nueva, la grande es lo
+/// guardado (`contenido_de_medio`) y acá va la miniatura; en un medio de antes (JPEG de 1600 px), las dos se generan la
+/// primera vez que se piden, desde lo guardado, y quedan acá. No se reescriben; se borran solo con el medio SUPRIMIDO.
+model VarianteGuardadaDeMedio {
+  medioId           String          @map("medio_id") @db.Uuid
+  variante          VarianteDeMedio
+  tipo              String
+  bytes             Int
+  ancho             Int
+  alto              Int
+  sha256            String
+  contenido         Bytes
+  momentoDeRegistro DateTime        @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+
+  medio Medio @relation(fields: [medioId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@id([medioId, variante])
+  @@map("variante_de_medio")
+}
+
+/// DL-191 (REC-05) — Una receta del Recetario de BE: de todos los profesionales de Nutrición, de solo lectura. La sumó un
+/// administrador con su rol vigente, desde una propuesta (`propuestaId`), o la sembró BE (`claveDeSemilla`, el código
+/// editorial de la semilla, y sin administrador). Append-only.
+model RecetaDelRecetario {
+  recetaId          String   @id @map("receta_id") @db.Uuid
+  propuestaId       String?  @unique @map("propuesta_id") @db.Uuid
+  administradorId   String?  @map("administrador_id") @db.Uuid
+  claveDeSemilla    String?  @unique @map("clave_de_semilla")
+  procedencia       Json
+  momentoDeRegistro DateTime @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+
+  receta        Receta                @relation(fields: [recetaId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  propuesta     PropuestaAlRecetario? @relation(fields: [propuestaId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  administrador Identidad?            @relation("RecetaDelRecetarioDelAdministrador", fields: [administradorId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@map("receta_del_recetario")
+}
+
+/// DL-191 (REC-06) — «Copiar a Mis recetas»: la receta propia que nació de una del Recetario de BE. La copia es una receta
+/// más del profesional; esta fila dice de cuál salió. Append-only.
+model CopiaDeRecetaDelRecetario {
+  recetaId          String   @id @map("receta_id") @db.Uuid
+  origenId          String   @map("origen_id") @db.Uuid
+  procedencia       Json
+  momentoDeRegistro DateTime @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+
+  receta Receta @relation("CopiaDeLaReceta", fields: [recetaId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  origen Receta @relation("CopiaDeRecetaOrigen", fields: [origenId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@index([origenId])
+  @@map("copia_de_receta_del_recetario")
+}
+
+/// DL-191 (REC-07, REC-D08) — Un profesional ofrece una versión de una receta suya al Recetario de BE. Si la receta tiene
+/// imagen, la propuesta la cita y registra la aceptación de la cesión de la foto: la versión del texto, su SHA-256 y el
+/// momento. Append-only; lo que decide Administración va en `decision_sobre_propuesta_al_recetario`.
+model PropuestaAlRecetario {
+  id                String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  recetaId          String    @map("receta_id") @db.Uuid
+  versionDeRecetaId String    @map("version_de_receta_id") @db.Uuid
+  profesionalId     String    @map("profesional_id") @db.Uuid
+  medioId           String?   @map("medio_id") @db.Uuid
+  versionDeLaCesion String?   @map("version_de_la_cesion")
+  huellaDeLaCesion  String?   @map("huella_de_la_cesion")
+  momentoDeLaCesion DateTime? @map("momento_de_la_cesion") @db.Timestamptz(3)
+  procedencia       Json
+  momentoDeRegistro DateTime  @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+
+  receta             Receta                             @relation(fields: [recetaId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  versionDeReceta    VersionDeReceta                    @relation(fields: [versionDeRecetaId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  profesional        Identidad                          @relation("PropuestaAlRecetarioDelProfesional", fields: [profesionalId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  medio              Medio?                             @relation(fields: [medioId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  decision           DecisionSobrePropuestaAlRecetario?
+  recetaDelRecetario RecetaDelRecetario?
+
+  @@index([recetaId, momentoDeRegistro])
+  @@map("propuesta_al_recetario")
+}
+
+/// DL-191 (REC-08): lo que decide Administración sobre una propuesta.
+enum ResultadoDePropuestaAlRecetario {
+  /// La sumó al Recetario de BE: hay una receta del recetario con esta propuesta.
+  SUMADA
+  RECHAZADA
+}
+
+/// DL-191 (REC-08) — La decisión de Administración sobre una propuesta, una sola vez, con su administrador con el rol
+/// vigente (trigger). Append-only.
+model DecisionSobrePropuestaAlRecetario {
+  propuestaId       String                          @id @map("propuesta_id") @db.Uuid
+  resultado         ResultadoDePropuestaAlRecetario
+  motivo            String?
+  administradorId   String                          @map("administrador_id") @db.Uuid
+  procedencia       Json
+  momentoDeRegistro DateTime                        @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+
+  propuesta     PropuestaAlRecetario @relation(fields: [propuestaId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  administrador Identidad            @relation("DecisionSobrePropuestaDelAdministrador", fields: [administradorId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@map("decision_sobre_propuesta_al_recetario")
 }
 
 /// DL-119 — Cada cambio de la imagen de una receta (asociar, reemplazar o retirar) es una fila nueva; la vigente es la

@@ -26,19 +26,27 @@ export class AuditoriaService {
   constructor(private readonly prisma: PrismaService) {}
 
   async registrar(entrada: EntradaDeAuditoria, tx?: Prisma.TransactionClient): Promise<void> {
-    await (tx ?? this.prisma).registroDeAuditoria.create({
-      data: {
-        operacion: entrada.operacion,
-        resultado: entrada.resultado,
-        motivo: entrada.motivo ?? null,
-        actorId: entrada.actorId ?? null,
-        sujetoId: entrada.sujetoId ?? null,
-        recursoTipo: entrada.recursoTipo ?? null,
-        recursoId: entrada.recursoId ?? null,
-        superficie: entrada.superficie ?? null,
-        requestId: entrada.requestId ?? null,
-        momentoDeOcurrencia: entrada.momentoDeOcurrencia ?? null,
-      },
-    });
+    await (tx ?? this.prisma).registroDeAuditoria.create({ data: filaDeAuditoria(entrada) });
   }
+
+  /** Varias entradas en una sola escritura (DL-191: las rutas firmadas de una lista), cada una como en `registrar`. */
+  async registrarVarias(entradas: readonly EntradaDeAuditoria[], tx?: Prisma.TransactionClient): Promise<void> {
+    if (entradas.length === 0) return;
+    await (tx ?? this.prisma).registroDeAuditoria.createMany({ data: entradas.map(filaDeAuditoria) });
+  }
+}
+
+function filaDeAuditoria(entrada: EntradaDeAuditoria) {
+  return {
+    operacion: entrada.operacion,
+    resultado: entrada.resultado,
+    motivo: entrada.motivo ?? null,
+    actorId: entrada.actorId ?? null,
+    sujetoId: entrada.sujetoId ?? null,
+    recursoTipo: entrada.recursoTipo ?? null,
+    recursoId: entrada.recursoId ?? null,
+    superficie: entrada.superficie ?? null,
+    requestId: entrada.requestId ?? null,
+    momentoDeOcurrencia: entrada.momentoDeOcurrencia ?? null,
+  };
 }

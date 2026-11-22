@@ -184,21 +184,12 @@ test('ED-31 · al volver de «Crearlo a mano» o de «Importarlo…», el foco v
   assert.equal(Q.COPY_OPCION_EN_UN_CUADRO.rangoDe('Almuerzo'), 'Lo que cubren las opciones de Almuerzo');
 });
 
-test('ED-30 · «Agregar una opción» del paso 5 no toca el borrador hasta «Guardar la opción»: cancelar no deja una vacía', () => {
-  assert.deepEqual(Q.opcionNueva(2), { label: 'Opción 3', items: [] });
-  const pasos = leer('nutrition/pasos-del-asistente.tsx');
-  assert.match(pasos, /onClick=\{\(\) => onAgregarOpcion\(i, j\)\}/);
-  assert.doesNotMatch(pasos, /options\.push\(\{ label: `Opción/);
-  const editor = leer('nutrition/editor.tsx');
-  assert.match(editor, /if \(m && nueva\) \{\n\s+if \(m\.options\.length < MAXIMO_DE_OPCIONES\) m\.options\.push\(copia\);/);
-});
-
 test('ED-31 · el cuadro calcula con las opciones de su propio día tipo, y lo que no se leyó todavía dice «leyendo»', () => {
   const editor = leer('nutrition/editor.tsx');
   assert.match(editor, /otrasOpciones=\{otrasOpcionesDelCuadro\}/);
   assert.match(editor, /rangosDelDia\(diaDeLaOpcion, agregando\.i,/);
-  // En el asistente se leen las composiciones de todos los días tipo; fuera de él, el que se mira y el del cuadro.
-  assert.match(editor, /const dias = conTodosLosDias \? estructura : \[\.\.\.new Set\(\[diaMirado, diaDelCuadro\]\)\]/);
+  // Se leen las composiciones del día que se mira y del día del cuadro (el asistente, que leía todas, se retiró: DL-193).
+  assert.match(editor, /const dias = \[\.\.\.new Set\(\[diaMirado, diaDelCuadro\]\)\]/);
 });
 
 test('ED-32 · después de «Usar la versión N», la porción guardada de la versión anterior ya no cuenta', () => {
@@ -207,26 +198,25 @@ test('ED-32 · después de «Usar la versión N», la porción guardada de la ve
   assert.doesNotMatch(editor, /\(id\) => itemsGuardados\(version, id\)/);
 });
 
-test('ED-30 · activar desde el paso 7 sale del asistente y muestra el plan activo', () => {
+test('ED-07 · activada, la vista muestra el plan activo (sin el asistente, que se retiró: DL-193)', () => {
   const plan = leer('nutrition/plan.tsx');
-  assert.match(plan, /ir\(\{ version: null, dia: null, comidas: null, asistente: null \}\);\n\s+void cargar\(\);/);
+  assert.match(plan, /setAviso\(\{ tipo: 'exito', texto, verLoQueRecibe: true \}\);\n\s+ir\(\{ version: null, dia: null, comidas: null \}\);\n\s+void cargar\(\);/);
 });
 
-test('EDC-12 · un objetivo nuevo cuenta como algo por guardar recién cuando llega su relectura, y «Siguiente» la espera', () => {
+test('EDC-12 y SAN-05 · pasar al objetivo vigente cuenta como algo por guardar: el autoguardado lo manda', () => {
   const editor = leer('nutrition/editor.tsx');
   assert.match(editor, /const objetivoPorGuardar = objetivoPedido && !!version && !!objetivo && objetivo\.versionId !== version\.objectiveVersionId;/);
-  // «Sucio» suma lo escrito y el objetivo por guardar: el autoguardado, «Guardar ahora», la salida y el asistente lo ven.
+  // «Sucio» suma lo escrito y el objetivo por guardar: el autoguardado, «Guardar ahora» y la salida lo ven.
   assert.match(editor, /const sucio = escritoSinGuardar \|\| objetivoPorGuardar;/);
   assert.match(editor, /const cambiosParaGuardar = useMemo\(\(\) => \[estructura, proximaRevision, objetivoPorGuardar\]/);
-  assert.match(editor, /setObjetivoPedido\(true\);\n\s+return onObjetivoNuevo\(\);/);
-  // Ya no se marca «sucio» antes de que llegue el objetivo nuevo: ese guardado saldría sin él.
-  assert.doesNotMatch(editor, /setSucio\(true\);\n\s+onObjetivoNuevo\(\);/);
-  const pasos = leer('nutrition/pasos-del-asistente.tsx');
-  assert.match(pasos, /ocupado: releyendoElObjetivo \? C\.leyendoElObjetivoNuevo/);
-  assert.match(leer('nutrition/plan.tsx'), /onObjetivoNuevo=\{\(\) => cargar\(false\)\}/);
+  // SAN-05 (DL-193): lo pide «Usarla ahora», en el aviso del objetivo más nuevo (antes, el paso 2 del asistente).
+  assert.match(editor, /data-usar-el-objetivo-vigente onClick=\{\(\) => setObjetivoPedido\(true\)\}/);
+  assert.doesNotMatch(editor, /onObjetivoNuevo/);
+  assert.doesNotMatch(leer('nutrition/plan.tsx'), /onObjetivoNuevo/);
   // El número de la versión cuenta todas las páginas; con la lista a medias, solo la fecha.
-  assert.match(pasos, /todasLasPaginas\(\(f\) => api\.listarObjetivos\(token, asesoradoId, f\)\)/);
-  assert.match(pasos, /r\.datos\.completa \? numeroDeLaVersionDelObjetivo/);
+  const numero = leer('nutrition/numero-del-objetivo.ts');
+  assert.match(numero, /todasLasPaginas\(\(f\) => api\.listarObjetivos\(token, asesoradoId, f\)\)/);
+  assert.match(numero, /r\.datos\.completa \? numeroDeLaVersionDelObjetivo/);
 });
 
 // ─── ED-32 · La foto después de guardar y «Usar la versión nueva» ──────────────────────────────────────────────────
@@ -321,71 +311,110 @@ test('ED-21 · uno que se llama igual se dice aparte y crear otro pide «Crear i
   assert.match(agregar, /onClick=\{\(\) => onCreado\(p\)\}/);
 });
 
-// ─── ED-30 · El asistente de Nutrición ─────────────────────────────────────────────────────────────────────────────
 
-const N = await import('../src/app/pro/advisees/nutrition/asistente-de-nutricion.ts');
-const opcion = (items, recipeVersionId) => ({ label: 'Opción 1', items, ...(recipeVersionId ? { recipeVersionId } : {}) });
-const comida = (label, opciones) => ({ label, options: opciones });
+// ─── DL-193 · Sin el asistente de 7 pasos de Nutrición (WP-SIN-ASISTENTE-DE-NUTRICION) ──────────────────────────────
 
-test('ED-30 · el paso sugerido sale del borrador: nunca el 1, el 2 ni el 7', () => {
-  assert.equal(N.pasoQueSigueEnNutricion([]), 3);
-  assert.equal(N.pasoQueSigueEnNutricion([{ label: 'Día habitual', meals: [] }]), 4);
-  assert.equal(N.pasoQueSigueEnNutricion([{ label: 'D', meals: [comida('Almuerzo', [opcion([])])] }]), 5);
-  assert.equal(N.pasoQueSigueEnNutricion([{ label: 'D', meals: [comida('Almuerzo', [])] }]), 5);
-  // Una opción de receta trae sus alimentos al guardar: no cuenta como vacía.
-  assert.equal(N.pasoQueSigueEnNutricion([{ label: 'D', meals: [comida('Almuerzo', [opcion([], 'rv1')]), comida('Cena', [opcion([{}])])] }]), 6);
-  assert.deepEqual([...N.PASOS_DE_NUTRICION], ['Punto de partida', 'Objetivo', 'Días tipo', 'Comidas', 'Opciones', 'Revisar', 'Activar']);
+const { existsSync } = await import('node:fs');
+const F = await import('../src/app/pro/advisees/accion-de-la-ficha.ts');
+const VO = await import('../src/app/pro/advisees/nutrition/version-del-objetivo.ts');
+const fuenteDe = (r) => new URL(`../src/app/pro/advisees/${r}`, import.meta.url);
+const PROHIBIDAS = /cumplimiento|adherencia|racha|puntaje|asesorado|estaci[oó]n/i;
+
+test('SAN-01 · los archivos del asistente de Nutrición ya no están, y nadie los importa', () => {
+  for (const r of ['nutrition/pasos-del-asistente.tsx', 'nutrition/asistente-de-nutricion.ts']) assert.equal(existsSync(fuenteDe(r)), false, r);
+  for (const r of ['nutrition/editor.tsx', 'nutrition/plan.tsx', 'nutrition/cuadro-de-la-opcion.tsx']) {
+    const s = leer(r);
+    assert.doesNotMatch(s, /pasos-del-asistente|asistente-de-nutricion|PasosDeNutricion|PuntoDePartidaDeNutricion|COPY_ASISTENTE_DE_NUTRICION/, r);
+    // El editor y la vista del plan ya no leen el paso pedido: una dirección vieja no abre nada distinto.
+    assert.doesNotMatch(s, /pasoPedido|asistente\/paso-que-sigue/, r);
+  }
+  // El armazón común sigue entero para Entrenamiento (SAN-D01): sus cuatro piezas y su uso desde el editor de Entrenamiento.
+  for (const r of ['asistente/asistente.tsx', 'asistente/operaciones-del-asistente.ts', 'asistente/paso-que-sigue.ts', 'asistente/punto-de-partida.tsx']) assert.equal(existsSync(fuenteDe(r)), true, r);
+  assert.match(leer('training/editor.tsx'), /from '\.\.\/asistente\/asistente'/);
+  assert.match(leer('training/plan.tsx'), /import \{ PuntoDePartida \} from '\.\.\/asistente\/punto-de-partida';/);
+  // El armazón ya no recibe los nombres de los pasos de otra área.
+  assert.doesNotMatch(leer('asistente/asistente.tsx'), /pasos\?: readonly string\[\]/);
 });
 
-test('ED-30 · «Lo que llevás armado», en pocas líneas', () => {
-  assert.deepEqual(N.loQueLlevasArmadoEnNutricion([]), ['0 días tipo · 0 comidas', 'Todavía sin días tipo.']);
-  assert.deepEqual(
-    N.loQueLlevasArmadoEnNutricion([
-      { label: 'Día habitual', meals: [comida('Desayuno', [opcion([{}]), opcion([])]), comida('Almuerzo', [opcion([])])] },
-      { label: '', meals: [] },
-    ]),
-    ['2 días tipo · 2 comidas', 'Día habitual · 2 comidas · 3 opciones · 2 sin alimentos', 'Día tipo 2 · sin comidas'],
-  );
+test('SAN-02 · «Empezar el plan» de Nutrición lleva a la vista del plan, sin el asistente; el de Entrenamiento sigue igual', () => {
+  const sinPlan = (area) => ({
+    nutrition: { available: area === 'NUTRICION', summary: null },
+    training: { available: area === 'ENTRENAMIENTO', summary: null },
+  });
+  const n = F.accionDeLaFicha(sinPlan('NUTRICION'), '2026-11-22');
+  assert.deepEqual(n, { tipo: 'empezar', area: 'NUTRICION', texto: 'Empezar el plan', vista: 'plan', extra: '' });
+  assert.equal(F.rutaDeLaAccion(n, 'p1'), '/pro/advisees/nutrition?id=p1&vista=plan');
+  assert.equal(F.accionDeLaFicha(sinPlan('ENTRENAMIENTO'), '2026-11-22').extra, '&asistente=1');
+  // La tarjeta de Nutrición del Resumen ya llevaba al plan sin el asistente.
+  assert.match(leer('seguimiento/resumen-area.tsx'), /<EmpezarElPlan area="NUTRICION" href=\{ruta\('NUTRICION', 'plan'\)\} \/>/);
+  // Una dirección vieja (`asistente=N`) abre la vista del plan y se le quita el parámetro.
+  const plan = leer('nutrition/plan.tsx');
+  assert.match(plan, /if \(parametros\.get\('asistente'\) !== null\) ir\(\{ asistente: null \}\);/);
+  assert.doesNotMatch(plan, /asistente: '[12]'|asistente: parametros/);
+  // En el editor, sin «Seguir con el asistente» en el «⋯», y «Revisar y activar…» siempre a la vista.
+  const editor = leer('nutrition/editor.tsx');
+  assert.doesNotMatch(editor, /clave: 'seguir-asistente'|texto: `Seguir con el asistente/);
+  assert.match(editor, /\{ofreceDescartar\(version\) \? \(/);
+  assert.match(editor, /<button type="button" className="boton boton--primario" data-revisar-y-activar onClick=\{abrirAntesDeActivar\}>/);
+  assert.match(editor, /<div className="editor-de-nutricion__zonas">/);
+  assert.doesNotMatch(editor, /enElAsistente|pasoDelAsistente|parametros\.get\('asistente'\)/);
 });
 
-test('TEST-EDP-027 · el objetivo general con su versión; un «%» del asistente dice su base (NUP-08); sin objetivo no hay paso 2', () => {
+test('SAN-03 · los puntos de partida siguen en la vista del plan: de cero, copiando la activa, en blanco con una activa y desde una plantilla', () => {
+  const plan = leer('nutrition/plan.tsx');
+  // De cero (sin activa) o copiando la activa: el botón de siempre.
+  assert.match(plan, /onClick=\{\(\) => void crear\(activa \? activa\.planId : null\)\}[^\n]*data-crear-version/);
+  // Desde una plantilla: con y sin activa.
+  assert.match(plan, /onClick=\{abrirDesdePlantilla\}[^\n]*data-empezar-desde-plantilla/);
+  assert.match(plan, /<MenuDePlantillas alGuardar=\{\(\) => setGuardarPlantilla\(true\)\} alEmpezar=\{sePuedeCrear \? abrirDesdePlantilla : null\} \/>/);
+  // En blanco con una activa: lo que antes solo ofrecía el paso 1 del asistente.
+  assert.match(plan, /const empezarEnBlanco = activa \? \(/);
+  assert.match(plan, /onClick=\{\(\) => void crear\(null\)\}[^\n]*data-empezar-en-blanco/);
+  assert.match(plan, /\{sePuedeCrear \? empezarEnBlanco : null\}/);
+  // Cada acto con su clave de intento: copiar y empezar en blanco son pedidos distintos.
+  assert.match(plan, /const intento = basadaEn === null \? intentoEnBlanco : intentoDeCrear;/);
+  // Sin plan, los pasos de «Empezar el plan» (evaluación, objetivo y plan) con «Crear nuevo plan» y la plantilla.
+  assert.match(plan, /const empezarElPlan = sePuedeCrear \? \(\n\s*<>\n\s*\{crearLaVersion\}\n\s*\{desdeUnaPlantilla\}\n\s*<\/>/);
+  assert.match(plan, /<PrimerPlanDeNutricion\n\s*objetivoDesde=/);
+  // Los textos nuevos de pantalla, sin palabras prohibidas.
+  const desde = plan.indexOf('export const COPY_EMPEZAR_EN_BLANCO');
+  assert.ok(desde > 0);
+  assert.doesNotMatch(plan.slice(desde, plan.indexOf('} as const;', desde)), PROHIBIDAS);
+  for (const t of Object.values(VO.COPY_VERSION_DEL_OBJETIVO).map((v) => (typeof v === 'function' ? v(2, 'lunes 9') : v))) assert.doesNotMatch(t, PROHIBIDAS, t);
+});
+
+test('SAN-04 · lo del paso 2 que no estaba en el editor: el objetivo con su versión y su fecha, y lo que está en proporción', () => {
   const versiones = [
     { objectiveId: 'o1', versionId: 'v2', createdAt: '2026-11-10T10:00:00Z' },
     { objectiveId: 'o1', versionId: 'v1', createdAt: '2026-10-01T10:00:00Z' },
     { objectiveId: 'o2', versionId: 'w1', createdAt: '2026-09-01T10:00:00Z' },
     { objectiveId: 'o1', versionId: 'v3', createdAt: '2026-11-11T10:00:00Z' },
   ];
-  assert.equal(N.numeroDeLaVersionDelObjetivo(versiones, 'v2'), 2);
-  assert.equal(N.numeroDeLaVersionDelObjetivo(versiones, 'v3'), 3);
-  assert.equal(N.numeroDeLaVersionDelObjetivo(versiones, 'nada'), null);
-  assert.equal(N.COPY_ASISTENTE_DE_NUTRICION.versionYFecha(3, 'martes 10 de noviembre'), 'Versión 3, vigente desde el martes 10 de noviembre.');
-  const textos = JSON.stringify(N.COPY_ASISTENTE_DE_NUTRICION, (_, v) => (typeof v === 'function' ? v(1, 'x') : v));
-  assert.equal(porcentajeSinSuBase(textos), false);
-  assert.equal(porcentajeSinSuBase(leer('nutrition/pasos-del-asistente.tsx')), false);
-  // El paso 1 solo se ofrece con un objetivo del que nacer; sin él, empieza por la evaluación.
-  const plan = leer('nutrition/plan.tsx');
-  assert.match(plan, /const conElAsistente = sePuedeCrear && pasoPedido\(parametros\.get\('asistente'\)\) !== null;/);
-  assert.match(plan, /parametros\.get\('asistente'\) && !objetivo && !borrador && !faltan\.objetivo \? \(\n\s+<Aviso tipo="info">\n\s+<p>\{CAN\.sinObjetivo\}<\/p>/);
-});
-
-test('ED-30 y ED-13 · la versión nueva del paso 2 ofrece los repartos habituales (API-HAN-06 a 08)', () => {
-  // El paso 2 escribe la versión nueva con el formulario de siempre, que trae «Usar un reparto habitual» (ED-13): en gramos.
-  const pasos = leer('nutrition/pasos-del-asistente.tsx');
-  assert.match(pasos, /<FormularioDeObjetivo\n\s+evaluaciones=\{evaluaciones\}/);
-  const formularios = leer('nutrition/formularios.tsx');
-  assert.ok(formularios.includes('<RepartosHabituales gramos={valores} onUsar={(g) => c(g)} />'));
-  assert.match(N.COPY_ASISTENTE_DE_NUTRICION.versionNuevaDetalle, /repartos habituales/);
-});
-
-test('ED-30 · los pasos 2 a 7 van sobre el mismo borrador; «Siguiente» guarda y espera (TEST-EDP-017)', () => {
-  const pasos = leer('nutrition/pasos-del-asistente.tsx');
-  assert.match(pasos, /const r = await sePuedeAvanzar\(\{ sucio, guardando, guardar \}\);/);
-  assert.match(pasos, /if \(r === 'no-avanza'\) return setNoAvanzo\(true\);/);
-  // El paso 5 arma cada opción en su cuadro (ED-31).
-  assert.match(pasos, /onClick=\{\(\) => onAbrirOpcion\(i, j, k\)\}/);
+  assert.equal(VO.numeroDeLaVersionDelObjetivo(versiones, 'v2'), 2);
+  assert.equal(VO.numeroDeLaVersionDelObjetivo(versiones, 'v3'), 3);
+  assert.equal(VO.numeroDeLaVersionDelObjetivo(versiones, 'w1'), 1);
+  assert.equal(VO.numeroDeLaVersionDelObjetivo(versiones, 'nada'), null);
+  assert.equal(VO.COPY_VERSION_DEL_OBJETIVO.versionYFecha(3, 'martes 10 de noviembre'), 'Versión 3, vigente desde el martes 10 de noviembre.');
+  assert.equal(VO.COPY_VERSION_DEL_OBJETIVO.versionYFecha(null, 'martes 10 de noviembre'), 'Vigente desde el martes 10 de noviembre.');
   const editor = leer('nutrition/editor.tsx');
-  assert.match(editor, /onAbrirOpcion=\{\(di, j, k\) => setAgregando\(\{ i: di, j, k \}\)\}/);
-  assert.match(editor, /<div className="editor-de-nutricion__zonas" hidden=\{enElAsistente\}>/);
-  // Corregir desde «Revisar» sale del asistente a la estación.
-  assert.match(editor, /ir\(\{ asistente: null, dia: pedidoDeLaPosicion\(l\.dia\)/);
+  assert.match(editor, /const numeroDelObjetivo = useNumeroDelObjetivo\(objetivo\);/);
+  assert.match(editor, /<p className="nota" data-version-del-objetivo>\n\s*\{COPY_VERSION_DEL_OBJETIVO\.versionYFecha\(numeroDelObjetivo, fechaDelDia\(objetivo\.effectiveFrom\)\)\}/);
+  assert.match(editor, /enProporcion=\{macrosEnProporcion\(objetivo\)\} compacto \/>/);
+  // El cuadro de la opción sigue diciendo la versión, ahora desde su propio módulo.
+  const cuadro = leer('nutrition/cuadro-de-la-opcion.tsx');
+  assert.match(cuadro, /import \{ useNumeroDelObjetivo \} from '\.\/numero-del-objetivo';/);
+  assert.match(cuadro, /COPY_VERSION_DEL_OBJETIVO\.versionYFecha\(numeroDelObjetivo, fechaDelDia\(objetivo\.effectiveFrom\)\)/);
+  // La versión nueva del objetivo se sigue escribiendo con el formulario de siempre, con los repartos habituales (ED-13).
+  assert.ok(leer('nutrition/formularios.tsx').includes('<RepartosHabituales gramos={valores} onUsar={(g) => c(g)} />'));
+});
+
+test('SAN-06 · un borrador armado con el asistente se abre igual en el editor: el asistente no guardaba nada propio', () => {
+  // El paso se deducía del borrador y el pedido vivía en la dirección: ni la API ni el navegador guardaban «en qué paso
+  // quedó». El borrador es una versión DRAFT como cualquiera, y el editor la abre con su estructura.
+  const editor = leer('nutrition/editor.tsx');
+  assert.doesNotMatch(editor, /localStorage|sessionStorage/);
+  assert.doesNotMatch(leer('nutrition/plan.tsx'), /localStorage|sessionStorage/);
+  // La opción nueva «solo en el cuadro» era del paso 5 del asistente: el cuadro edita una opción que ya está en el borrador.
+  assert.match(editor, /const opcionDondeSeAgrega = agregando \? comidaDondeSeAgrega\?\.options\[agregando\.k\] : undefined;/);
+  assert.equal(Q.opcionNueva, undefined);
 });

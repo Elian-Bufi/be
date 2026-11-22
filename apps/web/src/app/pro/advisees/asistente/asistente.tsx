@@ -1,9 +1,9 @@
 'use client';
 
 /**
- * ED-14 (WP-EDITORES-PROFESIONAL, §2.1) · El armazón del asistente, común a las dos áreas: los siete pasos a la vista
- * (el sugerido, marcado; cualquiera se elige), «Paso N de 7», el título de la decisión y, abajo, «Atrás», «Seguir en la
- * estación» y una sola acción principal.
+ * ED-14 (WP-EDITORES-PROFESIONAL, §2.1) · El armazón del asistente de Entrenamiento (lo compartía el de Nutrición, que se
+ * retiró con DL-193): los siete pasos a la vista (el sugerido, marcado; cualquiera se elige), «Paso N de 7», el título de
+ * la decisión y, abajo, «Atrás», «Seguir en la estación» y una sola acción principal.
  *
  * El asistente es una vista de la página, una tarjeta por paso, y no un `<dialog>`: así el buscador de ejercicios y la
  * galería de presets se abren como cuadros enfocados sin apilar un cuadro sobre otro (§2.3; EDT-11).
@@ -26,7 +26,6 @@ export function ArmazonDelAsistente({
   noAvanzo,
   onReintentar,
   armado = null,
-  pasos = PASOS_DEL_ASISTENTE,
 }: {
   paso: PasoDelAsistente;
   /** El paso que se deduce del borrador; `null` sin borrador (paso 1). */
@@ -46,8 +45,6 @@ export function ArmazonDelAsistente({
   onReintentar: () => void;
   /** ED-14: «Lo que llevás armado», en pocas líneas (`loQueLlevasArmado`); `null` sin borrador. */
   armado?: readonly string[] | null;
-  /** Los nombres de los siete pasos: los de Entrenamiento, salvo que el área diga otros (ED-30, Nutrición). */
-  pasos?: readonly string[];
 }) {
   const tituloRef = useRef<HTMLHeadingElement>(null);
   // El foco entra al título de cada paso: dice qué se decide.
@@ -58,7 +55,7 @@ export function ArmazonDelAsistente({
     <section className="asistente" aria-labelledby="titulo-del-paso" data-asistente={paso}>
       <nav aria-label={C.pasos}>
         <ol className="asistente__pasos">
-          {pasos.map((nombre, n) => {
+          {PASOS_DEL_ASISTENTE.map((nombre, n) => {
             const numero = (n + 1) as PasoDelAsistente;
             return (
               <li key={nombre} data-hecho={numero < paso ? '' : undefined}>

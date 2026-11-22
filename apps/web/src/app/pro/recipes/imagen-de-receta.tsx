@@ -13,7 +13,17 @@
  *   `useImagenParaCargar`, que comparten las dos; la subida y la asociación, sin React, en `cargar-la-imagen.ts`. Si la
  *   receta se guardó y la imagen no, lo elegido sigue en la receta guardada (`pendiente`), con su falla y su reintento.
  */
-import { COPY_RECETAS, COPY_REGISTRO_DE_COMIDAS, ETIQUETA_DE_PROCEDENCIA_DE_IMAGEN, ProcedenciaDeMedioSchema, type ProcedenciaDeMedio, type Receta } from '@be/domain';
+import {
+  COPY_RECETARIO,
+  COPY_RECETAS,
+  COPY_REGISTRO_DE_COMIDAS,
+  ETIQUETA_DE_PROCEDENCIA_DE_IMAGEN,
+  ProcedenciaDeMedioSchema,
+  type ProcedenciaDeMedio,
+  type Receta,
+  type RutasDeLaImagen,
+  type VarianteDeMedio,
+} from '@be/domain';
 import { useId, useRef, useState, type ReactNode } from 'react';
 import { DialogoDeConfirmacion } from '../../../components/dialogo';
 import { Aviso, Campo } from '../../../components/formulario';
@@ -30,9 +40,27 @@ import { cargarLaImagen, laImagenSinCargar, olvidarLaImagenSinCargar, textoDeLaF
  *   aviso con «Reintentar» (recargar la página cerraría la sesión);
  * - se recuerda en la pestaña: ir y volver de «Mis recetas» no la pide de nuevo;
  * - en la tarjeta (`chica`) es decorativa: el nombre ya está en el título y en «Abrir», y el lector no lo repite.
+ * - DL-191 (REC-02): la tarjeta pide la miniatura y el detalle, la grande. Una receta del Recetario de BE trae sus rutas ya
+ *   firmadas (`rutas`): no pide un acceso por imagen.
  */
-export function ImagenGuardada({ token, medioId, nombre, sesionPerdida, chica = false }: { token: string; medioId: string | null; nombre: string; sesionPerdida: (r: Resultado<unknown>) => boolean; chica?: boolean }) {
-  const { estado, recargar } = useImagenDeMedio(token, medioId, sesionPerdida, { recordar: true });
+export function ImagenGuardada({
+  token,
+  medioId,
+  nombre,
+  sesionPerdida,
+  chica = false,
+  variante,
+  rutas = null,
+}: {
+  token: string;
+  medioId: string | null;
+  nombre: string;
+  sesionPerdida: (r: Resultado<unknown>) => boolean;
+  chica?: boolean;
+  variante?: VarianteDeMedio;
+  rutas?: RutasDeLaImagen | null;
+}) {
+  const { estado, recargar } = useImagenDeMedio(token, medioId, sesionPerdida, { recordar: true, variante: variante ?? (chica ? 'thumbnail' : 'large'), rutas });
   const clase = `imagen-de-receta${chica ? ' imagen-de-receta--chica' : ''}`;
   if (estado.tipo === 'lista') return <img className={clase} src={estado.dataUrl} alt={chica ? '' : `${COPY_RECETAS.imagenDeReferencia}: ${nombre}`} decoding="async" />;
   const texto = estado.tipo === 'cargando' ? COPY_RECETAS.cargandoImagen : estado.tipo === 'fallo' ? `${nombre}: ${COPY_REGISTRO_DE_COMIDAS.imagenNoDisponible}` : `${nombre}: sin imagen de referencia`;
@@ -405,17 +433,27 @@ export function ImagenDeReceta({
   }
 
   const guardada = receta.image;
+  const figura = guardada ? (
+    <figure className="figura-de-receta">
+      <ImagenGuardada token={token} medioId={guardada.mediaId} nombre={receta.name} sesionPerdida={sesionPerdida} rutas={guardada.paths ?? null} />
+      <figcaption className="nota">
+        {COPY_RECETAS.imagenDeReferencia} · {ETIQUETA_DE_PROCEDENCIA_DE_IMAGEN[guardada.provenance]}
+        {guardada.authorship ? ` · ${guardada.authorship}` : ''} · {guardada.width} × {guardada.height} px · {fecha(guardada.attachedAt)}
+      </figcaption>
+    </figure>
+  ) : null;
+  // DL-191: la imagen de una receta del Recetario de BE no se cambia: se muestra, con su procedencia.
+  if (receta.origin === 'BE_RECIPE_BOOK') {
+    return (
+      <MarcoDeLaImagen id={id} titulo={COPY_RECETAS.imagenDeReferencia}>
+        {figura ?? <p className="nota">{COPY_RECETARIO.sinFoto}</p>}
+        <p className="nota">{COPY_RECETARIO.soloLectura}</p>
+      </MarcoDeLaImagen>
+    );
+  }
   return (
     <MarcoDeLaImagen id={id} titulo={COPY_RECETAS.imagenDeReferencia}>
-      {guardada ? (
-        <figure className="figura-de-receta">
-          <ImagenGuardada token={token} medioId={guardada.mediaId} nombre={receta.name} sesionPerdida={sesionPerdida} />
-          <figcaption className="nota">
-            {COPY_RECETAS.imagenDeReferencia} · {ETIQUETA_DE_PROCEDENCIA_DE_IMAGEN[guardada.provenance]}
-            {guardada.authorship ? ` · ${guardada.authorship}` : ''} · {guardada.width} × {guardada.height} px · {fecha(guardada.attachedAt)}
-          </figcaption>
-        </figure>
-      ) : null}
+      {figura}
 
       <EleccionDeImagen id={id} imagen={imagen} hayGuardada={guardada !== null} apagado={ocupado} errorDeProcedencia={imagen.faltaLaProcedencia ? COPY_RECETAS.faltaLaProcedencia : null}>
         <div className="acciones">

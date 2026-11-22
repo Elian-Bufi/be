@@ -11,7 +11,7 @@ describe('DL-120 · rutas firmadas de los medios privados', () => {
     const vence = rutas.vencimiento('LECTURA');
     const token = rutas.firmar(MEDIO, 'LECTURA', vence);
     expect(token).toMatch(/^[A-Za-z0-9._-]+$/);
-    expect(rutas.verificar(token, 'LECTURA')).toEqual({ medioId: MEDIO, vence });
+    expect(rutas.verificar(token, 'LECTURA')).toEqual({ medioId: MEDIO, vence, variante: null, guardable: false });
     // Una ruta de lectura no sirve para subir, ni al revés.
     expect(rutas.verificar(token, 'SUBIDA')).toBeNull();
     expect(rutas.verificar(rutas.firmar(MEDIO, 'SUBIDA', rutas.vencimiento('SUBIDA')), 'LECTURA')).toBeNull();
@@ -67,5 +67,47 @@ describe('DL-120 · rutas firmadas de los medios privados', () => {
     expect(clave.length).toBe(32);
     expect(clave.toString('utf8')).not.toContain(ENTORNO.jwtSecret);
     expect(clave.equals(Buffer.from(ENTORNO.jwtSecret).subarray(0, 32))).toBe(false);
+  });
+});
+
+describe('DL-191 · TEST-REC-004 y 005: la variante y la caché del recetario van firmadas', () => {
+  it('TEST-REC-004 · una ruta lleva su variante y si se puede guardar; cambiarlas rompe la firma; las de antes siguen valiendo', () => {
+    const rutas = new RutasFirmadas(ENTORNO);
+    const vence = rutas.vencimiento('LECTURA');
+    const miniatura = rutas.firmar(MEDIO, 'LECTURA', vence, { variante: 'thumbnail' });
+    expect(miniatura).toMatch(/^[A-Za-z0-9._-]+$/);
+    expect(rutas.verificar(miniatura, 'LECTURA')).toEqual({ medioId: MEDIO, vence, variante: 'thumbnail', guardable: false });
+    expect(rutas.verificar(rutas.firmar(MEDIO, 'LECTURA', vence, { variante: 'large', guardable: true }), 'LECTURA')).toEqual({ medioId: MEDIO, vence, variante: 'large', guardable: true });
+    expect(rutas.verificar(rutas.firmar(MEDIO, 'LECTURA', vence, { guardable: true }), 'LECTURA')).toEqual({ medioId: MEDIO, vence, variante: null, guardable: true });
+    // Sin opciones, la carga es la de siempre (tres segmentos): la APK publicada y las rutas emitidas antes no cambian.
+    const sinVariante = rutas.firmar(MEDIO, 'LECTURA', vence, {});
+    expect(Buffer.from(sinVariante.split('.')[0]!, 'base64url').toString('utf8').split('.')).toHaveLength(3);
+    // La firma cubre la variante: cambiar la miniatura por la grande (o sumarle la caché) con la misma firma no vale.
+    const [carga, firma] = miniatura.split('.') as [string, string];
+    const texto = Buffer.from(carga, 'base64url').toString('utf8');
+    for (const otra of [texto.replace(/.m$/, '.g'), texto.replace(/.m$/, '.mc'), `${texto}.x`]) {
+      expect(rutas.verificar(`${Buffer.from(otra, 'utf8').toString('base64url')}.${firma}`, 'LECTURA')).toBeNull();
+    }
+    // Una ruta de subida no lleva opciones.
+    expect(Buffer.from(rutas.firmar(MEDIO, 'SUBIDA', rutas.vencimiento('SUBIDA'), { variante: 'thumbnail' }).split('.')[0]!, 'base64url').toString('utf8').split('.')).toHaveLength(3);
+  });
+
+  it('TEST-REC-005 · la ruta de una imagen del recetario vence en la hora redonda siguiente a las 6 horas: la misma durante una hora', () => {
+    const rutas = new RutasFirmadas(ENTORNO);
+    const base = Date.UTC(2026, 10, 22, 10, 0, 0);
+    rutas.ahora = () => base + 1000;
+    const primera = rutas.vencimientoDelRecetario();
+    expect(primera.toISOString()).toBe('2026-11-22T17:00:00.000Z');
+    rutas.ahora = () => base + 59 * 60 * 1000;
+    expect(rutas.vencimientoDelRecetario()).toEqual(primera);
+    rutas.ahora = () => base + 60 * 60 * 1000 + 1000;
+    expect(rutas.vencimientoDelRecetario().toISOString()).toBe('2026-11-22T18:00:00.000Z');
+    // Entre 6 y 7 horas, nunca más.
+    for (const t of [base + 1000, base + 30 * 60 * 1000, base + 3599 * 1000]) {
+      rutas.ahora = () => t;
+      const falta = rutas.vencimientoDelRecetario().getTime() - t;
+      expect(falta).toBeGreaterThan(6 * 3600 * 1000 - 1);
+      expect(falta).toBeLessThanOrEqual(7 * 3600 * 1000);
+    }
   });
 });

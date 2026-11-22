@@ -7,8 +7,23 @@
  *   con su acceso firmado (API-MED-03), se descarga con fetch (CORS) y se muestra como data URL. La ruta firmada vence
  *   y no se guarda en ningún lado: la identidad de la imagen es su `mediaId`.
  * - Los límites son los del dominio, los mismos del servidor, que igual vuelve a validar todo.
+ * - DL-191 (REC-03): antes de subir, una imagen de más de 1600 px en el lado mayor se achica en el navegador
+ *   (`createImageBitmap` y un canvas) y se codifica en WebP, o en JPEG si el navegador no codifica WebP. Sube menos bytes
+ *   y el servidor igual valida y vuelve a codificar. Se achica una sola vez, al elegirla: el reintento sube lo mismo.
+ * - DL-191 (REC-02): una imagen se pide por variante (la miniatura en listas y tarjetas, la grande en el detalle); la de
+ *   una receta del Recetario de BE viene con su ruta ya firmada y no pide un acceso.
  */
-import { LIMITES_DE_MEDIO, TipoDeImagenSchema, type FinalidadDeMedio, type Medio, type ProcedenciaDeMedio, type TipoDeImagen } from '@be/domain';
+import {
+  LIMITES_DE_MEDIO,
+  medidasAlAchicar,
+  TipoDeImagenSchema,
+  type FinalidadDeMedio,
+  type Medio,
+  type ProcedenciaDeMedio,
+  type RutasDeLaImagen,
+  type TipoDeImagen,
+  type VarianteDeMedio,
+} from '@be/domain';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { api, type Resultado } from './api';
 
@@ -21,6 +36,8 @@ export interface ImagenElegida {
   readonly vistaPrevia: string;
   readonly ancho: number;
   readonly alto: number;
+  /** DL-191: lo que se sube, si se achicó en el navegador; si no, el archivo tal cual. */
+  readonly paraSubir?: { readonly contenido: Blob; readonly tipo: TipoDeImagen };
 }
 
 export function leerComoDataUrl(contenido: Blob): Promise<string> {
@@ -41,6 +58,39 @@ function dimensiones(dataUrl: string): Promise<{ ancho: number; alto: number }> 
   });
 }
 
+/**
+ * DL-191 (REC-03) · la imagen achicada a 1600 px en el lado mayor, en WebP (o JPEG), si hace falta achicarla, o
+ * recodificada en sus medidas si pesa más de 1,5 MB (un PNG de una cámara). `null` si no hace falta, o si el navegador no
+ * puede (sin `createImageBitmap`, sin canvas): entonces se sube el archivo tal cual.
+ */
+const BYTES_PARA_RECODIFICAR = 1.5 * 1024 * 1024;
+
+export async function achicarAntesDeSubir(archivo: Blob, ancho: number, alto: number): Promise<{ readonly contenido: Blob; readonly tipo: TipoDeImagen } | null> {
+  const medidas = medidasAlAchicar(ancho, alto);
+  if ((!medidas.achicar && archivo.size <= BYTES_PARA_RECODIFICAR) || typeof createImageBitmap !== 'function' || typeof document === 'undefined') return null;
+  try {
+    const mapa = await createImageBitmap(archivo, { resizeWidth: medidas.ancho, resizeHeight: medidas.alto, resizeQuality: 'high' });
+    const lienzo = document.createElement('canvas');
+    lienzo.width = medidas.ancho;
+    lienzo.height = medidas.alto;
+    const contexto = lienzo.getContext('2d');
+    if (!contexto) return null;
+    // Sobre blanco, como el servidor: una transparencia no queda negra en el JPEG.
+    contexto.fillStyle = 'white';
+    contexto.fillRect(0, 0, medidas.ancho, medidas.alto);
+    contexto.drawImage(mapa, 0, 0, medidas.ancho, medidas.alto);
+    mapa.close();
+    const codificar = (tipo: TipoDeImagen) => new Promise<Blob | null>((resolver) => lienzo.toBlob(resolver, tipo, LIMITES_DE_MEDIO.calidadAlAchicarEnElCliente));
+    // Un navegador que no codifica WebP devuelve un PNG: entonces, JPEG.
+    const webp = await codificar('image/webp');
+    if (webp && webp.type === 'image/webp' && webp.size > 0) return { contenido: webp, tipo: 'image/webp' };
+    const jpeg = await codificar('image/jpeg');
+    return jpeg && jpeg.type === 'image/jpeg' && jpeg.size > 0 ? { contenido: jpeg, tipo: 'image/jpeg' } : null;
+  } catch {
+    return null;
+  }
+}
+
 /** La revisión del cliente: tipo, bytes, que se decodifique y sus dimensiones. El servidor repite todo. */
 export async function revisarImagen(archivo: File): Promise<{ ok: true; imagen: ImagenElegida } | { ok: false; problema: ProblemaDeImagen }> {
   const tipo = TipoDeImagenSchema.safeParse(archivo.type);
@@ -52,7 +102,8 @@ export async function revisarImagen(archivo: File): Promise<{ ok: true; imagen: 
   const { ladoMinimo, ladoMaximo, pixelesMaximos } = LIMITES_DE_MEDIO;
   const lados = [medidas.ancho, medidas.alto];
   if (lados.some((l) => l < ladoMinimo || l > ladoMaximo) || medidas.ancho * medidas.alto > pixelesMaximos) return { ok: false, problema: 'DIMENSIONES' };
-  return { ok: true, imagen: { archivo, tipo: tipo.data, vistaPrevia, ...medidas } };
+  const achicada = await achicarAntesDeSubir(archivo, medidas.ancho, medidas.alto);
+  return { ok: true, imagen: { archivo, tipo: tipo.data, vistaPrevia, ...medidas, ...(achicada ? { paraSubir: achicada } : {}) } };
 }
 
 /**
@@ -65,28 +116,42 @@ export async function subirImagen(
   datos: { readonly finalidad: FinalidadDeMedio; readonly procedencia: ProcedenciaDeMedio; readonly autoria: string | null },
   claveDeIdempotencia: string,
 ): Promise<Resultado<{ data: Medio }>> {
+  // DL-191: se sube lo achicado, si se achicó; si no, el archivo tal cual.
+  const contenido = imagen.paraSubir?.contenido ?? imagen.archivo;
+  const tipo = imagen.paraSubir?.tipo ?? imagen.tipo;
   const intencion = await api.crearIntencionDeSubida(
     token,
-    { purpose: datos.finalidad, contentType: imagen.tipo, byteSize: imagen.archivo.size, provenance: datos.procedencia, authorship: datos.autoria },
+    { purpose: datos.finalidad, contentType: tipo, byteSize: contenido.size, provenance: datos.procedencia, authorship: datos.autoria },
     claveDeIdempotencia,
   );
   if (!intencion.ok) return intencion;
-  return api.subirMedio(intencion.datos.data.uploadPath, imagen.archivo, imagen.tipo);
+  return api.subirMedio(intencion.datos.data.uploadPath, contenido, tipo);
 }
 
 export type EstadoDeImagen = { readonly tipo: 'sin-imagen' } | { readonly tipo: 'cargando' } | { readonly tipo: 'lista'; readonly dataUrl: string } | { readonly tipo: 'fallo' };
 
 type Descarga = { readonly acceso: Resultado<unknown>; readonly dataUrl: string | null };
 
-/** El acceso firmado (API-MED-03) y la descarga de un medio, como data URL; `null` si alguno de los dos falla. */
-async function descargar(token: string, medioId: string): Promise<Descarga> {
-  const acceso = await api.accederAMedio(token, medioId);
-  if (!acceso.ok) return { acceso, dataUrl: null };
-  const dataUrl = await fetch(api.urlDe(acceso.datos.data.path), { credentials: 'omit', cache: 'no-store' })
+/** Los bytes de una ruta firmada, como data URL. El navegador guarda solo lo que la API deja guardar (REC-D10). */
+function bajar(ruta: string): Promise<string | null> {
+  return fetch(api.urlDe(ruta), { credentials: 'omit', cache: 'default' })
     .then((r) => (r.ok ? r.blob() : Promise.reject(new Error(`status ${r.status}`))))
     .then(leerComoDataUrl)
     .catch(() => null);
-  return { acceso, dataUrl };
+}
+
+/** Un acceso que ya está: la ruta firmada vino con la receta (el Recetario de BE). */
+const SIN_ACCESO: Resultado<unknown> = { ok: true, datos: null };
+
+/**
+ * El acceso firmado (API-MED-03) y la descarga de un medio, como data URL; `null` si alguno de los dos falla. Con `ruta`
+ * (la de una imagen del Recetario de BE, ya firmada), no se pide el acceso.
+ */
+async function descargar(token: string, medioId: string, variante: VarianteDeMedio | null, ruta: string | null): Promise<Descarga> {
+  if (ruta) return { acceso: SIN_ACCESO, dataUrl: await bajar(ruta) };
+  const acceso = await api.accederAMedio(token, medioId, variante ?? undefined);
+  if (!acceso.ok) return { acceso, dataUrl: null };
+  return { acceso, dataUrl: await bajar(acceso.datos.data.path) };
 }
 
 /**
@@ -111,12 +176,20 @@ function recordar(clave: string, dataUrl: string) {
 }
 
 /** La descarga compartida: dos tarjetas con la misma imagen que se montan a la vez hacen un solo pedido. */
-function descargaCompartida(clave: string, token: string, medioId: string): Promise<Descarga> {
+function descargaCompartida(clave: string, token: string, medioId: string, variante: VarianteDeMedio | null, ruta: string | null): Promise<Descarga> {
   const ya = enCurso.get(clave);
   if (ya) return ya;
-  const pedido = descargar(token, medioId).finally(() => enCurso.delete(clave));
+  const pedido = descargar(token, medioId, variante, ruta).finally(() => enCurso.delete(clave));
   enCurso.set(clave, pedido);
   return pedido;
+}
+
+/** DL-191: la ruta ya firmada de la variante pedida, si la imagen trae sus rutas (el Recetario de BE). */
+export function rutaDeLaVariante(rutas: RutasDeLaImagen | null | undefined, variante: VarianteDeMedio | null): string | null {
+  if (!rutas) return null;
+  // Se usa mientras le quede al menos un minuto: si no, se pide el acceso como siempre.
+  if (new Date(rutas.expiresAt).getTime() - Date.now() < 60_000) return null;
+  return variante === 'large' ? rutas.large : rutas.thumbnail;
 }
 
 /**
@@ -125,11 +198,20 @@ function descargaCompartida(clave: string, token: string, medioId: string): Prom
  * muestra nada: la página ya redirige. Una falla queda como `fallo`, para que la pantalla muestre su respaldo sin ocultar
  * el resto.
  */
-export function useImagenDeMedio(token: string, medioId: string | null, sesionPerdida: (r: Resultado<unknown>) => boolean, opciones: { readonly recordar?: boolean } = {}) {
+export function useImagenDeMedio(
+  token: string,
+  medioId: string | null,
+  sesionPerdida: (r: Resultado<unknown>) => boolean,
+  opciones: { readonly recordar?: boolean; readonly variante?: VarianteDeMedio; readonly rutas?: RutasDeLaImagen | null } = {},
+) {
   const recordarla = opciones.recordar === true;
+  const variante = opciones.variante ?? null;
+  const ruta = rutaDeLaVariante(opciones.rutas, variante);
+  // La clave lleva la variante: la miniatura de la lista no reemplaza a la grande del detalle.
+  const claveDe = (id: string) => `${token}|${id}|${variante ?? 'guardada'}`;
   const [estado, setEstado] = useState<EstadoDeImagen>(() => {
     if (!medioId) return { tipo: 'sin-imagen' };
-    const ya = recordarla ? recordadas.get(`${token}|${medioId}`) : undefined;
+    const ya = recordarla ? recordadas.get(claveDe(medioId)) : undefined;
     return ya ? { tipo: 'lista', dataUrl: ya } : { tipo: 'cargando' };
   });
   const generacion = useRef(0);
@@ -137,16 +219,18 @@ export function useImagenDeMedio(token: string, medioId: string | null, sesionPe
     async (forzar = false) => {
       const esta = ++generacion.current;
       if (!medioId) return setEstado({ tipo: 'sin-imagen' });
-      const clave = `${token}|${medioId}`;
+      const clave = `${token}|${medioId}|${variante ?? 'guardada'}`;
       const ya = recordarla && !forzar ? recordadas.get(clave) : undefined;
       if (ya) return setEstado({ tipo: 'lista', dataUrl: ya });
       setEstado({ tipo: 'cargando' });
-      const { acceso, dataUrl } = await (recordarla ? descargaCompartida(clave, token, medioId) : descargar(token, medioId));
+      // Un reintento a mano pide el acceso de nuevo, aunque la ruta haya venido firmada.
+      const firmada = forzar ? null : ruta;
+      const { acceso, dataUrl } = await (recordarla ? descargaCompartida(clave, token, medioId, variante, firmada) : descargar(token, medioId, variante, firmada));
       if (esta !== generacion.current || sesionPerdida(acceso)) return;
       if (dataUrl && recordarla) recordar(clave, dataUrl);
       setEstado(dataUrl ? { tipo: 'lista', dataUrl } : { tipo: 'fallo' });
     },
-    [token, medioId, sesionPerdida, recordarla],
+    [token, medioId, sesionPerdida, recordarla, variante, ruta],
   );
   useEffect(() => {
     void cargar();

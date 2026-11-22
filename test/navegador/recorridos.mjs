@@ -740,12 +740,15 @@ async function primerPlan({ p, d }) {
   await p.type('#objetivo-fundamento', 'Objetivo del recorrido de navegador.');
   await clic(p, 'form button[type="submit"]', 'Guardar nueva versión');
 
-  // 3. El plan. Se llegó con «Empezar el plan», que abre el asistente (ED-30): con el objetivo ya escrito, el paso 1
-  // ofrece desde dónde arrancar; «En blanco» y «Siguiente» crean la versión y siguen en el paso 2, el objetivo general.
-  await clic(p, '[data-punto-de-partida="blanco"]');
-  await clic(p, '[data-asistente-principal]');
+  // 3. El plan. «Empezar el plan» ya no abre el asistente (DL-193): con el objetivo escrito, el paso 3 de esta misma
+  // pantalla ofrece «Crear nuevo plan» (en blanco) o una plantilla, y la versión se abre en el editor de siempre.
+  assert.equal(ruta(p).parametros.get('asistente'), null, '«Empezar el plan» de Nutrición no pide el asistente');
+  assert.equal(await p.$('[data-asistente]'), null, 'sin el asistente de Nutrición');
+  await elemento(p, '[data-empezar-desde-plantilla]');
+  await clic(p, '[data-crear-version]', 'Crear nuevo plan');
   await elemento(p, '.editor-del-plan');
-  await elemento(p, '[data-objetivo-general]');
+  // El objetivo del día, con su versión y su fecha (SAN-04: lo decía el paso 2 del asistente).
+  await elemento(p, '[data-version-del-objetivo]', 'Versión 1, vigente desde el');
   // DJ-6: la primera versión en preparación lleva el número 1.
   await esperarTexto(p, 'Versión 1 · en preparación');
 
@@ -755,44 +758,57 @@ async function primerPlan({ p, d }) {
 }
 
 /**
- * ED-30 (WP-EDITORES-PROFESIONAL, §5.5): el asistente de Nutrición de punta a punta, con el objetivo ya escrito. Del paso
- * 1 al 7 sobre el mismo borrador: el día tipo de «En blanco», una comida con un alimento del catálogo base, y activar. Activada desde el
- * paso 7, se sale del asistente y se ve el plan activo (no el paso 1 de otra versión). En el paso 5, «Agregar una opción»
- * cancelado no deja una opción vacía en el borrador.
+ * DL-193 (WP-SIN-ASISTENTE-DE-NUTRICION): el plan de Nutrición de punta a punta sin el asistente de 7 pasos, con el
+ * objetivo ya escrito. Reemplaza al recorrido `asistenteDeNutricion` y prueba lo mismo que seguía vivo:
+ * - «Empezar el plan» de la ficha y una dirección vieja con `asistente=1` llevan a la vista del plan, sin el asistente;
+ *   ahí están los puntos de partida (crear en blanco y desde una plantilla).
+ * - Un borrador con una dirección vieja de un paso (`asistente=5`) se abre en el editor de siempre, entero.
+ * - En el editor: una comida, su opción con un alimento del catálogo base en su cuadro y activar.
+ * - Con una versión activa, la nueva puede empezar en blanco (SAN-03), además de copiarla o partir de una plantilla.
  */
-async function asistenteDeNutricion({ p, d }) {
+async function planDeNutricionSinAsistente({ p, d }) {
   await entrar(p, d.pro.correo);
   await abrirFicha(p, d.ase.nombre);
   await clic(p, '[data-accion-de-la-ficha="empezar"]', 'Empezar el plan');
   await esperarCamino(p, '/pro/advisees/nutrition');
+  assert.equal(ruta(p).parametros.get('vista'), 'plan');
+  assert.equal(ruta(p).parametros.get('asistente'), null, 'la ficha no pide el asistente de Nutrición');
+  await elemento(p, '[data-crear-version]', 'Crear nuevo plan');
+  await elemento(p, '[data-empezar-desde-plantilla]');
+  assert.equal(await p.$('[data-asistente]'), null, 'sin el asistente');
 
-  // 1 y 2. En blanco; el paso 2 muestra el objetivo general.
-  await clic(p, '[data-punto-de-partida="blanco"]');
-  await clic(p, '[data-asistente-principal]');
-  await elemento(p, '[data-objetivo-general]');
-  await clic(p, '[data-asistente-principal]', 'Siguiente: Días tipo');
+  // Una dirección vieja, con el paso 1 del asistente: la misma vista, y el parámetro se va.
+  const plan = `${WEB}/pro/advisees/nutrition?id=${encodeURIComponent(d.ase.id)}&vista=plan`;
+  await p.goto(`${plan}&asistente=1`, { waitUntil: 'networkidle2' });
+  await elemento(p, '[data-crear-version]', 'Crear nuevo plan');
+  await p.waitForFunction(() => !new URL(location.href).searchParams.has('asistente'), { timeout: ESPERA, polling: 100 });
+  assert.equal(await p.$('[data-punto-de-partida]'), null, 'no aparece el paso 1 del asistente');
 
-  // 3. «En blanco» ya trae un día tipo, «Día habitual»: se sigue con él.
-  await elemento(p, '[data-asistente-agregar-dia]');
-  assert.equal(await p.evaluate(() => document.querySelectorAll('li[data-dia-del-asistente]').length), 1, 'en blanco, un día tipo');
-  await clic(p, '[data-asistente-principal]', 'Siguiente: Comidas');
+  // Crear: el editor de siempre, con el objetivo y su versión.
+  await clic(p, '[data-crear-version]', 'Crear nuevo plan');
+  await elemento(p, '.editor-del-plan');
+  await esperarTexto(p, 'Versión 1 · en preparación');
+  await elemento(p, '[data-version-del-objetivo]');
 
-  // 4. Una comida, con su nombre (sin nombre no se puede guardar).
-  await clic(p, '[data-asistente-agregar-comida]');
-  const comida = await elemento(p, '[data-dia-del-asistente="1"] .asistente__sesiones input');
-  await comida.type('Almuerzo');
-  await clic(p, '[data-asistente-principal]', 'Siguiente: Opciones');
+  // Un borrador con la dirección vieja de un paso del asistente: el editor, entero y sin el asistente.
+  await p.goto(`${plan}&asistente=5`, { waitUntil: 'networkidle2' });
+  await elemento(p, '.editor-del-plan');
+  await p.waitForFunction(() => !new URL(location.href).searchParams.has('asistente'), { timeout: ESPERA, polling: 100 });
+  assert.equal(await p.$('[data-asistente]'), null, 'el borrador se abre en el editor, no en un paso del asistente');
+  assert.equal(await p.$eval('.editor-de-nutricion__zonas', (e) => e.hidden), false, 'el editor a la vista');
+  await elemento(p, '[data-revisar-y-activar]');
 
-  // 5. «Agregar una opción» y cancelar: el borrador sigue con una sola opción.
-  await elemento(p, '[data-opcion-del-asistente="1"]');
-  await clic(p, '[data-asistente-agregar-opcion]');
-  await elemento(p, '.cuadro-de-la-opcion [role="combobox"]');
-  await p.keyboard.press('Escape');
-  await p.waitForFunction(() => !document.querySelector('.cuadro-de-la-opcion [role="combobox"]'), { timeout: ESPERA });
-  assert.equal(await p.evaluate(() => document.querySelectorAll('[data-opcion-del-asistente]').length), 1, 'cancelar «Agregar una opción» no deja una opción vacía');
+  // Una comida vacía, con su nombre (sin nombre no se puede guardar): nace con el campo abierto.
+  await hidratado(p, '#agregar-comida');
+  await clic(p, '#agregar-comida', 'Agregar comida');
+  await clic(p, '.menu-de-acciones[data-abierto] .menu-de-acciones__accion', 'Una comida vacía');
+  await p.waitForFunction(() => document.activeElement instanceof HTMLInputElement, { timeout: ESPERA });
+  await p.keyboard.type('Almuerzo');
+  await p.keyboard.press('Enter');
 
-  // La opción 1, en su cuadro: buscar, Enter suma el marcado, la cantidad y el estado, y «Guardar la opción».
-  await clic(p, '[data-armar-la-opcion]');
+  // Su opción 1, en el cuadro: buscar, Enter suma el marcado, la cantidad y el estado, y «Guardar la opción».
+  await abrirComida(p, 1);
+  await clic(p, '.comida-del-editor[data-comida="1"] [data-agregar-item]');
   const buscador = await elemento(p, '.cuadro-de-la-opcion [role="combobox"]');
   await buscador.type('arroz');
   await elemento(p, '.cuadro-de-la-opcion [role="gridcell"][aria-selected="true"]');
@@ -802,21 +818,28 @@ async function asistenteDeNutricion({ p, d }) {
   await p.select('#cuadro-item-0-preparacion', 'COOKED');
   await clic(p, '.cuadro-de-la-opcion [data-principal-del-cuadro]', 'Guardar la opción');
   await p.waitForFunction(() => !document.querySelector('.cuadro-de-la-opcion [role="combobox"]'), { timeout: ESPERA });
-  await clic(p, '[data-asistente-principal]', 'Siguiente: Revisar');
+  await esperarGuardado(p);
 
-  // 6 y 7. Revisar y activar, sin fecha de revisión.
-  await clic(p, '[data-asistente-principal]', 'Siguiente: Activar');
-  await clic(p, '[data-asistente-principal]', 'Revisar y activar');
+  // Revisar y activar, sin fecha de revisión.
+  await clic(p, '[data-revisar-y-activar]');
   await elemento(p, 'dialog[open] [data-antes-de-activar]');
   await clic(p, 'dialog[open] .cuando-la-revisas input[value="sin-fecha"]');
   // El principal se enciende cuando la API terminó de revisar lo guardado y hay una fecha elegida.
   await p.waitForFunction(() => [...document.querySelectorAll('dialog[open] button.boton--primario')].some((b) => b.textContent.includes('Activar la versión 1') && !b.disabled), { timeout: ESPERA });
   await clic(p, 'dialog[open] button.boton--primario', 'Activar la versión 1');
 
-  // Activada: sin el asistente en la dirección y con el plan activo a la vista.
+  // Activada: el plan activo, y la versión nueva puede copiarla, partir de una plantilla o empezar en blanco (SAN-03).
   await elemento(p, '.plan__activo');
-  assert.equal(ruta(p).parametros.get('asistente'), null, 'activar desde el paso 7 sale del asistente');
-  assert.equal(await p.$('[data-punto-de-partida]'), null, 'no aparece el paso 1 de otra versión');
+  await elemento(p, '[data-crear-version]', 'Nueva versión del plan');
+  await elemento(p, '[data-empezar-en-blanco]', 'Empezar en blanco');
+  assert.equal(await p.$('[data-armar-con-el-asistente]'), null, 'sin «Armar con el asistente»');
+
+  // SAN-03 (revisión de DL-193): «Empezar en blanco» crea de verdad la versión 2 sin copiar la activa: el editor abre un
+  // día tipo vacío, sin el «Almuerzo» de la versión 1.
+  await clic(p, '[data-empezar-en-blanco]', 'Empezar en blanco');
+  await elemento(p, '[data-revisar-y-activar]');
+  await esperarTexto(p, 'Versión 2 · en preparación');
+  assert.equal(await p.$$eval('.editor-del-plan .comida-del-editor', (x) => x.length), 0, 'en blanco: sin las comidas de la activa');
 }
 
 /** Bloque 5: preparar la revisión desde la ficha y volver «donde estabas», con la vista y el período. */
@@ -2014,7 +2037,92 @@ async function franjasPorComida({ p, d, salida }) {
   }
 }
 
-export const TODOS = { sesion, pistas, borrador, conflicto, descartar, salidaSegura, irACorregir, respuestaPerdida, reintentar, salidaConFallas, primerPlan, asistenteDeNutricion, retorno, grafico, primeraInvitacion, areaSugerida, sesionRevocada, accesoRevocado, faltaUnaParte, completitud, evidencia, administracion, comparacion, comparacionConOpciones, sinSaltos, franjasPorComida, notacionDelEsfuerzo };
+/**
+ * DL-191 (WP-RECETARIO-E-IMAGENES; TEST-REC-040): el Recetario de BE → «Copiar a Mis recetas» → cargar la imagen desde el
+ * cajón del editor del plan. La semilla la carga `correr.mjs` antes de los recorridos, en la base local.
+ * - En «Recetas», la pestaña «Recetario de BE» busca sin tildes y copia «Avena cocida con banana y canela»: la copia se abre
+ *   en el editor, dice de cuál salió, y el servidor la tiene como propia, con su origen.
+ * - En el editor del plan, «Opción de receta» abre el cajón con la copia y su miniatura de reemplazo (sin foto); «Cargar
+ *   la imagen» la carga ahí mismo. El navegador la achica antes de subir (sube WebP o JPEG de 1600 px como máximo, no el
+ *   PNG de 1800 px) y la imagen queda en la receta: la lee Mis recetas, en WebP. La del recetario sigue sin foto.
+ * - Lo que aparece no corre nada: el renglón del aviso del recetario ya estaba en su lugar.
+ */
+async function recetario({ p, d, salida }) {
+  const R = dominio.COPY_RECETARIO;
+  const NOMBRE = 'Avena cocida con banana y canela';
+  const token = await sesionPorApi(d.pro.correo);
+  await entrar(p, d.pro.correo);
+  await clic(p, '.navegacion a', 'Mis recetas');
+  await esperarCamino(p, '/pro/recipes');
+  await clic(p, '.pestanas a', R.recetarioDeBe);
+  await p.waitForFunction(() => new URL(location.href).searchParams.get('vista') === 'recetario', { timeout: ESPERA });
+  await elemento(p, '[data-recetario-de-be]');
+  await hidratado(p, '#buscar-en-el-recetario');
+  await p.type('#buscar-en-el-recetario', 'AVENA cocida');
+  const fila = `[data-receta-del-recetario]`;
+  await elemento(p, fila, NOMBRE);
+  // Sin foto, el ícono de la comida en el lugar de la miniatura.
+  assert.ok(await p.$eval(`${fila} .imagen-de-receta--respaldo`, (e) => e.offsetParent !== null), 'sin foto, el ícono de la comida');
+  // El renglón del aviso de la tarjeta ya ocupa su lugar: al copiar no se corre nada.
+  const antes = await p.$eval(fila, (e) => e.getBoundingClientRect().height);
+  assert.ok(antes > 0);
+  await captura(p, salida, 'recetario-lista-1440');
+  await clic(p, `${fila} [data-copiar-a-mis-recetas]`, NOMBRE);
+  await p.waitForFunction(() => {
+    const u = new URL(location.href);
+    return Boolean(u.searchParams.get('receta')) && u.searchParams.get('vista') !== 'recetario';
+  }, { timeout: ESPERA });
+  await esperarTexto(p, R.copiada(NOMBRE));
+  await esperarTexto(p, R.copiaDe(NOMBRE));
+  const copiaId = ruta(p).parametros.get('receta');
+  const copia = (await pedir('GET', `/nutrition/recipes/${copiaId}`, { token })).data;
+  assert.equal(copia.origin, 'OWN');
+  assert.equal(copia.copiedFrom?.name, NOMBRE);
+  assert.equal(copia.image, null);
+  await elemento(p, '[data-proponer-al-recetario]');
+  await captura(p, salida, 'recetario-copia-1440');
+
+  // El editor del plan: «Opción de receta» abre el cajón con la copia.
+  await p.goto(`${WEB}/pro`, { waitUntil: 'networkidle2' });
+  await abrirFicha(p, d.ase.nombre);
+  await clic(p, '[data-accion-de-la-ficha="borrador"]');
+  await esperarCamino(p, '/pro/advisees/nutrition');
+  await elemento(p, '.comida-del-editor[data-comida="1"]');
+  await abrirComida(p, 1);
+  await clic(p, '.comida-del-editor[data-comida="1"] [data-opcion-de-receta]');
+  const enElCajon = `[data-imagen-en-el-cajon="${copiaId}"]`;
+  await elemento(p, enElCajon);
+  await clic(p, `${enElCajon} [data-cargar-imagen-en-el-cajon]`);
+  // Una foto sintética de 1800 × 1200 (un rectángulo de color, no una comida): el navegador la achica antes de subir.
+  const sharp = (await import('sharp')).default;
+  const archivo = join(salida, 'recetario-foto-sintetica.png');
+  writeFileSync(archivo, await sharp({ create: { width: 1800, height: 1200, channels: 3, background: { r: 230, g: 170, b: 60 } } }).png().toBuffer());
+  const subidas = [];
+  const alPedir = (q) => {
+    if (q.method() === 'PUT' && q.url().includes('/media/uploads/')) subidas.push(q.headers()['content-type']);
+  };
+  p.on('request', alPedir);
+  const entrada = await p.waitForSelector(`${enElCajon} input[type="file"]`, { timeout: ESPERA });
+  await entrada.uploadFile(archivo);
+  await elemento(p, `${enElCajon} .vista-previa`);
+  await p.select(`${enElCajon} select`, 'PERSON_PROVIDED');
+  await clic(p, `${enElCajon} [data-cargar-la-imagen]`);
+  await p.waitForFunction((s) => Boolean(document.querySelector(`${s} figure img.imagen-de-receta`)), { timeout: ESPERA }, enElCajon);
+  p.off('request', alPedir);
+  assert.equal(subidas.length, 1, 'una sola subida');
+  assert.ok(['image/webp', 'image/jpeg'].includes(subidas[0]), `el navegador sube la imagen achicada, no el PNG (${subidas[0]})`);
+  await captura(p, salida, 'recetario-imagen-en-el-cajon-1440');
+  // La imagen es de la receta: la lee Mis recetas, en WebP; la del recetario sigue sin foto.
+  const conImagen = (await pedir('GET', `/nutrition/recipes/${copiaId}`, { token })).data;
+  assert.ok(conImagen.image?.mediaId, 'la copia tiene imagen');
+  const miniatura = (await pedir('GET', `/media/${conImagen.image.mediaId}/access?variant=thumbnail`, { token })).data;
+  const bajada = await fetch(`${API}/api/v1${miniatura.path}`);
+  assert.equal(bajada.headers.get('content-type'), 'image/webp');
+  const delRecetario = (await pedir('GET', `/nutrition/recipe-book?q=${encodeURIComponent(NOMBRE)}`, { token })).data.find((r) => r.name === NOMBRE);
+  assert.equal(delRecetario.image, null, 'la del recetario no cambia');
+}
+
+export const TODOS = { sesion, pistas, borrador, conflicto, descartar, salidaSegura, irACorregir, respuestaPerdida, reintentar, salidaConFallas, primerPlan, planDeNutricionSinAsistente, retorno, grafico, primeraInvitacion, areaSugerida, sesionRevocada, accesoRevocado, faltaUnaParte, completitud, evidencia, administracion, comparacion, comparacionConOpciones, sinSaltos, franjasPorComida, notacionDelEsfuerzo, recetario };
 
 /** Errores de la página que no dicen nada del website (los del propio navegador). */
 const IGNORABLES = [/ResizeObserver loop/];

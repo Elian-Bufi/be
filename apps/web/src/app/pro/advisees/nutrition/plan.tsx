@@ -12,6 +12,9 @@
  *   (C-31): el que cita esa versión, no el que rija hoy si es otro.
  * - **Lo elegido vive en la dirección** (`version`, `dia`, `comidas`): «Actualizar» y volver atrás lo conservan.
  * - Una versión en preparación sigue en el editor de siempre, hasta su parte (la 7).
+ * - **DL-193 (WP-SIN-ASISTENTE-DE-NUTRICION):** sin el asistente de 7 pasos. Se empieza acá: «Crear nuevo plan» o «Nueva
+ *   versión del plan» (copia la activa), «Empezar en blanco» (con una activa: SAN-03) o desde una plantilla. Una dirección
+ *   vieja con `asistente=N` abre esta misma vista, sin ese parámetro.
  */
 import {
   COPY_PISTAS,
@@ -50,9 +53,6 @@ import { CorreccionesDespuesDeLaEvaluacion } from '../evaluacion/evaluacion-inic
 import { TiraDelObjetivo } from '../seguimiento/tira-del-objetivo';
 import { HistorialDelPlan, MenuDePlantillas, SelectorDeVersion, type VersionMostrada } from '../versiones-del-plan';
 import { EditorDeBorrador } from './editor';
-import { pasoPedido } from '../asistente/paso-que-sigue';
-import { COPY_ASISTENTE_DE_NUTRICION as CAN } from './asistente-de-nutricion';
-import { PuntoDePartidaDeNutricion } from './pasos-del-asistente';
 import { FormularioDeEvaluacion, FormularioDeObjetivo } from './formularios';
 import { ComidasDelPlan, SelectorDeDiaTipo } from './estructura-del-plan';
 import { ProveedorDeNotasPropias } from '../notas-propias';
@@ -62,6 +62,15 @@ import { Pista } from '../../../../components/pista';
 import { OtrasAreas } from '../seguimiento/otras-areas-en-pantalla';
 
 type Resumen = Omit<VersionDePlan, 'dayTypes'>;
+
+/**
+ * SAN-03 (DL-193): con una versión activa, empezar la nueva en blanco. Antes solo lo ofrecía el paso 1 del asistente («En
+ * blanco»); sin activa, «Crear nuevo plan» ya nace en blanco.
+ */
+export const COPY_EMPEZAR_EN_BLANCO = {
+  accion: 'Empezar en blanco',
+  pista: 'Una versión nueva con un día tipo vacío, sin copiar la activa. La activa no cambia hasta que actives la nueva.',
+} as const;
 
 /**
  * Número de versión para la persona: el orden de activación (1, 2, 3…). El campo `version` del 09 es el token de
@@ -111,6 +120,13 @@ export function VistaDePlan() {
   const [falloDesdePlantilla, setFalloDesdePlantilla] = useState<string | null>(null);
   // Una clave por acto: crear desde la activa y crear desde una plantilla son pedidos distintos.
   const intentoDeCrear = useClaveDeIntento();
+  const intentoEnBlanco = useClaveDeIntento();
+
+  // DL-193 (SAN-02): el asistente de Nutrición se retiró. Una dirección vieja (un enlace guardado, un aviso, la ficha de
+  // antes) con `asistente=N` abre esta misma vista; el parámetro se quita para que no quede colgado.
+  useEffect(() => {
+    if (parametros.get('asistente') !== null) ir({ asistente: null });
+  }, [parametros, ir]);
   const intentoDeAplicar = useClaveDeIntento();
 
   /** Las versiones, el objetivo vigente y la versión activa. Con `vaciar` en falso, el plan queda a la vista mientras se vuelve a leer. */
@@ -161,22 +177,23 @@ export function VistaDePlan() {
 
   async function crear(basadaEn: string | null) {
     if (!objetivo) return;
+    // Copiar la activa y empezar en blanco son pedidos distintos: cada uno con su clave (SAN-03).
+    const intento = basadaEn === null ? intentoEnBlanco : intentoDeCrear;
     setCreando(true);
     setAviso(null);
     const res = await api.crearBorradorDePlan(
       token,
       asesoradoId,
       basadaEn ? { objectiveVersionId: objetivo.versionId, basedOnPlanId: basadaEn } : { objectiveVersionId: objetivo.versionId, initialStructure: { dayTypes: [{ label: 'Día habitual', meals: [] }] } },
-      intentoDeCrear.actual(),
+      intento.actual(),
     );
-    intentoDeCrear.registrar(res);
+    intento.registrar(res);
     setCreando(false);
     // Una escritura denegada retira el contenido de la pestaña entera (B10-06:1145-1148).
     if (sesionPerdida(res) || accesoRetirado(res)) return;
     if (!res.ok) return setAviso({ tipo: 'error', texto: mensajeDeFallo(res) });
     setAviso({ tipo: 'exito', texto: COPY_NUTRICION.borradorCreado });
-    // ED-30: desde el asistente, sigue en el paso 2 con lo que trajo.
-    ir({ version: null, dia: null, comidas: null, asistente: parametros.get('asistente') ? '2' : null });
+    ir({ version: null, dia: null, comidas: null });
     await cargar();
   }
 
@@ -192,7 +209,7 @@ export function VistaDePlan() {
     if (!res.ok) return setFalloDesdePlantilla(res.tipo === 'API' && res.codigo === 'TEMPLATE_ARCHIVED' ? COPY_PLANTILLAS.archivadaNoSeAplica : mensajeDeFallo(res));
     setDesdePlantilla(false);
     setAviso({ tipo: 'exito', texto: COPY_PLANTILLAS.aplicada });
-    ir({ version: null, dia: null, comidas: null, asistente: parametros.get('asistente') ? '2' : null });
+    ir({ version: null, dia: null, comidas: null });
     await cargar();
   }
 
@@ -231,15 +248,16 @@ export function VistaDePlan() {
             // Las acciones que crean una versión: solo sin borrador, con un objetivo vigente del que nacer y, si hay una versión
             // activa, habiéndola leído (la nueva nace de ella).
             const sePuedeCrear = !borrador && !!objetivo && !faltan.activa;
-            // ED-30: el paso 1 del asistente, sin borrador y con un objetivo del que nacer (sin objetivo, empieza por la
-            // evaluación: no se ofrece el paso 2).
-            const conElAsistente = sePuedeCrear && pasoPedido(parametros.get('asistente')) !== null;
-            const armarConElAsistente = (
-              <button type="button" className="boton boton--quieto" onClick={() => ir({ asistente: '1' })} disabled={creando} data-armar-con-el-asistente>
-                <Icono nombre="etapa" tamano={18} />
-                {CAN.armarConElAsistente}
-              </button>
-            );
+            // SAN-03 (DL-193): con una activa, la versión nueva también puede nacer en blanco (lo que ofrecía el paso 1 del
+            // asistente). Sin activa, «Crear nuevo plan» ya nace en blanco.
+            const empezarEnBlanco = activa ? (
+              <Pista texto={COPY_EMPEZAR_EN_BLANCO.pista}>
+                <button type="button" className="boton boton--quieto" onClick={() => void crear(null)} disabled={creando} data-empezar-en-blanco>
+                  <Icono nombre="plan" tamano={18} />
+                  {COPY_EMPEZAR_EN_BLANCO.accion}
+                </button>
+              </Pista>
+            ) : null;
             const desdeUnaPlantilla = (
               <button type="button" className="boton boton--quieto" onClick={abrirDesdePlantilla} disabled={creando} data-empezar-desde-plantilla>
                 <Icono nombre="plantillas" tamano={18} />
@@ -259,7 +277,6 @@ export function VistaDePlan() {
             const empezarElPlan = sePuedeCrear ? (
               <>
                 {crearLaVersion}
-                {armarConElAsistente}
                 {desdeUnaPlantilla}
               </>
             ) : null;
@@ -300,21 +317,6 @@ export function VistaDePlan() {
                   mientrasTanto={borrador ? null : 'Mientras tanto, no se puede crear una versión nueva'}
                   onReintentar={() => void cargar(false)}
                 />
-                {/* ED-30: sin objetivo, el asistente empieza por la evaluación (los pasos de «Empezar el plan», abajo). */}
-                {parametros.get('asistente') && !objetivo && !borrador && !faltan.objetivo ? (
-                  <Aviso tipo="info">
-                    <p>{CAN.sinObjetivo}</p>
-                  </Aviso>
-                ) : null}
-                {conElAsistente ? (
-                  <PuntoDePartidaDeNutricion
-                    hayVigente={!!activa}
-                    creando={creando}
-                    onSalir={() => ir({ asistente: null })}
-                    onElegir={(p) => (p === 'plantilla' ? abrirDesdePlantilla() : void crear(p === 'vigente' && activa ? activa.planId : null))}
-                  />
-                ) : null}
-
                 {borrador && activa ? <SelectorDeVersion mostrada={mostrada} numeroDeLaActiva={numeroDeLaActiva ?? 1} numeroDelBorrador={numeroDelBorrador(historial)} onElegir={(cual) => ir({ version: cual === 'activa' ? 'activa' : null })} /> : null}
 
                 {borrador ? (
@@ -329,13 +331,10 @@ export function VistaDePlan() {
                         numero={numeroDelBorrador(historial)}
                         objetivo={objetivo ?? null}
                         vigente={activa && activa.activatedAt ? { numero: numeroDeLaActiva ?? 1, desde: activa.activatedAt, plan: activa } : null}
-                        // ED-30: el asistente escribió una versión nueva del objetivo: se vuelve a leer, con el plan a la vista.
-                        onObjetivoNuevo={() => cargar(false)}
                         // ED-07: el mismo texto en las dos áreas, con el número y el nombre, y «Ver lo que recibe».
                         onActivado={(texto) => {
                           setAviso({ tipo: 'exito', texto, verLoQueRecibe: true });
-                          // Activada desde el paso 7 del asistente, se sale de él: lo que sigue es ver el plan activo, no el paso 1 de otra versión.
-                          ir({ version: null, dia: null, comidas: null, asistente: null });
+                          ir({ version: null, dia: null, comidas: null });
                           void cargar();
                         }}
                         // ED-01: sin borrador, vuelven «Crear una nueva versión» y «Empezar desde una plantilla»; la vigente no cambió.
@@ -343,8 +342,7 @@ export function VistaDePlan() {
                           // Descartada, el foco espera a «Crear…»; si no se hizo, se queda en el aviso del error, que lo toma.
                           focoTrasDescartar.current = !porOtraPestana;
                           setAviso(porOtraPestana ? { tipo: 'error', texto: porOtraPestana } : { tipo: 'exito', texto: COPY_DESCARTAR_LA_VERSION.descartada(activa ? (numeroDeLaActiva ?? 1) : null) });
-                          // Como en Entrenamiento: descartada desde el asistente, vuelve a su paso 1 (desde dónde arrancar otra).
-                          ir({ version: null, dia: null, comidas: null, asistente: parametros.get('asistente') ? '1' : null });
+                          ir({ version: null, dia: null, comidas: null });
                           void cargar();
                         }}
                       />
@@ -353,7 +351,7 @@ export function VistaDePlan() {
                   </div>
                 ) : null}
 
-                {mostrada === 'activa' && activa && !conElAsistente ? (
+                {mostrada === 'activa' && activa ? (
                   <PlanActivo
                     version={activa}
                     numero={numeroDeLaActiva ?? 1}
@@ -363,7 +361,7 @@ export function VistaDePlan() {
                       <>
                         {!sePuedeCrear && borrador ? <p className="nota plan__ya-hay">{COPY_DEL_PLAN.yaHayUnaEnPreparacion}</p> : null}
                         <MenuDePlantillas alGuardar={() => setGuardarPlantilla(true)} alEmpezar={sePuedeCrear ? abrirDesdePlantilla : null} />
-                        {sePuedeCrear ? armarConElAsistente : null}
+                        {sePuedeCrear ? empezarEnBlanco : null}
                         {sePuedeCrear ? crearLaVersion : null}
                       </>
                     }
@@ -374,7 +372,7 @@ export function VistaDePlan() {
                 {/* Si no se pudo leer la versión activa o el objetivo, los pasos de «Empezar el plan» dirían que no hay: va la historia. */}
                 {mostrada === 'activa' && !activa && (faltan.activa || faltan.objetivo) && historial.length > 0 ? <HistorialDelPlan historial={historial} huella={null} /> : null}
 
-                {mostrada === 'activa' && !activa && !faltan.activa && !faltan.objetivo && !conElAsistente ? (
+                {mostrada === 'activa' && !activa && !faltan.activa && !faltan.objetivo ? (
                   <>
                     {/* Sin plan: los tres pasos en orden, en esta misma pantalla (DL-145). La acción principal va primera. */}
                     <PrimerPlanDeNutricion

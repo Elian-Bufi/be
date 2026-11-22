@@ -28,6 +28,10 @@ test('las rutas propias conocidas vuelven tal cual, también Plantillas y Mis re
 
 test('una receta abierta vuelve con su identificador, y un asesorado con el suyo', () => {
   assert.equal(destinoSeguro(`/pro/recipes?receta=${UUID}`), `/pro/recipes?receta=${UUID}`);
+  // DL-191: el Recetario de BE, la lista y una receta abierta.
+  assert.equal(destinoSeguro('/pro/recipes?vista=recetario'), '/pro/recipes?vista=recetario');
+  assert.equal(destinoSeguro(`/pro/recipes?vista=recetario&receta=${UUID}`), `/pro/recipes?receta=${UUID}&vista=recetario`);
+  assert.equal(destinoSeguro(`/pro/recipes?receta=${UUID}&vista=otra`), '/account');
   // La pestaña Entrenamiento de un asesorado (WP-ENTRENAMIENTO-SERIES): faltaba, y el login volvía a Cuenta.
   assert.equal(destinoSeguro(`/pro/advisees/training?id=${UUID}`), `/pro/advisees/training?id=${UUID}`);
   assert.equal(destinoSeguro(`/pro/advisees/nutrition?id=${UUID}`), `/pro/advisees/nutrition?id=${UUID}`);

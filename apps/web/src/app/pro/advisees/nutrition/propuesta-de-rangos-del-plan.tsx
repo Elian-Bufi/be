@@ -149,8 +149,8 @@ function LineaDelChequeo({ c }: { c: Exclude<ChequeoDeLaSuma, { estado: 'sin-ran
 /**
  * El reparto por comida de un día tipo. `dia`: el día con sus comidas ya guardadas; `null` si el día todavía no se
  * guardó. `comidasSinGuardar`: cuántas comidas del día todavía no tienen identidad (reciben su parte al guardar).
- * `nombreDelDia`: donde se listan los repartos de todos los días tipo (el paso de los rangos del asistente), el título dice
- * de qué día es; dentro de un día tipo, su pestaña ya lo dice.
+ * Va dentro de un día tipo, y su pestaña dice cuál es (la lista de todos los días tipo era la del asistente de Nutrición,
+ * que se retiró con DL-193).
  */
 export function RepartoPorComida({
   token,
@@ -158,7 +158,6 @@ export function RepartoPorComida({
   objetivo,
   dia,
   comidasSinGuardar = 0,
-  nombreDelDia = null,
   rangos,
 }: {
   token: string;
@@ -166,7 +165,6 @@ export function RepartoPorComida({
   objetivo: VersionDeObjetivo | null;
   dia: DiaDeLaPropuesta | null;
   comidasSinGuardar?: number;
-  nombreDelDia?: string | null;
   rangos: RangosIndicadosHook;
 }) {
   const id = useId();
@@ -177,8 +175,8 @@ export function RepartoPorComida({
   const [reemplazar, setReemplazar] = useState(false);
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  // RP-19: lo que se guardó, en el renglón al lado del botón (antes, un aviso arriba de la lista de rangos del asistente,
-  // que corría todo lo de abajo; en el editor no se veía).
+  // RP-19: lo que se guardó, en el renglón al lado del botón (antes, un aviso arriba de la lista de rangos, que corría todo
+  // lo de abajo; en el editor no se veía).
   const [hecho, setHecho] = useState<string | null>(null);
   // El reparto escrito es de este día tipo: con otras comidas, vuelve al punto de partida. Revisión del PR: la clave son
   // las comidas, no sus nombres; con el nombre, cambiarle el nombre a una comida borraba las partes que se habían escrito.
@@ -210,7 +208,7 @@ export function RepartoPorComida({
     <div className="reparto-por-comida__titulo">
       <h3 id={`${id}-titulo`}>
         <Icono nombre="objetivo" tamano={18} />
-        {nombreDelDia ? C.tituloDelDia(nombreDelDia) : C.titulo}
+        {C.titulo}
       </h3>
       <ExplicacionAPedido nombre={C.queEsNombre}>{C.queEs}</ExplicacionAPedido>
     </div>

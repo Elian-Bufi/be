@@ -5,7 +5,7 @@ import { Migas } from '../../../components/migas';
 import { NavegacionProfesional } from '../../../components/navegacion';
 import { MisRecetas } from './mis-recetas';
 
-export const metadata: Metadata = { title: 'Mis recetas · BE' };
+export const metadata: Metadata = { title: 'Recetas · BE' };
 
 /** Website `/pro/recipes` — las recetas propias del profesional de Nutrición (DL-119; WP-NUTRICION-RECETAS). */
 export default function PaginaDeRecetas() {
@@ -13,8 +13,8 @@ export default function PaginaDeRecetas() {
     <>
       <Encabezado navegacion={<NavegacionProfesional />} />
       <main id="contenido" className="contenido contenido--ancho">
-        <Migas pasos={[{ texto: 'Espacio profesional', href: '/pro' }, { texto: 'Mis recetas' }]} />
-        <h1>Mis recetas</h1>
+        <Migas pasos={[{ texto: 'Espacio profesional', href: '/pro' }, { texto: 'Recetas' }]} />
+        <h1>Recetas</h1>
         <Suspense fallback={null}>
           <MisRecetas />
         </Suspense>

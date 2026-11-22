@@ -276,7 +276,9 @@ import {
   IntencionDeSubidaResponseSchema,
   MedioResponseSchema,
   type IntencionDeSubidaRequest,
+  type VarianteDeMedio,
 } from './contratos-medios';
+import { PropuestaAlRecetarioResponseSchema, type ProponerAlRecetarioRequest } from './contratos-recetario';
 import {
   CalculoDeRecetaResponseSchema,
   DetalleDeRecetaResponseSchema,
@@ -1348,6 +1350,20 @@ export function crearClienteBe(opciones: OpcionesDeCliente) {
       return llamar('POST', '/nutrition/recipe-calculations', { token, esquema: CalculoDeRecetaResponseSchema, cuerpo });
     },
 
+    // ─── RCT · el Recetario de BE (DL-191) ──────────────────────────────────────────────────
+    /** API-RCT-01: las recetas del Recetario de BE, con la miniatura ya firmada. */
+    recetarioDeBe(token: string, filtro: { cursor?: string; limit?: string; q?: string } = {}) {
+      return llamar('GET', `/nutrition/recipe-book${query(filtro)}`, { token, esquema: ListaDeRecetasResponseSchema });
+    },
+    /** API-RCT-02: «Copiar a Mis recetas», con la misma imagen. */
+    copiarRecetaDelRecetario(token: string, recetaId: string, claveDeIdempotencia: string) {
+      return llamar('POST', `/nutrition/recipe-book/${encodeURIComponent(recetaId)}/copies`, { token, claveDeIdempotencia, esquema: RecetaResponseSchema, cuerpo: {} });
+    },
+    /** API-RCT-03: proponer una receta propia al Recetario de BE, con la cesión de la foto si tiene imagen. */
+    proponerAlRecetario(token: string, recetaId: string, cuerpo: ProponerAlRecetarioRequest, claveDeIdempotencia: string) {
+      return llamar('POST', `/nutrition/recipes/${encodeURIComponent(recetaId)}/proposals`, { token, claveDeIdempotencia, esquema: PropuestaAlRecetarioResponseSchema, cuerpo });
+    },
+
     // ─── MED · medios privados (DL-120) ─────────────────────────────────────────────────────
     /** API-MED-01: la intención de subida, con su ruta firmada. */
     crearIntencionDeSubida(token: string, cuerpo: IntencionDeSubidaRequest, claveDeIdempotencia: string) {
@@ -1355,9 +1371,12 @@ export function crearClienteBe(opciones: OpcionesDeCliente) {
     },
     /** API-MED-02. */
     subirMedio: subirBytes,
-    /** API-MED-03: la ruta de lectura firmada, que vence en 15 minutos como máximo. */
-    accederAMedio(token: string, medioId: string) {
-      return llamar('GET', `/media/${encodeURIComponent(medioId)}/access`, { token, esquema: AccesoAMedioResponseSchema });
+    /**
+     * API-MED-03: la ruta de lectura firmada, que vence en 15 minutos como máximo. DL-191: con `variante`, la miniatura o
+     * la grande de la imagen de una receta; sin ella, lo guardado (lo que pide la APK publicada).
+     */
+    accederAMedio(token: string, medioId: string, variante?: VarianteDeMedio) {
+      return llamar('GET', `/media/${encodeURIComponent(medioId)}/access${query({ variant: variante })}`, { token, esquema: AccesoAMedioResponseSchema });
     },
     /** API-MED-05: supresión a pedido de una foto propia de una comida. */
     suprimirMedio(token: string, medioId: string, claveDeIdempotencia: string) {

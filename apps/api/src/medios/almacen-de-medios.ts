@@ -1,5 +1,6 @@
-import type { Prisma } from '@prisma/client';
+import type { Prisma, VarianteDeMedio } from '@prisma/client';
 import type { Entorno } from '../config/entorno';
+import type { ImagenGuardable } from './procesamiento-de-imagen';
 
 type Tx = Prisma.TransactionClient;
 
@@ -20,6 +21,13 @@ export interface AlmacenDeMedios {
   leer(tx: Tx, medioId: string): Promise<Buffer | null>;
   /** Borra los bytes. El medio ya tiene que estar SUPRIMIDO (la base lo exige). */
   suprimir(tx: Tx, medioId: string): Promise<void>;
+  /**
+   * DL-191 · guarda una variante WebP de la imagen de una receta. Si ya está (dos lecturas que la generaron a la vez), no
+   * hace nada: las dos son la misma recodificación de lo mismo.
+   */
+  guardarVariante(tx: Tx, medioId: string, variante: VarianteDeMedio, imagen: ImagenGuardable<'image/webp'>): Promise<void>;
+  /** DL-191 · los bytes de una variante, o `null` si todavía no se generó. */
+  leerVariante(tx: Tx, medioId: string, variante: VarianteDeMedio): Promise<Buffer | null>;
 }
 
 export const ALMACEN_DE_MEDIOS = Symbol('ALMACEN_DE_MEDIOS');
@@ -39,7 +47,21 @@ export class AlmacenDeMediosEnPostgres implements AlmacenDeMedios {
   }
 
   async suprimir(tx: Tx, medioId: string): Promise<void> {
+    await tx.varianteGuardadaDeMedio.deleteMany({ where: { medioId } });
     await tx.contenidoDeMedio.deleteMany({ where: { medioId } });
+  }
+
+  async guardarVariante(tx: Tx, medioId: string, variante: VarianteDeMedio, imagen: ImagenGuardable<'image/webp'>): Promise<void> {
+    // Prisma pide un Uint8Array sobre un ArrayBuffer propio, como en `guardar`. `skipDuplicates`: ON CONFLICT DO NOTHING.
+    await tx.varianteGuardadaDeMedio.createMany({
+      data: [{ medioId, variante, tipo: imagen.tipo, bytes: imagen.bytes, ancho: imagen.ancho, alto: imagen.alto, sha256: imagen.sha256, contenido: new Uint8Array(imagen.contenido) }],
+      skipDuplicates: true,
+    });
+  }
+
+  async leerVariante(tx: Tx, medioId: string, variante: VarianteDeMedio): Promise<Buffer | null> {
+    const fila = await tx.varianteGuardadaDeMedio.findUnique({ where: { medioId_variante: { medioId, variante } }, select: { contenido: true } });
+    return fila ? Buffer.from(fila.contenido) : null;
   }
 }
 
