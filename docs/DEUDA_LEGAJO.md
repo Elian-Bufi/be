@@ -190,6 +190,7 @@
 | DL-188 | Pedido de Dirección · 2026-11-21 (el recorrido de la planificación de Nutrición en el escritorio profesional: «ponete a solucionar todo, empezá ya») | DL-186 · DL-146 · DL-163 (TB-07) · ED-02 · NUP-06 a 08 · NUP-10 · B10-01 · B10-10 §6-§8 · REG-06-157 · la decisión de Dirección del 18/11 (el «%» con su base) | La cabecera de un área ocupaba tres renglones, con un enlace largo para volver, «Actualizar» y la hora de la consulta; el acceso se partía; un error en línea movía su campo; el calculador tenía textos largos, un desplegable cortado, el ajuste con signo y la distribución por comida en el objetivo; las cantidades no llevaban ícono; la cuenta de los gramos ocupaba dos renglones; no estaba ten Haaf (2014) | **PROGRAMADA en `wp-recorrido-plan-pulido` (frente 1; PR en borrador, sin integrar) · RP-D01 a RP-D17 a ratificar · RP-19 «Sin saltos» (22/11) en `wp-recorrido-sin-saltos`, RP-D18 a RP-D26 a ratificar**: la cabecera en una franja con la vuelta como botón, el acceso en un chip y la revalidación al volver a la pestaña («Hay datos nuevos · Ver»); las filas de campos alineadas por arriba; el calculador más corto, con lo largo detrás de «?» y «Fuente», los g/kg con límites y paso 0,1 y el ajuste sin signo; el reparto por comida a la vista en cada día tipo; el ícono con el número y la abreviatura; la cuenta de los gramos detrás de un «?»; ten Haaf y Weijs (2014) en sus dos variantes. Sin operaciones nuevas ni migraciones. Detalle: `docs/paquetes/WP-RECORRIDO-PLAN-PULIDO.md` |
 | DL-189 | Pedido de Dirección · 2026-11-21 (la evaluación inicial «no le cierra»: un pantallazo del caso en lugar de la planilla) | RF-026 · RF-036 · RF-071 · REG-06-97 · REG-06-109 · DL-048 · DL-145 · DL-146 · DL-164 (D-3, D-4, D-6) · DL-165 (D-1, D-7) · DL-169 · DL-173 · DL-185 · DL-186 · Ley 26.529 art. 14 | La evaluación inicial era una planilla de «Concepto / Valor / Unidad / Fuente» con pastillas y el texto «BE no calcula»; los tres pasos de «Empezar el plan» ocupaban media pantalla; la fecha se escribía a mano; «Cargar con la persona» solo se abría desde una solicitud ya enviada y traía todas las preguntas a la vez | **PROGRAMADA en `wp-evaluacion-inicial-2` (PR en borrador, sin integrar) · EI-D01 a EI-D16 a ratificar**: la franja de los pasos, la fecha automática, la evaluación de Nutrición en tres bloques («Lo que contó», «Lo medido», «Lo que necesita el cálculo»), «Anotaciones» privadas, «Completarlo ahora con la persona» y lo crítico primero. Sin operaciones nuevas en la API ni cambios en la APK. Detalle: `docs/paquetes/WP-EVALUACION-INICIAL-2.md` |
 | DL-190 | Decisión de Dirección · 2026-11-21 (Kerr de cinco componentes y elegir el método antes de medir; WP-ANTROPOMETRIA-METODO-Y-KERR) | DL-110 · DL-111 (decisiones 5 a 7) · DL-112 · REG-06-152 · REG-06-157 · REG-06-203/204/205 · RF-048 · RF-049 · ficha de métodos D-1 y D-3 · DL-152 | El método se elegía después de medir, sobre un único protocolo de 30 mediciones; Kerr quedaba en reserva (D-3 sin resolver) y faltaban siete mediciones para sus cinco masas | **PROGRAMADA en `wp-antropometria-metodo-y-kerr` (PR en borrador, sin integrar) · AK-D01 a AK-D14 a ratificar**: Kerr (1988) en seis métodos (la piel por sexo; adiposa, muscular, ósea y residual) con la tabla 4.3 y el apéndice A de la tesis, D-3 resuelta (muslo a 1 cm del pliegue glúteo, pecho mesoesternal, cintura mínima), siete mediciones nuevas en el catálogo del dominio (no en una versión del protocolo, que cortaría la comparabilidad), una migración que solo agrega y, en la toma, la suma frente al peso medido en kg y en %; elegir uno o varios métodos al empezar la toma, con la unión de lo que piden más peso, talla y edad, el habitual de la última toma (API-MHA-01, familia propia MHA, sin migración), «+ Otra medición» y la nota del suprailíaco de Jackson y Pollock (D-1). La APK 0.31 no se rompe. Detalle: `docs/paquetes/WP-ANTROPOMETRIA-METODO-Y-KERR.md` |
+| DL-193 | Decisión de Dirección · 2026-11-22 (sacar el asistente de 7 pasos de Nutrición; WP-SIN-ASISTENTE-DE-NUTRICION) | RF-030 · RF-031 · UC-P10 · UC-P11 · B10-05 §12 · DL-145 · DL-167 (ED-30) · EDC-11 · EDC-12 | El asistente de Nutrición (ED-30) repetía, en siete pasos, lo que el editor ya hacía; Dirección lo encontró engorroso y anticuado frente a la forma normal | **PROGRAMADA en `wp-sin-asistente-de-nutricion` (PR en borrador, sin integrar) · SAN-D01 a SAN-D10 a ratificar**: sin el asistente de Nutrición (el de Entrenamiento no se toca); todo camino que llevaba a él va a la vista del plan o al editor, y una dirección vieja con `asistente=N` abre la misma vista sin ese parámetro; lo que solo tenía el asistente pasa al editor: «Empezar en blanco» con una versión activa, el objetivo con su versión y su fecha y lo que está en proporción, y «Usarla ahora» para pasar al objetivo vigente. Sin cambios en la API ni en la base: el asistente no guardaba estado propio. Detalle: `docs/paquetes/WP-SIN-ASISTENTE-DE-NUTRICION.md` |
 
 ---
 
@@ -9211,3 +9212,42 @@ plan en RPE sin un rechazo (TEST-RPE-024).
 - DL-194 (APK 0.32): declarar la capacidad, preguntar y mostrar en la notación y mandar el RIR; congelar sus lecturas.
 - Mirarlo en pantalla y con un lector de pantalla; la escritura rápida en RPE; si Dirección lo pide, `BE-E1RM` v2 con RPE 6
   a 7,5; el RPE de la sesión con «registrar otro deporte». Detalle completo: `docs/paquetes/WP-RPE-Y-MAXIMO-ESTIMADO.md`.
+
+## DL-193 — El plan de Nutrición sin el asistente de 7 pasos
+
+**Prioridad:** media (Dirección, al probar la planificación de Nutrición) · RF-030 · RF-031 · UC-P10 · UC-P11 · B10-05 §12 ·
+DL-145 · DL-167 (ED-30, EDC-11 y EDC-12) ·
+**Estado:** DECIDIDA por Dirección el 2026-11-22 · PROGRAMADA en `wp-sin-asistente-de-nutricion` (PR en borrador, sin
+integrar) · SAN-D01 a SAN-D10, **a ratificar**. Si al integrar el número choca con otro paquete, se renumera.
+
+**Qué pidió Dirección.** «El asistente de 7 pasos la verdad que lo sacaría, porque está muy engorroso, y le pusimos tanto
+esfuerzo a la forma normal que quedó muy bien, y hace anticuado el asistente ya.» El asistente de Entrenamiento queda: no
+lo probó todavía.
+
+**Qué dice el legajo.** **Ningún documento del legajo nombra un asistente** (lo buscado en `docs/legajo`: «asistente»,
+«wizard», «paso a paso», «guiado»; la única mención de «asistentes» es la de los asistentes de código en 08 §556, sin
+relación). El asistente nació en WP-EDITORES-PROFESIONAL (ED-30, del pedido de Dirección de DL-167: «crear con un asistente
+de cuadros y presets»). Lo que el legajo pide del diseño del plan no cambia y lo sigue cumpliendo el editor:
+- **RF-030 y UC-P10** (crear y editar un plan nutricional en borrador): el borrador se guarda y se retoma, no es vigente y
+  las inconsistencias se informan antes de activar (el panel en vivo y «Antes de activar»).
+- **RF-031 y UC-P11** (validar, versionar y activar): «Revisar y activar…», sin cambios.
+- **B10-05 §12** (crear borrador): «Plan → Crear nuevo plan → elegir objetivo de referencia → crear estructura inicial →
+  editor». Sin el asistente, el flujo vuelve a ser ese: el objetivo es el vigente (o se escribe antes, en los pasos de
+  «Empezar el plan» de DL-145) y la versión se abre en el editor.
+
+**Qué cambia.**
+- Se retiran ED-30 y las partes de EDC-11 (los siete pasos de Nutrición) y de EDC-12 que eran del paso 2. El número de la
+  versión del objetivo (EDC-12) sigue: ahora lo dice el editor, además del cuadro de la opción.
+- «Empezar el plan» de la ficha de Nutrición va a la vista del plan (no a `asistente=1`); sin «Armar con el asistente» ni
+  «Seguir con el asistente»; una dirección vieja con `asistente=N` abre la vista del plan y se le quita el parámetro.
+- Lo que solo tenía el asistente pasa al editor: «Empezar en blanco» con una versión activa (SAN-03), el objetivo con su
+  versión y su fecha y lo que está en proporción de las kcal (SAN-04), y «Usarla ahora» para que la versión en preparación
+  pase al objetivo vigente sin esperar otro cambio (SAN-05).
+- **La API, la base y la APK no cambian.** El asistente no guardaba estado propio (el paso vivía en la dirección y se
+  deducía del borrador): un borrador armado con él se abre entero en el editor, y no queda ningún campo sin uso.
+
+**Lo que queda.**
+- Ratificar SAN-D01 a SAN-D10.
+- Mirarlo en pantalla; la vista de todos los días tipo a la vez, si se extraña (SAN-D07); y, en el repaso de la entrega,
+  los documentos de paquetes cerrados que describen el asistente de Nutrición, que quedan como registro de su momento.
+  Detalle completo: `docs/paquetes/WP-SIN-ASISTENTE-DE-NUTRICION.md`.
