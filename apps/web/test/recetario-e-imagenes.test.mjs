@@ -43,6 +43,10 @@ test('TEST-REC-021 · las listas piden la miniatura y el detalle la grande; el r
   assert.match(MEDIOS, /\$\{token\}\|\$\{medioId\}\|\$\{variante \?\? 'guardada'\}/);
   assert.match(RECETARIO, /chica rutas=\{r\.image\?\.paths \?\? null\}/);
   assert.match(RECETARIO, /variante="large" rutas=\{r\.image\.paths \?\? null\}/);
+  // «Mis recetas» y el cajón del plan usan las rutas que trae la lista (API-REC-02): no piden un acceso por miniatura, que
+  // con muchas fotos llegaba al límite de consultas por minuto.
+  assert.match(MIS_RECETAS, /sesionPerdida=\{sesionPerdida\} chica rutas=\{r\.image\?\.paths \?\? null\}/);
+  assert.match(CAJON, /chica rutas=\{receta\.image\?\.paths \?\? null\}/);
 });
 
 test('TEST-REC-022 · «Recetas» tiene dos pestañas; el recetario se lee, se abre de solo lectura y se copia a Mis recetas', () => {

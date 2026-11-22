@@ -41,6 +41,30 @@ import { RutasFirmadas } from './rutas-firmadas';
 /** DL-191: la variante del contrato y la de la base. */
 const VARIANTE_EN_LA_BASE: Readonly<Record<VarianteDeMedio, VarianteEnLaBase>> = { thumbnail: 'MINIATURA', large: 'GRANDE' };
 
+/** DL-191 · cuántas generaciones perezosas de variantes corren a la vez en el proceso. */
+const GENERACIONES_A_LA_VEZ = 2;
+
+/** Un límite de tareas a la vez: las que pasan esperan en orden. */
+export class Turnos {
+  private libres: number;
+  private readonly cola: (() => void)[] = [];
+  constructor(cuantas: number) {
+    this.libres = cuantas;
+  }
+  async con<T>(tarea: () => Promise<T>): Promise<T> {
+    if (this.libres > 0) this.libres--;
+    else await new Promise<void>((seguir) => this.cola.push(seguir));
+    try {
+      return await tarea();
+    } finally {
+      const siguiente = this.cola.shift();
+      if (siguiente) siguiente();
+      else this.libres++;
+    }
+  }
+}
+const turnosDeGeneracion = new Turnos(GENERACIONES_A_LA_VEZ);
+
 /** Lo que sirve API-MED-04: los bytes, su tipo y, si se pueden guardar en el navegador, hasta cuándo. */
 export interface ContenidoDeMedio {
   readonly bytes: Buffer;
@@ -167,6 +191,22 @@ export class MediosService {
     @Inject(ALMACEN_DE_MEDIOS) private readonly almacen: AlmacenDeMedios,
     @Inject(ENTORNO) private readonly entorno: Entorno,
   ) {}
+
+  /** DL-191 · las variantes perezosas que se están generando, por medio: dos lecturas a la vez esperan la misma. */
+  private readonly generando = new Map<string, Promise<Awaited<ReturnType<typeof variantesDesdeLoGuardado>>>>();
+
+  /**
+   * DL-191 (REC-D02) · genera las variantes de un medio de antes, de a {@link GENERACIONES_A_LA_VEZ} por proceso: una lista
+   * con muchas fotos viejas que se abre por primera vez no decodifica todas a la vez (memoria y CPU acotadas), y la misma
+   * imagen pedida dos veces se genera una sola.
+   */
+  private variantesDe(medioId: string, guardado: Buffer): Promise<Awaited<ReturnType<typeof variantesDesdeLoGuardado>>> {
+    const ya = this.generando.get(medioId);
+    if (ya) return ya;
+    const pedido = turnosDeGeneracion.con(() => variantesDesdeLoGuardado(guardado)).finally(() => this.generando.delete(medioId));
+    this.generando.set(medioId, pedido);
+    return pedido;
+  }
 
   // ─── API-MED-01 ────────────────────────────────────────────────────────────────────────────
   crearIntencion(actor: ActorAutenticado, cuerpo: unknown, clave: string | undefined, ctx: ContextoDeSolicitud): Promise<ResultadoIdempotente> {
@@ -432,12 +472,62 @@ export class MediosService {
    * minutos y sin caché, porque mientras no se suma, la imagen es de quien la propuso.
    */
   rutasParaRevisar(medioId: string): RutasDeLaImagen {
+    return this.rutasPrivadas(medioId);
+  }
+
+  /** Las dos rutas privadas de la imagen de una receta: 15 minutos y sin caché, como las de API-MED-03. */
+  private rutasPrivadas(medioId: string): RutasDeLaImagen {
     const vence = this.rutas.vencimiento('LECTURA');
     return {
       thumbnail: `/media/content/${this.rutas.firmar(medioId, 'LECTURA', vence, { variante: 'thumbnail' })}`,
       large: `/media/content/${this.rutas.firmar(medioId, 'LECTURA', vence, { variante: 'large' })}`,
       expiresAt: vence.toISOString(),
     };
+  }
+
+  /**
+   * DL-191 · las rutas ya firmadas de las imágenes de una lista de recetas propias (API-REC-02: «Mis recetas» y el cajón
+   * del editor del plan), para que la pantalla no pida un acceso por miniatura: un profesional con muchas fotos llegaba al
+   * límite de consultas por minuto y la lista quedaba con las imágenes rotas.
+   * - Se firma solo lo que este profesional ya puede leer por API-MED-03: una imagen de receta disponible que es suya, o
+   *   una del Recetario de BE (la de una copia). Cualquier otra no lleva rutas, y la pantalla pide el acceso como siempre,
+   *   que decide y responde el mismo 404.
+   * - La propia sigue siendo privada: 15 minutos y sin caché, y cada ruta firmada queda en la auditoría como un acceso de
+   *   API-MED-03 (motivo `RUTA_EN_LA_LISTA`), en la misma transacción. La del recetario, como en su lista (REC-D10).
+   */
+  async rutasDeLaListaPropia(tx: Tx, actor: ActorAutenticado, medioIds: readonly string[], ctx: ContextoDeSolicitud): Promise<Map<string, RutasDeLaImagen>> {
+    const ids = [...new Set(medioIds)].filter((id) => esUuid(id));
+    const rutas = new Map<string, RutasDeLaImagen>();
+    if (ids.length === 0) return rutas;
+    const filas = await tx.$queryRaw<{ id: string; propio: boolean; delRecetario: boolean }[]>`
+      SELECT m."id"::text AS "id", m."propietario_id" = ${actor.identidadId}::uuid AS "propio",
+             EXISTS (SELECT 1 FROM "asociacion_de_imagen_de_receta" a JOIN "receta_del_recetario" rr ON rr."receta_id" = a."receta_id"
+                      WHERE a."medio_id" = m."id") AS "delRecetario"
+        FROM "medio" m
+       WHERE m."id" = ANY(${ids}::uuid[]) AND m."finalidad" = 'RECETA_REFERENCIA' AND m."estado" = 'DISPONIBLE'`;
+    const propias: string[] = [];
+    for (const f of filas) {
+      if (f.delRecetario) rutas.set(f.id, this.rutasDelRecetario(f.id));
+      else if (f.propio) propias.push(f.id);
+    }
+    if (propias.length === 0) return rutas;
+    await this.auditoria.registrarVarias(
+      propias.map((id) => ({
+        operacion: 'API-MED-03',
+        resultado: 'EXITO' as const,
+        motivo: 'RUTA_EN_LA_LISTA',
+        actorId: actor.identidadId,
+        sujetoId: null,
+        recursoTipo: RECURSO_DE_MEDIO,
+        recursoId: id,
+        superficie: ctx.superficie,
+        requestId: ctx.requestId,
+        momentoDeOcurrencia: ctx.momentoDeRecepcion,
+      })),
+      tx,
+    );
+    for (const id of propias) rutas.set(id, this.rutasPrivadas(id));
+    return rutas;
   }
 
   /**
@@ -606,7 +696,7 @@ export class MediosService {
     if (!leido.generar || !ruta.variante) return { bytes: leido.bytes, tipo: leido.tipo, guardableHasta };
     let variantes: Awaited<ReturnType<typeof variantesDesdeLoGuardado>>;
     try {
-      variantes = await variantesDesdeLoGuardado(leido.bytes);
+      variantes = await this.variantesDe(ruta.medioId, leido.bytes);
     } catch {
       return { bytes: leido.bytes, tipo: leido.tipo, guardableHasta };
     }

@@ -134,7 +134,10 @@ export const ImagenDeRecetaSchema = z.strictObject({
   width: z.number().int().positive(),
   height: z.number().int().positive(),
   attachedAt: Instante,
-  /** DL-191: solo en una receta del Recetario de BE (o en lo que revisa Administración). Las demás piden API-MED-03. */
+  /**
+   * DL-191: las rutas ya firmadas, en una receta del Recetario de BE, en la lista de las propias (API-REC-02, 15 minutos y
+   * sin caché las privadas) y en lo que revisa Administración. Sin ellas, se pide API-MED-03.
+   */
   paths: RutasDeLaImagenSchema.optional(),
 });
 export type ImagenDeReceta = z.infer<typeof ImagenDeRecetaSchema>;

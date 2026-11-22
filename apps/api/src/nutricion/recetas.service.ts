@@ -134,8 +134,15 @@ export class RecetasService {
         const hayMas = filas.length > consulta.limit;
         const pagina = filas.slice(0, consulta.limit);
         const ultima = pagina[pagina.length - 1];
+        // DL-191: cada imagen con sus rutas ya firmadas (la miniatura y la grande), así la lista no pide un acceso por
+        // miniatura: con muchas fotos, eso llegaba al límite de consultas por minuto. Solo lo que este profesional ya lee.
+        const recetas = await leerRecetas(tx, pagina);
+        const rutas = await this.medios.rutasDeLaListaPropia(tx, actor, recetas.flatMap((r) => (r.image ? [r.image.mediaId] : [])), ctx);
         return {
-          data: await leerRecetas(tx, pagina),
+          data: recetas.map((r) => {
+            const paths = r.image ? rutas.get(r.image.mediaId) : undefined;
+            return r.image && paths ? { ...r, image: { ...r.image, paths } } : r;
+          }),
           page: { limit: consulta.limit, nextCursor: hayMas && ultima ? escribirCursor(ultima.momentoDeActualizacion, ultima.id) : null, hasMore: hayMas },
         };
       },

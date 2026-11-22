@@ -185,7 +185,7 @@ export function MisRecetas() {
             <ul className="lista lista--recetas">
               {lista.estado.items.map((r) => (
                 <li key={r.recipeId} className="lista__item tarjeta-de-receta">
-                  <ImagenGuardada token={token} medioId={r.image?.mediaId ?? null} nombre={r.name} sesionPerdida={sesionPerdida} chica />
+                  <ImagenGuardada token={token} medioId={r.image?.mediaId ?? null} nombre={r.name} sesionPerdida={sesionPerdida} chica rutas={r.image?.paths ?? null} />
                   <div>
                     <p className="lista__titulo">{r.name}</p>
                     <p className="nota">{COPY_RECETAS.porcionesYEnergia(r.servings, nutrienteParaMostrar(r.calculation.perServing.energyKcal, 'energyKcal'))}</p>

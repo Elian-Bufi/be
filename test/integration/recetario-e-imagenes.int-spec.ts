@@ -1,5 +1,5 @@
 /**
- * WP-RECETARIO-E-IMAGENES (DL-191) contra PostgreSQL real · TEST-REC-010 a 019.
+ * WP-RECETARIO-E-IMAGENES (DL-191) contra PostgreSQL real · TEST-REC-008 y TEST-REC-010 a 019.
  * - Las imágenes livianas: la imagen de una receta en dos variantes WebP (la grande de 1200 px y la miniatura de 400 px),
  *   pedidas por variante; los medios de antes (JPEG de 1600 px) siguen sirviéndose sin variante, como los pide la APK
  *   publicada, y sus variantes se generan la primera vez; la foto de una comida no cambia.
@@ -159,6 +159,24 @@ describe('DL-191 · las imágenes livianas', () => {
     expect((await subirBytes(app, intencion.uploadPath, foto, 'image/png').expect(200)).body.data.mediaId).toBe(primera.mediaId);
     expect((await subirBytes(app, intencion.uploadPath, foto, 'image/png').expect(200)).body.data.mediaId).toBe(primera.mediaId);
   });
+
+  it('TEST-REC-008 · «Mis recetas» trae las rutas ya firmadas de sus imágenes: privadas, de 15 minutos, sin caché y auditadas', async () => {
+    const pro = await prepararProfesional(app, 'rec-lista-firmada', ['NUTRICION']);
+    const { receta, mediaId } = await recetaConImagen(pro, await sintetica(800, 600, { r: 30, g: 160, b: 160 }), 'Tarta de la lista firmada');
+    const lista = (await conSesion(app, pro.token).get('/api/v1/nutrition/recipes?limit=50').expect(200)).body;
+    ListaDeRecetasResponseSchema.parse(lista);
+    const enLaLista = lista.data.find((r: { recipeId: string }) => r.recipeId === receta.recipeId) as { image: { mediaId: string; paths: { thumbnail: string; large: string; expiresAt: string } } };
+    expect(enLaLista.image).toMatchObject({ mediaId, paths: { thumbnail: expect.stringMatching(/^\/media\/content\//), large: expect.stringMatching(/^\/media\/content\//) } });
+    expect(new Date(enLaLista.image.paths.expiresAt).getTime() - Date.now()).toBeLessThanOrEqual(15 * 60 * 1000);
+    // La miniatura por la ruta de la lista: la misma de API-MED-03, sin caché (es privada).
+    const miniatura = await leerContenido(app, enLaLista.image.paths.thumbnail).expect(200);
+    expect([miniatura.headers['content-type'], miniatura.headers['cache-control']]).toEqual(['image/webp', 'no-store']);
+    expect((await sharp(miniatura.body as Buffer).metadata()).width).toBe(400);
+    const grande = await leerContenido(app, enLaLista.image.paths.large).expect(200);
+    expect((await sharp(grande.body as Buffer).metadata()).width).toBe(800);
+    // Cada ruta firmada en la lista queda como un acceso auditado, sin pedir uno por imagen.
+    expect(await prisma.registroDeAuditoria.count({ where: { operacion: 'API-MED-03', motivo: 'RUTA_EN_LA_LISTA', actorId: pro.id, recursoId: mediaId } })).toBe(1);
+  });
 });
 
 describe('DL-191 · el Recetario de BE', () => {
@@ -307,6 +325,11 @@ describe('DL-191 · el Recetario de BE', () => {
     expect(copia.image.mediaId).toBe(mediaId);
     expect(await prisma.medio.count()).toBe(mediosAntes);
     expect(await prisma.medio.count({ where: { propietarioId: b.id } })).toBe(0);
+    // En «Mis recetas», la copia trae las rutas del recetario (guardables), sin una fila de auditoría por miniatura.
+    const enMisRecetas = (await conSesion(app, b.token).get('/api/v1/nutrition/recipes?limit=50').expect(200)).body.data.find((r: { recipeId: string }) => r.recipeId === copia.recipeId);
+    const porMisRecetas = await leerContenido(app, enMisRecetas.image.paths.thumbnail).expect(200);
+    expect(porMisRecetas.headers['cache-control']).toMatch(/^private, max-age=\d+, immutable$/);
+    expect(await prisma.registroDeAuditoria.count({ where: { motivo: 'RUTA_EN_LA_LISTA', actorId: b.id } })).toBe(0);
   });
 
   it('TEST-REC-018 · una receta del recetario como opción del plan, tal cual: la persona lee su imagen con el plan activado', async () => {

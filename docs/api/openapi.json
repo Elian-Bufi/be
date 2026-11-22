@@ -125550,7 +125550,7 @@
       },
       "get": {
         "operationId": "API-REC-02",
-        "summary": "Mis recetas (solo las propias), con su versión vigente, su cálculo y su imagen de referencia; la editada más recientemente primero.",
+        "summary": "Mis recetas (solo las propias), con su versión vigente, su cálculo y su imagen de referencia; la editada más recientemente primero. DL-191: la imagen trae sus rutas de lectura ya firmadas (image.paths: la miniatura y la grande), así la lista no pide un acceso por imagen: la propia, de 15 minutos y sin caché, y cada una queda auditada como un acceso de API-MED-03; la de una copia del Recetario de BE, como en su lista. Una imagen que el profesional no puede leer no trae rutas.",
         "description": "Fuente: DEUDA_LEGAJO DL-119. AuthN: SESSION.",
         "security": [
           {

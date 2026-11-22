@@ -3668,7 +3668,7 @@ const DEFINIDAS: readonly Operacion[] = [
     id: 'API-REC-02',
     metodo: 'get',
     ruta: '/nutrition/recipes',
-    resumen: 'Mis recetas (solo las propias), con su versión vigente, su cálculo y su imagen de referencia; la editada más recientemente primero.',
+    resumen: 'Mis recetas (solo las propias), con su versión vigente, su cálculo y su imagen de referencia; la editada más recientemente primero. DL-191: la imagen trae sus rutas de lectura ya firmadas (image.paths: la miniatura y la grande), así la lista no pide un acceso por imagen: la propia, de 15 minutos y sin caché, y cada una queda auditada como un acceso de API-MED-03; la de una copia del Recetario de BE, como en su lista. Una imagen que el profesional no puede leer no trae rutas.',
     autenticacion: 'SESSION',
     idempotencia: false,
     query: [LIMIT, CURSOR],
