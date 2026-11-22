@@ -19,6 +19,7 @@
 
 import { MACROS_DEL_RANGO, type EscribirRangosRequest, type MacroDelRango, type Rango, type RangosDelPlan } from '@be/domain';
 import { useCallback, useId, useRef, useState } from 'react';
+import { ExplicacionAPedido } from '../../../../components/explicacion-a-pedido';
 import { CampoDeFecha } from '../../../../components/campo-de-fecha';
 import { CuadroEnfocado } from '../../../../components/cuadro-enfocado';
 import { Aviso } from '../../../../components/formulario';
@@ -151,8 +152,16 @@ export function RangosIndicados({ rangos, dias, titulo = true }: { rangos: Rango
   };
   return (
     <section className="rangos-indicados" aria-label={C.titulo} data-rangos-indicados>
-      {titulo ? <h3>{C.titulo}</h3> : null}
-      <p className="nota">{C.ayuda}</p>
+      {/* Con título (el panel del editor), la explicación va detrás de un «?» al lado (pedido de Dirección: lo largo, a
+          un toque). Sin título (el paso del asistente), sigue a la vista: el paso la presenta con su propio título. */}
+      {titulo ? (
+        <div className="rangos-indicados__titulo">
+          <h3>{C.titulo}</h3>
+          <ExplicacionAPedido nombre={C.queSon}>{C.ayuda}</ExplicacionAPedido>
+        </div>
+      ) : (
+        <p className="nota">{C.ayuda}</p>
+      )}
       {datos.bodyWeight ? <p data-peso-usado>{pesoEnPalabras(datos.bodyWeight)}</p> : null}
       {datos.bodyWeightWithheld ? <p className="nota">{C.pesoRetenido}</p> : null}
       {avisosDelPesoUsado.map((texto) => (
