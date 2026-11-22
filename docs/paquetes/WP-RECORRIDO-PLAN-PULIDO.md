@@ -483,4 +483,8 @@ calentamiento y los atajos) va detrás de un «?». El catálogo de ejercicios, 
   angosta, puede pasar a dos renglones. Propuesta: reservar dos renglones.
 - `objetivos-por-serie.tsx` (`CampoHeredable`, `TablaDeObjetivos`) no se usa en ninguna pantalla: código muerto, que toca el
   frente del RPE.
+- **Visto en la CI, de otro frente:** la escena 08 de las capturas del objetivo y el calculador
+  (`EVIDENCIA/OBJETIVO-Y-CALCULADOR/herramientas/capturas.mjs`) busca `[data-frente-a-los-rangos]` en el almuerzo, y desde
+  RP-20 (#309) la comida del editor muestra las franjas: la escena espera 30 s y falla. No es de esta rama (no toca
+  `nutrition/**`).
 - `docs/DEUDA_LEGAJO.md` (DL-188) no se tocó: al integrar, sumarle RP-22 y RP-D60 a RP-D72.
