@@ -804,7 +804,7 @@ function SeriesDelEjercicio({
               {COPY_SELECCION.listo}
             </button>
             {/* RP-22: el aviso tiene su renglón en la barra: al tocar «Escribir» con algo que no se entiende, la tabla no baja. */}
-            <RenglonDelAviso id={`${id}-elegidas-no-se-entiende`} tipo={noSeEntiende ? 'error' : 'nota'} className="series-del-editor__aviso-de-las-elegidas" role="alert">
+            <RenglonDelAviso id={`${id}-elegidas-no-se-entiende`} tipo={noSeEntiende ? 'error' : 'nota'} className="aviso-de-las-elegidas" role="alert">
               {noSeEntiende ? (campo === 'repetitions' ? COPY_SELECCION.repeticionesNoSeEntienden : PL.noSeEntiende) : null}
             </RenglonDelAviso>
           </div>
