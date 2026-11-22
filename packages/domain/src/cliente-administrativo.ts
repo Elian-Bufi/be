@@ -42,6 +42,12 @@ import {
   type ConsultarAlimentosParaRevisarRequest,
   type DecidirSobreAlimentoRequest,
 } from './contratos-alimentos';
+import {
+  ListaDePropuestasParaRevisarResponseSchema,
+  PropuestaParaRevisarResponseSchema,
+  type ConsultarPropuestasAlRecetarioRequest,
+  type DecidirPropuestaRequest,
+} from './contratos-recetario';
 
 export type ResultadoAdministrativo<T> =
   | { readonly ok: true; readonly datos: T }
@@ -228,6 +234,14 @@ export function crearClienteAdministrativo(opciones: { readonly baseUrl: string;
     /** API-ALI-07 — los verificados de la tabla oficial y del canon, para elegir el equivalente. */
     buscarVerificados(token: string, consulta: BuscarVerificadosRequest) {
       return llamar('POST', '/admin/foods/verified/query', { token, cuerpo: consulta, esquema: ListaDeVerificadosResponseSchema });
+    },
+    /** API-RCT-04 — las propuestas al Recetario de BE, con su autor, la receta y las parecidas (DL-191). */
+    propuestasAlRecetario(token: string, consulta: ConsultarPropuestasAlRecetarioRequest) {
+      return llamar('POST', '/admin/recipe-proposals/query', { token, cuerpo: consulta, esquema: ListaDePropuestasParaRevisarResponseSchema });
+    },
+    /** API-RCT-05 — sumar o no sumar una propuesta, una sola vez, con su clave de idempotencia (DL-191). */
+    decidirPropuesta(token: string, propuestaId: string, pedido: DecidirPropuestaRequest, claveDeIdempotencia: string) {
+      return llamar('POST', `/admin/recipe-proposals/${encodeURIComponent(propuestaId)}/decisions`, { token, cuerpo: pedido, claveDeIdempotencia, esquema: PropuestaParaRevisarResponseSchema });
     },
   };
 }

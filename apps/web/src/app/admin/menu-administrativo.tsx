@@ -143,6 +143,16 @@ export function MenuAdministrativo() {
               </span>
             </Link>
           ) : null}
+          {/* DL-191 (REC-08): las recetas que los profesionales propusieron al Recetario de BE, para sumarlas o no. */}
+          {vigente && ruta !== '/admin/recipes' ? (
+            <Link href="/admin/recipes" className="menu-de-cuenta__opcion">
+              <Icono nombre="comida" />
+              <span>
+                Propuestas al Recetario de BE
+                <span className="nota">Sumar al recetario las recetas que propusieron los profesionales</span>
+              </span>
+            </Link>
+          ) : null}
           {/* UF-03 (DL-169; UF-D9): la recuperación asistida del acceso de una persona. */}
           {vigente && ruta !== '/admin/access' ? (
             <Link href="/admin/access" className="menu-de-cuenta__opcion">

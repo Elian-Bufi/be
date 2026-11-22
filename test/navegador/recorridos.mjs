@@ -1747,7 +1747,92 @@ async function franjasPorComida({ p, d, salida }) {
   }
 }
 
-export const TODOS = { sesion, pistas, borrador, conflicto, descartar, salidaSegura, irACorregir, respuestaPerdida, reintentar, salidaConFallas, primerPlan, asistenteDeNutricion, retorno, grafico, primeraInvitacion, areaSugerida, sesionRevocada, accesoRevocado, faltaUnaParte, completitud, evidencia, administracion, comparacion, comparacionConOpciones, franjasPorComida };
+/**
+ * DL-191 (WP-RECETARIO-E-IMAGENES; TEST-REC-040): el Recetario de BE → «Copiar a Mis recetas» → cargar la imagen desde el
+ * cajón del editor del plan. La semilla la carga `correr.mjs` antes de los recorridos, en la base local.
+ * - En «Recetas», la pestaña «Recetario de BE» busca sin tildes y copia «Avena cocida con banana y canela»: la copia se abre
+ *   en el editor, dice de cuál salió, y el servidor la tiene como propia, con su origen.
+ * - En el editor del plan, «Opción de receta» abre el cajón con la copia y su miniatura de reemplazo (sin foto); «Cargar
+ *   la imagen» la carga ahí mismo. El navegador la achica antes de subir (sube WebP o JPEG de 1600 px como máximo, no el
+ *   PNG de 1800 px) y la imagen queda en la receta: la lee Mis recetas, en WebP. La del recetario sigue sin foto.
+ * - Lo que aparece no corre nada: el renglón del aviso del recetario ya estaba en su lugar.
+ */
+async function recetario({ p, d, salida }) {
+  const R = dominio.COPY_RECETARIO;
+  const NOMBRE = 'Avena cocida con banana y canela';
+  const token = await sesionPorApi(d.pro.correo);
+  await entrar(p, d.pro.correo);
+  await clic(p, '.navegacion a', 'Mis recetas');
+  await esperarCamino(p, '/pro/recipes');
+  await clic(p, '.pestanas a', R.recetarioDeBe);
+  await p.waitForFunction(() => new URL(location.href).searchParams.get('vista') === 'recetario', { timeout: ESPERA });
+  await elemento(p, '[data-recetario-de-be]');
+  await hidratado(p, '#buscar-en-el-recetario');
+  await p.type('#buscar-en-el-recetario', 'AVENA cocida');
+  const fila = `[data-receta-del-recetario]`;
+  await elemento(p, fila, NOMBRE);
+  // Sin foto, el ícono de la comida en el lugar de la miniatura.
+  assert.ok(await p.$eval(`${fila} .imagen-de-receta--respaldo`, (e) => e.offsetParent !== null), 'sin foto, el ícono de la comida');
+  // El renglón del aviso de la tarjeta ya ocupa su lugar: al copiar no se corre nada.
+  const antes = await p.$eval(fila, (e) => e.getBoundingClientRect().height);
+  assert.ok(antes > 0);
+  await captura(p, salida, 'recetario-lista-1440');
+  await clic(p, `${fila} [data-copiar-a-mis-recetas]`, NOMBRE);
+  await p.waitForFunction(() => {
+    const u = new URL(location.href);
+    return Boolean(u.searchParams.get('receta')) && u.searchParams.get('vista') !== 'recetario';
+  }, { timeout: ESPERA });
+  await esperarTexto(p, R.copiada(NOMBRE));
+  await esperarTexto(p, R.copiaDe(NOMBRE));
+  const copiaId = ruta(p).parametros.get('receta');
+  const copia = (await pedir('GET', `/nutrition/recipes/${copiaId}`, { token })).data;
+  assert.equal(copia.origin, 'OWN');
+  assert.equal(copia.copiedFrom?.name, NOMBRE);
+  assert.equal(copia.image, null);
+  await elemento(p, '[data-proponer-al-recetario]');
+  await captura(p, salida, 'recetario-copia-1440');
+
+  // El editor del plan: «Opción de receta» abre el cajón con la copia.
+  await p.goto(`${WEB}/pro`, { waitUntil: 'networkidle2' });
+  await abrirFicha(p, d.ase.nombre);
+  await clic(p, '[data-accion-de-la-ficha="borrador"]');
+  await esperarCamino(p, '/pro/advisees/nutrition');
+  await elemento(p, '.comida-del-editor[data-comida="1"]');
+  await abrirComida(p, 1);
+  await clic(p, '.comida-del-editor[data-comida="1"] [data-opcion-de-receta]');
+  const enElCajon = `[data-imagen-en-el-cajon="${copiaId}"]`;
+  await elemento(p, enElCajon);
+  await clic(p, `${enElCajon} [data-cargar-imagen-en-el-cajon]`);
+  // Una foto sintética de 1800 × 1200 (un rectángulo de color, no una comida): el navegador la achica antes de subir.
+  const sharp = (await import('sharp')).default;
+  const archivo = join(salida, 'recetario-foto-sintetica.png');
+  writeFileSync(archivo, await sharp({ create: { width: 1800, height: 1200, channels: 3, background: { r: 230, g: 170, b: 60 } } }).png().toBuffer());
+  const subidas = [];
+  const alPedir = (q) => {
+    if (q.method() === 'PUT' && q.url().includes('/media/uploads/')) subidas.push(q.headers()['content-type']);
+  };
+  p.on('request', alPedir);
+  const entrada = await p.waitForSelector(`${enElCajon} input[type="file"]`, { timeout: ESPERA });
+  await entrada.uploadFile(archivo);
+  await elemento(p, `${enElCajon} .vista-previa`);
+  await p.select(`${enElCajon} select`, 'PERSON_PROVIDED');
+  await clic(p, `${enElCajon} [data-cargar-la-imagen]`);
+  await p.waitForFunction((s) => Boolean(document.querySelector(`${s} figure img.imagen-de-receta`)), { timeout: ESPERA }, enElCajon);
+  p.off('request', alPedir);
+  assert.equal(subidas.length, 1, 'una sola subida');
+  assert.ok(['image/webp', 'image/jpeg'].includes(subidas[0]), `el navegador sube la imagen achicada, no el PNG (${subidas[0]})`);
+  await captura(p, salida, 'recetario-imagen-en-el-cajon-1440');
+  // La imagen es de la receta: la lee Mis recetas, en WebP; la del recetario sigue sin foto.
+  const conImagen = (await pedir('GET', `/nutrition/recipes/${copiaId}`, { token })).data;
+  assert.ok(conImagen.image?.mediaId, 'la copia tiene imagen');
+  const miniatura = (await pedir('GET', `/media/${conImagen.image.mediaId}/access?variant=thumbnail`, { token })).data;
+  const bajada = await fetch(`${API}/api/v1${miniatura.path}`);
+  assert.equal(bajada.headers.get('content-type'), 'image/webp');
+  const delRecetario = (await pedir('GET', `/nutrition/recipe-book?q=${encodeURIComponent(NOMBRE)}`, { token })).data.find((r) => r.name === NOMBRE);
+  assert.equal(delRecetario.image, null, 'la del recetario no cambia');
+}
+
+export const TODOS = { sesion, pistas, borrador, conflicto, descartar, salidaSegura, irACorregir, respuestaPerdida, reintentar, salidaConFallas, primerPlan, asistenteDeNutricion, retorno, grafico, primeraInvitacion, areaSugerida, sesionRevocada, accesoRevocado, faltaUnaParte, completitud, evidencia, administracion, comparacion, comparacionConOpciones, franjasPorComida, recetario };
 
 /** Errores de la página que no dicen nada del website (los del propio navegador). */
 const IGNORABLES = [/ResizeObserver loop/];

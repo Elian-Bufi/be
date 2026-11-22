@@ -54,16 +54,17 @@ const conGps = () =>
     .toBuffer();
 
 describe('D2 · la imagen de una receta: intención, subida, recodificación, asociación y lectura', () => {
-  it('cada PNG del paquete entra por el flujo real y se lee como un JPEG de hasta 1600 px, sin metadatos', async () => {
+  // DL-191: la imagen de una receta se guarda en WebP, en dos variantes; lo guardado (sin variante) es la grande de 1200 px.
+  it('cada PNG del paquete entra por el flujo real y se lee como un WebP de hasta 1200 px, sin metadatos', async () => {
     const pro = await prepararProfesional(app, 'medios-png', ['NUTRICION']);
     const prisma = app.get(PrismaService);
     for (const foto of FOTOS) {
       const { mediaId, medio } = await subirImagen(app, pro, foto, { contentType: 'image/png', provenance: 'AI_GENERATED', authorship: 'Generada por IA para la demostración' });
-      expect(medio).toMatchObject({ mediaId, purpose: 'RECIPE_REFERENCE', status: 'AVAILABLE', contentType: 'image/jpeg', provenance: 'AI_GENERATED' });
-      expect(Math.max(medio.width as number, medio.height as number)).toBeLessThanOrEqual(1600);
+      expect(medio).toMatchObject({ mediaId, purpose: 'RECIPE_REFERENCE', status: 'AVAILABLE', contentType: 'image/webp', provenance: 'AI_GENERATED' });
+      expect(Math.max(medio.width as number, medio.height as number)).toBeLessThanOrEqual(1200);
       const bytes = await leerImagen(app, pro, mediaId);
       const m = await sharp(bytes).metadata();
-      expect(m.format).toBe('jpeg');
+      expect(m.format).toBe('webp');
       expect(m.exif).toBeUndefined();
       expect(m.icc).toBeUndefined();
       expect(bytes.length).toBe(medio.byteSize);
@@ -197,7 +198,7 @@ describe('D8 · la foto de una comida: sin EXIF ni GPS, privada, con rutas que v
     expect(acceso.path).toMatch(/^\/media\/content\/[A-Za-z0-9._-]+$/);
     expect(new Date(acceso.expiresAt).getTime() - Date.now()).toBeLessThanOrEqual(15 * 60 * 1000);
     const ok = await leerContenido(app, acceso.path).set('Origin', WEBSITE).expect(200);
-    expect(ok.headers['content-type']).toBe('image/jpeg');
+    expect(ok.headers['content-type']).toBe('image/webp'); // DL-191: la grande de la imagen de una receta
     expect(ok.headers['cache-control']).toBe('no-store');
     expect(ok.headers['access-control-allow-origin']).toBe(WEBSITE);
     expect(ok.headers['cross-origin-resource-policy']).toBe('cross-origin');

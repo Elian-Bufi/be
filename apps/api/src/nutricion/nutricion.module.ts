@@ -22,6 +22,7 @@ import { RecetasService } from './recetas.service';
 import { RegistroDeComidasController } from './registro-de-comidas.controller';
 import { RegistroDeComidasService } from './registro-de-comidas.service';
 import { RevisionDeAlimentosService } from './revision-de-alimentos.service';
+import { PropuestasAlRecetarioService } from './propuestas-al-recetario.service';
 import { RevisionesService } from './revisiones.service';
 
 /**
@@ -47,11 +48,14 @@ import { RevisionesService } from './revisiones.service';
     RegistroDeComidasService,
     AlimentosService,
     RevisionDeAlimentosService,
+    // DL-191 (WP-RECETARIO-E-IMAGENES): Administración revisa las propuestas al Recetario de BE.
+    PropuestasAlRecetarioService,
     // DL-186 (WP-OBJETIVO-Y-CALCULADOR): el objetivo con una toma de referencia y el calculador de macros.
     ObjetivoYCalculadorService,
   ],
   // DL-163 D-13, ampliada (TB-52): el plan compartido (API-RES-06) se lee con la misma lectura que usa la persona.
   // DL-180 (NUA-04): Administración revisa los alimentos cargados a mano desde su controlador, como las incidencias.
-  exports: [PlanesService, EvaluacionesService, RevisionDeAlimentosService],
+  // DL-191 (REC-08): las propuestas al Recetario de BE, también desde el controlador de Administración.
+  exports: [PlanesService, EvaluacionesService, RevisionDeAlimentosService, PropuestasAlRecetarioService],
 })
 export class NutricionModule {}

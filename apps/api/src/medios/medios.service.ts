@@ -5,13 +5,16 @@ import {
   IntencionDeSubidaRequestSchema,
   LIMITES_DE_MEDIO,
   TipoDeImagenSchema,
+  VarianteDeMedioSchema,
   type AccesoAMedioResponse,
   type Alcance,
   type FinalidadDeMedio as FinalidadApi,
   type IntencionDeSubidaResponse,
   type Medio,
+  type RutasDeLaImagen,
+  type VarianteDeMedio,
 } from '@be/domain';
-import type { FinalidadDeMedio, Medio as FilaDeMedio, Prisma } from '@prisma/client';
+import type { FinalidadDeMedio, Medio as FilaDeMedio, Prisma, VarianteDeMedio as VarianteEnLaBase } from '@prisma/client';
 import type { IncomingMessage } from 'node:http';
 import { DenegacionDelPdp, PdpService } from '../autorizacion/pdp.service';
 import type { Entorno } from '../config/entorno';
@@ -32,8 +35,31 @@ import type { ActorAutenticado } from '../sesion/sesion.guard';
 import { ALMACEN_DE_MEDIOS, type AlmacenDeMedios } from './almacen-de-medios';
 import { leerCuerpoCrudo } from './cuerpo-crudo';
 import { EjecutorDeMedios } from './ejecutor';
-import { procesarImagen, sha256, tipoAdmitido } from './procesamiento-de-imagen';
+import { procesarImagen, sha256, tipoAdmitido, variantesDesdeLoGuardado } from './procesamiento-de-imagen';
 import { RutasFirmadas } from './rutas-firmadas';
+
+/** DL-191: la variante del contrato y la de la base. */
+const VARIANTE_EN_LA_BASE: Readonly<Record<VarianteDeMedio, VarianteEnLaBase>> = { thumbnail: 'MINIATURA', large: 'GRANDE' };
+
+/** Lo que sirve API-MED-04: los bytes, su tipo y, si se pueden guardar en el navegador, hasta cuándo. */
+export interface ContenidoDeMedio {
+  readonly bytes: Buffer;
+  readonly tipo: 'image/jpeg' | 'image/webp';
+  readonly guardableHasta: Date | null;
+}
+
+/**
+ * DL-191 (REC-05, REC-D10) · si el medio es la imagen de una receta del Recetario de BE (vigente o de antes): lo lee
+ * cualquier profesional de Nutrición y su ruta se puede guardar en el navegador. La foto de una comida nunca entra acá:
+ * la base solo deja asociar medios RECETA_REFERENCIA a una receta.
+ */
+export async function esImagenDelRecetario(tx: Tx, medioId: string): Promise<boolean> {
+  const [fila] = await tx.$queryRaw<{ existe: boolean }[]>`
+    SELECT EXISTS (
+      SELECT 1 FROM "asociacion_de_imagen_de_receta" a JOIN "receta_del_recetario" rr ON rr."receta_id" = a."receta_id"
+       WHERE a."medio_id" = ${medioId}::uuid) AS "existe"`;
+  return fila?.existe === true;
+}
 
 type Tx = Prisma.TransactionClient;
 /** El medio con la ingesta a la que está unido, si es la foto de una comida: lo que lee el acceso (API-MED-03). */
@@ -71,7 +97,8 @@ export function medioApi(m: FilaDeMedio): Medio {
     mediaId: m.id,
     purpose: FINALIDAD_HACIA_API[m.finalidad],
     status: ESTADO_HACIA_API[m.estado],
-    contentType: disponible ? 'image/jpeg' : null,
+    // DL-191: la imagen de una receta subida desde entonces se guarda en WebP; lo de antes y lo demás, en JPEG.
+    contentType: disponible ? (m.tipoProcesado === 'image/webp' ? 'image/webp' : 'image/jpeg') : null,
     byteSize: disponible ? m.bytesProcesados : null,
     width: disponible ? m.anchoProcesado : null,
     height: disponible ? m.altoProcesado : null,
@@ -85,6 +112,19 @@ export function medioApi(m: FilaDeMedio): Medio {
  * API-MED-01 declara 422 para un tipo o un tamaño no admitidos (los del 09v8 API-PRO-04). El esquema estricto los
  * rechazaría como 400: se reconocen antes, por los dos campos, y lo demás sigue al esquema.
  */
+/**
+ * DL-191 · el único parámetro de API-MED-03: `variant`, `thumbnail` o `large`. Otro parámetro, o otro valor, es 400 como
+ * cualquier parámetro desconocido (09 §3.1).
+ */
+function leerVariante(query: Record<string, unknown>): VarianteDeMedio | null {
+  const { variant, ...resto } = query ?? {};
+  sinParametrosDeQuery(resto);
+  if (variant === undefined) return null;
+  const v = VarianteDeMedioSchema.safeParse(variant);
+  if (!v.success) throw errores.solicitudInvalida([{ code: 'INVALID_VARIANT', path: 'variant' }]);
+  return v.data;
+}
+
 function rechazarTipoOTamanoNoAdmitido(cuerpo: unknown): void {
   if (!cuerpo || typeof cuerpo !== 'object') return;
   const { contentType, byteSize } = cuerpo as Record<string, unknown>;
@@ -225,7 +265,40 @@ export class MediosService {
       if (!previo || previo.estado === 'SUPRIMIDO') throw errores.recursoNoEncontrado();
       if (previo.estado === 'DISPONIBLE') return { data: this.mismaSubida(previo, cuerpo.bytes) };
       if (tipo !== previo.tipoDeclarado) throw errores.tipoDeArchivoNoAdmitido([{ code: 'CONTENT_TYPE_DIFFERS_FROM_INTENT', path: 'Content-Type' }]);
-      const imagen = await procesarImagen(cuerpo.bytes, tipo);
+      const deReceta = previo.finalidad === 'RECETA_REFERENCIA';
+      if (deReceta) {
+        // DL-191 (REC-04, REC-D04) · una sola copia por huella: si el mismo dueño ya tiene esta imagen de receta (el mismo
+        // SHA-256 de lo recibido, la misma procedencia y la misma autoría), se responde ese medio y esta intención queda
+        // sin usar. Solo del mismo dueño: nunca se mira ni se revela un medio de otro.
+        const igual = await this.prisma.medio.findFirst({
+          where: {
+            propietarioId: previo.propietarioId,
+            finalidad: 'RECETA_REFERENCIA',
+            estado: 'DISPONIBLE',
+            sha256Original: sha256(cuerpo.bytes),
+            procedenciaDeImagen: previo.procedenciaDeImagen,
+            autoria: previo.autoria,
+            id: { not: previo.id },
+          },
+          orderBy: { momentoDeSubida: 'asc' },
+        });
+        if (igual) {
+          await this.auditoria.registrar({
+            operacion: 'API-MED-02',
+            resultado: 'EXITO',
+            motivo: 'MISMA_HUELLA',
+            actorId: igual.propietarioId,
+            sujetoId: null,
+            recursoTipo: RECURSO_DE_MEDIO,
+            recursoId: igual.id,
+            superficie: ctx.superficie,
+            requestId: ctx.requestId,
+            momentoDeOcurrencia: ctx.momentoDeRecepcion,
+          });
+          return { data: medioApi(igual) };
+        }
+      }
+      const imagen = await procesarImagen(cuerpo.bytes, tipo, deReceta ? 'VARIANTES_WEBP' : 'JPEG');
       return await conReintento(() =>
         this.prisma.$transaction(async (tx) => {
           const [medio] = await tx.$queryRaw<{ estado: FilaDeMedio['estado'] }[]>`SELECT "estado"::text AS "estado" FROM "medio" WHERE "id" = ${ruta.medioId}::uuid FOR NO KEY UPDATE`;
@@ -233,6 +306,8 @@ export class MediosService {
           // Dos subidas a la vez: la segunda encuentra lo de la primera y responde como un reintento.
           if (medio.estado === 'DISPONIBLE') return { data: this.mismaSubida(await tx.medio.findUniqueOrThrow({ where: { id: ruta.medioId } }), cuerpo.bytes) };
           await this.almacen.guardar(tx, ruta.medioId, imagen.procesada.contenido);
+          // DL-191: la miniatura de la imagen de una receta; la grande es lo guardado.
+          if (imagen.miniatura) await this.almacen.guardarVariante(tx, ruta.medioId, 'MINIATURA', imagen.miniatura);
           const actualizado = await tx.medio.update({
             where: { id: ruta.medioId },
             data: {
@@ -293,7 +368,7 @@ export class MediosService {
 
   // ─── API-MED-03 ────────────────────────────────────────────────────────────────────────────
   acceso(actor: ActorAutenticado, mediaId: string, query: Record<string, unknown>, ctx: ContextoDeSolicitud): Promise<AccesoAMedioResponse> {
-    sinParametrosDeQuery(query);
+    const variante = leerVariante(query);
     const recurso = { tipo: RECURSO_DE_MEDIO, id: mediaId };
     return this.ejecutor.leer({
       operacion: 'API-MED-03',
@@ -312,7 +387,11 @@ export class MediosService {
           throw this.ejecutor.noRevelable({ operacion: 'API-MED-03', actorId: actor.identidadId, recurso, ...(medio ? { alcance: ALCANCE_DE_FINALIDAD[medio.finalidad] } : {}) }, ctx);
         }
         const sujetoId = await this.decidirSegunFinalidad(tx, actor, medio, ctx);
-        const vence = this.rutas.vencimiento('LECTURA');
+        // DL-191: la variante es de la imagen de una receta; en las otras finalidades no cambia nada. La de una receta del
+        // Recetario de BE no es un dato de nadie: vale más y se puede guardar en el navegador (REC-D10).
+        const deReceta = medio.finalidad === 'RECETA_REFERENCIA';
+        const guardable = deReceta && (await esImagenDelRecetario(tx, medio.id));
+        const vence = guardable ? this.rutas.vencimientoDelRecetario() : this.rutas.vencimiento('LECTURA');
         // 08 §21.5: el acceso a la evidencia visual es un acceso sensible auditable; queda con su acto (08:395).
         await this.auditoria.registrar(
           {
@@ -328,9 +407,37 @@ export class MediosService {
           },
           tx,
         );
-        return { data: { mediaId: medio.id, path: `/media/content/${this.rutas.firmar(medio.id, 'LECTURA', vence)}`, expiresAt: vence.toISOString() } };
+        const token = this.rutas.firmar(medio.id, 'LECTURA', vence, { variante: deReceta ? variante : null, guardable });
+        return { data: { mediaId: medio.id, path: `/media/content/${token}`, expiresAt: vence.toISOString() } };
       },
     });
+  }
+
+  /**
+   * DL-191 (REC-D10) · las rutas ya firmadas de la imagen de una receta del Recetario de BE, para una lista: la miniatura y
+   * la grande, guardables, con el vencimiento del recetario. No audita una por una: quien llama ya decidió que el lector es
+   * un profesional de Nutrición y que el medio es del recetario, y la lista misma queda en la auditoría de su operación.
+   */
+  rutasDelRecetario(medioId: string): RutasDeLaImagen {
+    const vence = this.rutas.vencimientoDelRecetario();
+    return {
+      thumbnail: `/media/content/${this.rutas.firmar(medioId, 'LECTURA', vence, { variante: 'thumbnail', guardable: true })}`,
+      large: `/media/content/${this.rutas.firmar(medioId, 'LECTURA', vence, { variante: 'large', guardable: true })}`,
+      expiresAt: vence.toISOString(),
+    };
+  }
+
+  /**
+   * DL-191 (REC-08) · las rutas de la imagen de una propuesta para Administración, que no tiene sesión de profesional: 15
+   * minutos y sin caché, porque mientras no se suma, la imagen es de quien la propuso.
+   */
+  rutasParaRevisar(medioId: string): RutasDeLaImagen {
+    const vence = this.rutas.vencimiento('LECTURA');
+    return {
+      thumbnail: `/media/content/${this.rutas.firmar(medioId, 'LECTURA', vence, { variante: 'thumbnail' })}`,
+      large: `/media/content/${this.rutas.firmar(medioId, 'LECTURA', vence, { variante: 'large' })}`,
+      expiresAt: vence.toISOString(),
+    };
   }
 
   /**
@@ -389,14 +496,20 @@ export class MediosService {
   /**
    * La imagen de una receta: su profesional, o el asesorado con un plan activado (vigente o histórico) de ese profesional
    * que ofrece una receta a la que se asoció esta imagen, con el acceso que decide el PDP (como su plan, API-NUT-09).
+   *
+   * DL-191 (REC-05, REC-06): la imagen de una receta del Recetario de BE la lee cualquier profesional de Nutrición
+   * verificado y habilitado (la cesión de la foto lo permite); una receta del recetario en un plan, o la copia de una, la
+   * lee el asesorado de ese plan, con el PDP del profesional del plan. La imagen de la propuesta de otro profesional que
+   * todavía no se sumó sigue siendo suya: el mismo 404.
    */
   private async decidirImagenDeReceta(tx: Tx, actor: ActorAutenticado, medioId: string, propietarioId: string, ctx: ContextoDeSolicitud): Promise<string | null> {
     if (propietarioId === actor.identidadId) return null;
+    if ((await esImagenDelRecetario(tx, medioId)) && (await esProfesionalDeNutricion(tx, actor.identidadId))) return null;
     const [plan] = await tx.$queryRaw<{ profesionalId: string }[]>`
-      SELECT r."profesional_id"::text AS "profesionalId"
+      SELECT p."profesional_id"::text AS "profesionalId"
         FROM "asociacion_de_imagen_de_receta" a
         JOIN "receta" r ON r."id" = a."receta_id"
-        JOIN "plan_nutricional" p ON p."profesional_id" = r."profesional_id" AND p."asesorado_id" = ${actor.identidadId}::uuid
+        JOIN "plan_nutricional" p ON (p."profesional_id" = r."profesional_id" OR r."profesional_id" IS NULL) AND p."asesorado_id" = ${actor.identidadId}::uuid
         JOIN "version_de_plan_nutricional" v ON v."plan_id" = p."id" AND v."estado" = 'ACTIVADA'
         JOIN "instantanea_de_plan_nutricional" i ON i."version_de_plan_id" = v."id"
        WHERE a."medio_id" = ${medioId}::uuid
@@ -464,17 +577,48 @@ export class MediosService {
   }
 
   // ─── API-MED-04 ────────────────────────────────────────────────────────────────────────────
-  /** Los bytes de una ruta de lectura vigente. Vencida, alterada o de un medio suprimido: 404. */
-  async contenido(token: string, query: Record<string, unknown>): Promise<Buffer> {
+  /**
+   * Los bytes de una ruta de lectura vigente, con su tipo. Vencida, alterada o de un medio suprimido: 404.
+   * DL-191 (REC-02, REC-D02): con una variante, la de la imagen de una receta. La grande de una subida nueva es lo guardado;
+   * la miniatura, su fila. En un medio de antes (un JPEG de 1600 px) las dos se generan la primera vez que se piden, desde lo
+   * guardado, fuera de la transacción, y quedan guardadas: la generación es perezosa e idempotente (dos lecturas a la vez
+   * generan lo mismo y la segunda no escribe). Si no se pudiera generar, se sirve lo guardado.
+   */
+  async contenido(token: string, query: Record<string, unknown>): Promise<ContenidoDeMedio> {
     const ruta = this.rutas.verificar(token, 'LECTURA');
     if (!ruta) throw errores.recursoNoEncontrado();
     sinParametrosDeQuery(query);
-    const bytes = await this.prisma.$transaction(async (tx) => {
-      const medio = await tx.medio.findUnique({ where: { id: ruta.medioId }, select: { estado: true } });
-      return medio?.estado === 'DISPONIBLE' ? this.almacen.leer(tx, ruta.medioId) : null;
+    const guardableHasta = ruta.guardable ? ruta.vence : null;
+    const leido = await this.prisma.$transaction(async (tx) => {
+      const medio = await tx.medio.findUnique({ where: { id: ruta.medioId }, select: { estado: true, finalidad: true, tipoProcesado: true } });
+      if (medio?.estado !== 'DISPONIBLE') return null;
+      const tipoGuardado: ContenidoDeMedio['tipo'] = medio.tipoProcesado === 'image/webp' ? 'image/webp' : 'image/jpeg';
+      if (!ruta.variante || medio.finalidad !== 'RECETA_REFERENCIA' || (ruta.variante === 'large' && tipoGuardado === 'image/webp')) {
+        const bytes = await this.almacen.leer(tx, ruta.medioId);
+        return bytes ? { bytes, tipo: tipoGuardado, generar: false } : null;
+      }
+      const variante = await this.almacen.leerVariante(tx, ruta.medioId, VARIANTE_EN_LA_BASE[ruta.variante]);
+      if (variante) return { bytes: variante, tipo: 'image/webp' as const, generar: false };
+      const bytes = await this.almacen.leer(tx, ruta.medioId);
+      return bytes ? { bytes, tipo: tipoGuardado, generar: true } : null;
     });
-    if (!bytes) throw errores.recursoNoEncontrado();
-    return bytes;
+    if (!leido) throw errores.recursoNoEncontrado();
+    if (!leido.generar || !ruta.variante) return { bytes: leido.bytes, tipo: leido.tipo, guardableHasta };
+    let variantes: Awaited<ReturnType<typeof variantesDesdeLoGuardado>>;
+    try {
+      variantes = await variantesDesdeLoGuardado(leido.bytes);
+    } catch {
+      return { bytes: leido.bytes, tipo: leido.tipo, guardableHasta };
+    }
+    await this.prisma.$transaction(async (tx) => {
+      // Se guarda si el medio sigue disponible: la base no deja escribir variantes de un medio suprimido.
+      const [medio] = await tx.$queryRaw<{ estado: string }[]>`SELECT "estado"::text AS "estado" FROM "medio" WHERE "id" = ${ruta.medioId}::uuid FOR SHARE`;
+      if (medio?.estado !== 'DISPONIBLE') return;
+      await this.almacen.guardarVariante(tx, ruta.medioId, 'GRANDE', variantes.grande);
+      await this.almacen.guardarVariante(tx, ruta.medioId, 'MINIATURA', variantes.miniatura);
+    });
+    const servida = ruta.variante === 'large' ? variantes.grande : variantes.miniatura;
+    return { bytes: servida.contenido, tipo: 'image/webp', guardableHasta };
   }
 
   // ─── API-MED-05 ────────────────────────────────────────────────────────────────────────────

@@ -44,6 +44,7 @@ import {
   COPY_DEL_PLAN,
   COPY_HABITUALES,
   COPY_PLANTILLAS,
+  COPY_RECETARIO,
   COPY_RECETAS,
   PROBLEMA_DEL_EDITOR,
   avisoDeLoQueNoDejaGuardar,
@@ -99,6 +100,7 @@ import { agregarLaReceta, COPY_RECETA_NUEVA, OPCION_INICIAL, opcionesConLaReceta
 import { EditorDeReceta } from '../../recipes/editor-de-receta';
 import { pasoDeLaFotoTrasCrear, type ImagenAlCrear, type ImagenPendiente } from '../../recipes/cargar-la-imagen';
 import { AvisoDeLaImagenSinCargar, ImagenDeReceta } from '../../recipes/imagen-de-receta';
+import { ImagenEnElCajon, RecetarioEnElCajon } from '../../recipes/receta-en-el-cajon';
 import {
   cambiosEnUnaPorcion,
   COPY_FOTO_DE_LA_RECETA,
@@ -1852,12 +1854,32 @@ type ParaCorregir = { readonly texto: string; readonly ir: (() => void) | null }
  * RP-20 (C): cada receta dice, por kcal, P, C y G, dónde queda una porción frente al rango indicado de la comida, y se
  * pueden ver primero las que entran. La porción ya viene calculada en la lista (`calculation.perServing`): no se pide
  * nada por receta.
+ *
+ * DL-191 (REC-04 y REC-05): cada receta propia muestra su miniatura y deja cargar o cambiar su imagen ahí mismo
+ * (`ImagenEnElCajon`), y una segunda pestaña ofrece el Recetario de BE (`RecetarioEnElCajon`): agregarla tal cual o
+ * copiarla a Mis recetas. La búsqueda y el orden frente al rango valen para las dos.
  */
 function ElegirReceta({ comida, rango, onElegir, alCrearNueva }: { comida: string; rango: RangoIndicado | null; onElegir: (r: Receta) => void; alCrearNueva: () => void }) {
   const { token, sesionPerdida } = useNutricion();
   const [estado, setEstado] = useState<{ tipo: 'cargando' } | { tipo: 'error'; texto: string } | { tipo: 'lista'; recetas: readonly Receta[]; mas: string | null }>({ tipo: 'cargando' });
   const [texto, setTexto] = useState('');
   const [primeroLasQueEntranEnElRango, setPrimeroLasQueEntran] = useState(false);
+  const [origen, setOrigen] = useState<'propias' | 'recetario'>('propias');
+  /** La receta propia que cambió (su imagen) o que llegó (una copia del recetario), en la lista de «Tus recetas». */
+  const actualizar = (r: Receta) =>
+    setEstado((e) => (e.tipo === 'lista' ? { ...e, recetas: e.recetas.some((x) => x.recipeId === r.recipeId) ? e.recetas.map((x) => (x.recipeId === r.recipeId ? r : x)) : [r, ...e.recetas] } : e));
+  const frenteDe = (r: Receta) => {
+    const frente = recetaFrenteAlRango(r.calculation.perServing, rango, r.name);
+    return frente ? (
+      <div className="recetas-para-elegir__frente" data-receta-frente-al-rango>
+        <p className="nota" aria-hidden="true">
+          {COPY_FRANJAS.unaPorcionFrenteAlRangoDe(comida)}
+        </p>
+        <FranjasDeLaComida franjas={frente} comida={comida} variante="receta" />
+      </div>
+    ) : null;
+  };
+  const ordenar = (recetas: readonly Receta[]) => (primeroLasQueEntranEnElRango && rango ? primeroLasQueEntran(recetas, rango) : recetas);
 
   /** Lee desde el cursor hasta el final, o hasta `PAGINAS_DE_RECETAS` páginas: lo que queda se ofrece con «Ver más». */
   const cargar = useCallback(
@@ -1893,6 +1915,29 @@ function ElegirReceta({ comida, rango, onElegir, alCrearNueva }: { comida: strin
         </button>{' '}
         <span className="nota">{COPY_RECETA_NUEVA.queEs}</span>
       </p>
+      {/* DL-191: «Tus recetas» o el Recetario de BE. */}
+      <div className="selector-de-origen" role="group" aria-label="De dónde es la receta">
+        <button type="button" className={`boton boton--compacto ${origen === 'propias' ? 'boton--primario' : 'boton--secundario'}`} aria-pressed={origen === 'propias'} onClick={() => setOrigen('propias')} data-origen-propias>
+          Tus recetas
+        </button>
+        <button type="button" className={`boton boton--compacto ${origen === 'recetario' ? 'boton--primario' : 'boton--secundario'}`} aria-pressed={origen === 'recetario'} onClick={() => setOrigen('recetario')} data-origen-recetario>
+          {COPY_RECETARIO.recetarioDeBe}
+        </button>
+      </div>
+      {origen === 'recetario' ? (
+        <>
+          <Campo id="buscar-receta-del-recetario" type="search" autoComplete="off" etiqueta={COPY_RECETARIO.buscar} ayuda={COPY_ELEGIR_RECETA.ayuda} value={texto} onChange={(e) => setTexto(e.target.value)} data-buscar-receta />
+          {rango ? (
+            <div className="campo recetas-para-elegir__orden">
+              <label>
+                <input type="checkbox" checked={primeroLasQueEntranEnElRango} onChange={(e) => setPrimeroLasQueEntran(e.target.checked)} /> {COPY_FRANJAS.primeroLasQueEntran(comida)}
+              </label>
+            </div>
+          ) : null}
+          <RecetarioEnElCajon token={token} sesionPerdida={sesionPerdida} texto={texto} orden={ordenar} extra={frenteDe} onElegir={onElegir} onCopiada={actualizar} />
+        </>
+      ) : null}
+      {origen === 'recetario' ? null : <>
       {estado.tipo === 'cargando' ? <Cargando /> : null}
       {estado.tipo === 'error' ? (
         <Aviso tipo="error">
@@ -1930,7 +1975,9 @@ function ElegirReceta({ comida, rango, onElegir, alCrearNueva }: { comida: strin
             {enOrden.map((r) => {
               const frente = recetaFrenteAlRango(r.calculation.perServing, rango, r.name);
               return (
-                <li key={r.recipeId} className="lista__item" data-receta-para-elegir>
+                <li key={r.recipeId} className="lista__item receta-en-el-cajon" data-receta-para-elegir>
+                  <ImagenEnElCajon token={token} sesionPerdida={sesionPerdida} receta={r} onCambio={actualizar} />
+                  <div>
                   <p className="lista__titulo">{r.name}</p>
                   <p className="nota">
                     {COPY_RECETAS.version(r.versionNumber)} · {COPY_RECETAS.porcionesYEnergia(r.servings, nutrienteParaMostrar(r.calculation.perServing.energyKcal, 'energyKcal'))}
@@ -1947,6 +1994,7 @@ function ElegirReceta({ comida, rango, onElegir, alCrearNueva }: { comida: strin
                   <button type="button" className="boton boton--enlace" onClick={() => onElegir(r)}>
                     {COPY_RECETAS.agregarComoOpcion}: {r.name}
                   </button>
+                  </div>
                 </li>
               );
             })}
@@ -1961,6 +2009,7 @@ function ElegirReceta({ comida, rango, onElegir, alCrearNueva }: { comida: strin
           </button>
         </>
       ) : null}
+      </>}
     </div>
   );
 }

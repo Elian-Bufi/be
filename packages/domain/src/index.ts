@@ -29,6 +29,8 @@ export * from './contratos-medios';
 export * from './contratos-evidencia-visual';
 export * from './copy-evidencia-visual';
 export * from './contratos-recetas';
+export * from './contratos-recetario';
+export * from './recetario';
 export * from './alimentos-del-catalogo';
 export * from './contratos-alimentos';
 export * from './contratos-registro-de-comidas';

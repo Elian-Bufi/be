@@ -176,7 +176,8 @@ test('las 18 operaciones nuevas están declaradas, cada una con su DL', () => {
   assert.deepEqual(subida.security, []);
   assert.deepEqual(Object.keys(subida.requestBody!.content).sort(), ['image/jpeg', 'image/png', 'image/webp']);
   const lectura = doc.paths['/media/content/{token}']!.get!;
-  assert.deepEqual(Object.keys(lectura.responses['200']!.content!), ['image/jpeg']);
+  // DL-191: lo de antes en JPEG y la imagen de una receta en WebP.
+  assert.deepEqual(Object.keys(lectura.responses['200']!.content!), ['image/jpeg', 'image/webp']);
   assert.deepEqual(doc.paths['/media/{mediaId}/access']!.get!.security, [{ sesion: [] }]);
 });
 

@@ -123,7 +123,8 @@ export async function subirImagen(
     .send({ purpose, contentType, byteSize: bytes.length, provenance: opciones.provenance ?? (purpose === 'MEAL_EVIDENCE' ? 'PERSON_PROVIDED' : 'AI_GENERATED'), authorship: opciones.authorship ?? null })
     .expect(201);
   const subida = await subirBytes(app, intencion.body.data.uploadPath as string, bytes, contentType).expect(200);
-  return { mediaId: intencion.body.data.mediaId as string, uploadPath: intencion.body.data.uploadPath as string, medio: subida.body.data };
+  // DL-191 (REC-D04): la imagen de una receta que el mismo dueño ya subió responde ese medio, no el de la intención.
+  return { mediaId: subida.body.data.mediaId as string, uploadPath: intencion.body.data.uploadPath as string, medio: subida.body.data };
 }
 
 /** API-MED-02 a una ruta firmada, sin sesión. */

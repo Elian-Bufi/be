@@ -36,6 +36,14 @@ execFileSync(process.platform === 'win32' ? 'npx.cmd' : 'npx', ['prisma', 'migra
   shell: process.platform === 'win32',
 });
 
+// DL-191: la semilla del Recetario de BE, con su comando (idempotente; la base de los recorridos es local).
+console.log('recetario de BE…');
+execFileSync(process.execPath, ['apps/api/dist/nutricion/comando-del-recetario.js', 'sembrar', '--confirmo-escritura', '--operador', 'recorridos de navegador'], {
+  cwd: REPO,
+  env: { ...process.env, DATABASE_URL: base, APP_ENV: 'test' },
+  stdio: 'inherit',
+});
+
 const corrida = nuevaCorrida();
 let api = await arrancarApi({ salida });
 let web = null;

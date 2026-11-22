@@ -385,7 +385,15 @@ import { EvidenciaDeRevisionResponseSchema } from './contratos-evidencia-de-revi
 import { ObjetivoConReferenciaRequestSchema, ObjetivoConReferenciaResponseSchema, ReferenciaDelObjetivoResponseSchema, TomasDeReferenciaResponseSchema } from './contratos-objetivo-y-calculador';
 import { CuerpoDelContextoResponseSchema, RespuestasDelContextoResponseSchema } from './contratos-contexto-de-la-persona';
 import { FormulariosVinculadosResponseSchema, FormularioVinculadoConRespuestasResponseSchema, VincularFormulariosRequestSchema } from './contratos-evaluacion-y-formularios';
-import { AccesoAMedioResponseSchema, IntencionDeSubidaRequestSchema, IntencionDeSubidaResponseSchema, LIMITES_DE_MEDIO, MedioResponseSchema, TipoDeImagenSchema } from './contratos-medios';
+import { AccesoAMedioResponseSchema, IntencionDeSubidaRequestSchema, IntencionDeSubidaResponseSchema, LIMITES_DE_MEDIO, MedioResponseSchema, TipoDeImagenSchema, TipoGuardadoSchema, VarianteDeMedioSchema } from './contratos-medios';
+import {
+  ConsultarPropuestasAlRecetarioRequestSchema,
+  DecidirPropuestaRequestSchema,
+  ListaDePropuestasParaRevisarResponseSchema,
+  PropuestaAlRecetarioResponseSchema,
+  PropuestaParaRevisarResponseSchema,
+  ProponerAlRecetarioRequestSchema,
+} from './contratos-recetario';
 import {
   AsociarImagenDeRecetaRequestSchema,
   CalcularRecetaRequestSchema,
@@ -442,7 +450,8 @@ export interface Operacion {
   readonly requestBinario?: readonly string[];
   readonly query?: readonly ParametroDeQuery[];
   /** El primero es el éxito principal. REL-01 y CON-02 también responden 200 (deduplicado o replay). */
-  readonly exitos: readonly { readonly status: 200 | 201 | 202 | 204; readonly schema?: z.ZodType; readonly binario?: string }[];
+  /** `binario`: el tipo (o los tipos) de un cuerpo de bytes; API-MED-04 responde JPEG o WebP (DL-191). */
+  readonly exitos: readonly { readonly status: 200 | 201 | 202 | 204; readonly schema?: z.ZodType; readonly binario?: string | readonly string[] }[];
   readonly errores: Errores;
   /**
    * La forma de `error.details` de un código 422 que la trae (DL-104). Se declara sobre el ErrorEnvelope común, sin
@@ -1416,6 +1425,38 @@ const DEFINIDAS: readonly Operacion[] = [
     exitos: [{ status: 201, schema: AlimentoDelCanonResponseSchema }],
     errores: { ...{ 401: ['AUTHENTICATION_REQUIRED', 'SESSION_INVALID', 'SESSION_EXPIRED', 'SESSION_REVOKED'], 403: ['ACTION_FORBIDDEN', 'MFA_REQUIRED'], 503: ['ADMINISTRATION_NOT_AVAILABLE'] }, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 409: ['IDEMPOTENCY_KEY_REUSED'], 422: ['VALIDATION_FAILED'] },
     fuente: 'WP-NUTRICION-ALIMENTOS, segundo tramo (NUA-D16; decisión de Dirección del 2026-11-19) · WP-ADMINISTRACION (DL-155) · ID propio de BE (familia ALI) · DEUDA_LEGAJO DL-180',
+  },
+  {
+    id: 'API-RCT-04',
+    metodo: 'post',
+    ruta: '/admin/recipe-proposals/query',
+    resumen:
+      'Las propuestas al Recetario de BE, las que esperan primero (la más nueva arriba) y después lo decidido, o filtradas por estado (state). Cada una con quién la propuso (su nombre de profesional; nunca a quién se la indicó), la receta propuesta (nombre, porciones, ingredientes, pasos, cálculo e imagen con sus rutas de lectura firmadas de 15 minutos), la cesión de la foto registrada y las recetas parecidas que ya hay en el recetario o en otras propuestas (similar). La consulta va en el cuerpo y queda auditada.',
+    autenticacion: 'SESSION_MFA',
+    idempotencia: false,
+    request: ConsultarPropuestasAlRecetarioRequestSchema,
+    exitos: [{ status: 200, schema: ListaDePropuestasParaRevisarResponseSchema }],
+    errores: { ...{ 401: ['AUTHENTICATION_REQUIRED', 'SESSION_INVALID', 'SESSION_EXPIRED', 'SESSION_REVOKED'], 403: ['ACTION_FORBIDDEN', 'MFA_REQUIRED'], 503: ['ADMINISTRATION_NOT_AVAILABLE'] }, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD', 'INVALID_CURSOR'] },
+    fuente: 'WP-RECETARIO-E-IMAGENES REC-08 · WP-ADMINISTRACION (DL-155) · ID propio de BE (familia RCT) · DEUDA_LEGAJO DL-191',
+  },
+  {
+    id: 'API-RCT-05',
+    metodo: 'post',
+    ruta: '/admin/recipe-proposals/{proposalId}/decisions',
+    resumen:
+      'Sumar (ADD) o no sumar (REJECT) una propuesta al Recetario de BE, una sola vez. Sumarla crea una receta del recetario (sin profesional, de todos) con el contenido de la versión propuesta, recalculado, y con su imagen: el mismo medio, que desde ahí lee cualquier profesional de Nutrición por la cesión aceptada. La propuesta de un profesional sigue siendo suya en Mis recetas. Un rechazo puede llevar un motivo (reason), que ve quien la propuso; sumar no lo lleva. Ya decidida: 422 INVALID_STATE_TRANSITION. Inexistente: 404. Queda auditada, sin los textos.',
+    autenticacion: 'SESSION_MFA',
+    idempotencia: true,
+    request: DecidirPropuestaRequestSchema,
+    exitos: [{ status: 200, schema: PropuestaParaRevisarResponseSchema }],
+    errores: {
+      ...{ 401: ['AUTHENTICATION_REQUIRED', 'SESSION_INVALID', 'SESSION_EXPIRED', 'SESSION_REVOKED'], 403: ['ACTION_FORBIDDEN', 'MFA_REQUIRED'], 503: ['ADMINISTRATION_NOT_AVAILABLE'] },
+      400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'],
+      404: ['RESOURCE_NOT_FOUND'],
+      409: ['IDEMPOTENCY_KEY_REUSED'],
+      422: ['VALIDATION_FAILED', 'INVALID_STATE_TRANSITION', 'CATALOG_REFERENCE_INVALID'],
+    },
+    fuente: 'WP-RECETARIO-E-IMAGENES REC-08 · WP-ADMINISTRACION (DL-155) · ID propio de BE (familia RCT) · DEUDA_LEGAJO DL-191',
   },
   {
     id: 'API-INT-NUT-02',
@@ -3698,6 +3739,47 @@ const DEFINIDAS: readonly Operacion[] = [
     errores: { ...SESION, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 403: ['ACTION_FORBIDDEN'], 422: ['VALIDATION_FAILED', 'CATALOG_REFERENCE_INVALID'] },
     fuente: 'DEUDA_LEGAJO DL-119',
   },
+  // ─── WP-RECETARIO-E-IMAGENES · RCT: el Recetario de BE (DL-191) ──────────────────────────────────
+  {
+    id: 'API-RCT-01',
+    metodo: 'get',
+    ruta: '/nutrition/recipe-book',
+    resumen:
+      'Las recetas del Recetario de BE: curadas por Administración, de todos los profesionales de Nutrición y de solo lectura, con su versión vigente, su cálculo y su procedencia (origin: BE_RECIPE_BOOK). La imagen trae sus rutas de lectura ya firmadas (image.paths: la miniatura para la lista y la grande para el detalle), que valen de 6 a 7 horas porque no son datos de nadie: la lista no pide un acceso por imagen. Filtra por nombre (q, sin tildes ni mayúsculas); en orden alfabético. Solo un profesional de Nutrición verificado y habilitado.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    query: [LIMIT, CURSOR, { nombre: 'q', descripcion: 'Texto a buscar en el nombre (hasta 80 caracteres).', schema: { type: 'string', maxLength: 80 } }],
+    exitos: [{ status: 200, schema: ListaDeRecetasResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST', 'INVALID_CURSOR'], 403: ['ACTION_FORBIDDEN'] },
+    fuente: 'WP-RECETARIO-E-IMAGENES REC-05 · ID propio de BE (familia RCT) · DEUDA_LEGAJO DL-191',
+  },
+  {
+    id: 'API-RCT-02',
+    metodo: 'post',
+    ruta: '/nutrition/recipe-book/{recipeId}/copies',
+    resumen:
+      '«Copiar a Mis recetas»: una receta propia nueva (versión 1) con el contenido de la versión vigente de una del Recetario de BE, recalculada en el servidor, y con la misma imagen: el mismo medio, sin duplicar bytes. La copia dice de cuál salió (copiedFrom) y se edita como cualquier receta propia; la del recetario no cambia. Un alimento que se retiró del catálogo después: 422 CATALOG_REFERENCE_INVALID con su ruta. Una receta que no es del recetario: 404.',
+    autenticacion: 'SESSION',
+    idempotencia: true,
+    request: CuerpoVacioSchema,
+    exitos: [{ status: 201, schema: RecetaResponseSchema }],
+    // El cuerpo es vacío y estricto: un campo de más es UNKNOWN_FIELD, como en cualquier escritura.
+    errores: { ...SESION, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 403: ['ACTION_FORBIDDEN'], 404: ['RESOURCE_NOT_FOUND'], 409: ['IDEMPOTENCY_KEY_REUSED'], 422: ['CATALOG_REFERENCE_INVALID'] },
+    fuente: 'WP-RECETARIO-E-IMAGENES REC-06 · ID propio de BE (familia RCT) · DEUDA_LEGAJO DL-191',
+  },
+  {
+    id: 'API-RCT-03',
+    metodo: 'post',
+    ruta: '/nutrition/recipes/{recipeId}/proposals',
+    resumen:
+      'Proponer una receta propia al Recetario de BE: su versión vigente (expectedVersion). Si tiene imagen, photoAssignment acepta la cesión de la foto en la versión vigente de su texto (CESION_DE_LA_FOTO): la API registra la versión, el SHA-256 del texto y el momento; sin la aceptación, o con una versión vieja del texto, 422 VALIDATION_FAILED. Sin imagen, photoAssignment va en null. Un alimento cargado a mano no se propone (lo propio no se comparte): 422 VALIDATION_FAILED con la ruta del ingrediente. Ya hay una propuesta esperando, o esa versión ya está en el recetario: 422 INVALID_STATE_TRANSITION. Ajena o inexistente: 404.',
+    autenticacion: 'SESSION',
+    idempotencia: true,
+    request: ProponerAlRecetarioRequestSchema,
+    exitos: [{ status: 201, schema: PropuestaAlRecetarioResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 403: ['ACTION_FORBIDDEN'], 404: ['RESOURCE_NOT_FOUND'], 409: ['IDEMPOTENCY_KEY_REUSED', 'VERSION_CONFLICT'], 422: ['VALIDATION_FAILED', 'INVALID_STATE_TRANSITION'] },
+    fuente: 'WP-RECETARIO-E-IMAGENES REC-07 y REC-D08 · ID propio de BE (familia RCT) · DEUDA_LEGAJO DL-191',
+  },
   // ─── MED: medios privados (09v12 §24; 08 §21; DL-120) ───────────────────────────────────────────
   {
     id: 'API-MED-01',
@@ -3726,7 +3808,7 @@ const DEFINIDAS: readonly Operacion[] = [
     id: 'API-MED-02',
     metodo: 'put',
     ruta: '/media/uploads/{token}',
-    resumen: `Subir los bytes a la ruta firmada, con el tipo declarado: JPEG, PNG o WebP, hasta ${LIMITES_DE_MEDIO.bytesMaximos / 1024 / 1024} MB, de ${LIMITES_DE_MEDIO.ladoMinimo} a ${LIMITES_DE_MEDIO.ladoMaximo} px por lado. El servidor decodifica, orienta y recodifica en JPEG sin metadatos (EXIF, GPS, ICC). La misma subida repetida responde el mismo medio; una ruta vencida, alterada o ajena, 404.`,
+    resumen: `Subir los bytes a la ruta firmada, con el tipo declarado: JPEG, PNG o WebP, hasta ${LIMITES_DE_MEDIO.bytesMaximos / 1024 / 1024} MB, de ${LIMITES_DE_MEDIO.ladoMinimo} a ${LIMITES_DE_MEDIO.ladoMaximo} px por lado. El servidor decodifica, orienta y recodifica sin metadatos (EXIF, GPS, ICC): la foto de una comida y la imagen de un ejercicio, en JPEG de ${LIMITES_DE_MEDIO.ladoMaximoGuardado} px; la imagen de una receta (DL-191), en dos variantes WebP de calidad ${LIMITES_DE_MEDIO.calidadWebp}: la grande de ${LIMITES_DE_MEDIO.ladoDeLaGrande} px, que es lo guardado (contentType image/webp), y la miniatura de ${LIMITES_DE_MEDIO.ladoDeLaMiniatura} px. Una sola copia por huella: si el mismo dueño ya tiene una imagen de receta disponible con el mismo SHA-256 de lo recibido, la misma procedencia y la misma autoría, responde ese medio (otro mediaId que el de la intención) y la intención queda sin usar; nunca entre dueños distintos. La misma subida repetida responde el mismo medio; una ruta vencida, alterada o ajena, 404.`,
     autenticacion: 'SIGNED_URL',
     idempotencia: false,
     requestBinario: TipoDeImagenSchema.options,
@@ -3738,9 +3820,10 @@ const DEFINIDAS: readonly Operacion[] = [
     id: 'API-MED-03',
     metodo: 'get',
     ruta: '/media/{mediaId}/access',
-    resumen: `Ruta temporal de lectura de un medio disponible, que vence en ${LIMITES_DE_MEDIO.vigenciaDeLecturaSegundos / 60} minutos como máximo. Decide el PDP: la imagen de una receta, su profesional y el asesorado con un plan que la ofrece; la de un ejercicio, su profesional y el asesorado con un plan activado de ese profesional que lo incluye, con acceso de Entrenamiento vigente; la foto de una comida, su titular y el profesional del plan con vínculo, B2 y A3 vigentes y, con la exigencia de EVIDENCIA_VISUAL activa, el acto de ese vínculo vigente. Cada acceso queda auditado. Lo ajeno o inexistente: 404.`,
+    resumen: `Ruta temporal de lectura de un medio disponible, que vence en ${LIMITES_DE_MEDIO.vigenciaDeLecturaSegundos / 60} minutos como máximo. Decide el PDP: la imagen de una receta, su profesional y el asesorado con un plan que la ofrece; la de un ejercicio, su profesional y el asesorado con un plan activado de ese profesional que lo incluye, con acceso de Entrenamiento vigente; la foto de una comida, su titular y el profesional del plan con vínculo, B2 y A3 vigentes y, con la exigencia de EVIDENCIA_VISUAL activa, el acto de ese vínculo vigente. DL-191: la imagen de una receta del Recetario de BE la lee además cualquier profesional de Nutrición verificado y habilitado, con una ruta que vale de 6 a 7 horas y se puede guardar en el navegador (no es un dato de nadie). variant (opcional) pide la miniatura (thumbnail, ${LIMITES_DE_MEDIO.ladoDeLaMiniatura} px) o la grande (large, ${LIMITES_DE_MEDIO.ladoDeLaGrande} px) de la imagen de una receta, en WebP; en un medio de antes se generan la primera vez. Sin variant, lo guardado, como siempre (la APK publicada no la manda). En las otras finalidades variant no cambia nada. Cada acceso queda auditado. Lo ajeno o inexistente: 404.`,
     autenticacion: 'SESSION',
     idempotencia: false,
+    query: [{ nombre: 'variant', descripcion: 'thumbnail o large (DL-191). Sin variant, lo guardado.', schema: { type: 'string', enum: [...VarianteDeMedioSchema.options] } }],
     exitos: [{ status: 200, schema: AccesoAMedioResponseSchema }],
     errores: { ...SESION, 400: ['INVALID_REQUEST'], 404: ['RESOURCE_NOT_FOUND'] },
     fuente: '09v12 §24 · 08 §21 · 08:395 · DEUDA_LEGAJO DL-120 y DL-125',
@@ -3749,10 +3832,11 @@ const DEFINIDAS: readonly Operacion[] = [
     id: 'API-MED-04',
     metodo: 'get',
     ruta: '/media/content/{token}',
-    resumen: 'Los bytes del medio (JPEG), sin caché. Una ruta vencida, alterada o de un medio suprimido: 404.',
+    resumen:
+      'Los bytes del medio: JPEG (lo de antes, la foto de una comida y la imagen de un ejercicio) o WebP (la imagen de una receta y sus variantes, DL-191), con su Content-Type. Sin caché (no-store), salvo la imagen de una receta del Recetario de BE: private, max-age hasta que vence la ruta. Una ruta vencida, alterada o de un medio suprimido: 404.',
     autenticacion: 'SIGNED_URL',
     idempotencia: false,
-    exitos: [{ status: 200, binario: 'image/jpeg' }],
+    exitos: [{ status: 200, binario: TipoGuardadoSchema.options }],
     // 09 §3.1: un parámetro de query desconocido es 400, también en una ruta firmada (la ruta se usa tal como llega).
     errores: { 400: ['INVALID_REQUEST'], 404: ['RESOURCE_NOT_FOUND'] },
     fuente: '09v12 §24 · 08 §21 · DEUDA_LEGAJO DL-120',
@@ -5297,7 +5381,7 @@ export function documentoOpenApi(): Record<string, unknown> {
     const respuestas: Record<string, unknown> = {};
     for (const exito of op.exitos) {
       respuestas[exito.status] = exito.binario
-        ? { description: 'Éxito', content: { [exito.binario]: { schema: { type: 'string', contentMediaType: exito.binario } } } }
+        ? { description: 'Éxito', content: Object.fromEntries((typeof exito.binario === 'string' ? [exito.binario] : exito.binario).map((t) => [t, { schema: { type: 'string', contentMediaType: t } }])) }
         : exito.schema
           ? { description: 'Éxito', content: { 'application/json': { schema: aJson(exito.schema) } } }
           : { description: 'Éxito, sin cuerpo' };

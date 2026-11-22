@@ -13,6 +13,7 @@
  *   (`pendiente`): la receta guardada lo muestra con su falla y «Reintentar la imagen», que no vuelve a crear la receta.
  */
 import {
+  COPY_RECETARIO,
   COPY_RECETAS,
   ETIQUETA_DE_PREPARACION,
   ETIQUETA_DE_PROVEEDOR,
@@ -42,6 +43,7 @@ import { procedenciaDeElemento } from '../advisees/nutrition/importacion';
 import { TablaDeCalculo } from './calculo-de-receta';
 import { anotarLaImagenSinCargar, SIN_IMAGEN, type ImagenAlCrear, type ImagenPendiente } from './cargar-la-imagen';
 import { ImagenDeLaRecetaNueva, ImagenDeReceta, useImagenParaCargar } from './imagen-de-receta';
+import { ProponerAlRecetario } from './proponer-al-recetario';
 
 type Detalle = DetalleDeRecetaResponse['data'];
 type Unidad = 'g' | 'ml';
@@ -144,7 +146,8 @@ export function EditorDeReceta({
   imagenPendiente?: ImagenPendiente | null;
 }) {
   const [cargada, setCargada] = useState<Detalle | null>(null);
-  const [lectura, setLectura] = useState<'cargando' | 'lista' | 'no-disponible' | 'sin-area' | 'error'>(recetaId ? 'cargando' : 'lista');
+  // DL-191: una receta del Recetario de BE no se edita acá (`del-recetario`): se copia a Mis recetas.
+  const [lectura, setLectura] = useState<'cargando' | 'lista' | 'no-disponible' | 'sin-area' | 'error' | 'del-recetario'>(recetaId ? 'cargando' : 'lista');
   const [nombre, setNombre] = useState('');
   const [descripcion, setDescripcion] = useState('');
   const [porciones, setPorciones] = useState('1');
@@ -174,6 +177,7 @@ export function EditorDeReceta({
     if (sesionPerdida(r)) return;
     if (!r.ok) return setLectura(r.tipo === 'API' && r.codigo === 'RESOURCE_NOT_FOUND' ? 'no-disponible' : r.tipo === 'API' && r.codigo === 'ACTION_FORBIDDEN' ? 'sin-area' : 'error');
     const d = r.datos.data;
+    if (d.origin === 'BE_RECIPE_BOOK') return setLectura('del-recetario');
     setCargada(d);
     setNombre(d.name);
     setDescripcion(d.description ?? '');
@@ -289,10 +293,10 @@ export function EditorDeReceta({
 
   if (lectura === 'cargando') return <Cargando />;
   if (lectura === 'error') return <ErrorConReintento onReintentar={() => void cargar()} />;
-  if (lectura === 'no-disponible' || lectura === 'sin-area') {
+  if (lectura === 'no-disponible' || lectura === 'sin-area' || lectura === 'del-recetario') {
     return (
       <Aviso tipo="info">
-        <p>{lectura === 'sin-area' ? COPY_RECETAS.soloNutricion : 'No pudimos abrir esta receta.'}</p>
+        <p>{lectura === 'sin-area' ? COPY_RECETAS.soloNutricion : lectura === 'del-recetario' ? COPY_RECETARIO.soloLectura : 'No pudimos abrir esta receta.'}</p>
         <p>
           <button type="button" className="boton boton--enlace" onClick={onVolver}>
             {COPY_RECETAS.volverALaLista}
@@ -519,6 +523,16 @@ export function EditorDeReceta({
             }}
           />
         </section>
+      ) : null}
+
+      {/* DL-191: proponer la receta propia al Recetario de BE (fuera del cuadro de la receta nueva del plan). */}
+      {cargada && !enElPlan ? (
+        <ProponerAlRecetario
+          token={token}
+          receta={cargada}
+          sesionPerdida={sesionPerdida}
+          onPropuesta={(propuesta) => setCargada((d) => (d ? { ...d, proposal: propuesta } : d))}
+        />
       ) : null}
 
       {cargada ? (
