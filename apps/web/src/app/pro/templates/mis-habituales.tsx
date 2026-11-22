@@ -61,11 +61,13 @@ export function MisHabitualesDeEntrenamiento({ token, sesionPerdida = nunca }: {
   if (sinArea) return null;
   return (
     <section className="seccion" aria-labelledby="titulo-habituales-entrenamiento">
-      <h2 id="titulo-habituales-entrenamiento">{TITULO}</h2>
-      {/* RP-22 (DL-188): quién los ve y qué pasa al editarlos, detrás de un «?». */}
-      <ExplicacionAPedido nombre="Quién ve tus habituales" como="div">
-        <p className="nota">{COPY_HABITUALES.soloTuyos}</p>
-      </ExplicacionAPedido>
+      {/* RP-22 (DL-188): quién los ve y qué pasa al editarlos, detrás de un «?» al lado del título. */}
+      <div className="titulo-con-ayuda">
+        <h2 id="titulo-habituales-entrenamiento">{TITULO}</h2>
+        <ExplicacionAPedido nombre="Quién ve tus habituales" como="div">
+          <p className="nota">{COPY_HABITUALES.soloTuyos}</p>
+        </ExplicacionAPedido>
+      </div>
       {aviso && aviso.tipo === 'exito' ? (
         <AvisoFlotante onCerrar={() => setAviso(null)}>
           <p>{aviso.texto}</p>

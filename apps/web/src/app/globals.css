@@ -21777,6 +21777,36 @@ html:has(.estacion:not([data-en-el-asistente])) {
   min-width: 6rem;
 }
 
+/* El «?» al lado de un título (o de una casilla), y lo que abre en su propio renglón, debajo. */
+.titulo-con-ayuda {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.5rem;
+}
+
+.titulo-con-ayuda > h2 {
+  margin: 0;
+}
+
+.titulo-con-ayuda > .a-pedido {
+  display: contents;
+}
+
+.titulo-con-ayuda > .a-pedido > .a-pedido__boton {
+  margin-inline: 0 auto;
+}
+
+.titulo-con-ayuda > .a-pedido > .a-pedido__texto,
+.titulo-con-ayuda > p {
+  flex-basis: 100%;
+  order: 1;
+}
+
+.titulo-con-ayuda > .a-pedido > .a-pedido__texto p {
+  margin: 0.2rem 0 0;
+}
+
 /* ─── RP-20 y RP-21 (WP-RECORRIDO-PLAN-PULIDO, DL-188): las franjas por comida y «Rangos y totales» ───────────
    Cada opción frente al rango indicado de su comida, un renglón por kcal, P, C y G. Ubica, no califica: la banda va en
    el color de acento; las marcas, en el color del texto (llenas adentro, huecas afuera); nada en rojo ni en verde. Cada

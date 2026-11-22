@@ -130,7 +130,7 @@ export function CabeceraDeLaPlantilla({
             {base !== null ? <p className="nota" data-la-version-sigue>{P.laVersionSigue(base)}</p> : null}
           </div>
         )}
-        <div className="campo editor-de-la-plantilla__cargas" data-cargas-de-la-plantilla>
+        <div className="campo editor-de-la-plantilla__cargas titulo-con-ayuda" data-cargas-de-la-plantilla>
           <label>
             <input type="checkbox" checked={metadatos.conCargas} onChange={(e) => onMetadatos({ ...metadatos, conCargas: e.target.checked })} /> {COPY_PLANTILLAS.cargas}
           </label>
