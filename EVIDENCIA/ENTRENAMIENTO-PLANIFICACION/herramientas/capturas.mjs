@@ -947,6 +947,24 @@ function pantallas(ids, lugar) {
           return /versión 1\./.test(t) ? [] : [`la nota de origen dice «${t}»`];
         }),
     },
+    // ─── RP-22 (DL-188): las otras secciones de Entrenamiento, para mirarlas a los cinco anchos ─────────────────────
+    ...['resumen', 'ejecuciones', 'revisiones'].map((vista, n) => ({
+      nombre: `${22 + n}-seccion-${vista}`,
+      llegar: async (page) => {
+        await ir(page, `/pro/advisees/training?id=${ids.diego}&vista=${vista}`);
+        await visible(page, '#titulo-del-area');
+        await asentar(page);
+        await page.evaluate(() => window.scrollTo(0, 0));
+      },
+      verificar: (page) =>
+        page.evaluate(() => {
+          const texto = document.querySelector('main')?.innerText ?? '';
+          const problemas = [];
+          if (/Actualizar\b|Consultado a las/.test(texto)) problemas.push('dice «Actualizar» o «Consultado a las»');
+          for (const palabra of [/cumplimiento/i, /adherencia/i, /\bracha/i, /puntaje/i, /asesorad/i, /estación/i, /\bvolumen/i]) if (palabra.test(texto)) problemas.push(`dice «${texto.match(palabra)[0]}»`);
+          return problemas;
+        }),
+    })),
   ];
 }
 
