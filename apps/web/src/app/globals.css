@@ -21769,6 +21769,12 @@ html:has(.estacion:not([data-en-el-asistente])) {
   flex: 0 1 17rem;
 }
 
+/* La unidad de la carga tiene dos opciones cortas (kg y lb): con 7 rem deja lugar a las bases en el mismo renglón. */
+.criterio-del-ejercicio .campo:has(select[id$='-unidad']) {
+  flex: 0 1 7rem;
+  min-width: 6rem;
+}
+
 /* ─── RP-20 y RP-21 (WP-RECORRIDO-PLAN-PULIDO, DL-188): las franjas por comida y «Rangos y totales» ───────────
    Cada opción frente al rango indicado de su comida, un renglón por kcal, P, C y G. Ubica, no califica: la banda va en
    el color de acento; las marcas, en el color del texto (llenas adentro, huecas afuera); nada en rojo ni en verde. Cada
