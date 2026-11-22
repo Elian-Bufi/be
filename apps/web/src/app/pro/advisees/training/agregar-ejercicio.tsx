@@ -192,8 +192,12 @@ export function AgregarEjercicio({
           <>
             {/* C6: los elegidos, a la vista en el pie fijo y en el orden en que entran; cada uno se quita sin perder la
                 búsqueda. */}
+            {/* RP-22: tocar «Agregar» sin nada marcado lo dice en el mismo renglón del título de los elegidos (antes, un
+                párrafo nuevo arriba del botón agrandaba el pie y tapaba otro resultado). */}
             <div className="agregar-ejercicio__elegidos" data-elegidos={marcados.length}>
-              <p className="agregar-ejercicio__elegidos-titulo">{marcados.length === 0 ? V.ningunoElegido : V.elegidos(marcados.length)}</p>
+              <p className={`agregar-ejercicio__elegidos-titulo${falta && marcados.length === 0 ? ' campo__error' : ''}`} role={falta && marcados.length === 0 ? 'alert' : undefined} data-sin-marcados={falta && marcados.length === 0 ? '' : undefined}>
+                {falta && marcados.length === 0 ? V.sinMarcados : marcados.length === 0 ? V.ningunoElegido : V.elegidos(marcados.length)}
+              </p>
               {marcados.length > 0 ? (
                 <ul className="agregar-item__fichas agregar-ejercicio__fichas-elegidas">
                   {marcados.map((m) => (
@@ -231,11 +235,6 @@ export function AgregarEjercicio({
               </label>
             </details>
             <p className="nota agregar-item__antes agregar-ejercicio__aviso-del-catalogo">{COPY_ENTRENAMIENTO.catalogoSintetico}</p>
-            {falta && marcados.length === 0 ? (
-              <p className="campo__error" role="alert">
-                {V.sinMarcados}
-              </p>
-            ) : null}
             {/* C6: «Agregar 3 ejercicios a Sesión A», el único principal. Crear o importar va en «No encuentro el
                 ejercicio», al final de la búsqueda: no compiten con terminar la selección. */}
             <button type="button" className="boton boton--primario" data-agregar-marcados onClick={agregar}>

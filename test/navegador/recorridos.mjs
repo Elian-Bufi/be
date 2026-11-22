@@ -1852,6 +1852,73 @@ async function sinSaltos({ p, d, salida }) {
   nadaSeMovio(conCalculo, await fotoDeLugares(p, DEL_CALCULO), 'el calculador, sin factor');
   assert.ok(await p.$eval(`${K} [data-usar-el-calculo]`, (b) => b.disabled), 'sin factor no se usa el cálculo');
   await captura(p, salida, 'sin-saltos-calculador-sin-factor');
+
+  // 4. RP-22 · el editor de Entrenamiento (preparar.mjs: una sesión con un ejercicio de tres series, 60 kg y 90 s comunes).
+  // Escribir un valor que no se entiende en la fila Común o en una serie no corre las filas, el pie de la tabla ni
+  // «Revisar y activar…»: la celda se marca en su lugar y el renglón reservado debajo de la tabla dice qué corregir.
+  await p.goto(`${WEB}/pro/advisees/training?id=${encodeURIComponent(d.ase.id)}&vista=plan`, { waitUntil: 'networkidle2' });
+  await clic(p, '.ejercicio-del-editor [id^="abrir-ejercicio-"]');
+  await elemento(p, '[data-fila-general]');
+  await hidratado(p, '[data-fila-general] input.celda-de-serie');
+  await p.waitForNetworkIdle({ idleTime: 500, timeout: ESPERA }).catch(() => {});
+  await p.evaluate(() => document.fonts.ready.then(() => true));
+  await p.evaluate(() => document.querySelector('.series-del-editor')?.scrollIntoView({ block: 'center' }));
+  await pausa(300);
+  const E = '.ejercicio-del-editor[data-abierta]';
+  const DE_LA_TABLA = [`${E} [data-fila-general]`, `${E} tr[data-serie]`, `${E} tr[data-serie] input`, `${E} [data-agregar-serie]`, '[data-revisar-y-activar]'];
+  const quieta = await fotoDeLugares(p, DE_LA_TABLA);
+  assert.equal(await p.$eval(`${E} [data-lo-que-no-se-entiende]`, (e) => e.dataset.renglonDelAviso), 'vacio', 'el renglón del aviso está, vacío');
+  const [cargaComun, descansoComun] = await p.$$(`${E} [data-fila-general] input.celda-de-serie`);
+  // La carga común: «sesenta» no se entiende.
+  await reemplazarTexto(p, cargaComun, 'sesenta');
+  await p.waitForFunction((s) => document.querySelector(`${s} [data-lo-que-no-se-entiende="1"]`)?.textContent.includes('la carga común'), { timeout: ESPERA, polling: 100 }, E);
+  assert.equal(await cargaComun.evaluate((e) => e.getAttribute('aria-invalid')), 'true');
+  nadaSeMovio(quieta, await fotoDeLugares(p, DE_LA_TABLA), 'Entrenamiento: la carga común no se entiende');
+  await captura(p, salida, 'sin-saltos-entrenamiento-carga-comun');
+  // Una carga negativa tampoco (el contrato pide desde 0), y el descanso de más de una hora tampoco.
+  await reemplazarTexto(p, cargaComun, '-5');
+  await reemplazarTexto(p, descansoComun, '61:00');
+  await p.waitForFunction((s) => document.querySelector(`${s} [data-lo-que-no-se-entiende="2"]`), { timeout: ESPERA, polling: 100 }, E);
+  nadaSeMovio(quieta, await fotoDeLugares(p, DE_LA_TABLA), 'Entrenamiento: la carga negativa y el descanso de más de una hora');
+  // Las repeticiones de la serie 2, al revés: tres celdas marcadas, todo en su lugar.
+  const reps2 = await p.$(`${E} tr[data-serie="2"] td[data-etiqueta="Repeticiones"] input`);
+  await reemplazarTexto(p, reps2, '12-8');
+  await p.waitForFunction((s) => document.querySelector(`${s} [data-lo-que-no-se-entiende="3"]`), { timeout: ESPERA, polling: 100 }, E);
+  nadaSeMovio(quieta, await fotoDeLugares(p, DE_LA_TABLA), 'Entrenamiento: tres celdas que no se entienden');
+  await captura(p, salida, 'sin-saltos-entrenamiento-tres-celdas');
+  // Se corrige todo: el renglón queda vacío, con su alto, y nada se movió.
+  await reemplazarTexto(p, cargaComun, '60');
+  await reemplazarTexto(p, descansoComun, '01:30');
+  await reemplazarTexto(p, reps2, '8');
+  await p.waitForFunction((s) => document.querySelector(`${s} [data-lo-que-no-se-entiende]`)?.dataset.renglonDelAviso === 'vacio', { timeout: ESPERA, polling: 100 }, E);
+  nadaSeMovio(quieta, await fotoDeLugares(p, DE_LA_TABLA), 'Entrenamiento: todo corregido');
+  // ↑ en las repeticiones suma 1, y en la carga común, 2,5 kg (los números con su paso).
+  await reps2.click();
+  await p.keyboard.press('ArrowUp');
+  await p.waitForFunction((e) => e.value === '9', { timeout: ESPERA, polling: 100 }, reps2);
+  await cargaComun.click();
+  await p.keyboard.press('ArrowUp');
+  await p.waitForFunction((e) => e.value === '62,5', { timeout: ESPERA, polling: 100 }, cargaComun);
+  nadaSeMovio(quieta, await fotoDeLugares(p, DE_LA_TABLA), 'Entrenamiento: las flechas');
+  await captura(p, salida, 'sin-saltos-entrenamiento-flechas');
+  // Lo mismo a los anchos en que Dirección recorre el escritorio (1280, 1536, 2048 y, al final, 1440, el de siempre):
+  // una carga negativa marca la celda y escribe el renglón sin correr nada, y corregirla tampoco.
+  for (const ancho of [1280, 1536, 2048, 1440]) {
+    await p.setViewport({ width: ancho, height: 900 });
+    await pausa(300);
+    // Con el autoguardado de lo anterior ya hecho: la foto es la de la pantalla quieta.
+    await p.waitForNetworkIdle({ idleTime: 500, timeout: ESPERA }).catch(() => {});
+    await p.evaluate(() => document.querySelector('.series-del-editor')?.scrollIntoView({ block: 'center' }));
+    await pausa(300);
+    const aEsteAncho = await fotoDeLugares(p, DE_LA_TABLA);
+    await reemplazarTexto(p, cargaComun, '-5');
+    await p.waitForFunction((s) => document.querySelector(`${s} [data-lo-que-no-se-entiende="1"]`)?.textContent.includes('la carga común'), { timeout: ESPERA, polling: 100 }, E);
+    nadaSeMovio(aEsteAncho, await fotoDeLugares(p, DE_LA_TABLA), `Entrenamiento a ${ancho}: la carga negativa`);
+    if (ancho !== 1440) await captura(p, salida, `sin-saltos-entrenamiento-${ancho}`);
+    await reemplazarTexto(p, cargaComun, '62,5');
+    await p.waitForFunction((s) => document.querySelector(`${s} [data-lo-que-no-se-entiende]`)?.dataset.renglonDelAviso === 'vacio', { timeout: ESPERA, polling: 100 }, E);
+    nadaSeMovio(aEsteAncho, await fotoDeLugares(p, DE_LA_TABLA), `Entrenamiento a ${ancho}: la carga corregida`);
+  }
 }
 
 /**

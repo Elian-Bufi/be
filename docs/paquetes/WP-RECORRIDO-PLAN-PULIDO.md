@@ -395,3 +395,96 @@ Lo que se corrigió en la rama, con su prueba:
   reservar la franja de toda comida guardada cuando el día tipo tenga rangos o reparto.
 - `docs/DEUDA_LEGAJO.md` (DL-188) no se tocó en esta rama, para no chocar con el otro frente: al integrar, sumarle RP-20,
   RP-21 y RP-D40 a RP-D49.
+
+## 9. RP-22 · Entrenamiento antes de la prueba (22/11)
+
+> **El pedido:** Dirección prueba la planificación de Entrenamiento del profesional. Lo que marcó en el recorrido de
+> Nutrición (la cabecera, «Empezar el plan», los avisos que corren todo, lo largo a la vista, los números sin límites ni
+> paso, lo anotado del catálogo y del resumen) se lleva a Entrenamiento con las mismas piezas. Rama
+> `wp-entrenamiento-antes-de-la-prueba`, desde `wp-recorrido-sin-saltos` (RP-19). Decisiones **RP-D60 a RP-D72, a
+> ratificar**. No toca la lógica ni los textos de la intensidad (el frente del RPE, DL-192) ni `nutrition/**`.
+
+### En criollo
+
+En el editor de Entrenamiento, escribir algo que no se entiende ya no corre nada: la celda se marca en su lugar, del
+mismo tamaño, y un renglón que siempre está debajo de la tabla de series dice qué corregir y cómo se escribe («No se
+entiende la carga común: va un número desde 0.»). Lo mismo en el bloque en vueltas (el aviso del descanso ocupa el
+renglón de la indicación), en el objetivo del criterio (al pie de su recuadro), en la barra de las series elegidas, en el
+período y en los números de los formularios de la persona. Las repeticiones, el descanso y la carga tienen su mínimo, su
+máximo y su paso: con ↑ y ↓ suman o restan 1 repetición, 15 segundos o 2,5 kg, y en la fila Común, las repeticiones y el
+descanso del bloque aparecen las flechitas al pasar el mouse. El pie de la tabla (cómo se lee cada valor, el
+calentamiento y los atajos) va detrás de un «?». El catálogo de ejercicios, a 1280, es más ancho.
+
+### Lo que ya estaba
+
+- **La cabecera** (`marco-del-area.tsx`) es la misma pieza en las cuatro áreas: Entrenamiento ya tenía la franja única, el
+  chip de acceso que no se parte, la vuelta como botón y «Hay datos nuevos · Ver» al volver a la pestaña. No se cambió.
+- **«Empezar el plan»** (`primer-plan.tsx`) es la misma pieza que en Nutrición: la franja compacta de los tres pasos, sin el
+  bloque de «Todavía no hay un plan activo» y con la fecha automática («Hoy, 13:06 · cambiar») en la evaluación.
+- **«Sin indicar»:** en pantalla, el editor y la versión activa ya decían «Sin indicar»
+  (`COPY_ENTRENAMIENTO_POR_SERIE.sinObjetivo` vale «Sin indicar»); «Sin objetivo» quedaba solo en dos comentarios del
+  código, que se corrigieron.
+
+### Lo que cambió
+
+| Dónde | Qué saltaba o faltaba | Ahora |
+|---|---|---|
+| La tabla de series (`ejercicio-del-editor.tsx`, `planilla-de-series.ts`) | El aviso de la carga o el descanso comunes aparecía dentro de la celda y alargaba la fila mientras se escribía; las celdas de cada serie se marcaban sin decir nada; el borde de 2 px corría el valor | Cada celda se marca con el borde y una sombra (sin cambiar de tamaño); un renglón reservado debajo de la tabla (`loQueNoSeEntiendeEnLasSeries`, `textoDeLoQueNoSeEntiende`) dice la primera celda, cómo se escribe y cuántas más, y cada celda mal escrita lo nombra para el lector de pantalla |
+| La barra de las series elegidas | «No se entiende el valor» aparecía al tocar «Escribir» y bajaba la tabla | Su renglón, siempre, en la barra |
+| El objetivo del criterio | Su aviso, debajo del campo, desalineaba la fila (los campos se alinean por abajo) | Al pie del recuadro, en su renglón, con el nombre del campo; el campo se marca |
+| El bloque en vueltas (`bloque-del-editor.tsx`) | El aviso del descanso aparecía en la cabecera del bloque y la alargaba | El renglón de la indicación está siempre en un bloque en vueltas; mientras el descanso no se entiende, el aviso ocupa ese renglón |
+| Los números | Sin límites ni paso; una carga negativa o un descanso de más de una hora los rechazaba la API sin nombrar el lugar | Repeticiones de 1 a 1000, descanso de 00:00 a 60:00 y carga desde 0 (los del contrato); fuera de eso no se entienden y no se guardan. ↑ y ↓ dan un paso (1, 15 s, 2,5 kg o 5 lb; con Mayúsculas, cuatro) y las flechitas (`components/flechas-del-numero.tsx`) |
+| El pie de la tabla | Tres párrafos a la vista (cómo se lee, el calentamiento, Ctrl+D) | Detrás de un «?» (`ExplicacionAPedido`), con las flechas |
+| La evaluación (`resumen.tsx`) | El exceso de citas y el conflicto llevaban el mismo `id` (`trn-contexto`): el resumen los junta por `id` y mostraba dos veces el texto del conflicto | `trn-contexto-limite` y `trn-contexto-conflicto`, cada uno lleva a su lugar; el formulario, con `.avisos-con-lugar` |
+| El período (`control-de-periodo.tsx`) y los números de los formularios (`forms/campos-v2.tsx`) | El aviso aparecía y corría lo de abajo | Su renglón reservado |
+| El catálogo de ejercicios (`agregar-ejercicio.tsx`) | A 1280 × 800 el pie tapaba los resultados; «Agregar» sin marcar sumaba un párrafo al pie | El cajón de 35 rem desde 1280 (como desde 1440): la línea de «Con historial» ocupa un renglón menos y tres elegidos entran en uno; el pie se aprieta con poca altura; el aviso va en el título de los elegidos |
+| Las bases de la carga y de las repeticiones (el recuadro del criterio) | Las opciones largas («una sola mancuerna o implemento») se cortaban en un desplegable de 12 rem y el rótulo «Qué cuentan las repeticiones» ocupaba dos renglones | 17 rem: se leen enteras |
+| La revisión y el objetivo de Entrenamiento (`revisiones.tsx`, `resumen.tsx`) | Los avisos de cada campo aparecían y corrían lo de abajo | `.avisos-con-lugar` |
+| Plantillas y habituales (`templates/mis-plantillas.tsx`, `templates/mis-habituales.tsx`) | Dos párrafos a la vista arriba de las plantillas y uno arriba de los habituales; el filtro «Estado» a todo el ancho de la columna | Los párrafos detrás de un «?»; el filtro, angosto |
+| El editor de una plantilla (`edicion-de-plantilla.tsx`) | «Plantillas y habituales» como enlace subrayado (lo que RP-01 sacó de las áreas); la ayuda de las cargas, a la vista | La vuelta como botón fantasma con flecha, como en las áreas; la ayuda de las cargas detrás de un «?» (lo escrito en esta plantilla sigue a la vista) |
+
+### Decisiones de continuador (a ratificar)
+
+| ID | Decisión | Por qué / alternativa |
+|---|---|---|
+| RP-D60 | En la tabla de series, la celda que no se entiende se marca en su lugar y el texto va a un renglón reservado debajo de la tabla: la primera celda, cómo se escribe y «También…» o «Y N celdas más, marcadas.» | Una tabla no tiene lugar para un renglón por celda. Alternativa: el aviso posicionado junto a la celda, como en una planilla, tapando la fila de abajo mientras dura |
+| RP-D61 | Los límites del contrato valen en el website: una carga negativa y un descanso de más de 60:00 «no se entienden» y no se guardan | Antes se mandaban y la API los rechazaba sin decir dónde. No cambia el contrato |
+| RP-D62 | El paso: 1 repetición, 15 segundos, 2,5 kg o 5 lb; con Mayúsculas, cuatro. Desde una celda vacía, la flecha parte del valor común; sin él, escribe 8, 01:00 o 20 kg. Un valor fuera de la grilla va al paso siguiente (62 → 62,5 con ↑). Un rango de repeticiones no tiene paso | Lo que cambia de una serie a otra en una sala. Alternativa: 1 kg y 5 s |
+| RP-D63 | Las flechitas a la vista van en la fila Común, en las repeticiones y en el descanso del bloque; en la carga y el descanso de cada serie, que ya tienen la marca y su menú, solo ↑ y ↓. Aparecen con el mouse encima o con el foco (en una pantalla táctil, siempre) y no reciben el foco | Como las del campo numérico del navegador, que no sirve acá (no acepta «02:30» ni un rango). Alternativa: en todas las celdas, más angostas |
+| RP-D64 | El RIR y el % RM no tienen paso ni flechitas, y el objetivo del criterio solo cambió de lugar su aviso, que ahora nombra el campo («No se entiende el objetivo: va un número.») | Los cambia el frente del RPE (DL-192) |
+| RP-D65 | En un bloque «En vueltas», el renglón de la indicación está siempre; sin ejercicios queda vacío, con su alto; con el descanso mal escrito, el aviso lo ocupa | La indicación sin el descanso no dice lo que va a ver la persona |
+| RP-D66 | El pie de la tabla de series (cómo se lee cada valor, el calentamiento, Ctrl+D y las flechas), detrás de un «?» | Dirección no quiere párrafos a la vista; la celda ya dice «común», «propio» o «Sin indicar» |
+| RP-D67 | El catálogo: 35 rem de ancho desde 1280; con una ventana de 860 px de alto o menos, el pie con menos aire. La línea de «Con historial» queda a la vista (revisión del 15/11) y las fichas siguen debajo de su título, hasta dos renglones (revisión del tramo 2) | Alternativa: la línea de «Con historial» detrás de un «?», que ganaría dos renglones |
+| RP-D68 | «Empezar el plan» de Entrenamiento conserva «Registrar la evaluación» y «Pedir información a la persona» antes de abrir la evaluación; Nutrición la abre directamente (RP-12) | La evaluación de Entrenamiento es una lista de datos libres, no el pantallazo del caso. Alternativa: abrirla directamente también |
+| RP-D69 | Cada problema del resumen de la evaluación de Entrenamiento con su `id`: el exceso de citas lleva al límite de citas y el conflicto a su aviso | — |
+| RP-D70 | El período (el panel de «Elegir el período») y los números de los formularios de la persona reservan el renglón de su aviso | Es la regla de RP-19 (RP-D24) en las piezas que la auditoría marcó |
+| RP-D71 | Plantillas y habituales: lo que explica cada sección, detrás de un «?»; en el editor de una plantilla, la vuelta como en las áreas (RP-01) y la ayuda de las cargas detrás de un «?» | Lo mismo que se pidió para las áreas. Alternativa: dejar los párrafos, más cortos |
+| RP-D72 | Ícono, número y abreviatura (RP-07) no se suman en Entrenamiento: el renglón de cada ejercicio ya dice «3 × 8 rep. · 60 kg · RIR 2» y la tabla lleva la unidad en el rótulo de la columna | Un ícono por cantidad no suma claridad donde las cantidades son de una sola clase. Alternativa: íconos en la versión activa |
+
+### Lo que se probó
+
+- `apps/web/test/entrenamiento-antes-de-la-prueba.test.mjs`: el paso de cada número (con su borde, la grilla y el valor
+  común), los límites, el renglón de lo que no se entiende (una, dos y más celdas), dónde va cada aviso, las flechitas, el
+  bloque en vueltas, el período y los formularios, los `id` de la evaluación, el catálogo y el vocabulario de lo nuevo.
+- `editores-restos.test.mjs` (ED-23), al día con el renglón reservado.
+- El recorrido `sinSaltos` suma el editor de Entrenamiento: una carga común que no se entiende, una negativa, un descanso de
+  61:00 y unas repeticiones al revés no mueven las filas, las celdas, «Agregar serie» ni «Revisar y activar…»; todo
+  corregido, el renglón queda vacío; ↑ suma 1 repetición y 2,5 kg. Con capturas.
+- Las capturas de la planificación de Entrenamiento (`EVIDENCIA/ENTRENAMIENTO-PLANIFICACION/herramientas/capturas.mjs`)
+  suman 1440 × 900 y 2048 × 1000, «Empezar el plan» con Héctor Funes (sintético), el descanso del bloque y la carga común
+  que no se entienden.
+
+### Lo que queda
+
+- Ratificar RP-D60 a RP-D72.
+- **El cambio de criterio** (C7): el aviso de lo que se quitó, con «Deshacer», aparece debajo del recuadro y baja las
+  series. Responde a una elección y va debajo de ella; es del frente del RPE.
+- **La escritura rápida:** su lectura («Se lee: …», «Se pierde: …») cambia de largo mientras se escribe y, en una ventana
+  angosta, puede pasar a dos renglones. Propuesta: reservar dos renglones.
+- `objetivos-por-serie.tsx` (`CampoHeredable`, `TablaDeObjetivos`) no se usa en ninguna pantalla: código muerto, que toca el
+  frente del RPE.
+- **Visto en la CI, de otro frente:** la escena 08 de las capturas del objetivo y el calculador
+  (`EVIDENCIA/OBJETIVO-Y-CALCULADOR/herramientas/capturas.mjs`) busca `[data-frente-a-los-rangos]` en el almuerzo, y desde
+  RP-20 (#309) la comida del editor muestra las franjas: la escena espera 30 s y falla. No es de esta rama (no toca
+  `nutrition/**`).
+- `docs/DEUDA_LEGAJO.md` (DL-188) no se tocó: al integrar, sumarle RP-22 y RP-D60 a RP-D72.

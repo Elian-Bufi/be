@@ -545,8 +545,10 @@ export function FormularioDeEvaluacion({ onRegistrada, onCancelar, conTitulo = t
       if (d.fuente === 'CALCULATED' && !d.metodo.trim()) problemas.push({ id: `trn-dato-${i}-metodo`, texto: `Dato ${i + 1}: un dato calculado declara su método.` });
     });
     // Tope de citas y conflicto pendiente: se validan también acá, no solo al marcar.
-    if (excesoDeSeleccion(citadas) !== null) problemas.push({ id: 'trn-contexto', texto: COPY_ENTRENAMIENTO.excesoDeCitas });
-    if (conflicto) problemas.push({ id: 'trn-contexto', texto: COPY_ENTRENAMIENTO.actualizaAntesDeRegistrar });
+    // RP-22 (DL-188): cada problema con su `id`. Con el mismo (`trn-contexto` los dos), el resumen los junta por `id` y
+    // mostraba dos veces el texto del conflicto. El exceso de citas lleva al límite; el conflicto, a su aviso.
+    if (excesoDeSeleccion(citadas) !== null) problemas.push({ id: 'trn-contexto-limite', texto: COPY_ENTRENAMIENTO.excesoDeCitas });
+    if (conflicto) problemas.push({ id: 'trn-contexto-conflicto', texto: COPY_ENTRENAMIENTO.actualizaAntesDeRegistrar });
     setErrores(problemas);
     setEnvios((n) => n + 1);
     if (problemas.length > 0 || !momento.ok) return;
@@ -593,7 +595,7 @@ export function FormularioDeEvaluacion({ onRegistrada, onCancelar, conTitulo = t
   }
 
   return (
-    <form className="formulario" onSubmit={enviar} noValidate>
+    <form className="formulario avisos-con-lugar" onSubmit={enviar} noValidate data-evaluacion-de-entrenamiento>
       {conTitulo ? <h3>{COPY_ENTRENAMIENTO.nuevaEvaluacion}</h3> : null}
       <ResumenDeErrores titulo="Revisá estos datos:" errores={errores} intento={envios} />
       <FechaDeLaEvaluacion id="trn-evaluacion-ocurrencia" valor={ocurrencia} onCambiar={setOcurrencia} error={errores.find((e) => e.id === 'trn-evaluacion-ocurrencia')?.texto ?? null} />
@@ -641,12 +643,14 @@ export function FormularioDeEvaluacion({ onRegistrada, onCancelar, conTitulo = t
           </>
         )}
         {conflicto ? (
-          <Aviso tipo="error" enfocar>
-            <p>{COPY_ENTRENAMIENTO.contextoCambio}</p>
-            <button type="button" className="boton boton--secundario" onClick={() => void actualizarContexto()}>
-              {COPY_ENTRENAMIENTO.actualizarContexto}
-            </button>
-          </Aviso>
+          <div id="trn-contexto-conflicto" tabIndex={-1}>
+            <Aviso tipo="error" enfocar>
+              <p>{COPY_ENTRENAMIENTO.contextoCambio}</p>
+              <button type="button" className="boton boton--secundario" onClick={() => void actualizarContexto()}>
+                {COPY_ENTRENAMIENTO.actualizarContexto}
+              </button>
+            </Aviso>
+          </div>
         ) : null}
         {!conflicto && cambiadas.length > 0 ? (
           <Aviso tipo="info" enfocar>
@@ -784,7 +788,7 @@ export function FormularioDeObjetivo({ evaluaciones, onEmitido, onCancelar }: { 
   }
 
   return (
-    <form className="formulario" onSubmit={enviar} noValidate>
+    <form className="formulario avisos-con-lugar" onSubmit={enviar} noValidate data-objetivo-de-entrenamiento>
       <h3>{COPY_ENTRENAMIENTO.nuevaVersionDeObjetivo}</h3>
       <ResumenDeErrores titulo="Para emitir el objetivo falta:" errores={errores} intento={envios} />
       <div className="campo">
