@@ -1,5 +1,5 @@
 /**
- * WP-RPE-Y-MAXIMO-ESTIMADO (DL-192) · sin React: lo que el website hace con la notación del esfuerzo (TEST-RPE-040 a 045).
+ * WP-RPE-Y-MAXIMO-ESTIMADO (DL-192) · sin React: lo que el website hace con la notación del esfuerzo (TEST-RPE-040 a 046).
  * La conversión y el máximo estimado viven en el dominio (`notacion-del-esfuerzo.ts`) y tienen sus pruebas allá; acá se
  * fija que la fuerza, el editor y los registros los usen, y lo que dicen.
  *
@@ -90,11 +90,36 @@ test('TEST-RPE-043 · el editor guarda la notación con el borrador, la provee a
 });
 
 test('TEST-RPE-044 · lo registrado y la fuerza se leen en la notación del plan de la persona', () => {
-  assert.match(leer('training/entrenamiento.tsx'), /<ConLaNotacionDeLaPersona token=\{contexto\.token\} asesoradoId=\{contexto\.asesoradoId\}>/);
+  assert.match(leer('training/entrenamiento.tsx'), /<ConLaNotacionDeLaPersona token=\{contexto\.token\} asesoradoId=\{contexto\.asesoradoId\} clave=\{vista\}>/);
   assert.match(leer('training/ejecuciones.tsx'), /componerLasSesiones\(ejecuciones, objetivosPorVersion, notacion\)/);
   assert.match(leer('fuerza/fuerza-en-analizar.tsx'), /<ConLaNotacionDeLaPersona token=\{token\} asesoradoId=\{asesoradoId\}>/);
   assert.match(leer('fuerza/tarjeta.tsx'), /conQueSeEstimoElPunto\(p, notacion\)/);
   assert.match(leer('notacion-del-esfuerzo.tsx'), /notacionDeLasVersiones\(r\.datos\.data\)/);
+  // Activar una versión en otra notación se lee sin recargar: «Plan» la toma de las versiones que vuelve a leer, y las
+  // demás vistas releen la notación al entrar.
+  assert.match(leer('notacion-del-esfuerzo.tsx'), /\}, \[token, asesoradoId, clave\]\);/);
+  assert.match(leer('training/plan.tsx'), /const notacionDeLaPersona = r\?\.ok \? notacionDeLasVersiones\(r\.datos\.versiones\) : notacionDeArriba;/);
+  assert.match(leer('training/plan.tsx'), /<ProveedorDeLaNotacion value=\{notacionDeLaPersona\}>/);
+});
+
+test('TEST-RPE-046 · antes de activar, el cambio de notación se dice, y los renglones y «La vez pasada» van en la del borrador', async () => {
+  const C = await import('../src/app/pro/advisees/comparar-versiones.ts');
+  const V = await import('../src/app/pro/advisees/training/lista-de-la-vez-pasada.ts');
+  const plan = [{ blockId: 'b1', label: 'Fase 1', purpose: null, sessions: [{ sessionId: 's1', label: 'Piernas A', instructions: null, prescriptions: [] }] }];
+  const como = { nombreDelEjercicio: () => 'Ejercicio', renglon: () => '' };
+  // Mismo contenido, otra notación: la app de la persona va a preguntar distinto, y eso es un cambio.
+  const c = C.compararEntrenamiento(plan, plan, { ...como, notaciones: { vigente: 'RIR', borrador: 'RPE' } });
+  assert.deepEqual(c.lista, ['Cómo se escribe el esfuerzo: RIR → RPE']);
+  assert.equal(c.modificados, 1);
+  assert.equal(C.compararEntrenamiento(plan, plan, { ...como, notaciones: { vigente: 'RPE', borrador: 'RPE' } }).lista.length, 0);
+  assert.equal(C.compararEntrenamiento(plan, plan, como).lista.length, 0);
+  const editor = leer('training/editor.tsx');
+  assert.match(editor, /renglon: \(p\) => ejercicioPlegadoDelEditor\(p, 0, notacion\)\.resumen,\n(?:.*\n){0,2}.*notaciones: \{ vigente: notacionDe\(vigente\.plan\.effortNotation\), borrador: notacion \}/);
+  // «La vez pasada»: la ficha corta y la entera, en la notación; sin notación, RIR.
+  const serie = { numero: 1, carga: { value: 100, unit: 'kg' }, repeticiones: 5, rir: 2, cargaRapida: false, delPlan: [] };
+  assert.equal(V.textoDeLaFicha(serie, 'kg'), '100 × 5 · RIR 2');
+  assert.equal(V.textoDeLaFicha(serie, 'kg', 'RPE'), '100 × 5 · RPE 8');
+  assert.match(leer('training/la-vez-pasada.tsx'), /textoDeLaFicha\(serie, unidad, notacion\)/);
 });
 
 test('TEST-RPE-045 · los textos de pantalla nuevos pasan las guardias de Entrenamiento y de fuerza', () => {

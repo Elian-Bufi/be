@@ -42,7 +42,7 @@ import { cantidad, numero } from './formato-numeros';
 import type { NombreDeIcono } from './iconos';
 import { nivelDeDetalleDelRegistro, seCargoComoElPlan, textoDelNivelDeDetalle, type NivelDeDetalle } from './registro-por-niveles';
 import { relacionDeCarga, relacionDeRepeticiones, relacionDeRir, type RelacionConElObjetivo } from './relacion-con-el-objetivo';
-import { COPY_NOTACION_DEL_ESFUERZO, textoDelEsfuerzo, type NotacionDelEsfuerzo } from './notacion-del-esfuerzo';
+import { COPY_NOTACION_DEL_ESFUERZO, enElPisoDelRpe, textoDelEsfuerzo, type NotacionDelEsfuerzo } from './notacion-del-esfuerzo';
 
 /**
  * DL-192: la relación del RIR, dicha en la notación. Más en reserva es menos RPE: «RIR: por debajo» se lee «RPE: por
@@ -50,6 +50,14 @@ import { COPY_NOTACION_DEL_ESFUERZO, textoDelEsfuerzo, type NotacionDelEsfuerzo 
  */
 const relacionEnLaNotacion = (r: RelacionConElObjetivo, notacion: NotacionDelEsfuerzo): RelacionConElObjetivo =>
   notacion === 'RPE' && r === 'DEBAJO' ? 'ENCIMA' : notacion === 'RPE' && r === 'ENCIMA' ? 'DEBAJO' : r;
+
+/**
+ * DL-192 (RPE-D03): en RPE, lo indicado y lo registrado con 4 o más en reserva se leen los dos «RPE 6 o menos». Decir
+ * «RPE: por debajo» al lado de dos «6 o menos» sería una diferencia que la pantalla no muestra: en esa notación es igual.
+ * En RIR, el número se compara tal cual.
+ */
+const rirEnLaNotacion = (r: RelacionConElObjetivo, objetivo: number | null, realizado: number | null, notacion: NotacionDelEsfuerzo): RelacionConElObjetivo =>
+  notacion === 'RPE' && FUERA.includes(r) && objetivo !== null && realizado !== null && enElPisoDelRpe(objetivo) && enElPisoDelRpe(realizado) ? 'IGUAL' : r;
 
 // ─── Una serie ──────────────────────────────────────────────────────────────────────────────────────────────
 
@@ -93,7 +101,7 @@ const FUERA: readonly RelacionConElObjetivo[] = ['DEBAJO', 'ENCIMA'];
  */
 export function relacionDeUnaSerie(objetivo: Pick<ObjetivoDeSerie, 'repetitions' | 'rir' | 'suggestedLoad'>, s: SerieEjecutadaApi, notacion: NotacionDelEsfuerzo = 'RIR'): RelacionDeUnaSerie {
   const reps = relacionDeRepeticiones(objetivo.repetitions, s.completedRepetitions);
-  const rir = relacionDeRir(objetivo.rir, s.rir);
+  const rir = rirEnLaNotacion(relacionDeRir(objetivo.rir, s.rir), objetivo.rir, s.rir, notacion);
   const carga = relacionDeCarga(objetivo.suggestedLoad, s.load);
   const partes: string[] = [];
   const esfuerzo = COPY_NOTACION_DEL_ESFUERZO.etiqueta[notacion];

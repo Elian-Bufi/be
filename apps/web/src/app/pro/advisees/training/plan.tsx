@@ -34,6 +34,7 @@ import {
   historialDeVersiones,
   lineasDePrescripcion,
   loQueSeMiraDelPlan,
+  notacionDeLasVersiones,
   numerosDeVersionDePlan,
   sesionesDelBloque,
   todasLasPaginas,
@@ -74,7 +75,7 @@ import { DialogoGuardarPlantilla } from './plantillas';
 import { ZonasDeLaSesion } from './zonas-de-la-sesion';
 import { Pista } from '../../../../components/pista';
 import { OtrasAreas } from '../seguimiento/otras-areas-en-pantalla';
-import { useNotacionDelEsfuerzo } from '../notacion-del-esfuerzo';
+import { ProveedorDeLaNotacion, useNotacionDelEsfuerzo } from '../notacion-del-esfuerzo';
 
 /**
  * Número de versión para la persona: el orden de activación. El `version` del 09 es un token de concurrencia. Lo usa
@@ -103,6 +104,7 @@ const TODO_LO_ELEGIDO = { version: null, bloque: null, micro: null, sesion: null
 
 export function VistaDePlan() {
   const { token, asesoradoId, sesionPerdida, accesoRetirado, parametros, ir, irA } = useEntrenamiento();
+  const notacionDeArriba = useNotacionDelEsfuerzo();
   const [r, setR] = useState<Resultado<Datos> | null>(null);
   // Qué lectura falló, para decirlo: «No pudimos cargar esta vista» no decía cuál (bloque 5).
   const [queFallo, setQueFallo] = useState<string | null>(null);
@@ -272,8 +274,11 @@ export function VistaDePlan() {
     setDesdePlantilla(true);
   };
 
+  // DL-192: la notación de la persona sale de las mismas versiones que lee esta vista, no de la lectura de arriba (que se
+  // hizo al entrar): activar una versión en otra notación se lee así apenas se vuelve a leer el plan.
+  const notacionDeLaPersona = r?.ok ? notacionDeLasVersiones(r.datos.versiones) : notacionDeArriba;
   return (
-    <>
+    <ProveedorDeLaNotacion value={notacionDeLaPersona}>
       {/* TB-54 (DL-163 D-13, ampliada): «Otras áreas», al planificar. Lee API-RES-04 al abrir; sin otra área, nada. */}
       <OtrasAreas token={token} asesoradoId={asesoradoId} sesionPerdida={sesionPerdida} area="ENTRENAMIENTO" />
     <EstadoDeLectura r={r} onReintentar={cargar} que={queFallo}>
@@ -471,7 +476,7 @@ export function VistaDePlan() {
           })()
         : null}
     </EstadoDeLectura>
-    </>
+    </ProveedorDeLaNotacion>
   );
 }
 

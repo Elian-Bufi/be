@@ -22,8 +22,12 @@ export const useNotacionDelEsfuerzo = (): NotacionDelEsfuerzo => useContext(Cont
 /** Una notación fija para lo de abajo: el editor, con la del borrador. */
 export const ProveedorDeLaNotacion = Contexto.Provider;
 
-/** La notación del plan de una persona con este profesional, para lo de abajo. */
-export function ConLaNotacionDeLaPersona({ token, asesoradoId, children }: { token: string; asesoradoId: string; children: ReactNode }) {
+/**
+ * La notación del plan de una persona con este profesional, para lo de abajo. `clave`: cuando cambia, se vuelve a leer
+ * (en Entrenamiento, la vista: activar una versión en otra notación se ve al pasar a «Registros» sin recargar). Mientras se
+ * relee, queda la que había.
+ */
+export function ConLaNotacionDeLaPersona({ token, asesoradoId, clave, children }: { token: string; asesoradoId: string; clave?: string; children: ReactNode }) {
   const [notacion, setNotacion] = useState<NotacionDelEsfuerzo>(NOTACION_POR_OMISION);
   useEffect(() => {
     let vigente = true;
@@ -33,6 +37,6 @@ export function ConLaNotacionDeLaPersona({ token, asesoradoId, children }: { tok
     return () => {
       vigente = false;
     };
-  }, [token, asesoradoId]);
+  }, [token, asesoradoId, clave]);
   return <Contexto.Provider value={notacion}>{children}</Contexto.Provider>;
 }

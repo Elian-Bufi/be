@@ -93,10 +93,15 @@ igual en los dos sentidos, y por eso el valor de las dos notaciones es el mismo 
 - **RPE-D03 · «6 o menos»:** es la opción más baja y se guarda como RIR 4. En RPE, todo RIR de 4 o más se lee «RPE 6 o
   menos»; en RIR, el número se lee tal cual. Escribir un RPE de 1 a 6 es «6 o menos»; uno de 6 a 10 que no cae en un medio
   punto (8,3) no se entiende. Un RIR guardado con otros decimales (1,25) se lee exacto en RPE (8,75), sin redondear. No se
-  guarda una marca de «o más»: lo de debajo de RPE 6 no entra en la estimación y el RIR 4 es su piso.
+  guarda una marca de «o más»: lo de debajo de RPE 6 no entra en la estimación y el RIR 4 es su piso. En RPE, una serie
+  indicada «6 o menos» y registrada con 4 o más en reserva se lee «Dentro de lo indicado»: las dos dicen «RPE 6 o menos», y
+  una diferencia que la pantalla no muestra no se nombra (en RIR, el número se compara tal cual).
 - **RPE-D04 · Lo que sigue en RIR:** los gráficos (`entrenamiento.rir` de «Analizar», con su eje en RIR), la comparación
   gráfica por serie de Registros y lo que ven otros profesionales, porque leen el valor guardado. Una sola notación por
-  pantalla: las tablas de texto de Registros y de la fuerza se leen en la del plan.
+  pantalla: las tablas de texto de Registros y de la fuerza se leen en la del plan. En el editor, todo va en la del
+  borrador: también «La vez pasada» y los renglones de «Antes de activar», que además nombra el cambio de notación frente a
+  la vigente («Cómo se escribe el esfuerzo: RIR → RPE»): la app de la persona va a preguntar distinto aunque ningún número
+  cambie.
 - **RPE-D05 · El máximo estimado no cambia de método ni de límites** (§3). Ampliarlo a RPE 6 sería `BE-E1RM` v2.
 - **RPE-D06 · «estimado con N reps a RPE X» al lado de cada valor,** y la estimación nunca como máximo probado (§3).
 - **RPE-D07 · El historial y la fuerza se leen en la notación del plan vigente de la persona** (si no hay vigente, la de la
@@ -139,9 +144,9 @@ igual en los dos sentidos, y por eso el valor de las dos notaciones es el mismo 
   igual), 021 (elegir, conservar y quitar; el RPE como criterio es 422), 022 (se congela y la sucesora la hereda), 023 (el
   valor inicial, con otra persona), 024 (la última APK congelada registra en RIR con un plan en RPE; la 0.32 recibe la
   notación) y 025 (otro profesional recibe el 404 de lo inexistente).
-- **Website** (`apps/web/test/rpe-y-maximo-estimado.test.mjs`): TEST-RPE-040 a 045 (la serie de origen y con qué se estimó,
+- **Website** (`apps/web/test/rpe-y-maximo-estimado.test.mjs`): TEST-RPE-040 a 046 (la serie de origen y con qué se estimó,
   la regla y los motivos, el cuadro de la serie observada, el editor, lo registrado y la fuerza en la notación, y las
-  guardias).
+  guardias; el 046, el cambio de notación en «Antes de activar» y «La vez pasada» en la del borrador).
 - **Navegador** (`test/navegador/recorridos.mjs`, `notacionDelEsfuerzo`): TEST-RPE-030, elegir RPE en el editor, ver «RPE
   8», que se guarde solo, que siga al recargar y que la API diga RPE con el RIR 2 guardado.
 

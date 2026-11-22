@@ -1300,8 +1300,11 @@ export function EditorDePlan({
     confirmar && baseDeLaComparacion
       ? compararEntrenamiento(baseDeLaComparacion, bloques, {
           nombreDelEjercicio: (id) => nombres[id] ?? nombresDeLaVigente[id] ?? 'Ejercicio',
-          renglon: (p) => ejercicioPlegadoDelEditor(p, 0).resumen,
-          ...(vigente?.plan ? { agendas: { vigente: vigente.plan.agenda, borrador: agendaVisible } } : {}),
+          // DL-192: los dos renglones, en la notación del borrador (la que se lee en el editor); si cambió, se dice.
+          renglon: (p) => ejercicioPlegadoDelEditor(p, 0, notacion).resumen,
+          ...(vigente?.plan
+            ? { agendas: { vigente: vigente.plan.agenda, borrador: agendaVisible }, notaciones: { vigente: notacionDe(vigente.plan.effortNotation), borrador: notacion } }
+            : {}),
         })
       : null;
   // Lo que va a ver la persona: cada sesión, con sus días si los tiene, y lo que tiene.

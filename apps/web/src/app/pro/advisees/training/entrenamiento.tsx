@@ -150,7 +150,7 @@ export function Entrenamiento() {
       {contexto ? (
         <Contexto.Provider value={contexto}>
           {/* DL-192: lo de la persona se lee en la notación de su plan (RIR o RPE); el editor la cambia por la del borrador. */}
-          <ConLaNotacionDeLaPersona token={contexto.token} asesoradoId={contexto.asesoradoId}>
+          <ConLaNotacionDeLaPersona token={contexto.token} asesoradoId={contexto.asesoradoId} clave={vista}>
             {vista === 'resumen' ? <VistaDeResumen /> : null}
             {vista === 'plan' ? <VistaDePlan /> : null}
             {vista === 'ejecuciones' ? <VistaDeEjecuciones /> : null}

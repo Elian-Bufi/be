@@ -27,6 +27,7 @@ import {
   textoDelEsfuerzo,
 } from './notacion-del-esfuerzo';
 import { intensidadPlanificada } from './presentacion-de-prescripcion';
+import { textoDeLaSerie } from './la-vez-pasada';
 import { relacionDeUnaSerie, serieRegistradaEnPalabras } from './registros-de-entrenamiento';
 
 const BANCA = 'b5a3ddca-2d35-5d67-833b-cedfe0f6b1d7';
@@ -163,6 +164,11 @@ test('TEST-RPE-006 · los textos de la serie, del plan y de lo registrado, en ca
   assert.equal(serieRegistradaEnPalabras(registrada), '100 kg · 5 rep. · RIR 2 · esfuerzo percibido 7');
   // El esfuerzo percibido es otra medida: no se convierte.
   assert.equal(serieRegistradaEnPalabras(registrada, 'RPE'), '100 kg · 5 rep. · RPE 8 · esfuerzo percibido 7');
+  // «La vez pasada» del editor: lo registrado, en la notación del borrador; sin notación, RIR como siempre.
+  const vez = { carga: { value: 20, unit: 'kg' as const }, repeticiones: 8, rir: 2 };
+  assert.equal(textoDeLaSerie(vez), '20 kg × 8 · RIR 2');
+  assert.equal(textoDeLaSerie(vez, 'RPE'), '20 kg × 8 · RPE 8');
+  assert.equal(textoDeLaSerie({ ...vez, rir: 5 }, 'RPE'), '20 kg × 8 · RPE 6 o menos');
 });
 
 test('TEST-RPE-007 · la comparación con lo indicado es la del RIR guardado, dicha en RPE con el sentido al revés', () => {
@@ -175,6 +181,16 @@ test('TEST-RPE-007 · la comparación con lo indicado es la del RIR guardado, di
   assert.equal(relacionDeUnaSerie(objetivo, conRir(2), 'RPE').texto, 'Dentro de lo indicado');
   // La diferencia es la misma en las dos notaciones: cambia solo cómo se dice.
   assert.equal(relacionDeUnaSerie(objetivo, conRir(1)).conDiferencia, relacionDeUnaSerie(objetivo, conRir(1), 'RPE').conDiferencia);
+  // RPE-D03: indicado «6 o menos» (RIR 4) y registrado RIR 6 se leen los dos «RPE 6 o menos»: en RPE no hay diferencia
+  // que mostrar; en RIR, el número se compara tal cual. Con lo indicado arriba del piso, la diferencia sigue.
+  const enElPiso = { repetitions: { value: 5 }, rir: 4, suggestedLoad: null };
+  assert.equal(relacionDeUnaSerie(enElPiso, conRir(6)).texto, 'RIR: por encima');
+  assert.deepEqual(
+    [relacionDeUnaSerie(enElPiso, conRir(6), 'RPE').texto, relacionDeUnaSerie(enElPiso, conRir(6), 'RPE').conDiferencia],
+    ['Dentro de lo indicado', false],
+  );
+  assert.equal(relacionDeUnaSerie(enElPiso, conRir(3), 'RPE').texto, 'RPE: por encima');
+  assert.equal(relacionDeUnaSerie({ ...enElPiso, rir: 3 }, conRir(6), 'RPE').texto, 'RPE: por debajo');
 });
 
 test('TEST-RPE-008 · la notación de un plan: lo guardado, el borrador que nace y lo que se lee de la persona', () => {
