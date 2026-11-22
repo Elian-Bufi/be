@@ -70,7 +70,7 @@ export const RECORRIDOS = {
   comparacionConOpciones: { habilitado: ['NUTRICION'], datos: ['comparacion-con-opciones'] },
   // RP-19 (WP-RECORRIDO-PLAN-PULIDO, DL-188): con un error nada cambia de lugar, en el reparto, el objetivo y el calculador.
   // RP-22: también en el editor de Entrenamiento, con un borrador de una sesión con un ejercicio.
-  sinSaltos: { habilitado: ['NUTRICION', 'ENTRENAMIENTO'], datos: ['borrador', 'borrador-de-entrenamiento'] },
+  sinSaltos: { habilitado: ['NUTRICION', 'ENTRENAMIENTO'], datos: ['borrador', 'borrador-de-entrenamiento-sin-saltos'] },
   // RP-20 y RP-21 (DL-188): un borrador con el almuerzo en dos opciones y su rango indicado, para las franjas por comida.
   franjasPorComida: { habilitado: ['NUTRICION'], datos: ['franjas'] },
 };
@@ -340,8 +340,9 @@ export async function datos(estado) {
       });
       e.borrador = { planId: plan.planId };
     }
-    if (r.datos.includes('borrador-de-entrenamiento')) {
-      // RP-22: la evaluación, el objetivo y un borrador con una sesión y un ejercicio creado a mano (no depende del catálogo
+    if (r.datos.includes('borrador-de-entrenamiento-sin-saltos')) {
+      // RP-22 (con su propia clave: «borrador-de-entrenamiento» es el de `notacionDelEsfuerzo`, DL-192; con la misma, los dos
+      // armaban un borrador para la misma persona y el segundo recibía 409 «Ya hay un borrador de este plan»): la evaluación, el objetivo y un borrador con una sesión y un ejercicio creado a mano (no depende del catálogo
       // sembrado): tres series de 8, 60 kg y 90 s comunes. Todo sintético.
       const evaluacion = (
         await pedir('POST', `/advisees/${e.ase.id}/training/evaluations`, {
