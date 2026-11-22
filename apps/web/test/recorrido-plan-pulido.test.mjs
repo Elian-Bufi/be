@@ -436,4 +436,8 @@ test('RP-19 · el calculador: el gasto en reposo y las tablas quedan en su lugar
   // «Completá los datos de arriba» ya no aparece arriba del botón: va en su renglón, al lado.
   assert.doesNotMatch(calculador, /\{!vivo \? <p className="nota">\{C\.sinCalculo\}<\/p> : null\}/);
   assert.match(calculador, /<RenglonDelAviso juntoAlBoton anunciar data-por-que-no-se-usa>/);
+  // Una cantidad con su ícono y un «—» ocupan el mismo renglón: la cantidad, alineada arriba (si no, asoma 1,9 px y la fila
+  // con «—» es más baja: al vaciar el factor, los g/kg subían).
+  const css = leer('app/globals.css');
+  assert.match(css, /\.calculador__tabla \.cantidad-del-macro,\s*\.reparto-por-comida__tabla \.cantidad-del-macro \{\s*vertical-align: top;\s*\}/);
 });
