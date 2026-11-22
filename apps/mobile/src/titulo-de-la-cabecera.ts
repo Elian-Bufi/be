@@ -11,7 +11,14 @@
  *   «reducir movimiento», el cambio es instantáneo.
  * - **Qué título:** el primero que la pantalla dibuja con `Titulo` (en Inicio, la fecha). La pantalla lo registra al
  *   montarse y lo quita al irse; sin título, la cabecera no muestra nada al centro.
+ * - **Un título fijo** (DL-194, A32-03): en Nutrición y en Entrenamiento no hay título grande en el contenido. La pantalla
+ *   lo registra fijo (`fijar`) y la cabecera lo muestra siempre, como hoy aparece al desplazar, y lo lee el lector de
+ *   pantalla como encabezado: es el único. Así, sin desplazar, entra lo de la pantalla (la imagen de la opción, los
+ *   macros y «Comí algo diferente»).
  */
+
+/** El fin de un título fijo: cualquier desplazamiento, incluso el rebote de arriba, lo deja en la cabecera. */
+export const FIN_DEL_TITULO_FIJO = Number.NEGATIVE_INFINITY;
 
 /** El fundido del título, el mismo de la capa de la cabecera (AV2-T26). */
 export const FUNDIDO_DEL_TITULO = 160;
@@ -41,10 +48,14 @@ export interface TituloRegistrado {
   readonly texto: string;
   /** El borde de abajo del título en el contenido; `null` hasta medirlo. */
   readonly fin: number | null;
+  /** DL-194: el título vive solo en la cabecera, siempre a la vista, y lo lee el lector de pantalla. */
+  readonly fijo?: true;
 }
 
 export interface RegistroDelTitulo {
   registrar(id: string, texto: string): void;
+  /** DL-194: un título sin grande en el contenido, siempre en la cabecera. */
+  fijar(id: string, texto: string): void;
   medir(id: string, fin: number): void;
   quitar(id: string): void;
   /** El primero registrado que sigue en pantalla, o `null`. */
@@ -70,9 +81,16 @@ export function crearRegistroDelTitulo(): RegistroDelTitulo {
       titulos.set(id, { texto, fin: antes?.fin ?? null });
       avisar();
     },
+    fijar(id, texto) {
+      const antes = titulos.get(id);
+      if (antes && antes.fijo && antes.texto === texto) return;
+      titulos.set(id, { texto, fin: FIN_DEL_TITULO_FIJO, fijo: true });
+      avisar();
+    },
     medir(id, fin) {
       const antes = titulos.get(id);
-      if (!antes || antes.fin === fin) return;
+      // Un título fijo no se mide: no tiene grande en el contenido.
+      if (!antes || antes.fijo || antes.fin === fin) return;
       titulos.set(id, { ...antes, fin });
       avisar();
     },

@@ -17,11 +17,15 @@
  * - **Si Android cierra la app con la cámara abierta** (pasa en teléfonos con poca memoria), al volver se recupera lo
  *   escrito y la foto tomada (`getPendingResultAsync`). Lo escrito se guarda en la memoria del proceso solo mientras la
  *   cámara o la galería están abiertas; nunca va a disco.
+ * - **La foto se achica en el teléfono al elegirla** (DL-191 REC-03, en la app con DL-194, A32-05; `achicar-la-foto.ts`):
+ *   el lado mayor a 1600 px, en JPEG, una sola vez, así un reintento sube lo mismo. Si no se puede, va la original.
  */
 import { COPY_EVIDENCIA_VISUAL, COPY_NUTRICION, COPY_REGISTRO_DE_COMIDAS, type DetalleDeEvidenciaVisualRequerida, type Resultado } from '@be/domain';
+import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
 import * as ImagePicker from 'expo-image-picker';
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Image, Pressable, Text, useWindowDimensions, View } from 'react-native';
+import { fotoParaSubir, type Achicador } from '../achicar-la-foto';
 import { api } from '../api';
 import {
   AVISO_DE_FOTO_INVALIDA,
@@ -64,6 +68,21 @@ const OPCIONES_DEL_SELECTOR: ImagePicker.ImagePickerOptions = {
   allowsMultipleSelection: false,
   quality: 0.8,
   exif: false,
+};
+
+/** El achique con `expo-image-manipulator`: la foto en las medidas dadas, guardada como JPEG nuevo. Suelta lo nativo al terminar. */
+const achicarEnElTelefono: Achicador = async (uri, medidas, calidad) => {
+  const contexto = ImageManipulator.manipulate(uri).resize({ width: medidas.ancho, height: medidas.alto });
+  try {
+    const imagen = await contexto.renderAsync();
+    try {
+      return await imagen.saveAsync({ compress: calidad, format: SaveFormat.JPEG });
+    } finally {
+      imagen.release();
+    }
+  } finally {
+    contexto.release();
+  }
 };
 
 type ResultadoDeLaSubida =
@@ -128,7 +147,10 @@ export function PantallaDeComidaDiferente({
   useCambiosSinGuardar(estado.tipo !== 'guardado' && hayBorrador(descripcion, cantidadAproximada, foto) ? queSePierde : null);
 
   /** Una imagen del selector: si no se puede usar, se dice por qué y queda la foto que había. */
-  const usarImagen = (imagen: ImagenDelSelector) => {
+  const usarImagen = async (original: ImagenDelSelector) => {
+    // Se achica una sola vez, al elegirla: la que queda es la que se sube, también en un reintento.
+    const imagen = await fotoParaSubir(original, achicarEnElTelefono);
+    if (!montada.current) return;
     const elegida = fotoDesdeElSelector(imagen);
     if (elegida.foto === null) return setAvisoDeFoto(AVISO_DE_FOTO_INVALIDA[elegida.motivo]);
     setFoto(elegida.foto);
@@ -148,7 +170,7 @@ export function PantallaDeComidaDiferente({
       .then((r) => {
         if (!montada.current || !r || !('canceled' in r) || r.canceled) return;
         const imagen = r.assets[0];
-        if (imagen) usarImagen(imagen);
+        if (imagen) return usarImagen(imagen);
       })
       .catch(() => undefined);
     // Solo al abrir la pantalla: después, la foto la elige la persona.
@@ -169,7 +191,7 @@ export function PantallaDeComidaDiferente({
       // Cancelar no cambia nada: el texto y la foto que había siguen.
       if (r.canceled) return;
       const imagen = r.assets[0];
-      if (imagen) usarImagen(imagen);
+      if (imagen) await usarImagen(imagen);
     } catch {
       borradoresEnElSelector.delete(claveDelBorrador);
       if (montada.current) setAvisoDeFoto(COPY_REGISTRO_DE_COMIDAS.fotoNoSeAbrio);

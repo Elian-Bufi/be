@@ -211,7 +211,7 @@ function DetalleDeLaOpcion({ token, opcion, contexto, sesionPerdida, children }:
     <View>
       <Titulo>{COPY_REGISTRO_DE_COMIDAS.detalleDeLaComida}</Titulo>
       <Text style={estilos.contexto}>{contexto}</Text>
-      <ImagenDeMedio token={token} mediaId={opcion.image?.mediaId ?? null} sesionPerdida={sesionPerdida} rotulo={COPY_REGISTRO_DE_COMIDAS.imagenDeReferencia} />
+      <ImagenDeMedio token={token} mediaId={opcion.image?.mediaId ?? null} sesionPerdida={sesionPerdida} rotulo={COPY_REGISTRO_DE_COMIDAS.imagenDeReferencia} liviana />
       <Text style={estilos.nombre} accessibilityRole="header">
         {opcion.label}
       </Text>

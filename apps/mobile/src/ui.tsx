@@ -21,7 +21,7 @@ import { accesibilidadDelDesplegable } from './desplegable';
 import { useMovimientoReducido } from './movimiento-reducido';
 import { BORDE_DEL_BOTON, estiloDeLaEtiqueta, filoDelEstado, RELLENO_DEL_BOTON, subrayadoDelEnlace } from './receta-de-vidrio';
 import { COLOR, estilosPorTema, PALETAS } from './tema';
-import { useTituloGrande } from './titulo-en-la-cabecera';
+import { useTituloFijo, useTituloGrande } from './titulo-en-la-cabecera';
 import { DentroDelNivel, useBotonPrincipal, useSuperficie, useSuperficieDeControl, useVidrio } from './vidrio';
 
 // Los colores viven en tema.ts, donde los verifica la prueba de contraste; se reexportan para las pantallas.
@@ -39,6 +39,16 @@ export function Titulo({ children }: { children: ReactNode }) {
       {children}
     </Animated.Text>
   );
+}
+
+/**
+ * DL-194 (A32-03): el título de una pantalla que vive solo en la cabecera, siempre a la vista, entre el logo y la campana,
+ * como aparece al desplazar. Va en Nutrición y en Entrenamiento: sin el título grande, lo primero del contenido entra sin
+ * desplazar. El lector lo lee una vez, en la cabecera, como encabezado. Fuera de la app (una prueba), el título grande.
+ */
+export function TituloSoloEnLaCabecera({ children }: { children: string }) {
+  const enLaCabecera = useTituloFijo(children);
+  return enLaCabecera ? null : <Titulo>{children}</Titulo>;
 }
 
 /**

@@ -9,7 +9,7 @@
  * Uso: cd apps/mobile && npx jest src/titulo-de-la-cabecera.test.ts --runInBand.
  */
 import { describe, expect, test } from '@jest/globals';
-import { crearRegistroDelTitulo, duracionDelTitulo, finDelTitulo, FUNDIDO_DEL_TITULO, margenDelTituloChico, opacidadesDelTitulo, tituloEnLaCabecera } from './titulo-de-la-cabecera';
+import { crearRegistroDelTitulo, duracionDelTitulo, FIN_DEL_TITULO_FIJO, finDelTitulo, FUNDIDO_DEL_TITULO, margenDelTituloChico, opacidadesDelTitulo, tituloEnLaCabecera } from './titulo-de-la-cabecera';
 
 declare const require: (modulo: string) => { readFileSync(ruta: string, codificacion: string): string; join(...partes: string[]): string };
 declare const __dirname: string;
@@ -66,6 +66,17 @@ describe('TEST-PG-003 · el registro: el primer título de la pantalla, y se va 
     expect(r.actual()).toBeNull();
     expect(avisos).toBe(4);
   });
+
+  test('DL-194 (A32-03) · un título fijo está siempre en la cabecera, no se mide y se va con su pantalla', () => {
+    const r = crearRegistroDelTitulo();
+    r.fijar('a', 'Nutrición');
+    expect(r.actual()).toEqual({ texto: 'Nutrición', fin: FIN_DEL_TITULO_FIJO, fijo: true });
+    for (const y of [-40, 0, 1, 800]) expect(tituloEnLaCabecera(y, r.actual()?.fin ?? null)).toBe(true);
+    r.medir('a', 62);
+    expect(r.actual()?.fin).toBe(FIN_DEL_TITULO_FIJO);
+    r.quitar('a');
+    expect(r.actual()).toBeNull();
+  });
 });
 
 describe('TEST-PG-003 · la conexión (lectura del código)', () => {
@@ -90,5 +101,14 @@ describe('TEST-PG-003 · la conexión (lectura del código)', () => {
 
   test('Inicio conserva la fecha como título', () => {
     expect(leer('pantallas', 'inicio.tsx')).toContain('<Titulo>{fechaLarga(hoy)}</Titulo>');
+  });
+
+  test('DL-194 (A32-03) · Nutrición y Entrenamiento, con el título solo en la cabecera, que se lee como encabezado', () => {
+    expect(leer('pantallas', 'nutricion.tsx')).toContain('<TituloSoloEnLaCabecera>{COPY_NUTRICION.pestana}</TituloSoloEnLaCabecera>');
+    expect(leer('pantallas', 'nutricion.tsx')).not.toContain('<Titulo>{COPY_NUTRICION.pestana}</Titulo>');
+    expect(leer('pantallas', 'entrenamiento.tsx')).toContain('<TituloSoloEnLaCabecera>{COPY_ENTRENAMIENTO.pestana}</TituloSoloEnLaCabecera>');
+    expect(leer('pantallas', 'entrenamiento.tsx')).not.toContain('<Titulo>{COPY_ENTRENAMIENTO.pestana}</Titulo>');
+    const cabecera = leer('cabecera.tsx');
+    expect(cabecera).toMatch(/if \(actual\.fijo\) \{[\s\S]*?accessibilityRole="header"/);
   });
 });

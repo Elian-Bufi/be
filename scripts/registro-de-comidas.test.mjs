@@ -1,10 +1,12 @@
 /**
  * WP-NUTRICION-RECETAS · la APK, sin teléfono (docs/paquetes/WP-NUTRICION-RECETAS.md §10.4): lo que decide el carrusel, el
  * registro y la comida diferente, con los módulos puros de producción.
- *  1. Las opciones de una comida (`carrusel-de-opciones.ts`, desde AV2-21 una sola navegación): los segmentos, el anuncio,
- *     una sola opción, y la posición recordada por la opción.
- *  2. La franja de macros (`franja-de-macros.ts`): el orden, las unidades, el redondeo del dominio sobre las tres recetas
- *     del paquete, «Sin dato» en lugar de cero y las columnas (4, 2 por 2 o 1) sin recortar.
+ *  1. Las opciones de una comida (`carrusel-de-opciones.ts`; desde DL-194, A32-01, otra vez un carrusel): el imán sin la
+ *     vecina asomando, las flechas, los puntitos, el anuncio, una sola opción, la posición recordada por la opción y la
+ *     imagen pedida solo para la opción a la vista.
+ *  2. La franja de macros (`franja-de-macros.ts`): el orden y los íconos del website (A32-04), las abreviaturas, el
+ *     redondeo del dominio sobre las tres recetas del paquete, «Sin dato» en lugar de cero y las columnas (4, 2 por 2 o 1)
+ *     sin recortar.
  *  3. «¿Cuánto comiste?» (`consumo-de-la-opcion.ts`): vacío no es cero, el cero no se acepta, la casilla, «No lo comí» y
  *     lo que vuelve a la pantalla al completar.
  *  4. La comida diferente (`borrador-de-comida-diferente.ts`): al menos texto o foto, la foto inválida, los estados del
@@ -54,29 +56,54 @@ function macrosDe(receta) {
   return d.nutrientesDelResultado(d.calcularNutrientes(ingredientes));
 }
 
-// ─── 1. Las opciones de una comida: una sola navegación (AV2-21, TEST-AV2-019) ──────────────────
-// Hasta la 0.25 era un carrusel con asomo, flechas y puntitos; estas pruebas protegían lo mismo que siguen protegiendo:
-// la opción recordada por su identidad, el anuncio «Opción n de m», que elegir no registra y la imagen que se carga.
+// ─── 1. Las opciones de una comida: el carrusel (DL-194, A32-01; vuelve sobre AV2-21) ──────────────────
+// De la 0.26 a la 0.31 fueron segmentos «Opción 1 | 2 | 3». Dirección (2026-11-22) prefiere el carrusel: deslizar con
+// imán y también flechas, los puntitos y «Opción n de m», sin la vecina asomando. Siguen protegidos la opción recordada
+// por su identidad, el anuncio, que elegir no registra y que solo se pide la imagen de la opción a la vista.
 
-test('1 · TEST-AV2-019 · los segmentos de las opciones: «Opción n» hasta tres, solo el número desde cuatro, ninguno con una', () => {
-  const tres = [{ optionId: 'a' }, { optionId: 'b' }, { optionId: 'c' }];
-  assert.deepEqual(carrusel.segmentosDeLasOpciones(tres), [
-    { valor: 'a', texto: 'Opción 1' },
-    { valor: 'b', texto: 'Opción 2' },
-    { valor: 'c', texto: 'Opción 3' },
-  ]);
-  assert.deepEqual(
-    carrusel.segmentosDeLasOpciones([...tres, { optionId: 'd' }]).map((s) => s.texto),
-    ['1', '2', '3', '4'],
-  );
-  assert.deepEqual(carrusel.segmentosDeLasOpciones([{ optionId: 'a' }]), [], 'con una sola opción no hay nada que elegir');
-  assert.deepEqual(carrusel.segmentosDeLasOpciones([]), []);
+test('1 · TEST-A32-001 · cada tarjeta a todo el ancho: sin asomo de la vecina, y el imán se detiene en una entera', () => {
+  for (const ancho of [288, 318, 340.6]) {
+    const m = carrusel.medidasDelCarrusel(ancho, 3);
+    assert.equal(m.anchoDeTarjeta, Math.floor(ancho), 'la tarjeta ocupa todo el ancho: la siguiente no asoma');
+    assert.equal(m.paso, m.anchoDeTarjeta + carrusel.SEPARACION_ENTRE_TARJETAS);
+    // En reposo, la tarjeta k empieza en k × paso y termina antes de que empiece la siguiente: no se ve ni un dp de otra.
+    for (let k = 0; k < 3; k++) {
+      const x = carrusel.desplazamientoDe(k, m.paso, 3);
+      assert.equal(carrusel.indiceDesdeDesplazamiento(x, m.paso, 3), k);
+      assert.ok(x + ancho <= (k + 1) * m.paso, `la tarjeta ${k + 1} se ve entera, sola`);
+    }
+    // Un gesto que pasa la mitad lleva a la siguiente; uno corto vuelve.
+    assert.equal(carrusel.indiceDesdeDesplazamiento(m.paso * 0.6, m.paso, 3), 1);
+    assert.equal(carrusel.indiceDesdeDesplazamiento(m.paso * 0.4, m.paso, 3), 0);
+    assert.equal(carrusel.indiceDesdeDesplazamiento(m.paso * 9, m.paso, 3), 2, 'no se pasa del final');
+  }
+  assert.deepEqual(carrusel.medidasDelCarrusel(320, 1), { anchoDeTarjeta: 320, paso: 320 });
+  assert.deepEqual(carrusel.medidasDelCarrusel(Number.NaN, 3), { anchoDeTarjeta: 0, paso: 0 });
   assert.equal(carrusel.indiceValido(Number.NaN, 3), 0);
   assert.equal(carrusel.indiceValido(7, 3), 2);
   assert.equal(carrusel.indiceValido(7, 0), 0);
 });
 
-test('1 · TEST-AV2-019 · «Opción n de m» se anuncia al cambiar; con una sola opción, nada', () => {
+test('1 · TEST-A32-002 · las flechas con su nombre, «Opción n de m» y los puntitos; con una sola opción, ningún control', () => {
+  const primera = carrusel.controlesDelCarrusel(0, 3);
+  assert.equal(primera.contador, 'Opción 1 de 3');
+  assert.deepEqual(primera.anterior, { etiqueta: 'Opción anterior', habilitada: false }, 'en el extremo, deshabilitada');
+  assert.deepEqual(primera.siguiente, { etiqueta: 'Opción siguiente', habilitada: true });
+  assert.deepEqual(primera.puntos, [true, false, false]);
+  const ultima = carrusel.controlesDelCarrusel(2, 3);
+  assert.equal(ultima.contador, 'Opción 3 de 3');
+  assert.equal(ultima.anterior.habilitada, true);
+  assert.equal(ultima.siguiente.habilitada, false);
+  assert.deepEqual(ultima.puntos, [false, false, true]);
+  assert.equal(carrusel.controlesDelCarrusel(9, 3).contador, 'Opción 3 de 3', 'un índice que se pasa va al extremo');
+  assert.deepEqual(carrusel.controlesDelCarrusel(0, 1), { contador: null, anterior: null, siguiente: null, puntos: [] }, 'una sola opción: nada');
+  assert.deepEqual(carrusel.controlesDelCarrusel(0, 0), { contador: null, anterior: null, siguiente: null, puntos: [] });
+  // Los textos son los del dominio.
+  assert.equal(C.opcionAnterior, 'Opción anterior');
+  assert.equal(C.opcionSiguiente, 'Opción siguiente');
+});
+
+test('1 · TEST-A32-003 · «Opción n de m» se anuncia al cambiar; con una sola opción, nada', () => {
   assert.equal(carrusel.anuncioDeLaOpcion(1, 3), 'Opción 2 de 3');
   assert.equal(carrusel.anuncioDeLaOpcion(9, 3), 'Opción 3 de 3');
   assert.equal(carrusel.anuncioDeLaOpcion(0, 1), null);
@@ -91,65 +118,143 @@ test('1 · al volver del detalle, la comida sigue en la misma opción, aunque el
   assert.equal(carrusel.indiceDeLaOpcion(opciones, null), 0);
 });
 
-test('1 · TEST-AV2-019 · una sola navegación: elegir no registra, sin marco vacío, y solo se carga la imagen a la vista', () => {
+test('1 · TEST-A32-004 · la imagen se pide solo para la opción a la vista, y la que ya se vio la conserva', () => {
+  let vistas = carrusel.opcionesVistas(new Set(), 'pollo');
+  assert.deepEqual([...vistas], ['pollo'], 'al abrir, solo la de la vista');
+  const igual = carrusel.opcionesVistas(vistas, 'pollo');
+  assert.equal(igual, vistas, 'sin cambios, el mismo conjunto: no se vuelve a dibujar');
+  vistas = carrusel.opcionesVistas(vistas, 'salmon');
+  assert.deepEqual([...vistas].sort(), ['pollo', 'salmon'], 'la lentejas, que no se vio, no pide su imagen');
+  assert.equal(carrusel.opcionesVistas(vistas, null), vistas);
+});
+
+test('1 · TEST-A32-005 · el carrusel en la pantalla: imán, flechas, puntitos, sin segmentos, y elegir no registra', () => {
   const HOY = readFileSync(resolve(RAIZ, 'apps/mobile/src/pantallas/nutricion-hoy.tsx'), 'utf8');
-  const opciones = HOY.slice(HOY.indexOf('function OpcionesEnSegmentos('), HOY.indexOf('function OpcionALaVista('));
-  const opcion = HOY.slice(HOY.indexOf('function OpcionALaVista('), HOY.indexOf('// ─── Con registro'));
-  assert.ok(opciones.length > 0 && opcion.length > 0);
-  assert.doesNotMatch(opciones, /setInterval|setTimeout|autoplay/i, 'sin avance automático');
-  assert.doesNotMatch(opciones, /registrarComida|comi\(/, 'elegir solo cambia la opción a la vista');
-  // Un solo control: los Segmentos compactos. Ni desplazamiento con imán, ni flechas, ni puntitos.
-  assert.match(opciones, /<Segmentos<string> compactos etiqueta=\{COPY_REGISTRO_DE_COMIDAS\.opcionesDe\(comida\.label\)\}/);
-  assert.doesNotMatch(HOY, /snapToInterval|BotonDeFlecha|estilos\.punto|ASOMO_DE_LA_SIGUIENTE|<ScrollView/);
-  // La opción elegida se recuerda por su identidad, y se anuncia al cambiar.
-  assert.match(opciones, /useSeleccionRecordada<string \| null>\(token, `nutricion:opcion:\$\{fecha\}:\$\{comida\.mealId\}`, null\)/);
-  assert.match(opciones, /AccessibilityInfo\.announceForAccessibility\(anuncio\)/);
-  // Una sola opción a la vista: solo ella pide su imagen. Con imagen, la miniatura de 72 dp; sin imagen (hallazgo 13 de
-  // la 0.26), la de reemplazo en el mismo lugar y del mismo tamaño: el plato en una caja con el tinte del tema.
-  assert.equal((opciones.match(/<OpcionALaVista\b/g) ?? []).length, 1);
-  assert.match(opcion, /\{mediaId \? \(\s*<ImagenDeMedio [^>]*tamano=\{TAMANO_DE_LA_MINIATURA\} rotuloVisible=\{false\} respaldoCompacto \/>\s*\) : \(\s*<MiniaturaSinFoto \/>\s*\)\}/);
+  const carruselEnPantalla = HOY.slice(HOY.indexOf('function CarruselDeOpciones('), HOY.indexOf('function TarjetaDeOpcion('));
+  const tarjeta = HOY.slice(HOY.indexOf('function TarjetaDeOpcion('), HOY.indexOf('function BotonDeFlecha('));
+  assert.ok(carruselEnPantalla.length > 0 && tarjeta.length > 0);
+  assert.doesNotMatch(carruselEnPantalla, /setInterval|setTimeout|autoplay/i, 'sin avance automático');
+  assert.doesNotMatch(carruselEnPantalla, /registrarComida|comi\(/, 'cambiar de opción solo cambia la opción a la vista');
+  // Deslizar con imán, de a una tarjeta entera, y también las flechas.
+  assert.match(carruselEnPantalla, /snapToInterval=\{total > 1 \? medidas\.paso : undefined\}/);
+  assert.match(carruselEnPantalla, /scrollEnabled=\{total > 1\}/, 'con una sola opción, no se desliza');
+  assert.match(carruselEnPantalla, /onMomentumScrollEnd=\{alDetenerse\}/, 'la opción cambia cuando el imán dejó una entera');
+  assert.match(carruselEnPantalla, /<BotonDeFlecha hacia="izquierda" texto=\{controles\.anterior\.etiqueta\}/);
+  assert.match(carruselEnPantalla, /<BotonDeFlecha hacia="derecha" texto=\{controles\.siguiente\.etiqueta\}/);
+  assert.match(carruselEnPantalla, /\{controles\.contador && controles\.anterior && controles\.siguiente \? \(/, 'con una sola opción, ningún control');
+  assert.match(carruselEnPantalla, /estilos\.punto, lleno && estilos\.puntoElegido/);
+  assert.match(carruselEnPantalla, /style=\{estilos\.puntos\} accessible=\{false\} importantForAccessibility="no-hide-descendants"/, 'los puntitos no se leen: se lee el contador');
+  // Las flechas: 48 dp, su nombre y deshabilitadas en el extremo.
+  const flecha = HOY.slice(HOY.indexOf('function BotonDeFlecha('), HOY.indexOf('/** El lado de la miniatura de reemplazo'));
+  assert.match(flecha, /accessibilityLabel=\{texto\}/);
+  assert.match(flecha, /accessibilityState=\{\{ disabled: !habilitado \}\}/);
+  assert.match(HOY, /flecha: \{ width: 48, height: 48,/);
+  // Sin segmentos.
+  assert.doesNotMatch(HOY, /<Segmentos|segmentosDeLasOpciones|OpcionesEnSegmentos/);
+  // La opción se recuerda por su identidad, y se anuncia al cambiar, una vez (sin región viva que lo repita).
+  assert.match(carruselEnPantalla, /useSeleccionRecordada<string \| null>\(token, `nutricion:opcion:\$\{fecha\}:\$\{comida\.mealId\}`, null\)/);
+  assert.match(carruselEnPantalla, /AccessibilityInfo\.announceForAccessibility\(anuncio\)/);
+  assert.doesNotMatch(carruselEnPantalla, /accessibilityLiveRegion/);
+  // Solo la tarjeta a la vista la recorre el lector, y solo las vistas piden su imagen.
+  assert.match(carruselEnPantalla, /importantForAccessibility=\{i === indice \? 'auto' : 'no-hide-descendants'\}/);
+  assert.match(carruselEnPantalla, /cargarImagen=\{vistas\.current\.has\(o\.optionId\)\}/);
+  assert.match(carruselEnPantalla, /vistas\.current = opcionesVistas\(vistas\.current, opciones\[indice\]\?\.optionId\);/);
+  // Con «reducir movimiento», la flecha mueve sin animación.
+  assert.match(carruselEnPantalla, /animated: !movimientoReducido/);
+});
+
+test('1 · TEST-A32-006 · la foto grande a todo el ancho y, sin foto, la miniatura de reemplazo (no un marco vacío)', () => {
+  const HOY = readFileSync(resolve(RAIZ, 'apps/mobile/src/pantallas/nutricion-hoy.tsx'), 'utf8');
+  const tarjeta = HOY.slice(HOY.indexOf('function TarjetaDeOpcion('), HOY.indexOf('function BotonDeFlecha('));
+  assert.match(HOY, /const PROPORCION_DE_LA_FOTO = 16 \/ 10;/);
+  assert.match(
+    tarjeta,
+    /\{mediaId \? \(\s*<ImagenDeMedio token=\{token\} mediaId=\{mediaId\} cargar=\{cargarImagen\} sesionPerdida=\{sesionPerdida\} rotulo=\{COPY_REGISTRO_DE_COMIDAS\.imagenDeReferencia\} proporcion=\{PROPORCION_DE_LA_FOTO\} rotuloVisible=\{false\} liviana \/>\s*\) : null\}/,
+  );
+  assert.doesNotMatch(tarjeta, /tamano=\{TAMANO_DE_LA_MINIATURA\}/, 'la foto ya no es una miniatura de 72 dp');
+  assert.match(tarjeta, /\{mediaId \? null : <MiniaturaSinFoto \/>\}/, 'sin foto, la miniatura de reemplazo al lado del nombre');
   assert.match(HOY, /const TAMANO_DE_LA_MINIATURA = 72;/);
   assert.match(HOY, /miniaturaSinFoto: \{ width: TAMANO_DE_LA_MINIATURA, height: TAMANO_DE_LA_MINIATURA, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: COLOR\.iconoFondo \}/);
   assert.match(readFileSync(resolve(RAIZ, 'apps/mobile/src/imagen-de-medio.tsx'), 'utf8'), /marco: \{[^}]*borderRadius: 12,/, 'el mismo radio que el marco de la foto');
   const sinFoto = HOY.slice(HOY.indexOf('function MiniaturaSinFoto('), HOY.indexOf('// ─── Con registro'));
   assert.match(sinFoto, /<View style=\{estilos\.miniaturaSinFoto\} accessible=\{false\} importantForAccessibility="no-hide-descendants">\s*<IconoDePlato color=\{COLOR\.azul\} tamano=\{36\} \/>/);
-  assert.match(opcion, /rotulo=\{COPY_REGISTRO_DE_COMIDAS\.imagenDeReferencia\}/, 'TalkBack sigue diciendo «Imagen de referencia»');
+  // «Ver detalle» al lado del nombre, con 48 dp de toque, y los macros y «Comí esta opción» alineados abajo.
+  assert.match(tarjeta, /accessibilityLabel=\{`\$\{COPY_REGISTRO_DE_COMIDAS\.verDetalle\}: \$\{opcion\.label\}`\} onPress=\{alVerDetalle\}/);
+  assert.match(HOY, /verDetalle: \{[^}]*minHeight: 48/);
+  assert.ok(tarjeta.indexOf('estilos.empuje') < tarjeta.indexOf('<FranjaDeMacros') && tarjeta.indexOf('<FranjaDeMacros') < tarjeta.indexOf('comiEstaOpcion'));
   // «Estimación del plan» no se toca: en `tenue`.
   assert.match(HOY, /estimacion: \{[^}]*color: COLOR\.tenue/);
 });
 
 // ─── 2. La franja de macros ─────────────────────────────────────────────────────────────────────
 
-test('2 · la franja de las tres recetas del paquete: el orden, las unidades y el redondeo del dominio, con coma', () => {
+test('2 · la franja de las tres recetas del paquete: el orden del website, las abreviaturas y el redondeo del dominio, con coma', () => {
   for (const receta of RECETAS) {
     const celdas = franja.celdasDeLaFranja(macrosDe(receta));
+    // A32-04 (RP-07 en la app): el orden y las abreviaturas de las vistas de Nutrición del website.
     assert.deepEqual(
       celdas.map((c) => c.etiqueta),
-      ['Calorías', 'Carbohidratos', 'Grasas', 'Proteínas'],
+      ['Calorías', 'Proteínas', 'Carbohidratos', 'Grasas'],
     );
     assert.deepEqual(
       celdas.map((c) => c.unidad),
       ['kcal', 'g', 'g', 'g'],
     );
+    assert.deepEqual(
+      celdas.map((c) => c.abreviatura),
+      ['kcal', 'g P', 'g C', 'g G'],
+    );
+    assert.deepEqual(
+      celdas.map((c) => c.icono),
+      ['calorias', 'proteinas', 'carbohidratos', 'grasas'],
+    );
     // Lo que muestra la APK es lo que el paquete dice para mostrar (display_nutrients), con la coma del país.
-    const esperado = ['energy_kcal', 'carbohydrate_g', 'fat_g', 'protein_g'].map((k) => receta.display_nutrients[k].replace('.', ','));
+    const esperado = ['energy_kcal', 'protein_g', 'carbohydrate_g', 'fat_g'].map((k) => receta.display_nutrients[k].replace('.', ','));
     assert.deepEqual(
       celdas.map((c) => c.valor),
       esperado,
       receta.name,
     );
+    assert.equal(celdas[0].abreviado, `${esperado[0]} kcal`);
+    assert.equal(celdas[1].abreviado, `${esperado[1]} g P`);
+    // El lector de pantalla lee la palabra entera, no la abreviatura.
     assert.equal(celdas[0].paraLeer, `Calorías: ${esperado[0]} kcal`);
-    // La fibra va aparte, debajo de la franja.
-    assert.equal(franja.celdaDeMacro(macrosDe(receta), 'fiberG').paraLeer, `Fibra: ${receta.display_nutrients.fiber_g.replace('.', ',')} g`);
+    assert.equal(celdas[1].paraLeer, `Proteínas: ${esperado[1]} g`);
+    // La fibra va aparte, debajo de la franja, sin ícono.
+    const fibra = franja.celdaDeMacro(macrosDe(receta), 'fiberG');
+    assert.equal(fibra.paraLeer, `Fibra: ${receta.display_nutrients.fiber_g.replace('.', ',')} g`);
+    assert.equal(fibra.icono, null);
   }
+});
+
+test('2 · TEST-A32-007 · los íconos y las abreviaturas son los mismos que los del website, y los íconos existen en la familia de BE', () => {
+  const WEB = readFileSync(resolve(RAIZ, 'apps/web/src/app/pro/advisees/nutrition/abreviaturas-de-macros.ts'), 'utf8');
+  const tabla = (nombre) => Object.fromEntries([...(new RegExp(`${nombre}[^=]*= \\{([^}]*)\\}`).exec(WEB)?.[1] ?? '').matchAll(/(\w+): '([^']*)'/g)].map((m) => [m[1], m[2]]));
+  const web = { iconos: tabla('ICONO_DEL_MACRO'), abreviaturas: tabla('ABREVIATURA_DEL_MACRO') };
+  const MACRO = { energyKcal: 'kcal', proteinG: 'protein', carbohydrateG: 'carbohydrate', fatG: 'fat' };
+  for (const n of franja.NUTRIENTES_DE_LA_FRANJA) {
+    assert.equal(franja.ICONO_DEL_NUTRIENTE[n], web.iconos[MACRO[n]], `ícono de ${n}`);
+    assert.equal(franja.ABREVIATURA_DEL_NUTRIENTE[n], web.abreviaturas[MACRO[n]], `abreviatura de ${n}`);
+    assert.ok(d.ICONOS[franja.ICONO_DEL_NUTRIENTE[n]], `el ícono ${franja.ICONO_DEL_NUTRIENTE[n]} está en el dominio`);
+  }
+  // El orden también: el de «Rangos y totales» del website.
+  const RANGOS = readFileSync(resolve(RAIZ, 'apps/web/src/app/pro/advisees/nutrition/rangos.ts'), 'utf8');
+  assert.match(RANGOS, /NUTRIENTES_DEL_RANGO = \['energyKcal', 'proteinG', 'carbohydrateG', 'fatG'\] as const;/);
+  assert.deepEqual([...franja.NUTRIENTES_DE_LA_FRANJA], ['energyKcal', 'proteinG', 'carbohydrateG', 'fatG']);
+  // En la pantalla: el ícono en `tenue` arriba, y debajo el número con su abreviatura.
+  const PIEZAS = readFileSync(resolve(RAIZ, 'apps/mobile/src/piezas-de-nutricion.tsx'), 'utf8');
+  assert.match(PIEZAS, /\{c\.icono \? <Icono nombre=\{c\.icono\} tamano=\{LADO_DEL_ICONO_DEL_MACRO\} tono="tenue" \/> : null\}\s*<ValorDeMacro celda=\{c\} abreviado \/>/);
+  assert.match(PIEZAS, /unidad=\{abreviado \? celda\.abreviatura : celda\.unidad\}/);
 });
 
 test('2 · un nutriente desconocido dice «Sin dato», nunca 0', () => {
   const pollo = macrosDe(RECETAS[0]);
   const sinFibraNiGrasa = { ...pollo, fatG: { value: null, missing: [{ key: 'aceite', reason: 'SIN_DATO_DEL_NUTRIENTE' }] } };
-  const grasas = franja.celdasDeLaFranja(sinFibraNiGrasa)[2];
+  const grasas = franja.celdasDeLaFranja(sinFibraNiGrasa)[3];
+  assert.equal(grasas.nutriente, 'fatG');
   assert.equal(grasas.valor, null);
   assert.equal(grasas.texto, 'Sin dato');
+  assert.equal(grasas.abreviado, 'Sin dato');
   assert.equal(grasas.paraLeer, 'Grasas: Sin dato');
   assert.doesNotMatch(grasas.texto, /\b0\b/);
   // Un cero calculado sí es un cero: el aceite no tiene proteínas.
@@ -157,20 +262,21 @@ test('2 · un nutriente desconocido dice «Sin dato», nunca 0', () => {
   assert.equal(franja.celdaDeMacro(soloAceite, 'proteinG').valor, '0,0');
 });
 
-test('2 · cuatro columnas si entran; dos por dos en un teléfono o con letra ×1,3; una columna si ni así entran', () => {
+test('2 · cuatro columnas si entran; dos por dos en un teléfono angosto o con letra ×1,3; una columna si ni así entran', () => {
   const celdas = franja.celdasDeLaFranja(macrosDe(RECETAS[0]));
-  // Lo que pide «Carbohidratos», la etiqueta más larga, con la letra normal.
   const necesario = franja.anchoDeLaCelda(celdas, 1);
-  assert.ok(necesario >= 75 + franja.RELLENO_DE_LA_CELDA, `holgado sobre los 75 dp medidos de Roboto: ${necesario}`);
-  assert.equal(franja.columnasDeLaFranja(4 * necesario, 1, celdas), 4, 'una tableta');
+  assert.ok(necesario >= franja.LADO_DEL_ICONO_DEL_MACRO + franja.RELLENO_DE_LA_CELDA, `al menos el ícono: ${necesario}`);
+  assert.equal(franja.columnasDeLaFranja(4 * necesario, 1, celdas), 4, 'cuatro si entran');
   assert.equal(franja.columnasDeLaFranja(4 * necesario - 1, 1, celdas), 2);
-  // Los anchos reales de la franja en la tarjeta del carrusel (render del navegador): 360, 390 y 412 dp.
-  const ANCHO_DE_LA_FRANJA = { 360: 240, 390: 270, 412: 292 };
+  // Los anchos de la franja con la tarjeta a todo el ancho (A32-01): 360, 390 y 412 dp menos el relleno de la pantalla
+  // (20 + 20), el de la tarjeta de la comida (10 + 10 y su borde) y el de la opción (4 + 4), menos el borde de la franja.
+  const ANCHO_DE_LA_FRANJA = { 360: 288, 390: 318, 412: 340 };
   for (const [telefono, ancho] of Object.entries(ANCHO_DE_LA_FRANJA)) {
-    assert.equal(franja.columnasDeLaFranja(ancho, 1, celdas), 2, `${telefono} dp, letra ×1`);
+    assert.equal(franja.columnasDeLaFranja(ancho, 1, celdas), 4, `${telefono} dp, letra ×1: las cuatro en una fila`);
     assert.equal(franja.columnasDeLaFranja(ancho, 1.3, celdas), 2, `${telefono} dp, letra ×1,3: dos por dos`);
-    assert.equal(franja.columnasDeLaFranja(ancho, 2, celdas), 1, `${telefono} dp, letra ×2: una columna`);
   }
+  assert.equal(franja.columnasDeLaFranja(288, 2, celdas), 2, '360 dp, letra ×2: dos por dos todavía entra');
+  assert.equal(franja.columnasDeLaFranja(2 * franja.anchoDeLaCelda(celdas, 2) - 1, 2, celdas), 1, 'si dos no entran, una columna');
   // Con letra grande, dos por dos como mucho, aunque cuatro entraran.
   assert.equal(franja.columnasDeLaFranja(2000, 1.3, celdas), 2);
   // Ninguna disposición recorta: el ancho de la columna alcanza para la celda más ancha, salvo la de una sola columna,
