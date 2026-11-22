@@ -250,3 +250,106 @@ test('5 · en RPE el esfuerzo se elige con las opciones del dominio en la sesió
     assert.match(f, /notacion === 'RPE' \? \([\s\S]{0,80}<SelectorDeRpe/, pantalla);
   }
 });
+
+// ─── 6. Los caminos que mandan el RIR (revisión de DL-194) ──────────────────────────────────────
+
+const serieDelPlan = (setIndex, rir) => ({
+  setIndex,
+  note: null,
+  target: { repetitions: { value: 8 }, rir, suggestedLoad: { value: 60, unit: 'kg' }, restSeconds: null },
+  targetOrigin: { rir: 'SET', suggestedLoad: 'SET', restSeconds: 'NONE' },
+});
+const SESION_EN_RPE = d.SesionConObjetivosSchema.parse({
+  sessionId: 's1',
+  label: 'Piernas A',
+  order: 1,
+  instructions: null,
+  prescriptions: [
+    {
+      prescriptionId: 'p1',
+      order: 1,
+      exerciseId: 'ej-1',
+      exerciseVersionId: 'ev-1',
+      exerciseName: 'Sentadilla',
+      image: null,
+      sets: [1, 2, 3].map((i) => serieDelPlan(i, 2)),
+      intensity: null,
+      suggestedLoad: null,
+      restSeconds: null,
+      loadBasis: null,
+      repetitionBasis: null,
+      professionalParameters: [],
+      note: null,
+    },
+  ],
+});
+
+test('6 · «Ya la hice» con cambios en RPE: lo elegido viaja como su RIR (RPE 8 → 2, «6 o menos» → 4), lo vacío con el del plan', () => {
+  const ctx = { sesion: SESION_EN_RPE, fecha: '2026-11-22', hoy: '2026-11-22', notacion: 'RPE' };
+  let r = rr.elegir(ctx, rr.respuestasIniciales(ctx), 'distinto');
+  r = rr.marcarEjercicio(r, 'p1', true);
+  r = rr.escribir(r, 'p1', 1, 'rir', '8');
+  r = rr.escribir(r, 'p1', 2, 'rir', '6 o menos');
+  r = rr.escribir(r, 'p1', 3, 'repeticiones', '7');
+  const armado = rr.armarRegistro(ctx, r, new Date('2026-11-22T20:00:00Z'));
+  assert.equal(armado.ok, true, JSON.stringify(armado));
+  const [s1, s2, s3] = armado.changes.exercises[0].sets;
+  assert.deepEqual([s1.rir, s1.fieldOrigins.rir], [2, 'PERSON']);
+  assert.deepEqual([s2.rir, s2.fieldOrigins.rir], [4, 'PERSON']);
+  assert.deepEqual([s3.rir, s3.fieldOrigins.rir], [2, 'PLAN'], 'lo que se veía en gris (RPE 8) es el RIR 2 del plan');
+  for (const s of [s1, s2, s3]) d.SerieEjecutadaSchema.parse(s);
+  // En RPE, un «8,3» no es de la escala: no viaja como si fuera un RIR.
+  const mal = rr.armarRegistro(ctx, rr.escribir(r, 'p1', 1, 'rir', '8,3'), new Date('2026-11-22T20:00:00Z'));
+  assert.equal(mal.ok, false);
+  // Sin notación (un plan en RIR o sin API-SER-02), «8» es RIR 8, como siempre.
+  const ctxRir = { ...ctx, notacion: undefined };
+  const soloOcho = rr.escribir(rr.marcarEjercicio(rr.elegir(ctxRir, rr.respuestasIniciales(ctxRir), 'distinto'), 'p1', true), 'p1', 1, 'rir', '8');
+  const enRir = rr.armarRegistro(ctxRir, soloOcho, new Date('2026-11-22T20:00:00Z'));
+  assert.equal(enRir.ok, true);
+  assert.equal(enRir.changes.exercises[0].sets[0].rir, 8);
+});
+
+test('6 · la corrección en RPE: una serie que se suma con «Agregar serie» también se elige en RPE y viaja como su RIR', () => {
+  const registrada = { setIndex: 1, load: { value: 60, unit: 'kg' }, completedRepetitions: 8, rir: 2, perceivedExertion: null };
+  const ejercicio = { prescriptionId: 'p1', prescribedExerciseVersionId: 'ev-1', prescribedExerciseName: 'Sentadilla', performedExerciseVersionId: 'ev-1', performedExerciseName: 'Sentadilla', substituted: false, sets: [registrada], executionSummary: null };
+  const ejecucion = { original: { granularity: 'SET', sessionCondition: 'COMPLETED', reason: null, exercises: [ejercicio], sessionSummary: null }, corrections: [], effectiveView: { kind: 'ORIGINAL' } };
+  const sesion = { ...SESION_EN_RPE, prescriptions: [{ ...SESION_EN_RPE.prescriptions[0], sets: [serieDelPlan(1, 2)] }] };
+  let estado = c.estadoInicial(ejecucion, sesion, 'RPE');
+  estado = c.corregir(estado, { tipo: 'agregar', prescriptionId: 'p1' });
+  const nueva = estado.ejercicios[0].filas.at(-1);
+  assert.equal(nueva.origen, 'nueva');
+  assert.equal(nueva.notacion, 'RPE', 'la fila nueva no queda en RIR bajo la columna «RPE»');
+  estado = c.corregir(estado, { tipo: 'escribir', prescriptionId: 'p1', setIndex: nueva.setIndex, campo: 'repeticiones', texto: '6' });
+  estado = c.corregir(estado, { tipo: 'escribir', prescriptionId: 'p1', setIndex: nueva.setIndex, campo: 'rir', texto: '8' });
+  estado = c.corregir(estado, { tipo: 'motivo', motivo: 'falto-cargar' });
+  const armada = c.construirCorreccion(estado);
+  assert.ok(armada.ok, JSON.stringify(armada));
+  const sumada = armada.correction.exercises[0].sets.find((s) => s.setIndex === nueva.setIndex);
+  assert.equal(sumada.rir, 2, 'RPE 8 es RIR 2');
+  // En RIR, la fila nueva es la de siempre, sin campos de más.
+  const enRir = c.corregir(c.estadoInicial(ejecucion, sesion), { tipo: 'agregar', prescriptionId: 'p1' });
+  assert.equal(Object.hasOwn(enRir.ejercicios[0].filas.at(-1), 'notacion'), false);
+});
+
+test('6 · lo escrito antes de saber la notación (la sesión general de «Hoy») pasa a RPE con su mismo RIR', () => {
+  const escritas = {
+    'p1:1': { carga: '60', repeticiones: '8', rir: '8', tiempo: '', unidad: 'kg' },
+    'p1:2': { carga: '60', repeticiones: '8', rir: '1,5', tiempo: '', unidad: 'kg' },
+    'p1:3': { carga: '60', repeticiones: '8', rir: '', tiempo: '', unidad: 'kg' },
+    'p1:4': { carga: '60', repeticiones: '8', rir: 'x', tiempo: '', unidad: 'kg' },
+  };
+  const enRpe = s.escritasEnOtraNotacion(escritas, 'RIR', 'RPE');
+  assert.deepEqual([enRpe['p1:1'].rir, enRpe['p1:1'].rirAnterior], ['6 o menos', 8], 'un RIR 8 no pasa a ser RPE 8');
+  assert.deepEqual([enRpe['p1:2'].rir, enRpe['p1:2'].rirAnterior], ['8,5', 1.5]);
+  assert.equal(enRpe['p1:3'], escritas['p1:3'], 'lo vacío no cambia');
+  assert.equal(enRpe['p1:4'], escritas['p1:4'], 'lo que no se entiende queda como estaba');
+  // Y al tildar, viaja el mismo RIR que se había escrito.
+  const tildada = s.serieAlTildar(enRpe['p1:1'], objetivo(2), 1, 'kg', 'WORKING', 'RPE');
+  assert.ok(tildada.ok);
+  assert.equal(tildada.serie.rir, 8);
+  assert.equal(s.escritasEnOtraNotacion(escritas, 'RIR', 'RIR'), escritas, 'sin cambio de notación, lo mismo');
+  // El almacén la aplica al llegar API-SER-02, y guarda el RIR anterior para después de reabrir la app.
+  const almacen = fuente('apps/mobile/src/almacen-de-entrenamiento.ts');
+  assert.match(almacen, /escritas: escritasEnOtraNotacion\(x\.escritas, x\.notacion, nueva\)/);
+  assert.match(almacen, /\.\.\.\(rirAnterior !== undefined \? \{ rirAnterior \} : \{\}\)/);
+});

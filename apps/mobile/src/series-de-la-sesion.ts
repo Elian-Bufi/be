@@ -117,6 +117,30 @@ export function escritasDelEjercicio(escritas: EscritasDeLaSesion, prescriptionI
   return propias;
 }
 
+/**
+ * DL-192 (DL-194): lo escrito sin registrar cuando cambia la notación de la sesión. La sesión general de «Hoy» es RIR
+ * hasta que llega API-SER-02; si el plan es en RPE, un «8» escrito antes como RIR no puede pasar a leerse como RPE 8 (RIR
+ * 2). Cada esfuerzo se lee en la notación con que se escribió y vuelve escrito en la nueva, con su RIR guardado
+ * (`rirAnterior`): viaja el mismo número. Lo que no se entiende queda como estaba: la fila lo marca al tildar. Sin cambios,
+ * devuelve lo mismo.
+ */
+export function escritasEnOtraNotacion(escritas: EscritasDeLaSesion, de: NotacionDelEsfuerzo, a: NotacionDelEsfuerzo): EscritasDeLaSesion {
+  if (de === a) return escritas;
+  let cambio = false;
+  const nuevas: Record<string, FilaEscritaGuardada> = {};
+  for (const [clave, f] of Object.entries(escritas)) {
+    const leido = f.rir.trim() === '' ? null : leerEsfuerzo(f.rir, de, f.rirAnterior ?? f.sinProcedencia?.rir);
+    if (!leido || leido.error || leido.rir === null) {
+      nuevas[clave] = f;
+      continue;
+    }
+    cambio = true;
+    const { rirAnterior: _anterior, ...resto } = f;
+    nuevas[clave] = { ...resto, rir: esfuerzoParaEditar(leido.rir, a), ...(a === 'RPE' ? { rirAnterior: leido.rir } : {}) };
+  }
+  return cambio ? nuevas : escritas;
+}
+
 /** Lo escrito de un ejercicio con la unidad nueva: al cambiar de kg a lb, lo escrito pasa a leerse en lb. */
 export function escritasConUnidad(escritas: EscritasDeLaSesion, prescriptionId: string, unidad: Unidad): EscritasDeLaSesion {
   const prefijo = `${prescriptionId}:`;

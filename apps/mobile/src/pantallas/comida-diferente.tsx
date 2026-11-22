@@ -70,9 +70,15 @@ const OPCIONES_DEL_SELECTOR: ImagePicker.ImagePickerOptions = {
   exif: false,
 };
 
-/** El achique con `expo-image-manipulator`: la foto en las medidas dadas, guardada como JPEG nuevo. Suelta lo nativo al terminar. */
+/**
+ * El achique con `expo-image-manipulator`: la foto con su lado mayor en la medida dada, guardada como JPEG nuevo. Suelta
+ * lo nativo al terminar. Se fija **un solo lado** y el manipulador calcula el otro con la proporción de lo que decodificó:
+ * el ancho y el alto del selector pueden venir sin la rotación EXIF de la cámara (la foto en vertical guardada en
+ * horizontal con su marca de orientación), y fijar los dos aplastaría la foto. Si la rotación los invierte, sale con el
+ * lado mayor algo más grande, nunca deformada; el servidor igual la recodifica.
+ */
 const achicarEnElTelefono: Achicador = async (uri, medidas, calidad) => {
-  const contexto = ImageManipulator.manipulate(uri).resize({ width: medidas.ancho, height: medidas.alto });
+  const contexto = ImageManipulator.manipulate(uri).resize(medidas.ancho >= medidas.alto ? { width: medidas.ancho } : { height: medidas.alto });
   try {
     const imagen = await contexto.renderAsync();
     try {

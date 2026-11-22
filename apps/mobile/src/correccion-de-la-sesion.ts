@@ -351,7 +351,8 @@ export function corregir(e: EstadoDeCorreccion, a: AccionDeCorreccion): EstadoDe
         const siguiente = Math.max(0, ...ej.filas.map((f) => f.setIndex)) + 1;
         if (siguiente > MAXIMO_DE_SERIES) return ej;
         const unidad = unidadDelEjercicioEnCorreccion(ej) ?? ej.filas[0]?.unidad ?? 'kg';
-        return { ...ej, filas: [...ej.filas, { setIndex: siguiente, origen: 'nueva', escrita: FILA_VACIA, unidad, quitada: false, tildada: false, antes: null, objetivo: null }] };
+        // DL-192: la fila nueva lleva la notación del plan, como las demás: en RPE se elige el RPE y se lee como su RIR.
+        return { ...ej, filas: [...ej.filas, { setIndex: siguiente, origen: 'nueva', escrita: FILA_VACIA, unidad, quitada: false, tildada: false, antes: null, objetivo: null, ...(e.notacion === 'RPE' ? { notacion: e.notacion } : {}) }] };
       });
     case 'resumen':
       return cambiarEjercicio(e, a.prescriptionId, (ej) => ({ ...ej, resumen: a.texto }));

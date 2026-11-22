@@ -283,7 +283,9 @@ test('5 · TEST-A32-014 · la foto de una comida se achica una vez, al elegirla,
   const DIFERENTE = readFileSync(resolve(RAIZ, 'apps/mobile/src/pantallas/comida-diferente.tsx'), 'utf8');
   const usar = DIFERENTE.slice(DIFERENTE.indexOf('const usarImagen = async'), DIFERENTE.indexOf('// Si Android cerró la app con la cámara abierta, lo escrito'));
   assert.ok(usar.indexOf('fotoParaSubir(original, achicarEnElTelefono)') >= 0 && usar.indexOf('fotoParaSubir(original, achicarEnElTelefono)') < usar.indexOf('fotoDesdeElSelector(imagen)'));
-  assert.match(DIFERENTE, /ImageManipulator\.manipulate\(uri\)\.resize\(\{ width: medidas\.ancho, height: medidas\.alto \}\)/);
+  // Un solo lado fijo: con el ancho y el alto del selector sin la rotación EXIF, fijar los dos aplastaría la foto.
+  assert.match(DIFERENTE, /ImageManipulator\.manipulate\(uri\)\.resize\(medidas\.ancho >= medidas\.alto \? \{ width: medidas\.ancho \} : \{ height: medidas\.alto \}\)/);
+  assert.doesNotMatch(DIFERENTE, /resize\(\{ width: medidas\.ancho, height: medidas\.alto \}\)/);
   assert.match(DIFERENTE, /saveAsync\(\{ compress: calidad, format: SaveFormat\.JPEG \}\)/);
   assert.match(readFileSync(resolve(RAIZ, 'apps/mobile/package.json'), 'utf8'), /"expo-image-manipulator": "57\.0\.\d+"/);
 });

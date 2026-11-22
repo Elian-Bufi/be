@@ -62,6 +62,7 @@ import {
   conciliarSeries,
   ejerciciosParaGuardar,
   escritasConUnidad,
+  escritasEnOtraNotacion,
   esQuitada,
   guardadasDe,
   guardadasVigentes,
@@ -319,7 +320,10 @@ function leerEscritas(v: unknown): EscritasDeLaSesion {
     const unidad: Unidad | null = fila.unidad === 'kg' ? 'kg' : fila.unidad === 'lb' ? 'lb' : null;
     if (carga === null || repeticiones === null || rir === null || tiempo === null || unidad === null) continue;
     const sinProcedencia = leerSinProcedencia(fila.sinProcedencia);
-    leidas[clave] = { carga, repeticiones, rir, tiempo, unidad, ...(sinProcedencia ? { sinProcedencia } : {}) };
+    // DL-192 (A32-D14): el RIR guardado de una serie que volvió a la fila en RPE; sin él, al reabrir la app un RIR de 5
+    // («6 o menos») viajaría como 4.
+    const rirAnterior = typeof fila.rirAnterior === 'number' && Number.isFinite(fila.rirAnterior) && fila.rirAnterior >= 0 ? fila.rirAnterior : undefined;
+    leidas[clave] = { carga, repeticiones, rir, tiempo, unidad, ...(sinProcedencia ? { sinProcedencia } : {}), ...(rirAnterior !== undefined ? { rirAnterior } : {}) };
   }
   return leidas;
 }
@@ -898,7 +902,12 @@ export function crearAlmacenDeEntrenamiento(deps: DependenciasDelAlmacen) {
      * plan (`effortNotation`); sin ella (la sesión general de «Hoy»), queda la que ya tenía.
      */
     fijarSesionDelPlan(draftId: string, sesion: SesionConObjetivos, objetivosGenerales: boolean, notacion?: NotacionDelEsfuerzo): void {
-      cambiar(draftId, (x) => (objetivosGenerales && x.sesion && !x.objetivosGenerales ? x : { ...x, sesion, objetivosGenerales, notacion: notacion ?? x.notacion }));
+      cambiar(draftId, (x) => {
+        if (objetivosGenerales && x.sesion && !x.objetivosGenerales) return x;
+        const nueva = notacion ?? x.notacion;
+        // Lo escrito antes de saber la notación pasa a la nueva con el mismo RIR: un «8» de RIR no se lee como RPE 8.
+        return { ...x, sesion, objetivosGenerales, notacion: nueva, escritas: escritasEnOtraNotacion(x.escritas, x.notacion, nueva) };
+      });
     },
     /**
      * El borrador recién leído o guardado: las series del teléfono se concilian con él, y lo escrito en una fila que llegó

@@ -85,7 +85,7 @@ pide la de siempre.
 | TEST-A32-007 y §2 | Los íconos y las abreviaturas, iguales a los del website y presentes en la familia de íconos; el orden; «Sin dato»; las columnas a 360, 390 y 412 dp | `scripts/registro-de-comidas.test.mjs` §2 |
 | TEST-A32-010 a 014 | La variante por marco; la variante en la clave y en la renovación; la tolerancia a una API sin variantes; las imágenes livianas en Nutrición y no en Entrenamiento; el achique (una vez, sin agrandar, la original si falla) | `scripts/imagen-de-medio.test.mjs` §5 |
 | TEST-A32-020 | Kerr: nombres, bloques de Indicadores y método de cada masa | `scripts/selector-de-tomas.test.mjs` |
-| (14 pruebas) | RPE: la notación de la lectura, las opciones, ida y vuelta, el RIR intacto, la casilla con su procedencia, «Ya la hice», la corrección, «La vez pasada», la capacidad | `scripts/esfuerzo-en-la-app.test.mjs` |
+| (17 pruebas) | RPE: la notación de la lectura, las opciones, ida y vuelta, el RIR intacto, la casilla con su procedencia, «Ya la hice», la corrección, «La vez pasada», la capacidad; y, de la revisión: lo que manda «Ya la hice» con cambios, la serie sumada en la corrección y lo escrito antes de que llegue la notación | `scripts/esfuerzo-en-la-app.test.mjs` |
 | TEST-PG-003 (DL-194) | El título fijo: siempre en la cabecera, no se mide, se va con su pantalla y se lee como encabezado | `apps/mobile/src/titulo-de-la-cabecera.test.ts`, `hora-de-lo-que-ves.test.ts` (jest, en la CI) |
 
 Se corrieron en local, de a una por la memoria: `registro-de-comidas`, `imagen-de-medio`, `selector-de-tomas`,

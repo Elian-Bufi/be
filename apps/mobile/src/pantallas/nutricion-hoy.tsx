@@ -521,9 +521,14 @@ function CarruselDeOpciones({
   if (ancho > 0 && inicio.current === null) inicio.current = desplazamientoDe(indice, medidas.paso, total);
   const indiceActual = useRef(indice);
   indiceActual.current = indice;
+  // La tarjeta que el carrusel muestra, o hacia la que va: la del gesto o la de la flecha. Si la opción cambia sin eso (el
+  // plan se reordenó o sacó una opción), el carrusel se alinea con ella: el contador, la tarjeta que recorre el lector y la
+  // imagen que se pide son siempre los de la tarjeta a la vista.
+  const destino = useRef(indice);
 
   const elegir = (i: number, desplazar: boolean) => {
     const j = indiceValido(i, total);
+    destino.current = j;
     if (j !== indiceActual.current) {
       setRecordada(opciones[j]?.optionId ?? null);
       const anuncio = anuncioDeLaOpcion(j, total);
@@ -534,8 +539,17 @@ function CarruselDeOpciones({
 
   // Al medir (y si cambia el ancho), la tarjeta elegida queda alineada, sin animación.
   useEffect(() => {
-    if (medidas.paso > 0) lista.current?.scrollTo({ x: desplazamientoDe(indiceActual.current, medidas.paso, total), animated: false });
+    if (!(medidas.paso > 0)) return;
+    destino.current = indiceActual.current;
+    lista.current?.scrollTo({ x: desplazamientoDe(indiceActual.current, medidas.paso, total), animated: false });
   }, [medidas.paso, total]);
+
+  // La opción cambió sin un gesto ni una flecha (el plan cambió de orden): la tarjeta a la vista pasa a ser la suya.
+  useEffect(() => {
+    if (!(medidas.paso > 0) || destino.current === indice) return;
+    destino.current = indice;
+    lista.current?.scrollTo({ x: desplazamientoDe(indice, medidas.paso, total), animated: false });
+  }, [indice, medidas.paso, total]);
 
   // La opción cambia cuando el imán dejó una tarjeta entera a la vista: mientras se desliza, ni el contador ni el anuncio.
   const alDetenerse = (e: NativeSyntheticEvent<NativeScrollEvent>) => elegir(indiceDesdeDesplazamiento(e.nativeEvent.contentOffset.x, medidas.paso, total), false);
