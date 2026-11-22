@@ -9045,16 +9045,26 @@ la APK no lo lee. Pruebas: `calculador-de-macros.test.ts`, `objetivo-y-calculado
 
 **RP-19 · Sin saltos (pedido del 2026-11-22, con capturas).** «Cuando hay un error se mueve todo de lugar»: en el reparto
 por comida, con partes que suman 99, cada fila perdía su rango, la tabla se reacomodaba y un párrafo de error empujaba el
-botón; al proponer, el cuadro de la suma de los rangos aparecía arriba de las comidas. **PROGRAMADA en
-`wp-recorrido-sin-saltos` (PR en borrador, sin integrar) · RP-D18 a RP-D26, a ratificar.** La regla: lo que aparece o se va
+botón; al proponer, el cuadro de la suma de los rangos aparecía arriba de las comidas. **INTEGRADA con el PR #310
+(`wp-recorrido-sin-saltos`) · RP-D18 a RP-D26, a ratificar.** La regla: lo que aparece o se va
 mientras se escribe tiene su lugar reservado (el renglón del aviso, `.avisos-con-lugar`, tablas con columnas fijas) y el
 resumen de errores no se achica al corregir. Cada fila del reparto muestra siempre su rango; «Todo el día» dice la suma y
 lo que falta; el chequeo de la suma de los rangos frente al objetivo es una línea del reparto. La misma regla en el
 calculador, el objetivo, la evaluación inicial, el paso 1 de los asistentes y el cuadro del rango. Sin operaciones nuevas
 ni migraciones; no toca la APK. Pruebas: `recorrido-plan-pulido.test.mjs` y el recorrido de navegador `sinSaltos`.
 
+**RP-20 y RP-21 · Las franjas por comida y «Rangos y totales» (pedido del 2026-11-22).** «Que esté en cada comida con cada
+uno de los macros, así se ve cómo sumando alimentos se va llegando a los macros planteados para esa comida»: lo crítico no
+es la suma del día frente al objetivo (da bien por construcción) sino que cada opción entre en el margen de su comida, y
+que en promedio vaya por buen camino. **INTEGRADA en main eadc32fb (PR #309) · RP-D40 a RP-D49, a ratificar.** En cada
+comida, una franja por kcal, P, C y G con la banda del rango indicado, una marca por opción (llena adentro, hueca afuera,
+sin rojo ni verde: ubica, no califica) y la del promedio; la misma franja con la opción abierta, en vivo; la porción de
+cada receta al elegirla, con «Primero las que entran». El panel «Rangos y totales» rediseñado con íconos, el día arriba y
+los textos largos detrás de «?». Sin operaciones nuevas ni migraciones; no toca la APK. Pruebas:
+`franjas-por-comida.test.mjs` y el recorrido de navegador `franjasPorComida`.
+
 **Lo que queda.**
-- Ratificar RP-D01 a RP-D17 y RP-D18 a RP-D26.
+- Ratificar RP-D01 a RP-D17, RP-D18 a RP-D26 y RP-D40 a RP-D49.
 - RP-19 anotado: la comida plegada suma el renglón «Indicado» al proponer y la cantidad de un alimento avisa en su fila
   (`comida-del-editor.tsx`, de otro frente); el mismo patrón fuera de la planificación (Entrenamiento, Seguimiento,
   formularios de la persona, recetas).

@@ -62,6 +62,7 @@ import {
   ubicacionDelProblema,
   type DetalleDelFallo,
   type Receta,
+  type Rango as RangoIndicado,
   type RecetaDeOpcion,
   type ValidationIssue,
   type VersionDeObjetivo,
@@ -92,7 +93,7 @@ import { AntesDeActivar } from '../cuadro-antes-de-activar';
 import { CuadroDelDescarte } from '../cuadro-del-descarte';
 import { CuadroEnfocado } from '../../../../components/cuadro-enfocado';
 import { COPY_ESTACION as CE } from '../estacion/estacion';
-import { COPY_RANGOS, itemsParaElTotal, nombreDeLaComida, nombreDelDiaTipo, NUTRIENTES_DEL_RANGO, queFaltaEnPalabras, rangoDelDiaEnPalabras, rangoEnUnaCelda, rangosDelDia, type ComposicionConocida } from './rangos';
+import { COPY_RANGOS, itemsParaElTotal, nombreDeLaComida, nombreDelDiaTipo, rangosDelDia, type ComposicionConocida } from './rangos';
 import { alQuitarElDia, alQuitarLaComida, alQuitarLaOpcion, COPY_QUITAR } from './quitar-con-contenido';
 import { agregarLaReceta, COPY_RECETA_NUEVA, OPCION_INICIAL, opcionesConLaReceta, opcionesQueSiguen, type LugarDeLaReceta } from './receta-en-el-plan';
 import { EditorDeReceta } from '../../recipes/editor-de-receta';
@@ -127,8 +128,9 @@ import { COPY_RANGOS_INDICADOS } from './rangos-indicados';
 import { CuadroDelRangoIndicado, rangoIndicadoDe, RangosIndicados, sePuedeIndicar, useRangosIndicados, type DiaParaLosRangos } from './rangos-indicados-del-plan';
 import { KcalDelObjetivo } from './suma-de-los-rangos';
 import { RepartoPorComida } from './propuesta-de-rangos-del-plan';
-import { RotuloConIcono } from './cantidad-del-macro';
-import { MACRO_DEL_NUTRIENTE } from './abreviaturas-de-macros';
+import { RangosYTotales } from './rangos-y-totales';
+import { FranjasDeLaComida } from './franjas-de-la-comida';
+import { COPY_FRANJAS, primeroLasQueEntran, recetaFrenteAlRango } from './franjas-por-comida';
 import { pasoQueSigueEnNutricion } from './asistente-de-nutricion';
 import { pasoPedido } from '../asistente/paso-que-sigue';
 import { opcionAlGuardar, opcionNueva, subtituloDelCuadro, tituloDelCuadro } from './opcion-en-un-cuadro';
@@ -1024,16 +1026,6 @@ export function EditorDeBorrador({
   // ── ED-31 y ED-34: los totales de cada opción y los rangos del día tipo que se mira ─────────────────────────
   const rangos = dia ? rangosDelDia(dia, i, composiciones, nombres, (id, rv) => itemsGuardados(version, id, rv), (rv) => recetas[rv]?.name ?? null) : null;
   const leyendoComposiciones = [...composiciones.values()].filter((c) => c === 'leyendo').length;
-  const huecosDelDia = rangos
-    ? [
-        ...new Set(
-          NUTRIENTES_DEL_RANGO.flatMap((n) => {
-            const r = rangos.dia[n];
-            return r.tipo === 'sin-dato' ? r.faltan.map(queFaltaEnPalabras) : [];
-          }),
-        ),
-      ]
-    : [];
 
   // Una plantilla no guarda recetas (DL-119): con una opción de receta, «Guardar como plantilla» dice por qué no.
   const sinPlantilla = estructura.some((d) => tieneRecetas(d.meals)) ? COPY_RECETAS.recetaEnPlantilla : null;
@@ -1333,8 +1325,7 @@ export function EditorDeBorrador({
               composiciones={composiciones}
               origenes={origenes}
               rangoDeOpciones={rangos?.comidas[j]?.rango ?? null}
-              rangosDelDia={rangos?.dia ?? null}
-              rango={{ ...rangoParaIndicar(i, j), delDia: rangoIndicadoDe(rangosIndicados.estado, dia.dayTypeId, null) }}
+              rango={{ ...rangoParaIndicar(i, j), leyendo: rangosIndicados.estado.estado === 'leyendo' && !!m.mealId }}
               itemsDeLaReceta={(optionId, rv) => itemsGuardados(version, optionId, rv)}
               versionNueva={(k) => {
                 const o = m.options[k];
@@ -1470,60 +1461,17 @@ export function EditorDeBorrador({
         rangos={
           rangos ? (
             <>
-              <h3>{COPY_RANGOS.tituloDelDia(nombreDelDia)}</h3>
-              <p className="panel-de-nutricion__del-dia" data-rango-del-dia>
-                {rangoDelDiaEnPalabras(rangos.dia.energyKcal)}
-              </p>
-              {rangos.comidas.length > 0 ? (
-                <div className="desplazable-x">
-                  <table className="tabla panel-de-nutricion__tabla" data-rangos-por-comida>
-                    <caption className="visualmente-oculto">{COPY_RANGOS.tituloDeLasComidas}</caption>
-                    <thead>
-                      <tr>
-                        <th scope="col">{COPY_RANGOS.comida}</th>
-                        {NUTRIENTES_DEL_RANGO.map((n) => (
-                          <th key={n} scope="col">
-                            <RotuloConIcono macro={MACRO_DEL_NUTRIENTE[n]} texto={COPY_RANGOS.nutriente[n]} />
-                          </th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {rangos.comidas.map((c, j) => (
-                        <tr key={j}>
-                          <th scope="row">
-                            {c.nombre} <span className="nota">· {c.opciones.length === 1 ? '1 opción' : `${c.opciones.length} opciones`}</span>
-                          </th>
-                          {NUTRIENTES_DEL_RANGO.map((n) => (
-                            <td key={n} data-nutriente={COPY_RANGOS.nutriente[n]}>{rangoEnUnaCelda(c.rango[n], n)}</td>
-                          ))}
-                        </tr>
-                      ))}
-                      <tr className="panel-de-nutricion__fila-del-dia">
-                        <th scope="row">{COPY_RANGOS.elDia}</th>
-                        {NUTRIENTES_DEL_RANGO.map((n) => (
-                          <td key={n} data-nutriente={COPY_RANGOS.nutriente[n]}>{rangoEnUnaCelda(rangos.dia[n], n)}</td>
-                        ))}
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-              ) : null}
-              {huecosDelDia.length > 0 ? (
-                <ul className="estacion__lista-del-panel" data-huecos>
-                  {huecosDelDia.slice(0, 6).map((t) => (
-                    <li key={t}>{t}</li>
-                  ))}
-                  {huecosDelDia.length > 6 ? <li>{COPY_RANGOS.yMas(huecosDelDia.length - 6)}</li> : null}
-                </ul>
-              ) : null}
-              {leyendoComposiciones > 0 ? (
-                <p className="nota" role="status">
-                  {COPY_RANGOS.leyendo(leyendoComposiciones)}
-                </p>
-              ) : null}
-              <p className="nota">{COPY_RANGOS.comoSeLee}</p>
-              <p className="nota">{COPY_RANGOS.estimacion}</p>
+              {/* RP-21 (DL-188): el día arriba, con sus íconos y su tramo frente al rango del día; después cada comida con lo
+                  que aportan sus opciones y su franja compacta; lo que no suma, una vez y en chico. Sale del borrador en
+                  pantalla: se mueve con cada tecla. */}
+              <RangosYTotales
+                rangos={rangos}
+                nombreDelDia={nombreDelDia}
+                rangoDelDia={dia ? rangoIndicadoDe(rangosIndicados.estado, dia.dayTypeId, null) : null}
+                comidas={(dia?.meals ?? []).map((m) => ({ rango: rangoIndicadoDe(rangosIndicados.estado, dia?.dayTypeId, m.mealId), claves: m.options.map((o, k) => o.optionId ?? `nueva-${k}`) }))}
+                leyendo={leyendoComposiciones}
+                conRecetas={tieneRecetas(dia?.meals ?? [])}
+              />
               <RangosIndicados rangos={rangosIndicados} dias={[paraLosRangos(dia!, i)]} />
               {/* RP-06 (DL-188): la propuesta de rangos desde el objetivo ya no es un cuadro de este panel: es el «Reparto por
                   comida», a la vista en el día tipo. */}
@@ -1650,6 +1598,8 @@ export function EditorDeBorrador({
       {/* Las recetas, en el mismo cajón que los alimentos: no hay un diálogo encima de otro. */}
       <Cajon abierto={eligiendoReceta !== null} titulo={COPY_RECETAS.agregarComoOpcion} sobretitulo={comidaDeLaReceta ? comidaDeLaReceta.label.trim() || `Comida ${(eligiendoReceta?.j ?? 0) + 1}` : null} onCerrar={() => setEligiendoReceta(null)}>
         <ElegirReceta
+          comida={comidaDeLaReceta && eligiendoReceta ? nombreDeLaComida(comidaDeLaReceta, eligiendoReceta.j) : ''}
+          rango={eligiendoReceta && comidaDeLaReceta ? rangoIndicadoDe(rangosIndicados.estado, estructura[eligiendoReceta.i]?.dayTypeId, comidaDeLaReceta.mealId) : null}
           alCrearNueva={() => {
             if (!eligiendoReceta) return;
             const { i: di, j } = eligiendoReceta;
@@ -1898,11 +1848,16 @@ type ParaCorregir = { readonly texto: string; readonly ir: (() => void) | null }
  * La lista de recetas propias, para sumar una como opción de una comida (DL-119). Va dentro de un cajón. Desde TB-48,
  * con un buscador: lee todas las propias de a 50 al abrir el cajón y las filtra por su nombre mientras se escribe
  * (`recetas-para-elegir.ts`). API-REC-02 no busca por texto, así que no le pide nada nuevo.
+ *
+ * RP-20 (C): cada receta dice, por kcal, P, C y G, dónde queda una porción frente al rango indicado de la comida, y se
+ * pueden ver primero las que entran. La porción ya viene calculada en la lista (`calculation.perServing`): no se pide
+ * nada por receta.
  */
-function ElegirReceta({ onElegir, alCrearNueva }: { onElegir: (r: Receta) => void; alCrearNueva: () => void }) {
+function ElegirReceta({ comida, rango, onElegir, alCrearNueva }: { comida: string; rango: RangoIndicado | null; onElegir: (r: Receta) => void; alCrearNueva: () => void }) {
   const { token, sesionPerdida } = useNutricion();
   const [estado, setEstado] = useState<{ tipo: 'cargando' } | { tipo: 'error'; texto: string } | { tipo: 'lista'; recetas: readonly Receta[]; mas: string | null }>({ tipo: 'cargando' });
   const [texto, setTexto] = useState('');
+  const [primeroLasQueEntranEnElRango, setPrimeroLasQueEntran] = useState(false);
 
   /** Lee desde el cursor hasta el final, o hasta `PAGINAS_DE_RECETAS` páginas: lo que queda se ofrece con «Ver más». */
   const cargar = useCallback(
@@ -1926,6 +1881,8 @@ function ElegirReceta({ onElegir, alCrearNueva }: { onElegir: (r: Receta) => voi
   }, [cargar]);
 
   const visibles = estado.tipo === 'lista' ? recetasQueCoinciden(estado.recetas, texto) : [];
+  // RP-20 (C): el orden, si se pide ver primero las que entran en el rango de la comida. Cuántas hay no cambia.
+  const enOrden = primeroLasQueEntranEnElRango && rango ? primeroLasQueEntran(visibles, rango) : visibles;
   return (
     <div className="recetas-para-elegir">
       {/* ED-32: crear una receta sin salir del plan; entra como opción de esta comida. */}
@@ -1959,18 +1916,40 @@ function ElegirReceta({ onElegir, alCrearNueva }: { onElegir: (r: Receta) => voi
               {COPY_ELEGIR_RECETA.borrar}
             </button>
           ) : null}
+          {/* RP-20 (C): ver primero las que entran en el rango de la comida; no esconde ninguna. */}
+          {rango ? (
+            <div className="campo recetas-para-elegir__orden">
+              <label>
+                <input type="checkbox" checked={primeroLasQueEntranEnElRango} onChange={(e) => setPrimeroLasQueEntran(e.target.checked)} data-primero-las-que-entran /> {COPY_FRANJAS.primeroLasQueEntran(comida)}
+              </label>
+            </div>
+          ) : comida ? (
+            <p className="nota">{COPY_FRANJAS.sinRangoParaComparar(comida)}</p>
+          ) : null}
           <ul className="lista">
-            {visibles.map((r) => (
-              <li key={r.recipeId} className="lista__item">
-                <p className="lista__titulo">{r.name}</p>
-                <p className="nota">
-                  {COPY_RECETAS.version(r.versionNumber)} · {COPY_RECETAS.porcionesYEnergia(r.servings, nutrienteParaMostrar(r.calculation.perServing.energyKcal, 'energyKcal'))}
-                </p>
-                <button type="button" className="boton boton--enlace" onClick={() => onElegir(r)}>
-                  {COPY_RECETAS.agregarComoOpcion}: {r.name}
-                </button>
-              </li>
-            ))}
+            {enOrden.map((r) => {
+              const frente = recetaFrenteAlRango(r.calculation.perServing, rango, r.name);
+              return (
+                <li key={r.recipeId} className="lista__item" data-receta-para-elegir>
+                  <p className="lista__titulo">{r.name}</p>
+                  <p className="nota">
+                    {COPY_RECETAS.version(r.versionNumber)} · {COPY_RECETAS.porcionesYEnergia(r.servings, nutrienteParaMostrar(r.calculation.perServing.energyKcal, 'energyKcal'))}
+                  </p>
+                  {frente ? (
+                    <div className="recetas-para-elegir__frente" data-receta-frente-al-rango>
+                      {/* El lector oye esta frase al empezar la franja (`franjasEnPalabras`, variante «receta»): no dos veces. */}
+                      <p className="nota" aria-hidden="true">
+                        {COPY_FRANJAS.unaPorcionFrenteAlRangoDe(comida)}
+                      </p>
+                      <FranjasDeLaComida franjas={frente} comida={comida} variante="receta" />
+                    </div>
+                  ) : null}
+                  <button type="button" className="boton boton--enlace" onClick={() => onElegir(r)}>
+                    {COPY_RECETAS.agregarComoOpcion}: {r.name}
+                  </button>
+                </li>
+              );
+            })}
           </ul>
         </>
       ) : null}
