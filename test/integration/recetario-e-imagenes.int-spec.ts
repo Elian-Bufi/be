@@ -104,7 +104,7 @@ describe('DL-191 · las imágenes livianas', () => {
     expect(grande.bytes.length).toBeLessThan(300 * 1024);
     for (const l of [sin, grande, miniatura]) expect(l.cache).toBe('no-store');
     // La miniatura quedó guardada con la subida; otra variante, o un parámetro desconocido, es 400.
-    expect(await prisma.varianteGuardadaDeMedio.count({ where: { medioId } })).toBe(1);
+    expect(await prisma.varianteGuardadaDeMedio.count({ where: { medioId: mediaId } })).toBe(1);
     await conSesion(app, pro.token).get(`/api/v1/media/${mediaId}/access?variant=enorme`).expect(400);
     await conSesion(app, pro.token).get(`/api/v1/media/${mediaId}/access?tamano=chico`).expect(400);
     // La variante va firmada en la ruta: pedirla en los bytes, por fuera de la firma, no cambia nada y es 400.
@@ -116,15 +116,15 @@ describe('DL-191 · las imágenes livianas', () => {
     const mediaId = await medioDeAntes(pro);
     const comoLaApk = await leer(pro, mediaId);
     expect([comoLaApk.tipo, comoLaApk.formato, comoLaApk.ancho]).toEqual(['image/jpeg', 'jpeg', 1600]);
-    expect(await prisma.varianteGuardadaDeMedio.count({ where: { medioId } })).toBe(0);
+    expect(await prisma.varianteGuardadaDeMedio.count({ where: { medioId: mediaId } })).toBe(0);
     const miniatura = await leer(pro, mediaId, 'thumbnail');
     expect([miniatura.tipo, miniatura.formato, miniatura.ancho, miniatura.alto]).toEqual(['image/webp', 'webp', 400, 300]);
-    expect(await prisma.varianteGuardadaDeMedio.count({ where: { medioId } })).toBe(2);
+    expect(await prisma.varianteGuardadaDeMedio.count({ where: { medioId: mediaId } })).toBe(2);
     const grande = await leer(pro, mediaId, 'large');
     expect([grande.tipo, grande.ancho, grande.alto]).toEqual(['image/webp', 1200, 900]);
     // La segunda vez se lee lo guardado: los mismos bytes, sin generar de nuevo.
     expect(sha256((await leer(pro, mediaId, 'thumbnail')).bytes)).toBe(sha256(miniatura.bytes));
-    expect(await prisma.varianteGuardadaDeMedio.count({ where: { medioId } })).toBe(2);
+    expect(await prisma.varianteGuardadaDeMedio.count({ where: { medioId: mediaId } })).toBe(2);
     // Lo de antes no se reescribió.
     expect(sha256((await leer(pro, mediaId)).bytes)).toBe(sha256(comoLaApk.bytes));
   });
@@ -136,7 +136,7 @@ describe('DL-191 · las imágenes livianas', () => {
     expect(medio).toMatchObject({ contentType: 'image/jpeg', width: 1600 });
     const conVariante = await leer(ase, mediaId, 'thumbnail');
     expect([conVariante.tipo, conVariante.ancho, conVariante.cache]).toEqual(['image/jpeg', 1600, 'no-store']);
-    expect(await prisma.varianteGuardadaDeMedio.count({ where: { medioId } })).toBe(0);
+    expect(await prisma.varianteGuardadaDeMedio.count({ where: { medioId: mediaId } })).toBe(0);
     expect(new Date(conVariante.expiresAt).getTime() - Date.now()).toBeLessThanOrEqual(15 * 60 * 1000);
   });
 
