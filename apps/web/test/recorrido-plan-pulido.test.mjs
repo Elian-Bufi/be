@@ -369,6 +369,9 @@ test('RP-19 · la regla reutilizable: el renglón del aviso, los campos con su l
   assert.match(bloque, /\.renglon-del-aviso \{\s*display: block;\s*min-height: 1\.55rem;/);
   assert.match(bloque, /\.avisos-con-lugar \.campo\[data-con-aviso\]:not\(:has\(> \.campo__error\)\)::after \{\s*content: '';\s*display: block;\s*height: 1\.55rem;\s*margin-top: 0\.2rem;/);
   assert.match(bloque, /\.avisos-con-lugar \.campo\[data-con-aviso\] > \.campo__error \{\s*min-height: 1\.55rem;\s*margin: 0\.2rem 0 0;/);
+  // Un campo con aviso no cambia de tamaño: el segundo píxel del borde es una sombra (con 2 px, el factor del calculador
+  // se ensanchaba y corría al vecino 2 px).
+  assert.match(bloque, /\.avisos-con-lugar \.campo--error input,[\s\S]*?\{\s*border-width: 1px;\s*box-shadow: 0 0 0 1px var\(--error\);/);
   // El resumen de errores: los renglones del envío quedan; lo corregido se marca y no se va hasta el envío siguiente.
   const envio = [{ id: 'a', texto: 'Falta A' }, { id: 'b', texto: 'Falta B' }];
   assert.deepEqual(V.renglonesDelResumen(envio, [{ id: 'b', texto: 'Falta B' }]), [{ id: 'a', texto: 'Falta A', corregido: true }, { id: 'b', texto: 'Falta B', corregido: false }]);

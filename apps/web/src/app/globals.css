@@ -21666,3 +21666,15 @@ html:has(.estacion:not([data-en-el-asistente])) {
   justify-content: flex-end;
   text-align: right;
 }
+
+/* Un campo con aviso no cambia de tamaño. El borde de 2 px del error (`.campo--error`) agrandaba el ancho propio del campo
+   y, en una fila de campos, corría al vecino 2 px (lo encontró el recorrido `sinSaltos` en el factor del calculador): en
+   un formulario con los avisos en su lugar, el borde sigue de 1 px y el segundo píxel es una sombra, que no ocupa lugar. */
+.avisos-con-lugar .campo--error input,
+.avisos-con-lugar .campo--error select,
+.avisos-con-lugar .campo--error textarea,
+.avisos-con-lugar .campo--error .campo-de-fecha__boton,
+.avisos-con-lugar .campo-de-fecha__boton[aria-invalid='true'] {
+  border-width: 1px;
+  box-shadow: 0 0 0 1px var(--error);
+}

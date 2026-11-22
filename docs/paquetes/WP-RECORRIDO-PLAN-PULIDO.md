@@ -166,7 +166,9 @@ campo) y del resumen de errores de GOV.UK (no cambia hasta el envío siguiente).
 2. **Los formularios con los avisos en su lugar** (`.avisos-con-lugar`): cada campo que puede avisar reserva el renglón
    de su aviso. `Campo` y `CampoDeFecha` se marcan solos (`data-con-aviso`) cuando reciben `error`, aunque sea `null`; los
    campos escritos a mano llevan `data-con-aviso`. Sin aviso, el renglón vacío es un `::after` del mismo alto; con aviso,
-   el aviso lo ocupa. No cambia nada fuera de los formularios que la usan.
+   el aviso lo ocupa. El campo con aviso tampoco cambia de tamaño: el borde sigue de 1 px y el segundo píxel del error es
+   una sombra (con un borde de 2 px, el factor del calculador se ensanchaba y corría 2 px al campo de al lado; lo encontró
+   el recorrido `sinSaltos`). No cambia nada fuera de los formularios que la usan.
 3. **Las tablas que cambian en vivo**, con columnas fijas (`table-layout: fixed` y `<colgroup>`) y cada celda con su
    renglón siempre, con «—» cuando no hay número.
 
