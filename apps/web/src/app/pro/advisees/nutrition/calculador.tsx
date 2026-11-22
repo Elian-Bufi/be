@@ -33,7 +33,7 @@ import { useEffect, useId, useState } from 'react';
 import { CampoDeFecha } from '../../../../components/campo-de-fecha';
 import { Enlace } from '../../../../components/enlace';
 import { ExplicacionAPedido } from '../../../../components/explicacion-a-pedido';
-import { Aviso, Campo } from '../../../../components/formulario';
+import { Aviso, Campo, RenglonDelAviso } from '../../../../components/formulario';
 import { api } from '../../../../lib/api';
 import { hoyEn } from '../seguimiento/estado';
 import {
@@ -52,6 +52,7 @@ import {
   parteEnPalabras,
   PROBLEMA_DEL_CALCULO,
   problemasDelCalculador,
+  reposoEnVivo,
   valoresParaElObjetivo,
   type ValoresDelCalculador,
 } from './calculador-del-objetivo';
@@ -138,14 +139,25 @@ export function CalculadorDelObjetivo({
   const ficha = FICHA_DEL_METODO_DE_REPOSO[valores.metodo];
   const err = (clave: string) => problemas[clave] ?? null;
   const paraElObjetivo = vivo ? valoresParaElObjetivo(vivo.resultado) : null;
-  const notaDeEdad = vivo ? notaDeLaPoblacion(valores.metodo, { ageYears: vivo.datos.ageYears?.value ?? null }) : null;
+  // RP-19 (DL-188): el gasto en reposo no depende del factor, el ajuste ni los g/kg: se ve aunque esos no se entiendan.
+  const reposo = reposoEnVivo(valores, lista);
+  const notaDeEdad = notaDeLaPoblacion(valores.metodo, { ageYears: reposo.datos.ageYears?.value ?? null });
+  const puedeDecirLaPoblacion = [1, 999].some((ageYears) => notaDeLaPoblacion(valores.metodo, { ageYears }) !== null);
+  // RP-19: lo de abajo (el gasto total y los macros) tiene su lugar aunque falte el cálculo: «—» en vez de irse.
+  const conDescanso = valores.conFactorDeDescanso;
+  const kcalEnReposo = reposo.resting.state === 'CALCULATED' ? numero(reposo.resting.kcal, 0) : '—';
+  const totales = vivo?.resultado.totals && vivo.resultado.energy ? { totals: vivo.resultado.totals, energy: vivo.resultado.energy } : null;
+  const macrosDelCalculo = vivo?.resultado.macros ?? null;
+  const problemasDelCalculo = vivo?.resultado.issues.map((i) => PROBLEMA_DEL_CALCULO[i]).join(' ') ?? '';
+  const porQueNoSeUsa = usado ? null : !vivo ? C.sinCalculo : !paraElObjetivo ? C.sinKcalParaLlevar : null;
   const usarLaToma = (t: TomaDeReferencia) => c({ fuente: 'toma', evaluationId: t.evaluationId, corridaId: t.composition.find((x) => x.leanMassKg !== null)?.calculationId ?? '' });
   const L = LIMITES_DE_LOS_GRAMOS_POR_KG;
   const numeroConPunto = (s: string) => s.replace(',', '.');
   const factorDeReferencia = (escrito: string) => FACTORES_DE_ACTIVIDAD.find((f) => numero(f.valor, 2) === escrito || String(f.valor).replace('.', ',') === escrito)?.valor ?? '';
 
   return (
-    <div className="calculador" data-calculador>
+    // RP-19 (DL-188): `avisos-con-lugar`: el aviso de cada campo, que aparece mientras se escribe, tiene su renglón.
+    <div className="calculador avisos-con-lugar" data-calculador>
       <p className="nota">{C.estimacion}</p>
 
       {/* ─── La referencia (RP-05: «Usar la toma del…» precarga; si no hay toma, a mano) ─── */}
@@ -300,60 +312,64 @@ export function CalculadorDelObjetivo({
             <ExplicacionAPedido nombre={C.sexo}>{C.sexoAyuda}</ExplicacionAPedido>
           </fieldset>
         ) : null}
-        {vivo ? (
-          <div className="calculador__metodo" data-gasto-en-reposo>
-            {vivo.resultado.resting.state === 'CALCULATED' ? (
-              <dl className="datos">
-                <div>
-                  <dt>{C.formula}</dt>
-                  <dd>{vivo.resultado.resting.equation}</dd>
-                </div>
-                <div>
-                  <dt>{C.conLosDatos}</dt>
-                  <dd data-formula-aplicada>{vivo.resultado.resting.applied} kcal</dd>
-                </div>
-                <div>
-                  <dt>{C.reposo}</dt>
-                  <dd>
-                    <strong>
-                      <CantidadDelMacro macro="kcal" cifra={numero(vivo.resultado.resting.kcal, 0)} /> por día
-                    </strong>
-                  </dd>
-                </div>
-              </dl>
-            ) : (
-              <p className="nota" data-falta-un-dato>
-                {vivo.resultado.resting.state === 'MISSING_DATA' ? faltaEnPalabras(vivo.resultado.resting.missing) : vivo.resultado.resting.reason}
-              </p>
-            )}
-            {notaDeEdad ? (
-              <p className="nota" data-fuera-de-la-poblacion>
-                {notaDeEdad}
-              </p>
-            ) : null}
-            <details className="calculador__datos">
-              <summary>Los datos que usa, con su origen</summary>
-              <dl className="datos">
-                <div>
-                  <dt>Peso</dt>
-                  <dd>{datoEnPalabras(vivo.datos.weightKg, 'kg')}</dd>
-                </div>
-                <div>
-                  <dt>Talla</dt>
-                  <dd>{datoEnPalabras(vivo.datos.heightCm, 'cm')}</dd>
-                </div>
-                <div>
-                  <dt>Edad</dt>
-                  <dd>{datoEnPalabras(vivo.datos.ageYears, 'años')}</dd>
-                </div>
-                <div>
-                  <dt>{C.masaLibre}</dt>
-                  <dd>{masaEnPalabras(vivo.datos.leanMassKg, vivo.datos.weightKg?.value ?? null)}</dd>
-                </div>
-              </dl>
-            </details>
-          </div>
-        ) : null}
+        {/* RP-19 (DL-188): siempre, con los tres renglones: la fórmula, la cuenta (o lo que falta) y el resultado (o «—»).
+            Antes se iba con un factor que no se entendía, y el campo del factor, que está abajo, subía mientras se escribía. */}
+        <div className="calculador__metodo" data-gasto-en-reposo={reposo.resting.state}>
+          <dl className="datos">
+            <div>
+              <dt>{C.formula}</dt>
+              <dd>{reposo.resting.state === 'CALCULATED' ? reposo.resting.equation : '—'}</dd>
+            </div>
+            <div>
+              <dt>{C.conLosDatos}</dt>
+              {reposo.resting.state === 'CALCULATED' ? (
+                <dd data-formula-aplicada>{reposo.resting.applied} kcal</dd>
+              ) : (
+                <dd className="nota" data-falta-un-dato>
+                  {reposo.resting.state === 'MISSING_DATA' ? faltaEnPalabras(reposo.resting.missing) : reposo.resting.reason}
+                </dd>
+              )}
+            </div>
+            <div>
+              <dt>{C.reposo}</dt>
+              <dd>
+                {reposo.resting.state === 'CALCULATED' ? (
+                  <strong>
+                    <CantidadDelMacro macro="kcal" cifra={numero(reposo.resting.kcal, 0)} /> por día
+                  </strong>
+                ) : (
+                  '—'
+                )}
+              </dd>
+            </div>
+          </dl>
+          {/* La nota de la población (ten Haaf con el peso, fuera de los 18 a 35 años): su renglón se reserva con los métodos
+              que la pueden decir, aunque todavía no la digan; con los demás, no ocupa lugar. */}
+          {puedeDecirLaPoblacion ? (
+            <RenglonDelAviso data-fuera-de-la-poblacion={notaDeEdad ? '' : undefined}>{notaDeEdad}</RenglonDelAviso>
+          ) : null}
+          <details className="calculador__datos">
+            <summary>Los datos que usa, con su origen</summary>
+            <dl className="datos">
+              <div>
+                <dt>Peso</dt>
+                <dd>{datoEnPalabras(reposo.datos.weightKg, 'kg')}</dd>
+              </div>
+              <div>
+                <dt>Talla</dt>
+                <dd>{datoEnPalabras(reposo.datos.heightCm, 'cm')}</dd>
+              </div>
+              <div>
+                <dt>Edad</dt>
+                <dd>{datoEnPalabras(reposo.datos.ageYears, 'años')}</dd>
+              </div>
+              <div>
+                <dt>{C.masaLibre}</dt>
+                <dd>{masaEnPalabras(reposo.datos.leanMassKg, reposo.datos.weightKg?.value ?? null)}</dd>
+              </div>
+            </dl>
+          </details>
+        </div>
       </fieldset>
 
       {/* ─── Actividad y ajuste (RP-05: el día de descanso, en su propio renglón, al lado del factor del día) ─── */}
@@ -440,43 +456,44 @@ export function CalculadorDelObjetivo({
             </div>
           ) : null}
         </div>
-        {vivo?.resultado.totals && vivo.resultado.energy ? (
-          <table className="tabla calculador__tabla" data-gasto-total>
-            <thead>
+        {/* RP-19 (DL-188): el gasto total tiene su lugar aunque falte el cálculo: «—» en cada celda, no una tabla que se va
+            y vuelve debajo de los campos que se están escribiendo. */}
+        <table className="tabla calculador__tabla calculador__tabla--total" data-gasto-total={totales ? 'listo' : 'sin-calculo'}>
+          <colgroup>
+            <col className="calculador__col-dia" />
+            <col className="calculador__col-cuenta" />
+            <col className="calculador__col-energia" />
+          </colgroup>
+          <thead>
+            <tr>
+              <th scope="col">Día</th>
+              <th scope="col">{C.total}</th>
+              <th scope="col">{C.energia}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <th scope="row">{conDescanso ? C.diaDeEntrenamiento : C.elDia}</th>
+              <td>{totales && vivo ? `${kcalEnReposo} × ${numero(vivo.parametros.activity.factor, 2)} = ${numero(totales.totals.day, 0)} kcal` : '—'}</td>
+              <td>
+                <strong>{totales ? <CantidadDelMacro macro="kcal" cifra={numero(totales.energy.day, 0)} /> : '—'}</strong>
+              </td>
+            </tr>
+            {conDescanso ? (
               <tr>
-                <th scope="col">Día</th>
-                <th scope="col">{C.total}</th>
-                <th scope="col">{C.energia}</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <th scope="row">{vivo.resultado.totals.restDay === null ? C.elDia : C.diaDeEntrenamiento}</th>
+                <th scope="row">{C.diaDeDescanso}</th>
                 <td>
-                  {numero(vivo.resultado.resting.state === 'CALCULATED' ? vivo.resultado.resting.kcal : 0, 0)} × {numero(vivo.parametros.activity.factor, 2)} = {numero(vivo.resultado.totals.day, 0)} kcal
+                  {totales && vivo && totales.totals.restDay !== null
+                    ? `${kcalEnReposo} × ${numero(vivo.parametros.activity.restDayFactor ?? 0, 2)} = ${numero(totales.totals.restDay, 0)} kcal`
+                    : '—'}
                 </td>
                 <td>
-                  <strong>
-                    <CantidadDelMacro macro="kcal" cifra={numero(vivo.resultado.energy.day, 0)} />
-                  </strong>
+                  <strong>{totales && totales.energy.restDay !== null ? <CantidadDelMacro macro="kcal" cifra={numero(totales.energy.restDay, 0)} /> : '—'}</strong>
                 </td>
               </tr>
-              {vivo.resultado.totals.restDay !== null && vivo.resultado.energy.restDay !== null ? (
-                <tr>
-                  <th scope="row">{C.diaDeDescanso}</th>
-                  <td>
-                    {numero(vivo.resultado.resting.state === 'CALCULATED' ? vivo.resultado.resting.kcal : 0, 0)} × {numero(vivo.parametros.activity.restDayFactor ?? 0, 2)} = {numero(vivo.resultado.totals.restDay, 0)} kcal
-                  </td>
-                  <td>
-                    <strong>
-                      <CantidadDelMacro macro="kcal" cifra={numero(vivo.resultado.energy.restDay, 0)} />
-                    </strong>
-                  </td>
-                </tr>
-              ) : null}
-            </tbody>
-          </table>
-        ) : null}
+            ) : null}
+          </tbody>
+        </table>
       </fieldset>
 
       {/* ─── Los macros (RP-05: g/kg con límites con nombre y paso de 0,1) ─── */}
@@ -526,27 +543,32 @@ export function CalculadorDelObjetivo({
                 error={err('grasaPorKg')}
               />
             </div>
-            {vivo?.resultado.macros ? (
-              <>
-                <p className="nota">
-                  Por kilo de {vivo.resultado.macros.base === 'LEAN_MASS' ? `masa libre de grasa (${numero(vivo.resultado.macros.baseKg, 1)} kg)` : `peso (${numero(vivo.resultado.macros.baseKg, 2)} kg)`}; los carbohidratos, por diferencia, con 4, 4 y 9 kcal por gramo.
-                </p>
-                <TablaDeMacros titulo={vivo.resultado.macros.restDay ? C.diaDeEntrenamiento : C.elDia} m={vivo.resultado.macros.day} />
-                {vivo.resultado.macros.restDay ? <TablaDeMacros titulo={C.diaDeDescanso} m={vivo.resultado.macros.restDay} /> : null}
-              </>
-            ) : null}
+            {/* RP-19: la nota y las tablas de los macros, siempre que se pidan; sin cálculo, con «—» en cada celda (y en los
+                kilos de la nota, para que tenga el mismo largo y no cambie de renglones). */}
+            <p className="nota">
+              Por kilo de{' '}
+              {valores.base === 'LEAN_MASS'
+                ? `masa libre de grasa (${macrosDelCalculo ? numero(macrosDelCalculo.baseKg, 1) : '—'} kg)`
+                : `peso (${macrosDelCalculo ? numero(macrosDelCalculo.baseKg, 2) : '—'} kg)`}
+              ; los carbohidratos, por diferencia, con 4, 4 y 9 kcal por gramo.
+            </p>
+            <TablaDeMacros titulo={conDescanso ? C.diaDeEntrenamiento : C.elDia} m={macrosDelCalculo?.day ?? null} />
+            {conDescanso ? <TablaDeMacros titulo={C.diaDeDescanso} m={macrosDelCalculo?.restDay ?? null} /> : null}
           </>
         ) : null}
-        {vivo?.resultado.issues.map((i) => (
-          <p key={i} className="nota" role="status" data-problema-del-calculo>
-            {PROBLEMA_DEL_CALCULO[i]}
-          </p>
-        ))}
+        {/* RP-19: lo que el cálculo no pudo hacer, en su renglón reservado (antes, párrafos que aparecían arriba del botón). */}
+        <RenglonDelAviso role="status" data-problema-del-calculo={problemasDelCalculo ? '' : undefined}>
+          {problemasDelCalculo}
+        </RenglonDelAviso>
       </fieldset>
 
-      {!vivo ? <p className="nota">{C.sinCalculo}</p> : null}
-      {/* RP-05: el paso que sigue, primario y al pie del resultado. */}
+      {/* RP-05: el paso que sigue, primario y al pie del resultado, a la derecha. RP-19: por qué está apagado, en el renglón
+          reservado a su izquierda (antes, «Completá los datos de arriba» aparecía arriba del botón y lo corría). Lo que
+          responde al toque va debajo del botón: no lo mueve. */}
       <div className="acciones calculador__usar">
+        <RenglonDelAviso juntoAlBoton anunciar data-por-que-no-se-usa>
+          {porQueNoSeUsa}
+        </RenglonDelAviso>
         <button
           type="button"
           className="boton boton--primario"
@@ -566,18 +588,30 @@ export function CalculadorDelObjetivo({
   );
 }
 
-/** Los macros de un día: gramos (con su ícono, RP-07), g/kg, kcal y la parte de la energía con su base y su número. */
-function TablaDeMacros({ titulo, m }: { titulo: string; m: MacrosDelDia }) {
+const SIN_DATO = '—';
+
+/**
+ * Los macros de un día: gramos (con su ícono, RP-07), g/kg, kcal y la parte de la energía con su base y su número. RP-19:
+ * sin cálculo (`m` en `null`), la misma tabla con «—» en cada celda y columnas fijas: lo que llega no la reacomoda.
+ */
+function TablaDeMacros({ titulo, m }: { titulo: string; m: MacrosDelDia | null }) {
   const filas = [
-    ['Proteínas', 'protein', m.protein],
-    ['Carbohidratos', 'carbohydrate', m.carbohydrate],
-    ['Grasas', 'fat', m.fat],
+    ['Proteínas', 'protein', m?.protein ?? null],
+    ['Carbohidratos', 'carbohydrate', m?.carbohydrate ?? null],
+    ['Grasas', 'fat', m?.fat ?? null],
   ] as const;
   return (
-    <table className="tabla calculador__tabla" data-macros-del-dia>
+    <table className="tabla calculador__tabla calculador__tabla--macros" data-macros-del-dia={m ? 'listo' : 'sin-calculo'}>
       <caption>
-        {titulo} · <CantidadDelMacro macro="kcal" cifra={numero(m.energyKcal, 0)} />
+        {titulo} · {m ? <CantidadDelMacro macro="kcal" cifra={numero(m.energyKcal, 0)} /> : SIN_DATO}
       </caption>
+      <colgroup>
+        <col className="calculador__col-macro" />
+        <col className="calculador__col-g" />
+        <col className="calculador__col-g" />
+        <col className="calculador__col-g" />
+        <col className="calculador__col-parte" />
+      </colgroup>
       <thead>
         <tr>
           <th scope="col">Macro</th>
@@ -591,12 +625,10 @@ function TablaDeMacros({ titulo, m }: { titulo: string; m: MacrosDelDia }) {
         {filas.map(([nombre, macro, x]) => (
           <tr key={nombre}>
             <th scope="row">{nombre}</th>
-            <td>
-              <CantidadDelMacro macro={macro} cifra={numero(x.grams, 0)} />
-            </td>
-            <td>{numero(x.perKg, 2)}</td>
-            <td>{numero(x.kcal, 0)}</td>
-            <td>{parteEnPalabras(x.energyShare, m.energyKcal)}</td>
+            <td>{x ? <CantidadDelMacro macro={macro} cifra={numero(x.grams, 0)} /> : SIN_DATO}</td>
+            <td>{x ? numero(x.perKg, 2) : SIN_DATO}</td>
+            <td>{x ? numero(x.kcal, 0) : SIN_DATO}</td>
+            <td>{x && m ? parteEnPalabras(x.energyShare, m.energyKcal) : SIN_DATO}</td>
           </tr>
         ))}
       </tbody>

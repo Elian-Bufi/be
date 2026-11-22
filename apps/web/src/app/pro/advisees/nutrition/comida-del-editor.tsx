@@ -29,8 +29,11 @@
  *   rango indicado, si lo tiene.
  * - **NUP-03 (NUP-D04):** cada opción es un renglón plegable con su nombre y sus números; desplegada, la tabla y las
  *   acciones de siempre. Una abierta por comida, o ninguna.
- * - **NUP-04 y NUP-05:** la opción abierta se ubica frente al rango de su comida y el día frente al suyo, en una línea
- *   neutra; y el rango de la comida se ve y se indica acá mismo.
+ * - **NUP-05:** el rango de la comida se ve y se indica acá mismo.
+ * - **RP-20 (WP-RECORRIDO-PLAN-PULIDO, DL-188), en lugar de las líneas de NUP-04:** debajo del encabezado, plegada o
+ *   abierta, una franja por kcal, P, C y G con cada opción frente al rango indicado de la comida; adentro de la opción
+ *   abierta, la misma franja con esa opción sola, que se mueve con cada tecla de una cantidad. El día frente a su rango
+ *   pasó al panel «Rangos y totales» (RP-21).
  * - **NUP-12:** la comida vacía dice por dónde empezar: una comida habitual, copiar de otra comida, una receta o alimentos.
  */
 import {
@@ -45,7 +48,6 @@ import {
   motivoDeNumeroIlegible,
   pestanaDeLaOpcion,
   type EstructuraDePlanEntrada,
-  type Rango as RangoIndicado,
   type RecetaDeOpcion,
   type VersionDePlan,
   COPY_NOTAS_PROPIAS,
@@ -64,7 +66,9 @@ import { conNumero, conUnidad, iconoDeLaFila, numeroDelCampo, opcionesDeUnidad, 
 import { COPY_DE_LOS_EDITORES as E } from '../editar-la-estructura';
 import { COPY_DE_OTRA_COMIDA, MAXIMO_DE_OPCIONES } from './opcion-de-otra-comida';
 import { COPY_VERSION_NUEVA } from './version-nueva-de-la-receta';
-import { aporteDelItem, aporteEnPalabras, aporteEnUnaLinea, cifrasDeLoQueAporta, comidaVacia, composicionEnLaPista, COPY_PLANIFICACION as CP, diaFrenteAlRango, loQueAportaLaComida, loQueAportaLaComidaEnPalabras, numerosDeLaOpcion, opcionFrenteAlRango, type LineaFrenteAlRango } from './planificacion';
+import { aporteDelItem, aporteEnPalabras, aporteEnUnaLinea, cifrasDeLoQueAporta, comidaVacia, composicionEnLaPista, COPY_PLANIFICACION as CP, loQueAportaLaComida, loQueAportaLaComidaEnPalabras, numerosDeLaOpcion, type LineaFrenteAlRango } from './planificacion';
+import { COPY_FRANJAS, franjasDeLaComida } from './franjas-por-comida';
+import { FranjasDeLaComida, FranjasQueSeLeen } from './franjas-de-la-comida';
 import { cifrasDelTotal, COPY_RANGOS, faltantesDeLaOpcion, queFaltaEnPalabras, totalEnPalabras, type ComposicionConocida, type RangoPorNutriente, type TotalDeLaOpcion } from './rangos';
 import { rangoEnPalabras } from './rangos-indicados';
 import { NutrientesConIconos, RangoIndicadoConIconos } from './cantidad-del-macro';
@@ -84,8 +88,8 @@ export type NombreEnEdicion = { readonly de: 'comida' } | { readonly de: 'opcion
 
 /** NUP-05: el rango indicado de la comida, y cómo se indica o se cambia desde acá. */
 export interface RangoDeLaComida extends RangoParaIndicar {
-  /** El del día tipo, para ubicar el día (NUP-04). */
-  readonly delDia: RangoIndicado | null;
+  /** RP-D47: los rangos todavía se están leyendo y la comida ya se guardó: la franja guarda su lugar. */
+  readonly leyendo?: boolean;
 }
 
 export function ComidaDelEditor({
@@ -103,7 +107,6 @@ export function ComidaDelEditor({
   composiciones,
   origenes,
   rangoDeOpciones,
-  rangosDelDia,
   rango,
   itemsDeLaReceta,
   versionNueva,
@@ -146,9 +149,7 @@ export function ComidaDelEditor({
   origenes: ReadonlyMap<string, string>;
   /** NUP-02: lo que aporta la comida, de la opción que menos a la que más; `null` si no se calculó. */
   rangoDeOpciones: RangoPorNutriente | null;
-  /** NUP-04: lo que va del día tipo según lo que se elija, para ubicarlo frente a su rango. */
-  rangosDelDia: RangoPorNutriente | null;
-  /** NUP-05: el rango indicado de esta comida y del día, y cómo indicarlo. */
+  /** NUP-05: el rango indicado de esta comida y cómo indicarlo. */
   rango: RangoDeLaComida;
   /** Con la versión que cita la opción: la porción guardada de otra versión no vale (después de «Usar la versión N»). */
   itemsDeLaReceta: (optionId: string | undefined, recipeVersionId: string) => ItemsGuardados | null;
@@ -198,9 +199,13 @@ export function ComidaDelEditor({
   // NUP-02: lo que aporta la comida y su rango indicado, también plegada.
   const aporta = rangoDeOpciones ? loQueAportaLaComida(rangoDeOpciones, comida.options.length) : null;
   const aportaEnPalabras = rangoDeOpciones ? loQueAportaLaComidaEnPalabras(rangoDeOpciones, comida.options.length) : null;
-  // NUP-04: la opción abierta frente al rango de su comida, y el día frente al suyo.
   const conAlgo = !!opcion && (opcion.items.length > 0 || !!opcion.recipeVersionId);
-  const frente: readonly LineaFrenteAlRango[] = total && conAlgo ? [...opcionFrenteAlRango(total, rango.indicado, plegada.titulo), ...(rangosDelDia ? diaFrenteAlRango(rangosDelDia, rango.delDia) : [])] : [];
+  // RP-20: cada opción frente al rango indicado de la comida, una franja por kcal, P, C y G, también plegada. Sale de lo
+  // que está en pantalla (cada tecla de una cantidad la mueve); una opción de receta, con la porción de su versión guardada.
+  const paraLaFranja = comida.options.map((o, n) => ({ clave: o.optionId ?? `nueva-${n}`, nombre: pestanaDeLaOpcion(o, n), total: totalDeLaOpcion(n) }));
+  const franjas = franjasDeLaComida(rango.indicado, paraLaFranja);
+  // RP-20 (B): la opción abierta sola frente al rango de su comida, en vivo. Reemplaza las líneas de NUP-04.
+  const franjasDeLaOpcion = opcion && conAlgo ? franjasDeLaComida(rango.indicado, [paraLaFranja[k]!]) : null;
   const vacia = comidaVacia(comida);
   /** NUP-12: «alimentos» abre la primera opción vacía en su cuadro; sin opciones, nace la 1 y se abre. */
   const empezarConAlimentos = () => {
@@ -231,7 +236,8 @@ export function ComidaDelEditor({
                   <span className="visualmente-oculto">{aportaEnPalabras}</span>
                 </span>
               ) : null}
-              {rango.indicado ? (
+              {/* Con la franja debajo (RP-20), el rango ya está en cada renglón: el encabezado no lo repite. */}
+              {rango.indicado && !franjas ? (
                 <span className="comida-del-editor__indicado" data-rango-indicado-de-la-comida>
                   <span aria-hidden="true">
                     {CP.indicado}: <RangoIndicadoConIconos rango={rango.indicado} />
@@ -280,6 +286,17 @@ export function ComidaDelEditor({
           </div>
         ) : null}
       </div>
+      {/* RP-20: las opciones frente al rango de la comida, plegada o abierta. Sin rango no se dibuja (el renglón para
+          indicarlo va adentro); mientras se leen los rangos, guarda su lugar (RP-D47). */}
+      {franjas ? (
+        <div className="comida-del-editor__franjas" data-franjas-de-la-comida data-rango-indicado-de-la-comida>
+          <FranjasDeLaComida franjas={franjas} comida={plegada.titulo} />
+        </div>
+      ) : rango.leyendo ? (
+        <div className="comida-del-editor__franjas" data-franjas-de-la-comida data-leyendo-el-rango>
+          <FranjasQueSeLeen />
+        </div>
+      ) : null}
       {/* PG-16: las notas propias atadas a esta comida (por su nombre), a la vista aunque esté plegada. */}
       <NotasAlLado comida={comida.label} />
       <div id={`${propio}-cuerpo`} className="comida-del-plan__cuerpo comida-del-editor__cuerpo" hidden={!abierta}>
@@ -445,8 +462,18 @@ export function ComidaDelEditor({
                                   {faltan.length > 0 ? <p className="nota">{faltan.slice(0, 3).map(queFaltaEnPalabras).join('; ')}{faltan.length > 3 ? `; y ${faltan.length - 3} más` : ''}</p> : null}
                                 </div>
                               ) : null}
-                              {/* NUP-04: dónde queda frente a los rangos indicados. Ubica, no califica: sin color, y no bloquea. */}
-                              {frente.length > 0 ? <FrenteALosRangos lineas={frente} /> : null}
+                              {/* RP-20 (B): la opción frente al rango de su comida, en franjas que se mueven con cada tecla.
+                                  Reemplaza las líneas de NUP-04. Ubica, no califica: sin rojo ni verde, y no bloquea. */}
+                              {franjasDeLaOpcion ? (
+                                <div className="opcion-del-editor__franjas" data-franjas-de-la-opcion>
+                                  <p className="opcion-del-editor__franjas-titulo">
+                                    <Icono nombre="rango" tamano={18} />
+                                    {COPY_FRANJAS.tituloDeLaOpcion}
+                                    <span className="nota"> · {COPY_FRANJAS.ubicaNoCalifica}</span>
+                                  </p>
+                                  <FranjasDeLaComida franjas={franjasDeLaOpcion} comida={plegada.titulo} variante="opcion" />
+                                </div>
+                              ) : null}
                               <div className="opcion-del-editor__pie">
                                 {opcion.recipeVersionId ? null : (
                                   <>
@@ -543,12 +570,12 @@ function AccionDeInicio({ texto, noSePuede, alTocar, comida }: { texto: string; 
  * sin alimentos (`sinAlimentos`, en el cuadro de la opción) no tiene nada que ubicar: una sola indicación neutra en vez de
  * una línea «sin dato» por macro.
  */
-export function FrenteALosRangos({ lineas, sinAlimentos = false }: { lineas: readonly LineaFrenteAlRango[]; sinAlimentos?: boolean }) {
+export function FrenteALosRangos({ lineas, sinAlimentos = false, titulo = CP.frenteAlRango }: { lineas: readonly LineaFrenteAlRango[]; sinAlimentos?: boolean; titulo?: string }) {
   return (
     <div className="frente-a-los-rangos" data-frente-a-los-rangos>
       <p className="frente-a-los-rangos__titulo">
         <Icono nombre="objetivo" tamano={18} />
-        {CP.frenteAlRango}
+        {titulo}
         {sinAlimentos ? null : <span className="nota"> · {CP.frenteAlRangoAyuda}</span>}
       </p>
       {sinAlimentos ? (

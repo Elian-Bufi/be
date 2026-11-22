@@ -55,7 +55,9 @@ export function CambioDelNombreProfesional({
     const pedido = { professionalName: nombre, expectedName: nombreDeHoy, rationale: fundamento };
     const evaluado = evaluarCambioDeNombre(pedido, nombreDeHoy);
     if (!evaluado.ok) return mostrar(evaluado.issues);
+    // RP-19: este envío también cuenta; si no, el resumen quedaría con lo del anterior tachado.
     setErrores({});
+    setIntento((n) => n + 1);
     setEnviando(true);
     clave.current ??= nuevaClaveAdministrativa();
     const r = await apiAdministrativa.cambiarNombreProfesional(sesion.token, profesionalId, pedido, clave.current);

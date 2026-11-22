@@ -536,7 +536,8 @@ function pantallas(norma) {
       entera: true,
       llegar: async (page) => {
         await ir(page, nutricion());
-        await visible(page, '[data-suma-de-los-rangos]');
+        // RP-19 (DL-188): la suma de los rangos ya no va arriba de las comidas: es una línea del «Reparto por comida».
+        await visible(page, '[data-reparto-por-comida] [data-chequeo-de-la-suma]');
         await visible(page, '[data-aporta-la-comida]');
       },
     },

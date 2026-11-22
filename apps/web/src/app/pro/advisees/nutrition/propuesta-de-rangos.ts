@@ -11,6 +11,10 @@
  * - **RP-06 (WP-RECORRIDO-PLAN-PULIDO, DL-188): el reparto por comida, en el plan.** Dejó de ser un cuadro aparte: es un
  *   «Reparto por comida» a la vista en cada día tipo, con una parte del día por comida (la misma para las kcal y los tres
  *   macros) que suma 100, y la opción de repartir cada macro por separado. Propone las kcal, P, C y G de cada comida.
+ * - **RP-19 (DL-188): sin saltos.** Cada fila muestra siempre su rango con la parte que tiene escrita (`rangosPorFila`), el
+ *   día no depende del reparto (`rangoDelDia`), la suma de las partes se ve en vivo con lo que falta o sobra
+ *   (`sumasEnVivo`), y el chequeo de la suma de los rangos indicados frente al objetivo va en un renglón propio
+ *   (`chequeoDeLaSuma`; antes, un cuadro arriba de las comidas que aparecía al proponer).
  */
 import {
   MACROS_DE_LA_PROPUESTA,
@@ -24,6 +28,7 @@ import {
   type GramosDelDia,
   type MacroDeLaPropuesta,
   type PesoDeReferencia,
+  type Rango,
   type RangoEntrada,
   type RangoPropuesto,
   type RangosDelPlan,
@@ -31,6 +36,7 @@ import {
   type RepartoDeUnaComida,
   type VersionDeObjetivo,
 } from '@be/domain';
+import { objetivoDelDia, sumaDeLosRangos } from './planificacion';
 import { entradaDesde } from './rangos-indicados';
 
 /** De dónde salen los gramos del día: el cálculo del objetivo (con su variante de descanso) o los gramos del objetivo. */
@@ -153,6 +159,163 @@ export function propuestaDelDia(
   return { ok: true, gramos, dia: p.dia, comidas: p.comidas };
 }
 
+// ─── RP-19 (WP-RECORRIDO-PLAN-PULIDO, DL-188) · Sin saltos ──────────────────────────────────────────────────────────
+
+/** RP-19: la parte escrita de un macro de una comida, como número; `null` si está vacía o no es un número. */
+export function parteEscrita(s: string | undefined): number | null {
+  const t = (s ?? '').trim().replace(',', '.');
+  return /^\d+(\.\d+)?$/.test(t) ? Number(t) : null;
+}
+
+/** RP-19: el rango del día, con su margen. No depende del reparto: se ve igual aunque las partes no sumen 100. */
+export function rangoDelDia(fuente: FuenteDeLaPropuesta, variante: RepartoEscrito['variante'], tolerancia: number): RangoPropuesto {
+  const gramos = variante === 'descanso' && fuente.descanso ? fuente.descanso : fuente.dia;
+  // Sin comidas, `propuestaDeRangos` no revisa el reparto: devuelve siempre el rango del día.
+  return propuestaDeRangos(gramos, tolerancia, [])!.dia;
+}
+
+/** RP-19: lo que muestra una fila del reparto: el rango de cada macro y sus kcal; `null` donde no hay una parte que se entienda. */
+export interface RangosDeLaFila {
+  readonly macros: Readonly<Record<MacroDeLaPropuesta, { readonly min: number; readonly max: number } | null>>;
+  readonly kcal: { readonly min: number; readonly max: number } | null;
+}
+
+/**
+ * RP-19: el rango de cada comida, siempre, con la parte que tiene escrita. El rango de una comida no depende de las demás:
+ * antes, con partes que sumaban 99, todas las filas perdían su rango y la tabla se achicaba y se reacomodaba.
+ * - Si las partes suman 100, es exactamente la propuesta que se guarda (los redondeos repartidos por el resto mayor, para
+ *   que las comidas sumen el día).
+ * - Si no, cada comida lleva su parte del rango del día, redondeada al gramo por su cuenta: puede diferir en 1 g de lo que
+ *   se propone cuando la suma da 100.
+ * - Una parte vacía o que no es un número deja ese lugar sin rango (`null`: la pantalla pone «—», con el mismo alto). Las
+ *   kcal de la fila, solo si se entienden las tres partes.
+ */
+export function rangosPorFila(d: DiaDeLaPropuesta, e: RepartoEscrito, fuente: FuenteDeLaPropuesta, tolerancia: number): readonly RangosDeLaFila[] {
+  const p = propuestaDelDia(d, e, fuente, tolerancia);
+  if (p.ok) return p.comidas.map((r) => ({ macros: r, kcal: kcalDelRango(r) }));
+  const dia = rangoDelDia(fuente, e.variante, tolerancia);
+  const redondo = (x: number) => Math.floor(x + 0.5 + 1e-9);
+  return d.comidas.map((c) => {
+    const macros = Object.fromEntries(
+      MACROS_DE_LA_PROPUESTA.map((m) => {
+        const parte = parteEscrita(e.comidas[c.mealId]?.[m]);
+        if (parte === null) return [m, null];
+        const min = redondo((dia[m].min * parte) / 100);
+        return [m, { min, max: Math.max(min, redondo((dia[m].max * parte) / 100)) }];
+      }),
+    ) as Record<MacroDeLaPropuesta, { min: number; max: number } | null>;
+    const completo = MACROS_DE_LA_PROPUESTA.every((m) => macros[m] !== null);
+    return { macros, kcal: completo ? kcalDelRango(macros as RangoPropuesto) : null };
+  });
+}
+
+/** RP-19: cuánto suman las partes de un macro, si llegan a 100 y si alguna no es un número. */
+export interface SumaDeLasPartes {
+  readonly suma: number;
+  readonly bien: boolean;
+  readonly hayIlegibles: boolean;
+}
+
+/**
+ * RP-19: la suma de las partes de cada macro, en vivo, con la misma regla que deja proponer (`problemasDelReparto`: 100
+ * con medio punto de redondeo y ninguna parte que no se entienda). Una parte vacía cuenta como cero.
+ */
+export function sumasEnVivo(d: DiaDeLaPropuesta, e: RepartoEscrito): Readonly<Record<MacroDeLaPropuesta, SumaDeLasPartes>> {
+  const r = reparto(d, e);
+  const problemas = new Set(problemasDelReparto(r).map((p) => p.macro));
+  const sumas = sumaDeLasPartes(d, e);
+  return Object.fromEntries(
+    MACROS_DE_LA_PROPUESTA.map((m) => {
+      const hayIlegibles = r.some((x) => !Number.isFinite(x[m]));
+      return [m, { suma: sumas[m], bien: d.comidas.length > 0 && !problemas.has(m), hayIlegibles }];
+    }),
+  ) as Record<MacroDeLaPropuesta, SumaDeLasPartes>;
+}
+
+/**
+ * RP-19: lo que falta o sobra para llegar a 100, en la unidad de la base (las kcal que suman los gramos del día, o los
+ * gramos de un macro): «faltan 20 kcal», «sobran 3,9 g». Así no queda un «%» suelto, sin su base (decisión del 18/11). O
+ * qué revisar; vacío si está bien (el renglón queda, vacío).
+ */
+export function loQueFaltaDeLaSuma(s: SumaDeLasPartes, base: { readonly cantidad: number; readonly unidad: 'kcal' | 'g' }): string {
+  if (s.bien) return '';
+  if (s.hayIlegibles) return COPY_PROPUESTA.revisaLaMarcada;
+  const cantidad = (Math.abs(100 - s.suma) * base.cantidad) / 100;
+  const cifra = numero(cantidad, base.unidad === 'kcal' ? 0 : 1);
+  const uno = cifra === '1';
+  return `${s.suma < 100 ? (uno ? 'falta' : 'faltan') : uno ? 'sobra' : 'sobran'} ${cifra} ${base.unidad}`;
+}
+
+/** RP-19: qué se compara de la suma de los rangos indicados: las kcal (de los gramos, con 4, 4 y 9) y cada macro. */
+export type ClaveDeLaSuma = 'kcal' | MacroDeLaPropuesta;
+
+/** RP-19: un número del objetivo del día que queda afuera de la suma de los rangos de las comidas, y por cuánto. */
+export interface FueraDeLaSuma {
+  readonly clave: ClaveDeLaSuma;
+  /** El objetivo del día, la base de la diferencia. */
+  readonly objetivo: number;
+  readonly diferencia: number;
+  /** `encima`: el objetivo pasa el máximo de la suma; `debajo`: no llega a su mínimo. */
+  readonly lado: 'encima' | 'debajo';
+}
+
+export type ChequeoDeLaSuma =
+  | { readonly estado: 'sin-rangos' }
+  | { readonly estado: 'contiene' }
+  | { readonly estado: 'afuera'; readonly afuera: readonly FueraDeLaSuma[] }
+  | { readonly estado: 'sin-comparar'; readonly claves: readonly ClaveDeLaSuma[] };
+
+/**
+ * RP-19 (pedido de Dirección del 22/11): el chequeo de NUP-06 en una línea. ¿La suma de los rangos indicados de las comidas
+ * contiene el objetivo del día? Con los rangos que salen del reparto (el objetivo con su margen) los contiene por
+ * construcción; dice algo distinto cuando los rangos se escribieron a mano comida por comida. La misma cuenta que la tabla
+ * de NUP-06 (`sumaDeLosRangos`, con las kcal de los gramos): un mínimo vacío cuenta como cero, y sin mínimo o sin tope de
+ * un lado no se compara de ese lado. Un macro del objetivo que no está en gramos no se compara.
+ */
+export function chequeoDeLaSuma(comidas: readonly { readonly nombre: string; readonly rango: Rango | null }[], objetivo: VersionDeObjetivo): ChequeoDeLaSuma {
+  const suma = sumaDeLosRangos(comidas);
+  if (comidas.length === 0 || MACROS_DE_LA_PROPUESTA.every((m) => suma.macros[m].conRango === 0)) return { estado: 'sin-rangos' };
+  const o = objetivoDelDia(objetivo);
+  const afuera: FueraDeLaSuma[] = [];
+  const sinComparar: ClaveDeLaSuma[] = [];
+  const claves: readonly ClaveDeLaSuma[] = ['kcal', ...MACROS_DE_LA_PROPUESTA];
+  for (const clave of claves) {
+    const s = clave === 'kcal' ? suma.kcal : suma.macros[clave];
+    const bruto = clave === 'kcal' ? o.kcal : o.macros[clave];
+    if (bruto === null) continue;
+    // Se compara lo que se muestra: las kcal, enteras; los gramos, a un decimal (como la tabla de NUP-06).
+    const objetivoDelDato = clave === 'kcal' ? Math.round(bruto) : Math.round(bruto * 10) / 10;
+    const piso = s.conMinimo > 0;
+    const tope = s.max;
+    const redondo = (x: number) => (clave === 'kcal' ? Math.round(x) : Math.round(x * 10) / 10);
+    if (s.conRango === 0) sinComparar.push(clave);
+    else if (tope !== null && objetivoDelDato > tope) afuera.push({ clave, objetivo: objetivoDelDato, diferencia: redondo(objetivoDelDato - tope), lado: 'encima' });
+    else if (piso && objetivoDelDato < s.min) afuera.push({ clave, objetivo: objetivoDelDato, diferencia: redondo(s.min - objetivoDelDato), lado: 'debajo' });
+    else if (!(piso && tope !== null)) sinComparar.push(clave);
+  }
+  if (afuera.length > 0) return { estado: 'afuera', afuera };
+  if (sinComparar.length > 0) return { estado: 'sin-comparar', claves: sinComparar };
+  return { estado: 'contiene' };
+}
+
+/** RP-19: el nombre de lo que se compara, en minúscula, para la línea del chequeo. */
+const NOMBRE_EN_LA_LINEA: Readonly<Record<ClaveDeLaSuma, string>> = { kcal: 'kcal', protein: 'proteínas', carbohydrate: 'carbohidratos', fat: 'grasas' };
+
+/** RP-19: un número afuera, en palabras, con su base: «proteínas, 12 g por encima del máximo (objetivo 130 g)». */
+export function fueraEnPalabras(f: FueraDeLaSuma): string {
+  const unidad = f.clave === 'kcal' ? 'kcal' : 'g';
+  const cifra = (x: number) => numero(x, f.clave === 'kcal' ? 0 : 1);
+  return `${NOMBRE_EN_LA_LINEA[f.clave]}, ${cifra(f.diferencia)} ${unidad} por ${f.lado === 'encima' ? 'encima del máximo' : 'debajo del mínimo'} (objetivo ${cifra(f.objetivo)} ${unidad})`;
+}
+
+/** RP-19: la línea del chequeo, en texto (la pantalla le suma los íconos). Vacía sin rangos indicados. */
+export function chequeoEnPalabras(c: ChequeoDeLaSuma): string {
+  if (c.estado === 'sin-rangos') return '';
+  if (c.estado === 'contiene') return COPY_PROPUESTA.contieneElObjetivo;
+  if (c.estado === 'afuera') return `${COPY_PROPUESTA.quedaAfuera}: ${c.afuera.map(fueraEnPalabras).join('; ')}.`;
+  return COPY_PROPUESTA.sinComparar(c.claves.map((k) => NOMBRE_EN_LA_LINEA[k]));
+}
+
 const enGramos = (r: RangoPropuesto): RangoEntrada => ({
   protein: { unit: 'g', min: r.protein.min, max: r.protein.max },
   carbohydrate: { unit: 'g', min: r.carbohydrate.min, max: r.carbohydrate.max },
@@ -239,8 +402,23 @@ export const COPY_PROPUESTA = {
   parejo: 'Repartir parejo',
   sugerido: 'Sugerido por el nombre de cada comida',
   sugeridoAyuda: 'Un punto de partida: más carbohidratos en el desayuno y el almuerzo; la merienda, con más proteína y grasa. Cambialo a tu criterio.',
-  noSuma: (macro: string, suma: number) => `${macro}: las partes suman ${numero(suma, 1)} de 100. Ajustalas para proponer.`,
-  noSumaUnica: (suma: number) => `Las partes suman ${numero(suma, 1)} de 100. Ajustalas para proponer.`,
+  // RP-19 (DL-188): la suma de las partes se ve en vivo en «Todo el día» («99 %», «de las 1.985 kcal» y, debajo, «faltan
+  // 20 kcal»); los párrafos de error debajo de la tabla, que corrían el botón, se fueron. La base del «%» de cada parte va
+  // en el rótulo de su columna.
+  deLosGramos: (gramos: number) => `% de los ${numero(gramos, 0)} g`,
+  sumaEnVivo: (suma: number) => `${numero(suma, 1)} %`,
+  sumaDelMacro: (macro: string, suma: number, gramos: number) => `Suma de las partes de ${macro.toLowerCase()}: ${numero(suma, 1)} % de los ${numero(gramos, 0)} g`,
+  revisaLaMarcada: 'revisá la marcada',
+  /** RP-19: la base de la suma, debajo de la cifra: «de las 1.985 kcal», «de los 130 g». */
+  baseDeLaSuma: (cantidad: number, unidad: 'kcal' | 'g') => (unidad === 'kcal' ? `de las ${numero(cantidad, 0)} kcal` : `de los ${numero(cantidad, 0)} g`),
+  noSuman: 'Las partes no suman 100: ajustalas para proponer.',
+  margenInvalido: 'Revisá el margen: un número de 0 a 50.',
+  // RP-19 (pedido de Dirección del 22/11): el chequeo de la suma de los rangos frente al objetivo, en un renglón del reparto.
+  contieneElObjetivo: 'La suma de los rangos de las comidas contiene el objetivo del día',
+  quedaAfuera: 'El objetivo del día queda afuera de la suma de los rangos de las comidas',
+  sinComparar: (que: readonly string[]) =>
+    `La suma de los rangos de las comidas no tiene mínimo o tope en ${que.length === 1 ? que[0] : `${que.slice(0, -1).join(', ')} y ${que[que.length - 1]}`}: ahí no se puede comparar con el objetivo del día`,
+  detalleDeLaSuma: 'El detalle de la suma de los rangos de las comidas, macro por macro',
   reemplazar: (n: number) => `Reemplazar también los ${n} rangos que ya escribiste`,
   reemplazarUno: 'Reemplazar también el rango que ya escribiste',
   seConservan: (lista: string) => `Se conservan como están: ${lista}.`,

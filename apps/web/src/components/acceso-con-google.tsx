@@ -157,7 +157,9 @@ function PasoDeVincular({ idToken, correo, seguir, volver }: { idToken: string; 
       setIntento((n) => n + 1);
       return;
     }
+    // RP-19: este envío también cuenta; si no, el resumen quedaría con lo del anterior tachado.
     setError(null);
+    setIntento((n) => n + 1);
     setEnviando(true);
     const paso = pasoDeAccesoConGoogle('VINCULAR', await api.vincularGoogle(idToken, contrasena), 'WEB');
     setEnviando(false);

@@ -75,7 +75,9 @@ export function IncorporarProfesional() {
     setFalla(null);
     const evaluada = evaluarIncorporacion(pedido());
     if (!evaluada.ok) return mostrar(evaluada.issues);
+    // RP-19: este envío también cuenta; si no, el resumen quedaría con lo del anterior tachado.
     setErrores({});
+    setIntento((n) => n + 1);
     setEnviando(true);
     clave.current ??= nuevaClaveAdministrativa();
     const r = await apiAdministrativa.incorporarProfesional(sesion.token, pedido(), clave.current);

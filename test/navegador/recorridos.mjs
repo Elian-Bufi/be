@@ -1666,7 +1666,288 @@ async function notacionDelEsfuerzo({ p, d, salida }) {
 
 // ─── La corrida ──────────────────────────────────────────────────────────────────────────────────────────────────────
 
-export const TODOS = { sesion, pistas, borrador, conflicto, descartar, salidaSegura, irACorregir, respuestaPerdida, reintentar, salidaConFallas, primerPlan, asistenteDeNutricion, retorno, grafico, primeraInvitacion, areaSugerida, sesionRevocada, accesoRevocado, faltaUnaParte, completitud, evidencia, administracion, comparacion, comparacionConOpciones, notacionDelEsfuerzo };
+// ─── RP-19 (WP-RECORRIDO-PLAN-PULIDO, DL-188) · Sin saltos ─────────────────────────────────────────────────────────────
+
+/**
+ * Dónde está cada elemento que coincide con el selector, en la página (no en la ventana: desplazarse no es un salto), con
+ * su ancho y su alto.
+ */
+const lugares = (p, selector) =>
+  p.evaluate((s) => [...document.querySelectorAll(s)].map((e) => {
+    const r = e.getBoundingClientRect();
+    return { x: Math.round((r.left + scrollX) * 10) / 10, y: Math.round((r.top + scrollY) * 10) / 10, ancho: Math.round(r.width * 10) / 10 };
+  }), selector);
+
+/** Los lugares de varios selectores a la vez, con su nombre. */
+async function fotoDeLugares(p, selectores) {
+  const foto = {};
+  for (const s of selectores) foto[s] = await lugares(p, s);
+  return foto;
+}
+
+/** RP-19: nada se movió más de 1 px (ni de costado, ni hacia abajo, ni cambió de ancho). */
+function nadaSeMovio(antes, despues, momento) {
+  for (const [s, previos] of Object.entries(antes)) {
+    const ahora = despues[s];
+    assert.equal(ahora.length, previos.length, `${momento}: «${s}» tenía ${previos.length} elementos y ahora ${ahora.length}`);
+    previos.forEach((a, i) => {
+      const b = ahora[i];
+      const salto = Math.max(Math.abs(a.x - b.x), Math.abs(a.y - b.y), Math.abs(a.ancho - b.ancho));
+      assert.ok(salto <= 1, `${momento}: «${s}» [${i}] se movió ${salto} px (de ${JSON.stringify(a)} a ${JSON.stringify(b)})`);
+    });
+  }
+}
+
+/** Reemplaza lo escrito en un campo (vacío si `texto` es ''), con el teclado, como el profesional. */
+async function reemplazarTexto(p, campo, texto) {
+  await campo.click();
+  await p.keyboard.down('Control');
+  await p.keyboard.press('KeyA');
+  await p.keyboard.up('Control');
+  await p.keyboard.press('Backspace');
+  if (texto) await p.keyboard.type(texto);
+}
+
+/** El campo de un rótulo, dentro de `dentro` (los `id` de `useId` no se escriben a mano en un selector). */
+async function campoDelRotulo(p, dentro, rotulo) {
+  const h = await p.waitForFunction(
+    (d, t) => {
+      const l = [...document.querySelectorAll(`${d} label`)].find((x) => x.textContent.trim() === t);
+      return l ? document.getElementById(l.htmlFor) : null;
+    },
+    { timeout: ESPERA, polling: 100 },
+    dentro,
+    rotulo,
+  );
+  return h.asElement();
+}
+
+/**
+ * RP-19 · «Sin saltos» (pedido de Dirección del 22/11): con un error nada cambia de lugar. En el reparto por comida, unas
+ * partes que suman 99, una vacía y una que vuelve a sumar 100 no mueven los campos, las columnas ni «Proponer estos
+ * rangos»; cada fila conserva su rango y «Todo el día» dice lo que falta. Al proponer, nada aparece arriba de las comidas
+ * (antes, el cuadro de la suma de los rangos) y el chequeo queda en su renglón del reparto. En el objetivo, corregir un
+ * campo después de un envío con errores no corre los demás ni el botón (el aviso tiene su renglón y el resumen no se
+ * achica). En el calculador, vaciar el factor para escribir otro no mueve el factor, los g/kg ni «Usar estos valores».
+ */
+async function sinSaltos({ p, d, salida }) {
+  p.on('dialog', (dialogo) => void dialogo.accept());
+  await abrirElBorrador(p, d);
+
+  // 1. El reparto por comida, con el objetivo de 2.100 kcal en gramos (preparar.mjs) y las dos comidas del borrador.
+  const R = '[data-reparto-por-comida]';
+  await elemento(p, `${R} [data-tabla-del-reparto]`, null, 60_000);
+  await hidratado(p, `${R} [data-parte-de-la-comida]`);
+  await p.waitForNetworkIdle({ idleTime: 500, timeout: ESPERA }).catch(() => {});
+  // Revisión del PR: con la letra ya cargada, un cambio de letra no se cuenta como un salto.
+  await p.evaluate(() => document.fonts.ready.then(() => true));
+  const partes = await p.$$(`${R} [data-parte-de-la-comida]`);
+  assert.equal(partes.length, 2, 'el borrador tiene dos comidas guardadas');
+  const valores = await p.$$eval(`${R} [data-parte-de-la-comida]`, (xs) => xs.map((x) => Number(x.value)));
+  assert.equal(valores[0] + valores[1], 100, 'el punto de partida suma 100');
+  const QUIETOS = [`${R} [data-parte-de-la-comida]`, `${R} [data-kcal-propuestas]`, `${R} [data-rango-del-dia-propuesto]`, `${R} [data-margen-del-reparto]`, `${R} [data-proponer-rangos]`];
+  const alPrincipio = await fotoDeLugares(p, QUIETOS);
+  await captura(p, salida, 'sin-saltos-reparto-100');
+
+  // Las partes suman 99: cada fila sigue con su rango, «Todo el día» dice «99 %» y lo que falta (el 1 % de las 1.985 kcal
+  // que suman los gramos del objetivo, unas 20 kcal), y no se puede proponer.
+  await reemplazarTexto(p, partes[0], String(100 - valores[1] - 1));
+  await p.waitForFunction((s) => document.querySelector(`${s} [data-suma-de-las-partes] [data-lo-que-falta]`)?.textContent.includes('faltan 20 kcal'), { timeout: ESPERA, polling: 100 }, R);
+  assert.match(await p.$eval(`${R} [data-suma-de-las-partes] .reparto-por-comida__suma-cifra`, (e) => e.textContent), /^99 %$/);
+  nadaSeMovio(alPrincipio, await fotoDeLugares(p, QUIETOS), 'las partes suman 99');
+  assert.equal(await p.$$eval(`${R} [data-kcal-propuestas] [data-sin-rango]`, (xs) => xs.length), 0, 'con 99, cada comida conserva su rango');
+  assert.ok(await p.$eval(`${R} [data-proponer-rangos]`, (b) => b.disabled), 'con 99 no se propone');
+  assert.match(await p.$eval(`${R} [data-por-que-no-se-propone]`, (e) => e.textContent), /Las partes no suman 100/);
+  assert.equal(await p.$(`${R} .campo__error`), null, 'ningún párrafo de error debajo de la tabla');
+  await captura(p, salida, 'sin-saltos-reparto-99');
+
+  // Una parte vacía: su fila queda con «—», en el mismo lugar.
+  await reemplazarTexto(p, partes[0], '');
+  await p.waitForFunction((s) => document.querySelector(`${s} tbody tr [data-kcal-propuestas] [data-sin-rango]`), { timeout: ESPERA, polling: 100 }, R);
+  nadaSeMovio(alPrincipio, await fotoDeLugares(p, QUIETOS), 'una parte vacía');
+
+  // De nuevo 100: se puede proponer, y nada se movió.
+  await reemplazarTexto(p, partes[0], String(100 - valores[1]));
+  await p.waitForFunction((s) => document.querySelector(`${s} [data-proponer-rangos]`)?.disabled === false, { timeout: ESPERA, polling: 100 }, R);
+  nadaSeMovio(alPrincipio, await fotoDeLugares(p, QUIETOS), 'otra vez 100');
+
+  // Proponer: lo que se guardó se dice al lado del botón, el chequeo de la suma queda en su renglón y nada aparece arriba
+  // de las comidas (antes, el cuadro de la suma de los rangos aparecía ahí de golpe y corría toda la pantalla).
+  const comidas = await fotoDeLugares(p, ['.comida-del-editor[data-comida="1"]']);
+  const delReparto = () => p.evaluate((s) => {
+    const r = document.querySelector(s).getBoundingClientRect();
+    return ['[data-tabla-del-reparto]', '[data-chequeo-de-la-suma]', '[data-proponer-rangos]'].map((x) => Math.round((document.querySelector(`${s} ${x}`).getBoundingClientRect().top - r.top) * 10) / 10);
+  }, R);
+  const adentroAntes = await delReparto();
+  await clic(p, `${R} [data-proponer-rangos]`, 'Proponer estos rangos');
+  await p.waitForFunction((s) => document.querySelector(`${s} [data-por-que-no-se-propone]`)?.textContent.includes('Se guardaron'), { timeout: ESPERA, polling: 100 }, R);
+  await elemento(p, `${R} [data-chequeo-de-la-suma="contiene"]`);
+  assert.equal(await p.$('[data-suma-de-los-rangos=""]'), null, 'el cuadro de la suma ya no está arriba de las comidas');
+  nadaSeMovio(comidas, await fotoDeLugares(p, ['.comida-del-editor[data-comida="1"]']), 'al proponer, arriba de las comidas');
+  const adentroDespues = await delReparto();
+  adentroAntes.forEach((y, i) => assert.ok(Math.abs(y - adentroDespues[i]) <= 1, `al proponer, adentro del reparto [${i}] se movió de ${y} a ${adentroDespues[i]}`));
+  await captura(p, salida, 'sin-saltos-reparto-propuesto');
+
+  // 2. El objetivo: un envío con errores y, al corregir un campo, los demás y el botón quedan donde estaban.
+  await p.goto(`${WEB}/pro/advisees/nutrition?id=${encodeURIComponent(d.ase.id)}&vista=resumen`, { waitUntil: 'networkidle2' });
+  // El botón se enciende cuando llegaron las evaluaciones y los objetivos: se espera a que esté encendido.
+  await p.waitForFunction(() => [...document.querySelectorAll('.acciones button')].some((b) => b.textContent.includes('Nueva versión de objetivo') && !b.disabled), { timeout: ESPERA, polling: 100 });
+  await clic(p, '.acciones button', 'Nueva versión de objetivo');
+  await hidratado(p, '#objetivo-kcal');
+  await clic(p, 'form button[type="submit"]', 'Guardar nueva versión');
+  await elemento(p, '[data-resumen-de-errores]');
+  await p.waitForSelector('#objetivo-kcal[aria-invalid="true"]', { timeout: ESPERA });
+  const CAMPOS = ['#objetivo-proteina', '#objetivo-carbohidratos', '#objetivo-grasas', '#objetivo-fundamento', 'form button[type="submit"]'];
+  const conErrores = await fotoDeLugares(p, CAMPOS);
+  await p.click('#objetivo-kcal');
+  await p.keyboard.type('2100');
+  await p.keyboard.press('Tab');
+  await p.waitForSelector('#objetivo-kcal:not([aria-invalid])', { timeout: ESPERA });
+  await elemento(p, '[data-resumen-de-errores] li[data-corregido]');
+  nadaSeMovio(conErrores, await fotoDeLugares(p, CAMPOS), 'el objetivo, al corregir las kcal');
+  await captura(p, salida, 'sin-saltos-objetivo-corregido');
+
+  // 3. El calculador: con un cálculo completo, vaciar el factor para escribir otro no mueve nada.
+  await clic(p, '[data-abrir-el-calculador]');
+  const K = '[data-calculador]';
+  await elemento(p, `${K} [data-referencia-del-calculo]`);
+  await reemplazarTexto(p, await campoDelRotulo(p, K, 'Peso (kg)'), '68');
+  await reemplazarTexto(p, await campoDelRotulo(p, K, 'Talla (cm)'), '162');
+  await reemplazarTexto(p, await campoDelRotulo(p, K, 'Edad (años)'), '45');
+  await clic(p, `${K} [data-sexo-de-la-ecuacion] label.segmento`, 'Mujer');
+  await reemplazarTexto(p, await campoDelRotulo(p, K, 'Proteína (g/kg)'), '2');
+  await reemplazarTexto(p, await campoDelRotulo(p, K, 'Grasa (g/kg)'), '1');
+  await elemento(p, `${K} [data-gasto-total="listo"]`);
+  await elemento(p, `${K} [data-macros-del-dia="listo"]`);
+  const factor = await campoDelRotulo(p, K, 'Factor del día');
+  await p.evaluate((e) => e.setAttribute('data-factor-del-recorrido', ''), factor);
+  const DEL_CALCULO = [`${K} [data-factor-del-recorrido]`, `${K} [data-macros-del-calculo] input[type="number"]`, `${K} [data-usar-el-calculo]`];
+  const conCalculo = await fotoDeLugares(p, DEL_CALCULO);
+  await reemplazarTexto(p, factor, '');
+  await elemento(p, `${K} [data-gasto-total="sin-calculo"]`);
+  await elemento(p, `${K} [data-gasto-en-reposo="CALCULATED"]`);
+  nadaSeMovio(conCalculo, await fotoDeLugares(p, DEL_CALCULO), 'el calculador, sin factor');
+  assert.ok(await p.$eval(`${K} [data-usar-el-calculo]`, (b) => b.disabled), 'sin factor no se usa el cálculo');
+  await captura(p, salida, 'sin-saltos-calculador-sin-factor');
+}
+
+/**
+ * RP-20 y RP-21 (WP-RECORRIDO-PLAN-PULIDO, DL-188): las franjas por comida, en vivo. Con el rango del almuerzo indicado,
+ * la comida plegada ya muestra sus cuatro renglones (kcal, P, C y G) con una marca por opción. Al cambiar la cantidad del
+ * arroz en la opción abierta, su marca se mueve en la opción, en la franja de la comida y en «Rangos y totales», y ninguna
+ * de las tres cambia de alto. El panel no se desplaza de costado a 1280, 1440, 1536 y 2048 de ancho (la pantalla de
+ * Dirección: 1920 × 1080 con Windows al 125 %, con el navegador al 100 y al 75 %).
+ */
+async function franjasPorComida({ p, d, salida }) {
+  await abrirElBorrador(p, d);
+  const comida = '.comida-del-editor[data-comida="2"]';
+  // Plegada, con su franja debajo del encabezado: los cuatro renglones y una marca por opción (y su promedio).
+  await elemento(p, `${comida} [data-franjas-de-la-comida] .franja__marca`);
+  assert.equal(await p.$(`${comida}[data-abierta]`), null, 'la comida está plegada');
+  assert.equal(await p.$$eval(`${comida} [data-franjas-de-la-comida] .franja`, (fs) => fs.length), 4, 'kcal, P, C y G');
+  await p.waitForFunction((s) => document.querySelectorAll(`${s} [data-franjas-de-la-comida] .franja[data-renglon="protein"] .franja__marca:not([data-espera])`).length === 2, { timeout: ESPERA, polling: 100 }, comida);
+  assert.ok(await p.$(`${comida} [data-franjas-de-la-comida] .franja[data-renglon="protein"] .franja__promedio`), 'el promedio de las dos opciones');
+  await p.$eval(comida, (e) => e.scrollIntoView({ block: 'center' }));
+  await captura(p, salida, 'franjas-comida-plegada-1440');
+
+  // La opción del arroz, abierta: su franja, sola.
+  await abrirComida(p, 2);
+  await clic(p, '#pestana-0-1-0');
+  const campo = await elemento(p, '#item-0-1-0-0-cantidad');
+  await elemento(p, `${comida} [data-franjas-de-la-opcion] .franja__marca`);
+  const clave = await p.$eval(`${comida} [data-franjas-de-la-opcion] .franja__marca`, (m) => m.dataset.marca);
+  /** Dónde está la marca del arroz en cada renglón, en la opción, en la comida y en el panel, y el alto de cada caja. */
+  const medir = () =>
+    p.evaluate(
+      (s, k) => {
+        const lugares = { opcion: `${s} [data-franjas-de-la-opcion]`, comida: `${s} [data-franjas-de-la-comida]`, panel: '[data-rangos-por-comida] [data-comida-del-panel="2"]', dia: '[data-panel-de-nutricion] [data-rango-del-dia]' };
+        return Object.fromEntries(
+          Object.entries(lugares).map(([lugar, selector]) => {
+            const caja = document.querySelector(selector);
+            const marcas = [...(caja?.querySelectorAll(`.franja__marca[data-marca="${k}"]`) ?? [])].map((m) => m.style.getPropertyValue('--en'));
+            return [lugar, { alto: caja ? caja.getBoundingClientRect().height : null, marcas }];
+          }),
+        );
+      },
+      comida,
+      clave,
+    );
+  const antes = await medir();
+  for (const lugar of ['opcion', 'comida', 'panel']) assert.equal(antes[lugar].marcas.length, 4, `${lugar}: una marca del arroz por renglón`);
+
+  // Borrar la cantidad, como al reescribirla a mano: el arroz queda un momento sin dato. Su marca se va de la opción, de
+  // la comida y del panel, el día no se puede sumar, y nada cambia de alto: ni las franjas ni el bloque del día.
+  await campo.focus();
+  await p.keyboard.down('Control');
+  await p.keyboard.press('KeyA');
+  await p.keyboard.up('Control');
+  await p.keyboard.press('Backspace');
+  assert.equal(await p.$eval('#item-0-1-0-0-cantidad', (e) => e.value), '', 'la cantidad quedó vacía');
+  await p.waitForFunction(
+    (s, k) => !document.querySelector(`${s} [data-franjas-de-la-opcion] .franja__marca[data-marca="${k}"]`) && !!document.querySelector('[data-panel-de-nutricion] [data-rango-del-dia] [data-dia-sin-dato]'),
+    { timeout: ESPERA, polling: 100 },
+    comida,
+    clave,
+  );
+  const vacio = await medir();
+  for (const lugar of ['opcion', 'comida', 'panel']) assert.deepEqual(vacio[lugar].marcas, [], `${lugar}: sin cantidad, el arroz no se ubica`);
+  for (const lugar of ['opcion', 'comida', 'panel', 'dia']) assert.equal(vacio[lugar].alto, antes[lugar].alto, `${lugar}: el alto no cambia con la cantidad vacía`);
+
+  // Escribir la cantidad nueva: la marca vuelve en otro lugar, en los tres lugares, sin que cambie el alto.
+  await p.keyboard.type('75');
+  assert.equal(await p.$eval('#item-0-1-0-0-cantidad', (e) => e.value), '75', 'la cantidad nueva reemplaza la anterior');
+  await p.waitForFunction(
+    (s, k, previo) => {
+      const marca = document.querySelector(`${s} [data-franjas-de-la-opcion] .franja__marca[data-marca="${k}"]`);
+      return !!marca && marca.style.getPropertyValue('--en') !== previo && !document.querySelector('[data-panel-de-nutricion] [data-rango-del-dia] [data-dia-sin-dato]');
+    },
+    { timeout: ESPERA, polling: 100 },
+    comida,
+    clave,
+    antes.opcion.marcas[0],
+  );
+  const despues = await medir();
+  assert.equal(despues.dia.alto, antes.dia.alto, 'dia: el alto no cambia');
+  for (const lugar of ['opcion', 'comida', 'panel']) {
+    assert.equal(despues[lugar].marcas.length, 4, `${lugar}: el arroz vuelve a tener una marca por renglón`);
+    assert.notDeepEqual(despues[lugar].marcas, antes[lugar].marcas, `${lugar}: la marca del arroz se movió`);
+    assert.equal(despues[lugar].alto, antes[lugar].alto, `${lugar}: el alto no cambia`);
+  }
+  // Las tres dicen lo mismo: la comida y el panel toman lo que está en pantalla, no lo guardado.
+  assert.deepEqual(despues.comida.marcas, despues.opcion.marcas, 'la comida y la opción ubican igual al arroz');
+  assert.deepEqual(despues.panel.marcas, despues.opcion.marcas, 'el panel y la opción ubican igual al arroz');
+  await p.$eval(`${comida} [data-franjas-de-la-opcion]`, (e) => e.scrollIntoView({ block: 'center' }));
+  await captura(p, salida, 'franjas-opcion-abierta-1440');
+  const panel = await p.$('[data-panel-de-nutricion]');
+  if (salida) for (const tema of ['azul-noche', 'claro']) {
+    await p.evaluate((t) => (document.documentElement.dataset.tema = t), tema);
+    await pausa(200);
+    await panel.screenshot({ path: join(salida, `franjas-panel-1440-${tema}.png`) });
+  }
+  await p.evaluate(() => (document.documentElement.dataset.tema = 'azul-noche'));
+
+  // El panel y las franjas no se desplazan de costado en los anchos de Dirección.
+  for (const ancho of [1280, 1536, 2048, 1440]) {
+    await p.setViewport({ width: ancho, height: 900 });
+    await pausa(300);
+    const desborde = await p.evaluate(() => {
+      const panel = document.querySelector('[data-panel-de-nutricion]');
+      const fuera = [...document.querySelectorAll('.franjas')].filter((f) => f.scrollWidth > f.clientWidth + 1).length;
+      // Lo que se corta con «…»: los límites y el resumen de la comida y de la opción, y el renglón de ayuda del día.
+      const cortados = [...document.querySelectorAll(".franjas:is([data-variante='comida'], [data-variante='opcion']) :is(.franja__izquierda, .franja__derecha), .rangos-y-totales__ayuda")]
+        .filter((x) => x.clientWidth > 0 && x.scrollWidth > x.clientWidth + 1)
+        .map((x) => x.textContent);
+      return { panel: panel ? panel.scrollWidth - panel.clientWidth : null, fuera, cortados };
+    });
+    assert.ok(desborde.panel !== null && desborde.panel <= 1, `a ${ancho}: el panel no se desplaza de costado (${desborde.panel} px de más)`);
+    assert.equal(desborde.fuera, 0, `a ${ancho}: ninguna franja se sale de su lugar`);
+    assert.deepEqual(desborde.cortados, [], `a ${ancho}: ningún resumen ni límite se corta`);
+    await p.$eval(comida, (e) => e.scrollIntoView({ block: 'start' }));
+    if (ancho !== 1440) await captura(p, salida, `franjas-${ancho}`);
+  }
+}
+
+export const TODOS = { sesion, pistas, borrador, conflicto, descartar, salidaSegura, irACorregir, respuestaPerdida, reintentar, salidaConFallas, primerPlan, asistenteDeNutricion, retorno, grafico, primeraInvitacion, areaSugerida, sesionRevocada, accesoRevocado, faltaUnaParte, completitud, evidencia, administracion, comparacion, comparacionConOpciones, sinSaltos, franjasPorComida, notacionDelEsfuerzo };
 
 /** Errores de la página que no dicen nada del website (los del propio navegador). */
 const IGNORABLES = [/ResizeObserver loop/];

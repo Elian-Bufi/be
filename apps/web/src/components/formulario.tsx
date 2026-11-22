@@ -4,8 +4,21 @@
  * Piezas de formulario accesibles (10-B10 §6-§8): label persistente (el placeholder no la sustituye), error asociado al
  * campo con texto (no solo color), resumen de errores que recibe el foco.
  */
-import { forwardRef, useEffect, useRef, useState, type FocusEvent, type InputHTMLAttributes, type KeyboardEvent, type ReactNode } from 'react';
-import { alEnviar, alSalirDelCampo, anuncioDeLosAvisos, enfocarLoQueFalta, idsDelCampo, siguienteQueFalta, SIN_AVISOS, type AvisosDelFormulario, type ErrorDeCampo } from './validacion-viva';
+import { forwardRef, useEffect, useRef, useState, type FocusEvent, type HTMLAttributes, type InputHTMLAttributes, type KeyboardEvent, type ReactNode } from 'react';
+import { Icono } from './icono';
+import {
+  alEnviar,
+  alSalirDelCampo,
+  anuncioDeLosAvisos,
+  COPY_AVISOS_VIVOS,
+  enfocarLoQueFalta,
+  idsDelCampo,
+  renglonesDelResumen,
+  siguienteQueFalta,
+  SIN_AVISOS,
+  type AvisosDelFormulario,
+  type ErrorDeCampo,
+} from './validacion-viva';
 
 interface PropsDeCampo extends InputHTMLAttributes<HTMLInputElement> {
   readonly id: string;
@@ -16,8 +29,10 @@ interface PropsDeCampo extends InputHTMLAttributes<HTMLInputElement> {
 
 export const Campo = forwardRef<HTMLInputElement, PropsDeCampo>(function Campo({ id, etiqueta, ayuda, error, ...resto }, ref) {
   const descripcion = [ayuda ? `${id}-ayuda` : null, error ? `${id}-error` : null].filter(Boolean).join(' ') || undefined;
+  // RP-19 (DL-188): un campo que recibe `error` (aunque sea `null`) puede avisar. Dentro de `.avisos-con-lugar`, su renglón
+  // del aviso queda reservado: el aviso que aparece o se va no corre lo que está debajo.
   return (
-    <div className={`campo${error ? ' campo--error' : ''}`}>
+    <div className={`campo${error ? ' campo--error' : ''}`} data-con-aviso={error !== undefined ? '' : undefined}>
       <label htmlFor={id}>{etiqueta}</label>
       {ayuda ? (
         <p id={`${id}-ayuda`} className="campo__ayuda">
@@ -49,22 +64,48 @@ export function erroresPorCampo(errores: readonly { id: string; texto: string }[
 /**
  * El foco va al resumen solo cuando un envío produce errores (`intento` cambia), nunca en cada render: si no, cada
  * tecla que el usuario escribe para corregir un campo le devolvería el foco al resumen (10-B10 §6-§7).
+ *
+ * RP-19: `intento` cuenta **cada** envío, también el que pasa la revisión y vacía los errores. Si un envío que sale bien no
+ * lo cuenta, el resumen queda con lo del envío anterior tachado («Ya corregiste lo marcado.») hasta el envío siguiente.
  */
 export function ResumenDeErrores({ titulo, errores, intento }: { titulo: string; errores: readonly { id: string; texto: string }[]; intento: number }) {
   const ref = useRef<HTMLDivElement>(null);
   const hayErrores = errores.length > 0;
+  // RP-19 (DL-188): los renglones del envío quedan hasta el envío siguiente; lo corregido se marca y no se va. Si se fuera,
+  // el resumen se achicaría un renglón y el formulario entero subiría justo al pasar al campo siguiente. La lista del envío
+  // se toma en el mismo render en que cambia `intento` (no se pinta un cuadro con la lista vieja).
+  const [delEnvio, setDelEnvio] = useState({ intento, lista: errores });
+  if (delEnvio.intento !== intento) setDelEnvio({ intento, lista: errores });
+  const renglones = renglonesDelResumen(delEnvio.intento === intento ? delEnvio.lista : errores, errores);
   useEffect(() => {
     if (hayErrores) ref.current?.focus();
     // A propósito depende solo del envío (intento), no de la lista.
   }, [intento]);
-  if (errores.length === 0) return null;
+  if (renglones.length === 0) return null;
+  const todoCorregido = renglones.every((e) => e.corregido);
+  // Revisión de RP-19: el lector de pantalla oye el resumen una vez por envío y no a cada corrección. Ahora el resumen
+  // cambia entre envíos (lo corregido se marca, el título pasa a «Ya corregiste lo marcado.»), y con `role="alert"` (en
+  // vivo, urgente y entero) se volvía a leer completo al salir de cada campo corregido, encima del rótulo del campo
+  // siguiente. `aria-live="off"`: lo que cambia entre envíos no se anuncia (el «Listo para…» lo dice `AnuncioDeLosAvisos`).
+  // La clave del envío lo vuelve a montar en cada envío: un `role="alert"` nuevo se anuncia entero, como antes, y el foco
+  // llega igual.
   return (
-    <div ref={ref} className="aviso aviso--error" role="alert" tabIndex={-1}>
-      <p className="aviso__titulo">{titulo}</p>
+    <div
+      key={intento}
+      ref={ref}
+      className={`aviso aviso--${todoCorregido ? 'info' : 'error'} resumen-de-errores`}
+      role="alert"
+      aria-live="off"
+      tabIndex={-1}
+      data-resumen-de-errores
+    >
+      <p className="aviso__titulo">{todoCorregido ? COPY_AVISOS_VIVOS.todoCorregido : titulo}</p>
       <ul>
-        {errores.map((e) => (
-          <li key={e.id}>
+        {renglones.map((e) => (
+          <li key={e.id} data-corregido={e.corregido ? '' : undefined}>
+            {e.corregido ? <Icono nombre="tilde" tamano={15} /> : null}
             <a href={`#${e.id}`}>{e.texto}</a>
+            {e.corregido ? <span className="visualmente-oculto"> ({COPY_AVISOS_VIVOS.corregido})</span> : null}
           </li>
         ))}
       </ul>
@@ -81,6 +122,31 @@ export function Aviso({ tipo, children, enfocar = false }: { tipo: 'error' | 'in
     <div ref={ref} className={`aviso aviso--${tipo}`} role={tipo === 'error' ? 'alert' : 'status'} tabIndex={enfocar ? -1 : undefined}>
       {children}
     </div>
+  );
+}
+
+/**
+ * RP-19 (WP-RECORRIDO-PLAN-PULIDO, DL-188) · «Sin saltos»: un renglón con su lugar reservado para lo que va y viene
+ * mientras se escribe o se elige (un aviso, lo que falta de una suma, por qué un botón está apagado). Siempre está en la
+ * página y, vacío, ocupa lo mismo: lo que aparece no corre los campos ni los botones. `juntoAlBoton`: al lado de un botón,
+ * con su alto, para que el botón no se mueva aunque el texto ocupe dos renglones. `anunciar`: el lector de pantalla lo lee
+ * al cambiar. Las reglas, en `globals.css` (bloque RP-19).
+ */
+export function RenglonDelAviso({
+  tipo = 'nota',
+  juntoAlBoton = false,
+  anunciar = false,
+  className,
+  children,
+  ...resto
+}: HTMLAttributes<HTMLSpanElement> & { tipo?: 'nota' | 'error' | 'exito'; juntoAlBoton?: boolean; anunciar?: boolean }) {
+  const hay = children !== null && children !== undefined && children !== false && children !== '';
+  const clases = ['renglon-del-aviso', `renglon-del-aviso--${tipo}`, juntoAlBoton ? 'renglon-del-aviso--junto-al-boton' : null, className].filter(Boolean).join(' ');
+  return (
+    <span {...resto} className={clases} aria-live={anunciar ? 'polite' : undefined} data-renglon-del-aviso={hay ? 'con-aviso' : 'vacio'}>
+      {hay && tipo === 'error' ? <span aria-hidden="true">⚠ </span> : null}
+      {children}
+    </span>
   );
 }
 

@@ -247,7 +247,7 @@ export function FormularioDeEvaluacion({ onRegistrada, onCancelar = null, conTit
   const porCampo = erroresPorCampo(errores);
   const nombresDePendientes = new Map((conto?.pendientes ?? []).map((p) => [p.solicitud.formRequestId, p.solicitud.templateName] as const));
   return (
-    <form className="formulario evaluacion-inicial" onSubmit={enviar} onBlur={avisos.alSalir} onKeyDown={avisos.alEnter} noValidate data-evaluacion-inicial data-lecturas={leyendo ? 'leyendo' : 'listas'}>
+    <form className="formulario evaluacion-inicial avisos-con-lugar" onSubmit={enviar} onBlur={avisos.alSalir} onKeyDown={avisos.alEnter} noValidate data-evaluacion-inicial data-lecturas={leyendo ? 'leyendo' : 'listas'}>
       <div className="evaluacion-inicial__cabecera">
         <h3>{titulo}</h3>
         <FechaDeLaEvaluacion id="evaluacion-ocurrencia" valor={ocurrencia} onCambiar={setOcurrencia} error={porCampo['evaluacion-ocurrencia'] ?? null} />
@@ -467,7 +467,7 @@ export function CamposDeObjetivo({
   return (
     <>
       <p className="nota">{COPY_NUTRICION.noCalcula}</p>
-      <div className={`campo${errorDeEvaluacion ? ' campo--error' : ''}`}>
+      <div className={`campo${errorDeEvaluacion ? ' campo--error' : ''}`} data-con-aviso>
         <label htmlFor={`${prefijo}-evaluacion`}>Evaluación de referencia</label>
         <select
           id={`${prefijo}-evaluacion`}
@@ -521,7 +521,7 @@ export function CamposDeObjetivo({
       </fieldset>
       {/* RP-05 (DL-188): la distribución por comida salió del objetivo: es prematura sin días tipo. Vive en el plan, en cada
           día tipo, como «Reparto por comida» (RP-06). Lo que una versión vieja guardó en ese texto queda con ella. */}
-      <div className={`campo${errorDeFundamento ? ' campo--error' : ''}`}>
+      <div className={`campo${errorDeFundamento ? ' campo--error' : ''}`} data-con-aviso>
         <label htmlFor={`${prefijo}-fundamento`}>Fundamento</label>
         <p id={`${prefijo}-fundamento-ayuda`} className="campo__ayuda">
           Por qué fijás este objetivo. Es obligatorio: queda con la versión.
@@ -621,7 +621,7 @@ export function FormularioDeObjetivo({
     );
   }
   return (
-    <form className="formulario" onSubmit={enviar} onBlur={avisos.alSalir} onKeyDown={avisos.alEnter} noValidate>
+    <form className="formulario avisos-con-lugar" onSubmit={enviar} onBlur={avisos.alSalir} onKeyDown={avisos.alEnter} noValidate>
       <h3>{COPY_NUTRICION.nuevaVersionDeObjetivo}</h3>
       <ResumenDeErrores titulo="Revisá estos datos:" errores={errores} intento={avisos.envios} />
       <AnuncioDeLosAvisos texto={avisos.anuncio(COPY_AVISOS_VIVOS.listoParaGuardar)} />

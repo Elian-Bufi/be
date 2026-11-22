@@ -250,6 +250,19 @@ export function parametrosDelCalculador(v: ValoresDelCalculador, hoy: string): P
   };
 }
 
+/**
+ * RP-19 (WP-RECORRIDO-PLAN-PULIDO, DL-188) · sin saltos: el gasto en reposo y los datos que usa, siempre. Depende solo de
+ * los datos, el método y el sexo: un factor, un ajuste o unos g/kg que todavía no se entienden no lo borran. Antes, al
+ * vaciar el factor para escribir otro, desaparecían la fórmula y la cuenta, que están arriba del campo, y el campo subía
+ * mientras se escribía.
+ */
+export function reposoEnVivo(v: ValoresDelCalculador, tomas: readonly TomaDeReferencia[]): { readonly datos: DatosUsados; readonly resting: ResultadoDelCalculo['resting'] } {
+  const datos = datosUsados(v, tomas);
+  // El gasto en reposo no usa la actividad, el ajuste ni los macros: se calcula con un factor neutro y sin lo demás.
+  const neutros: ParametrosDelCalculo = { sex: v.sexo === '' ? null : v.sexo, restingMethod: v.metodo, activity: { factor: 1, restDayFactor: null }, adjustment: null, macros: null };
+  return { datos, resting: calcularObjetivo(datos, neutros).resting };
+}
+
 /** El cálculo en vivo, o `null` si los parámetros todavía no se entienden. */
 export function calculoEnVivo(v: ValoresDelCalculador, tomas: readonly TomaDeReferencia[], hoy: string): { readonly datos: DatosUsados; readonly parametros: ParametrosDelCalculo; readonly resultado: ResultadoDelCalculo } | null {
   const parametros = parametrosDelCalculador(v, hoy);
@@ -450,4 +463,6 @@ export const COPY_CALCULADOR = {
   usados: 'Listo: las kcal, los gramos y el método quedaron en el objetivo. Revisalos antes de guardar. La toma, el factor, el ajuste y los g/kg quedan con el cálculo, solo para vos: el objetivo lo pueden ver otros profesionales con los que la persona comparte Nutrición.',
   seGuardaCon: (fuente: string) => `Al guardar, el objetivo queda vinculado a la referencia (${fuente}) y al cálculo.`,
   sinCalculo: 'Completá los datos de arriba para ver el cálculo.',
+  /** RP-19: con un cálculo, pero sin kcal para llevar (un déficit mayor que el gasto, un dato que falta). */
+  sinKcalParaLlevar: 'Con estos datos no hay kcal para llevar al objetivo: revisá lo de arriba.',
 } as const;

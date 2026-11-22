@@ -44,7 +44,9 @@ export function RestablecerSegundoFactor() {
     if (!correo.trim()) encontrados['rsf-correo'] = T.problemas.INVALID_LOCAL_IDENTIFIER!;
     if (!fundamento.trim()) encontrados['rsf-fundamento'] = T.problemas.RATIONALE_REQUIRED!;
     if (Object.keys(encontrados).length > 0) return mostrar(encontrados);
+    // RP-19: este envío también cuenta; si no, el resumen quedaría con lo del anterior tachado.
     setErrores({});
+    setIntento((n) => n + 1);
     setConfirmando(true);
   }
 

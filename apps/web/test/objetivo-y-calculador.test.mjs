@@ -208,7 +208,9 @@ test('las pantallas: el calculador separado de los rangos de cada comida, sin pa
   for (const t of [calculador, propuesta, leer('app/pro/advisees/nutrition/referencia-del-objetivo.tsx')]) {
     assert.doesNotMatch(t, /(cumplimiento|adherencia|asesorad[oa]s?|racha|puntaje|estaci[oó]n)/i);
   }
-  assert.match(propuesta, /% de los \$\{numero\(gramos\[m\], 0\)\} g/);
+  // RP-19 (DL-188): el «%» de cada parte, con su base, en el rótulo de la columna.
+  assert.match(propuesta, /C\.deLosGramos\(gramos\[m\]\)/);
+  assert.equal(P.COPY_PROPUESTA.deLosGramos(130), '% de los 130 g');
   // El calculador vive en el objetivo; la propuesta, en el plan, y guarda por API-PLN-03 como cualquier rango.
   assert.match(leer('app/pro/advisees/nutrition/formularios.tsx'), /SeccionDelCalculador/);
   assert.match(propuesta, /escribirRangosDelPlan/);
