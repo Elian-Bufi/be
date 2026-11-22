@@ -5,7 +5,7 @@
  * buscador adentro y, al costado, el total al instante, lo que cubren las opciones de su comida y el objetivo general.
  * La lógica está en `opcion-en-un-cuadro.ts`; la cuenta, en `rangos.ts` (la del dominio, `SUM_SOURCE_PER_100G_V1`).
  *
- * - Lo abren «Agregar ítem» de una opción de alimentos y el paso 5 del asistente (ED-30). Trabaja sobre una copia: el
+ * - Lo abre «Agregar ítem» de una opción de alimentos. Trabaja sobre una copia: el
  *   borrador cambia solo con «Guardar la opción», que aplica la regla del plan (sin nombre o con una cantidad que no se
  *   entiende, dice por qué y lleva al campo).
  * - El buscador es un combobox con grilla (ARIA 1.2): el foco queda en el campo y la celda marcada se anuncia por
@@ -47,7 +47,6 @@ import { dia as fechaDelDia } from '../../../../lib/formato';
 import { mensajeDeFallo } from '../../../../lib/intento';
 import { TiraDelObjetivo } from '../seguimiento/tira-del-objetivo';
 import { CrearManualmente } from './agregar-item';
-import { COPY_ASISTENTE_DE_NUTRICION } from './asistente-de-nutricion';
 import { FilaDeItem, type OpcionEnEdicion } from './comida-del-editor';
 import type { AlimentosHabituales } from './habituales';
 import { ImportacionDeOpenFoodFacts } from './importacion';
@@ -65,7 +64,8 @@ import {
   PAUSA_DEL_BUSCADOR,
   resultadosDelBuscador,
 } from './opcion-en-un-cuadro';
-import { useNumeroDelObjetivo } from './pasos-del-asistente';
+import { useNumeroDelObjetivo } from './numero-del-objetivo';
+import { COPY_VERSION_DEL_OBJETIVO } from './version-del-objetivo';
 import { FrenteALosRangos } from './comida-del-editor';
 import { COPY_PLANIFICACION, diaFrenteAlRango, origenBreve } from './planificacion';
 import { COPY_FRANJAS, franjasDeLaComida } from './franjas-por-comida';
@@ -355,8 +355,8 @@ export function CuadroDeLaOpcion({
               {objetivo ? (
                 <>
                   <TiraDelObjetivo calorias={objetivo.estimatedEnergyRequirement.value} macros={{ estado: 'listos', valor: objetivo.macronutrientDistribution }} onReintentar={() => undefined} />
-                  {/* EDC-12: con su versión, como en el paso 2 del asistente. */}
-                  <p className="nota">{COPY_ASISTENTE_DE_NUTRICION.versionYFecha(numeroDelObjetivo, fechaDelDia(objetivo.effectiveFrom))}</p>
+                  {/* EDC-12: con su versión, como en el objetivo del editor. */}
+                  <p className="nota">{COPY_VERSION_DEL_OBJETIVO.versionYFecha(numeroDelObjetivo, fechaDelDia(objetivo.effectiveFrom))}</p>
                 </>
               ) : (
                 <p className="nota">{C.sinObjetivo}</p>

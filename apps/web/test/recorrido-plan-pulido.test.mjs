@@ -190,11 +190,10 @@ test('RP-06 · el reparto por comida, en el plan: una parte por comida que suma 
   assert.match(delPlan, /dia && comidasSinGuardar === 0 \? C\.sinComidasGuardadas : C\.sinDiaGuardado/);
   // Revisión del PR: lo escrito vuelve al punto de partida si cambian las comidas, no si cambia el nombre de una.
   assert.match(delPlan, /const claveDelDia = dia \? `\$\{dia\.dayTypeId\}\|\$\{dia\.comidas\.map\(\(c\) => c\.mealId\)\.join\(','\)\}` : '';/);
-  // Revisión del PR: en el paso de los rangos del asistente se ven los repartos de todos los días tipo, uno debajo del
-  // otro; cada título dice de qué día es (con comidas que se llaman igual, eran cuadros idénticos con el mismo nombre).
-  assert.equal(P.COPY_PROPUESTA.tituloDelDia('Día de descanso'), 'Reparto por comida · Día de descanso');
-  assert.match(delPlan, /\{nombreDelDia \? C\.tituloDelDia\(nombreDelDia\) : C\.titulo\}/);
-  assert.match(leer('app/pro/advisees/nutrition/editor.tsx'), /estructura\.map\(\(d, n\) => \(\s*<RepartoPorComida [^\n]*nombreDelDia=\{nombreDelDiaTipo\(d, n\)\}/);
+  // El reparto va dentro de su día tipo, y la pestaña dice cuál es: la lista de todos los días tipo, cada uno con su
+  // título, era la del paso de los rangos del asistente de Nutrición, que se retiró (DL-193).
+  assert.match(delPlan, /<Icono nombre="objetivo" tamano=\{18\} \/>\n\s*\{C\.titulo\}/);
+  assert.equal(P.COPY_PROPUESTA.tituloDelDia, undefined);
   // Si no suman 100, no se propone y se dice cuánto suman (RP-19: en «Todo el día», con lo que falta).
   const corto = P.conParteUnica(P.repartoInicialUnico(DIA, 'parejo'), 'm4', '20');
   assert.equal(P.parteUnica(corto, 'm4'), '20');
@@ -402,15 +401,14 @@ test('RP-19 · la regla reutilizable: el renglón del aviso, los campos con su l
     assert.match(leer(r), /setErrores\(\{\}\);\n\s*setIntento\(\(n\) => n \+ 1\);/, r);
   }
   assert.match(leer('components/acceso-con-google.tsx'), /setError\(null\);\n\s*setIntento\(\(n\) => n \+ 1\);\n\s*setEnviando\(true\);/);
-  // Dónde se usa: el objetivo, la evaluación, el calculador, el paso 1 de los asistentes y el cuadro del rango.
+  // Dónde se usa: el objetivo, la evaluación, el calculador, el paso 1 del asistente de Entrenamiento y el cuadro del rango
+  // (el paso 1 del de Nutrición se retiró con DL-193).
   const formularios = leer('app/pro/advisees/nutrition/formularios.tsx');
   assert.match(formularios, /<form className="formulario evaluacion-inicial avisos-con-lugar"/);
   assert.match(formularios, /<form className="formulario avisos-con-lugar" onSubmit=\{enviar\}/);
   assert.equal(formularios.match(/data-con-aviso>/g)?.length, 2, 'la evaluación de referencia y el fundamento, que no pasan por Campo');
   assert.match(leer('app/pro/advisees/nutrition/calculador.tsx'), /<div className="calculador avisos-con-lugar" data-calculador>/);
-  for (const r of ['app/pro/advisees/asistente/punto-de-partida.tsx', 'app/pro/advisees/nutrition/pasos-del-asistente.tsx']) {
-    assert.match(leer(r), /<RenglonDelAviso id="falta-punto-de-partida"/, r);
-  }
+  assert.match(leer('app/pro/advisees/asistente/punto-de-partida.tsx'), /<RenglonDelAviso id="falta-punto-de-partida"/);
   assert.equal(leer('app/pro/advisees/nutrition/rangos-indicados-del-plan.tsx').match(/<RenglonDelAviso id=/g)?.length, 3);
   assert.match(leer('app/pro/advisees/evaluacion/evaluacion-inicial.tsx'), /<RenglonDelAviso id=\{`\$\{id\}-problema`\}/);
 });

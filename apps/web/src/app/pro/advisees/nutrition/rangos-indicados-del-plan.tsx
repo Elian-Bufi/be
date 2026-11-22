@@ -1,7 +1,7 @@
 'use client';
 
 /**
- * API-PLN-02 y API-PLN-03 en el editor y en el asistente de Nutrición (ED-34; decisión de Dirección del 2026-11-13,
+ * API-PLN-02 y API-PLN-03 en el editor de Nutrición (ED-34; decisión de Dirección del 2026-11-13,
  * «Último peso, guardado en gramos») · Los rangos que indica el profesional, por día tipo y por comida. La lógica y los
  * textos están en `rangos-indicados.ts`.
  *
@@ -12,9 +12,9 @@
  * - Lo guardado no se mueve: un peso más nuevo, o la toma usada corregida o anulada, se avisa en neutro y se usa solo si el
  *   profesional lo elige.
  * - Los rangos se guardan aparte de la estructura (su propia revisión): no esperan al autoguardado ni lo frenan.
- * - **NUP-05 (WP-NUTRICION-PLANIFICACION):** el cuadro se abre desde donde se arma (cada comida del editor, los pasos 3 a 5
- *   del asistente) y no solo desde la lista: qué rango está abierto vive en `useRangosIndicados`, y el cuadro se dibuja una
- *   sola vez (`CuadroDelRangoIndicado`), aunque la lista aparezca en dos lugares.
+ * - **NUP-05 (WP-NUTRICION-PLANIFICACION):** el cuadro se abre desde donde se arma (cada comida del editor) y no solo desde
+ *   la lista: qué rango está abierto vive en `useRangosIndicados`, y el cuadro se dibuja una sola vez
+ *   (`CuadroDelRangoIndicado`).
  */
 
 import { MACROS_DEL_RANGO, type EscribirRangosRequest, type MacroDelRango, type Rango, type RangosDelPlan } from '@be/domain';
@@ -105,7 +105,7 @@ export interface DiaParaLosRangos {
   readonly comidas: readonly { readonly mealId?: string | undefined; readonly nombre: string }[];
 }
 
-export function RangosIndicados({ rangos, dias, titulo = true }: { rangos: RangosIndicadosHook; dias: readonly DiaParaLosRangos[]; titulo?: boolean }) {
+export function RangosIndicados({ rangos, dias }: { rangos: RangosIndicadosHook; dias: readonly DiaParaLosRangos[] }) {
   const { estado, aviso } = rangos;
   if (estado.estado === 'leyendo') return <p className="nota" role="status">{C.leyendo}</p>;
   if (estado.estado === 'falla')
@@ -152,16 +152,12 @@ export function RangosIndicados({ rangos, dias, titulo = true }: { rangos: Rango
   };
   return (
     <section className="rangos-indicados" aria-label={C.titulo} data-rangos-indicados>
-      {/* Con título (el panel del editor), la explicación va detrás de un «?» al lado (pedido de Dirección: lo largo, a
-          un toque). Sin título (el paso del asistente), sigue a la vista: el paso la presenta con su propio título. */}
-      {titulo ? (
-        <div className="rangos-indicados__titulo">
-          <h3>{C.titulo}</h3>
-          <ExplicacionAPedido nombre={C.queSon}>{C.ayuda}</ExplicacionAPedido>
-        </div>
-      ) : (
-        <p className="nota">{C.ayuda}</p>
-      )}
+      {/* La explicación va detrás de un «?» al lado del título (pedido de Dirección: lo largo, a un toque). La lista sin
+          título era la del paso del asistente de Nutrición, que se retiró (DL-193). */}
+      <div className="rangos-indicados__titulo">
+        <h3>{C.titulo}</h3>
+        <ExplicacionAPedido nombre={C.queSon}>{C.ayuda}</ExplicacionAPedido>
+      </div>
       {datos.bodyWeight ? <p data-peso-usado>{pesoEnPalabras(datos.bodyWeight)}</p> : null}
       {datos.bodyWeightWithheld ? <p className="nota">{C.pesoRetenido}</p> : null}
       {avisosDelPesoUsado.map((texto) => (
@@ -185,8 +181,8 @@ export function RangosIndicados({ rangos, dias, titulo = true }: { rangos: Rango
 }
 
 /**
- * NUP-05: el cuadro del rango que está abierto, dibujado una sola vez por editor (lo abren la lista, cada comida y los
- * pasos del asistente). Al guardar, el aviso queda en la lista.
+ * NUP-05: el cuadro del rango que está abierto, dibujado una sola vez por editor (lo abren la lista y cada comida). Al
+ * guardar, el aviso queda en la lista.
  */
 export function CuadroDelRangoIndicado({ token, planId, rangos }: { token: string; planId: string; rangos: RangosIndicadosHook }) {
   const { estado, abierto } = rangos;

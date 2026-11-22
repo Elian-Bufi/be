@@ -344,23 +344,24 @@ function pantallas(ids) {
       },
     ],
     PRO_N: [
+      // DL-193 (WP-SIN-ASISTENTE-DE-NUTRICION): el asistente de Nutrición se retiró. Las capturas 13 y 14 de su momento
+      // («13-asistente-nutricion-paso-1» y «14-asistente-nutricion-paso-5») quedan como evidencia de ED-30; desde ahora, la
+      // herramienta saca los puntos de partida de la vista del plan y la versión nueva en el editor, que la 15 necesita.
       {
-        nombre: '13-asistente-nutricion-paso-1',
+        nombre: '13-nutricion-puntos-de-partida',
         entera: true,
         llegar: async (page) => {
-          await ir(page, nutricion(norma, '&asistente=1'));
-          await visible(page, '[data-asistente="1"]');
+          await ir(page, nutricion(norma));
+          await visible(page, '[data-crear-version]');
         },
       },
       {
-        nombre: '14-asistente-nutricion-paso-5',
+        nombre: '14-nutricion-version-nueva-en-el-editor',
         entera: true,
         llegar: async (page) => {
-          await clic(page, '[data-punto-de-partida="vigente"]');
-          await clic(page, '[data-asistente-principal]');
-          await visible(page, '[data-asistente="2"]');
-          await ir(page, nutricion(norma, '&asistente=5'));
-          await visible(page, '[data-asistente="5"]');
+          // «Nueva versión del plan» copia la activa (lo que hacía «Copiar el plan vigente» del asistente).
+          await clic(page, '[data-crear-version]');
+          await visible(page, '.editor-del-plan');
         },
       },
       {

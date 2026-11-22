@@ -461,15 +461,21 @@ function pantallas(norma) {
     if (await page.$(`${boton}[aria-expanded="false"]`)) await clic(page, boton);
   };
   return [
+    // DL-193 (WP-SIN-ASISTENTE-DE-NUTRICION): el asistente de Nutrición se retiró. Las capturas 01 a 05 de su momento
+    // («01-asistente-objetivo-kcal-y-porcentaje» a «05-asistente-paso-5-formas-de-sumar») quedan como evidencia de NUP-07,
+    // NUP-05, NUP-06 y NUP-13. Desde ahora, la versión nueva se crea en la vista del plan (la que siguen usando las
+    // capturas 06 en adelante), el objetivo se escribe con el formulario de siempre (en el Resumen), y los pasos 3 a 5 ya
+    // no se sacan: lo mismo se ve en el editor (06 en adelante).
     {
-      nombre: '01-asistente-objetivo-kcal-y-porcentaje',
+      nombre: '01-objetivo-kcal-y-porcentaje',
       entera: true,
       llegar: async (page) => {
-        await ir(page, nutricion('&asistente=1'));
-        await clic(page, '[data-punto-de-partida="vigente"]');
-        await clic(page, '[data-asistente-principal]');
-        await visible(page, '[data-asistente="2"]');
-        await clic(page, '[data-objetivo-nuevo]');
+        await ir(page, nutricion());
+        // «Nueva versión del plan» copia la activa (lo que hacía «Copiar el plan vigente» del asistente).
+        await clic(page, '[data-crear-version]');
+        await visible(page, '.editor-del-plan');
+        await ir(page, `/pro/advisees/nutrition?id=${norma}&vista=resumen`);
+        await clic(page, 'button', 'Nueva versión de objetivo');
         await visible(page, '#objetivo-kcal');
         // El caso real de Dirección: 2.500 kcal con P 112, C 80 y G 335 (unas 3.780 kcal).
         await escribir(page, '#objetivo-kcal', '2500');
@@ -481,7 +487,7 @@ function pantallas(norma) {
       },
     },
     {
-      nombre: '02-asistente-objetivo-error-alineado',
+      nombre: '02-objetivo-error-alineado',
       llegar: async (page) => {
         // Un error en Proteínas, al enviar: los tres campos siguen a la misma altura.
         await escribir(page, '#objetivo-proteina', 'abc');
@@ -493,41 +499,6 @@ function pantallas(norma) {
       },
       despues: async (page) => {
         await clic(page, 'form.formulario button', 'Cancelar').catch(() => {});
-      },
-    },
-    {
-      nombre: '03-asistente-paso-3-rango-del-dia',
-      entera: true,
-      llegar: async (page) => {
-        await ir(page, nutricion('&asistente=3'));
-        await visible(page, '[data-asistente="3"]');
-        await indicarRango(page, 0, { Proteínas: [70, 100], Carbohidratos: [180, 260], Grasas: [45, 70] });
-      },
-    },
-    {
-      nombre: '04-asistente-paso-4-rangos-y-suma',
-      entera: true,
-      llegar: async (page, nota) => {
-        await ir(page, nutricion('&asistente=4'));
-        await visible(page, '[data-asistente="4"]');
-        const rangos = [
-          { Proteínas: [15, 25], Carbohidratos: [30, 50], Grasas: [5, 15] },
-          { Proteínas: [30, 40], Carbohidratos: [40, 70], Grasas: [10, 20] },
-          { Proteínas: [8, 15], Carbohidratos: [20, 40], Grasas: [3, 10] },
-          { Proteínas: [25, 35], Carbohidratos: [30, 60], Grasas: [8, null] },
-        ];
-        // La colación queda sin rango: la suma lo dice («sin tope»).
-        for (const [n, r] of rangos.entries()) await indicarRango(page, n, r).catch((e) => nota(`rango ${n + 1}: ${String(e.message ?? e).slice(0, 120)}`));
-        await (await visible(page, '[data-suma-de-los-rangos]')).evaluate((x) => x.scrollIntoView({ block: 'start' }));
-        await pausa(400);
-      },
-    },
-    {
-      nombre: '05-asistente-paso-5-formas-de-sumar',
-      entera: true,
-      llegar: async (page) => {
-        await ir(page, nutricion('&asistente=5'));
-        await visible(page, '[data-asistente-formas-de-sumar]');
       },
     },
     {

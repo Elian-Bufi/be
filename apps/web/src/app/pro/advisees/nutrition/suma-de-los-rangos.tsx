@@ -25,7 +25,7 @@ import { RangoIndicadoConIconos, RotuloConIcono } from './cantidad-del-macro';
  * línea del «Reparto por comida» y esta tabla, `enDetalle`, queda detrás de su «?»: sin título ni recuadro propios.
  */
 export function SumaDeLosRangosIndicados({ comidas, objetivo, enDetalle = false }: { comidas: readonly { readonly nombre: string; readonly rango: Rango | null }[]; objetivo: VersionDeObjetivo | null; enDetalle?: boolean }) {
-  // Puede haber más de una (una por día tipo en el paso 4, y la del editor detrás del asistente): cada una con su id.
+  // Puede haber más de una en la página: cada una con su id.
   const id = useId();
   if (comidas.length === 0) return null;
   const suma = sumaDeLosRangos(comidas);
@@ -117,7 +117,15 @@ export function SumaDeLosRangosIndicados({ comidas, objetivo, enDetalle = false 
  */
 export function KcalDelObjetivo({ kcal, gramos, enProporcion = [], compacto = false }: { kcal: number | null; gramos: GramosDelObjetivo; enProporcion?: readonly MacroDelRango[]; compacto?: boolean }) {
   const k = kcalDeLosGramos(gramos, kcal);
-  if (!k && compacto) return null;
+  // Compacto (el objetivo del editor), sin gramos que sumar: se dice solo si es porque hay macros en proporción de las
+  // kcal (SAN-04, DL-193: lo decía el paso 2 del asistente). «Con los tres macros escritos…» es del formulario.
+  if (!k && compacto) {
+    return enProporcion.length > 0 ? (
+      <p className="nota kcal-del-objetivo" data-kcal-del-objetivo data-en-proporcion>
+        {sinLasKcalDeLosGramos(enProporcion)}
+      </p>
+    ) : null;
+  }
   if (!k) {
     return (
       <p className="nota kcal-del-objetivo" data-kcal-del-objetivo>
@@ -195,7 +203,7 @@ export interface RangoParaIndicar {
 
 /**
  * NUP-05: el rango de una comida o de un día tipo en un renglón, con su botón para indicarlo o cambiarlo: en la comida
- * del editor y en los pasos 3, 4 y 5 del asistente, mientras se arma (no recién en «Revisar»).
+ * del editor, mientras se arma (no recién en «Revisar»).
  */
 export function RangoEnUnRenglon({ de, rango, soloElBoton = false }: { de: string; rango: RangoParaIndicar; soloElBoton?: boolean }) {
   // Con el rango ya a la vista en otro lado (el encabezado de la comida), el renglón es solo el botón.

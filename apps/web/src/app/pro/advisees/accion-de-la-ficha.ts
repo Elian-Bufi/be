@@ -11,7 +11,8 @@
  *    fecha (TA-13): aplicada, la fecha que queda en el plan vigente es de un ciclo ya revisado, y lo que sigue es su
  *    borrador, o nada (D-6: «no sigue como vencida»).
  * 3. **Un plan en borrador:** «Seguir el borrador».
- * 4. **Un área sin plan vigente ni borrador:** «Empezar el plan».
+ * 4. **Un área sin plan vigente ni borrador:** «Empezar el plan». En Entrenamiento abre el asistente; en Nutrición, la
+ *    vista del plan con sus pasos de siempre (DL-193: el asistente de Nutrición se retiró).
  * Con todo al día, ninguna: la ficha no inventa una urgencia. Las tarjetas del Resumen siguen teniendo las suyas.
  * Un área legible sin ningún dato todavía llega con el resumen en `null` (el tablero no inventa ceros): para la ficha es
  * un área sin plan, y la acción es empezarlo (lo encontró el recorrido de navegador `primerPlan`).
@@ -32,6 +33,8 @@ export interface AccionDeLaFicha {
 
 const NOMBRE: Readonly<Record<AreaDeLaAccion, string>> = { NUTRICION: 'Nutrición', ENTRENAMIENTO: 'Entrenamiento' };
 const RUTA_DEL_AREA: Readonly<Record<AreaDeLaAccion, string>> = { NUTRICION: 'nutrition', ENTRENAMIENTO: 'training' };
+/** Lo que suma «Empezar el plan» a la dirección: el asistente en Entrenamiento; nada en Nutrición (DL-193). */
+const EMPEZAR: Readonly<Record<AreaDeLaAccion, string>> = { NUTRICION: '', ENTRENAMIENTO: '&asistente=1' };
 
 /** La dirección de la acción, sin el retorno (lo suma quien arma el enlace). */
 export const rutaDeLaAccion = (a: AccionDeLaFicha, asesoradoId: string): string =>
@@ -74,8 +77,9 @@ export function accionDeLaFicha(dominios: Dominios, hoy: string): AccionDeLaFich
 
   // 4. Un área sin plan vigente.
   const sinPlan = legibles.find(({ resumen }) => !resumen?.activePlan);
-  // ED-16 y ED-30: en las dos áreas, empezar es abrir el asistente (sin objetivo, empieza por ahí: el paso 0 de DL-145).
-  if (sinPlan) return { tipo: 'empezar', area: sinPlan.area, texto: `Empezar el plan${deCual(sinPlan.area)}`, vista: 'plan', extra: '&asistente=1' };
+  // ED-16: en Entrenamiento, empezar es abrir el asistente. DL-193 (SAN-02): en Nutrición, la vista del plan, que sin
+  // objetivo empieza por la evaluación (el paso 0 de DL-145) y después ofrece crear el plan o partir de una plantilla.
+  if (sinPlan) return { tipo: 'empezar', area: sinPlan.area, texto: `Empezar el plan${deCual(sinPlan.area)}`, vista: 'plan', extra: EMPEZAR[sinPlan.area] };
   return null;
 }
 
@@ -85,8 +89,8 @@ export function accionDeLaFicha(dominios: Dominios, hoy: string): AccionDeLaFich
  * - sin plan vigente ni borrador, «Empezar el plan» abre el asistente (el mismo verbo que la acción de la ficha);
  * - con plan vigente, «Ajustar el plan» crea la versión nueva desde la vigente y abre la estación, en un clic;
  * - con borrador, «Seguir el borrador» lo abre donde quedó.
- * Usa la cadena de TB-09; no la reemplaza: la acción principal de la ficha sigue siendo una. Nutrición se suma con su
- * asistente y su estación (ED-30 y ED-33).
+ * Usa la cadena de TB-09; no la reemplaza: la acción principal de la ficha sigue siendo una. Es solo de Entrenamiento:
+ * la tarjeta de Nutrición lleva a la vista del plan (DL-193: sin asistente).
  */
 export interface AccionDelPlan {
   readonly tipo: 'crear' | 'ajustar' | 'seguir';
