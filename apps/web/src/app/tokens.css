@@ -111,6 +111,16 @@
      óseo y lo residual, o lo que no es grasa ni músculo). El músculo va en el azul de la libre de grasa, de la que es
      parte; el resto, en un violeta grisáceo que se distingue de los dos y del gris de los huecos, sin matiz de juicio. */
   --composicion-resto: #6e5f8f;
+  /* RP-23 (WP-RECORRIDO-PLAN-PULIDO, DL-188; RP-D81): el punto de cada opción en las franjas de una comida, por su lugar
+     (la 1, la 2…). Una paleta categórica sin juicio: azul, violeta, verde azulado, magenta y gris pizarra; ni rojo, ni el
+     verde de «bien», ni el ámbar del foco. 3:1 o más contra la tarjeta y el fondo suave, y ΔE 20 o más entre sí y contra
+     la banda (el acento), el foco, el error, el éxito y los enlaces (`scripts/contraste.test.cjs`). Además del color, la
+     casilla de la opción y su texto dicen de cuál es cada punto (WCAG 1.4.1). */
+  --opcion-1: #0b62a4;
+  --opcion-2: #7b3fb5;
+  --opcion-3: #00796b;
+  --opcion-4: #b0287a;
+  --opcion-5: #5f6b7a;
   /* Sombras y velo: no son texto ni bordes de control */
   --sombra-suave: 0 1px 2px rgb(10 31 68 / 6%), 0 1px 1px rgb(10 31 68 / 4%);
   --sombra: 0 20px 50px rgb(10 31 68 / 30%);
@@ -204,6 +214,12 @@
   --composicion-libre: #4f97ea;
   --composicion-grasa: #16a085;
   --composicion-resto: #b9a3dc;
+  /* RP-23: las cinco opciones sobre navy, las mismas familias, más claras. */
+  --opcion-1: #a3c9ff;
+  --opcion-2: #c9a7ff;
+  --opcion-3: #2bb3a3;
+  --opcion-4: #f28ac4;
+  --opcion-5: #b4bfcc;
   --sombra-suave: none;
   --sombra: 0 20px 50px rgb(0 0 0 / 45%);
   --sombra-desplazamiento: rgb(39 213 249 / 40%);

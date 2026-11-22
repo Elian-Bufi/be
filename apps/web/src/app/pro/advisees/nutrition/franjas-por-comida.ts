@@ -13,6 +13,10 @@
  *   suelto; sin rojo ni verde y sin bloquear nada. La cuenta de dónde queda es `ubicar` (`planificacion.ts`).
  * - **Lo que no se puede ubicar se dice una vez:** una opción sin alimentos no cuenta; una que se está leyendo (o una
  *   receta que se calcula al guardar) espera en su lugar; una con un dato que falta dice «sin dato» en el resumen.
+ * - **RP-23: el promedio, y las opciones que se eligen** (Dirección, 22/11: «se ven muy sucias» con todas las opciones).
+ *   La franja de la comida y la del panel muestran la banda y la raya del promedio (con una sola opción, su valor); cada
+ *   opción tiene su casilla y su color (`colorDeLaOpcion`), y solo las tildadas suman su punto, en su color, lleno adentro
+ *   y hueco afuera (RP-D80 a RP-D83). El lector de pantalla sigue oyendo todas las opciones, y cuáles están en las barras.
  */
 import { MACROS_DEL_RANGO, numero, type MacroDelRango, type Nutrientes, type Rango as RangoIndicado } from '@be/domain';
 import { cantidadAbreviada, cifraDeLosLimites, type MacroConIcono } from './abreviaturas-de-macros';
@@ -104,12 +108,16 @@ export interface OpcionParaLaFranja {
   /** «Opción 1», «2 · Pollo»: va en la pista de la marca y en el texto accesible. */
   readonly nombre: string;
   readonly total: TotalDeLaOpcion | null;
+  /** RP-23: el lugar de la opción en su comida (0, 1, 2…): de ahí sale su color (`colorDeLaOpcion`). */
+  readonly lugar?: number;
 }
 
 /** Una opción ubicada en un renglón. */
 export interface MarcaDeLaOpcion {
   readonly clave: string;
   readonly nombre: string;
+  /** RP-23: su color, de 1 a `COLORES_DE_LAS_OPCIONES` (`null` si la opción no dice su lugar: la receta que se elige). */
+  readonly color: number | null;
   readonly valor: number;
   readonly posicion: number;
   readonly fijada: 'izquierda' | 'derecha' | null;
@@ -177,10 +185,12 @@ const cuantas = (n: number, una: string, varias: string): string => (n === 1 ? `
 export function franjaDelRenglon(r: RenglonDeLaFranja, limites: Limites | null, opciones: readonly OpcionParaLaFranja[]): FranjaDelRenglon {
   const n = NUTRIENTE_DEL_RENGLON[r];
   const conValor: { clave: string; nombre: string; valor: number }[] = [];
+  const colores = new Map<string, number | null>();
   const esperan: OpcionQueEspera[] = [];
   const sinDato: string[] = [];
   for (const o of opciones) {
     const e = estadoDe(o.total, n);
+    colores.set(o.clave, o.lugar === undefined ? null : colorDeLaOpcion(o.lugar));
     if (e.tipo === 'valor') conValor.push({ clave: o.clave, nombre: o.nombre, valor: comoSeMuestra(r, e.valor) });
     else if (e.tipo === 'espera') esperan.push({ clave: o.clave, nombre: o.nombre, motivo: e.motivo });
     else if (e.tipo === 'sin-dato') sinDato.push(o.nombre);
@@ -190,7 +200,7 @@ export function franjaDelRenglon(r: RenglonDeLaFranja, limites: Limites | null, 
     limites && tope !== null
       ? conValor.map((o) => {
           const u = ubicar(o.valor, limites);
-          return { ...o, ...posicionEnLaPista(o.valor, tope), ubicacion: u, texto: `${o.nombre}: ${conSuMacro(r, o.valor)} · ${ubicacionEnPalabras(u, r)}` };
+          return { ...o, color: colores.get(o.clave) ?? null, ...posicionEnLaPista(o.valor, tope), ubicacion: u, texto:`${o.nombre}: ${conSuMacro(r, o.valor)} · ${ubicacionEnPalabras(u, r)}` };
         })
       : [];
   const valorPromedio = conValor.length >= 2 ? comoSeMuestra(r, conValor.reduce((s, o) => s + o.valor, 0) / conValor.length) : null;
@@ -228,8 +238,9 @@ export function franjaDelRenglon(r: RenglonDeLaFranja, limites: Limites | null, 
   const deDondeSale = r === 'kcal' ? `, ${COPY_FRANJAS.kcalDeLosGramosCorto}` : '';
   const oido: string[] = [`${NOMBRE_DEL_RENGLON[r]}: ${limites ? `rango indicado ${limitesConSuMacro(limites, r)}${deDondeSale}` : 'sin rango indicado'}`];
   if (limites) {
-    for (const m of marcas) oido.push(m.texto);
+    // RP-23: el promedio primero, como se ve; después cada opción, esté o no en las barras.
     if (promedio) oido.push(`promedio ${conSuMacro(r, promedio.valor)}, ${ubicacionEnPalabras(promedio.ubicacion, r)}`);
+    for (const m of marcas) oido.push(m.texto);
     if (marcas.length >= 2) oido.push(`${adentro} de ${marcas.length} opciones adentro`);
   } else if (conValor.length > 0) for (const o of conValor) oido.push(`${o.nombre}: ${conSuMacro(r, o.valor)}`);
   for (const e of esperan) oido.push(`${e.nombre}: ${e.motivo === 'leyendo' ? 'leyendo su composición' : 'se calcula cuando se guarda el plan'}`);
@@ -252,6 +263,42 @@ export function armarFranjas(rango: RangoIndicado | null, opciones: readonly Opc
 export function franjasDeLaComida(rango: RangoIndicado | null, opciones: readonly OpcionParaLaFranja[]): FranjasDeLaComida | null {
   const f = armarFranjas(rango, opciones);
   return f.renglones.every((r) => r.limites === null) ? null : f;
+}
+
+// ─── RP-23 · El promedio, y las opciones que se eligen ───────────────────────────────────────────────────────────
+
+/**
+ * RP-D81: cuántos colores tiene la paleta de las opciones (`--opcion-1` a `--opcion-5` en tokens.css, medidos en los dos
+ * temas). Desde la sexta, los colores vuelven a empezar: la casilla y el texto siguen diciendo de qué opción es cada punto.
+ */
+export const COLORES_DE_LAS_OPCIONES = 5;
+
+/** El color de la opción en ese lugar de su comida (0, 1, 2…): de 1 a `COLORES_DE_LAS_OPCIONES`, por posición. */
+export const colorDeLaOpcion = (lugar: number): number => (((Math.trunc(lugar) % COLORES_DE_LAS_OPCIONES) + COLORES_DE_LAS_OPCIONES) % COLORES_DE_LAS_OPCIONES) + 1;
+
+/** El nombre de cada color, para el lector de pantalla y la pista del punto: el color no es la única vía (WCAG 1.4.1). */
+export const NOMBRE_DEL_COLOR: Readonly<Record<number, string>> = { 1: 'azul', 2: 'violeta', 3: 'verde azulado', 4: 'magenta', 5: 'gris pizarra' };
+
+/**
+ * RP-D80: la raya de la comida. Con dos opciones o más, su promedio; con una sola, su valor (el promedio de una), para
+ * que la comida plegada no quede con la banda sola. `null` si ninguna opción tiene el dato o el renglón no tiene rango.
+ */
+export function rayaDelPromedio(r: FranjaDelRenglon): { readonly valor: number; readonly posicion: number; readonly fijada: 'izquierda' | 'derecha' | null; readonly ubicacion: Ubicacion } | null {
+  if (r.promedio) return r.promedio;
+  const una = r.marcas.length === 1 ? r.marcas[0]! : null;
+  return una ? { valor: una.valor, posicion: una.posicion, fijada: una.fijada, ubicacion: una.ubicacion } : null;
+}
+
+/** RP-D80: las marcas que se dibujan en la franja de la comida y del panel: solo las de las opciones tildadas. */
+export const marcasALaVista = (r: FranjaDelRenglon, elegidas: ReadonlySet<string>): readonly MarcaDeLaOpcion[] => r.marcas.filter((m) => elegidas.has(m.clave));
+
+/**
+ * RP-23: lo que oye el lector de pantalla al final de la franja de la comida: qué hay en las barras. La franja entera
+ * (el promedio y cada opción, con dónde queda) se oye igual, haya o no casillas tildadas.
+ */
+export function enLasBarrasEnPalabras(opciones: readonly OpcionParaLaFranja[], elegidas: ReadonlySet<string>): string {
+  const tildadas = opciones.filter((o) => elegidas.has(o.clave)).map((o) => (o.lugar === undefined ? o.nombre : `${o.nombre} (${NOMBRE_DEL_COLOR[colorDeLaOpcion(o.lugar)]})`));
+  return tildadas.length === 0 ? COPY_FRANJAS.enLasBarrasSoloElPromedio : COPY_FRANJAS.enLasBarras(listaEnPalabras(tildadas));
 }
 
 /** RP-21: lo que aportan las opciones con el dato, de la que menos a la que más, sin la unidad: «520–700», «28». */
@@ -287,11 +334,14 @@ const TITULO_EN_PALABRAS: Readonly<Record<VarianteDeLaFranja, (comida: string) =
   receta: (c) => COPY_FRANJAS.unaPorcionFrenteAlRangoDe(c),
 };
 
-/** El texto entero de la franja para el lector de pantalla: un renglón por oración. */
-export function franjasEnPalabras(f: FranjasDeLaComida, comida: string, variante: VarianteDeLaFranja = 'comida'): string {
+/**
+ * El texto entero de la franja para el lector de pantalla: un renglón por oración. Con `enLasBarras` (RP-23, la comida y
+ * el panel), al final dice qué hay dibujado: el promedio solo o, además, las opciones tildadas.
+ */
+export function franjasEnPalabras(f: FranjasDeLaComida, comida: string, variante: VarianteDeLaFranja = 'comida', enLasBarras?: string): string {
   const titulo = TITULO_EN_PALABRAS[variante](comida);
   if (f.sinAlimentos) return `${titulo}. ${variante === 'comida' ? COPY_FRANJAS.sinAlimentos : COPY_FRANJAS.sinAlimentosLaOpcion}`;
-  return `${titulo}. ${f.renglones.map((r) => r.enPalabras).join('. ')}.`;
+  return `${titulo}. ${f.renglones.map((r) => r.enPalabras).join('. ')}.${enLasBarras ? ` ${enLasBarras}` : ''}`;
 }
 
 // ─── El día (RP-21) ─────────────────────────────────────────────────────────────────────────────────────────────
@@ -300,7 +350,10 @@ export function franjasEnPalabras(f: FranjasDeLaComida, comida: string, variante
 export interface TramoDelDia {
   readonly renglon: RenglonDeLaFranja;
   readonly limites: Limites | null;
+  /** RP-D84: sin dato no hay banda: sola, en el medio de la escala, se veía como un punto que no decía nada. */
   readonly banda: BandaEnLaPista | null;
+  /** RP-D84: el día todavía no se suma en este renglón: la pista queda vacía, con su alto. */
+  readonly sinDato: boolean;
   /** El tramo en la pista; `null` sin dato o sin rango del día. */
   readonly tramo: { readonly desde: number; readonly hasta: number; readonly minimo: Ubicacion; readonly maximo: Ubicacion; readonly fijado: boolean } | null;
   /** «1.850 a 2.420», «1.850», sin la unidad (la pone `CantidadDelMacro`); `null` sin dato. */
@@ -313,16 +366,17 @@ export function tramosDelDia(dia: RangoPorNutriente, rango: RangoIndicado | null
   return RENGLONES_DE_LA_FRANJA.map((r): TramoDelDia => {
     const v: Rango = dia[NUTRIENTE_DEL_RENGLON[r]];
     const limites = limitesDelRenglon(rango, r);
-    // Sin dato, el renglón sigue en su lugar con la banda del rango del día (si la hay): el bloque del día no se achica
-    // cada vez que una cantidad queda vacía mientras se escribe.
-    const sinDato = (): TramoDelDia => ({ renglon: r, limites, banda: limites ? bandaEnLaPista(limites, topeDeLaEscala(limites)) : null, tramo: null, cifra: null, enPalabras: `${NOMBRE_DEL_RENGLON[r]} del día: sin dato` });
+    // Sin dato, el renglón sigue en su lugar con su pista vacía: el bloque del día no se achica cada vez que una cantidad
+    // queda vacía mientras se escribe. RP-D84: sin la banda, que sola (la escala la centra siempre) era un punto en el
+    // medio de cada barra que no decía nada.
+    const sinDato = (): TramoDelDia => ({ renglon: r, limites, banda: null, sinDato: true, tramo: null, cifra: null, enPalabras: `${NOMBRE_DEL_RENGLON[r]} del día: sin dato` });
     if (v.tipo === 'sin-dato') return sinDato();
     if (!Number.isFinite(Number(v.min)) || !Number.isFinite(Number(v.max))) return sinDato();
     const min = comoSeMuestra(r, Number(v.min));
     const max = comoSeMuestra(r, Number(v.max));
     const cifraDelTramo = min === max ? cifra(r, min) : `${cifra(r, min)} a ${cifra(r, max)}`;
     const visible = cantidadAbreviada(r, cifraDelTramo);
-    if (!limites) return { renglon: r, limites, banda: null, tramo: null, cifra: cifraDelTramo, enPalabras: `${NOMBRE_DEL_RENGLON[r]} del día: ${visible}` };
+    if (!limites) return { renglon: r, limites, banda: null, sinDato: false, tramo: null, cifra: cifraDelTramo, enPalabras: `${NOMBRE_DEL_RENGLON[r]} del día: ${visible}` };
     const tope = topeDeLaEscala(limites, [max]);
     const a = posicionEnLaPista(min, tope);
     const b = posicionEnLaPista(max, tope);
@@ -333,6 +387,7 @@ export function tramosDelDia(dia: RangoPorNutriente, rango: RangoIndicado | null
       renglon: r,
       limites,
       banda: bandaEnLaPista(limites, tope),
+      sinDato: false,
       tramo: { desde: a.posicion, hasta: b.posicion, minimo, maximo, fijado: b.fijada !== null || a.fijada !== null },
       cifra: cifraDelTramo,
       enPalabras: `${NOMBRE_DEL_RENGLON[r]} del día: ${visible}, frente al rango del día ${limitesConSuMacro(limites, r)}: ${queda}`,
@@ -430,10 +485,19 @@ export const COPY_FRANJAS = {
   /** Lo mismo, para el lector, en el renglón de las kcal. */
   kcalDeLosGramosCorto: 'sale de los gramos, con 4, 4 y 9 kcal por gramo',
   /** Cómo se lee una franja (en el «?» del panel): no hay otra leyenda a la vista. */
-  comoSeLeeLaFranja: 'En cada franja, la banda es el rango indicado de la comida; cada punto, una opción (lleno si queda adentro, hueco si queda afuera), y la raya, el promedio de las opciones. Lo que no entra en la escala va en el borde, con una flecha.',
+  comoSeLeeLaFranja: 'En cada franja, la banda es el rango indicado de la comida y la raya, el promedio de sus opciones (con una sola, su valor). Al tildar una opción, su punto aparece en su color: lleno si queda adentro, hueco si queda afuera. Lo que no entra en la escala va en el borde, con una flecha.',
+  // RP-23
+  /** La etiqueta de la casilla de cada opción (la oye el lector; a la vista, la casilla y el punto). */
+  mostrarEnLasBarras: (n: number, color: string) => `Mostrar la opción ${n} en las barras de la comida (su punto es ${color})`,
+  /** La pista del punto de color, al pasar el puntero. */
+  suPunto: (n: number, color: string) => `Opción ${n}: su punto en las barras es ${color}`,
+  enLasBarrasSoloElPromedio: 'En las barras, solo el promedio.',
+  enLasBarras: (lista: string) => `En las barras, el promedio y ${lista}.`,
   /** La nota corta de las recetas: se cuentan con su porción guardada. */
   recetasGuardadas: 'Una opción de receta se ubica con la porción de la versión guardada.',
   promedio: 'Promedio de las opciones',
+  /** RP-D80: con una sola opción, la raya es su valor. */
+  laUnicaOpcion: 'El valor de la única opción',
   ubicaNoCalifica: 'Ubica, no corrige: podés dejarla así.',
   // RP-21
   segunLoQueElija: 'Según la opción que elija en cada comida',

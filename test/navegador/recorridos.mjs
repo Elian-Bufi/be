@@ -1922,30 +1922,55 @@ async function sinSaltos({ p, d, salida }) {
 }
 
 /**
- * RP-20 y RP-21 (WP-RECORRIDO-PLAN-PULIDO, DL-188): las franjas por comida, en vivo. Con el rango del almuerzo indicado,
- * la comida plegada ya muestra sus cuatro renglones (kcal, P, C y G) con una marca por opción. Al cambiar la cantidad del
- * arroz en la opción abierta, su marca se mueve en la opción, en la franja de la comida y en «Rangos y totales», y ninguna
- * de las tres cambia de alto. El panel no se desplaza de costado a 1280, 1440, 1536 y 2048 de ancho (la pantalla de
- * Dirección: 1920 × 1080 con Windows al 125 %, con el navegador al 100 y al 75 %).
+ * RP-20, RP-21 y RP-23 (WP-RECORRIDO-PLAN-PULIDO, DL-188): las franjas por comida, en vivo. Con el rango del almuerzo
+ * indicado, la comida plegada ya muestra sus cuatro renglones (kcal, P, C y G) con la banda y el promedio, sin el punto
+ * de cada opción (RP-23: nada tildado por defecto). Al tildar la casilla del arroz, su punto aparece en su color en la
+ * comida y en «Rangos y totales», sin que nada cambie de alto, y se recuerda en la sesión. Al cambiar la cantidad del
+ * arroz en la opción abierta, su marca se mueve en la opción, en la franja de la comida y en el panel, y ninguna de las
+ * tres cambia de alto; mientras el día no se puede sumar, su pista queda vacía (RP-D84). El panel no se desplaza de
+ * costado a 1280, 1440, 1536 y 2048 de ancho (la pantalla de Dirección: 1920 × 1080 con Windows al 125 %, con el
+ * navegador al 100 y al 75 %).
  */
 async function franjasPorComida({ p, d, salida }) {
   await abrirElBorrador(p, d);
   const comida = '.comida-del-editor[data-comida="2"]';
-  // Plegada, con su franja debajo del encabezado: los cuatro renglones y una marca por opción (y su promedio).
-  await elemento(p, `${comida} [data-franjas-de-la-comida] .franja__marca`);
+  // Plegada, con su franja debajo del encabezado: los cuatro renglones, la banda y la raya del promedio de las dos
+  // opciones; ningún punto, porque no hay nada tildado (RP-23).
+  await elemento(p, `${comida} [data-franjas-de-la-comida] .franja[data-renglon="protein"] .franja__promedio`);
   assert.equal(await p.$(`${comida}[data-abierta]`), null, 'la comida está plegada');
   assert.equal(await p.$$eval(`${comida} [data-franjas-de-la-comida] .franja`, (fs) => fs.length), 4, 'kcal, P, C y G');
-  await p.waitForFunction((s) => document.querySelectorAll(`${s} [data-franjas-de-la-comida] .franja[data-renglon="protein"] .franja__marca:not([data-espera])`).length === 2, { timeout: ESPERA, polling: 100 }, comida);
-  assert.ok(await p.$(`${comida} [data-franjas-de-la-comida] .franja[data-renglon="protein"] .franja__promedio`), 'el promedio de las dos opciones');
+  assert.equal(await p.$$eval(`${comida} [data-franjas-de-la-comida] .franja__marca`, (ms) => ms.length), 0, 'por defecto, solo el promedio');
+  assert.equal(await p.$$eval('[data-rangos-por-comida] [data-comida-del-panel="2"] .franja__marca', (ms) => ms.length), 0, 'el panel, igual: solo el promedio');
+  assert.match(await p.$eval(`${comida} [data-franjas-de-la-comida] .visualmente-oculto`, (e) => e.textContent), /En las barras, solo el promedio\.$/);
   await p.$eval(comida, (e) => e.scrollIntoView({ block: 'center' }));
   await captura(p, salida, 'franjas-comida-plegada-1440');
 
-  // La opción del arroz, abierta: su franja, sola.
+  // La opción del arroz, abierta: su franja, sola, con su punto en el color del texto (como estaba).
   await abrirComida(p, 2);
   await clic(p, '#pestana-0-1-0');
   const campo = await elemento(p, '#item-0-1-0-0-cantidad');
   await elemento(p, `${comida} [data-franjas-de-la-opcion] .franja__marca`);
   const clave = await p.$eval(`${comida} [data-franjas-de-la-opcion] .franja__marca`, (m) => m.dataset.marca);
+  assert.equal(await p.$(`${comida} [data-franjas-de-la-opcion] .franja__marca[data-color-de-la-opcion]`), null, 'la franja de la opción abierta no cambia');
+
+  // RP-23: la casilla del arroz (la opción 1), con su etiqueta y su punto de color. Tildarla suma su punto, en su color, a
+  // la comida y al panel; ningún alto cambia y queda recordado en la sesión.
+  const casilla = `${comida} [data-en-las-barras="1"] input[type="checkbox"]`;
+  await elemento(p, casilla);
+  assert.equal(await p.$eval(casilla, (c) => c.checked), false, 'por defecto, sin tildar');
+  assert.match(await p.$eval(`${comida} [data-en-las-barras="1"]`, (l) => l.textContent), /Mostrar la opción 1 en las barras de la comida \(su punto es azul\)/);
+  const altos = () =>
+    p.evaluate((s) => [`${s} [data-franjas-de-la-comida]`, `${s} [data-opcion-plegable="1"]`, '[data-rangos-por-comida] [data-comida-del-panel="2"]'].map((x) => document.querySelector(x)?.getBoundingClientRect().height ?? null), comida);
+  const altosSinTildar = await altos();
+  await clic(p, casilla);
+  await p.waitForFunction((s, k) => document.querySelectorAll(`${s} [data-franjas-de-la-comida] .franja__marca[data-marca="${k}"][data-color-de-la-opcion="1"]`).length === 4, { timeout: ESPERA, polling: 100 }, comida, clave);
+  assert.equal(await p.$$eval(`[data-rangos-por-comida] [data-comida-del-panel="2"] .franja__marca[data-marca="${clave}"][data-color-de-la-opcion="1"]`, (ms) => ms.length), 4, 'en el panel también, en su color');
+  assert.equal(await p.$$eval(`${comida} [data-franjas-de-la-comida] .franja__marca`, (ms) => ms.length), 4, 'solo la tildada');
+  assert.deepEqual(await altos(), altosSinTildar, 'tildar no cambia ningún alto (RP-19)');
+  const colores = await p.$eval(`${comida} [data-franjas-de-la-comida] .franja__marca[data-color-de-la-opcion="1"]`, (m) => [getComputedStyle(m).borderTopColor, getComputedStyle(document.querySelector('.comida-del-editor[data-comida="2"] [data-en-las-barras="1"] .en-las-barras__punto')).backgroundColor]);
+  assert.equal(colores[0], colores[1], 'el punto de la barra y el de la casilla, del mismo color');
+  assert.match(await p.$eval(`${comida} [data-franjas-de-la-comida] .visualmente-oculto`, (e) => e.textContent), /En las barras, el promedio y .+ \(azul\)\.$/);
+  assert.ok(await p.evaluate(() => Object.keys(sessionStorage).some((k) => k.startsWith('be:nutricion:en-las-barras:') && sessionStorage.getItem(k).includes('|'))), 'recordado en la sesión');
   /** Dónde está la marca del arroz en cada renglón, en la opción, en la comida y en el panel, y el alto de cada caja. */
   const medir = () =>
     p.evaluate(
@@ -1981,6 +2006,8 @@ async function franjasPorComida({ p, d, salida }) {
   );
   const vacio = await medir();
   for (const lugar of ['opcion', 'comida', 'panel']) assert.deepEqual(vacio[lugar].marcas, [], `${lugar}: sin cantidad, el arroz no se ubica`);
+  // RP-D84: el día sin sumar deja la pista vacía: ni la banda sola (que era un punto en el medio) ni el tramo.
+  assert.equal(await p.$$eval('[data-panel-de-nutricion] [data-rango-del-dia] :is(.franja__banda, .franja__tramo, .franja__marca)', (xs) => xs.length), 0, 'el día sin dato: la pista vacía');
   for (const lugar of ['opcion', 'comida', 'panel', 'dia']) assert.equal(vacio[lugar].alto, antes[lugar].alto, `${lugar}: el alto no cambia con la cantidad vacía`);
 
   // Escribir la cantidad nueva: la marca vuelve en otro lugar, en los tres lugares, sin que cambie el alto.

@@ -9076,8 +9076,18 @@ habituales y «Todavía no podés activar» con lo largo detrás de «?»; un `i
 migraciones; no toca la APK. Pruebas: `entrenamiento-antes-de-la-prueba.test.mjs` y el recorrido `sinSaltos` en
 Entrenamiento, a cuatro anchos.
 
+**RP-23 · El promedio, y las opciones que se eligen (pedido del 2026-11-22).** Dirección, con capturas: las franjas por
+comida «se ven muy sucias» cuando se juntan todas las opciones. **En borrador · RP-D80 a RP-D84, a ratificar.** La franja
+de la comida y la del panel «Rangos y totales» muestran por macro la banda del rango y la raya del promedio (con una sola
+opción, su valor); al desplegar la comida, cada opción lleva una casilla y un punto de su color (cinco colores por lugar,
+sin rojo ni verde, `--opcion-1` a `--opcion-5` en los dos temas), y las tildadas suman su punto en ese color, lleno
+adentro y hueco afuera. Por defecto no hay nada tildado; se recuerda por plan en la sesión. La franja de la opción
+abierta y la de la receta, como estaban. El día sin dato deja su pista vacía (antes, la banda sola parecía un punto en el
+medio). Tildar no cambia ningún alto (RP-19). Sin operaciones nuevas ni migraciones; no toca la APK. Pruebas:
+`franjas-por-comida.test.mjs`, `scripts/contraste.test.cjs` y el recorrido `franjasPorComida`.
+
 **Lo que queda.**
-- Ratificar RP-D01 a RP-D17, RP-D18 a RP-D26, RP-D40 a RP-D49 y RP-D60 a RP-D72.
+- Ratificar RP-D01 a RP-D17, RP-D18 a RP-D26, RP-D40 a RP-D49, RP-D60 a RP-D72 y RP-D80 a RP-D84.
 - RP-19 anotado: la comida plegada suma el renglón «Indicado» al proponer y la cantidad de un alimento avisa en su fila
   (`comida-del-editor.tsx`, de otro frente); el mismo patrón fuera de la planificación (Entrenamiento, Seguimiento,
   formularios de la persona, recetas).
