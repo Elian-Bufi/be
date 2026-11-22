@@ -21691,7 +21691,7 @@ html:has(.estacion:not([data-en-el-asistente])) {
   inset-inline-end: 3px;
   display: grid;
   grid-template-rows: 1fr 1fr;
-  width: 1.15rem;
+  width: 1.2rem;
   opacity: 0;
   transition: opacity 0.12s;
 }
@@ -21753,6 +21753,13 @@ html:has(.estacion:not([data-en-el-asistente])) {
 .criterio-del-ejercicio input[aria-invalid='true'] {
   border-color: var(--error);
   box-shadow: 0 0 0 1px var(--error);
+}
+
+/* Plantillas: el filtro por estado no ocupa todo el ancho de la columna (tres opciones cortas). */
+.campo--filtro-angosto select {
+  width: auto;
+  min-width: 10rem;
+  max-width: 16rem;
 }
 
 /* ─── RP-20 y RP-21 (WP-RECORRIDO-PLAN-PULIDO, DL-188): las franjas por comida y «Rangos y totales» ───────────

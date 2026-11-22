@@ -12,6 +12,7 @@
 import { COPY_HABITUALES, cuentaDeSeries, type EjercicioDeCatalogo, type SesionHabitual } from '@be/domain';
 import { useEffect, useMemo, useState } from 'react';
 import { AvisoFlotante } from '../../../components/ayuda';
+import { ExplicacionAPedido } from '../../../components/explicacion-a-pedido';
 import { useAvisarALaLista, useCambiosParaSalir, useDetalleConGuardia } from '../../../components/salida-segura';
 import { Cargando, ErrorConReintento, VerMas } from '../../../components/estados';
 import { Aviso, Campo } from '../../../components/formulario';
@@ -61,7 +62,10 @@ export function MisHabitualesDeEntrenamiento({ token, sesionPerdida = nunca }: {
   return (
     <section className="seccion" aria-labelledby="titulo-habituales-entrenamiento">
       <h2 id="titulo-habituales-entrenamiento">{TITULO}</h2>
-      <p className="nota">{COPY_HABITUALES.soloTuyos}</p>
+      {/* RP-22 (DL-188): quién los ve y qué pasa al editarlos, detrás de un «?». */}
+      <ExplicacionAPedido nombre="Quién ve tus habituales" como="div">
+        <p className="nota">{COPY_HABITUALES.soloTuyos}</p>
+      </ExplicacionAPedido>
       {aviso && aviso.tipo === 'exito' ? (
         <AvisoFlotante onCerrar={() => setAviso(null)}>
           <p>{aviso.texto}</p>

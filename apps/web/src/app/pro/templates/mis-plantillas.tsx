@@ -24,6 +24,7 @@ import {
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Enlace } from '../../../components/enlace';
+import { ExplicacionAPedido } from '../../../components/explicacion-a-pedido';
 import { Icono } from '../../../components/icono';
 import { tomarAvisoPara } from '../../../lib/aviso-al-llegar';
 import { useClaveDeIntento } from '../../../lib/intento';
@@ -119,12 +120,15 @@ export function MisPlantillas() {
             {abrirElEditor.abriendo ? PLT.creandoLaPlantilla : PLT.nuevaPlantilla}
           </button>
         </div>
-        <p className="nota">{PLT.queSeHaceAca}</p>
-        <p className="nota">{COPY_PLANTILLAS.soloTuya}</p>
+        {/* RP-22 (DL-188): lo que explica la sección, detrás de un «?»: Dirección no quiere párrafos a la vista. */}
+        <ExplicacionAPedido nombre="Qué es una plantilla y quién la ve" como="div">
+          <p className="nota">{PLT.queSeHaceAca}</p>
+          <p className="nota">{COPY_PLANTILLAS.soloTuya}</p>
+        </ExplicacionAPedido>
         <EnPreparacion preparaciones={preparaciones} />
         {/* Sin plantillas y sin filtro, el filtro no tiene nada que filtrar: aparece cuando hay alguna. */}
         {estado === '' && lista.estado.tipo === 'listo' && lista.estado.items.length === 0 ? null : (
-        <div className="campo">
+        <div className="campo campo--filtro-angosto">
           <label htmlFor="plantillas-estado">Estado</label>
           <select
             ref={filtroDeEstado}

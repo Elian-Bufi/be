@@ -18,10 +18,10 @@ export function ConFlechas({ que, alSubir, alBajar, children }: { que: string; a
       {children}
       <span className="con-flechas__flechas">
         <button type="button" tabIndex={-1} className="con-flechas__flecha" aria-label={`Sumar un paso a ${que}`} title={`Sumar un paso a ${que}`} onMouseDown={(e) => e.preventDefault()} onClick={alSubir} data-flecha="sube">
-          <Icono nombre="arriba" tamano={12} />
+          <Icono nombre="arriba" tamano={15} />
         </button>
         <button type="button" tabIndex={-1} className="con-flechas__flecha" aria-label={`Restar un paso a ${que}`} title={`Restar un paso a ${que}`} onMouseDown={(e) => e.preventDefault()} onClick={alBajar} data-flecha="baja">
-          <Icono nombre="abajo" tamano={12} />
+          <Icono nombre="abajo" tamano={15} />
         </button>
       </span>
     </span>
