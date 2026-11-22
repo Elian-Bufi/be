@@ -21608,6 +21608,153 @@ html:has(.estacion:not([data-en-el-asistente])) {
   box-shadow: 0 0 0 1px var(--error);
 }
 
+/* ═══ RP-22 (WP-RECORRIDO-PLAN-PULIDO, DL-188) · Entrenamiento antes de la prueba ════════════════════════════════════
+   La regla de RP-19 en el editor de Entrenamiento y lo que comparte: lo que no se entiende se marca en su celda sin
+   cambiarla de tamaño y se dice en un renglón reservado; los números que se escriben como texto (descanso, repeticiones,
+   carga) tienen sus flechitas. Bloque propio: no cambia las reglas de RP-19 ni las de otros frentes. */
+
+/* Una celda que no se entiende: el borde sigue de 1,5 px y el resto del rojo es una sombra (antes, 2 px corrían el valor). */
+.celda-de-objetivo[data-estado='no-se-entiende'],
+.series-del-editor .celda-de-serie[aria-invalid='true'],
+.bloque-del-editor__campo input[aria-invalid='true'],
+.agregar-ejercicio__para-todos > input[aria-invalid='true'] {
+  border-width: 1.5px;
+  border-color: var(--error);
+  box-shadow: 0 0 0 1px var(--error);
+}
+
+/* El número de los formularios de la persona: con aviso, del mismo tamaño. */
+.campo-de-inicio__numero.campo--error input {
+  border-width: 1px;
+  box-shadow: 0 0 0 1px var(--error);
+}
+
+/* El renglón de lo que no se entiende, debajo de la tabla de series: su alto aunque esté vacío. */
+.ejercicio-del-editor__series > .renglon-del-aviso {
+  margin: -0.25rem 0 0.35rem;
+  font-size: 0.9rem;
+}
+
+/* En la barra de las series elegidas, el aviso ocupa su propio renglón, siempre. */
+.series-del-editor__elegidas > .series-del-editor__aviso-de-las-elegidas {
+  flex-basis: 100%;
+  margin: 0;
+}
+
+/* La indicación del bloque en vueltas es el renglón del aviso: con su ícono y su alto, esté llena o vacía. */
+.renglon-del-aviso.bloque-del-editor__indicacion {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-height: 1.55rem;
+  margin: 0;
+}
+
+.renglon-del-aviso--nota.bloque-del-editor__indicacion {
+  color: var(--texto);
+  font-size: inherit;
+  font-weight: 600;
+}
+
+/* El pie de la tabla de series, con lo largo detrás de un «?». */
+.ejercicio-del-editor__pie-de-series {
+  align-items: center;
+}
+
+.ejercicio-del-editor__pie-de-series .a-pedido__texto p {
+  margin: 0.25rem 0 0;
+}
+
+/* Las flechitas de un número escrito como texto: a la derecha, adentro del campo, con su lugar reservado; se ven con el
+   mouse encima o con el foco, como las del campo numérico del navegador. */
+.con-flechas {
+  position: relative;
+  display: block;
+  min-width: 0;
+}
+
+.bloque-del-editor__campo .con-flechas {
+  display: inline-block;
+}
+
+.con-flechas > input {
+  padding-inline-end: 1.5rem;
+}
+
+.series-del-editor .con-flechas > .celda-de-serie {
+  padding-inline-end: 1.5rem;
+}
+
+.con-flechas__flechas {
+  position: absolute;
+  inset-block: 3px;
+  inset-inline-end: 3px;
+  display: grid;
+  grid-template-rows: 1fr 1fr;
+  width: 1.15rem;
+  opacity: 0;
+  transition: opacity 0.12s;
+}
+
+.con-flechas:hover > .con-flechas__flechas,
+.con-flechas:focus-within > .con-flechas__flechas {
+  opacity: 1;
+}
+
+.con-flechas__flecha {
+  display: grid;
+  place-items: center;
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  background: none;
+  color: var(--tenue);
+  cursor: pointer;
+}
+
+.con-flechas__flecha:hover {
+  background: var(--fondo-suave);
+  color: var(--texto);
+}
+
+@media (hover: none) {
+  .con-flechas__flechas {
+    opacity: 1;
+  }
+}
+
+/* El catálogo de ejercicios a 1280 × 800 (lo anotado en el recorrido de Nutrición): el pie tapaba los resultados. Desde
+   1280 px el cajón tiene el ancho que tenía desde 1440 (35 rem): la línea de «Con historial» ocupa un renglón menos y tres
+   elegidos entran en un renglón. Con poca altura de ventana, el pie se aprieta un poco. Los
+   elegidos siguen debajo de su título, hasta dos renglones de fichas, sin cortar ninguna. */
+@media (min-width: 80rem) and (max-width: 89.99rem) {
+  .cajon:has(.agregar-ejercicio) {
+    width: min(35rem, 100vw);
+  }
+}
+
+@media (max-height: 860px) {
+  .cajon:has(.agregar-ejercicio) .cajon__pie {
+    gap: 0.4rem 0.75rem;
+    padding-block: 0.6rem 0.7rem;
+  }
+}
+
+/* El aviso del objetivo de intensidad, al pie del recuadro del criterio, en su renglón; el campo se marca sin crecer. */
+.criterio-del-ejercicio > .criterio-del-ejercicio__aviso-del-objetivo {
+  flex: 1 1 100%;
+  margin: -0.3rem 0 0;
+  min-height: 1.4rem;
+  font-size: 0.9rem;
+}
+
+.criterio-del-ejercicio input[aria-invalid='true'] {
+  border-color: var(--error);
+  box-shadow: 0 0 0 1px var(--error);
+}
+
 /* ─── RP-20 y RP-21 (WP-RECORRIDO-PLAN-PULIDO, DL-188): las franjas por comida y «Rangos y totales» ───────────
    Cada opción frente al rango indicado de su comida, un renglón por kcal, P, C y G. Ubica, no califica: la banda va en
    el color de acento; las marcas, en el color del texto (llenas adentro, huecas afuera); nada en rojo ni en verde. Cada
@@ -22032,151 +22179,4 @@ html:has(.estacion:not([data-en-el-asistente])) {
 
 .rangos-y-totales__falta {
   font-size: 0.8rem;
-}
-
-/* ═══ RP-22 (WP-RECORRIDO-PLAN-PULIDO, DL-188) · Entrenamiento antes de la prueba ════════════════════════════════════
-   La regla de RP-19 en el editor de Entrenamiento y lo que comparte: lo que no se entiende se marca en su celda sin
-   cambiarla de tamaño y se dice en un renglón reservado; los números que se escriben como texto (descanso, repeticiones,
-   carga) tienen sus flechitas. Bloque propio: no cambia las reglas de RP-19 ni las de otros frentes. */
-
-/* Una celda que no se entiende: el borde sigue de 1,5 px y el resto del rojo es una sombra (antes, 2 px corrían el valor). */
-.celda-de-objetivo[data-estado='no-se-entiende'],
-.series-del-editor .celda-de-serie[aria-invalid='true'],
-.bloque-del-editor__campo input[aria-invalid='true'],
-.agregar-ejercicio__para-todos > input[aria-invalid='true'] {
-  border-width: 1.5px;
-  border-color: var(--error);
-  box-shadow: 0 0 0 1px var(--error);
-}
-
-/* El número de los formularios de la persona: con aviso, del mismo tamaño. */
-.campo-de-inicio__numero.campo--error input {
-  border-width: 1px;
-  box-shadow: 0 0 0 1px var(--error);
-}
-
-/* El renglón de lo que no se entiende, debajo de la tabla de series: su alto aunque esté vacío. */
-.ejercicio-del-editor__series > .renglon-del-aviso {
-  margin: -0.25rem 0 0.35rem;
-  font-size: 0.9rem;
-}
-
-/* En la barra de las series elegidas, el aviso ocupa su propio renglón, siempre. */
-.series-del-editor__elegidas > .series-del-editor__aviso-de-las-elegidas {
-  flex-basis: 100%;
-  margin: 0;
-}
-
-/* La indicación del bloque en vueltas es el renglón del aviso: con su ícono y su alto, esté llena o vacía. */
-.renglon-del-aviso.bloque-del-editor__indicacion {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  min-height: 1.55rem;
-  margin: 0;
-}
-
-.renglon-del-aviso--nota.bloque-del-editor__indicacion {
-  color: var(--texto);
-  font-size: inherit;
-  font-weight: 600;
-}
-
-/* El pie de la tabla de series, con lo largo detrás de un «?». */
-.ejercicio-del-editor__pie-de-series {
-  align-items: center;
-}
-
-.ejercicio-del-editor__pie-de-series .a-pedido__texto p {
-  margin: 0.25rem 0 0;
-}
-
-/* Las flechitas de un número escrito como texto: a la derecha, adentro del campo, con su lugar reservado; se ven con el
-   mouse encima o con el foco, como las del campo numérico del navegador. */
-.con-flechas {
-  position: relative;
-  display: block;
-  min-width: 0;
-}
-
-.bloque-del-editor__campo .con-flechas {
-  display: inline-block;
-}
-
-.con-flechas > input {
-  padding-inline-end: 1.5rem;
-}
-
-.series-del-editor .con-flechas > .celda-de-serie {
-  padding-inline-end: 1.5rem;
-}
-
-.con-flechas__flechas {
-  position: absolute;
-  inset-block: 3px;
-  inset-inline-end: 3px;
-  display: grid;
-  grid-template-rows: 1fr 1fr;
-  width: 1.15rem;
-  opacity: 0;
-  transition: opacity 0.12s;
-}
-
-.con-flechas:hover > .con-flechas__flechas,
-.con-flechas:focus-within > .con-flechas__flechas {
-  opacity: 1;
-}
-
-.con-flechas__flecha {
-  display: grid;
-  place-items: center;
-  min-width: 0;
-  min-height: 0;
-  padding: 0;
-  border: 0;
-  border-radius: 4px;
-  background: none;
-  color: var(--tenue);
-  cursor: pointer;
-}
-
-.con-flechas__flecha:hover {
-  background: var(--fondo-suave);
-  color: var(--texto);
-}
-
-@media (hover: none) {
-  .con-flechas__flechas {
-    opacity: 1;
-  }
-}
-
-/* El catálogo de ejercicios a 1280 × 800 (lo anotado en el recorrido de Nutrición): el pie tapaba los resultados. Desde
-   1280 px el cajón tiene el ancho que tenía desde 1440 (35 rem): la línea de «Con historial» ocupa un renglón menos y tres
-   elegidos entran en un renglón. Con poca altura de ventana, el pie se aprieta un poco. Los
-   elegidos siguen debajo de su título, hasta dos renglones de fichas, sin cortar ninguna. */
-@media (min-width: 80rem) and (max-width: 89.99rem) {
-  .cajon:has(.agregar-ejercicio) {
-    width: min(35rem, 100vw);
-  }
-}
-
-@media (max-height: 860px) {
-  .cajon:has(.agregar-ejercicio) .cajon__pie {
-    gap: 0.4rem 0.75rem;
-    padding-block: 0.6rem 0.7rem;
-  }
-}
-
-/* El aviso del objetivo de intensidad, al pie del recuadro del criterio, en su renglón; el campo se marca sin crecer. */
-.criterio-del-ejercicio > .criterio-del-ejercicio__aviso-del-objetivo {
-  flex: 1 1 100%;
-  margin: -0.3rem 0 0;
-  min-height: 1.4rem;
-  font-size: 0.9rem;
-}
-
-.criterio-del-ejercicio input[aria-invalid='true'] {
-  border-color: var(--error);
-  box-shadow: 0 0 0 1px var(--error);
 }
