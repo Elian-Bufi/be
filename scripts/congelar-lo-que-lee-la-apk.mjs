@@ -408,7 +408,9 @@ function rutaDe(nodo, dominio, metodo) {
     let ruta = nodo.head.text;
     for (const tramo of nodo.templateSpans) {
       const e = tramo.expression;
-      const esConsulta = ts.isCallExpression(e) && ts.isIdentifier(e.expression) && e.expression.text === 'query';
+      // La consulta es `query(…)` o, desde la 0.31 (`loQueSePuedeCompartir`, API-CMP-01), una variable `consulta` armada
+      // a mano con su «?» al final de la ruta.
+      const esConsulta = (ts.isCallExpression(e) && ts.isIdentifier(e.expression) && e.expression.text === 'query') || (ts.isIdentifier(e) && e.text === 'consulta');
       if (esConsulta && tramo.literal.text !== '') throw new Error(`${metodo}: hay ruta después de la consulta`);
       ruta += (esConsulta ? '' : '{}') + tramo.literal.text;
     }
