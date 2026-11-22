@@ -341,9 +341,10 @@ export async function datos(estado) {
       e.borrador = { planId: plan.planId };
     }
     if (r.datos.includes('borrador-de-entrenamiento-sin-saltos')) {
-      // RP-22 (con su propia clave: «borrador-de-entrenamiento» es el de `notacionDelEsfuerzo`, DL-192; con la misma, los dos
-      // armaban un borrador para la misma persona y el segundo recibía 409 «Ya hay un borrador de este plan»): la evaluación, el objetivo y un borrador con una sesión y un ejercicio creado a mano (no depende del catálogo
-      // sembrado): tres series de 8, 60 kg y 90 s comunes. Todo sintético.
+      // RP-22: la evaluación, el objetivo y un borrador con una sesión y un ejercicio creado a mano (no depende del catálogo
+      // sembrado): tres series de 8, 60 kg y 90 s comunes. Todo sintético. Tiene su propia clave: «borrador-de-entrenamiento»
+      // es el de `notacionDelEsfuerzo` (DL-192, arriba). Con la misma, cada uno de los dos escenarios armaba los dos
+      // borradores para su persona y el segundo recibía 409 «Ya hay un borrador de este plan».
       const evaluacion = (
         await pedir('POST', `/advisees/${e.ase.id}/training/evaluations`, {
           token: pro,
