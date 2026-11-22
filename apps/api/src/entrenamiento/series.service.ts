@@ -1,6 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import {
   decodificarOcurrencia,
+  notacionDe,
   referenciasDeEjercicio,
   sesionesDelPlan,
   type ContenidoDePlanDeEntrenamiento,
@@ -18,7 +19,14 @@ import { ZONA_POR_DEFECTO, fechaLocalEn } from '../nutricion/zona';
 import { momentoDeLaBase } from '../prisma/concurrencia';
 import type { ActorAutenticado } from '../sesion/sesion.guard';
 import { CatalogoDeEjerciciosService } from './catalogo.service';
-import { CompatibilidadDeClientesService, distingueElCalentamiento, entregaRetenida, exigeObjetivosPorSerie, tieneSeriesDeCalentamiento } from './compatibilidad-de-clientes';
+import {
+  CompatibilidadDeClientesService,
+  distingueElCalentamiento,
+  entregaRetenida,
+  exigeObjetivosPorSerie,
+  muestraLaNotacionDelEsfuerzo,
+  tieneSeriesDeCalentamiento,
+} from './compatibilidad-de-clientes';
 import { EjecucionesDeEntrenamientoService } from './ejecuciones.service';
 import { EjecutorDeEntrenamiento, esUuid, exigirA3Vigente } from './ejecutor';
 import { contenidoDeLaVersion, INCLUIR_PLAN_DE_ENTRENAMIENTO, nombreVisibleDe, resolverDeInstantanea, seguimientoAbierto, versionDePlanApi } from './lectura-entrenamiento';
@@ -95,6 +103,8 @@ export class ObjetivosPorSerieService {
             setKindsDelivery: { required: tieneSeriesDeCalentamiento(contenido), adviseeClientCapable: await this.compatibilidad.titularCapaz(tx, titular, CAPACIDAD_TIPOS_DE_SERIE) },
             // DL-137: en una activada, la de la instantánea; en un borrador, la que se está editando.
             agenda: contenido.agenda ?? null,
+            // DL-192 (RPE-D01): lo mismo para la notación del esfuerzo; ausente es RIR.
+            effortNotation: notacionDe(contenido.effortNotation),
           },
         };
       },
@@ -166,6 +176,8 @@ export class ObjetivosPorSerieService {
             snapshotDigest: version.instantanea.huella,
             imagesAsOf: imagesAsOf.toISOString(),
             session: sesionConObjetivosApi(ubicada.sesion, ubicada.orden, resolver, imagenes),
+            // DL-192 (RPE-D08): solo al cliente que la declara; la APK instalada la rechazaría y sigue en RIR.
+            ...(muestraLaNotacionDelEsfuerzo(ctx) ? { effortNotation: notacionDe(instantanea.contenido.effortNotation) } : {}),
           },
         };
       },

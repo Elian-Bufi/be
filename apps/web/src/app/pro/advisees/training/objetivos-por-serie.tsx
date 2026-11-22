@@ -22,9 +22,11 @@ import {
   type OrigenDelObjetivo,
   type PrescripcionConObjetivos,
   type PrescripcionParaResolver,
+  COPY_NOTACION_DEL_ESFUERZO,
 } from '@be/domain';
 import { useEffect, useState } from 'react';
 import { numeroEnCampo } from '../../../../lib/formato';
+import { useNotacionDelEsfuerzo } from '../notacion-del-esfuerzo';
 
 /**
  * Un objetivo de una serie con sus tres estados (DL-122):
@@ -121,6 +123,8 @@ export function TablaDeObjetivos({
   bases?: { readonly loadBasis?: BaseDeCarga | null; readonly repetitionBasis?: BaseDeRepeticiones | null };
   titulo?: string;
 }) {
+  // DL-192: el RIR de cada serie, en la notación del plan; lo guardado sigue siendo el RIR.
+  const notacion = useNotacionDelEsfuerzo();
   if (filas.length === 0) return null;
   return (
     <div className="desplazable-x">
@@ -135,7 +139,7 @@ export function TablaDeObjetivos({
             <th scope="col">{COPY_ENTRENAMIENTO_POR_SERIE.columnaSerie}</th>
             <th scope="col">Carga</th>
             <th scope="col">{COPY_ENTRENAMIENTO_POR_SERIE.columnaRepeticiones}</th>
-            {conRir ? <th scope="col">{COPY_ENTRENAMIENTO_POR_SERIE.columnaRir}</th> : null}
+            {conRir ? <th scope="col">{COPY_NOTACION_DEL_ESFUERZO.etiqueta[notacion]}</th> : null}
             <th scope="col">{COPY_ENTRENAMIENTO_POR_SERIE.descansoRecomendado}</th>
           </tr>
         </thead>
@@ -151,7 +155,7 @@ export function TablaDeObjetivos({
               </td>
               {conRir ? (
                 <td>
-                  <Valor texto={textoDeRir(f.rir)} origen={f.origin.rir} />
+                  <Valor texto={textoDeRir(f.rir, notacion)} origen={f.origin.rir} />
                 </td>
               ) : null}
               <td>

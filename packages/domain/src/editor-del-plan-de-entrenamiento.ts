@@ -278,15 +278,15 @@ const unoOVarios = (n: number, uno: string, varios: string): string => (n === 1 
  * Lo que dice un ejercicio plegado. El resumen es el del plan activo (`renglonDelEjercicio`), calculado sobre lo que el
  * editor tiene escrito: el objetivo de cada serie se resuelve igual que al guardar. Si falta el objetivo de intensidad o
  * hay un dato que no se entiende, no hay resumen que valga: dice cuántas series tiene, y el aviso dice qué pasa.
- * `problemas` son los de «Validar» que cayeron en este ejercicio.
+ * `problemas` son los de «Validar» que cayeron en este ejercicio. DL-192: el resumen, en la notación del plan.
  */
-export function ejercicioPlegadoDelEditor(p: EjercicioDelEditor, problemas: number): EjercicioPlegadoDelEditor {
+export function ejercicioPlegadoDelEditor(p: EjercicioDelEditor, problemas: number, notacion: 'RIR' | 'RPE' = 'RIR'): EjercicioPlegadoDelEditor {
   const propios = loQueNoDejaGuardarDelEjercicio(p, '');
   const faltaElObjetivo = propios.some((x) => x.code === P.faltaElObjetivo);
   const parametros = propios.filter((x) => x.code === P.parametroIncompleto).length;
   const ilegibles = propios.length - parametros - (faltaElObjetivo ? 1 : 0);
   return {
-    resumen: faltaElObjetivo || ilegibles > 0 ? cuentaDeSeries(p.sets) : renglonDelEjercicio(comoLoLeeElPlan(p)),
+    resumen: faltaElObjetivo || ilegibles > 0 ? cuentaDeSeries(p.sets) : renglonDelEjercicio(comoLoLeeElPlan(p), notacion),
     avisos: [
       ...(faltaElObjetivo ? ['Falta el objetivo de intensidad'] : []),
       ...(ilegibles > 0 ? [unoOVarios(ilegibles, 'dato que no se entiende', 'datos que no se entienden')] : []),

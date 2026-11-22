@@ -29,8 +29,10 @@ import {
   type SesionConObjetivos,
   COPY_TIPOS_DE_SERIE,
   COPY_BLOQUES_DE_LA_SESION,
+  COPY_NOTACION_DEL_ESFUERZO,
 } from '@be/domain';
 import { useId, type ReactNode } from 'react';
+import { useNotacionDelEsfuerzo } from '../notacion-del-esfuerzo';
 import { EnPartes, conNumerosPegados } from '../../../../components/en-partes';
 import { Icono } from '../../../../components/icono';
 import type { Resultado } from '../../../../lib/api';
@@ -199,8 +201,11 @@ function BloqueDelPlan({ encabezado, nivel, children }: { encabezado: Encabezado
 function EjercicioDelPlan({ prescripcion: p, abierto, onAlternar, acceso, nivel }: { prescripcion: PrescripcionConObjetivos; abierto: boolean; onAlternar: () => void; acceso: AccesoALasImagenes; nivel: 3 | 4 | 5 }) {
   const id = useId();
   const Titulo = nivel === 3 ? 'h3' : nivel === 4 ? 'h4' : 'h5';
-  const { filas, conRir, conNota } = seriesDelEjercicio(p);
-  const general = loGeneralDelEjercicio(p);
+  // DL-192: el RIR, en la notación del plan de la persona (RIR o RPE); lo guardado no cambia.
+  const notacion = useNotacionDelEsfuerzo();
+  const columnaDelEsfuerzo = COPY_NOTACION_DEL_ESFUERZO.etiqueta[notacion];
+  const { filas, conRir, conNota } = seriesDelEjercicio(p, notacion);
+  const general = loGeneralDelEjercicio(p, notacion);
   const sinObjetivo = <span className="tenue">{COPY_ENTRENAMIENTO_POR_SERIE.sinObjetivo}</span>;
   return (
     <section className="comida-del-plan ejercicio-del-plan" data-ejercicio={p.order} data-abierta={abierto ? '' : undefined}>
@@ -211,7 +216,7 @@ function EjercicioDelPlan({ prescripcion: p, abierto, onAlternar, acceso, nivel 
             <span className="comida-del-plan__nombre">{p.exerciseName}</span>
             {/* Plegado dice lo que piden sus series; abierto, cuántas son y con qué criterio: el detalle está abajo. */}
             <span className="comida-del-plan__cuenta" data-resumen>
-              <EnPartes texto={abierto ? encabezadoDelEjercicio(p) : renglonDelEjercicio(p)} />
+              <EnPartes texto={abierto ? encabezadoDelEjercicio(p, notacion) : renglonDelEjercicio(p, notacion)} />
             </span>
           </span>
           <Icono nombre={abierto ? 'arriba' : 'abajo'} tamano={18} />
@@ -232,7 +237,7 @@ function EjercicioDelPlan({ prescripcion: p, abierto, onAlternar, acceso, nivel 
                         <th scope="col">{COPY_ENTRENAMIENTO_POR_SERIE.columnaSerie}</th>
                         <th scope="col">{C.cargaSugerida}</th>
                         <th scope="col">{COPY_ENTRENAMIENTO_POR_SERIE.columnaRepeticiones}</th>
-                        {conRir ? <th scope="col">{COPY_ENTRENAMIENTO_POR_SERIE.columnaRir}</th> : null}
+                        {conRir ? <th scope="col">{columnaDelEsfuerzo}</th> : null}
                         <th scope="col">{COPY_ENTRENAMIENTO_POR_SERIE.descansoRecomendado}</th>
                         {conNota ? <th scope="col">{C.nota}</th> : null}
                       </tr>
@@ -248,7 +253,7 @@ function EjercicioDelPlan({ prescripcion: p, abierto, onAlternar, acceso, nivel 
                           </th>
                           <td data-etiqueta={C.cargaSugerida}>{f.carga ?? sinObjetivo}</td>
                           <td data-etiqueta={f.repeticiones === null ? COPY_ENTRENAMIENTO_POR_SERIE.columnaRepeticiones : undefined}>{f.repeticiones ?? sinObjetivo}</td>
-                          {conRir ? <td data-etiqueta={f.rir === null ? COPY_ENTRENAMIENTO_POR_SERIE.columnaRir : undefined}>{f.rir ?? sinObjetivo}</td> : null}
+                          {conRir ? <td data-etiqueta={f.rir === null ? columnaDelEsfuerzo : undefined}>{f.rir ?? sinObjetivo}</td> : null}
                           <td data-etiqueta={COPY_ENTRENAMIENTO_POR_SERIE.descansoRecomendado}>{f.descanso ?? sinObjetivo}</td>
                           {conNota ? (
                             <td className="series-del-plan__nota" data-etiqueta={f.nota ? C.nota : undefined}>

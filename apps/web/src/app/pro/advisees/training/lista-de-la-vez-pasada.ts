@@ -11,7 +11,7 @@
  *
  * Es puro: lo prueba `apps/web/test/graficos-fase-1.test.mjs`.
  */
-import { textoDeLaSerie, type SerieDeLaVezPasada, type VezPasada } from '@be/domain';
+import { textoDeLaSerie, type NotacionDelEsfuerzo, type SerieDeLaVezPasada, type VezPasada } from '@be/domain';
 
 /** Cuántas veces se arman de lo leído: todas (los 91 días ya están leídos; no hay otra lectura). */
 export const TODAS_LAS_VECES = Number.POSITIVE_INFINITY;
@@ -23,8 +23,9 @@ export function unidadComun(veces: readonly VezPasada[]): 'kg' | 'lb' | null {
 }
 
 /** El texto de la ficha: «137,5 × 3 · RIR 2» si la unidad ya está arriba; si no, la serie entera («137,5 kg × 3 · RIR 2»). */
-export function textoDeLaFicha(s: SerieDeLaVezPasada, unidad: 'kg' | 'lb' | null): string {
-  const entero = textoDeLaSerie(s);
+export function textoDeLaFicha(s: SerieDeLaVezPasada, unidad: 'kg' | 'lb' | null, notacion: NotacionDelEsfuerzo = 'RIR'): string {
+  // DL-192: el RIR registrado, en la notación del borrador que se está editando («× 3 · RPE 8»).
+  const entero = textoDeLaSerie(s, notacion);
   return unidad && s.carga?.unit === unidad && s.repeticiones !== null ? entero.replace(` ${unidad} ×`, ' ×') : entero;
 }
 

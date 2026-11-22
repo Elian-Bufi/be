@@ -33,7 +33,7 @@
  * `CuadroDeLaVezPasada`, el mismo cuadro lateral sin la fuerza estimada: DL-174 abre el cuadro para todos los ejercicios, y
  * la fuerza estimada sigue solo en la lista de la v1 (GR-T70).
  */
-import { COPY_LA_VEZ_PASADA, fechaEnPocasPalabras, loQueSeHizo, marcaDelPlan, textoDeLaSerie, VECES_EN_EL_EDITOR, vecesPasadas, type SerieDeLaVezPasada, type VezPasada } from '@be/domain';
+import { COPY_LA_VEZ_PASADA, COPY_NOTACION_DEL_ESFUERZO, fechaEnPocasPalabras, loQueSeHizo, marcaDelPlan, textoDeLaSerie, VECES_EN_EL_EDITOR, vecesPasadas, type SerieDeLaVezPasada, type VezPasada } from '@be/domain';
 import { useCallback, useEffect, useId, useState, type ReactNode } from 'react';
 import { CuadroEnfocado } from '../../../../components/cuadro-enfocado';
 import { BloqueDeEstado } from '../../../../components/estados';
@@ -45,6 +45,7 @@ import { usePersonaDelArea } from '../marco-del-area';
 import { hoyEn, restarDias } from '../seguimiento/estado';
 import { AccesoAlHistorial, COPY_DEL_HISTORIAL, PasoDelHistorialDiferido, type PasoDelHistorial } from '../graficos/entrenamiento/acceso-al-historial';
 import { anterioresQueQuedan, textoDeLaFicha, TODAS_LAS_VECES, unidadComun } from './lista-de-la-vez-pasada';
+import { useNotacionDelEsfuerzo } from '../notacion-del-esfuerzo';
 
 /** Cuántos días se leen: 91 con hoy. API-TRN-21 acepta 92, y el hoy de la API puede ir un día adelante del navegador. */
 const DIAS_QUE_SE_LEEN = 91;
@@ -53,7 +54,7 @@ export const COPY_LA_VEZ_PASADA_EN_EL_EDITOR = {
   abrir: 'La vez pasada',
   queEs: (persona: string, desde: string) => `Lo que registró ${persona} las últimas veces que hizo este ejercicio en tus planes, serie por serie, desde el ${desde}.`,
   /** La línea tenue de arriba de la lista: de dónde sale y, con una sola unidad, cómo se lee cada ficha. */
-  deDonde: (persona: string, desde: string, unidad: string | null) => `Lo registrado por ${persona} en tus planes, desde el ${desde}${unidad ? ` · ${unidad} × repeticiones · RIR` : ''}`,
+  deDonde: (persona: string, desde: string, unidad: string | null, esfuerzo = 'RIR') => `Lo registrado por ${persona} en tus planes, desde el ${desde}${unidad ? ` · ${unidad} × repeticiones · ${esfuerzo}` : ''}`,
   ninguna: (desde: string) => `Sin sesiones registradas con este ejercicio en tus planes desde el ${desde}.`,
   sesion: 'Sesión',
   serie: (n: number) => `Serie ${n}`,
@@ -126,14 +127,16 @@ function MarcaDeOrigen({ hueca = false }: { hueca?: boolean }) {
 /** Una serie registrada como ficha: su marca, el texto (que no se parte) y, si vino del plan, lo que vino del plan. */
 function FichaDeSerie({ serie, unidad }: { serie: SerieDeLaVezPasada; unidad: 'kg' | 'lb' | null }) {
   const delPlan = marcaDelPlan(serie, COPY_LA_VEZ_PASADA.cargaRapida);
-  const corto = textoDeLaFicha(serie, unidad);
+  // DL-192: el RIR registrado, en la notación del borrador que se está editando.
+  const notacion = useNotacionDelEsfuerzo();
+  const corto = textoDeLaFicha(serie, unidad, notacion);
   return (
     <li className={serie.cargaRapida ? 'la-vez-pasada__ficha la-vez-pasada__serie--del-plan' : 'la-vez-pasada__ficha'} data-carga-rapida={serie.cargaRapida ? '' : undefined}>
       <MarcaDeOrigen hueca={serie.cargaRapida} />
       <span className="la-vez-pasada__valor" aria-hidden="true">
         {corto}
       </span>
-      <span className="visualmente-oculto">{`${C.serie(serie.numero)}: ${textoDeLaSerie(serie)}`}</span>
+      <span className="visualmente-oculto">{`${C.serie(serie.numero)}: ${textoDeLaSerie(serie, notacion)}`}</span>
       {delPlan ? <span className="la-vez-pasada__del-plan">{delPlan}</span> : null}
     </li>
   );
@@ -230,6 +233,7 @@ function ListaDeLaVezPasada({ veces, hoy, persona, nombre, unidad }: { veces: re
 export function LaVezPasada({ lectura, recargar, nombre }: { lectura: LecturaDeLaVezPasada; recargar: () => void; nombre: string }) {
   const id = useId();
   const persona = usePersonaDelArea() ?? C.persona;
+  const notacion = useNotacionDelEsfuerzo();
   return (
     <section className="la-vez-pasada" aria-labelledby={`${id}-titulo`} data-la-vez-pasada>
       <p id={`${id}-titulo`} className="ejercicio-del-plan__subtitulo">
@@ -255,7 +259,7 @@ export function LaVezPasada({ lectura, recargar, nombre }: { lectura: LecturaDeL
         ) : (
           <>
             {/* La unidad, una sola para la línea de arriba y las fichas: la de todas las veces, no la de las que se ven. */}
-            <p className="nota la-vez-pasada__que-es">{C.deDonde(persona, fechaEnPocasPalabras(lectura.desde, lectura.hoy), unidadComun(lectura.veces))}</p>
+            <p className="nota la-vez-pasada__que-es">{C.deDonde(persona, fechaEnPocasPalabras(lectura.desde, lectura.hoy), unidadComun(lectura.veces), COPY_NOTACION_DEL_ESFUERZO.etiqueta[notacion])}</p>
             <ListaDeLaVezPasada veces={lectura.veces} hoy={lectura.hoy} persona={persona} nombre={nombre} unidad={unidadComun(lectura.veces)} />
             <ComoLeerlo>
               <p>{C.queEs(persona, fechaEnPocasPalabras(lectura.desde, lectura.hoy))}</p>
