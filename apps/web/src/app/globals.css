@@ -21556,6 +21556,15 @@ html:has(.estacion:not([data-en-el-asistente])) {
   table-layout: fixed;
 }
 
+/* Una cantidad con su ícono y un «—» ocupan el mismo renglón. La cantidad es `inline-flex` con el ícono primero: su línea de
+   base es el borde de abajo del ícono, que queda centrado, y la caja asoma 1,9 px por encima del renglón; con «—» la fila
+   era 1,9 px más baja (lo encontró el recorrido `sinSaltos` al vaciar el factor: los g/kg subían). Alineada arriba, entra
+   en el renglón y el número queda donde estaba. */
+.calculador__tabla .cantidad-del-macro,
+.reparto-por-comida__tabla .cantidad-del-macro {
+  vertical-align: top;
+}
+
 .calculador__col-dia {
   width: 30%;
 }
