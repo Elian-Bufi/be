@@ -125,7 +125,7 @@ import { gramosDelObjetivo, origenBreve } from './planificacion';
 import { ContextoDeLosAlimentos, datosDelAlimento, type DatosDelAlimento } from './alimentos-del-catalogo';
 import { COPY_RANGOS_INDICADOS } from './rangos-indicados';
 import { CuadroDelRangoIndicado, rangoIndicadoDe, RangosIndicados, sePuedeIndicar, useRangosIndicados, type DiaParaLosRangos } from './rangos-indicados-del-plan';
-import { KcalDelObjetivo, SumaDeLosRangosIndicados } from './suma-de-los-rangos';
+import { KcalDelObjetivo } from './suma-de-los-rangos';
 import { RepartoPorComida } from './propuesta-de-rangos-del-plan';
 import { RotuloConIcono } from './cantidad-del-macro';
 import { MACRO_DEL_NUTRIENTE } from './abreviaturas-de-macros';
@@ -1293,9 +1293,9 @@ export function EditorDeBorrador({
 
       {dia ? (
         <div className="comidas-del-plan comidas-del-editor" data-dia={i + 1}>
-          {/* NUP-06: la suma de los rangos indicados de las comidas, frente al objetivo del día. Otra cuenta que la de las
-              opciones («Rangos y totales»): la tabla lo dice. */}
-          <SumaDeLosRangosIndicados comidas={dia.meals.map((m, j) => ({ nombre: nombreDeLaComida(m, j), rango: rangoIndicadoDe(rangosIndicados.estado, dia.dayTypeId, m.mealId) }))} objetivo={objetivo} />
+          {/* RP-19 (DL-188, pedido del 22/11): la suma de los rangos indicados frente al objetivo (NUP-06) ya no va acá,
+              arriba de las comidas: aparecía de golpe al proponer los rangos y corría toda la pantalla. Su chequeo es una
+              línea del «Reparto por comida», con el detalle detrás de un «?». */}
           {cambiandoElNombreDelDia || dia.label.trim() === '' ? (
             <CampoDeNombre
               id={`dia-${i}`}

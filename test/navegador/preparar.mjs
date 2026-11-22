@@ -66,6 +66,8 @@ export const RECORRIDOS = {
   // opción por comida (el día tiene indicado) y con uno que deja elegir el almuerzo (el día no tiene).
   comparacion: { habilitado: ['NUTRICION'], datos: ['comparacion'] },
   comparacionConOpciones: { habilitado: ['NUTRICION'], datos: ['comparacion-con-opciones'] },
+  // RP-19 (WP-RECORRIDO-PLAN-PULIDO, DL-188): con un error nada cambia de lugar, en el reparto, el objetivo y el calculador.
+  sinSaltos: { habilitado: ['NUTRICION'], datos: ['borrador'] },
 };
 const vinculosDe = (r) => r.vinculos ?? r.habilitado;
 

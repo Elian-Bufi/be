@@ -13,32 +13,48 @@
  *   escrito es una casilla aparte con la lista de lo que se reemplaza.
  * - Antes era un cuadro detrás de «Proponer rangos desde el cálculo del objetivo», para todos los días a la vez: el mismo
  *   cálculo, ahora visible y día por día, sin duplicarlo.
+ * - **RP-19 · sin saltos.** Con un error nada cambia de lugar: cada fila muestra siempre su rango (o «—», con el mismo alto);
+ *   «Todo el día» dice la suma de las partes en vivo y, en su renglón reservado, lo que falta o sobra; la tabla tiene sus
+ *   columnas fijas; el porqué del botón apagado y lo que se guardó van en un renglón reservado al lado del botón, y lo que
+ *   aparece después de proponer («Lo que ya escribiste», un error del servidor) va debajo del botón. El chequeo de la suma
+ *   de los rangos indicados frente al objetivo (antes, un cuadro arriba de las comidas que aparecía de golpe al proponer)
+ *   es un renglón propio debajo de la tabla, con el detalle detrás de un «?».
  */
-import { MACROS_DE_LA_PROPUESTA, numero, type RangosDelPlan, type ReferenciaYCalculo, type VersionDeObjetivo } from '@be/domain';
+import { MACROS_DE_LA_PROPUESTA, numero, type RangoPropuesto, type RangosDelPlan, type ReferenciaYCalculo, type VersionDeObjetivo } from '@be/domain';
 import { useEffect, useId, useMemo, useState } from 'react';
 import { ExplicacionAPedido } from '../../../../components/explicacion-a-pedido';
-import { Aviso } from '../../../../components/formulario';
+import { Aviso, RenglonDelAviso } from '../../../../components/formulario';
 import { Icono } from '../../../../components/icono';
 import { api } from '../../../../lib/api';
 import { mensajeDeFallo } from '../../../../lib/intento';
+import { ICONO_DEL_MACRO } from './abreviaturas-de-macros';
 import { CantidadDelMacro, RotuloConIcono } from './cantidad-del-macro';
 import {
+  chequeoDeLaSuma,
   conParteUnica,
   COPY_PROPUESTA as C,
   cuerpoConLaPropuesta,
   fuenteDeLaPropuesta,
+  fueraEnPalabras,
   kcalDeLosGramosDelDia,
   kcalDelRango,
+  loQueFaltaDeLaSuma,
   NOMBRE_DEL_MACRO_DE_LA_PROPUESTA,
+  parteEscrita,
   parteUnica,
   propuestaDelDia,
+  rangoDelDia,
+  rangosPorFila,
   repartoInicial,
   repartoInicialUnico,
-  sumaDeLasPartes,
+  sumasEnVivo,
+  type ChequeoDeLaSuma,
   type DiaDeLaPropuesta,
   type RepartoEscrito,
+  type SumaDeLasPartes,
 } from './propuesta-de-rangos';
-import type { RangosIndicadosHook } from './rangos-indicados-del-plan';
+import { rangoIndicadoDe, type RangosIndicadosHook } from './rangos-indicados-del-plan';
+import { SumaDeLosRangosIndicados } from './suma-de-los-rangos';
 
 type LecturaDelCalculo = { estado: 'leyendo' } | { estado: 'listo'; calculo: ReferenciaYCalculo | null } | { estado: 'falla' };
 
@@ -60,6 +76,74 @@ function useCalculoDelObjetivo(token: string, versionId: string | null): Lectura
 }
 
 const cifra = (x: { readonly min: number; readonly max: number }): string => (x.min === x.max ? numero(x.min, 0) : `${numero(x.min, 0)} a ${numero(x.max, 0)}`);
+
+/** Para buscar lo que ya está escrito sin una propuesta lista: los nombres no dependen de los números. */
+const SIN_NUMEROS: RangoPropuesto = { protein: { min: 0, max: 0 }, carbohydrate: { min: 0, max: 0 }, fat: { min: 0, max: 0 } };
+
+/** RP-19: una cantidad con su ícono o, si no hay una parte que se entienda, «—»: el mismo renglón, con el mismo alto. */
+function CantidadOGuion({ macro, x }: { macro: 'kcal' | (typeof MACROS_DE_LA_PROPUESTA)[number]; x: { readonly min: number; readonly max: number } | null }) {
+  if (x) return <CantidadDelMacro macro={macro} cifra={cifra(x)} />;
+  return (
+    <span className="reparto-por-comida__sin-rango" data-sin-rango>
+      <span aria-hidden="true">—</span>
+      <span className="visualmente-oculto">sin rango: falta la parte</span>
+    </span>
+  );
+}
+
+/**
+ * RP-19: la suma de las partes en «Todo el día»: «99 %» (marcado si no da 100), su base («de las 1.985 kcal») y, en un
+ * renglón reservado, lo que falta o sobra en la unidad de la base («faltan 20 kcal»; vacío si da 100). El lector de
+ * pantalla oye la frase entera.
+ */
+function SumaEnVivo({ s, base, completa }: { s: SumaDeLasPartes; base: { readonly cantidad: number; readonly unidad: 'kcal' | 'g' }; completa: string }) {
+  const falta = loQueFaltaDeLaSuma(s, base);
+  return (
+    <span className="reparto-por-comida__suma" data-suma-bien={s.bien ? '' : undefined}>
+      <span className="reparto-por-comida__suma-cifra" aria-hidden="true">
+        {C.sumaEnVivo(s.suma)}
+      </span>
+      <span className="reparto-por-comida__base" aria-hidden="true">
+        {C.baseDeLaSuma(base.cantidad, base.unidad)}
+      </span>
+      <span className="visualmente-oculto">{falta ? `${completa}: ${falta}` : completa}</span>
+      <RenglonDelAviso tipo={s.bien ? 'nota' : 'error'} aria-hidden="true" data-lo-que-falta>
+        {falta}
+      </RenglonDelAviso>
+    </span>
+  );
+}
+
+/** RP-19: el chequeo en una línea, con sus íconos. Ubica, no califica: sin colores de error ni de éxito (NUP-06). */
+function LineaDelChequeo({ c }: { c: Exclude<ChequeoDeLaSuma, { estado: 'sin-rangos' }> }) {
+  if (c.estado === 'contiene') {
+    return (
+      <>
+        {C.contieneElObjetivo}{' '}
+        <span className="reparto-por-comida__iconos" aria-hidden="true">
+          {(['kcal', ...MACROS_DE_LA_PROPUESTA] as const).map((m) => (
+            <Icono key={m} nombre={ICONO_DEL_MACRO[m]} tamano={15} />
+          ))}
+        </span>
+      </>
+    );
+  }
+  if (c.estado === 'afuera') {
+    return (
+      <>
+        {C.quedaAfuera}:{' '}
+        {c.afuera.map((f, n) => (
+          <span key={f.clave}>
+            {n > 0 ? '; ' : null}
+            <RotuloConIcono macro={f.clave} texto={fueraEnPalabras(f)} />
+          </span>
+        ))}
+        .
+      </>
+    );
+  }
+  return <>{C.sinComparar(c.claves.map((k) => (k === 'kcal' ? 'kcal' : NOMBRE_DEL_MACRO_DE_LA_PROPUESTA[k].toLowerCase())))}</>;
+}
 
 /**
  * El reparto por comida de un día tipo. `dia`: el día con sus comidas ya guardadas; `null` si el día todavía no se
@@ -92,6 +176,9 @@ export function RepartoPorComida({
   const [reemplazar, setReemplazar] = useState(false);
   const [enviando, setEnviando] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // RP-19: lo que se guardó, en el renglón al lado del botón (antes, un aviso arriba de la lista de rangos del asistente,
+  // que corría todo lo de abajo; en el editor no se veía).
+  const [hecho, setHecho] = useState<string | null>(null);
   // El reparto escrito es de este día tipo: con otras comidas, vuelve al punto de partida. Revisión del PR: la clave son
   // las comidas, no sus nombres; con el nombre, cambiarle el nombre a una comida borraba las partes que se habían escrito.
   const claveDelDia = dia ? `${dia.dayTypeId}|${dia.comidas.map((c) => c.mealId).join(',')}` : '';
@@ -100,6 +187,7 @@ export function RepartoPorComida({
     setPorMacro(false);
     setReemplazar(false);
     setError(null);
+    setHecho(null);
   }, [claveDelDia]);
 
   const fuente = calculo.estado === 'listo' ? fuenteDeLaPropuesta(objetivo, calculo.calculo) : null;
@@ -113,6 +201,7 @@ export function RepartoPorComida({
   const cambiar = (e: RepartoEscrito) => {
     setEscrito(e);
     setError(null);
+    setHecho(null);
   };
 
   // El «?» va al lado del título y no adentro: el título nombra la sección, y la explicación no se le suma al abrirla.
@@ -136,25 +225,35 @@ export function RepartoPorComida({
   }
   if (!r) return null;
   const gramos = fuente ? (r.variante === 'descanso' && fuente.descanso ? fuente.descanso : fuente.dia) : null;
-  const sumas = sumaDeLasPartes(dia, r);
+  // RP-19: cada fila con su rango, siempre; el día, con su margen, sin depender del reparto; la suma de las partes, en vivo.
+  const filas = fuente && toleranciaValida ? rangosPorFila(dia, r, fuente, t) : null;
+  const delDia = fuente && toleranciaValida ? rangoDelDia(fuente, r.variante, t) : null;
+  const sumas = sumasEnVivo(dia, r);
   // La base del «%»: lo que suman los gramos del día, de donde salen las kcal de cada comida.
   const base = gramos ? kcalDeLosGramosDelDia(gramos) : 0;
   const listo = p?.ok ? { dayTypeId: dia.dayTypeId, dia: p.dia, comidas: dia.comidas.map((c, j) => ({ mealId: c.mealId, rango: p.comidas[j]! })) } : null;
   const nombre = (_: string, mealId: string | null) => (mealId === null ? 'todo el día' : (dia.comidas.find((c) => c.mealId === mealId)?.nombre ?? 'una comida'));
-  const vistaPrevia = listo ? cuerpoConLaPropuesta(datos, [listo], nombre, reemplazar) : null;
-  const conReemplazo = listo ? cuerpoConLaPropuesta(datos, [listo], nombre, true) : null;
-  const yaEscritos = conReemplazo?.reemplazados.length ?? 0;
-  const nuevos = vistaPrevia ? vistaPrevia.nuevos + vistaPrevia.reemplazados.length : 0;
+  // RP-19: lo que ya está escrito no depende de que la propuesta esté lista (antes, «Lo que ya escribiste» aparecía y se iba
+  // con la suma). Sin propuesta, se busca con números vacíos: lo que se manda sale solo de `listo`.
+  const destino = listo ?? { dayTypeId: dia.dayTypeId, dia: SIN_NUMEROS, comidas: dia.comidas.map((c) => ({ mealId: c.mealId, rango: SIN_NUMEROS })) };
+  const vistaPrevia = cuerpoConLaPropuesta(datos, [destino], nombre, reemplazar);
+  const conReemplazo = cuerpoConLaPropuesta(datos, [destino], nombre, true);
+  const yaEscritos = conReemplazo.reemplazados.length;
+  const nuevos = vistaPrevia.nuevos + vistaPrevia.reemplazados.length;
+  // RP-19 (pedido del 22/11): la suma de los rangos indicados frente al objetivo, en un renglón propio del reparto.
+  const comidasConRango = dia.comidas.map((c) => ({ nombre: c.nombre, rango: rangoIndicadoDe(rangos.estado, dia.dayTypeId, c.mealId) }));
+  const chequeo = chequeoDeLaSuma(comidasConRango, objetivo);
 
   async function proponer() {
-    if (!vistaPrevia || nuevos === 0) return;
+    if (!listo || nuevos === 0) return;
     setEnviando(true);
     setError(null);
-    const respuesta = await api.escribirRangosDelPlan(token, planId, vistaPrevia.cuerpo);
+    setHecho(null);
+    const respuesta = await api.escribirRangosDelPlan(token, planId, cuerpoConLaPropuesta(datos, [listo], nombre, reemplazar).cuerpo);
     setEnviando(false);
     if (respuesta.ok) {
       rangos.setDatos(respuesta.datos.data);
-      rangos.setAviso(C.guardado(nuevos));
+      setHecho(C.guardado(nuevos));
       setReemplazar(false);
       return;
     }
@@ -165,7 +264,10 @@ export function RepartoPorComida({
     setError(mensajeDeFallo(respuesta));
   }
 
-  const noSePuede = !fuente ? null : !toleranciaValida ? 'Revisá el margen: un número de 0 a 50.' : p && !p.ok ? 'Las partes no suman 100: ajustalas para proponer.' : nuevos === 0 ? C.nadaQueGuardar : null;
+  // Por qué el botón está apagado, o lo que se guardó: en el renglón reservado al lado del botón.
+  const bloqueo = !toleranciaValida ? C.margenInvalido : !listo ? C.noSuman : nuevos === 0 ? C.nadaQueGuardar : null;
+  const renglonDelBoton = enviando ? null : (hecho ?? bloqueo ?? (comidasSinGuardar > 0 ? C.sinGuardar : null));
+  const ilegible = (texto: string | undefined) => (texto ?? '').trim() !== '' && parteEscrita(texto) === null;
 
   return (
     <section className="reparto-por-comida" aria-labelledby={`${id}-titulo`} data-reparto-por-comida>
@@ -202,7 +304,15 @@ export function RepartoPorComida({
             <ExplicacionAPedido nombre={C.sugerido}>{C.sugeridoAyuda}</ExplicacionAPedido>
             <span className="reparto-por-comida__margen">
               <label htmlFor={`${id}-tolerancia`}>{C.tolerancia}</label>
-              <input id={`${id}-tolerancia`} inputMode="decimal" size={3} aria-invalid={toleranciaValida ? undefined : true} value={tolerancia} onChange={(e) => (setTolerancia(e.target.value), setError(null))} />
+              <input
+                id={`${id}-tolerancia`}
+                inputMode="decimal"
+                size={3}
+                aria-invalid={toleranciaValida ? undefined : true}
+                value={tolerancia}
+                onChange={(e) => (setTolerancia(e.target.value), setError(null), setHecho(null))}
+                data-margen-del-reparto
+              />
             </span>
             <label className="opcion-en-linea">
               <input
@@ -217,28 +327,50 @@ export function RepartoPorComida({
               {C.porMacro}
             </label>
           </div>
+          {/* RP-19: columnas fijas (`table-layout: fixed` y anchos por columna): lo que se escribe no reacomoda la tabla. */}
           <div className="desplazable-x">
-            <table className="tabla reparto-por-comida__tabla" data-tabla-del-reparto>
+            <table className={`tabla reparto-por-comida__tabla${porMacro ? ' reparto-por-comida__tabla--por-macro' : ''}`} data-tabla-del-reparto>
               <caption className="visualmente-oculto">
                 {C.titulo}: {dia.nombre}
               </caption>
+              <colgroup>
+                <col className="reparto-por-comida__col-comida" />
+                {porMacro ? null : <col className="reparto-por-comida__col-parte" />}
+                <col className="reparto-por-comida__col-kcal" />
+                {MACROS_DE_LA_PROPUESTA.map((m) => (
+                  <col key={m} className="reparto-por-comida__col-macro" />
+                ))}
+              </colgroup>
               <thead>
                 <tr>
                   <th scope="col">Comida</th>
-                  {porMacro ? null : <th scope="col">{C.parte}</th>}
+                  {porMacro ? null : (
+                    <th scope="col">
+                      {C.parte}
+                      {/* El «%» de cada parte, con su base, una vez: en el rótulo de la columna. */}
+                      <span id={`${id}-base`} className="reparto-por-comida__base">
+                        {C.deLasKcal(base)}
+                      </span>
+                    </th>
+                  )}
                   <th scope="col">
                     <RotuloConIcono macro="kcal" texto="kcal" />
                   </th>
                   {MACROS_DE_LA_PROPUESTA.map((m) => (
                     <th key={m} scope="col">
                       <RotuloConIcono macro={m} texto={NOMBRE_DEL_MACRO_DE_LA_PROPUESTA[m]} />
+                      {porMacro ? (
+                        <span id={`${id}-base-${m}`} className="reparto-por-comida__base">
+                          {C.deLosGramos(gramos[m])}
+                        </span>
+                      ) : null}
                     </th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {dia.comidas.map((comida, j) => {
-                  const rango = p?.ok ? p.comidas[j]! : null;
+                  const fila = filas?.[j] ?? null;
                   const unica = parteUnica(r, comida.mealId);
                   return (
                     <tr key={comida.mealId}>
@@ -253,15 +385,18 @@ export function RepartoPorComida({
                               step={1}
                               inputMode="numeric"
                               aria-label={C.parteDe(comida.nombre)}
+                              aria-describedby={`${id}-base`}
+                              aria-invalid={ilegible(unica ?? undefined) ? true : undefined}
                               value={unica ?? ''}
                               onChange={(e) => cambiar(conParteUnica(r, comida.mealId, e.target.value))}
                               data-parte-de-la-comida
                             />
-                            <span className="nota">{C.deLasKcal(base)}</span>
                           </span>
                         </td>
                       )}
-                      <td data-kcal-propuestas>{rango ? <CantidadDelMacro macro="kcal" cifra={cifra(kcalDelRango(rango))} /> : '—'}</td>
+                      <td data-kcal-propuestas>
+                        <CantidadOGuion macro="kcal" x={fila?.kcal ?? null} />
+                      </td>
                       {MACROS_DE_LA_PROPUESTA.map((m) => (
                         <td key={m}>
                           {porMacro ? (
@@ -270,19 +405,18 @@ export function RepartoPorComida({
                                 inputMode="decimal"
                                 size={3}
                                 aria-label={`${NOMBRE_DEL_MACRO_DE_LA_PROPUESTA[m]} de ${comida.nombre}, parte del día`}
+                                aria-describedby={`${id}-base-${m}`}
+                                aria-invalid={ilegible(r.comidas[comida.mealId]?.[m]) ? true : undefined}
                                 value={r.comidas[comida.mealId]?.[m] ?? ''}
                                 onChange={(e) => cambiar({ ...r, comidas: { ...r.comidas, [comida.mealId]: { ...(r.comidas[comida.mealId] ?? { protein: '', carbohydrate: '', fat: '' }), [m]: e.target.value } } })}
+                                data-parte-del-macro={m}
                               />
-                              <span className="nota">{`% de los ${numero(gramos[m], 0)} g`}</span>
                             </span>
                           ) : null}
-                          {rango ? (
-                            <span className="reparto-por-comida__rango" data-rango-propuesto>
-                              <CantidadDelMacro macro={m} cifra={cifra(rango[m])} />
-                            </span>
-                          ) : porMacro ? null : (
-                            '—'
-                          )}
+                          {/* RP-19: el renglón del rango está siempre; sin una parte que se entienda, «—». */}
+                          <span className="reparto-por-comida__rango" data-rango-propuesto>
+                            <CantidadOGuion macro={m} x={fila?.macros[m] ?? null} />
+                          </span>
                         </td>
                       ))}
                     </tr>
@@ -290,49 +424,65 @@ export function RepartoPorComida({
                 })}
                 <tr className="reparto-por-comida__fila-del-dia">
                   <th scope="row">Todo el día</th>
-                  {porMacro ? null : <td data-suma-de-las-partes>{C.sumaDeLasPartes(sumas.protein, base)}</td>}
+                  {porMacro ? null : (
+                    <td data-suma-de-las-partes>
+                      <SumaEnVivo s={sumas.protein} base={{ cantidad: base, unidad: 'kcal' }} completa={C.sumaDeLasPartes(sumas.protein.suma, base)} />
+                    </td>
+                  )}
                   <td>
-                    <CantidadDelMacro macro="kcal" cifra={p?.ok ? cifra(kcalDelRango(p.dia)) : numero(gramos.kcal, 0)} />
+                    <CantidadOGuion macro="kcal" x={delDia ? kcalDelRango(delDia) : null} />
                   </td>
                   {MACROS_DE_LA_PROPUESTA.map((m) => (
                     <td key={m} data-rango-del-dia-propuesto>
-                      <CantidadDelMacro macro={m} cifra={p?.ok ? cifra(p.dia[m]) : numero(gramos[m], 0)} />
+                      {porMacro ? (
+                        <SumaEnVivo s={sumas[m]} base={{ cantidad: gramos[m], unidad: 'g' }} completa={C.sumaDelMacro(NOMBRE_DEL_MACRO_DE_LA_PROPUESTA[m], sumas[m].suma, gramos[m])} />
+                      ) : null}
+                      <span className="reparto-por-comida__rango">
+                        <CantidadOGuion macro={m} x={delDia?.[m] ?? null} />
+                      </span>
                     </td>
                   ))}
                 </tr>
               </tbody>
             </table>
           </div>
-          {p && !p.ok ? (
-            porMacro ? (
-              p.sumas.map((s) => (
-                <p key={s.macro} className="campo__error" role="status">
-                  {C.noSuma(NOMBRE_DEL_MACRO_DE_LA_PROPUESTA[s.macro], s.suma)}
-                </p>
-              ))
-            ) : (
-              <p className="campo__error" role="status" data-no-suma-100>
-                {C.noSumaUnica(sumas.protein)}
-              </p>
-            )
-          ) : null}
-          {comidasSinGuardar > 0 ? <p className="nota">{C.sinGuardar}</p> : null}
-          {yaEscritos > 0 && conReemplazo && vistaPrevia ? (
+          {/* RP-19 (pedido del 22/11): la suma de los rangos indicados frente al objetivo, en una línea y en su lugar. Sin
+              rangos indicados, el renglón queda vacío con el mismo alto; el detalle por macro, detrás del «?», se abre hacia
+              abajo y no corre nada de lo que está arriba. */}
+          <div className="renglon-del-aviso renglon-del-aviso--con-boton reparto-por-comida__chequeo" aria-live="polite" data-chequeo-de-la-suma={chequeo.estado}>
+            {chequeo.estado === 'sin-rangos' ? null : (
+              <>
+                <span className="reparto-por-comida__chequeo-texto">
+                  <Icono nombre="objetivo" tamano={15} />
+                  <span>
+                    <LineaDelChequeo c={chequeo} />
+                  </span>
+                </span>
+                <ExplicacionAPedido nombre={C.detalleDeLaSuma} como="div">
+                  <SumaDeLosRangosIndicados comidas={comidasConRango} objetivo={objetivo} enDetalle />
+                </ExplicacionAPedido>
+              </>
+            )}
+          </div>
+          <div className="acciones reparto-por-comida__acciones">
+            <button type="button" className="boton boton--secundario" data-proponer-rangos disabled={enviando || bloqueo !== null} aria-busy={enviando} onClick={() => void proponer()}>
+              {enviando ? C.guardando : C.proponer}
+            </button>
+            <RenglonDelAviso juntoAlBoton anunciar tipo={hecho && renglonDelBoton === hecho ? 'exito' : 'nota'} data-por-que-no-se-propone>
+              {renglonDelBoton}
+            </RenglonDelAviso>
+          </div>
+          {/* RP-19: lo que aparece después de proponer va debajo del botón: no lo corre. */}
+          {error ? <Aviso tipo="error">{error}</Aviso> : null}
+          {yaEscritos > 0 ? (
             <fieldset className="grupo grupo--anidado" data-reemplazar-rangos>
               <legend>Lo que ya escribiste</legend>
               <label className="opcion-en-linea">
-                <input type="checkbox" checked={reemplazar} onChange={(e) => setReemplazar(e.target.checked)} /> {yaEscritos === 1 ? C.reemplazarUno : C.reemplazar(yaEscritos)}
+                <input type="checkbox" checked={reemplazar} onChange={(e) => (setReemplazar(e.target.checked), setHecho(null))} /> {yaEscritos === 1 ? C.reemplazarUno : C.reemplazar(yaEscritos)}
               </label>
               <p className="nota">{reemplazar ? C.seReemplazan(conReemplazo.reemplazados.join(', ')) : C.seConservan(vistaPrevia.conservados.join(', '))}</p>
             </fieldset>
           ) : null}
-          {error ? <Aviso tipo="error">{error}</Aviso> : null}
-          <div className="acciones reparto-por-comida__acciones">
-            <button type="button" className="boton boton--secundario" data-proponer-rangos disabled={enviando || noSePuede !== null} aria-busy={enviando} onClick={() => void proponer()}>
-              {enviando ? C.guardando : C.proponer}
-            </button>
-            {noSePuede ? <span className="nota">{noSePuede}</span> : null}
-          </div>
         </>
       ) : null}
     </section>

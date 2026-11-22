@@ -413,9 +413,11 @@ test('NUP-04 y NUP-05 · la línea frente a los rangos, en la opción y en el cu
   assert.match(EDITOR, /rangoDe=\{rangoParaIndicar\}/);
 });
 
-test('NUP-06 · la suma de los rangos va arriba de las comidas, en el editor y en el paso 4, y se separa de las opciones', () => {
-  const comidas = EDITOR.slice(EDITOR.indexOf('<div className="comidas-del-plan comidas-del-editor"'));
-  assert.ok(comidas.indexOf('<SumaDeLosRangosIndicados') >= 0 && comidas.indexOf('<SumaDeLosRangosIndicados') < comidas.indexOf('{dia.meals.map((m, j) => ('), 'arriba de las comidas');
+test('NUP-06 · la suma de los rangos: en el paso 4, debajo de las comidas; en el editor, su chequeo va en el reparto (RP-19)', () => {
+  // RP-19 (DL-188, pedido de Dirección del 22/11): arriba de las comidas del editor aparecía de golpe al proponer y corría
+  // toda la pantalla. Su chequeo es una línea del «Reparto por comida», con la tabla detrás de un «?».
+  assert.doesNotMatch(EDITOR, /<SumaDeLosRangosIndicados/);
+  assert.match(leer('app/pro/advisees/nutrition/propuesta-de-rangos-del-plan.tsx'), /<SumaDeLosRangosIndicados comidas=\{comidasConRango\} objetivo=\{objetivo\} enDetalle \/>/);
   assert.match(PASOS, /<SumaDeLosRangosIndicados comidas=\{dia\.meals\.map/);
   assert.match(P.COPY_PLANIFICACION.sumaAyuda, /otra cuenta que «Rangos y totales»/);
   assert.match(PIEZAS, /<p className="nota">\{C\.sumaAyuda\}<\/p>/);

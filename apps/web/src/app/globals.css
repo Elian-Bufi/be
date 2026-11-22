@@ -21440,3 +21440,229 @@ html:has(.estacion:not([data-en-el-asistente])) {
 .formulario-de-inicio__criticas > h3 {
   margin-top: 0;
 }
+
+/* ═══ RP-19 (WP-RECORRIDO-PLAN-PULIDO, DL-188) · Sin saltos ══════════════════════════════════════════════════════════
+   La regla: lo que aparece o se va mientras se escribe o se elige tiene su lugar reservado; vacío, ocupa lo mismo. Un
+   error no corre los campos ni los botones. Tres piezas, una sola regla:
+   - el renglón del aviso (`RenglonDelAviso` en `components/formulario.tsx`): un renglón de alto fijo para un aviso, lo
+     que falta de una suma o por qué un botón está apagado;
+   - `.avisos-con-lugar` en un formulario: cada campo que puede avisar (`data-con-aviso`, que `Campo` y `CampoDeFecha`
+     ponen solos cuando reciben `error`) reserva el renglón de su aviso;
+   - las tablas que cambian en vivo, con columnas fijas (`table-layout: fixed`) y cada celda con su renglón siempre.
+   Bloque propio: no cambia las reglas de RP-03 ni las de otros frentes. */
+
+.renglon-del-aviso {
+  display: block;
+  min-height: 1.55rem;
+  margin: 0.2rem 0 0;
+  line-height: 1.55;
+}
+
+.renglon-del-aviso--nota {
+  color: var(--tenue);
+  font-size: 0.92rem;
+}
+
+.renglon-del-aviso--error {
+  color: var(--error);
+  font-weight: 600;
+}
+
+.renglon-del-aviso--exito {
+  color: var(--texto);
+  font-weight: 600;
+}
+
+/* Al lado de un botón: con el alto del botón, para que el botón no se mueva aunque el texto ocupe dos renglones. */
+.renglon-del-aviso--junto-al-boton {
+  display: inline-flex;
+  align-items: center;
+  flex: 1 1 16rem;
+  min-height: 44px;
+  margin: 0;
+}
+
+/* Con un «?» adentro: el alto del botón chico, también cuando el renglón está vacío. */
+.renglon-del-aviso--con-boton {
+  min-height: 2.25rem;
+}
+
+/* Un formulario con los avisos en su lugar: cada campo que puede avisar reserva el renglón de su aviso. Sin aviso, un
+   renglón vacío del mismo alto (el `::after`); con aviso, el aviso lo ocupa. Con un aviso de dos renglones crece uno. */
+.avisos-con-lugar .campo[data-con-aviso] > .campo__error {
+  min-height: 1.55rem;
+  margin: 0.2rem 0 0;
+  line-height: 1.55;
+}
+
+.avisos-con-lugar .campo[data-con-aviso]:not(:has(> .campo__error))::after {
+  content: '';
+  display: block;
+  height: 1.55rem;
+  margin-top: 0.2rem;
+}
+
+/* El «⚠» puede venir de otra letra, más alta: no agranda el renglón. */
+.avisos-con-lugar .campo__error > [aria-hidden='true'],
+.renglon-del-aviso > [aria-hidden='true'] {
+  line-height: 1;
+}
+
+/* El resumen de errores: lo corregido queda, tachado y con su tilde, hasta el envío siguiente. */
+.resumen-de-errores li[data-corregido] {
+  color: var(--tenue);
+}
+
+.resumen-de-errores li[data-corregido] a {
+  color: var(--tenue);
+  text-decoration-line: line-through;
+}
+
+.resumen-de-errores li[data-corregido] > .icono {
+  margin-inline-end: 0.3rem;
+  vertical-align: -0.15em;
+}
+
+/* ─── El reparto por comida (RP-06) sin saltos ─── */
+/* Columnas fijas: lo que se escribe no reacomoda la tabla. Los anchos alcanzan para «2.070 a 2.530 kcal» y «297 a 363 g
+   C» en un renglón; donde no entran, la tabla se desplaza de costado (`desplazable-x`), no se parte. */
+.reparto-por-comida__tabla {
+  table-layout: fixed;
+  width: 100%;
+  font-size: 0.92rem;
+}
+
+.reparto-por-comida__tabla th,
+.reparto-por-comida__tabla td {
+  padding-inline: 0.4rem;
+}
+
+.reparto-por-comida__col-comida {
+  width: 7rem;
+}
+
+.reparto-por-comida__col-parte {
+  width: 8.5rem;
+}
+
+.reparto-por-comida__col-kcal {
+  width: 10.5rem;
+}
+
+.reparto-por-comida__col-macro {
+  width: 8.5rem;
+}
+
+.reparto-por-comida__tabla tbody th {
+  overflow-wrap: anywhere;
+}
+
+.reparto-por-comida__tabla .cantidad-del-macro {
+  white-space: nowrap;
+}
+
+/* La base del «%», una vez, en el rótulo de su columna. */
+.reparto-por-comida__base {
+  display: block;
+  color: var(--tenue);
+  font-size: 0.82rem;
+  font-weight: 400;
+}
+
+.reparto-por-comida__sin-rango {
+  color: var(--tenue);
+}
+
+/* «Todo el día»: la suma de las partes («99 %», marcada si no da 100) y, debajo, lo que falta o sobra, en su renglón. */
+.reparto-por-comida__suma {
+  display: block;
+  margin-bottom: 0.15rem;
+}
+
+.reparto-por-comida__suma-cifra {
+  display: block;
+  font-variant-numeric: tabular-nums;
+}
+
+.reparto-por-comida__suma:not([data-suma-bien]) .reparto-por-comida__suma-cifra {
+  color: var(--error);
+}
+
+.reparto-por-comida__suma .renglon-del-aviso {
+  margin: 0;
+  font-size: 0.85rem;
+}
+
+/* El chequeo de la suma de los rangos indicados frente al objetivo: un renglón propio, con su alto aunque esté vacío. */
+.reparto-por-comida__chequeo {
+  margin: 0.35rem 0 0;
+  font-size: 0.92rem;
+}
+
+.reparto-por-comida__chequeo-texto > .icono {
+  margin-inline-end: 0.3rem;
+  vertical-align: -0.15em;
+}
+
+.reparto-por-comida__iconos {
+  display: inline-flex;
+  gap: 0.25rem;
+  vertical-align: -0.15em;
+}
+
+.suma-de-los-rangos--en-detalle {
+  padding: 0;
+  border: 0;
+  background: none;
+}
+
+/* El botón queda arriba de su fila: el renglón de al lado puede crecer hacia abajo, el botón no se mueve. */
+.reparto-por-comida__acciones {
+  align-items: flex-start;
+}
+
+/* El calculador del objetivo: el gasto total y los macros, con columnas fijas; con «—» o con números, la tabla no cambia. */
+.calculador__tabla--total,
+.calculador__tabla--macros {
+  table-layout: fixed;
+}
+
+.calculador__col-dia {
+  width: 30%;
+}
+
+.calculador__col-cuenta {
+  width: 42%;
+}
+
+.calculador__col-energia {
+  width: 28%;
+}
+
+.calculador__col-macro {
+  width: 22%;
+}
+
+.calculador__col-g {
+  width: 13%;
+}
+
+.calculador__col-parte {
+  width: 39%;
+}
+
+.calculador__usar {
+  align-items: flex-start;
+}
+
+/* La evaluación inicial: el aviso de un dato que se está cambiando va en su renglón, debajo del campo y de «Listo». */
+.dato-del-calculo__problema {
+  flex-basis: 100%;
+  margin: 0;
+}
+
+/* «Usar estos valores» sigue a la derecha; su porqué, a la izquierda, pegado a él. */
+.calculador__usar > .renglon-del-aviso--junto-al-boton {
+  justify-content: flex-end;
+  text-align: right;
+}
