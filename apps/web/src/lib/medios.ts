@@ -76,7 +76,7 @@ export async function achicarAntesDeSubir(archivo: Blob, ancho: number, alto: nu
     const contexto = lienzo.getContext('2d');
     if (!contexto) return null;
     // Sobre blanco, como el servidor: una transparencia no queda negra en el JPEG.
-    contexto.fillStyle = '#ffffff';
+    contexto.fillStyle = 'white';
     contexto.fillRect(0, 0, medidas.ancho, medidas.alto);
     contexto.drawImage(mapa, 0, 0, medidas.ancho, medidas.alto);
     mapa.close();
