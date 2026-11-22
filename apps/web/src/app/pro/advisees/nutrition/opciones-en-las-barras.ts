@@ -7,7 +7,10 @@
  *   volver al plan siguen tildadas. No viaja al guardar, la persona no lo ve y no tiene datos de salud: solo identidades.
  * - **Sin almacenamiento** (modo privado, cuota llena, un valor roto) sigue andando en la pantalla: cada acceso va con
  *   try/catch.
- * - La clave de una opción es la de su día tipo, su comida y su opción (o sus lugares, si todavía no se guardaron).
+ * - La clave de una opción es la de su día tipo, su comida y su opción, con sus identificadores guardados. Una opción
+ *   que todavía no se guardó (o cuya comida o día tipo no se guardaron) no se puede tildar: su lugar cambia al quitar,
+ *   duplicar o mover y su identidad, al autoguardar, y la marca pasaría a otra opción o se perdería. El autoguardado le da
+ *   su identidad en la primera pausa.
  */
 import { useCallback, useEffect, useState } from 'react';
 
@@ -71,19 +74,21 @@ export function useOpcionesEnLasBarras(planId: string): { readonly elegidas: Rea
   return { elegidas, alternar };
 }
 
+/** Si la opción se puede tildar: ella, su comida y su día tipo, guardados (con su identificador). */
+export const sePuedeMostrarEnLasBarras = (dia: { readonly dayTypeId?: string | null }, comida: { readonly mealId?: string | null }, opcion: { readonly optionId?: string | null }): boolean =>
+  !!dia.dayTypeId && !!comida.mealId && !!opcion.optionId;
+
 /**
- * Las opciones tildadas de una comida, por la clave de su franja (`optionId`, o `nueva-N` si no se guardó): lo que reciben
- * la comida del editor y su renglón en «Rangos y totales».
+ * Las opciones tildadas de una comida, por la clave de su franja (su `optionId`): lo que reciben la comida del editor y
+ * su renglón en «Rangos y totales». Lo que no se guardó no cuenta, aunque haya quedado algo recordado con esa forma.
  */
 export function enLasBarrasDeLaComida(
   elegidas: ReadonlySet<string>,
   dia: { readonly dayTypeId?: string | null },
-  i: number,
   comida: { readonly mealId?: string | null; readonly options: readonly { readonly optionId?: string | null }[] },
-  j: number,
 ): ReadonlySet<string> {
-  const delDia = dia.dayTypeId ?? `nuevo-${i}`;
-  const deLaComida = comida.mealId ?? `nueva-${j}`;
-  const claves = comida.options.map((o, k) => o.optionId ?? `nueva-${k}`);
-  return new Set(claves.filter((c) => elegidas.has(claveEnLasBarras(delDia, deLaComida, c))));
+  const delDia = dia.dayTypeId;
+  const deLaComida = comida.mealId;
+  if (!delDia || !deLaComida) return new Set();
+  return new Set(comida.options.flatMap((o) => (o.optionId && elegidas.has(claveEnLasBarras(delDia, deLaComida, o.optionId)) ? [o.optionId] : [])));
 }

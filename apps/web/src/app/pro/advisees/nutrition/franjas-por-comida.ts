@@ -492,12 +492,14 @@ export const COPY_FRANJAS = {
   /** La pista del punto de color, al pasar el puntero. */
   suPunto: (n: number, color: string) => `Opción ${n}: su punto en las barras es ${color}`,
   enLasBarrasSoloElPromedio: 'En las barras, solo el promedio.',
+  /** Una opción que todavía no se guardó: su casilla, apagada, hasta el autoguardado. */
+  alGuardarseSePuedeMostrar: 'Se puede mostrar en las barras cuando se guarde.',
   enLasBarras: (lista: string) => `En las barras, el promedio y ${lista}.`,
   /** La nota corta de las recetas: se cuentan con su porción guardada. */
   recetasGuardadas: 'Una opción de receta se ubica con la porción de la versión guardada.',
   promedio: 'Promedio de las opciones',
-  /** RP-D80: con una sola opción, la raya es su valor. */
-  laUnicaOpcion: 'El valor de la única opción',
+  /** RP-D80: con una sola opción con el dato (las otras se leen, se calculan al guardar o les falta algo), la raya es su valor. */
+  laUnicaOpcion: 'El valor de la única opción con el dato',
   ubicaNoCalifica: 'Ubica, no corrige: podés dejarla así.',
   // RP-21
   segunLoQueElija: 'Según la opción que elija en cada comida',

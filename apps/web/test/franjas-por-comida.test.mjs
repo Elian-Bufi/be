@@ -492,10 +492,16 @@ test('RP-23 (RP-D82) · las casillas: nada tildado por defecto, se recuerdan por
   assert.equal(B.leerEnLasBarras(falla, 'plan-1').size, 0);
   assert.doesNotThrow(() => B.guardarEnLasBarras(falla, 'plan-1', una));
   assert.doesNotThrow(() => B.guardarEnLasBarras(null, 'plan-1', una));
-  // Por comida: la clave de la franja de cada opción tildada (también las que no se guardaron).
+  // Por comida: la clave de la franja de cada opción tildada, solo las guardadas. Una sin guardar cambia de lugar al quitar,
+  // duplicar o mover, y de identidad al autoguardar: lo recordado con su forma vieja («nueva-2») no pasa a otra opción.
   const comida = { mealId: 'comida-2', options: [{ optionId: 'opcion-1' }, { optionId: 'opcion-3' }, {}] };
   const elegidas = new Set([clave, B.claveEnLasBarras('dia-1', 'comida-2', 'nueva-2'), B.claveEnLasBarras('otro', 'comida-2', 'opcion-1')]);
-  assert.deepEqual([...B.enLasBarrasDeLaComida(elegidas, { dayTypeId: 'dia-1' }, 0, comida, 1)], ['opcion-3', 'nueva-2']);
+  assert.deepEqual([...B.enLasBarrasDeLaComida(elegidas, { dayTypeId: 'dia-1' }, comida)], ['opcion-3']);
+  assert.equal(B.enLasBarrasDeLaComida(new Set([B.claveEnLasBarras('nuevo-0', 'nueva-1', 'nueva-0')]), {}, { options: [{}] }).size, 0, 'un día o una comida sin guardar: nada');
+  assert.equal(B.sePuedeMostrarEnLasBarras({ dayTypeId: 'dia-1' }, comida, comida.options[1]), true);
+  assert.equal(B.sePuedeMostrarEnLasBarras({ dayTypeId: 'dia-1' }, comida, comida.options[2]), false, 'la opción sin guardar, apagada');
+  assert.equal(B.sePuedeMostrarEnLasBarras({}, comida, comida.options[1]), false, 'el día sin guardar, apagada');
+  assert.doesNotMatch(EDITOR, /nuevo-${i}`, m.mealId ?? `nueva-/, 'sin claves por lugar');
   // En la sesión, no para siempre; el estado vive en la pantalla del editor.
   const FUENTE = leer('app/pro/advisees/nutrition/opciones-en-las-barras.ts');
   assert.match(FUENTE, /window\.sessionStorage/);
@@ -520,10 +526,12 @@ test('RP-23 (RP-D83) · la casilla y el punto, en el renglón de la cabecera de 
   assert.ok(fila.indexOf('<CasillaEnLasBarras') > 0 && fila.indexOf('<CasillaEnLasBarras') < fila.indexOf('<h4 className="opcion-plegable__titulo">'), 'la casilla, antes de la cabecera y fuera de su botón');
   assert.match(fila, /<\/h4>\n\s*<\/div>/);
   const casilla = COMIDA.slice(COMIDA.indexOf('function CasillaEnLasBarras('), COMIDA.indexOf('function AccionDeInicio('));
-  assert.match(casilla, /<input type="checkbox" checked=\{tildada\} onChange=\{alAlternar\} \/>/);
+  assert.match(casilla, /<input type="checkbox" checked=\{tildada && !sinGuardar\} disabled=\{sinGuardar\} onChange=\{alAlternar\} \/>/);
   assert.match(casilla, /<span className="en-las-barras__punto" data-color-de-la-opcion=\{color\} aria-hidden="true" \/>/);
-  assert.match(casilla, /<span className="visualmente-oculto">\{COPY_FRANJAS\.mostrarEnLasBarras\(lugar \+ 1, nombreDelColor\)\}<\/span>/);
-  assert.match(casilla, /title=\{COPY_FRANJAS\.suPunto\(lugar \+ 1, nombreDelColor\)\}/);
+  assert.match(casilla, /<span className="visualmente-oculto">\s*\{COPY_FRANJAS\.mostrarEnLasBarras\(lugar \+ 1, nombreDelColor\)\}\s*\{sinGuardar \? ` \$\{COPY_FRANJAS\.alGuardarseSePuedeMostrar\}` : ''\}\s*<\/span>/);
+  assert.match(casilla, /title=\{sinGuardar \? COPY_FRANJAS\.alGuardarseSePuedeMostrar : COPY_FRANJAS\.suPunto\(lugar \+ 1, nombreDelColor\)\}/);
+  // Sin guardar, apagada: su lugar y su identidad todavía cambian.
+  assert.match(fila, /sinGuardar=\{!sePuedeMostrarEnLasBarras\(n\)\} alAlternar=\{\(\) => alAlternarEnLasBarras\(n\)\}/);
   // Los estilos, en el bloque de RP-20 y RP-21: los colores salen de los tokens; la fila no agrega renglones.
   const bloque = ESTILOS.slice(ESTILOS.indexOf('/* ─── RP-20 y RP-21'));
   for (let n = 1; n <= 5; n++) assert.match(bloque, new RegExp(`\\[data-color-de-la-opcion='${n}'\\] \\{\\n\\s*--color-de-la-opcion: var\\(--opcion-${n}\\);`));

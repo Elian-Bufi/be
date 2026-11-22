@@ -130,6 +130,7 @@ export function ComidaDelEditor({
   alQuitarOpcion,
   totalDeLaOpcion,
   enLasBarras,
+  sePuedeMostrarEnLasBarras,
   alAlternarEnLasBarras,
 }: {
   /** El prefijo de los identificadores de sus campos: `I-J`, las posiciones del día tipo y de la comida. */
@@ -187,8 +188,10 @@ export function ComidaDelEditor({
   totalDeLaOpcion: (k: number) => TotalDeLaOpcion | null;
   /** RP-23: las opciones de esta comida (por la clave de su franja) que se muestran en las barras. */
   enLasBarras: ReadonlySet<string>;
-  /** RP-23: tildar o destildar una opción (por la clave de su franja). */
-  alAlternarEnLasBarras: (clave: string) => void;
+  /** RP-23: si la opción `k` se puede tildar (ella, su comida y su día tipo, ya guardados). */
+  sePuedeMostrarEnLasBarras: (k: number) => boolean;
+  /** RP-23: tildar o destildar la opción `k`. */
+  alAlternarEnLasBarras: (k: number) => void;
 }) {
   const propio = useId();
   // PG-16 (DL-173): «Anotar sobre esta comida», si el editor tiene las notas propias.
@@ -350,7 +353,7 @@ export function ComidaDelEditor({
                       <li key={o.optionId ?? `nueva-${n}`} className="opcion-plegable" data-opcion-plegable={n + 1} data-abierta={abiertaLaOpcion ? '' : undefined} data-receta={o.recipeVersionId ? '' : undefined}>
                         {/* RP-23: la casilla y el punto de color, en el renglón de la cabecera (no la agrandan). */}
                         <div className="opcion-plegable__fila">
-                          {conCasillas ? <CasillaEnLasBarras lugar={n} tildada={enLasBarras.has(paraLaFranja[n]!.clave)} alAlternar={() => alAlternarEnLasBarras(paraLaFranja[n]!.clave)} /> : null}
+                          {conCasillas ? <CasillaEnLasBarras lugar={n} tildada={enLasBarras.has(paraLaFranja[n]!.clave)} sinGuardar={!sePuedeMostrarEnLasBarras(n)} alAlternar={() => alAlternarEnLasBarras(n)} /> : null}
                           <h4 className="opcion-plegable__titulo">
                             <button
                               type="button"
@@ -557,24 +560,28 @@ export function ComidaDelEditor({
   );
 }
 
-/** NUP-12: una forma de empezar la comida vacía. Si no se puede, queda apagada y dice por qué (a la vista y al lector). */
 /**
  * RP-23 (RP-D82, RP-D83): la casilla de una opción y su punto de color, junto a su cabecera. Tildada, el punto de la opción
  * aparece en las barras de la comida y del panel, en ese color. La etiqueta la oye el lector («Mostrar la opción 2 en las
  * barras de la comida»); a la vista, la casilla y el punto, que dice su color al pasar el puntero.
  */
-function CasillaEnLasBarras({ lugar, tildada, alAlternar }: { lugar: number; tildada: boolean; alAlternar: () => void }) {
+function CasillaEnLasBarras({ lugar, tildada, sinGuardar, alAlternar }: { lugar: number; tildada: boolean; sinGuardar: boolean; alAlternar: () => void }) {
   const color = colorDeLaOpcion(lugar);
   const nombreDelColor = NOMBRE_DEL_COLOR[color]!;
+  // Sin guardar, apagada y diciendo por qué: su lugar y su identidad todavía cambian (ver `opciones-en-las-barras.ts`).
   return (
-    <label className="en-las-barras" data-en-las-barras={lugar + 1} title={COPY_FRANJAS.suPunto(lugar + 1, nombreDelColor)}>
-      <input type="checkbox" checked={tildada} onChange={alAlternar} />
+    <label className="en-las-barras" data-en-las-barras={lugar + 1} data-sin-guardar={sinGuardar ? '' : undefined} title={sinGuardar ? COPY_FRANJAS.alGuardarseSePuedeMostrar : COPY_FRANJAS.suPunto(lugar + 1, nombreDelColor)}>
+      <input type="checkbox" checked={tildada && !sinGuardar} disabled={sinGuardar} onChange={alAlternar} />
       <span className="en-las-barras__punto" data-color-de-la-opcion={color} aria-hidden="true" />
-      <span className="visualmente-oculto">{COPY_FRANJAS.mostrarEnLasBarras(lugar + 1, nombreDelColor)}</span>
+      <span className="visualmente-oculto">
+        {COPY_FRANJAS.mostrarEnLasBarras(lugar + 1, nombreDelColor)}
+        {sinGuardar ? ` ${COPY_FRANJAS.alGuardarseSePuedeMostrar}` : ''}
+      </span>
     </label>
   );
 }
 
+/** NUP-12: una forma de empezar la comida vacía. Si no se puede, queda apagada y dice por qué (a la vista y al lector). */
 function AccionDeInicio({ texto, noSePuede, alTocar, comida }: { texto: string; noSePuede: string | null; alTocar: () => void; comida: string }) {
   if (noSePuede) {
     return (

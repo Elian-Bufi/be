@@ -22209,6 +22209,12 @@ html:has(.estacion:not([data-en-el-asistente])) {
   outline: none;
 }
 
+/* Una opción sin guardar todavía: la casilla apagada (su pista dice por qué), con el mismo lugar y alto. */
+.en-las-barras[data-sin-guardar] {
+  cursor: default;
+  opacity: 0.55;
+}
+
 .en-las-barras__punto {
   width: 0.75rem;
   height: 0.75rem;
