@@ -17,6 +17,7 @@ import type { PlanConObjetivos, PrescripcionConObjetivos, SesionConObjetivos } f
 import { COPY_ENTRENAMIENTO, ETIQUETA_DE_CRITERIO, cantidadDeSeries as cantidadDeSeriesComun } from './copy-entrenamiento';
 import { ETIQUETA_DE_BASE_DE_CARGA, ETIQUETA_DE_BASE_DE_REPETICIONES, textoDeCarga, textoDeRepeticiones, textoDeRir, textoDeSegundos } from './copy-entrenamiento-por-serie';
 import { numero } from './formato-numeros';
+import { COPY_NOTACION_DEL_ESFUERZO, type NotacionDelEsfuerzo } from './notacion-del-esfuerzo';
 import { intensidadPlanificada } from './presentacion-de-prescripcion';
 import { COPY_DE_VERSIONES, elegidoPorOrden } from './versiones-de-plan';
 import { COPY_TIPOS_DE_SERIE, cuentaDeSeries, esDeCalentamiento, numerosEfectivos, seriesEfectivas, type ConTipoDeSerie } from './tipos-de-serie';
@@ -76,9 +77,13 @@ const SIN_CRITERIO = COPY_ENTRENAMIENTO.sinCriterio.toLowerCase();
 const enumerar = (nombres: readonly string[]): string => (nombres.length <= 1 ? (nombres[0] ?? '') : `${nombres.slice(0, -1).join(', ')} y ${nombres[nombres.length - 1]}`);
 const todasIguales = (valores: readonly (string | null)[]): boolean => valores.every((v) => v === valores[0]);
 
-/** La cabecera de un ejercicio abierto: «4 series · criterio de intensidad: RIR». Sin criterio, lo dice. */
-export function encabezadoDelEjercicio(p: Pick<PrescripcionConObjetivos, 'sets' | 'intensity'>): string {
-  return `${cuentaDeSeries(p.sets)} · ${p.intensity ? `criterio de intensidad: ${ETIQUETA_DE_CRITERIO[p.intensity.criterion]}` : SIN_CRITERIO}`;
+/**
+ * La cabecera de un ejercicio abierto: «4 series · criterio de intensidad: RIR». Sin criterio, lo dice. DL-192: en un plan
+ * en RPE, «criterio de intensidad: RIR, escrito en RPE»: el criterio sigue siendo uno de dos (REG-06-128).
+ */
+export function encabezadoDelEjercicio(p: Pick<PrescripcionConObjetivos, 'sets' | 'intensity'>, notacion: NotacionDelEsfuerzo = 'RIR'): string {
+  const enRpe = notacion === 'RPE' && p.intensity?.criterion === 'RIR' ? ', escrito en RPE' : '';
+  return `${cuentaDeSeries(p.sets)} · ${p.intensity ? `criterio de intensidad: ${ETIQUETA_DE_CRITERIO[p.intensity.criterion]}${enRpe}` : SIN_CRITERIO}`;
 }
 
 /**
@@ -87,8 +92,9 @@ export function encabezadoDelEjercicio(p: Pick<PrescripcionConObjetivos, 'sets' 
  * - Si algo cambia de una serie a otra, eso no se resume: «4 series · 6–8 rep. · carga y RIR por serie · descanso 02:30».
  *   Nunca la primera serie por todas, ni un rango de RIR.
  * - Sin criterio de intensidad, lo dice. Con % RM, la intensidad es la general: no hay un % RM por serie.
+ * - DL-192: en un plan en RPE, el RIR se escribe en RPE («RPE 8», «RPE por serie»).
  */
-export function renglonDelEjercicio(p: Pick<PrescripcionConObjetivos, 'sets' | 'intensity'>): string {
+export function renglonDelEjercicio(p: Pick<PrescripcionConObjetivos, 'sets' | 'intensity'>, notacion: NotacionDelEsfuerzo = 'RIR'): string {
   // DL-178: el renglón resume las series efectivas; el calentamiento se nombra aparte y no entra en el resumen.
   const efectivas = seriesEfectivas(p.sets);
   const calentamiento = p.sets.length - efectivas.length;
@@ -97,7 +103,7 @@ export function renglonDelEjercicio(p: Pick<PrescripcionConObjetivos, 'sets' | '
   const cantidadDeSeries = (n: number) => (calentamiento > 0 ? COPY_TIPOS_DE_SERIE.efectivas(n) : cantidadDeSeriesComun(n));
   const repeticiones = efectivas.map((s) => textoDeRepeticiones(s.target.repetitions));
   const cargas = efectivas.map((s) => textoDeCarga(s.target.suggestedLoad));
-  const rires = efectivas.map((s) => textoDeRir(s.target.rir));
+  const rires = efectivas.map((s) => textoDeRir(s.target.rir, notacion));
   const descansos = efectivas.map((s) => textoDeSegundos(s.target.restSeconds));
   const conRir = p.intensity?.criterion === 'RIR';
   const todoIgual = todasIguales(repeticiones) && todasIguales(cargas) && todasIguales(descansos) && (!conRir || todasIguales(rires));
@@ -114,7 +120,7 @@ export function renglonDelEjercicio(p: Pick<PrescripcionConObjetivos, 'sets' | '
   else if (cargas[0]) partes.push(cargas[0]);
   if (!p.intensity) partes.push(SIN_CRITERIO);
   else if (!conRir) partes.push(`${numero(p.intensity.target.value)} ${ETIQUETA_DE_CRITERIO.PERCENT_RM}`);
-  else if (!todasIguales(rires)) porSerie.push('RIR');
+  else if (!todasIguales(rires)) porSerie.push(COPY_NOTACION_DEL_ESFUERZO.etiqueta[notacion]);
   else if (rires[0]) partes.push(rires[0]);
   const descansoIgual = todasIguales(descansos);
   if (!descansoIgual) porSerie.push('descanso');
@@ -138,9 +144,12 @@ export interface SerieDelPlan {
 
 /**
  * Las series de un ejercicio, con el objetivo que resolvió la API para cada una. La columna del RIR va si el criterio es
- * RIR o alguna serie tiene uno; la de la nota, si alguna serie la tiene.
+ * RIR o alguna serie tiene uno; la de la nota, si alguna serie la tiene. DL-192: el RIR, en la notación del plan.
  */
-export function seriesDelEjercicio(p: Pick<PrescripcionConObjetivos, 'sets' | 'intensity'>): { readonly filas: readonly SerieDelPlan[]; readonly conRir: boolean; readonly conNota: boolean } {
+export function seriesDelEjercicio(
+  p: Pick<PrescripcionConObjetivos, 'sets' | 'intensity'>,
+  notacion: NotacionDelEsfuerzo = 'RIR',
+): { readonly filas: readonly SerieDelPlan[]; readonly conRir: boolean; readonly conNota: boolean } {
   const efectivos = numerosEfectivos(p.sets);
   const filas = [...p.sets]
     .sort((a, b) => a.setIndex - b.setIndex)
@@ -149,7 +158,7 @@ export function seriesDelEjercicio(p: Pick<PrescripcionConObjetivos, 'sets' | 'i
       ...(esDeCalentamiento(s) ? { deCalentamiento: true as const } : {}),
       carga: textoDeCarga(s.target.suggestedLoad),
       repeticiones: textoDeRepeticiones(s.target.repetitions),
-      rir: textoDeRir(s.target.rir),
+      rir: textoDeRir(s.target.rir, notacion),
       descanso: textoDeSegundos(s.target.restSeconds),
       nota: s.note && s.note.trim() !== '' ? s.note : null,
     }));
@@ -167,10 +176,13 @@ export interface DatoGeneralDelEjercicio {
  * cuenta la carga y qué cuentan las repeticiones, si se declararon, cada parámetro del profesional con su unidad, y la
  * nota. Lo que no se declaró no ocupa un renglón.
  */
-export function loGeneralDelEjercicio(p: Pick<PrescripcionConObjetivos, 'intensity' | 'loadBasis' | 'repetitionBasis' | 'professionalParameters' | 'note'>): readonly DatoGeneralDelEjercicio[] {
+export function loGeneralDelEjercicio(
+  p: Pick<PrescripcionConObjetivos, 'intensity' | 'loadBasis' | 'repetitionBasis' | 'professionalParameters' | 'note'>,
+  notacion: NotacionDelEsfuerzo = 'RIR',
+): readonly DatoGeneralDelEjercicio[] {
   const C = COPY_DEL_PLAN_DE_ENTRENAMIENTO;
   return [
-    { rotulo: C.intensidad, valor: intensidadPlanificada(p) ?? COPY_ENTRENAMIENTO.sinCriterio },
+    { rotulo: C.intensidad, valor: intensidadPlanificada(p, notacion) ?? COPY_ENTRENAMIENTO.sinCriterio },
     ...(p.loadBasis ? [{ rotulo: C.laCargaSeCuenta, valor: ETIQUETA_DE_BASE_DE_CARGA[p.loadBasis] }] : []),
     ...(p.repetitionBasis ? [{ rotulo: C.lasRepeticiones, valor: ETIQUETA_DE_BASE_DE_REPETICIONES[p.repetitionBasis] }] : []),
     ...p.professionalParameters.map((q) => ({ rotulo: q.label, valor: `${typeof q.value === 'number' ? numero(q.value) : q.value}${q.unit ? ` ${q.unit}` : ''}` })),
