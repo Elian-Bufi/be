@@ -73,6 +73,8 @@ import {
   type ResumenDelRegistroRapido,
   type Respuestas,
 } from '../registro-rapido';
+import { notacionDeLaLectura, rotuloDelEsfuerzo, textosDelEsfuerzo } from '../esfuerzo-en-la-app';
+import { SelectorDeRpe } from '../selector-de-rpe';
 import { placeholdersDeLaSerie, unidadDelEjercicio, type ErroresDeFila, type FilaEscrita } from '../series-de-la-sesion';
 import { Aviso, Ayuda, Boton, Campo, Casilla, Dato, estilosPorTema, Parrafo, Seccion, Segmentos, Subtitulo, Titulo } from '../ui';
 
@@ -191,7 +193,8 @@ export function PantallaDeRegistroRapido({
     };
   }, [token, occurrenceId, sesionPerdida, vuelta]);
 
-  const ctx = useMemo((): Contexto | null => (lectura?.ok ? { sesion: lectura.datos.data.session, fecha, hoy } : null), [lectura, fecha, hoy]);
+  // DL-192: con la notación del esfuerzo del plan (API-SER-02): en RPE se elige el RPE y se manda el RIR.
+  const ctx = useMemo((): Contexto | null => (lectura?.ok ? { sesion: lectura.datos.data.session, fecha, hoy, notacion: notacionDeLaLectura(lectura.datos.data) } : null), [lectura, fecha, hoy]);
   useEffect(() => {
     if (ctx && r === null) setR(respuestasIniciales(ctx));
   }, [ctx, r]);
@@ -419,10 +422,11 @@ export function PantallaDeRegistroRapido({
       if (!serie) return null;
       const clave = claveDeSerie(p.prescriptionId, s.setIndex);
       const error = errores[clave];
-      const gris = placeholdersDeLaSerie(s.target, unidad);
+      const notacion = ctx.notacion ?? 'RIR';
+      const gris = placeholdersDeLaSerie(s.target, unidad, notacion);
       const abierta = !plegadas || abiertas.has(clave) || tieneAlgoEscrito(serie.escrita) || error !== undefined || serieDelPlan(s) === null;
       // El rótulo visible es corto, como las columnas de la sesión; el lector de pantalla dice el campo entero.
-      const campo = (que: Exclude<keyof FilaEscrita, 'sinProcedencia'>, visible: string, accesible: string, teclado: 'decimal-pad' | 'number-pad', enGris: string) => {
+      const campo = (que: Exclude<keyof FilaEscrita, 'sinProcedencia' | 'rirAnterior'>, visible: string, accesible: string, teclado: 'decimal-pad' | 'number-pad', enGris: string) => {
         const mensaje = error?.[que];
         return (
           <View style={estilos.celda}>
@@ -445,14 +449,29 @@ export function PantallaDeRegistroRapido({
           marcada={serie.hecha}
           onCambio={(v) => cambiar(marcarSerie(r, p.prescriptionId, s.setIndex, v))}
           titulo={T.serie(rotulo.numero)}
-          texto={lineaDeLaSerie(s)}
+          texto={lineaDeLaSerie(s, notacion)}
           error={error?.fila}
         >
           {serie.hecha && abierta ? (
             <View style={estilos.celdas}>
               {campo('carga', unidad, `Carga en ${unidad} ${rotulo.deLa}`, 'decimal-pad', gris.carga)}
               {campo('repeticiones', COPY_ENTRENAMIENTO_POR_SERIE.columnaRepeticiones, `Repeticiones ${rotulo.deLa}`, 'number-pad', gris.repeticiones)}
-              {campo('rir', COPY_ENTRENAMIENTO_POR_SERIE.columnaRir, `RIR ${rotulo.deLa}, opcional`, 'decimal-pad', gris.rir)}
+              {notacion === 'RPE' ? (
+                <View style={estilos.celda}>
+                  <SelectorDeRpe
+                    forma="campo"
+                    rotuloVisible={textosDelEsfuerzo(notacion).columna}
+                    valor={serie.escrita.rir}
+                    placeholder={gris.rir}
+                    titulo={`${rotuloDelEsfuerzo(notacion)} ${rotulo.deLa}`}
+                    error={error?.rir ?? null}
+                    etiqueta={`${rotuloDelEsfuerzo(notacion)} ${rotulo.deLa}, opcional${error?.rir ? `. Revisá este campo: ${error.rir}` : ''}`}
+                    onCambiar={(v) => cambiar(escribir(r, p.prescriptionId, s.setIndex, 'rir', v))}
+                  />
+                </View>
+              ) : (
+                campo('rir', COPY_ENTRENAMIENTO_POR_SERIE.columnaRir, `RIR ${rotulo.deLa}, opcional`, 'decimal-pad', gris.rir)
+              )}
             </View>
           ) : null}
           {serie.hecha && !abierta ? <Boton texto={T.cambiarLaSerie(rotulo.numero)} tipo="enlace" onPress={() => setAbiertas((a) => new Set(a).add(clave))} /> : null}
@@ -498,7 +517,7 @@ export function PantallaDeRegistroRapido({
           {ejerciciosConSusBloques(ctx.sesion, (p) => {
             const { estado, texto } = estadoEnElFinal(p, r.ejercicios[p.prescriptionId]);
             const anotar = estado === 'falta-anotar';
-            const plan = lineaDelPlan(p);
+            const plan = lineaDelPlan(p, ctx.notacion);
             return (
               <View key={p.prescriptionId} style={estilos.filaDelFinal}>
                 <View style={estilos.textosDelFinal} accessible accessibilityLabel={`${p.exerciseName}. ${plan}. ${texto}`}>
@@ -564,7 +583,7 @@ export function PantallaDeRegistroRapido({
             const e = r.ejercicios[p.prescriptionId];
             if (!e) return null;
             return (
-              <Casilla key={p.prescriptionId} marcada={e.hecho} onCambio={(v) => cambiar(marcarEjercicio(r, p.prescriptionId, v))} titulo={p.exerciseName} texto={lineaDelPlan(p)}>
+              <Casilla key={p.prescriptionId} marcada={e.hecho} onCambio={(v) => cambiar(marcarEjercicio(r, p.prescriptionId, v))} titulo={p.exerciseName} texto={lineaDelPlan(p, ctx.notacion)}>
                 {e.hecho ? (
                   p.sets.length === 0 ? (
                     <Parrafo tenue>{T.contaloEnLaNota}</Parrafo>

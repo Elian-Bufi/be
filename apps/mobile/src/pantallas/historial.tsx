@@ -37,6 +37,7 @@ import { TEXTOS_DE_LA_VUELTA } from '../textos-de-la-vuelta';
 import { Aviso, Boton, Dato, EstadoVacio, estilosPorTema, Insignia, Parrafo, Seccion, Subtitulo, Titulo } from '../ui';
 import { volverAHoy, type DondeSeVe } from '../volver-a-hoy';
 import { textoDePrescripcion } from './entrenamiento';
+import { notacionDeLaLectura } from '../esfuerzo-en-la-app';
 
 type Ejecucion = HistorialDeEntrenamientoResponse['data']['executions'][number];
 
@@ -221,6 +222,8 @@ export function PantallaDePlanDeEntrenamiento({ token, id, salir }: { token: str
 
   const plan = carga.datos;
   const sesiones = sesionesDe(plan);
+  // DL-192: el RIR de la intensidad y de cada serie, en la notación de esta versión (API-TRN-09); sin el campo, RIR.
+  const notacion = notacionDeLaLectura(plan);
   return (
     <View>
       <Titulo>{COPY_ENTRENAMIENTO.planHistoricoTitulo}</Titulo>
@@ -234,7 +237,7 @@ export function PantallaDePlanDeEntrenamiento({ token, id, salir }: { token: str
           {s.prescriptions.length === 0 ? <Parrafo tenue>{COPY_ENTRENAMIENTO.sinPrescripciones}</Parrafo> : null}
           {/* DL-181: los ejercicios, bajo su bloque si la sesión tiene; sin bloques, la lista de siempre. */}
           {ejerciciosConSusBloques(s, (p) => (
-            <Dato key={p.prescriptionId} etiqueta={p.exerciseName} valor={textoDePrescripcion(p)} apilado />
+            <Dato key={p.prescriptionId} etiqueta={p.exerciseName} valor={textoDePrescripcion(p, notacion)} apilado />
           ))}
         </Seccion>
       ))}

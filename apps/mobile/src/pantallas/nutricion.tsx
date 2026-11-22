@@ -47,7 +47,7 @@ import { CajaInformativa, FranjaDeMacros, LineaDeFibra } from '../piezas-de-nutr
 import { useDeshacer } from '../registro-de-comidas';
 import { TEXTOS_DE_LA_VUELTA } from '../textos-de-la-vuelta';
 import { HoraDeLoQueVes } from '../hora-en-pantalla';
-import { Aviso, Boton, COLOR, Dato, EstadoVacio, estilosPorTema, Insignia, Parrafo, Pestanas, Seccion, Subtitulo, Titulo } from '../ui';
+import { Aviso, Boton, COLOR, Dato, EstadoVacio, estilosPorTema, Insignia, Parrafo, Pestanas, Seccion, Subtitulo, Titulo, TituloSoloEnLaCabecera } from '../ui';
 import { HoyDeNutricion } from './nutricion-hoy';
 
 /** Lo que acompaña al nombre de un ítem del plan: « · 150 g · cocido». La cantidad, con la coma del país. */
@@ -97,7 +97,8 @@ export function PantallaDeHoy({
   const yDeLaVista = useRef(0);
   return (
     <View onLayout={(e) => (yDeLaPantalla.current = e.nativeEvent.layout.y)}>
-      <Titulo>{COPY_NUTRICION.pestana}</Titulo>
+      {/* DL-194 (A32-03): el título, solo en la cabecera; sin desplazar se ven la opción, sus macros y la comida diferente. */}
+      <TituloSoloEnLaCabecera>{COPY_NUTRICION.pestana}</TituloSoloEnLaCabecera>
       <HoraDeLoQueVes />
       <Pestanas
         etiqueta={COPY_REGISTRO_DE_COMIDAS.queVer}
@@ -371,7 +372,7 @@ function OpcionRegistrada({ token, registro, sesionPerdida }: { token: string; r
     <View>
       {opcion ? (
         <Seccion titulo={opcion.label}>
-          <ImagenDeMedio token={token} mediaId={opcion.image?.mediaId ?? null} sesionPerdida={sesionPerdida} rotulo={COPY_REGISTRO_DE_COMIDAS.imagenDeReferencia} />
+          <ImagenDeMedio token={token} mediaId={opcion.image?.mediaId ?? null} sesionPerdida={sesionPerdida} rotulo={COPY_REGISTRO_DE_COMIDAS.imagenDeReferencia} liviana />
         </Seccion>
       ) : null}
       {consumo ? (
@@ -422,7 +423,7 @@ function ComidaDiferenteRegistrada({
         {registro.approximateQuantity ? <Dato etiqueta={COPY_REGISTRO_DE_COMIDAS.cantidadAproximadaInformada} valor={registro.approximateQuantity} apilado /> : null}
         {registro.evidence.map((foto) => (
           <View key={foto.mediaId} style={s.foto}>
-            <ImagenDeMedio token={token} mediaId={foto.mediaId} sesionPerdida={sesionPerdida} rotulo={COPY_REGISTRO_DE_COMIDAS.tuFoto} proporcion={4 / 3} />
+            <ImagenDeMedio token={token} mediaId={foto.mediaId} sesionPerdida={sesionPerdida} rotulo={COPY_REGISTRO_DE_COMIDAS.tuFoto} proporcion={4 / 3} liviana />
             <Boton texto={COPY_EVIDENCIA_VISUAL.borrarFoto} tipo="peligroSecundario" onPress={() => onBorrarFoto(foto.mediaId)} />
           </View>
         ))}

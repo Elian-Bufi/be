@@ -130,7 +130,7 @@ describe('TEST-PG-010 · «La vez pasada» debajo del ejercicio', () => {
   test('la sesión la lee de «Tu historial» una vez y la dibuja debajo del ejercicio, tenue y entera para el lector', () => {
     const sesion = readFileSync(join(__dirname, 'pantallas', 'entrenamiento.tsx'), 'utf8');
     expect(sesion).toMatch(/api\.misEjecucionesDeEntrenamiento\(token, ultimosDiasHasta\(fechaDeLaSesion, DIAS_DE_LA_VEZ_PASADA\)\)/);
-    expect(sesion).toMatch(/lineaDeLaVezPasadaDelEjercicio\(historia, \{ exerciseId: p\.exerciseId, fechaDeLaSesion, hoy, sustituido: sustitucion\.ejecutado !== null \}\)/);
+    expect(sesion).toMatch(/lineaDeLaVezPasadaDelEjercicio\(historia, \{ exerciseId: p\.exerciseId, fechaDeLaSesion, hoy, sustituido: sustitucion\.ejecutado !== null, notacion \}\)/);
     expect(sesion).toMatch(/vezPasada=\{vezPasada\}/);
     const pieza = readFileSync(join(__dirname, 'pantallas', 'sesion-enfocada.tsx'), 'utf8');
     expect(pieza).toMatch(/<Text style=\{estilos\.detalle\} accessibilityLabel=\{vezPasada\.paraLeer\} testID="la-vez-pasada">/);

@@ -6,7 +6,7 @@
  * - **a la izquierda**, en las cinco raíces, el logo redondo con su brillo y sin el texto «BE»: es accesible y el lector
  *   dice «BE» una vez; en un detalle, «Volver»;
  * - **al centro** (PG-04 de WP-PULIDO-GRANDES), el título de la pantalla, chico, solo cuando el grande ya subió al
- *   desplazar (`TituloChico`);
+ *   desplazar (`TituloChico`); desde DL-194, en Nutrición y Entrenamiento, siempre (el título fijo);
  * - **a la derecha**, la campana de las novedades (DL-133) con un punto de 8 dp en el acento mientras haya algo sin leer,
  *   sin número ni animación. El número sigue en su nombre para el lector: «Novedades, 47 sin leer»;
  * - **debajo**, la línea fina del aviso de prueba, en `tenue` (08 §33), y la línea de actualización. Desde UF-08 de
@@ -34,7 +34,7 @@ import { LineaDeActualizacion } from './estados';
 import { textoDeVolverA, type Ruta } from './navegacion';
 import { ALTO_DEL_DESVANECIDO, capaDeLaCabecera, desvanecidoDeLaCabecera } from './receta-de-vidrio';
 import { margenDelTituloChico } from './titulo-de-la-cabecera';
-import { useTextoDelTitulo, type TituloCompartido } from './titulo-en-la-cabecera';
+import { useTituloDeLaCabecera, type TituloCompartido } from './titulo-en-la-cabecera';
 import { COLOR, estilosPorTema, PALETAS } from './tema';
 
 const ISOTIPO = require('../assets/isotipo.png');
@@ -137,9 +137,21 @@ export function DesvanecidoDeLaCabecera({ cubierta, altoContraste }: { cubierta:
  * los empuja nunca: con letra grande se corta con «…». No se recorre con el lector: el título se lee una vez, el grande.
  */
 function TituloChico({ titulo, conVolver }: { titulo: TituloCompartido; conVolver: boolean }) {
-  const texto = useTextoDelTitulo(titulo.registro);
-  if (!texto) return null;
+  const actual = useTituloDeLaCabecera(titulo.registro);
+  if (!actual) return null;
+  const texto = actual.texto;
   const margen = margenDelTituloChico(conVolver);
+  // DL-194 (A32-03): un título fijo (Nutrición, Entrenamiento) no tiene grande en el contenido. Está siempre, igual que
+  // el que sube al desplazar, y es el único de la pantalla: el lector lo lee como encabezado.
+  if (actual.fijo) {
+    return (
+      <View pointerEvents="none" style={[estilos.centro, { left: margen, right: margen }]}>
+        <Text style={estilos.tituloChico} numberOfLines={1} ellipsizeMode="tail" maxFontSizeMultiplier={1.15} accessibilityRole="header">
+          {texto}
+        </Text>
+      </View>
+    );
+  }
   return (
     <Animated.View
       pointerEvents="none"

@@ -101,10 +101,10 @@ describe('TEST-PG-008 · las cuatro pantallas (lectura del código)', () => {
     expect(app).not.toMatch(/setInterval\([^)]*actualizarLoQueSeVe/);
   });
 
-  test('la hora, debajo del título de cada una', () => {
+  test('la hora, debajo del título de cada una (en Nutrición y Entrenamiento, arriba: el título va en la cabecera, A32-03)', () => {
     expect(leer('pantallas', 'inicio.tsx')).toMatch(/<Titulo>\{fechaLarga\(hoy\)\}<\/Titulo>\s*(\{\}\s*)?<HoraDeLoQueVes \/>/);
-    expect(leer('pantallas', 'nutricion.tsx')).toMatch(/<Titulo>\{COPY_NUTRICION\.pestana\}<\/Titulo>\s*<HoraDeLoQueVes \/>/);
-    expect(leer('pantallas', 'entrenamiento.tsx')).toMatch(/<Titulo>\{COPY_ENTRENAMIENTO\.pestana\}<\/Titulo>\s*<HoraDeLoQueVes \/>/);
+    expect(leer('pantallas', 'nutricion.tsx')).toMatch(/<TituloSoloEnLaCabecera>\{COPY_NUTRICION\.pestana\}<\/TituloSoloEnLaCabecera>\s*<HoraDeLoQueVes \/>/);
+    expect(leer('pantallas', 'entrenamiento.tsx')).toMatch(/<TituloSoloEnLaCabecera>\{COPY_ENTRENAMIENTO\.pestana\}<\/TituloSoloEnLaCabecera>\s*<HoraDeLoQueVes \/>/);
     expect(leer('pantallas', 'novedades.tsx')).toMatch(/<Titulo>\{COPY_NOVEDADES\.titulo\}<\/Titulo>\s*<HoraDeLoQueVes \/>/);
   });
 

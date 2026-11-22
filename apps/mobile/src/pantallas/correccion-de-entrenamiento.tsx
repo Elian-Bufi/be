@@ -23,6 +23,7 @@ import {
   type EjecucionDeEntrenamiento,
   type PrescripcionConObjetivos,
   type Resultado,
+  type NotacionDelEsfuerzo,
   type SesionConObjetivos,
   rotuloPorIndice,
   type RotuloDeSerie,
@@ -59,7 +60,9 @@ import {
   type FilaEnCorreccion,
   type MotivoDeCorreccion,
 } from '../correccion-de-la-sesion';
+import { notacionDeLaLectura, rotuloDelEsfuerzo, textosDelEsfuerzo } from '../esfuerzo-en-la-app';
 import { Cargando, ErrorConReintento } from '../estados';
+import { SelectorDeRpe } from '../selector-de-rpe';
 import { fechaCivil } from '../formato';
 import { ImagenDeMedio } from '../imagen-de-medio';
 import { falloDe, useClaveDeIntento } from '../intento';
@@ -69,7 +72,10 @@ import { Aviso, Boton, Campo, CasillaSola, Desplegable, estilosPorTema, Insignia
 import { RESPALDO_DE_EJERCICIO } from './sesion-enfocada';
 
 type AlPerderLaSesion = (r: Resultado<unknown>) => boolean;
-type Lectura = null | { readonly tipo: 'error'; readonly sinConexion: boolean } | { readonly tipo: 'lista'; readonly x: EjecucionDeEntrenamiento; readonly sesion: SesionConObjetivos; readonly conPlan: boolean };
+type Lectura =
+  | null
+  | { readonly tipo: 'error'; readonly sinConexion: boolean }
+  | { readonly tipo: 'lista'; readonly x: EjecucionDeEntrenamiento; readonly sesion: SesionConObjetivos; readonly conPlan: boolean; readonly notacion: NotacionDelEsfuerzo };
 
 /** El lado de la miniatura del ejercicio, en dp. */
 const LADO_DE_LA_IMAGEN = 56;
@@ -91,7 +97,8 @@ export function PantallaDeCorreccion({ token, id, salir, ir }: { token: string; 
     // leer, quedan las repeticiones de cada serie, que vienen con la ejecución.
     const s = await api.sesionParaRegistrar(token, x.occurrenceId);
     if (sesionPerdida(s)) return;
-    setLectura({ tipo: 'lista', x, sesion: s.ok ? s.datos.data.session : sesionDesdeLaOcurrencia(x.plannedSession), conPlan: s.ok });
+    // DL-192: con la notación del esfuerzo del plan; sin API-SER-02, RIR.
+    setLectura({ tipo: 'lista', x, sesion: s.ok ? s.datos.data.session : sesionDesdeLaOcurrencia(x.plannedSession), conPlan: s.ok, notacion: notacionDeLaLectura(s.ok ? s.datos.data : null) });
   }, [token, id, sesionPerdida]);
 
   useEffect(() => {
@@ -108,6 +115,7 @@ export function PantallaDeCorreccion({ token, id, salir, ir }: { token: string; 
       token={token}
       x={lectura.x}
       sesion={lectura.sesion}
+      notacion={lectura.notacion}
       conPlan={lectura.conPlan}
       sesionPerdida={sesionPerdida}
       accesoRetirado={accesoRetirado}
@@ -121,6 +129,7 @@ function FormularioDeLaCorreccion({
   token,
   x,
   sesion,
+  notacion,
   conPlan,
   sesionPerdida,
   accesoRetirado,
@@ -130,6 +139,7 @@ function FormularioDeLaCorreccion({
   token: string;
   x: EjecucionDeEntrenamiento;
   sesion: SesionConObjetivos;
+  notacion: NotacionDelEsfuerzo;
   conPlan: boolean;
   sesionPerdida: AlPerderLaSesion;
   accesoRetirado: AlPerderLaSesion;
@@ -137,7 +147,7 @@ function FormularioDeLaCorreccion({
   onRegistrada: () => void;
 }) {
   const base = useMemo(() => registroVigente(x), [x]);
-  const [inicial] = useState(() => estadoInicial(x, sesion));
+  const [inicial] = useState(() => estadoInicial(x, sesion, notacion));
   const [estado, hacer] = useReducer(corregir, inicial);
   const [enviando, setEnviando] = useState(false);
   const [fallo, setFallo] = useState<string | null>(null);
@@ -312,6 +322,8 @@ function TarjetaDelEjercicio({
   noSePudoTildar: (prescriptionId: string, setIndex: number, errores: ErroresDeFila) => void;
 }) {
   const unidad = unidadDelEjercicioEnCorreccion(ej);
+  // DL-192: todas las filas llevan la notación del plan (estadoInicial).
+  const notacion = ej.filas[0]?.notacion ?? 'RIR';
   // DL-178: el calentamiento se nombra así y las efectivas, con su número efectivo (el tipo de la fila ya junta el registro y el plan).
   const rotuloDe = rotuloPorIndice(ej.filas.map((x) => ({ setIndex: x.setIndex, setKind: x.tipo })));
   return (
@@ -332,7 +344,7 @@ function TarjetaDelEjercicio({
           <Text style={[estilos.columna, estilos.columnaSerie]}>{COPY_ENTRENAMIENTO_POR_SERIE.columnaSerie}</Text>
           <Text style={[estilos.columna, estilos.columnaDato]}>{unidad ?? COPY_ENTRENAMIENTO.carga}</Text>
           <Text style={[estilos.columna, estilos.columnaDato]}>{COPY_ENTRENAMIENTO_POR_SERIE.columnaRepeticiones}</Text>
-          <Text style={[estilos.columna, estilos.columnaDato]}>{COPY_ENTRENAMIENTO_POR_SERIE.columnaRir}</Text>
+          <Text style={[estilos.columna, estilos.columnaDato]}>{textosDelEsfuerzo(notacion).columna}</Text>
           <View style={estilos.columnaCasilla} />
         </View>
       ) : null}
@@ -342,7 +354,7 @@ function TarjetaDelEjercicio({
           fila={f}
           rotulo={rotuloDe(f.setIndex)}
           ejercicio={ej.nombre}
-          errores={textoDeLosErrores(errores.get(claveDeFila(ej.prescriptionId, f.setIndex)))}
+          errores={textoDeLosErrores(errores.get(claveDeFila(ej.prescriptionId, f.setIndex)), notacion)}
           disposicion={disposicion}
           hacer={(a) => hacer({ ...a, prescriptionId: ej.prescriptionId, setIndex: f.setIndex } as AccionDeCorreccion)}
           noSePudoTildar={(e) => noSePudoTildar(ej.prescriptionId, f.setIndex, e)}
@@ -366,7 +378,7 @@ const CAMPOS: readonly { readonly campo: CampoDeLaCorreccion; readonly teclado: 
 
 /** Lo que es un campo, de qué serie, y el plan de esa serie: el nombre accesible de la celda. */
 function nombreDelCampo(campo: CampoDeLaCorreccion, f: FilaEnCorreccion, rotulo: RotuloDeSerie, ejercicio: string, plan: string): string {
-  const que = campo === 'carga' ? `Carga en ${f.unidad}` : campo === 'repeticiones' ? 'Repeticiones' : 'RIR, opcional';
+  const que = campo === 'carga' ? `Carga en ${f.unidad}` : campo === 'repeticiones' ? 'Repeticiones' : `${rotuloDelEsfuerzo(f.notacion ?? 'RIR')}, opcional`;
   const delPlan = plan === COPY_ENTRENAMIENTO_POR_SERIE.sinObjetivo ? plan : `Plan: ${plan}`;
   return `${que} ${rotulo.deLa} de ${ejercicio}. ${delPlan}`;
 }
@@ -398,6 +410,8 @@ function FilaDeLaCorreccion({
   noSePudoTildar: (errores: ErroresDeFila) => void;
 }) {
   const estado = estadoDeLaFila(f);
+  // DL-192: en un plan en RPE, el esfuerzo se elige entre las opciones del RPE.
+  const notacion = f.notacion ?? 'RIR';
   const tocarLaCasilla = () => {
     const r = alTocarLaCasilla(f);
     if ('errores' in r) noSePudoTildar(r.errores);
@@ -413,15 +427,15 @@ function FilaDeLaCorreccion({
       <View style={estilos.filaQuitada}>
         <View style={estilos.textosDeLaQuitada}>
           <Text style={estilos.textoQuitada}>{rotulo.numero === null ? `Se quita el calentamiento` : T.seQuita(rotulo.numero)}</Text>
-          {f.antes ? <Text style={estilos.valoresQuitados}>{textoCortoDeSerie(f.antes)}</Text> : null}
+          {f.antes ? <Text style={estilos.valoresQuitados}>{textoCortoDeSerie(f.antes, notacion)}</Text> : null}
           <Boton texto={T.deshacer} tipo="enlace" icono="deshacer" onPress={() => hacer({ tipo: 'deshacer' })} />
         </View>
         {casilla}
       </View>
     );
   }
-  const plan = placeholdersDeLaSerie(f.objetivo, f.unidad);
-  const marca = [estado === 'cambiada' && f.antes ? T.antes(textoCortoDeSerie(f.antes)) : null, estado === 'sumada' ? T.nueva : null, filaComoElPlan(f) ? T.comoElPlan : null].filter((x): x is string => x !== null).join(' · ');
+  const plan = placeholdersDeLaSerie(f.objetivo, f.unidad, notacion);
+  const marca = [estado === 'cambiada' && f.antes ? T.antes(textoCortoDeSerie(f.antes, notacion)) : null, estado === 'sumada' ? T.nueva : null, filaComoElPlan(f) ? T.comoElPlan : null].filter((x): x is string => x !== null).join(' · ');
   const estiloDeFila = [estilos.fila, filaTildada(f) && estilos.filaTildada, (estado === 'cambiada' || estado === 'sumada') && estilos.filaCambiada, errores ? estilos.filaConError : null];
   if (disposicion === 'tarjetas') {
     return (
@@ -431,16 +445,30 @@ function FilaDeLaCorreccion({
           <View style={estilos.espacio} />
           {casilla}
         </View>
-        {CAMPOS.map(({ campo, teclado }) => (
-          <Campo
-            key={campo}
-            etiqueta={campo === 'carga' ? `${COPY_ENTRENAMIENTO.carga} (${f.unidad})` : campo === 'repeticiones' ? COPY_ENTRENAMIENTO_POR_SERIE.columnaRepeticiones : COPY_ENTRENAMIENTO_POR_SERIE.rirTitulo}
-            value={f.escrita[campo]}
-            placeholder={plan[campo]}
-            keyboardType={teclado}
-            onChangeText={(texto) => hacer({ tipo: 'escribir', campo, texto })}
-          />
-        ))}
+        {CAMPOS.map(({ campo, teclado }) =>
+          campo === 'rir' && notacion === 'RPE' ? (
+            <SelectorDeRpe
+              key={campo}
+              forma="campo"
+              rotuloVisible={textosDelEsfuerzo(notacion).titulo}
+              valor={f.escrita.rir}
+              placeholder={plan.rir}
+              titulo={`${rotuloDelEsfuerzo(notacion)} ${rotulo.deLa}`}
+              error={null}
+              etiqueta={nombreDelCampo('rir', f, rotulo, ejercicio, plan.rir)}
+              onCambiar={(texto) => hacer({ tipo: 'escribir', campo: 'rir', texto })}
+            />
+          ) : (
+            <Campo
+              key={campo}
+              etiqueta={campo === 'carga' ? `${COPY_ENTRENAMIENTO.carga} (${f.unidad})` : campo === 'repeticiones' ? COPY_ENTRENAMIENTO_POR_SERIE.columnaRepeticiones : textosDelEsfuerzo(notacion).titulo}
+              value={f.escrita[campo]}
+              placeholder={plan[campo]}
+              keyboardType={teclado}
+              onChangeText={(texto) => hacer({ tipo: 'escribir', campo, texto })}
+            />
+          ),
+        )}
         {marca ? <Text style={estilos.marca}>{marca}</Text> : null}
         {errores ? <Aviso tipo="error" titulo={errores} /> : null}
       </View>
@@ -452,9 +480,22 @@ function FilaDeLaCorreccion({
         <View style={estilos.celdaSerie}>
           <Text style={estilos.numeroDeSerie}>{rotulo.corto}</Text>
         </View>
-        {CAMPOS.map(({ campo, teclado }) => (
-          <Celda key={campo} valor={f.escrita[campo]} plan={plan[campo]} teclado={teclado} etiqueta={`${nombreDelCampo(campo, f, rotulo, ejercicio, plan[campo])}${errores ? `. Revisá: ${errores}` : ''}`} conError={errores !== null} onCambiar={(texto) => hacer({ tipo: 'escribir', campo, texto })} />
-        ))}
+        {CAMPOS.map(({ campo, teclado }) =>
+          campo === 'rir' && notacion === 'RPE' ? (
+            <SelectorDeRpe
+              key={campo}
+              forma="celda"
+              valor={f.escrita.rir}
+              placeholder={plan.rir}
+              titulo={`${rotuloDelEsfuerzo(notacion)} ${rotulo.deLa}`}
+              error={errores}
+              etiqueta={`${nombreDelCampo('rir', f, rotulo, ejercicio, plan.rir)}${errores ? `. Revisá: ${errores}` : ''}`}
+              onCambiar={(texto) => hacer({ tipo: 'escribir', campo: 'rir', texto })}
+            />
+          ) : (
+            <Celda key={campo} valor={f.escrita[campo]} plan={plan[campo]} teclado={teclado} etiqueta={`${nombreDelCampo(campo, f, rotulo, ejercicio, plan[campo])}${errores ? `. Revisá: ${errores}` : ''}`} conError={errores !== null} onCambiar={(texto) => hacer({ tipo: 'escribir', campo, texto })} />
+          ),
+        )}
         {casilla}
       </View>
       {marca ? <Text style={estilos.marca}>{marca}</Text> : null}

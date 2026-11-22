@@ -48,6 +48,7 @@ import {
   type EjecucionDeEntrenamiento,
   type HoyDeEntrenamientoResponse,
   type Ocurrencia,
+  type NotacionDelEsfuerzo,
   type Prescripcion,
   type PrescripcionConObjetivos,
   type RegistroDeEjecucion,
@@ -82,6 +83,7 @@ import { fecha, fechaCivil, fechaLarga, hora as horaDe, ultimosDiasHasta } from 
 import { Icono } from '../icono';
 import { IconoDeEjercicio } from '../iconos-de-entrenamiento';
 import { DIAS_DE_LA_VEZ_PASADA, lineaDeLaVezPasadaDelEjercicio } from '../la-vez-pasada-en-la-sesion';
+import { notacionDeLaLectura } from '../esfuerzo-en-la-app';
 import { esIncierto, falloDe, useClaveDeIntento } from '../intento';
 import { useLecturaRecordada, useSeleccionRecordada } from '../lecturas';
 import { VISTA_RECORDADA } from '../volver-a-hoy';
@@ -129,7 +131,7 @@ import {
 } from '../series-de-la-sesion';
 import { sePuedeOfrecer, TEXTOS_DEL_REGISTRO_RAPIDO } from '../registro-rapido';
 import { cambiosParaSustituir, ejercicioRealizadoDe, sePuedeSustituir, sustitucionDe, textoDeLaConfirmacion, TEXTOS_DE_LA_SUSTITUCION, type EjercicioNombrado } from '../sustitucion-de-ejercicio';
-import { Aviso, Boton, Campo, COLOR, Dato, Desplegable, EstadoVacio, estilosPorTema, Insignia, Parrafo, Pestanas, Seccion, Segmentos, Subtitulo, Tarjeta, Titulo } from '../ui';
+import { Aviso, Boton, Campo, COLOR, Dato, Desplegable, EstadoVacio, estilosPorTema, Insignia, Parrafo, Pestanas, Seccion, Segmentos, Subtitulo, Tarjeta, Titulo, TituloSoloEnLaCabecera } from '../ui';
 import { ContenidoDelHistorial } from './historial';
 import { PlanPorSerie } from './plan-por-serie';
 import { AlLado, aRegistroRapido } from './registro-rapido';
@@ -167,8 +169,9 @@ const hoyEn = (zona: string): string => new Intl.DateTimeFormat('en-CA', { timeZ
  * website: todas las series (una pirámide 10/8/6 ya no es «3 × 10») con sus notas, la intensidad con su referencia, la
  * carga sugerida aparte del criterio (B10-06:463-477), los parámetros con su unidad y la nota.
  */
-export function textoDePrescripcion(p: Prescripcion): string {
-  return lineasDePrescripcion(p).join('\n');
+export function textoDePrescripcion(p: Prescripcion, notacion: NotacionDelEsfuerzo = 'RIR'): string {
+  // DL-192: el RIR de la intensidad y de cada serie, en la notación de la versión del plan («RPE 8»).
+  return lineasDePrescripcion(p, { notacion }).join('\n');
 }
 
 /**
@@ -298,7 +301,7 @@ export function PantallaDeEntrenamiento({ token, identidadId, salir, ir }: { tok
 
   return (
     <View>
-      <Titulo>{COPY_ENTRENAMIENTO.pestana}</Titulo>
+      <TituloSoloEnLaCabecera>{COPY_ENTRENAMIENTO.pestana}</TituloSoloEnLaCabecera>
       <HoraDeLoQueVes />
       <Pestanas etiqueta="Qué ver de tu entrenamiento" opciones={VISTAS} valor={vista} alElegir={setVista} />
       {contenido}
@@ -1072,7 +1075,8 @@ export function PantallaDeSesion({
     if (b.ok) entrenamientoLocal.fijarBorrador(draftId, b.datos.data);
     const s = await api.sesionParaRegistrar(token, ocurrencia);
     if (sesionPerdida(s)) return;
-    if (s.ok) entrenamientoLocal.fijarSesionDelPlan(draftId, s.datos.data.session, false);
+    // DL-192: con la notación del esfuerzo del plan, que la API manda porque esta APK declara la capacidad.
+    if (s.ok) entrenamientoLocal.fijarSesionDelPlan(draftId, s.datos.data.session, false, notacionDeLaLectura(s.datos.data));
     if (modo === 'en-vivo') {
       const t = await api.tiemposDelBorrador(token, draftId);
       if (sesionPerdida(t)) return;
@@ -1126,6 +1130,8 @@ export function PantallaDeSesion({
   }, [corre]);
 
   const sesionDelPlan = local?.sesion ?? null;
+  // DL-192: cómo se pregunta y se muestra el esfuerzo (RIR o RPE). Lo que se manda es siempre el RIR.
+  const notacion = local?.notacion ?? 'RIR';
   const prescripciones = sesionDelPlan?.prescriptions ?? [];
   const nombreDe = (id: string) => prescripciones.find((x) => x.prescriptionId === id)?.exerciseName ?? 'Ejercicio';
   const recomendadoDe = (id: string, setIndex: number) => prescripciones.find((x) => x.prescriptionId === id)?.sets.find((s) => s.setIndex === setIndex)?.target.restSeconds ?? null;
@@ -1271,7 +1277,7 @@ export function PantallaDeSesion({
         if (cronometrandose) {
           const ahora = entrenamientoLocal.sesion(draftId);
           const ms = ahora ? (enVivoDeLaCorrida(ahora.corrida, almacen.reloj)?.medicionAbierta?.ms ?? null) : null;
-          const plan = alTerminarLaSerie(escrita, f.objetivo, f.setIndex, unidadDeLaFila, ms, f.numero);
+          const plan = alTerminarLaSerie(escrita, f.objetivo, f.setIndex, unidadDeLaFila, ms, f.numero, notacion);
           if (plan.tipo === 'medicion-larga') {
             // No se escribe en la fila: se resuelve como la medición que quedó abierta, y después se registra.
             const serie = { prescriptionId: p.prescriptionId, setIndex: f.setIndex };
@@ -1303,7 +1309,7 @@ export function PantallaDeSesion({
           descansoEmpezado = descansoAuto !== null && medidos !== null;
           if (medidos !== null) escrita = { ...escrita, tiempo: textoDeTiempo(medidos) };
         }
-        const lectura = serieAlTildar(escrita, f.objetivo, f.setIndex, unidadDeLaFila, f.tipo);
+        const lectura = serieAlTildar(escrita, f.objetivo, f.setIndex, unidadDeLaFila, f.tipo, notacion);
         if (!lectura.ok) {
           const anuncio = anuncioParaRegistrar(escrita, f.objetivo, f.setIndex, lectura.errores, f.numero);
           enfocar(f.setIndex);
@@ -1331,7 +1337,7 @@ export function PantallaDeSesion({
         return;
       }
       if (f.estado === 'en-conflicto' || !f.registrada) return;
-      const restaurar = escritaDeLaSerie(f.registrada, unidad);
+      const restaurar = escritaDeLaSerie(f.registrada, unidad, notacion);
       const conAlgo = hayAlgoEscrito(restaurar);
       // Una carga registrada en otra unidad vuelve con su unidad: la columna del ejercicio pasa a esa.
       if (conAlgo && restaurar.carga !== '' && restaurar.unidad !== unidad) entrenamientoLocal.fijarUnidad(draftId, p.prescriptionId, restaurar.unidad);
@@ -1473,7 +1479,7 @@ export function PantallaDeSesion({
   /** Lo escrito sin registrar de toda la sesión, en el teléfono ahora (PA-01). */
   function pendientesAhora() {
     const s = entrenamientoLocal.sesion(draftId);
-    return s?.sesion ? pendientesDeRegistrar(s.sesion, s.borrador, s.series, s.quitadas, s.escritas) : [];
+    return s?.sesion ? pendientesDeRegistrar(s.sesion, s.borrador, s.series, s.quitadas, s.escritas, s.notacion) : [];
   }
 
   /**
@@ -1777,7 +1783,7 @@ export function PantallaDeSesion({
     // finalizar todavía o qué falló; el detalle (las series y los tiempos), plegado.
     const C = TEXTOS_DEL_CIERRE;
     const deHoy = borrador ? borrador.date === hoyEn(borrador.timeZone) : true;
-    const pendientes = pendientesDeRegistrar(s, borrador, local.series, quitadas, escritasDeLaSesion);
+    const pendientes = pendientesDeRegistrar(s, borrador, local.series, quitadas, escritasDeLaSesion, notacion);
     const porEjercicio = s.prescriptions.flatMap((x) => {
       // DL-178: se nombran como en la tabla: las efectivas con su número efectivo, y el calentamiento por su nombre.
       const numeros = new Map(filasDe(x).map((f) => [f.setIndex, f.numero] as const));
@@ -1879,7 +1885,7 @@ export function PantallaDeSesion({
   }
 
   const bases = basesDeLaPrescripcion(p);
-  const banda = filaActiva ? bandaDeLaSerie(filaActiva.setIndex, filaActiva.objetivo, filaActiva.numero) : null;
+  const banda = filaActiva ? bandaDeLaSerie(filaActiva.setIndex, filaActiva.objetivo, filaActiva.numero, notacion) : null;
   // La serie que origina un descanso que se inicia ahora: la que se hizo, no la que viene (al tildar, el foco avanza).
   const serieDelDescanso = filaActiva ? serieQueOriginaElDescanso(filas, filaActiva.setIndex) : null;
   // Al terminar el descanso: la fila que quedará enfocada, si no es la misma del descanso.
@@ -1920,7 +1926,7 @@ export function PantallaDeSesion({
   // La sustitución del ejercicio activo (DL-151): lo planificado y lo ejecutado según el borrador, y si se ofrece.
   const sustitucion = sustitucionDe(p, borrador, local.series);
   // PG-11 · GR-01: la vez pasada del ejercicio activo, si la hay; no si se sustituyó en esta sesión.
-  const vezPasada = lineaDeLaVezPasadaDelEjercicio(historia, { exerciseId: p.exerciseId, fechaDeLaSesion, hoy, sustituido: sustitucion.ejecutado !== null });
+  const vezPasada = lineaDeLaVezPasadaDelEjercicio(historia, { exerciseId: p.exerciseId, fechaDeLaSesion, hoy, sustituido: sustitucion.ejecutado !== null, notacion });
   const aSustituir = dialogo?.tipo === 'sustituir' ? (s.prescriptions.find((x) => x.prescriptionId === dialogo.prescriptionId) ?? null) : null;
 
   return (
@@ -1989,8 +1995,9 @@ export function PantallaDeSesion({
         deshabilitado={ocupado}
       />
       {/* La ayuda por defecto, plegada junto al encabezado de la tabla, con el ícono de ayuda (PA-02). */}
-      <AyudaDeLaTabla />
+      <AyudaDeLaTabla notacion={notacion} />
       <TablaDeSeries
+        notacion={notacion}
         filas={filas}
         activa={filaActiva?.setIndex ?? 0}
         unidad={unidad}
@@ -2003,7 +2010,7 @@ export function PantallaDeSesion({
         ocupado={ocupado}
         acciones={{ onEnfocar: enfocar, onEscribir: escribir, onTildar: tildar, onReloj: relojDeLaFila, onEscribirTiempo: escribirTiempo }}
       />
-      <ErroresDeLaFila errores={errores} nombreDe={(setIndex) => nombreDeLaFila({ setIndex, numero: numeroDeLaFila(setIndex) })} />
+      <ErroresDeLaFila errores={errores} notacion={notacion} nombreDe={(setIndex) => nombreDeLaFila({ setIndex, numero: numeroDeLaFila(setIndex) })} />
       <View style={estilos.accionesDeLaTabla}>
         {hayParaEscribir ? <Boton texto={t.cambiarUnidad(unidad === 'kg' ? 'lb' : 'kg')} tipo="enlace" onPress={() => entrenamientoLocal.fijarUnidad(draftId, p.prescriptionId, unidad === 'kg' ? 'lb' : 'kg')} /> : null}
         {sePuedeAgregar ? (

@@ -352,3 +352,49 @@ test('DL-118, ajuste del 2026-10-05: la cabecera dice la toma y su fecha, sin «
   assert.match(tarjeta, /respecto: `respecto del \$\{fechaCorta\(anterior\.fecha\)\}`/);
 });
 
+
+// ─── DL-194 (A32-06) · Kerr de cinco componentes (DL-190) con sus nombres en la APK ────────────────────────────────
+
+test('TEST-A32-020 · las siete mediciones de Kerr y sus cinco masas se ven con su nombre, en su bloque, nunca con el código', () => {
+  const MASAS_DE_KERR = ['masa-piel-kerr', 'masa-adiposa-kerr', 'masa-muscular-kerr', 'masa-osea-kerr', 'masa-residual-kerr'];
+  assert.equal(d.MEDICIONES_COMPLEMENTARIAS.length, 7);
+  const G_CM = grupo('cmp-cm', 'cm');
+  const G_KG = grupo('cmp-kg', 'kg');
+  const metricas = [
+    serie('peso', [punto('ev-1', '2026-09-24', 80, G_KG)], [G_KG]),
+    ...d.MEDICIONES_COMPLEMENTARIAS.map((m, i) => serie(m, [punto('ev-1', '2026-09-24', 30 + i, G_CM)], [G_CM])),
+    ...MASAS_DE_KERR.map((m, i) => {
+      const g = grupo(`cmp-${m}`, 'kg', { methodVersionId: `3e0b1b56-6e0a-4d1a-8f1a-6a6d2b6a4f${(0x2d + i + (i > 0 ? 1 : 0)).toString(16)}` });
+      return serie(m, [{ ...punto('ev-1', '2026-09-24', 10 + i, g), dataClass: 'DERIVED' }], [g]);
+    }),
+  ];
+  const toma = d.ultimaToma(datos(metricas));
+  assert.ok(toma);
+  // Cada una con su nombre del catálogo: ninguna cae en el código legible de una métrica que BE no conoce.
+  for (const m of [...toma.medidas, ...toma.derivadas]) {
+    assert.ok(Object.hasOwn(d.NOMBRE_DE_METRICA, m.metrica), `${m.metrica} está en el catálogo de nombres`);
+    assert.equal(m.nombre, d.NOMBRE_DE_METRICA[m.metrica], m.metrica);
+  }
+  assert.deepEqual(
+    toma.derivadas.map((m) => m.nombre),
+    ['Masa de la piel (Kerr)', 'Masa adiposa (Kerr)', 'Masa muscular (Kerr)', 'Masa ósea (Kerr)', 'Masa residual (Kerr)'],
+    'las cinco masas, en el orden del catálogo',
+  );
+  // En Indicadores: la talla sentado con el peso y la talla; las cinco masas entre los resultados de las fórmulas; los
+  // perímetros sin sitio en la figura y los diámetros, en «Más datos de esta toma». Nada se descarta.
+  const bloques = disposicion.bloquesDeIndicadores(toma);
+  assert.deepEqual(bloques.mediciones.map((m) => m.metrica), ['peso', 'talla-sentado']);
+  assert.deepEqual(bloques.resultados.map((m) => m.metrica), MASAS_DE_KERR);
+  assert.deepEqual(
+    bloques.masDatos.map((m) => m.nombre),
+    ['Perímetro de la cabeza', 'Perímetro del muslo a 1 cm del pliegue glúteo', 'Diámetro biacromial (hombros)', 'Diámetro biiliocrestal (crestas ilíacas)', 'Diámetro transverso del tórax', 'Diámetro anteroposterior del tórax'],
+  );
+  assert.equal(bloques.mediciones.length + bloques.resultados.length + bloques.contexto.length + bloques.masDatos.length, toma.medidas.length + toma.derivadas.length);
+  // El perímetro del muslo de Kerr no es el sitio del muslo de la figura: no se confunden.
+  assert.equal(disposicion.esSitioDeLaFigura('perimetro-muslo-gluteo'), false);
+  // Y el método de cada masa tiene nombre, para la procedencia del detalle.
+  for (const m of toma.derivadas) {
+    const metodo = metricas.find((s) => s.metricCode === m.metrica).comparability.groups[0].methodVersionId;
+    assert.match(d.nombreDeMetodo(metodo) ?? '', /(Kerr)/, m.metrica);
+  }
+});

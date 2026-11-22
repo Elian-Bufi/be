@@ -17,12 +17,15 @@
  *   receta no mide la porción ni demuestra lo que se comió.
  * - **El respaldo es de quien la usa:** por omisión, el plato y los textos de Nutrición; la imagen de un ejercicio usa la
  *   mancuerna de la app. Con `tamano`, el marco es un cuadrado fijo (la imagen de 112 dp de la sesión enfocada).
+ * - **Liviana** (`liviana`, DL-194 A32-05 con DL-191): la imagen de una receta o la foto de una comida pide la medida que
+ *   le alcanza a su marco (`varianteParaElMarco`): la miniatura en un marco chico y la grande a todo el ancho. Sin
+ *   `tamano`, espera a medir el marco para pedirla. Si la API no conoce las variantes, la de siempre.
  */
 import { COPY_REGISTRO_DE_COMIDAS, type Resultado } from '@be/domain';
 import { useEffect, useState, type ReactElement } from 'react';
-import { Image, Text, View } from 'react-native';
+import { Image, PixelRatio, Text, View } from 'react-native';
 import { api } from './api';
-import { crearAccesoAMedios, crearCargadorDeImagen, type EstadoDeLaImagen } from './cargador-de-imagen';
+import { crearAccesoAMedios, crearCargadorDeImagen, varianteParaElMarco, type EstadoDeLaImagen, type VarianteDeImagen } from './cargador-de-imagen';
 import { IconoDePlato } from './iconos-de-nutricion';
 import { relojDelServidor } from './reloj-del-servidor';
 import { COLOR, estilosPorTema } from './tema';
@@ -41,8 +44,12 @@ export const RESPALDO_DE_COMIDA: RespaldoDeImagen = {
   noDisponible: COPY_REGISTRO_DE_COMIDAS.imagenNoDisponible,
 };
 
-/** Un solo acceso por proceso, compartido por todas las imágenes. */
-const accesoAMedios = crearAccesoAMedios({ acceder: (token, mediaId) => api.accederAMedio(token, mediaId), urlDe: (ruta) => api.urlDe(ruta), ahoraMs: () => relojDelServidor.ahora() });
+/**
+ * Un solo acceso por proceso, compartido por todas las imágenes. API-MED-03 con la variante: el cliente del dominio
+ * (DL-191) la manda como `?variant=thumbnail|large`, y sin ella pide lo guardado. Con una API de antes de DL-191, el 400
+ * por el parámetro hace que se pida sin variante (`crearAccesoAMedios`).
+ */
+const accesoAMedios = crearAccesoAMedios({ acceder: (token, mediaId, variante) => api.accederAMedio(token, mediaId, variante), urlDe: (ruta) => api.urlDe(ruta), ahoraMs: () => relojDelServidor.ahora() });
 
 export function ImagenDeMedio({
   token,
@@ -56,6 +63,7 @@ export function ImagenDeMedio({
   tamano,
   rotuloVisible = true,
   ajuste = 'cubrir',
+  liviana = false,
 }: {
   token: string;
   mediaId: string | null;
@@ -76,20 +84,32 @@ export function ImagenDeMedio({
   rotuloVisible?: boolean;
   /** `cubrir`: una foto llena el marco. `contener`: una ilustración se ve entera, sin recortar el cuerpo ni el material. */
   ajuste?: 'cubrir' | 'contener';
+  /** DL-191: pedir la medida que le alcanza al marco (la miniatura o la grande). Para las imágenes de Nutrición. */
+  liviana?: boolean;
 }) {
   const [estado, setEstado] = useState<EstadoDeLaImagen>(mediaId ? { tipo: 'cargando' } : { tipo: 'sin-imagen' });
   const [cargador] = useState(() => crearCargadorDeImagen(accesoAMedios, setEstado));
 
+  // El lado mayor del marco, en dp: el cuadrado fijo, o el ancho medido con su proporción. Sin medir, `null`.
+  const [anchoMedido, setAnchoMedido] = useState<number | null>(null);
+  const ladoMayor = tamano ?? (anchoMedido === null ? null : Math.max(anchoMedido, anchoMedido / proporcion));
+  const variante: VarianteDeImagen | undefined = liviana && ladoMayor !== null ? varianteParaElMarco(ladoMayor, PixelRatio.get()) : undefined;
+  // Una imagen liviana sin medir todavía no pide nada: la medida decide qué variante.
+  const listaParaPedir = cargar && (!liviana || ladoMayor !== null);
+
   useEffect(() => {
-    cargador.mostrar(token, mediaId, cargar, sesionPerdida);
+    cargador.mostrar(token, mediaId, listaParaPedir, sesionPerdida, variante);
     return () => cargador.soltar();
-  }, [cargador, token, mediaId, sesionPerdida, cargar]);
+  }, [cargador, token, mediaId, sesionPerdida, listaParaPedir, variante]);
 
   const contener = ajuste === 'contener';
   const texto = estado.tipo === 'sin-imagen' ? respaldo.sinImagen : respaldo.noDisponible;
   return (
     <View>
-      <View style={[estilos.marco, tamano === undefined ? { aspectRatio: proporcion } : { width: tamano, height: tamano, alignSelf: 'flex-start' }, contener && estado.tipo !== 'fallo' && estado.tipo !== 'sin-imagen' ? estilos.fondoDeIlustracion : null]}>
+      <View
+        style={[estilos.marco, tamano === undefined ? { aspectRatio: proporcion } : { width: tamano, height: tamano, alignSelf: 'flex-start' }, contener && estado.tipo !== 'fallo' && estado.tipo !== 'sin-imagen' ? estilos.fondoDeIlustracion : null]}
+        onLayout={liviana && tamano === undefined ? (e) => setAnchoMedido(Math.round(e.nativeEvent.layout.width)) : undefined}
+      >
         {estado.tipo === 'lista' ? (
           <Image
             source={{ uri: estado.url }}

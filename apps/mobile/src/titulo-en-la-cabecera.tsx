@@ -8,7 +8,7 @@
  */
 import { createContext, useContext, useEffect, useId, useSyncExternalStore } from 'react';
 import { Animated, type LayoutChangeEvent } from 'react-native';
-import { finDelTitulo, type RegistroDelTitulo } from './titulo-de-la-cabecera';
+import { finDelTitulo, type RegistroDelTitulo, type TituloRegistrado } from './titulo-de-la-cabecera';
 
 export interface TituloCompartido {
   readonly registro: RegistroDelTitulo;
@@ -34,7 +34,23 @@ export function useTituloGrande(texto: string | null): { readonly alMedir?: (e: 
   };
 }
 
-/** Para la cabecera: el texto del título de la pantalla, o `null`. Solo cambia al cambiar de pantalla, no al desplazar. */
-export function useTextoDelTitulo(registro: RegistroDelTitulo): string | null {
-  return useSyncExternalStore(registro.suscribir, () => registro.actual()?.texto ?? null);
+/**
+ * DL-194 (A32-03): para una pantalla sin título grande en el contenido (Nutrición, Entrenamiento). Lo fija en la cabecera
+ * mientras la pantalla está montada. Devuelve si hay cabecera que lo muestre: fuera del proveedor, la pantalla dibuja el
+ * título como siempre.
+ */
+export function useTituloFijo(texto: string | null): boolean {
+  const compartido = useContext(ContextoDelTitulo);
+  const id = useId();
+  useEffect(() => {
+    if (!compartido || texto === null) return;
+    compartido.registro.fijar(id, texto);
+    return () => compartido.registro.quitar(id);
+  }, [compartido, id, texto]);
+  return compartido !== null && texto !== null;
+}
+
+/** Para la cabecera: el título de la pantalla, o `null`. Solo cambia al cambiar de pantalla, no al desplazar. */
+export function useTituloDeLaCabecera(registro: RegistroDelTitulo): TituloRegistrado | null {
+  return useSyncExternalStore(registro.suscribir, () => registro.actual());
 }

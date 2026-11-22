@@ -44,6 +44,7 @@ import {
   tipoDeSerie,
   type TipoDeSerie,
 } from '@be/domain';
+import { esfuerzoEnLaFrase, esfuerzoParaEditar, rotuloDelEsfuerzo, type NotacionDelEsfuerzo } from './esfuerzo-en-la-app';
 import { ANCHO_DE_LA_CASILLA, FILA_VACIA, hayAlgoEscrito, leerFila, MAXIMO_DE_SERIES, origenesDeLaSerie, serieAlTildar, unidadDelEjercicio, type ErroresDeFila, type FilaEscrita, type Unidad } from './series-de-la-sesion';
 
 export type Condicion = 'COMPLETED' | 'COMPLETED_WITH_DEVIATION' | 'NOT_COMPLETED';
@@ -66,6 +67,8 @@ export interface FilaEnCorreccion {
   readonly objetivo: ObjetivoDeSerie | null;
   /** DL-178: si es de calentamiento (por el plan o por lo registrado). Ausente: efectiva. */
   readonly tipo?: TipoDeSerie;
+  /** DL-192: la notación del esfuerzo del plan; el RIR se escribe y se lee así. Ausente: RIR. */
+  readonly notacion?: NotacionDelEsfuerzo;
 }
 
 export interface EjercicioEnCorreccion {
@@ -97,6 +100,8 @@ export interface EstadoDeCorreccion {
   readonly sinDatosAntes: boolean;
   readonly motivo: MotivoDeCorreccion | null;
   readonly otroMotivo: string;
+  /** DL-192: la notación del esfuerzo del plan (API-SER-02), para los textos de los cambios. Ausente: RIR. */
+  readonly notacion?: NotacionDelEsfuerzo;
 }
 
 // ─── Los textos ─────────────────────────────────────────────────────────────────────────────────
@@ -220,12 +225,13 @@ export function canonico(valor: unknown): string {
  */
 export const paraEditar = (v: number): string => String(v).replace('.', ',');
 
-/** Una serie registrada, escrita en su fila tal como está. */
-export function filaDeLaSerie(s: SerieEjecutadaApi): FilaEscrita {
+/** Una serie registrada, escrita en su fila tal como está. DL-192: en RPE, el esfuerzo como su opción, con el RIR guardado. */
+export function filaDeLaSerie(s: SerieEjecutadaApi, notacion: NotacionDelEsfuerzo = 'RIR'): FilaEscrita {
   return {
     carga: s.load ? paraEditar(s.load.value) : '',
     repeticiones: s.completedRepetitions === null ? '' : paraEditar(s.completedRepetitions),
-    rir: s.rir === null ? '' : paraEditar(s.rir),
+    rir: s.rir === null ? '' : notacion === 'RPE' ? esfuerzoParaEditar(s.rir, notacion) : paraEditar(s.rir),
+    ...(notacion === 'RPE' && s.rir !== null ? { rirAnterior: s.rir } : {}),
   };
 }
 
@@ -235,7 +241,9 @@ const unidadDe = (u: string | undefined, porDefecto: Unidad): Unidad => (u === '
  * El estado con el que abre la corrección: lo que rige, más lo planificado que no se registró. `sesion` es la de
  * API-SER-02 (con el objetivo de cada serie) o, si no se pudo leer, la de la ocurrencia (`sesionDesdeLaOcurrencia`).
  */
-export function estadoInicial(x: Pick<EjecucionDeEntrenamiento, 'original' | 'corrections' | 'effectiveView'>, sesion: SesionConObjetivos): EstadoDeCorreccion {
+export function estadoInicial(x: Pick<EjecucionDeEntrenamiento, 'original' | 'corrections' | 'effectiveView'>, sesion: SesionConObjetivos, notacion: NotacionDelEsfuerzo = 'RIR'): EstadoDeCorreccion {
+  // DL-192: cada fila lleva la notación del plan solo si es RPE; en RIR, la forma de siempre.
+  const conNotacion = notacion === 'RPE' ? { notacion } : {};
   const base = registroVigente(x);
   const forma = base.granularity === 'EXERCISE_OR_SESSION' ? 'EXERCISE_OR_SESSION' : 'SET';
   const prescripcion = (id: string) => sesion.prescriptions.find((p) => p.prescriptionId === id) ?? null;
@@ -248,11 +256,11 @@ export function estadoInicial(x: Pick<EjecucionDeEntrenamiento, 'original' | 'co
       for (const s of e.sets ?? []) {
         const planificada = p?.sets.find((x) => x.setIndex === s.setIndex);
         const tipo: TipoDeSerie = s.setKind === 'WARM_UP' || planificada?.setKind === 'WARM_UP' ? 'WARM_UP' : 'WORKING';
-        filas.push({ setIndex: s.setIndex, origen: 'registrada', escrita: filaDeLaSerie(s), unidad: unidadDe(s.load?.unit, porDefecto), quitada: false, tildada: false, antes: s, objetivo: planificada?.target ?? null, tipo });
+        filas.push({ setIndex: s.setIndex, origen: 'registrada', escrita: filaDeLaSerie(s, notacion), unidad: unidadDe(s.load?.unit, porDefecto), quitada: false, tildada: false, antes: s, objetivo: planificada?.target ?? null, tipo, ...conNotacion });
       }
       for (const ps of p?.sets ?? []) {
         if (filas.some((f) => f.setIndex === ps.setIndex)) continue;
-        filas.push({ setIndex: ps.setIndex, origen: 'planificada', escrita: FILA_VACIA, unidad: porDefecto, quitada: false, tildada: false, antes: null, objetivo: ps.target, tipo: tipoDeSerie(ps) });
+        filas.push({ setIndex: ps.setIndex, origen: 'planificada', escrita: FILA_VACIA, unidad: porDefecto, quitada: false, tildada: false, antes: null, objetivo: ps.target, tipo: tipoDeSerie(ps), ...conNotacion });
       }
       filas.sort((a, b) => a.setIndex - b.setIndex);
     }
@@ -276,7 +284,7 @@ export function estadoInicial(x: Pick<EjecucionDeEntrenamiento, 'original' | 'co
       ejecutado: null,
       performedExerciseVersionId: p.exerciseVersionId,
       estaba: false,
-      filas: forma === 'SET' ? p.sets.map((s) => ({ setIndex: s.setIndex, origen: 'planificada' as const, escrita: FILA_VACIA, unidad, quitada: false, tildada: false, antes: null, objetivo: s.target, tipo: tipoDeSerie(s) })) : [],
+      filas: forma === 'SET' ? p.sets.map((s) => ({ setIndex: s.setIndex, origen: 'planificada' as const, escrita: FILA_VACIA, unidad, quitada: false, tildada: false, antes: null, objetivo: s.target, tipo: tipoDeSerie(s), ...conNotacion })) : [],
       resumen: forma === 'EXERCISE_OR_SESSION' ? '' : null,
     });
   }
@@ -289,6 +297,7 @@ export function estadoInicial(x: Pick<EjecucionDeEntrenamiento, 'original' | 'co
     sinDatosAntes: base.sessionCondition === 'NOT_COMPLETED',
     motivo: null,
     otroMotivo: '',
+    ...conNotacion,
   };
 }
 
@@ -342,7 +351,8 @@ export function corregir(e: EstadoDeCorreccion, a: AccionDeCorreccion): EstadoDe
         const siguiente = Math.max(0, ...ej.filas.map((f) => f.setIndex)) + 1;
         if (siguiente > MAXIMO_DE_SERIES) return ej;
         const unidad = unidadDelEjercicioEnCorreccion(ej) ?? ej.filas[0]?.unidad ?? 'kg';
-        return { ...ej, filas: [...ej.filas, { setIndex: siguiente, origen: 'nueva', escrita: FILA_VACIA, unidad, quitada: false, tildada: false, antes: null, objetivo: null }] };
+        // DL-192: la fila nueva lleva la notación del plan, como las demás: en RPE se elige el RPE y se lee como su RIR.
+        return { ...ej, filas: [...ej.filas, { setIndex: siguiente, origen: 'nueva', escrita: FILA_VACIA, unidad, quitada: false, tildada: false, antes: null, objetivo: null, ...(e.notacion === 'RPE' ? { notacion: e.notacion } : {}) }] };
       });
     case 'resumen':
       return cambiarEjercicio(e, a.prescriptionId, (ej) => ({ ...ej, resumen: a.texto }));
@@ -419,10 +429,10 @@ function serieDeLaFila(f: FilaEnCorreccion): { readonly serie: SerieEjecutadaApi
   if (f.quitada) return { serie: null, errores: null };
   if (f.origen !== 'registrada') {
     if (!hayAlgoEscrito(f.escrita) && !f.tildada) return { serie: null, errores: null };
-    const alTildar = serieAlTildar(f.escrita, f.objetivo, f.setIndex, f.unidad, f.tipo);
+    const alTildar = serieAlTildar(f.escrita, f.objetivo, f.setIndex, f.unidad, f.tipo, f.notacion);
     return alTildar.ok ? { serie: alTildar.serie, errores: null } : { serie: null, errores: alTildar.errores };
   }
-  const lectura = leerFila(f.escrita, f.setIndex, f.unidad);
+  const lectura = leerFila(f.escrita, f.setIndex, f.unidad, f.notacion);
   if (!lectura.ok) {
     // Una registrada vaciada no se borra en silencio: se quita, o se le anota un dato.
     const vaciada = !hayAlgoEscrito(f.escrita);
@@ -498,9 +508,9 @@ export function pedidoDeCorreccion(e: EstadoDeCorreccion, base: RegistroDeEjecuc
 
 // ─── Qué cambia ─────────────────────────────────────────────────────────────────────────────────
 
-/** «58 kg · 8 reps · RIR 2»: una serie en una línea corta. Lo que no se anotó no se nombra. */
-export function textoCortoDeSerie(s: Pick<SerieEjecutadaApi, 'load' | 'completedRepetitions' | 'rir'>): string {
-  const partes = [s.load ? cantidad(s.load.value, s.load.unit) : null, s.completedRepetitions === null ? null : `${numero(s.completedRepetitions, 0)} ${COPY_ENTRENAMIENTO.reps.toLowerCase()}`, s.rir === null ? null : `RIR ${numero(s.rir)}`];
+/** «58 kg · 8 reps · RIR 2»: una serie en una línea corta. Lo que no se anotó no se nombra. DL-192: «RPE 8» en RPE. */
+export function textoCortoDeSerie(s: Pick<SerieEjecutadaApi, 'load' | 'completedRepetitions' | 'rir'>, notacion: NotacionDelEsfuerzo = 'RIR'): string {
+  const partes = [s.load ? cantidad(s.load.value, s.load.unit) : null, s.completedRepetitions === null ? null : `${numero(s.completedRepetitions, 0)} ${COPY_ENTRENAMIENTO.reps.toLowerCase()}`, s.rir === null ? null : esfuerzoEnLaFrase(s.rir, notacion)];
   return partes.filter((p): p is string => p !== null).join(' · ');
 }
 
@@ -510,7 +520,8 @@ export function textoCortoDeSerie(s: Pick<SerieEjecutadaApi, 'load' | 'completed
  * reps)», «Cómo resultó: Realizada → Realizada con desvío». Con esto se cuenta cuántos cambios hay y se muestran antes de
  * registrar; lo que se quita se puede deshacer hasta entonces.
  */
-export function cambiosEntre(antes: RegistroCorregido, despues: RegistroCorregido, nombreDe: (prescriptionId: string) => string): string[] {
+export function cambiosEntre(antes: RegistroCorregido, despues: RegistroCorregido, nombreDe: (prescriptionId: string) => string, notacion: NotacionDelEsfuerzo = 'RIR'): string[] {
+  const textoCorto = (s: Pick<SerieEjecutadaApi, 'load' | 'completedRepetitions' | 'rir'>) => textoCortoDeSerie(s, notacion);
   const cambios: string[] = [];
   if (antes.sessionCondition !== despues.sessionCondition) {
     // Con las palabras de las opciones que eligió la persona: «No pude realizarla», no la etiqueta del registro.
@@ -533,9 +544,9 @@ export function cambiosEntre(antes: RegistroCorregido, despues: RegistroCorregid
     const indices = [...new Set([...a, ...d].map((s) => s.setIndex))].sort((x, y) => x - y);
     for (const i of indices) {
       const [sa, sd] = [a.find((s) => s.setIndex === i), d.find((s) => s.setIndex === i)];
-      if (sa && !sd) cambios.push(`Se quita la serie ${i} de ${nombre} (${textoCortoDeSerie(sa)})`);
-      else if (!sa && sd) cambios.push(`Se suma la serie ${i} de ${nombre}${sd.recordedAs === 'AS_PLANNED' ? `, ${T.comoElPlan}` : ''} (${textoCortoDeSerie(sd)})`);
-      else if (sa && sd && !mismosValores(sa, sd)) cambios.push(`Cambia la serie ${i} de ${nombre}: ${textoCortoDeSerie(sa)} → ${textoCortoDeSerie(sd)}`);
+      if (sa && !sd) cambios.push(`Se quita la serie ${i} de ${nombre} (${textoCorto(sa)})`);
+      else if (!sa && sd) cambios.push(`Se suma la serie ${i} de ${nombre}${sd.recordedAs === 'AS_PLANNED' ? `, ${T.comoElPlan}` : ''} (${textoCorto(sd)})`);
+      else if (sa && sd && !mismosValores(sa, sd)) cambios.push(`Cambia la serie ${i} de ${nombre}: ${textoCorto(sa)} → ${textoCorto(sd)}`);
     }
     const [ra, rd] = [resumen(antes, id), resumen(despues, id)];
     if (ra !== rd) cambios.push(ra === null ? `${nombre}: se suma un resumen` : rd === null ? `${nombre}: se quita el resumen` : `${nombre}: cambia el resumen`);
@@ -548,7 +559,7 @@ export function cambiosEntre(antes: RegistroCorregido, despues: RegistroCorregid
 /** Los cambios del estado frente a lo que rige; vacío si todavía no se puede armar el registro. */
 export function cambiosDelEstado(e: EstadoDeCorreccion, base: RegistroDeEjecucion, nombreDe: (prescriptionId: string) => string): string[] {
   const c = construirCorreccion(e);
-  return c.ok ? cambiosEntre(registroComoEntrada(base), c.correction, nombreDe) : [];
+  return c.ok ? cambiosEntre(registroComoEntrada(base), c.correction, nombreDe, e.notacion) : [];
 }
 
 /** Si hay algo para preguntar antes de salir: un cambio en lo registrado, o un motivo escrito. */
@@ -572,7 +583,7 @@ export type EstadoDeLaFila = 'igual' | 'cambiada' | 'quitada' | 'sumada' | 'vaci
 export function estadoDeLaFila(f: FilaEnCorreccion): EstadoDeLaFila {
   if (f.origen !== 'registrada') return !f.quitada && (f.tildada || hayAlgoEscrito(f.escrita)) ? 'sumada' : 'vacia';
   if (f.quitada) return 'quitada';
-  const lectura = leerFila(f.escrita, f.setIndex, f.unidad);
+  const lectura = leerFila(f.escrita, f.setIndex, f.unidad, f.notacion);
   return lectura.ok && f.antes && mismosValores(lectura.serie, f.antes) ? 'igual' : 'cambiada';
 }
 
@@ -600,7 +611,7 @@ export function alTocarLaCasilla(f: FilaEnCorreccion): { readonly accion: 'quita
   if (filaTildada(f)) return { accion: 'quitar' };
   if (f.origen === 'registrada') return { accion: 'deshacer' };
   if (hayAlgoEscrito(f.escrita)) return { accion: 'deshacer' };
-  const comoElPlan = serieAlTildar(f.escrita, f.objetivo, f.setIndex, f.unidad);
+  const comoElPlan = serieAlTildar(f.escrita, f.objetivo, f.setIndex, f.unidad, 'WORKING', f.notacion);
   return comoElPlan.ok ? { accion: 'tildar' } : { errores: comoElPlan.errores };
 }
 
@@ -611,9 +622,9 @@ export function pistaDeLaCasilla(f: FilaEnCorreccion): string {
 }
 
 /** Los errores de una fila en una frase, con el nombre de cada campo: van debajo de la fila y en su nombre accesible. */
-export function textoDeLosErrores(errores: ErroresDeFila | undefined): string | null {
+export function textoDeLosErrores(errores: ErroresDeFila | undefined, notacion: NotacionDelEsfuerzo = 'RIR'): string | null {
   if (!errores) return null;
-  const nombre = { carga: COPY_ENTRENAMIENTO.carga, repeticiones: 'Repeticiones', rir: 'RIR' } as const;
+  const nombre = { carga: COPY_ENTRENAMIENTO.carga, repeticiones: 'Repeticiones', rir: rotuloDelEsfuerzo(notacion) } as const;
   const partes = [errores.fila ?? null, ...(['carga', 'repeticiones', 'rir'] as const).map((c) => (errores[c] ? `${nombre[c]}: ${errores[c]}` : null))];
   const texto = partes.filter((p): p is string => p !== null).join(' ');
   return texto || null;

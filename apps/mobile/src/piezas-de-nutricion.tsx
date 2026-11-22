@@ -6,7 +6,8 @@
 import type { Nutrientes } from '@be/domain';
 import { useState, type ReactNode } from 'react';
 import { Pressable, Text, useWindowDimensions, View } from 'react-native';
-import { celdaDeMacro, celdasDeLaFranja, columnasDeLaFranja, LETRA_DE_LA_ETIQUETA, LETRA_DEL_VALOR, type CeldaDeMacro } from './franja-de-macros';
+import { celdaDeMacro, celdasDeLaFranja, columnasDeLaFranja, LADO_DEL_ICONO_DEL_MACRO, LETRA_DEL_VALOR, type CeldaDeMacro } from './franja-de-macros';
+import { Icono } from './icono';
 import { accesibilidadDelDesplegable } from './desplegable';
 import { Flecha, IconoDeInformacion } from './iconos-de-nutricion';
 import { COLOR, estilosPorTema } from './tema';
@@ -14,8 +15,10 @@ import { CajaDeCasilla, Cifra, Superficie } from './ui';
 import { useSuperficie } from './vidrio';
 
 /**
- * Calorías, Carbohidratos, Grasas y Proteínas. Cuatro columnas si entran; si no, dos por dos, y con letra muy grande una
- * columna, con la etiqueta arriba y el valor abajo (`franja-de-macros.ts`). Cada celda se lee entera.
+ * Las kcal y los tres macros (DL-194, A32-04: RP-07 en la app), cada uno con su ícono arriba y, debajo, el número con su
+ * abreviatura: «529 kcal», «30,0 g P». Cuatro columnas si entran; si no, dos por dos, y con letra muy grande una columna,
+ * con el ícono y la etiqueta entera a la izquierda y el valor abajo (`franja-de-macros.ts`). Cada celda se lee entera, con
+ * la palabra completa: «Proteínas: 30,0 g». El ícono es decoración, en `tenue`, como en el website.
  */
 export function FranjaDeMacros({ nutrientes }: { nutrientes: Nutrientes }) {
   const { fontScale } = useWindowDimensions();
@@ -32,7 +35,10 @@ export function FranjaDeMacros({ nutrientes }: { nutrientes: Nutrientes }) {
             columnas === 1 ? (
               // El ancho explícito: sin él, la fila mide su contenido en una línea y no baja el valor a la siguiente.
               <View key={c.nutriente} style={[estilos.fila, { width: interior }, i > 0 && estilos.lineaArriba]} accessible accessibilityLabel={c.paraLeer}>
-                <Text style={estilos.etiquetaEnFila}>{c.etiqueta}</Text>
+                <View style={estilos.etiquetaConIcono}>
+                  {c.icono ? <Icono nombre={c.icono} tamano={LADO_DEL_ICONO_DEL_MACRO} tono="tenue" /> : null}
+                  <Text style={estilos.etiquetaEnFila}>{c.etiqueta}</Text>
+                </View>
                 <ValorDeMacro celda={c} />
               </View>
             ) : (
@@ -42,11 +48,8 @@ export function FranjaDeMacros({ nutrientes }: { nutrientes: Nutrientes }) {
                 accessible
                 accessibilityLabel={c.paraLeer}
               >
-                {/* Si en un teléfono la etiqueta no entra igual, se achica un poco en vez de partir la palabra. */}
-                <Text style={estilos.etiqueta} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.9}>
-                  {c.etiqueta}
-                </Text>
-                <ValorDeMacro celda={c} />
+                {c.icono ? <Icono nombre={c.icono} tamano={LADO_DEL_ICONO_DEL_MACRO} tono="tenue" /> : null}
+                <ValorDeMacro celda={c} abreviado />
               </View>
             ),
           )
@@ -61,9 +64,10 @@ export function LineaDeFibra({ nutrientes }: { nutrientes: Nutrientes }) {
   return <Text style={estilos.fibra}>{fibra.paraLeer}</Text>;
 }
 
-function ValorDeMacro({ celda }: { celda: CeldaDeMacro }) {
+/** El número con su unidad; en la franja de columnas (`abreviado`), con la abreviatura del macro («g P»). */
+function ValorDeMacro({ celda, abreviado = false }: { celda: CeldaDeMacro; abreviado?: boolean }) {
   if (celda.valor === null) return <Text style={estilos.sinDato}>{celda.texto}</Text>;
-  return <Cifra valor={celda.valor} unidad={celda.unidad} tamano={LETRA_DEL_VALOR} />;
+  return <Cifra valor={celda.valor} unidad={abreviado ? celda.abreviatura : celda.unidad} tamano={LETRA_DEL_VALOR} />;
 }
 
 /** Un aviso informativo con su ícono: «Cantidades sin confirmar», «Macros sin calcular». Se lee como una sola frase. */
@@ -171,12 +175,13 @@ export function Desplegador({ texto, abierto, onPress }: { texto: string; abiert
 
 const estilos = estilosPorTema((COLOR) => ({
   franja: { flexDirection: 'row', flexWrap: 'wrap', borderWidth: 1, borderColor: COLOR.borde, borderRadius: 12, backgroundColor: COLOR.fondo, marginVertical: 6 },
-  celda: { paddingHorizontal: 4, paddingVertical: 8, alignItems: 'center', justifyContent: 'center', borderColor: COLOR.borde },
-  // Una columna (letra muy grande): la etiqueta arriba y el valor abajo, igual en las cuatro filas.
+  // El ícono arriba y el número con su abreviatura abajo (A32-04).
+  celda: { paddingHorizontal: 4, paddingVertical: 8, gap: 3, alignItems: 'center', justifyContent: 'center', borderColor: COLOR.borde },
+  // Una columna (letra muy grande): el ícono y la etiqueta arriba y el valor abajo, igual en las cuatro filas.
   fila: { alignItems: 'flex-start', paddingHorizontal: 12, paddingVertical: 8, borderColor: COLOR.borde },
   lineaIzquierda: { borderLeftWidth: 1 },
   lineaArriba: { borderTopWidth: 1 },
-  etiqueta: { fontSize: LETRA_DE_LA_ETIQUETA, lineHeight: 16, fontWeight: '600', color: COLOR.tenue, textAlign: 'center' },
+  etiquetaConIcono: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   etiquetaEnFila: { fontSize: 14, lineHeight: 19, fontWeight: '600', color: COLOR.tenue },
   sinDato: { fontSize: 14, lineHeight: 20, fontWeight: '700', color: COLOR.tenue },
   fibra: { fontSize: 14, lineHeight: 19, color: COLOR.tenue, marginBottom: 4 },

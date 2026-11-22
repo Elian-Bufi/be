@@ -4,12 +4,12 @@
  * - **La fecha civil es la de la API**, y las comidas son las del plan, en fichas, con lo registrado marcado
  *   (`comidas-de-hoy.ts`). Si el plan tiene varios días, la persona elige cuál es hoy: BE no elige en silencio (DL-049).
  *   La elección es la misma de Inicio y de «Plan».
- * - **Por comida, una sola navegación entre sus opciones** (`carrusel-de-opciones.ts`, AV2-21): «Opción 1 | Opción 2 |
- *   Opción 3» en Segmentos compactos y, debajo, la opción elegida a todo el ancho. Hasta la 0.25 era un carrusel con
- *   asomo, flechas y puntitos. Con una sola opción, sin control.
- * - **La opción:** una miniatura de 72 dp (sin foto, la de reemplazo: el plato en una caja con el tinte del tema), el
- *   nombre, la franja de macros de las porciones del plan (una estimación, no lo consumido), «Ver detalle» y «Comí esta
- *   opción». Elegir no registra.
+ * - **Por comida, el carrusel de sus opciones** (`carrusel-de-opciones.ts`; DL-194, A32-01, que vuelve sobre los
+ *   segmentos de AV2-21): se desliza con imán y también con flechas, con «Opción n de m» y los puntitos; cada tarjeta, a
+ *   todo el ancho, sin la vecina asomando. Con una sola opción, sin controles.
+ * - **La opción** (A32-02): la foto grande a todo el ancho (sin foto, la miniatura de reemplazo de 72 dp al lado del
+ *   nombre: el plato en una caja con el tinte del tema), el nombre con «Ver detalle», la franja de macros con sus íconos
+ *   (A32-04; de las porciones del plan, una estimación, no lo consumido) y «Comí esta opción». Elegir no registra.
  * - **«Comí esta opción»** registra con el comando único (`registro-de-comidas.tsx`), con las cantidades sin confirmar:
  *   lo previsto nunca se convierte en consumido. Un doble toque o un reintento no duplican.
  * - **Con la comida registrada**, en lugar del carrusel: «Almuerzo registrado», la opción con su foto, «Cantidades sin
@@ -33,24 +33,25 @@ import {
   type Resultado,
 } from '@be/domain';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { AccessibilityInfo, Pressable, Text, useWindowDimensions, View } from 'react-native';
+import { AccessibilityInfo, Pressable, ScrollView, Text, useWindowDimensions, View, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
 import { api } from '../api';
-import { anuncioDeLaOpcion, indiceDeLaOpcion, indiceValido, segmentosDeLasOpciones } from '../carrusel-de-opciones';
+import { anuncioDeLaOpcion, controlesDelCarrusel, desplazamientoDe, indiceDeLaOpcion, indiceDesdeDesplazamiento, indiceValido, medidasDelCarrusel, opcionesVistas, SEPARACION_ENTRE_TARJETAS } from '../carrusel-de-opciones';
 import { intentoDeLaComida } from '../comando-de-registro';
 import { comidaPedidaOElegida, comidaQueSeMuestra, comidaRegistrada, etiquetaDeLaComida, fichasPorFila, LETRA_DE_LA_FICHA, registroDeLaComida, RELLENO_DE_LA_FICHA, SEPARACION_DE_LAS_FICHAS } from '../comidas-de-hoy';
 import { useDiaDeLaApi } from '../dia-de-la-api';
 import { Cargando, ErrorConReintento, SinActualizar } from '../estados';
 import { fechaLarga } from '../formato';
 import { Icono } from '../icono';
-import { IconoDeCamara, IconoDePlato, IconoDeRegistrado, IconoSinRegistro } from '../iconos-de-nutricion';
+import { Flecha, IconoDeCamara, IconoDePlato, IconoDeRegistrado, IconoSinRegistro } from '../iconos-de-nutricion';
 import { ImagenDeMedio } from '../imagen-de-medio';
 import { esIncierto, falloDe } from '../intento';
 import { useLecturaRecordada, useSeleccionRecordada } from '../lecturas';
+import { useMovimientoReducido } from '../movimiento-reducido';
 import { useAccesoRetirado, useSesionPerdida, type Ir, type Salida } from '../navegacion';
 import { CajaInformativa, FilaQueAbre, FranjaDeMacros } from '../piezas-de-nutricion';
 import { ahoraEnElServidor, registrarComida, useDeshacer } from '../registro-de-comidas';
 import { TEXTOS_DE_LA_VUELTA } from '../textos-de-la-vuelta';
-import { Aviso, Boton, COLOR, EstadoVacio, estilosPorTema, Insignia, Parrafo, Segmentos, Superficie } from '../ui';
+import { Aviso, Boton, COLOR, EstadoVacio, estilosPorTema, Insignia, Parrafo, Superficie } from '../ui';
 
 export type HoyConOpciones = HoyConOpcionesResponse['data'];
 type Comida = HoyConOpciones['meals'][number];
@@ -449,7 +450,7 @@ function OpcionesDeLaComida({
         {comida.options.length === 0 ? (
           <Parrafo tenue>{COPY_REGISTRO_DE_COMIDAS.sinOpciones}</Parrafo>
         ) : (
-          <OpcionesEnSegmentos
+          <CarruselDeOpciones
             token={token}
             fecha={fecha}
             comida={comida}
@@ -476,15 +477,17 @@ function OpcionesDeLaComida({
   );
 }
 
-/** El lado de la miniatura de una opción, en dp (AV2-21). */
-const TAMANO_DE_LA_MINIATURA = 72;
+/** La proporción de la foto de una opción: a todo el ancho, como antes de AV2-21 (A32-02, con A32-D03). */
+const PROPORCION_DE_LA_FOTO = 16 / 10;
 
 /**
- * Las opciones de una comida, con una sola navegación (AV2-21, con AV2-D10): arriba, «Opción 1 | Opción 2 | Opción 3»
- * en Segmentos compactos; debajo, la opción elegida a todo el ancho. Elegir no registra. La opción elegida se recuerda
- * por su identidad, se anuncia «Opción n de m» al cambiar, y solo se pide la imagen de la que está a la vista.
+ * El carrusel de las opciones de una comida (DL-194, A32-01; la lógica, en `carrusel-de-opciones.ts`). Cada tarjeta ocupa
+ * todo el ancho y se detiene entera con el imán (`snapToInterval`): la vecina no asoma (la queja del 2026-10-29). Arriba,
+ * las flechas «Opción anterior» y «Opción siguiente», «Opción n de m» y los puntitos, para quien no descubre el gesto.
+ * Cambiar de opción no registra. La opción a la vista se recuerda por su identidad, se anuncia «Opción n de m» al
+ * cambiar y solo ella pide su imagen. Con una sola opción, ningún control y sin desplazar.
  */
-function OpcionesEnSegmentos({
+function CarruselDeOpciones({
   token,
   fecha,
   comida,
@@ -503,48 +506,124 @@ function OpcionesEnSegmentos({
 }) {
   const opciones = comida.options;
   const total = opciones.length;
+  const movimientoReducido = useMovimientoReducido();
   const [recordada, setRecordada] = useSeleccionRecordada<string | null>(token, `nutricion:opcion:${fecha}:${comida.mealId}`, null);
   const indice = indiceValido(indiceDeLaOpcion(opciones, recordada), total);
-  const opcion = opciones[indice];
-  const segmentos = segmentosDeLasOpciones(opciones);
+  const [ancho, setAncho] = useState(0);
+  const lista = useRef<ScrollView>(null);
+  const medidas = medidasDelCarrusel(ancho, total);
+  const controles = controlesDelCarrusel(indice, total);
+  // Solo la opción a la vista pide su imagen; la que ya estuvo a la vista la conserva (cada acceso queda en la API).
+  const vistas = useRef<ReadonlySet<string>>(new Set());
+  vistas.current = opcionesVistas(vistas.current, opciones[indice]?.optionId);
+  // Donde empieza el carrusel: la opción recordada, sin animación. Se fija una vez, al medir.
+  const inicio = useRef<number | null>(null);
+  if (ancho > 0 && inicio.current === null) inicio.current = desplazamientoDe(indice, medidas.paso, total);
+  const indiceActual = useRef(indice);
+  indiceActual.current = indice;
+  // La tarjeta que el carrusel muestra, o hacia la que va: la del gesto o la de la flecha. Si la opción cambia sin eso (el
+  // plan se reordenó o sacó una opción), el carrusel se alinea con ella: el contador, la tarjeta que recorre el lector y la
+  // imagen que se pide son siempre los de la tarjeta a la vista.
+  const destino = useRef(indice);
 
-  const elegir = (id: string) => {
-    if (id === opcion?.optionId) return;
-    setRecordada(id);
-    const anuncio = anuncioDeLaOpcion(
-      opciones.findIndex((o) => o.optionId === id),
-      total,
-    );
-    if (anuncio) AccessibilityInfo.announceForAccessibility(anuncio);
+  const elegir = (i: number, desplazar: boolean) => {
+    const j = indiceValido(i, total);
+    destino.current = j;
+    if (j !== indiceActual.current) {
+      setRecordada(opciones[j]?.optionId ?? null);
+      const anuncio = anuncioDeLaOpcion(j, total);
+      if (anuncio) AccessibilityInfo.announceForAccessibility(anuncio);
+    }
+    if (desplazar) lista.current?.scrollTo({ x: desplazamientoDe(j, medidas.paso, total), animated: !movimientoReducido });
   };
 
-  if (!opcion) return null;
+  // Al medir (y si cambia el ancho), la tarjeta elegida queda alineada, sin animación.
+  useEffect(() => {
+    if (!(medidas.paso > 0)) return;
+    destino.current = indiceActual.current;
+    lista.current?.scrollTo({ x: desplazamientoDe(indiceActual.current, medidas.paso, total), animated: false });
+  }, [medidas.paso, total]);
+
+  // La opción cambió sin un gesto ni una flecha (el plan cambió de orden): la tarjeta a la vista pasa a ser la suya.
+  useEffect(() => {
+    if (!(medidas.paso > 0) || destino.current === indice) return;
+    destino.current = indice;
+    lista.current?.scrollTo({ x: desplazamientoDe(indice, medidas.paso, total), animated: false });
+  }, [indice, medidas.paso, total]);
+
+  // La opción cambia cuando el imán dejó una tarjeta entera a la vista: mientras se desliza, ni el contador ni el anuncio.
+  const alDetenerse = (e: NativeSyntheticEvent<NativeScrollEvent>) => elegir(indiceDesdeDesplazamiento(e.nativeEvent.contentOffset.x, medidas.paso, total), false);
+
+  if (total === 0) return null;
   return (
     <View>
-      {segmentos.length > 0 ? <Segmentos<string> compactos etiqueta={COPY_REGISTRO_DE_COMIDAS.opcionesDe(comida.label)} opciones={segmentos} valor={opcion.optionId} alElegir={elegir} /> : null}
-      <OpcionALaVista
-        key={opcion.optionId}
-        token={token}
-        opcion={opcion}
-        sesionPerdida={sesionPerdida}
-        registrando={registrando === opcion.optionId}
-        otraRegistrando={registrando !== null && registrando !== opcion.optionId}
-        alVerDetalle={() => alVerDetalle(opcion)}
-        alComer={() => alComer(opcion)}
-      />
+      {controles.contador && controles.anterior && controles.siguiente ? (
+        <View style={estilos.controles}>
+          <BotonDeFlecha hacia="izquierda" texto={controles.anterior.etiqueta} habilitado={controles.anterior.habilitada} onPress={() => elegir(indice - 1, true)} />
+          <View style={estilos.centroDeLosControles}>
+            <Text style={estilos.contador}>{controles.contador}</Text>
+            <View style={estilos.puntos} accessible={false} importantForAccessibility="no-hide-descendants">
+              {controles.puntos.map((lleno, k) => (
+                <View key={opciones[k]?.optionId ?? k} style={[estilos.punto, lleno && estilos.puntoElegido]} />
+              ))}
+            </View>
+          </View>
+          <BotonDeFlecha hacia="derecha" texto={controles.siguiente.etiqueta} habilitado={controles.siguiente.habilitada} onPress={() => elegir(indice + 1, true)} />
+        </View>
+      ) : null}
+      <View onLayout={(e) => setAncho(Math.floor(e.nativeEvent.layout.width))}>
+        {ancho > 0 ? (
+          <ScrollView
+            ref={lista}
+            horizontal
+            accessibilityLabel={COPY_REGISTRO_DE_COMIDAS.opcionesDe(comida.label)}
+            showsHorizontalScrollIndicator={false}
+            scrollEnabled={total > 1}
+            snapToInterval={total > 1 ? medidas.paso : undefined}
+            snapToAlignment="start"
+            decelerationRate="fast"
+            disableIntervalMomentum
+            nestedScrollEnabled
+            contentOffset={{ x: inicio.current ?? 0, y: 0 }}
+            onMomentumScrollEnd={alDetenerse}
+          >
+            {opciones.map((o, i) => (
+              <View
+                key={o.optionId}
+                style={[estilos.lugarDeTarjeta, { width: medidas.anchoDeTarjeta, marginRight: i < total - 1 ? SEPARACION_ENTRE_TARJETAS : 0 }]}
+                // Solo la tarjeta a la vista la recorre el lector: las otras se alcanzan con las flechas.
+                importantForAccessibility={i === indice ? 'auto' : 'no-hide-descendants'}
+                accessibilityElementsHidden={i !== indice}
+              >
+                <TarjetaDeOpcion
+                  token={token}
+                  opcion={o}
+                  cargarImagen={vistas.current.has(o.optionId)}
+                  sesionPerdida={sesionPerdida}
+                  registrando={registrando === o.optionId}
+                  otraRegistrando={registrando !== null && registrando !== o.optionId}
+                  alVerDetalle={() => alVerDetalle(o)}
+                  alComer={() => alComer(o)}
+                />
+              </View>
+            ))}
+          </ScrollView>
+        ) : null}
+      </View>
     </View>
   );
 }
 
 /**
- * La opción a la vista, compacta (AV2-21): con imagen, una miniatura de 72 dp al lado del nombre, que TalkBack sigue
- * llamando «Imagen de referencia». Sin imagen (hallazgo 13 de la 0.26: faltan las fotos de muchas recetas), la miniatura
- * de reemplazo en el mismo lugar y del mismo tamaño: la opción no queda coja. Va directo en la tarjeta de la comida, sin
- * otra tarjeta adentro. «Estimación del plan», en `tenue`: no se toca.
+ * Una opción del carrusel (A32-02): la foto grande a todo el ancho, «como estaba antes», que TalkBack llama «Imagen de
+ * referencia». Sin foto, la miniatura de reemplazo de 72 dp al lado del nombre (hallazgo 13 de la 0.26), no un marco
+ * grande vacío: el «hueco enorme» del 2026-10-29 era eso. Debajo, el nombre con «Ver detalle» al lado, «Estimación del plan» en `tenue` (no se toca), los macros con
+ * sus íconos y «Comí esta opción».
  */
-function OpcionALaVista({
+function TarjetaDeOpcion({
   token,
   opcion,
+  cargarImagen,
   sesionPerdida,
   registrando,
   otraRegistrando,
@@ -553,6 +632,7 @@ function OpcionALaVista({
 }: {
   token: string;
   opcion: OpcionConMacros;
+  cargarImagen: boolean;
   sesionPerdida: AlPerderLaSesion;
   registrando: boolean;
   otraRegistrando: boolean;
@@ -562,28 +642,51 @@ function OpcionALaVista({
   const mediaId = opcion.image?.mediaId ?? null;
   return (
     <View style={estilos.opcion}>
+      {mediaId ? (
+        <ImagenDeMedio token={token} mediaId={mediaId} cargar={cargarImagen} sesionPerdida={sesionPerdida} rotulo={COPY_REGISTRO_DE_COMIDAS.imagenDeReferencia} proporcion={PROPORCION_DE_LA_FOTO} rotuloVisible={false} liviana />
+      ) : null}
       <View style={estilos.cabezaDeOpcion}>
-        {mediaId ? (
-          <ImagenDeMedio token={token} mediaId={mediaId} sesionPerdida={sesionPerdida} rotulo={COPY_REGISTRO_DE_COMIDAS.imagenDeReferencia} tamano={TAMANO_DE_LA_MINIATURA} rotuloVisible={false} respaldoCompacto />
-        ) : (
-          <MiniaturaSinFoto />
-        )}
+        {mediaId ? null : <MiniaturaSinFoto />}
         <View style={estilos.textosDeOpcion}>
           <Text style={estilos.nombreDeOpcion}>{opcion.label}</Text>
           <Text style={estilos.estimacion}>{COPY_REGISTRO_DE_COMIDAS.estimacionDelPlan}</Text>
         </View>
+        <Pressable accessibilityRole="button" accessibilityLabel={`${COPY_REGISTRO_DE_COMIDAS.verDetalle}: ${opcion.label}`} onPress={alVerDetalle} hitSlop={4} style={({ pressed }) => [estilos.verDetalle, pressed && estilos.presionada]}>
+          <Text style={estilos.textoVerDetalle}>{COPY_REGISTRO_DE_COMIDAS.verDetalle}</Text>
+          <Flecha color={COLOR.acento} hacia="derecha" tamano={18} />
+        </Pressable>
       </View>
+      {/* Las tarjetas miden lo mismo: lo que sobra va antes de los macros, que quedan alineados abajo con el botón. */}
+      <View style={estilos.empuje} />
       <FranjaDeMacros nutrientes={opcion.planned} />
-      <FilaQueAbre texto={COPY_REGISTRO_DE_COMIDAS.verDetalle} acento onPress={alVerDetalle} />
       <Boton texto={registrando ? COPY_REGISTRO_DE_COMIDAS.guardando : COPY_REGISTRO_DE_COMIDAS.comiEstaOpcion} onPress={alComer} ocupado={registrando} deshabilitado={otraRegistrando} />
     </View>
   );
 }
 
+/** Una flecha del carrusel: 48 dp de toque, con su nombre para el lector, y deshabilitada en el extremo. */
+function BotonDeFlecha({ hacia, texto, habilitado, onPress }: { hacia: 'izquierda' | 'derecha'; texto: string; habilitado: boolean; onPress: () => void }) {
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={texto}
+      accessibilityState={{ disabled: !habilitado }}
+      disabled={!habilitado}
+      onPress={onPress}
+      style={({ pressed }) => [estilos.flecha, !habilitado && estilos.flechaDeshabilitada, pressed && estilos.presionada]}
+    >
+      <Flecha color={habilitado ? COLOR.acento : COLOR.tenue} hacia={hacia} />
+    </Pressable>
+  );
+}
+
+/** El lado de la miniatura de reemplazo de una opción sin foto, en dp (AV2-21). */
+const TAMANO_DE_LA_MINIATURA = 72;
+
 /**
  * La miniatura de una opción sin foto (hallazgo 13 de la 0.26): el plato en `azul` dentro de una caja con el tinte
- * `iconoFondo` del tema, como la caja del ícono de las tarjetas (AV2-T25), del tamaño y con el radio del marco de la
- * foto. Es decoración: el lector de pantalla no la recorre, y no dice «sin imagen» (el nombre de la opción alcanza).
+ * `iconoFondo` del tema, como la caja del ícono de las tarjetas (AV2-T25), con el radio del marco de la foto. Es
+ * decoración: el lector de pantalla no la recorre, y no dice «sin imagen» (el nombre de la opción alcanza).
  */
 function MiniaturaSinFoto() {
   return (
@@ -655,6 +758,7 @@ function ComidaRegistrada({
                 rotulo={deUnaOpcion ? COPY_REGISTRO_DE_COMIDAS.imagenDeReferencia : COPY_REGISTRO_DE_COMIDAS.tuFoto}
                 proporcion={apilada ? 16 / 10 : 4 / 3}
                 respaldoCompacto={!apilada}
+                liviana
               />
             </View>
           ) : null}
@@ -706,15 +810,30 @@ const estilos = estilosPorTema((COLOR) => ({
   nombreDeComida: { fontSize: 19, lineHeight: 25, fontWeight: '800', color: COLOR.texto },
   estadoDeComida: { flexDirection: 'row', alignItems: 'center', gap: 6 },
   textoDeEstado: { fontSize: 14, lineHeight: 19, color: COLOR.tenue },
-  // La opción a la vista va directo en la tarjeta de la comida (AV2-21): sin otra tarjeta adentro.
-  opcion: { paddingHorizontal: 4, paddingTop: 10 },
-  // Del tamaño y con el radio del marco de la foto (`imagen-de-medio.tsx`), con el tinte de la caja del ícono.
+  // Las flechas, «Opción n de m» y los puntitos, en una sola fila arriba de la tarjeta (A32-01).
+  controles: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 4, marginBottom: 6 },
+  centroDeLosControles: { flexShrink: 1, alignItems: 'center', gap: 4 },
+  contador: { fontSize: 15, lineHeight: 20, fontWeight: '700', color: COLOR.texto, textAlign: 'center' },
+  flecha: { width: 48, height: 48, borderRadius: 24, alignItems: 'center', justifyContent: 'center' },
+  flechaDeshabilitada: { opacity: 0.45 },
+  puntos: { flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', gap: 6 },
+  punto: { width: 7, height: 7, borderRadius: 4, backgroundColor: COLOR.borde },
+  puntoElegido: { backgroundColor: COLOR.acento },
+  // Cada tarjeta, a todo el ancho y del alto de la más alta: lo que sobra va antes de los macros (`empuje`).
+  lugarDeTarjeta: { alignSelf: 'stretch' },
+  // La opción va directo en la tarjeta de la comida (AV2-21): sin otra tarjeta adentro.
+  opcion: { flex: 1, paddingHorizontal: 4 },
+  empuje: { flexGrow: 1 },
+  // Del radio del marco de la foto (`imagen-de-medio.tsx`), con el tinte de la caja del ícono.
   miniaturaSinFoto: { width: TAMANO_DE_LA_MINIATURA, height: TAMANO_DE_LA_MINIATURA, borderRadius: 12, alignItems: 'center', justifyContent: 'center', backgroundColor: COLOR.iconoFondo },
-  cabezaDeOpcion: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 12, marginBottom: 6 },
-  textosDeOpcion: { flex: 1, minWidth: 160 },
+  cabezaDeOpcion: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 8, marginBottom: 2 },
+  textosDeOpcion: { flex: 1 },
   nombreDeOpcion: { fontSize: 18, lineHeight: 24, fontWeight: '800', color: COLOR.texto },
   // «Estimación del plan» no se toca: en `tenue`, no en el cian de lo que se toca (AV2-21).
   estimacion: { fontSize: 13, lineHeight: 18, fontWeight: '600', color: COLOR.tenue, marginTop: 2 },
+  // «Ver detalle», al lado del nombre: 48 dp de toque sin otra fila (A32-D05).
+  verDetalle: { flexDirection: 'row', alignItems: 'center', gap: 2, minHeight: 48, paddingLeft: 4 },
+  textoVerDetalle: { fontSize: 15, lineHeight: 20, fontWeight: '700', color: COLOR.acento },
   titular: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 8, marginBottom: 8 },
   textoDelTitular: { flex: 1, fontSize: 23, lineHeight: 29, fontWeight: '800', color: COLOR.texto },
   tarjetaRegistrada: { flexDirection: 'row', gap: 12, borderWidth: 1, borderColor: COLOR.borde, borderRadius: 16, padding: 12 },
