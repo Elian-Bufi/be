@@ -833,6 +833,13 @@ async function planDeNutricionSinAsistente({ p, d }) {
   await elemento(p, '[data-crear-version]', 'Nueva versión del plan');
   await elemento(p, '[data-empezar-en-blanco]', 'Empezar en blanco');
   assert.equal(await p.$('[data-armar-con-el-asistente]'), null, 'sin «Armar con el asistente»');
+
+  // SAN-03 (revisión de DL-193): «Empezar en blanco» crea de verdad la versión 2 sin copiar la activa: el editor abre un
+  // día tipo vacío, sin el «Almuerzo» de la versión 1.
+  await clic(p, '[data-empezar-en-blanco]', 'Empezar en blanco');
+  await elemento(p, '[data-revisar-y-activar]');
+  await esperarTexto(p, 'Versión 2 · en preparación');
+  assert.equal(await p.$$eval('.editor-del-plan .comida-del-editor', (x) => x.length), 0, 'en blanco: sin las comidas de la activa');
 }
 
 /** Bloque 5: preparar la revisión desde la ficha y volver «donde estabas», con la vista y el período. */

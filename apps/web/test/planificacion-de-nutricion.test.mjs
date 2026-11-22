@@ -429,6 +429,13 @@ test('NUP-07 y NUP-10 · el objetivo: las kcal de los gramos al escribir y en lo
   // En el editor, en dos renglones: las comidas siguen a la vista. Un objetivo viejo en proporción de las kcal lo dice
   // (SAN-04: antes, solo en el paso 2 del asistente).
   assert.match(EDITOR, /<KcalDelObjetivo kcal=\{objetivo\.estimatedEnergyRequirement\.value\} gramos=\{gramosDelObjetivo\(objetivo\)\} enProporcion=\{macrosEnProporcion\(objetivo\)\} compacto \/>/);
+  // Revisión de DL-193: compacto y sin gramos que sumar, antes no dibujaba nada y `enProporcion` no llegaba a la pantalla.
+  // Ahora lo dice si hay macros en proporción; sin ellos (un objetivo en gramos a medias), sigue sin decir nada.
+  const kcal = PIEZAS.slice(PIEZAS.indexOf('export function KcalDelObjetivo'));
+  assert.match(kcal, /if \(!k && compacto\) \{\n(?:\s*\/\/[^\n]*\n)*\s*return enProporcion\.length > 0 \? \(\n\s*<p className="nota kcal-del-objetivo" data-kcal-del-objetivo data-en-proporcion>\n\s*\{sinLasKcalDeLosGramos\(enProporcion\)\}/);
+  assert.doesNotMatch(kcal, /if \(!k && compacto\) return null;/);
+  assert.equal(P.sinLasKcalDeLosGramos(['protein', 'fat']), 'El objetivo tiene Proteínas y Grasas en proporción de las kcal, no en gramos: no hay gramos que sumar.');
+  assert.equal(P.macrosEnProporcion({ estimatedEnergyRequirement: { value: 2000 }, macronutrientDistribution: { protein: { value: 0.2, unit: 'energy_share' }, carbohydrate: { value: 250, unit: 'g/day' }, fat: { value: 0.3, unit: 'energy_share' } } }).join(), 'protein,fat');
   assert.equal(P.porcentajeEnUnaParte('protein', 79, 1750), 'Proteínas 79 g · 18 % de las 1.750 kcal');
   // El aviso no bloquea: el formulario no lo cuenta como error.
   assert.doesNotMatch(FORMULARIOS.slice(FORMULARIOS.indexOf('export function erroresDeObjetivo'), FORMULARIOS.indexOf('export function aObjetivo')), /kcalDeLosGramos|noCoinciden/);

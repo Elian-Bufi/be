@@ -117,7 +117,15 @@ export function SumaDeLosRangosIndicados({ comidas, objetivo, enDetalle = false 
  */
 export function KcalDelObjetivo({ kcal, gramos, enProporcion = [], compacto = false }: { kcal: number | null; gramos: GramosDelObjetivo; enProporcion?: readonly MacroDelRango[]; compacto?: boolean }) {
   const k = kcalDeLosGramos(gramos, kcal);
-  if (!k && compacto) return null;
+  // Compacto (el objetivo del editor), sin gramos que sumar: se dice solo si es porque hay macros en proporción de las
+  // kcal (SAN-04, DL-193: lo decía el paso 2 del asistente). «Con los tres macros escritos…» es del formulario.
+  if (!k && compacto) {
+    return enProporcion.length > 0 ? (
+      <p className="nota kcal-del-objetivo" data-kcal-del-objetivo data-en-proporcion>
+        {sinLasKcalDeLosGramos(enProporcion)}
+      </p>
+    ) : null;
+  }
   if (!k) {
     return (
       <p className="nota kcal-del-objetivo" data-kcal-del-objetivo>
