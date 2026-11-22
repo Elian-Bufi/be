@@ -196,8 +196,8 @@ con su tilde, hasta el envío siguiente (`renglonesDelResumen`, en `validacion-v
   100 (depende de lo que ya está escrito, no de la propuesta).
 
 **La suma de los rangos frente al objetivo** (el agregado del 22/11): sale de arriba de las comidas del editor
-(`editor.tsx`: solo se sacó el montaje). Su chequeo es un renglón propio del reparto, debajo de la tabla, con su alto
-reservado (`chequeoDeLaSuma`, `chequeoEnPalabras`):
+(`editor.tsx`: solo se sacó el montaje). Su chequeo es un renglón propio del reparto, debajo de «Proponer estos rangos»,
+con su alto reservado (`chequeoDeLaSuma`, `chequeoEnPalabras`):
 
 - «La suma de los rangos de las comidas contiene el objetivo del día», con los íconos de las kcal y los macros.
 - Si algo queda afuera, cuál, por cuánto y con su base: «El objetivo del día queda afuera de la suma de los rangos de las
@@ -260,7 +260,29 @@ reservado (`chequeoDeLaSuma`, `chequeoEnPalabras`):
 | RP-D20 | El rango del día en «Todo el día» es siempre el del objetivo con su margen | Antes, sin 100, mostraba los gramos sin margen y cambiaba de texto |
 | RP-D21 | Columnas fijas con anchos en rem (comida 7, parte 8,5, kcal 10,5 y 8,5 por macro), la tabla a 0,92 rem y las cantidades sin partirse: donde no entra, la tabla se desplaza de costado | Alternativa: dejar partir las cantidades, con dos renglones reservados en cada celda (filas más altas) |
 | RP-D22 | Lo que responde a «Proponer» va al lado del botón (lo que se guardó, en el renglón reservado) o debajo («Lo que ya escribiste», el error del servidor). «Lo que ya escribiste» se ve aunque la suma no dé 100. Lo que se guardó ya no va al aviso de la lista de rangos del asistente, que corría todo (y en el editor no se veía) | Alternativa: «Lo que ya escribiste» arriba del botón, con su alto reservado |
-| RP-D23 | (Pedido del 22/11.) La suma de los rangos frente al objetivo sale de arriba de las comidas del editor y su chequeo es una línea del reparto, con su alto reservado, los íconos, cuál queda afuera, por cuánto y su base; el detalle, detrás de un «?». Sin colores de juicio (NUP-06). Las comidas todavía sin guardar no entran en el chequeo (no pueden tener rango; el autoguardado las guarda enseguida). En el paso de las comidas del asistente la tabla queda como estaba, debajo de las comidas | Alternativa: la línea en la fila «Todo el día» (más apretada) |
+| RP-D23 | (Pedido del 22/11.) La suma de los rangos frente al objetivo sale de arriba de las comidas del editor y su chequeo es una línea del reparto, debajo de «Proponer estos rangos» (cambia al proponer y puede ocupar dos renglones: arriba, bajaba el botón), con su alto reservado; sin la tabla del reparto (un objetivo sin gramos por día ni cálculo), igual se ve; los íconos, cuál queda afuera, por cuánto y su base; el detalle, detrás de un «?». Sin colores de juicio (NUP-06). Las comidas todavía sin guardar no entran en el chequeo (no pueden tener rango; el autoguardado las guarda enseguida). En el paso de las comidas del asistente la tabla queda como estaba, debajo de las comidas | Alternativa: la línea en la fila «Todo el día» (más apretada) |
 | RP-D24 | La regla única: el renglón del aviso, `.avisos-con-lugar` (cada campo que puede avisar reserva su renglón) y las tablas en vivo con columnas fijas y «—». Se aplica donde Elián recorre la planificación (§7.3). Un aviso de dos renglones todavía crece uno | Alternativa: el aviso posicionado encima de lo de abajo, sin ocupar lugar (tapa lo que sigue mientras dura) |
-| RP-D25 | El resumen de errores ya no se achica al corregir, en todo el website: lo corregido queda tachado con su tilde hasta el envío siguiente; con todo corregido dice «Ya corregiste lo marcado.», como aviso informativo. Matiza ED-04 en lo visual (el aviso del campo sí se va al corregir) | Como GOV.UK, que no lo cambia hasta reenviar. Alternativa: el resumen fijo sin marcar lo corregido, o achicarse como antes |
+| RP-D25 | El resumen de errores ya no se achica al corregir, en todo el website: lo corregido queda tachado con su tilde hasta el envío siguiente; con todo corregido dice «Ya corregiste lo marcado.», como aviso informativo. Matiza ED-04 en lo visual (el aviso del campo sí se va al corregir). El lector de pantalla lo oye una vez por envío, no a cada corrección; cada envío cuenta, también el que pasa la revisión | Como GOV.UK, que no lo cambia hasta reenviar. Alternativa: el resumen fijo sin marcar lo corregido, o achicarse como antes |
 | RP-D26 | En el calculador, el gasto en reposo se calcula y se muestra siempre con los datos, el método y el sexo; el gasto total y las tablas de macros (si se piden) están siempre, con «—»; la nota de la población, en un renglón reservado solo con los métodos que la pueden decir (hoy, ten Haaf con el peso) | El reposo no depende del factor, el ajuste ni los g/kg. Alternativa: dejar el último cálculo a la vista, atenuado, mientras se corrige |
+
+### 7.7 La revisión del PR
+
+Lo que encontró la revisión adversaria y se corrigió en la rama, con su prueba:
+
+- **El resumen de errores, en todo el website.** Con `role="alert"` (en vivo, urgente y entero), cada corrección (un
+  renglón que se marca, el título que pasa a «Ya corregiste lo marcado.») hacía que el lector de pantalla volviera a leer
+  el resumen completo al salir del campo, encima del rótulo del campo siguiente. Ahora lleva `aria-live="off"` y se vuelve
+  a montar en cada envío: se anuncia una vez por envío, como antes, y el «Listo para…» lo sigue diciendo
+  `AnuncioDeLosAvisos`.
+- **Un envío que pasa la revisión también cuenta.** Cinco formularios vaciaban los errores sin contar el envío
+  (recuperación asistida, restablecer el segundo factor, incorporar y cambiar el nombre, en Administración; vincular la
+  cuenta de Google): con el resumen nuevo quedaba «Ya corregiste lo marcado.» con lo anterior tachado durante el envío y
+  después de que salía bien. Ahora cuentan el envío.
+- **«revisá la marcada» no tenía marca.** La parte o el margen que no se entiende solo llevaba `aria-invalid`; ahora se ve
+  con el borde y la sombra del error, sin cambiar de tamaño.
+- **El chequeo de la suma, debajo del botón.** Con el objetivo afuera de la suma (por ejemplo, unas kcal escritas lejos de
+  las que suman los gramos, o un margen chico) la línea ocupa dos renglones o más, y cambia justo al proponer: arriba de
+  «Proponer estos rangos», lo bajaba. Sin la tabla del reparto (un objetivo sin gramos por día ni cálculo con macros, o un
+  cálculo que no se pudo leer) el chequeo no se veía en ningún lado del editor; ahora sí. Solo la línea está en vivo: el
+  detalle del «?» no se anuncia entero al abrirlo.
+- **El recorrido `sinSaltos`** espera la letra (`document.fonts.ready`) antes de la primera foto de los lugares.

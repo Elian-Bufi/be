@@ -1704,6 +1704,8 @@ async function sinSaltos({ p, d, salida }) {
   await elemento(p, `${R} [data-tabla-del-reparto]`, null, 60_000);
   await hidratado(p, `${R} [data-parte-de-la-comida]`);
   await p.waitForNetworkIdle({ idleTime: 500, timeout: ESPERA }).catch(() => {});
+  // Revisión del PR: con la letra ya cargada, un cambio de letra no se cuenta como un salto.
+  await p.evaluate(() => document.fonts.ready.then(() => true));
   const partes = await p.$$(`${R} [data-parte-de-la-comida]`);
   assert.equal(partes.length, 2, 'el borrador tiene dos comidas guardadas');
   const valores = await p.$$eval(`${R} [data-parte-de-la-comida]`, (xs) => xs.map((x) => Number(x.value)));

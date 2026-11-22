@@ -21573,6 +21573,14 @@ html:has(.estacion:not([data-en-el-asistente])) {
   color: var(--tenue);
 }
 
+/* Revisión de RP-19: la parte o el margen que no se entiende se ve marcado («revisá la marcada» lo nombra), sin cambiar de
+   tamaño: el borde sigue de 1 px y el segundo píxel es una sombra, como en `.avisos-con-lugar`. */
+.reparto-por-comida__parte input[aria-invalid='true'],
+.reparto-por-comida__margen input[aria-invalid='true'] {
+  border-color: var(--error);
+  box-shadow: 0 0 0 1px var(--error);
+}
+
 /* «Todo el día»: la suma de las partes («99 %», marcada si no da 100) y, debajo, lo que falta o sobra, en su renglón. */
 .reparto-por-comida__suma {
   display: block;

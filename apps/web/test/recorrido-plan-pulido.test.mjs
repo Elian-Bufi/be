@@ -351,7 +351,18 @@ test('RP-19 · la pantalla del reparto: columnas fijas, renglones reservados y n
   // El chequeo de la suma de los rangos, en un renglón propio con su alto y el detalle detrás de un «?».
   assert.match(pieza, /renglon-del-aviso renglon-del-aviso--con-boton reparto-por-comida__chequeo/);
   assert.match(pieza, /<ExplicacionAPedido nombre=\{C\.detalleDeLaSuma\} como="div">\s*<SumaDeLosRangosIndicados comidas=\{comidasConRango\} objetivo=\{objetivo\} enDetalle \/>/);
-  assert.ok(pieza.indexOf('reparto-por-comida__chequeo') < acciones, 'el chequeo va arriba del botón, en su lugar reservado');
+  // Revisión del PR: debajo del botón, no arriba. Cambia al proponer y, con el objetivo afuera, ocupa más de un renglón:
+  // arriba, bajaba el botón. Va antes de lo que aparece después de proponer, para no correrse cuando eso aparece.
+  const chequeoConTabla = pieza.indexOf('{renglonDelChequeo}', acciones);
+  assert.ok(chequeoConTabla > acciones, 'el chequeo va debajo del botón');
+  assert.ok(chequeoConTabla < pieza.indexOf('{error ? <Aviso tipo="error">{error}</Aviso> : null}') && chequeoConTabla < pieza.indexOf('data-reemplazar-rangos'), 'y arriba del error y de «Lo que ya escribiste»');
+  // Sin la tabla del reparto (sin gramos por día ni cálculo, o sin poder leer el cálculo), el chequeo igual se ve.
+  assert.match(pieza, /\{calculo\.estado !== 'leyendo' && !\(fuente && gramos\) \? renglonDelChequeo : null\}/);
+  // Solo la línea está en vivo: el detalle del «?» queda afuera de la región que se anuncia.
+  assert.match(pieza, /<span className="reparto-por-comida__chequeo-texto" aria-live="polite">/);
+  assert.doesNotMatch(pieza, /reparto-por-comida__chequeo" aria-live/);
+  // La parte o el margen que no se entiende se ve marcado, sin cambiar de tamaño («revisá la marcada» lo nombra).
+  assert.match(bloque, /\.reparto-por-comida__parte input\[aria-invalid='true'\],\s*\.reparto-por-comida__margen input\[aria-invalid='true'\] \{\s*border-color: var\(--error\);\s*box-shadow: 0 0 0 1px var\(--error\);/);
   // El cuadro de la suma ya no va arriba de las comidas del editor.
   assert.doesNotMatch(leer('app/pro/advisees/nutrition/editor.tsx'), /<SumaDeLosRangosIndicados/);
   // Lo que se guardó, al lado del botón; ya no en el aviso de la lista de rangos, que corría lo de abajo.
@@ -378,6 +389,17 @@ test('RP-19 · la regla reutilizable: el renglón del aviso, los campos con su l
   assert.deepEqual(V.renglonesDelResumen(envio, [{ id: 'b', texto: 'B, ahora' }, { id: 'c', texto: 'Falta C' }]).map((r) => [r.id, r.texto, r.corregido]), [['a', 'Falta A', true], ['b', 'B, ahora', false], ['c', 'Falta C', false]]);
   assert.deepEqual(V.renglonesDelResumen([], []), []);
   assert.match(formulario, /const renglones = renglonesDelResumen\(delEnvio\.intento === intento \? delEnvio\.lista : errores, errores\);/);
+  // Revisión del PR: el lector oye el resumen una vez por envío (se vuelve a montar con la clave del envío) y no a cada
+  // corrección (`aria-live="off"`: con el `role="alert"` solo, se releía entero al salir de cada campo corregido).
+  const resumen = formulario.slice(formulario.indexOf('export function ResumenDeErrores('), formulario.indexOf('export function Aviso('));
+  assert.match(resumen, /key=\{intento\}/);
+  assert.match(resumen, /role="alert"\s+aria-live="off"/);
+  // Y cada envío cuenta, también el que pasa la revisión: si no, el resumen quedaba con lo anterior tachado («Ya corregiste
+  // lo marcado.») después de un envío que salió bien (la consola de Administración y vincular Google).
+  for (const r of ['app/admin/access/recuperacion-asistida.tsx', 'app/admin/access/restablecer-segundo-factor.tsx', 'app/admin/incorporar.tsx', 'app/admin/professional/nombre.tsx']) {
+    assert.match(leer(r), /setErrores\(\{\}\);\n\s*setIntento\(\(n\) => n \+ 1\);/, r);
+  }
+  assert.match(leer('components/acceso-con-google.tsx'), /setError\(null\);\n\s*setIntento\(\(n\) => n \+ 1\);\n\s*setEnviando\(true\);/);
   // Dónde se usa: el objetivo, la evaluación, el calculador, el paso 1 de los asistentes y el cuadro del rango.
   const formularios = leer('app/pro/advisees/nutrition/formularios.tsx');
   assert.match(formularios, /<form className="formulario evaluacion-inicial avisos-con-lugar"/);

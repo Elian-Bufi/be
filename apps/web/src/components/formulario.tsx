@@ -64,6 +64,9 @@ export function erroresPorCampo(errores: readonly { id: string; texto: string }[
 /**
  * El foco va al resumen solo cuando un envío produce errores (`intento` cambia), nunca en cada render: si no, cada
  * tecla que el usuario escribe para corregir un campo le devolvería el foco al resumen (10-B10 §6-§7).
+ *
+ * RP-19: `intento` cuenta **cada** envío, también el que pasa la revisión y vacía los errores. Si un envío que sale bien no
+ * lo cuenta, el resumen queda con lo del envío anterior tachado («Ya corregiste lo marcado.») hasta el envío siguiente.
  */
 export function ResumenDeErrores({ titulo, errores, intento }: { titulo: string; errores: readonly { id: string; texto: string }[]; intento: number }) {
   const ref = useRef<HTMLDivElement>(null);
@@ -80,8 +83,22 @@ export function ResumenDeErrores({ titulo, errores, intento }: { titulo: string;
   }, [intento]);
   if (renglones.length === 0) return null;
   const todoCorregido = renglones.every((e) => e.corregido);
+  // Revisión de RP-19: el lector de pantalla oye el resumen una vez por envío y no a cada corrección. Ahora el resumen
+  // cambia entre envíos (lo corregido se marca, el título pasa a «Ya corregiste lo marcado.»), y con `role="alert"` (en
+  // vivo, urgente y entero) se volvía a leer completo al salir de cada campo corregido, encima del rótulo del campo
+  // siguiente. `aria-live="off"`: lo que cambia entre envíos no se anuncia (el «Listo para…» lo dice `AnuncioDeLosAvisos`).
+  // La clave del envío lo vuelve a montar en cada envío: un `role="alert"` nuevo se anuncia entero, como antes, y el foco
+  // llega igual.
   return (
-    <div ref={ref} className={`aviso aviso--${todoCorregido ? 'info' : 'error'} resumen-de-errores`} role="alert" tabIndex={-1} data-resumen-de-errores>
+    <div
+      key={intento}
+      ref={ref}
+      className={`aviso aviso--${todoCorregido ? 'info' : 'error'} resumen-de-errores`}
+      role="alert"
+      aria-live="off"
+      tabIndex={-1}
+      data-resumen-de-errores
+    >
       <p className="aviso__titulo">{todoCorregido ? COPY_AVISOS_VIVOS.todoCorregido : titulo}</p>
       <ul>
         {renglones.map((e) => (

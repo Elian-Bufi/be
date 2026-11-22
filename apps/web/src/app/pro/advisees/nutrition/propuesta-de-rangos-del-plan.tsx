@@ -18,7 +18,8 @@
  *   columnas fijas; el porqué del botón apagado y lo que se guardó van en un renglón reservado al lado del botón, y lo que
  *   aparece después de proponer («Lo que ya escribiste», un error del servidor) va debajo del botón. El chequeo de la suma
  *   de los rangos indicados frente al objetivo (antes, un cuadro arriba de las comidas que aparecía de golpe al proponer)
- *   es un renglón propio debajo de la tabla, con el detalle detrás de un «?».
+ *   es un renglón propio debajo del botón (revisión del PR: arriba, al proponer, lo bajaba), con el detalle detrás de un
+ *   «?»; sin la tabla del reparto, igual se ve.
  */
 import { MACROS_DE_LA_PROPUESTA, numero, type RangoPropuesto, type RangosDelPlan, type ReferenciaYCalculo, type VersionDeObjetivo } from '@be/domain';
 import { useEffect, useId, useMemo, useState } from 'react';
@@ -86,7 +87,7 @@ function CantidadOGuion({ macro, x }: { macro: 'kcal' | (typeof MACROS_DE_LA_PRO
   return (
     <span className="reparto-por-comida__sin-rango" data-sin-rango>
       <span aria-hidden="true">—</span>
-      <span className="visualmente-oculto">sin rango: falta la parte</span>
+      <span className="visualmente-oculto">sin rango</span>
     </span>
   );
 }
@@ -243,6 +244,33 @@ export function RepartoPorComida({
   // RP-19 (pedido del 22/11): la suma de los rangos indicados frente al objetivo, en un renglón propio del reparto.
   const comidasConRango = dia.comidas.map((c) => ({ nombre: c.nombre, rango: rangoIndicadoDe(rangos.estado, dia.dayTypeId, c.mealId) }));
   const chequeo = chequeoDeLaSuma(comidasConRango, objetivo);
+  // RP-19 (pedido del 22/11): la suma de los rangos indicados frente al objetivo, en una línea y en su lugar. Sin rangos
+  // indicados, el renglón queda vacío con el mismo alto; el detalle por macro, detrás del «?», se abre hacia abajo.
+  // Revisión del PR:
+  // - Va debajo de «Proponer estos rangos», no arriba: cambia al proponer, y con el objetivo afuera (por ejemplo, las kcal
+  //   escritas lejos de las que suman los gramos, o un margen chico) ocupa dos renglones o más. Arriba del botón, lo bajaba.
+  // - Sin la tabla del reparto (un objetivo sin gramos por día ni cálculo con macros, o un cálculo que no se pudo leer),
+  //   el chequeo igual se ve: antes, el cuadro de la suma de NUP-06 estaba siempre arriba de las comidas.
+  // - Solo la línea está en vivo: el detalle que se abre con el «?» no se anuncia entero.
+  const renglonDelChequeo = (
+    <div className="renglon-del-aviso renglon-del-aviso--con-boton reparto-por-comida__chequeo" data-chequeo-de-la-suma={chequeo.estado}>
+      <span className="reparto-por-comida__chequeo-texto" aria-live="polite">
+        {chequeo.estado === 'sin-rangos' ? null : (
+          <>
+            <Icono nombre="objetivo" tamano={15} />
+            <span>
+              <LineaDelChequeo c={chequeo} />
+            </span>
+          </>
+        )}
+      </span>
+      {chequeo.estado === 'sin-rangos' ? null : (
+        <ExplicacionAPedido nombre={C.detalleDeLaSuma} como="div">
+          <SumaDeLosRangosIndicados comidas={comidasConRango} objetivo={objetivo} enDetalle />
+        </ExplicacionAPedido>
+      )}
+    </div>
+  );
 
   async function proponer() {
     if (!listo || nuevos === 0) return;
@@ -275,6 +303,7 @@ export function RepartoPorComida({
       {calculo.estado === 'leyendo' ? <p className="nota" role="status">Leyendo el objetivo…</p> : null}
       {calculo.estado === 'falla' ? <p className="nota">No se pudo leer el cálculo del objetivo. Se vuelve a intentar al abrir de nuevo el editor.</p> : null}
       {calculo.estado === 'listo' && !fuente ? <p className="nota">{C.sinFuente}</p> : null}
+      {calculo.estado !== 'leyendo' && !(fuente && gramos) ? renglonDelChequeo : null}
       {fuente && gramos ? (
         <>
           <p className="nota" data-fuente-de-la-propuesta>
@@ -446,24 +475,6 @@ export function RepartoPorComida({
               </tbody>
             </table>
           </div>
-          {/* RP-19 (pedido del 22/11): la suma de los rangos indicados frente al objetivo, en una línea y en su lugar. Sin
-              rangos indicados, el renglón queda vacío con el mismo alto; el detalle por macro, detrás del «?», se abre hacia
-              abajo y no corre nada de lo que está arriba. */}
-          <div className="renglon-del-aviso renglon-del-aviso--con-boton reparto-por-comida__chequeo" aria-live="polite" data-chequeo-de-la-suma={chequeo.estado}>
-            {chequeo.estado === 'sin-rangos' ? null : (
-              <>
-                <span className="reparto-por-comida__chequeo-texto">
-                  <Icono nombre="objetivo" tamano={15} />
-                  <span>
-                    <LineaDelChequeo c={chequeo} />
-                  </span>
-                </span>
-                <ExplicacionAPedido nombre={C.detalleDeLaSuma} como="div">
-                  <SumaDeLosRangosIndicados comidas={comidasConRango} objetivo={objetivo} enDetalle />
-                </ExplicacionAPedido>
-              </>
-            )}
-          </div>
           <div className="acciones reparto-por-comida__acciones">
             <button type="button" className="boton boton--secundario" data-proponer-rangos disabled={enviando || bloqueo !== null} aria-busy={enviando} onClick={() => void proponer()}>
               {enviando ? C.guardando : C.proponer}
@@ -472,6 +483,7 @@ export function RepartoPorComida({
               {renglonDelBoton}
             </RenglonDelAviso>
           </div>
+          {renglonDelChequeo}
           {/* RP-19: lo que aparece después de proponer va debajo del botón: no lo corre. */}
           {error ? <Aviso tipo="error">{error}</Aviso> : null}
           {yaEscritos > 0 ? (
