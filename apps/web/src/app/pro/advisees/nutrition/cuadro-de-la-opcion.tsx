@@ -67,7 +67,9 @@ import {
 } from './opcion-en-un-cuadro';
 import { useNumeroDelObjetivo } from './pasos-del-asistente';
 import { FrenteALosRangos } from './comida-del-editor';
-import { diaFrenteAlRango, opcionFrenteAlRango, origenBreve } from './planificacion';
+import { diaFrenteAlRango, origenBreve } from './planificacion';
+import { COPY_FRANJAS, franjasDeLaComida } from './franjas-por-comida';
+import { FranjasDeLaComida } from './franjas-de-la-comida';
 import { COPY_RANGOS, faltantesDeLaOpcion, fibraDeLaOpcion, itemsParaElTotal, NUTRIENTES_DEL_RANGO, queFaltaEnPalabras, rangoDeLaComida, rangoDelDia, rangoEnUnaCelda, totalDeLaOpcion, type Composiciones, type RangoPorNutriente, type TotalDeLaOpcion } from './rangos';
 
 type Busqueda =
@@ -208,10 +210,12 @@ export function CuadroDeLaOpcion({
   const rango = total ? rangoDeLaComida([...otrasOpciones, { nombre: copia?.label || titulo, total }], comida) : null;
   const sinNombre = copia !== null && copia.label.trim() === '';
   const impide = copia ? loQueNoDejaGuardarLaOpcion(copia, todosLosNombres) : null;
-  // NUP-04: la opción como queda frente al rango de su comida, y el día (con esta opción en su comida) frente al suyo.
-  const frente = total && rango ? [...opcionFrenteAlRango(total, rangoIndicadoDeLaComida, comida), ...diaFrenteAlRango(rangoDelDia([...otrasComidasDelDia, rango], ''), rangoIndicadoDelDia)] : [];
   // Una opción nueva todavía vacía no tiene nada que ubicar: una sola indicación, no una línea «sin dato» por macro.
   const sinAlimentos = copia !== null && copia.items.length === 0 && !copia.recipeVersionId;
+  // RP-20 (B): la opción como queda frente al rango de su comida, en franjas que se mueven con cada tecla. El día (con esta
+  // opción en su comida) frente al suyo sigue en líneas (NUP-04): el cuadro tapa el panel «Rangos y totales».
+  const franjas = total ? franjasDeLaComida(rangoIndicadoDeLaComida, [{ clave: 'cuadro', nombre: copia?.label.trim() || titulo, total }]) : null;
+  const frenteDelDia = total && rango && !sinAlimentos ? diaFrenteAlRango(rangoDelDia([...otrasComidasDelDia, rango], ''), rangoIndicadoDelDia) : [];
 
   return (
     <CuadroEnfocado
@@ -338,9 +342,11 @@ export function CuadroDeLaOpcion({
                 <p className="nota">{C.conEstaOpcion}</p>
               </section>
             ) : null}
-            {frente.length > 0 ? (
-              <section className="cuadro-de-la-opcion__tarjeta" aria-label="Frente a los rangos indicados" data-frente-en-el-cuadro>
-                <FrenteALosRangos lineas={frente} sinAlimentos={sinAlimentos} />
+            {franjas || frenteDelDia.length > 0 ? (
+              <section className="cuadro-de-la-opcion__tarjeta" aria-labelledby="opcion-frente-al-rango" data-frente-en-el-cuadro>
+                <h3 id="opcion-frente-al-rango">{COPY_FRANJAS.frenteAlRangoDe(comida)}</h3>
+                {franjas ? <FranjasDeLaComida franjas={franjas} comida={comida} variante="opcion" /> : null}
+                {frenteDelDia.length > 0 ? <FrenteALosRangos lineas={frenteDelDia} titulo={COPY_FRANJAS.elDiaFrenteAlSuyo} /> : null}
               </section>
             ) : null}
             <section className="cuadro-de-la-opcion__tarjeta" aria-labelledby="opcion-objetivo-general">

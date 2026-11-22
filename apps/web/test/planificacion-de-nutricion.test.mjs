@@ -395,9 +395,11 @@ test('NUP-02 y NUP-03 · la comida plegada dice lo que aporta y su rango; cada o
   assert.doesNotMatch(COMIDA, /type="radio"/, 'ya no son pestañas');
 });
 
-test('NUP-04 y NUP-05 · la línea frente a los rangos, en la opción y en el cuadro; el rango se indica donde se arma', () => {
-  assert.match(COMIDA, /\{frente\.length > 0 \? <FrenteALosRangos lineas=\{frente\} \/> : null\}/);
-  assert.match(CUADRO, /<FrenteALosRangos lineas=\{frente\} sinAlimentos=\{sinAlimentos\} \/>/);
+test('NUP-04 y NUP-05 · frente a los rangos, en la opción y en el cuadro; el rango se indica donde se arma', () => {
+  // RP-20 (DL-188): las líneas de la opción pasaron a ser franjas (franjas-por-comida.test.mjs); en el cuadro, el día
+  // frente a su rango sigue en líneas.
+  assert.match(COMIDA, /<FranjasDeLaComida franjas=\{franjasDeLaOpcion\} comida=\{plegada\.titulo\} variante="opcion" \/>/);
+  assert.match(CUADRO, /<FrenteALosRangos lineas=\{frenteDelDia\} titulo=\{COPY_FRANJAS\.elDiaFrenteAlSuyo\} \/>/);
   // Ubica, no califica: la pieza no usa los colores de error ni de éxito.
   const pieza = COMIDA.slice(COMIDA.indexOf('export function FrenteALosRangos'), COMIDA.indexOf('export function FilaDeItem'));
   assert.doesNotMatch(pieza, /error|exito|peligro/);
@@ -479,9 +481,12 @@ const O = await import('../src/app/pro/advisees/nutrition/opcion-de-otra-comida.
 const ENFOCADO = leer('components/cuadro-enfocado.tsx');
 const DIALOGO = leer('components/dialogo.tsx');
 
-test('NUP-04 · en el cuadro, una opción nueva todavía vacía no muestra una línea «sin dato» por macro: una sola indicación', () => {
+test('NUP-04 · en el cuadro, una opción nueva todavía vacía no muestra una línea «sin dato» por macro: una sola indicación', async () => {
   assert.match(CUADRO, /const sinAlimentos = copia !== null && copia\.items\.length === 0 && !copia\.recipeVersionId;/);
-  assert.match(CUADRO, /<FrenteALosRangos lineas=\{frente\} sinAlimentos=\{sinAlimentos\} \/>/);
+  // RP-20 (DL-188): la franja de la opción vacía dice una sola indicación (la misma de antes), y el día no se ubica.
+  assert.match(CUADRO, /const frenteDelDia = total && rango && !sinAlimentos \?/);
+  const FR = await import('../src/app/pro/advisees/nutrition/franjas-por-comida.ts');
+  assert.equal(FR.COPY_FRANJAS.sinAlimentosLaOpcion, P.COPY_PLANIFICACION.frenteSinAlimentos);
   const pieza = COMIDA.slice(COMIDA.indexOf('export function FrenteALosRangos'), COMIDA.indexOf('export function FilaDeItem'));
   assert.match(pieza, /\{sinAlimentos \? \(\n\s*<p className="nota" data-frente-sin-alimentos>\n\s*\{CP\.frenteSinAlimentos\}/);
   assert.equal(P.COPY_PLANIFICACION.frenteSinAlimentos, 'Todavía no tiene alimentos: se ubica cuando sumes el primero.');

@@ -136,7 +136,9 @@ test('RP-07 · la pieza se usa en el calculador, las comidas, los rangos y «Ran
     ['nutrition/comida-del-editor.tsx', '<NutrientesConIconos cifras={cifrasDelTotal(total)}'],
     ['nutrition/suma-de-los-rangos.tsx', '<RangoIndicadoConIconos '],
     ['nutrition/rangos-indicados-del-plan.tsx', '<RangoIndicadoConIconos '],
-    ['nutrition/editor.tsx', '<RotuloConIcono macro={MACRO_DEL_NUTRIENTE[n]}'],
+    // RP-21: «Rangos y totales» dejó la tabla con el ícono en el rótulo: cada cantidad lleva el suyo, en la franja del panel.
+    ['nutrition/franjas-de-la-comida.tsx', '<CantidadDelMacro macro={macro} cifra={cifra} />'],
+    ['nutrition/editor.tsx', '<RangosYTotales'],
   ]) {
     assert.ok(leer(`app/pro/advisees/${archivo}`).includes(pieza), `${archivo}: ${pieza}`);
   }
