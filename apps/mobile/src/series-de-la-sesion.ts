@@ -51,6 +51,7 @@ import {
   tipoDeSerie,
   type TipoDeSerie,
 } from '@be/domain';
+import { esfuerzoParaEditar, esfuerzoParaMostrar, leerEsfuerzo, type NotacionDelEsfuerzo } from './esfuerzo-en-la-app';
 import { TEXTOS_DE_LA_SESION } from './textos-de-la-sesion';
 import { TEXTOS_DEL_CALENTAMIENTO } from './textos-del-calentamiento';
 
@@ -73,6 +74,12 @@ export interface FilaEscrita {
    * número: la unidad es del ejercicio.
    */
   readonly sinProcedencia?: SinProcedencia;
+  /**
+   * DL-192 (DL-194): el RIR guardado de la serie que volvió a la fila, en un plan en RPE. Opcional. Si lo que dice la fila
+   * sigue siendo lo que ese RIR muestra en RPE, vuelve ese mismo RIR: un RIR de 5 se lee «6 o menos» y no pasa a ser el 4
+   * de «6 o menos» solo por verse así (RPE-D03). En RIR no hace falta: el número vuelve idéntico.
+   */
+  readonly rirAnterior?: number;
 }
 
 /** Los valores de una fila que no se sabe quién escribió (ED-70), como se registraron: la carga con su unidad. */
@@ -154,7 +161,7 @@ export interface Placeholders {
  * Lo que muestran en gris los campos vacíos de una serie: el objetivo de esa serie, o «Sin indicar». La carga lleva la
  * unidad solo si no es la de la columna: «16» en una columna en kg, «35 lb» si el objetivo está en libras.
  */
-export function placeholdersDeLaSerie(objetivo: ObjetivoDeSerie | null, unidadDeLaColumna: Unidad): Placeholders {
+export function placeholdersDeLaSerie(objetivo: ObjetivoDeSerie | null, unidadDeLaColumna: Unidad, notacion: NotacionDelEsfuerzo = 'RIR'): Placeholders {
   const sin = COPY_ENTRENAMIENTO_POR_SERIE.sinObjetivo;
   const carga = objetivo?.suggestedLoad ?? null;
   const reps = objetivo?.repetitions ?? null;
@@ -162,8 +169,8 @@ export function placeholdersDeLaSerie(objetivo: ObjetivoDeSerie | null, unidadDe
   return {
     carga: carga === null ? sin : carga.unit === unidadDeLaColumna ? numero(carga.value) : `${numero(carga.value)} ${carga.unit}`,
     repeticiones: reps === null ? sin : 'value' in reps ? numero(reps.value, 0) : `${numero(reps.min, 0)}–${numero(reps.max, 0)}`,
-    // El cero es un objetivo: «RIR 0» se muestra, no se confunde con «Sin indicar».
-    rir: rir === null ? sin : numero(rir),
+    // El cero es un objetivo: «RIR 0» se muestra, no se confunde con «Sin indicar». DL-192: en RPE, «8» o «6 o menos».
+    rir: esfuerzoParaMostrar(rir, notacion) ?? sin,
   };
 }
 
@@ -173,9 +180,11 @@ export function bandaDeLaSerie(
   objetivo: ObjetivoDeSerie | null,
   /** DL-178: el número efectivo de la serie, o `null` si es de calentamiento. Sin él, el `setIndex`. */
   numeroEfectivo: number | null = setIndex,
+  /** DL-192: la notación del plan; el RIR del objetivo se lee así («RPE 8»). */
+  notacion: NotacionDelEsfuerzo = 'RIR',
 ): { readonly titulo: string; readonly plan: string; readonly descanso: string | null; readonly completa: string } {
   const titulo = numeroEfectivo === null ? TEXTOS_DEL_CALENTAMIENTO.planDelCalentamiento : COPY_ENTRENAMIENTO_POR_SERIE.planDeLaSerie(numeroEfectivo);
-  const plan = objetivo ? textoDelPlanDeLaSerie(objetivo) : COPY_ENTRENAMIENTO_POR_SERIE.sinObjetivo;
+  const plan = objetivo ? textoDelPlanDeLaSerie(objetivo, notacion) : COPY_ENTRENAMIENTO_POR_SERIE.sinObjetivo;
   const segundos = objetivo?.restSeconds ?? null;
   const descanso = segundos === null ? null : `${COPY_ENTRENAMIENTO_POR_SERIE.descansoRecomendado} ${textoDeSegundos(segundos)}`;
   return { titulo, plan, descanso, completa: [`${titulo}: ${plan}`, descanso].filter((p): p is string => p !== null).join(' · ') };
@@ -273,8 +282,12 @@ const RIR_MAXIMO = 20;
 /** `durationSeconds` llega hasta 36.000 s: 10 horas (DL-161). */
 export const MAXIMO_DE_SEGUNDOS = 36000;
 
-/** La carga, las repeticiones y el RIR escritos, leídos y validados como en el contrato. Vacío es `null`; el cero es un valor. */
-function leerCampos(f: FilaEscrita): { carga: number | null; repeticiones: number | null; rir: number | null; errores: ErroresDeFila } {
+/**
+ * La carga, las repeticiones y el RIR escritos, leídos y validados como en el contrato. Vacío es `null`; el cero es un
+ * valor. DL-192: en un plan en RPE, el esfuerzo es una de las opciones del RPE y se lee como el RIR que se manda; uno que
+ * volvió de una serie sin procedencia y no se tocó vuelve con su RIR de antes (`leerEsfuerzo`).
+ */
+function leerCampos(f: FilaEscrita, notacion: NotacionDelEsfuerzo = 'RIR'): { carga: number | null; repeticiones: number | null; rir: number | null; errores: ErroresDeFila } {
   const errores: ErroresDeFila = {};
   const leer = (texto: string, campo: keyof FilaEscrita): number | null => {
     if (texto.trim() === '') return null;
@@ -284,14 +297,15 @@ function leerCampos(f: FilaEscrita): { carga: number | null; repeticiones: numbe
   };
   const carga = leer(f.carga, 'carga');
   const repeticiones = leer(f.repeticiones, 'repeticiones');
-  const rir = leer(f.rir, 'rir');
+  const esfuerzo = leerEsfuerzo(f.rir, notacion, f.rirAnterior ?? f.sinProcedencia?.rir);
+  const rir = esfuerzo.rir;
+  if (esfuerzo.error) errores.rir = esfuerzo.error;
   if (carga !== null && carga < 0) errores.carga = 'La carga no puede ser negativa.';
   if (repeticiones !== null) {
     if (!Number.isInteger(repeticiones)) errores.repeticiones = 'Las repeticiones van sin decimales.';
     else if (repeticiones < 0) errores.repeticiones = 'Las repeticiones no pueden ser negativas.';
     else if (repeticiones > MAXIMO_DE_REPETICIONES) errores.repeticiones = `Revisá las repeticiones: el máximo es ${numero(MAXIMO_DE_REPETICIONES, 0)}.`;
   }
-  if (rir !== null && (rir < 0 || rir > RIR_MAXIMO)) errores.rir = 'El RIR va de 0 a 20.';
   return { carga, repeticiones, rir, errores };
 }
 
@@ -353,8 +367,8 @@ export function origenesDeLaSerie(origenes: Partial<Record<CampoConOrigen, Orige
  * Un rango de repeticiones (10–12) no se convierte en un número: queda sin informar. Sin carga ni repeticiones, ni
  * escritas ni planificadas, no hay serie: el dominio exige una de las dos (`SET_WITHOUT_DATA`), y nunca se fabrica.
  */
-export function serieAlTildar(f: FilaEscrita, objetivo: ObjetivoDeSerie | null, setIndex: number, unidad: Unidad, tipo: TipoDeSerie = 'WORKING'): LecturaDeFila {
-  const { carga, repeticiones, rir, errores } = leerCampos(f);
+export function serieAlTildar(f: FilaEscrita, objetivo: ObjetivoDeSerie | null, setIndex: number, unidad: Unidad, tipo: TipoDeSerie = 'WORKING', notacion: NotacionDelEsfuerzo = 'RIR'): LecturaDeFila {
+  const { carga, repeticiones, rir, errores } = leerCampos(f, notacion);
   const tiempo = leerTiempo(f.tiempo ?? '');
   if (!tiempo.ok) errores.tiempo = tiempo.error;
   if (!tiempo.ok || Object.keys(errores).length > 0) return { ok: false, errores };
@@ -418,10 +432,12 @@ export function alTerminarLaSerie(
   msMedidos: number | null,
   /** DL-178: el número efectivo (`null` en una de calentamiento); sin él, el `setIndex`. */
   numeroEfectivo: number | null = setIndex,
+  /** DL-192: la notación del plan, para leer el esfuerzo escrito. */
+  notacion: NotacionDelEsfuerzo = 'RIR',
 ): AlTerminarLaSerie {
   if (msMedidos !== null && Math.round(msMedidos / 1000) > MAXIMO_DE_SEGUNDOS) return { tipo: 'medicion-larga', anuncio: TEXTOS_DE_LA_SESION.medicionLarga(laSerieOElCalentamiento(numeroEfectivo)) };
   const conTiempo = msMedidos === null ? f : { ...f, tiempo: textoDeTiempo(Math.max(0, Math.round(msMedidos / 1000))) };
-  const lectura = serieAlTildar(conTiempo, objetivo, setIndex, unidad);
+  const lectura = serieAlTildar(conTiempo, objetivo, setIndex, unidad, 'WORKING', notacion);
   if (lectura.ok) return { tipo: 'registrar' };
   return { tipo: 'falta-un-dato', errores: lectura.errores, anuncio: anuncioParaRegistrar(f, objetivo, setIndex, lectura.errores, numeroEfectivo) };
 }
@@ -452,7 +468,7 @@ export function anuncioParaRegistrar(
  * serie de antes de la procedencia) vuelve escrito, como siempre, y queda anotado en `sinProcedencia`: si se vuelve a
  * tildar sin cambiarlo, sigue sin clave, y la serie vuelve igual a la del servidor.
  */
-export function escritaDeLaSerie(serie: SerieEjecutadaApi, unidadDeLaColumna: Unidad): FilaEscritaGuardada {
+export function escritaDeLaSerie(serie: SerieEjecutadaApi, unidadDeLaColumna: Unidad, notacion: NotacionDelEsfuerzo = 'RIR'): FilaEscritaGuardada {
   const tiempo = serie.durationSeconds === null || serie.durationSeconds === undefined ? '' : textoDeTiempo(serie.durationSeconds);
   if (serie.recordedAs === 'AS_PLANNED') return { carga: '', repeticiones: '', rir: '', tiempo, unidad: unidadDeLaColumna };
   const delPlan = (c: CampoConOrigen): boolean => serie.fieldOrigins?.[c] === 'PLAN';
@@ -468,7 +484,8 @@ export function escritaDeLaSerie(serie: SerieEjecutadaApi, unidadDeLaColumna: Un
   return {
     carga: carga ? numero(carga.value) : '',
     repeticiones: repeticiones === null ? '' : String(repeticiones),
-    rir: rir === null ? '' : numero(rir),
+    rir: esfuerzoParaEditar(rir, notacion),
+    ...(notacion === 'RPE' && rir !== null ? { rirAnterior: rir } : {}),
     tiempo,
     unidad: carga?.unit ?? unidadDeLaColumna,
     ...(Object.keys(sinProcedencia).length > 0 ? { sinProcedencia } : {}),
@@ -479,9 +496,9 @@ export function escritaDeLaSerie(serie: SerieEjecutadaApi, unidadDeLaColumna: Un
  * La serie que se registra con lo escrito en la fila, y solo con eso. Vacío es `null`; el cero es un valor. Los errores
  * van por campo, para mostrarlos al lado del campo y en su nombre accesible.
  */
-export function leerFila(f: FilaEscrita, setIndex: number, unidad: Unidad): LecturaDeFila {
+export function leerFila(f: FilaEscrita, setIndex: number, unidad: Unidad, notacion: NotacionDelEsfuerzo = 'RIR'): LecturaDeFila {
   if (!puedeRegistrar(f)) return { ok: false, errores: { fila: COPY_ENTRENAMIENTO_POR_SERIE.faltaUnDato } };
-  const { carga, repeticiones, rir, errores } = leerCampos(f);
+  const { carga, repeticiones, rir, errores } = leerCampos(f, notacion);
   if (Object.keys(errores).length > 0) return { ok: false, errores };
   const serie: SerieEjecutadaApi = {
     setIndex,
@@ -750,6 +767,8 @@ export function pendientesDeRegistrar(
   locales: readonly SerieLocal[],
   quitadas: readonly FilaQuitada[],
   escritas: EscritasDeLaSesion,
+  /** DL-192: la notación del plan, para leer el esfuerzo escrito como al tildar. */
+  notacion: NotacionDelEsfuerzo = 'RIR',
 ): PendienteDeRegistrar[] {
   return sesion.prescriptions.flatMap((p) => {
     const delEjercicio = escritasDelEjercicio(escritas, p.prescriptionId);
@@ -758,7 +777,7 @@ export function pendientesDeRegistrar(
     return filas.flatMap((f): PendienteDeRegistrar[] => {
       const escrita = delEjercicio.get(f.setIndex);
       if (f.estado !== 'sin-registrar' || !escrita || !hayAlgoEscrito(escrita)) return [];
-      return [{ prescriptionId: p.prescriptionId, nombre: p.exerciseName, setIndex: f.setIndex, planificada: f.planificada, lectura: serieAlTildar(escrita, f.objetivo, f.setIndex, escrita.unidad, f.tipo) }];
+      return [{ prescriptionId: p.prescriptionId, nombre: p.exerciseName, setIndex: f.setIndex, planificada: f.planificada, lectura: serieAlTildar(escrita, f.objetivo, f.setIndex, escrita.unidad, f.tipo, notacion) }];
     });
   });
 }

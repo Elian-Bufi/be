@@ -970,6 +970,9 @@ const OPACO_POR_DECISION = [
   'nutricion-hoy.tsx · ficha',
   'progreso.tsx · tarjeta',
   'recuperacion.tsx · circuloDeLaNube',
+  // DL-194: las opciones del RPE de una serie son un diálogo más, con su opción elegida como la de `dialogo.tsx`.
+  'selector-de-rpe.tsx · dialogo',
+  'selector-de-rpe.tsx · opcionElegida',
   'sesion-enfocada.tsx · dialogo',
   'sesion-enfocada.tsx · hoja',
   'ui.tsx · aviso_info',

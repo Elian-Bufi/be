@@ -43,6 +43,7 @@ import {
   BorradorDeEjecucionSchema,
   EventoDeTiempoSchema,
   mismoEvento,
+  notacionDe,
   SerieEjecutadaSchema,
   SesionConObjetivosSchema,
   type BorradorDeEjecucion,
@@ -50,6 +51,7 @@ import {
   type ContextoDeEventos,
   type EventoDeTiempo,
   type MedicionAbierta,
+  type NotacionDelEsfuerzo,
   type Resultado,
   type SesionConObjetivos,
 } from '@be/domain';
@@ -102,6 +104,11 @@ export interface SesionLocal {
   readonly sesion: SesionConObjetivos | null;
   /** Si los objetivos son los generales de cada prescripción y no los de cada serie. La pantalla lo avisa. */
   readonly objetivosGenerales: boolean;
+  /**
+   * DL-192 (DL-194): cómo se escribe el esfuerzo en el plan de la sesión, el `effortNotation` de API-SER-02. Sin leerla
+   * (la sesión general de «Hoy», una sesión guardada por una APK anterior), RIR. Lo que se manda es siempre el RIR.
+   */
+  readonly notacion: NotacionDelEsfuerzo;
   /** El último borrador leído o guardado (API-TRN-16 y 17). */
   readonly borrador: BorradorDeEjecucion | null;
   readonly corrida: Corrida;
@@ -275,6 +282,8 @@ function leerSesion(v: unknown): SesionLocal | null {
     etiqueta: x.etiqueta,
     sesion: sesion?.data ?? null,
     objetivosGenerales: x.objetivosGenerales === true,
+    // Tolerante: lo que no es `RPE` (también lo que falta, de una APK anterior) es RIR.
+    notacion: notacionDe(x.notacion),
     borrador: borrador?.data ?? null,
     corrida: { registrados, pendientes },
     series,
@@ -868,6 +877,7 @@ export function crearAlmacenDeEntrenamiento(deps: DependenciasDelAlmacen) {
         etiqueta: datos.etiqueta,
         sesion: datos.sesion ?? null,
         objetivosGenerales: datos.objetivosGenerales ?? false,
+        notacion: 'RIR',
         borrador: null,
         corrida: CORRIDA_VACIA,
         series: [],
@@ -883,9 +893,12 @@ export function crearAlmacenDeEntrenamiento(deps: DependenciasDelAlmacen) {
       avisar();
       return nueva;
     },
-    /** La sesión de API-SER-02. Los objetivos generales nunca reemplazan a los de cada serie. */
-    fijarSesionDelPlan(draftId: string, sesion: SesionConObjetivos, objetivosGenerales: boolean): void {
-      cambiar(draftId, (x) => (objetivosGenerales && x.sesion && !x.objetivosGenerales ? x : { ...x, sesion, objetivosGenerales }));
+    /**
+     * La sesión de API-SER-02. Los objetivos generales nunca reemplazan a los de cada serie. DL-192: con la notación del
+     * plan (`effortNotation`); sin ella (la sesión general de «Hoy»), queda la que ya tenía.
+     */
+    fijarSesionDelPlan(draftId: string, sesion: SesionConObjetivos, objetivosGenerales: boolean, notacion?: NotacionDelEsfuerzo): void {
+      cambiar(draftId, (x) => (objetivosGenerales && x.sesion && !x.objetivosGenerales ? x : { ...x, sesion, objetivosGenerales, notacion: notacion ?? x.notacion }));
     },
     /**
      * El borrador recién leído o guardado: las series del teléfono se concilian con él, y lo escrito en una fila que llegó

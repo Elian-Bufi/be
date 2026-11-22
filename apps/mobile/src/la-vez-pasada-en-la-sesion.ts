@@ -16,7 +16,27 @@
  * - **Es de solo lectura** (fase 1 de WP-GRAFICOS): tocarla para copiar los números en la fila que sigue, con
  *   «Deshacer», es el resto de PG-11 y queda para la tanda B. `comparable` ya dice cuándo se va a poder copiar.
  */
-import { lineaDeLaVezPasada, vecesPasadas, type EjecucionDeEntrenamiento } from '@be/domain';
+import { COPY_LA_VEZ_PASADA, fechaEnPocasPalabras, lineaDeLaVezPasada, marcaDelPlan, numero, textoDeLaSerie, vecesPasadas, type EjecucionDeEntrenamiento, type NotacionDelEsfuerzo, type SerieDeLaVezPasada, type VezPasada } from '@be/domain';
+
+/**
+ * DL-192 (DL-194): la línea en la notación del plan de la sesión. En RIR, la del dominio tal cual. En RPE, la misma frase
+ * con cada serie en RPE («20 kg × 8 · RPE 8»): `lineaDeLaVezPasada` del dominio todavía no recibe la notación, así que acá
+ * se arma con sus mismas piezas (`COPY_LA_VEZ_PASADA`, `marcaDelPlan`, `textoDeLaSerie`), con la voz de la persona.
+ */
+export function lineaEnLaNotacion(v: VezPasada, hoy: string, paraLeer: boolean, notacion: NotacionDelEsfuerzo): string {
+  if (notacion === 'RIR') return lineaDeLaVezPasada(v, hoy, 'persona', paraLeer);
+  const c = COPY_LA_VEZ_PASADA;
+  const encabezado = c.encabezado(fechaEnPocasPalabras(v.fecha, hoy, paraLeer));
+  if (v.como.tipo === 'con-otro') return `${encabezado}: ${v.como.identidad === 'otro-ejercicio' ? c.conOtro('persona', v.como.nombre) : c.conOtroSinIdentidad('persona', v.como.nombre)}`;
+  if (v.como.tipo === 'resumida') return `${encabezado}: ${c.resumida('persona')}`;
+  const conSuMarca = (s: SerieDeLaVezPasada): string => {
+    const marca = marcaDelPlan(s, c.comoElPlan);
+    return marca ? `${textoDeLaSerie(s, notacion)} (${marca})` : textoDeLaSerie(s, notacion);
+  };
+  const seguidas = v.como.series.every((s, i) => s.numero === i + 1);
+  const series = v.como.series.map((s) => (seguidas ? conSuMarca(s) : `serie ${numero(s.numero)}: ${conSuMarca(s)}`)).join(', ');
+  return `${encabezado}: ${v.como.enLugarDe ? `${series} (${c.enLugarDe(v.como.enLugarDe)})` : series}`;
+}
 
 /** PG-D6: la vez pasada se busca en los 90 días hasta la fecha de la sesión, los mismos de «Tu historial». */
 export const DIAS_DE_LA_VEZ_PASADA = 90;
@@ -36,10 +56,11 @@ export interface LineaDeLaVezPasada {
  */
 export function lineaDeLaVezPasadaDelEjercicio(
   ejecuciones: readonly EjecucionDeEntrenamiento[] | null,
-  o: { readonly exerciseId: string | null; readonly fechaDeLaSesion: string; readonly hoy: string; readonly sustituido: boolean },
+  o: { readonly exerciseId: string | null; readonly fechaDeLaSesion: string; readonly hoy: string; readonly sustituido: boolean; readonly notacion?: NotacionDelEsfuerzo },
 ): LineaDeLaVezPasada | null {
   if (!ejecuciones || !o.exerciseId || o.sustituido) return null;
   const vez = vecesPasadas(ejecuciones, o.exerciseId, { cuantas: 1, hasta: o.fechaDeLaSesion })[0];
   if (!vez) return null;
-  return { texto: lineaDeLaVezPasada(vez, o.hoy, 'persona'), paraLeer: lineaDeLaVezPasada(vez, o.hoy, 'persona', true), comparable: vez.comparable };
+  const notacion = o.notacion ?? 'RIR';
+  return { texto: lineaEnLaNotacion(vez, o.hoy, false, notacion), paraLeer: lineaEnLaNotacion(vez, o.hoy, true, notacion), comparable: vez.comparable };
 }

@@ -62,6 +62,8 @@ import { Flecha, IconoDeRegistrado } from '../iconos-de-nutricion';
 import { CasillaSimple } from '../piezas-de-nutricion';
 import { ImagenDeMedio, type RespaldoDeImagen } from '../imagen-de-medio';
 import type { TramoDelRecorrido } from '../franja-de-la-sesion';
+import { esfuerzoEnLaFrase, esfuerzoParaMostrar, rotuloDelEsfuerzo, textosDelEsfuerzo, type NotacionDelEsfuerzo } from '../esfuerzo-en-la-app';
+import { SelectorDeRpe } from '../selector-de-rpe';
 import { TEXTOS_DE_LA_SESION } from '../textos-de-la-sesion';
 import { avisoDelGuardado as avisoDelGuardadoDe, lineaDelEnvio, TEXTOS_DEL_GUARDADO, textoDeEstadoDeFila } from '../textos-del-guardado';
 import {
@@ -297,8 +299,8 @@ function LineaDeLaSustitucion({ ejecutado }: { ejecutado: string }) {
 
 // ─── La tabla de series ─────────────────────────────────────────────────────────────────────────
 
-/** Lo registrado en cada celda: el valor, o «—» si no se informó (no es cero). */
-function textoRegistrado(f: FilaDeLaTabla): { carga: string; repeticiones: string; rir: string; tiempo: string } {
+/** Lo registrado en cada celda: el valor, o «—» si no se informó (no es cero). DL-192: el esfuerzo, en la notación. */
+function textoRegistrado(f: FilaDeLaTabla, notacion: NotacionDelEsfuerzo): { carga: string; repeticiones: string; rir: string; tiempo: string } {
   const carga = f.registrada?.load ?? null;
   const repeticiones = f.registrada?.completedRepetitions ?? null;
   const rir = f.registrada?.rir ?? null;
@@ -306,7 +308,7 @@ function textoRegistrado(f: FilaDeLaTabla): { carga: string; repeticiones: strin
   return {
     carga: carga === null ? '—' : numero(carga.value),
     repeticiones: repeticiones === null ? '—' : numero(repeticiones, 0),
-    rir: rir === null ? '—' : numero(rir),
+    rir: esfuerzoParaMostrar(rir, notacion) ?? '—',
     tiempo: segundos === null ? '—' : textoDeTiempo(segundos),
   };
 }
@@ -315,26 +317,27 @@ function textoRegistrado(f: FilaDeLaTabla): { carga: string; repeticiones: strin
 const comoSeCargo = (f: FilaDeLaTabla): string => (f.registrada?.recordedAs === 'AS_PLANNED' ? TEXTOS_DE_LA_SESION.comoElPlan : 'escrita');
 
 /** La frase de una fila para el lector de pantalla: su estado, lo registrado o lo escrito, y el plan. */
-function fraseDeLaFila(f: FilaDeLaTabla, unidad: Unidad, activa: boolean, escrita: FilaEscrita | undefined): string {
+function fraseDeLaFila(f: FilaDeLaTabla, unidad: Unidad, activa: boolean, escrita: FilaEscrita | undefined, notacion: NotacionDelEsfuerzo): string {
+  const rotulo = rotuloDelEsfuerzo(notacion);
   if (f.registrada) {
     const r = f.registrada;
     const estado = textoDeEstadoDeFila(f) ?? 'Registrada';
     const partes = [
       r.load ? `${numero(r.load.value)} ${r.load.unit}` : 'carga no informada',
       r.completedRepetitions === null ? 'repeticiones no informadas' : `${numero(r.completedRepetitions, 0)} repeticiones`,
-      r.rir === null ? 'RIR no informado' : `RIR ${numero(r.rir)}`,
+      esfuerzoEnLaFrase(r.rir, notacion),
       ...(r.durationSeconds === null || r.durationSeconds === undefined ? [] : [`tiempo ${textoDeTiempo(r.durationSeconds)}`]),
     ];
     return `${nombreDeLaFila(f)}${activa ? `, ${COPY_ENTRENAMIENTO_POR_SERIE.serieActual}` : ''}, ${estado}, ${comoSeCargo(f)}: ${partes.join(', ')}`;
   }
-  const p = placeholdersDeLaSerie(f.objetivo, unidad);
+  const p = placeholdersDeLaSerie(f.objetivo, unidad, notacion);
   const estado = activa ? COPY_ENTRENAMIENTO_POR_SERIE.serieActual : escrita && hayAlgoEscrito(escrita) ? TEXTOS_DE_LA_SESION.escritaSinRegistrar : COPY_ENTRENAMIENTO_POR_SERIE.sinRegistrar;
   const escrito =
     escrita && hayAlgoEscrito(escrita)
-      ? `. Escrito: ${[escrita.carga.trim() ? `carga ${escrita.carga} ${unidad}` : null, escrita.repeticiones.trim() ? `${escrita.repeticiones} repeticiones` : null, escrita.rir.trim() ? `RIR ${escrita.rir}` : null, (escrita.tiempo ?? '').trim() ? `tiempo ${escrita.tiempo}` : null].filter((x): x is string => x !== null).join(', ')}`
+      ? `. Escrito: ${[escrita.carga.trim() ? `carga ${escrita.carga} ${unidad}` : null, escrita.repeticiones.trim() ? `${escrita.repeticiones} repeticiones` : null, escrita.rir.trim() ? `${rotulo} ${escrita.rir}` : null, (escrita.tiempo ?? '').trim() ? `tiempo ${escrita.tiempo}` : null].filter((x): x is string => x !== null).join(', ')}`
       : '';
   // DL-178: el calentamiento se nombra así y dice que no cuenta; las efectivas, con su número efectivo.
-  return `${nombreDeLaFila(f)}${f.numero === null ? `. ${TEXTOS_DEL_CALENTAMIENTO.queEs}` : ''}, ${estado}${escrito}. Plan: carga ${p.carga}${p.carga === COPY_ENTRENAMIENTO_POR_SERIE.sinObjetivo ? '' : ` ${unidad}`}, repeticiones ${p.repeticiones}, RIR ${p.rir}`;
+  return `${nombreDeLaFila(f)}${f.numero === null ? `. ${TEXTOS_DEL_CALENTAMIENTO.queEs}` : ''}, ${estado}${escrito}. Plan: carga ${p.carga}${p.carga === COPY_ENTRENAMIENTO_POR_SERIE.sinObjetivo ? '' : ` ${unidad}`}, repeticiones ${p.repeticiones}, ${rotulo} ${p.rir}`;
 }
 
 /** El reloj de las filas: el de la serie que corre, si hay una, y si se puede medir (en vivo, con la corrida y sin pausa). */
@@ -375,10 +378,13 @@ export function TablaDeSeries({
   escribiendoTiempo,
   ocupado,
   acciones,
+  notacion = 'RIR',
 }: {
   filas: readonly FilaDeLaTabla[];
   activa: number;
   unidad: Unidad;
+  /** DL-192: cómo se escribe el esfuerzo en el plan; en RPE, la columna dice «RPE» y el esfuerzo se elige. */
+  notacion?: NotacionDelEsfuerzo;
   /** Lo escrito en cada fila de este ejercicio, por número de serie. */
   escritas: ReadonlyMap<number, FilaEscrita>;
   /** Los errores de la última fila que se quiso tildar. */
@@ -397,7 +403,7 @@ export function TablaDeSeries({
           <Text style={[estilos.columna, estilos.columnaSerie]}>{COPY_ENTRENAMIENTO_POR_SERIE.columnaSerie}</Text>
           <Text style={[estilos.columna, estilos.columnaDato]}>{unidad}</Text>
           <Text style={[estilos.columna, estilos.columnaDato]}>{COPY_ENTRENAMIENTO_POR_SERIE.columnaRepeticiones}</Text>
-          <Text style={[estilos.columna, estilos.columnaDato]}>{COPY_ENTRENAMIENTO_POR_SERIE.columnaRir}</Text>
+          <Text style={[estilos.columna, estilos.columnaDato]}>{textosDelEsfuerzo(notacion).columna}</Text>
           <Text style={[estilos.columna, estilos.columnaDato]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>
             {TEXTOS_DE_LA_SESION.columnaTiempo}
           </Text>
@@ -416,6 +422,7 @@ export function TablaDeSeries({
           escribiendoTiempo: escribiendoTiempo === f.setIndex,
           ocupado,
           acciones,
+          notacion,
         };
         return disposicion === 'tabla' ? <FilaDeTabla key={f.setIndex} {...props} /> : <TarjetaDeSerie key={f.setIndex} {...props} />;
       })}
@@ -435,6 +442,7 @@ interface PropsDeFila {
   escribiendoTiempo: boolean;
   ocupado: boolean;
   acciones: AccionesDeLaTabla;
+  notacion: NotacionDelEsfuerzo;
 }
 
 const CAMPOS: readonly { readonly campo: 'carga' | 'repeticiones' | 'rir'; readonly teclado: KeyboardTypeOptions }[] = [
@@ -444,14 +452,17 @@ const CAMPOS: readonly { readonly campo: 'carga' | 'repeticiones' | 'rir'; reado
   { campo: 'rir', teclado: 'decimal-pad' },
 ];
 
+/** DL-192: el título de las opciones del RPE de una fila: «RPE de la serie 2» o «RPE del calentamiento». */
+const tituloDelSelector = (numeroEfectivo: number | null): string => `RPE ${numeroEfectivo === null ? 'del calentamiento' : `de la serie ${numeroEfectivo}`}`;
+
 /** El largo máximo de lo que se escribe en una celda: el almacén descarta lo que pase de 40. */
 const LARGO_DE_UNA_CELDA = 12;
 
 /** El nombre accesible de un campo de la fila activa: qué es, de qué serie, el plan de esa serie y el error si lo hay. */
-function etiquetaDelCampo(campo: keyof FilaEscrita, numeroEfectivo: number | null, unidad: Unidad, placeholder: string, error: string | undefined): string {
+function etiquetaDelCampo(campo: keyof FilaEscrita, numeroEfectivo: number | null, unidad: Unidad, placeholder: string, error: string | undefined, notacion: NotacionDelEsfuerzo = 'RIR'): string {
   // DL-178: con el número efectivo, como lo dice la fila; una de calentamiento, «del calentamiento».
   const de = numeroEfectivo === null ? 'del calentamiento' : `de la serie ${numeroEfectivo}`;
-  const que = campo === 'carga' ? `Carga en ${unidad} ${de}` : campo === 'repeticiones' ? `Repeticiones ${de}` : campo === 'rir' ? `RIR ${de}, opcional` : TEXTOS_DE_LA_SESION.tiempoDeLaSerie(numeroEfectivo);
+  const que = campo === 'carga' ? `Carga en ${unidad} ${de}` : campo === 'repeticiones' ? `Repeticiones ${de}` : campo === 'rir' ? `${rotuloDelEsfuerzo(notacion)} ${de}, opcional` : TEXTOS_DE_LA_SESION.tiempoDeLaSerie(numeroEfectivo);
   const plan = campo === 'tiempo' ? '' : placeholder === COPY_ENTRENAMIENTO_POR_SERIE.sinObjetivo ? `. ${COPY_ENTRENAMIENTO_POR_SERIE.sinObjetivo}` : `. Plan: ${placeholder}`;
   return `${que}${plan}${error ? `. Revisá este campo: ${error}` : ''}`;
 }
@@ -462,11 +473,11 @@ function estiloDeLaFila(f: FilaDeLaTabla, activa: boolean) {
   return [activa ? estilos.filaActiva : estilos.filaQuieta, registrada && estilos.filaRegistrada, registrada && activa && estilos.filaRegistradaActiva, f.estado === 'en-conflicto' && estilos.filaEnConflicto];
 }
 
-function FilaDeTabla({ fila: f, activa, unidad, escrita, errores, relojEnCurso, relojDisponible, escribiendoTiempo, ocupado, acciones }: PropsDeFila) {
-  const p = placeholdersDeLaSerie(f.objetivo, unidad);
+function FilaDeTabla({ fila: f, activa, unidad, escrita, errores, relojEnCurso, relojDisponible, escribiendoTiempo, ocupado, acciones, notacion }: PropsDeFila) {
+  const p = placeholdersDeLaSerie(f.objetivo, unidad, notacion);
   const estado = f.estado === 'guardada' ? null : f.estado === 'sin-registrar' ? (!activa && escrita && hayAlgoEscrito(escrita) ? TEXTOS_DE_LA_SESION.escritaSinRegistrar : null) : textoDeEstadoDeFila(f);
   const editable = activa && f.estado === 'sin-registrar';
-  const r = textoRegistrado(f);
+  const r = textoRegistrado(f, notacion);
   const comoElPlan = f.registrada?.recordedAs === 'AS_PLANNED';
   return (
     <View style={estiloDeLaFila(f, activa)}>
@@ -476,7 +487,7 @@ function FilaDeTabla({ fila: f, activa, unidad, escrita, errores, relojEnCurso, 
         <Pressable
           accessibilityRole="button"
           accessibilityState={{ selected: activa }}
-          accessibilityLabel={fraseDeLaFila(f, unidad, activa, escrita)}
+          accessibilityLabel={fraseDeLaFila(f, unidad, activa, escrita, notacion)}
           accessibilityHint={activa ? undefined : 'Enfoca esta serie'}
           onPress={() => acciones.onEnfocar(f.setIndex)}
           style={({ pressed }) => [estilos.celdaSerie, pressed && estilos.presionado]}
@@ -484,9 +495,23 @@ function FilaDeTabla({ fila: f, activa, unidad, escrita, errores, relojEnCurso, 
           <Text style={estilos.numeroDeSerie}>{marcaDeLaFila(f)}</Text>
         </Pressable>
         {editable ? (
-          CAMPOS.map(({ campo, teclado }) => (
-            <CeldaEditable key={campo} valor={escrita?.[campo] ?? ''} placeholder={p[campo]} teclado={teclado} error={errores[campo]} etiqueta={etiquetaDelCampo(campo, f.numero, unidad, p[campo], errores[campo])} onCambiar={(t) => acciones.onEscribir(f.setIndex, campo, t)} />
-          ))
+          CAMPOS.map(({ campo, teclado }) =>
+            // DL-192: en un plan en RPE, el esfuerzo se elige entre las opciones del RPE; lo demás se escribe.
+            campo === 'rir' && notacion === 'RPE' ? (
+              <SelectorDeRpe
+                key={campo}
+                forma="celda"
+                valor={escrita?.rir ?? ''}
+                placeholder={p.rir}
+                titulo={tituloDelSelector(f.numero)}
+                error={errores.rir}
+                etiqueta={etiquetaDelCampo('rir', f.numero, unidad, p.rir, errores.rir, notacion)}
+                onCambiar={(t) => acciones.onEscribir(f.setIndex, 'rir', t)}
+              />
+            ) : (
+              <CeldaEditable key={campo} valor={escrita?.[campo] ?? ''} placeholder={p[campo]} teclado={teclado} error={errores[campo]} etiqueta={etiquetaDelCampo(campo, f.numero, unidad, p[campo], errores[campo], notacion)} onCambiar={(t) => acciones.onEscribir(f.setIndex, campo, t)} />
+            ),
+          )
         ) : (
           // Tocar los datos de una fila la enfoca. El lector de pantalla ya los oye en el número de la serie.
           <Pressable accessible={false} importantForAccessibility="no-hide-descendants" onPress={() => acciones.onEnfocar(f.setIndex)} style={estilos.datosDeLaFila}>
@@ -531,7 +556,7 @@ function CeldaDeTiempo({ fila: f, activa, escrita, error, relojEnCurso, relojDis
   if (f.registrada) {
     return (
       <View style={[estilos.celda, estilos.celdaRegistrada]} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
-        <Text style={estilos.valorDeTiempo}>{textoRegistrado(f).tiempo}</Text>
+        <Text style={estilos.valorDeTiempo}>{textoRegistrado(f, 'RIR').tiempo}</Text>
       </View>
     );
   }
@@ -645,15 +670,15 @@ function CeldaEditable({
 }
 
 /** Con la letra grande: cada serie en su tarjeta, con sus cuatro campos, el reloj y la casilla de ui.tsx. */
-function TarjetaDeSerie({ fila: f, activa, unidad, escrita, errores, relojEnCurso, relojDisponible, ocupado, acciones }: PropsDeFila) {
+function TarjetaDeSerie({ fila: f, activa, unidad, escrita, errores, relojEnCurso, relojDisponible, ocupado, acciones, notacion }: PropsDeFila) {
   const t = TEXTOS_DE_LA_SESION;
-  const p = placeholdersDeLaSerie(f.objetivo, unidad);
+  const p = placeholdersDeLaSerie(f.objetivo, unidad, notacion);
   const estado = activa ? COPY_ENTRENAMIENTO_POR_SERIE.serieActual : f.estado === 'sin-registrar' ? (escrita && hayAlgoEscrito(escrita) ? t.escritaSinRegistrar : null) : textoDeEstadoDeFila(f);
   // La tildada sin escribir nada lleva «como el plan» en su título; la escrita, nada más (DL-161).
   const comoElPlan = f.registrada?.recordedAs === 'AS_PLANNED' ? t.comoElPlan : null;
   const titulo = [nombreDeLaFila(f), estado, comoElPlan].filter((x): x is string => x !== null).join(' · ');
   const etiquetaDe = (campo: keyof FilaEscrita) =>
-    campo === 'carga' ? `${COPY_ENTRENAMIENTO.carga} (${unidad})` : campo === 'repeticiones' ? COPY_ENTRENAMIENTO_POR_SERIE.columnaRepeticiones : campo === 'rir' ? COPY_ENTRENAMIENTO_POR_SERIE.rirTitulo : `${t.columnaTiempo} (opcional)`;
+    campo === 'carga' ? `${COPY_ENTRENAMIENTO.carga} (${unidad})` : campo === 'repeticiones' ? COPY_ENTRENAMIENTO_POR_SERIE.columnaRepeticiones : campo === 'rir' ? textosDelEsfuerzo(notacion).titulo : `${t.columnaTiempo} (opcional)`;
   const casilla = (
     <Casilla
       marcada={f.estado !== 'sin-registrar'}
@@ -674,24 +699,38 @@ function TarjetaDeSerie({ fila: f, activa, unidad, escrita, errores, relojEnCurs
     return (
       <Superficie style={estilos.tarjetaDeSerie} encima={estilos.tarjetaActiva}>
         <Text style={estilos.tituloDeTarjeta}>{titulo}</Text>
-        {(['carga', 'repeticiones', 'rir', 'tiempo'] as const).map((campo) => (
-          <Campo
-            key={campo}
-            etiqueta={etiquetaDe(campo)}
-            value={escrita?.[campo] ?? ''}
-            placeholder={campo === 'tiempo' ? '' : p[campo]}
-            keyboardType={campo === 'repeticiones' ? 'number-pad' : campo === 'tiempo' ? 'numbers-and-punctuation' : 'decimal-pad'}
-            maxLength={LARGO_DE_UNA_CELDA}
-            error={errores[campo] ?? null}
-            onChangeText={(texto) => acciones.onEscribir(f.setIndex, campo, texto)}
-          />
-        ))}
+        {(['carga', 'repeticiones', 'rir', 'tiempo'] as const).map((campo) =>
+          campo === 'rir' && notacion === 'RPE' ? (
+            <SelectorDeRpe
+              key={campo}
+              forma="campo"
+              rotuloVisible={etiquetaDe(campo)}
+              valor={escrita?.rir ?? ''}
+              placeholder={p.rir}
+              titulo={tituloDelSelector(f.numero)}
+              error={errores.rir ?? null}
+              etiqueta={etiquetaDelCampo('rir', f.numero, unidad, p.rir, errores.rir, notacion)}
+              onCambiar={(texto) => acciones.onEscribir(f.setIndex, 'rir', texto)}
+            />
+          ) : (
+            <Campo
+              key={campo}
+              etiqueta={etiquetaDe(campo)}
+              value={escrita?.[campo] ?? ''}
+              placeholder={campo === 'tiempo' ? '' : p[campo]}
+              keyboardType={campo === 'repeticiones' ? 'number-pad' : campo === 'tiempo' ? 'numbers-and-punctuation' : 'decimal-pad'}
+              maxLength={LARGO_DE_UNA_CELDA}
+              error={errores[campo] ?? null}
+              onChangeText={(texto) => acciones.onEscribir(f.setIndex, campo, texto)}
+            />
+          ),
+        )}
         {botonDelReloj}
         {casilla}
       </Superficie>
     );
   }
-  const r = textoRegistrado(f);
+  const r = textoRegistrado(f, notacion);
   const valor = (campo: 'carga' | 'repeticiones' | 'rir' | 'tiempo'): string => {
     if (f.registrada) return r[campo];
     const escrito = escrita?.[campo] ?? '';
@@ -700,7 +739,7 @@ function TarjetaDeSerie({ fila: f, activa, unidad, escrita, errores, relojEnCurs
   };
   return (
     <Superficie style={estilos.tarjetaDeSerie} encima={[(f.estado === 'guardada' || f.estado === 'pendiente-de-enviar') && estilos.tarjetaRegistrada, activa && estilos.tarjetaActiva]}>
-      <Pressable accessibilityRole="button" accessibilityState={{ selected: activa }} accessibilityLabel={fraseDeLaFila(f, unidad, activa, escrita)} onPress={() => acciones.onEnfocar(f.setIndex)} style={({ pressed }) => [pressed && estilos.presionado]}>
+      <Pressable accessibilityRole="button" accessibilityState={{ selected: activa }} accessibilityLabel={fraseDeLaFila(f, unidad, activa, escrita, notacion)} onPress={() => acciones.onEnfocar(f.setIndex)} style={({ pressed }) => [pressed && estilos.presionado]}>
         <Text style={estilos.tituloDeTarjeta}>{titulo}</Text>
         {(['carga', 'repeticiones', 'rir', 'tiempo'] as const).map((campo) => (
           <View key={campo} style={estilos.parDeTarjeta} importantForAccessibility="no-hide-descendants">
@@ -719,14 +758,17 @@ function TarjetaDeSerie({ fila: f, activa, unidad, escrita, errores, relojEnCurs
 export function ErroresDeLaFila({
   errores,
   nombreDe,
+  notacion = 'RIR',
 }: {
   errores: { readonly setIndex: number; readonly errores: ErroresDeFila } | null;
+  /** DL-192: el esfuerzo se nombra en la notación del plan. */
+  notacion?: NotacionDelEsfuerzo;
   /** DL-178: cómo se nombra la fila («Calentamiento», «Serie 1»); sin esto, «Serie» y su `setIndex`. */
   nombreDe?: (setIndex: number) => string;
 }) {
   if (!errores) return null;
   const e = errores.errores;
-  const nombres = { carga: COPY_ENTRENAMIENTO.carga, repeticiones: 'Repeticiones', rir: 'RIR', tiempo: TEXTOS_DE_LA_SESION.columnaTiempo } as const;
+  const nombres = { carga: COPY_ENTRENAMIENTO.carga, repeticiones: 'Repeticiones', rir: rotuloDelEsfuerzo(notacion), tiempo: TEXTOS_DE_LA_SESION.columnaTiempo } as const;
   const lista = [...(e.fila ? [e.fila] : []), ...(['carga', 'repeticiones', 'rir', 'tiempo'] as const).filter((c) => e[c]).map((c) => `${nombres[c]}: ${e[c]}`)];
   if (lista.length === 0) return null;
   return <Aviso tipo="error" titulo={`${nombreDe ? nombreDe(errores.setIndex) : `${COPY_ENTRENAMIENTO.serie} ${numero(errores.setIndex, 0)}`}. ${lista.join(' ')}`} />;
@@ -752,8 +794,9 @@ export function BandaDelPlan({ banda }: { banda: ReturnType<typeof bandaDeLaSeri
  * guarda lo planificado, cómo se deshace, que el tiempo es opcional y la ayuda del RIR con su ejemplo, literales del
  * encargo, sin abreviar.
  */
-export function AyudaDeLaTabla() {
+export function AyudaDeLaTabla({ notacion = 'RIR' }: { notacion?: NotacionDelEsfuerzo } = {}) {
   const e = COPY_ENTRENAMIENTO_POR_SERIE;
+  const esfuerzo = textosDelEsfuerzo(notacion);
   const t = TEXTOS_DE_LA_SESION;
   const faltaUnDato = `${e.faltaUnDato.charAt(0).toLowerCase()}${e.faltaUnDato.slice(1)}`;
   return (
@@ -762,7 +805,8 @@ export function AyudaDeLaTabla() {
       <Parrafo>{`${t.ayudaRango} Si la serie no tiene nada planificado en la carga ni en las repeticiones, ${faltaUnDato}`}</Parrafo>
       <Parrafo>{t.ayudaDestildar}</Parrafo>
       <Parrafo>{t.ayudaTiempo}</Parrafo>
-      <Parrafo>{`${e.rirTitulo}: ${e.rirAyuda}. ${e.rirEjemplo}.`}</Parrafo>
+      {/* En RIR, la ayuda y el ejemplo literales de Dirección; en RPE (DL-192), los mismos dichos en esa notación. */}
+      <Parrafo>{notacion === 'RIR' ? `${e.rirTitulo}: ${e.rirAyuda}. ${e.rirEjemplo}.` : `${esfuerzo.titulo}: ${esfuerzo.ayuda}. ${esfuerzo.ejemplo}.`}</Parrafo>
       <Parrafo tenue>{t.ayudaGuardado}</Parrafo>
     </Ayuda>
   );

@@ -15,6 +15,7 @@ import { ejerciciosConSusBloques } from '../bloques-en-pantalla';
 import { Cargando } from '../estados';
 import { ImagenDeMedio } from '../imagen-de-medio';
 import { useLecturaRecordada } from '../lecturas';
+import { notacionDeLaLectura, type NotacionDelEsfuerzo } from '../esfuerzo-en-la-app';
 import { AVISO_SIN_PLAN_POR_SERIE, bandaDeLaSerie, basesDeLaPrescripcion, ejerciciosYSeries, sesionDesdeLaOcurrencia } from '../series-de-la-sesion';
 import { Aviso, Boton, Dato, Desplegable, estilosPorTema, Parrafo } from '../ui';
 import { RESPALDO_DE_EJERCICIO, TecnicaDelEjercicio } from './sesion-enfocada';
@@ -44,6 +45,8 @@ function DetalleDeLaSesion({ ocurrencia, token, sesionPerdida }: { ocurrencia: O
   const [tecnica, setTecnica] = useState<string | null>(null);
   if (!r) return <Cargando />;
   const sesion = r.ok ? r.datos.data.session : sesionDesdeLaOcurrencia(ocurrencia.plannedSession);
+  // DL-192: el RIR de cada serie, en la notación del plan (API-SER-02); sin leerla, RIR.
+  const notacion = notacionDeLaLectura(r.ok ? r.datos.data : null);
   const elegida = sesion.prescriptions.find((p) => p.prescriptionId === tecnica) ?? null;
   return (
     <View>
@@ -55,7 +58,7 @@ function DetalleDeLaSesion({ ocurrencia, token, sesionPerdida }: { ocurrencia: O
       {sesion.instructions ? <Dato etiqueta={COPY_ENTRENAMIENTO.indicacionesDeLaSesion} valor={sesion.instructions} apilado /> : null}
       {/* DL-181: los ejercicios, bajo su bloque si la sesión tiene; sin bloques, la lista de siempre. */}
       {ejerciciosConSusBloques(sesion, (p) => (
-        <PrescripcionDelPlan key={p.prescriptionId} prescripcion={p} token={token} sesionPerdida={sesionPerdida} onVerTecnica={() => setTecnica(p.prescriptionId)} />
+        <PrescripcionDelPlan key={p.prescriptionId} prescripcion={p} notacion={notacion} token={token} sesionPerdida={sesionPerdida} onVerTecnica={() => setTecnica(p.prescriptionId)} />
       ))}
       {sesion.prescriptions.length === 0 ? <Parrafo tenue>{COPY_ENTRENAMIENTO.sinPrescripciones}</Parrafo> : null}
       <TecnicaDelEjercicio visible={elegida !== null} prescripcion={elegida} token={token} sesionPerdida={sesionPerdida} onCerrar={() => setTecnica(null)} />
@@ -63,7 +66,19 @@ function DetalleDeLaSesion({ ocurrencia, token, sesionPerdida }: { ocurrencia: O
   );
 }
 
-function PrescripcionDelPlan({ prescripcion: p, token, sesionPerdida, onVerTecnica }: { prescripcion: PrescripcionConObjetivos; token: string; sesionPerdida: AlPerderLaSesion; onVerTecnica: () => void }) {
+function PrescripcionDelPlan({
+  prescripcion: p,
+  notacion,
+  token,
+  sesionPerdida,
+  onVerTecnica,
+}: {
+  prescripcion: PrescripcionConObjetivos;
+  notacion: NotacionDelEsfuerzo;
+  token: string;
+  sesionPerdida: AlPerderLaSesion;
+  onVerTecnica: () => void;
+}) {
   const bases = basesDeLaPrescripcion(p);
   return (
     <View style={estilos.prescripcion}>
@@ -81,7 +96,7 @@ function PrescripcionDelPlan({ prescripcion: p, token, sesionPerdida, onVerTecni
       {p.sets.map((s, i) => {
         // DL-178: el calentamiento se nombra así y no lleva número; las efectivas, 1, 2, 3.
         const rotulo = rotulosDeLasSeries(p.sets)[i]!;
-        const banda = bandaDeLaSerie(s.setIndex, s.target, rotulo.numero);
+        const banda = bandaDeLaSerie(s.setIndex, s.target, rotulo.numero, notacion);
         const texto = `${rotulo.largo}: ${banda.plan}${banda.descanso ? ` · ${banda.descanso}` : ''}${s.note ? ` · ${s.note}` : ''}`;
         return (
           <Text key={s.setIndex} style={estilos.serie}>

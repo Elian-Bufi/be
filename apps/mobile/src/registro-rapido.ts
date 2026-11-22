@@ -47,6 +47,7 @@ import {
   rotulosDeLasSeries,
 } from '@be/domain';
 import { fechaCorta } from './formato';
+import { esfuerzoParaMostrar, rotuloDelEsfuerzo, type NotacionDelEsfuerzo } from './esfuerzo-en-la-app';
 import { FILA_VACIA, serieAlTildar, unidadDelEjercicio, type ErroresDeFila, type FilaEscrita } from './series-de-la-sesion';
 
 // ─── Los textos ─────────────────────────────────────────────────────────────────────────────────
@@ -164,7 +165,7 @@ const repeticionesDe = (s: SerieConObjetivo): string | null => {
  * Lo planificado de un ejercicio en una línea: «3 × 10 · RIR 2 · 16 kg». La carga va solo si el plan la trae, y con su
  * unidad. Una pirámide no se resume como si fuera pareja: «3 × 10/8/6».
  */
-export function lineaDelPlan(p: Pick<PrescripcionConObjetivos, 'sets'>): string {
+export function lineaDelPlan(p: Pick<PrescripcionConObjetivos, 'sets'>, notacion: NotacionDelEsfuerzo = 'RIR'): string {
   if (p.sets.length === 0) return T.sinSeriesEnElPlan;
   // DL-178: la línea resume las series efectivas; el calentamiento se nombra aparte («3 × 8 + 2 de calentamiento»).
   const efectivas = seriesEfectivas(p.sets);
@@ -173,7 +174,8 @@ export function lineaDelPlan(p: Pick<PrescripcionConObjetivos, 'sets'>): string 
   const n = efectivas.length;
   if (n === 0) return COPY_TIPOS_DE_SERIE.deCalentamiento(calentamiento);
   const reps = porSerie(efectivas.map(repeticionesDe));
-  const rir = porSerie(efectivas.map((s) => (s.target.rir === null ? null : numero(s.target.rir))));
+  // DL-192: el RIR de cada serie, escrito en la notación del plan («RPE 8/8/9»).
+  const rir = porSerie(efectivas.map((s) => esfuerzoParaMostrar(s.target.rir, notacion)));
   const cargas = efectivas.map((s) => s.target.suggestedLoad);
   const unidades = new Set(cargas.flatMap((c) => (c ? [c.unit] : [])));
   let carga: string | null = null;
@@ -182,7 +184,7 @@ export function lineaDelPlan(p: Pick<PrescripcionConObjetivos, 'sets'>): string 
     carga = valor === null ? null : `${valor} ${[...unidades][0]}`;
   } else if (unidades.size > 1) carga = porSerie(cargas.map((c) => textoDeCarga(c)));
   const series = conCalentamiento(reps === null ? `${numero(n, 0)} ${n === 1 ? 'serie' : 'series'}` : `${numero(n, 0)} × ${reps}`);
-  return [series, rir === null ? null : `RIR ${rir}`, carga].filter((x): x is string => x !== null).join(' · ');
+  return [series, rir === null ? null : `${rotuloDelEsfuerzo(notacion)} ${rir}`, carga].filter((x): x is string => x !== null).join(' · ');
 }
 
 /**
@@ -239,6 +241,8 @@ export interface Contexto {
   readonly fecha: string;
   /** Hoy, para la API. */
   readonly hoy: string;
+  /** DL-192: la notación del esfuerzo del plan (API-SER-02, `effortNotation`); sin ella, RIR. Lo que se manda es el RIR. */
+  readonly notacion?: NotacionDelEsfuerzo;
 }
 
 /** Desde una pendiente o desde «Registrar otro día», el día es el de esa ocurrencia: no se cambia. */
@@ -484,7 +488,13 @@ export const claveDeSerie = (prescriptionId: string, setIndex: number): string =
  * (`AS_PLANNED`); lo escrito, `TYPED`, con lo planificado en lo que quedó vacío (`serieAlTildar`). Lo que se ve es lo
  * que viaja: escribir solo las repeticiones no borra la carga ni el RIR que se veían en gris.
  */
-function seriesDelDetalle(p: PrescripcionConObjetivos, e: EjercicioRapido, errores: Record<string, ErroresDeFila>, primerProblema: { motivo: string | null; ejercicio: string | null }): SerieEjecutadaApi[] {
+function seriesDelDetalle(
+  p: PrescripcionConObjetivos,
+  e: EjercicioRapido,
+  errores: Record<string, ErroresDeFila>,
+  primerProblema: { motivo: string | null; ejercicio: string | null },
+  notacion: NotacionDelEsfuerzo = 'RIR',
+): SerieEjecutadaApi[] {
   const unidad = unidadDelEjercicio(p);
   const series: SerieEjecutadaApi[] = [];
   const rotulos = rotulosDeLasSeries(p.sets);
@@ -505,7 +515,7 @@ function seriesDelDetalle(p: PrescripcionConObjetivos, e: EjercicioRapido, error
       continue;
     }
     // Lo escrito y, en lo que quedó vacío, lo planificado que se veía en gris: la regla de la casilla de la sesión.
-    const leida = serieAlTildar(escrita, s.target, s.setIndex, unidad, tipoDeSerie(s));
+    const leida = serieAlTildar(escrita, s.target, s.setIndex, unidad, tipoDeSerie(s), notacion);
     if (!leida.ok) {
       errores[claveDeSerie(p.prescriptionId, s.setIndex)] = leida.errores;
       primerProblema.motivo ??= leida.errores.fila ? T.faltaUnDato(p.exerciseName, n) : T.revisaUnValor(p.exerciseName, n);
@@ -549,7 +559,7 @@ export function armarRegistro(ctx: Contexto, r: Respuestas, ahora: Date): Regist
     if (seriesEfectivas(p.sets).some((s) => !e.series[s.setIndex]?.hecha)) todoCompleto = false;
     // Con todas sus series destildadas, el ejercicio no se hizo: no se manda (SET_REQUIRED).
     if (hechas === 0) continue;
-    const sets = seriesDelDetalle(p, e, errores, primerProblema);
+    const sets = seriesDelDetalle(p, e, errores, primerProblema, ctx.notacion);
     if (sets.length > 0) exercises.push({ prescriptionId: p.prescriptionId, performedExerciseVersionId: p.exerciseVersionId, sets });
   }
   if (primerProblema.motivo) return { ok: false, paso: todo ? 'revisar' : 'detalle', motivo: primerProblema.motivo, errores, ...(todo && primerProblema.ejercicio ? { ejercicio: primerProblema.ejercicio } : {}) };
@@ -607,10 +617,10 @@ export const textoDelResumen = (r: ResumenDelRegistroRapido): string => `Registr
 export const loQueVeTuProfesional = (r: Pick<ResumenDelRegistroRapido, 'nivel'>): string => (r.nivel ? T.comoLaVeTuProfesional(textoDelNivelDeDetalle(r.nivel)) : T.loVeTuProfesional);
 
 /** Lo planificado de una serie, en el mismo orden que la línea del ejercicio: «10 rep. · RIR 2 · 16 kg». */
-export function lineaDeLaSerie(s: SerieConObjetivo): string {
+export function lineaDeLaSerie(s: SerieConObjetivo, notacion: NotacionDelEsfuerzo = 'RIR'): string {
   const t = s.target;
   const reps = repeticionesDe(s);
-  const partes = [reps === null ? null : `${reps} rep.`, textoDeRir(t.rir), textoDeCarga(t.suggestedLoad)].filter((x): x is string => x !== null);
+  const partes = [reps === null ? null : `${reps} rep.`, textoDeRir(t.rir, notacion), textoDeCarga(t.suggestedLoad)].filter((x): x is string => x !== null);
   return partes.length > 0 ? partes.join(' · ') : COPY_ENTRENAMIENTO_POR_SERIE.sinObjetivo;
 }
 
