@@ -477,7 +477,7 @@ function OpcionesDeLaComida({
   );
 }
 
-/** La proporción de la foto de una opción: a todo el ancho, como antes de AV2-21 (A32-02, con A32-D02). */
+/** La proporción de la foto de una opción: a todo el ancho, como antes de AV2-21 (A32-02, con A32-D03). */
 const PROPORCION_DE_LA_FOTO = 16 / 10;
 
 /**
@@ -817,7 +817,7 @@ const estilos = estilosPorTema((COLOR) => ({
   nombreDeOpcion: { fontSize: 18, lineHeight: 24, fontWeight: '800', color: COLOR.texto },
   // «Estimación del plan» no se toca: en `tenue`, no en el cian de lo que se toca (AV2-21).
   estimacion: { fontSize: 13, lineHeight: 18, fontWeight: '600', color: COLOR.tenue, marginTop: 2 },
-  // «Ver detalle», al lado del nombre: 48 dp de toque sin otra fila (A32-D04).
+  // «Ver detalle», al lado del nombre: 48 dp de toque sin otra fila (A32-D05).
   verDetalle: { flexDirection: 'row', alignItems: 'center', gap: 2, minHeight: 48, paddingLeft: 4 },
   textoVerDetalle: { fontSize: 15, lineHeight: 20, fontWeight: '700', color: COLOR.acento },
   titular: { flexDirection: 'row', alignItems: 'center', gap: 12, marginTop: 8, marginBottom: 8 },
