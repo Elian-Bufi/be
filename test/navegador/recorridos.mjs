@@ -1631,7 +1631,92 @@ async function comparacionConOpciones({ p, d, salida }) {
 
 // ─── La corrida ──────────────────────────────────────────────────────────────────────────────────────────────────────
 
-export const TODOS = { sesion, pistas, borrador, conflicto, descartar, salidaSegura, irACorregir, respuestaPerdida, reintentar, salidaConFallas, primerPlan, asistenteDeNutricion, retorno, grafico, primeraInvitacion, areaSugerida, sesionRevocada, accesoRevocado, faltaUnaParte, completitud, evidencia, administracion, comparacion, comparacionConOpciones };
+/**
+ * RP-20 y RP-21 (WP-RECORRIDO-PLAN-PULIDO, DL-188): las franjas por comida, en vivo. Con el rango del almuerzo indicado,
+ * la comida plegada ya muestra sus cuatro renglones (kcal, P, C y G) con una marca por opción. Al cambiar la cantidad del
+ * arroz en la opción abierta, su marca se mueve en la opción, en la franja de la comida y en «Rangos y totales», y ninguna
+ * de las tres cambia de alto. El panel no se desplaza de costado a 1280, 1440, 1536 y 2048 de ancho (la pantalla de
+ * Dirección: 1920 × 1080 con Windows al 125 %, con el navegador al 100 y al 75 %).
+ */
+async function franjasPorComida({ p, d, salida }) {
+  await abrirElBorrador(p, d);
+  const comida = '.comida-del-editor[data-comida="2"]';
+  // Plegada, con su franja debajo del encabezado: los cuatro renglones y una marca por opción (y su promedio).
+  await elemento(p, `${comida} [data-franjas-de-la-comida] .franja__marca`);
+  assert.equal(await p.$(`${comida}[data-abierta]`), null, 'la comida está plegada');
+  assert.equal(await p.$$eval(`${comida} [data-franjas-de-la-comida] .franja`, (fs) => fs.length), 4, 'kcal, P, C y G');
+  await p.waitForFunction((s) => document.querySelectorAll(`${s} [data-franjas-de-la-comida] .franja[data-renglon="protein"] .franja__marca:not([data-espera])`).length === 2, { timeout: ESPERA, polling: 100 }, comida);
+  assert.ok(await p.$(`${comida} [data-franjas-de-la-comida] .franja[data-renglon="protein"] .franja__promedio`), 'el promedio de las dos opciones');
+  await captura(p, salida, 'franjas-comida-plegada-1440');
+
+  // La opción del arroz, abierta: su franja, sola.
+  await abrirComida(p, 2);
+  await clic(p, '#pestana-0-1-0');
+  const campo = await elemento(p, '#item-0-1-0-0-cantidad');
+  await elemento(p, `${comida} [data-franjas-de-la-opcion] .franja__marca`);
+  const clave = await p.$eval(`${comida} [data-franjas-de-la-opcion] .franja__marca`, (m) => m.dataset.marca);
+  /** Dónde está la marca del arroz en cada renglón, en la opción, en la comida y en el panel, y el alto de cada caja. */
+  const medir = () =>
+    p.evaluate(
+      (s, k) => {
+        const lugares = { opcion: `${s} [data-franjas-de-la-opcion]`, comida: `${s} [data-franjas-de-la-comida]`, panel: '[data-rangos-por-comida] [data-comida-del-panel="2"]' };
+        return Object.fromEntries(
+          Object.entries(lugares).map(([lugar, selector]) => {
+            const caja = document.querySelector(selector);
+            const marcas = [...(caja?.querySelectorAll(`.franja__marca[data-marca="${k}"]`) ?? [])].map((m) => m.style.getPropertyValue('--en'));
+            return [lugar, { alto: caja ? caja.getBoundingClientRect().height : null, marcas }];
+          }),
+        );
+      },
+      comida,
+      clave,
+    );
+  const antes = await medir();
+  for (const lugar of ['opcion', 'comida', 'panel']) assert.equal(antes[lugar].marcas.length, 4, `${lugar}: una marca del arroz por renglón`);
+
+  // Bajar la cantidad: la marca se mueve con cada tecla, en los tres lugares, sin que cambie el alto.
+  await campo.click({ clickCount: 3 });
+  await p.keyboard.type('75');
+  await p.waitForFunction(
+    (s, k, previo) => document.querySelector(`${s} [data-franjas-de-la-opcion] .franja__marca[data-marca="${k}"]`)?.style.getPropertyValue('--en') !== previo,
+    { timeout: ESPERA, polling: 100 },
+    comida,
+    clave,
+    antes.opcion.marcas[0],
+  );
+  const despues = await medir();
+  for (const lugar of ['opcion', 'comida', 'panel']) {
+    assert.notDeepEqual(despues[lugar].marcas, antes[lugar].marcas, `${lugar}: la marca del arroz se movió`);
+    assert.equal(despues[lugar].alto, antes[lugar].alto, `${lugar}: el alto no cambia`);
+  }
+  // Las tres dicen lo mismo: la comida y el panel toman lo que está en pantalla, no lo guardado.
+  assert.deepEqual(despues.comida.marcas, despues.opcion.marcas, 'la comida y la opción ubican igual al arroz');
+  assert.deepEqual(despues.panel.marcas, despues.opcion.marcas, 'el panel y la opción ubican igual al arroz');
+  await captura(p, salida, 'franjas-opcion-abierta-1440');
+  const panel = await p.$('[data-panel-de-nutricion]');
+  if (salida) for (const tema of ['azul-noche', 'claro']) {
+    await p.evaluate((t) => (document.documentElement.dataset.tema = t), tema);
+    await pausa(200);
+    await panel.screenshot({ path: join(salida, `franjas-panel-1440-${tema}.png`) });
+  }
+  await p.evaluate(() => (document.documentElement.dataset.tema = 'azul-noche'));
+
+  // El panel y las franjas no se desplazan de costado en los anchos de Dirección.
+  for (const ancho of [1280, 1536, 2048, 1440]) {
+    await p.setViewport({ width: ancho, height: 900 });
+    await pausa(300);
+    const desborde = await p.evaluate(() => {
+      const panel = document.querySelector('[data-panel-de-nutricion]');
+      const fuera = [...document.querySelectorAll('.franjas')].filter((f) => f.scrollWidth > f.clientWidth + 1).length;
+      return { panel: panel ? panel.scrollWidth - panel.clientWidth : null, fuera };
+    });
+    assert.ok(desborde.panel !== null && desborde.panel <= 1, `a ${ancho}: el panel no se desplaza de costado (${desborde.panel} px de más)`);
+    assert.equal(desborde.fuera, 0, `a ${ancho}: ninguna franja se sale de su lugar`);
+    if (ancho !== 1440) await captura(p, salida, `franjas-${ancho}`);
+  }
+}
+
+export const TODOS = { sesion, pistas, borrador, conflicto, descartar, salidaSegura, irACorregir, respuestaPerdida, reintentar, salidaConFallas, primerPlan, asistenteDeNutricion, retorno, grafico, primeraInvitacion, areaSugerida, sesionRevocada, accesoRevocado, faltaUnaParte, completitud, evidencia, administracion, comparacion, comparacionConOpciones, franjasPorComida };
 
 /** Errores de la página que no dicen nada del website (los del propio navegador). */
 const IGNORABLES = [/ResizeObserver loop/];

@@ -66,6 +66,8 @@ export const RECORRIDOS = {
   // opción por comida (el día tiene indicado) y con uno que deja elegir el almuerzo (el día no tiene).
   comparacion: { habilitado: ['NUTRICION'], datos: ['comparacion'] },
   comparacionConOpciones: { habilitado: ['NUTRICION'], datos: ['comparacion-con-opciones'] },
+  // RP-20 y RP-21 (DL-188): un borrador con el almuerzo en dos opciones y su rango indicado, para las franjas por comida.
+  franjasPorComida: { habilitado: ['NUTRICION'], datos: ['franjas'] },
 };
 const vinculosDe = (r) => r.vinculos ?? r.habilitado;
 
@@ -196,6 +198,40 @@ async function estructuraDeLaComparacion(pro, conOpciones) {
   };
 }
 
+/**
+ * RP-20 (DL-188): el plan de las franjas. El almuerzo tiene dos opciones (arroz y pollo, 150 g cada una) y su rango
+ * indicado sale de lo que aportan: el promedio de las dos, de 15 % menos a 15 % más, en gramos enteros. Así las marcas
+ * caen cerca de la banda con cualquier composición del catálogo base, y bajar la cantidad del arroz las mueve.
+ */
+async function estructuraDeLasFranjas(pro) {
+  const buscar = async (texto) => {
+    const r = await pedir('POST', '/nutrition/catalog-items/search', { token: pro, cuerpo: { q: texto, limit: 5 }, clave: false });
+    if (!r.data[0]) throw new Error(`el catálogo base no tiene «${texto}» (¿se aplicaron las migraciones?)`);
+    return r.data[0];
+  };
+  const [avena, arroz, pollo] = [await buscar('avena'), await buscar('arroz'), await buscar('pollo')];
+  const item = (a, gramos, preparationState) => ({ catalogItemId: a.catalogItemId, quantity: { value: gramos, unit: 'g' }, preparationState });
+  const macro = (clave) => {
+    const promedio = ((arroz.composition[clave] + pollo.composition[clave]) / 2) * 1.5;
+    const max = Math.max(1, Math.ceil(promedio * 1.15));
+    return { unit: 'g', min: Math.min(max, Math.floor(promedio * 0.85)), max };
+  };
+  return {
+    estructura: {
+      dayTypes: [
+        {
+          label: 'Día habitual',
+          meals: [
+            { label: 'Desayuno', prescriptionMode: 'DISH_OPTIONS', options: [{ label: 'Avena', items: [item(avena, 50, 'RAW')] }] },
+            { label: 'Almuerzo', prescriptionMode: 'DISH_OPTIONS', options: [{ label: 'Arroz', items: [item(arroz, 150, 'COOKED')] }, { label: 'Pollo', items: [item(pollo, 150, 'COOKED')] }] },
+          ],
+        },
+      ],
+    },
+    almuerzo: { protein: macro('proteinG'), carbohydrate: macro('carbohydrateG'), fat: macro('fatG') },
+  };
+}
+
 async function evaluacionYObjetivo(pro, aseId) {
   const evaluacion = (await pedir('POST', `/advisees/${aseId}/nutrition/evaluations`, { token: pro, cuerpo: evaluacionNutricional(new Date(Date.now() - 2 * 3600_000)) })).data.evaluationId;
   const objetivo = (await pedir('POST', `/advisees/${aseId}/nutrition/objectives`, { token: pro, cuerpo: objetivoNutricional(evaluacion, new Date(Date.now() - 3600_000)) })).data;
@@ -242,6 +278,20 @@ export async function datos(estado) {
     if (r.datos.includes('borrador')) {
       const { objetivo } = await evaluacionYObjetivo(pro, e.ase.id);
       const plan = (await pedir('POST', `/advisees/${e.ase.id}/nutrition/plans`, { token: pro, cuerpo: { objectiveVersionId: objetivo, initialStructure: await estructura(pro) } })).data;
+      e.borrador = { planId: plan.planId };
+    }
+    if (r.datos.includes('franjas')) {
+      // RP-20: el borrador y el rango indicado del almuerzo (API-PLN-03, sin clave de idempotencia: va por su revisión).
+      const { objetivo } = await evaluacionYObjetivo(pro, e.ase.id);
+      const { estructura: inicial, almuerzo } = await estructuraDeLasFranjas(pro);
+      const plan = (await pedir('POST', `/advisees/${e.ase.id}/nutrition/plans`, { token: pro, cuerpo: { objectiveVersionId: objetivo, initialStructure: inicial } })).data;
+      const dia = plan.dayTypes[0];
+      const leidos = (await pedir('GET', `/nutrition/plans/${plan.planId}/ranges`, { token: pro })).data;
+      await pedir('PUT', `/nutrition/plans/${plan.planId}/ranges`, {
+        token: pro,
+        clave: false,
+        cuerpo: { expectedRevision: leidos.revision, bodyWeight: null, dayTypes: [{ dayTypeId: dia.dayTypeId, day: null, meals: [{ mealId: dia.meals[1].mealId, range: almuerzo }] }] },
+      });
       e.borrador = { planId: plan.planId };
     }
     if (r.datos.includes('plan-con-revision')) {
