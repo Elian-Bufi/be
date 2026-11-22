@@ -190,6 +190,7 @@
 | DL-188 | Pedido de Dirección · 2026-11-21 (el recorrido de la planificación de Nutrición en el escritorio profesional: «ponete a solucionar todo, empezá ya») | DL-186 · DL-146 · DL-163 (TB-07) · ED-02 · NUP-06 a 08 · NUP-10 · B10-01 · B10-10 §6-§8 · REG-06-157 · la decisión de Dirección del 18/11 (el «%» con su base) | La cabecera de un área ocupaba tres renglones, con un enlace largo para volver, «Actualizar» y la hora de la consulta; el acceso se partía; un error en línea movía su campo; el calculador tenía textos largos, un desplegable cortado, el ajuste con signo y la distribución por comida en el objetivo; las cantidades no llevaban ícono; la cuenta de los gramos ocupaba dos renglones; no estaba ten Haaf (2014) | **PROGRAMADA en `wp-recorrido-plan-pulido` (frente 1; PR en borrador, sin integrar) · RP-D01 a RP-D17 a ratificar · RP-19 «Sin saltos» (22/11) en `wp-recorrido-sin-saltos`, RP-D18 a RP-D26 a ratificar**: la cabecera en una franja con la vuelta como botón, el acceso en un chip y la revalidación al volver a la pestaña («Hay datos nuevos · Ver»); las filas de campos alineadas por arriba; el calculador más corto, con lo largo detrás de «?» y «Fuente», los g/kg con límites y paso 0,1 y el ajuste sin signo; el reparto por comida a la vista en cada día tipo; el ícono con el número y la abreviatura; la cuenta de los gramos detrás de un «?»; ten Haaf y Weijs (2014) en sus dos variantes. Sin operaciones nuevas ni migraciones. Detalle: `docs/paquetes/WP-RECORRIDO-PLAN-PULIDO.md` |
 | DL-189 | Pedido de Dirección · 2026-11-21 (la evaluación inicial «no le cierra»: un pantallazo del caso en lugar de la planilla) | RF-026 · RF-036 · RF-071 · REG-06-97 · REG-06-109 · DL-048 · DL-145 · DL-146 · DL-164 (D-3, D-4, D-6) · DL-165 (D-1, D-7) · DL-169 · DL-173 · DL-185 · DL-186 · Ley 26.529 art. 14 | La evaluación inicial era una planilla de «Concepto / Valor / Unidad / Fuente» con pastillas y el texto «BE no calcula»; los tres pasos de «Empezar el plan» ocupaban media pantalla; la fecha se escribía a mano; «Cargar con la persona» solo se abría desde una solicitud ya enviada y traía todas las preguntas a la vez | **PROGRAMADA en `wp-evaluacion-inicial-2` (PR en borrador, sin integrar) · EI-D01 a EI-D16 a ratificar**: la franja de los pasos, la fecha automática, la evaluación de Nutrición en tres bloques («Lo que contó», «Lo medido», «Lo que necesita el cálculo»), «Anotaciones» privadas, «Completarlo ahora con la persona» y lo crítico primero. Sin operaciones nuevas en la API ni cambios en la APK. Detalle: `docs/paquetes/WP-EVALUACION-INICIAL-2.md` |
 | DL-190 | Decisión de Dirección · 2026-11-21 (Kerr de cinco componentes y elegir el método antes de medir; WP-ANTROPOMETRIA-METODO-Y-KERR) | DL-110 · DL-111 (decisiones 5 a 7) · DL-112 · REG-06-152 · REG-06-157 · REG-06-203/204/205 · RF-048 · RF-049 · ficha de métodos D-1 y D-3 · DL-152 | El método se elegía después de medir, sobre un único protocolo de 30 mediciones; Kerr quedaba en reserva (D-3 sin resolver) y faltaban siete mediciones para sus cinco masas | **PROGRAMADA en `wp-antropometria-metodo-y-kerr` (PR en borrador, sin integrar) · AK-D01 a AK-D14 a ratificar**: Kerr (1988) en seis métodos (la piel por sexo; adiposa, muscular, ósea y residual) con la tabla 4.3 y el apéndice A de la tesis, D-3 resuelta (muslo a 1 cm del pliegue glúteo, pecho mesoesternal, cintura mínima), siete mediciones nuevas en el catálogo del dominio (no en una versión del protocolo, que cortaría la comparabilidad), una migración que solo agrega y, en la toma, la suma frente al peso medido en kg y en %; elegir uno o varios métodos al empezar la toma, con la unión de lo que piden más peso, talla y edad, el habitual de la última toma (API-MHA-01, familia propia MHA, sin migración), «+ Otra medición» y la nota del suprailíaco de Jackson y Pollock (D-1). La APK 0.31 no se rompe. Detalle: `docs/paquetes/WP-ANTROPOMETRIA-METODO-Y-KERR.md` |
+| DL-194 | Decisión de Dirección · 2026-11-22 (la app para la APK 0.32; WP-APP-0-32) | DL-170 (AV2-21) · DL-173 (PG-04) · DL-188 (RP-07) · DL-190 · DL-191 · DL-192 · DL-152 · B10-06 | Nutrición · Hoy cambiaba de opción con segmentos y una miniatura de 72 dp; el título grande ocupaba lo primero de Nutrición y Entrenamiento; los macros no tenían los íconos del website; la app no mostraba Kerr con sus nombres probados, no preguntaba en RPE ni pedía imágenes livianas | **PROGRAMADA en `wp-app-0-32` (PR en borrador, sin integrar) · A32-D01 a A32-D15 a ratificar**: el carrusel con imán, flechas, «Opción n de m» y puntitos, sin asomo; la foto grande a todo el ancho; el título fijo en la cabecera; los macros con ícono, número y abreviatura; Kerr con sus nombres; la notación RPE con la capacidad `training-effort-notation-1`, mandando el RIR; las imágenes por variante, tolerantes a una API sin DL-191, y la foto de una comida achicada en el teléfono; el script de congelado corregido. La APK 0.32 no se armó en el paquete. Detalle: `docs/paquetes/WP-APP-0-32.md` |
 
 ---
 
@@ -9221,3 +9222,47 @@ plan en RPE sin un rechazo (TEST-RPE-024).
 - DL-194 (APK 0.32): declarar la capacidad, preguntar y mostrar en la notación y mandar el RIR; congelar sus lecturas.
 - Mirarlo en pantalla y con un lector de pantalla; la escritura rápida en RPE; si Dirección lo pide, `BE-E1RM` v2 con RPE 6
   a 7,5; el RPE de la sesión con «registrar otro deporte». Detalle completo: `docs/paquetes/WP-RPE-Y-MAXIMO-ESTIMADO.md`.
+
+## DL-194 — La app para la APK 0.32: el carrusel, la foto grande, el título en la cabecera, los macros con íconos, Kerr, RPE e imágenes livianas
+
+**Prioridad:** media (Dirección prueba la app en su teléfono y la 0.32 junta DL-190, DL-191 y DL-192) · DL-170 (AV2-21,
+AV2-D10) · DL-173 (PG-04) · DL-188 (RP-07) · DL-190 · DL-191 · DL-192 · DL-152 · B10-06 · **Estado:** DECIDIDA por
+Dirección el 2026-11-22 · PROGRAMADA en `wp-app-0-32` (PR en borrador, sin integrar) · A32-D01 a A32-D15, **a ratificar**.
+La APK 0.32 no se armó ni se publicó en el paquete. Si al integrar el número choca con otro paquete, se renumera.
+
+**Qué pidió Dirección.** En Nutrición · Hoy, volver al carrusel en lugar de los segmentos «Opción 1 | 2 | 3» (DL-170,
+AV2-21): deslizar con imán y también flechas, «por si no se entiende», con los puntitos y «Opción n de m», sin la tarjeta
+vecina asomando (su queja del 2026-10-29). La foto grande, «como estaba antes»: el hueco enorme de octubre era la falta de
+fotos, y «lo visual suma mucho». El título de Nutrición y de Entrenamiento solo en la cabecera, para que sin desplazar se
+vean la imagen, los macros y la carga de una foto. Los macros con ícono, número y abreviatura, como en el website (RP-07).
+Y que la 0.32 muestre Kerr (DL-190), pregunte en RPE (DL-192) y use las imágenes livianas (DL-191).
+
+**Qué dice el legajo.** Nada en contra: la navegación entre opciones, el lugar del título y la forma de los macros son
+decisiones de interfaz de Dirección (B10-06: sin gestos exclusivos, por eso las flechas; 48 dp de toque; el lector de
+pantalla dice lo que cambia). Lo previsto no se convierte en consumido y elegir una opción no registra. No se edita el
+legajo.
+
+**Lo programado.**
+- **A32-01 · El carrusel:** imán de a una tarjeta entera a todo el ancho, flechas con nombre, «Opción n de m», puntitos;
+  con una sola opción, ningún control; el anuncio una vez; la opción recordada por su identidad; la imagen solo de la
+  opción que estuvo a la vista.
+- **A32-02 · La foto grande** a todo el ancho (16:10); sin foto, la miniatura de 72 dp al lado del nombre.
+- **A32-03 · El título fijo en la cabecera** en Nutrición y Entrenamiento, leído como encabezado.
+- **A32-04 · Los macros con íconos** del website, en su orden y con su abreviatura; el lector lee la palabra entera.
+- **A32-05 · Imágenes livianas:** la miniatura o la grande según el tamaño del marco, tolerante a una API sin variantes;
+  la foto de una comida achicada a 1600 px en JPEG al elegirla (`expo-image-manipulator` 57.0.22, dependencia nueva).
+- **A32-06 · Kerr:** las siete mediciones y las cinco masas con su nombre del dominio, en su bloque de Indicadores.
+- **A32-07 · Lecturas congeladas:** el script de DL-152 lee la consulta armada a mano de API-CMP-01; la 0.31 ya se puede
+  congelar.
+- **A32-08 · RPE:** la capacidad `training-effort-notation-1`, `effortNotation` de API-TRN-09 y API-SER-02, el esfuerzo
+  elegido con `OPCIONES_DE_RPE` y mandado como `rir` con `fieldOrigins.rir`, y lo indicado y lo registrado en la notación.
+- Pruebas: TEST-A32-001 a 007 (`registro-de-comidas`), 010 a 014 (`imagen-de-medio`), 020 (`selector-de-tomas`), las de
+  `esfuerzo-en-la-app` y las del título fijo (jest).
+
+**La APK publicada.** La 0.31 no cambia: sigue con los segmentos, pregunta el RIR y pide las imágenes sin variante.
+
+**Lo que queda.**
+- Ratificar A32-D01 a A32-D15.
+- Armar y publicar la 0.32; congelar sus lecturas, con la prueba de integración cubriendo CMP-01 a 03, HIA-01 a 03,
+  RES-09 y 10, sin pedir CON-01 ni 02 a una APK que no las lee, y lo nuevo de la 0.32.
+- Probarla en el teléfono y con TalkBack. Detalle completo: `docs/paquetes/WP-APP-0-32.md`.
