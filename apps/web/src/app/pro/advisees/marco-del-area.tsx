@@ -57,7 +57,7 @@ import { EsperandoSesion } from '../../../lib/sesion';
 import { COPY_CONTEXTO } from '@be/domain';
 import { ProveedorDeCitas } from './contexto/citas';
 import { PanelDeContexto } from './contexto/panel';
-import { esAtajoDelPanel, guardarPreferencia, leerPreferencia, modoDelPanel, type ModoDelPanel, type Pestana } from './contexto/panel-de-contexto';
+import { esAtajoDelPanel, guardarPreferencia, leerPreferencia, modoDelPanelEnElArea, type ModoDelPanel, type Pestana } from './contexto/panel-de-contexto';
 
 /** El alcance de los vínculos de un área (`scope.code`). */
 export type AlcanceDelArea = 'NUTRICION' | 'ENTRENAMIENTO' | 'ANTROPOMETRIA';
@@ -289,7 +289,8 @@ export function MarcoDelArea<C extends string>({
       almacen = null;
     }
     setPanel(leerPreferencia(almacen, areaDelPanel));
-    const medir = () => setModo(modoDelPanel(window.innerWidth));
+    // DL-196: en Entrenamiento, siempre como cajón (no comprime el editor).
+    const medir = () => setModo(modoDelPanelEnElArea(areaDelPanel, window.innerWidth));
     medir();
     window.addEventListener('resize', medir);
     return () => window.removeEventListener('resize', medir);

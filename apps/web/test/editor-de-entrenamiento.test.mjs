@@ -261,3 +261,11 @@ test('TEST-EE-22 · en pantalla, las palabras de BE: sin «volumen», «cumplimi
   }
   assert.deepEqual(d.terminosProhibidosEn(F.nombreDeFaseNueva([])), []);
 });
+
+test('TEST-EE-23 · en Entrenamiento, el contexto de la persona se abre como cajón, por encima: no comprime el editor (E7)', async () => {
+  const C = await import('../src/app/pro/advisees/contexto/panel-de-contexto.ts');
+  assert.equal(C.modoDelPanelEnElArea('ENTRENAMIENTO', 1920), 'cajon');
+  assert.equal(C.modoDelPanelEnElArea('NUTRICION', 1920), 'costado');
+  assert.equal(C.modoDelPanelEnElArea('NUTRICION', 1280), 'cajon');
+  assert.match(leer('app/pro/advisees/marco-del-area.tsx'), /setModo\(modoDelPanelEnElArea\(areaDelPanel, window\.innerWidth\)\)/);
+});
