@@ -149,9 +149,10 @@ test('RP-D92 · la miniatura de la receta en el editor: las rutas firmadas en lo
   assert.match(gancho, /api\.listarRecetas\(token, \{ limit: String\(RECETAS_POR_PAGINA\)/);
   assert.doesNotMatch(gancho, /consultarReceta|accederAMedio/);
   const editor = leer('app/pro/advisees/nutrition/editor.tsx');
-  // Sin rutas firmadas no se pide la miniatura: el plato de respaldo.
-  assert.match(editor, /const conRutas = deLaLista\?\.image\?\.paths \? deLaLista\.image : null;/);
-  assert.match(editor, /medioId=\{conRutas\?\.mediaId \?\? null\}/);
+  // Sin rutas firmadas no se pide la miniatura: el plato de respaldo. RP-25 (`imagenDeLaCabecera`): salvo la imagen
+  // recién cargada en esta pantalla, que se pide una vez por su medio (su prueba, en `opcion-como-receta.test.mjs`).
+  assert.match(editor, /const enLaCabecera = citada \? imagenDeLaCabecera\(deLaLista, imagenes\.cambiadaAca\(citada\.recipeId\)\) : null;/);
+  assert.match(editor, /medioId=\{enLaCabecera\?\.medioId \?\? null\}/);
   assert.match(editor, /<ImagenEnElCajon token=\{token\} sesionPerdida=\{sesionPerdida\} receta=\{deLaLista\} onCambio=\{imagenes\.actualizar\} \/>/);
   const comida = leer('app/pro/advisees/nutrition/comida-del-editor.tsx');
   assert.match(comida, /imagenDeLaOpcion\?\.\(o\.recipeVersionId, 'cabecera'\) \?\? <Icono nombre="receta" tamano=\{18\} \/>/);

@@ -22356,6 +22356,13 @@ html:has(.estacion:not([data-en-el-asistente])) {
   min-width: 0;
 }
 
+/* RP-25: «Agregar foto», al lado de la cabecera de una opción de alimentos (no adentro: es otro botón). No la agranda. */
+.opcion-plegable__fila > .opcion-plegable__foto {
+  flex: none;
+  margin-inline-start: 0.25rem;
+  white-space: nowrap;
+}
+
 .en-las-barras {
   display: inline-flex;
   flex: none;
