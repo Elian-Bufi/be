@@ -151,7 +151,7 @@ export class EntrenamientoController {
   buscarEjercicios(@Body() cuerpo: unknown, @Query() query: Record<string, unknown>, @Req() req: Solicitud): Promise<unknown> {
     sinParametrosDeQuery(query);
     const b = validarCuerpo(BusquedaDeEjerciciosRequestSchema, cuerpo);
-    return this.catalogo.buscar(actorDe(req), comoConsultaDeLista(b));
+    return this.catalogo.buscar(actorDe(req), comoConsultaDeLista(b), b.zoneId ?? null);
   }
 
   /** API-INT-TRN-01. */

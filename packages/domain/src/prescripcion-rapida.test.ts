@@ -58,8 +58,8 @@ test('TEST-EDP-023 · aplicada, el ejercicio queda con esos valores generales y 
 // ── ED-11 · Aplicar un preset (TEST-EDP-012 y 013, con DJ-8) ────────────────────────────────────────────────────
 
 test('TEST-EDP-012 · un preset de BE nunca trae ejercicio, alimento ni carga; su versión queda en el contenido', () => {
-  assert.equal(VERSION_DE_LOS_PRESETS_DE_BE, 1);
-  assert.equal(PRESETS_DE_BE.length, 7);
+  assert.equal(VERSION_DE_LOS_PRESETS_DE_BE, 2);
+  assert.equal(PRESETS_DE_BE.length, 8);
   for (const p of PRESETS_DE_BE) {
     assert.doesNotMatch(JSON.stringify(p), /exercise|food|alimento|kg|lb\b|suggestedLoad/i, p.clave);
     if (p.tipo === 'PRESCRIPCION') assert.equal(prescripcionDelPreset(p).carga, null);

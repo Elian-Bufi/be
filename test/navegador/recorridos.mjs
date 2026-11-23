@@ -2471,6 +2471,12 @@ async function editorDeEntrenamiento({ p, d, salida }) {
   // «Copiar la fase anterior»: «Fase 2», con la misma sesión y sus días.
   await clic(p, '[data-copiar-la-fase-anterior]');
   await elemento(p, '[data-fase-del-plan="2"]');
+  // DL-196 parte B (E19): la copia ofrece aplicarle una progresión; se cierra sin aplicar y la copia queda como está.
+  await dialogoAbierto(p, 'Progresión y descarga');
+  await elemento(p, '[data-asistente-de-progresion] [data-desde-la-copia]');
+  await captura(p, salida, 'copia-con-progresion');
+  await p.keyboard.press('Escape');
+  await dialogoCerrado(p);
   assert.match(await p.$eval('[data-fase-del-plan="2"] .fase-del-plan__nombre', (e) => e.textContent), /^Fase 2$/);
   await elemento(p, '[data-fase-del-plan="2"] [data-dias-de-la-sesion="1"] [data-dia="MONDAY"][aria-pressed="true"]');
   await esperarGuardado(p);
@@ -2541,7 +2547,71 @@ async function aproximacionesPorPorcentaje({ p, d, salida }) {
   await captura(p, salida, 'aproximaciones-guardadas');
 }
 
-export const TODOS = { sesion, pistas, borrador, conflicto, descartar, salidaSegura, irACorregir, respuestaPerdida, reintentar, salidaConFallas, primerPlan, planDeNutricionSinAsistente, retorno, grafico, primeraInvitacion, areaSugerida, sesionRevocada, accesoRevocado, faltaUnaParte, completitud, evidencia, administracion, comparacion, comparacionConOpciones, sinSaltos, franjasPorComida, cierreDeNutricion, notacionDelEsfuerzo, recetario, opcionComoReceta, recorridosGuiados, editorDeEntrenamiento, aproximacionesPorPorcentaje };
+/**
+ * TEST-EE-NAV-03 · la progresión de una fase con su vista previa (E12, E18) y la distribución con la silueta (E13, E20):
+ * «Progresión…» en el desplegable de la fase abre el asistente; lineal con la descarga en la semana 4: el gráfico tiene
+ * su escalón y la tabla semana × ejercicio, antes de aplicar. Aplicada, la regla se lee en la fase y la API la guarda en
+ * la planificación. En el panel, «Distribución» dibuja la silueta y su tabla; la estrella la deja en «Favoritos». El
+ * ejercicio muestra su carga por semana y la carga para N repeticiones.
+ */
+async function progresionYDistribucion({ p, d, salida }) {
+  await abrirElEditorDeEntrenamiento(p, d);
+  await reemplazarTexto(p, await p.$('[data-semanas-de-la-fase]'), '6');
+  // El asistente: lineal de entrada, con la vista previa a la vista.
+  await clic(p, '[data-abrir-progresion]');
+  await dialogoAbierto(p, 'Progresión y descarga');
+  await elemento(p, '[data-asistente-de-progresion] [data-tabla-de-la-progresion]');
+  // La descarga en la semana 4: la franja del escalón en el gráfico y la semana marcada en la tabla.
+  await clic(p, '[data-asistente-de-progresion] [data-descarga]');
+  await p.select('[data-asistente-de-progresion] [data-campo="semana-de-descarga"]', '4');
+  await p.waitForFunction(() => document.querySelectorAll('[data-asistente-de-progresion] [data-tabla-de-la-progresion] td[data-descarga]').length > 0, { timeout: ESPERA, polling: 100 });
+  const conCarga = await p.$('[data-asistente-de-progresion] [data-grafico-de-semanas]');
+  if (conCarga) await elemento(p, '[data-asistente-de-progresion] .grafico-de-semanas__descarga');
+  // La lectura del gráfico con el teclado: la semana 4 dice que es de descarga.
+  if (conCarga) {
+    await p.$eval('[data-asistente-de-progresion] .grafico-de-semanas__dibujo', (e) => e.focus());
+    for (let n = 0; n < 4; n += 1) await p.keyboard.press('ArrowRight');
+    await p.waitForFunction(() => /descarga/.test(document.querySelector('[data-asistente-de-progresion] .grafico-de-semanas__lectura')?.textContent ?? ''), { timeout: ESPERA, polling: 100 });
+  }
+  await capturaEnLosDosTemas(p, salida, 'progresion-vista-previa');
+  await clic(p, '[data-asistente-de-progresion] ~ * [data-principal-del-cuadro], dialog[open] [data-principal-del-cuadro]');
+  await dialogoCerrado(p);
+  await elemento(p, '[data-progresion-de-la-fase="LINEAR"]');
+  await esperarGuardado(p);
+  const token = await sesionPorApi(d.pro.correo);
+  const plan = (await pedir('GET', `/training/plans/${d.borradorDeEntrenamiento}/detail`, { token })).data;
+  const regla = plan.planning.progressions.find((x) => x.blockId === plan.blocks[0].blockId);
+  assert.equal(regla.model, 'LINEAR');
+  assert.equal(regla.deload.week, 4);
+  // El panel de la fase: «Distribución», con la silueta (o lo que falta para dibujarla) y su tabla.
+  await clic(p, '[data-elegir-fase="1"]');
+  await clic(p, '[data-selector-de-vistas] [data-vista="distribucion"]');
+  await elemento(p, '[data-vista-del-panel="distribucion"] [data-distribucion-de-la-fase]');
+  await p.waitForFunction(() => !/Leyendo las zonas/.test(document.querySelector('[data-distribucion-de-la-fase]')?.textContent ?? ''), { timeout: ESPERA, polling: 100 });
+  // Con el teclado, las vistas van con ← y →.
+  await p.focus('[data-selector-de-vistas] [data-vista="distribucion"]');
+  await p.keyboard.press('ArrowRight');
+  await elemento(p, '[data-vista-del-panel="progresion"] [data-progresion-en-el-panel="con-regla"]');
+  await p.keyboard.press('ArrowLeft');
+  await elemento(p, '[data-vista-del-panel="distribucion"]');
+  await capturaEnLosDosTemas(p, salida, 'distribucion-de-la-fase');
+  // La estrella: la distribución queda en «Favoritos».
+  await clic(p, '[data-vista-del-panel="distribucion"] .marco-del-panel__acciones [data-favorito="no"]');
+  await elemento(p, '[data-vista-del-panel="distribucion"] .marco-del-panel__acciones [data-favorito="si"]');
+  await clic(p, '[data-selector-de-vistas] [data-vista="favoritos"]');
+  await elemento(p, '[data-favoritos-del-plan="1"]');
+  await captura(p, salida, 'favoritos-del-plan');
+  // El ejercicio: la carga por semana (gráfico X/Y) y la carga para N repeticiones.
+  await clic(p, '.ejercicio-del-editor [id^="abrir-ejercicio-"]');
+  await hidratado(p, '.ejercicio-del-editor[data-abierta] [data-cuantas-aproximaciones]');
+  await p.click('.ejercicio-del-editor[data-abierta] [data-cuantas-aproximaciones]');
+  await elemento(p, '[data-foco-del-panel="ejercicio"] [data-carga-para-repeticiones]');
+  await elemento(p, '[data-foco-del-panel="ejercicio"] [data-carga-por-semana]');
+  await captura(p, salida, 'carga-por-semana-del-ejercicio');
+  await esperarGuardado(p);
+}
+
+export const TODOS = { sesion, pistas, borrador, conflicto, descartar, salidaSegura, irACorregir, respuestaPerdida, reintentar, salidaConFallas, primerPlan, planDeNutricionSinAsistente, retorno, grafico, primeraInvitacion, areaSugerida, sesionRevocada, accesoRevocado, faltaUnaParte, completitud, evidencia, administracion, comparacion, comparacionConOpciones, sinSaltos, franjasPorComida, cierreDeNutricion, notacionDelEsfuerzo, recetario, opcionComoReceta, recorridosGuiados, editorDeEntrenamiento, aproximacionesPorPorcentaje, progresionYDistribucion };
 
 /** Errores de la página que no dicen nada del website (los del propio navegador). */
 const IGNORABLES = [/ResizeObserver loop/];

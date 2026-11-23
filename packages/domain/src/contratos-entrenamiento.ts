@@ -433,6 +433,53 @@ export const AproximacionesDelEjercicioSchema = z.strictObject({
 export type AproximacionesDelEjercicio = z.infer<typeof AproximacionesDelEjercicioSchema>;
 
 /**
+ * DL-196 parte B (EE-D30 a EE-D33) · la progresión de una fase: una **regla** que dice cómo cambia la carga de trabajo
+ * semana a semana dentro de la fase. No reescribe las series: la sesión sigue siendo la misma todas las semanas de su
+ * fase y la regla se lee encima (`progresiones.ts`). Los modelos:
+ * - `LINEAR`: `loadStep` más por semana (en la unidad del ejercicio) y, si se dice, `repStep` repeticiones más;
+ * - `DOUBLE`: primero las repeticiones, de `repRange.min` a `repRange.max` de a una por semana; al llegar arriba, la carga
+ *   sube `loadStep` y las repeticiones vuelven abajo;
+ * - `UNDULATING`: tres semanas que se repiten (pesada, liviana y media), cada una con su parte de la carga de trabajo
+ *   (`waves`, en % de la carga de trabajo de la sesión);
+ * - `null`: sin modelo, solo la descarga.
+ * La descarga (`deload`) va en una semana elegida de la fase: la carga baja a `workingLoadShare` % de la carga de trabajo
+ * de la semana anterior (`LOAD`) o se hacen `setsRemoved` series efectivas menos con la misma carga (`SETS`). Se aplica a
+ * toda la fase (`prescriptionIds` en `null`) o a los ejercicios elegidos.
+ */
+export const ProgresionDeLaFaseSchema = z.strictObject({
+  blockId: IdDeNodoSchema,
+  model: z.enum(['LINEAR', 'DOUBLE', 'UNDULATING']).nullable(),
+  loadStep: z.number().finite().min(0).max(50).nullable(),
+  repStep: z.number().int().min(0).max(5).nullable(),
+  repRange: z
+    .strictObject({ min: z.number().int().min(1).max(50), max: z.number().int().min(1).max(50) })
+    .refine((r) => r.max > r.min, { message: 'El rango termina después de empezar', path: ['max'] })
+    .nullable(),
+  waves: z.array(z.number().int().min(40).max(100)).min(3).max(3).nullable(),
+  deload: z
+    .strictObject({
+      week: z.number().int().min(1).max(52),
+      mode: z.enum(['LOAD', 'SETS']),
+      workingLoadShare: z.number().int().min(40).max(95),
+      setsRemoved: z.number().int().min(1).max(10),
+    })
+    .nullable(),
+  prescriptionIds: z.array(IdDeNodoSchema).min(1).max(60).nullable(),
+});
+export type ProgresionDeLaFase = z.infer<typeof ProgresionDeLaFaseSchema>;
+
+/**
+ * DL-196 parte B (EE-D38, GR-27) · un gráfico del editor marcado como favorito de esta planificación: la carga por semana
+ * de un ejercicio (`EXERCISE_LOAD`, por su prescripción), la progresión de una fase (`PHASE_PROGRESSION`) o su
+ * distribución por músculo (`PHASE_DISTRIBUTION`).
+ */
+export const GraficoFavoritoDelPlanSchema = z.strictObject({
+  kind: z.enum(['EXERCISE_LOAD', 'PHASE_PROGRESSION', 'PHASE_DISTRIBUTION']),
+  id: IdDeNodoSchema,
+});
+export type GraficoFavoritoDelPlan = z.infer<typeof GraficoFavoritoDelPlanSchema>;
+
+/**
  * DL-196 (WP-EDITOR-ENTRENAMIENTO) · la planificación de una versión del plan, aparte de su estructura:
  * - `startDate` y `weeks`: cuándo empieza el plan y cuántas semanas dura (el fin sale de los dos, EE-D01);
  * - `goal`: el objetivo general del plan, en palabras del profesional (para la persona; la APK 0.32 todavía no lo muestra);
@@ -449,6 +496,10 @@ export const PlanificacionDelPlanSchema = z.strictObject({
   goal: TextoOpcional(1000).optional(),
   phases: z.array(z.strictObject({ blockId: IdDeNodoSchema, weeks: z.number().int().min(1).max(52).nullable() })).max(12),
   warmUps: z.array(AproximacionesDelEjercicioSchema).max(400).optional(),
+  /** DL-196 parte B: la progresión de cada fase, como regla (EE-D30). Una por fase. */
+  progressions: z.array(ProgresionDeLaFaseSchema).max(12).optional(),
+  /** DL-196 parte B (GR-27): los gráficos del editor marcados como favoritos de esta planificación. */
+  favoriteCharts: z.array(GraficoFavoritoDelPlanSchema).max(30).optional(),
   privateNotes: z
     .strictObject({
       plan: TextoOpcional(4000),
@@ -571,6 +622,11 @@ export const BusquedaDeEjerciciosResponseSchema = z.strictObject({ data: z.array
  */
 export const BusquedaDeEjerciciosRequestSchema = z.strictObject({
   q: z.string().trim().max(80),
+  /**
+   * DL-196 parte B (EE-D41): solo los ejercicios que trabajan esa zona (una de las 17), como principal o secundaria, en su
+   * asignación vigente. Con `q` vacío, todos los de esa zona. Una zona que no existe es un 422 `INVALID_FILTER`.
+   */
+  zoneId: z.string().max(40).optional(),
   limit: z.number().int().min(1).max(50).optional(),
   cursor: z.string().max(400).optional(),
 });

@@ -1,6 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import {
   CrearEjercicioRequestSchema,
+  esZonaMuscular,
   ordenarZonasDeEjercicio,
   problemasDeZonas,
   type EjercicioDeCatalogo,
@@ -71,6 +72,18 @@ const COLUMNAS_DEL_BUSCADOR = Prisma.sql`${COLUMNAS}, ${CORRESPONDENCIA}`;
  * - El catálogo **no calcula**: sin porcentaje de músculo trabajado ni volumen (09v10:854).
  * - UF-09 (DL-169): en producción no ofrece ni acepta lo sembrado como demostración, tampoco al asesorado; en `test`, sí.
  */
+/**
+ * DL-196 parte B (EE-D41): el ejercicio trabaja la zona, como principal o secundaria, en su asignación vigente (la de número
+ * más alto, como `zonasDeEjercicios`).
+ */
+function conLaZona(zona: string): Prisma.Sql {
+  return Prisma.sql`AND EXISTS (
+    SELECT 1 FROM "asignacion_de_zonas_de_ejercicio" a
+      JOIN "zona_de_ejercicio" z ON z."asignacion_id" = a."id"
+     WHERE a."ejercicio_id" = e."id" AND z."zona_id" = ${zona}
+       AND a."numero" = (SELECT MAX(a2."numero") FROM "asignacion_de_zonas_de_ejercicio" a2 WHERE a2."ejercicio_id" = e."id"))`;
+}
+
 @Injectable()
 export class CatalogoDeEjerciciosService {
   /** UF-09: si este ambiente ofrece el catálogo de demostración (solo `test` y desarrollo). */
@@ -109,8 +122,10 @@ export class CatalogoDeEjerciciosService {
    * sustitución de la APK: cuando se publique una APK con esa lectura, su forma queda congelada (DL-152) y un campo nuevo
    * va en otra operación.
    */
-  async buscar(actor: ActorAutenticado, query: Record<string, unknown>): Promise<{ data: EjercicioEncontrado[]; page: unknown }> {
-    const { filas, page } = await this.buscarFilas(actor, query);
+  async buscar(actor: ActorAutenticado, query: Record<string, unknown>, zona: string | null = null): Promise<{ data: EjercicioEncontrado[]; page: unknown }> {
+    // DL-196 parte B (EE-D41): el filtro por zona de la silueta; una zona que no es de las 17 es un 422.
+    if (zona !== null && !esZonaMuscular(zona)) throw errores.validacionFallida([{ code: 'INVALID_FILTER', path: 'zoneId' }]);
+    const { filas, page } = await this.buscarFilas(actor, query, zona);
     const visual = await visualDeEjercicios(this.lector(), filas.map((f) => f.ejercicioId));
     return { data: filas.map((f) => ({ ...ejercicioApi(f, visual(f.ejercicioId)), matchedAlternativeName: f.nombreAlternativo, origin: origenEnElBuscador(f, actor.identidadId) })), page };
   }
@@ -135,7 +150,7 @@ export class CatalogoDeEjerciciosService {
     return { data: await fichasVisuales(this.lector(), ids.flatMap((id) => porId.get(id) ?? [])) };
   }
 
-  private async buscarFilas(actor: ActorAutenticado, query: Record<string, unknown>): Promise<{ filas: readonly (FilaDeEjercicio & ConOrigenEnLaBase & ConNombreAlternativo)[]; page: unknown }> {
+  private async buscarFilas(actor: ActorAutenticado, query: Record<string, unknown>, zona: string | null = null): Promise<{ filas: readonly (FilaDeEjercicio & ConOrigenEnLaBase & ConNombreAlternativo)[]; page: unknown }> {
     const { q: crudo, cursor: cursorEscrito, ...resto } = query;
     if (crudo !== undefined && typeof crudo !== 'string') throw errores.solicitudInvalida([{ code: 'INVALID_FILTER', path: 'q' }]);
     const consulta = leerConsultaDeLista(resto, {});
@@ -149,7 +164,8 @@ export class CatalogoDeEjerciciosService {
         tablas: Prisma.sql`"version_de_ejercicio" v JOIN "ejercicio_de_catalogo" e ON e."id" = v."ejercicio_id"`,
         visibles: Prisma.sql`NOT EXISTS (SELECT 1 FROM "version_de_ejercicio" s WHERE s."predecesora_id" = v."id")
            AND v."disponibilidad" = 'DISPONIBLE'
-           AND ${this.visibles(creadores)}`,
+           AND ${this.visibles(creadores)}
+           ${zona === null ? Prisma.empty : conLaZona(zona)}`,
         nombresAlternativos: NOMBRES_ALTERNATIVOS,
       },
       leerBusqueda(q),

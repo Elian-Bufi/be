@@ -1619,8 +1619,9 @@ export function crearClienteBe(opciones: OpcionesDeCliente) {
      * clave de idempotencia. API-TRN-13 (`q` en la URL) queda como contrato legado de la API. Cada ejercicio trae el nombre
      * alternativo que coincidió, si fue por uno (DL-141).
      */
-    buscarEjercicios(token: string, texto: string) {
-      return llamar('POST', '/training/exercises/search', { token, esquema: BusquedaDeEjerciciosResponseSchema, cuerpo: { q: texto, limit: 20 } });
+    /** DL-196 parte B (EE-D41): con `zona`, solo los ejercicios que la trabajan; sin texto, todos los de esa zona (hasta 50). */
+    buscarEjercicios(token: string, texto: string, zona: string | null = null) {
+      return llamar('POST', '/training/exercises/search', { token, esquema: BusquedaDeEjerciciosResponseSchema, cuerpo: zona ? { q: texto, zoneId: zona, limit: 50 } : { q: texto, limit: 20 } });
     },
     /** API-INT-TRN-01: carga manual, con cero zonas hasta WP-07. */
     crearEjercicio(token: string, nombre: string, claveDeIdempotencia: string) {

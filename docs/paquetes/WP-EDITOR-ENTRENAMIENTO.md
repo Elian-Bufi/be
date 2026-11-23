@@ -1,4 +1,4 @@
-# WP-EDITOR-ENTRENAMIENTO · El rediseño del editor de Entrenamiento (DL-196), parte A
+# WP-EDITOR-ENTRENAMIENTO · El rediseño del editor de Entrenamiento (DL-196), partes A y B
 
 **Estado:** PROGRAMADO en `wp-editor-entrenamiento-a` (PR en borrador, sin integrar). Las decisiones EE-D01 a EE-D17 están
 **a ratificar** por Dirección. La parte B (progresiones y descargas, distribución por grupo muscular con la silueta,
@@ -135,3 +135,88 @@ profesional en el Proceso).
 - Mirarlo en pantalla, en los dos temas, a 1280, 1440 y 1920 (con el zoom de Dirección), y con un lector de pantalla.
 - La APK: mostrar el objetivo general del plan (EE-D07) y, si hace falta, las fechas de las fases.
 - La parte B, sobre el panel contextual de esta parte.
+
+---
+
+# Parte B · Progresiones, distribución con la silueta y gráficos X/Y
+
+**Estado:** PROGRAMADA en `wp-editor-entrenamiento-b` (PR en borrador, sin integrar). Las decisiones EE-D30 a EE-D43 están
+**a ratificar** por Dirección. Una, EE-D34, es un **desvío del legajo decidido por Dirección** (REG-06-139; B10-06 §59):
+queda en DEUDA_LEGAJO DL-196, y el legajo no se edita.
+
+**Origen.** Las observaciones E7, E12, E13, E18, E19 y E20 del recorrido del 2026-11-23: las progresiones y las descargas
+«no se encuentran»; copiar una fase y aplicarle una progresión; gráficos X/Y de lo que se cambia; la carga calculada para N
+repeticiones; la distribución por grupo muscular y las estructuras, con la silueta («sacarle mucho jugo»); los gráficos
+favoritos del plan (GR-27).
+
+## 8. Requisitos (EE-20 a EE-27)
+
+| Id | Requisito | Dónde |
+| --- | --- | --- |
+| EE-20 | **«Progresión…» en cada fase:** el botón en el desplegable de la fase y, al lado, la regla guardada en un renglón fijo («Lineal: +2,5 kg por semana · descarga en la semana 4 (60 % de la carga de trabajo)»). | `training/editor.tsx` (`fase-del-plan__progresion`) |
+| EE-21 | **El asistente, corto:** el modelo (sin progresión, lineal, doble progresión u ondulante) como control segmentado, con sus campos en un renglón; la semana de descarga (por carga o por series), combinable; a toda la fase o a los ejercicios elegidos; «Usar la de…» otra fase; el «?» de la esquina con un ejemplo de cada modelo y otro de la descarga. **La vista previa antes de aplicar:** el gráfico X/Y (semanas en X, carga en Y, con la curva y el escalón de la descarga) y la tabla semana × ejercicio. | `training/asistente-de-progresion.tsx`, `progresiones.ts` (dominio), `training/progresion-del-editor.ts` |
+| EE-22 | **Copiar la fase anterior + progresión (E19):** la copia abre el asistente; si la original tenía regla, viene traída y se puede «Arrancar donde terminó». | `training/editor.tsx` (`copiarLaFaseAnterior`, `aplicarLaProgresion`) |
+| EE-23 | **El gráfico X/Y de un ejercicio (E7, E18):** en el panel del ejercicio, la carga por semana de su fase: lo planificado (punteado, con la regla), lo realizado (lleno) y el máximo estimado (Epley v1, rombos; huecos si son de la banda orientativa), con la franja de la descarga, la lectura con el teclado y «Ver la tabla». | `training/grafico-de-semanas.tsx`, `training/panel-de-la-parte-b.tsx` (`CargaPorSemana`) |
+| EE-24 | **La carga para N repeticiones (E7):** repeticiones y RIR (o RPE, según la notación del plan); la carga, con la cuenta a la vista y los límites del método; sin datos, lo dice. | `cargaParaRepeticiones` (dominio), `CargaParaRepeticiones` |
+| EE-25 | **«Distribución» (E13, E20):** en el panel de la fase o de la sesión, la silueta como mapa de calor de series por semana (al pasar el puntero, sobre la zona exacta: «Pectoral: 12 series por semana (de 3 ejercicios) · 2 días»), su escala, la tabla con la frecuencia (que es también lo del lector de pantalla y del teclado), los equilibrios, las zonas a cuidar y el acceso a las estructuras; «Abrir grande». | `distribucion-por-musculo.ts` (dominio), `components/figura-de-calor.tsx`, `DistribucionDeLaFase` |
+| EE-26 | **Estructuras y catálogo por músculo:** el reparto semanal de cada estructura en la silueta, en la galería de presets; «Por músculo» en el catálogo de ejercicios: tocar un músculo (o elegirlo en la lista) busca los ejercicios que lo trabajan. Un ejercicio que trabaja una zona a cuidar da un aviso discreto en su panel, con su renglón reservado (RP-19). | `galeria-de-presets.tsx`, `training/agregar-ejercicio.tsx`, API-TRN-13-BUSQUEDA (`zoneId`), `AvisoDeZonaACuidar` |
+| EE-27 | **Favoritos del plan (GR-27):** la estrella en la carga por semana, la progresión y la distribución; la vista «Favoritos» los dibuja con lo de hoy y, debajo, el enfoque de gráficos del plan («Patrones», que pasó ahí). | `progresion-del-editor.ts` (`conFavorito`), `training/editor.tsx` |
+
+## 9. El contrato (parte B)
+
+- `PlanificacionDelPlanSchema` suma, opcionales: `progressions[]` (`ProgresionDeLaFaseSchema`: `blockId`; `model`
+  `LINEAR`, `DOUBLE`, `UNDULATING` o `null`; `loadStep` de 0 a 50; `repStep` de 0 a 5; `repRange` con `max > min`; `waves`
+  de tres partes de 40 a 100; `deload` con `week`, `mode` `LOAD` o `SETS`, `workingLoadShare` de 40 a 95 y `setsRemoved`
+  de 1 a 10; `prescriptionIds` o `null`; hasta 12) y `favoriteCharts[]` (`kind` `EXERCISE_LOAD`, `PHASE_PROGRESSION` o
+  `PHASE_DISTRIBUTION`, e `id`; hasta 30). Sin migración: van en el JSON de la versión, como la parte A.
+- `planificacionPodada`: la progresión de una fase que no está se va; la de ejercicios elegidos queda con los que siguen
+  (si no queda ninguno, se va); los favoritos de lo que no está, también.
+- API-TRN-13-BUSQUEDA (`POST /training/exercises/search`) acepta `zoneId`: solo los ejercicios que trabajan esa zona en su
+  asignación vigente, como principal o secundaria; una zona que no es de las 17 es un 422 `INVALID_FILTER`.
+- Presets de BE, versión 2: cada sesión de una estructura dice sus zonas típicas; se suma «Por grupo muscular · 5 días».
+- `docs/api/openapi.json` regenerado.
+
+## 10. Decisiones a ratificar (EE-D30 a EE-D43)
+
+| Id | Decisión |
+| --- | --- |
+| EE-D30 | **La progresión es una regla de la fase, no series nuevas.** Hoy una sesión es la misma todas las semanas de su fase; la regla se guarda en la planificación (`progressions`) y se lee encima: en el editor, en la vista previa y en los gráficos. **La persona ve, por ahora, la carga de la sesión** (la base): la planificación solo viaja al profesional, así que la APK 0.32 no recibe nada distinto. La carga de cada semana le llega en una versión siguiente: el dominio ya la calcula (`semanasDelEjercicio`, `semanaDeLaFecha`) para «Hoy» y la sesión. |
+| EE-D31 | **Los modelos.** Lineal: más carga y/o más repeticiones por semana. Doble: de `min` a `max` repeticiones, de a una por semana; al llegar arriba, más carga y vuelve a `min`. Ondulante semanal: pesada, liviana y media (100, 80 y 90 % de la carga de trabajo, por omisión), y se repite. Descarga: por carga (un % de la carga de trabajo de la semana anterior) o por series (n menos, nunca menos de una); la semana de descarga no cuenta para el modelo: la siguiente retoma donde quedó. Una regla por fase. |
+| EE-D32 | **La base y el redondeo.** La base es la carga de trabajo (la común de las efectivas, EE-D05), las repeticiones de las efectivas (la cifra o el piso del rango) y sus series efectivas. Cada carga se redondea al paso del ejercicio: el de sus aproximaciones si se eligió y, si no, el de su implemento (EE-D03). Un aumento menor que el paso se ve redondeado en la vista previa: no se esconde. Un ejercicio sin carga escrita solo mueve repeticiones o series. |
+| EE-D33 | **Copiar + progresión (E19).** «Copiar la fase anterior» abre el asistente para la copia; cerrarlo deja la copia como está. Con la regla de la original, viene traída (con sus ejercicios traducidos) y «Arrancar donde terminó» corre las cargas de trabajo de la copia a las de la última semana sin descarga de la original: todas las efectivas se corren lo mismo (una pirámide sigue siendo pirámide); las aproximaciones «Por porcentaje» dicen que ya no coinciden, con «Recalcular» (EE-D05). Sin semanas en la fase, el asistente las pide (4 por omisión) y las guarda. |
+| EE-D34 | **Series por semana por músculo: desvío de REG-06-139 y B10-06 §59 («no se cuenta por zona») decidido por Dirección** (DEUDA_LEGAJO DL-196). Cada serie efectiva cuenta 1 en las zonas principales del ejercicio y ½ en las secundarias, por cada día de la semana en que va su sesión; una sesión sin días cuenta una vez y se dice; las aproximaciones no cuentan; un ejercicio sin zonas no suma y se dice. Son las zonas vigentes de la ficha visual (API-EJE-05), no las de la instantánea. El mapa usa cuatro niveles relativos al máximo de la fase, sin umbrales: ubica, no califica. **Frecuencia:** los días distintos en que se trabaja la zona (principal o secundaria); una sesión sin días es un día propio. |
+| EE-D35 | **Los equilibrios.** Cuatro pares lado a lado, con barras enfrentadas en un tono neutro y sus series en texto: empuje (pectoral y tríceps) / tracción (dorsal, romboides y bíceps); cuádriceps / isquiotibiales; pectoral / espalda alta (romboides y trapecio); abdomen / erectores. El catálogo tiene un solo deltoides (REG-06-137, 17 zonas): el par deltoides anterior / posterior se mira con pectoral / espalda alta hasta que el catálogo de zonas los separe. El deltoides no entra en empuje ni en tracción (está en los dos). |
+| EE-D36 | **La carga para N repeticiones.** Del último máximo estimado de la persona (el de la tarjeta, Epley v1, DL-171): máximo × 30 ÷ (30 + repeticiones + RIR), hacia abajo al paso de la barra (2,5 kg o 5 lb). El límite ratificado es el del método: hasta 12 repeticiones equivalentes y, de más de 10, orientativa. El RIR de destino no se limita a 2 (ese límite es el de lo que entra a la estimación). Con la notación RPE, el RIR es 10 − RPE (la escala anclada, DL-192). Solo los seis ejercicios de la lista v1; sin estimación, «no hay datos suficientes». |
+| EE-D37 | **Las estructuras (E13).** Los presets pasan a la versión 2: cada sesión de una estructura dice las zonas que trabaja como principales en un reparto típico (no son ejercicios: ED-D2 sigue), y se suma «Por grupo muscular · 5 días» (pecho, espalda, piernas, hombros y brazos). Su reparto se dibuja en la silueta, en la vista previa de la galería; desde «Distribución», un botón abre la galería. Como todo preset de BE, Dirección los valida antes de publicarlos. |
+| EE-D38 | **Los favoritos del plan (GR-27).** Viven en la planificación (`favoriteCharts`): la carga por semana de un ejercicio, la progresión o la distribución de una fase, hasta 30, con la estrella de cada gráfico; se podan con la estructura y la sucesora los hereda. No son gráficos del registro GR (son del editor, no de los datos de la persona): por eso no se guardan en un enfoque. La vista «Favoritos» los dibuja y, debajo, el enfoque GR-27 del plan («Patrones», que se movió ahí desde el pie del panel). |
+| EE-D39 | **Las zonas a cuidar.** Del formulario más nuevo que responde `trn_zonas` con «sí» en `dolor_o_lesiones`: cada región declarada se lleva a los músculos que la rodean o la cargan (cuello → trapecio; hombros → deltoides; codos → bíceps, tríceps y antebrazo; muñecas → antebrazo; espalda alta → trapecio y romboides; lumbar → erectores; cadera → glúteos y aductores; rodillas → cuádriceps; tobillos → gemelos y tibial). «Otra» no se ubica. Van rayadas en violeta sobre la silueta y, en un ejercicio que las trabaja, con un aviso discreto en su panel. Ubica, no indica. |
+| EE-D40 | **El panel tiene vistas** (enmienda de EE-D09, «sin pestañas»): en el plan, «Almanaque» y «Favoritos»; en la fase y la sesión, además, «Distribución» y «Progresión». Una por vez, como pestañas (← y →). En un ejercicio no hay vistas: el aviso, la carga por semana, la carga para N repeticiones y «La vez pasada», uno debajo del otro. |
+| EE-D41 | **El catálogo por músculo.** API-TRN-13-BUSQUEDA filtra por `zoneId` en la asignación vigente (principal o secundaria); el filtro es del catálogo entero, con o sin texto (hasta 50). En el cajón, «Por músculo» abre la silueta tocable (y una lista de las 17 zonas para el teclado); los chips por zona de lo encontrado siguen como estaban. |
+| EE-D42 | **La silueta.** Por ahora, la masculina (la femenina está en desarrollo; que el cuerpo salga del perfil queda pendiente). El puntero ubica la zona por la transparencia de su máscara (cada capa se lee una vez). Los niveles (`--calor-1` a `--calor-4`), la raya de las zonas a cuidar (`--zona-a-cuidar`) y el velo de la señalada (`--calor-senalada`) son tokens; van sobre el maniquí, que es el mismo en los dos temas, y la guardia de contraste los mide contra él. |
+| EE-D43 | **El gráfico X/Y.** Lo planificado y lo realizado van en el mismo color y se distinguen por la forma (TB-03): punteado con puntos huecos contra línea llena; el máximo estimado, en el segundo color, con rombos. Lo realizado es lo más alto registrado en cada semana de la fase; sin fechas en la fase, no se ubica y se dice. La lectura de cada semana tiene su renglón reservado; el dibujo recibe el foco (← → Inicio Fin) y tiene su tabla. |
+
+## 11. Pruebas (parte B)
+
+- **Dominio:** `progresiones.test.ts` (TEST-EE-30 a 37: lineal, doble, ondulante, descarga, alcance y copia, contrato y
+  poda, carga para N repeticiones, semanas en el calendario y textos) y `distribucion-por-musculo.test.ts` (TEST-EE-40 a
+  44: el conteo 1 y ½, sin aproximaciones, sin días, sin zonas, la frecuencia, el calor, los equilibrios, las estructuras y
+  las zonas a cuidar). En `prescripcion-rapida.test.ts`, los presets: versión 2 y ocho.
+- **Website:** `apps/web/test/editor-de-entrenamiento-b.test.mjs` (TEST-EE-50 a 57: la base y la vista previa, arrancar
+  donde terminó, la distribución desde la estructura, los favoritos, las vistas del panel, lo pedido por Dirección en la
+  fuente y las reglas de pantalla).
+- **API, en la CI:** `test/integration/editor-de-entrenamiento-b.int-spec.ts` (TEST-EE-API-10: progresiones y favoritos
+  guardados y podados, lo mal formado rechazado y nada para la persona; TEST-EE-API-11: el buscador por zona y su 422).
+- **Navegador, en la CI:** `progresionYDistribucion` (TEST-EE-NAV-03: el asistente con la descarga y la vista previa en
+  los dos temas, aplicar y la API; la distribución en los dos temas, las vistas con el teclado, la estrella y «Favoritos»;
+  el ejercicio con su carga por semana y la carga para N repeticiones) y, en `editorDeEntrenamiento`, la copia que ofrece
+  la progresión. Las capturas quedan en el artefacto `resultados-recorridos`.
+- Guardias: `contraste` (los cuatro niveles y la raya, sobre el maniquí), `acciones-y-ayudas` (el «?» en la esquina) y
+  `copy-pantallas`.
+
+## 12. Lo que queda (parte B)
+
+- Ratificar EE-D30 a EE-D43 y, en especial, el desvío de EE-D34.
+- La APK: mostrar la carga de cada semana (EE-D30) y el cuerpo según el perfil.
+- Separar deltoides anterior y posterior en el catálogo de zonas, si Dirección quiere ese par (EE-D35).
+- La silueta femenina, cuando esté.
+- La pasada de densidad (E5) de todo el editor, mirando las capturas con Dirección.

@@ -43,6 +43,7 @@ import {
   habitualesQueCoinciden,
   leerPrescripcion,
   nombreDeZona,
+  ZONAS_MUSCULARES,
   ordenDeZona,
   vistaPreviaDePrescripcion,
   type PrescripcionLeida,
@@ -56,6 +57,7 @@ import { Ayuda } from '../../../../components/ayuda';
 import { Cajon } from '../../../../components/cajon';
 import { Cargando } from '../../../../components/estados';
 import { Aviso, Campo } from '../../../../components/formulario';
+import { FiguraDeCalor } from '../../../../components/figura-de-calor';
 import { Icono } from '../../../../components/icono';
 import { OrigenEnElCatalogo } from '../../../../components/origen-en-el-catalogo';
 import { api } from '../../../../lib/api';
@@ -286,6 +288,9 @@ function ContenidoDeAgregarEjercicio({
   const [detalle, setDetalle] = useState<string | null>(null);
   // ED-21: las zonas elegidas en los chips (sobre lo encontrado).
   const [zonasElegidas, setZonasElegidas] = useState<readonly string[]>([]);
+  // DL-196 parte B (E20, EE-D41): el músculo elegido en la silueta filtra el catálogo entero (la API), no solo lo encontrado.
+  const [musculo, setMusculo] = useState<string | null>(null);
+  const [silueta, setSilueta] = useState(false);
   // GR-04: qué ejercicios ya hizo la persona, para la marca «Con historial» de cada resultado.
   const { historial, recargar: releerElHistorial } = useHistorialDelBuscador();
   // C6: «No encuentro el ejercicio», plegado; sin resultados, abierto.
@@ -297,11 +302,11 @@ function ContenidoDeAgregarEjercicio({
     if (modo === 'buscar') campo.current?.focus({ preventScroll: true });
   }, [modo, campo]);
 
-  const buscar = async (que: string) => {
+  const buscar = async (que: string, zona: string | null = musculo) => {
     const esta = ++pedido.current;
     setDetalle(null);
     setBusqueda({ tipo: 'buscando', texto: que });
-    const r = await api.buscarEjercicios(token, que);
+    const r = await api.buscarEjercicios(token, que, zona);
     // Una respuesta que llega después de otra búsqueda no pisa a la más nueva.
     if (esta !== pedido.current || sesionPerdida(r)) return;
     // Un error no es un catálogo vacío (B10-10:41): se dice que no se pudo buscar, con su motivo.
@@ -390,7 +395,52 @@ function ContenidoDeAgregarEjercicio({
         <button type="submit" className="boton boton--quieto agregar-item__enviar">
           Buscar
         </button>
+        <button type="button" className="boton boton--discreto agregar-item__por-musculo" aria-expanded={silueta} aria-controls={`${id}-silueta`} onClick={() => setSilueta((x) => !x)} data-por-musculo>
+          {silueta ? 'Ocultar la silueta' : 'Por músculo'}
+        </button>
       </form>
+      {/* DL-196 parte B (E20): tocar un músculo en la silueta (o elegirlo en la lista) busca los ejercicios que lo trabajan. */}
+      <div id={`${id}-silueta`} className="agregar-item__silueta" hidden={!silueta} data-silueta-del-catalogo={musculo ?? ''}>
+        {silueta ? (
+          <>
+            <FiguraDeCalor
+              rotulo="catalogo"
+              chica
+              elegibles
+              zonas={[]}
+              elegidas={musculo ? [musculo] : []}
+              onTocar={(z) => {
+                const nuevo = z === musculo ? null : z;
+                setMusculo(nuevo);
+                setZonasElegidas([]);
+                void buscar(texto.trim(), nuevo);
+              }}
+            />
+            <div className="agregar-item__musculo">
+              <label htmlFor={`${id}-musculo`}>Músculo</label>
+              <select
+                id={`${id}-musculo`}
+                value={musculo ?? ''}
+                onChange={(e) => {
+                  const nuevo = e.target.value || null;
+                  setMusculo(nuevo);
+                  setZonasElegidas([]);
+                  void buscar(texto.trim(), nuevo);
+                }}
+                data-campo="musculo-del-catalogo"
+              >
+                <option value="">Todos</option>
+                {ZONAS_MUSCULARES.map((z) => (
+                  <option key={z.zoneId} value={z.zoneId}>
+                    {z.name}
+                  </option>
+                ))}
+              </select>
+              <p className="nota">{musculo ? `Los ejercicios que trabajan ${nombreDeZona(musculo) ?? musculo}, como principal o secundario${texto.trim() ? ` y se llaman «${texto.trim()}»` : ''}.` : 'Tocá un músculo en la silueta para ver los ejercicios que lo trabajan.'}</p>
+            </div>
+          </>
+        ) : null}
+      </div>
 
       {/* Lo que se acaba de sumar, dicho donde la persona está mirando: el editor quedó detrás del velo. C6: los elegidos
           se ven en el pie; acá se anuncian al lector, sin repetirlos a la vista. */}

@@ -64,6 +64,16 @@ import {
   pedidoDeLaPosicion,
   COPY_BLOQUES_DE_LA_SESION,
   PROBLEMA_DE_BLOQUES,
+  COPY_PROGRESIONES,
+  conProgresion,
+  progresionDeLaFase,
+  progresionEnPalabras,
+  progresionParaOtraFase,
+  seAplicaA,
+  sinProgresion,
+  zonasACuidar as zonasACuidarDelFormulario,
+  type ZonasACuidar,
+  type VezPasada,
   nombreDeLaFase,
   nombreDelBloqueDeLaSesion,
   partesDeLaSesion,
@@ -96,7 +106,24 @@ import { BotonVerElRecorrido, RecorridoGuiado, useRecorridoGuiado } from '../../
 import { Almanaque, type SesionDelAlmanaque } from './almanaque';
 import { DatosDeLaFase, DatosDelPlan, DiasDeLaFase, letraDeLaSesion } from './plan-y-fases';
 import { MarcoDelPanel, PanelDelEjercicio, PatronesAPedido } from './panel-del-editor';
-import { FOCO_DE_ENTRADA, focoDelElemento, mismoFoco, type FocoDelEditor } from './panel-contextual';
+import { FOCO_DE_ENTRADA, focoDelElemento, mismoFoco, NOMBRE_DE_LA_VISTA, VISTAS_DEL_FOCO, vistaDelFoco, vistaPorTecla, type FocoDelEditor, type VistaDelPanel } from './panel-contextual';
+import { AsistenteDeProgresion, type AplicacionDeLaProgresion } from './asistente-de-progresion';
+import { GraficoDeSemanas } from './grafico-de-semanas';
+import { AvisoDeZonaACuidar, CargaParaRepeticiones, CargaPorSemana, DistribucionConFichas, EstrellaDeFavorito } from './panel-de-la-parte-b';
+import {
+  baseDelEjercicio,
+  cargasDeLaUltimaSemana,
+  conCargaDeTrabajo,
+  conFavorito,
+  COPY_FAVORITOS,
+  ejerciciosDeLaFase,
+  esFavorito,
+  repeticionesDeTrabajo,
+  sesionesDeLaFase,
+  sesionesParaDistribuir,
+  unidadDeLaFase,
+  vistaPrevia,
+} from './progresion-del-editor';
 import { LoQueImpideActivar } from './lo-que-impide-activar';
 import {
   agendaConLaCopia,
@@ -443,6 +470,26 @@ export function EditorDePlan({
   const [foco, setFoco] = useState<FocoDelEditor>(FOCO_DE_ENTRADA);
   const [mesDelAlmanaque, setMesDelAlmanaque] = useState<MesDelAlmanaque | null>(null);
   const [almanaqueGrande, setAlmanaqueGrande] = useState(false);
+  // DL-196 parte B: la vista del panel (almanaque, distribución, progresión o favoritos), la distribución grande, el
+  // asistente de la progresión (de una fase, o de la copia recién hecha) y las zonas a cuidar que declaró la persona.
+  const [vistaElegida, setVistaElegida] = useState<VistaDelPanel>('almanaque');
+  const [distribucionGrande, setDistribucionGrande] = useState(false);
+  const [progresionAbierta, setProgresionAbierta] = useState<{
+    readonly blockId: string;
+    readonly copia: { readonly original: string; readonly originalId: string | null; readonly prescripciones: ReadonlyMap<string, string> } | null;
+  } | null>(null);
+  const [aCuidar, setACuidar] = useState<ZonasACuidar | null>(null);
+  useEffect(() => {
+    if (!token || asesoradoId === null) return;
+    let vivo = true;
+    // Lo declarado en el formulario (API-CTX-01). Si no se puede leer, no se marca nada: la silueta no inventa.
+    void api.respuestasDelContexto(token, asesoradoId).then((r) => {
+      if (vivo && r.ok) setACuidar(zonasACuidarDelFormulario(r.datos.data.forms));
+    });
+    return () => {
+      vivo = false;
+    };
+  }, [token, asesoradoId]);
   // DL-196 (EE-06): la lista de «Antes de activar», desplegada al lado de «Revisar y activar».
   const [impideAbierto, setImpideAbierto] = useState(false);
   const [fechasAbiertas, setFechasAbiertas] = useState(false);
@@ -1430,7 +1477,49 @@ export function EditorDePlan({
           ? `«${nombreDelBloque(original, n - 1)}» copiada como «${copia.bloque.label}», con sus sesiones, sus semanas y sus días.`
           : `«${nombreDelBloque(original, n - 1)}» copiada como «${copia.bloque.label}», con sus sesiones. Los días no se copiaron: sin el inicio del plan y las semanas de cada fase, las dos fases irían todas las semanas a la vez.`,
     });
+    // DL-196 parte B (E19): con la copia hecha, se ofrece aplicarle una progresión (o seguir la de la original).
+    if (!plantilla && copia.bloque.blockId) {
+      setProgresionAbierta({ blockId: copia.bloque.blockId, copia: { original: nombreDelBloque(original, n - 1), originalId: original.blockId ?? null, prescripciones: copia.prescripciones } });
+    }
   };
+  /** DL-196 parte B: los ejercicios de una fase, con sus nombres, para la progresión y la distribución. */
+  const ejerciciosDeUnaFase = (b: BloqueE) => ejerciciosDeLaFase(b, (p) => nombres[p.exerciseVersionId] ?? 'Ejercicio', nombreDeLaSesion);
+  const aproximacionesDeId = (id: string | null) => aproximacionesDe(plan, id);
+  /**
+   * DL-196 parte B (E12, E19): aplica lo elegido en el asistente. Desde una copia, «Arrancar donde terminó» corre las
+   * cargas de trabajo de la copia a las de la última semana de la original (sin la descarga) antes de guardar la regla.
+   */
+  const aplicarLaProgresion = (blockId: string, nombre: string, a: AplicacionDeLaProgresion) => {
+    let p = a.semanas !== null ? conSemanasDeLaFase(plan, blockId, a.semanas) : plan;
+    const copia = progresionAbierta?.copia ?? null;
+    if (a.arrancarDondeTermino && copia?.originalId) {
+      const original = bloques.find((b) => b.blockId === copia.originalId);
+      const regla = progresionDeLaFase(plan, copia.originalId);
+      if (original && regla) {
+        const ultimas = cargasDeLaUltimaSemana(vistaPrevia(regla, ejerciciosDeUnaFase(original), semanasDeLaFase(plan, copia.originalId) ?? 4, aproximacionesDeId));
+        const nuevas = new Map([...copia.prescripciones].flatMap(([o, c]) => (ultimas.has(o) ? [[c, ultimas.get(o)!] as const] : [])));
+        if (nuevas.size > 0) {
+          cambiar((x) => {
+            for (const b of x) {
+              if (b.blockId !== blockId) continue;
+              for (const ses of sesionesDeLaFase(b)) ses.prescriptions = ses.prescriptions.map((q) => (q.prescriptionId && nuevas.has(q.prescriptionId) ? conCargaDeTrabajo(q, nuevas.get(q.prescriptionId)!) : q));
+            }
+            return x;
+          });
+        }
+      }
+    }
+    p = a.progresion ? conProgresion(p, a.progresion) : sinProgresion(p, blockId);
+    cambiarPlanificacion(p);
+    setProgresionAbierta(null);
+    setMensaje({ tipo: 'exito', texto: a.progresion ? COPY_PROGRESIONES.aplicada(nombre) : COPY_PROGRESIONES.quitada(nombre) });
+  };
+  /** GR-27 (DL-196 parte B): marca o desmarca un gráfico del panel como favorito de este plan. */
+  const alternarFavorito = (kind: 'EXERCISE_LOAD' | 'PHASE_PROGRESSION' | 'PHASE_DISTRIBUTION', id: string | null | undefined) => {
+    if (id) cambiarPlanificacion(conFavorito(plan, { kind, id }));
+  };
+  const estrella = (kind: 'EXERCISE_LOAD' | 'PHASE_PROGRESSION' | 'PHASE_DISTRIBUTION', id: string | null | undefined, deQue: string) =>
+    !plantilla && id ? <EstrellaDeFavorito marcado={esFavorito(plan, { kind, id })} onCambiar={() => alternarFavorito(kind, id)} deQue={deQue} /> : null;
   const quitarBloque = () => {
     cambiar((x) => (x.splice(i, 1), x));
     elegirBloque(Math.max(0, i - 1));
@@ -2298,6 +2387,163 @@ export function EditorDePlan({
   // Un ejercicio con su ejercicio del catálogo conocido (lo trae la versión guardada) muestra su panel; si no, el almanaque.
   const ejercicioEnFoco = foco.tipo === 'ejercicio' ? sesion?.prescriptions[foco.l] : undefined;
   const ejercicioDelCatalogo = ejercicioEnFoco ? (ejercicios[ejercicioEnFoco.exerciseVersionId] ?? null) : null;
+  // ── DL-196 parte B: la carga por semana de un ejercicio, la distribución, la progresión y los favoritos ─────────────
+  /** Lo planificado de cada semana de la fase para un ejercicio: con la regla de su fase, o su carga de trabajo todas las semanas. */
+  const planDelEjercicio = (b: BloqueE, q: PrescripcionE) => {
+    const nombre = nombres[q.exerciseVersionId] ?? 'Ejercicio';
+    const semanas = semanasDeLaFase(plan, b.blockId) ?? 4;
+    const regla = progresionDeLaFase(plan, b.blockId);
+    const base = baseDelEjercicio(q, nombre, aproximacionesDeId(q.prescriptionId ?? null));
+    const filas = regla && seAplicaA(regla, q.prescriptionId) ? vistaPrevia(regla, [{ prescriptionId: q.prescriptionId ?? null, nombre, sesion: '', prescripcion: q }], semanas, aproximacionesDeId)[0]?.semanas : null;
+    return {
+      nombre,
+      unidad: base.unidad,
+      plan: filas ? filas.map((f) => ({ carga: f.carga, descarga: f.descarga })) : Array.from({ length: semanas }, () => ({ carga: base.carga, descarga: false })),
+    };
+  };
+  /** La carga por semana de un ejercicio, con lo registrado, dentro del panel de «La vez pasada». */
+  const cargaPorSemanaDe = (n: number, q: PrescripcionE, exerciseId: string) => {
+    const b = bloques[n];
+    if (!b || asesoradoId === null) return null;
+    const d = planDelEjercicio(b, q);
+    const conAsesorado = asesoradoId;
+    return (veces: readonly VezPasada[] | null) => (
+      <CargaPorSemana
+        token={token}
+        asesoradoId={conAsesorado}
+        sesionPerdida={sesionPerdida}
+        exerciseId={exerciseId}
+        nombre={d.nombre}
+        unidad={d.unidad}
+        fase={fechasDeFases[n] ?? null}
+        plan={d.plan}
+        veces={veces}
+        acciones={estrella('EXERCISE_LOAD', q.prescriptionId, `la carga por semana de ${d.nombre}`)}
+      />
+    );
+  };
+  /** La distribución de una fase, con las zonas de sus ejercicios. */
+  const distribucionDe = (b: BloqueE, chica: boolean) => (
+    <DistribucionConFichas
+      token={token}
+      sesionPerdida={sesionPerdida}
+      ids={[...new Set(sesionesDeLaFase(b).flatMap((s) => s.prescriptions.flatMap((q) => (ejercicios[q.exerciseVersionId] ? [ejercicios[q.exerciseVersionId]!] : []))))]}
+      armar={(zonasDe) => sesionesParaDistribuir(b, agendaVisible, (q) => zonasDe(ejercicios[q.exerciseVersionId] ?? null))}
+      aCuidar={aCuidar}
+      chica={chica}
+      onVerEstructuras={chica ? null : () => setGaleria({ tarea: 'estructura', ejercicio: null })}
+    />
+  );
+  /** La progresión de una fase en el panel: la regla en palabras y su curva en el primer ejercicio con carga. */
+  const progresionDe = (b: BloqueE, n: number) => {
+    const regla = progresionDeLaFase(plan, b.blockId);
+    const semanas = semanasDeLaFase(plan, b.blockId) ?? 4;
+    const filas = regla ? vistaPrevia(regla, ejerciciosDeUnaFase(b), semanas, aproximacionesDeId) : [];
+    const conCarga = filas.find((f) => f.semanas.some((x) => x.carga !== null)) ?? null;
+    return (
+      <div className="progresion-en-el-panel" data-progresion-en-el-panel={regla ? 'con-regla' : 'sin-regla'}>
+        <p className="nota">{regla ? progresionEnPalabras(regla, conCarga?.unidad ?? 'kg') : `${nombreDelBloque(b, n)} no tiene progresión: la carga de trabajo queda igual todas las semanas.`}</p>
+        {conCarga ? (
+          <GraficoDeSemanas
+            titulo={`${conCarga.nombre}: la carga planificada por semana`}
+            semanas={semanas}
+            unidad={conCarga.unidad}
+            descargas={conCarga.semanas.filter((x) => x.descarga).map((x) => x.semana)}
+            series={[{ clave: 'plan', nombre: 'Planificado', forma: 'plan', valores: conCarga.semanas.map((x) => x.carga) }]}
+          />
+        ) : null}
+        <button type="button" className="boton boton--quieto boton--compacto" onClick={() => b.blockId && setProgresionAbierta({ blockId: b.blockId, copia: null })} data-abrir-progresion-del-panel>
+          <Icono nombre="sube" tamano={18} />
+          {COPY_PROGRESIONES.abrir}
+        </button>
+      </div>
+    );
+  };
+  /** GR-27: los gráficos marcados en este plan, cada uno dibujado con lo de hoy. Lo que ya no está, se dice. */
+  const favoritosDelPlan = (
+    <div className="favoritos-del-plan" data-favoritos-del-plan={(plan.favoriteCharts ?? []).length}>
+      {(plan.favoriteCharts ?? []).length === 0 ? <p className="nota">{COPY_FAVORITOS.vacio}</p> : null}
+      {(plan.favoriteCharts ?? []).map((g) => {
+        const clave = `${g.kind}:${g.id}`;
+        if (g.kind === 'EXERCISE_LOAD') {
+          const n = bloques.findIndex((b) => sesionesDeLaFase(b).some((s) => s.prescriptions.some((q) => q.prescriptionId === g.id)));
+          const q = n >= 0 ? sesionesDeLaFase(bloques[n]!).flatMap((s) => s.prescriptions).find((x) => x.prescriptionId === g.id) : undefined;
+          const exerciseId = q ? ejercicios[q.exerciseVersionId] : undefined;
+          if (!q || !exerciseId || asesoradoId === null) {
+            return (
+              <p key={clave} className="nota">
+                {COPY_FAVORITOS.yaNoEsta}
+              </p>
+            );
+          }
+          return (
+            <PanelDelEjercicio
+              key={clave}
+              token={token}
+              asesoradoId={asesoradoId}
+              sesionPerdida={sesionPerdida}
+              exerciseId={exerciseId}
+              nombre={nombres[q.exerciseVersionId] ?? 'Ejercicio'}
+              loQueIndica={null}
+              cargaPorSemana={cargaPorSemanaDe(n, q, exerciseId)}
+              soloElGrafico
+            />
+          );
+        }
+        const n = bloques.findIndex((b) => b.blockId === g.id);
+        const b = bloques[n];
+        if (!b) {
+          return (
+            <p key={clave} className="nota">
+              {COPY_FAVORITOS.yaNoEsta}
+            </p>
+          );
+        }
+        const deQue = `${g.kind === 'PHASE_PROGRESSION' ? COPY_PROGRESIONES.titulo : NOMBRE_DE_LA_VISTA.distribucion} · ${nombreDelBloque(b, n)}`;
+        return (
+          <section key={clave} className="favoritos-del-plan__grafico" aria-label={deQue}>
+            <div className="favoritos-del-plan__cabecera">
+              <h4 className="ejercicio-del-plan__subtitulo">{deQue}</h4>
+              {estrella(g.kind, g.id, deQue)}
+            </div>
+            {g.kind === 'PHASE_PROGRESSION' ? progresionDe(b, n) : distribucionDe(b, true)}
+          </section>
+        );
+      })}
+    </div>
+  );
+  const vistas: readonly VistaDelPanel[] = foco.tipo === 'ejercicio' ? [] : VISTAS_DEL_FOCO[foco.tipo];
+  const vista = vistaDelFoco(foco.tipo, vistaElegida);
+  /** EE-D40: el selector de vistas del panel, como pestañas (← y → con el teclado). */
+  const selectorDeVistas =
+    vistas.length > 1 ? (
+      <div className="selector-de-vistas" role="tablist" aria-label="Qué muestra el panel" data-selector-de-vistas>
+        {vistas.map((v) => (
+          <button
+            key={v}
+            id={`vista-del-panel-${v}`}
+            type="button"
+            role="tab"
+            aria-selected={v === vista}
+            aria-controls="vista-del-panel"
+            tabIndex={v === vista ? 0 : -1}
+            className="selector-de-vistas__opcion"
+            onClick={() => setVistaElegida(v)}
+            onKeyDown={(e) => {
+              const otra = vistaPorTecla(vistas, vista, e.key);
+              if (!otra) return;
+              e.preventDefault();
+              setVistaElegida(otra);
+              document.getElementById(`vista-del-panel-${otra}`)?.focus();
+            }}
+            data-vista={v}
+          >
+            {NOMBRE_DE_LA_VISTA[v]}
+          </button>
+        ))}
+      </div>
+    ) : null;
+  const deQueEsLaFase = bloque ? nombreDelBloque(bloque, i) : COPY_FASES.elPlan;
   const panelDelFoco =
     ejercicioEnFoco && ejercicioDelCatalogo && asesoradoId !== null ? (
       <PanelDelEjercicio
@@ -2308,11 +2554,54 @@ export function EditorDePlan({
         exerciseId={ejercicioDelCatalogo}
         nombre={nombres[ejercicioEnFoco.exerciseVersionId] ?? 'Ejercicio'}
         loQueIndica={<EnPartes texto={ejercicioPlegadoDelEditor(ejercicioEnFoco, 0, notacion).resumen} />}
+        antes={<AvisoDeZonaACuidar token={token} sesionPerdida={sesionPerdida} exerciseId={ejercicioDelCatalogo} aCuidar={aCuidar} />}
+        cargaPorSemana={plantilla ? null : cargaPorSemanaDe(i, ejercicioEnFoco, ejercicioDelCatalogo)}
+        despues={
+          plantilla ? null : (
+            <CargaParaRepeticiones
+              token={token}
+              asesoradoId={asesoradoId}
+              sesionPerdida={sesionPerdida}
+              exerciseId={ejercicioDelCatalogo}
+              unidad={baseDelEjercicio(ejercicioEnFoco, nombres[ejercicioEnFoco.exerciseVersionId] ?? '', null).unidad}
+              notacion={notacion}
+              repeticionesDeEntrada={repeticionesDeTrabajo(ejercicioEnFoco)}
+              rirDeEntrada={ejercicioEnFoco.intensity?.criterion === 'RIR' ? ejercicioEnFoco.intensity.target.value : null}
+            />
+          )
+        }
       />
     ) : (
-      <MarcoDelPanel id="panel-del-almanaque" deQue={deQueEsElAlmanaque} titulo={COPY_FASES.almanaque} onAbrirGrande={() => setAlmanaqueGrande(true)}>
-        {almanaque(1)}
-      </MarcoDelPanel>
+      <>
+        {selectorDeVistas}
+        <div id="vista-del-panel" role={vistas.length > 1 ? 'tabpanel' : undefined} aria-labelledby={vistas.length > 1 ? `vista-del-panel-${vista}` : undefined} data-vista-del-panel={vista}>
+          {vista === 'distribucion' && bloque ? (
+            <MarcoDelPanel id="panel-de-la-distribucion" deQue={deQueEsLaFase} titulo={NOMBRE_DE_LA_VISTA.distribucion} onAbrirGrande={() => setDistribucionGrande(true)}>
+              <div className="marco-del-panel__acciones">{estrella('PHASE_DISTRIBUTION', bloque.blockId, `la distribución de ${deQueEsLaFase}`)}</div>
+              {distribucionDe(bloque, false)}
+            </MarcoDelPanel>
+          ) : vista === 'progresion' && bloque ? (
+            <MarcoDelPanel id="panel-de-la-progresion" deQue={deQueEsLaFase} titulo={COPY_PROGRESIONES.titulo} onAbrirGrande={null}>
+              <div className="marco-del-panel__acciones">{estrella('PHASE_PROGRESSION', bloque.blockId, `la progresión de ${deQueEsLaFase}`)}</div>
+              {progresionDe(bloque, i)}
+            </MarcoDelPanel>
+          ) : vista === 'favoritos' ? (
+            <MarcoDelPanel id="panel-de-los-favoritos" deQue={COPY_FASES.elPlan} titulo={COPY_FAVORITOS.titulo} onAbrirGrande={null}>
+              {favoritosDelPlan}
+              {asesoradoId !== null ? (
+                <PatronesAPedido>
+                  {/* WP-GRAFICOS rama E (GR-27): los gráficos de la persona con el enfoque de este plan; nada de acá escribe en el plan. */}
+                  <PatronesDelPlan token={token} asesoradoId={asesoradoId} sesionPerdida={sesionPerdida} area="ENTRENAMIENTO" planId={comoPlan(version)?.trainingPlanId ?? null} />
+                </PatronesAPedido>
+              ) : null}
+            </MarcoDelPanel>
+          ) : (
+            <MarcoDelPanel id="panel-del-almanaque" deQue={deQueEsElAlmanaque} titulo={COPY_FASES.almanaque} onAbrirGrande={() => setAlmanaqueGrande(true)}>
+              {almanaque(1)}
+            </MarcoDelPanel>
+          )}
+        </div>
+      </>
     );
   /** «Antes de activar» (o «Antes de guardar», en una plantilla): lo que impide y lo que queda sin completar, cada cosa con su «Ir a…». */
   const listaAntesDeActivar = (
@@ -2744,6 +3033,16 @@ export function EditorDePlan({
                               onAnotaciones={(v) => conIdDeLaFase((id) => cambiarPlanificacion(conAnotacionesDeLaFase(plan, id, v)))}
                             />
                           )}
+                          {/* DL-196 parte B (E12): la progresión de la fase, a pedido. La regla guardada se lee en un renglón fijo. */}
+                          {!plantilla ? (
+                            <div className="fase-del-plan__progresion" data-progresion-de-la-fase={progresionDeLaFase(plan, bloque.blockId)?.model ?? (progresionDeLaFase(plan, bloque.blockId) ? 'descarga' : 'ninguna')}>
+                              <button type="button" className="boton boton--quieto boton--compacto" onClick={() => conIdDeLaFase((id) => setProgresionAbierta({ blockId: id, copia: null }))} data-abrir-progresion>
+                                <Icono nombre="sube" tamano={18} />
+                                {COPY_PROGRESIONES.abrir}
+                              </button>
+                              <span className="nota">{progresionDeLaFase(plan, bloque.blockId) ? progresionEnPalabras(progresionDeLaFase(plan, bloque.blockId)!, unidadDeLaFase(ejerciciosDeUnaFase(bloque))) : COPY_PROGRESIONES.sinModelo}</span>
+                            </div>
+                          ) : null}
                           {microciclo && j !== null ? (
                             <div className="plan__niveles niveles-del-editor">
                               <SelectorDeNivel
@@ -3139,12 +3438,7 @@ export function EditorDePlan({
           )}
           {/* «Otras áreas» solo aparece si tiene algo (sin datos, no ocupa nada). */}
           {!plantilla && asesoradoId !== null ? <OtrasAreas token={token} asesoradoId={asesoradoId} sesionPerdida={sesionPerdida} area="ENTRENAMIENTO" /> : null}
-          {!plantilla && asesoradoId !== null ? (
-            <PatronesAPedido>
-              {/* WP-GRAFICOS rama E: los gráficos de la persona con el enfoque de este plan; nada de acá escribe en el plan. */}
-              <PatronesDelPlan token={token} asesoradoId={asesoradoId} sesionPerdida={sesionPerdida} area="ENTRENAMIENTO" planId={comoPlan(version)?.trainingPlanId ?? null} />
-            </PatronesAPedido>
-          ) : null}
+          {/* DL-196 parte B: «Patrones» (el enfoque GR-27 del plan) pasó a la vista «Favoritos» del panel. */}
         </aside>
       </div>
       )}
@@ -3217,6 +3511,59 @@ export function EditorDePlan({
         onInsertarHabitual={insertarSesion}
         onCerrar={() => setGaleria(null)}
       />
+
+      {/* DL-196 parte B (E12, E19): el asistente de la progresión de una fase, o de la copia recién hecha. */}
+      {progresionAbierta
+        ? (() => {
+            const n = bloques.findIndex((b) => b.blockId === progresionAbierta.blockId);
+            const b = bloques[n];
+            if (!b || !b.blockId) return null;
+            const id = b.blockId;
+            const copia = progresionAbierta.copia;
+            const original = copia?.originalId ? bloques.find((x) => x.blockId === copia.originalId) : undefined;
+            const reglaOriginal = copia?.originalId ? progresionDeLaFase(plan, copia.originalId) : null;
+            return (
+              <AsistenteDeProgresion
+                abierto
+                persona={persona}
+                fase={nombreDelBloque(b, n)}
+                blockId={id}
+                semanasDeLaFase={semanasDeLaFase(plan, id)}
+                ejercicios={ejerciciosDeUnaFase(b)}
+                aproximacionesDe={aproximacionesDeId}
+                actual={progresionDeLaFase(plan, id)}
+                otras={bloques.flatMap((x, m) => {
+                  const r = x.blockId && x.blockId !== id ? progresionDeLaFase(plan, x.blockId) : null;
+                  return r ? [{ fase: nombreDelBloque(x, m), progresion: r }] : [];
+                })}
+                desdeLaCopia={
+                  copia && original
+                    ? {
+                        original: copia.original,
+                        progresion: reglaOriginal ? progresionParaOtraFase(reglaOriginal, id, copia.prescripciones) : null,
+                        ejercicios: ejerciciosDeUnaFase(original),
+                        semanas: semanasDeLaFase(plan, copia.originalId),
+                      }
+                    : null
+                }
+                onAplicar={(a) => aplicarLaProgresion(id, nombreDelBloque(b, n), a)}
+                onCerrar={() => setProgresionAbierta(null)}
+              />
+            );
+          })()
+        : null}
+
+      {/* DL-196 parte B: la distribución grande, con la silueta más alta y la tabla entera. */}
+      <CuadroEnfocado
+        abierto={distribucionGrande && !!bloque}
+        forma="panel"
+        titulo={`${NOMBRE_DE_LA_VISTA.distribucion} · ${deQueEsLaFase}`}
+        sobretitulo={persona}
+        className="distribucion-grande"
+        onCerrar={() => setDistribucionGrande(false)}
+      >
+        {distribucionGrande && bloque ? distribucionDe(bloque, false) : null}
+      </CuadroEnfocado>
 
       {/* DL-196 (EE-04): el almanaque grande, tres meses seguidos. */}
       <CuadroEnfocado abierto={almanaqueGrande} forma="panel" titulo={COPY_FASES.almanaque} sobretitulo={persona} className="almanaque-grande" onCerrar={() => setAlmanaqueGrande(false)}>

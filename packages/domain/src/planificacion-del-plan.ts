@@ -108,15 +108,27 @@ export function planificacionPodada(
   const warmUps = (planificacion.warmUps ?? []).filter((w) => hayPrescripcion.has(w.prescriptionId));
   const notas = planificacion.privateNotes;
   const notasDeFases = (notas?.phases ?? []).filter((n) => hayBloque.has(n.blockId));
+  // DL-196 parte B: la progresión de una fase que ya no está se va; la de ejercicios elegidos queda con los que siguen, y
+  // si no queda ninguno, se va (no pasa a valer para toda la fase).
+  const progressions = (planificacion.progressions ?? []).flatMap((p) => {
+    if (!hayBloque.has(p.blockId)) return [];
+    if (p.prescriptionIds === null) return [p];
+    const siguen = p.prescriptionIds.filter((id) => hayPrescripcion.has(id));
+    return siguen.length > 0 ? [{ ...p, prescriptionIds: siguen }] : [];
+  });
+  const favoriteCharts = (planificacion.favoriteCharts ?? []).filter((g) => (g.kind === 'EXERCISE_LOAD' ? hayPrescripcion.has(g.id) : hayBloque.has(g.id)));
   const podada: PlanificacionDelPlan = {
     startDate: planificacion.startDate,
     weeks: planificacion.weeks,
     goal: planificacion.goal?.trim() ? planificacion.goal : null,
     phases,
     ...(warmUps.length > 0 ? { warmUps } : {}),
+    ...(progressions.length > 0 ? { progressions } : {}),
+    ...(favoriteCharts.length > 0 ? { favoriteCharts } : {}),
     ...(notas && (notas.plan?.trim() || notasDeFases.length > 0) ? { privateNotes: { plan: notas.plan?.trim() ? notas.plan : null, phases: notasDeFases } } : {}),
   };
-  const vacia = podada.startDate === null && podada.weeks === null && !podada.goal && phases.length === 0 && warmUps.length === 0 && !podada.privateNotes;
+  const vacia =
+    podada.startDate === null && podada.weeks === null && !podada.goal && phases.length === 0 && warmUps.length === 0 && progressions.length === 0 && favoriteCharts.length === 0 && !podada.privateNotes;
   return vacia ? null : podada;
 }
 
