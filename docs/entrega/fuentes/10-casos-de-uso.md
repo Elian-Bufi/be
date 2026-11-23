@@ -8,7 +8,7 @@
 **Carrera:** Analista de Sistemas, Escuela Da Vinci
 **Fecha:** Noviembre de 2026
 
-> **Resumen.** Un caso de uso cuenta algo que alguien logra con BE, de punta a punta. Son 53, y juntos cuentan el circuito que une a la persona con sus profesionales, la historia que deja en el tiempo y su continuidad cuando cambia de profesional.
+> **Resumen.** Un caso de uso cuenta algo que alguien logra con BE, de punta a punta. Son 57, y juntos cuentan el circuito que une a la persona con sus profesionales, la historia que deja en el tiempo y su continuidad cuando cambia de profesional.
 
 **Entregable:** 10 · Casos de uso
 **Fecha:** Noviembre de 2026
@@ -18,7 +18,7 @@
 
 *Lo que cada persona logra con BE, de punta a punta.*
 
-Un caso de uso cuenta algo que alguien quiere lograr con BE: quién lo empieza, qué pasos sigue y qué obtiene. Este documento reúne los 53 casos del sistema, con sus diagramas y sus relaciones, y con los mismos identificadores que la especificación, los requisitos y las pruebas.
+Un caso de uso cuenta algo que alguien quiere lograr con BE: quién lo empieza, qué pasos sigue y qué obtiene. Este documento reúne los 57 casos del sistema, con sus diagramas y sus relaciones, y con los mismos identificadores que la especificación, los requisitos y las pruebas.
 
 Juntos cuentan un circuito. El profesional invita; la persona acepta y autoriza su área; el profesional evalúa, arma y activa un plan; la persona registra desde su teléfono lo que hizo; y el profesional revisa y decide cómo sigue. Cada paso queda en la historia de la persona, en el orden en que pasó y en todas sus áreas: Nutrición, Entrenamiento y Antropometría.
 
@@ -26,27 +26,27 @@ Sobre esa historia trabajan los casos de seguimiento y análisis. Los gráficos 
 
 > **La idea clave.** Cada caso de uso deja su rastro en la historia de la persona: **lo indicado, lo que pasó y lo que se decidió**, en el tiempo y con su permiso.
 
-![Figura 1: El mapa de los 53 casos, por módulo. El color dice quién inicia cada uno](pendiente)
+![Figura 1: El mapa de los 57 casos, por módulo. El color dice quién inicia cada uno](pendiente)
 
 > **Texto de la figura:**
 > - Acceso y cuenta7 casos
 > - **P25**Registrar la cuenta y el perfil propio**P26**Iniciar y cerrar la sesión**P27**Pedir los propios datos y cerrar la cuenta**P28**Avisar un problema y gestionarlo**E05**Entrar con Google**E06**Administrar los métodos de acceso**E09**Recuperar el acceso
-> - Profesionales y Administración4 casos
-> - **P01**Incorporar a un profesional**P02**Resolver la verificación de un área**P03**Suspender o rehabilitar a un profesional**P29**Conceder o retirar la habilitación de un área
+> - Profesionales y Administración5 casos
+> - **P01**Incorporar a un profesional**P02**Resolver la verificación de un área**P03**Suspender o rehabilitar a un profesional**P29**Conceder o retirar la habilitación de un área**P36**Revisar los alimentos cargados a mano y las propuestas al Recetario
 > - Vínculo y permisos5 casos
 > - **P04**Invitar a una persona o pedirle un vínculo**P05**Aceptar o rechazar un vínculo**P06**Consultar, pausar o finalizar un vínculo**P07**Dar y consultar los permisos**P08**Retirar el permiso
-> - Nutrición5 casos
-> - **P09**Registrar la evaluación y el objetivo nutricional**P10**Diseñar el plan nutricional**P11**Validar y activar el plan nutricional**P12**Ver y registrar lo que comió**P13**Revisar lo registrado y decidir cómo sigue
-> - Entrenamiento6 casos
-> - **P14**Registrar la evaluación y el objetivo de entrenamiento**P15**Diseñar el plan de entrenamiento**P16**Validar y activar el plan de entrenamiento**P17**Ver y registrar la sesión**E02**Corregir lo registrado**P18**Revisar lo registrado y decidir cómo sigue
+> - Nutrición6 casos
+> - **P09**Registrar la evaluación y el objetivo nutricional**P10**Diseñar el plan nutricional**P11**Validar y activar el plan nutricional**P12**Ver y registrar lo que comió**P13**Revisar lo registrado y decidir cómo sigue**E10**Calcular el objetivo con una toma
+> - Entrenamiento7 casos
+> - **P14**Registrar la evaluación y el objetivo de entrenamiento**P15**Diseñar el plan de entrenamiento**P16**Validar y activar el plan de entrenamiento**P17**Ver y registrar la sesión**E02**Corregir lo registrado**P18**Revisar lo registrado y decidir cómo sigue**P37**Preparar una plantilla de entrenamiento
 > - Antropometría3 casos
 > - **P19**Registrar una toma**P20**Ver la evolución antropométrica**E03**Corregir o anular una medición
 > - Seguimiento y análisis4 casos
 > - **P23**Ver la cartera y las revisiones pendientes**P24**Ver la ficha, la línea de tiempo y los gráficos**E07**Dejar una nota de coordinación**P31**Ver mi evolución
 > - La historia anterior2 casos
 > - **P34**Autorizar la historia anterior de un área**P35**Consultar la historia anterior de un área
-> - Información, novedades y avisos4 casos
-> - **P32**Pedir información a la persona**P33**Completar la información pedida**P30**Ver novedades**E08**Recibir un aviso en el teléfono
+> - Información, novedades y avisos5 casos
+> - **P32**Pedir información a la persona**P33**Completar la información pedida**P30**Ver novedades**E08**Recibir un aviso en el teléfono**E11**Vincular formularios a la evaluación
 > - Casos compartidos y proceso interno13 casos
 > - **I02**Evaluar la autorización**I03**Auditar y conservar la historia**I04**Validar y versionar un plan**I05**Registrar una revisión válida**I06**Aplicar la continuidad o el cierre**I07**Importar con revisión**I08**Seguir con el respaldo manual**I09**Calcular resultados antropométricos**I10**Verificar que el profesional puede operar el área**I11**Encauzar por el canal previsto**I12**Registrar una corrección trazable**I13**Ejecutar y adoptar un cálculo profesional**S01**Calcular la TVCC-30
 > - La inicia la personaLa inicia el profesionalLa persona o el profesionalAdministraciónAdentro de BE
@@ -61,8 +61,8 @@ Sobre esa historia trabajan los casos de seguimiento y análisis. Los gráficos 
 
 | Tipo | Casos | Qué es |
 | --- | --- | --- |
-| Principal (UC-P) | 33 | Un objetivo completo de un actor: activar un plan, registrar una sesión, revisar. |
-| Extensión (UC-E) | 7 | Un comportamiento que se suma a un caso base en un punto y solo con una condición: entrar con Google extiende iniciar la sesión, si se elige Google. |
+| Principal (UC-P) | 35 | Un objetivo completo de un actor: activar un plan, registrar una sesión, revisar. |
+| Extensión (UC-E) | 9 | Un comportamiento que se suma a un caso base en un punto y solo con una condición: entrar con Google extiende iniciar la sesión, si se elige Google. |
 | Compartido (UC-I) | 12 | Un paso que varios casos necesitan en el mismo punto, adentro de BE. Unos se usan siempre («include»), como evaluar la autorización; otros, solo con una condición («extend»), como importar un alimento que no está en el catálogo. |
 | Soporte (UC-S) | 1 | Un proceso interno, sin pantalla: el cálculo de la TVCC-30. |
 
@@ -79,7 +79,7 @@ Cada caso tiene una ficha breve, siempre con la misma forma. Esta es la de UC-P1
 > - Revisar lo registrado y decidir cómo sigue
 > - 1. **Quién**Profesional de Nutrición · Website2
 > - **Objetivo**Cerrar un período con una revisión válida y una próxima acción.
-> - **Recorrido**1. Toca «Preparar la revisión de Nutrición» cuando la revisión acordada se acerca 2. Mira el período: lo indicado y lo registrado día por día, la energía y los macronutrientes sobre el mismo eje, con el objetivo de cada temporada de fondo 3. Marca la evidencia, escribe lo que observó y elige uno de los seis resultados, con su fundamento y la próxima acción 4. Toca «Registrar revisión» y, en el momento o después, aplica lo decidido3
+> - **Recorrido**1. Toca «Preparar la revisión de Nutrición» cuando la revisión acordada se acerca 2. Mira el período: lo indicado y lo registrado día por día, la energía y los macronutrientes sobre el mismo eje, con el objetivo de cada período de fondo 3. Marca la evidencia, escribe lo que observó y elige uno de los seis resultados, con su fundamento y la próxima acción 4. Toca «Registrar revisión» y, en el momento o después, aplica lo decidido3
 > - **Resultado**Una revisión válida en la línea de tiempo. Al aplicarla, deja de figurar como pendiente.
 > - **Para qué**Cada decisión queda escrita con su fundamento: se puede reconstruir por qué se cambió el plan y ver qué pasó después.4
 > - **Relaciones**Incluye UC-I02, UC-I03 y UC-I05. Lo extiende UC-I06.5
@@ -124,8 +124,8 @@ Los diagramas siguen la notación de casos de uso de UML. BE es la frontera: los
 | Actor | Quién es | Canal |
 | --- | --- | --- |
 | Persona | Quien recibe el acompañamiento y es titular de sus datos. Sigue su plan, registra lo que hace, ve su evolución y decide quién ve qué. | App Android; en el website, su cuenta |
-| Profesional | Acompaña a la persona en Nutrición, Entrenamiento o Antropometría. Evalúa, planifica, revisa, compara en el tiempo y se coordina con los otros profesionales de la persona. | Website, con segundo factor |
-| Administración | Incorpora a los profesionales con la matrícula verificada fuera de BE y decide sobre cada área, siempre con un fundamento registrado. Atiende los problemas que se avisan y los pedidos sobre los datos. | Website, con segundo factor |
+| Profesional | Acompaña a la persona en Nutrición, Entrenamiento o Antropometría. Evalúa, planifica, revisa, compara en el tiempo y se coordina con los otros profesionales de la persona. | Website |
+| Administración | Incorpora a los profesionales con la matrícula verificada fuera de BE y decide sobre cada área, siempre con un fundamento registrado. Atiende los problemas que se avisan y los pedidos sobre los datos. Cuida los alimentos cargados a mano y el Recetario de BE. | Website, con segundo factor |
 | Servicios externos | Actores secundarios: Google para entrar, Open Food Facts y wger para importar alimentos y ejercicios, y el servicio de avisos al teléfono. Si alguno falla, lo esencial sigue. | Fuera de BE |
 
 ## 2.1 La persona
@@ -156,7 +156,7 @@ Inicia 20 casos, casi todos desde la app. Su recorrido es corto a propósito: ac
 
 ## 2.2 El profesional
 
-Es el actor con más casos: 26. Trabaja en el website y repite el mismo circuito en cada área (evaluar, diseñar, activar y revisar), con la historia de la persona a la vista mientras decide.
+Es el actor con más casos: 29. Trabaja en el website y repite el mismo circuito en cada área (evaluar, diseñar, activar y revisar), con la historia de la persona a la vista mientras decide.
 
 ![Figura 5: Los casos que inicia el profesional](pendiente)
 
@@ -168,9 +168,9 @@ Es el actor con más casos: 26. Trabaja en el website y repite el mismo circuito
 > - Vínculo y permisos
 > - **P04**Invitar a una persona o pedirle un vínculo**P06**Consultar, pausar o finalizar un vínculo
 > - Nutrición
-> - **P09**Registrar la evaluación y el objetivo nutricional**P10**Diseñar el plan nutricional**P11**Validar y activar el plan nutricional**P13**Revisar lo registrado y decidir cómo sigue
+> - **P09**Registrar la evaluación y el objetivo nutricional**P10**Diseñar el plan nutricional**P11**Validar y activar el plan nutricional**P13**Revisar lo registrado y decidir cómo sigue**E10**Calcular el objetivo con una toma
 > - Entrenamiento
-> - **P14**Registrar la evaluación y el objetivo de entrenamiento**P15**Diseñar el plan de entrenamiento**P16**Validar y activar el plan de entrenamiento**P18**Revisar lo registrado y decidir cómo sigue
+> - **P14**Registrar la evaluación y el objetivo de entrenamiento**P15**Diseñar el plan de entrenamiento**P16**Validar y activar el plan de entrenamiento**P18**Revisar lo registrado y decidir cómo sigue**P37**Preparar una plantilla de entrenamiento
 > - Antropometría
 > - **P19**Registrar una toma**P20**Ver la evolución antropométrica**E03**Corregir o anular una medición
 > - Seguimiento y análisis
@@ -178,11 +178,11 @@ Es el actor con más casos: 26. Trabaja en el website y repite el mismo circuito
 > - La historia anterior
 > - **P35**Consultar la historia anterior de un área
 > - Información, novedades y avisos
-> - **P32**Pedir información a la persona**P30**Ver novedades
+> - **P32**Pedir información a la persona**P30**Ver novedades**E11**Vincular formularios a la evaluación
 
 ## 2.3 Administración
 
-Participa en 8 casos, y en ninguno ve datos de salud. Decide quién opera en BE y en qué área, deja escrito por qué y atiende lo que se le pide.
+Participa en 9 casos, y en ninguno ve datos de salud. Decide quién opera en BE y en qué área, deja escrito por qué y atiende lo que se le pide.
 
 ![Figura 6: Los casos en los que participa Administración](pendiente)
 
@@ -192,7 +192,7 @@ Participa en 8 casos, y en ninguno ve datos de salud. Decide quién opera en BE 
 > - Acceso y cuenta
 > - **P26**Iniciar y cerrar la sesión**P27**Pedir los propios datos y cerrar la cuenta**P28**Avisar un problema y gestionarlo**E09**Recuperar el acceso
 > - Profesionales y Administración
-> - **P01**Incorporar a un profesional**P02**Resolver la verificación de un área**P03**Suspender o rehabilitar a un profesional**P29**Conceder o retirar la habilitación de un área
+> - **P01**Incorporar a un profesional**P02**Resolver la verificación de un área**P03**Suspender o rehabilitar a un profesional**P29**Conceder o retirar la habilitación de un área**P36**Revisar los alimentos cargados a mano y las propuestas al Recetario
 
 ## 2.4 Lo que pasa adentro de BE
 
@@ -232,7 +232,7 @@ Cuando la persona cambia de profesional, el circuito no vuelve a empezar de cero
 
 ## 3.1 Las extensiones
 
-Una extensión agrega un comportamiento a un caso base en un punto, y solo cuando se da una condición. Por eso cada una dice dónde se engancha y qué la dispara. Son 18 relaciones «extend»: las de las 7 extensiones, la de la historia anterior y las de los casos compartidos que se usan solo a veces.
+Una extensión agrega un comportamiento a un caso base en un punto, y solo cuando se da una condición. Por eso cada una dice dónde se engancha y qué la dispara. Son 21 relaciones «extend»: las de las 9 extensiones, la de la historia anterior y las de los casos compartidos que se usan solo a veces.
 
 **Tabla 3.** Cada «extend», con su punto de extensión y su condición.
 
@@ -242,12 +242,15 @@ Una extensión agrega un comportamiento a un caso base en un punto, y solo cuand
 | UC-E05 · Entrar con Google | UC-P26 · Iniciar y cerrar la sesión | Elegir cómo entrar | Si elige «Continuar con Google» para entrar |
 | UC-E06 · Administrar los métodos de acceso | UC-P26 · Iniciar y cerrar la sesión | Sesión abierta | Si abre «Cómo entrás» en su cuenta, con la sesión abierta |
 | UC-E09 · Recuperar el acceso | UC-P26 · Iniciar y cerrar la sesión | Ingresar la contraseña | Si olvidó la contraseña y toca «¿Olvidaste tu contraseña?» |
-| UC-P34 · Autorizar la historia anterior de un área | UC-P05 · Aceptar o rechazar un vínculo | Después de aceptar | Si acepta a un profesional en un área en la que ya tuvo otro |
+| UC-P34 · Autorizar la historia anterior de un área | UC-P05 · Aceptar o rechazar un vínculo | Después de aceptar | Si acepta a un profesional en un área en la que ya tuvo otro: la historia anterior viene marcada en la pantalla única de compartir |
 | UC-I13 · Ejecutar y adoptar un cálculo profesional | UC-P09 · Registrar la evaluación y el objetivo nutricional | Registrar la evaluación | Si el profesional elige ejecutar un método de cálculo |
+| UC-E10 · Calcular el objetivo con una toma | UC-P09 · Registrar la evaluación y el objetivo nutricional | Definir el objetivo | Si el profesional toca «Calcular» |
+| UC-E11 · Vincular formularios a la evaluación | UC-P09 · Registrar la evaluación y el objetivo nutricional | Registrar la evaluación | Si la persona respondió formularios o falta lo que contó |
 | UC-I07 · Importar con revisión | UC-P10 · Diseñar el plan nutricional | Agregar un alimento | Si el alimento no está en el catálogo propio y lo busca afuera |
 | UC-I08 · Seguir con el respaldo manual | UC-P10 · Diseñar el plan nutricional | Agregar un alimento | Si el catálogo externo no responde |
 | UC-I06 · Aplicar la continuidad o el cierre | UC-P13 · Revisar lo registrado y decidir cómo sigue | Revisión registrada | Si el profesional aplica lo decidido, en el momento o después |
 | UC-I13 · Ejecutar y adoptar un cálculo profesional | UC-P14 · Registrar la evaluación y el objetivo de entrenamiento | Registrar la evaluación | Si el profesional elige ejecutar un método de cálculo |
+| UC-E11 · Vincular formularios a la evaluación | UC-P14 · Registrar la evaluación y el objetivo de entrenamiento | Registrar la evaluación | Si la persona respondió formularios o falta lo que contó |
 | UC-I07 · Importar con revisión | UC-P15 · Diseñar el plan de entrenamiento | Agregar un ejercicio | Si el ejercicio no está en el catálogo propio y lo busca afuera |
 | UC-I08 · Seguir con el respaldo manual | UC-P15 · Diseñar el plan de entrenamiento | Agregar un ejercicio | Si el catálogo externo no responde |
 | UC-E02 · Corregir lo registrado | UC-P17 · Ver y registrar la sesión | Sesión registrada | Si la persona encuentra un error en una sesión ya registrada |
@@ -293,7 +296,7 @@ Es el momento en que lo indicado queda escrito. Desde ahí, todo lo que la perso
 | Actor principal | Profesional de Nutrición, en el website. |
 | Actores secundarios | La persona, que recibe la novedad y ve la versión en su app. El servicio de avisos, si ella activó los avisos. |
 | Disparador | El profesional toca «Revisar y activar…» en la barra del editor del plan. |
-| Precondiciones | · El profesional entró con su segundo factor y puede operar Nutrición: el área está verificada y habilitada (UC-I10).<br>· La persona aceptó el vínculo de Nutrición, autorizó el tratamiento de sus datos de salud y dio el permiso del área (UC-I02).<br>· Hay un borrador del plan guardado y un objetivo vigente de la persona. |
+| Precondiciones | · El profesional entró y puede operar Nutrición: el área está verificada y habilitada (UC-I10).<br>· La persona aceptó el vínculo de Nutrición, autorizó el tratamiento de sus datos de salud y dio el permiso del área (UC-I02).<br>· Hay un borrador del plan guardado y un objetivo vigente de la persona. |
 | Resultado | · La versión queda activada, con su instantánea y su huella, y ya no se puede modificar. El plan apunta a ella; la anterior queda en el historial.<br>· El seguimiento de Nutrición se abre o continúa, con la próxima revisión acordada.<br>· La persona tiene una novedad y ve en su app exactamente esa versión. |
 | Si algo falla | No cambia nada: la activación es una sola transacción, y el borrador queda como estaba. |
 | Relaciones | Incluye UC-I02, UC-I03, UC-I04 y UC-I10. |
@@ -394,7 +397,7 @@ Es donde la historia se convierte en una decisión. Cada revisión deja escrito 
 | Actor principal | Profesional de Nutrición, en el website. |
 | Actores secundarios | La persona, que recibe la novedad y lee la decisión en «Revisiones», en su app. |
 | Disparador | Se acerca o vence la revisión acordada: la cartera y la ficha la muestran, y el profesional toca «Preparar la revisión de Nutrición» (o «Nueva revisión», en Revisiones). |
-| Precondiciones | · El profesional entró con su segundo factor y puede operar Nutrición.<br>· La persona mantiene el vínculo y el permiso del área.<br>· Hay un seguimiento de Nutrición abierto: una versión del plan activada. |
+| Precondiciones | · El profesional entró y puede operar Nutrición.<br>· La persona mantiene el vínculo y el permiso del área.<br>· Hay un seguimiento de Nutrición abierto: una versión del plan activada. |
 | Resultado | · Una revisión válida, con su período, la evidencia marcada, la interpretación, uno de los seis resultados, el fundamento y la próxima acción.<br>· Registrarla no cambia nada por sí sola. Al aplicarla, BE crea lo que corresponde y la revisión deja de figurar como pendiente.<br>· Queda en la línea de tiempo, y la persona la ve. |
 | Si algo falla | Abrir la pantalla no es revisar: nada se escribe hasta «Registrar revisión», y lo escrito no se pierde al cambiar el período. |
 | Relaciones | Incluye UC-I02, UC-I03 y UC-I05. Lo extiende UC-I06. |
@@ -404,7 +407,7 @@ Es donde la historia se convierte en una decisión. Cada revisión deja escrito 
 
 1. **Profesional**Toca «Preparar la revisión de Nutrición».
 2. **BE**Propone el período, desde la última revisión hasta hoy (hasta 92 días), y lee su contexto: el objetivo y las versiones del plan que rigieron, lo registrado, la comparación día por día entre lo indicado y lo registrado, los días sin dato y las revisiones anteriores.
-3. **Profesional**Mira el período: lo indicado y lo registrado en gramos, la energía registrada de cada día con lo que se sabe de ese día y los macronutrientes en paneles alineados, con el objetivo de cada temporada de fondo. Nada viene marcado ni elegido.
+3. **Profesional**Mira el período: lo indicado y lo registrado en gramos, la energía registrada de cada día con lo que se sabe de ese día y los macronutrientes en paneles alineados, con el objetivo de cada período de fondo. Nada viene marcado ni elegido.
 4. **Profesional**En el paso «Lo que miraste», marca la evidencia que sostiene la revisión.
 5. **Profesional**En «Lo que observaste», escribe la interpretación.
 6. **Profesional**En «Lo que decidís», elige uno de los seis resultados (mantener, ajustar, sustituir, reprogramar la revisión, cambiar el objetivo o finalizar), lee su efecto y escribe el fundamento y la próxima acción. BE no sugiere un resultado.
@@ -440,7 +443,7 @@ En **Entrenamiento (UC-P18)**, el recorrido es el mismo, con «Preparar la revis
 
 ## 5.1 Acceso y cuenta
 
-Crear la cuenta, entrar y salir, recuperar el acceso, avisar un problema, pedir los propios datos y cerrar la cuenta. La cuenta es de quien la crea y es una sola, entre con su contraseña o con Google. El profesional y Administración entran con un segundo factor, porque trabajan con datos de salud.
+Crear la cuenta, entrar y salir, recuperar el acceso, avisar un problema, pedir los propios datos y cerrar la cuenta. La cuenta es de quien la crea y es una sola, entre con su contraseña o con Google. El profesional entra con su contraseña o con Google; Administración, que decide quién opera en BE, confirma además con un segundo factor.
 
 ![Figura 9: Casos de uso de Acceso y cuenta](pendiente)
 
@@ -467,17 +470,17 @@ Crear la cuenta, entrar y salir, recuperar el acceso, avisar un problema, pedir 
 >
 > **Recorrido.**
 >
-> 1. Ingresa su correo y su contraseña
+> 1. Ingresa su correo y su contraseña, o entra con Google
 > 2. BE valida la cuenta y su estado, sin revelar qué dato falló
-> 3. El profesional y Administración confirman con el código de su aplicación autenticadora
+> 3. Administración, además, confirma con el código de su aplicación autenticadora
 > 4. BE lleva a cada uno a su lugar: la persona a la app (en el website, a su cuenta), el profesional al espacio profesional y Administración a su consola
 > 5. Al salir, la sesión deja de servir; también puede cerrar todas las sesiones abiertas
 >
 > **Resultado.** Una sesión abierta en su canal, o un rechazo neutro.
 >
-> **Variante.** Si un profesional perdió su autenticador y sus códigos de recuperación, Administración lo verifica por el canal de ayuda y restablece su segundo factor; al volver a entrar, lo configura de nuevo.
+> **Variante.** Si alguien de Administración perdió su autenticador y sus códigos de recuperación, otro administrador lo verifica por el canal de ayuda y restablece su segundo factor; al volver a entrar, lo configura de nuevo.
 >
-> **Para qué.** Con una contraseña robada no alcanza para entrar al espacio profesional: los datos de salud piden dos pasos.
+> **Para qué.** Cada uno entra por su canal, con el límite de intentos y sesiones que vencen. La consola de Administración, que decide quién opera en BE, pide además un segundo paso.
 >
 > **Relaciones.** Incluye UC-I11 y UC-I03. Lo extienden UC-E05, UC-E06 y UC-E09.
 >
@@ -587,7 +590,7 @@ Quién trabaja como profesional en BE y en qué área. El profesional no se decl
 > 3. En la consola, elige «Incorporar un profesional» y carga el correo de la cuenta, el nombre profesional, el tipo, la matrícula si es de la salud, las áreas y dónde lo verificó
 > 4. BE crea el perfil profesional con la verificación y la habilitación de cada área, y registra el fundamento
 >
-> **Resultado.** Un profesional que entra al espacio profesional con su segundo factor y opera solo sus áreas. Habilitar no es certificar una matrícula.
+> **Resultado.** Un profesional que entra al espacio profesional con su contraseña o con Google y opera solo sus áreas. Habilitar no es certificar una matrícula.
 >
 > **Relaciones.** Incluye UC-I03.
 >
@@ -643,6 +646,23 @@ Quién trabaja como profesional en BE y en qué área. El profesional no se decl
 >
 > **Requisitos.** RF-015, RF-066
 
+> **UC-P36 · Revisar los alimentos cargados a mano y las propuestas al Recetario.** Principal · Administración · Website, con segundo factor
+>
+> **Objetivo.** Que el catálogo de Nutrición tenga valores confiables, que lo que piden varios profesionales esté verificado para todos y que el Recetario de BE sume las recetas que valen para todos.
+>
+> **Recorrido.**
+>
+> 1. Abre «Alimentos» y mira las cargas a mano agrupadas por nombre parecido, con cuántos profesionales cargaron algo así
+> 2. Revisa una carga en la versión que ve: la certifica con su fuente, marca su equivalente verificado o suma un alimento al catálogo verificado
+> 3. En «Propuestas al Recetario de BE» mira cada receta que propuso un profesional, con su autor, la cesión de la foto y las «Parecidas»
+> 4. Elige «Sumar al Recetario de BE» o «No sumarla», con un motivo opcional que ve quien la propuso
+>
+> **Resultado.** Cada decisión con su versión, su fuente y su autor. El buscador de quien cargó el alimento le sugiere el verificado, y una receta sumada queda para todos los profesionales de Nutrición. Administración ve quién cargó o propuso, nunca a qué persona se le indicó.
+>
+> **Relaciones.** Incluye UC-I02 y UC-I03.
+>
+> **Requisitos.** RF-072, RF-027, RF-060
+
 ## 5.3 Vínculo y permisos
 
 Cómo empieza, se autoriza, cambia y termina una relación. Aceptar un vínculo no es consentir: el permiso sobre los datos de un área es un acto propio de la persona, que puede retirar cuando quiera, con efecto desde ese momento. Son datos de salud: sin ese permiso, el profesional no ve nada.
@@ -675,7 +695,7 @@ Cómo empieza, se autoriza, cambia y termina una relación. Aceptar un vínculo 
 > 1. Abre la invitación (el enlace, el QR o el código) o la solicitud recibida
 > 2. Ve quién la invita, para qué área y con qué finalidad
 > 3. Acepta o rechaza
-> 4. Si acepta, sigue en el mismo recorrido al permiso de esa área (UC-P07)
+> 4. Si acepta, sigue en una sola pantalla con lo que se propone compartir, ya marcado: el área, lo de sus otras áreas y, si ya tuvo otro profesional en esa área, la historia anterior (UC-P07 y UC-P34)
 >
 > **Resultado.** Un vínculo aceptado o rechazado, con su registro y una novedad para el profesional.
 >
@@ -707,9 +727,9 @@ Cómo empieza, se autoriza, cambia y termina una relación. Aceptar un vínculo 
 > **Recorrido.**
 >
 > 1. Autoriza el tratamiento de sus datos de salud, como un acto separado de crear la cuenta
-> 2. Al aceptar un vínculo, lee el texto del permiso de esa área y lo otorga; BE guarda la versión, la fecha y el autor
+> 2. Al aceptar un vínculo, lee el texto del permiso de esa área y, en una sola pantalla con todo marcado, decide qué comparte: «Aceptar y compartir», «Elegir qué compartir» o «Ahora no»; BE guarda la versión, la fecha y el autor
 > 3. Autoriza aparte las fotos de sus comidas para su profesional de Nutrición, y decide con quiénes comparte «Mis hábitos»
-> 4. En «Quién ve qué» ve, por profesional, lo que autorizó y desde cuándo y, debajo de cada área, si comparte su historia anterior (UC-P34)
+> 4. En «Quién ve qué» ve, por profesional, lo que autorizó y desde cuándo, con un interruptor por cosa: el área, lo de otras áreas y la historia anterior (UC-P34)
 >
 > **Resultado.** Permisos vigentes, específicos y con versión: cada profesional ve solo lo que la persona autorizó.
 >
@@ -725,7 +745,7 @@ Cómo empieza, se autoriza, cambia y termina una relación. Aceptar un vínculo 
 >
 > **Recorrido.**
 >
-> 1. En «Privacidad» o en el vínculo, elige «Revocar acceso» de ese profesional
+> 1. En «Quién ve qué», apaga una cosa sola que ya no quiere compartir, o elige «Revocar acceso» del área de ese profesional
 > 2. Confirma
 > 3. BE retira el acceso en ese momento y avisa al profesional
 >
@@ -747,16 +767,17 @@ El circuito completo de un área: la evaluación y el objetivo, el plan en borra
 >
 > **Recorrido.**
 >
-> 1. Abre la ficha de la persona en Nutrición
-> 2. Registra la evaluación con su fuente
-> 3. Si quiere, ejecuta un método de cálculo con versión y decide si adopta el resultado
-> 4. Define el objetivo de energía y de macronutrientes, con su vigencia
+> 1. Con el área vacía, en la ficha, toca «Empezar el plan»: arriba, la franja de los pasos («Evaluación › Objetivo › Plan»), con el estado de cada uno
+> 2. Registra la evaluación en tres bloques: «Lo que contó» la persona, «Lo medido» y «Lo que necesita el cálculo», cada dato con su origen y su fecha; la fecha es la de ahora y se puede cambiar, y «Anotaciones» queda solo para él
+> 3. Si falta lo que contó la persona, lo completa con ella en el mismo lugar (UC-E11)
+> 4. Si quiere, ejecuta un método de cálculo con versión y decide si adopta el resultado, o toca «Calcular» para que BE proponga el objetivo con un método publicado (UC-E10)
+> 5. Define el objetivo de energía y de macronutrientes, con su vigencia; BE dice las kcal que suman sus gramos y avisa si no coinciden
 >
 > **Resultado.** La evaluación y el objetivo, con autor, fecha y versión. Un objetivo nuevo no pisa al anterior: lo sucede.
 >
-> **Relaciones.** Incluye UC-I02 y UC-I03. Lo extiende UC-I13.
+> **Relaciones.** Incluye UC-I02 y UC-I03. Lo extienden UC-I13, UC-E10 y UC-E11.
 >
-> **Requisitos.** RF-021, RF-026, RF-029, RF-070
+> **Requisitos.** RF-021, RF-026, RF-029, RF-070, RF-071, RF-073
 
 > **UC-P10 · Diseñar el plan nutricional.** Principal · Profesional de Nutrición · Website
 >
@@ -764,11 +785,12 @@ El circuito completo de un área: la evaluación y el objetivo, el plan en borra
 >
 > **Recorrido.**
 >
-> 1. Crea el borrador en blanco, desde una plantilla o con el asistente
-> 2. Arma los días tipo y las comidas con alimentos, recetas propias y «Mis habituales», y puede copiar desde otra comida
+> 1. Crea el borrador desde la vista del plan: en blanco, copiando la versión activa o desde una plantilla
+> 2. Arma los días tipo y las comidas con alimentos («Verificado» o «Tuyo»), recetas propias o del Recetario de BE y «Mis habituales», con la cantidad en gramos o en medidas caseras; mientras escribe, ve lo que aporta cada alimento, y puede copiar desde otra comida
 > 3. Si quiere, fija rangos de macronutrientes para el día o para cada comida, en gramos o en gramos por kilo de peso
-> 4. Si un alimento no está, lo busca en un catálogo externo o lo carga a mano
-> 5. BE guarda solo y dice si el cambio ya llegó; la pestaña «Patrones» de la estación muestra lo registrado con el objetivo de cada temporada de fondo
+> 4. Mira el reparto por comida y la franja de cada comida, con el promedio de sus opciones; el panel «Contexto de…» le muestra lo de la persona sin salir del editor
+> 5. Si un alimento no está, lo busca en un catálogo externo o lo carga a mano
+> 6. BE guarda solo y dice si el cambio ya llegó; la pestaña «Patrones» del editor muestra lo registrado con el objetivo de cada período de fondo
 >
 > **Resultado.** Un borrador que la persona todavía no ve.
 >
@@ -819,7 +841,7 @@ El circuito completo de un área: la evaluación y el objetivo, el plan en borra
 > **Recorrido.**
 >
 > 1. Toca «Preparar la revisión de Nutrición» cuando la revisión acordada se acerca
-> 2. Mira el período: lo indicado y lo registrado día por día, la energía y los macronutrientes sobre el mismo eje, con el objetivo de cada temporada de fondo
+> 2. Mira el período: lo indicado y lo registrado día por día, la energía y los macronutrientes sobre el mismo eje, con el objetivo de cada período de fondo
 > 3. Marca la evidencia, escribe lo que observó y elige uno de los seis resultados, con su fundamento y la próxima acción
 > 4. Toca «Registrar revisión» y, en el momento o después, aplica lo decidido
 >
@@ -830,6 +852,23 @@ El circuito completo de un área: la evaluación y el objetivo, el plan en borra
 > **Relaciones.** Incluye UC-I02, UC-I03 y UC-I05. Lo extiende UC-I06.
 >
 > **Requisitos.** RF-021, RF-034, RF-035, RF-055, RF-056
+
+> **UC-E10 · Calcular el objetivo con una toma.** Extensión · Profesional de Nutrición · Website
+>
+> **Objetivo.** Proponer el objetivo con un método publicado y con los datos a la vista, sin que BE decida por el profesional.
+>
+> **Recorrido.**
+>
+> 1. En el objetivo, toca «Calcular»
+> 2. Elige «Usar la toma del» día de la última toma de Antropometría que puede usar, o «Cargar a mano»
+> 3. Elige el método (cada uno dice para quién sirve; «De dónde sale» y «Fuente» muestran la fórmula y la cita), el ajuste («Mantener», «Déficit» o «Superávit») y los g/kg de proteína y grasa
+> 4. «Usar estos valores en el objetivo» los lleva al formulario, y el profesional decide y guarda
+>
+> **Resultado.** Un objetivo apoyado en una toma y en un método publicado. El servidor rehace la cuenta al guardar y la guarda con sus valores; si llega una toma más nueva, BE lo avisa sin recalcular solo.
+>
+> **Relaciones.** Extiende UC-P09. Incluye UC-I02 y UC-I03.
+>
+> **Requisitos.** RF-073, RF-029, RF-070
 >
 > **Completo en** «UC-P13 · Revisar lo registrado y decidir cómo sigue».
 
@@ -845,28 +884,29 @@ El mismo circuito, con la prescripción serie por serie, la sesión guiada en el
 >
 > **Recorrido.**
 >
-> 1. Abre la ficha de la persona en Entrenamiento
-> 2. Registra la evaluación
+> 1. Con el área vacía, en la ficha, toca «Empezar el plan»: arriba, la franja de los pasos («Evaluación › Objetivo › Plan»)
+> 2. Registra la evaluación, con la fecha de ahora (que se puede cambiar) y sus «Anotaciones» privadas; si falta lo que contó la persona, lo completa con ella en el mismo lugar (UC-E11)
 > 3. Si quiere, ejecuta un método de cálculo con versión y decide si adopta el resultado
 > 4. Define el objetivo, con su período
 >
 > **Resultado.** La evaluación y el objetivo, con autor, fecha y versión.
 >
-> **Relaciones.** Incluye UC-I02 y UC-I03. Lo extiende UC-I13.
+> **Relaciones.** Incluye UC-I02 y UC-I03. Lo extienden UC-I13 y UC-E11.
 >
-> **Requisitos.** RF-021, RF-036, RF-064, RF-070
+> **Requisitos.** RF-021, RF-036, RF-064, RF-070, RF-071
 
 > **UC-P15 · Diseñar el plan de entrenamiento.** Principal · Profesional de Entrenamiento · Website
 >
-> **Objetivo.** Armar bloques, sesiones y la prescripción serie por serie, viendo lo que la persona ya hizo.
+> **Objetivo.** Armar fases, sesiones y la prescripción serie por serie, viendo lo que la persona ya hizo.
 >
 > **Recorrido.**
 >
-> 1. Crea el borrador en blanco o desde una plantilla, y ordena los bloques y las sesiones
+> 1. Crea el borrador en blanco o desde una plantilla, y ordena las fases y las sesiones, con sus días; dentro de una sesión puede agrupar ejercicios en un bloque «Seguido» o «En vueltas»
 > 2. Busca los ejercicios en el catálogo, con su imagen y sus zonas musculares; el buscador marca «Con historial» los que ya estuvieron en sesiones registradas de la persona en el último año, con cuántas y la fecha de la última
 > 3. En el cuadro de cada ejercicio ve «La vez pasada» (las últimas tres veces, serie por serie: carga, repeticiones y RIR) y su historial en paneles alineados: carga, repeticiones y RIR de la misma serie, el RIR indicado frente al registrado y, en los ejercicios con método aprobado, el 1RM estimado (Epley v1) sesión a sesión, con las versiones del plan de fondo
-> 4. Indica series, repeticiones, carga, RIR y descanso de cada serie; puede calcular la carga desde la estimación, y la confirma él
-> 5. Si un ejercicio no está, lo busca en un catálogo externo o crea uno propio
+> 4. Elige cómo se escribe el esfuerzo: RIR o RPE
+> 5. Indica las series de calentamiento y las efectivas, y de cada serie las repeticiones, la carga, el esfuerzo y el descanso, también con la escritura rápida y «Aplicar»; puede calcular la carga desde la estimación, y la confirma él
+> 6. Mientras planifica, el panel «Contexto de…» le muestra lo de la persona; si un ejercicio no está, lo busca en un catálogo externo o crea uno propio
 >
 > **Resultado.** Un borrador completo que la persona todavía no ve.
 >
@@ -902,8 +942,8 @@ El mismo circuito, con la prescripción serie por serie, la sesión guiada en el
 > **Recorrido.**
 >
 > 1. Abre «Hoy» y toca «Iniciar entrenamiento»
-> 2. Ve un ejercicio a la vez, con «La vez pasada» y lo planificado de cada serie en gris
-> 3. Registra cada serie con lo que hizo o con un toque; el descanso arranca solo
+> 2. Ve un ejercicio a la vez, bajo su bloque, con «La vez pasada» y lo planificado de cada serie en gris
+> 3. Registra cada serie con lo que hizo o con un toque, y responde el esfuerzo en la notación del plan (RIR o RPE); las series de calentamiento se registran y no cuentan; el descanso arranca solo
 > 4. Toca «Finalizar entrenamiento» y confirma; si quiere, le deja una nota a su profe
 >
 > **Resultado.** Una sesión registrada aparte de lo planificado, unida a la versión que regía ese día.
@@ -946,6 +986,23 @@ El mismo circuito, con la prescripción serie por serie, la sesión guiada en el
 > **Relaciones.** Incluye UC-I02, UC-I03 y UC-I05. Lo extiende UC-I06.
 >
 > **Requisitos.** RF-021, RF-045, RF-046, RF-055, RF-056
+
+> **UC-P37 · Preparar una plantilla de entrenamiento.** Principal · Profesional de Entrenamiento · Website
+>
+> **Objetivo.** Tener listos sus planes base sin elegir a una persona.
+>
+> **Recorrido.**
+>
+> 1. En «Mis plantillas», elige «Nueva plantilla» (en blanco o desde otra) o «Editar»
+> 2. Arma fases, sesiones, bloques y series en el mismo editor de los planes, que se guarda solo
+> 3. Toca «Revisar»
+> 4. Elige «Guardar plantilla» o «Guardar nueva versión»
+>
+> **Resultado.** Una versión nueva de la plantilla. Los planes que salieron de las anteriores no cambian, y cada plan dice qué versión se aplicó.
+>
+> **Relaciones.** Incluye UC-I02, UC-I03 y UC-I04.
+>
+> **Requisitos.** RF-039, RF-040
 >
 > **Completo en** «UC-P13 · Revisar lo registrado y decidir cómo sigue».
 
@@ -961,9 +1018,9 @@ Tomas con protocolo y cálculos que se pueden repetir, correcciones que no borra
 >
 > **Recorrido.**
 >
-> 1. Abre una toma nueva, que se guarda como borrador mientras la completa
-> 2. Carga las mediciones sobre la figura, con los puntos del protocolo
-> 3. BE calcula los resultados derivados con su método y su versión
+> 1. Elige qué va a calcular: uno o varios métodos, o un conjunto de un toque, como «Kerr (1988), cinco componentes»
+> 2. Abre la toma nueva, que se guarda como borrador mientras la completa, y carga sobre la figura solo lo que piden esos métodos, más peso, talla y edad
+> 3. BE calcula los resultados derivados con su método y su versión; con Kerr, el «Peso estructurado» frente al peso medido
 > 4. Registra la toma: desde ese momento es historia y no se edita
 >
 > **Resultado.** Las mediciones y los cálculos, separados, con método y versión.
@@ -1170,6 +1227,23 @@ El pedido de información con plantillas que tienen versión, los hábitos que l
 >
 > **Requisitos.** RF-021, RF-071
 
+> **UC-E11 · Vincular formularios a la evaluación.** Extensión · Profesional de Nutrición o de Entrenamiento · Website
+>
+> **Objetivo.** Que la evaluación se apoye en lo que la persona contó, sin copiar sus respuestas.
+>
+> **Recorrido.**
+>
+> 1. En «Lo que contó», ve los formularios que la persona respondió y los vincula a la evaluación
+> 2. Si falta algo, «Completarlo ahora con» la persona abre la carga en el mismo lugar, con «Primero lo necesario para planificar» y «Cargar también el resto» (UC-P32 y UC-P33)
+> 3. Al terminar, vuelve a la evaluación con lo cargado, que la persona confirma o corrige desde la app
+> 4. Si prefiere, «Enviárselo» se lo pide a la app, como «Pedir información»
+>
+> **Resultado.** La evaluación con sus formularios vinculados, sin copiar ninguna respuesta. Si la persona corrige algo, la evaluación lo dice.
+>
+> **Relaciones.** Extiende UC-P09 y UC-P14. Incluye UC-P32, UC-P33, UC-I02 y UC-I03.
+>
+> **Requisitos.** RF-026, RF-036, RF-071
+
 > **UC-P30 · Ver novedades.** Principal · Persona o profesional · App y website
 >
 > **Objetivo.** Enterarse de lo nuevo que le corresponde.
@@ -1341,7 +1415,7 @@ Quién usa cada uno, siempre o con una condición, está en la Tabla 4.
 > **Recorrido.**
 >
 > 1. Lee la verificación y la habilitación del área
-> 2. Comprueba que la sesión tenga el segundo factor verificado
+> 2. Comprueba que la sesión esté vigente
 > 3. Permite o rechaza
 >
 > **Resultado.** Solo inicia procesos quien está verificado y habilitado en el área.
