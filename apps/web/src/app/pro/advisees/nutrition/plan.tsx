@@ -285,7 +285,7 @@ export function VistaDePlan() {
               <Aviso tipo="info">
                 <p>
                   {COPY_DEL_PLAN.primeroElObjetivo}{' '}
-                  <button type="button" className="boton boton--enlace" data-navega onClick={() => irA('resumen')}>
+                  <button type="button" className="boton boton--discreto boton--con-flecha" data-navega onClick={() => irA('resumen')}>
                     {COPY_DEL_PLAN.irAResumen}
                   </button>
                 </p>

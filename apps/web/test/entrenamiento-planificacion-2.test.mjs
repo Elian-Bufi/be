@@ -249,14 +249,20 @@ test('C5 · los días se eligen en un solo lugar: los chips junto a cada sesión
   // La agenda ya no tiene su tabla de días por sesión, ni los elige.
   assert.doesNotMatch(AGENDA, /agenda-del-plan__semana|const alternarDia = /);
   assert.doesNotMatch(AGENDA, /export function AgendaDelPlan/);
-  // El editor elige los días solo en los chips (la estación y el paso 5 del asistente usan los mismos).
-  assert.equal((EDITOR.match(/alternarDia\(/g) ?? []).length, 1);
-  assert.match(EDITOR, /\{\/\* ED-24 y C5: los días en siete chips, el único lugar donde se eligen/);
+  // DL-196 (EE-02): el editor elige los días en la tabla de días de cada fase y el asistente en sus chips; los dos
+  // escriben la misma agenda con `alternarDia`, desde el inicio del plan.
+  assert.equal((EDITOR.match(/alternarDia\(/g) ?? []).length, 2);
+  assert.equal((EDITOR.match(/agendaDelPlan\(alternarDia\(agendaVisible, id, (d|dia), inicioDeLaAgenda\)\)/g) ?? []).length, 2);
+  assert.match(EDITOR, /<DiasDeLaFase\n/);
   // Arriba de la sesión, ni la tira de la semana suelta ni «Días de entrenamiento»; en el selector de la sesión, tampoco.
   assert.doesNotMatch(EDITOR, /<AgendaDelPlan/);
   assert.doesNotMatch(EDITOR, /data-dias-de-la-sesion|C\.sinDiaAsignado/);
   // El renglón de la sesión no repite los días que dicen sus chips.
   assert.doesNotMatch(EDITOR, /dias\.length > 0 \? dias\.map\(\(d\) => DIA_LARGO\[d\]\)\.join\(', '\) : CE\.sinDia/);
+  // DL-196: la tabla de días de la fase, una fila por sesión y una casilla por día (lunes a domingo).
+  const DIAS = fuente('../src/app/pro/advisees/training/plan-y-fases.tsx');
+  assert.match(DIAS, /aria-pressed=\{s\.dias\.includes\(d\)\}/);
+  assert.match(DIAS, /data-dias-de-la-sesion=\{n \+ 1\}/);
 });
 
 test('C5 · «Ver próximas fechas» a pedido, desde la lista de sesiones: el inicio, la semana con «Duplicar el día» y las dos semanas', () => {
@@ -269,8 +275,8 @@ test('C5 · «Ver próximas fechas» a pedido, desde la lista de sesiones: el in
   assert.match(AGENDA, /<CampoDeFecha id="agenda-desde" etiqueta=\{A\.desde\}/);
   assert.match(AGENDA, /\{A\.proximasDosSemanas\}/);
   assert.match(AGENDA, /data-quitar-agenda/);
-  // Sin días, se dice qué pasa, en una línea.
-  assert.match(EDITOR, /<p className="nota">\{COPY_AGENDA_DE_ENTRENAMIENTO\.sinAgenda\}<\/p>/);
+  // DL-196: sin días, lo dice la ayuda de la tabla de días («Una sesión sin días no tiene fecha»), en su «?».
+  assert.match(fuente('../src/app/pro/advisees/training/plan-y-fases.tsx'), /Una sesión sin días no tiene fecha/);
 });
 
 // ─── C6 · el catálogo: la selección a la vista con un pie fijo; crear o importar, aparte ───────────────────────
@@ -305,8 +311,8 @@ const PL = await import('../src/app/pro/advisees/training/planilla-de-series.ts'
 test('C8 · cada valor dice de dónde sale, en la celda: «común», «propio» o «Sin indicar»', () => {
   // Toma el común: se ve el valor común, marcado «común».
   assert.deepEqual(PL.origenDeLaCelda('de-lo-general', '62,5'), { placeholder: '62,5', marca: 'común', descripcion: 'Común a todas las series: 62,5.' });
-  // Sin común que tomar: «Sin indicar», sin marca (lo dice el texto).
-  assert.deepEqual(PL.origenDeLaCelda('de-lo-general', null), { placeholder: 'Sin indicar', marca: null, descripcion: 'Sin indicar: no hay un valor común.' });
+  // Sin común que tomar: la celda queda vacía y discreta (DL-196, E14); el lector oye «Sin indicar».
+  assert.deepEqual(PL.origenDeLaCelda('de-lo-general', null), { placeholder: '', marca: null, descripcion: 'Sin indicar: no hay un valor común.' });
   // Propio: marcado «propio»; el lector oye también el común.
   assert.deepEqual(PL.origenDeLaCelda('propio', '02:30'), { placeholder: '02:30', marca: 'propio', descripcion: 'Propio de esta serie; el valor común es 02:30.' });
   // «Sin indicar» elegido en la serie, aunque haya común: no se muestra el común como si valiera.
@@ -366,15 +372,11 @@ test('C11 · «Sesiones vacías» no pide nombre ni propósito: no abre ningún 
 
 // ─── Lo que mostraron las capturas ──────────────────────────────────────────────────────────────────────────────
 
-test('Capturas · en pantalla nunca «asesorado»: el aviso de los objetivos por serie dice «la persona» (sin tocar el 409 de la API)', () => {
-  // El editor dice el texto del dominio con «la persona»; el dominio lo conserva porque es también el mensaje del 409, que
-  // cambia en la ventana de la API (ED-08, etapa 2; la excepción contada en scripts/copy-pantallas.test.cjs).
-  // La misma expresión que usa el editor (una expresión, no un texto: la guardia de ED-06 lee los textos).
-  const enPantalla = d.COPY_COMPATIBILIDAD_DE_CLIENTES.activacionBloqueada.replace(/tu asesorado/, 'la persona');
-  assert.doesNotMatch(enPantalla, /asesorad/);
-  assert.match(enPantalla, /la persona todavía no usó una versión de BE/);
-  assert.ok(EDITOR.includes("const ACTIVACION_BLOQUEADA_POR_LA_APP = COPY_COMPATIBILIDAD_DE_CLIENTES.activacionBloqueada.replace(/tu asesorado/, 'la persona');"));
-  assert.doesNotMatch(EDITOR, /COPY_COMPATIBILIDAD_DE_CLIENTES\.activacionBloqueada\b(?!Titulo)(?!\.replace)/, 'el editor no muestra el texto del dominio tal cual');
+test('DL-196 (E3) · el aviso «Todavía no podés activar este plan» ya no existe: la versión de la app no traba nada', () => {
+  // Dirección (19/11 y 23/11): todos usan la última APK. Ni el aviso, ni el ítem de «Antes de activar», ni su texto.
+  assert.equal(d.COPY_COMPATIBILIDAD_DE_CLIENTES, undefined);
+  assert.doesNotMatch(EDITOR, /ACTIVACION_BLOQUEADA_POR_LA_APP|COPY_COMPATIBILIDAD_DE_CLIENTES|data-motivo-sin-activar|data-listo-para-activar/);
+  assert.doesNotMatch(EDITOR, /Todavía no podés activar/);
 });
 
 test('Capturas · la fila «Común» no se parte: su detalle lo oye solo el lector', () => {
@@ -480,7 +482,7 @@ test('Revisión · ENP-D17 también al duplicar una sesión o insertar una habit
 
 test('Revisión · «Ocultar» la vuelta a la revisión deja el foco en la sesión: el botón desaparece con la barra', () => {
   assert.match(EDITOR, /data-ocultar-la-vuelta\n\s*onClick=\{\(\) => \{\n\s*setVolverALaRevision\(null\);\n(?:\s*\/\/.*\n)*\s*setParaEnfocar\('zona-editor'\);/);
-  assert.match(EDITOR, /<div id="zona-editor" className="estacion__zona estacion__centro" data-zona="editor" role="region" aria-label=\{CE\.editor\} tabIndex=\{-1\}>/);
+  assert.match(EDITOR, /id="zona-editor"\n\s*className="estacion__zona estacion__centro editor-de-entrenamiento__centro"\n\s*data-zona="editor"\n\s*role="region"\n\s*aria-label=\{CE\.editor\}\n\s*tabIndex=\{-1\}/);
 });
 
 test('Revisión · sin ninguna sesión con días, «Próximas fechas» se cierra: no vuelve a abrirse sola con el próximo día', () => {

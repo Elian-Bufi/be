@@ -42,15 +42,17 @@ import {
   type OpcionDeLaCelda,
   COPY_NOTAS_PROPIAS,
   conElCalentamientoArriba,
-  COPY_TIPOS_DE_SERIE,
   esDeCalentamiento,
-  rotulosDeLasSeries,
   COPY_NOTACION_DEL_ESFUERZO,
   esfuerzoEnCampo,
   leerRpeEscrito,
   type NotacionDelEsfuerzo,
+  type AproximacionesDelEjercicio,
 } from '@be/domain';
-import { useEffect, useId, useState, type ComponentProps, type KeyboardEvent } from 'react';
+import { Fragment, useEffect, useId, useRef, useState, type ComponentProps, type FocusEvent, type KeyboardEvent, type ReactNode } from 'react';
+import { SeccionDeAproximaciones } from './aproximaciones-del-ejercicio';
+import { rotulosConAproximaciones } from './aproximaciones';
+import { cifrasTrasLaTecla, textoDeLaMascara } from './mascara-de-tiempo';
 import { EnPartes } from '../../../../components/en-partes';
 import { Campo, RenglonDelAviso } from '../../../../components/formulario';
 import { ExplicacionAPedido } from '../../../../components/explicacion-a-pedido';
@@ -216,6 +218,84 @@ function pasoConLaFlecha(e: KeyboardEvent<HTMLInputElement>, campo: CampoConPaso
 const pasoConElMouse = (campo: CampoConPaso, texto: string, sube: boolean, unidad?: 'kg' | 'lb'): number | null => conUnPaso(campo, texto, null, sube, { ...PASOS, unidad });
 const escribirElDescanso = (n: number | null): string => (n === null || Number.isNaN(n) ? '' : (textoDeSegundos(n) ?? ''));
 
+/**
+ * DL-196 (E15) · la máscara «mm:ss» de los campos de tiempo (`mascara-de-tiempo.ts`): el «:» queda fijo y lo que se
+ * escribe entra por los minutos («3» es 03:00; «130», 01:30). Al entrar al campo se elige todo: la primera cifra empieza
+ * de nuevo. Pegar sigue entendiendo «2:30» o los segundos. Las flechas dan su paso como siempre.
+ */
+function useMascaraDeTiempo(activa: boolean, alEscribir: (t: string) => void) {
+  const cifras = useRef<string | null>(null);
+  return {
+    alEntrar: (e: FocusEvent<HTMLInputElement>) => {
+      cifras.current = null;
+      if (activa) e.currentTarget.select();
+    },
+    alSalir: () => {
+      cifras.current = null;
+    },
+    /** Si la tecla era de la máscara (una cifra, Borrar, Suprimir o «:»): ya la escribió. */
+    alTeclear: (e: KeyboardEvent<HTMLInputElement>): boolean => {
+      if (!activa || e.ctrlKey || e.metaKey || e.altKey) return false;
+      if (e.key === ':') {
+        e.preventDefault();
+        return true;
+      }
+      const siguiente = cifrasTrasLaTecla(cifras.current ?? '', e.key);
+      if (siguiente === null) {
+        if (e.key === 'ArrowUp' || e.key === 'ArrowDown') cifras.current = null;
+        return false;
+      }
+      e.preventDefault();
+      cifras.current = siguiente;
+      alEscribir(textoDeLaMascara(siguiente));
+      return true;
+    },
+  };
+}
+
+/** DL-196 (E11) · los pasos de las acciones rápidas: la carga en kg o lb, el descanso en segundos. */
+const PASOS_RAPIDOS = { suggestedLoad: [-5, -2.5, -1, 1, 2.5, 5], restSeconds: [-15, -5, 5, 15] } as const;
+
+/**
+ * DL-196 (E11) · las acciones rápidas de un campo: al enfocar la carga, −5 · −2,5 · −1 · +1 · +2,5 · +5 (en su unidad);
+ * al enfocar el descanso, −15 · −5 · +5 · +15 s. Aparecen debajo del campo mientras tiene el foco y no se llevan el foco
+ * (las flechas del teclado siguen dando su paso). Nada baja de cero ni pasa una hora.
+ */
+function AccionesRapidas({ campo, unidad = 'kg', desde, alAplicar, de }: { campo: 'suggestedLoad' | 'restSeconds'; unidad?: 'kg' | 'lb'; desde: number | null; alAplicar: (n: number) => void; de: string }) {
+  const sufijo = campo === 'restSeconds' ? 's' : unidad;
+  return (
+    <span className="acciones-rapidas" role="group" aria-label={`Acciones rápidas: ${de}`} data-acciones-rapidas={campo}>
+      {PASOS_RAPIDOS[campo].map((paso) => (
+        <button
+          key={paso}
+          type="button"
+          tabIndex={-1}
+          className="acciones-rapidas__paso"
+          aria-label={`${paso > 0 ? 'Sumar' : 'Restar'} ${numeroEnCampo(Math.abs(paso))} ${sufijo} a ${de}`}
+          // No se lleva el foco: el campo sigue siendo el que se edita.
+          onMouseDown={(e) => e.preventDefault()}
+          onClick={() => alAplicar(Math.min(campo === 'restSeconds' ? 3600 : Number.MAX_SAFE_INTEGER, Math.max(0, Math.round(((desde ?? 0) + paso) * 100) / 100)))}
+          data-paso={paso}
+        >
+          {paso > 0 ? '+' : '−'}
+          {numeroEnCampo(Math.abs(paso))}
+        </button>
+      ))}
+      <span className="acciones-rapidas__unidad" aria-hidden="true">
+        {sufijo}
+      </span>
+    </span>
+  );
+}
+
+/** El campo con sus acciones rápidas debajo, que se ven mientras el foco está adentro. */
+const ConAccionesRapidas = ({ children, acciones }: { children: ReactNode; acciones: ReactNode }) => (
+  <span className="con-acciones-rapidas">
+    {children}
+    {acciones}
+  </span>
+);
+
 /** La unidad de las cargas de una prescripción: la de su carga sugerida, o kg. Las series usan la misma (DL-122). */
 const unidadDe = (p: PrescripcionE): 'kg' | 'lb' => p.suggestedLoad?.unit ?? p.sets.find((x) => x.suggestedLoad)?.suggestedLoad?.unit ?? 'kg';
 
@@ -250,7 +330,12 @@ export function EjercicioDelEditor({
   accionesDelBloque = [],
   lineaSinAplicar = '',
   onLineaSinAplicar,
+  aproximaciones = null,
+  onAproximaciones,
 }: {
+  /** DL-196 (EE-07): cómo se arman las aproximaciones (de la planificación) y cómo se guarda; sin esto, no se ofrecen. */
+  aproximaciones?: AproximacionesDelEjercicio | null;
+  onAproximaciones?: (c: Omit<AproximacionesDelEjercicio, 'prescriptionId'>) => void;
   /** C7: lo escrito en la escritura rápida y todavía sin aplicar; vive en el editor (`escritura-rapida.ts`). */
   lineaSinAplicar?: string;
   onLineaSinAplicar?: (texto: string) => void;
@@ -305,7 +390,15 @@ export function EjercicioDelEditor({
   const [vezPasada, setVezPasada] = useState(false);
   const Titulo = nivel;
   return (
-    <section className="comida-del-plan ejercicio-del-editor" data-ejercicio={posicion + 1} data-abierta={abierto ? '' : undefined} data-en-bloque={nivel === 'h4' ? '' : undefined}>
+    // DL-196 (EE-05): el panel de la derecha sigue al ejercicio que se toca (`data-foco`).
+    <section
+      className="comida-del-plan ejercicio-del-editor"
+      data-ejercicio={posicion + 1}
+      data-abierta={abierto ? '' : undefined}
+      data-en-bloque={nivel === 'h4' ? '' : undefined}
+      data-foco="ejercicio"
+      data-foco-ejercicio={posicion}
+    >
       <div className="comida-del-editor__cabecera">
         <Titulo className="comida-del-plan__titulo">
           <button type="button" id={`abrir-ejercicio-${id}`} className="comida-del-plan__boton" aria-expanded={abierto} aria-controls={`${propio}-cuerpo`} onClick={alAlternar}>
@@ -407,6 +500,8 @@ export function EjercicioDelEditor({
             <CriterioDelEjercicio id={id} prescripcion={p} onCambiar={onCambiar} />
             {/* ED-22: la prescripción en una línea, arriba de las series que escribe. */}
             <LineaDePrescripcion id={id} nombre={nombre} prescripcion={p} texto={onLineaSinAplicar ? lineaSinAplicar : undefined} onTexto={onLineaSinAplicar} onAplicar={(nueva, revisar) => onAplicarLinea(nueva, revisar)} />
+            {/* DL-196 (EE-07): las aproximaciones, antes de las efectivas. */}
+            {onAproximaciones ? <SeccionDeAproximaciones id={id} nombre={nombre} prescripcion={p} config={aproximaciones} onCambiar={onCambiar} onConfig={onAproximaciones} /> : null}
             <SeriesDelEjercicio
               id={id}
               nombre={nombre}
@@ -519,29 +614,41 @@ function CeldaDeObjetivo({
   });
   // Lo escrito viaja al valor en cada tecla (`alEscribir`): la marca sigue a lo que hay en la celda.
   const marca = origen.marca;
+  // DL-196 (E15): el descanso, con la máscara «mm:ss».
+  const mascara = useMascaraDeTiempo(paso?.campo === 'restSeconds', alEscribir);
+  // DL-196 (E11): las acciones rápidas parten de lo que tiene la celda: lo suyo o, si no tiene, lo común.
+  const desde = typeof valor === 'number' && !Number.isNaN(valor) ? valor : deLoGeneral !== null ? leer(deLoGeneral) : null;
+  const campo = (
+    <input
+      id={id}
+      aria-label={rotulo}
+      aria-describedby={celda.estado === 'no-se-entiende' && aviso ? `${id}-estado ${aviso}` : `${id}-estado`}
+      aria-invalid={celda.estado === 'no-se-entiende' || undefined}
+      inputMode={entero ? 'numeric' : 'decimal'}
+      autoComplete="off"
+      value={texto}
+      title={paso ? COPY_DE_LOS_NUMEROS.flechas(paso.campo, paso.unidad) : undefined}
+      onKeyDown={(e) => {
+        if (mascara.alTeclear(e) || !paso) return;
+        const n = pasoConLaFlecha(e, paso.campo, deLoGeneral === null ? null : leer(deLoGeneral), paso.unidad);
+        if (n !== null) alEscribir(escribir(n));
+      }}
+      onFocus={mascara.alEntrar}
+      placeholder={origen.placeholder}
+      data-en-gris={celda.enGris ? '' : undefined}
+      // «Sin indicar» es un texto: se acomoda distinto que un número.
+      data-texto={texto === '' && origen.placeholder === PL.sinIndicar ? '' : undefined}
+      data-mascara-de-tiempo={paso?.campo === 'restSeconds' ? '' : undefined}
+      onChange={(e) => alEscribir(e.target.value)}
+      onBlur={() => {
+        mascara.alSalir();
+        alSalir();
+      }}
+    />
+  );
   return (
     <div className="celda-de-objetivo" data-estado={celda.estado} data-origen={marca ?? undefined}>
-      <input
-        id={id}
-        aria-label={rotulo}
-        aria-describedby={celda.estado === 'no-se-entiende' && aviso ? `${id}-estado ${aviso}` : `${id}-estado`}
-        aria-invalid={celda.estado === 'no-se-entiende' || undefined}
-        inputMode={entero ? 'numeric' : 'decimal'}
-        autoComplete="off"
-        value={texto}
-        title={paso ? COPY_DE_LOS_NUMEROS.flechas(paso.campo, paso.unidad) : undefined}
-        onKeyDown={(e) => {
-          if (!paso) return;
-          const n = pasoConLaFlecha(e, paso.campo, deLoGeneral === null ? null : leer(deLoGeneral), paso.unidad);
-          if (n !== null) alEscribir(escribir(n));
-        }}
-        placeholder={origen.placeholder}
-        data-en-gris={celda.enGris ? '' : undefined}
-        // «Sin indicar» es un texto: se acomoda distinto que un número.
-        data-texto={texto === '' && origen.placeholder === PL.sinIndicar ? '' : undefined}
-        onChange={(e) => alEscribir(e.target.value)}
-        onBlur={alSalir}
-      />
+      {paso ? <ConAccionesRapidas acciones={<AccionesRapidas campo={paso.campo} unidad={paso.unidad} desde={desde} alAplicar={(n) => alEscribir(escribir(n))} de={queEs} />}>{campo}</ConAccionesRapidas> : campo}
       {marca ? (
         <span className="celda-de-objetivo__origen" aria-hidden="true" data-origen-de-la-celda>
           {marca}
@@ -550,7 +657,10 @@ function CeldaDeObjetivo({
       <span id={`${id}-estado`} className="visualmente-oculto">
         {origen.descripcion}
       </span>
-      <MenuDeAcciones rotulo={`Opciones para ${queEs}`} icono="abajo" acciones={celda.opciones.map((o) => ({ clave: o, texto: OPCION_DE_LA_CELDA[o], alElegir: () => onCambiar(objetivoElegidoEnLaCelda(o)) }))} />
+      {/* DL-196 (E14): el menú de la celda es discreto: se ve al pasar o al entrar a la celda. */}
+      <span className="celda-de-objetivo__opciones">
+        <MenuDeAcciones rotulo={`Opciones para ${queEs}`} icono="abajo" acciones={celda.opciones.map((o) => ({ clave: o, texto: OPCION_DE_LA_CELDA[o], alElegir: () => onCambiar(objetivoElegidoEnLaCelda(o)) }))} />
+      </span>
     </div>
   );
 }
@@ -589,7 +699,10 @@ function CeldaGeneral({
     const n = pasoConElMouse(paso.campo, texto, sube, paso.unidad);
     if (n !== null) alEscribir(formatear(n));
   };
+  const mascara = useMascaraDeTiempo(paso.campo === 'restSeconds', alEscribir);
+  const desde = valor !== null && !Number.isNaN(valor) ? valor : null;
   return (
+    <ConAccionesRapidas acciones={<AccionesRapidas campo={paso.campo} unidad={paso.unidad} desde={desde} alAplicar={(n) => alEscribir(formatear(n))} de={rotulo.toLowerCase()} />}>
     <ConFlechas que={rotulo.toLowerCase()} alSubir={() => paso1(true)} alBajar={() => paso1(false)}>
       <input
         id={id}
@@ -602,14 +715,21 @@ function CeldaGeneral({
         value={texto}
         title={COPY_DE_LOS_NUMEROS.flechas(paso.campo, paso.unidad)}
         data-celda-general-no-se-entiende={mal ? '' : undefined}
+        data-mascara-de-tiempo={paso.campo === 'restSeconds' ? '' : undefined}
         onChange={(e) => alEscribir(e.target.value)}
         onKeyDown={(e) => {
+          if (mascara.alTeclear(e)) return;
           const n = pasoConLaFlecha(e, paso.campo, null, paso.unidad);
           if (n !== null) alEscribir(formatear(n));
         }}
-        onBlur={alSalir}
+        onFocus={mascara.alEntrar}
+        onBlur={() => {
+          mascara.alSalir();
+          alSalir();
+        }}
       />
     </ConFlechas>
+    </ConAccionesRapidas>
   );
 }
 
@@ -685,8 +805,10 @@ function SeriesDelEjercicio({
   const rirGeneral = conRir && p.intensity && valido(p.intensity.target.value) ? rirEnCampo(notacion)(p.intensity.target.value) : null;
   const descansoGeneral = valido(p.restSeconds) ? textoDeSegundos(p.restSeconds) : null;
   // DL-178: las efectivas se numeran 1, 2, 3 como siempre; las de calentamiento llevan «C» y van arriba.
-  const rotulos = rotulosDeLasSeries(p.sets);
-  const cual = (n: number): string => (rotulos[n]?.numero == null ? 'esta serie de calentamiento' : `la serie ${rotulos[n]!.numero}`);
+  // DL-196 (EE-07): las aproximaciones se rotulan A1, A2…; las efectivas, 1, 2, 3 como siempre.
+  const rotulos = rotulosConAproximaciones(p.sets);
+  const cual = (n: number): string => (rotulos[n]?.numero == null ? `la ${rotulos[n]?.largo.toLowerCase() ?? 'aproximación'}` : `la serie ${rotulos[n]!.numero}`);
+  const primeraEfectiva = p.sets.some(esDeCalentamiento) ? p.sets.findIndex((s) => !esDeCalentamiento(s)) : -1;
   const cambiarLaSerie = (n: number, f: (s: Serie) => Serie) => onCambiar({ sets: p.sets.map((x, m) => (m === n ? f(x) : x)) });
   /** DL-178: marca o desmarca una serie como calentamiento; el calentamiento sube arriba, sin cambiar el orden de cada tipo. */
   const marcarCalentamiento = (n: number) => {
@@ -777,11 +899,14 @@ function SeriesDelEjercicio({
           </div>
         ) : null}
         {seleccionando ? (
-          <div className="series-del-editor__elegidas" role="group" aria-label={PL.elegidas(elegidas.size)} data-series-elegidas={elegidas.size}>
-            <strong aria-live="polite">{elegidas.size === 0 ? COPY_SELECCION.ninguna : PL.elegidas(elegidas.size)}</strong>
-            <button type="button" className="boton boton--discreto" onClick={() => setElegidas(elegidas.size === p.sets.length ? new Set() : new Set(p.sets.map((_, n) => n)))} data-elegir-todas>
-              {elegidas.size === p.sets.length ? COPY_SELECCION.ningunaDeNuevo : COPY_SELECCION.todas}
-            </button>
+          // DL-196 (E10): la barra se lee como una frase: «En las 2 series elegidas, poner [campo] en [valor] → Aplicar».
+          <div className="series-del-editor__elegidas con-ayuda-en-la-esquina" role="group" aria-label={PL.elegidas(elegidas.size)} data-series-elegidas={elegidas.size}>
+            <span className="series-del-editor__frase" aria-live="polite">
+              {elegidas.size === 0 ? COPY_SELECCION.ninguna : COPY_SELECCION.enLasElegidas(elegidas.size)}
+            </span>
+            <span className="series-del-editor__frase" aria-hidden="true">
+              {COPY_SELECCION.poner}
+            </span>
             <label>
               <span className="visualmente-oculto">{PL.campo}</span>
               <select value={campo} onChange={(e) => setCampo(e.target.value as ObjetivoDeLaSerie | 'repetitions')} data-campo-de-las-elegidas>
@@ -791,6 +916,9 @@ function SeriesDelEjercicio({
                 {conRir ? <option value="rir">{esfuerzo}</option> : null}
               </select>
             </label>
+            <span className="series-del-editor__frase" aria-hidden="true">
+              {COPY_SELECCION.en}
+            </span>
             <label>
               <span className="visualmente-oculto">{PL.valor}</span>
               <input
@@ -809,7 +937,12 @@ function SeriesDelEjercicio({
               />
             </label>
             <button type="button" className="boton boton--secundario boton--compacto" aria-disabled={elegidas.size === 0 || undefined} onClick={() => elegidas.size > 0 && escribirEnLasElegidas()} data-escribir-en-las-elegidas>
-              {elegidas.size > 0 ? COPY_SELECCION.escribirEn(elegidas.size) : PL.escribir}
+              <Icono nombre="derecha" tamano={15} />
+              {COPY_SELECCION.aplicar}
+              <span className="visualmente-oculto"> {elegidas.size > 0 ? COPY_SELECCION.escribirEn(elegidas.size) : ''}</span>
+            </button>
+            <button type="button" className="boton boton--quieto boton--compacto" onClick={() => setElegidas(elegidas.size === p.sets.length ? new Set() : new Set(p.sets.map((_, n) => n)))} data-elegir-todas>
+              {elegidas.size === p.sets.length ? COPY_SELECCION.ningunaDeNuevo : COPY_SELECCION.todas}
             </button>
             {campo !== 'repetitions' ? (
               <button type="button" className="boton boton--quieto boton--compacto" aria-disabled={elegidas.size === 0 || undefined} onClick={() => elegidas.size > 0 && onCambiar({ sets: volverALoGeneral(p.sets, elegidas) })} data-volver-a-lo-general>
@@ -822,9 +955,13 @@ function SeriesDelEjercicio({
                 {COPY_CARGA_DESDE_LA_ESTIMACION.abrirEnLasElegidas}
               </button>
             ) : null}
-            <button type="button" className="boton boton--discreto" onClick={soltar} data-terminar-la-seleccion>
+            <button type="button" className="boton boton--quieto boton--compacto" onClick={soltar} data-terminar-la-seleccion>
               {COPY_SELECCION.listo}
             </button>
+            <ExplicacionAPedido nombre="Cómo se cambian varias series a la vez" como="div" lugar="esquina">
+              <p>{COPY_SELECCION.ayuda}</p>
+              <p>{COPY_SELECCION.ayudaComun}</p>
+            </ExplicacionAPedido>
             {/* RP-22: el aviso tiene su renglón en la barra: al tocar «Escribir» con algo que no se entiende, la tabla no baja. */}
             <RenglonDelAviso id={`${id}-elegidas-no-se-entiende`} tipo={noSeEntiende ? 'error' : 'nota'} className="aviso-de-las-elegidas" role="alert">
               {noSeEntiende ? (campo === 'repetitions' ? COPY_SELECCION.repeticionesNoSeEntienden : campo === 'suggestedLoad' ? COPY_SELECCION.cargaNoSeEntiende : campo === 'restSeconds' ? COPY_SELECCION.descansoNoSeEntiende : PL.noSeEntiende) : null}
@@ -857,7 +994,7 @@ function SeriesDelEjercicio({
                 </th>
               ) : null}
               <th scope="col">
-                {COPY_ENTRENAMIENTO.descanso} <span className="nota">02:30</span>
+                {COPY_ENTRENAMIENTO.descanso} <span className="nota">mm:ss</span>
               </th>
               <th scope="col" className="series-del-editor__columna-nota">
                 {C.nota}
@@ -914,7 +1051,19 @@ function SeriesDelEjercicio({
               <td />
             </tr>
             {p.sets.map((s, n) => (
-              <tr key={n} data-serie={n + 1} data-elegida={elegidas.has(n) ? '' : undefined} data-calentamiento={esDeCalentamiento(s) ? '' : undefined}>
+              <Fragment key={n}>
+              {/* DL-196 (EE-07): las aproximaciones van agrupadas arriba; un renglón fino separa las efectivas. */}
+              {n === 0 && primeraEfectiva > 0 ? (
+                <tr className="series-del-editor__grupo" aria-hidden="true">
+                  <td colSpan={99}>{COPY_SELECCION.grupoAproximaciones}</td>
+                </tr>
+              ) : null}
+              {n === primeraEfectiva && n > 0 ? (
+                <tr className="series-del-editor__grupo" aria-hidden="true">
+                  <td colSpan={99}>{COPY_SELECCION.grupoEfectivas}</td>
+                </tr>
+              ) : null}
+              <tr data-serie={n + 1} data-elegida={elegidas.has(n) ? '' : undefined} data-calentamiento={esDeCalentamiento(s) ? '' : undefined}>
                 {seleccionando ? (
                   <td className="series-del-editor__elegir">
                     <input type="checkbox" checked={elegidas.has(n)} onChange={() => elegir(n)} aria-label={PL.elegir(n + 1)} />
@@ -924,11 +1073,11 @@ function SeriesDelEjercicio({
                   <span className="series-del-editor__numero" title={rotulos[n]!.largo}>
                     {rotulos[n]!.corto}
                   </span>
-                  {/* DL-178: «C» marca la serie como calentamiento: se registra y no entra en los cálculos. */}
-                  <label className="series-del-editor__calentamiento" title={COPY_TIPOS_DE_SERIE.ayudaDelEditor}>
+                  {/* DL-178 y DL-196 (E9): la casilla marca la serie como aproximación: se registra y no entra en los cálculos. */}
+                  <label className="series-del-editor__calentamiento" title={COPY_SELECCION.ayudaDeLaAproximacion}>
                     <input type="checkbox" id={`${id}-serie-${n}-calentamiento`} checked={esDeCalentamiento(s)} onChange={() => marcarCalentamiento(n)} data-marcar-calentamiento={n + 1} />
-                    <span aria-hidden="true">{COPY_TIPOS_DE_SERIE.marca}</span>
-                    <span className="visualmente-oculto">{`${COPY_TIPOS_DE_SERIE.marcarComoCalentamiento} (${rotulos[n]!.largo})`}</span>
+                    <span aria-hidden="true">{COPY_SELECCION.aprox}</span>
+                    <span className="visualmente-oculto">{`${COPY_SELECCION.aproximacion} (${rotulos[n]!.largo})`}</span>
                   </label>
                 </th>
                 <td data-etiqueta="Repeticiones">
@@ -1003,6 +1152,7 @@ function SeriesDelEjercicio({
                   </button>
                 </td>
               </tr>
+              </Fragment>
             ))}
           </tbody>
         </table>
@@ -1038,7 +1188,7 @@ function SeriesDelEjercicio({
         {p.sets.length > 0 ? (
           <ExplicacionAPedido nombre={COPY_DE_LOS_NUMEROS.comoSeLeeLaTabla} como="div" lugar="esquina">
             <p className="nota" data-como-se-lee-cada-valor>{PL.comoSeLee}</p>
-            <p className="nota" data-ayuda-del-calentamiento>{COPY_TIPOS_DE_SERIE.ayudaDelEditor}</p>
+            <p className="nota" data-ayuda-del-calentamiento>{COPY_SELECCION.ayudaDeLaAproximacion}</p>
             <p className="nota">{PL.atajo}</p>
             <p className="nota">{COPY_DE_LOS_NUMEROS.flechasEnLaTabla}</p>
           </ExplicacionAPedido>
@@ -1050,8 +1200,20 @@ function SeriesDelEjercicio({
 
 /** ENP-D16 (C4): la edición conjunta de series. */
 const COPY_SELECCION = {
-  seleccionar: 'Seleccionar series',
-  ninguna: 'Elegí las series',
+  seleccionar: 'Cambiar varias series',
+  ninguna: 'Elegí las series en la tabla y,',
+  enLasElegidas: (n: number) => (n === 1 ? 'En la serie elegida,' : `En las ${n} series elegidas,`),
+  poner: 'poner',
+  en: 'en',
+  aplicar: 'Aplicar',
+  ayuda:
+    'Tildá las series que querés cambiar (o «Elegir todas»), elegí qué dato y escribí el valor: «Aplicar» lo escribe en todas las elegidas de una vez. «Volver a lo común» les saca el valor propio. «Listo» cierra la barra.',
+  ayudaComun: 'Lo común es lo que toman las series que no tienen un valor propio: se escribe en la primera fila de la tabla.',
+  aproximacion: 'Aproximación',
+  aprox: 'Aprox.',
+  ayudaDeLaAproximacion: 'Marcá las series de aproximación: van arriba de las efectivas, se registran y no entran en las cuentas ni en los gráficos.',
+  grupoAproximaciones: 'Aproximaciones',
+  grupoEfectivas: 'Efectivas',
   todas: 'Elegir todas',
   ningunaDeNuevo: 'Ninguna',
   repeticiones: 'Repeticiones',
@@ -1067,6 +1229,21 @@ const COPY_SELECCION = {
 const COPY_CRITERIO_ARRIBA = {
   titulo: 'Criterio, unidad y bases de las series',
   notasYParametros: 'Notas y parámetros',
+  // DL-196 (E8 y E16): todas las explicaciones del renglón, en el «?» de la esquina, con un ejemplo de cada dato.
+  queEsCadaDato: 'Qué es cada dato del criterio',
+  intensidad: 'Intensidad: el criterio con el que se indica qué tan exigente es cada serie. Se elige uno, o ninguno: nunca dos.',
+  rpe:
+    'RPE: la escala de esfuerzo percibido, del 1 al 10. Dice qué tan dura se sintió la serie: 1, casi nada; 10, el máximo esfuerzo posible.',
+  rpeYRir:
+    'En la práctica se usa anclada a las repeticiones en reserva (la escala de Zourdos): RPE 10 = no podía hacer otra; RPE 9 ≈ me quedaba 1; RPE 8 ≈ me quedaban 2; RPE 7 ≈ me quedaban 3. Por eso BE guarda el RIR: es el mismo dato en las dos escalas.',
+  rir: 'RIR: las repeticiones en reserva, cuántas más podría haber hecho. Por ejemplo, RIR 2 = me quedaban 2.',
+  porcentaje: '% RM: una parte de la carga máxima para una repetición (1RM). Por ejemplo, con un 1RM de 100 kg, 75 % RM son 75 kg. La referencia dice cómo se estimó ese 1RM.',
+  objetivo: (rango: string) => `Objetivo: con un criterio elegido, es necesario. En esta escala va de ${rango}; en % RM, hasta 100.`,
+  unidad: 'Unidad: la de todas las cargas del ejercicio. Cambiarla no convierte los números.',
+  bases:
+    'Carga: si es una sola mancuerna o implemento, por mancuerna (cuando son dos) o el total externo. Repeticiones: si son por serie o por lado. «Sin indicar» deja que se lean como siempre.',
+  carga: 'Carga',
+  repeticiones: 'Repeticiones',
 } as const;
 
 /**
@@ -1087,7 +1264,18 @@ function CriterioDelEjercicio({ id, prescripcion: p, onCambiar }: { id: string; 
   // campo desalineaba la fila (los campos se alinean por abajo) y bajaba las series mientras se escribía.
   const [objetivoMal, setObjetivoMal] = useState(false);
   return (
-    <div className="criterio-del-ejercicio" role="group" aria-label={COPY_CRITERIO_ARRIBA.titulo} data-criterio-del-ejercicio>
+    // DL-196 (E8): un solo renglón compacto; lo que explica cada dato, en el «?» de la esquina.
+    <div className="criterio-del-ejercicio con-ayuda-en-la-esquina" role="group" aria-label={COPY_CRITERIO_ARRIBA.titulo} data-criterio-del-ejercicio>
+        <ExplicacionAPedido nombre={COPY_CRITERIO_ARRIBA.queEsCadaDato} como="div" lugar="esquina">
+          <p>{COPY_CRITERIO_ARRIBA.intensidad}</p>
+          <p data-ayuda-del-rpe>{COPY_CRITERIO_ARRIBA.rpe}</p>
+          <p>{COPY_CRITERIO_ARRIBA.rpeYRir}</p>
+          <p>{COPY_CRITERIO_ARRIBA.rir}</p>
+          <p>{COPY_CRITERIO_ARRIBA.porcentaje}</p>
+          <p>{COPY_CRITERIO_ARRIBA.objetivo(RANGO_DEL_ESFUERZO[notacion])}</p>
+          <p>{COPY_CRITERIO_ARRIBA.unidad}</p>
+          <p>{COPY_CRITERIO_ARRIBA.bases}</p>
+        </ExplicacionAPedido>
         <div className="lo-general-del-editor__par">
           <div className="campo">
             <label htmlFor={`${id}-criterio`}>{COPY_ENTRENAMIENTO.intensidad}</label>
@@ -1115,8 +1303,7 @@ function CriterioDelEjercicio({ id, prescripcion: p, onCambiar }: { id: string; 
             <CampoInterpretado
               id={`${id}-objetivo`}
               etiqueta={`${COPY_ENTRENAMIENTO.objetivoDeIntensidad} (${nombreDelCriterio(criterio as Criterio)})`}
-              // Con un criterio elegido, el objetivo no es opcional: vacío no es cero.
-              ayuda={criterio === 'RIR' ? `Necesario, de ${RANGO_DEL_ESFUERZO[notacion]}` : 'Necesario, hasta 100'}
+              // Con un criterio elegido, el objetivo no es opcional: vacío no es cero. DL-196 (E8): el rango, en el «?».
               inputMode="decimal"
               valor={p.intensity.target.value}
               clave={String(p.intensity.target.value)}
@@ -1152,7 +1339,7 @@ function CriterioDelEjercicio({ id, prescripcion: p, onCambiar }: { id: string; 
           <Campo
             id={`${id}-referencia`}
             etiqueta={`${COPY_ENTRENAMIENTO.referenciaDeRm} (opcional)`}
-            ayuda="Por ejemplo: 1RM estimado por el método que usaste. En los ejercicios de la lista de Epley v1, «Calcular la carga desde la estimación…» la escribe con el método y la fecha."
+            placeholder="1RM estimado por…"
             value={p.intensity.target.reference?.description ?? ''}
             onChange={(e) => onCambiar({ intensity: { ...p.intensity!, target: { ...p.intensity!.target, reference: e.target.value ? { description: e.target.value } : null } } })}
             maxLength={500}
@@ -1183,7 +1370,7 @@ function CriterioDelEjercicio({ id, prescripcion: p, onCambiar }: { id: string; 
         {/* ENP-D14: las bases, a la vista y en el mismo renglón: cambian cómo se leen la carga y las repeticiones de abajo. */}
           <div className="criterio-del-ejercicio__bases" data-bases>
             <div className="campo">
-              <label htmlFor={`${id}-base-carga`}>Cómo se cuenta la carga</label>
+              <label htmlFor={`${id}-base-carga`}>{COPY_CRITERIO_ARRIBA.carga}</label>
               <select
                 id={`${id}-base-carga`}
                 value={p.loadBasis ?? ''}
@@ -1201,7 +1388,7 @@ function CriterioDelEjercicio({ id, prescripcion: p, onCambiar }: { id: string; 
               </select>
             </div>
             <div className="campo">
-              <label htmlFor={`${id}-base-reps`}>Qué cuentan las repeticiones</label>
+              <label htmlFor={`${id}-base-reps`}>{COPY_CRITERIO_ARRIBA.repeticiones}</label>
               <select
                 id={`${id}-base-reps`}
                 value={p.repetitionBasis ?? ''}

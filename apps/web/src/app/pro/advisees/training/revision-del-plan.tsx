@@ -65,7 +65,7 @@ export const COPY_REVISION_DE_LA_PLANTILLA = {
 /** C9: «Volver a la revisión», arriba de la sesión, después de «Ir a…». */
 export const COPY_VOLVER_A_LA_REVISION = {
   desdeElCuadro: 'Corregí acá y volvé a «Antes de activar»: la fecha de la próxima revisión que elegiste se conserva.',
-  desdeElPanel: 'Corregí acá y volvé a la revisión del panel.',
+  desdeElPanel: 'Corregí acá y volvé a la lista de «Antes de activar».',
   volver: 'Volver a la revisión',
   ocultar: 'Ocultar',
 } as const;
@@ -112,7 +112,7 @@ export function RevisionDelPlan({
             {x.lugar === 'Plan' ? x.texto.charAt(0).toUpperCase() + x.texto.slice(1) : `${x.lugar}: ${x.texto}`}
           </span>{' '}
           {x.ir && x.destino ? (
-            <button type="button" className="boton boton--enlace" data-navega onClick={x.ir} data-ir-al-problema>
+            <button type="button" className="boton boton--discreto boton--con-flecha" data-navega onClick={x.ir} data-ir-al-problema>
               <Icono nombre="derecha" tamano={15} />
               {T.irA(x.destino)}
             </button>

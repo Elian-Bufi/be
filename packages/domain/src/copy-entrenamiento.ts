@@ -333,8 +333,9 @@ export const TERMINOS_PROHIBIDOS_DE_ENTRENAMIENTO: readonly string[] = [
 export function terminosProhibidosDeEntrenamientoEn(texto: string): string[] {
   const t = texto.toLowerCase();
   const hallados = TERMINOS_PROHIBIDOS_DE_ENTRENAMIENTO.filter((p) => t.includes(p));
-  // `%` solo como criterio de prescripción: «% RM» (B10-06:418-423). Cualquier otro porcentaje es cumplimiento.
-  if (/%(?!\s*rm)/.test(t)) hallados.push('%');
+  // `%` solo como criterio de prescripción: «% RM» (B10-06:418-423) o, desde DL-196 (EE-07), el de una aproximación con
+  // su base a la vista: «% de la carga de trabajo». Cualquier otro porcentaje es cumplimiento.
+  if (/%(?!\s*(rm\b|de la carga de trabajo))/.test(t)) hallados.push('%');
   // «Intensidad 80 kg»: la carga rotulada como intensidad (B10-06:1202).
   if (/intensidad\s*:?\s*\d+([.,]\d+)?\s*(kg|lb)/.test(t)) hallados.push('carga como intensidad');
   return hallados;

@@ -297,7 +297,7 @@ function Estado({ lecturas, onIrA }: { lecturas: Lecturas; onIrA: (v: 'plan' | '
                 return (
                   <>
                     {activo ? `Activado el ${fecha(activo.activatedAt as string)}` : COPY_ENTRENAMIENTO.sinPlanActivo}{' '}
-                    <button type="button" className="boton boton--enlace" data-navega onClick={() => onIrA('plan')}>
+                    <button type="button" className="boton boton--discreto boton--con-flecha" data-navega onClick={() => onIrA('plan')}>
                       {activo ? 'Ver plan' : COPY_PRIMER_PLAN.titulo}
                     </button>
                   </>
@@ -319,7 +319,7 @@ function Estado({ lecturas, onIrA }: { lecturas: Lecturas; onIrA: (v: 'plan' | '
                 return (
                   <>
                     {ultima ? `${ultima.plannedSession.label} · ${dia(`${ultima.date}T12:00:00Z`)} · ${etiquetaDeCondicionRegistrada(registroVigente(ultima))}` : COPY_ENTRENAMIENTO.sinEjecuciones}{' '}
-                    <button type="button" className="boton boton--enlace" data-navega onClick={() => onIrA('ejecuciones')}>
+                    <button type="button" className="boton boton--discreto boton--con-flecha" data-navega onClick={() => onIrA('ejecuciones')}>
                       Ver registros
                     </button>
                   </>
@@ -337,7 +337,7 @@ function Estado({ lecturas, onIrA }: { lecturas: Lecturas; onIrA: (v: 'plan' | '
                 return (
                   <>
                     {revision ? `${ETIQUETA_DE_RESULTADO[revision.result]} · ${fecha(revision.recordedAt)} · Próxima acción: ${revision.nextAction.description}` : 'Todavía no hay revisiones.'}{' '}
-                    <button type="button" className="boton boton--enlace" data-navega onClick={() => onIrA('revisiones')}>
+                    <button type="button" className="boton boton--discreto boton--con-flecha" data-navega onClick={() => onIrA('revisiones')}>
                       Ver revisiones
                     </button>
                   </>

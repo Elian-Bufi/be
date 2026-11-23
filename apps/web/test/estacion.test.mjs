@@ -87,13 +87,17 @@ test('TEST-EDP-054 · la barra: «Guardar ahora» y «Revisar y activar…» con
   assert.doesNotMatch(barra, /guardando \? |sucio \? '|\{guardando && /);
 });
 
-test('TEST-EDP-018 · las tres zonas, con su salto por teclado y su propio desplazamiento', () => {
-  for (const zona of ['estructura', 'editor', 'panel']) {
-    assert.match(EDITOR, new RegExp(`id="zona-${zona}" className="estacion__zona[^"]*" data-zona="${zona}"[^>]*tabIndex=\\{-1\\}`), zona);
-  }
-  assert.match(EDITOR, /\['zona-estructura', CE\.irALaEstructura\],\n\s*\['zona-editor', CE\.irAlEditor\],\n\s*\['zona-panel', CE\.irAlPanel\],/);
+test('TEST-EDP-018 (DL-196) · dos zonas, como Nutrición: el centro se desplaza con la página y el panel queda a la vista', () => {
+  // E5 y E7: sin la columna izquierda. Las dos zonas conservan su salto por teclado.
+  assert.doesNotMatch(EDITOR, /id="zona-estructura"/);
+  assert.match(EDITOR, /id="zona-editor"\n\s*className="estacion__zona estacion__centro[^"]*"\n\s*data-zona="editor"/);
+  assert.match(EDITOR, /<aside id="zona-panel" className="estacion__zona estacion__panel[^"]*" data-zona="panel"[^>]*tabIndex=\{-1\}/);
+  assert.match(EDITOR, /\['zona-editor', CE\.irAlEditor\],\n\s*\['zona-panel', CE\.irAlPanel\],/);
+  // E1: el editor no tiene un alto fijo que deje la página más larga que su contenido; el panel acompaña al desplazarse.
   const css = leer('app/globals.css');
-  assert.match(css, /\.estacion__zona \{\n\s*min-height: 0;\n\s*overflow-y: auto;/);
+  assert.match(css, /\.editor-de-entrenamiento__zonas \{[^}]*grid-template-columns: minmax\(0, 1fr\)/);
+  assert.match(css, /\.editor-de-entrenamiento__zonas \.estacion__panel \{[^}]*position: sticky;/);
+  assert.doesNotMatch(css, /\.estacion__zonas \{\n\s*height: calc\(100dvh - 14rem\);/);
 });
 
 test('TEST-EDP-020 · la ayuda se dice una vez: el párrafo fijo se fue a la ayuda de primer uso, que se recuerda', () => {

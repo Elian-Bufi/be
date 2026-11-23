@@ -1231,7 +1231,7 @@ export function EditorDeBorrador({
                       {ubicacionDelProblema(p.path, estructura)} → {PROBLEMA[p.code] ?? 'revisá este elemento'}
                     </>
                   ) : (
-                    <button type="button" className="boton boton--enlace" data-navega data-problema onClick={() => irAlProblema(p)}>
+                    <button type="button" className="boton boton--discreto boton--con-flecha" data-navega data-problema onClick={() => irAlProblema(p)}>
                       {ubicacionDelProblema(p.path, estructura)} → {PROBLEMA[p.code] ?? 'revisá este elemento'}
                     </button>
                   )}
@@ -1822,7 +1822,7 @@ function PanelDeNutricion({
         <li key={n}>
           {x.texto}{' '}
           {x.ir ? (
-            <button type="button" className="boton boton--enlace" data-navega onClick={x.ir}>
+            <button type="button" className="boton boton--discreto boton--con-flecha" data-navega onClick={x.ir}>
               {CE.irACorregir}
             </button>
           ) : null}

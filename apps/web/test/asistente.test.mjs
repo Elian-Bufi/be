@@ -87,9 +87,11 @@ test('TEST-EDP-021 · el asistente escribe con las operaciones de la estación y
   // Cada escritura toca un campo de una sesión de su grupo: el nombre, una sesión nueva o la prescripción de un ejercicio.
   const escrituras = [...pasos.matchAll(/cambiar\(\((\w+)\) => \(([^;]*?), \1\)\)/g)].map((m) => m[2]);
   assert.deepEqual(escrituras, ['(sesionesDelGrupo(x, g)[n]!.label = e.target.value)', 'sesionesDelGrupo(x, g).push(sesionVacia(g.sesiones.length + 1))', '(sesionesDelGrupo(b, g)[n]!.prescriptions[l] = nueva)']);
-  // Los días, con los mismos chips que la estación.
+  // Los días, con los chips de siempre. DL-196: en el editor van en la tabla de días de cada fase (`DiasDeLaFase`), que
+  // escribe la misma agenda con `alternarDia`.
   assert.match(pasos, /chipsDeDias\(s, n\)/);
-  assert.equal((EDITOR.match(/chipsDeDias\(s, n\)/g) ?? []).length, 2);
+  assert.equal((EDITOR.match(/chipsDeDias\(s, n\)/g) ?? []).length, 1);
+  assert.match(EDITOR, /onAlternar=\{\(id, dia\) => cambiarAgenda\(agendaDelPlan\(alternarDia\(agendaVisible, id, dia, inicioDeLaAgenda\)\)\)\}/);
   // El paso 4 muestra el nombre, lo que tiene ahora y la marca de la carga, al lado de la línea.
   assert.match(pasos, /<strong>\{nombre\}<\/strong>[^\n]*ejercicioPlegadoDelEditor\(x, 0\)\.resumen/);
   assert.match(pasos, /const revisar = cargaARevisar\(clave, x\);/);

@@ -211,7 +211,8 @@ test('TEST-GRF-099 · «Patrones» es la segunda vista de la ficha y una pestañ
   const ficha = leer(join(WEB, 'src/app/pro/advisees/workspace.tsx'));
   assert.match(ficha, /vista === 'patrones' \? <Patrones \/>/);
   const entrenamiento = leer(join(WEB, 'src/app/pro/advisees/training/editor.tsx'));
-  assert.match(entrenamiento, /\['patrones', CE\.pestanaPatrones\]/);
+  // DL-196 (EE-05): en Entrenamiento el panel es contextual, sin pestañas: «Patrones» se abre a pedido debajo.
+  assert.match(entrenamiento, /<PatronesAPedido>\n(?:\s*\{\/\*.*\*\/\}\n)?\s*<PatronesDelPlan /);
   assert.match(entrenamiento, /<PatronesDelPlan [^>]*area="ENTRENAMIENTO" planId=\{comoPlan\(version\)\?\.trainingPlanId \?\? null\}/);
   const nutricion = leer(join(WEB, 'src/app/pro/advisees/nutrition/editor.tsx'));
   assert.match(nutricion, /\['patrones', CE\.pestanaPatrones\]/);

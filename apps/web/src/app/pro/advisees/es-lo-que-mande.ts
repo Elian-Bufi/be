@@ -34,6 +34,8 @@ export interface CuerpoDelGuardado {
    * una nueva, el interruptor de las cargas). Ausente en los planes: su huella no cambia.
    */
   readonly metadatos?: unknown;
+  /** DL-196: la planificación de Entrenamiento (fechas, semanas, aproximaciones, anotaciones); ausente en Nutrición. */
+  readonly planificacion?: unknown;
 }
 
 const vacio = (v: unknown): boolean => v === undefined || v === null || v === '' || (Array.isArray(v) && v.length === 0);
@@ -59,6 +61,7 @@ export function huellaDelGuardado(c: CuerpoDelGuardado): string {
     agenda: contenido(c.agenda ?? null, false) ?? null,
     objetivo: c.objetivo ?? null,
     ...(c.metadatos !== undefined ? { metadatos: contenido(c.metadatos, false) ?? null } : {}),
+    ...(c.planificacion !== undefined ? { planificacion: contenido(c.planificacion, false) ?? null } : {}),
   });
 }
 

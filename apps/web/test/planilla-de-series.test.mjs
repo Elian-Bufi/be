@@ -24,13 +24,14 @@ test('TEST-EDP-024 · lo que se ve heredado es lo que la API guarda heredado', (
   assert.equal('restSeconds' in escritas[3], false);
   // Lo efectivo de cada serie (lo que recibe la APK) dice el propio en las tres y el general en la cuarta.
   assert.deepEqual(d.objetivosEfectivos(prescripcion(escritas)).map((o) => o.restSeconds), [120, 120, 120, 90]);
-  // Un RIR propio distinto de lo general: la API lo trata como objetivo por serie.
+  // Un RIR propio distinto de lo general: es el objetivo efectivo de esas series (DL-196: ya no traba nada al activar).
   const conRir = P.escribirEnLasSeries(escritas, new Set([0, 1, 2]), 'rir', 1);
-  assert.equal(d.planExigeObjetivosPorSerie(estructura(prescripcion(conRir))), true);
+  assert.deepEqual(d.objetivosEfectivos(prescripcion(conRir)).map((o) => o.rir).slice(0, 3), [1, 1, 1]);
+  assert.equal(d.planExigeObjetivosPorSerie, undefined);
   // «Volver a lo general» quita la clave (no deja un null, que sería «Sin objetivo»): todo vuelve a heredarse.
   const devueltas = P.volverALoGeneral(conRir, new Set([0, 1, 2]));
   assert.deepEqual(devueltas, sets);
-  assert.equal(d.planExigeObjetivosPorSerie(estructura(prescripcion(devueltas))), false);
+  assert.equal(estructura(prescripcion(devueltas)).blocks.length, 1);
   // «Sin objetivo» (null) también vuelve a lo general; las repeticiones y la nota no se tocan.
   const conNull = [{ repetitions: { value: 6 }, rir: null, note: 'x', suggestedLoad: { value: 80, unit: 'kg' } }];
   assert.deepEqual(P.volverALoGeneral(conNull, new Set([0])), [{ repetitions: { value: 6 }, note: 'x' }]);
