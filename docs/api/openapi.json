@@ -47894,6 +47894,196 @@
                               "additionalProperties": false
                             }
                           },
+                          "progressions": {
+                            "maxItems": 12,
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "blockId": {
+                                  "type": "string",
+                                  "pattern": "^[A-Za-z0-9_-]{1,64}$"
+                                },
+                                "model": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string",
+                                      "enum": [
+                                        "LINEAR",
+                                        "DOUBLE",
+                                        "UNDULATING"
+                                      ]
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "loadStep": {
+                                  "anyOf": [
+                                    {
+                                      "type": "number",
+                                      "minimum": 0,
+                                      "maximum": 50
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "repStep": {
+                                  "anyOf": [
+                                    {
+                                      "type": "integer",
+                                      "minimum": 0,
+                                      "maximum": 5
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "repRange": {
+                                  "anyOf": [
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "min": {
+                                          "type": "integer",
+                                          "minimum": 1,
+                                          "maximum": 50
+                                        },
+                                        "max": {
+                                          "type": "integer",
+                                          "minimum": 1,
+                                          "maximum": 50
+                                        }
+                                      },
+                                      "required": [
+                                        "min",
+                                        "max"
+                                      ],
+                                      "additionalProperties": false
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "waves": {
+                                  "anyOf": [
+                                    {
+                                      "minItems": 3,
+                                      "maxItems": 3,
+                                      "type": "array",
+                                      "items": {
+                                        "type": "integer",
+                                        "minimum": 40,
+                                        "maximum": 100
+                                      }
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "deload": {
+                                  "anyOf": [
+                                    {
+                                      "type": "object",
+                                      "properties": {
+                                        "week": {
+                                          "type": "integer",
+                                          "minimum": 1,
+                                          "maximum": 52
+                                        },
+                                        "mode": {
+                                          "type": "string",
+                                          "enum": [
+                                            "LOAD",
+                                            "SETS"
+                                          ]
+                                        },
+                                        "workingLoadShare": {
+                                          "type": "integer",
+                                          "minimum": 40,
+                                          "maximum": 95
+                                        },
+                                        "setsRemoved": {
+                                          "type": "integer",
+                                          "minimum": 1,
+                                          "maximum": 10
+                                        }
+                                      },
+                                      "required": [
+                                        "week",
+                                        "mode",
+                                        "workingLoadShare",
+                                        "setsRemoved"
+                                      ],
+                                      "additionalProperties": false
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                },
+                                "prescriptionIds": {
+                                  "anyOf": [
+                                    {
+                                      "minItems": 1,
+                                      "maxItems": 60,
+                                      "type": "array",
+                                      "items": {
+                                        "type": "string",
+                                        "pattern": "^[A-Za-z0-9_-]{1,64}$"
+                                      }
+                                    },
+                                    {
+                                      "type": "null"
+                                    }
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "blockId",
+                                "model",
+                                "loadStep",
+                                "repStep",
+                                "repRange",
+                                "waves",
+                                "deload",
+                                "prescriptionIds"
+                              ],
+                              "additionalProperties": false
+                            }
+                          },
+                          "favoriteCharts": {
+                            "maxItems": 30,
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "kind": {
+                                  "type": "string",
+                                  "enum": [
+                                    "EXERCISE_LOAD",
+                                    "PHASE_PROGRESSION",
+                                    "PHASE_DISTRIBUTION"
+                                  ]
+                                },
+                                "id": {
+                                  "type": "string",
+                                  "pattern": "^[A-Za-z0-9_-]{1,64}$"
+                                }
+                              },
+                              "required": [
+                                "kind",
+                                "id"
+                              ],
+                              "additionalProperties": false
+                            }
+                          },
                           "privateNotes": {
                             "type": "object",
                             "properties": {
@@ -50374,6 +50564,10 @@
                   "q": {
                     "type": "string",
                     "maxLength": 80
+                  },
+                  "zoneId": {
+                    "type": "string",
+                    "maxLength": 40
                   },
                   "limit": {
                     "type": "integer",
@@ -92240,6 +92434,196 @@
                                       "mode",
                                       "workingLoadShares",
                                       "step"
+                                    ],
+                                    "additionalProperties": false
+                                  }
+                                },
+                                "progressions": {
+                                  "maxItems": 12,
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "properties": {
+                                      "blockId": {
+                                        "type": "string",
+                                        "pattern": "^[A-Za-z0-9_-]{1,64}$"
+                                      },
+                                      "model": {
+                                        "anyOf": [
+                                          {
+                                            "type": "string",
+                                            "enum": [
+                                              "LINEAR",
+                                              "DOUBLE",
+                                              "UNDULATING"
+                                            ]
+                                          },
+                                          {
+                                            "type": "null"
+                                          }
+                                        ]
+                                      },
+                                      "loadStep": {
+                                        "anyOf": [
+                                          {
+                                            "type": "number",
+                                            "minimum": 0,
+                                            "maximum": 50
+                                          },
+                                          {
+                                            "type": "null"
+                                          }
+                                        ]
+                                      },
+                                      "repStep": {
+                                        "anyOf": [
+                                          {
+                                            "type": "integer",
+                                            "minimum": 0,
+                                            "maximum": 5
+                                          },
+                                          {
+                                            "type": "null"
+                                          }
+                                        ]
+                                      },
+                                      "repRange": {
+                                        "anyOf": [
+                                          {
+                                            "type": "object",
+                                            "properties": {
+                                              "min": {
+                                                "type": "integer",
+                                                "minimum": 1,
+                                                "maximum": 50
+                                              },
+                                              "max": {
+                                                "type": "integer",
+                                                "minimum": 1,
+                                                "maximum": 50
+                                              }
+                                            },
+                                            "required": [
+                                              "min",
+                                              "max"
+                                            ],
+                                            "additionalProperties": false
+                                          },
+                                          {
+                                            "type": "null"
+                                          }
+                                        ]
+                                      },
+                                      "waves": {
+                                        "anyOf": [
+                                          {
+                                            "minItems": 3,
+                                            "maxItems": 3,
+                                            "type": "array",
+                                            "items": {
+                                              "type": "integer",
+                                              "minimum": 40,
+                                              "maximum": 100
+                                            }
+                                          },
+                                          {
+                                            "type": "null"
+                                          }
+                                        ]
+                                      },
+                                      "deload": {
+                                        "anyOf": [
+                                          {
+                                            "type": "object",
+                                            "properties": {
+                                              "week": {
+                                                "type": "integer",
+                                                "minimum": 1,
+                                                "maximum": 52
+                                              },
+                                              "mode": {
+                                                "type": "string",
+                                                "enum": [
+                                                  "LOAD",
+                                                  "SETS"
+                                                ]
+                                              },
+                                              "workingLoadShare": {
+                                                "type": "integer",
+                                                "minimum": 40,
+                                                "maximum": 95
+                                              },
+                                              "setsRemoved": {
+                                                "type": "integer",
+                                                "minimum": 1,
+                                                "maximum": 10
+                                              }
+                                            },
+                                            "required": [
+                                              "week",
+                                              "mode",
+                                              "workingLoadShare",
+                                              "setsRemoved"
+                                            ],
+                                            "additionalProperties": false
+                                          },
+                                          {
+                                            "type": "null"
+                                          }
+                                        ]
+                                      },
+                                      "prescriptionIds": {
+                                        "anyOf": [
+                                          {
+                                            "minItems": 1,
+                                            "maxItems": 60,
+                                            "type": "array",
+                                            "items": {
+                                              "type": "string",
+                                              "pattern": "^[A-Za-z0-9_-]{1,64}$"
+                                            }
+                                          },
+                                          {
+                                            "type": "null"
+                                          }
+                                        ]
+                                      }
+                                    },
+                                    "required": [
+                                      "blockId",
+                                      "model",
+                                      "loadStep",
+                                      "repStep",
+                                      "repRange",
+                                      "waves",
+                                      "deload",
+                                      "prescriptionIds"
+                                    ],
+                                    "additionalProperties": false
+                                  }
+                                },
+                                "favoriteCharts": {
+                                  "maxItems": 30,
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "properties": {
+                                      "kind": {
+                                        "type": "string",
+                                        "enum": [
+                                          "EXERCISE_LOAD",
+                                          "PHASE_PROGRESSION",
+                                          "PHASE_DISTRIBUTION"
+                                        ]
+                                      },
+                                      "id": {
+                                        "type": "string",
+                                        "pattern": "^[A-Za-z0-9_-]{1,64}$"
+                                      }
+                                    },
+                                    "required": [
+                                      "kind",
+                                      "id"
                                     ],
                                     "additionalProperties": false
                                   }
