@@ -16602,8 +16602,10 @@ p.cifra-del-espacio__desglose {
   vertical-align: middle;
 }
 
-.almanaque__dia:not([data-del-mes]) .almanaque__numero {
-  opacity: 0.45;
+/* Los días de los bordes (de otro mes) se leen más tenues, con el color tenue y no con transparencia: siguen
+   legibles. Un día de sesión de otro mes es un botón y conserva su texto (WCAG 1.4.3). */
+.almanaque__dia:not([data-del-mes]) > .almanaque__numero {
+  color: var(--tenue);
 }
 
 .almanaque__numero {
