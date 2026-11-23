@@ -423,7 +423,9 @@ export function EjercicioDelEditor({
                   {COPY_ESCRITURA_RAPIDA.sinAplicar}: «{lineaSinAplicar.trim()}»
                 </span>
               ) : null}
-              {plegado.avisos.length > 0 ? (
+              {/* RP-19 (DL-196): abierto, lo que no se entiende lo dicen la celda marcada y el renglón reservado debajo de la
+                  tabla. Si además apareciera acá mientras se escribe, la cabecera pasaba a dos renglones y corría las series. */}
+              {!abierto && plegado.avisos.length > 0 ? (
                 <span className="comida-del-editor__avisos" data-avisos>
                   <Icono nombre="aviso" tamano={18} />
                   <EnPartes texto={plegado.avisos.join(' · ')} />
