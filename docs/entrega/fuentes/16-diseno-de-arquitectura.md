@@ -37,7 +37,56 @@ BE son tres aplicaciones que comparten un solo servidor: la app de la persona, e
 
 BE tiene tres roles. La persona usa la app para Android: ve lo de hoy, registra lo que hizo y decide quién ve qué. El profesional trabaja desde el website, pensado para el escritorio. Administración también usa el website, con contraseña y segundo factor obligatorio, y habilita a cada profesional por área sin ver datos de salud.
 
-![Figura 2: BE en su contexto. A la izquierda, los tres roles; a la derecha, los servicios externos y lo único que reciben](pendiente)
+```mermaid
+%% BE · Diseño de arquitectura v2 · BE en su contexto: roles y servicios externos (nivel 1 del modelo C4).
+flowchart TB
+  P["`**Persona**
+[app Android]
+Sigue su plan, registra lo que hizo y decide quién ve qué`"]
+  PR["`**Profesional**
+[website]
+Acompaña a la persona en Nutrición, Entrenamiento o Antropometría`"]
+  AD["`**Administración**
+[website con segundo factor]
+Habilita a cada profesional por área; no ve datos de salud`"]
+  GH["`**GitHub**
+[repositorio, Actions y Releases]
+Código, verificación automática y publicación de la app`"]
+  BE["`**BE**
+[sistema]
+App, website, API y base de datos. Aplica las reglas de cada área, autoriza cada operación y guarda la historia`"]
+  GO["`**Google**
+[servicio externo]
+Inicio de sesión con la cuenta de Google`"]
+  EX["`**Expo Push y Firebase**
+[servicio externo]
+Entregan los avisos al teléfono`"]
+  OF["`**Open Food Facts, USDA y wger**
+[servicios externos]
+Catálogos públicos de alimentos y de ejercicios`"]
+  CO["`**Proveedor de correo**
+[servicio externo, configurable]
+Envía el código para recuperar el acceso cuando está configurado`"]
+  P -->|usa la app| BE
+  PR -->|usa el website| BE
+  AD -->|usa el website| BE
+  GH -.->|"despliega el website y la API; publica la app"| BE
+  BE -->|verifica la cuenta| GO
+  BE -->|«Tenés una novedad»| EX
+  BE -->|"busca e importa, con revisión"| OF
+  BE -->|código de recuperación| CO
+  style P fill:#FFFFFF,stroke:#1F7A70,stroke-width:2px,color:#1F2933
+  style PR fill:#FFFFFF,stroke:#2F5D8A,stroke-width:2px,color:#1F2933
+  style AD fill:#FFFFFF,stroke:#5A4E8C,stroke-width:2px,color:#1F2933
+  style GH fill:#FFFFFF,stroke:#3B4A5A,stroke-width:2px,color:#1F2933,stroke-dasharray:6 4
+  style BE fill:#EEF3F8,stroke:#2F5D8A,stroke-width:3px,color:#1F2933
+  style GO fill:#F7F9FB,stroke:#6B7785,stroke-width:2px,color:#1F2933,stroke-dasharray:6 4
+  style EX fill:#F7F9FB,stroke:#6B7785,stroke-width:2px,color:#1F2933,stroke-dasharray:6 4
+  style OF fill:#F7F9FB,stroke:#6B7785,stroke-width:2px,color:#1F2933,stroke-dasharray:6 4
+  style CO fill:#F7F9FB,stroke:#6B7785,stroke-width:2px,color:#1F2933,stroke-dasharray:6 4
+```
+
+*Figura 2: BE en su contexto. A la izquierda, los tres roles; a la derecha, los servicios externos y lo único que reciben.*
 
 Hacia afuera, BE manda lo mínimo. Ningún servicio externo recibe datos de salud: el aviso al teléfono dice solo que hay una novedad, y la app la muestra al abrirla. Lo que llega de los catálogos externos no entra directo: el profesional lo revisa antes de importarlo. GitHub no participa de la operación; guarda el código, verifica cada cambio y construye la app.
 
@@ -56,7 +105,65 @@ Hacia afuera, BE manda lo mínimo. Ningún servicio externo recibe datos de salu
 | Recordatorios | Tarea programada | Tres veces por día le pide a la API que envíe los recordatorios del día. |
 | @be/domain | Paquete TypeScript | Contratos de cada operación, textos y reglas puras. Lo compilan la app, el website y la API; de él sale la especificación OpenAPI. |
 
-![Figura 3: Los contenedores de BE. Las flechas van de quien pide a quien responde; ninguna se cruza con otra. El sello «@be/domain» marca las tres piezas que se compilan con el paquete compartido](pendiente)
+```mermaid
+%% BE · Diseño de arquitectura v2 · Los contenedores de BE y cómo se comunican (nivel 2 del modelo C4).
+flowchart LR
+  P["`**Persona**`"]
+  PA["`**Profesional y Administración**`"]
+  subgraph BE["BE"]
+    DOM["`**@be/domain**
+[paquete TypeScript compartido]
+Contratos, textos y reglas puras. De acá sale la especificación OpenAPI`"]
+    APP["`**App de la persona**
+[Android · React Native y Expo]
+Inicio, Nutrición, Entrenamiento, Evolución y Perfil. Guarda la sesión en el almacenamiento seguro`"]
+    WEB["`**Website**
+[Next.js · exportación estática]
+Escritorio del profesional y Administración. Reanuda la sesión con una cookie httpOnly`"]
+    REC["`**Recordatorios**
+[tarea programada]
+Tres veces por día pide a la API los recordatorios del día`"]
+    API["`**API**
+[NestJS · TypeScript · monolito modular]
+34 módulos por dominio. Autoriza cada operación, aplica las reglas y audita en la misma transacción`"]
+    DB["`**Base de datos**
+[PostgreSQL 16 · Prisma]
+163 tablas, 102 migraciones. Rechaza por sí misma lo que rompería la historia`"]
+  end
+  EXP["`**Expo Push**`"]
+  OFF["`**Open Food Facts · USDA · wger**`"]
+  COR["`**Correo (configurable)**`"]
+  GOO["`**Google**`"]
+  P --> APP
+  PA --> WEB
+  DOM -.->|se compila con| APP
+  DOM -.->|se compila con| WEB
+  DOM -.->|se compila con| API
+  APP -->|HTTPS · JSON| API
+  WEB -->|HTTPS · JSON| API
+  REC -->|HTTPS con secreto de tareas| API
+  API -->|SQL por la red privada| DB
+  API -->|avisos| EXP
+  API -->|con tiempo máximo| OFF
+  API -->|código de recuperación| COR
+  API -->|verifica el token| GOO
+  APP -.->|elige la cuenta| GOO
+  style P fill:#FFFFFF,stroke:#1F7A70,stroke-width:2px,color:#1F2933
+  style PA fill:#FFFFFF,stroke:#2F5D8A,stroke-width:2px,color:#1F2933
+  style DOM fill:#FFFFFF,stroke:#3B4A5A,stroke-width:2px,color:#1F2933,stroke-dasharray:6 4
+  style APP fill:#FFFFFF,stroke:#1F7A70,stroke-width:2px,color:#1F2933
+  style WEB fill:#FFFFFF,stroke:#2F5D8A,stroke-width:2px,color:#1F2933
+  style REC fill:#FFFFFF,stroke:#6B7785,stroke-width:2px,color:#1F2933
+  style API fill:#FFFFFF,stroke:#2F5D8A,stroke-width:3px,color:#1F2933
+  style DB fill:#FFFFFF,stroke:#3E7D32,stroke-width:2px,color:#1F2933
+  style EXP fill:#F7F9FB,stroke:#6B7785,stroke-width:2px,color:#1F2933,stroke-dasharray:6 4
+  style OFF fill:#F7F9FB,stroke:#6B7785,stroke-width:2px,color:#1F2933,stroke-dasharray:6 4
+  style COR fill:#F7F9FB,stroke:#6B7785,stroke-width:2px,color:#1F2933,stroke-dasharray:6 4
+  style GOO fill:#F7F9FB,stroke:#6B7785,stroke-width:2px,color:#1F2933,stroke-dasharray:6 4
+  style BE fill:#FAFBFC,stroke:#2F5D8A,stroke-width:1px,stroke-dasharray:6 4
+```
+
+*Figura 3: Los contenedores de BE. Las flechas van de quien pide a quien responde; ninguna se cruza con otra. El sello «@be/domain» marca las tres piezas que se compilan con el paquete compartido.*
 
 # 3. Despliegue
 
@@ -64,7 +171,78 @@ Hacia afuera, BE manda lo mínimo. Ningún servicio externo recibe datos de salu
 
 BE corre en Render, en la región Frankfurt. La demostración usa datos sintéticos; para operar con datos reales a escala se suma un ambiente de producción separado, con la misma forma (ver el análisis de viabilidad, 24).
 
-![Figura 4: El despliegue: del repositorio a Render, con la verificación como puerta. Las cuatro piezas de Render están en la misma región y la base solo se alcanza por la red privada](pendiente)
+```mermaid
+%% BE · Diseño de arquitectura v2 · Dónde corre cada pieza y cómo llega un cambio (vista de despliegue).
+flowchart TB
+  subgraph PC["PC del autor"]
+    DEV["`**Desarrollo**
+[Node 22 · Git]
+Cambios en ramas y pull requests`"]
+    FIR["`**Firma de la app**
+[keystore local]
+Verifica la huella del AAB, lo firma, arma la APK y la firma. La clave nunca sale de esta PC`"]
+  end
+  subgraph GH["GitHub"]
+    REPO["`**Repositorio**
+[rama principal]`"]
+    AAB["`**Actions · AAB sin firma**
+[ramas aab/*]
+Construye la app sin firmar y deja el archivo un día`"]
+    CI["`**Actions · ci**
+[en cada push y pull request]
+Hashes del legajo · tipos, pruebas, build y auditoría · integración con PostgreSQL 16 · recorridos en navegador · imagen de la API con migraciones`"]
+    REL["`**Releases**
+[la última versión]
+APK con su huella SHA-256`"]
+  end
+  subgraph RD["Render · Frankfurt · ambiente de prueba"]
+    BW["`**be-web**
+[sitio estático]
+Website con encabezados de seguridad`"]
+    BR["`**be-recordatorios**
+[tarea programada]
+22, 10 y 15 h de Argentina`"]
+    BA["`**be-api**
+[servicio web · Docker]
+Aplica las migraciones al arrancar y recibe tráfico cuando /health/ready responde`"]
+    BD["`**be-db-test**
+[PostgreSQL 16]
+Plan pago; solo red privada`"]
+  end
+  NAV["`**Navegador**`"]
+  TEL["`**Teléfono Android**
+Instala la APK descargada`"]
+  DEV -->|push| REPO
+  REPO --> AAB
+  REPO --> CI
+  AAB -->|"descarga y compara la huella"| FIR
+  FIR -->|publica| REL
+  CI -->|"si la verificación pasa, despliega"| BW
+  CI --> BA
+  BR --> BA
+  BA --> BD
+  NAV --> BW
+  NAV -.->|HTTPS| BA
+  REL -->|"el website ofrece la última versión"| TEL
+  TEL -.->|HTTPS| BA
+  style DEV fill:#FFFFFF,stroke:#9A4B2E,stroke-width:2px,color:#1F2933
+  style FIR fill:#FFFFFF,stroke:#9A4B2E,stroke-width:2px,color:#1F2933
+  style REPO fill:#FFFFFF,stroke:#3B4A5A,stroke-width:2px,color:#1F2933
+  style AAB fill:#FFFFFF,stroke:#3B4A5A,stroke-width:2px,color:#1F2933
+  style CI fill:#FFFFFF,stroke:#3B4A5A,stroke-width:2px,color:#1F2933
+  style REL fill:#FFFFFF,stroke:#3B4A5A,stroke-width:2px,color:#1F2933
+  style BW fill:#FFFFFF,stroke:#2F5D8A,stroke-width:2px,color:#1F2933
+  style BR fill:#FFFFFF,stroke:#6B7785,stroke-width:2px,color:#1F2933
+  style BA fill:#FFFFFF,stroke:#2F5D8A,stroke-width:3px,color:#1F2933
+  style BD fill:#FFFFFF,stroke:#3E7D32,stroke-width:2px,color:#1F2933
+  style NAV fill:#FFFFFF,stroke:#2F5D8A,stroke-width:2px,color:#1F2933
+  style TEL fill:#FFFFFF,stroke:#1F7A70,stroke-width:2px,color:#1F2933
+  style PC fill:#FDF8F5,stroke:#9A4B2E,stroke-width:1px
+  style GH fill:#F7F9FB,stroke:#3B4A5A,stroke-width:1px
+  style RD fill:#F4F8FC,stroke:#2F5D8A,stroke-width:1px
+```
+
+*Figura 4: El despliegue: del repositorio a Render, con la verificación como puerta. Las cuatro piezas de Render están en la misma región y la base solo se alcanza por la red privada.*
 
 ## 3.1 Cómo llega un cambio
 
@@ -92,7 +270,46 @@ Dos consecuencias importan. Primero, no hay escritura sin autorización ni audit
 
 > **Un reintento no duplica.** Si la conexión se corta y la app reintenta con la misma clave, la API devuelve la respuesta guardada; antes vuelve a decidir el permiso, y si ya no se permite, responde el mismo 404.
 
-![Figura 5: El recorrido de una escritura, por ejemplo activar un plan o registrar una comida. Fuente: apps/api/src/plataforma/ejecutor.ts; el código del diagrama está en las fuentes de esta entrega](pendiente)
+```mermaid
+%% BE · Diseño de arquitectura v2 · El recorrido de toda operación que escribe datos de salud (apps/api/src/plataforma/ejecutor.ts).
+flowchart TB
+  E1["`**1 · Pedido**
+La app o el website mandan la operación por HTTPS, con su clave de idempotencia y la versión que leyeron.`"]
+  E2["`**2 · Sesión**
+SesionGuard comprueba que la sesión exista, esté activa y no haya sido revocada.`"]
+  E3["`**3 · Contrato**
+El cuerpo se valida contra el contrato compartido. Si no cumple: 400.`"]
+  E4["`**4 · Idempotencia**
+Si la clave ya se usó, se vuelve a autorizar y se devuelve la respuesta guardada.`"]
+  subgraph TX["una sola transacción"]
+    direction LR
+    E5["`**5 · Autorización**
+El punto de decisión mira vínculo, consentimiento, habilitación y área. Si niega: se revierte, se registra y responde 404.`"]
+    E6["`**6 · Efecto**
+Se escriben los hechos. La base rechaza lo que rompería una regla.`"]
+    E7["`**7 · Constancia**
+Auditoría, registro de idempotencia y novedad, en la misma transacción.`"]
+    E8["`**8 · Confirmación**
+COMMIT. Si algo falló antes, no queda nada a medias.`"]
+    E5 --> E6 --> E7 --> E8
+  end
+  E9["`**9 · Aviso**
+Después de confirmar, el aviso al teléfono sale por Expo Push, lo mejor posible.`"]
+  E1 --> E2 --> E3 --> E4 --> TX
+  TX --> E9
+  style E1 fill:#FFFFFF,stroke:#3B4A5A,stroke-width:2px,color:#1F2933
+  style E2 fill:#FFFFFF,stroke:#3B4A5A,stroke-width:2px,color:#1F2933
+  style E3 fill:#FFFFFF,stroke:#3B4A5A,stroke-width:2px,color:#1F2933
+  style E4 fill:#FFFFFF,stroke:#3B4A5A,stroke-width:2px,color:#1F2933
+  style E5 fill:#FFFFFF,stroke:#2F5D8A,stroke-width:2px,color:#1F2933
+  style E6 fill:#FFFFFF,stroke:#2F5D8A,stroke-width:2px,color:#1F2933
+  style E7 fill:#FFFFFF,stroke:#2F5D8A,stroke-width:2px,color:#1F2933
+  style E8 fill:#FFFFFF,stroke:#2F5D8A,stroke-width:2px,color:#1F2933
+  style E9 fill:#FFFFFF,stroke:#6B7785,stroke-width:2px,color:#1F2933,stroke-dasharray:6 4
+  style TX fill:#F4F8FC,stroke:#2F5D8A,stroke-width:2px,stroke-dasharray:6 4
+```
+
+*Figura 5: El recorrido de una escritura, por ejemplo activar un plan o registrar una comida. Fuente: apps/api/src/plataforma/ejecutor.ts; el código del diagrama está en las fuentes de esta entrega.*
 
 # 5. Decisiones de arquitectura
 

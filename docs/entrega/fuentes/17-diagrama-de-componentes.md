@@ -29,7 +29,91 @@ La forma sigue a lo que BE ofrece. Nutrición, Entrenamiento y Antropometría so
 
 *Fuente: El repositorio: apps/api/src (módulos y controladores), docs/api/openapi.json, apps/web/src/app y apps/mobile/src/pantallas.*
 
-![Figura 1: Las tres aplicaciones tienen la misma forma en capas: arriba lo que ofrecen, en el medio sus piezas y abajo lo que habla con la otra punta (la API o la base). Debajo de las tres, el paquete que comparten al compilar](pendiente)
+```mermaid
+%% BE · Diagrama de componentes v2 · Componentes de la app, el website y la API, y el paquete compartido.
+flowchart LR
+  subgraph APP["App de la persona · Android"]
+    direction LR
+    A1["`**Pantallas**
+47 pantallas en cinco pestañas: Inicio, Nutrición, Entrenamiento, Evolución y Perfil`"]
+    A2["`**Sesión**
+token en el almacenamiento seguro; acceso con correo o con Google`"]
+    A3["`**Sesión de entrenamiento en curso**
+relojes, descansos y series de la sesión que se está haciendo`"]
+    A4["`**Avisos del teléfono**
+registro del teléfono y apertura de la novedad`"]
+    A5["`**Cliente de la API**
+cada escritura con su clave de idempotencia y la versión que leyó`"]
+  end
+  subgraph WEB["Website · Next.js"]
+    direction LR
+    W1["`**Escritorio del profesional**
+cartera, ficha por área, editores de planes, recetas, ejercicios y plantillas`"]
+    W2["`**Administración**
+profesionales por área, accesos, derechos y seguridad`"]
+    W3["`**Cuenta y páginas públicas**
+inicio, registro, invitación, recuperar el acceso, ayuda y legales`"]
+    W4["`**Cliente de la API y sesión**
+reanudación con cookie httpOnly, autoguardado y manejo de fallas`"]
+  end
+  subgraph API["API · NestJS · monolito modular"]
+    direction TB
+    C1["`**Controladores**
+la interfaz HTTP: 339 rutas, 335 de ellas en la especificación pública`"]
+    C2["`**Servicios por módulo**
+119 clases inyectables en los 34 módulos; cada uno resuelve un caso de su área`"]
+    C3["`**Ejecutor de dominio**
+una sola transacción: autorización, efecto, auditoría e idempotencia`"]
+    C4["`**Punto de decisión (PDP)**
+decide con vínculo, consentimiento, habilitación y área`"]
+    C5["`**Prisma**
+el acceso a la base, generado desde el esquema`"]
+    C6["`**Adaptadores**
+Google, Expo Push, Open Food Facts, wger y correo`"]
+    C1 --> C2 --> C3 --> C4
+    C3 --> C5
+    C2 --> C6
+  end
+  subgraph DB["PostgreSQL 16"]
+    direction LR
+    D1["`**163 tablas**
+con disparadores, restricciones e índices únicos parciales`"]
+    D2["`**102 migraciones**
+se aplican en orden al arrancar la API`"]
+  end
+  DOM["`**@be/domain**
+Paquete compartido que se compila con la app, el website y la API: los contratos de cada operación (de ellos sale la especificación OpenAPI), los textos que ve cada persona y las reglas puras. Si un contrato cambia, los tres lados lo ven en la compilación.`"]
+  APP -->|HTTPS · JSON| API
+  WEB -->|HTTPS · JSON| API
+  API -->|SQL · red privada| DB
+  DOM -.->|se compila con| APP
+  DOM -.->|se compila con| WEB
+  DOM -.->|se compila con| API
+  style A1 fill:#FFFFFF,stroke:#1F7A70,stroke-width:1.5px,color:#1F2933
+  style A2 fill:#FFFFFF,stroke:#1F7A70,stroke-width:1.5px,color:#1F2933
+  style A3 fill:#FFFFFF,stroke:#1F7A70,stroke-width:1.5px,color:#1F2933
+  style A4 fill:#FFFFFF,stroke:#1F7A70,stroke-width:1.5px,color:#1F2933
+  style A5 fill:#FFFFFF,stroke:#1F7A70,stroke-width:1.5px,color:#1F2933
+  style W1 fill:#FFFFFF,stroke:#2F5D8A,stroke-width:1.5px,color:#1F2933
+  style W2 fill:#FFFFFF,stroke:#2F5D8A,stroke-width:1.5px,color:#1F2933
+  style W3 fill:#FFFFFF,stroke:#2F5D8A,stroke-width:1.5px,color:#1F2933
+  style W4 fill:#FFFFFF,stroke:#2F5D8A,stroke-width:1.5px,color:#1F2933
+  style C1 fill:#FFFFFF,stroke:#B0413E,stroke-width:1.5px,color:#1F2933
+  style C2 fill:#FFFFFF,stroke:#B0413E,stroke-width:1.5px,color:#1F2933
+  style C3 fill:#FFFFFF,stroke:#B0413E,stroke-width:1.5px,color:#1F2933
+  style C4 fill:#FFFFFF,stroke:#B0413E,stroke-width:1.5px,color:#1F2933
+  style C5 fill:#FFFFFF,stroke:#3B4A5A,stroke-width:1.5px,color:#1F2933
+  style C6 fill:#FFFFFF,stroke:#3B4A5A,stroke-width:1.5px,color:#1F2933
+  style D1 fill:#FFFFFF,stroke:#3E7D32,stroke-width:1.5px,color:#1F2933
+  style D2 fill:#FFFFFF,stroke:#3E7D32,stroke-width:1.5px,color:#1F2933
+  style DOM fill:#F7F9FB,stroke:#3B4A5A,stroke-width:2px,color:#1F2933,stroke-dasharray:6 4
+  style APP fill:#F3FAF8,stroke:#1F7A70,stroke-width:2px
+  style WEB fill:#F4F8FC,stroke:#2F5D8A,stroke-width:2px
+  style API fill:#FCF5F5,stroke:#B0413E,stroke-width:2px
+  style DB fill:#F5FAF4,stroke:#3E7D32,stroke-width:2px
+```
+
+*Figura 1: Las tres aplicaciones tienen la misma forma en capas: arriba lo que ofrecen, en el medio sus piezas y abajo lo que habla con la otra punta (la API o la base). Debajo de las tres, el paquete que comparten al compilar.*
 
 # 1. La API, módulo por módulo
 
@@ -43,9 +127,46 @@ El grafo muestra las importaciones explícitas entre módulos: la lista `imports
 
 No dibuja Sesión, que trae el guard que pide la sesión en cada ruta protegida: la importan casi todos los módulos, y dibujarla taparía el resto. Tampoco dibuja los cinco módulos globales (Prisma, Plataforma, Autorización, Proceso y Novedades): se registran una sola vez y cualquier módulo usa sus servicios sin importarlos. Análisis, Cartera y Dashboard importan además Prisma de forma explícita, y tampoco se dibuja.
 
-Quedan dieciséis dependencias, pocas a propósito: cada área resuelve lo suyo, y lo común está en los globales.
+Quedan diecisiete dependencias, pocas a propósito: cada área resuelve lo suyo, y lo común está en los globales.
 
-![Figura 3: Las dieciséis importaciones explícitas entre módulos (la lista imports de cada uno), sin Sesión ni los globales (todos los usan y no se dibujan). La flecha va del módulo que importa al importado, y cada módulo conserva el color de su franja. Resúmenes e Historia anterior leen de Nutrición y de Entrenamiento, y estas dos importan, cada una, Integraciones y Medios](pendiente)
+```mermaid
+flowchart LR
+  acceso_google["Acceso con Google"]
+  identidad["Identidad"]
+  administracion["Administración"]
+  profesional["Profesional"]
+  derechos["Derechos"]
+  recuperacion["Recuperación"]
+  incidencias["Incidencias"]
+  nutricion["Nutrición"]
+  analisis["Análisis"]
+  entrenamiento["Entrenamiento"]
+  integraciones["Integraciones"]
+  medios["Medios"]
+  historia_anterior["Historia anterior"]
+  vinculo["Vínculo"]
+  notas_propias["Notas propias"]
+  resumenes["Resúmenes"]
+  acceso_google --> identidad
+  administracion --> profesional
+  administracion --> derechos
+  administracion --> recuperacion
+  administracion --> incidencias
+  administracion --> nutricion
+  analisis --> entrenamiento
+  entrenamiento --> integraciones
+  entrenamiento --> medios
+  historia_anterior --> nutricion
+  historia_anterior --> entrenamiento
+  identidad --> vinculo
+  notas_propias --> entrenamiento
+  nutricion --> integraciones
+  nutricion --> medios
+  resumenes --> nutricion
+  resumenes --> entrenamiento
+```
+
+*Figura 3: Las 17 importaciones explícitas entre módulos (la lista imports de cada uno), sin Sesión ni los globales (todos los usan y no se dibujan). La flecha va del módulo que importa al importado. Leído de apps/api/src/*/*.module.ts.*
 
 ## 1.2 Cada módulo, en una fila
 
