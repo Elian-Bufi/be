@@ -98,7 +98,6 @@ Una línea que sale de una tabla y vuelve a ella es una cadena: cada fila apunta
 2. **En dbdiagram.io**: El modelo completo e interactivo, desde «14 DER - fuente.dbml», que acompaña a este documento: zoom, buscador y cada tabla con su descripción y la de cada campo.
 3. **Como código**: El DBML y cada lámina, en Mermaid, salen del esquema con un script: se leen como texto y se vuelven a generar si el esquema cambia.
 
-*.*
 
 > **Nada está dibujado a mano.** Un script lee `prisma/schema.prisma`, el mismo archivo con el que Prisma crea las migraciones, y escribe el DBML y las láminas. Por eso el DER coincide campo por campo con la base. Si el esquema cambia, se vuelve a generar; no se corrige a mano.
 

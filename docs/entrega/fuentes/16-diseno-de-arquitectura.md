@@ -73,7 +73,6 @@ BE corre en Render, en la región Frankfurt. La demostración usa datos sintéti
 3. **Despliegue**: Con la rama principal en verde, Render despliega el website, la API y la tarea programada.
 4. **Puerta de salud**: La API aplica las migraciones al arrancar y recibe tráfico recién cuando `/health/ready` responde.
 
-*.*
 
 ## 3.2 Cómo llega la app al teléfono
 
@@ -84,7 +83,6 @@ La app se instala desde el website, y la clave con que se firma nunca sale de la
 3. **Firma**: Se firma con la clave de la app, se verifica y se arma la APK, también firmada.
 4. **Publica**: La APK se publica en las releases del repositorio, con su huella; el website ofrece siempre la última.
 
-*.*
 
 # 4. Una escritura, paso a paso
 

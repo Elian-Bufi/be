@@ -31,7 +31,7 @@
 
 - Cada requisito tiene un ID (**REQ-TUT-nn**), qué pide y **cómo se verifica**. Un requisito sin verificación no entra.
 - «Hoy» es siempre el día en que se arma la muestra: todas las fechas son relativas a ese día («La construcción»).
-- En el documento y en pantalla se dice **«persona»**, nunca «asesorado».
+- En el documento y en pantalla se dice **«persona»**, nunca el nombre técnico que usa la base de datos.
 - Los gráficos que todavía no están programados figuran en la matriz con su estado, para que los datos ya los dejen listos; la guía del tutor muestra solo lo que está funcionando.
 
 # 1. El objetivo y la audiencia
@@ -314,7 +314,7 @@ Las reglas van en tres tablas, una por área. Fuera de ellas hay cuatro familias
 
 **REQ-TUT-40 · Ubicar, nunca calificar, también en lo escrito.** Ningún texto de la muestra (notas propias, notas de la sesión, revisiones, nombres de planes, de recetas y de enfoques) usa las palabras que B05 prohíbe, califica el cuerpo o la conducta, ni afirma causas («gracias a los carbohidratos subió la fuerza»). Las revisiones dicen qué se ve, en qué se funda y qué se hace. *Se verifica:* R-TXT-01, la guardia de vocabulario de BE corrida sobre todos los textos de la muestra, más la lectura de Elián.
 
-**REQ-TUT-41 · Ningún «asesorado» en pantalla.** *Se verifica:* el texto visible de las capturas de la matriz, buscado por la palabra.
+**REQ-TUT-41 · Ningún nombre técnico de la persona en pantalla.** *Se verifica:* el texto visible de las capturas de la matriz, buscado por ese nombre.
 
 **REQ-TUT-42 · La matriz de los gráficos.** Cada gráfico aprobado tiene al menos una persona con la que se luce, y los datos que necesita («La matriz de los gráficos»). *Se verifica:* la captura de cada celda «Luce» de la matriz.
 
@@ -449,7 +449,7 @@ La cuenta de la Lic. Julieta Arce (website) y la de Carolina R. (app), con su co
 
 **REQ-TUT-72 · Las capturas de cada gráfico por persona.** Cada celda «Luce» y «Vacío» de la matriz, más las tres pantallas de REQ-TUT-03, se captura en Claro y en Azul noche, a 1920×1080 y a 1440×900, con la herramienta de capturas de los gráficos, contra la muestra cargada en test. *Se verifica:* la carpeta de capturas tiene una por celda y yo las reviso antes de mostrárselas a Elián.
 
-**REQ-TUT-73 · El chequeo de textos.** R-TXT-01 recorre todos los textos de la muestra con la guardia de vocabulario de BE y la búsqueda de «asesorado». *Se verifica:* cero hallazgos.
+**REQ-TUT-73 · El chequeo de textos.** R-TXT-01 recorre todos los textos de la muestra con la guardia de vocabulario de BE y la búsqueda del nombre técnico de la persona. *Se verifica:* cero hallazgos.
 
 **REQ-TUT-74 · El chequeo después de cargar.** Con la cuenta de la profesional, por la API: los conteos por persona, las fechas de lo último registrado, «Te toca a vos» contra Tabla 3, y los valores clave (rangos de 1RM estimado, pesos de las tomas) contra la historia generada. *Se verifica:* el informe, en cero diferencias.
 
@@ -471,7 +471,7 @@ La cuenta de la Lic. Julieta Arce (website) y la de Carolina R. (app), con su co
 | CA-TUT-02 | La misma semilla y el mismo día dan la misma huella en dos corridas; dos cargas seguidas dan los mismos conteos | Las dos huellas y los conteos |
 | CA-TUT-03 | El chequeo después de cargar da cero diferencias, y «Te toca a vos» coincide con la foto del día | El informe por la API |
 | CA-TUT-04 | Cada celda «Luce» y «Vacío» de la matriz tiene su captura en los dos temas y los dos tamaños, revisada | La carpeta de capturas |
-| CA-TUT-05 | Los textos dan cero hallazgos de vocabulario y ningún «asesorado» | El informe de R-TXT-01 |
+| CA-TUT-05 | Los textos dan cero hallazgos de vocabulario y ningún nombre técnico de la persona | El informe de R-TXT-01 |
 | CA-TUT-06 | La privacidad da cero hallazgos y no hay datos reales al alcance del tutor | El informe y el conteo de REQ-TUT-48 |
 | CA-TUT-07 | La prueba de permisos y la del tutor travieso pasan | Los guiones de prueba |
 | CA-TUT-08 | Dos mañanas seguidas, la muestra se rehízo sola y «hoy» es hoy | Dos capturas de «Te toca a vos» con su fecha |
