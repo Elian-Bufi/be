@@ -42,8 +42,8 @@ export function aproximacionesPorOmision(p: Prescripcion, nombre: string, prescr
   const cuantas = cuantasAproximaciones(p) || 3;
   return {
     prescriptionId,
-    mode: 'PERCENT',
-    percents: [...porcentajesPara(cuantas)],
+    mode: 'FROM_WORKING_LOAD',
+    workingLoadShares: [...porcentajesPara(cuantas)],
     step: pasoPorOmision(implementoDelEjercicio(nombre, p.loadBasis ?? null), cargaDeTrabajo(p), unidadDeLaPrescripcion(p)),
   };
 }
@@ -53,7 +53,7 @@ export function conAproximacionesCalculadas(p: Prescripcion, a: AproximacionesDe
   const trabajo = cargaDeTrabajo(p);
   if (trabajo === null) return null;
   const efectivas = p.sets.filter((s) => !esDeCalentamiento(s));
-  return [...seriesDeAproximacion(trabajo, a.percents, a.step, unidadDeLaPrescripcion(p)), ...efectivas];
+  return [...seriesDeAproximacion(trabajo, a.workingLoadShares, a.step, unidadDeLaPrescripcion(p)), ...efectivas];
 }
 
 /** «A mano»: tantas aproximaciones como se pidan; las que se suman copian la última (o nacen vacías), las de más se quitan. */

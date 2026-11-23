@@ -420,14 +420,14 @@ export type PasoDeRedondeo = z.infer<typeof PasoDeRedondeoSchema>;
 
 /**
  * DL-196 (EE-07) · cómo se arman las aproximaciones de un ejercicio (las series `WARM_UP` antes de las efectivas):
- * - `PERCENT`: BE las calcula desde la carga de trabajo con estos porcentajes, redondeadas al paso;
+ * - `FROM_WORKING_LOAD`: BE las calcula desde la carga de trabajo con estos porcentajes, redondeadas al paso;
  * - `MANUAL`: el profesional escribe cada una. Los porcentajes quedan como estaban, por si vuelve a «Por %».
  * Las series en sí son las de siempre (`setKind: WARM_UP`): esto solo recuerda cómo se armaron.
  */
 export const AproximacionesDelEjercicioSchema = z.strictObject({
   prescriptionId: IdDeNodoSchema,
-  mode: z.enum(['PERCENT', 'MANUAL']),
-  percents: z.array(z.number().int().min(5).max(95)).max(6),
+  mode: z.enum(['FROM_WORKING_LOAD', 'MANUAL']),
+  workingLoadShares: z.array(z.number().int().min(5).max(95)).max(6),
   step: PasoDeRedondeoSchema,
 });
 export type AproximacionesDelEjercicio = z.infer<typeof AproximacionesDelEjercicioSchema>;

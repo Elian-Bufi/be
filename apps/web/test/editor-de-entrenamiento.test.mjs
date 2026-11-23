@@ -97,7 +97,7 @@ test('TEST-EE-12 · copiar la fase anterior: identificadores nuevos, las mismas 
     weeks: 8,
     goal: null,
     phases: [{ blockId: 'b1', weeks: 4 }],
-    warmUps: [{ prescriptionId: 'p1', mode: 'PERCENT', percents: [40, 60, 80], step: 2.5 }],
+    warmUps: [{ prescriptionId: 'p1', mode: 'FROM_WORKING_LOAD', workingLoadShares: [40, 60, 80], step: 2.5 }],
     privateNotes: { plan: null, phases: [{ blockId: 'b1', text: 'Ojo con el hombro' }] },
   };
   const conCopia = F.planificacionConLaCopia(plan, 'b1', copia);
@@ -132,7 +132,7 @@ test('TEST-EE-14 · las aproximaciones «Por %» desde la carga de trabajo, con 
     sets: [{ repetitions: { value: 5 } }, { repetitions: { value: 5 } }],
   };
   const config = A.aproximacionesPorOmision(p, 'Sentadilla trasera', 'p1');
-  assert.deepEqual(config, { prescriptionId: 'p1', mode: 'PERCENT', percents: [40, 60, 80], step: 2.5 });
+  assert.deepEqual(config, { prescriptionId: 'p1', mode: 'FROM_WORKING_LOAD', workingLoadShares: [40, 60, 80], step: 2.5 });
   const sets = A.conAproximacionesCalculadas(p, config);
   assert.deepEqual(
     sets.map((s) => `${s.setKind ?? 'WORKING'} ${s.repetitions.value}×${s.suggestedLoad?.value ?? ''}`),

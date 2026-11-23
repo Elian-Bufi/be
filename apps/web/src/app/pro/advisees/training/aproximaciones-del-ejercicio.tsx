@@ -77,7 +77,7 @@ export function SeccionDeAproximaciones({
   /** Escribe la configuración y, en «Por %», las series que salen de ella. */
   const aplicar = (c: Omit<AproximacionesDelEjercicio, 'prescriptionId'>, conCarga = p) => {
     onConfig(c);
-    if (c.mode === 'PERCENT') {
+    if (c.mode === 'FROM_WORKING_LOAD') {
       const sets = conAproximacionesCalculadas(conCarga, { ...c, prescriptionId: '' });
       if (sets) onCambiar({ ...(conCarga !== p ? { suggestedLoad: conCarga.suggestedLoad } : {}), sets: [...sets] });
       else if (conCarga !== p) onCambiar({ suggestedLoad: conCarga.suggestedLoad });
@@ -86,13 +86,13 @@ export function SeccionDeAproximaciones({
   const cambiarCuantas = (n: number) => {
     // Sin carga de trabajo todavía, las series se suman vacías: se calculan apenas se escriba la carga.
     if (actual.mode === 'MANUAL' || n === 0 || trabajo === null) {
-      onConfig({ ...actual, percents: n === 0 ? actual.percents : [...porcentajesPara(n)] });
+      onConfig({ ...actual, workingLoadShares: n === 0 ? actual.workingLoadShares : [...porcentajesPara(n)] });
       return onCambiar({ sets: [...conCantidadAMano(p, n)] });
     }
-    aplicar({ mode: 'PERCENT', percents: [...porcentajesPara(n)], step: actual.step });
+    aplicar({ mode: 'FROM_WORKING_LOAD', workingLoadShares: [...porcentajesPara(n)], step: actual.step });
   };
-  const noCoinciden = actual.mode === 'PERCENT' && cuantas > 0 && trabajo !== null && !coincidenConLosPorcentajes(p, { ...actual, prescriptionId: '' });
-  const previas = actual.mode === 'PERCENT' && trabajo !== null && cuantas > 0 ? conAproximacionesCalculadas(p, { ...actual, prescriptionId: '' }) : null;
+  const noCoinciden = actual.mode === 'FROM_WORKING_LOAD' && cuantas > 0 && trabajo !== null && !coincidenConLosPorcentajes(p, { ...actual, prescriptionId: '' });
+  const previas = actual.mode === 'FROM_WORKING_LOAD' && trabajo !== null && cuantas > 0 ? conAproximacionesCalculadas(p, { ...actual, prescriptionId: '' }) : null;
   return (
     <section className="aproximaciones-del-ejercicio con-ayuda-en-la-esquina" aria-labelledby={`${propio}-titulo`} data-aproximaciones data-recorrido="editor-entrenamiento-aproximaciones">
       <p id={`${propio}-titulo`} className="ejercicio-del-plan__subtitulo">
@@ -116,7 +116,7 @@ export function SeccionDeAproximaciones({
                 setCargaEscrita(e.target.value);
                 const n = Number(e.target.value.replace(',', '.'));
                 const conCarga: PrescripcionE = { ...p, suggestedLoad: e.target.value.trim() === '' ? null : Number.isFinite(n) && n >= 0 ? { value: n, unit: unidad } : { value: Number.NaN, unit: unidad } };
-                if (actual.mode === 'PERCENT' && cuantas > 0) aplicar(actual, conCarga);
+                if (actual.mode === 'FROM_WORKING_LOAD' && cuantas > 0) aplicar(actual, conCarga);
                 else onCambiar({ suggestedLoad: conCarga.suggestedLoad });
               }}
               onBlur={() => setCargaEscrita(null)}
@@ -140,18 +140,18 @@ export function SeccionDeAproximaciones({
           <div className="segmentos__fila">
             {(
               [
-                ['PERCENT', T.porPorcentaje],
+                ['FROM_WORKING_LOAD', T.porPorcentaje],
                 ['MANUAL', T.aMano],
               ] as const
             ).map(([modo, texto]) => (
               <label key={modo} className="segmento">
-                <input type="radio" name={`${id}-modo`} checked={actual.mode === modo} onChange={() => (modo === 'PERCENT' ? aplicar({ ...actual, mode: 'PERCENT' }) : onConfig({ ...actual, mode: 'MANUAL' }))} data-modo-aproximaciones={modo} />
+                <input type="radio" name={`${id}-modo`} checked={actual.mode === modo} onChange={() => (modo === 'FROM_WORKING_LOAD' ? aplicar({ ...actual, mode: 'FROM_WORKING_LOAD' }) : onConfig({ ...actual, mode: 'MANUAL' }))} data-modo-aproximaciones={modo} />
                 {texto}
               </label>
             ))}
           </div>
         </fieldset>
-        {actual.mode === 'PERCENT' && cuantas > 0 ? (
+        {actual.mode === 'FROM_WORKING_LOAD' && cuantas > 0 ? (
           <div className="campo">
             <label htmlFor={`${id}-redondeo`}>{T.redondeo}</label>
             <select id={`${id}-redondeo`} value={actual.step} onChange={(e) => aplicar({ ...actual, step: Number(e.target.value) as PasoDeRedondeo })} data-redondeo>
@@ -164,12 +164,12 @@ export function SeccionDeAproximaciones({
           </div>
         ) : null}
       </div>
-      {actual.mode === 'PERCENT' && cuantas > 0 ? (
+      {actual.mode === 'FROM_WORKING_LOAD' && cuantas > 0 ? (
         <div className="aproximaciones-del-ejercicio__porcentajes" role="group" aria-labelledby={`${propio}-porcentajes`}>
           <span id={`${propio}-porcentajes`} className="nota">
             {T.porcentajes}
           </span>
-          {actual.percents.slice(0, cuantas).map((pct, n) => (
+          {actual.workingLoadShares.slice(0, cuantas).map((pct, n) => (
             <label key={n} className="aproximaciones-del-ejercicio__porcentaje">
               <span className="visualmente-oculto">{T.porcentaje(n + 1)}</span>
               <input
@@ -178,7 +178,7 @@ export function SeccionDeAproximaciones({
                 onChange={(e) => {
                   const v = Number(e.target.value);
                   if (!Number.isInteger(v) || v < 5 || v > 95) return;
-                  aplicar({ ...actual, percents: actual.percents.map((x, m) => (m === n ? v : x)) });
+                  aplicar({ ...actual, workingLoadShares: actual.workingLoadShares.map((x, m) => (m === n ? v : x)) });
                 }}
                 data-porcentaje-de-aproximacion={n + 1}
               />

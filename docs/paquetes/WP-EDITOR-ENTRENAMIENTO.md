@@ -37,7 +37,7 @@ WARM_UP`): se indican y se registran, y no entran en ninguna cuenta.
 ## 2. El contrato
 
 - `PlanificacionDelPlanSchema` (estricto): `startDate`, `weeks` (1 a 104), `goal`, `phases[]` (`blockId`, `weeks` de 1 a
-  52), `warmUps[]` (`prescriptionId`, `mode` `PERCENT` o `MANUAL`, `percents` de 5 a 95, `step` 1, 2,5, 5 o 10) y
+  52), `warmUps[]` (`prescriptionId`, `mode` `FROM_WORKING_LOAD` o `MANUAL`, `workingLoadShares` de 5 a 95, `step` 1, 2,5, 5 o 10) y
   `privateNotes` (`plan`, `phases[]`).
 - API-TRN-10: `planning` opcional. Ausente, la que había (podada); `null`, se quita; un valor se guarda podado: lo que
   nombra fases o ejercicios que ya no están se va (`planificacionPodada`). Sin migración: va en el JSON de la versión, como

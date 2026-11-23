@@ -51,8 +51,8 @@ const PLANIFICACION: PlanificacionDelPlan = {
     { blockId: 'fase-que-no-esta', weeks: 2 },
   ],
   warmUps: [
-    { prescriptionId: 'rx-banca', mode: 'PERCENT', percents: [40, 60, 80], step: 2.5 },
-    { prescriptionId: 'rx-que-no-esta', mode: 'MANUAL', percents: [], step: 5 },
+    { prescriptionId: 'rx-banca', mode: 'FROM_WORKING_LOAD', workingLoadShares: [40, 60, 80], step: 2.5 },
+    { prescriptionId: 'rx-que-no-esta', mode: 'MANUAL', workingLoadShares: [], step: 5 },
   ],
   privateNotes: { plan: NOTA_PRIVADA, phases: [{ blockId: 'fase-base', text: NOTA_DE_LA_FASE }] },
 };
@@ -71,7 +71,7 @@ describe('DL-196 · la planificación se guarda con el borrador', () => {
     expect(leida).toEqual({
       ...PLANIFICACION,
       phases: [{ blockId: 'fase-base', weeks: 4 }],
-      warmUps: [{ prescriptionId: 'rx-banca', mode: 'PERCENT', percents: [40, 60, 80], step: 2.5 }],
+      warmUps: [{ prescriptionId: 'rx-banca', mode: 'FROM_WORKING_LOAD', workingLoadShares: [40, 60, 80], step: 2.5 }],
     });
     // Sin el campo, sigue.
     const sinCampo = await pro.patch(`/api/v1/training/plans/${b.planId}`).send({ expectedVersion: conPlan.body.data.version, changes: estructuraConFase() }).expect(200);
@@ -83,7 +83,7 @@ describe('DL-196 · la planificación se guarda con el borrador', () => {
       .expect(400);
     await pro
       .patch(`/api/v1/training/plans/${b.planId}`)
-      .send({ expectedVersion: sinCampo.body.data.version, changes: estructuraConFase(), planning: { ...PLANIFICACION, warmUps: [{ prescriptionId: 'rx-banca', mode: 'PERCENT', percents: [40], step: 1.25 }] } })
+      .send({ expectedVersion: sinCampo.body.data.version, changes: estructuraConFase(), planning: { ...PLANIFICACION, warmUps: [{ prescriptionId: 'rx-banca', mode: 'FROM_WORKING_LOAD', workingLoadShares: [40], step: 1.25 }] } })
       .expect(400);
     // Con null, se quita.
     await pro.patch(`/api/v1/training/plans/${b.planId}`).send({ expectedVersion: sinCampo.body.data.version, changes: estructuraConFase(), planning: null }).expect(200);

@@ -2535,7 +2535,7 @@ async function aproximacionesPorPorcentaje({ p, d, salida }) {
     [25, 40, 50],
   );
   assert.equal(ejercicio.restSeconds, 90, 'el descanso común se guardó como 01:30');
-  assert.deepEqual(plan.planning.warmUps.map((w) => [w.mode, w.step, w.percents.join('/')]), [['PERCENT', 5, '40/60/80']]);
+  assert.deepEqual(plan.planning.warmUps.map((w) => [w.mode, w.step, w.workingLoadShares.join('/')]), [['FROM_WORKING_LOAD', 5, '40/60/80']]);
   await captura(p, salida, 'aproximaciones-guardadas');
 }
 

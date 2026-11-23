@@ -47851,11 +47851,11 @@
                                 "mode": {
                                   "type": "string",
                                   "enum": [
-                                    "PERCENT",
+                                    "FROM_WORKING_LOAD",
                                     "MANUAL"
                                   ]
                                 },
-                                "percents": {
+                                "workingLoadShares": {
                                   "maxItems": 6,
                                   "type": "array",
                                   "items": {
@@ -47888,7 +47888,7 @@
                               "required": [
                                 "prescriptionId",
                                 "mode",
-                                "percents",
+                                "workingLoadShares",
                                 "step"
                               ],
                               "additionalProperties": false
@@ -92201,11 +92201,11 @@
                                       "mode": {
                                         "type": "string",
                                         "enum": [
-                                          "PERCENT",
+                                          "FROM_WORKING_LOAD",
                                           "MANUAL"
                                         ]
                                       },
-                                      "percents": {
+                                      "workingLoadShares": {
                                         "maxItems": 6,
                                         "type": "array",
                                         "items": {
@@ -92238,7 +92238,7 @@
                                     "required": [
                                       "prescriptionId",
                                       "mode",
-                                      "percents",
+                                      "workingLoadShares",
                                       "step"
                                     ],
                                     "additionalProperties": false

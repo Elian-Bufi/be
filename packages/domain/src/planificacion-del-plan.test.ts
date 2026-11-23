@@ -156,7 +156,7 @@ test('TEST-EE-07 · el paso por omisión sale del implemento: máquina 5, barra 
 });
 
 test('TEST-EE-08 · la planificación se poda con la estructura y las anotaciones no salen para nadie más', () => {
-  const conAproximaciones: PlanificacionDelPlan = { ...PLAN, warmUps: [{ prescriptionId: 'p1', mode: 'PERCENT', percents: [40, 60, 80], step: 2.5 }] };
+  const conAproximaciones: PlanificacionDelPlan = { ...PLAN, warmUps: [{ prescriptionId: 'p1', mode: 'FROM_WORKING_LOAD', workingLoadShares: [40, 60, 80], step: 2.5 }] };
   const podada = planificacionPodada(conAproximaciones, ['base'], []);
   assert.deepEqual(podada?.phases, [{ blockId: 'base', weeks: 4 }]);
   assert.equal(podada?.warmUps, undefined);
@@ -170,6 +170,6 @@ test('TEST-EE-09 · el contrato: semanas enteras de 1 a 52 por fase, aproximacio
   assert.equal(PlanificacionDelPlanSchema.safeParse(PLAN).success, true);
   assert.equal(PlanificacionDelPlanSchema.safeParse({ ...PLAN, phases: [{ blockId: 'base', weeks: 0 }] }).success, false);
   assert.equal(PlanificacionDelPlanSchema.safeParse({ ...PLAN, phases: [{ blockId: 'base', weeks: 2.5 }] }).success, false);
-  assert.equal(PlanificacionDelPlanSchema.safeParse({ ...PLAN, warmUps: [{ prescriptionId: 'p1', mode: 'PERCENT', percents: [40], step: 1.25 }] }).success, false);
+  assert.equal(PlanificacionDelPlanSchema.safeParse({ ...PLAN, warmUps: [{ prescriptionId: 'p1', mode: 'FROM_WORKING_LOAD', workingLoadShares: [40], step: 1.25 }] }).success, false);
   assert.equal(PlanificacionDelPlanSchema.safeParse({ ...PLAN, extra: true }).success, false);
 });
