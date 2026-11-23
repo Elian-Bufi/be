@@ -159,6 +159,7 @@ Lo comprueban las pruebas de `test/integration/registro-de-comidas.int-spec.ts`:
 | EventoDeVinculo | Persistencia · P03 | El hecho ConsentimientoRevocado, con su estado previo y su estado posterior. | Consentimiento |
 
 Lo comprueban las pruebas de `test/integration/consentimiento.int-spec.ts` (retirar Entrenamiento no toca Nutrición: el profesional de Entrenamiento pierde el acceso, el de Nutrición lo conserva, y la revocación queda como versión y como hecho; revocar dos veces deja una sola revocación) y la de concurrencia de `test/integration/concurrencia-wp03.int-spec.ts`: con lecturas en curso, ninguna decisión que permite tiene un momento posterior a la revocación, y toda lectura que empieza después de confirmarla da 404.
+
 Retirar una sola cosa (lo de otra área, la historia anterior) sin cortar el área entera pasa por `CompartirService` (API-CMP-03), desde los interruptores de «Quién ve qué»: escribe con `EjecutorDeCompartir` y deja la misma auditoría.
 
 # Anexo A. La persistencia, módulo por módulo
