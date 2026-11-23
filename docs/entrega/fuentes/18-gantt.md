@@ -64,7 +64,45 @@ Tres decisiones ordenan el cronograma:
 
 *Figura 2: Las tres decisiones que ordenan el cronograma.*
 
-![Figura 3: El diagrama de Gantt de BE, de junio a diciembre de 2026, por semanas. Responsable de todas las tareas: Elián Gastón Bufi](pendiente)
+```mermaid
+gantt
+  title BE, de junio a diciembre de 2026
+  dateFormat YYYY-MM-DD
+  axisFormat %d/%m
+  section 1 · Idea
+  Propuesta y prototipo :t1, 2026-06-11, 2026-07-17
+  section 2 · Especificación
+  Visión, alcance, negocio, requisitos, casos de uso, dominio, arquitectura, seguridad, contratos de la API y plan de pruebas :t2, 2026-07-18, 2026-09-15
+  section 3 · Núcleo
+  Identidad, cuenta y acceso :t3, 2026-09-16, 2026-09-19
+  Vínculo, consentimiento y permisos :t4, 2026-09-19, 2026-09-20
+  Nutrición, Entrenamiento y Antropometría :t5, 2026-09-19, 2026-09-22
+  Pedidos de información y hábitos :t6, 2026-09-21, 2026-09-22
+  Seguimiento profesional :t7, 2026-09-22, 2026-09-25
+  section 4 · Ampliación
+  Escritorio del profesional por áreas :t8, 2026-09-26, 2026-10-21
+  Recetas, entrenamiento por serie, agenda y acceso con Google :t9, 2026-09-26, 2026-10-21
+  section 5 · Consolidación
+  Administración y segundo factor :t10, 2026-10-22, 2026-10-25
+  Prueba en el teléfono :t11, 2026-10-26, 2026-10-30
+  section 6 · Segunda vuelta
+  Formularios de inicio y coordinación entre áreas :t12, 2026-11-02, 2026-11-07
+  Editores, fuerza estimada y acceso :t13, 2026-11-08, 2026-11-13
+  section 7 · Cierre
+  Pulido de la app y del website :t14, 2026-11-14, 2026-11-18
+  Gráficos comparativos :t15, 2026-11-14, 2026-11-22
+  Historia anterior :t16, 2026-11-17, 2026-11-22
+  Planificación de Entrenamiento y Nutrición :t17, 2026-11-15, 2026-11-19
+  Patrones, el calculador del objetivo y la muestra del tutor :t18, 2026-11-19, 2026-11-20
+  Evaluación inicial, Kerr, RPE y Recetario de BE :t19, 2026-11-20, 2026-11-22
+  Pruebas finales, manuales y video :t20, 2026-11-20, 2026-11-25
+  section 8 · Defensa
+  Correcciones del tutor :t21, 2026-11-26, 2026-12-08
+  Ensayo de la defensa :t22, 2026-12-01, 2026-12-08
+  Mesa examinadora :t23, 2026-12-09, 2026-12-22
+```
+
+*Figura 3: El diagrama de Gantt de BE, de junio a diciembre de 2026, por semanas. Responsable de todas las tareas: Elián Gastón Bufi.*
 
 # 2. Las tareas
 
@@ -86,10 +124,13 @@ Tres decisiones ordenan el cronograma:
 | 5 · Consolidación | Administración y segundo factor | 22/10 | 25/10 | 4 | Escritorio | La habilitación de profesionales por área, con fundamento |
 | 5 · Consolidación | Prueba en el teléfono | 26/10 | 30/10 | 5 | Administración | El recorrido completo probado en un teléfono, con sus hallazgos |
 | 6 · Segunda vuelta | Formularios de inicio y coordinación entre áreas | 2/11 | 7/11 | 6 | Prueba en el teléfono | El resumen y el plan vigente de otras áreas, con el permiso de la persona |
-| 6 · Segunda vuelta | Editores, fuerza estimada y acceso | 8/11 | 13/11 | 6 | Formularios | Los editores que se guardan solos, el 1RM estimado y el segundo factor del profesional |
+| 6 · Segunda vuelta | Editores, fuerza estimada y acceso | 8/11 | 13/11 | 6 | Formularios | Los editores que se guardan solos, el 1RM estimado y el acceso del profesional con contraseña o Google |
 | 7 · Cierre | Pulido de la app y del website | 14/11 | 18/11 | 5 | Segunda vuelta | Las tandas del pulido, con su revisión |
 | 7 · Cierre | Gráficos comparativos | 14/11 | 22/11 | 9 | Segunda vuelta | Las comparativas en el tiempo, por área y entre áreas |
 | 7 · Cierre | Historia anterior | 17/11 | 22/11 | 6 | Gráficos comparativos | El profesional nuevo ve la historia anterior, con la autorización de la persona |
+| 7 · Cierre | Planificación de Entrenamiento y Nutrición | 15/11 | 19/11 | 5 | Segunda vuelta | Fases, bloques, calentamiento, plantillas sin persona, alimentos propios y el catálogo verificado |
+| 7 · Cierre | «Patrones», el calculador del objetivo y la muestra del tutor | 19/11 | 20/11 | 2 | Gráficos comparativos | Los enfoques, el objetivo calculado con una toma y la muestra para probar BE |
+| 7 · Cierre | Evaluación inicial, Kerr, RPE y Recetario de BE | 20/11 | 22/11 | 3 | Planificación de Entrenamiento y Nutrición | La evaluación en tres bloques, los métodos elegidos antes de medir, el RPE y el Recetario de BE |
 | 7 · Cierre | Pruebas finales, manuales y video | 20/11 | 25/11 | 6 | Gráficos e historia anterior | La medición de los casos de prueba, los manuales con capturas reales y el video |
 | 8 · Defensa | Correcciones del tutor | 26/11 | 8/12 | 13 | Entrega al tutor | La devolución del tutor, atendida |
 | 8 · Defensa | Ensayo de la defensa | 1/12 | 8/12 | 8 | Correcciones | La presentación y la demostración, ensayadas |

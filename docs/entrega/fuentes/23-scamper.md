@@ -139,7 +139,7 @@ flowchart LR
 | --- | --- | --- |
 | Usar los registros para medir el servicio, no a la persona. | La tasa de ciclos cerrados en 30 días mide, de los ciclos de seguimiento que vencieron en esa ventana, cuántos se cerraron con una revisión aplicada, y se calcula de forma reproducible. | En BE |
 | La historia de la persona, para su próximo profesional. | Con la autorización de la persona, el profesional nuevo ve su historia anterior del área, en solo lectura. | En BE |
-| La misma estructura para otras disciplinas. | Kinesiología u otro deporte podrían usar el mismo circuito; registrar otro deporte en Entrenamiento es la primera idea. | Proyección |
+| La misma estructura para otras disciplinas. | Kinesiología u otro deporte podrían usar el mismo circuito; registrar otro deporte en Entrenamiento es la primera idea, con su duración y el esfuerzo percibido de la sesión (el RPE de la sesión). | Proyección |
 
 ## 2.6 E · Eliminar
 
@@ -212,7 +212,7 @@ Las ideas que más cambiaron el producto no fueron las que agregan funciones, si
 
 Las dos descartadas también dicen algo. Que una IA arme el plan y vender datos son caminos que el mercado recorre; BE no los toma porque contradicen su principio: ubicar, nunca calificar, y no decidir por el profesional.
 
-> **La proyección.** Turnos y cobros, y registrar otro deporte, entran en el orden que marque el piloto con profesionales (FODA, 19, y buyer persona, 21).
+> **La proyección.** Turnos y cobros, registrar otro deporte con el RPE de la sesión y, como «Combinar», el carrito de compras familiar (los planes de varias personas en una sola compra), entran en el orden que marque el piloto con profesionales (FODA, 19, y buyer persona, 21).
 
 > **Fuentes.** 1. La estimación de fuerza de BE: la fórmula de Epley, versión 1, con «Cómo se calculó».
 > 2. Benchmarking (22), de esta misma entrega.

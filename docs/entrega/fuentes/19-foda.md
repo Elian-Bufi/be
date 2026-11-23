@@ -25,6 +25,7 @@ Este FODA mira a BE como producto. Adentro (fortalezas y debilidades) va lo que 
 - La historia de la persona entre áreas, en el tiempo.
 - Cada cambio de plan, unido a lo que pasó.
 - Comparativas para encontrar patrones.
+- Ayuda a decidir sin decidir: el objetivo calculado muestra el método, la fórmula y la cita, y el profesional decide.
 
 ### D · Debilidades
 
@@ -208,7 +209,7 @@ D1 se resuelve en semanas con el piloto y ordena todo lo demás: es el primer pa
 | A1 | Competidores maduros | Desde el primer día | Tienen años de producto y planes gratis para empezar (ABC Trainerize, Everfit, Practice Better y MediFlow). BE no compite por cantidad de funciones sino por la historia de la persona entre áreas, con el porqué de cada cambio. |
 | A2 | La costumbre | Desde el primer día | Mensajería, planilla y PDF no cuestan nada y todos los saben usar. BE baja el costo de empezar: invitación con un link, un QR o un código, y registro en pocos toques para la persona. |
 | A3 | Costos en dólares, ingresos en pesos | Al cobrar | La infraestructura se paga en dólares; con ingresos en pesos, el tipo de cambio mueve el margen. El costo de la infraestructura es chico y se revisa en cada cambio de precio. |
-| A4 | Un incidente con datos de salud | Con datos reales | Permiso por área en cada operación, registro de quién hizo qué y segundo factor para profesionales y Administración. Para operar a escala: la revisión legal y un ambiente de producción separado. |
+| A4 | Un incidente con datos de salud | Con datos reales | Permiso por área en cada operación, registro de quién hizo qué y segundo factor para Administración; el profesional entra con su contraseña o con Google, con límite de intentos. Para operar a escala: la revisión legal y un ambiente de producción separado. |
 | A5 | Dependencia de proveedores | Desde el primer día | BE depende de Render (servidor y base), de Google (acceso con la cuenta y la tienda) y de Expo (avisos al teléfono). Cambiar de proveedor es posible pero lleva trabajo; se revisa cuando cambian sus precios o sus políticas. |
 | A6 | Planes automáticos con IA | Al crecer | Si se instala la idea de que el profesional sobra, BE compite cuesta arriba. La respuesta es la propuesta misma: BE no decide por el profesional, le ordena la información. |
 
