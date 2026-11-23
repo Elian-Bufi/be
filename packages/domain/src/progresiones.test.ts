@@ -67,6 +67,21 @@ test('TEST-EE-33 · la descarga: un escalón en la semana elegida y la progresi�
   assert.ok(semanasDelEjercicio(regla({ deload: { week: 8, mode: 'LOAD', workingLoadShare: 60, setsRemoved: 1 } }), sentadilla, 4).every((x) => !x.descarga));
   // Descarga en la semana 1: la base es la carga de trabajo.
   assert.equal(semanasDelEjercicio(regla({ deload: { week: 1, mode: 'LOAD', workingLoadShare: 50, setsRemoved: 1 } }), sentadilla, 1)[0]!.carga, 40);
+  // Sin series efectivas, la descarga por series no inventa una.
+  assert.equal(semanasDelEjercicio(regla({ deload: { week: 1, mode: 'SETS', workingLoadShare: 60, setsRemoved: 2 } }), { ...sentadilla, series: 0 }, 1)[0]!.series, 0);
+});
+
+test('TEST-EE-33b · cargas chicas: ni la descarga ni la ondulante dejan una carga en 0', () => {
+  // Una mancuerna de 1 kg (paso 1): 40 % son 0,4 kg, que al paso daría 0. Queda en un paso, sin pasar la carga de trabajo.
+  const liviana: BaseDelEjercicio = { carga: 1, unidad: 'kg', repeticiones: 15, series: 3, paso: 1 };
+  const ola = semanasDelEjercicio(regla({ model: 'UNDULATING', waves: [100, 40, 40] }), liviana, 3);
+  assert.deepEqual(ola.map((x) => x.carga), [1, 1, 1]);
+  const descarga = semanasDelEjercicio(regla({ deload: { week: 2, mode: 'LOAD', workingLoadShare: 40, setsRemoved: 1 } }), { ...liviana, carga: 2.5, paso: 2.5 }, 2);
+  assert.ok(descarga.every((x) => (x.carga ?? 0) > 0), JSON.stringify(descarga));
+  assert.ok(descarga.every((x) => (x.carga ?? 0) <= 2.5), JSON.stringify(descarga));
+  // En libras, lo mismo.
+  const enLibras = semanasDelEjercicio(regla({ model: 'UNDULATING', waves: [100, 40, 90] }), { carga: 2.5, unidad: 'lb', repeticiones: 12, series: 2, paso: 5 }, 3);
+  assert.ok(enLibras.every((x) => (x.carga ?? 0) > 0), JSON.stringify(enLibras));
 });
 
 test('TEST-EE-34 · a qué se aplica, guardar, quitar y llevarla a la copia de la fase', () => {
@@ -124,6 +139,10 @@ test('TEST-EE-36 · la carga para N repeticiones: la cuenta a la vista y los lí
   assert.equal(orientativa.hay && orientativa.carga, 72.5);
   assert.deepEqual(cargaParaRepeticiones(100, 'kg', 12, 1), { hay: false, motivo: 'FUERA_DE_LOS_LIMITES' });
   assert.deepEqual(cargaParaRepeticiones(100, 'kg', 0, 1), { hay: false, motivo: 'DATOS_INVALIDOS' });
+  // DL-171 (R3): RIR de 0 a 2. 5 repeticiones con RIR 3 suman 8 equivalentes, pero el método no estima con ese RIR.
+  assert.deepEqual(cargaParaRepeticiones(100, 'kg', 5, 3), { hay: false, motivo: 'FUERA_DE_LOS_LIMITES' });
+  assert.deepEqual(cargaParaRepeticiones(100, 'kg', 5, 2.5), { hay: false, motivo: 'FUERA_DE_LOS_LIMITES' });
+  assert.ok(cargaParaRepeticiones(100, 'kg', 5, 2).hay);
   const una = cargaParaRepeticiones(101, 'kg', 1, 0);
   assert.ok(una.hay && una.carga === 100);
   const enLibras = cargaParaRepeticiones(225, 'lb', 5, 2);

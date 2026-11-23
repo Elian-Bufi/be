@@ -12,7 +12,7 @@
  *
  * Sin React ni base: la usan el cuadro del website y sus pruebas.
  */
-import { epley, estimacionConLaDecima, TOPE_DE_LA_ESTIMACION, TOPE_DEL_NUCLEO, type EntradasDeLaEstimacion, type UnidadDeLaCarga } from './estimacion-de-fuerza';
+import { epley, estimacionConLaDecima, RIR_MAXIMO_DE_LA_ESTIMACION, TOPE_DE_LA_ESTIMACION, TOPE_DEL_NUCLEO, type EntradasDeLaEstimacion, type UnidadDeLaCarga } from './estimacion-de-fuerza';
 import { numero } from './formato-numeros';
 
 /** Los pasos del redondeo por unidad; el primero es el de entrada. */
@@ -95,13 +95,16 @@ export type CargaParaRepeticiones =
 /**
  * La carga con la que, según la estimación de Epley v1, se harían `repeticiones` dejando `rir` en reserva: la cuenta del
  * método al revés, con las repeticiones equivalentes (repeticiones + RIR). Respeta los límites ratificados del método
- * (DL-171): hasta 12 repeticiones equivalentes; de más de 10 a 12, orientativa. Se redondea hacia abajo al paso: nunca
- * más de lo que dice la cuenta. Fuera de los límites o con datos que no tienen sentido, no hay carga: se dice por qué.
+ * (DL-171): RIR de 0 a 2 y hasta 12 repeticiones equivalentes; de más de 10 a 12, orientativa. Se redondea hacia abajo al
+ * paso: nunca más de lo que dice la cuenta. Fuera de los límites o con datos que no tienen sentido, no hay carga: se dice
+ * por qué.
  */
 export function cargaParaRepeticiones(estimacion: number, unidad: UnidadDeLaCarga, repeticiones: number, rir: number, paso: number = PASOS_DEL_REDONDEO[unidad][0]!): CargaParaRepeticiones {
   if (!Number.isFinite(estimacion) || estimacion <= 0 || !Number.isInteger(repeticiones) || repeticiones < 1 || !Number.isFinite(rir) || rir < 0 || !(paso > 0)) {
     return { hay: false, motivo: 'DATOS_INVALIDOS' };
   }
+  // DL-171 (R3): con un RIR mayor que 2 el método no estima, así que tampoco se usa al revés.
+  if (rir > RIR_MAXIMO_DE_LA_ESTIMACION) return { hay: false, motivo: 'FUERA_DE_LOS_LIMITES' };
   const equivalentes = repeticiones + rir;
   if (equivalentes > TOPE_DE_LA_ESTIMACION) return { hay: false, motivo: 'FUERA_DE_LOS_LIMITES' };
   const bruta = equivalentes === 1 ? estimacion : (estimacion * 30) / (30 + equivalentes);

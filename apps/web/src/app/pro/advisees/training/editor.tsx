@@ -121,6 +121,7 @@ import {
   repeticionesDeTrabajo,
   sesionesDeLaFase,
   sesionesParaDistribuir,
+  unidadDeLaFase,
   vistaPrevia,
 } from './progresion-del-editor';
 import { LoQueImpideActivar } from './lo-que-impide-activar';
@@ -3039,7 +3040,7 @@ export function EditorDePlan({
                                 <Icono nombre="sube" tamano={18} />
                                 {COPY_PROGRESIONES.abrir}
                               </button>
-                              <span className="nota">{progresionDeLaFase(plan, bloque.blockId) ? progresionEnPalabras(progresionDeLaFase(plan, bloque.blockId)!, 'kg') : COPY_PROGRESIONES.sinModelo}</span>
+                              <span className="nota">{progresionDeLaFase(plan, bloque.blockId) ? progresionEnPalabras(progresionDeLaFase(plan, bloque.blockId)!, unidadDeLaFase(ejerciciosDeUnaFase(bloque))) : COPY_PROGRESIONES.sinModelo}</span>
                             </div>
                           ) : null}
                           {microciclo && j !== null ? (

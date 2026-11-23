@@ -191,7 +191,7 @@ export function CargaParaRepeticiones({
   else if (!r || !r.hay)
     resultado = (
       <p className="nota" data-fuera-de-los-limites>
-        {r && r.motivo === 'FUERA_DE_LOS_LIMITES' ? `Fuera de los límites del método: repeticiones más ${enRpe ? 'lo que queda en reserva' : 'RIR'} tienen que sumar hasta ${TOPE_DE_LA_ESTIMACION}.` : 'Escribí repeticiones enteras desde 1 y un esfuerzo que tenga sentido.'}
+        {r && r.motivo === 'FUERA_DE_LOS_LIMITES' ? `Fuera de los límites del método: ${enRpe ? 'RPE de 8 a 10 (RIR de 0 a 2)' : 'RIR de 0 a 2'}, y repeticiones más RIR hasta ${TOPE_DE_LA_ESTIMACION}.` : 'Escribí repeticiones enteras desde 1 y un esfuerzo que tenga sentido.'}
       </p>
     );
   else
@@ -218,7 +218,7 @@ export function CargaParaRepeticiones({
               : 'El RIR son las repeticiones que quedan en reserva al terminar la serie.'}
           </p>
           <p>Ejemplo: con un máximo estimado de 100 kg, 8 repeticiones con RIR 2 → 100 × 30 ÷ 40 = 75 kg. Se redondea hacia abajo, al paso de la barra.</p>
-          <p>Solo hasta {TOPE_DE_LA_ESTIMACION} repeticiones equivalentes; de más de {TOPE_DEL_NUCLEO}, es orientativa.</p>
+          <p>Solo con RIR de 0 a 2 y hasta {TOPE_DE_LA_ESTIMACION} repeticiones equivalentes; de más de {TOPE_DEL_NUCLEO}, es orientativa.</p>
         </ExplicacionAPedido>
       </div>
       <div className="carga-para-repeticiones__campos">
@@ -228,7 +228,7 @@ export function CargaParaRepeticiones({
         </label>
         <label>
           {enRpe ? 'a RPE' : 'con RIR'}
-          <input type="number" min={enRpe ? 4 : 0} max={enRpe ? 10 : 6} step={0.5} value={esfuerzo} onChange={(e) => setEsfuerzo(e.target.value)} data-campo="esfuerzo-para-la-carga" />
+          <input type="number" min={enRpe ? 8 : 0} max={enRpe ? 10 : 2} step={0.5} value={esfuerzo} onChange={(e) => setEsfuerzo(e.target.value)} data-campo="esfuerzo-para-la-carga" />
         </label>
       </div>
       {/* RP-19: el resultado tiene su lugar; cambia de texto sin mover lo de abajo. */}
@@ -294,6 +294,17 @@ export function DistribucionDeLaFase({
             ) : null}
           </div>
         </div>
+      ) : null}
+      {/* La silueta es decorativa para el lector: en la versión chica (favoritos), sin tabla, lo dice esta lista. */}
+      {d.zonas.length > 0 && chica ? (
+        <ul className="visualmente-oculto" data-distribucion-en-texto>
+          {d.zonas.map((z) => (
+            <li key={z.zoneId}>
+              {zonaEnPalabras(z)}
+              {zonasACuidar.includes(z.zoneId) ? ` (${D.aCuidar.toLowerCase()})` : ''}
+            </li>
+          ))}
+        </ul>
       ) : null}
       {d.zonas.length > 0 && !chica ? (
         <table className="tabla tabla--compacta distribucion-de-la-fase__tabla" aria-labelledby={`${id}-tabla`} data-tabla-de-la-distribucion>

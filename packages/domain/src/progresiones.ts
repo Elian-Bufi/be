@@ -101,7 +101,13 @@ function semanaDelModelo(p: ProgresionDeLaFase, base: BaseDelEjercicio, indice: 
  */
 export function semanasDelEjercicio(p: ProgresionDeLaFase, base: BaseDelEjercicio, semanas: number): SemanaDeLaProgresion[] {
   const descarga = semanaDeDescarga(p, semanas);
-  const redondear = (c: number | null): number | null => (c === null ? null : Math.max(0, redondearAlPaso(c, base.paso)));
+  // Con cargas chicas (una mancuerna de 1 kg al 40 %), el redondeo al paso daría 0: queda en un paso, sin pasar la carga
+  // de trabajo. Una carga propuesta nunca es 0 ni negativa si la de trabajo no lo es.
+  const redondear = (c: number | null): number | null => {
+    if (c === null) return null;
+    const r = Math.max(0, redondearAlPaso(c, base.paso));
+    return r > 0 || c <= 0 || base.carga === null || base.carga <= 0 ? r : Math.min(base.paso, base.carga);
+  };
   const filas: SemanaDeLaProgresion[] = [];
   for (let semana = 1; semana <= semanas; semana += 1) {
     if (semana === descarga && p.deload) {
@@ -111,7 +117,8 @@ export function semanasDelEjercicio(p: ProgresionDeLaFase, base: BaseDelEjercici
         semana,
         carga: porCarga ? redondear(anterior.carga === null ? null : (anterior.carga * p.deload.workingLoadShare) / 100) : anterior.carga,
         repeticiones: anterior.repeticiones,
-        series: porCarga ? base.series : Math.max(1, base.series - p.deload.setsRemoved),
+        // Nunca menos de una serie, salvo que no tenga efectivas: la descarga no inventa una.
+        series: porCarga || base.series === 0 ? base.series : Math.max(1, base.series - p.deload.setsRemoved),
         descarga: true,
         ola: null,
       });

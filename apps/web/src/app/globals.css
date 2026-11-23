@@ -13819,7 +13819,9 @@ details[open] > summary:not([class])::before {
 
 .figura-de-calor__zona--a-cuidar,
 .figura-de-calor__muestra--a-cuidar {
-  background: repeating-linear-gradient(45deg, var(--zona-a-cuidar) 0 2.5px, transparent 2.5px 6px);
+  /* La raya violeta lleva un filete del color del maniquí: sobre los niveles 3 y 4 (azules oscuros) el violeta solo no se
+     distingue (1,3:1 y 1,15:1), y la zona a cuidar con más series es justo la que más importa ver. */
+  background: repeating-linear-gradient(45deg, var(--zona-a-cuidar) 0 2.5px, var(--figura-cuerpo) 2.5px 3.5px, transparent 3.5px 6px);
 }
 
 .figura-de-calor__zona--resaltada {

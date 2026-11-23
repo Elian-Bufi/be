@@ -178,3 +178,9 @@ export const COPY_FAVORITOS = {
   queEs: 'Los gráficos que marcaste en este plan (la carga por semana de un ejercicio, la progresión o la distribución de una fase) y, debajo, el enfoque de gráficos de la persona elegido para este plan.',
   yaNoEsta: 'Lo que marcaste ya no está en el plan.',
 } as const;
+
+/** La unidad de las cargas de una fase, para la regla en palabras: la de sus ejercicios si es una sola; si no, kg. */
+export function unidadDeLaFase(ejercicios: readonly EjercicioDeLaFase[]): 'kg' | 'lb' {
+  const unidades = new Set(ejercicios.map((e) => unidadDeLaPrescripcion(e.prescripcion)));
+  return unidades.size === 1 ? [...unidades][0]! : 'kg';
+}
