@@ -2569,7 +2569,7 @@ async function progresionYDistribucion({ p, d, salida }) {
   if (conCarga) await elemento(p, '[data-asistente-de-progresion] .grafico-de-semanas__descarga');
   // La lectura del gráfico con el teclado: la semana 4 dice que es de descarga.
   if (conCarga) {
-    await p.focus('[data-asistente-de-progresion] .grafico-de-semanas__dibujo');
+    await p.$eval('[data-asistente-de-progresion] .grafico-de-semanas__dibujo', (e) => e.focus());
     for (let n = 0; n < 4; n += 1) await p.keyboard.press('ArrowRight');
     await p.waitForFunction(() => /descarga/.test(document.querySelector('[data-asistente-de-progresion] .grafico-de-semanas__lectura')?.textContent ?? ''), { timeout: ESPERA, polling: 100 });
   }

@@ -455,7 +455,7 @@ export const ProgresionDeLaFaseSchema = z.strictObject({
     .strictObject({ min: z.number().int().min(1).max(50), max: z.number().int().min(1).max(50) })
     .refine((r) => r.max > r.min, { message: 'El rango termina después de empezar', path: ['max'] })
     .nullable(),
-  waves: z.array(z.number().int().min(40).max(100)).length(3).nullable(),
+  waves: z.array(z.number().int().min(40).max(100)).min(3).max(3).nullable(),
   deload: z
     .strictObject({
       week: z.number().int().min(1).max(52),
