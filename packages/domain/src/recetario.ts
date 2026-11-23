@@ -106,7 +106,7 @@ export const COPY_RECETARIO = {
   sumada: (nombre: string) => `«${nombre}» ya está en el Recetario de BE.`,
   rechazada: (nombre: string) => `«${nombre}» no se sumó. Quien la propuso lo ve en Mis recetas.`,
   // RP-24 (RP-D94): lo que dice la API al decidir, en palabras; antes, cualquier 422 decía «no disponible».
-  yaDecidida: 'Esta propuesta ya se decidió (quizás desde otra pestaña). La lista se vuelve a leer.',
+  yaDecidida: 'Esta propuesta ya se decidió (quizás desde otra pestaña). Volvé a leer la lista para ver cómo quedó.',
   conAlimentosAMano: 'No se puede sumar: tiene alimentos cargados a mano por quien la propuso, y esos no entran al Recetario de BE. Podés no sumarla y decirle en el motivo que los cambie por alimentos del catálogo.',
   noSeDecidio: 'No se pudo guardar la decisión: la propuesta tiene un dato que no se acepta. Volvé a leer la lista y probá de nuevo.',
   conCesion: (version: string, fecha: string) => `Con la cesión de la foto aceptada (${version}, ${fecha}).`,

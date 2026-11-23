@@ -127,6 +127,11 @@ test('RP-D91 · el «?» en la esquina: lo que abre flota y se cierra con Escape
   assert.match(pieza, /if \(e\.key !== 'Escape'\) return;/);
   assert.match(pieza, /document\.addEventListener\('pointerdown', afuera\)/);
   assert.match(pieza, /<ExplicacionAPedido nombre=\{nombre\} como=\{como\} lugar="esquina">/);
+  // Revisión adversaria: Escape cierra solo la ayuda (no el cuadro que la contiene); pasar el foco afuera la cierra, así no
+  // quedan dos abiertas; y lo que flota se limita al lugar entre el «?» y el borde del contenedor que lo cortaría.
+  assert.match(pieza, /e\.preventDefault\(\);\s*e\.stopPropagation\(\);/);
+  assert.match(pieza, /document\.addEventListener\('focusin', afuera\)/);
+  assert.match(pieza, /texto\.style\.maxWidth = `min\(30rem, 80vw, /);
   assert.match(ESTILOS, /\.encabezado-con-ayuda \{\s*display: flex;\s*align-items: flex-start;\s*justify-content: space-between;/);
 });
 
@@ -151,6 +156,8 @@ test('RP-D92 · la miniatura de la receta en el editor: las rutas firmadas en lo
   const comida = leer('app/pro/advisees/nutrition/comida-del-editor.tsx');
   assert.match(comida, /imagenDeLaOpcion\?\.\(o\.recipeVersionId, 'cabecera'\) \?\? <Icono nombre="receta" tamano=\{18\} \/>/);
   assert.match(comida, /imagenDeLaOpcion\(opcion\.recipeVersionId, 'cuerpo'\)/);
+  // Va dentro del botón de la cabecera: el respaldo es un `span`, nunca un `div` (un botón solo admite contenido en línea).
+  assert.match(leer('app/pro/recipes/imagen-de-receta.tsx'), /const respaldo = \(\n\s*<span className=/);
   // La miniatura mide lo que el renglón de la cabecera: no la agranda (RP-19).
   assert.match(ESTILOS, /\.opcion-plegable__miniatura \{[^}]*height: 2rem;/);
 });
