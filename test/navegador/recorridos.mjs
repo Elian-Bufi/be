@@ -2452,9 +2452,9 @@ async function editorDeEntrenamiento({ p, d, salida }) {
   assert.match(etiqueta, /Piernas A/, 'el día dice qué sesión es');
   await esperarGuardado(p);
   await captura(p, salida, 'editor-entrenamiento-almanaque-1440');
-  // Tocar un día lleva a la sesión.
+  // Tocar un día lleva a la sesión: la elige (la primera no se escribe en la dirección) y deja el foco en su menú.
   await clic(p, '[data-almanaque] [data-dia-del-almanaque]');
-  await p.waitForFunction(() => location.search.includes('sesion='), { timeout: ESPERA, polling: 100 });
+  await p.waitForFunction(() => location.search.includes('sesion=') || Boolean(document.activeElement?.closest('#menu-de-la-sesion')), { timeout: ESPERA, polling: 100 });
   // La API guardó la planificación y la agenda empieza con el plan.
   const token = await sesionPorApi(d.pro.correo);
   const plan = (await pedir('GET', `/training/plans/${d.borradorDeEntrenamiento}/detail`, { token })).data;
@@ -2530,8 +2530,10 @@ async function aproximacionesPorPorcentaje({ p, d, salida }) {
   const token = await sesionPorApi(d.pro.correo);
   const plan = (await pedir('GET', `/training/plans/${d.borradorDeEntrenamiento}/detail`, { token })).data;
   const ejercicio = plan.blocks[0].sessions[0].prescriptions[0];
+  // Sin declarar training-set-kinds-1, la API saca `setKind` en el borde (lo de la APK 0.32): se pide como el website.
+  const conTipos = (await pedir('GET', `/training/plans/${d.borradorDeEntrenamiento}/detail`, { token, capacidades: 'training-set-kinds-1' })).data;
   assert.deepEqual(
-    ejercicio.sets.filter((s) => s.setKind === 'WARM_UP').map((s) => s.suggestedLoad?.value),
+    conTipos.blocks[0].sessions[0].prescriptions[0].sets.filter((s) => s.setKind === 'WARM_UP').map((s) => s.suggestedLoad?.value),
     [25, 40, 50],
   );
   assert.equal(ejercicio.restSeconds, 90, 'el descanso común se guardó como 01:30');

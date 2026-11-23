@@ -11,8 +11,10 @@ export const dominio = createRequire(join(REPO, 'packages/domain/'))(join(REPO, 
 /** La credencial de TODAS las cuentas de los recorridos: sintética, de una base local que se descarta. */
 export const CREDENCIAL = 'clave-sintetica-de-recorrido-01';
 
-export async function pedir(metodo, ruta, { token, cuerpo, superficie = 'WEB', esperado, clave } = {}) {
+export async function pedir(metodo, ruta, { token, cuerpo, superficie = 'WEB', esperado, clave, capacidades } = {}) {
   const headers = { 'Content-Type': 'application/json', 'X-BE-Surface': superficie };
+  // Lo que declara saber mostrar (`X-BE-Capabilities`), como el website o la APK; sin esto, la forma de siempre.
+  if (capacidades) headers['X-BE-Capabilities'] = capacidades;
   if (token) headers.Authorization = `Bearer ${token}`;
   if (clave !== false && ['POST', 'PUT', 'DELETE'].includes(metodo)) headers['Idempotency-Key'] = clave ?? `recorrido-${randomUUID()}`;
   const r = await fetch(`${API}/api/v1${ruta}`, { method: metodo, headers, body: cuerpo === undefined ? undefined : JSON.stringify(cuerpo) });

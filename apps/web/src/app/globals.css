@@ -10919,7 +10919,7 @@ button.comida-del-dia__fila > .icono:last-child {
   align-items: stretch;
 }
 
-.celda-de-objetivo > input {
+.celda-de-objetivo input {
   flex: 1 1 auto;
   width: 100%;
   min-width: 0;
@@ -10936,19 +10936,19 @@ button.comida-del-dia__fila > .icono:last-child {
 
 /* Sin un valor escrito, la celda dice lo que la serie recibe: en gris, lo que toma de lo general; en el color del texto,
    «Sin objetivo» elegido para esa serie. */
-.celda-de-objetivo > input::placeholder {
+.celda-de-objetivo input::placeholder {
   color: var(--texto);
   font-weight: 600;
   opacity: 1;
 }
 
-.celda-de-objetivo > input[data-en-gris]::placeholder {
+.celda-de-objetivo input[data-en-gris]::placeholder {
   color: var(--tenue);
   font-weight: 400;
 }
 
 /* «Sin objetivo» es un texto, no un número: va desde la izquierda y un poco más chico, para entrar en la celda. */
-.celda-de-objetivo > input[data-texto] {
+.celda-de-objetivo input[data-texto] {
   font-size: 0.88rem;
   text-align: left;
 }
@@ -11186,7 +11186,7 @@ button.comida-del-dia__fila > .icono:last-child {
     font-size: 0.9rem;
   }
 
-  .series-del-editor .celda-de-objetivo > input[data-texto] {
+  .series-del-editor .celda-de-objetivo input[data-texto] {
     padding-inline-start: 0.45rem;
     font-size: 0.82rem;
   }
@@ -16809,7 +16809,7 @@ p.cifra-del-espacio__desglose {
   background: var(--fondo-suave);
 }
 
-.series-del-editor tr[data-calentamiento] .celda-de-objetivo > input,
+.series-del-editor tr[data-calentamiento] .celda-de-objetivo input,
 .series-del-editor tr[data-calentamiento] .celda-de-serie {
   font-weight: 400;
 }
@@ -16832,6 +16832,13 @@ p.cifra-del-espacio__desglose {
 .con-acciones-rapidas {
   position: relative;
   display: block;
+}
+
+/* En la celda de una serie, el envoltorio ocupa el lugar del campo (antes, el campo era hijo directo de la celda). */
+.celda-de-objetivo > .con-acciones-rapidas {
+  display: flex;
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
 .acciones-rapidas {
@@ -17883,7 +17890,7 @@ p.cifra-del-espacio__desglose {
   color: var(--enlace);
 }
 
-.celda-de-objetivo[data-origen] > input {
+.celda-de-objetivo[data-origen] input {
   padding-block-start: 0.75rem;
 }
 

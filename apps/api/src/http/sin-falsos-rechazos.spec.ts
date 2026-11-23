@@ -137,11 +137,6 @@ function texto(s: Esquema, o: Opciones): string {
 
 function numero(s: Esquema, o: Opciones): number {
   const valido = (v: number): boolean => s.safeParse(v).success;
-  if (o.modo === 'minimo') {
-    const v = [0, 1, 2, -1].find(valido);
-    if (v === undefined) throw new Error('el generador no encontró un número');
-    return v;
-  }
   let lo = -1000;
   let hi = 1000;
   let entera = false;
@@ -149,6 +144,12 @@ function numero(s: Esquema, o: Opciones): number {
     if (c.check === 'greater_than') lo = Math.max(lo, c.inclusive ? c.value : c.value + 1);
     if (c.check === 'less_than') hi = Math.min(hi, c.inclusive ? c.value : c.value - 1);
     if (c.check === 'number_format') entera = true;
+  }
+  if (o.modo === 'minimo') {
+    // DL-196: un mínimo mayor que 2 (los porcentajes de las aproximaciones, de 5 a 95) se prueba con su cota.
+    const v = [0, 1, 2, -1, lo].find(valido);
+    if (v === undefined) throw new Error('el generador no encontró un número');
+    return v;
   }
   for (let i = 0; i < 20; i++) {
     const v = entero(lo, hi, o) + (entera || o.azar() < 0.5 ? 0 : 0.5);
