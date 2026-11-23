@@ -297,7 +297,7 @@ function Estado({ lecturas, onIrA }: { lecturas: Lecturas; onIrA: (v: 'plan' | '
                 return (
                   <>
                     {activo ? `Activado el ${fecha(activo.activatedAt as string)}` : COPY_ENTRENAMIENTO.sinPlanActivo}{' '}
-                    <button type="button" className="boton boton--enlace" onClick={() => onIrA('plan')}>
+                    <button type="button" className="boton boton--enlace" data-navega onClick={() => onIrA('plan')}>
                       {activo ? 'Ver plan' : COPY_PRIMER_PLAN.titulo}
                     </button>
                   </>
@@ -319,7 +319,7 @@ function Estado({ lecturas, onIrA }: { lecturas: Lecturas; onIrA: (v: 'plan' | '
                 return (
                   <>
                     {ultima ? `${ultima.plannedSession.label} · ${dia(`${ultima.date}T12:00:00Z`)} · ${etiquetaDeCondicionRegistrada(registroVigente(ultima))}` : COPY_ENTRENAMIENTO.sinEjecuciones}{' '}
-                    <button type="button" className="boton boton--enlace" onClick={() => onIrA('ejecuciones')}>
+                    <button type="button" className="boton boton--enlace" data-navega onClick={() => onIrA('ejecuciones')}>
                       Ver registros
                     </button>
                   </>
@@ -337,7 +337,7 @@ function Estado({ lecturas, onIrA }: { lecturas: Lecturas; onIrA: (v: 'plan' | '
                 return (
                   <>
                     {revision ? `${ETIQUETA_DE_RESULTADO[revision.result]} · ${fecha(revision.recordedAt)} · Próxima acción: ${revision.nextAction.description}` : 'Todavía no hay revisiones.'}{' '}
-                    <button type="button" className="boton boton--enlace" onClick={() => onIrA('revisiones')}>
+                    <button type="button" className="boton boton--enlace" data-navega onClick={() => onIrA('revisiones')}>
                       Ver revisiones
                     </button>
                   </>
@@ -620,7 +620,7 @@ export function FormularioDeEvaluacion({ onRegistrada, onCancelar, conTitulo = t
             </div>
             {d.fuente === 'CALCULATED' ? <Campo id={`trn-dato-${i}-metodo`} etiqueta="Método declarado" value={d.metodo} onChange={(e) => cambiar(i, { metodo: e.target.value })} maxLength={500} /> : null}
             {datos.length > 1 ? (
-              <button type="button" className="boton boton--enlace" onClick={() => setDatos((ds) => ds.filter((_, j) => j !== i))}>
+              <button type="button" className="boton boton--discreto" onClick={() => setDatos((ds) => ds.filter((_, j) => j !== i))}>
                 Quitar dato {i + 1}
               </button>
             ) : null}
@@ -684,7 +684,7 @@ export function FormularioDeEvaluacion({ onRegistrada, onCancelar, conTitulo = t
         {cargaDeContexto === 'error' ? (
           // Reintenta lo que falló: la primera página si no se cargó ninguna; si no, la página pendiente (aunque las
           // cargadas no hayan traído respuestas de entrenamiento).
-          <button type="button" className="boton boton--enlace" onClick={() => void (paginas === 0 ? cargarContexto() : cargarMas())}>
+          <button type="button" className="boton boton--discreto" onClick={() => void (paginas === 0 ? cargarContexto() : cargarMas())}>
             No se pudo cargar el contexto declarado. Reintentar
           </button>
         ) : null}

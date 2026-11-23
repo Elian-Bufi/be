@@ -83,10 +83,10 @@ export function useCopiarDelRecetario({ token, sesionPerdida }: Sesion, alCopiar
   return { copiar, copiando, fallo };
 }
 
-/** Lo que explica el recetario, a pedido. */
+/** Lo que explica el recetario, a pedido. RP-24 (RP-D91): en la esquina de su sección o de su renglón, flotando. */
 export function QueEsElRecetario() {
   return (
-    <ExplicacionAPedido nombre={`Qué es el ${COPY_RECETARIO.recetarioDeBe}`} como="div">
+    <ExplicacionAPedido nombre={`Qué es el ${COPY_RECETARIO.recetarioDeBe}`} como="div" lugar="esquina">
       <p>{COPY_RECETARIO.queEs}</p>
       <p>{COPY_RECETAS.avisoDeImagen}</p>
     </ExplicacionAPedido>
@@ -115,7 +115,7 @@ export function RecetarioDeBe({ token, sesionPerdida, onAbrir, onCopiada }: Sesi
               <p className="lista__titulo">{r.name}</p>
               <p className="nota">{COPY_RECETAS.porcionesYEnergia(r.servings, nutrienteParaMostrar(r.calculation.perServing.energyKcal, 'energyKcal'))}</p>
               <div className="acciones acciones--compactas">
-                <button type="button" className="boton boton--enlace" onClick={() => onAbrir(r.recipeId)}>
+                <button type="button" className="boton boton--enlace" data-navega onClick={() => onAbrir(r.recipeId)}>
                   {COPY_RECETAS.abrir} {r.name}
                 </button>
                 <button type="button" className="boton boton--secundario boton--compacto" disabled={copiando !== null} onClick={() => void copiar(r)} data-copiar-a-mis-recetas>
@@ -152,7 +152,7 @@ export function DetalleDelRecetario({ token, sesionPerdida, recetaId, onVolver, 
   }, [cargar]);
   const volver = (
     <p>
-      <button type="button" className="boton boton--enlace" onClick={onVolver}>
+      <button type="button" className="boton boton--discreto" onClick={onVolver}>
         ← Volver al {COPY_RECETARIO.recetarioDeBe}
       </button>
     </p>

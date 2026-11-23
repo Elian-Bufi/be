@@ -70,7 +70,7 @@ function DiaDeEvidencia({
         <CasillaDeGrupo ids={ids} elegidas={elegidas} onMarcar={onMarcar}>
           <strong className="evidencia__fecha">{fecha}</strong> <span className="evidencia__cuenta">{cuentaDelDia(items.length, marcadas, registros)}</span>
         </CasillaDeGrupo>
-        <button type="button" className="boton boton--enlace evidencia__ver" aria-expanded={abierto} aria-controls={id} onClick={() => setAbierto((a) => !a)}>
+        <button type="button" className="boton boton--discreto evidencia__ver" aria-expanded={abierto} aria-controls={id} onClick={() => setAbierto((a) => !a)}>
           {abierto ? 'Ocultar' : 'Ver'}
           <span className="visualmente-oculto">
             {' '}
@@ -199,7 +199,7 @@ export function SeleccionDeEvidencia({
                 <li key={c.id}>
                   {c.dia ? `${diaDelAnioEnCurso(c.dia, hoy)} · ` : ''}
                   {c.texto}{' '}
-                  <button type="button" className="boton boton--enlace" onClick={() => onMarcar([c.id], false)}>
+                  <button type="button" className="boton boton--discreto" onClick={() => onMarcar([c.id], false)}>
                     Quitar
                     <span className="visualmente-oculto">
                       : {c.dia ? `${diaDelAnioEnCurso(c.dia, hoy)}, ` : ''}
@@ -209,7 +209,7 @@ export function SeleccionDeEvidencia({
                 </li>
               ))}
             </ul>
-            <button type="button" className="boton boton--enlace" onClick={() => onCambiar(new Set())}>
+            <button type="button" className="boton boton--discreto" onClick={() => onCambiar(new Set())}>
               Desmarcar todo
             </button>
           </details>

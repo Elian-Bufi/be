@@ -149,7 +149,7 @@ export function CuadroEnfocado({
       <div className="cajon__cabecera">
         <div>
           {atras ? (
-            <button type="button" className="boton boton--enlace cuadro-enfocado__atras" onClick={atras.alTocar} disabled={ocupado} data-atras-del-cuadro>
+            <button type="button" className="boton boton--discreto cuadro-enfocado__atras" onClick={atras.alTocar} disabled={ocupado} data-atras-del-cuadro>
               <Icono nombre="izquierda" tamano={18} />
               {atras.texto}
             </button>
@@ -159,7 +159,7 @@ export function CuadroEnfocado({
             {titulo}
           </h2>
         </div>
-        <button type="button" className="boton boton--enlace cajon__cerrar" onClick={pedirCerrar} disabled={ocupado} data-pide-cerrar>
+        <button type="button" className="boton boton--discreto cajon__cerrar" onClick={pedirCerrar} disabled={ocupado} data-pide-cerrar>
           <Icono nombre="cerrar" tamano={18} />
           {COPY_CUADRO_ENFOCADO.cerrar}
         </button>
@@ -188,7 +188,7 @@ export function CuadroEnfocado({
           {pie}
           {principal ? (
             <div className="acciones">
-              <button ref={cancelarRef} type="button" className="boton boton--enlace" onClick={pedirCerrar} disabled={ocupado} data-cancelar-del-cuadro data-pide-cerrar>
+              <button ref={cancelarRef} type="button" className="boton boton--discreto" onClick={pedirCerrar} disabled={ocupado} data-cancelar-del-cuadro data-pide-cerrar>
                 {COPY_CUADRO_ENFOCADO.cancelar}
               </button>
               {principal.apagado ? (

@@ -85,7 +85,7 @@ export function AyudaDeVista({
   }
   return (
     <>
-      <button type="button" className="boton boton--enlace como-se-lee__boton" aria-haspopup="dialog" onClick={abrir}>
+      <button type="button" className="boton boton--discreto como-se-lee__boton" aria-haspopup="dialog" onClick={abrir}>
         <Icono nombre="ayuda" tamano={18} />
         <span className="como-se-lee__palabras">Cómo se lee esta vista</span>
       </button>

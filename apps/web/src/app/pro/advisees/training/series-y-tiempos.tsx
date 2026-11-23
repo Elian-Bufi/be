@@ -59,7 +59,7 @@ function FallaDeLosTiempos({ reintentar }: { reintentar: () => void }) {
   return (
     <p className="nota">
       No pudimos leer los tiempos de esta sesión.{' '}
-      <button type="button" className="boton boton--enlace" onClick={reintentar}>
+      <button type="button" className="boton boton--discreto" onClick={reintentar}>
         Reintentar
       </button>
     </p>

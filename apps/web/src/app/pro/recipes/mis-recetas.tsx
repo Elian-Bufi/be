@@ -120,9 +120,13 @@ export function MisRecetas() {
           <DetalleDelRecetario key={recetaId} token={token} sesionPerdida={sesionPerdida} recetaId={recetaId} onVolver={() => ir('vista=recetario')} onCopiada={alCopiar} />
         ) : (
           <section className="seccion" aria-labelledby="titulo-recetario">
-            <h2 id="titulo-recetario">
-              {COPY_RECETARIO.recetarioDeBe} <QueEsElRecetario />
-            </h2>
+            {/* RP-24 (RP-D91): el «?» fuera del título (antes iba adentro del `h2`), en la esquina de la sección. */}
+            <div className="encabezado-con-ayuda">
+              <h2 id="titulo-recetario" className="encabezado-con-ayuda__titulo">
+                {COPY_RECETARIO.recetarioDeBe}
+              </h2>
+              <QueEsElRecetario />
+            </div>
             <RecetarioDeBe token={token} sesionPerdida={sesionPerdida} onAbrir={(id) => ir(`vista=recetario&receta=${encodeURIComponent(id)}`)} onCopiada={alCopiar} />
           </section>
         )}
@@ -195,7 +199,7 @@ export function MisRecetas() {
                     </p>
                     {r.copiedFrom ? <p className="nota">{COPY_RECETARIO.copiaDe(r.copiedFrom.name)}</p> : null}
                     {r.proposal ? <p className="nota" data-estado-de-la-propuesta={r.proposal.status}>{COPY_RECETARIO.estadoDeLaPropuesta[r.proposal.status](r.proposal.versionNumber)}</p> : null}
-                    <button type="button" className="boton boton--enlace" onClick={() => ir(`receta=${encodeURIComponent(r.recipeId)}`)}>
+                    <button type="button" className="boton boton--enlace" data-navega onClick={() => ir(`receta=${encodeURIComponent(r.recipeId)}`)}>
                       {COPY_RECETAS.abrir} {r.name}
                     </button>
                   </div>

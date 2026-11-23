@@ -387,9 +387,9 @@ test('RP-21 · sin saltos en el panel: el día tiene siempre su renglón de ayud
 });
 
 test('RP-21 · lo largo, detrás de un «?»: cómo se lee, cómo se suma, las kcal de los gramos, las recetas, la estimación y los rangos indicados', () => {
-  // El «?» va al lado del título del día, y lo largo no queda además a la vista.
-  assert.ok(PANEL.indexOf('<div className="rangos-y-totales__encabezado">') < PANEL.indexOf('<ExplicacionAPedido nombre={COPY_FRANJAS.comoSeLeeElPanel} como="div">'));
-  const pedido = PANEL.slice(PANEL.indexOf('<ExplicacionAPedido'), PANEL.indexOf('</ExplicacionAPedido>'));
+  // RP-24 (RP-D91): el «?» va en la esquina del encabezado del día (`EncabezadoConAyuda`), y lo largo no queda además a la vista.
+  assert.match(PANEL, /<EncabezadoConAyuda\s+className="rangos-y-totales__encabezado"/);
+  const pedido = PANEL.slice(PANEL.indexOf('nombre={COPY_FRANJAS.comoSeLeeElPanel}'), PANEL.indexOf('/>', PANEL.indexOf('{COPY_RANGOS.estimacion}')));
   for (const t of ['COPY_FRANJAS.comoSeLeeLaFranja', 'COPY_RANGOS.comoSeLee', 'COPY_FRANJAS.kcalDeLosGramos', 'COPY_FRANJAS.recetasGuardadas', 'COPY_RANGOS.estimacion']) {
     assert.ok(pedido.includes(`{${t}}`), `${t}, detrás del «?»`);
     assert.equal(PANEL.split(`{${t}}`).length - 1, 1, `${t}: una sola vez, a pedido`);
@@ -398,7 +398,7 @@ test('RP-21 · lo largo, detrás de un «?»: cómo se lee, cómo se suma, las k
   // asistente de Nutrición) se retiró con DL-193.
   const DEL_PLAN = leer('app/pro/advisees/nutrition/rangos-indicados-del-plan.tsx');
   const lista = DEL_PLAN.slice(DEL_PLAN.indexOf('export function RangosIndicados'), DEL_PLAN.indexOf('export function CuadroDelRangoIndicado'));
-  assert.match(lista, /<div className="rangos-indicados__titulo">\n\s*<h3>\{C\.titulo\}<\/h3>\n\s*<ExplicacionAPedido nombre=\{C\.queSon\}>\{C\.ayuda\}<\/ExplicacionAPedido>/);
+  assert.match(lista, /<EncabezadoConAyuda className="rangos-indicados__titulo" titulo=\{C\.titulo\} nombre=\{C\.queSon\} como="span" ayuda=\{C\.ayuda\} \/>/);
   assert.equal(lista.split('{C.ayuda}').length - 1, 1, 'una sola vez, a pedido');
   for (const t of [F.COPY_FRANJAS.comoSeLeeLaFranja, F.COPY_FRANJAS.comoSeLeeElPanel, F.COPY_FRANJAS.kcalDeLosGramosCorto]) {
     assert.deepEqual(d.terminosProhibidosEn(t), [], t);

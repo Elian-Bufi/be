@@ -74,7 +74,7 @@ export function ComidasDelPlan({ dia, pedido, onPedir, nivel = 3 }: { dia: DiaTi
       <div className="comidas-del-plan__barra">
         <p className="nota">{COPY_PLANTILLAS.comidas(comidas.length)}</p>
         {comidas.length > 1 ? (
-          <button type="button" className="boton boton--enlace" data-todas-las-comidas onClick={() => onPedir(pedidoDeComidas(comidas, todas ? new Set() : new Set(comidas.map((c) => c.order))))}>
+          <button type="button" className="boton boton--discreto" data-todas-las-comidas onClick={() => onPedir(pedidoDeComidas(comidas, todas ? new Set() : new Set(comidas.map((c) => c.order))))}>
             {todas ? COPY_DEL_PLAN.plegarTodas : COPY_DEL_PLAN.abrirTodas}
           </button>
         ) : null}

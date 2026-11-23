@@ -19,7 +19,7 @@
 
 import { MACROS_DEL_RANGO, type EscribirRangosRequest, type MacroDelRango, type Rango, type RangosDelPlan } from '@be/domain';
 import { useCallback, useId, useRef, useState } from 'react';
-import { ExplicacionAPedido } from '../../../../components/explicacion-a-pedido';
+import { EncabezadoConAyuda } from '../../../../components/explicacion-a-pedido';
 import { CampoDeFecha } from '../../../../components/campo-de-fecha';
 import { CuadroEnfocado } from '../../../../components/cuadro-enfocado';
 import { Aviso, RenglonDelAviso } from '../../../../components/formulario';
@@ -48,7 +48,8 @@ import {
   type FormularioDelRango,
   type PesoElegido,
 } from './rangos-indicados';
-import { RangoIndicadoConIconos } from './cantidad-del-macro';
+import { CantidadDelMacro } from './cantidad-del-macro';
+import { cifraDeLosLimites } from './abreviaturas-de-macros';
 
 export type EstadoDeLosRangos = { readonly estado: 'leyendo' } | { readonly estado: 'falla' } | { readonly estado: 'listo'; readonly datos: RangosDelPlan };
 
@@ -112,7 +113,7 @@ export function RangosIndicados({ rangos, dias }: { rangos: RangosIndicadosHook;
     return (
       <p className="nota">
         {C.noSeLeyeron}{' '}
-        <button type="button" className="boton boton--enlace" onClick={() => void rangos.recargar()}>
+        <button type="button" className="boton boton--discreto" onClick={() => void rangos.recargar()}>
           {C.reintentar}
         </button>
       </p>
@@ -127,37 +128,50 @@ export function RangosIndicados({ rangos, dias }: { rangos: RangosIndicadosHook;
   const fila = (dayTypeId: string | undefined, mealId: string | null | undefined, nombre: string) => {
     const r = dayTypeId && mealId !== undefined ? rangoDe(dayTypeId, mealId) : null;
     const sinGuardar = !dayTypeId || mealId === undefined;
+    // RP-24 (RP-D90): un renglón prolijo. Arriba, el nombre y la acción discreta a la derecha («Cambiar», sin subrayado; el
+    // lector oye «Cambiar el rango de Desayuno»); abajo, los tres macros en columnas fijas, cada uno con su ícono, su
+    // número y su abreviatura: los de todas las comidas quedan alineados.
     return (
-      <li key={`${dayTypeId ?? 'nuevo'}-${mealId ?? 'dia'}-${nombre}`}>
-        <span className="rangos-indicados__donde">{nombre}</span>{' '}
+      <li key={`${dayTypeId ?? 'nuevo'}-${mealId ?? 'dia'}-${nombre}`} className="rangos-indicados__renglon" data-renglon-del-rango>
+        <span className="rangos-indicados__donde">{nombre}</span>
+        {activada ? null : sinGuardar ? (
+          <span className="nota rangos-indicados__accion">{C.guardaPrimero}</span>
+        ) : (
+          <button
+            type="button"
+            className="boton boton--discreto rangos-indicados__accion"
+            aria-label={r ? C.cambiar(nombre) : C.escribir(nombre)}
+            aria-haspopup="dialog"
+            onClick={() => rangos.abrir({ dayTypeId: dayTypeId!, mealId: mealId as string | null, nombre })}
+          >
+            {r ? C.cambiarCorto : C.escribirCorto}
+          </button>
+        )}
         {r ? (
           <span className="rangos-indicados__valor">
-            <span aria-hidden="true">
-              <RangoIndicadoConIconos rango={r} />
+            <span className="rangos-indicados__macros" aria-hidden="true">
+              {MACROS_DEL_RANGO.map((m) => {
+                const v = r[m];
+                return (
+                  <span key={m} className="rangos-indicados__macro" data-macro={m}>
+                    {v ? <CantidadDelMacro macro={m} cifra={cifraDeLosLimites(v.grams.min, v.grams.max)} /> : <span className="tenue">—</span>}
+                  </span>
+                );
+              })}
             </span>
             <span className="visualmente-oculto">{rangoEnPalabras(r)}</span>
           </span>
         ) : (
-          <span className="rangos-indicados__valor">{C.sinRango}</span>
-        )}{' '}
-        {activada ? null : sinGuardar ? (
-          <span className="nota">· {C.guardaPrimero}</span>
-        ) : (
-          <button type="button" className="boton boton--enlace" onClick={() => rangos.abrir({ dayTypeId: dayTypeId!, mealId: mealId as string | null, nombre })}>
-            {r ? C.cambiar(nombre) : C.escribir(nombre)}
-          </button>
+          <span className="rangos-indicados__valor tenue">{C.sinRango}</span>
         )}
       </li>
     );
   };
   return (
     <section className="rangos-indicados" aria-label={C.titulo} data-rangos-indicados>
-      {/* La explicación va detrás de un «?» al lado del título (pedido de Dirección: lo largo, a un toque). La lista sin
-          título era la del paso del asistente de Nutrición, que se retiró (DL-193). */}
-      <div className="rangos-indicados__titulo">
-        <h3>{C.titulo}</h3>
-        <ExplicacionAPedido nombre={C.queSon}>{C.ayuda}</ExplicacionAPedido>
-      </div>
+      {/* La explicación va detrás de un «?» en la esquina superior derecha (RP-24, RP-D91; pedido de Dirección: lo largo,
+          a un toque). La lista sin título era la del paso del asistente de Nutrición, que se retiró (DL-193). */}
+      <EncabezadoConAyuda className="rangos-indicados__titulo" titulo={C.titulo} nombre={C.queSon} como="span" ayuda={C.ayuda} />
       {datos.bodyWeight ? <p data-peso-usado>{pesoEnPalabras(datos.bodyWeight)}</p> : null}
       {datos.bodyWeightWithheld ? <p className="nota">{C.pesoRetenido}</p> : null}
       {avisosDelPesoUsado.map((texto) => (

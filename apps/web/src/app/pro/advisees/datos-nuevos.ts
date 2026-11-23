@@ -25,6 +25,15 @@ const CLAVES: Readonly<Record<string, ClaveDelDominio>> = { NUTRICION: 'nutritio
 /** Un identificador, solo si lo escribió otro: lo propio no es «nuevo» para quien lo escribió. */
 const deOtro = (x: { readonly identityId: string } | null | undefined, id: string, yoId: string): string => (x && x.identityId !== yoId ? id : '');
 
+/**
+ * RP-24 (RP-D93) · El conteo de registros es «dentro del período consultado»: a medianoche el período corre un día y el
+ * conteo cambia sin que nadie haya registrado nada, y la cabecera decía «Hay datos nuevos» a las 0:00. El conteo va
+ * marcado en la huella y el período al principio: con otro período, el conteo no se compara (lo nuevo lo dice la fecha
+ * del último registro, que sí cambia con un registro nuevo).
+ */
+const CONTEO = 'cuantos=';
+const PERIODO = '§';
+
 function huellaDelDominio(clave: ClaveDelDominio, d: Dominios, yoId: string): string {
   const e = d[clave];
   if (!e.available) return `${clave}:no`;
@@ -32,11 +41,11 @@ function huellaDelDominio(clave: ClaveDelDominio, d: Dominios, yoId: string): st
   if (!s) return `${clave}:si:vacio`;
   if (clave === 'nutrition') {
     const n = s as NonNullable<Extract<Dominios['nutrition'], { available: true }>['summary']>;
-    return [clave, n.registeredIntakes, n.lastIntakeAt ?? '', deOtro(n.objective?.authoredBy, n.objective?.objectiveVersionId ?? '', yoId), deOtro(n.lastReview?.author, n.lastReview?.reviewId ?? '', yoId)].join(':');
+    return [clave, CONTEO + n.registeredIntakes, n.lastIntakeAt ?? '', deOtro(n.objective?.authoredBy, n.objective?.objectiveVersionId ?? '', yoId), deOtro(n.lastReview?.author, n.lastReview?.reviewId ?? '', yoId)].join(':');
   }
   if (clave === 'training') {
     const t = s as NonNullable<Extract<Dominios['training'], { available: true }>['summary']>;
-    return [clave, t.registeredExecutions, t.lastExecutionAt ?? '', deOtro(t.objective?.authoredBy, t.objective?.objectiveVersionId ?? '', yoId), deOtro(t.lastReview?.author, t.lastReview?.reviewId ?? '', yoId)].join(':');
+    return [clave, CONTEO + t.registeredExecutions, t.lastExecutionAt ?? '', deOtro(t.objective?.authoredBy, t.objective?.objectiveVersionId ?? '', yoId), deOtro(t.lastReview?.author, t.lastReview?.reviewId ?? '', yoId)].join(':');
   }
   const a = s as NonNullable<Extract<Dominios['anthropometry'], { available: true }>['summary']>;
   return [clave, deOtro(a.lastEvaluation?.author, a.lastEvaluation?.evaluationId ?? '', yoId)].join(':');
@@ -47,14 +56,36 @@ function huellaDelDominio(clave: ClaveDelDominio, d: Dominios, yoId: string): st
  * `dominios`: lo que trajo el resumen; `null` si no se pudo leer (una falla de red no es un cambio): entonces no hay
  * huella, y no se compara.
  */
-export function huellaDelArea(alcance: string | null, estados: readonly string[], dominios: Dominios | null, yoId: string): string | null {
+export function huellaDelArea(
+  alcance: string | null,
+  estados: readonly string[],
+  dominios: Dominios | null,
+  yoId: string,
+  periodo: { readonly start: string | null; readonly end: string | null } | null = null,
+): string | null {
   if (!dominios) return null;
   const claves: readonly ClaveDelDominio[] = alcance && CLAVES[alcance] ? [CLAVES[alcance]!] : ['nutrition', 'training', 'anthropometry'];
-  return [[...estados].sort().join('|'), ...claves.map((c) => huellaDelDominio(c, dominios, yoId))].join('#');
+  const delPeriodo = periodo ? `${periodo.start ?? ''}/${periodo.end ?? ''}` : '';
+  return delPeriodo + PERIODO + [[...estados].sort().join('|'), ...claves.map((c) => huellaDelDominio(c, dominios, yoId))].join('#');
 }
 
-/** Si hay algo nuevo: dos huellas que se pudieron leer y no coinciden. Sin la primera todavía, nada. */
-export const hayDatosNuevos = (antes: string | null, ahora: string | null): boolean => antes !== null && ahora !== null && antes !== ahora;
+/** La huella sin los conteos, para comparar dos lecturas de períodos distintos. */
+const sinConteos = (huella: string): string =>
+  huella
+    .slice(huella.indexOf(PERIODO) + 1)
+    .split(':')
+    .filter((x) => !x.startsWith(CONTEO))
+    .join(':');
+
+/**
+ * Si hay algo nuevo: dos huellas que se pudieron leer y no coinciden. Sin la primera todavía, nada. Si el período corrió
+ * (pasó la medianoche), los conteos no cuentan: el resto sí.
+ */
+export function hayDatosNuevos(antes: string | null, ahora: string | null): boolean {
+  if (antes === null || ahora === null || antes === ahora) return false;
+  const periodo = (h: string) => h.slice(0, h.indexOf(PERIODO));
+  return periodo(antes) === periodo(ahora) ? true : sinConteos(antes) !== sinConteos(ahora);
+}
 
 export const COPY_DATOS_NUEVOS = {
   hay: 'Hay datos nuevos',

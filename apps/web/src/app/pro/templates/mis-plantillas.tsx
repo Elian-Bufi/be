@@ -112,18 +112,21 @@ export function MisPlantillas() {
       ) : null}
       {sinArea ? null : (
       <section className={conDetalle ? 'seccion seccion--con-detalle' : 'seccion'} aria-labelledby="titulo-plantillas" data-con-detalle={conDetalle ? '' : undefined}>
-        <div className="plantillas-y-habituales__cabecera titulo-con-ayuda">
+        <div className="plantillas-y-habituales__cabecera">
           <h2 id="titulo-plantillas">{COPY_PLANTILLAS.plantillasDeEntrenamiento}</h2>
-          {/* RP-22 (DL-188): lo que explica la sección, detrás de un «?» al lado del título: Dirección no quiere párrafos a la vista. */}
-          <ExplicacionAPedido nombre="Qué es una plantilla y quién la ve" como="div">
-            <p className="nota">{PLT.queSeHaceAca}</p>
-            <p className="nota">{COPY_PLANTILLAS.soloTuya}</p>
-          </ExplicacionAPedido>
-          {/* PLT (DL-182): una plantilla nueva, sin persona: abre el editor en blanco, sin pedir nada antes. */}
-          <button type="button" className="boton boton--primario" data-nueva-plantilla disabled={abrirElEditor.abriendo} onClick={() => void abrirElEditor.nueva()}>
-            <Icono nombre="mas" tamano={18} />
-            {abrirElEditor.abriendo ? PLT.creandoLaPlantilla : PLT.nuevaPlantilla}
-          </button>
+          <span className="plantillas-y-habituales__acciones">
+            {/* PLT (DL-182): una plantilla nueva, sin persona: abre el editor en blanco, sin pedir nada antes. */}
+            <button type="button" className="boton boton--primario" data-nueva-plantilla disabled={abrirElEditor.abriendo} onClick={() => void abrirElEditor.nueva()}>
+              <Icono nombre="mas" tamano={18} />
+              {abrirElEditor.abriendo ? PLT.creandoLaPlantilla : PLT.nuevaPlantilla}
+            </button>
+            {/* RP-22 (DL-188): lo que explica la sección, detrás de un «?»: Dirección no quiere párrafos a la vista. RP-24
+                (RP-D91): el «?», en la esquina superior derecha de la sección, después de la acción. */}
+            <ExplicacionAPedido nombre="Qué es una plantilla y quién la ve" como="div" lugar="esquina">
+              <p className="nota">{PLT.queSeHaceAca}</p>
+              <p className="nota">{COPY_PLANTILLAS.soloTuya}</p>
+            </ExplicacionAPedido>
+          </span>
         </div>
         <EnPreparacion preparaciones={preparaciones} />
         {/* Sin plantillas y sin filtro, el filtro no tiene nada que filtrar: aparece cuando hay alguna. */}
@@ -176,7 +179,7 @@ export function MisPlantillas() {
                   </p>
                   <CambiosEnPreparacion preparacion={cambiosDe(preparaciones, p.templateId)} version={p.versionNumber} />
                   <div className="acciones lista__acciones">
-                  <button type="button" className="boton boton--enlace" aria-expanded={abiertaId === p.templateId} onClick={() => detalle.antes(() => setAbiertaId(abiertaId === p.templateId ? null : p.templateId))}>
+                  <button type="button" className="boton boton--discreto" aria-expanded={abiertaId === p.templateId} onClick={() => detalle.antes(() => setAbiertaId(abiertaId === p.templateId ? null : p.templateId))}>
                     {abiertaId === p.templateId ? 'Cerrar' : 'Ver'}
                   </button>
                   <AccionesDeEdicion plantilla={p} preparacion={cambiosDe(preparaciones, p.templateId)} editor={abrirElEditor} />

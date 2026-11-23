@@ -121,7 +121,7 @@ export function CalculadorDelObjetivo({
     return (
       <p className="nota">
         No se pudieron leer las tomas de Antropometría.{' '}
-        <button type="button" className="boton boton--enlace" onClick={onReleer}>
+        <button type="button" className="boton boton--discreto" onClick={onReleer}>
           Reintentar
         </button>
       </p>
@@ -198,7 +198,7 @@ export function CalculadorDelObjetivo({
             {fueAAntropometria ? (
               <>
                 {' · '}
-                <button type="button" className="boton boton--enlace" onClick={onReleer}>
+                <button type="button" className="boton boton--discreto" onClick={onReleer}>
                   {C.releerLasTomas}
                 </button>
               </>
@@ -280,12 +280,15 @@ export function CalculadorDelObjetivo({
       </fieldset>
 
       {/* ─── El método (RP-05: el desplegable entero; RP-09: para quién sirve cada uno) ─── */}
-      <fieldset className="grupo" data-metodo-del-calculo>
+      {/* RP-24 (RP-D91): el «?» de cada grupo, en su esquina superior derecha; «Fuente» sigue al lado de lo que cita. */}
+      <fieldset className="grupo con-ayuda-en-la-esquina" data-metodo-del-calculo>
         <legend>{C.metodo}</legend>
+        <ExplicacionAPedido nombre={C.poblacionDelMetodo} lugar="esquina">
+          {ficha.poblacion}
+        </ExplicacionAPedido>
         <div className="campo calculador__metodo-elegido">
           <span className="calculador__rotulo">
             <label htmlFor={`${id}-metodo`}>{C.metodo}</label>
-            <ExplicacionAPedido nombre={C.poblacionDelMetodo}>{ficha.poblacion}</ExplicacionAPedido>
             <ExplicacionAPedido boton="Fuente" nombre={`${C.fuente} de ${ficha.nombre}`}>
               {ficha.cita}
             </ExplicacionAPedido>
@@ -299,8 +302,11 @@ export function CalculadorDelObjetivo({
           </select>
         </div>
         {ficha.necesita.includes('sex') ? (
-          <fieldset className="segmentos" data-sexo-de-la-ecuacion>
+          <fieldset className="segmentos con-ayuda-en-la-esquina" data-sexo-de-la-ecuacion>
             <legend>{C.sexo}</legend>
+            <ExplicacionAPedido nombre={C.sexo} lugar="esquina">
+              {C.sexoAyuda}
+            </ExplicacionAPedido>
             <div className="segmentos__fila">
               <label className="segmento">
                 <input type="radio" name={`${id}-sexo`} checked={valores.sexo === 'FEMALE'} onChange={() => c({ sexo: 'FEMALE' })} /> {C.mujer}
@@ -309,7 +315,6 @@ export function CalculadorDelObjetivo({
                 <input type="radio" name={`${id}-sexo`} checked={valores.sexo === 'MALE'} onChange={() => c({ sexo: 'MALE' })} /> {C.hombre}
               </label>
             </div>
-            <ExplicacionAPedido nombre={C.sexo}>{C.sexoAyuda}</ExplicacionAPedido>
           </fieldset>
         ) : null}
         {/* RP-19 (DL-188): siempre, con los tres renglones: la fórmula, la cuenta (o lo que falta) y el resultado (o «—»).
@@ -373,10 +378,12 @@ export function CalculadorDelObjetivo({
       </fieldset>
 
       {/* ─── Actividad y ajuste (RP-05: el día de descanso, en su propio renglón, al lado del factor del día) ─── */}
-      <fieldset className="grupo" data-actividad-del-calculo>
+      <fieldset className="grupo con-ayuda-en-la-esquina" data-actividad-del-calculo>
         <legend>{C.factor}</legend>
+        <ExplicacionAPedido nombre={C.queEsElFactor} lugar="esquina">
+          {C.factorAyuda}
+        </ExplicacionAPedido>
         <p className="calculador__a-pedido">
-          <ExplicacionAPedido nombre={C.queEsElFactor}>{C.factorAyuda}</ExplicacionAPedido>
           <ExplicacionAPedido boton="Fuente" nombre={`${C.fuente} de los niveles de actividad`}>
             {CITA_DEL_FACTOR_DE_ACTIVIDAD}
           </ExplicacionAPedido>

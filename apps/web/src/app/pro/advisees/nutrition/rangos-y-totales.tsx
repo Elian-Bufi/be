@@ -22,7 +22,7 @@
  */
 import type { Rango } from '@be/domain';
 import { useId } from 'react';
-import { ExplicacionAPedido } from '../../../../components/explicacion-a-pedido';
+import { EncabezadoConAyuda } from '../../../../components/explicacion-a-pedido';
 import { Icono } from '../../../../components/icono';
 import { FranjasDeLaComida, TramosDelDia } from './franjas-de-la-comida';
 import { armarFranjas, COPY_FRANJAS, enLasBarrasEnPalabras, loQueFaltaEnElDia, tramosDelDia } from './franjas-por-comida';
@@ -55,21 +55,29 @@ export function RangosYTotales({
   return (
     <div className="rangos-y-totales">
       <section className="rangos-y-totales__dia" aria-labelledby={`${id}-dia`} data-rango-del-dia>
-        {/* El «?» va al lado del título y no adentro: el título nombra la sección (como en el «Reparto por comida»). */}
-        <div className="rangos-y-totales__encabezado">
-          <h3 id={`${id}-dia`} className="rangos-y-totales__titulo">
-            <Icono nombre="calendario" tamano={18} />
-            {COPY_RANGOS.elDia}
-            <span className="rangos-y-totales__del-dia"> · {nombreDelDia}</span>
-          </h3>
-          <ExplicacionAPedido nombre={COPY_FRANJAS.comoSeLeeElPanel} como="div">
-            <p>{COPY_FRANJAS.comoSeLeeLaFranja}</p>
-            <p>{COPY_RANGOS.comoSeLee}</p>
-            <p>{COPY_FRANJAS.kcalDeLosGramos}</p>
-            {conRecetas ? <p>{COPY_FRANJAS.recetasGuardadas}</p> : null}
-            <p>{COPY_RANGOS.estimacion}</p>
-          </ExplicacionAPedido>
-        </div>
+        {/* RP-24 (RP-D91): el «?» en la esquina superior derecha de la sección, no adentro del título ni a su lado. */}
+        <EncabezadoConAyuda
+          className="rangos-y-totales__encabezado"
+          claseDelTitulo="rangos-y-totales__titulo"
+          id={`${id}-dia`}
+          titulo={
+            <>
+              <Icono nombre="calendario" tamano={18} />
+              {COPY_RANGOS.elDia}
+              <span className="rangos-y-totales__del-dia"> · {nombreDelDia}</span>
+            </>
+          }
+          nombre={COPY_FRANJAS.comoSeLeeElPanel}
+          ayuda={
+            <>
+              <p>{COPY_FRANJAS.comoSeLeeLaFranja}</p>
+              <p>{COPY_RANGOS.comoSeLee}</p>
+              <p>{COPY_FRANJAS.kcalDeLosGramos}</p>
+              {conRecetas ? <p>{COPY_FRANJAS.recetasGuardadas}</p> : null}
+              <p>{COPY_RANGOS.estimacion}</p>
+            </>
+          }
+        />
         {rangos.comidas.length === 0 ? (
           <p className="nota">{COPY_RANGOS_Y_TOTALES.sinComidas}</p>
         ) : (

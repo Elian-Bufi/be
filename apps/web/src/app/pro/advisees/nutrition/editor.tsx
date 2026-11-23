@@ -101,6 +101,8 @@ import { EditorDeReceta } from '../../recipes/editor-de-receta';
 import { pasoDeLaFotoTrasCrear, type ImagenAlCrear, type ImagenPendiente } from '../../recipes/cargar-la-imagen';
 import { AvisoDeLaImagenSinCargar, ImagenDeReceta } from '../../recipes/imagen-de-receta';
 import { ImagenEnElCajon, RecetarioEnElCajon } from '../../recipes/receta-en-el-cajon';
+import { ImagenGuardada } from '../../recipes/imagen-de-receta';
+import { recetasDelPlan, useImagenesDeLasRecetas } from './imagenes-de-las-recetas';
 import {
   cambiosEnUnaPorcion,
   COPY_FOTO_DE_LA_RECETA,
@@ -295,6 +297,12 @@ export function EditorDeBorrador({
   // EDC-12: con el objetivo nuevo pedido, el borrador que cita el anterior tiene algo por guardar aunque no se haya
   // tocado nada más.
   const objetivoPorGuardar = objetivoPedido && !!version && !!objetivo && objetivo.versionId !== version.objectiveVersionId;
+  // RP-24 (RP-D96): el pedido se cumple cuando la versión guardada cita el objetivo vigente, y vuelve a `false`. Antes
+  // quedaba en `true`: si después llegaba otra versión del objetivo, el borrador pasaba a usarla sin «Usarla ahora».
+  const objetivoCitado = !!version && !!objetivo && objetivo.versionId === version.objectiveVersionId;
+  useEffect(() => {
+    if (objetivoPedido && objetivoCitado) setObjetivoPedido(false);
+  }, [objetivoPedido, objetivoCitado]);
   // «Sucio»: lo escrito sin guardar, o el objetivo nuevo que el borrador todavía no cita.
   const sucio = escritoSinGuardar || objetivoPorGuardar;
   const [guardando, setGuardando] = useState(false);
@@ -445,6 +453,24 @@ export function EditorDeBorrador({
       }
     })();
   }, [porLeer, token, sesionPerdida]);
+
+  // RP-24 (RP-D92): la miniatura de cada opción que es una receta, con las rutas firmadas en lote de la lista propia.
+  const recetasDeEstePlan = useMemo(() => recetasDelPlan(estructura, recetas), [estructura, recetas]);
+  const imagenes = useImagenesDeLasRecetas(token, sesionPerdida, recetasDeEstePlan.length > 0);
+  const imagenDeLaOpcion = (recipeVersionId: string, donde: 'cabecera' | 'cuerpo') => {
+    const citada = recetas[recipeVersionId];
+    const deLaLista = citada ? imagenes.de(citada.recipeId) : null;
+    if (donde === 'cabecera') {
+      // Sin las rutas firmadas no se pide nada (sería un acceso por miniatura): queda el plato de respaldo.
+      const conRutas = deLaLista?.image?.paths ? deLaLista.image : null;
+      return (
+        <span className="opcion-plegable__miniatura" data-miniatura-de-la-receta={conRutas ? '' : 'respaldo'}>
+          <ImagenGuardada token={token} medioId={conRutas?.mediaId ?? null} nombre={citada?.name ?? ''} sesionPerdida={sesionPerdida} chica rutas={conRutas?.paths ?? null} />
+        </span>
+      );
+    }
+    return deLaLista ? <ImagenEnElCajon token={token} sesionPerdida={sesionPerdida} receta={deLaLista} onCambio={imagenes.actualizar} /> : null;
+  };
 
   // ED-32: las recetas de las opciones del día que se mira se leen como están hoy (una vez cada una), para decir si hay
   // una versión más nueva que la que cita la opción. Si no se puede leer, no se ofrece nada.
@@ -1138,7 +1164,7 @@ export function EditorDeBorrador({
             {objetivoPedido ? null : (
               <>
                 {' '}
-                <button type="button" className="boton boton--enlace" data-usar-el-objetivo-vigente onClick={() => setObjetivoPedido(true)}>
+                <button type="button" className="boton boton--discreto" data-usar-el-objetivo-vigente onClick={() => setObjetivoPedido(true)}>
                   {COPY_VERSION_DEL_OBJETIVO.usarlaAhora}
                 </button>
               </>
@@ -1165,7 +1191,7 @@ export function EditorDeBorrador({
                       {ubicacionDelProblema(p.path, estructura)} → {PROBLEMA[p.code] ?? 'revisá este elemento'}
                     </>
                   ) : (
-                    <button type="button" className="boton boton--enlace" data-problema onClick={() => irAlProblema(p)}>
+                    <button type="button" className="boton boton--enlace" data-navega data-problema onClick={() => irAlProblema(p)}>
                       {ubicacionDelProblema(p.path, estructura)} → {PROBLEMA[p.code] ?? 'revisá este elemento'}
                     </button>
                   )}
@@ -1272,6 +1298,7 @@ export function EditorDeBorrador({
               }
               nombres={nombres}
               recetas={recetas}
+              imagenDeLaOpcion={imagenDeLaOpcion}
               composiciones={composiciones}
               origenes={origenes}
               rangoDeOpciones={rangos?.comidas[j]?.rango ?? null}
@@ -1387,7 +1414,7 @@ export function EditorDeBorrador({
                 />
                 <button
                   type="button"
-                  className="boton boton--enlace"
+                  className="boton boton--discreto"
                   onClick={() => {
                     setInsertandoComida(false);
                     document.getElementById('agregar-comida')?.focus();
@@ -1732,7 +1759,7 @@ function PanelDeNutricion({
         <li key={n}>
           {x.texto}{' '}
           {x.ir ? (
-            <button type="button" className="boton boton--enlace" onClick={x.ir}>
+            <button type="button" className="boton boton--enlace" data-navega onClick={x.ir}>
               {CE.irACorregir}
             </button>
           ) : null}
@@ -1909,7 +1936,7 @@ function ElegirReceta({ comida, rango, onElegir, alCrearNueva }: { comida: strin
             {visibles.length === 0 ? COPY_ELEGIR_RECETA.ninguna(texto) : COPY_ELEGIR_RECETA.cuantas(visibles.length, estado.recetas.length)}
           </p>
           {visibles.length === 0 ? (
-            <button type="button" className="boton boton--enlace" onClick={() => setTexto('')}>
+            <button type="button" className="boton boton--discreto" onClick={() => setTexto('')}>
               {COPY_ELEGIR_RECETA.borrar}
             </button>
           ) : null}
@@ -1943,7 +1970,7 @@ function ElegirReceta({ comida, rango, onElegir, alCrearNueva }: { comida: strin
                       <FranjasDeLaComida franjas={frente} comida={comida} variante="receta" />
                     </div>
                   ) : null}
-                  <button type="button" className="boton boton--enlace" onClick={() => onElegir(r)}>
+                  <button type="button" className="boton boton--discreto" onClick={() => onElegir(r)}>
                     {COPY_RECETAS.agregarComoOpcion}: {r.name}
                   </button>
                   </div>

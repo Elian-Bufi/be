@@ -233,7 +233,7 @@ export function MarcoDelArea<C extends string>({
       if (!conLaHuella || !vinculos || !dominios) return;
       const sePuede: LecturaPorArea = (d) => dominios[CLAVE_DEL_DOMINIO[d]].available;
       const delArea = alcance ? vinculos.filter((v) => v.scope.code === alcance) : vinculos;
-      const huella = huellaDelArea(alcance, delArea.map((v) => `${v.scope.code}:${JSON.stringify(estadoDelArea(v, sePuede))}`), dominios, yoId);
+      const huella = huellaDelArea(alcance, delArea.map((v) => `${v.scope.code}:${JSON.stringify(estadoDelArea(v, sePuede))}`), dominios, yoId, panel?.ok ? panel.datos.data.period : null);
       if (conLaHuella === 'base' || huellaVista.current === null) huellaVista.current = huella;
       else if (hayDatosNuevos(huellaVista.current, huella)) setHayNuevos(true);
     },
@@ -389,7 +389,7 @@ export function MarcoDelArea<C extends string>({
                   <span className="chip-del-acceso chip-del-acceso--falla">
                     <Icono nombre="acceso" tamano={15} />
                     {COPY_VOLVER.accesoNoSeLeyo}{' '}
-                    <button type="button" className="boton boton--enlace" onClick={() => void leer(false, 'base')}>
+                    <button type="button" className="boton boton--discreto" onClick={() => void leer(false, 'base')}>
                       Reintentar<span className="visualmente-oculto"> la lectura del acceso</span>
                     </button>
                   </span>
@@ -405,7 +405,7 @@ export function MarcoDelArea<C extends string>({
                     <span className="aviso-de-datos-nuevos" data-datos-nuevos>
                       <Icono nombre="actualizar" tamano={15} />
                       {COPY_DATOS_NUEVOS.hay} ·{' '}
-                      <button type="button" className="boton boton--enlace" onClick={verLoNuevo} title={COPY_DATOS_NUEVOS.verDetalle}>
+                      <button type="button" className="boton boton--discreto" onClick={verLoNuevo} title={COPY_DATOS_NUEVOS.verDetalle}>
                         {COPY_DATOS_NUEVOS.ver}
                       </button>
                     </span>

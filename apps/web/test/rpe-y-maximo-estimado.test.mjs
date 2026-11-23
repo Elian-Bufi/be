@@ -85,7 +85,7 @@ test('TEST-RPE-043 · el editor guarda la notación con el borrador, la provee a
   assert.match(ejercicio, /leerRpeEscrito\(t\)/);
   const selector = leer('training/notacion-del-plan.tsx');
   // Lo largo y las fuentes, detrás del «?».
-  assert.match(selector, /<ExplicacionAPedido nombre="Qué es el RPE y cómo se guarda" como="div">/);
+  assert.match(selector, /<ExplicacionAPedido nombre="Qué es el RPE y cómo se guarda" como="div" lugar="esquina">/);
   assert.match(selector, /aria-pressed=\{n === notacion\}/);
 });
 

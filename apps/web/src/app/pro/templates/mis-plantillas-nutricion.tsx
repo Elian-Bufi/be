@@ -107,7 +107,7 @@ export function MisPlantillasNutricionales({ token, sesionPerdida }: { token: st
                 <p className="nota">
                   Versión {p.versionNumber} · {COPY_PLANTILLAS.comidas(p.mealCount)} · {p.copiedQuantities ? COPY_PLANTILLAS.conCantidades : COPY_PLANTILLAS.sinCantidades} · {p.origin ? COPY_PLANTILLAS.origen(fecha(p.createdAt)) : COPY_PLANTILLAS.desdeCero} · actualizada el {fecha(p.updatedAt)}
                 </p>
-                <button type="button" className="boton boton--enlace" aria-expanded={abiertaId === p.templateId} onClick={() => detalle.antes(() => setAbiertaId(abiertaId === p.templateId ? null : p.templateId))}>
+                <button type="button" className="boton boton--discreto" aria-expanded={abiertaId === p.templateId} onClick={() => detalle.antes(() => setAbiertaId(abiertaId === p.templateId ? null : p.templateId))}>
                   {abiertaId === p.templateId ? 'Cerrar' : 'Ver'}
                 </button>
                 {abiertaId === p.templateId ? (

@@ -250,12 +250,12 @@ function PasosEntreVersiones({ versiones }: { versiones: VersionesDelControl }) 
   const siguiente = etapaVecina(delArea, elegida.planVersionId, 1);
   return (
     <span className="periodo-del-seguimiento__pasos" data-pasos-entre-versiones>
-      <button type="button" className="boton boton--enlace" disabled={!anterior} onClick={() => anterior && versiones.onElegir(anterior)}>
+      <button type="button" className="boton boton--discreto" disabled={!anterior} onClick={() => anterior && versiones.onElegir(anterior)}>
         <Icono nombre="izquierda" tamano={18} />
         {P.laAnterior}
         {anterior ? <span className="visualmente-oculto">: {textoDeLaEtapa(anterior)}</span> : null}
       </button>
-      <button type="button" className="boton boton--enlace" disabled={!siguiente} onClick={() => siguiente && versiones.onElegir(siguiente)}>
+      <button type="button" className="boton boton--discreto" disabled={!siguiente} onClick={() => siguiente && versiones.onElegir(siguiente)}>
         {P.laSiguiente}
         {siguiente ? <span className="visualmente-oculto">: {textoDeLaEtapa(siguiente)}</span> : null}
         <Icono nombre="derecha" tamano={18} />

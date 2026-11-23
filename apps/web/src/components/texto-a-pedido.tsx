@@ -58,12 +58,12 @@ export function TextoAPedido({
         {texto ? (
           <>
             <span className="nivel-del-plan__rotulo">{rotulo}</span> <span className="texto-a-pedido__texto">{conNumerosPegados(texto)}</span>{' '}
-            <button ref={boton} type="button" className="boton boton--enlace" onClick={alAbrir}>
+            <button ref={boton} type="button" className="boton boton--discreto" onClick={alAbrir}>
               Cambiar<span className="visualmente-oculto"> {queEs}</span>
             </button>
           </>
         ) : (
-          <button ref={boton} type="button" className="boton boton--enlace" onClick={alAbrir}>
+          <button ref={boton} type="button" className="boton boton--discreto" onClick={alAbrir}>
             <Icono nombre="mas" tamano={18} />
             Agregar {queEs}
           </button>

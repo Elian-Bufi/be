@@ -587,6 +587,32 @@ code {
   text-underline-offset: 0.18em;
 }
 
+/* RP-24 (RP-D90, WP-RECORRIDO-PLAN-PULIDO): una acción discreta. Sin subrayado: el subrayado queda para la navegación
+   (ir a otra vista, a otra página o al lugar de un problema). Sin borde ni fondo hasta que el puntero o el foco la
+   tocan; el color de acento dice que se puede tocar. Mide 2 rem de alto: entra en un renglón de una lista o de una
+   cabecera sin agrandarlo, y supera el mínimo de 24 px de un blanco táctil (WCAG 2.5.8). */
+.boton--discreto {
+  min-height: 2rem;
+  padding: 0.15rem 0.5rem;
+  background: transparent;
+  border-color: transparent;
+  border-radius: 8px;
+  color: var(--enlace);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.boton--discreto:hover:not(:disabled),
+.boton--discreto:focus-visible {
+  background: var(--fondo-suave);
+  border-color: var(--borde-control);
+}
+
+.boton--discreto[aria-disabled='true'] {
+  color: var(--tenue);
+  cursor: not-allowed;
+}
+
 /* ─── Formularios (10-B10 §6-§8) ─────────────────────────────────────── */
 .formulario {
   display: flex;
@@ -893,7 +919,9 @@ input[type='radio'] {
 
 /* «Quitar» es un control suelto en cada renglón: lleva el alto de un objetivo (GUIA-UX-UI I.5). */
 .evidencia__lista .boton--enlace,
-.evidencia__marcadas > .boton--enlace {
+.evidencia__marcadas > .boton--enlace,
+.evidencia__lista .boton--discreto,
+.evidencia__marcadas > .boton--discreto {
   min-height: 2.75rem;
 }
 
@@ -2407,6 +2435,27 @@ html:has(.acciones--fijas) {
   flex: none;
 }
 
+/* RP-24 (RP-D92): la miniatura de una opción de receta en la cabecera del editor, del alto del renglón (no lo agranda). */
+.opcion-plegable__miniatura {
+  display: inline-flex;
+  flex: none;
+  width: 2rem;
+  height: 2rem;
+}
+
+.opcion-plegable__miniatura > .imagen-de-receta {
+  width: 2rem;
+  height: 2rem;
+  min-width: 0;
+  border-radius: 6px;
+  object-fit: cover;
+}
+
+.opcion-plegable__miniatura > .imagen-de-receta--respaldo svg {
+  width: 1.1rem;
+  height: 1.1rem;
+}
+
 /* Sin imagen o si la descarga falla: el ícono ocupa el mismo lugar y el resto sigue a la vista. */
 .imagen-de-receta--respaldo {
   display: grid;
@@ -3711,7 +3760,8 @@ html:has(.acciones--fijas) {
   margin-top: 0.15rem;
 }
 
-.pie-de-graficos .boton--enlace {
+.pie-de-graficos .boton--enlace,
+.pie-de-graficos .boton--discreto {
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
@@ -3719,7 +3769,8 @@ html:has(.acciones--fijas) {
 }
 
 /* El enlace de lo que está abierto debajo queda marcado: color del texto y subrayado más grueso. */
-.pie-de-graficos .boton--enlace[aria-expanded='true'] {
+.pie-de-graficos .boton--enlace[aria-expanded='true'],
+.pie-de-graficos .boton--discreto[aria-expanded='true'] {
   color: var(--texto);
   text-decoration-thickness: 2px;
 }
@@ -3805,7 +3856,8 @@ html:has(.acciones--fijas) {
   margin-top: 0.15rem;
 }
 
-.dato-de-lectura__pie .boton--enlace {
+.dato-de-lectura__pie .boton--enlace,
+.dato-de-lectura__pie .boton--discreto {
   margin-left: auto;
 }
 
@@ -3890,7 +3942,8 @@ html:has(.acciones--fijas) {
   margin-top: 0.5rem;
 }
 
-.mas-acciones .boton--enlace {
+.mas-acciones .boton--enlace,
+.mas-acciones .boton--discreto {
   min-height: 44px;
   text-align: left;
 }
@@ -4634,7 +4687,8 @@ ul.modos-de-analizar__aviso {
   margin: 0;
 }
 
-.area__contexto .boton--enlace {
+.area__contexto .boton--enlace,
+.area__contexto .boton--discreto {
   vertical-align: baseline;
 }
 
@@ -4963,7 +5017,9 @@ a.observacion__fila:focus-visible {
 
 /* El enlace es chico a la vista y cómodo de tocar: el relleno agranda lo que se toca sin mover lo demás. */
 .indicadores-del-resumen > .encabezado-de-bloque > .boton--enlace,
-.indicadores-del-resumen > .encabezado-de-bloque > .pista > .boton--enlace {
+.indicadores-del-resumen > .encabezado-de-bloque > .pista > .boton--enlace,
+.indicadores-del-resumen > .encabezado-de-bloque > .boton--discreto,
+.indicadores-del-resumen > .encabezado-de-bloque > .pista > .boton--discreto {
   margin: -0.6rem 0;
   padding: 0.6rem 0;
 }
@@ -5960,14 +6016,16 @@ a.observacion__fila:focus-visible {
   margin-top: 0.15rem;
 }
 
-.pie-de-etapas .boton--enlace {
+.pie-de-etapas .boton--enlace,
+.pie-de-etapas .boton--discreto {
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
   min-height: 44px;
 }
 
-.pie-de-etapas .boton--enlace[aria-expanded='true'] {
+.pie-de-etapas .boton--enlace[aria-expanded='true'],
+.pie-de-etapas .boton--discreto[aria-expanded='true'] {
   color: var(--texto);
   text-decoration-thickness: 2px;
 }
@@ -8312,7 +8370,8 @@ button.comida-del-dia__fila > .icono:last-child {
   border-top: 1px solid var(--borde);
 }
 
-.historia-de-respuesta .boton--enlace {
+.historia-de-respuesta .boton--enlace,
+.historia-de-respuesta .boton--discreto {
   align-self: flex-start;
 }
 
@@ -8645,7 +8704,8 @@ button.comida-del-dia__fila > .icono:last-child {
   line-height: 1.3;
 }
 
-.preguntas-del-pedido__aclaraciones .boton--enlace {
+.preguntas-del-pedido__aclaraciones .boton--enlace,
+.preguntas-del-pedido__aclaraciones .boton--discreto {
   font-size: inherit;
 }
 
@@ -8922,6 +8982,13 @@ button.comida-del-dia__fila > .icono:last-child {
   align-items: baseline;
   gap: 0.15rem 1.15rem;
   min-width: 0;
+}
+
+/* RP-24 (RP-D98): la versión del objetivo, en su propio renglón. El número llega después del objetivo («Vigente desde…»
+   pasa a «Versión 3, vigente desde…»): al alargarse, saltaba de renglón y corría la tira del objetivo. */
+.plan__objetivo > [data-version-del-objetivo] {
+  flex-basis: 100%;
+  margin: 0;
 }
 
 .plan__objetivo-titulo {
@@ -10041,7 +10108,8 @@ button.comida-del-dia__fila > .icono:last-child {
   margin: 0;
 }
 
-.rango-en-un-renglon .boton--enlace {
+.rango-en-un-renglon .boton--enlace,
+.rango-en-un-renglon .boton--discreto {
   min-height: 2.25rem;
 }
 
@@ -10199,7 +10267,8 @@ button.comida-del-dia__fila > .icono:last-child {
   padding-left: 1.1rem;
 }
 
-.problemas-del-plan .boton--enlace {
+.problemas-del-plan .boton--enlace,
+.problemas-del-plan .boton--discreto {
   text-align: left;
 }
 
@@ -10509,7 +10578,8 @@ button.comida-del-dia__fila > .icono:last-child {
   overflow-wrap: anywhere;
 }
 
-.texto-a-pedido > .boton--enlace {
+.texto-a-pedido > .boton--enlace,
+.texto-a-pedido > .boton--discreto {
   display: inline-flex;
   align-items: center;
   gap: 0.3rem;
@@ -10560,7 +10630,9 @@ button.comida-del-dia__fila > .icono:last-child {
 }
 
 .sesion-habitual-a-pedido > .boton--enlace,
-.comida-habitual-a-pedido > .boton--enlace {
+.comida-habitual-a-pedido > .boton--enlace,
+.sesion-habitual-a-pedido > .boton--discreto,
+.comida-habitual-a-pedido > .boton--discreto {
   min-height: 44px;
 }
 
@@ -10866,7 +10938,8 @@ button.comida-del-dia__fila > .icono:last-child {
   border-bottom: 1px solid var(--borde);
 }
 
-.parametros-del-editor > .boton--enlace {
+.parametros-del-editor > .boton--enlace,
+.parametros-del-editor > .boton--discreto {
   display: inline-flex;
   align-items: center;
   gap: 0.3rem;
@@ -11864,7 +11937,8 @@ p.eleccion-de-metodos__sitio {
   width: 100%;
 }
 
-.medicion-libre .boton--enlace {
+.medicion-libre .boton--enlace,
+.medicion-libre .boton--discreto {
   justify-self: start;
   margin-bottom: 0.75rem;
 }
@@ -11879,7 +11953,8 @@ p.eleccion-de-metodos__sitio {
   border-top: 1px solid var(--borde);
 }
 
-.datos-de-la-carga__agregar .boton--enlace {
+.datos-de-la-carga__agregar .boton--enlace,
+.datos-de-la-carga__agregar .boton--discreto {
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
@@ -16693,7 +16768,8 @@ p.cifra-del-espacio__desglose {
   width: fit-content;
 }
 
-.revision-del-plan__lista .boton--enlace {
+.revision-del-plan__lista .boton--enlace,
+.revision-del-plan__lista .boton--discreto {
   display: inline-flex;
   align-items: center;
   gap: 0.2rem;
@@ -17720,6 +17796,14 @@ p.cifra-del-espacio__desglose {
   margin: 0;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
+}
+
+/* RP-24 (RP-D97): el ícono de cada macro, antes de su nombre, en las tarjetas del cuadro de la opción. */
+.cuadro-de-la-opcion__totales dt,
+.cuadro-de-la-opcion__rango-del-macro {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
 }
 
 .cuadro-de-la-opcion__otro {
@@ -19130,6 +19214,53 @@ html:has(.estacion:not([data-en-el-asistente])) {
   font-variant-numeric: tabular-nums;
 }
 
+/* RP-24 (RP-D90): cada renglón de «Rangos indicados», sin viñeta. Arriba, el nombre y la acción discreta a la derecha;
+   abajo, los tres macros en tres columnas iguales: los números de todas las comidas quedan uno debajo del otro. */
+.rangos-indicados .estacion__lista-del-panel {
+  padding-inline-start: 0;
+  list-style: none;
+}
+
+.rangos-indicados__renglon {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    'donde accion'
+    'valor valor';
+  align-items: center;
+  gap: 0 0.5rem;
+  padding: 0.3rem 0;
+  border-bottom: 1px solid var(--borde);
+}
+
+.rangos-indicados .estacion__lista-del-panel li + li {
+  margin-top: 0;
+}
+
+.rangos-indicados__renglon > .rangos-indicados__donde {
+  grid-area: donde;
+}
+
+.rangos-indicados__renglon > .rangos-indicados__accion {
+  grid-area: accion;
+  justify-self: end;
+}
+
+.rangos-indicados__renglon > .rangos-indicados__valor {
+  grid-area: valor;
+  font-size: 0.9rem;
+}
+
+.rangos-indicados__macros {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.5rem;
+}
+
+.rangos-indicados__macro {
+  white-space: nowrap;
+}
+
 .rangos-indicados__tabla input,
 .rangos-indicados__tabla select {
   max-width: 6rem;
@@ -20290,6 +20421,13 @@ html:has(.estacion:not([data-en-el-asistente])) {
   margin: 0;
 }
 
+/* RP-24: la acción de la sección y, a su derecha, el «?» en la esquina. */
+.plantillas-y-habituales__acciones {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
 .lista__acciones {
   display: flex;
   flex-wrap: wrap;
@@ -20778,6 +20916,70 @@ html:has(.estacion:not([data-en-el-asistente])) {
   overflow-wrap: anywhere;
 }
 
+/* RP-24 (RP-D91): el «?» en la esquina superior derecha de su sección, tarjeta o grupo. Lo desplegado flota debajo del
+   botón, alineado a su derecha, encima de lo que sigue: no ocupa lugar y no corre lo que se está editando (RP-19). */
+.a-pedido--esquina {
+  position: relative;
+  display: inline-block;
+  flex: none;
+}
+
+.a-pedido--esquina > .a-pedido__boton {
+  margin-inline-start: 0;
+}
+
+.a-pedido--esquina > .a-pedido__texto:not([hidden]) {
+  position: absolute;
+  z-index: 40;
+  top: calc(100% + 0.35rem);
+  right: 0;
+  width: max-content;
+  max-width: min(30rem, 80vw);
+  margin: 0;
+  border: 1px solid var(--borde);
+  border-left: 3px solid var(--borde);
+  border-radius: 8px;
+  background: var(--superficie);
+  box-shadow: var(--sombra);
+  text-align: start;
+  white-space: normal;
+}
+
+.a-pedido--esquina > .a-pedido__texto > :first-child {
+  margin-top: 0;
+}
+
+.a-pedido--esquina > .a-pedido__texto > :last-child {
+  margin-bottom: 0;
+}
+
+/* El renglón del título con su «?» a la derecha (`EncabezadoConAyuda`). */
+.encabezado-con-ayuda {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.encabezado-con-ayuda > .encabezado-con-ayuda__titulo {
+  margin: 0;
+  min-width: 0;
+}
+
+/* Un grupo sin renglón de título (un `fieldset`, un campo, un aviso): el «?» arriba a la derecha, con su lugar
+   reservado a la derecha para que no tape el texto. */
+.con-ayuda-en-la-esquina {
+  position: relative;
+  padding-inline-end: 2.75rem;
+}
+
+.con-ayuda-en-la-esquina > .a-pedido--esquina,
+.con-ayuda-en-la-esquina > legend + .a-pedido--esquina {
+  position: absolute;
+  top: 0.35rem;
+  right: 0.35rem;
+}
+
 .calculador__rotulo {
   display: block;
 }
@@ -20945,7 +21147,8 @@ html:has(.estacion:not([data-en-el-asistente])) {
   white-space: nowrap;
 }
 
-.aviso-de-datos-nuevos .boton--enlace {
+.aviso-de-datos-nuevos .boton--enlace,
+.aviso-de-datos-nuevos .boton--discreto {
   font-weight: 650;
 }
 
@@ -20960,9 +21163,6 @@ html:has(.estacion:not([data-en-el-asistente])) {
   align-self: center;
 }
 
-.plan__objetivo .kcal-del-objetivo--compacto > .a-pedido:has(> .a-pedido__texto:not([hidden])) {
-  flex-basis: 100%;
-}
 
 .plan__objetivo .kcal-del-objetivo--compacto > .kcal-del-objetivo__aviso {
   flex-basis: 100%;
@@ -21873,35 +22073,8 @@ html:has(.estacion:not([data-en-el-asistente])) {
   min-width: 6rem;
 }
 
-/* El «?» al lado de un título (o de una casilla), y lo que abre en su propio renglón, debajo. */
-.titulo-con-ayuda {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.35rem 0.5rem;
-}
-
-.titulo-con-ayuda > h2 {
-  margin: 0;
-}
-
-.titulo-con-ayuda > .a-pedido {
-  display: contents;
-}
-
-.titulo-con-ayuda > .a-pedido > .a-pedido__boton {
-  margin-inline: 0 auto;
-}
-
-.titulo-con-ayuda > .a-pedido > .a-pedido__texto,
-.titulo-con-ayuda > p {
-  flex-basis: 100%;
-  order: 1;
-}
-
-.titulo-con-ayuda > .a-pedido > .a-pedido__texto p {
-  margin: 0.2rem 0 0;
-}
+/* RP-24 (RP-D91): el «?» de una sección, en su esquina (`EncabezadoConAyuda` y `.con-ayuda-en-la-esquina`); el bloque
+   `.titulo-con-ayuda`, que lo ponía al lado del título, se retiró. */
 
 /* ─── RP-20 y RP-21 (WP-RECORRIDO-PLAN-PULIDO, DL-188): las franjas por comida y «Rangos y totales» ───────────
    Cada opción frente al rango indicado de su comida, un renglón por kcal, P, C y G. Ubica, no califica: la banda va en
@@ -22312,20 +22485,8 @@ html:has(.estacion:not([data-en-el-asistente])) {
   gap: 0.35rem;
 }
 
-.rangos-y-totales__encabezado > .a-pedido,
-.rangos-indicados__titulo > .a-pedido {
-  display: contents;
-}
-
-.rangos-y-totales__encabezado .a-pedido__boton,
-.rangos-indicados__titulo .a-pedido__boton {
-  margin-inline-start: 0;
-}
-
 .rangos-y-totales__encabezado .a-pedido__texto:not([hidden]),
 .rangos-indicados__titulo .a-pedido__texto:not([hidden]) {
-  flex-basis: 100%;
-  margin: 0.15rem 0 0.2rem;
   font-size: 0.85rem;
 }
 

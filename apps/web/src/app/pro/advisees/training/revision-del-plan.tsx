@@ -112,7 +112,7 @@ export function RevisionDelPlan({
             {x.lugar === 'Plan' ? x.texto.charAt(0).toUpperCase() + x.texto.slice(1) : `${x.lugar}: ${x.texto}`}
           </span>{' '}
           {x.ir && x.destino ? (
-            <button type="button" className="boton boton--enlace" onClick={x.ir} data-ir-al-problema>
+            <button type="button" className="boton boton--enlace" data-navega onClick={x.ir} data-ir-al-problema>
               <Icono nombre="derecha" tamano={15} />
               {T.irA(x.destino)}
             </button>

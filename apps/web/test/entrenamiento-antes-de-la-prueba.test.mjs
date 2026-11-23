@@ -209,12 +209,13 @@ test('RP-22 · lo nuevo en pantalla no usa palabras prohibidas y cada «%» llev
 
 test('RP-22 · plantillas y habituales sin párrafos a la vista; la vuelta del editor de una plantilla como en las áreas', () => {
   const plantillas = leer('app/pro/templates/mis-plantillas.tsx');
-  assert.match(plantillas, /<ExplicacionAPedido nombre="Qué es una plantilla y quién la ve" como="div">\n\s*<p className="nota">\{PLT\.queSeHaceAca\}<\/p>/);
+  // RP-24 (RP-D91): el «?», en la esquina de la sección, flotando.
+  assert.match(plantillas, /<ExplicacionAPedido nombre="Qué es una plantilla y quién la ve" como="div" lugar="esquina">\n\s*<p className="nota">\{PLT\.queSeHaceAca\}<\/p>/);
   assert.match(plantillas, /className="campo campo--filtro-angosto"/);
-  assert.match(leer('app/pro/templates/mis-habituales.tsx'), /<ExplicacionAPedido nombre="Quién ve tus habituales" como="div">/);
+  assert.match(leer('app/pro/templates/mis-habituales.tsx'), /<EncabezadoConAyuda nivel=\{2\} id="titulo-habituales-entrenamiento" titulo=\{TITULO\} nombre="Quién ve tus habituales"/);
   const edicion = leer('app/pro/advisees/training/edicion-de-plantilla.tsx');
   assert.match(edicion, /className="boton boton--fantasma boton--compacto marco-del-area__volver" data-volver-a-plantillas/);
-  assert.match(edicion, /<ExplicacionAPedido nombre="Qué pasa con las cargas sugeridas" como="div">/);
+  assert.match(edicion, /<ExplicacionAPedido nombre="Qué pasa con las cargas sugeridas" como="div" lugar="esquina">/);
 });
 
 test('RP-22 · desplegables legibles y los avisos con su lugar en la revisión y el objetivo', () => {

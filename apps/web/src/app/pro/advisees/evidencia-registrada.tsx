@@ -87,7 +87,7 @@ export function EvidenciaRegistrada({
       </p>
       <button
         type="button"
-        className="boton boton--enlace"
+        className="boton boton--discreto"
         aria-expanded={abierta}
         aria-controls={`${id}-lista`}
         onClick={() => {

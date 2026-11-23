@@ -111,7 +111,7 @@ export function DialogoGuardarPlantillaNutricional({
             {notas.map((n) => (
               <li key={n.lugar}>
                 <span className="nota">{n.rotulo}:</span> «{n.texto}»{' '}
-                <button type="button" className="boton boton--enlace" onClick={() => setEstructura((e) => vaciarNota(e, n.lugar))} aria-label={`${COPY_PLANTILLAS.vaciarNota}: ${n.rotulo}`}>
+                <button type="button" className="boton boton--discreto" onClick={() => setEstructura((e) => vaciarNota(e, n.lugar))} aria-label={`${COPY_PLANTILLAS.vaciarNota}: ${n.rotulo}`}>
                   {COPY_PLANTILLAS.vaciarNota}
                 </button>
               </li>

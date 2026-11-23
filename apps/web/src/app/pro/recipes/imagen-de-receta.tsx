@@ -76,7 +76,7 @@ export function ImagenGuardada({
       {respaldo}
       <p className="nota">
         {COPY_REGISTRO_DE_COMIDAS.imagenNoDisponible}{' '}
-        <button type="button" className="boton boton--enlace" onClick={() => void recargar()}>
+        <button type="button" className="boton boton--discreto" onClick={() => void recargar()}>
           Reintentar
         </button>
       </p>
@@ -372,7 +372,7 @@ export function ImagenDeLaRecetaNueva({
         <div className="acciones">
           <button
             type="button"
-            className="boton boton--enlace"
+            className="boton boton--discreto"
             disabled={apagado}
             onClick={() => {
               imagen.quitar();
@@ -464,7 +464,7 @@ export function ImagenDeReceta({
       </EleccionDeImagen>
       {guardada ? (
         <div className="acciones">
-          <button type="button" className="boton boton--enlace" onClick={() => setConfirmarRetiro(true)} disabled={ocupado}>
+          <button type="button" className="boton boton--discreto" onClick={() => setConfirmarRetiro(true)} disabled={ocupado}>
             {COPY_RECETAS.retirarImagen}
           </button>
         </div>

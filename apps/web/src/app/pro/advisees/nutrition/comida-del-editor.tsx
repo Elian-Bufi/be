@@ -54,7 +54,7 @@ import {
   COPY_ALIMENTOS,
   equivalenciaEnPalabras,
 } from '@be/domain';
-import { useEffect, useId, useState } from 'react';
+import { useEffect, useId, useState, type ReactNode } from 'react';
 import { CampoDeNombre } from '../../../../components/campo-de-nombre';
 import { EnPartes } from '../../../../components/en-partes';
 import { Icono } from '../../../../components/icono';
@@ -104,6 +104,7 @@ export function ComidaDelEditor({
   nombreEnEdicion,
   nombres,
   recetas,
+  imagenDeLaOpcion,
   composiciones,
   origenes,
   rangoDeOpciones,
@@ -147,6 +148,8 @@ export function ComidaDelEditor({
   nombreEnEdicion: NombreEnEdicion;
   nombres: Readonly<Record<string, string>>;
   recetas: Readonly<Record<string, RecetaDeOpcion>>;
+  /** RP-24 (RP-D92): la miniatura de una opción de receta, en su cabecera, y en el cuerpo cargar o cambiar la imagen. */
+  imagenDeLaOpcion?: (recipeVersionId: string, donde: 'cabecera' | 'cuerpo') => ReactNode;
   /** NUP-01: la composición de cada alimento y de dónde sale, por su identidad en el catálogo. */
   composiciones: ReadonlyMap<string, ComposicionConocida>;
   origenes: ReadonlyMap<string, string>;
@@ -363,7 +366,7 @@ export function ComidaDelEditor({
                               aria-controls={`${propio}-opcion-${n}`}
                               onClick={() => alElegirOpcion(abiertaLaOpcion ? -1 : n)}
                             >
-                              {o.recipeVersionId ? <Icono nombre="receta" tamano={18} /> : <Icono nombre="alimento" tamano={18} />}
+                              {o.recipeVersionId ? (imagenDeLaOpcion?.(o.recipeVersionId, 'cabecera') ?? <Icono nombre="receta" tamano={18} />) : <Icono nombre="alimento" tamano={18} />}
                               <span className="opcion-plegable__nombre">{pestanaDeLaOpcion(o, n)}</span>
                               {numeros ? (
                                 <span className="opcion-plegable__numeros" data-numeros-de-la-opcion>
@@ -396,6 +399,8 @@ export function ComidaDelEditor({
                               {opcion.recipeVersionId ? (
                                 <>
                                   <OpcionDeReceta receta={recetas[opcion.recipeVersionId] ?? null} items={itemsDeLaReceta(opcion.optionId, opcion.recipeVersionId)} nombres={nombres} />
+                                  {/* RP-24 (RP-D92): la imagen de la receta, acá mismo: cargarla o cambiarla la cambia en Mis recetas. */}
+                                  {imagenDeLaOpcion ? <div className="opcion-del-editor__imagen" data-imagen-de-la-opcion>{imagenDeLaOpcion(opcion.recipeVersionId, 'cuerpo')}</div> : null}
                                   {/* ED-32: «Hay una versión 3 de esta receta», con lo que cambia, y pasarla solo a pedido. */}
                                   {nueva ? (
                                     <div className="version-nueva-de-la-receta" data-version-nueva={nueva.numero}>
@@ -501,15 +506,15 @@ export function ComidaDelEditor({
                                   </>
                                 )}
                                 <span className="opcion-del-editor__del-nombre">
-                                  <button type="button" className="boton boton--enlace" onClick={() => alEditarNombre({ de: 'opcion', opcion: k })}>
+                                  <button type="button" className="boton boton--discreto" onClick={() => alEditarNombre({ de: 'opcion', opcion: k })}>
                                     Cambiar el nombre
                                   </button>
-                                  <button type="button" className="boton boton--enlace" data-duplicar-opcion onClick={() => alDuplicarOpcion(k)}>
+                                  <button type="button" className="boton boton--discreto" data-duplicar-opcion onClick={() => alDuplicarOpcion(k)}>
                                     {E.duplicarOpcion(k)}
                                   </button>
                                   <button
                                     type="button"
-                                    className="boton boton--enlace"
+                                    className="boton boton--discreto"
                                     onClick={() => alQuitarOpcion(k)}
                                   >
                                     Quitar opción {k + 1}
@@ -586,7 +591,7 @@ function AccionDeInicio({ texto, noSePuede, alTocar, comida }: { texto: string; 
   if (noSePuede) {
     return (
       <Pista texto={noSePuede}>
-        <button type="button" className="boton boton--enlace" aria-disabled onClick={() => undefined}>
+        <button type="button" className="boton boton--discreto" aria-disabled onClick={() => undefined}>
           {texto}
           <span className="visualmente-oculto"> en {comida}</span>
         </button>
@@ -594,7 +599,7 @@ function AccionDeInicio({ texto, noSePuede, alTocar, comida }: { texto: string; 
     );
   }
   return (
-    <button type="button" className="boton boton--enlace" aria-haspopup="dialog" onClick={alTocar}>
+    <button type="button" className="boton boton--discreto" aria-haspopup="dialog" onClick={alTocar}>
       {texto}
       <span className="visualmente-oculto"> en {comida}</span>
     </button>

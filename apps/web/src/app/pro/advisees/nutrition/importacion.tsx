@@ -237,7 +237,7 @@ export function ImportacionDeOpenFoodFacts({ id, onIncorporado, onCargarManualme
           <p>{aviso.texto}</p>
           {aviso.conAlternativa ? (
             <p>
-              <button type="button" className="boton boton--enlace" onClick={onCargarManualmente}>
+              <button type="button" className="boton boton--discreto" onClick={onCargarManualmente}>
                 Cargar el alimento manualmente
               </button>
             </p>

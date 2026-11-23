@@ -120,7 +120,7 @@ export function RepartosHabituales({ gramos, onUsar }: { gramos: { readonly prot
               {pisado.texto}{' '}
               <button
                 type="button"
-                className="boton boton--enlace"
+                className="boton boton--discreto"
                 onClick={() => {
                   onUsar({ ...pisado.antes });
                   setPisado(null);
@@ -143,14 +143,14 @@ export function RepartosHabituales({ gramos, onUsar }: { gramos: { readonly prot
             <button type="button" className="boton boton--secundario boton--compacto" aria-disabled={!nombre.trim() || enviando || undefined} onClick={() => void guardar()}>
               {enviando ? 'Guardando…' : existente ? C.reemplazar : C.confirmar}
             </button>
-            <button type="button" className="boton boton--enlace" onClick={() => setGuardando(false)}>
+            <button type="button" className="boton boton--discreto" onClick={() => setGuardando(false)}>
               {C.cancelar}
             </button>
           </p>
         </div>
       ) : (
         <p className="repartos-habituales__acciones">
-          <button type="button" className="boton boton--enlace" aria-disabled={!completos || undefined} aria-describedby={!completos ? `${id}-falta` : undefined} onClick={() => completos && setGuardando(true)}>
+          <button type="button" className="boton boton--discreto" aria-disabled={!completos || undefined} aria-describedby={!completos ? `${id}-falta` : undefined} onClick={() => completos && setGuardando(true)}>
             {C.guardar}
           </button>
           {!completos ? (

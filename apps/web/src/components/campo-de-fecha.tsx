@@ -218,14 +218,14 @@ export function CampoDeFecha({ id, etiqueta, etiquetaEnTexto, value, onChange, m
           <p className="visualmente-oculto">{C.ayudaDelTeclado}</p>
           <div className="campo-de-fecha__pie">
             {dentroDeLosLimites(hoy, min, max) ? (
-              <button type="button" className="boton boton--enlace" onClick={() => elegir(hoy)}>
+              <button type="button" className="boton boton--discreto" onClick={() => elegir(hoy)}>
                 {C.hoy}
               </button>
             ) : null}
             {vaciable && elegida ? (
               <button
                 type="button"
-                className="boton boton--enlace"
+                className="boton boton--discreto"
                 onClick={() => {
                   cerrar(true);
                   onChange('');

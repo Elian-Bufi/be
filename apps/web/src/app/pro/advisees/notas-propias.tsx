@@ -84,7 +84,7 @@ export function TextosDeNotasPropias({ notas, className }: { notas: readonly Not
     return (
       <p className="nota">
         {T.ocultas}{' '}
-        <button type="button" className="boton boton--enlace" onClick={() => setVer(true)}>
+        <button type="button" className="boton boton--discreto" onClick={() => setVer(true)}>
           {T.mostrar}
         </button>
       </p>
@@ -100,7 +100,7 @@ export function TextosDeNotasPropias({ notas, className }: { notas: readonly Not
         ))}
       </ul>
       {ocultos ? (
-        <button type="button" className="boton boton--enlace" onClick={() => setVer(false)}>
+        <button type="button" className="boton boton--discreto" onClick={() => setVer(false)}>
           {T.volverAOcultar}
         </button>
       ) : null}

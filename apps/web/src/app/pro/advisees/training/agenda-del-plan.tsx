@@ -223,7 +223,7 @@ export function ProximasFechas({
                       {movida ? <span className="nota">{A.movidaDesde(movida.from)}</span> : null}
                       {!pasado ? (
                         <span className="agenda-del-plan__acciones">
-                          <button type="button" className="boton boton--enlace" onClick={() => setMoviendo({ sessionId: p.sessionId, desde: fecha, hacia: sumarDias(fecha, 1) })}>
+                          <button type="button" className="boton boton--discreto" onClick={() => setMoviendo({ sessionId: p.sessionId, desde: fecha, hacia: sumarDias(fecha, 1) })}>
                             {A.mover}
                             <span className="visualmente-oculto">
                               {' '}
@@ -231,7 +231,7 @@ export function ProximasFechas({
                             </span>
                           </button>
                           {movida ? (
-                            <button type="button" className="boton boton--enlace" onClick={() => deshacer(p.sessionId, fecha)}>
+                            <button type="button" className="boton boton--discreto" onClick={() => deshacer(p.sessionId, fecha)}>
                               {A.deshacerMovimiento}
                             </button>
                           ) : null}
@@ -270,7 +270,7 @@ export function ProximasFechas({
 
       <p className="nota agenda-del-plan__avisos">{A.avisos}</p>
       <p className="nota">
-        <button type="button" className="boton boton--enlace" data-quitar-agenda onClick={() => (onCambiar(null), onCerrar())}>
+        <button type="button" className="boton boton--discreto" data-quitar-agenda onClick={() => (onCambiar(null), onCerrar())}>
           {A.quitarDias}
         </button>{' '}
         {A.quitarDiasAyuda}

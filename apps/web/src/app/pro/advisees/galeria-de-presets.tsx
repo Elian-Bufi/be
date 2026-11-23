@@ -438,7 +438,7 @@ export function GaleriaDePresets({
           <p>
             <strong>{C.loQueSePierde}</strong> {alcance.sePierde.length === 0 ? C.nada : alcance.sePierde.join(' · ')} {C.deshacerExplica}
           </p>
-          <button type="button" className="boton boton--enlace" onClick={() => setPaso('elegir')}>
+          <button type="button" className="boton boton--discreto" onClick={() => setPaso('elegir')}>
             Atrás
           </button>
         </div>

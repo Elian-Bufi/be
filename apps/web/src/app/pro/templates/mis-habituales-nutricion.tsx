@@ -95,7 +95,7 @@ export function MisHabitualesDeNutricion({ token, sesionPerdida = NUNCA_PERDIDA 
                 <p className="nota">
                   {COPY_HABITUALES.alimentos(c.itemCount)} · {c.copiedQuantities ? COPY_HABITUALES.conCantidades : COPY_HABITUALES.sinCantidades} · {COPY_HABITUALES.actualizada(fecha(c.updatedAt))}
                 </p>
-                <button type="button" className="boton boton--enlace" aria-expanded={abiertaId === c.presetId} onClick={() => detalle.antes(() => setAbiertaId(abiertaId === c.presetId ? null : c.presetId))}>
+                <button type="button" className="boton boton--discreto" aria-expanded={abiertaId === c.presetId} onClick={() => detalle.antes(() => setAbiertaId(abiertaId === c.presetId ? null : c.presetId))}>
                   {abiertaId === c.presetId ? 'Cerrar' : 'Ver'}
                 </button>
                 {abiertaId === c.presetId ? (
@@ -137,7 +137,7 @@ export function MisHabitualesDeNutricion({ token, sesionPerdida = NUNCA_PERDIDA 
                 <span>
                   {el.name} · {cantidad(el.composition.energyKcal, 'kcal')} cada {el.composition.referenceAmount === '100ml' ? '100 ml' : '100 g'}
                 </span>
-                <button type="button" className="boton boton--enlace" aria-label={`${COPY_HABITUALES.quitar}: ${el.name}`} onClick={() => void quitarAlimento(el)}>
+                <button type="button" className="boton boton--discreto" aria-label={`${COPY_HABITUALES.quitar}: ${el.name}`} onClick={() => void quitarAlimento(el)}>
                   {COPY_HABITUALES.quitar}
                 </button>
               </li>

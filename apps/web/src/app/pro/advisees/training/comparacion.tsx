@@ -1124,10 +1124,10 @@ function TablaDeEvolucion({
                 <td data-etiqueta={COPY_COMPARACION.diferencia}>{textoDeLaDiferencia(p, medida, '—')}</td>
                 <td data-etiqueta="Registro">{c.fuente.tipo === 'correccion' ? COPY_COMPARACION.correccionVigente : c.fuente.tipo === 'original' ? COPY_COMPARACION.registroOriginal : COPY_COMPARACION.sinDato}</td>
                 <td data-etiqueta="Acciones">
-                  <button type="button" className="boton boton--enlace" onClick={() => onElegir(p.indice)} aria-label={`Ver los valores de ${rotuloDeObservacion(p.observacion)}`}>
+                  <button type="button" className="boton boton--discreto" onClick={() => onElegir(p.indice)} aria-label={`Ver los valores de ${rotuloDeObservacion(p.observacion)}`}>
                     Ver valores
                   </button>{' '}
-                  <button type="button" className="boton boton--enlace" onClick={() => onAbrir(c.executionId, c.prescriptionId)} aria-label={`${COPY_COMPARACION.verLaEjecucion} del ${rotuloDeObservacion(p.observacion)}`}>
+                  <button type="button" className="boton boton--discreto" onClick={() => onAbrir(c.executionId, c.prescriptionId)} aria-label={`${COPY_COMPARACION.verLaEjecucion} del ${rotuloDeObservacion(p.observacion)}`}>
                     {COPY_COMPARACION.verLaEjecucion}
                   </button>
                 </td>

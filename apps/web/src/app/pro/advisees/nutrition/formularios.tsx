@@ -311,7 +311,7 @@ export function FormularioDeEvaluacion({ onRegistrada, onCancelar = null, conTit
               {d.fuente === 'CALCULATED' ? (
                 <Campo id={`dato-${i}-metodo`} etiqueta="Método declarado" value={d.metodo} onChange={(e) => cambiar(i, { metodo: e.target.value })} maxLength={500} error={porCampo[`dato-${i}-metodo`] ?? null} />
               ) : null}
-              <button type="button" className="boton boton--enlace" onClick={() => setDatos((ds) => ds.filter((_, j) => j !== i))}>
+              <button type="button" className="boton boton--discreto" onClick={() => setDatos((ds) => ds.filter((_, j) => j !== i))}>
                 Quitar dato {i + 1}
               </button>
             </div>
@@ -339,7 +339,7 @@ export function FormularioDeEvaluacion({ onRegistrada, onCancelar = null, conTit
                     <strong>{c.pregunta}:</strong> {c.respuesta} <span className="nota">· {c.fuente.nombre} · {dia(c.fuente.fecha)}</span>
                     {cambiadas.includes(claveDeCita(c)) ? <span className="nota"> · Cambió desde que la viste: volvé a leer el contexto y citala de nuevo.</span> : null}
                   </span>
-                  <button type="button" className="boton boton--enlace" aria-label={`Quitar la cita: ${c.pregunta}`} onClick={() => setCitas((xs) => xs.filter((x) => claveDeCita(x) !== claveDeCita(c)))}>
+                  <button type="button" className="boton boton--discreto" aria-label={`Quitar la cita: ${c.pregunta}`} onClick={() => setCitas((xs) => xs.filter((x) => claveDeCita(x) !== claveDeCita(c)))}>
                     Quitar
                   </button>
                 </li>

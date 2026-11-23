@@ -120,7 +120,7 @@ test('RP-07 · ícono, número y abreviatura, con la palabra completa para el le
 test('RP-08 · la cuenta de los gramos va detrás de un «?» junto al objetivo del día; si no coinciden, el aviso corto queda a la vista', () => {
   const piezas = leer('app/pro/advisees/nutrition/suma-de-los-rangos.tsx');
   const compacto = piezas.slice(piezas.indexOf('if (compacto) {'), piezas.indexOf('return (\n    <div className="kcal-del-objetivo" data-kcal-del-objetivo>'));
-  assert.match(compacto, /<ExplicacionAPedido nombre=\{C\.cuentaDeLosGramos\} como="div">/);
+  assert.match(compacto, /<ExplicacionAPedido nombre=\{C\.cuentaDeLosGramos\} como="div" lugar="esquina">/);
   assert.match(compacto, /\{noCoinciden && kcal !== null \? \(\s*<p className="kcal-del-objetivo__aviso" data-no-coinciden>/);
   assert.match(compacto, /C\.noCoincidenCorto\(k, kcal\)/);
   // Lo largo (la cuenta con 4, 4 y 9 y la parte de cada macro) queda adentro del «?».
@@ -135,7 +135,8 @@ test('RP-07 · la pieza se usa en el calculador, las comidas, los rangos y «Ran
     ['nutrition/comida-del-editor.tsx', '<RangoIndicadoConIconos '],
     ['nutrition/comida-del-editor.tsx', '<NutrientesConIconos cifras={cifrasDelTotal(total)}'],
     ['nutrition/suma-de-los-rangos.tsx', '<RangoIndicadoConIconos '],
-    ['nutrition/rangos-indicados-del-plan.tsx', '<RangoIndicadoConIconos '],
+    // RP-24 (RP-D90): la lista de los rangos indicados, en columnas: cada macro con su `CantidadDelMacro`.
+    ['nutrition/rangos-indicados-del-plan.tsx', '<CantidadDelMacro '],
     // RP-21: «Rangos y totales» dejó la tabla con el ícono en el rótulo: cada cantidad lleva el suyo, en la franja del panel.
     ['nutrition/franjas-de-la-comida.tsx', '<CantidadDelMacro macro={macro} cifra={cifra} />'],
     ['nutrition/editor.tsx', '<RangosYTotales'],
@@ -351,7 +352,7 @@ test('RP-19 · la pantalla del reparto: columnas fijas, renglones reservados y n
   assert.ok(pieza.indexOf('{error ? <Aviso tipo="error">{error}</Aviso> : null}') > acciones, 'el error del servidor va debajo del botón');
   // El chequeo de la suma de los rangos, en un renglón propio con su alto y el detalle detrás de un «?».
   assert.match(pieza, /renglon-del-aviso renglon-del-aviso--con-boton reparto-por-comida__chequeo/);
-  assert.match(pieza, /<ExplicacionAPedido nombre=\{C\.detalleDeLaSuma\} como="div">\s*<SumaDeLosRangosIndicados comidas=\{comidasConRango\} objetivo=\{objetivo\} enDetalle \/>/);
+  assert.match(pieza, /<ExplicacionAPedido nombre=\{C\.detalleDeLaSuma\} como="div" lugar="esquina">\s*<SumaDeLosRangosIndicados comidas=\{comidasConRango\} objetivo=\{objetivo\} enDetalle \/>/);
   // Revisión del PR: debajo del botón, no arriba. Cambia al proponer y, con el objetivo afuera, ocupa más de un renglón:
   // arriba, bajaba el botón. Va antes de lo que aparece después de proponer, para no correrse cuando eso aparece.
   const chequeoConTabla = pieza.indexOf('{renglonDelChequeo}', acciones);

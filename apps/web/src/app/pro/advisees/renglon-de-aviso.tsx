@@ -20,7 +20,7 @@ export interface CosaParaRevisar {
   readonly completar?: { readonly cuantas: number; readonly alCompletar: (valor: string) => string | null } | null;
 }
 
-export function RenglonDeAviso({ cosa, textoIr, claseIr = 'boton boton--enlace', conIcono = false }: { cosa: CosaParaRevisar; textoIr: string; claseIr?: string; conIcono?: boolean }) {
+export function RenglonDeAviso({ cosa, textoIr, claseIr = 'boton boton--discreto', conIcono = false }: { cosa: CosaParaRevisar; textoIr: string; claseIr?: string; conIcono?: boolean }) {
   const id = useId();
   const [abierto, setAbierto] = useState(false);
   const [completando, setCompletando] = useState(false);
@@ -53,7 +53,7 @@ export function RenglonDeAviso({ cosa, textoIr, claseIr = 'boton boton--enlace',
             </button>
           ) : null}
           {detalle.length > 0 ? (
-            <button type="button" className="boton boton--enlace" aria-expanded={abierto} aria-controls={`${id}-detalle`} onClick={() => setAbierto((a) => !a)}>
+            <button type="button" className="boton boton--discreto" aria-expanded={abierto} aria-controls={`${id}-detalle`} onClick={() => setAbierto((a) => !a)}>
               {abierto ? G.ocultar : G.verCadaUna(detalle.length)}
             </button>
           ) : null}

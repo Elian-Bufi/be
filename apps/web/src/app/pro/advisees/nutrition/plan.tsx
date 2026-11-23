@@ -285,7 +285,7 @@ export function VistaDePlan() {
               <Aviso tipo="info">
                 <p>
                   {COPY_DEL_PLAN.primeroElObjetivo}{' '}
-                  <button type="button" className="boton boton--enlace" onClick={() => irA('resumen')}>
+                  <button type="button" className="boton boton--enlace" data-navega onClick={() => irA('resumen')}>
                     {COPY_DEL_PLAN.irAResumen}
                   </button>
                 </p>
@@ -299,7 +299,7 @@ export function VistaDePlan() {
                     <p>{aviso.texto}</p>
                     {aviso.verLoQueRecibe ? (
                       <p>
-                        <button type="button" className="boton boton--enlace" onClick={verLoQueRecibe}>
+                        <button type="button" className="boton boton--discreto" onClick={verLoQueRecibe}>
                           {COPY_RESULTADO_DE_ACTIVAR.verLoQueRecibe}
                         </button>
                       </p>
@@ -498,7 +498,7 @@ function PlanActivo({
             <p className="nota plan__objetivo-falla">
               {COPY_DEL_PLAN.objetivoNoSeLeyo}{' '}
               {objetivo.estado === 'falla' ? (
-                <button type="button" className="boton boton--enlace" onClick={reintentar}>
+                <button type="button" className="boton boton--discreto" onClick={reintentar}>
                   Reintentar<span className="visualmente-oculto"> la lectura del objetivo</span>
                 </button>
               ) : null}

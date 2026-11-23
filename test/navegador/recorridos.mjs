@@ -2074,6 +2074,58 @@ async function franjasPorComida({ p, d, salida }) {
  *   PNG de 1800 px) y la imagen queda en la receta: la lee Mis recetas, en WebP. La del recetario sigue sin foto.
  * - Lo que aparece no corre nada: el renglón del aviso del recetario ya estaba en su lugar.
  */
+/**
+ * RP-24 «Cierre de Nutrición» (WP-RECORRIDO-PLAN-PULIDO, DL-188): en el editor, a 1440 con el panel abierto.
+ * - El «?» del día, en la esquina superior derecha de su sección: lo que abre flota y no corre nada; Escape lo cierra y
+ *   devuelve el foco al «?».
+ * - «Rangos indicados»: cada renglón con su acción discreta («Cambiar» o «Indicar», sin subrayado, con el nombre completo
+ *   para el lector) y los macros en columnas alineadas.
+ * - Ninguna acción del editor ni del panel se ve subrayada: el subrayado queda para la navegación (`data-navega`).
+ */
+async function cierreDeNutricion({ p, d, salida }) {
+  await abrirElBorrador(p, d);
+  const seccion = '[data-panel-de-nutricion] [data-rango-del-dia]';
+  const pregunta = `${seccion} [data-encabezado-con-ayuda] .a-pedido__boton`;
+  await elemento(p, pregunta);
+  const lugares = () =>
+    p.evaluate((s) => {
+      const caja = document.querySelector(s);
+      const boton = caja.querySelector('[data-encabezado-con-ayuda] .a-pedido__boton').getBoundingClientRect();
+      const abajo = [...caja.children].slice(1).map((e) => Math.round(e.getBoundingClientRect().top));
+      return { derecha: Math.round(caja.getBoundingClientRect().right - boton.right), arriba: Math.round(boton.top - caja.getBoundingClientRect().top), abajo, alto: Math.round(caja.getBoundingClientRect().height) };
+    }, seccion);
+  const antes = await lugares();
+  assert.ok(antes.derecha <= 24, `el «?» va contra el borde derecho de la sección (a ${antes.derecha} px)`);
+  assert.ok(antes.arriba <= 24, `el «?» va arriba (a ${antes.arriba} px del borde)`);
+  await clic(p, pregunta);
+  await p.waitForFunction((s) => document.querySelector(`${s} [data-encabezado-con-ayuda] .a-pedido__texto`)?.hidden === false, { timeout: ESPERA, polling: 100 }, seccion);
+  assert.deepEqual(await lugares(), antes, 'abrir el «?» no corre nada: lo que abre flota (RP-19)');
+  assert.equal(await p.$eval(`${seccion} [data-encabezado-con-ayuda] .a-pedido__texto`, (t) => getComputedStyle(t).position), 'absolute');
+  await captura(p, salida, 'cierre-de-nutricion-ayuda-en-la-esquina-1440');
+  await p.keyboard.press('Escape');
+  await p.waitForFunction((s) => document.querySelector(`${s} [data-encabezado-con-ayuda] .a-pedido__texto`)?.hidden === true, { timeout: ESPERA, polling: 100 }, seccion);
+  assert.ok(await p.$eval(pregunta, (b) => b === document.activeElement), 'Escape devuelve el foco al «?»');
+
+  // «Rangos indicados»: la acción discreta en cada renglón, y los macros alineados en columnas.
+  const renglon = '[data-panel-de-nutricion] [data-rangos-indicados] [data-renglon-del-rango]';
+  await elemento(p, renglon);
+  const acciones = await p.$$eval(`${renglon} .rangos-indicados__accion`, (bs) => bs.filter((b) => b.tagName === 'BUTTON').map((b) => ({ texto: b.textContent.trim(), etiqueta: b.getAttribute('aria-label'), subrayado: getComputedStyle(b).textDecorationLine })));
+  assert.ok(acciones.length > 0, 'hay renglones con su acción');
+  for (const a of acciones) {
+    assert.match(a.texto, /^(Cambiar|Indicar)$/);
+    assert.match(a.etiqueta, /^(Cambiar|Indicar) el rango de /);
+    assert.equal(a.subrayado, 'none', `«${a.etiqueta}» sin subrayado`);
+  }
+  const columnas = await p.$$eval(`${renglon} .rangos-indicados__macros`, (ms) => ms.map((m) => [...m.children].map((c) => Math.round(c.getBoundingClientRect().left))));
+  for (const c of columnas.slice(1)) assert.deepEqual(c, columnas[0], 'los macros de cada renglón, uno debajo del otro');
+  await p.$eval('[data-panel-de-nutricion] [data-rangos-indicados]', (e) => e.scrollIntoView({ block: 'center' }));
+  await captura(p, salida, 'cierre-de-nutricion-rangos-indicados-1440');
+
+  // Ninguna acción subrayada en el editor ni en el panel: lo subrayado navega.
+  const subrayadas = await p.$$eval('.editor-del-plan button, [data-panel-de-nutricion] button', (bs) => bs.filter((b) => b.offsetParent && !b.hasAttribute('data-navega') && getComputedStyle(b).textDecorationLine.includes('underline')).map((b) => b.textContent.trim().slice(0, 60)));
+  assert.deepEqual(subrayadas, [], 'ninguna acción con subrayado');
+}
+
 async function recetario({ p, d, salida }) {
   const R = dominio.COPY_RECETARIO;
   const NOMBRE = 'Avena cocida con banana y canela';
@@ -2149,7 +2201,7 @@ async function recetario({ p, d, salida }) {
   assert.equal(delRecetario.image, null, 'la del recetario no cambia');
 }
 
-export const TODOS = { sesion, pistas, borrador, conflicto, descartar, salidaSegura, irACorregir, respuestaPerdida, reintentar, salidaConFallas, primerPlan, planDeNutricionSinAsistente, retorno, grafico, primeraInvitacion, areaSugerida, sesionRevocada, accesoRevocado, faltaUnaParte, completitud, evidencia, administracion, comparacion, comparacionConOpciones, sinSaltos, franjasPorComida, notacionDelEsfuerzo, recetario };
+export const TODOS = { sesion, pistas, borrador, conflicto, descartar, salidaSegura, irACorregir, respuestaPerdida, reintentar, salidaConFallas, primerPlan, planDeNutricionSinAsistente, retorno, grafico, primeraInvitacion, areaSugerida, sesionRevocada, accesoRevocado, faltaUnaParte, completitud, evidencia, administracion, comparacion, comparacionConOpciones, sinSaltos, franjasPorComida, cierreDeNutricion, notacionDelEsfuerzo, recetario };
 
 /** Errores de la página que no dicen nada del website (los del propio navegador). */
 const IGNORABLES = [/ResizeObserver loop/];

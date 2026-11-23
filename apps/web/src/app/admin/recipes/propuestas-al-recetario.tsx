@@ -54,6 +54,18 @@ function FotoDeLaPropuesta({ ruta, nombre }: { ruta: string | null; nombre: stri
   );
 }
 
+/**
+ * RP-24 (RP-D94) · Lo que respondió la API al decidir, en palabras. Antes, todo lo que no era la sesión decía «no
+ * disponible», también un 422 que tenía explicación: una propuesta ya decidida o con alimentos cargados a mano.
+ */
+export function textoDeLaDecision(res: { readonly ok: false; readonly tipo: string; readonly codigo?: string; readonly issues?: readonly { readonly code: string }[] }): string {
+  if (res.tipo !== 'API') return COPY.noDisponible;
+  if (res.codigo === 'INVALID_STATE_TRANSITION') return C.yaDecidida;
+  if (res.codigo === 'VALIDATION_FAILED' && res.issues?.some((i) => i.code === 'OWN_FOOD_NOT_PROPOSABLE')) return C.conAlimentosAMano;
+  if (res.codigo === 'VALIDATION_FAILED') return C.noSeDecidio;
+  return COPY.noDisponible;
+}
+
 function Propuesta({ p, alDecidir }: { p: PropuestaParaRevisar; alDecidir: (actualizada: PropuestaParaRevisar, texto: string) => void }) {
   const id = useId();
   const { sesion, revisar } = useAdministracion();
@@ -70,7 +82,7 @@ function Propuesta({ p, alDecidir }: { p: PropuestaParaRevisar; alDecidir: (actu
     setEnviando(null);
     if (res.ok) return alDecidir(res.datos.data, decision === 'ADD' ? C.sumada(p.name) : C.rechazada(p.name));
     if (revisar(res)) return;
-    setFallo(COPY.noDisponible);
+    setFallo(textoDeLaDecision(res));
   }
   return (
     <li className="lista__item propuesta-al-recetario" data-propuesta={p.proposalId} data-estado={p.status}>

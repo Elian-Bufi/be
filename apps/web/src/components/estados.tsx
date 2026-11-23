@@ -85,7 +85,7 @@ export function ErrorConReintento({ mensaje = COPY.errorDeVista, onReintentar }:
     <Aviso tipo="error">
       <p>
         {mensaje}{' '}
-        <button type="button" className="boton boton--enlace" onClick={onReintentar}>
+        <button type="button" className="boton boton--discreto" onClick={onReintentar}>
           {COPY.reintentar}
         </button>
       </p>
