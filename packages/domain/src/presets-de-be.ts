@@ -10,9 +10,14 @@
  * valores, no una regla). Sigue valiendo ED-D2: Dirección los valida antes de publicarlos.
  */
 import type { DiaDeLaSemana } from './contratos-entrenamiento';
+import type { IdDeZonaMuscular } from './zonas-musculares';
 import { leerPrescripcion, type PrescripcionLeida } from './prescripcion-rapida';
 
-export const VERSION_DE_LOS_PRESETS_DE_BE = 1;
+/**
+ * 2 desde DL-196 parte B (EE-D37): cada sesión de una estructura dice las zonas que trabaja como principales en un reparto
+ * típico (para la silueta del reparto semanal) y se sumó «Por grupo muscular · 5 días». Lo ya aplicado no cambia.
+ */
+export const VERSION_DE_LOS_PRESETS_DE_BE = 2;
 
 export interface PresetDeEstructura {
   readonly tipo: 'ESTRUCTURA';
@@ -20,7 +25,11 @@ export interface PresetDeEstructura {
   readonly nombre: string;
   /** «4 sesiones · sin ejercicios». */
   readonly detalle: string;
-  readonly sesiones: readonly { readonly nombre: string; readonly dias: readonly DiaDeLaSemana[] }[];
+  /**
+   * Cada sesión con sus días sugeridos y las zonas que trabaja como principales en un reparto típico (DL-196 parte B): sirven
+   * para dibujar el reparto semanal en la silueta. No son ejercicios: BE no elige ejercicios (ED-D2).
+   */
+  readonly sesiones: readonly { readonly nombre: string; readonly dias: readonly DiaDeLaSemana[]; readonly zonas: readonly IdDeZonaMuscular[] }[];
 }
 
 export interface PresetDePrescripcion {
@@ -44,25 +53,40 @@ const estructura = (clave: string, nombre: string, sesiones: PresetDeEstructura[
 });
 const prescripcion = (clave: string, nombre: string, linea: string, detalle: string): PresetDePrescripcion => ({ tipo: 'PRESCRIPCION', clave, nombre, linea, detalle });
 
+const CUERPO_ENTERO: readonly IdDeZonaMuscular[] = ['pectoral', 'dorsal', 'deltoides', 'cuadriceps', 'isquios', 'gluteos', 'recto-abdominal'];
+const TORSO: readonly IdDeZonaMuscular[] = ['pectoral', 'dorsal', 'romboides', 'deltoides', 'biceps', 'triceps'];
+const PIERNAS: readonly IdDeZonaMuscular[] = ['cuadriceps', 'isquios', 'gluteos', 'aductores', 'gemelos', 'recto-abdominal'];
+const EMPUJE: readonly IdDeZonaMuscular[] = ['pectoral', 'deltoides', 'triceps'];
+const TIRON: readonly IdDeZonaMuscular[] = ['dorsal', 'romboides', 'trapecio', 'biceps', 'antebrazo'];
+const PIERNAS_DE_LA_TRIADA: readonly IdDeZonaMuscular[] = ['cuadriceps', 'isquios', 'gluteos', 'gemelos'];
+
 export const PRESETS_DE_BE: readonly PresetDeBe[] = [
   estructura('CUERPO_ENTERO_3', 'Cuerpo entero · 3 días', [
-    { nombre: 'Cuerpo entero A', dias: ['MONDAY'] },
-    { nombre: 'Cuerpo entero B', dias: ['WEDNESDAY'] },
-    { nombre: 'Cuerpo entero C', dias: ['FRIDAY'] },
+    { nombre: 'Cuerpo entero A', dias: ['MONDAY'], zonas: CUERPO_ENTERO },
+    { nombre: 'Cuerpo entero B', dias: ['WEDNESDAY'], zonas: CUERPO_ENTERO },
+    { nombre: 'Cuerpo entero C', dias: ['FRIDAY'], zonas: CUERPO_ENTERO },
   ]),
   estructura('TORSO_PIERNAS_4', 'Torso / Piernas · 4 días', [
-    { nombre: 'Torso A', dias: ['MONDAY'] },
-    { nombre: 'Piernas A', dias: ['TUESDAY'] },
-    { nombre: 'Torso B', dias: ['THURSDAY'] },
-    { nombre: 'Piernas B', dias: ['FRIDAY'] },
+    { nombre: 'Torso A', dias: ['MONDAY'], zonas: TORSO },
+    { nombre: 'Piernas A', dias: ['TUESDAY'], zonas: PIERNAS },
+    { nombre: 'Torso B', dias: ['THURSDAY'], zonas: TORSO },
+    { nombre: 'Piernas B', dias: ['FRIDAY'], zonas: PIERNAS },
   ]),
   estructura('EMPUJE_TIRON_PIERNAS_6', 'Empuje / Tirón / Piernas · 6 días', [
-    { nombre: 'Empuje A', dias: ['MONDAY'] },
-    { nombre: 'Tirón A', dias: ['TUESDAY'] },
-    { nombre: 'Piernas A', dias: ['WEDNESDAY'] },
-    { nombre: 'Empuje B', dias: ['THURSDAY'] },
-    { nombre: 'Tirón B', dias: ['FRIDAY'] },
-    { nombre: 'Piernas B', dias: ['SATURDAY'] },
+    { nombre: 'Empuje A', dias: ['MONDAY'], zonas: EMPUJE },
+    { nombre: 'Tirón A', dias: ['TUESDAY'], zonas: TIRON },
+    { nombre: 'Piernas A', dias: ['WEDNESDAY'], zonas: PIERNAS_DE_LA_TRIADA },
+    { nombre: 'Empuje B', dias: ['THURSDAY'], zonas: EMPUJE },
+    { nombre: 'Tirón B', dias: ['FRIDAY'], zonas: TIRON },
+    { nombre: 'Piernas B', dias: ['SATURDAY'], zonas: PIERNAS_DE_LA_TRIADA },
+  ]),
+  // DL-196 parte B (E13, EE-D37): la división por grupo muscular, cada grupo una vez por semana.
+  estructura('POR_GRUPO_MUSCULAR_5', 'Por grupo muscular · 5 días', [
+    { nombre: 'Pecho', dias: ['MONDAY'], zonas: ['pectoral'] },
+    { nombre: 'Espalda', dias: ['TUESDAY'], zonas: ['dorsal', 'romboides', 'trapecio'] },
+    { nombre: 'Piernas', dias: ['WEDNESDAY'], zonas: ['cuadriceps', 'isquios', 'gluteos', 'aductores', 'gemelos'] },
+    { nombre: 'Hombros', dias: ['THURSDAY'], zonas: ['deltoides', 'trapecio'] },
+    { nombre: 'Brazos', dias: ['FRIDAY'], zonas: ['biceps', 'triceps', 'antebrazo'] },
   ]),
   prescripcion('HIPERTROFIA', 'Hipertrofia', '4×8-12 RIR 2 · 90 s', '4×8-12 · RIR 2 · 90 s · sin cargas'),
   prescripcion('FUERZA', 'Fuerza', '5×5 RIR 2 · 3 min', '5×5 · RIR 2 · 3 min · sin cargas'),

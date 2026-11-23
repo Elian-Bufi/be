@@ -12,7 +12,7 @@
  *
  * Sin React ni base: la usan el cuadro del website y sus pruebas.
  */
-import { epley, estimacionConLaDecima, type EntradasDeLaEstimacion, type UnidadDeLaCarga } from './estimacion-de-fuerza';
+import { epley, estimacionConLaDecima, TOPE_DE_LA_ESTIMACION, TOPE_DEL_NUCLEO, type EntradasDeLaEstimacion, type UnidadDeLaCarga } from './estimacion-de-fuerza';
 import { numero } from './formato-numeros';
 
 /** Los pasos del redondeo por unidad; el primero es el de entrada. */
@@ -74,4 +74,43 @@ export function cargaDesdeLaEstimacion(
 export function referenciaDeLaEstimacion(fechaCivil: string): string {
   const [anio, mes, dia] = fechaCivil.split('-');
   return `1RM estimado · Epley v1 · ${dia}/${mes}/${anio}`;
+}
+
+// ─── DL-196 parte B (E7, E18; EE-D36) · la carga para N repeticiones a un esfuerzo dado ──────────────────────────────
+
+export type CargaParaRepeticiones =
+  | {
+      readonly hay: true;
+      /** La carga redondeada hacia abajo al paso, en la unidad de la estimación. */
+      readonly carga: number;
+      readonly unidad: UnidadDeLaCarga;
+      readonly repeticionesEquivalentes: number;
+      /** Más de 10 repeticiones equivalentes (hasta 12): la banda orientativa del método. */
+      readonly orientativa: boolean;
+      /** «≈ 100,0 kg × 30 ÷ (30 + 8 + 2) = 75,0 kg → 75 kg». */
+      readonly cuenta: string;
+    }
+  | { readonly hay: false; readonly motivo: 'FUERA_DE_LOS_LIMITES' | 'DATOS_INVALIDOS' };
+
+/**
+ * La carga con la que, según la estimación de Epley v1, se harían `repeticiones` dejando `rir` en reserva: la cuenta del
+ * método al revés, con las repeticiones equivalentes (repeticiones + RIR). Respeta los límites ratificados del método
+ * (DL-171): hasta 12 repeticiones equivalentes; de más de 10 a 12, orientativa. Se redondea hacia abajo al paso: nunca
+ * más de lo que dice la cuenta. Fuera de los límites o con datos que no tienen sentido, no hay carga: se dice por qué.
+ */
+export function cargaParaRepeticiones(estimacion: number, unidad: UnidadDeLaCarga, repeticiones: number, rir: number, paso: number = PASOS_DEL_REDONDEO[unidad][0]!): CargaParaRepeticiones {
+  if (!Number.isFinite(estimacion) || estimacion <= 0 || !Number.isInteger(repeticiones) || repeticiones < 1 || !Number.isFinite(rir) || rir < 0 || !(paso > 0)) {
+    return { hay: false, motivo: 'DATOS_INVALIDOS' };
+  }
+  const equivalentes = repeticiones + rir;
+  if (equivalentes > TOPE_DE_LA_ESTIMACION) return { hay: false, motivo: 'FUERA_DE_LOS_LIMITES' };
+  const bruta = equivalentes === 1 ? estimacion : (estimacion * 30) / (30 + equivalentes);
+  const carga = Number((Math.floor(bruta / paso + MARGEN) * paso).toFixed(2));
+  if (carga <= 0) return { hay: false, motivo: 'DATOS_INVALIDOS' };
+  const u = unidad;
+  const cuenta =
+    equivalentes === 1
+      ? `≈ ${numero(estimacion, 1)} ${u} con 1 repetición equivalente → ${numero(carga, 2)} ${u}`
+      : `≈ ${numero(estimacion, 1)} ${u} × 30 ÷ (30 + ${numero(repeticiones, 0)} + ${numero(rir, 1)}) = ${numero(Math.floor(bruta * 10 + MARGEN) / 10, 1)} ${u} → ${numero(carga, 2)} ${u}`;
+  return { hay: true, carga, unidad: u, repeticionesEquivalentes: equivalentes, orientativa: equivalentes > TOPE_DEL_NUCLEO, cuenta };
 }
