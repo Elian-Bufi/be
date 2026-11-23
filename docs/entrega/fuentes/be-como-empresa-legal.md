@@ -8,7 +8,7 @@
 **Carrera:** Analista de Sistemas, Escuela Da Vinci
 **Fecha:** 19 de noviembre de 2026
 
-> **Resumen.** BE ya hace mucho de lo que la ley pide (consentimiento por área con evidencia, «Quién ve qué», borrado, servidores en la Unión Europea), pero todavía no tiene responsable legal, ni textos validados, ni base inscripta ante la AAIP, y su código está en un repositorio público sin licencia. Este documento ordena qué hacer primero, quién lo hace y con qué fuentes.
+> **Resumen.** BE ya hace mucho de lo que la ley pide (consentimiento por área con evidencia, «Quién ve qué», borrado, servidores en la Unión Europea), pero todavía no tiene responsable legal, ni textos validados, ni base inscripta ante la AAIP, y su código está en un repositorio público, con su licencia de todos los derechos reservados. Este documento ordena qué hacer primero, quién lo hace y con qué fuentes.
 
 **Fecha:** 19 de noviembre de 2026
 
@@ -29,7 +29,7 @@
 
 *Dónde está BE, qué hay que hacer y en qué orden, y cuánto cuesta a grandes rasgos.*
 
-**Dónde estamos.** BE ya está construido como la ley de datos personales lo pediría: el consentimiento se da por área y queda guardado con su versión, la persona ve «Quién ve qué» y lo puede retirar, puede pedir el borrado, y los servidores están en Frankfurt (Alemania, Unión Europea), un destino que la Argentina reconoce como adecuado. **Lo que falta es lo legal alrededor del sistema:** nadie figura todavía como responsable de los datos, los textos legales son de demostración, la base no está inscripta ante la AAIP y el código está en un repositorio público sin licencia.
+**Dónde estamos.** BE ya está construido como la ley de datos personales lo pediría: el consentimiento se da por área y queda guardado con su versión, la persona ve «Quién ve qué» y lo puede retirar, puede pedir el borrado, y los servidores están en Frankfurt (Alemania, Unión Europea), un destino que la Argentina reconoce como adecuado. **Lo que falta es lo legal alrededor del sistema:** nadie figura todavía como responsable de los datos, los textos legales son de demostración, la base no está inscripta ante la AAIP y el código está en un repositorio público, con su licencia de todos los derechos reservados desde el 19/11.
 
 - **Gratis** inscribir la base: ante la AAIP, por TAD, y no vence
 - **$100.000** multa por infracción: tope de la escala muy grave, que se multiplica hasta ×500 si se acumulan
@@ -58,7 +58,7 @@
 - **Por cobro:** Mercado Pago, de 1,49 % a 6,99 % más IVA; Google Play, 15 % de las suscripciones.
 
 > **Los tres riesgos mayores de hoy.** 1. **Datos de salud reales sin responsable, sin textos validados y sin base inscripta:** leve por no inscribir; muy grave si el consentimiento no vale (Res. AAIP 126/2024).
-> 2. **El código público y sin licencia:** protegido, pero sin secreto comercial y copiable de hecho.
+> 2. **El código público:** con la licencia de todos los derechos reservados, pero sin secreto comercial y copiable de hecho.
 > 3. **Todo depende de una persona:** dominio, cuentas y llave de firma de la APK, sin titular empresa ni respaldo documentado.
 
 # 1. Los requisitos legales de BE
@@ -385,7 +385,7 @@ Aplica en cuanto BE cobre a personas (consumidores). Lo que importa ([Ley 24.240
 
 *Qué protege la ley, de quién es el código, qué pasa con el repositorio público, las licencias de terceros, las cesiones, los secretos, las cuentas y los contratos con proveedores.*
 
-> **La idea clave.** El código de BE está protegido desde que se escribió, pero **está publicado sin licencia y a la vista de todos**: cerrarlo y documentar la autoría humana es más urgente que registrarlo.
+> **La idea clave.** El código de BE está protegido desde que se escribió, y desde el 19/11 declara su licencia (todos los derechos reservados, Ley 11.723), pero **está a la vista de todos**: cerrarlo y documentar la autoría humana es más urgente que registrarlo.
 
 ## 6.1 Qué protege la Ley 11.723
 
@@ -420,9 +420,9 @@ Aplica en cuanto BE cobre a personas (consumidores). Lo que importa ([Ley 24.240
 
 ## 6.4 El repositorio público
 
-**Lo verifiqué el 19/11/2026:** `github.com/Elian-Bufi/be` es **público** y **no tiene licencia declarada** (GitHub informa `visibility: PUBLIC` y `licenseInfo: null`).
+**Lo verifiqué el 19/11/2026:** `github.com/Elian-Bufi/be` es **público**. Ese mismo día se sumó el archivo `LICENSE`: «Todos los derechos reservados», con la Ley 11.723 de Propiedad Intelectual.
 
-- **Qué implica.** Sin licencia rigen **todos los derechos reservados**: nadie puede copiar, modificar ni distribuir el código legalmente. Pero **de hecho** cualquiera lo puede leer, clonar y copiar, y probar una copia ilegal cuesta. Además, al estar a la vista se **pierde el secreto comercial** sobre el código, el esquema de datos, el legajo y las decisiones de producto (la Ley 24.766 exige «medidas razonables» para mantener algo secreto) ([Ley 24.766](https://www.argentina.gob.ar/normativa/nacional/41094/texto)). Los términos de GitHub permiten a otros usuarios **ver y hacer fork** de un repositorio público dentro de GitHub.
+- **Qué implica.** Con la licencia declarada rigen **todos los derechos reservados**: nadie puede copiar, modificar ni distribuir el código legalmente. Pero **de hecho** cualquiera lo puede leer, clonar y copiar, y probar una copia ilegal cuesta. Además, al estar a la vista se **pierde el secreto comercial** sobre el código, el esquema de datos, el legajo y las decisiones de producto (la Ley 24.766 exige «medidas razonables» para mantener algo secreto) ([Ley 24.766](https://www.argentina.gob.ar/normativa/nacional/41094/texto)). Los términos de GitHub permiten a otros usuarios **ver y hacer fork** de un repositorio público dentro de GitHub.
 - **Otro riesgo:** el historial público puede incluir datos que no deberían estar a la vista (nombres de prueba, configuraciones, capturas). Conviene una revisión antes de cualquier decisión.
 
 **Tabla 8.** Las opciones para el repositorio.

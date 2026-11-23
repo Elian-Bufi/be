@@ -405,6 +405,12 @@ Las reglas van en tres tablas, una por área. Fuera de ellas hay cuatro familias
 
 **REQ-TUT-58 · El servidor despierto.** El día que el tutor prueba, el website y la API responden en menos de 3 segundos desde la primera pantalla (el servicio pago de Render no se duerme). *Se verifica:* la primera carga cronometrada la mañana de la entrega.
 
+## 7.1 Cuentas para probar
+
+[CUENTAS DEL TUTOR: se completan en el documento privado]
+
+La cuenta de la Lic. Julieta Arce (website) y la de Carolina R. (app), con su correo y su contraseña, van solo en el documento privado que Elián le pasa al tutor (REQ-TUT-56).
+
 # 8. La construcción
 
 *Un generador que se puede rehacer en cualquier momento, con el mismo resultado, sin tocar nada a mano.*
