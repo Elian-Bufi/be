@@ -2511,7 +2511,7 @@ export function EditorDePlan({
       })}
     </div>
   );
-  const vistas = foco.tipo === 'ejercicio' ? [] : VISTAS_DEL_FOCO[foco.tipo];
+  const vistas: readonly VistaDelPanel[] = foco.tipo === 'ejercicio' ? [] : VISTAS_DEL_FOCO[foco.tipo];
   const vista = vistaDelFoco(foco.tipo, vistaElegida);
   /** EE-D40: el selector de vistas del panel, como pestañas (← y → con el teclado). */
   const selectorDeVistas =
