@@ -21,8 +21,8 @@
 BE son tres aplicaciones que comparten un solo servidor: la app de la persona, el website del profesional y de Administración, y la API, que es la única que toca la base de datos. Importa porque BE guarda datos de salud: cada escritura tiene que pasar por el mismo control de permiso y dejar la misma auditoría, sin excepciones, y eso es más fácil de garantizar con una sola puerta.
 
 - **3** aplicaciones: app, website y API
-- **27** módulos: de un monolito modular
-- **272** operaciones: en la especificación OpenAPI
+- **34** módulos: de un monolito modular
+- **335** operaciones: en la especificación OpenAPI
 - **1** nube: Render, región Frankfurt
 
 *Fuente: El repositorio: apps/api/src (módulos y controladores), docs/api/openapi.json y prisma/schema.prisma.*
@@ -51,8 +51,8 @@ Hacia afuera, BE manda lo mínimo. Ningún servicio externo recibe datos de salu
 | --- | --- | --- |
 | App de la persona | Android · React Native y Expo | Cinco pestañas: Inicio, Nutrición, Entrenamiento, Evolución y Perfil. Guarda la sesión en el almacenamiento seguro del teléfono. |
 | Website | Next.js · exportación estática | Escritorio del profesional y Administración. No tiene servidor propio: es un sitio estático que pide todo a la API. |
-| API | NestJS · TypeScript | Monolito modular de 27 módulos. Autoriza cada operación, aplica las reglas de cada área y audita en la misma transacción. |
-| Base de datos | PostgreSQL 16 · Prisma | 139 tablas. Además de guardar, rechaza por sí misma las escrituras que romperían la historia. |
+| API | NestJS · TypeScript | Monolito modular de 34 módulos. Autoriza cada operación, aplica las reglas de cada área y audita en la misma transacción. |
+| Base de datos | PostgreSQL 16 · Prisma | 163 tablas. Además de guardar, rechaza por sí misma las escrituras que romperían la historia. |
 | Recordatorios | Tarea programada | Tres veces por día le pide a la API que envíe los recordatorios del día. |
 | @be/domain | Paquete TypeScript | Contratos de cada operación, textos y reglas puras. Lo compilan la app, el website y la API; de él sale la especificación OpenAPI. |
 
@@ -102,7 +102,7 @@ Dos consecuencias importan. Primero, no hay escritura sin autorización ni audit
 
 > **La idea clave.** El monolito modular no es un atajo: es lo que permite que **una operación entre áreas sea atómica** sin coordinar servicios. Se puede separar en servicios si cambian el equipo, la escala o esa necesidad.
 
-## 5.1 Siete decisiones, con su costo
+## 5.1 Diez decisiones, con su costo
 
 **Tabla 2.** Las decisiones de arquitectura de BE, por qué se tomaron y lo que cuestan.
 
@@ -115,12 +115,15 @@ Dos consecuencias importan. Primero, no hay escritura sin autorización ni audit
 | Website estático | Sin servidor de páginas: menos superficie de ataque, menos costo y una CSP estricta. | Todo dato se pide a la API desde el navegador. |
 | App fuera de tiendas | Control total de la firma y publicación inmediata de cada versión. | La instalación es manual y no hay actualización automática de tienda. |
 | Render como nube | Despliegue desde el repositorio, base administrada y red privada, sin operar servidores. | Un costo mensual y una sola región. |
+| La misma función en todos lados | Las cuentas son del dominio compartido: el cálculo del objetivo da lo mismo en el website y en el servidor, que lo rehace al guardar; la conversión entre RIR y RPE y las cuentas de Kerr, también. Lo guardado es siempre una sola medida (el RIR), así que cambiar la notación nunca reescribe la historia. | Cada regla nueva se escribe en el paquete compartido y se publica con las tres piezas. |
+| El mismo 404 para lo ajeno | Un dato que no corresponde responde igual que uno que no existe: ni siquiera se filtra que existe. | Por la respuesta no se distingue un dato ajeno de uno inexistente; lo dice la auditoría. |
+| Capacidad declarada del cliente | Un campo nuevo del plan sale solo para la app que declara conocerlo, así la app instalada nunca recibe algo que no sabe mostrar. | Cada campo nuevo pide su declaración y su filtro en la API. |
 
 ## 5.2 Lo que está resuelto y lo que no
 
 > **Seguridad y privacidad.** - **Sesiones revocables.** El servidor puede cerrar una sesión en cualquier momento; el website la reanuda con una cookie httpOnly y la app la guarda en el almacenamiento seguro.
 > - **Autorización en un solo lugar,** con la misma regla para la app y el website.
-> - **Segundo factor** obligatorio para Administración y para el profesional en el website.
+> - **Segundo factor** obligatorio para Administración, que decide quién opera en BE. El profesional entra con su contraseña o con Google, con el límite de intentos y sesiones que vencen: es una decisión para no sumarle fricción mientras el código por correo no está.
 > - **Datos mínimos hacia afuera:** los avisos no llevan datos de salud y las imágenes pierden sus metadatos.
 
 > **Consistencia y fallas.** - **Concurrencia optimista.** Cada escritura declara la versión que leyó; si otro la cambió antes, hay un conflicto que el cliente muestra.
