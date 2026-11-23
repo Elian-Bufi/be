@@ -21,6 +21,7 @@ import {
   renglonesVigentes,
   semanasDeLoAvanzado,
   sesionesPorSemanaDeLaAgenda,
+  ventanasDeLasSesiones,
   textosDeLaVersion,
   textosQueFaltan,
   textosQuePide,
@@ -28,6 +29,7 @@ import {
   type TextosAceptados,
   type AreaConPlan,
   type AvanceDelPlan,
+  type ContenidoDePlanDeEntrenamiento,
   type LoQueSeComparteDeMiAreaResponse,
   type MisResumenesCompartidosResponse,
   type NivelDeResumen,
@@ -381,7 +383,7 @@ export class ResumenesService {
             area: 'ENTRENAMIENTO',
             ...base,
             nextReviewAt: await this.proximaRevisionDe(tx, compartido.fuenteId, personaId, 'ENTRENAMIENTO'),
-            progress: avance('SESSIONS', sesionesPorSemanaDeLaAgenda(contenidoDeLaVersion(fila, new Map()).contenido.agenda), compartido.activadoEn, momento, registradas.map((r) => r.fechaLocal)),
+            progress: avance('SESSIONS', sesionesPorSemana(contenidoDeLaVersion(fila, new Map()).contenido, momento), compartido.activadoEn, momento, registradas.map((r) => r.fechaLocal)),
             plan,
             objective: efectiva && objetivo ? objetivoDeEntrenamientoApi(efectiva, objetivo, true, base.author.displayName) : null,
           },
@@ -580,6 +582,14 @@ export class ResumenesService {
 }
 
 /** Lo avanzado (TA-86): las fechas civiles de lo registrado, contadas por semana en la zona de la persona. */
+/**
+ * Las sesiones por semana de la agenda. DL-196 (EE-D02): con fases por semanas, las de la fase que rige hoy, no las de
+ * todas las fases juntas.
+ */
+function sesionesPorSemana(contenido: ContenidoDePlanDeEntrenamiento, ahora: Date): number | null {
+  return sesionesPorSemanaDeLaAgenda(contenido.agenda, ventanasDeLasSesiones(contenido.planning, contenido.blocks), fechaLocalEn(ahora, ZONA_POR_DEFECTO));
+}
+
 function avance(unit: AvanceDelPlan['unit'], plannedPerWeek: number | null, activadoEn: Date, ahora: Date, fechas: readonly Date[]): AvanceDelPlan {
   const civil = (d: Date) => fechaLocalEn(d, ZONA_POR_DEFECTO);
   return { unit, plannedPerWeek, weeks: semanasDeLoAvanzado({ activadoEl: civil(activadoEn), hoy: civil(ahora), registradas: fechas.map((f) => f.toISOString().slice(0, 10)) }) };

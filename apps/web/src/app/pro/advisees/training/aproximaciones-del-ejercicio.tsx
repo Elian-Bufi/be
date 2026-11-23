@@ -170,19 +170,12 @@ export function SeccionDeAproximaciones({
             {T.porcentajes}
           </span>
           {actual.workingLoadShares.slice(0, cuantas).map((pct, n) => (
-            <label key={n} className="aproximaciones-del-ejercicio__porcentaje">
-              <span className="visualmente-oculto">{T.porcentaje(n + 1)}</span>
-              <input
-                inputMode="numeric"
-                value={pct}
-                onChange={(e) => {
-                  const v = Number(e.target.value);
-                  if (!Number.isInteger(v) || v < 5 || v > 95) return;
-                  aplicar({ ...actual, workingLoadShares: actual.workingLoadShares.map((x, m) => (m === n ? v : x)) });
-                }}
-                data-porcentaje-de-aproximacion={n + 1}
-              />
-            </label>
+            <CampoDePorcentaje
+              key={n}
+              n={n + 1}
+              valor={pct}
+              onValor={(v) => aplicar({ ...actual, workingLoadShares: actual.workingLoadShares.map((x, m) => (m === n ? v : x)) })}
+            />
           ))}
           <span className="nota aproximaciones-del-ejercicio__base" data-base-de-las-aproximaciones>
             {trabajo === null ? T.sinCarga : T.base(trabajo, unidad)}
@@ -197,20 +190,54 @@ export function SeccionDeAproximaciones({
             .join(' · ')}
         </p>
       ) : null}
-      {/* RP-19: el aviso tiene su lugar, y no pisa nada: «Recalcular» o dejarlas a mano. */}
-      {noCoinciden ? (
-        <p className="aviso-en-linea aproximaciones-del-ejercicio__no-coinciden" role="status" data-aproximaciones-no-coinciden>
-          <Icono nombre="aviso" tamano={15} />
-          {T.noCoinciden}
-          <button type="button" className="boton boton--discreto" onClick={() => aplicar(actual)} data-recalcular-aproximaciones>
-            <Icono nombre="actualizar" tamano={15} />
-            {T.recalcular}
-          </button>
-          <button type="button" className="boton boton--discreto" onClick={() => onConfig({ ...actual, mode: 'MANUAL' })}>
-            {T.pasarAMano}
-          </button>
-        </p>
+      {/* RP-19: el aviso tiene su renglón reservado mientras se calcula «Por porcentaje»: al tocar una carga de la tabla,
+          aparece sin correr la tabla de abajo. No pisa nada: «Recalcular» o dejarlas a mano. */}
+      {actual.mode === 'FROM_WORKING_LOAD' && cuantas > 0 ? (
+        <div className="aproximaciones-del-ejercicio__lugar-del-aviso" role="status" data-lugar-del-aviso-de-aproximaciones>
+          {noCoinciden ? (
+            <p className="aviso-en-linea aproximaciones-del-ejercicio__no-coinciden" data-aproximaciones-no-coinciden>
+              <Icono nombre="aviso" tamano={15} />
+              {T.noCoinciden}
+              <button type="button" className="boton boton--discreto" onClick={() => aplicar(actual)} data-recalcular-aproximaciones>
+                <Icono nombre="actualizar" tamano={15} />
+                {T.recalcular}
+              </button>
+              <button type="button" className="boton boton--discreto" onClick={() => onConfig({ ...actual, mode: 'MANUAL' })}>
+                {T.pasarAMano}
+              </button>
+            </p>
+          ) : null}
+        </div>
       ) : null}
     </section>
+  );
+}
+
+/**
+ * Un porcentaje de la carga de trabajo, de 5 a 95. Lo escrito se guarda aparte mientras se escribe: para pasar de 40 a 55
+ * se borra y se escribe, y en el medio («», «5») no es un porcentaje válido. Se aplica apenas lo es; al salir, vuelve a
+ * mostrar el que rige.
+ */
+function CampoDePorcentaje({ n, valor, onValor }: { n: number; valor: number; onValor: (v: number) => void }) {
+  const [escrito, setEscrito] = useState<string | null>(null);
+  const v = escrito === null ? null : Number(escrito.trim());
+  const mal = escrito !== null && !(escrito.trim() !== '' && Number.isInteger(v) && v! >= 5 && v! <= 95);
+  return (
+    <label className="aproximaciones-del-ejercicio__porcentaje">
+      <span className="visualmente-oculto">{T.porcentaje(n)}</span>
+      <input
+        inputMode="numeric"
+        maxLength={2}
+        value={escrito ?? String(valor)}
+        aria-invalid={mal || undefined}
+        onChange={(e) => {
+          setEscrito(e.target.value);
+          const x = Number(e.target.value.trim());
+          if (e.target.value.trim() !== '' && Number.isInteger(x) && x >= 5 && x <= 95) onValor(x);
+        }}
+        onBlur={() => setEscrito(null)}
+        data-porcentaje-de-aproximacion={n}
+      />
+    </label>
   );
 }

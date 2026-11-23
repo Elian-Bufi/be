@@ -105,6 +105,7 @@ import {
   colorDeLaFase,
   conAnotacionesDeLaFase,
   conAproximaciones,
+  conInicio,
   conSemanasDeLaFase,
   copiarLaFase,
   nombreDeFaseNueva,
@@ -1412,12 +1413,23 @@ export function EditorDePlan({
     const n = bloques.length;
     const copia = copiarLaFase(original, nombreDeFaseNueva(bloques), () => crypto.randomUUID());
     cambiar((x) => (x.push(copia.bloque), x));
-    cambiarPlanificacion(planificacionConLaCopia(plan, original.blockId, copia));
-    const conDias = agendaConLaCopia(agendaVisible, copia);
+    const conLaCopia = planificacionConLaCopia(plan, original.blockId, copia);
+    cambiarPlanificacion(conLaCopia);
+    // Los días se copian solo si la copia tiene fechas: sin ellas, sus sesiones irían todas las semanas junto con las de la
+    // original, y la persona tendría las dos fases a la vez (EE-D02).
+    const conFechas = (fechasDeLasFases(conLaCopia, [...bloques, copia.bloque])[n] ?? null) !== null;
+    const conDias = conFechas ? agendaConLaCopia(agendaVisible, copia) : agendaVisible;
     if (conDias !== agendaVisible) cambiarAgenda(conDias);
+    const habiaDias = agendaVisible?.sessions.some((s) => copia.sesiones.has(s.sessionId)) ?? false;
     elegirBloque(n);
     setFoco({ tipo: 'fase' });
-    setMensaje({ tipo: 'exito', texto: `«${nombreDelBloque(original, n - 1)}» copiada como «${copia.bloque.label}», con sus sesiones, sus semanas y sus días.` });
+    setMensaje({
+      tipo: 'exito',
+      texto:
+        conFechas || !habiaDias
+          ? `«${nombreDelBloque(original, n - 1)}» copiada como «${copia.bloque.label}», con sus sesiones, sus semanas y sus días.`
+          : `«${nombreDelBloque(original, n - 1)}» copiada como «${copia.bloque.label}», con sus sesiones. Los días no se copiaron: sin el inicio del plan y las semanas de cada fase, las dos fases irían todas las semanas a la vez.`,
+    });
   };
   const quitarBloque = () => {
     cambiar((x) => (x.splice(i, 1), x));
@@ -2845,6 +2857,9 @@ export function EditorDePlan({
                                 document.getElementById('ver-proximas-fechas')?.focus();
                               }}
                               onCambiar={cambiarAgenda}
+                              // DL-196: las fechas de la fase (como en el almanaque) y el inicio, que es el del plan.
+                              ventanas={ventanas}
+                              onInicio={plan.startDate ? (f) => alCambiarElPlan(conInicio(plan, f)) : undefined}
                               semana={
                                 <ol className="estacion__tira" aria-label={CE.semana}>
                                   {tiraDeLaSemana(agendaConDias, nombreDeLaSesionPorId).map((d) => (

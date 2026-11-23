@@ -16789,6 +16789,11 @@ p.cifra-del-espacio__desglose {
   font-variant-numeric: tabular-nums;
 }
 
+/* RP-19: el renglón del aviso «ya no coinciden» está reservado mientras se calcula «Por porcentaje». */
+.aproximaciones-del-ejercicio__lugar-del-aviso {
+  min-height: 2.25rem;
+}
+
 .aproximaciones-del-ejercicio__no-coinciden {
   display: flex;
   flex-wrap: wrap;

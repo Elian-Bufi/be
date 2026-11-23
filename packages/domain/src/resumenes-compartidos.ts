@@ -14,6 +14,7 @@
  */
 import { ALCANCES, type Alcance } from './alcance';
 import type { ValidationIssue } from './contratos';
+import type { VentanasDeLasSesiones } from './agenda-de-entrenamiento';
 import type { AgendaDeEntrenamiento } from './contratos-entrenamiento';
 import {
   AREAS_CON_PLAN,
@@ -269,6 +270,18 @@ export function semanasDeLoAvanzado(p: { readonly activadoEl: string; readonly h
   return semanas.slice(-SEMANAS_DE_LO_AVANZADO);
 }
 
-/** Las sesiones por semana que fija la agenda del plan (DL-137): la suma de los días de cada sesión; `null` sin agenda. */
-export const sesionesPorSemanaDeLaAgenda = (agenda: AgendaDeEntrenamiento | null | undefined): number | null =>
-  agenda ? agenda.sessions.reduce((n, s) => n + s.weekdays.length, 0) : null;
+/**
+ * Las sesiones por semana que fija la agenda del plan (DL-137): la suma de los días de cada sesión; `null` sin agenda.
+ * DL-196 (EE-D02): con fases por semanas, cada sesión va solo en las de su fase. Con `ventanas` y `fecha`, cuentan las
+ * sesiones sin ventana y las de la fase que rige ese día, no las de todas las fases juntas; si ese día no rige ninguna
+ * (antes del inicio o después del fin), `null`: esa semana el plan no fija sesiones.
+ */
+export function sesionesPorSemanaDeLaAgenda(agenda: AgendaDeEntrenamiento | null | undefined, ventanas?: VentanasDeLasSesiones, fecha?: string): number | null {
+  if (!agenda) return null;
+  const rigen = agenda.sessions.filter((s) => {
+    const v = ventanas && fecha ? ventanas.get(s.sessionId) : undefined;
+    return v === undefined || (fecha! >= v.desde && fecha! <= v.hasta);
+  });
+  if (rigen.length === 0 && agenda.sessions.length > 0) return null;
+  return rigen.reduce((n, s) => n + s.weekdays.length, 0);
+}

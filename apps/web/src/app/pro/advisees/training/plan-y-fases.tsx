@@ -32,7 +32,8 @@ export const COPY_PLAN_Y_FASES = {
   fin: 'Fin',
   sinInicio: 'Elegí cuándo empieza: con eso, cada fase y cada sesión tienen sus fechas.',
   objetivo: 'Objetivo del plan',
-  objetivoAyuda: 'Lo que busca el plan, en tus palabras. La persona lo va a ver con su plan.',
+  // EE-D07: la app de la persona todavía no lo muestra; sí sale en la descarga de sus datos. No se promete lo que no pasa.
+  objetivoAyuda: 'Lo que busca el plan, en tus palabras. La app de la persona todavía no lo muestra; sí va en la descarga de sus datos.',
   anotaciones: 'Anotaciones',
   soloVos: 'Solo vos',
   anotacionesAyuda: 'Lo que querés recordar de este plan: la persona no lo ve, ni en la app ni en lo que se descarga de sus datos.',
