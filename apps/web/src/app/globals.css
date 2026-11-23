@@ -17323,6 +17323,7 @@ p.cifra-del-espacio__desglose {
 }
 
 .asistente-de-progresion__cuerpo fieldset {
+  position: relative;
   display: grid;
   gap: 0.5rem;
   margin: 0;

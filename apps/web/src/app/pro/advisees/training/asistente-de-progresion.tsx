@@ -138,11 +138,6 @@ export function AsistenteDeProgresion({
       pie={<p className="nota">{P.comoSeVe}</p>}
     >
       <div className="asistente-de-progresion__cuerpo" data-asistente-de-progresion={blockId}>
-        <ExplicacionAPedido nombre="Cómo funciona la progresión" como="div" lugar="esquina">
-          <p>Una regla para toda la fase: cómo cambia la carga de trabajo semana a semana. La sesión sigue siendo la misma; la regla se lee encima.</p>
-          <p>{P.descargaQueHace}</p>
-          <p>Las cargas se redondean como las aproximaciones: al paso del implemento (2,5 kg en la barra, 5 kg en una máquina, 1 kg en las mancuernas livianas).</p>
-        </ExplicacionAPedido>
 
         {desdeLaCopia ? (
           <div className="asistente-de-progresion__copia" data-desde-la-copia>
@@ -168,6 +163,18 @@ export function AsistenteDeProgresion({
 
         <fieldset className="asistente-de-progresion__modelos">
           <legend>Modelo</legend>
+          {/* El «?» de la esquina: qué es la regla y un ejemplo de cada modelo. */}
+          <ExplicacionAPedido nombre="Cómo funciona la progresión, con ejemplos" como="div" lugar="esquina">
+            <p>Una regla para toda la fase: cómo cambia la carga de trabajo semana a semana. La sesión sigue siendo la misma; la regla se lee encima.</p>
+            {MODELOS.flatMap((m) =>
+              m ? [
+                <p key={m}>
+                  <strong>{P.modelos[m]}.</strong> {P.queHace[m]} {P.ejemplos[m]}
+                </p>,
+              ] : [],
+            )}
+            <p>Las cargas se redondean como las aproximaciones: al paso del implemento (2,5 kg en la barra, 5 kg en una máquina, 1 kg en las mancuernas livianas).</p>
+          </ExplicacionAPedido>
           <div className="selector-segmentado" role="radiogroup" aria-label="Modelo de progresión">
             {MODELOS.map((m) => (
               <label key={m ?? 'ninguno'} className="selector-segmentado__opcion" data-modelo={m ?? 'ninguno'}>
@@ -178,10 +185,7 @@ export function AsistenteDeProgresion({
           </div>
           {regla.model ? (
             <p className="asistente-de-progresion__que-hace nota">
-              {P.queHace[regla.model]}{' '}
-              <ExplicacionAPedido nombre={`Un ejemplo de ${P.modelos[regla.model].toLowerCase()}`}>
-                <p>{P.ejemplos[regla.model]}</p>
-              </ExplicacionAPedido>
+              {P.queHace[regla.model]} {P.ejemplos[regla.model]}
             </p>
           ) : (
             <p className="asistente-de-progresion__que-hace nota">La carga de trabajo queda igual todas las semanas; podés sumar solo una descarga.</p>
@@ -244,6 +248,10 @@ export function AsistenteDeProgresion({
 
         <fieldset className="asistente-de-progresion__descarga">
           <legend className="visualmente-oculto">{P.descarga}</legend>
+          <ExplicacionAPedido nombre="Qué es la semana de descarga, con un ejemplo" como="div" lugar="esquina">
+            <p>{P.descargaQueHace}</p>
+            <p>{P.descargaEjemplo}</p>
+          </ExplicacionAPedido>
           <div className="asistente-de-progresion__fila">
             <label className="casilla">
               <input
@@ -266,10 +274,6 @@ export function AsistenteDeProgresion({
                     ))}
                   </select>
                 </label>
-                <ExplicacionAPedido nombre="Un ejemplo de descarga">
-                  <p>{P.descargaQueHace}</p>
-                  <p>{P.descargaEjemplo}</p>
-                </ExplicacionAPedido>
               </>
             ) : null}
           </div>
