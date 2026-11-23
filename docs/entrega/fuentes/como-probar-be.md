@@ -1,104 +1,78 @@
 # Cómo probar BE
 
-*Qué hace falta, con qué cuenta entrar y qué probar con cada rol, paso a paso, hasta recorrer el ciclo completo entre la persona, sus profesionales y Administración.*
+*Qué hace falta, con qué cuenta entrar y qué probar, paso a paso, con la cartera de una profesional que usa BE todos los días.*
 
-> Todos los datos son sintéticos: Diego Sosa y sus profesionales no son personas reales.
+> Todos los datos son sintéticos: la Lic. Julieta Arce, sus colegas y las personas que acompaña no son personas reales.
 
-**Autor:** Elián Bufi
-**Carrera:** Analista de Sistemas, Escuela Da Vinci
+**Autor:** Elián Bufi  
+**Carrera:** Analista de Sistemas, Escuela Da Vinci  
 **Fecha:** Noviembre de 2026
 
-> **Resumen.** Con las cuentas de evaluación se recorre BE de punta a punta. Primero, un recorrido corto por rol; después, el ciclo completo sobre la historia de Diego Sosa, de la invitación a la historia anterior.
+> **Resumen.** Con dos cuentas se recorre BE de punta a punta: la de una profesional que trabaja las tres áreas, en el website, y la de una de sus personas, en la app. Primero, un recorrido corto por rol; después, cinco personas que muestran cada una algo distinto, y al final el ciclo completo entre el teléfono y la computadora.
 
-**Fecha:** Noviembre de 2026
-**Lo acompaña:** El paso a paso de cada tarea, en los manuales de usuario (09). Qué es BE y por qué importa, en el Resumen y guía (00).
+**Lo acompaña:** El paso a paso de cada tarea, en los manuales (09). Qué es BE y por qué importa, en el Resumen y guía (00).
 
 # Resumen
 
-*Tres maneras de entrar a BE, y un recorrido que las une.*
+*Una profesional con más de un año de historia, cinco personas para mirar en profundidad y un recorrido que une los dos canales.*
 
-Esta guía sirve para recorrer BE sin ayuda, con cuentas preparadas para la evaluación. BE tiene tres roles, y cada uno entra por su lado: la **persona**, con la app en su teléfono Android; el **profesional**, con el website en la computadora; y **Administración**, también en el website, por su propia entrada.
+Esta guía sirve para recorrer BE sin ayuda. BE tiene tres roles, y cada uno entra por su lado: la **persona**, con la app en su teléfono Android; el **profesional**, con el website en la computadora; y **Administración**, también en el website, por su propia entrada.
 
-Los datos son los de una historia sintética. Diego Sosa tiene 36 años y lleva tres en BE: la Lic. Sofía Paz lo acompaña en Nutrición y Antropometría, y el Prof. Martín Acosta, en Entrenamiento. Su historia tiene planes que cambiaron de versión, comidas y sesiones registradas, tomas y revisiones: lo que hace falta para ver a BE trabajar en el tiempo.
+La muestra es la cartera de la **Lic. Julieta Arce**, licenciada en Nutrición, profesora de Educación Física y antropometrista: acompaña a quince personas en las tres áreas y usa BE desde hace dieciséis meses. Cinco de esas personas tienen una historia larga y completa, y cada una muestra algo distinto: el progreso, el estancamiento y la descarga, la vuelta después de una pausa, la composición corporal y una persona que recién empieza. Las otras diez completan una cartera de todos los días.
 
-Se puede probar de dos maneras. Los **recorridos cortos** muestran qué ve y qué hace cada rol. El **recorrido completo** une a los tres, de la invitación de una profesional nueva a la historia anterior que Diego le autoriza.
-
-> **La idea clave.** La prueba más elocuente es **cruzar las pantallas**: lo que la persona registra en el teléfono aparece en el website al lado de lo que el profesional indicó, y lo que el profesional activa o revisa le llega a la persona.
+> **La idea clave.** La prueba más elocuente es **cruzar las pantallas**: lo que la persona registra en el teléfono aparece en el website al lado de lo que la profesional indicó, y lo que la profesional activa o revisa le llega a la persona.
 
 **Tabla 1.** Qué se prueba con cada rol y dónde está en esta guía.
 
 | Rol | Dónde | Qué se prueba | En esta guía |
 | --- | --- | --- | --- |
 | Persona | La app, en un teléfono Android | Lo que tiene para hoy, registrar comidas y sesiones, su evolución y quién ve qué | «La persona, en la app» |
-| Profesional | El website, en la computadora | Las personas que acompaña, la ficha de cada una, sus áreas, los planes, las revisiones y los gráficos | «El profesional, en el website» |
+| Profesional | El website, en la computadora | Las personas que acompaña, la ficha de cada una, sus áreas, los planes, las revisiones y los gráficos | «La profesional, en el website» y «Cinco personas, cinco historias» |
 | Administración | El website, en su propia entrada | Habilitar a cada profesional por área, con su fundamento, sin ver datos de salud | «Administración, en el website» |
-| Los tres | La app y el website | El ciclo completo, en ocho pasos | «El recorrido completo» |
+| Los dos canales | La app y el website | El ciclo completo, de un plan nuevo a la revisión | «El recorrido completo» |
 
 # 1. Antes de empezar
 
-*Un teléfono, una computadora, una app de códigos y una cuenta por rol, con datos sintéticos.*
+*Un teléfono, una computadora y una cuenta por rol, con datos sintéticos.*
 
 ## 1.1 Qué hace falta
 
-- **PERSONA · Un teléfono Android.** Android 7 o posterior, para la app de la persona. Se instala desde un enlace, fuera de la tienda.
-
-- **PROFESIONAL Y ADMINISTRACIÓN · Una computadora.** Con un navegador de escritorio y una pantalla de 1280 de ancho o más, para el website.
-
-- **SEGUNDO FACTOR · Una app de códigos.** En cualquier teléfono; por ejemplo, Google Authenticator. Da el código que piden el profesional y Administración al entrar.
-
-*Figura 1: Lo que hace falta para probar BE.*
+- **Persona · Un teléfono Android.** Android 7 o posterior, para la app de la persona. Se instala desde un enlace, fuera de la tienda.
+- **Profesional · Una computadora.** Con un navegador de escritorio y una pantalla de 1280 de ancho o más, para el website.
+- **Administración · La misma computadora.** Administración entra por su propia puerta y, además de la contraseña, escribe el código de una app de códigos, como Google Authenticator.
 
 ## 1.2 Los enlaces
 
-![Figura 2: Los dos enlaces de BE, con su código QR. El de la app baja siempre la última](pendiente)
+![Figura 1: Los dos enlaces de BE, con su código QR. El de la app baja siempre la última](pendiente)
 
 > **Texto de la figura:**
-> - La app para Android
-> - https://github.com/Elian-Bufi/be/releases/latest/download/be.apk
-> - Desde el teléfono: se escanea el código con la cámara y baja el archivo «be.apk». El website también la ofrece en su portada, con «Bajar BE».
-> - El website
-> - https://be-web-1ngj.onrender.com
-> - Desde la computadora. El profesional entra con «Ya tengo una cuenta». Administración tiene su propia entrada: [be-web-1ngj.onrender.com/admin](https://be-web-1ngj.onrender.com/admin).
+> - La app para Android: https://github.com/Elian-Bufi/be/releases/latest/download/be.apk. Desde el teléfono: se escanea el código con la cámara y baja el archivo «be.apk». El website también la ofrece en su portada, con «Bajar BE».
+> - El website: https://be-web-1ngj.onrender.com. Desde la computadora. La profesional entra con «Ya tengo una cuenta». Administración tiene su propia entrada, en /admin.
 
 ## 1.3 Lo que conviene saber
 
-- **LOS DATOS · Son sintéticos.** Diego Sosa, su historia y sus profesionales están armados para la demostración. Ninguna persona es real.
+- **Los datos · Son sintéticos.** La profesional, sus colegas y las personas que acompaña están armadas para la evaluación, con nombres ficticios y la inicial del apellido. Ninguna persona es real.
+- **La historia · Nada se pisa.** Lo que se acepta, se activa o se registra queda en la historia. Por eso el recorrido completo se hace una vez.
+- **Las ventanas · Una cuenta por ventana.** Si la profesional y la persona se abren en la misma computadora, la segunda va en una ventana privada. Administración tiene su propia sesión.
+- **Lo de ahora · Se actualiza solo.** En el website, al volver a la pestaña, BE se fija si hay algo nuevo y lo dice con «Hay datos nuevos · Ver». En la app, se tira la pantalla hacia abajo: debajo del título dice «Al día» y la hora.
 
-- **LA HISTORIA · Nada se borra.** Lo que se acepta, se activa o se registra queda en la historia. Por eso el recorrido completo se hace una vez.
+## 1.4 Cuentas para probar
 
-- **LAS VENTANAS · Una cuenta por ventana.** Al entrar con otra cuenta, las pestañas de la anterior se recargan: la segunda va en una ventana privada. Administración tiene su propia sesión.
+[CUENTAS DEL TUTOR: se completan en el documento privado]
 
-- **LO DE AHORA · Volver a leer.** En el website, «Actualizar». En la app, se tira la pantalla hacia abajo: debajo del título dice «Al día» y la hora.
+Las credenciales no van en este documento ni en el repositorio: se entregan aparte, por el canal acordado con el tutor.
 
-*Figura 3: Cuatro cosas que evitan sorpresas durante la prueba.*
+**Tabla 2.** Las cuentas de la evaluación, quién es cada una y dónde entra.
 
-## 1.4 Las cuentas de evaluación
-
-Las credenciales no van en este documento: se entregan junto con él, en la fila de las cuentas de evaluación.
-
-**Tabla 2.** Las cuentas de evaluación, quién es cada una en la historia y dónde entra.
-
-| Rol | Quién es en la historia | Correo | Contraseña | Segundo factor |
-| --- | --- | --- | --- | --- |
-| Persona · en la app | Diego Sosa | [COMPLETAR: [correo]] | [COMPLETAR: [contraseña]] | No lo usa |
-| Profesional · en el website | Lic. Sofía Paz: Nutrición y Antropometría | [COMPLETAR: [correo]] | [COMPLETAR: [contraseña]] | QR adjunto |
-| Profesional · en el website | Prof. Martín Acosta: Entrenamiento | [COMPLETAR: [correo]] | [COMPLETAR: [contraseña]] | QR adjunto |
-| Profesional · en el website | Prof. Lucía Benítez: Antropometría, la profesional nueva del recorrido completo | [COMPLETAR: [correo]] | [COMPLETAR: [contraseña]] | QR adjunto |
-| Administración · en el website, /admin | La consola de Administración | [COMPLETAR: [correo]] | [COMPLETAR: [contraseña]] | QR adjunto |
-
-## 1.5 Cómo se entra con el segundo factor
-
-La persona entra con su correo y su contraseña. El profesional y Administración, además, escriben un código de seis dígitos que da una app de códigos y cambia cada 30 segundos: así, una contraseña sola no alcanza para ver datos de salud ni para habilitar profesionales. Cada una de esas cuentas ya tiene su autenticador configurado, y **el QR de ese autenticador se entrega junto con sus credenciales**.
-
-**Tabla 3.** Entrar con el segundo factor.
-
-| # | Qué hacer | Qué se ve |
+| Rol | Quién es en la muestra | Dónde entra |
 | --- | --- | --- |
-| 1 | En el teléfono, abrir la app de códigos, agregar una cuenta y escanear el QR que vino con las credenciales. Se hace una vez por cuenta. | La cuenta de BE en la app, con un código de seis dígitos que cambia cada 30 segundos. |
-| 2 | En la computadora, entrar al website con el correo y la contraseña: el profesional, con «Iniciar sesión»; Administración, en /admin, con «Continuar». | El profesional ve «Confirmá que sos vos»; Administración, «Código del autenticador». |
-| 3 | Escribir el código que muestra la app en «Código de seis dígitos» y tocar «Confirmar». | El profesional entra a su «Espacio profesional»; Administración, a «Profesionales». |
+| Profesional | Lic. Julieta Arce: Nutrición, Entrenamiento y Antropometría | El website, con «Ya tengo una cuenta» |
+| Persona | Carolina R., una de sus personas | La app, en el teléfono |
+| Administración, si se entrega | La consola de Administración | El website, en /admin, con su segundo factor |
 
-El profesional escribe el código una vez por sesión. Administración lo vuelve a escribir después de 15 minutos sin actividad, y su sesión vence a las 8 horas. Si un código no vale, «Si algo falla» dice qué hacer.
+## 1.5 Cómo se entra
+
+La profesional y la persona entran con su correo y su contraseña (o con Google, si la cuenta lo tiene). Administración, además, escribe el código de seis dígitos de su app de códigos, que cambia cada 30 segundos: la consola que decide quién opera en BE pide dos pasos.
 
 # 2. La persona, en la app
 
@@ -108,7 +82,7 @@ El profesional escribe el código una vez por sesión. Administración lo vuelve
 
 La app se instala fuera de Google Play, desde el archivo que baja el enlace de «Los enlaces». Para eso **no se desactiva ninguna protección**: Android solo pide, la primera vez, autorizar al navegador como fuente de la instalación. Play Protect sigue activo y, como la app no viene de la tienda, puede pedir una confirmación.
 
-**Tabla 4.** La instalación, paso a paso. Los nombres cambian un poco según la marca del teléfono.
+**Tabla 3.** La instalación, paso a paso. Los nombres cambian un poco según la marca del teléfono.
 
 | # | Qué hacer | Qué se ve |
 | --- | --- | --- |
@@ -120,186 +94,134 @@ La app se instala fuera de Google Play, desde el archivo que baja el enlace de �
 
 ## 2.2 El recorrido corto
 
-Con la cuenta de Diego Sosa en el teléfono. La barra de abajo tiene cinco destinos: **Inicio, Nutrición, Entrenamiento, Evolución y Perfil**. Arriba a la derecha, la campana abre las «Novedades», con un punto mientras haya algo sin leer.
+Con la cuenta de Carolina R. en el teléfono. La barra de abajo tiene cinco destinos: **Inicio, Nutrición, Entrenamiento, Evolución y Perfil**. Arriba a la derecha, la campana abre las «Novedades», con un punto mientras haya algo sin leer. La app muestra los últimos 90 días: la historia larga se ve en el website.
 
-**Tabla 5.** El recorrido corto de la persona.
-
-| # | Qué hacer | Qué se tiene que ver |
-| --- | --- | --- |
-| 1 | Abrir BE, tocar «Iniciar sesión» y entrar con la cuenta de Persona. | La primera vez en ese teléfono, tres tarjetas presentan BE; todas tienen «Saltar», y la tercera, «¿Te avisamos?», pregunta por los avisos. Después, Inicio, con la fecha de hoy: «Entrenamiento de hoy», las «Comidas» del día, «Mediciones» y la «Actividad». |
-| 2 | En **Nutrición**, abrir una comida del plan de hoy, elegir una de sus opciones y tocar «Comí esta opción». | La comida queda registrada con su hora, también en Inicio. Si comió otra cosa, «Comí algo diferente» la registra aparte, con foto si quiere. |
-| 3 | En **Entrenamiento**, tocar «Empezar» en la sesión de hoy. | Cada ejercicio con sus series y, debajo, una línea tenue con «La vez pasada»: la fecha y lo que hizo esa vez. |
-| 4 | Tocar «Empezar serie 1» y, al terminarla, «Terminar serie 1»; seguir así y, al final, «Finalizar entrenamiento». | Entre serie y serie corre el descanso. Antes de finalizar, BE muestra cuántas series quedaron registradas; lo que falta queda «Sin registrar», nunca como un cero. «Ya la hice» registra una sesión de una vez, sin cronómetros. |
-| 5 | En **Evolución**, mirar la última toma. | La última toma ubicada sobre la figura, cada medida en el tiempo y lo calculado con su método. Ningún valor se marca como bueno o malo. |
-| 6 | Tocar la **campana**. | Las «Novedades»: un plan nuevo, una revisión registrada, un pedido de sus profesionales. Cada una abre lo que avisa. |
-| 7 | En **Perfil**, abrir «Quién ve qué». | Por profesional y por área: lo que autorizó y desde cuándo, «Lo que ve de tus otras áreas», con un interruptor por cosa, y «Tus hábitos». Arriba, el tratamiento de sus datos de salud y los «Pedidos para responder». |
-| 8 | En **Perfil**, mirar «Vínculos y solicitudes», «Mis hábitos» y «Privacidad y consentimientos». | Cada vínculo con su estado, y lo que autorizó, con su texto. Pausar o finalizar un vínculo corta el acceso del profesional: con la cuenta de evaluación, mejor no hacerlo. |
-
-> **Si se va a hacer el recorrido completo.** Los pasos 2 a 4 quedan registrados en la historia de Diego. Se pueden dejar para el paso «Registrar» del recorrido completo («Registrar»). Si en Inicio aparece la tarjeta «Compartí lo tuyo entre tus profesionales», es la invitación a compartir el resumen y el plan de cada área entre sus profesionales: «Compartir todo con tus profesionales» abre la misma pantalla de «Aceptar y compartir», y «Ahora no» la deja de mostrar.
-
-# 3. El profesional, en el website
-
-*Las personas que acompaña, la ficha de cada una y su área, con todo el contexto.*
-
-Con la cuenta de la Lic. Sofía Paz, que acompaña a Diego en Nutrición y Antropometría. El recorrido completo («El recorrido completo») muestra lo de Entrenamiento con el Prof. Martín Acosta.
-
-**Tabla 6.** El recorrido corto del profesional.
+**Tabla 4.** El recorrido corto de la persona.
 
 | # | Qué hacer | Qué se tiene que ver |
 | --- | --- | --- |
-| 1 | Entrar al website con la cuenta de la Lic. Sofía Paz y su código («Cómo se entra con el segundo factor»). | El «Espacio profesional»: «Te toca a vos», con lo que hay que hacer y su fecha; «Esperan respuesta»; «Tu semana», y «Las personas que acompañás». |
-| 2 | En «Las personas que acompañás», tocar **Diego Sosa**. | Su ficha, con las vistas «Resumen», «Línea de tiempo» y «Analizar». Arriba, «Acceso actual» dice qué áreas puede ver hoy; al lado, «Pedir información», «Más» y «Actualizar». |
-| 3 | Mirar el «Resumen». | Una tarjeta por área, con su plan vigente y lo último registrado, y el enlace para abrirla: «Abrir Nutrición», «Abrir Antropometría». Sin semáforos: BE ubica, no califica. |
-| 4 | Abrir la «Línea de tiempo». | La historia de Diego en orden: los planes y sus versiones, las revisiones y las tomas. |
-| 5 | Abrir «Analizar». | «¿Qué querés mirar?»: las métricas de sus áreas en el tiempo, con las etapas de los planes de fondo; se pueden comparar dos etapas o dos períodos. |
-| 6 | «Abrir Nutrición» y recorrer «Resumen», «Plan», «Registros» y «Revisiones». | En «Registros», lo indicado y lo registrado por día; un día sin registro dice «Sin registro», no un cero. En «Plan», «Otras áreas · lo comparte la persona», con el plan de Entrenamiento que Diego le comparte. |
-| 7 | «Abrir Antropometría», abrir la toma más reciente en «Tomas» y bajar hasta el final. | «Desde el inicio y desde la anterior»: cada medida de la toma, la diferencia con la primera toma y con la anterior, y los días entre fechas. |
-| 8 | Opcional: «Pedir información», arriba de la ficha. | El pedido se arma campo por campo, con su propósito. Pedir información no amplía el acceso ni el consentimiento; Diego lo ve en la app, en Perfil, «Para responder». |
+| 1 | Abrir BE, tocar «Iniciar sesión» y entrar con la cuenta de la persona. | La primera vez en ese teléfono, tres tarjetas presentan BE; todas tienen «Saltar», y la tercera, «¿Te avisamos?», pregunta por los avisos. Después, Inicio, con la fecha de hoy, el entrenamiento y las comidas del día. |
+| 2 | En **Nutrición**, abrir una comida del plan de hoy, pasar sus opciones con las flechas o deslizando y tocar «Comí esta opción». | Arriba de cada opción, «Opción n de m» y los puntitos; la foto grande del plato o su miniatura, y los macros con su ícono, su número y su abreviatura. «Nutrición» queda en la cabecera. La comida queda registrada con su hora, también en Inicio. Si comió otra cosa, «Comí algo diferente» la registra aparte, con foto si quiere. |
+| 3 | En **Entrenamiento**, tocar «Empezar» en la sesión de hoy. | Cada ejercicio con sus series, bajo su bloque si lo tiene, y debajo, una línea tenue con «La vez pasada»: la fecha y lo que hizo esa vez. |
+| 4 | Tocar «Empezar serie 1» y, al terminarla, «Terminar serie 1»; seguir así y, al final, «Finalizar entrenamiento». | Entre serie y serie corre el descanso. Las series de calentamiento se registran y no cuentan. Si el plan está en RPE, el esfuerzo se elige de una lista. Antes de finalizar, BE muestra cuántas series quedaron registradas; lo que falta queda «Sin registrar», nunca como un cero. «Ya la hice» registra una sesión de una vez. |
+| 5 | En **Evolución**, mirar la última toma. | La última toma ubicada sobre la figura, cada medida en el tiempo y lo calculado con su método, siempre como estimación. Ningún valor se marca como bueno o malo. |
+| 6 | Tocar la **campana**. | Las «Novedades»: un plan nuevo, una revisión registrada, un pedido de su profesional. Cada una abre lo que avisa. |
+| 7 | En **Perfil**, abrir «Quién ve qué». | Por profesional y por área: lo que autorizó y desde cuándo, con un interruptor por cosa, y «Tus hábitos». Arriba, el tratamiento de sus datos de salud y los «Pedidos para responder». |
 
-![Figura 4: «Analizar», comparando dos etapas del plan de Nutrición de Diego Sosa: desde cuándo y hasta cuándo rigió cada versión, qué se sabe de cada una y la diferencia entre las dos, sin restar totales de duraciones distintas. Captura del website, vista por la Lic. Sofía Paz](pendiente)
+> **Si se va a hacer el recorrido completo.** Los pasos 2 a 4 quedan registrados en la historia de Carolina. Se pueden dejar para el paso «Registrar» del recorrido completo.
 
-![Figura 5: «Desde el inicio y desde la anterior», al final de una toma de Diego Sosa. Cada diferencia es una resta, con su signo y su unidad: ubica el cambio, no lo califica. Captura del website](pendiente)
+# 3. La profesional, en el website
 
-# 4. Administración, en el website
+*Las personas que acompaña, la ficha de cada una y sus áreas, con todo el contexto.*
+
+**Tabla 5.** El recorrido corto de la profesional.
+
+| # | Qué hacer | Qué se tiene que ver |
+| --- | --- | --- |
+| 1 | Entrar al website con la cuenta de la Lic. Julieta Arce. | El «Espacio profesional»: «Te toca a vos», con lo que hay que hacer y su fecha; «Esperan respuesta»; «Tu semana», y «Las personas que acompañás». |
+| 2 | En «Las personas que acompañás», tocar a una persona. | Su ficha, con «Resumen», «Patrones», «Línea de tiempo» y «Analizar». Arriba, «Acceso actual» dice qué áreas puede ver hoy. |
+| 3 | Abrir un área («Abrir Nutrición», «Abrir Entrenamiento» o «Abrir Antropometría»). | Una franja arriba: la vuelta a la ficha, el área, la persona y su acceso. Debajo, «Resumen», «Plan», «Registros» y «Revisiones», o las tomas en Antropometría. |
+| 4 | En «Plan» de Nutrición, abrir la versión en preparación, o empezar una con «Nueva versión del plan». | El editor: el «Reparto por comida» de cada día tipo, la franja de cada comida con el promedio de sus opciones y «Rangos y totales» al costado. Si hay un objetivo más nuevo, «Usarla ahora». |
+| 5 | En «Plan» de Entrenamiento, abrir el editor y, al pie de las sesiones, mirar «Cómo se escribe el esfuerzo». | RIR o RPE: la misma medida escrita de dos formas. Si se elige RPE y se activa, la app pregunta el esfuerzo así. |
+| 6 | En el menú de arriba, «Mis recetas». | Dos pestañas: «Mis recetas» y el «Recetario de BE», con «Copiar a Mis recetas». Una receta propia ofrece «Proponer al Recetario de BE». |
+| 7 | En «Plantillas y habituales», mirar las plantillas. | Las plantillas de entrenamiento, con sus versiones; «Nueva plantilla» prepara una sin elegir a ninguna persona. |
+
+# 4. Cinco personas, cinco historias
+
+*Cada persona muestra algo distinto. Todas tienen más de un año de historia, salvo la que recién empieza.*
+
+**Tabla 6.** Qué mirar con cada persona.
+
+| Persona | Qué muestra | Dónde mirarlo |
+| --- | --- | --- |
+| **Tomás M.**, 31 años | El progreso: fases de adaptación, hipertrofia, fuerza y descarga, con el objetivo de Nutrición ajustado en el camino. | En la ficha, «Analizar» → «¿Cómo viene progresando este ejercicio?»: el 1RM estimado de la sentadilla, sesión por sesión, con las versiones del plan de fondo. En el editor de Entrenamiento, «Con historial» y «La vez pasada». |
+| **Valeria Q.**, 38 años | El estancamiento y la descarga, y la historia anterior: viene de otro entrenador, y lo autorizó a la profesional. | En «Más» → «Historia anterior», lo que pasó con el entrenador anterior, en solo lectura y marcado como de otro profesional. En «Analizar», el press que no cambió durante diez semanas y la descarga que siguió. En el editor, el panel «Contexto de…» muestra su medicación. |
+| **Gustavo P.**, 47 años | La vuelta después de una pausa por una mudanza, con un déficit moderado y un plan simplificado con medidas caseras. | En la «Línea de tiempo», las semanas sin registro, que dicen «Sin registro» y no un cero, y la vuelta con cargas más bajas. En el plan de Nutrición, las medidas caseras. |
+| **Carolina R.**, 34 años | La composición corporal: dos déficits con un mantenimiento en el medio, con un plan sin carne ni pescado. Es la cuenta de la app. | En Antropometría, la evolución «Por medida» y «Por método»; en «Patrones», el peso y la energía en el mismo tiempo, sin afirmar causas. |
+| **Silvia D.**, 58 años | La que recién empieza, por indicación médica: su plan siguiente en preparación, un pedido de información sin responder, y Nutrición con otra colega, la Lic. Natalia Y. | En el «Espacio profesional», su plan siguiente con «Seguir el borrador», y el pedido de información que todavía no respondió. En la ficha, lo que Silvia comparte de Nutrición y las notas de coordinación con la colega. |
+
+![Figura 2: «Analizar», con el 1RM estimado de un ejercicio y las versiones del plan de fondo. Captura del website](pendiente)
+
+![Figura 3: La historia anterior de Valeria Q., en solo lectura y marcada como de otro profesional. Captura del website](pendiente)
+
+# 5. Administración, en el website
 
 *Habilitar a cada profesional por área, con su fundamento. Sin ver datos de salud.*
 
-Administración decide qué profesionales pueden operar en BE y en qué área. Entra por su propia puerta, con su segundo factor, y ninguna de sus pantallas muestra un plan, un registro o una medición de una persona.
+Administración decide qué profesionales pueden operar en BE y en qué área. Entra por su propia puerta, con su segundo factor, y ninguna de sus pantallas muestra un plan, un registro o una medición de una persona. Esta parte se prueba si se entrega la cuenta de Administración.
 
 **Tabla 7.** El recorrido corto de Administración.
 
 | # | Qué hacer | Qué se tiene que ver |
 | --- | --- | --- |
-| 1 | Abrir be-web-1ngj.onrender.com/admin. | «Entrar a Administración», aparte de la portada del website. |
+| 1 | Abrir el website en /admin. | «Entrar a Administración», aparte de la portada del website. |
 | 2 | Escribir «Correo» y «Contraseña», tocar «Continuar» y, en «Código del autenticador», el código de la app; «Confirmar». | «Profesionales»: los profesionales registrados en BE y su situación en cada área. |
-| 3 | Buscar «Benítez» en «Buscar por nombre o correo», o tocar «Ver las pendientes». | La lista, con la situación de cada área: «Puede operar», «Pendiente de revisión», «Verificada, sin habilitación»… |
-| 4 | «Abrir la ficha» de la Prof. Lucía Benítez. | «Áreas»: en Antropometría, la «Verificación» y la «Habilitación para operar en BE», con desde cuándo. Debajo, el «Historial»: las decisiones de Administración y los hechos automáticos, del más nuevo al más viejo. |
-| 5 | Mirar las decisiones que ofrece cada área. Se puede abrir una y salir con «Cancelar». | Cada decisión pide un «Fundamento interno», que ve solo Administración, y, cuando corresponde, un «Texto para el profesional». Cancelar no registra nada; confirmar sí, y avisa al profesional. |
-| 6 | En el menú de la cuenta, arriba a la derecha, mirar «Seguridad de tu acceso», «Pedidos de derechos», «Incidencias» y «Recuperar el acceso». | Su autenticador; los pedidos de acceso, rectificación y supresión de las personas; lo que avisaron sobre el acceso, los datos o la app, y el código de un solo uso para que una persona recupere su acceso. |
+| 3 | Buscar a la profesional en «Buscar por nombre o correo» y abrir su ficha. | «Áreas»: en cada una, la «Verificación» y la «Habilitación para operar en BE», con desde cuándo, y el «Historial» de las decisiones. |
+| 4 | Mirar las decisiones que ofrece cada área. Se puede abrir una y salir con «Cancelar». | Cada decisión pide un «Fundamento interno», que ve solo Administración, y, cuando corresponde, un «Texto para el profesional». Cancelar no registra nada. |
+| 5 | En el menú, «Alimentos» y «Propuestas al Recetario de BE». | Los alimentos cargados a mano, agrupados por nombre parecido, con quién los cargó y nunca a quién se le indicaron; las recetas propuestas, con su autor, la cesión de la foto y las «Parecidas», con «Sumar al Recetario de BE» o «No sumarla». |
 
 > **Lo que se tiene que notar.** Administración **habilita, pero no mira**. Habilitar no es certificar una matrícula, y cada decisión queda en el historial con su fundamento.
 
-# 5. El recorrido completo
+# 6. El recorrido completo
 
-*Ocho pasos entre la persona, sus profesionales y Administración, sobre la historia de Diego Sosa.*
+*Seis pasos entre la profesional y Carolina, del plan nuevo a la revisión.*
 
-Diego Sosa lleva tres años con la Lic. Sofía Paz y el Prof. Martín Acosta. Ahora suma a la **Prof. Lucía Benítez** para sus tomas de Antropometría. La invitación, el consentimiento, un plan nuevo con su registro y su revisión, los gráficos, un permiso que se retira y la historia anterior: todo el ciclo, con los tres roles. El recorrido **va y vuelve** entre el teléfono y la computadora, y termina donde BE se diferencia: una profesional nueva que no empieza de cero.
+El recorrido **va y vuelve** entre la computadora y el teléfono. Para prepararse: el teléfono con la cuenta de Carolina R. y, en la computadora, la cuenta de la Lic. Julieta Arce. El recorrido se hace una sola vez: activar el plan y registrar quedan en la historia de Carolina.
 
-1. **Invitar** (Profesional): La Prof. Lucía Benítez crea una invitación: enlace, QR o código. Administración ya la habilitó en Antropometría.
-2. **Aceptar y compartir** (Persona): Diego acepta y, en una sola pantalla, comparte lo que viene marcado.
-3. **Activar un plan** (Profesional): El Prof. Martín Acosta ajusta el plan de Entrenamiento y activa la versión nueva.
-4. **Registrar** (Persona): Diego hace la sesión serie por serie y registra una comida.
-5. **Revisar** (Profesional): El Prof. Martín Acosta ve lo registrado y registra una revisión.
-6. **Mirar los gráficos** (Profesional): «La vez pasada», el 1RM estimado y las versiones del plan, en el tiempo.
-7. **Retirar algo** (Persona): En «Quién ve qué», Diego deja de compartir el plan de Nutrición.
-8. **Ver la historia anterior** (Profesional): La Prof. Lucía Benítez ve, en solo lectura, las tomas de antes.
+1. **Invitar** (Profesional): La profesional crea una invitación para una persona nueva: enlace, QR o código.
+2. **Activar un plan** (Profesional): Ajusta el plan de Entrenamiento de Carolina, con el esfuerzo en RPE, y activa la versión nueva.
+3. **Registrar** (Persona): Carolina hace la sesión, eligiendo el esfuerzo en RPE, y registra una comida pasando sus opciones.
+4. **Revisar** (Profesional): La profesional ve lo registrado frente a lo indicado y registra una revisión.
+5. **Mirar los gráficos** (Profesional): «La vez pasada», el 1RM estimado con la serie de la que salió y las versiones del plan, en el tiempo.
+6. **Retirar algo** (Persona): En «Quién ve qué», Carolina deja de compartir una cosa sola.
 
-*Figura 6: El recorrido completo. Cada paso tiene su sección, con lo que se hace y lo que se tiene que ver.*
+*Figura 4: El recorrido completo. Cada paso tiene su sección.*
 
-**Para prepararse.** El teléfono, con la cuenta de Diego Sosa. En la computadora, una ventana con la cuenta del Prof. Martín Acosta y una ventana privada con la de la Prof. Lucía Benítez; Administración, si se quiere ver el paso 1 desde su lado, en una pestaña aparte, porque su consola tiene su propia sesión. El recorrido se hace una sola vez: aceptar el vínculo, activar el plan y registrar quedan en la historia de Diego.
+## 6.1 Invitar
 
-## 5.1 Invitar
+**La profesional**, en el website: en el «Espacio profesional», «Invitar a alguien nuevo» (enlace, QR o código); elegir el área y tocar «Crear invitación».
 
-**Administración** (opcional), en «Profesionales»: la ficha de la Prof. Lucía Benítez muestra Antropometría con «Puede operar». Sin esa habilitación, BE no la deja invitar en esa área.
+**Qué se tiene que ver:** «La invitación está lista», con el «Enlace», el «Código QR» y el «Código», y «Copiar enlace» y «Compartir por WhatsApp». El enlace y el código se muestran solo ahora; la invitación es para una sola persona y vence a los 7 días. Quien la acepta decide, en una sola pantalla y con todo marcado, qué comparte: «Aceptar y compartir», «Elegir qué compartir» o «Ahora no».
 
-**La Prof. Lucía Benítez**, en el website: en el «Espacio profesional», «Invitar a alguien nuevo» (enlace, QR o código). Como trabaja en una sola área, Antropometría ya viene elegida. Tocar «Crear invitación».
+## 6.2 Activar un plan
 
-**Qué se tiene que ver:** «La invitación está lista», con el «Enlace», el «Código QR» y el «Código», y «Copiar enlace» y «Compartir por WhatsApp». El enlace y el código se muestran solo ahora; la invitación es para una sola persona y vence a los 7 días.
+**La profesional**, en el website: en la ficha de Carolina, en el «Resumen», la tarjeta de Entrenamiento ofrece «Ajustar el plan» (o «Seguir el borrador», si ya hay uno). Al pie de las sesiones, en «Cómo se escribe el esfuerzo», elegir «RPE (esfuerzo de 6 a 10)». Cambiar algo, por ejemplo la carga de una serie, esperar «Guardado» y tocar «Revisar y activar…».
 
-## 5.2 Aceptar y compartir
+**Qué se tiene que ver:** «Antes de activar la versión» con su número: lo que impide activar, si hay algo; lo que cambia frente a la versión vigente, con «Cómo se escribe el esfuerzo: RIR → RPE»; lo que va a ver Carolina, y «¿Cuándo la revisás?». «Activar la versión…» la activa, y la anterior se conserva.
 
-**Diego**, en la app: en Perfil, «Tengo un código»; escribir el código y tocar «Ver invitación». También se puede escanear el QR con la cámara: el enlace ofrece «Abrir en la app BE». La app dice «Prof. Lucía Benítez te invita a acompañarte en Antropometría.» Tocar «Aceptar invitación».
+**Carolina**, en la app: la campana avisa el plan nuevo de Entrenamiento, y Entrenamiento ya lo muestra.
 
-Enseguida aparece **una sola pantalla de consentimiento**, «Qué compartís con Prof. Lucía Benítez»: qué ve ella y para qué, y «Lo que vas a compartir», una línea por cosa, ya marcada. Sus datos de Antropometría; el resumen y el plan vigente de sus otras áreas, y lo de Antropometría para sus otros profesionales; su historia anterior de Antropometría, y sus hábitos, si corresponde.
+## 6.3 Registrar
 
-Tres botones: **«Aceptar y compartir»**; **«Elegir qué compartir»**, que despliega un interruptor por cosa; y **«Ahora no»**, que no comparte nada. Las notas privadas de los profesionales nunca se comparten.
+**Carolina**, en la app, en Entrenamiento: «Empezar» la sesión; en cada serie, el esfuerzo se elige de una lista (de 10 a 6,5 y «6 o menos»). En Nutrición, abrir una comida, pasar sus opciones con las flechas o deslizando y tocar «Comí esta opción».
 
-**Qué se tiene que ver:** «Listo: quedó registrado lo que compartís.», con «Ver vínculo» y el acceso a «Quién ve qué», donde cada cosa se puede retirar después.
+**Qué se tiene que ver:** en Inicio, la sesión y la comida registradas. Lo registrado queda aparte de lo indicado: BE guarda las dos cosas, y ninguna pisa a la otra. Lo que se guarda del esfuerzo es siempre el RIR, así que la historia no cambia.
 
-*Maqueta*
+## 6.4 Revisar
 
-![Figura 7: La pantalla única de consentimiento, con los textos de la app para este caso. La pantalla suma además el aviso del perfil de la profesional, y sus líneas dependen de lo que tiene cada persona](pendiente)
+**La profesional**, en el website: «Abrir Entrenamiento» y, en «Registros», la sesión que Carolina acaba de hacer, al lado de lo que indicaba el plan, en RPE. Después, en «Revisiones», «Nueva revisión», en tres pasos: «Lo que miraste», «Lo que observaste» y «Lo que decidís». Tocar «Registrar revisión».
 
-> **Texto de la figura:**
-> - Vínculo aceptado
-> - Qué compartís con Prof. Lucía Benítez
-> - Prof. Lucía Benítez te va a acompañar en Antropometría. Para eso necesita ver tus datos de Antropometría. Y para planificar teniendo en cuenta todo lo tuyo, sirve que vea el resumen y el plan vigente de tus otras áreas, y que tus otros profesionales vean lo de Antropometría.
-> - Lo que vas a compartir
-> - Tus datos de Antropometría, para Prof. Lucía Benítez: para evaluación antropométrica.
-> - El resumen y el plan vigente de Nutrición (de Lic. Sofía Paz), para Prof. Lucía Benítez.
-> - El resumen y el plan vigente de Entrenamiento (de Prof. Martín Acosta), para Prof. Lucía Benítez.
-> - El resumen de Antropometría (de Lic. Sofía Paz y Prof. Lucía Benítez), para Prof. Martín Acosta.
-> - Tu historia anterior de Antropometría, para Prof. Lucía Benítez: lo que pasó antes en Antropometría con otros profesionales.
-> - Las notas privadas de tus profesionales nunca se comparten.
-> - Podés retirar cada cosa cuando quieras en «Quién ve qué», en tu Perfil: deja de verse desde ese momento, y no se borra nada.
-> - Al tocar «Aceptar y compartir» aceptás los textos de lo que compartís: **Los textos completos ›**
-> - Aceptar y compartir
-> - Elegir qué compartir
-> - Ahora no
+**Qué se tiene que ver:** la revisión queda en «Revisiones registradas», con su resultado, su fundamento y la próxima acción. BE no sugiere el resultado: lo decide la profesional. **Carolina** recibe en la campana la revisión y, al tocarla, la ve completa.
 
-A quien ya tiene vínculos, Inicio le muestra una sola vez la tarjeta «Compartí lo tuyo entre tus profesionales», con «Compartir todo con tus profesionales» y «Ahora no»: la misma pantalla, con todo lo de todos sus profesionales.
+## 6.5 Mirar los gráficos
 
-## 5.3 Activar un plan
+**La profesional**, en el editor de Entrenamiento: en un ejercicio con barra, «Detalle y fuerza estimada».
 
-**El Prof. Martín Acosta**, en el website: en «Las personas que acompañás», Diego Sosa. En el «Resumen», la tarjeta de Entrenamiento ofrece «Ajustar el plan» (o «Seguir el borrador», si ya hay uno): crea la versión nueva desde la vigente y la abre para editar. La versión en preparación avisa que Diego no la ve.
+- **«La vez pasada»**, debajo de «Lo que indica el plan» y sin mezclarse con eso: lo que Carolina registró las últimas veces, serie por serie, en la notación del plan.
+- **«En el tiempo» → «Historial»:** el 1RM estimado, una estimación por sesión con las versiones del plan de fondo, y cada estimación dice con qué serie salió («estimado con 5 reps a RPE 8 · 100 kg»).
+- **«Abrir en Analizar»** lleva el ejercicio a «Analizar». Ahí las métricas se ven «Alineadas» o «Superpuestas», y «Armá tu gráfico» junta hasta tres series de distintas áreas. Cuando se superponen dos áreas, el gráfico lo dice: «Coinciden en el tiempo; esto no prueba que una cosa cause la otra.»
 
-Cambiar algo, por ejemplo la carga de una serie, esperar «Guardado» y tocar «Revisar y activar…».
+![Figura 5: El editor de Entrenamiento con la tabla de series, sus límites y «Cómo se escribe el esfuerzo». Captura del website](pendiente)
 
-**Qué se tiene que ver:** «Antes de activar la versión» con su número: lo que impide activar, si hay algo; lo que cambia frente a la versión vigente; «Lo que va a ver Diego Sosa», y «¿Cuándo la revisás?». El botón «Activar la versión… de Entrenamiento» la activa, y la anterior se conserva.
+## 6.6 Retirar algo en «Quién ve qué»
 
-**Diego**, en la app: la campana avisa «Plan nuevo de Entrenamiento», y Entrenamiento ya muestra el plan nuevo.
+**Carolina**, en la app: en Perfil, «Quién ve qué». Debajo de la profesional, apagar una cosa sola.
 
-## 5.4 Registrar
+**Qué se tiene que ver:** BE pide confirmar con «Dejar de compartir»: deja de verse desde ese momento, no se borra nada y se puede volver a compartir. Al confirmar, el interruptor dice «No lo ve». En el website, al volver a la pestaña, «Hay datos nuevos · Ver».
 
-**Diego**, en la app, en Entrenamiento: «Empezar» la sesión; en cada ejercicio, «Empezar serie 1» y «Terminar serie 1», con el descanso entre series, hasta «Finalizar entrenamiento». Para no hacerla entera, «Ya la hice» la registra de una vez. En Nutrición, una comida con «Comí esta opción».
+> **El final del recorrido.** BE guarda lo indicado y lo registrado por separado, en el tiempo, y la persona decide quién ve qué. Si cambia de profesional, **no empieza de cero**: la historia anterior de Valeria Q. muestra cómo lo ve el profesional nuevo.
 
-**Qué se tiene que ver:** en Inicio, la sesión y la comida registradas. Lo registrado queda aparte de lo indicado: BE guarda las dos cosas, y ninguna pisa a la otra.
-
-## 5.5 Revisar
-
-**El Prof. Martín Acosta**, en el website: «Abrir Entrenamiento» y, en «Registros», la sesión que Diego acaba de hacer, al lado de lo que indicaba el plan. Después, en «Revisiones», «Nueva revisión», en tres pasos: «Lo que miraste» (lo que examinó, marcado por él), «Lo que observaste» y «Lo que decidís». Tocar «Registrar revisión».
-
-**Qué se tiene que ver:** la revisión queda en «Revisiones registradas», con su resultado, su fundamento y la próxima acción. BE no sugiere el resultado: lo decide el profesional. **Diego** recibe en la campana «Revisión de Entrenamiento» y, al tocarla, la ve completa.
-
-## 5.6 Mirar los gráficos
-
-**El Prof. Martín Acosta**, en la versión en preparación del plan (si ya no hay, «Ajustar el plan» abre una nueva, que Diego no ve): en «Sentadilla trasera con barra», tocar «Detalle y fuerza estimada».
-
-- **«La vez pasada»**, debajo de «Lo que indica el plan» y sin mezclarse con eso: lo que Diego registró las últimas veces, serie por serie.
-- **«En el tiempo» → «Historial»:** el «1RM estimado (Epley v1)», una estimación por sesión con las versiones del plan de fondo; la carga, las repeticiones y el RIR de la misma serie; el RIR indicado y el registrado, y la cinta «Lo que pasó en el período». «Perfil de carga y repeticiones» muestra la carga frente a las repeticiones.
-- **«Abrir en Analizar»** lleva el ejercicio a «Analizar». Ahí las métricas se ven «Alineadas», una debajo de la otra con el mismo eje de fechas, o «Superpuestas», en el mismo gráfico. En la ficha, «Patrones» → «Agregar un gráfico» abre **«Armá tu gráfico»**, que junta hasta tres series de distintas áreas. Cuando se superponen dos áreas, el gráfico lo dice: «Coinciden en el tiempo; esto no prueba que una cosa cause la otra.»
-
-![Figura 8: El editor de Entrenamiento del Prof. Martín Acosta, con el historial de la sentadilla de Diego Sosa abierto al costado. Captura del website, a 1280 de ancho](pendiente)
-
-> **Texto de la figura:**
-> - 1. «9 · en preparación» y «8 · activa»: la versión nueva se prepara al lado de la vigente, y la persona no la ve hasta que se activa.
-> - 2. «Detalle y fuerza estimada» abre el cuadro del ejercicio: lo que indica el plan, «La vez pasada» y «En el tiempo».
-> - 3. El «Período» del historial: 12 semanas, 6 meses o desde que la acompaña.
-> - 4. «1RM estimado (Epley v1)»: una estimación por sesión, con la versión del plan de fondo (v8). Es una estimación, nunca una medición.
-
-![Figura 9: «La vez pasada» de la sentadilla: las tres últimas sesiones de Diego, serie por serie, en kg × repeticiones · RIR. Captura del website](pendiente)
-
-## 5.7 Retirar algo en «Quién ve qué»
-
-**Diego**, en la app: en Perfil, «Quién ve qué». Debajo del Prof. Martín Acosta, en «Lo que ve de tus otras áreas», apagar «El resumen y el plan de Nutrición».
-
-**Qué se tiene que ver:** BE pide confirmar con «Dejar de compartir»: el Prof. Martín Acosta deja de verlo desde ese momento, no se borra nada y se puede volver a compartir. Al confirmar, el interruptor dice «No lo ve».
-
-**El Prof. Martín Acosta**, en el website: «Actualizar» en la ficha de Diego. En Entrenamiento, «Otras áreas · lo comparte la persona» ya no muestra el plan de Nutrición y ofrece «Pedir ver su plan». Si lo pide, a Diego le llega en «Quién ve qué», en «Pedidos para responder», con «Sí, compartir» y «Ahora no», del mismo peso. Volver a prender el interruptor muestra el texto completo antes de compartir.
-
-## 5.8 Ver la historia anterior con un profesional nuevo
-
-**La Prof. Lucía Benítez**, en el website: en «Las personas que acompañás», Diego Sosa; en su ficha, «Más» → «Historia anterior». Se abre en Antropometría.
-
-**Qué se tiene que ver:** arriba, el aviso fijo, «Lo que sigue pasó con otro profesional, antes de tu acompañamiento. Solo lectura.». Debajo, las tomas de antes, con su protocolo y lo calculado con su método, cada cosa marcada «De otro profesional», sin nombre. Todo se ve como estaba cuando ella empezó a acompañarlo, y se recorre por tramos con «Tramo anterior» y «Tramo siguiente».
-
-**Diego**, en «Quién ve qué»: debajo de la Prof. Lucía Benítez, «Tu historia anterior de Antropometría», con desde cuándo la ve y, cuando ella la miró, «Miró tu historia anterior» con el día y la hora. Con el interruptor «Compartir mi historia anterior» la deja de compartir: ella deja de verla desde ese momento, y no se borra nada.
-
-Si Diego no la hubiera compartido, la página le diría a la profesional lo que hace falta, «Para ver la historia anterior, la persona tiene que autorizarte», sin insinuar que haya algo.
-
-> **El final del recorrido.** Si la persona cambia o suma un profesional, **no empieza de cero**: el profesional nuevo ve lo que ella autoriza, en solo lectura y como estaba entonces, y ella sabe cuándo lo miró.
-
-# 6. Si algo falla
+# 7. Si algo falla
 
 *Lo que puede pasar durante la prueba, y qué hacer.*
 
@@ -307,14 +229,9 @@ Si Diego no la hubiera compartido, la página le diría a la profesional lo que 
 
 | Lo que pasa | Qué hacer |
 | --- | --- |
-| Android no deja instalar la app | Autorizar al navegador como fuente («Permitir de esta fuente») y, si Play Protect pregunta, «Más detalles» → «Instalar de todos modos» («Instalar la app»). Hace falta Android 7 o posterior. |
+| Android no deja instalar la app | Autorizar al navegador como fuente («Permitir de esta fuente») y, si Play Protect pregunta, «Más detalles» → «Instalar de todos modos». Hace falta Android 7 o posterior. |
 | Ya hay una app BE en el teléfono | Instalar la última desde el enlace de esta guía. Si Android no la deja instalar encima, desinstalar la anterior y volver a instalar. |
 | «Demasiados intentos. Probá de nuevo más tarde.» | Son cinco intentos de entrar cada 15 minutos, por red y por cuenta: esperar y volver a probar. |
-| «El código no es válido o ya se usó.» | Esperar el código siguiente de la app de códigos, que cambia cada 30 segundos, y revisar que el teléfono tenga la hora automática. |
-| El autenticador quedó bloqueado, después de varios códigos que no valían | Entrar con «Usar un código de recuperación», si se entregaron con las credenciales; cada uno sirve una sola vez. Si no, pedirle a Elián Gastón Bufi que restablezca el segundo factor. |
+| Lo que hizo la persona no aparece en el website | Volver a la pestaña: BE se fija solo si hay algo nuevo y lo dice con «Hay datos nuevos · Ver». |
+| Administración: «El código no es válido o ya se usó.» | Esperar el código siguiente de la app de códigos, que cambia cada 30 segundos, y revisar que el teléfono tenga la hora automática. |
 | Al recargar el website aparece «Recuperando tu sesión…» | Es normal: la sesión vuelve sola. Vence a las 12 horas; la de Administración, a las 8. Después, se entra de nuevo. |
-| Al entrar con otra cuenta, las otras pestañas se recargaron | Es a propósito, para no mostrar los datos de otra cuenta. La segunda cuenta va en una ventana privada. |
-| Un aviso dice que algo cambió mientras se miraba | Otro rol, u otra pestaña, cambió lo mismo al mismo tiempo. BE no pisa lo del otro ni guarda a medias: «Actualizar» y repetir. |
-| Lo que hizo el otro rol todavía no aparece | En el website, «Actualizar» en la ficha. En la app, tirar la pantalla hacia abajo: debajo del título dice «Al día» y la hora de lo que se ve. |
-| La app dice «Sin conexión» | Revisar la conexión del teléfono y volver a abrir la pantalla. |
-| Algo sigue sin andar | Cerrar la sesión y volver a entrar: en la app, Perfil → «Sesión y este teléfono» → «Cerrar sesión»; en el website, «Cerrar sesión» en el menú «Cuenta». Si sigue, avisarle a Elián Gastón Bufi. |
