@@ -115,8 +115,9 @@ export async function armarExportacion(tx: Tx, titularId: string, dominios: read
   }
   if (dominios.includes('TRAINING')) {
     archivo.entrenamiento = {
+      // DL-196 (EE-D05): las anotaciones privadas del profesional son suyas: no salen en lo que se le entrega a la persona.
       planes: await filas(tx.$queryRaw`
-        SELECT to_jsonb(v) - 'procedencia' AS "fila" FROM "version_de_plan_de_entrenamiento" v
+        SELECT (to_jsonb(v) - 'procedencia') #- '{contenido,planning,privateNotes}' AS "fila" FROM "version_de_plan_de_entrenamiento" v
           JOIN "plan_de_entrenamiento" p ON p."id" = v."plan_id"
          WHERE p."asesorado_id" = ${titularId}::uuid AND v."estado" = 'ACTIVADA' ORDER BY v."momento_de_registro"`),
       registros: await filas(tx.$queryRaw`

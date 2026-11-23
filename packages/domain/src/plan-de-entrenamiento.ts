@@ -21,6 +21,7 @@ import type {
   BaseDeRepeticiones,
   EjercicioRegistradoEntrada,
   EstructuraDePlanDeEntrenamientoEntrada,
+  PlanificacionDelPlan,
   SesionEntrada,
   VersionDePlanDeEntrenamiento,
 } from './contratos-entrenamiento';
@@ -109,6 +110,11 @@ export interface ContenidoDePlanDeEntrenamiento {
    * lo que no existe no se guarda. Los valores siguen siendo RIR (`notacion-del-esfuerzo.ts`).
    */
   readonly effortNotation?: 'RPE';
+  /**
+   * DL-196: la planificación (fechas, semanas de cada fase, objetivo, aproximaciones y anotaciones privadas). Ausente en
+   * los planes de antes. Solo la leen el profesional y la agenda; las anotaciones no salen nunca para la persona.
+   */
+  readonly planning?: PlanificacionDelPlan | null;
 }
 
 /** DL-192: el contenido con su notación del esfuerzo: `RPE` se guarda, RIR (lo de siempre) se quita. */

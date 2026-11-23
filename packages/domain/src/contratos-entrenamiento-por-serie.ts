@@ -30,6 +30,7 @@ import {
   IntensidadSchema,
   NotacionDelEsfuerzoSchema,
   ParametroProfesionalSchema,
+  PlanificacionDelPlanSchema,
   RepeticionesPrescriptasSchema,
   TipoDeSerieSchema,
   VersionDePlanDeEntrenamientoSchema,
@@ -188,30 +189,12 @@ const BloqueConObjetivosSchema = z.strictObject({
 });
 
 /**
- * Si un plan puede llegar a la app de su titular (`compatibilidad-de-clientes.ts`; precierre del 2026-10-06, §2). Las APK
- * instaladas muestran solo los objetivos generales: un plan con objetivos distintos por serie no se activa mientras el
- * titular no haya usado una app que los muestre.
- */
-export const EntregaDeObjetivosPorSerieSchema = z.strictObject({
-  /** Alguna serie tiene un RIR o una carga efectivos distintos de los generales de su prescripción. */
-  required: z.boolean(),
-  /** El titular ya usó una APK que declara que muestra los objetivos de cada serie. */
-  adviseeClientCapable: z.boolean(),
-});
-export type EntregaDeObjetivosPorSerie = z.infer<typeof EntregaDeObjetivosPorSerieSchema>;
-
-/**
- * API-SER-01: la versión de plan como API-TRN-09, con los objetivos por serie, las imágenes y si se le puede entregar a
- * la app de su titular. Solo el profesional.
+ * API-SER-01: la versión de plan como API-TRN-09, con los objetivos por serie y las imágenes. Solo el profesional.
+ * DL-196 (punto 5): ya no dice si el plan se le puede entregar a la app del titular (`setTargetsDelivery` y
+ * `setKindsDelivery` salieron): todos usan la última APK, y todo plan se activa y se entrega.
  */
 export const PlanConObjetivosSchema = VersionDePlanDeEntrenamientoSchema.omit({ blocks: true }).extend({
   blocks: z.array(BloqueConObjetivosSchema),
-  setTargetsDelivery: EntregaDeObjetivosPorSerieSchema,
-  /**
-   * DL-178: lo mismo para las series de calentamiento. `required`: alguna serie es de calentamiento;
-   * `adviseeClientCapable`: el titular ya usó una APK que declara `training-set-kinds-1`.
-   */
-  setKindsDelivery: EntregaDeObjetivosPorSerieSchema,
   /** DL-137: la agenda de la versión (los días de cada sesión, desde cuándo y lo movido), o `null` si no tiene. */
   agenda: AgendaDeEntrenamientoSchema.nullable(),
   /**
@@ -220,6 +203,12 @@ export const PlanConObjetivosSchema = VersionDePlanDeEntrenamientoSchema.omit({ 
    * se sigan entendiendo.
    */
   effortNotation: NotacionDelEsfuerzoSchema.optional(),
+  /**
+   * DL-196: la planificación de la versión (fechas, semanas de cada fase, objetivo, aproximaciones y las anotaciones
+   * privadas), o `null` si no tiene. Opcional, como `effortNotation`, para que un website y una API de despliegues
+   * distintos se sigan entendiendo.
+   */
+  planning: PlanificacionDelPlanSchema.nullable().optional(),
 });
 export type PlanConObjetivos = z.infer<typeof PlanConObjetivosSchema>;
 export const PlanConObjetivosResponseSchema = z.strictObject({ data: PlanConObjetivosSchema });

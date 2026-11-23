@@ -75,7 +75,6 @@ import {
   SESION_DEMO,
   SESION_ID,
   subirImagenDeEjercicio,
-  usarLaApk,
   type EjercicioDeLaDemo,
   type ImagenDelPaquete,
   type PlanDeLaDemo,
@@ -571,8 +570,6 @@ const CALIDAD_DEL_PAQUETE: Readonly<Record<string, string>> = { medido: 'MEASURE
  */
 async function planActivadoParaTiempos(nombre: string): Promise<PlanDeLaDemo> {
   const c = await circuitoListoParaPlanificarEntrenamiento(app, etiqueta(nombre));
-  // El titular ya usó la APK que muestra los objetivos por serie: sin eso, «Piernas A» no se activa (DL-122).
-  await usarLaApk(app, c.ase);
   const ejercicios = await ejerciciosDeLaDemo(app, c.pro);
   const segunda = { sessionId: 'piernas-b', label: 'Piernas B', prescriptions: [{ ...prescripcionDeLaDemo(EJ_C, ejercicios.get(EJ_C.catalogFixtureKey)!.versionId), prescriptionId: 'rx-c-b' }] };
   const creado = await conSesion(app, c.pro.token).post(`/api/v1/advisees/${c.ase.id}/training/plans`).send({ objectiveVersionId: c.objectiveVersionId, initialStructure: estructuraDeLaDemo(ejercicios, [segunda]) }).expect(201);

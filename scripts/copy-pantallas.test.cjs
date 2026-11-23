@@ -622,15 +622,13 @@ test('ED-05 · la guardia de códigos encuentra «(DL-1)» en un texto y no en u
  *
  * No son texto a la vista las claves, las rutas, los `id` y los nombres de íconos («tus-asesorados», «ASESORADO»). Y
  * quedan, contados uno por uno, los que cambian en otro momento:
- * - los textos legales con versión, que cambian en su versión siguiente;
- * - lo que también devuelve la API (el mensaje del 409 de la app de la persona), que cambia en la ventana de la API (ED-08,
- *   etapa 2; R1). La referencia neutral de quien no tiene nombre ya dice «Persona · …» (WP-SIN-ASESORADO-EN-FINALIZADOS).
+ * - los textos legales con versión, que cambian en su versión siguiente. El mensaje del 409 de la app de la persona salió
+ *   con DL-196 (punto 5). La referencia neutral de quien no tiene nombre ya dice «Persona · …» (WP-SIN-ASESORADO-EN-FINALIZADOS).
  */
 const ES_IDENTIFICADOR = /^[a-z0-9#./_-]+$|^[A-Z0-9_]+$/;
 const ASESORADO_FUERA_DE_ESTA_ETAPA = [
   'textos.ts · 1. BE es una plataforma que ayuda a asesorados',
   'textos.ts · Esta información es sobre una sola categoría',
-  'compatibilidad-de-clientes.ts · Este plan tiene objetivos distintos',
 ];
 const DEL_DOMINIO = (archivo) => join(RAIZ, 'packages/domain/src', archivo);
 const CON_PERSONA = [

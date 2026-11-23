@@ -1,31 +1,31 @@
 /**
- * Qué clientes pueden recibir un plan con objetivos por serie (DL-122; precierre del 2026-10-06, §2).
+ * Lo que un cliente declara que sabe mostrar (cabecera `X-BE-Capabilities`), y para qué lo usa la API.
  *
- * **Las APK instaladas no saben mostrarlos.** La 0.13.2 (versionCode 22) y las candidatas 0.14.0 (23 y 24) leen la
- * prescripción con su forma de siempre: la intensidad y la carga sugerida generales, no las de cada serie. Sus contratos
- * de entrenamiento son idénticos, y ninguna muestra un texto que mande el servidor: cada fallo se traduce a un mensaje
- * neutro. No hay forma de decirles «Actualizá BE» sin romperlas. Por eso, en lugar de un aviso:
- * - **El cliente declara lo que sabe mostrar** con la cabecera `X-BE-Capabilities`. Sin la cabecera (las APK instaladas,
- *   o un cliente que no declara versión), no sabe mostrar objetivos por serie. La capacidad no se infiere ni se finge:
- *   solo la declara la APK que dibuja los objetivos de cada serie.
- * - **Un plan exige objetivos por serie** si alguna serie tiene un RIR o una carga efectivos distintos de los generales
- *   de su prescripción: lo que una APK anterior mostraría como objetivo de esa serie sería otro. El descanso y las bases
- *   de carga y de repeticiones no cuentan: una APK anterior no los muestra, así que no muestra uno equivocado.
- * - **Un plan así no se activa** mientras su titular no haya usado un cliente capaz (la API lo registra), y **no se
- *   entrega** a un cliente sin la capacidad: «Hoy» lo informa como no disponible y el detalle es el 404 no revelador.
- *   Los planes sin objetivos por serie y el historial siguen como siempre.
+ * **DL-196 (punto 5; Dirección, 19/11 y 23/11): ya no hay compatibilidad con APK viejas.** Todos usan la última (0.32).
+ * Por eso salió todo lo que trababa o retenía por la versión de la app: un plan con objetivos distintos por serie o con
+ * series de calentamiento **se activa** aunque su titular nunca haya declarado nada (API-TRN-12 ya no responde 409
+ * CLIENT_CAPABILITY_REQUIRED) y **se entrega** a cualquier pedido, con o sin la cabecera («Hoy», el período, el detalle,
+ * abrir el borrador). Salieron con eso `planExigeObjetivosPorSerie`, `prescripcionExigeObjetivosPorSerie`,
+ * `planTieneCalentamiento` y los textos de la activación bloqueada. La tabla `capacidad_de_cliente_declarada` queda en
+ * desuso: la API ya no la escribe ni la lee.
+ *
+ * **En Entrenamiento queda el moldeo de la forma**, no una traba: a quien no declara una capacidad, la API le saca en el
+ * borde los campos que su esquema estricto rechazaría, y recibe lo de antes. La APK 0.32 y el website las declaran todas:
+ * - `training-set-kinds-1`: `setKind` explícito en las series (`sin-tipo-de-serie.interceptor.ts`);
+ * - `training-session-groups-1`: los bloques de la sesión (`SinBloquesDeLaSesionInterceptor`);
+ * - `training-effort-notation-1`: `effortNotation`;
+ * - `training-set-targets-1` ya no decide nada en el servidor; sigue en la lista porque la APK 0.32 la declara.
+ * `forms-format-3` y `pending-steps-texts-1` no son de Entrenamiento (formularios de formato 3 y pasos de los textos
+ * vigentes) y siguen como estaban.
  */
-import type { z } from 'zod';
-import type { CargaSchema } from './contratos-entrenamiento';
-import { esCriterioRir, objetivosEfectivos, type PrescripcionParaResolver } from './objetivos-por-serie';
-import { tieneCalentamiento, type ConTipoDeSerie } from './tipos-de-serie';
-
-type Carga = z.infer<typeof CargaSchema>;
 
 /** La cabecera con la que un cliente declara lo que sabe mostrar: capacidades separadas por comas. */
 export const HEADER_DE_CAPACIDADES = 'X-BE-Capabilities';
 
-/** El cliente muestra el objetivo de cada serie (API-SER-02) y nunca los generales como si fueran los de la serie. */
+/**
+ * El cliente muestra el objetivo de cada serie (API-SER-02). DL-196: ya no decide nada en el servidor (decidía activar y
+ * entregar los planes con objetivos por serie); queda porque la APK 0.32 y el website la declaran.
+ */
 export const CAPACIDAD_OBJETIVOS_POR_SERIE = 'training-set-targets-1';
 
 /**
@@ -47,9 +47,8 @@ export const CAPACIDAD_TEXTOS_VIGENTES = 'pending-steps-texts-1';
 /**
  * DL-178 · el cliente distingue las series de calentamiento: las muestra como «Calentamiento», las registra con
  * `setKind: WARM_UP` y no las cuenta. Solo a quien la declara le salen las series con `setKind` explícito; a quien no, con
- * la forma de siempre (su esquema estricto rechazaría el campo). Un plan con calentamiento no se le entrega a un cliente
- * sin la capacidad (lo vería todo efectivo y lo registraría así) y no se activa mientras el titular no haya usado uno
- * que la declare, igual que los objetivos por serie. La declaran el website, que se despliega con la API, y la APK nueva.
+ * la forma de siempre (su esquema estricto rechazaría el campo). DL-196: un plan con calentamiento se activa y se entrega
+ * siempre; la capacidad solo decide la forma. La declaran el website, que se despliega con la API, y la APK nueva.
  */
 export const CAPACIDAD_TIPOS_DE_SERIE = 'training-set-kinds-1';
 
@@ -57,9 +56,8 @@ export const CAPACIDAD_TIPOS_DE_SERIE = 'training-set-kinds-1';
  * DL-181 (WP-ENTRENAMIENTO-PLANIFICACION, ENP-D06) · el cliente sabe mostrar los bloques de la sesión: lee `exerciseGroups`
  * de cada sesión y `exerciseGroupId` de cada ejercicio y agrupa los ejercicios bajo su bloque. Solo a quien la declara le
  * salen las dos claves; a quien no, `SinBloquesDeLaSesionInterceptor` se las saca en el borde (su esquema estricto las
- * rechazaría) y recibe lo de antes: los mismos ejercicios en el mismo orden. A diferencia de DL-178, nada se retiene ni se
- * bloquea: el registro sigue siendo por ejercicio y nada se cuenta distinto. Por eso no se registra. La declaran el
- * website, que se despliega con la API, y la APK nueva.
+ * rechazaría) y recibe lo de antes: los mismos ejercicios en el mismo orden. Nada se retiene ni se bloquea: el registro
+ * sigue siendo por ejercicio y nada se cuenta distinto. La declaran el website, que se despliega con la API, y la APK nueva.
  */
 export const CAPACIDAD_BLOQUES_DE_LA_SESION = 'training-session-groups-1';
 
@@ -68,7 +66,7 @@ export const CAPACIDAD_BLOQUES_DE_LA_SESION = 'training-session-groups-1';
  * o RPE): lee `effortNotation` de la versión (API-TRN-09) y de la sesión para registrar (API-SER-02), y sigue mandando el
  * RIR, que es el valor de las dos. Solo a quien la declara le sale el campo; a quien no, la forma de siempre (su esquema
  * estricto lo rechazaría). Nada se retiene ni se bloquea: una APK que pregunta en RIR guarda lo mismo que una que pregunta
- * en RPE. Por eso no se registra. La declara la APK 0.32 (DL-194).
+ * en RPE. La declara la APK 0.32 (DL-194).
  */
 export const CAPACIDAD_NOTACION_DEL_ESFUERZO = 'training-effort-notation-1';
 
@@ -103,62 +101,3 @@ export function capacidadesDeclaradas(valor: string | readonly string[] | null |
 
 /** El valor de la cabecera para un cliente que declara estas capacidades. */
 export const valorDeCapacidades = (capacidades: readonly CapacidadDeCliente[]): string => [...new Set(capacidades)].join(',');
-
-/**
- * RP-22 (DL-188): lo que no se entiende todavía no es un objetivo distinto. En el editor, un número mal escrito viaja como
- * NaN (no se guarda: `loQueNoDejaGuardarElEntrenamiento`), y las series que lo toman de lo general también lo tienen; con
- * `===`, NaN nunca es igual a NaN, y una carga común mal escrita pasaba por «objetivos distintos por serie»: aparecía
- * arriba el aviso de la app de la persona y corría el editor mientras se escribía.
- */
-const sinLeer = (n: number | null | undefined): boolean => typeof n === 'number' && Number.isNaN(n);
-const mismaCarga = (a: Carga | null, b: Carga | null): boolean =>
-  a === null || b === null ? a === b : (a.value === b.value && a.unit === b.unit) || sinLeer(a.value) || sinLeer(b.value);
-const mismoRir = (a: number | null, b: number | null): boolean => a === b || sinLeer(a) || sinLeer(b);
-
-/**
- * Si una prescripción exige un cliente que muestre los objetivos por serie: alguna serie tiene un RIR o una carga
- * efectivos distintos de los generales, que es lo único que muestra una APK anterior.
- */
-export function prescripcionExigeObjetivosPorSerie(prescripcion: PrescripcionParaResolver): boolean {
-  const rirGeneral = esCriterioRir(prescripcion.intensity) ? prescripcion.intensity!.target.value : null;
-  const cargaGeneral = prescripcion.suggestedLoad ?? null;
-  return objetivosEfectivos(prescripcion).some((o) => !mismoRir(o.rir, rirGeneral) || !mismaCarga(o.suggestedLoad, cargaGeneral));
-}
-
-interface SesionConPrescripciones {
-  readonly prescriptions: readonly PrescripcionParaResolver[];
-}
-interface EstructuraConSesiones {
-  readonly blocks: readonly { readonly sessions?: readonly SesionConPrescripciones[] | null; readonly microcycles?: readonly { readonly sessions?: readonly SesionConPrescripciones[] | null }[] | null }[];
-}
-
-/** Si alguna prescripción de un plan exige objetivos por serie: el plan entero queda para clientes capaces. */
-export function planExigeObjetivosPorSerie(estructura: EstructuraConSesiones): boolean {
-  return estructura.blocks.some((b) =>
-    [...(b.sessions ?? []), ...(b.microcycles ?? []).flatMap((m) => m.sessions ?? [])].some((s) => s.prescriptions.some(prescripcionExigeObjetivosPorSerie)),
-  );
-}
-
-interface SesionConSeries {
-  readonly prescriptions: readonly { readonly sets: readonly ConTipoDeSerie[] }[];
-}
-interface EstructuraConSeries {
-  readonly blocks: readonly { readonly sessions?: readonly SesionConSeries[] | null; readonly microcycles?: readonly { readonly sessions?: readonly SesionConSeries[] | null }[] | null }[];
-}
-
-/** DL-178: si alguna serie de un plan es de calentamiento. Un plan así queda para clientes que las distinguen. */
-export function planTieneCalentamiento(estructura: EstructuraConSeries): boolean {
-  return estructura.blocks.some((b) =>
-    [...(b.sessions ?? []), ...(b.microcycles ?? []).flatMap((m) => m.sessions ?? [])].some((s) => s.prescriptions.some((p) => tieneCalentamiento(p.sets))),
-  );
-}
-
-/** Lo que se le dice al profesional cuando no puede activar un plan por la versión de la app de su asesorado. */
-export const COPY_COMPATIBILIDAD_DE_CLIENTES = {
-  activacionBloqueadaTitulo: 'Todavía no podés activar este plan',
-  activacionBloqueada:
-    'Este plan tiene objetivos distintos en algunas series, y tu asesorado todavía no usó una versión de BE que los muestre. Con la versión que tiene vería los valores generales de cada ejercicio, que no son los de esas series.',
-  queHacer:
-    'Podés activarlo cuando la persona abra Entrenamiento con BE actualizada, o dejar los mismos objetivos en todas las series de cada ejercicio para activarlo ahora.',
-  listoParaActivar: 'La persona ya usa una versión de BE que muestra los objetivos de cada serie.',
-} as const;

@@ -2025,7 +2025,7 @@ const DEFINIDAS: readonly Operacion[] = [
     id: 'API-TRN-09',
     metodo: 'get',
     ruta: '/training/plans/{planId}',
-    resumen: 'Una versión de plan con su jerarquía. Si está activada, se reconstruye desde la instantánea, no desde el catálogo actual. A un pedido del titular sin la capacidad training-set-targets-1 (X-BE-Capabilities), una versión con objetivos distintos por serie no se le entrega: 404 como lo inexistente (DL-122, precierre del 2026-10-06). DL-192: `effortNotation` va siempre al profesional, y al titular solo si declara training-effort-notation-1.',
+    resumen: 'Una versión de plan con su jerarquía. Si está activada, se reconstruye desde la instantánea, no desde el catálogo actual. Se entrega a cualquier pedido, declare o no capacidades (DL-196). DL-192: `effortNotation` va siempre al profesional, y al titular solo si declara training-effort-notation-1.',
     autenticacion: 'SESSION',
     idempotencia: false,
     exitos: [{ status: 200, schema: PlanDeEntrenamientoResponseSchema }],
@@ -2066,17 +2066,17 @@ const DEFINIDAS: readonly Operacion[] = [
     metodo: 'post',
     ruta: '/training/plans/{planId}/activate',
     resumen:
-      'Activar: en una transacción, versión esperada, PDP, capacidad, validación, instantánea inmutable, cambio de versión efectiva y apertura del Proceso si es nuevo. La anterior se conserva. Un plan con objetivos distintos por serie no se activa mientras su titular no haya usado una APK que los muestre (409 CLIENT_CAPABILITY_REQUIRED): las instaladas mostrarían los generales.',
+      'Activar: en una transacción, versión esperada, PDP, capacidad, validación, instantánea inmutable, cambio de versión efectiva y apertura del Proceso si es nuevo. La anterior se conserva. DL-196: la versión de la app del titular no traba la activación; un plan con objetivos distintos por serie o con series de calentamiento se activa igual.',
     autenticacion: 'SESSION',
     idempotencia: true,
     request: VersionEsperadaRequestSchema,
     exitos: [{ status: 200, schema: ActivacionDePlanDeEntrenamientoResponseSchema }],
     errores: {
       ...ESCRITURA_REVELABLE,
-      409: ['VERSION_CONFLICT', 'ACTIVE_PLAN_CONFLICT', 'IDEMPOTENCY_KEY_REUSED', 'CLIENT_CAPABILITY_REQUIRED'],
+      409: ['VERSION_CONFLICT', 'ACTIVE_PLAN_CONFLICT', 'IDEMPOTENCY_KEY_REUSED'],
       422: ['OPERATION_NOT_READY', 'CAPACITY_NOT_AVAILABLE', 'PLAN_NOT_EDITABLE'],
     },
-    fuente: '09v10:788-834 · REG-06-104, 105 · 06:5164 · DEUDA_LEGAJO DL-087 · DL-122 (precierre del 2026-10-06, §2)',
+    fuente: '09v10:788-834 · REG-06-104, 105 · 06:5164 · DEUDA_LEGAJO DL-087 · DL-196',
   },
   // ─── WP-TABLERO-ALTA-GAMA · PLE: planificar Entrenamiento (DL-163 D-19 y D-21). Familia propia de BE ─────────────────
   {
@@ -2670,7 +2670,7 @@ const DEFINIDAS: readonly Operacion[] = [
     id: 'API-TRN-14',
     metodo: 'get',
     ruta: '/me/training/today',
-    resumen: '«Hoy» del asesorado: las sesiones de la instantánea vigente como ocurrencias del día, con el estado de su registro. La ausencia de registro no se convierte en NOT_COMPLETED. A un pedido del titular sin la capacidad training-set-targets-1 (X-BE-Capabilities), una versión con objetivos distintos por serie no se le entrega: planState NOT_AVAILABLE, sin plan ni ocurrencias. Con la capacidad, queda registrada para la activación (DL-122, precierre del 2026-10-06).',
+    resumen: '«Hoy» del asesorado: las sesiones de la instantánea vigente como ocurrencias del día, con el estado de su registro. La ausencia de registro no se convierte en NOT_COMPLETED. El plan vigente se entrega a cualquier pedido, declare o no capacidades (DL-196).',
     autenticacion: 'SESSION',
     idempotencia: false,
     exitos: [{ status: 200, schema: HoyDeEntrenamientoResponseSchema }],
@@ -2682,7 +2682,7 @@ const DEFINIDAS: readonly Operacion[] = [
     metodo: 'get',
     ruta: '/me/training/occurrences',
     resumen:
-      'Ocurrencias de un período pasado, para registrar en diferido. Sin esta lectura, la sesión de anteayer no se podría registrar y la ausencia de registro se volvería permanente. Hasta 31 días, nunca después de hoy. A un pedido del titular sin la capacidad training-set-targets-1 (X-BE-Capabilities), una versión con objetivos distintos por serie no se le entrega: planState NOT_AVAILABLE, sin ocurrencias (DL-122, precierre del 2026-10-06).',
+      'Ocurrencias de un período pasado, para registrar en diferido. Sin esta lectura, la sesión de anteayer no se podría registrar y la ausencia de registro se volvería permanente. Hasta 31 días, nunca después de hoy. El plan se entrega a cualquier pedido, declare o no capacidades (DL-196).',
     autenticacion: 'SESSION',
     idempotencia: false,
     query: [
@@ -2713,7 +2713,7 @@ const DEFINIDAS: readonly Operacion[] = [
     id: 'API-TRN-15',
     metodo: 'put',
     ruta: '/training/occurrences/{occurrenceId}/execution-draft',
-    resumen: 'Crear u obtener el borrador singular de una ocurrencia: 201 si lo creó, 200 si ya existía. Tocar «Comenzar» dos veces da el mismo borrador. A un pedido del titular sin la capacidad training-set-targets-1 (X-BE-Capabilities), una versión con objetivos distintos por serie no se le entrega: 404 como lo inexistente, sin crear nada (DL-122, precierre del 2026-10-06).',
+    resumen: 'Crear u obtener el borrador singular de una ocurrencia: 201 si lo creó, 200 si ya existía. Tocar «Comenzar» dos veces da el mismo borrador. Se abre para cualquier pedido, declare o no capacidades (DL-196).',
     autenticacion: 'SESSION',
     idempotencia: false,
     request: AbrirBorradorDeEjecucionRequestSchema,
@@ -2873,7 +2873,7 @@ const DEFINIDAS: readonly Operacion[] = [
     metodo: 'get',
     ruta: '/training/plans/{planId}/detail',
     resumen:
-      'La versión de plan de API-TRN-09 con los objetivos por serie (RIR, carga sugerida y descanso, con herencia desde la prescripción), la base de carga y de repeticiones, la imagen de cada ejercicio y si el plan se le puede entregar a la app del titular (`setTargetsDelivery`). Solo para el profesional del plan: el titular lee API-SER-02. DL-192: con la notación del esfuerzo de la versión (`effortNotation`, RIR o RPE).',
+      'La versión de plan de API-TRN-09 con los objetivos por serie (RIR, carga sugerida y descanso, con herencia desde la prescripción), la base de carga y de repeticiones y la imagen de cada ejercicio. Solo para el profesional del plan: el titular lee API-SER-02. DL-192: con la notación del esfuerzo de la versión (`effortNotation`, RIR o RPE).',
     autenticacion: 'SESSION',
     idempotencia: false,
     exitos: [{ status: 200, schema: PlanConObjetivosResponseSchema }],
@@ -5375,7 +5375,7 @@ export function documentoOpenApi(): Record<string, unknown> {
       in: 'header',
       required: false,
       description:
-        'Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.',
+        'Lo que el cliente sabe mostrar, separado por comas. Solo moldea la forma de algunas respuestas (a quien no declara una capacidad no le salen los campos que su esquema rechazaría); no retiene ni traba nada (DL-196). Nunca autoriza.',
       schema: { type: 'string', maxLength: 256 },
     });
     const respuestas: Record<string, unknown> = {};

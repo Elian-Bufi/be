@@ -158,6 +158,7 @@ export * from './copy-novedades';
 export * from './tvcc30';
 export * from './contratos-invitaciones';
 export * from './agenda-de-entrenamiento';
+export * from './planificacion-del-plan';
 export * from './copy-agenda-de-entrenamiento';
 export * from './copy-primer-plan';
 export * from './copy-pistas';

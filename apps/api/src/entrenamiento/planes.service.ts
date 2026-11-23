@@ -15,6 +15,8 @@ import {
   conLaNotacion,
   notacionDe,
   notacionInicial,
+  planificacionPodada,
+  prescripcionesDelPlan,
   problemasDeAgenda,
   problemasDeCompletitud,
   problemasDeReferencias,
@@ -28,10 +30,10 @@ import {
   type EstructuraDePlanDeEntrenamientoEntrada,
   type NotacionDelEsfuerzo,
   type OrigenDePlanEnPlantilla,
+  type PlanificacionDelPlan,
   type Procedencia,
   type ValidationIssue,
   type VersionDePlanDeEntrenamiento,
-  CAPACIDAD_TIPOS_DE_SERIE,
 } from '@be/domain';
 import type { Prisma } from '@prisma/client';
 import { createHash, randomUUID } from 'node:crypto';
@@ -48,20 +50,11 @@ import { PlantillasDeEntrenamientoService } from './plantillas.service';
 import type { ActorAutenticado } from '../sesion/sesion.guard';
 import { esToken } from '../vinculo/lectura';
 import { CatalogoDeEjerciciosService } from './catalogo.service';
-import {
-  calentamientoRequiereLaApp,
-  capacidadDelClienteRequerida,
-  CompatibilidadDeClientesService,
-  entregaRetenida,
-  exigeObjetivosPorSerie,
-  muestraLaNotacionDelEsfuerzo,
-  seRetieneLaEntrega,
-  tieneSeriesDeCalentamiento,
-} from './compatibilidad-de-clientes';
+import { muestraLaNotacionDelEsfuerzo } from './compatibilidad-de-clientes';
 import { EjecutorDeEntrenamiento, esUuid, exigirA3Vigente } from './ejecutor';
 import { EvaluacionesDeEntrenamientoService } from './evaluaciones.service';
 import { registrarEventoDeEntrenamiento } from './eventos';
-import { contenidoDeLaVersion, INCLUIR_PLAN_DE_ENTRENAMIENTO, nombreVisibleDe, notacionDeLaVersion, seguimientoAbierto, versionDePlanApi, type VersionConPlan } from './lectura-entrenamiento';
+import { INCLUIR_PLAN_DE_ENTRENAMIENTO, nombreVisibleDe, notacionDeLaVersion, seguimientoAbierto, versionDePlanApi, type VersionConPlan } from './lectura-entrenamiento';
 
 type Tx = Prisma.TransactionClient;
 
@@ -94,6 +87,21 @@ function agendaValida(agenda: AgendaDeEntrenamiento | null, estructura: Contenid
   return agenda;
 }
 
+/**
+ * DL-196: la planificación que queda guardada con esta estructura. Sin el campo, la que había; `null`, ninguna. En los dos
+ * casos, sin las fases, las anotaciones ni las aproximaciones de lo que ya no está en el plan (`planificacionPodada`).
+ */
+function planificacionDelBorrador(
+  pedida: PlanificacionDelPlan | null | undefined,
+  anterior: PlanificacionDelPlan | null | undefined,
+  estructura: ContenidoDePlanDeEntrenamiento,
+): PlanificacionDelPlan | null {
+  if (pedida === null) return null;
+  const bloques = estructura.blocks.map((b) => b.blockId);
+  const prescripciones = prescripcionesDelPlan(estructura).map((p) => p.prescripcion.prescriptionId);
+  return planificacionPodada(pedida === undefined ? anterior : pedida, bloques, prescripciones);
+}
+
 const noEditable = () =>
   new ErrorDeApi(422, CodigoDeError.PLAN_NOT_EDITABLE, 'Esta versión está activada y no se puede editar. Para cambiarla, creá una nueva versión a partir de esta.');
 /** TB-47 (DL-163 D-21): una versión activada no se descarta nunca. El mismo código que editarla, con su texto. */
@@ -117,8 +125,9 @@ const objetivoNoAplicable = () =>
  * - La activación es la transacción del 09 (09v10:807-823): versión esperada, PDP, validación, instantánea **antes**
  *   de la vigencia, vigencia única, Proceso nuevo con capacidad o continuidad, hecho y auditoría. Si algo falla, no
  *   cambia nada. El Proceso es el mismo de nutrición (06:5164), desatado de ese dominio en la base (§9.7).
- * - Un plan con objetivos distintos por serie se activa solo si su titular ya usó una app que los muestra, y al titular
- *   se le entrega solo a un cliente que los muestra (DL-122, precierre del 2026-10-06; `compatibilidad-de-clientes.ts`).
+ * - DL-196 (punto 5): la versión de la app del titular no traba nada. Un plan con objetivos distintos por serie o con
+ *   series de calentamiento se activa aunque el titular nunca haya declarado capacidades, y se le entrega a cualquier
+ *   pedido. Lo que declara el cliente solo moldea la forma (`compatibilidad-de-clientes.ts`).
  */
 @Injectable()
 export class PlanesDeEntrenamientoService {
@@ -129,7 +138,6 @@ export class PlanesDeEntrenamientoService {
     private readonly evaluaciones: EvaluacionesDeEntrenamientoService,
     private readonly procesos: ProcesoService,
     private readonly plantillas: PlantillasDeEntrenamientoService,
-    private readonly compatibilidad: CompatibilidadDeClientesService,
     private readonly novedades: PublicadorDeNovedades,
   ) {}
 
@@ -319,9 +327,7 @@ export class PlanesDeEntrenamientoService {
    * *opera* sobre el plan vigente —«Hoy», abrir un borrador, confirmar, corregir— sigue bajo el PDP de su profesional
    * (UC-P17 E03).
    *
-   * Una versión con objetivos distintos por serie no se le entrega a un cliente que no los muestra: las APK instaladas
-   * dibujarían los generales como si fueran los de cada serie. Es el mismo 404 que lo inexistente, y el motivo queda en la
-   * auditoría (DL-122, precierre del 2026-10-06).
+   * DL-196: se entrega a cualquier pedido del titular, declare o no capacidades.
    */
   consultar(actor: ActorAutenticado, planId: string, query: Record<string, unknown>, ctx: ContextoDeSolicitud): Promise<{ data: VersionDePlanDeEntrenamiento }> {
     sinParametrosDeQuery(query);
@@ -340,7 +346,6 @@ export class PlanesDeEntrenamientoService {
         if (titular === actor.identidadId) {
           if (v.estado !== 'ACTIVADA') throw this.ejecutor.noRevelable({ operacion: 'API-TRN-09', actorId: actor.identidadId, recurso, sujetoId: titular }, ctx);
           await exigirA3Vigente(tx, actor.identidadId);
-          if (seRetieneLaEntrega(ctx, contenidoDeLaVersion(v, new Map()).contenido)) throw entregaRetenida();
         } else {
           await this.decidir(tx, 'API-TRN-09', actor, actor.identidadId, titular, recurso, ctx);
           if (v.plan.profesionalId !== actor.identidadId) throw this.ejecutor.noRevelable({ operacion: 'API-TRN-09', actorId: actor.identidadId, recurso, sujetoId: titular }, ctx);
@@ -374,7 +379,10 @@ export class PlanesDeEntrenamientoService {
         const agenda = pedido.agenda === undefined ? agendaPodada(v.contenido.agenda, sesionesDe(estructura)) : agendaValida(pedido.agenda, estructura);
         // DL-192 (RPE-D01): sin el campo, la notación que tenía el borrador sigue.
         const notacion = pedido.effortNotation ?? notacionDe(v.contenido.effortNotation);
-        const contenido: ContenidoDePlanDeEntrenamiento = conLaNotacion(agenda ? { ...estructura, agenda } : estructura, notacion);
+        // DL-196: la planificación (fechas, semanas de las fases, objetivo, aproximaciones y anotaciones), como la agenda.
+        const planificacion = planificacionDelBorrador(pedido.planning, v.contenido.planning, estructura);
+        const conAgenda: ContenidoDePlanDeEntrenamiento = agenda ? { ...estructura, agenda } : estructura;
+        const contenido: ContenidoDePlanDeEntrenamiento = conLaNotacion(planificacion ? { ...conAgenda, planning: planificacion } : conAgenda, notacion);
         const evaluacion = evaluarTransicionDePlanDeEntrenamiento(v.estado, { transicion: 'GuardarBorrador', cambiosValidosComoBorrador: true });
         if (!evaluacion.permitida) throw noEditable();
         await tx.versionDePlanDeEntrenamiento.update({
@@ -455,12 +463,8 @@ export class PlanesDeEntrenamientoService {
         // 5. Validar (UC-I04).
         const { issues, catalogo } = await this.problemasParaActivar(tx, v);
         if (issues.length > 0) throw noLista(issues);
-        // 5 bis. Un plan con objetivos distintos por serie, solo si su titular ya usó una app que los muestra: las instaladas
-        // mostrarían los generales (DL-122, precierre del 2026-10-06). Después de la versión esperada, el PDP y la validación,
-        // y antes de la instantánea: el 409 no deja nada cambiado, y un reintento con la misma clave vuelve a decidir.
-        if (exigeObjetivosPorSerie(v.contenido) && !(await this.compatibilidad.titularCapaz(tx, v.asesoradoId))) throw capacidadDelClienteRequerida();
-        // 5 ter. DL-178: lo mismo con el calentamiento. Una app que no lo distingue lo mostraría y lo registraría como efectivo.
-        if (tieneSeriesDeCalentamiento(v.contenido) && !(await this.compatibilidad.titularCapaz(tx, v.asesoradoId, CAPACIDAD_TIPOS_DE_SERIE))) throw calentamientoRequiereLaApp();
+        // DL-196 (punto 5): la versión de la app del titular ya no traba la activación (antes, un 409
+        // CLIENT_CAPABILITY_REQUIRED para los objetivos por serie y el calentamiento). Todos usan la última APK.
         // 6. Preservar la instantánea ANTES de la vigencia (REG-06-104).
         const instantanea = construirInstantaneaDeEntrenamiento(v.contenido, catalogo);
         const evaluacion = evaluarTransicionDePlanDeEntrenamiento(v.estado, { transicion: 'ActivarVersion', borradorValido: true, instantaneaPreservable: instantanea !== null });

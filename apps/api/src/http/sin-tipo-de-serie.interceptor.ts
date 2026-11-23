@@ -10,8 +10,8 @@ import { map, type Observable } from 'rxjs';
  * `lectura-por-serie.ts`). Un cliente que no declara `training-set-kinds-1` en `X-BE-Capabilities` —la APK instalada hasta
  * la candidata que lo declare— valida esas respuestas con esquemas estrictos y rechazaría el campo. A él se le saca, en el
  * borde y en ningún otro lado: así los cálculos de adentro siempre ven el tipo, y lo que recibe esa APK es exactamente lo
- * de antes (DL-152). Un plan con calentamiento ni siquiera le llega (`seRetieneLaEntrega`), así que lo único que pierde es
- * un `WORKING` que para ella es la ausencia.
+ * de antes (DL-152). Desde DL-196 un plan con calentamiento también le llega (ya no se retiene por la versión de la app):
+ * sin el campo, sus series de calentamiento se ven como las demás. Todos usan la última APK, que lo declara.
  *
  * `setKind` es un nombre propio de DL-178: ninguna otra respuesta lo usa, así que sacarlo de todo el cuerpo no toca nada más.
  */

@@ -3,7 +3,6 @@ import { IntegracionesModule } from '../integraciones/integraciones.module';
 import { MediosModule } from '../medios/medios.module';
 import { SesionModule } from '../sesion/sesion.module';
 import { CatalogoDeEjerciciosService } from './catalogo.service';
-import { CompatibilidadDeClientesService } from './compatibilidad-de-clientes';
 import { EjecucionesDeEntrenamientoService } from './ejecuciones.service';
 import { EjecutorDeEntrenamiento } from './ejecutor';
 import { EntrenamientoPorSerieController } from './entrenamiento-por-serie.controller';
@@ -28,8 +27,8 @@ import { TiemposDeSesionService } from './tiempos.service';
  * B-08 — Circuito de entrenamiento (06:4947-5786). Como en nutrición, el PDP (AutorizacionModule) y el Proceso
  * (ProcesoModule) son globales: este módulo no decide autorización ni gestiona el ciclo del Proceso por su cuenta.
  * WP-ENTRENAMIENTO-SERIES suma los objetivos por serie, los tiempos de la sesión y la imagen del ejercicio, que cita un
- * medio privado: por eso importa MediosModule, como las recetas. El precierre del 2026-10-06 suma qué clientes reciben un
- * plan con objetivos por serie (`compatibilidad-de-clientes.ts`).
+ * medio privado: por eso importa MediosModule, como las recetas. Lo que declara el cliente solo moldea la forma de algunas
+ * respuestas: ningún plan se traba ni se retiene por la versión de la app (DL-196; `compatibilidad-de-clientes.ts`).
  */
 @Module({
   imports: [SesionModule, IntegracionesModule, MediosModule],
@@ -49,7 +48,6 @@ import { TiemposDeSesionService } from './tiempos.service';
     ObjetivosPorSerieService,
     TiemposDeSesionService,
     ImagenesDeEjercicioService,
-    CompatibilidadDeClientesService,
     // ED-72 (DL-171): la serie observada por el profesional (API-FZA-01 a 03).
     SeriesObservadasService,
     // PG-15 (DL-173): la nota para tu profe (API-TRN-25 y sus dos lecturas).
