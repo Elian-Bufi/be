@@ -76,6 +76,8 @@ export const RECORRIDOS = {
   franjasPorComida: { habilitado: ['NUTRICION'], datos: ['franjas'] },
   // RP-24 (DL-188): el mismo borrador, para el «?» en la esquina, «Rangos indicados» y las acciones sin subrayado.
   cierreDeNutricion: { habilitado: ['NUTRICION'], datos: ['franjas'] },
+  // RP-25 (DL-188): el mismo borrador; «Avena», una opción de alimentos, se guarda como receta y se le carga la foto.
+  opcionComoReceta: { habilitado: ['NUTRICION'], datos: ['franjas'] },
   // DL-191 (WP-RECETARIO-E-IMAGENES): el recetario, copiar y cargar la imagen desde el cajón del plan; la semilla del
   // recetario la carga correr.mjs en la base local.
   recetario: { habilitado: ['NUTRICION'], datos: ['borrador'] },

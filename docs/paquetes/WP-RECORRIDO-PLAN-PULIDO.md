@@ -15,6 +15,10 @@
 > **RP-24 «Cierre de Nutrición» (22/11),** rama `wp-cierre-de-nutricion`, desde `wp-franjas-promedio-y-elegidas` (RP-23):
 > las acciones sin subrayado, el «?» en la esquina, la imagen de la receta en el editor y lo BAJA que se veía. Decisiones
 > **RP-D90 a RP-D99, a ratificar**. Detalle en el §11.
+>
+> **RP-25 «Guardar como receta» (23/11),** rama `wp-opcion-como-receta`, desde `main`: una opción de alimentos se guarda
+> como receta desde el editor y ahí mismo se le carga la foto. Decisiones **RP-D100 a RP-D105, a ratificar**. Detalle en
+> el §12.
 
 ## 0. En criollo
 
@@ -734,3 +738,79 @@ alcance el 22/11: no se empezó.
 - La misma guardia de acciones, fuera de la planificación (Seguimiento, gráficos, Antropometría, formularios de la
   persona).
 - Kerr y «Sin anotar» (arriba), y «Ver como la persona» si Dirección la retoma.
+
+## 12. RP-25 · Una opción de alimentos que se guarda como receta, con su foto (23/11)
+
+> **El pedido de Dirección (23/11):** una opción del plan armada con alimentos sueltos (por ejemplo, «Galletas de arroz con
+> huevo») no podía tener imagen, porque la imagen es de la receta (DL-191 y RP-24). Elián quiere convertirla en receta
+> desde el editor y cargar la foto ahí mismo: «así no carga muchas fotos para cada plan; una vez que carga una foto es
+> porque se vuelve una de sus recetas». Rama `wp-opcion-como-receta`, desde `main`. Decisiones **RP-D100 a RP-D105, a
+> ratificar**. Sin operaciones nuevas ni migraciones: usa API-REC-01 (crear la receta), API-ALI-04 (la versión de cada
+> alimento) y API-REC-05 (la imagen), como Mis recetas. No toca la APK.
+
+### En criollo
+
+En una opción de alimentos con algo adentro aparecen dos accesos. Al lado de su cabecera, donde una receta muestra su
+miniatura, «Agregar foto» (un botón discreto con el ícono de la imagen); con la opción abierta, junto a «Cambiar el
+nombre», «Guardar como receta». Los dos abren el mismo cuadro: si se llegó por la foto, la primera línea explica que una
+foto es de una receta y que, para sumarla, la opción se guarda en Mis recetas y pasa a ser esa receta. Debajo, lo que
+lleva para una porción («Avena, 50 g, Crudo») y que la persona ve los mismos alimentos y cantidades. Si algo no entra en
+una receta (un alimento sin cantidad o sin estado, una cantidad en unidades), se dice alimento por alimento y el botón
+queda apagado con su porqué. Al guardar, la receta queda en Mis recetas (versión 1), la opción pasa a ser esa receta y el
+mismo cuadro ofrece cargar la foto con el recuadro de siempre. Al volver al plan, la miniatura está en la cabecera.
+
+### Cómo funciona
+
+- **La receta** (API-REC-01): el nombre de la opción, sus alimentos con su cantidad y su estado, **una porción**, sin
+  pasos. Con una porción, la que el servidor arma para el plan (DL-119, `cantidadDeUnaPorcion`) es la misma que la persona
+  ya tenía. La versión del catálogo de cada alimento se lee en el momento (API-ALI-04, por identidad), porque una receta
+  cita versiones. Una clave de idempotencia por cuerpo: reintentar sin respuesta no crea dos recetas.
+- **La opción pasa a ser esa receta** en el borrador, como si se la hubiera agregado desde el cajón: conserva su identidad
+  (`optionId`) y su nombre, y cita la versión 1 (`recipeVersionId`, `items: []`). Se busca por su identidad, o por su
+  lugar y su nombre si todavía no se guardó, y el cambio se aplica sobre la estructura vigente: si mientras tanto llegó un
+  autoguardado, sus identificadores no se pierden. Viaja con el autoguardado siguiente; un guardado que estaba en vuelo
+  no la pisa (cuenta como una edición posterior), y un 409 sigue el camino de siempre (`VERSION_CONFLICT`, ED-61).
+- **La foto**, en el mismo cuadro, con `ImagenDeReceta` (`imagen-de-receta.tsx`, la pieza de Mis recetas y del cajón).
+- **La miniatura de la cabecera:** API-REC-05 no devuelve las rutas firmadas de una receta propia, así que una imagen
+  recién cargada en esta pantalla se pide una vez por su medio (API-MED-03). Es un pedido por cada imagen que se carga, no
+  por miniatura: las demás siguen saliendo de la lista propia en lote (RP-D92). Lo mismo vale para la imagen que se carga
+  o cambia en el cuerpo de una opción de receta, que hasta ahora dejaba el plato de respaldo en la cabecera
+  (`imagenDeLaCabecera`).
+- **Las reglas vigentes:** las dos acciones son `boton--discreto` (sin subrayado); el acceso de la cabecera va al lado del
+  botón de la cabecera, no adentro (un botón no va dentro de otro) y no agranda el renglón; el error del pedido tiene su
+  renglón reservado al pie del cuadro (`RenglonDelAviso`, RP-19). Sin «%» y sin las palabras prohibidas.
+- **Archivos:** `opcion-como-receta.ts` (la lógica, sin React), `guardar-como-receta.tsx` (el cuadro),
+  `comida-del-editor.tsx` (los dos accesos), `editor.tsx` (el cuadro y la opción que cambia), `imagenes-de-las-recetas.ts`
+  (`imagenDeLaCabecera`) y `globals.css` (`.opcion-plegable__foto`, junto a `.opcion-plegable__fila`).
+
+### Decisiones de continuador (a ratificar)
+
+| ID | Decisión | Por qué / alternativa |
+|---|---|---|
+| RP-D100 | La receta se crea directo, sin pasar por el editor de recetas: el nombre de la opción, sus alimentos con su cantidad y su estado, una porción y sin pasos. La versión de cada alimento es la vigente, leída al guardar | Dirección pidió hacerlo en un paso. Con una porción, la persona ve las mismas cantidades. Alternativa: abrir el editor de recetas lleno con la opción (más completo, pero un paso más y un formulario largo) |
+| RP-D101 | En la cabecera, «Agregar foto» con el ícono de la imagen, al lado del botón de la cabecera, solo en las opciones de alimentos con algún alimento. Su nombre accesible y su `title` dicen «se guarda como receta»; la primera línea del cuadro lo explica | «Agregar foto · se guarda como receta» a la vista en cada opción repetiría lo mismo hasta doce veces por comida. Alternativa: ese texto largo a la vista |
+| RP-D102 | Lo que una receta no admite se dice antes, alimento por alimento, y no se guarda nada: un alimento sin cantidad o sin estado de preparación, una cantidad en unidades o de más de 5000 g o ml, más de 40 alimentos o notas de más de 500 caracteres en total | Completarlo solo (por ejemplo, el estado «Tal como se adquiere») cambiaría lo que ve la persona sin que nadie lo decida. Alternativa: dejar que lo diga el servidor (un error menos claro) |
+| RP-D103 | Las notas de los alimentos pasan a la descripción de la receta, una por renglón («Huevo: bien cocido»), que la persona lee junto a la receta. Las medidas caseras («2 cucharadas») quedan en gramos: solo las veía el profesional | Una receta no tiene notas por ingrediente; sin esto, la persona dejaría de leerlas. Alternativa: no dejar guardarla con notas |
+| RP-D104 | La opción conserva su identidad y su nombre, y pasa a citar la versión 1. Si mientras tanto ya no está (se quitó), la receta igual queda en Mis recetas y el cuadro lo dice, sin deshacerla. El autoguardado no se pausa: el cambio se aplica sobre la estructura vigente | Son dos escrituras sin transacción conjunta, como la receta nueva de ED-32. Conservar la identidad mantiene lo que ya la cita. Alternativa: borrar la receta si la opción no está (otra escritura que puede fallar) |
+| RP-D105 | Una imagen recién cargada en esta pantalla se pide una vez por su medio para la miniatura de la cabecera; las demás, de la lista en lote (RP-D92) | API-REC-05 no firma las rutas de una receta propia. Alternativa: que API-REC-05 las devuelva (un cambio de la API) |
+
+### Lo que se probó
+
+- `apps/web/test/opcion-como-receta.test.mjs` (nuevo, en `npm test`): lo que impide, el cuerpo de API-REC-01 (una porción,
+  las notas en la descripción, el nombre), el alimento que el catálogo ya no devuelve y el 422 con su ruta, la opción que
+  pasa a citar la receta (por identidad aunque se mueva, por lugar y nombre si es nueva, el reintento), la miniatura de
+  una imagen recién cargada, los dos accesos como botones discretos y las palabras prohibidas.
+- `cierre-de-nutricion.test.mjs` y `franjas-por-comida.test.mjs`, al día con la miniatura y el acceso nuevo.
+- El recorrido de navegador `opcionComoReceta` (`test/navegador/recorridos.mjs`): en el borrador de las franjas, «Agregar
+  foto» en la cabecera de «Avena» (sin subrayado y fuera del botón de la cabecera), el cuadro con lo que lleva, «Guardar
+  como receta», la receta en Mis recetas con una porción y 50 g crudos, la foto cargada en el mismo cuadro, la miniatura
+  en la cabecera sin agrandar el renglón y el borrador guardado con la opción que cita la receta.
+- Por la memoria del equipo no se corrió el chequeo de tipos completo del website ni el navegador en local: los corre la
+  CI. Se revisaron los tipos de los archivos nuevos y del editor por separado. El CSS se verificó con postcss y
+  `scripts/contraste.test.cjs` (no hay colores nuevos).
+
+### Lo que queda
+
+- Ratificar RP-D100 a RP-D105.
+- Mirarlo en la pantalla de Dirección y con un lector de pantalla (el nombre accesible de «Agregar foto»).
+- Si Dirección lo quiere, «Guardar como receta» también desde una comida habitual o una plantilla.

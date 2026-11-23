@@ -102,7 +102,9 @@ import { pasoDeLaFotoTrasCrear, type ImagenAlCrear, type ImagenPendiente } from 
 import { AvisoDeLaImagenSinCargar, ImagenDeReceta } from '../../recipes/imagen-de-receta';
 import { ImagenEnElCajon, RecetarioEnElCajon } from '../../recipes/receta-en-el-cajon';
 import { ImagenGuardada } from '../../recipes/imagen-de-receta';
-import { recetasDelPlan, useImagenesDeLasRecetas } from './imagenes-de-las-recetas';
+import { imagenDeLaCabecera, recetasDelPlan, useImagenesDeLasRecetas } from './imagenes-de-las-recetas';
+import { GuardarComoReceta, type PedidoDeGuardarComoReceta } from './guardar-como-receta';
+import { dondeEstaLaOpcion, opcionComoReceta } from './opcion-como-receta';
 import {
   cambiosEnUnaPorcion,
   COPY_FOTO_DE_LA_RECETA,
@@ -369,6 +371,8 @@ export function EditorDeBorrador({
   // ED-32: guardada la receta nueva, el paso de la foto en el mismo cuadro (opcional), con lo que se dirá al cerrar.
   // NUA-06: `pendiente`, la imagen elegida al crearla que no se pudo cargar, para reintentarla ahí.
   const [fotoDeLaReceta, setFotoDeLaReceta] = useState<{ readonly receta: Receta; readonly texto: string; readonly aviso: string | null; readonly pendiente: ImagenPendiente | null } | null>(null);
+  // RP-25: la opción de alimentos que se guarda como receta (en un cuadro), y por dónde se llegó.
+  const [comoReceta, setComoReceta] = useState<PedidoDeGuardarComoReceta | null>(null);
   // ED-32: cada receta de las opciones del día tipo que se mira, como está hoy, para ofrecer su versión nueva.
   const [recetasVigentes, setRecetasVigentes] = useState<ReadonlyMap<string, RecetaVigente | 'leyendo' | 'falla'>>(() => new Map());
   // API-PLN-01 en la vista previa de la versión nueva (§8.7): la estimación del servidor de las opciones guardadas, de una
@@ -461,11 +465,12 @@ export function EditorDeBorrador({
     const citada = recetas[recipeVersionId];
     const deLaLista = citada ? imagenes.de(citada.recipeId) : null;
     if (donde === 'cabecera') {
-      // Sin las rutas firmadas no se pide nada (sería un acceso por miniatura): queda el plato de respaldo.
-      const conRutas = deLaLista?.image?.paths ? deLaLista.image : null;
+      // Sin las rutas firmadas no se pide nada (sería un acceso por miniatura): queda el plato de respaldo. RP-25: salvo la
+      // imagen que se acaba de cargar en esta pantalla, que se pide una vez por su medio.
+      const enLaCabecera = citada ? imagenDeLaCabecera(deLaLista, imagenes.cambiadaAca(citada.recipeId)) : null;
       return (
-        <span className="opcion-plegable__miniatura" data-miniatura-de-la-receta={conRutas ? '' : 'respaldo'}>
-          <ImagenGuardada token={token} medioId={conRutas?.mediaId ?? null} nombre={citada?.name ?? ''} sesionPerdida={sesionPerdida} chica rutas={conRutas?.paths ?? null} />
+        <span className="opcion-plegable__miniatura" data-miniatura-de-la-receta={enLaCabecera ? '' : 'respaldo'}>
+          <ImagenGuardada token={token} medioId={enLaCabecera?.medioId ?? null} nombre={citada?.name ?? ''} sesionPerdida={sesionPerdida} chica rutas={enLaCabecera?.rutas ?? null} />
         </span>
       );
     }
@@ -892,6 +897,29 @@ export function EditorDeBorrador({
     setPestanas((p) => ({ ...p, [`${res.i}-${res.j}`]: res.k }));
     pasarALaFoto(r, COPY_RECETA_NUEVA.agregada(r.name, res.k, recetaNueva.nombre), imagen);
   };
+  /**
+   * RP-25: la opción de alimentos ya está en Mis recetas como receta; pasa a citarla en el borrador (y viaja con el
+   * autoguardado), con su identidad y su nombre. Se aplica sobre la estructura vigente: si mientras tanto llegó un
+   * guardado, sus identificadores no se pierden. Devuelve si la opción se encontró.
+   */
+  const alGuardarLaOpcionComoReceta = (r: Receta): boolean => {
+    if (!comoReceta) return false;
+    const lugar = comoReceta;
+    setRecetas((x) => ({ ...x, [r.recipeVersionId]: { recipeId: r.recipeId, recipeVersionId: r.recipeVersionId, versionNumber: r.versionNumber, name: r.name, servings: r.servings } }));
+    imagenes.actualizar(r);
+    const res = opcionComoReceta(estructuraDeAhora.current, lugar, r);
+    if (res.tipo === 'no-se-pudo') return false;
+    if (res.tipo === 'convertida') {
+      cambiar((e) => {
+        const x = opcionComoReceta(e, lugar, r);
+        return x.tipo === 'convertida' ? x.estructura : e;
+      });
+    }
+    setPestanas((p) => ({ ...p, [`${res.i}-${res.j}`]: res.k }));
+    return true;
+  };
+  const dondeEstaLaDelCuadro = comoReceta ? dondeEstaLaOpcion(estructura, comoReceta) : null;
+  const opcionComoRecetaAhora = dondeEstaLaDelCuadro ? (estructura[dondeEstaLaDelCuadro.i]?.meals[dondeEstaLaDelCuadro.j]?.options[dondeEstaLaDelCuadro.k] ?? null) : null;
   const alGuardarLaRecetaNueva = (r: Receta, agregar: boolean, imagen: ImagenAlCrear) => {
     setRecetas((x) => ({ ...x, [r.recipeVersionId]: { recipeId: r.recipeId, recipeVersionId: r.recipeVersionId, versionNumber: r.versionNumber, name: r.name, servings: r.servings } }));
     if (agregar) return agregarLaRecetaNueva(r, imagen);
@@ -1299,6 +1327,10 @@ export function EditorDeBorrador({
               nombres={nombres}
               recetas={recetas}
               imagenDeLaOpcion={imagenDeLaOpcion}
+              alGuardarComoReceta={(k, origen) => {
+                const o = m.options[k];
+                if (o) setComoReceta({ i, j, k, optionId: o.optionId ?? null, label: o.label, origen });
+              }}
               composiciones={composiciones}
               origenes={origenes}
               rangoDeOpciones={rangos?.comidas[j]?.rango ?? null}
@@ -1668,6 +1700,22 @@ export function EditorDeBorrador({
           />
         ) : null}
       </CuadroEnfocado>
+
+      {/* RP-25: «Guardar como receta», con la foto en el mismo cuadro. */}
+      <GuardarComoReceta
+        token={token}
+        sesionPerdida={sesionPerdida}
+        pedido={comoReceta}
+        opcion={opcionComoRecetaAhora}
+        nombres={nombres}
+        persona={persona}
+        onGuardada={alGuardarLaOpcionComoReceta}
+        onImagen={imagenes.actualizar}
+        onCerrar={(hecho) => {
+          setComoReceta(null);
+          if (hecho) setMensaje({ tipo: 'exito', texto: hecho });
+        }}
+      />
 
       <AntesDeActivar
         abierto={confirmar}
