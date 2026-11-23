@@ -159,11 +159,11 @@ La pantalla que más requisitos junta es el editor de planes. Así se ve el de E
 
 Cada requisito conserva el número de la especificación del proyecto, por eso la numeración tiene saltos. Cada uno está asignado al canal donde se usa: el website, la app o los dos. Los compartidos, y los que resuelve el servidor sin pantalla propia, aparecen en este documento; los que también usa la app están además en el de la app (13). La línea «Funciona en» de cada uno dice dónde se ve.
 
-![Figura 4: Los 55 requisitos funcionales de este documento, por canal](pendiente)
+![Figura 4: Los 57 requisitos funcionales de este documento, por canal](pendiente)
 
 > **Texto de la figura:**
-> - **30**solo en el website
-> - **25**compartidos con la app, o resueltos por el servidor para los dos canales
+> - **32** solo en el website
+> - **25** compartidos con la app, o resueltos por el servidor para los dos canales
 
 ## 2.2 La prioridad
 
