@@ -1,6 +1,6 @@
 # 09 · Manual del profesional
 
-*Cómo trabaja el profesional en BE, tarea por tarea: de entrar con el segundo factor a leer la historia de una persona en el tiempo y decidir con su contexto.*
+*Cómo trabaja el profesional en BE, tarea por tarea: de entrar a leer la historia de una persona en el tiempo y decidir con su contexto.*
 
 > BE ubica, no califica: muestra qué se indicó, qué pasó y qué cambió, y la decisión queda en manos del profesional.
 
@@ -36,9 +36,9 @@ Los ejemplos son los de la historia sintética de la demostración. **Diego Sosa
 
 ### Cómo se lee cada tarea
 
-Cada tarea responde lo mismo, en el mismo orden: **para qué** sirve; **quién** puede hacerla; los **pasos**, con los nombres que se leen en la pantalla; la **imagen** de esa pantalla; **lo que se ve** al terminar, y **si algo falla**, con el texto del aviso y qué hacer. Los nombres de botones, pestañas y avisos van entre comillas, tal como aparecen.
+Cada tarea responde lo mismo, en el mismo orden: **para qué** sirve; **quién** puede hacerla; los **pasos**, con los nombres que se leen en la pantalla; la **imagen** de esa pantalla; **lo que se ve** al terminar, y **si algo falla**, con el texto del aviso y qué hacer. Los nombres de botones, pestañas y avisos van entre comillas, tal como aparecen. La ayuda de cada sección está en el «?» de su esquina superior derecha: lo que explica flota sin correr lo que se está editando, y se cierra con Escape.
 
-> **Lo que hace falta.** Una computadora con un navegador de escritorio, de 1024 a 1920 de ancho; se recomienda 1280 o más. Una app de códigos en el teléfono para el segundo factor, por ejemplo Google Authenticator. Y la habilitación de Administración en el área en que se trabaja.
+> **Lo que hace falta.** Una computadora con un navegador de escritorio, de 1024 a 1920 de ancho; se recomienda 1280 o más. Una cuenta con contraseña o con Google. Y la habilitación de Administración en el área en que se trabaja.
 
 ### Las tareas
 
@@ -46,15 +46,16 @@ Cada tarea responde lo mismo, en el mismo orden: **para qué** sirve; **quién**
 
 | Tarea | Para qué |
 | --- | --- |
-| «Entrar con el segundo factor» | Llegar al Espacio profesional con la contraseña y el código |
+| «Entrar» | Llegar al Espacio profesional con la contraseña o con Google |
 | «Leer el Espacio profesional» | Saber qué te toca hoy y con quién |
 | «Invitar a una persona: enlace, QR o código» | Sumar a alguien a tu acompañamiento en un área |
 | «La ficha de la persona» | Ver a la persona completa y escribir tus notas propias |
 | «La evaluación y el objetivo» | Asentar de dónde parte y adónde quiere llegar |
 | «Armar el plan de nutrición» | Indicar qué comer, con opciones y totales |
-| «Armar las sesiones de entrenamiento» | Indicar qué entrenar, con «Con historial» y «La vez pasada» |
+| «Armar las sesiones de entrenamiento» | Indicar qué entrenar, en RIR o en RPE, con «Con historial» y «La vez pasada» |
 | «Revisar y activar el plan» | Que el plan le llegue como una versión que no cambia |
 | «Dar el plan en PDF, con el QR para bajar la app» | Darle el plan en papel, con el QR de la app |
+| «El contexto de la persona mientras planificás» | Ver lo importante de la persona sin salir del editor |
 | «Pedir información» | Que complete lo que hace falta saber |
 | «Ver lo que registró la persona y las notas que te dejó» | Ver qué pasó frente a lo indicado, y sus notas |
 | «Registrar una revisión y aplicar la decisión» | Cerrar un período con una decisión escrita |
@@ -67,45 +68,28 @@ Cada tarea responde lo mismo, en el mismo orden: **para qué** sirve; **quién**
 | «La historia anterior de una persona que viene de otro profesional» | No empezar de cero con una persona que viene de otro profesional |
 | «Ver otras áreas y coordinarse con notas» | Ver sus otras áreas y coordinar con notas |
 | «Pedir acceso a lo que no se comparte» | Pedir lo que hoy no comparte |
-| «Plantillas, recetas y ejercicios propios» | Plantillas, recetas y ejercicios propios |
+| «Plantillas, recetas y ejercicios propios» | Plantillas sin persona, «Mis recetas», el Recetario de BE y ejercicios propios |
+| «Mis alimentos» | Corregir o retirar lo que cargaste a mano, y sus medidas caseras |
 
 # 1. Entrar y organizarse
 
-*El segundo factor, lo que te toca hoy y cómo sumar a alguien nuevo.*
+*Cómo se entra, lo que te toca hoy y cómo sumar a alguien nuevo.*
 
-## 1.1 Entrar con el segundo factor
+## 1.1 Entrar
 
-**Para qué.** Llegar al Espacio profesional. Además de la contraseña, BE pide el código de una app de códigos: una contraseña sola no alcanza para ver datos de salud.
+**Para qué.** Llegar al Espacio profesional para trabajar con las personas que acompañás.
 
-**Quién puede.** Todo profesional con cuenta en BE. El código se pide siempre, una vez por sesión, y no se puede saltear.
+**Quién puede.** Todo profesional con cuenta en BE, habilitado por Administración en al menos un área.
 
 **Los pasos.**
 
-1. En el website, «Ya tengo una cuenta». En «Iniciar sesión», escribir el «Correo electrónico» y la «Contraseña» y tocar «Iniciar sesión», o entrar con «Continuar con Google».
-2. En «Confirmá que sos vos», escribir en «Código de seis dígitos» el código que muestra la app de códigos y tocar «Confirmar».
+1. En el website, «Ya tengo una cuenta».
+2. En «Iniciar sesión», escribir el «Correo electrónico» y la «Contraseña» y tocar «Iniciar sesión», o entrar con «Continuar con Google».
 
-**La primera vez,** en lugar del paso 2, BE pide «Configurá tu segundo factor»: «Empezar», escanear el código QR con la app de códigos (o cargar la «Clave para cargar a mano»), escribir el código y «Confirmar». Al final muestra «Tus códigos de recuperación»: son diez, cada uno sirve una sola vez y no se vuelven a mostrar. Se guardan fuera de la computadora antes de tocar «Ya los guardé».
-
-*Maqueta*
-
-![Figura 2: «Confirmá que sos vos», con los textos del website](pendiente)
-
-> **Texto de la figura:**
-> - Confirmá que sos vos
-> - Para ver a las personas que acompañás, BE pide el código de tu aplicación de códigos además de la contraseña. Lo pide una vez por sesión.
-> - Código de seis dígitos
-> - Escribí los seis dígitos que muestra tu aplicación de códigos para BE.
-> - Confirmar
-> - Usar un código de recuperación
-> - › Si perdiste el autenticador y los códigos
-> - Cerrar sesión
-
-**Lo que se ve.** El «Espacio profesional». La sesión vence a las 12 horas. En «Cuenta» → «Seguridad de tu acceso», «Reemplazar el autenticador» o «Generar códigos nuevos», con una entrada de los últimos 10 minutos.
+**Lo que se ve.** El «Espacio profesional». La sesión vence a las 12 horas; para salir, «Cuenta» → «Cerrar sesión».
 
 | Si pasa esto | Qué hacer |
 | --- | --- |
-| «El código no es válido o ya se usó.» | Esperar el código siguiente, que cambia cada 30 segundos, y revisar que el teléfono tenga la hora automática. |
-| «Hubo demasiados códigos del autenticador que no valen, seguidos: por seguridad, el autenticador quedó bloqueado. Entrá con un código de recuperación, que lo desbloquea.» | «Usar un código de recuperación»: 12 caracteres, en tres grupos de cuatro. Después, reemplazar el autenticador desde «Seguridad». |
 | «Demasiados intentos. Probá de nuevo más tarde.» | Esperar unos minutos y volver a entrar. |
 | «No pudimos verificar los datos de acceso.» | Revisar el correo y la contraseña, o «¿Olvidaste tu contraseña?». |
 
@@ -204,16 +188,22 @@ Cada tarea responde lo mismo, en el mismo orden: **para qué** sirve; **quién**
 
 **Quién puede.** El profesional de Nutrición o de Entrenamiento, con el vínculo y el permiso del área. En Antropometría, el punto de partida es la primera toma («Cargar una toma de antropometría»).
 
-![Figura 6: El «Resumen» de Nutrición de Diego Sosa: el «Estado del seguimiento», el «Objetivo» vigente con su fundamento y desde cuándo rige, y los botones para una evaluación o un objetivo nuevos. Captura del website](pendiente)
+![Figura 6: El «Resumen» de Nutrición de Diego Sosa, con la cabecera del área en una franja: el «Estado del seguimiento», el «Objetivo» vigente con su fundamento y desde cuándo rige, y los botones para una evaluación o un objetivo nuevos. Captura del website](pendiente)
 
 **Los pasos.**
 
-1. Con el área vacía, en la ficha, «Empezar el plan». Son tres pasos, en orden: «Evaluación inicial», «Objetivo» y «Plan».
-2. «Registrar la evaluación»: la «Fecha y hora de la evaluación» y los «Datos de la evaluación», cada uno con su valor, su unidad, su fuente y su método; «Registrar evaluación». Si falta información, «Pedir información a la persona» («Pedir información»).
-3. «Definir el objetivo». En Nutrición, el «Requerimiento energético estimado (kcal por día)», las proteínas, los carbohidratos y las grasas en gramos, el «Fundamento» y «Vigente desde»: «Guardar nueva versión». En Entrenamiento, el «Objetivo» y su «Fundamento»: «Emitir nueva versión».
-4. Seguir con el plan. Más adelante, en el «Resumen» del área, «Nueva evaluación» o «Nueva versión de objetivo».
+1. Con el área vacía, en la ficha, «Empezar el plan». Arriba, una franja con los tres pasos: «Evaluación», «Objetivo» y «Plan», cada uno con su estado («Ahora», «Después» o la fecha en que quedó listo); debajo, solo el paso actual.
+2. La evaluación lleva la fecha y la hora de ahora («Hoy, 12:12 · cambiar»); «cambiar» es para una evaluación hecha antes. En Nutrición se arma en tres bloques: «Lo que contó» la persona, con sus formularios respondidos; «Lo medido», con la última toma de Antropometría que podés usar y «Ver toma»; y «Lo que necesita el cálculo», con edad, sexo, peso, talla y nivel de actividad, cada uno con su origen y su fecha. «Anotaciones» es tuyo: la persona no lo ve.
+3. Si falta lo que contó, «Completarlo ahora con» la persona abre la carga en el mismo lugar, con «Primero lo necesario para planificar» y «Cargar también el resto»; al terminar, vuelve a la evaluación, y la persona lo confirma desde la app. «Enviárselo» lo pide a la app, como «Pedir información».
+4. «Definir el objetivo». En Nutrición, el «Requerimiento energético estimado (kcal por día)», las proteínas, los carbohidratos y las grasas en gramos, el «Fundamento» y «Vigente desde»: «Guardar nueva versión». BE dice las kcal que suman los gramos (4, 4 y 9 por gramo) y avisa si no coinciden con el requerimiento; el «%» de cada macro va con su base («18 % de las 2.500 kcal · 112 g»). En Entrenamiento, el «Objetivo» y su «Fundamento»: «Emitir nueva versión».
+5. En Nutrición, si querés que BE proponga los números, «Calcular»: «Usar la toma del» día de la toma o «Cargar a mano»; elegir el método (cada uno dice para quién sirve; «De dónde sale» y «Fuente» muestran la fórmula y la cita), el ajuste («Mantener», «Déficit» o «Superávit») y los g/kg de proteína y grasa. «Usar estos valores en el objetivo» los lleva al formulario: BE propone, vos decidís.
+6. Seguir con el plan. Más adelante, en el «Resumen» del área, «Nueva evaluación» o «Nueva versión de objetivo».
 
-**Lo que se ve.** «Objetivo definido. Sigue el plan.». El «Resumen» del área muestra el «Estado del seguimiento», el objetivo vigente con su fundamento y la «Historia del objetivo», con sus versiones.
+![Figura 6b: La franja de los pasos y la evaluación en tres bloques, con «Anotaciones» y «Completarlo ahora con». Captura del website](pendiente)
+
+![Figura 6c: «Calcular», con la toma, el método, el ajuste sin signo y «Usar estos valores en el objetivo». Captura del website](pendiente)
+
+**Lo que se ve.** «Objetivo definido. Sigue el plan.». El «Resumen» del área muestra el «Estado del seguimiento», el objetivo vigente con su fundamento y la «Historia del objetivo», con sus versiones. Si el objetivo se apoya en una toma y llega una más nueva, BE lo avisa y no recalcula solo.
 
 | Si pasa esto | Qué hacer |
 | --- | --- |
@@ -226,7 +216,7 @@ Cada tarea responde lo mismo, en el mismo orden: **para qué** sirve; **quién**
 
 **Quién puede.** El profesional de Nutrición, con el vínculo y el permiso del área y un objetivo vigente.
 
-![Figura 7: El editor del plan de Nutrición, con la versión 5 en preparación para Norma Castro, persona de la historia sintética. Captura del website, vista por la Lic. Sofía Paz](pendiente)
+![Figura 7: El editor del plan de Nutrición: la versión en preparación, el reparto por comida del día tipo, las franjas de cada comida y «Rangos y totales». Captura del website](pendiente)
 
 > **Texto de la figura:**
 > - 1. «5 · en preparación» al lado de «4 · activa»: la persona no ve el borrador.
@@ -235,15 +225,19 @@ Cada tarea responde lo mismo, en el mismo orden: **para qué** sirve; **quién**
 > - 4. «Revisar y activar…».
 > - 5. Los días tipo y «Agregar».
 > - 6. Cada comida, con sus opciones: la persona elige una.
-> - 7. «Rangos y totales» del día y de cada comida.
+> - 7. «Rangos y totales» del día y de cada comida, con sus íconos.
+> - 8. El «Reparto por comida» del día tipo y la franja de cada comida, con las opciones tildadas.
 
 **Los pasos.**
 
-1. En «Plan», empezar la versión: «Crear nuevo plan», «Nueva versión del plan» (desde la vigente) o «Empezar desde una plantilla». También se puede «Armar con el asistente», en siete pasos: «Punto de partida», «Objetivo», «Días tipo», «Comidas», «Opciones», «Revisar» y «Activar».
-2. En «Día tipo», armar cada día tipo con sus comidas; «Agregar comida» suma «Una comida vacía» o «Una comida habitual».
-3. En cada comida, sumar opciones: «Opción de alimentos» u «Opción de receta». En la opción, «Buscar un alimento»: los habituales van primero; si no está, «Crearlo a mano» o «Importarlo de Open Food Facts». «Guardar la opción».
-4. Al costado, mirar «Rangos y totales»: entre cuánto y cuánto va el día según la opción que elija la persona, y cada comida.
-5. Cuando está listo, «Revisar y activar…» («Revisar y activar el plan»).
+1. En «Plan», empezar la versión: «Crear nuevo plan» (sin plan activo), «Nueva versión del plan» (copia la activa), «Empezar en blanco» (con una activa, sin copiarla) o «Empezar desde una plantilla». Todo se arma en el mismo editor.
+2. En «Día tipo», armar cada día tipo con sus comidas; «Agregar comida» suma «Una comida vacía» o «Una comida habitual». En la comida vacía, «Empezá con:» propone por dónde arrancar.
+3. En cada comida, sumar opciones: «Opción de alimentos» u «Opción de receta». En la opción, «Buscar un alimento»: los habituales van primero, y cada uno dice si es «Verificado» o «Tuyo», con el ícono de su grupo; si no está, «Crearlo a mano» o «Importarlo de Open Food Facts». La cantidad va en gramos o en una medida casera (la unidad, la cucharada, la taza o la porción), y la persona recibe los gramos. Mientras se escriben los gramos, cada alimento muestra lo que aporta. «Guardar la opción».
+4. En cada día tipo, el «Reparto por comida»: la «Parte del día» de cada comida (en % de las kcal del día, que suman 100) y el rango que resulta en kcal, proteínas, carbohidratos y grasas; solo llena lo vacío o pide confirmar.
+5. Cada comida muestra, aunque esté plegada, una franja por macro: la banda es el rango indicado y la raya, el promedio de sus opciones. Al abrir la comida, cada opción tiene una casilla y un punto de color: tildada, su punto aparece en las cuatro franjas, lleno si queda adentro del rango y hueco si queda afuera. Todo se mueve al cambiar una cantidad. La franja ubica y no califica.
+6. Una opción que es una receta muestra su miniatura y, abierta, «Cargar la imagen» o «Cambiar la imagen»: la imagen es de la receta y cambia en todos los lugares que la usan.
+7. Al costado, «Rangos y totales»: el día arriba y cada comida debajo, con sus íconos. El objetivo del día dice su versión y desde cuándo rige; si hay uno más nuevo, «Usarla ahora».
+8. Cuando está listo, «Revisar y activar…» («Revisar y activar el plan»).
 
 **Lo que se ve.** La versión en preparación dice que la persona no la ve; guardar no la activa. El estado se lee al lado: «Guardado a las …». En el menú «⋯», «Descartar la versión en preparación».
 
@@ -262,18 +256,21 @@ Cada tarea responde lo mismo, en el mismo orden: **para qué** sirve; **quién**
 **Los pasos.**
 
 1. En «Plan», empezar la versión: «Crear plan», «Armar con el asistente» (siete pasos, de «Punto de partida» a «Activar») o, sobre el plan vigente, «Ajustar el plan» desde la ficha.
-2. A la izquierda, la estructura: el «Bloque» con su «Propósito», sus semanas y sus «Sesiones». «+ Sesión» suma una.
-3. Sumar ejercicios con «Agregar ejercicio»: «Buscar en el catálogo BE» y filtrar por zona. Los que la persona ya hizo en tus planes llevan la marca **«Con historial»**, con cuántas sesiones y cuándo fue la última. Marcar uno o varios, escribir si se quiere una «Prescripción para todos (opcional)» y «Agregar». Si no está, «Crear un ejercicio propio» o «Importar desde wger».
-4. Escribir la prescripción en una línea, por ejemplo «4×8-12 RIR 2 · 60 kg · 90 s», y Enter; o serie por serie en la planilla: «Repeticiones», «Carga sugerida», «RIR», «Descanso» y «Nota». «Presets» aplica una prescripción lista a la sesión.
-5. En «Días de entrenamiento», «Elegir los días» de cada sesión.
+2. A la izquierda, la estructura: la «Fase» con su «Propósito», sus semanas y sus «Sesiones», con los días al lado de cada sesión. «+ Sesión» suma una, y «Sesiones vacías» arma A, B y C de una vez. Dentro de una sesión, un «Bloque» opcional agrupa ejercicios «Seguido» o «En vueltas», con las vueltas y el descanso.
+3. Sumar ejercicios con «Agregar ejercicio»: «Buscar en el catálogo BE» y filtrar por zona; los elegidos quedan a la vista. Los que la persona ya hizo en tus planes llevan la marca **«Con historial»**, con cuántas sesiones y cuándo fue la última. Marcar uno o varios, escribir si se quiere una «Prescripción para todos (opcional)» y «Agregar». Si no está, «Crear un ejercicio propio» o «Importar desde wger».
+4. Escribir la prescripción en una línea, por ejemplo «4×8-12 RIR 2 · 60 kg · 90 s», y «Aplicar»; o serie por serie en la planilla: «Repeticiones», «Carga sugerida», el esfuerzo, «Descanso» y «Nota». Las series de calentamiento llevan la marca «C», van arriba de las efectivas y no entran en ninguna cuenta. Cada valor dice si es común, propio o «Sin indicar». Las repeticiones, el descanso y la carga tienen su mínimo, su máximo y su paso: con ↑ y ↓ suman o restan una repetición, 15 segundos o 2,5 kg. Lo que no se entiende se marca en su celda y un renglón debajo de la tabla dice qué corregir. «Presets» aplica una prescripción lista a la sesión. Cómo se lee la tabla va detrás del «?».
+5. Al pie de las sesiones, «Cómo se escribe el esfuerzo»: «RIR (repeticiones en reserva)» o «RPE (esfuerzo de 6 a 10)». Es la misma medida escrita de dos formas (RPE = 10 − RIR); la persona responde y ve todo así, y BE guarda siempre el RIR.
+6. En «Días de entrenamiento», «Elegir los días» de cada sesión.
 
 ![Figura 8: «Agregar ejercicio» en el plan de Diego Sosa: arriba, qué cuenta la marca; la sentadilla, «Con historial», con 47 sesiones y la última el 9 de noviembre. Captura del website, vista por el Prof. Martín Acosta](pendiente)
 
-6. En cada ejercicio, «Detalle y fuerza estimada» (o «La vez pasada»): arriba, «Lo que indica el plan»; debajo, **«La vez pasada»**, lo que la persona registró las últimas veces.
+7. En cada ejercicio, «Detalle y fuerza estimada» (o «La vez pasada»): arriba, «Lo que indica el plan»; debajo, **«La vez pasada»**, lo que la persona registró las últimas veces.
 
-**Lo que se ve.** «La vez pasada» muestra lo que la persona registró de ese ejercicio en tus planes en los últimos tres meses, serie por serie, y no se mezcla con lo indicado. Cada valor dice si lo escribió la persona («Escrita por la persona») o si cargó los valores del plan; una sesión cargada otro día o corregida, lo dice. Debajo, «En el tiempo» abre el historial del ejercicio («El historial del ejercicio y el 1RM estimado»).
+**Lo que se ve.** «La vez pasada» muestra lo que la persona registró de ese ejercicio en tus planes en los últimos tres meses, serie por serie, y no se mezcla con lo indicado. Cada valor dice si lo escribió la persona («Escrita por la persona») o si cargó los valores del plan; una sesión cargada otro día o corregida, lo dice. Con el plan en RPE, «La vez pasada» se lee en RPE. Debajo, «En el tiempo» abre el historial del ejercicio («El historial del ejercicio y el 1RM estimado»).
 
 La versión en preparación se guarda sola y la persona no la ve hasta que se activa.
+
+![Figura 9b: «Cómo se escribe el esfuerzo» con RPE elegido, y la tabla de series con sus límites. Captura del website](pendiente)
 
 ![Figura 9: El cuadro de la sentadilla, desde «Detalle y fuerza estimada»: «La vez pasada» de Diego Sosa, sesión por sesión, en kg × repeticiones · RIR, y «En el tiempo». Captura del website, vista por el Prof. Martín Acosta](pendiente)
 
@@ -294,7 +291,7 @@ La versión en preparación se guarda sola y la persona no la ve hasta que se ac
 **Los pasos.**
 
 1. En el editor, «Revisar y activar…».
-2. «Lo que impide activar»: cada problema con «Ir a corregir»; lo que queda sin completar y no impide, aparte, con «Ir». Leer «Lo que cambia frente a la versión …» y «Lo que va a ver …».
+2. «Lo que impide activar»: cada problema con «Ir a corregir»; lo que queda sin completar y no impide, aparte, con «Ir». Leer «Lo que cambia frente a la versión …» (también si cambió cómo se escribe el esfuerzo: «Cómo se escribe el esfuerzo: RIR → RPE») y «Lo que va a ver …».
 3. «¿Cuándo la revisás?»: «En 1 semana», «En 2 semanas», «En 4 semanas», «Elegir una fecha» o «Sin fecha por ahora».
 4. «Activar la versión … de …», o «Volver al plan» sin activar.
 
@@ -338,6 +335,24 @@ La versión en preparación se guarda sola y la persona no la ve hasta que se ac
 | --- | --- |
 | No aparece «Descargar el plan en PDF» | El botón está en la versión activa, no en la que está en preparación. |
 | «Ocultar nombres» está prendido | BE pregunta antes: «Descargar sin los nombres» o «Volver». Para dársela con su nombre, apagarlo en el menú «Cuenta». |
+
+## 2.7 El contexto de la persona mientras planificás
+
+**Para qué.** Decidir con lo importante de la persona a la vista, sin salir del editor del plan.
+
+**Quién puede.** El profesional del área, con el vínculo y el permiso del área. Lo que la persona no comparte no aparece.
+
+**Los pasos.**
+
+1. En el editor del plan, abrir el panel «Contexto de…» con el nombre de la persona.
+2. Pasar por sus cinco pestañas: «Lo importante», «Formularios», «Cuerpo», «Otras áreas» y «Notas».
+3. En la evaluación, «Citar» una respuesta la deja unida a la evaluación, sin copiarla.
+
+**Lo que se ve.** Lo importante de la persona, sus formularios, su cuerpo, lo que comparte de sus otras áreas y las notas, al lado del plan. Al volver a la pestaña, si hay algo nuevo, «Hay datos nuevos · Ver».
+
+| Si pasa esto | Qué hacer |
+| --- | --- |
+| Una pestaña no muestra nada de otra área | La persona no la comparte con vos: se puede pedir con «Pedir acceso a lo que no se comparte». |
 
 # 3. El seguimiento
 
@@ -387,7 +402,7 @@ La versión en preparación se guarda sola y la persona no la ve hasta que se ac
 | --- | --- |
 | «Ese día no había un plan vigente.» | No hay con qué comparar ese día: el plan empezó a regir después. |
 | «Este registro no está disponible con tu acceso actual.» | El permiso del área cambió: lo dice «Acceso actual». |
-| «No pudimos leer las notas de las sesiones.» | «Actualizar» en la ficha. |
+| «No pudimos leer las notas de las sesiones.» | Volver a la pestaña: BE se fija solo si hay algo nuevo y lo dice con «Hay datos nuevos · Ver». |
 
 ## 3.3 Registrar una revisión y aplicar la decisión
 
@@ -436,14 +451,17 @@ En Entrenamiento, una progresión que conserva la estructura se registra como «
 
 1. En la ficha, «Abrir Antropometría». En «Tomas», «Preparar una toma» (o «Seguir con la toma en preparación», si quedó una a medias).
 2. En «Datos de la toma»: «Cuándo se tomó», «Cómo se obtuvo» y el «Protocolo».
-3. Cargar los valores en «Medidas en la figura», con «Perímetros» y «Pliegues» sobre la figura del cuerpo. Lo que el protocolo no declara va en «Fuera de la figura», con «Agregar medición». Mientras se carga, la toma se guarda sola.
-4. «Registrar toma» y, en el cuadro que lo explica, «Registrar esta toma».
-5. En el detalle de la toma, «Calcular con un método»: elegir uno de «Se pueden calcular con esta toma», mirar lo que «Pide» y lo que «Da», y tocar «Calcular».
-6. Bajar hasta «Desde el inicio y desde la anterior».
+3. En «Qué vas a calcular», «Elegir métodos»: uno o varios, o un conjunto de un toque («Kerr (1988), cinco componentes» o «Somatotipo de Heath y Carter»). La figura y la lista marcan solo lo que piden, más peso, talla y edad; vienen elegidos los de tu última toma, «+ Otra medición» suma un punto suelto y lo que ya tiene dato nunca se esconde. Al elegir Jackson y Pollock, BE dice dónde se toma el suprailíaco.
+4. Cargar los valores en «Medidas en la figura», con «Perímetros» y «Pliegues» sobre la figura del cuerpo. Lo que el protocolo no declara va en «Fuera de la figura», con «Agregar medición». Mientras se carga, la toma se guarda sola.
+5. «Registrar toma» y, en el cuadro que lo explica, «Registrar esta toma».
+6. En el detalle de la toma, «Calcular con un método»: elegir uno de «Se pueden calcular con esta toma», mirar lo que «Pide» y lo que «Da», y tocar «Calcular».
+7. Bajar hasta «Desde el inicio y desde la anterior».
 
 ![Figura 15: «Desde el inicio y desde la anterior», al final de la toma más reciente de Diego Sosa: cada diferencia es una resta, con su signo, su unidad y los días entre fechas. Captura del website](pendiente)
 
-**Lo que se ve.** «Toma registrada. Ya forma parte de la evolución.». La tabla compara solo tomas con el mismo protocolo, método y unidad, con las «Mediciones» y los «Resultados calculados», cada uno con su método y su versión. En «Evolución», cada medida en el tiempo, «Por medida», «Por sitio» (dos tomas, sitio por sitio) o «Por método» (la masa grasa según cada método, en un eje común).
+**Lo que se ve.** «Toma registrada. Ya forma parte de la evolución.». La tabla compara solo tomas con el mismo protocolo, método y unidad, con las «Mediciones» y los «Resultados calculados», cada uno con su método y su versión. En «Evolución», cada medida en el tiempo, «Por medida», «Por sitio» (dos tomas, sitio por sitio) o «Por método» (la masa grasa según cada método, en un eje común). Con Kerr, un cuadro con el peso de la balanza, las cinco masas, el «Peso estructurado» (su suma) y la diferencia con el peso medido, en kg y en % del peso medido.
+
+![Figura 15b: «Qué vas a calcular» y el cuadro de Kerr con el «Peso estructurado». Captura del website](pendiente)
 
 | Si pasa esto | Qué hacer |
 | --- | --- |
@@ -469,7 +487,7 @@ En Entrenamiento, una progresión que conserva la estructura se registra como «
 4. «Perfil de carga y repeticiones» muestra la carga frente a las repeticiones.
 5. «Abrir en Analizar» lleva el gráfico a la ficha («Analizar la historia de la persona»).
 
-**Lo que se ve.** Una estimación por sesión, nunca una medición. BE estima solo con series de RIR 0 a 2, y lo dice: «Solo lo ves vos: la persona no ve estimaciones.». Desde la tarjeta de la fuerza, «Registrar una serie observada» suma una serie medida por el profesional, y «Calcular la carga desde la estimación…» propone una carga: «Nada se escribe hasta que confirmes.».
+**Lo que se ve.** Una estimación por sesión, nunca una medición. BE estima solo con series efectivas de RIR 0 a 2 (RPE 8 a 10), y cada estimación dice con qué serie salió: «estimado con 5 reps a RPE 8 · 100 kg». Lo dice también así: «Solo lo ves vos: la persona no ve estimaciones.». Desde la tarjeta de la fuerza, «Registrar una serie observada» suma una serie medida por el profesional, y «Calcular la carga desde la estimación…» propone una carga: «Nada se escribe hasta que confirmes.».
 
 ![Figura 16: «1RM estimado (Epley v1)» de la sentadilla de Diego Sosa: una estimación por sesión, con la versión del plan arriba (v8). Captura del website](pendiente)
 
@@ -648,7 +666,7 @@ En Entrenamiento, una progresión que conserva la estructura se registra como «
 
 ## 6.1 Plantillas, recetas y ejercicios propios
 
-**Para qué.** No empezar cada plan desde cero: guardar lo que funciona como plantilla o como habitual, armar recetas propias para usarlas como opción de una comida y sumar ejercicios que no están en el catálogo.
+**Para qué.** No empezar cada plan desde cero: preparar plantillas, aun sin una persona, guardar lo que funciona como habitual, armar recetas propias o usar las del Recetario de BE como opción de una comida, y sumar ejercicios que no están en el catálogo.
 
 **Quién puede.** Cada profesional, con lo suyo: las recetas, con el área de Nutrición; los ejercicios propios, con la de Entrenamiento. Nada de esto lleva datos de una persona.
 
@@ -656,8 +674,8 @@ En Entrenamiento, una progresión que conserva la estructura se registra como «
 
 | Dónde | Qué se hace |
 | --- | --- |
-| «Plantillas y habituales» | «Plantillas de entrenamiento», «Plantillas de comidas», «Habituales de entrenamiento» y «Habituales de nutrición». Se guardan desde un plan, con «Guardar como plantilla» o «Guardar como habitual»; acá se ven, se renombran, se archivan y se quitan. |
-| «Mis recetas» | «Nueva receta»: el nombre, los ingredientes con su cantidad y las porciones; «Guardar receta». En el plan, una receta entra como opción de una comida. |
+| «Plantillas y habituales» | «Plantillas de entrenamiento», «Plantillas de comidas», «Habituales de entrenamiento» y «Habituales de nutrición». Se guardan desde un plan, con «Guardar como plantilla» o «Guardar como habitual»; acá se ven, se renombran, se archivan y se quitan. Una plantilla de entrenamiento también se prepara sin una persona: «Nueva plantilla» (en blanco o desde otra), «Editar» o «Crear otra desde esta», en el mismo editor de los planes; «Revisar» y «Guardar plantilla» o «Guardar nueva versión». Editarla no toca los planes que salieron de ella, y cada plan dice qué versión se aplicó. |
+| «Mis recetas» | Dos pestañas: «Mis recetas» («Nueva receta»: el nombre, los ingredientes con su cantidad, las porciones y su imagen; «Guardar receta») y el «Recetario de BE», recetas para todos los profesionales de Nutrición que se usan tal cual como opción o se copian con «Copiar a Mis recetas». Una receta propia se puede «Proponer al Recetario de BE»: si tiene foto, «Leí y acepto la cesión de la foto»; Administración la suma o no. En el plan, una receta entra como opción de una comida. |
 | «Mis ejercicios» | «Crear ejercicio» con su «Nombre del ejercicio», y «Agregar una imagen». Solo los ve el profesional y, cuando forman parte de un plan activado, la persona a la que se lo indicó. |
 | «Presets», en el editor de Entrenamiento | Prescripciones listas para una sesión: «De BE · punto de partida» (Hipertrofia, Fuerza, Resistencia, Técnica) y las «Tuyos». «Usar» las escribe en el borrador. |
 
@@ -665,10 +683,27 @@ En Entrenamiento, una progresión que conserva la estructura se registra como «
 
 ![Figura 26: Los presets de una sesión, en el editor de Entrenamiento: los de BE y los propios, con «Usar». Captura del website](pendiente)
 
+![Figura 26b: «Mis recetas» con sus dos pestañas, «Mis recetas» y «Recetario de BE», y el cuadro de «Proponer al Recetario de BE». Captura del website](pendiente)
+
 | Si pasa esto | Qué hacer |
 | --- | --- |
 | «Ya tenés una plantilla con ese nombre.» | Elegir otro nombre, o renombrar la que ya está. |
 | «Las recetas son del área de Nutrición, y tu cuenta no la tiene habilitada.» | Las recetas y los ejercicios propios dependen del área habilitada por Administración. |
+| «Tiene un alimento que cargaste a mano: para proponerla, cambialo por uno del catálogo verificado.» | Cambiar ese ingrediente por uno «Verificado» y volver a proponerla. |
+
+## 6.2 Mis alimentos
+
+**Para qué.** Corregir o retirar un alimento que cargaste a mano sin romper los planes ni las recetas que lo usan.
+
+**Quién puede.** El profesional de Nutrición, con lo que cargó él: lo cargado a mano es tuyo, y otro profesional no lo ve.
+
+**Los pasos.**
+
+1. En el editor de Nutrición, dentro de una opción, «¿Uno tuyo tiene un error? Corregilo en» → «Mis alimentos (en otra pestaña)».
+2. Elegir el alimento: «Corregir» abre su formulario, con sus valores y sus medidas caseras (cada una con su equivalencia en gramos); guardar crea una versión nueva.
+3. «Retirar» lo saca del buscador.
+
+**Lo que se ve.** Los planes activados y las recetas conservan la versión que usaban; lo que cita un alimento retirado lo sigue mostrando, marcado. Si Administración suma al catálogo verificado un alimento parecido, el buscador te lo sugiere primero.
 
 # 7. Si algo falla en cualquier pantalla
 
@@ -680,8 +715,8 @@ En Entrenamiento, una progresión que conserva la estructura se registra como «
 | --- | --- |
 | Al recargar aparece «Recuperando tu sesión…» | Es normal: la sesión vuelve sola. Vence a las 12 horas; después, se entra de nuevo con el código. |
 | Al entrar con otra cuenta, las otras pestañas se recargaron | Es a propósito, para no mostrar los datos de otra cuenta. Una segunda cuenta va en una ventana privada. |
-| Un aviso dice que algo cambió en otra pestaña o en otro equipo | BE no pisa lo del otro ni guarda a medias. Lo tuyo sigue en pantalla: copiar lo necesario, «Actualizar» y repetir. |
-| Lo que hizo la persona no aparece | «Actualizar», arriba de la ficha: al lado dice «Consultado a las» y la hora de lo que se ve. |
+| Un aviso dice que algo cambió en otra pestaña o en otro equipo | BE no pisa lo del otro ni guarda a medias. Lo tuyo sigue en pantalla: copiar lo necesario, «Cargar la versión guardada» y repetir. |
+| Lo que hizo la persona no aparece | Al volver a la pestaña, BE se fija solo si hay algo nuevo: «Hay datos nuevos · Ver». |
 | Sin conexión, BE no pudo guardar | Lo escrito sigue en pantalla. Al volver la conexión, «Reintentar». |
 | No se ven los datos de una persona | Mirar «Acceso actual» en su ficha: con el vínculo en pausa o un permiso retirado, no hay acceso. Lo decide la persona. |
 | Hace falta mostrar la pantalla a otros | «Ocultar nombres», en el menú «Cuenta», reemplaza los nombres por una referencia. |
