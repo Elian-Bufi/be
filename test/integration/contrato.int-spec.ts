@@ -1949,6 +1949,16 @@ it('TEST-CT (WP-NOVEDADES-Y-AVISOS): NOV-01 a 06, con éxitos y errores declarad
   await ase.put(preferencias).send({ mealLogReminder: true, trainingLogReminder: false, otro: true }).expect(400); // UNKNOWN_FIELD
   await ase.put(preferencias).send({ mealLogReminder: 'sí', trainingLogReminder: false }).expect(400); // INVALID_REQUEST
   await request(servidor).put(preferencias).send({ mealLogReminder: true, trainingLogReminder: true }).expect(401);
+  // RGU-01 y 02 (DL-195): los recorridos guiados del usuario de la sesión.
+  const recorridos = '/api/v1/me/guided-tours';
+  await ase.get(recorridos).expect(200);
+  await ase.get(`${recorridos}?x=1`).expect(400); // INVALID_REQUEST
+  await request(servidor).get(recorridos).expect(401);
+  await ase.put(`${recorridos}/training-plan-editor`).send({ state: 'SKIPPED' }).expect(200);
+  await ase.put(`${recorridos}/training-plan-editor`).send({ state: 'SKIPPED', otro: 1 }).expect(400); // UNKNOWN_FIELD
+  await ase.put(`${recorridos}/training-plan-editor`).send({ state: 'DONE' }).expect(400); // INVALID_REQUEST
+  await ase.put(`${recorridos}/no-existe`).send({ state: 'SEEN' }).expect(404); // RESOURCE_NOT_FOUND
+  await request(servidor).put(`${recorridos}/training-plan-editor`).send({ state: 'SEEN' }).expect(401);
 });
 
 it('TEST-CT (WP-INVITACION): INV-01 a 05, con éxitos y errores declarados', async () => {

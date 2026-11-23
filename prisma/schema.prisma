@@ -257,6 +257,7 @@ model Identidad {
   novedadesOriginadas        Novedad[]                   @relation("NovedadDeLaFuente")
   suscripcionesPush          SuscripcionPush[]           @relation("SuscripcionPushDeLaIdentidad")
   preferenciasDeRecordatorio PreferenciaDeRecordatorio[] @relation("PreferenciaDeRecordatorioDeLaIdentidad")
+  recorridosGuiados          RecorridoGuiadoVisto[]      @relation("RecorridoGuiadoVistoDeLaIdentidad")
 
   // WP-INVITACION (DL-136)
   invitacionesDeVinculo    InvitacionDeVinculo[]    @relation("InvitacionDelProfesional")
@@ -4342,6 +4343,30 @@ model PreferenciaDeRecordatorio {
 
   @@id([identidadId, tipo])
   @@map("preferencia_de_recordatorio")
+}
+
+/// DL-195 (WP-RECORRIDOS-GUIADOS) — Cómo terminó un recorrido guiado: VISTO (llegó al final y tocó «Terminar») u OMITIDO.
+/// Los dos lo dan por visto: no vuelve a aparecer solo.
+enum EstadoDelRecorridoGuiado {
+  VISTO
+  OMITIDO
+}
+
+/// DL-195 — Los recorridos guiados que vio u omitió cada usuario: una fila por recorrido. Es una preferencia de la
+/// pantalla, sin datos de salud, y se recuerda por usuario (no por navegador). Sin fila, no lo vio. Mutable: volver a
+/// verlo y terminarlo cambia el estado; cada cambio queda en la auditoría.
+model RecorridoGuiadoVisto {
+  identidadId            String                   @map("identidad_id") @db.Uuid
+  /// El identificador del recorrido, el de la ruta (`training-plan-editor`); la API acepta solo los de @be/domain.
+  recorrido              String
+  estado                 EstadoDelRecorridoGuiado
+  procedencia            Json
+  momentoDeActualizacion DateTime                 @default(now()) @map("momento_de_actualizacion") @db.Timestamptz(3)
+
+  identidad Identidad @relation("RecorridoGuiadoVistoDeLaIdentidad", fields: [identidadId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@id([identidadId, recorrido])
+  @@map("recorrido_guiado_visto")
 }
 
 // ─── RF-058 · UC-S01 · TVCC-30 (DL-135) ───────────────────────────────────────────────────────────

@@ -219,3 +219,6 @@ export * from './calculador-de-macros';
 export * from './evaluacion-inicial';
 // WP-RPE-Y-MAXIMO-ESTIMADO (DL-192): el RPE como segunda notación del RIR y el máximo estimado escrito en esa notación.
 export * from './notacion-del-esfuerzo';
+
+// WP-RECORRIDOS-GUIADOS (DL-195): los recorridos guiados del espacio profesional (pasos, lógica y API-RGU-01 y 02).
+export * from './recorridos-guiados';

@@ -85,6 +85,9 @@ export const RECORRIDOS = {
   // DL-191 (WP-RECETARIO-E-IMAGENES): el recetario, copiar y cargar la imagen desde el cajón del plan; la semilla del
   // recetario la carga correr.mjs en la base local.
   recetario: { habilitado: ['NUTRICION'], datos: ['borrador'] },
+  // DL-195 (WP-RECORRIDOS-GUIADOS): el recorrido guiado del editor de Entrenamiento, con una cuenta que no lo vio. Es el
+  // único que lo ve: a los demás profesionales la preparación les marca los recorridos como omitidos (ver `datos`).
+  recorridosGuiados: { habilitado: ['ENTRENAMIENTO'], datos: ['borrador-de-entrenamiento'], recorridosSinVer: true },
 };
 const vinculosDe = (r) => r.vinculos ?? r.habilitado;
 
@@ -319,6 +322,9 @@ export async function datos(estado) {
     const pro = await sesion(e.pro.correo);
     // UF-11 (DL-169): la primera sesión del profesional configuraba su segundo factor; desde DL-177 no hace nada.
     await verificarSegundoFactor(e.pro.correo, pro);
+    // DL-195: el recorrido guiado aparece solo la primera vez que se abre un editor, y es modal. Los recorridos que no lo
+    // prueban empiezan con los dos omitidos, por la API, como si el profesional los hubiera cerrado antes.
+    if (!r.recorridosSinVer) for (const t of dominio.RECORRIDOS_GUIADOS) await pedir('PUT', `/me/guided-tours/${t}`, { token: pro, cuerpo: { state: 'SKIPPED' }, clave: false });
     const ase = await sesion(e.ase.correo, 'APK');
     e.ase.nombre = nombreDeLaPersona(recorrido);
     await ponerNombre(ase, e.ase.nombre);

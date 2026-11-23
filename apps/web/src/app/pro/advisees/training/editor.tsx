@@ -90,7 +90,9 @@ import {
   ventanasDeLasSesiones,
   type MesDelAlmanaque,
   type PlanificacionDelPlan,
+  RECORRIDO_DEL_EDITOR_DE_ENTRENAMIENTO,
 } from '@be/domain';
+import { BotonVerElRecorrido, RecorridoGuiado, useRecorridoGuiado } from '../../../../components/recorrido-guiado';
 import { Almanaque, type SesionDelAlmanaque } from './almanaque';
 import { DatosDeLaFase, DatosDelPlan, DiasDeLaFase, letraDeLaSesion } from './plan-y-fases';
 import { MarcoDelPanel, PanelDelEjercicio, PatronesAPedido } from './panel-del-editor';
@@ -1171,6 +1173,10 @@ export function EditorDePlan({
     setDescartar(false);
     plantilla.onDescartada(p.templateId === null || p.baseVersionNumber === null ? PLT.descartadaLaNueva : PLT.descartadosLosCambios(p.baseVersionNumber));
   }
+
+  // DL-195 (GUI-08): el recorrido guiado aparece solo la primera vez que el profesional abre el editor de una versión del
+  // plan (no en la plantilla ni en el asistente).
+  const recorrido = useRecorridoGuiado('training-plan-editor', version !== null && !plantilla && esDelPlan(version) && pasoPedido(parametros.get('asistente')) === null);
 
   if (error === 'no-disponible' && plantilla) return <PreparacionQueYaNoEsta volver={plantilla.volver} />;
   if (error === 'no-disponible') return <NoDisponible />;
@@ -2352,6 +2358,8 @@ export function EditorDePlan({
           ) : null}
         </h2>
         <div className="editor-del-plan__acciones">
+          {/* DL-195 (GUI-10): «Ver el recorrido», el primero de la barra: un lugar fijo, que no se mueve con el estado. */}
+          {pasoDelAsistente ? null : <BotonVerElRecorrido alTocar={recorrido.abrir} />}
           <EstadoDeGuardado
             className="editor-del-plan__estado"
             guardando={guardando}
@@ -2858,7 +2866,7 @@ export function EditorDePlan({
                             />
                           ) : null}
                         </div>
-                        <div className="fase-del-plan__sesiones" data-foco="sesion" data-recorrido="editor-entrenamiento-sesion">
+                        <div className="fase-del-plan__sesiones" data-foco="sesion" data-recorrido="sesiones">
                           <div className="plan__niveles niveles-del-editor">
                             {sesion ? (
                               <SelectorDeNivel nivel="sesion" rotulo={C.sesion} opciones={paraElegir(sesiones.map(nombreDeLaSesion))} elegido={{ order: k + 1, label: nombreDeLaSesion(sesion, k) }} onElegir={(o) => elegirSesion(o - 1)}>
@@ -3045,6 +3053,7 @@ export function EditorDePlan({
                                   id="agregar-ejercicios-a-la-sesion"
                                   className="boton boton--quieto"
                                   data-agregar-ejercicio
+                                  data-recorrido="agregar-ejercicio"
                                   onClick={() => {
                                     setAgregandoEn(null);
                                     setAgregando(true);
@@ -3059,6 +3068,7 @@ export function EditorDePlan({
                                   type="button"
                                   className="boton boton--quieto"
                                   data-agregar-bloque-de-la-sesion
+                                  data-recorrido="agregar-bloque"
                                   aria-disabled={sinAgregarBloque ? true : undefined}
                                   aria-describedby={sinAgregarBloque ? `${prefijo}-s${k}-tope-de-bloques` : undefined}
                                   onClick={() => {
@@ -3278,6 +3288,9 @@ export function EditorDePlan({
           void prescripcionesHabituales.recargar();
         }}
       />
+
+      {/* DL-195: el recorrido guiado del editor, sobre todo lo demás (va en un portal). */}
+      <RecorridoGuiado definicion={RECORRIDO_DEL_EDITOR_DE_ENTRENAMIENTO} abierto={recorrido.abierto} alCerrar={recorrido.cerrar} />
 
       <AgregarEjercicio
         abierto={agregando && !!sesion}

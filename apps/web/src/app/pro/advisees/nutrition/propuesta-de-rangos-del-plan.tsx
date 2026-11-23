@@ -221,7 +221,7 @@ export function RepartoPorComida({
   );
   if (!dia || dia.comidas.length === 0) {
     return (
-      <section className="reparto-por-comida" aria-labelledby={`${id}-titulo`} data-reparto-por-comida>
+      <section className="reparto-por-comida" aria-labelledby={`${id}-titulo`} data-reparto-por-comida data-recorrido="reparto">
         {encabezado}
         {/* Con comidas nuevas todavía sin guardar, lo que falta es guardar; sin ninguna, agregarlas. */}
         <p className="nota" data-reparto-sin-comidas>{dia && comidasSinGuardar === 0 ? C.sinComidasGuardadas : C.sinDiaGuardado}</p>
@@ -302,7 +302,7 @@ export function RepartoPorComida({
   const ilegible = (texto: string | undefined) => (texto ?? '').trim() !== '' && parteEscrita(texto) === null;
 
   return (
-    <section className="reparto-por-comida" aria-labelledby={`${id}-titulo`} data-reparto-por-comida>
+    <section className="reparto-por-comida" aria-labelledby={`${id}-titulo`} data-reparto-por-comida data-recorrido="reparto">
       {encabezado}
       {calculo.estado === 'leyendo' ? <p className="nota" role="status">Leyendo el objetivo…</p> : null}
       {calculo.estado === 'falla' ? <p className="nota">No se pudo leer el cálculo del objetivo. Se vuelve a intentar al abrir de nuevo el editor.</p> : null}

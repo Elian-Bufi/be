@@ -394,6 +394,7 @@ export function EjercicioDelEditor({
     <section
       className="comida-del-plan ejercicio-del-editor"
       data-ejercicio={posicion + 1}
+      data-recorrido="ejercicio"
       data-abierta={abierto ? '' : undefined}
       data-en-bloque={nivel === 'h4' ? '' : undefined}
       data-foco="ejercicio"

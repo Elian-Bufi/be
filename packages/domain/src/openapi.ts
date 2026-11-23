@@ -90,6 +90,7 @@ import {
   RegistrarSuscripcionPushRequestSchema,
   SuscripcionPushResponseSchema,
 } from './contratos-novedades';
+import { MarcarRecorridoRequestSchema, RecorridosVistosResponseSchema, RecorridoVistoResponseSchema } from './recorridos-guiados';
 import {
   AceptarSolicitudResponseSchema,
   ConsentimientoDeSaludOtorgadoResponseSchema,
@@ -4224,6 +4225,34 @@ const DEFINIDAS: readonly Operacion[] = [
     exitos: [{ status: 200, schema: PreferenciasDeAvisosResponseSchema }],
     errores: { ...SESION, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'] },
     fuente: '04 RF-062 (derivación: «10 preferencias») · pedido de Dirección del 2026-10-16 · ID propio de BE (familia NOV) · DEUDA_LEGAJO DL-133',
+  },
+
+  // ─── WP-RECORRIDOS-GUIADOS (DL-195): los recorridos guiados que vio u omitió el usuario de la sesión ─────────────────
+  // Una preferencia de la pantalla, sin datos de salud: solo lo propio, sin titular en la ruta. El 09 no la tiene.
+  {
+    id: 'API-RGU-01',
+    metodo: 'get',
+    ruta: '/me/guided-tours',
+    resumen:
+      'Los recorridos guiados que el usuario de la sesión vio hasta el final (SEEN) u omitió (SKIPPED), con cuándo. Un recorrido que no está, no lo vio: el website lo muestra solo la primera vez que abre esa interfaz. Cada usuario lee solo lo suyo.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    exitos: [{ status: 200, schema: RecorridosVistosResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST'] },
+    fuente: 'Pedido de Dirección del 2026-11-23 («un tutorial para las primeras veces») · WP-RECORRIDOS-GUIADOS GUI-06 · ID propio de BE (familia RGU) · DEUDA_LEGAJO DL-195',
+  },
+  {
+    id: 'API-RGU-02',
+    metodo: 'put',
+    ruta: '/me/guided-tours/{tourId}',
+    resumen:
+      'Marcar un recorrido guiado como visto (SEEN) u omitido (SKIPPED) para el usuario de la sesión. Repetirlo con el mismo estado no cambia nada; con el otro, lo reemplaza. Un recorrido que no existe es 404. Cada usuario marca solo lo suyo.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    request: MarcarRecorridoRequestSchema,
+    exitos: [{ status: 200, schema: RecorridoVistoResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 404: ['RESOURCE_NOT_FOUND'] },
+    fuente: 'Pedido de Dirección del 2026-11-23 («un tutorial para las primeras veces») · WP-RECORRIDOS-GUIADOS GUI-06 · ID propio de BE (familia RGU) · DEUDA_LEGAJO DL-195',
   },
 
   // ─── WP-INVITACION (DL-136): el profesional invita con un enlace o un código; usarla crea la solicitud de REL-01 ────────
