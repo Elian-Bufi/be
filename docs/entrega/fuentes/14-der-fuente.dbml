@@ -4,10 +4,10 @@
 
 Project BE {
   database_type: 'PostgreSQL'
-  Note: 'Modelo de datos de BE: 146 tablas, 280 claves foráneas y 102 conjuntos de valores, en 13 módulos. Ninguna clave foránea borra en cascada: todas son restrict.'
+  Note: 'Modelo de datos de BE: 163 tablas, 326 claves foráneas y 108 conjuntos de valores, en 13 módulos. Ninguna clave foránea borra en cascada: todas son restrict.'
 }
 
-// ─── Identidad y acceso ────────────────────────────────────────────────────────────────────────
+// ─── Identidad y acceso ───────────────────────────────────────────────────────────────────────────
 
 Table identidad [headercolor: #2F5D8A] {
   id uuid [pk, default: `gen_random_uuid()`, note: 'Identificador único de la fila.']
@@ -226,7 +226,7 @@ Table capacidad_de_cliente_declarada [headercolor: #2F5D8A] {
   Note: 'Qué capacidades declaró la versión de la app que usó una cuenta, para saber qué funciones puede ofrecerle.'
 }
 
-// ─── Administración, derechos y auditoría ──────────────────────────────────────────────────────
+// ─── Administración, derechos y auditoría ─────────────────────────────────────────────────────────
 
 Table rol_administrativo [headercolor: #5A4E8C] {
   id uuid [pk, default: `gen_random_uuid()`, note: 'Identificador único de la fila.']
@@ -534,7 +534,7 @@ Table cambio_de_incidencia [headercolor: #5A4E8C] {
   Note: 'Cada cambio de estado de una incidencia: el motivo, la respuesta para quien la reportó y la cuenta de Administración que lo registró. Solo se agrega.'
 }
 
-// ─── Profesionales, vínculos y consentimiento ──────────────────────────────────────────────────
+// ─── Profesionales, vínculos y consentimiento ─────────────────────────────────────────────────────
 
 Table perfil_profesional [headercolor: #1F7A70] {
   id uuid [pk, default: `gen_random_uuid()`, note: 'Identificador único de la fila.']
@@ -818,7 +818,7 @@ Table evento_de_vinculo [headercolor: #1F7A70] {
   Note: 'Los hechos del vínculo (solicitud, aceptación, pausa, finalización), con estado previo y posterior.'
 }
 
-// ─── Proceso de acompañamiento ─────────────────────────────────────────────────────────────────
+// ─── Proceso de acompañamiento ────────────────────────────────────────────────────────────────────
 
 Table proceso_operativo [headercolor: #7A5C1F] {
   id uuid [pk, default: `gen_random_uuid()`, note: 'Identificador único de la fila.']
@@ -946,7 +946,7 @@ Table archivo_de_nota_propia [headercolor: #7A5C1F] {
   Note: 'El archivo de una nota propia, una sola vez y por su autor. La nota no se borra: sigue en la historia.'
 }
 
-// ─── Nutrición ─────────────────────────────────────────────────────────────────────────────────
+// ─── Nutrición ────────────────────────────────────────────────────────────────────────────────────
 
 Table elemento_de_catalogo_nutricional [headercolor: #3E7D32] {
   id uuid [pk, default: `gen_random_uuid()`, note: 'Identificador único de la fila.']
@@ -981,7 +981,7 @@ Table evaluacion_nutricional [headercolor: #3E7D32] {
   contexto text [note: 'Contexto de la evaluación.']
   valoracion jsonb [not null, note: 'Los datos evaluados, cada uno con su fuente: informado, observado o calculado.']
   referencias jsonb [not null, note: 'Referencias que usó el profesional.']
-  notas text [note: 'Notas del profesional.']
+  notas text [note: 'Las «Anotaciones» del profesional, hasta 4.000 caracteres: ninguna lectura de la persona las devuelve.']
   procedencia jsonb [not null, note: 'De dónde vino la fila: la fuente, la superficie (app o website), la operación, el caso de uso y el pedido que la produjo.']
   momento_de_ocurrencia timestamptz(3) [not null, note: 'Cuándo pasó el hecho en la realidad; vacío si no se sabe.']
   momento_de_registro timestamptz(3) [not null, default: `now()`, note: 'Cuándo BE guardó la fila.']
@@ -1195,11 +1195,47 @@ Table evento_de_nutricion [headercolor: #3E7D32] {
   Note: 'Los hechos del área de Nutrición, en orden, para reconstruir la historia.'
 }
 
-// ─── Recetas, fotos y registro de comidas ──────────────────────────────────────────────────────
+Table cita_de_respuesta_en_evaluacion_nutricional [headercolor: #3E7D32] {
+  id uuid [pk, default: `gen_random_uuid()`, note: 'Identificador único de la fila.']
+  evaluacion_id uuid [not null, note: 'La evaluación a la que pertenece.']
+  respuesta_id uuid [not null, note: 'La respuesta.']
+  rectificacion_id uuid [note: 'La rectificación vigente al citar; `null` si lo vigente era la respuesta original.']
+  codigo_de_campo text [not null, note: 'El campo del formulario citado.']
+  orden integer [not null, note: 'Posición en la lista.']
+  momento_de_registro timestamptz(3) [not null, default: `now()`, note: 'Cuándo BE guardó la fila.']
+
+  indexes {
+    (evaluacion_id, orden) [unique]
+    (evaluacion_id, respuesta_id, codigo_de_campo) [unique]
+    respuesta_id
+  }
+
+  Note: 'Una respuesta de formulario citada en una evaluación de Nutrición: es una referencia, no una copia, y fija la versión vigente al citar.'
+}
+
+Table calculo_del_objetivo_nutricional [headercolor: #3E7D32] {
+  id uuid [pk, default: `gen_random_uuid()`, note: 'Identificador único de la fila.']
+  version_de_objetivo_id uuid [not null, unique, note: 'La versión de objetivo a la que responde.']
+  profesional_id uuid [not null, note: 'El profesional.']
+  asesorado_id uuid [not null, note: 'La persona.']
+  evaluacion_antropometrica_id uuid [note: 'La toma de referencia, si la hay; nula si la referencia es a mano.']
+  contenido jsonb [not null, note: '{ reference, data, parameters, result }: lo que se usó y lo que dio, tal cual.']
+  procedencia jsonb [not null, note: 'De dónde vino la fila: la fuente, la superficie (app o website), la operación, el caso de uso y el pedido que la produjo.']
+  momento_de_registro timestamptz(3) [not null, default: `now()`, note: 'Cuándo BE guardó la fila.']
+
+  indexes {
+    (profesional_id, asesorado_id)
+    evaluacion_antropometrica_id
+  }
+
+  Note: 'Con qué se escribió una versión del objetivo: la toma de Antropometría o los datos a mano, los valores usados, el método y sus parámetros. Solo se agrega.'
+}
+
+// ─── Recetas, fotos y registro de comidas ─────────────────────────────────────────────────────────
 
 Table receta [headercolor: #8A6A12] {
   id uuid [pk, default: `gen_random_uuid()`, note: 'Identificador único de la fila.']
-  profesional_id uuid [not null, note: 'El profesional.']
+  profesional_id uuid [note: 'El profesional dueño; vacío en una receta del Recetario de BE.']
   version integer [not null, default: 1, note: 'Versión de la fila; cada escritura declara la que leyó y, si otro la cambió antes, hay conflicto.']
   momento_de_registro timestamptz(3) [not null, default: `now()`, note: 'Cuándo BE guardó la fila.']
   momento_de_actualizacion timestamptz(3) [not null, default: `now()`, note: 'Última modificación de la fila.']
@@ -1208,7 +1244,7 @@ Table receta [headercolor: #8A6A12] {
     (profesional_id, momento_de_actualizacion)
   }
 
-  Note: 'Una receta propia del profesional. Su contenido vive en las versiones y su imagen, en las asociaciones.'
+  Note: 'Una receta propia del profesional o, sin profesional, del Recetario de BE.'
 }
 
 Table version_de_receta [headercolor: #8A6A12] {
@@ -1223,7 +1259,7 @@ Table version_de_receta [headercolor: #8A6A12] {
   ingredientes jsonb [not null, note: 'Cada ingrediente: alimento y versión del catálogo, cantidad, unidad y estado.']
   metodo_de_calculo MetodoDeCalculoNutricional [not null, note: 'Cómo se calculó el aporte: suma de los ingredientes según su fuente por 100 g.']
   resultado jsonb [not null, note: 'El aporte calculado por porción y total.']
-  autor_id uuid [not null, note: 'Quién hizo el cambio.']
+  autor_id uuid [note: 'Quién escribió la versión; vacío solo en una receta del recetario sembrada por BE.']
   procedencia jsonb [not null, note: 'De dónde vino la fila: la fuente, la superficie (app o website), la operación, el caso de uso y el pedido que la produjo.']
   momento_de_registro timestamptz(3) [not null, default: `now()`, note: 'Cuándo BE guardó la fila.']
 
@@ -1279,6 +1315,7 @@ Table medio [headercolor: #8A6A12] {
 
   indexes {
     (propietario_id, finalidad, estado)
+    (propietario_id, sha256_original)
   }
 
   Note: 'Los datos de una imagen privada (foto de comida, de receta o de ejercicio): tipo, tamaño, huellas y estado.'
@@ -1335,7 +1372,79 @@ Table rectificacion_de_cantidades [headercolor: #8A6A12] {
   Note: '«Completar cantidades»: las cantidades consumidas de una comida del plan, en cadena de rectificaciones.'
 }
 
-// ─── Antropometría ─────────────────────────────────────────────────────────────────────────────
+Table variante_de_medio [headercolor: #8A6A12] {
+  medio_id uuid [note: 'El medio del que es variante.']
+  variante VarianteDeMedio [note: 'Miniatura o grande.']
+  tipo text [not null, note: 'Siempre image/webp.']
+  bytes integer [not null, note: 'El tamaño, que coincide con el contenido.']
+  ancho integer [not null, note: 'El ancho, en píxeles.']
+  alto integer [not null, note: 'El alto, en píxeles.']
+  sha256 text [not null, note: 'La huella del contenido.']
+  contenido bytea [not null, note: 'Días tipo, comidas y opciones con sus alimentos o recetas.']
+  momento_de_registro timestamptz(3) [not null, default: `now()`, note: 'Cuándo BE guardó la fila.']
+
+  indexes {
+    (medio_id, variante) [pk]
+  }
+
+  Note: 'Las medidas livianas de la imagen de una receta, armadas la primera vez que se piden. No se reescriben; se borran solo al suprimir el medio.'
+}
+
+Table receta_del_recetario [headercolor: #8A6A12] {
+  receta_id uuid [pk, note: 'La receta, sin profesional.']
+  propuesta_id uuid [unique, note: 'La propuesta de la que salió, si la sumó Administración.']
+  administrador_id uuid [note: 'Quién la sumó, con su rol vigente.']
+  clave_de_semilla text [unique, note: 'La clave editorial, si la sembró BE.']
+  procedencia jsonb [not null, note: 'De dónde vino la fila.']
+  momento_de_registro timestamptz(3) [not null, default: `now()`, note: 'Cuándo BE guardó la fila.']
+
+  Note: 'Una receta del Recetario de BE: la suma un administrador desde una propuesta o la siembra BE. Solo se agrega.'
+}
+
+Table copia_de_receta_del_recetario [headercolor: #8A6A12] {
+  receta_id uuid [pk, note: 'La receta propia que salió de la copia.']
+  origen_id uuid [not null, note: 'La receta del recetario que se copió.']
+  procedencia jsonb [not null, note: 'De dónde vino la fila.']
+  momento_de_registro timestamptz(3) [not null, default: `now()`, note: 'Cuándo BE guardó la fila.']
+
+  indexes {
+    origen_id
+  }
+
+  Note: 'De qué receta del recetario sale una receta propia. La copia reusa la misma imagen, sin duplicarla. Solo se agrega.'
+}
+
+Table propuesta_al_recetario [headercolor: #8A6A12] {
+  id uuid [pk, default: `gen_random_uuid()`, note: 'Identificador único de la fila.']
+  receta_id uuid [not null, note: 'La receta propia que se propone.']
+  version_de_receta_id uuid [not null, note: 'La versión que se propone.']
+  profesional_id uuid [not null, note: 'Quien la propone, dueño de la receta.']
+  medio_id uuid [note: 'La imagen, si la tiene.']
+  version_de_la_cesion text [note: 'La versión del texto de la cesión aceptado.']
+  huella_de_la_cesion text [note: 'El SHA-256 del texto aceptado.']
+  momento_de_la_cesion timestamptz(3) [note: 'Cuándo se aceptó.']
+  procedencia jsonb [not null, note: 'De dónde vino la fila.']
+  momento_de_registro timestamptz(3) [not null, default: `now()`, note: 'Cuándo BE guardó la fila.']
+
+  indexes {
+    (receta_id, momento_de_registro)
+  }
+
+  Note: 'Un profesional ofrece una versión de una receta suya. Con imagen, la cesión está completa; sin imagen, no hay cesión. Solo se agrega.'
+}
+
+Table decision_sobre_propuesta_al_recetario [headercolor: #8A6A12] {
+  propuesta_id uuid [pk, note: 'La propuesta decidida, una sola vez.']
+  resultado ResultadoDePropuestaAlRecetario [not null, note: 'Sumada o rechazada.']
+  motivo text [note: 'Opcional, de 1 a 300 caracteres; lo ve quien la propuso.']
+  administrador_id uuid [not null, note: 'Quién decidió, con su rol vigente.']
+  procedencia jsonb [not null, note: 'De dónde vino la fila.']
+  momento_de_registro timestamptz(3) [not null, default: `now()`, note: 'Cuándo BE guardó la fila.']
+
+  Note: 'Lo que decide Administración. Sumada, con la receta ya en el recetario; rechazada, sin ella. Solo se agrega.'
+}
+
+// ─── Antropometría ────────────────────────────────────────────────────────────────────────────────
 
 Table especificacion_antropometrica [headercolor: #9A4B2E] {
   id uuid [pk, default: `gen_random_uuid()`, note: 'Identificador único de la fila.']
@@ -1522,7 +1631,7 @@ Table evento_de_antropometria [headercolor: #9A4B2E] {
   Note: 'Los hechos del área de Antropometría, en orden.'
 }
 
-// ─── Entrenamiento ─────────────────────────────────────────────────────────────────────────────
+// ─── Entrenamiento ────────────────────────────────────────────────────────────────────────────────
 
 Table ejercicio_de_catalogo [headercolor: #B0413E] {
   id uuid [pk, default: `gen_random_uuid()`, note: 'Identificador único de la fila.']
@@ -1555,7 +1664,7 @@ Table evaluacion_de_entrenamiento [headercolor: #B0413E] {
   asesorado_id uuid [not null, note: 'La persona.']
   valoracion jsonb [not null, note: 'Lo evaluado por el profesional.']
   referencias jsonb [not null, note: 'Referencias que usó el profesional.']
-  notas text [note: 'Notas del profesional.']
+  notas text [note: 'Las «Anotaciones» del profesional, hasta 4.000 caracteres: ninguna lectura de la persona las devuelve.']
   contexto text [note: 'Contexto de la evaluación.']
   procedencia jsonb [not null, note: 'De dónde vino la fila: la fuente, la superficie (app o website), la operación, el caso de uso y el pedido que la produjo.']
   momento_de_ocurrencia timestamptz(3) [not null, note: 'Cuándo pasó el hecho en la realidad; vacío si no se sabe.']
@@ -1641,7 +1750,7 @@ Table version_de_plan_de_entrenamiento [headercolor: #B0413E] {
   estado EstadoDeVersionDePlan [not null, default: 'BORRADOR', note: 'Borrador, activada o descartada.']
   version integer [not null, default: 1, note: 'Número de versión, correlativo dentro de su serie.']
   version_de_objetivo_id uuid [not null, note: 'La versión de objetivo a la que responde.']
-  contenido jsonb [not null, note: 'Bloques, semanas, sesiones y prescripciones, con identificadores estables.']
+  contenido jsonb [not null, note: 'Fases, semanas, sesiones, bloques y prescripciones, con identificadores estables. Puede declarar la notación del esfuerzo (RPE); lo guardado en cada serie es siempre el RIR.']
   proxima_revision date [note: 'Cuándo toca revisar esta versión.']
   revision_de_origen_id uuid [note: 'La revisión que la originó, si la hay.']
   autor_id uuid [not null, note: 'Quién escribió la versión (sin clave foránea).']
@@ -1860,7 +1969,7 @@ Table serie_observada [headercolor: #B0413E] {
   Note: 'Cada serie que el profesional observó en un ejercicio de la persona (carga, repeticiones y RIR), con la fuerza estimada por Epley guardada como hecho. Corregir o anular agrega una fila que sucede a la anterior. La persona no la recibe.'
 }
 
-// ─── Catálogos e importación ───────────────────────────────────────────────────────────────────
+// ─── Catálogos e importación ──────────────────────────────────────────────────────────────────────
 
 Table candidato_de_importacion [headercolor: #456B7F] {
   id uuid [pk, default: `gen_random_uuid()`, note: 'Identificador único de la fila.']
@@ -2037,7 +2146,78 @@ Table zona_de_ejercicio [headercolor: #456B7F] {
   Note: 'Una zona dentro de una asignación, con su rol (principal o secundario).'
 }
 
-// ─── Formularios y hábitos ─────────────────────────────────────────────────────────────────────
+Table grupo_de_alimento [headercolor: #456B7F] {
+  id uuid [pk, default: `gen_random_uuid()`, note: 'Identificador único de la fila.']
+  elemento_id uuid [not null, note: 'El alimento.']
+  numero integer [not null, note: 'Número correlativo dentro de su serie; la fila vigente es la de mayor número.']
+  grupo GrupoDeAlimento [not null, note: 'El grupo del alimento.']
+  autor_id uuid [note: 'Quién lo eligió; NULL si lo sembró BE con una migración.']
+  procedencia jsonb [not null, note: 'De dónde vino la fila: la fuente, la superficie (app o website), la operación, el caso de uso y el pedido que la produjo.']
+  momento_de_registro timestamptz(3) [not null, default: `now()`, note: 'Cuándo BE guardó la fila.']
+
+  indexes {
+    (elemento_id, numero) [unique]
+  }
+
+  Note: 'El grupo de un alimento, aparte de sus versiones: cambiarlo no crea una versión ni toca planes, recetas ni registros. El vigente es el de mayor número.'
+}
+
+Table alimento_compartido [headercolor: #456B7F] {
+  elemento_id uuid [pk, note: 'El alimento.']
+  procedencia jsonb [not null, note: 'De dónde vino la fila: la fuente, la superficie (app o website), la operación, el caso de uso y el pedido que la produjo.']
+  momento_de_registro timestamptz(3) [not null, default: `now()`, note: 'Cuándo BE guardó la fila.']
+
+  Note: 'Histórica: un alimento cargado a mano que veían los demás profesionales. Desde que lo cargado a mano es propio de quien lo cargó, no se escribe.'
+}
+
+Table alimento_del_canon [headercolor: #456B7F] {
+  elemento_id uuid [pk, note: 'El alimento.']
+  fuente text [not null, note: 'La tabla, la publicación o el rótulo de donde salen sus valores.']
+  origen_id uuid [note: 'La carga a mano de cuyos valores partió, si partió de una.']
+  administrador_id uuid [not null, note: 'La cuenta de Administración.']
+  procedencia jsonb [not null, note: 'De dónde vino la fila: la fuente, la superficie (app o website), la operación, el caso de uso y el pedido que la produjo.']
+  momento_de_registro timestamptz(3) [not null, default: `now()`, note: 'Cuándo BE guardó la fila.']
+
+  Note: 'Un alimento que Administración sumó al catálogo verificado («Sumar al canon»), con su fuente y, si salió de una carga a mano, la carga de la que partió.'
+}
+
+Table medidas_caseras_de_alimento [headercolor: #456B7F] {
+  id uuid [pk, default: `gen_random_uuid()`, note: 'Identificador único de la fila.']
+  elemento_id uuid [not null, note: 'El alimento.']
+  numero integer [not null, note: 'Número correlativo dentro de su serie; la fila vigente es la de mayor número.']
+  medidas jsonb [not null, note: 'Las medidas caseras, cada una con su equivalencia en gramos.']
+  autor_id uuid [note: 'Quién las definió; NULL si las sembró BE con una migración.']
+  procedencia jsonb [not null, note: 'De dónde vino la fila: la fuente, la superficie (app o website), la operación, el caso de uso y el pedido que la produjo.']
+  momento_de_registro timestamptz(3) [not null, default: `now()`, note: 'Cuándo BE guardó la fila.']
+
+  indexes {
+    (elemento_id, numero) [unique]
+  }
+
+  Note: 'Las medidas caseras de un alimento (la unidad, la cucharada, la taza y la porción), cada una con su equivalencia en gramos. Cada cambio es una versión nueva.'
+}
+
+Table revision_administrativa_de_alimento [headercolor: #456B7F] {
+  id uuid [pk, default: `gen_random_uuid()`, note: 'Identificador único de la fila.']
+  elemento_id uuid [not null, note: 'El alimento.']
+  numero integer [not null, note: 'Número correlativo dentro de su serie; la fila vigente es la de mayor número.']
+  resultado ResultadoDeRevisionDeAlimento [not null, note: 'Mantener, ajustar, sustituir, reprogramar la revisión, cambiar el objetivo o finalizar.']
+  version_id uuid [not null, note: 'La versión que vio y revisó.']
+  fuente text [note: 'La fuente citada: solo y siempre en CERTIFICADO.']
+  equivalente_id uuid [note: 'El alimento verificado equivalente: solo y siempre en EQUIVALENTE.']
+  administrador_id uuid [not null, note: 'La cuenta de Administración.']
+  procedencia jsonb [not null, note: 'De dónde vino la fila: la fuente, la superficie (app o website), la operación, el caso de uso y el pedido que la produjo.']
+  momento_de_registro timestamptz(3) [not null, default: `now()`, note: 'Cuándo BE guardó la fila.']
+
+  indexes {
+    (elemento_id, numero) [unique]
+    equivalente_id
+  }
+
+  Note: 'Cada decisión de Administración sobre un alimento cargado a mano, contra la versión que vio: certificarlo con su fuente o marcar su equivalente verificado. La vigente es la de mayor número.'
+}
+
+// ─── Formularios y hábitos ────────────────────────────────────────────────────────────────────────
 
 Table plantilla_de_formulario [headercolor: #6B5B2E] {
   id uuid [pk, default: `gen_random_uuid()`, note: 'Identificador único de la fila.']
@@ -2239,7 +2419,27 @@ Table pedido_de_acceso_a_habitos [headercolor: #6B5B2E] {
   Note: 'El pedido de un profesional para ver los hábitos de la persona.'
 }
 
-// ─── Lo que se comparte entre áreas ────────────────────────────────────────────────────────────
+Table vinculo_de_formulario_en_evaluacion [headercolor: #6B5B2E] {
+  id uuid [pk, default: `gen_random_uuid()`, note: 'Identificador único de la fila.']
+  alcance Alcance [not null, note: 'NUTRICION o ENTRENAMIENTO: dice cuál de las dos evaluaciones lleva (la otra es NULL).']
+  evaluacion_nutricional_id uuid [note: 'La evaluación de Nutrición, si el vínculo es de esa área.']
+  evaluacion_de_entrenamiento_id uuid [note: 'La evaluación de Entrenamiento, si el vínculo es de esa área.']
+  respuesta_id uuid [not null, note: 'La respuesta.']
+  rectificacion_id uuid [note: 'La rectificación vigente al vincular; `null` si lo vigente era la respuesta original.']
+  vinculado_en timestamptz(3) [not null, default: `now()`, note: 'Cuándo se vinculó.']
+  desvinculado_en timestamptz(3) [note: 'Cuándo se desvinculó; vacío mientras sigue vinculado.']
+
+  indexes {
+    (evaluacion_nutricional_id, vinculado_en)
+    (evaluacion_de_entrenamiento_id, vinculado_en)
+    respuesta_id
+    rectificacion_id
+  }
+
+  Note: 'Un formulario que la persona respondió, vinculado entero a una evaluación inicial de Nutrición o de Entrenamiento. Es una referencia, no una copia.'
+}
+
+// ─── Lo que se comparte entre áreas ───────────────────────────────────────────────────────────────
 
 Table autorizacion_de_resumenes [headercolor: #7B3F6E] {
   id uuid [pk, default: `gen_random_uuid()`, note: 'Identificador único de la fila.']
@@ -2370,7 +2570,31 @@ Table referencia_de_nota [headercolor: #7B3F6E] {
   Note: 'Un recurso citado en una nota, por su identificador. Citarlo no da acceso.'
 }
 
-// ─── Herramientas del profesional ──────────────────────────────────────────────────────────────
+Table autorizacion_de_historia_anterior [headercolor: #7B3F6E] {
+  id uuid [pk, default: `gen_random_uuid()`, note: 'Identificador único de la fila.']
+  asesorado_id uuid [not null, note: 'La persona.']
+  profesional_id uuid [not null, note: 'El profesional.']
+  alcance Alcance [not null, note: 'Área: Nutrición, Entrenamiento o Antropometría.']
+  alcance_de_vinculo_id uuid [not null, note: 'El área del vínculo.']
+  version integer [not null, note: 'Número de versión, correlativo dentro de su serie.']
+  predecesora_id uuid [unique, note: 'La fila anterior de la cadena; vacía en la primera.']
+  estado EstadoDeAutorizacionDeHistoriaAnterior [not null, note: 'Borrador, activada o descartada.']
+  texto_id text [note: 'El texto aceptado (`TEXTO_DE_LA_HISTORIA_ANTERIOR` de @be/domain) y su hash; solo en una VIGENTE.']
+  hash_del_texto text [note: 'Huella SHA-256 del texto aceptado.']
+  actor_id uuid [not null, note: 'Quién hizo la acción.']
+  procedencia jsonb [not null, note: 'De dónde vino la fila: la fuente, la superficie (app o website), la operación, el caso de uso y el pedido que la produjo.']
+  momento_de_ocurrencia timestamptz(3) [not null, note: 'Cuándo pasó el hecho en la realidad; vacío si no se sabe.']
+  momento_de_registro timestamptz(3) [not null, default: `now()`, note: 'Cuándo BE guardó la fila.']
+
+  indexes {
+    (alcance_de_vinculo_id, version) [unique]
+    asesorado_id
+  }
+
+  Note: 'La autorización de la persona para que el profesional nuevo de un área vea lo que pasó antes en esa área, en solo lectura y sin las notas privadas. Se puede retirar; cada cambio es una versión.'
+}
+
+// ─── Herramientas del profesional ─────────────────────────────────────────────────────────────────
 
 Table plantilla_de_plan_de_entrenamiento [headercolor: #3B6E8F] {
   id uuid [pk, default: `gen_random_uuid()`, note: 'Identificador único de la fila.']
@@ -2578,7 +2802,66 @@ Table reparto_habitual [headercolor: #3B6E8F] {
   Note: 'Un reparto de macronutrientes en gramos por día que el profesional guarda para reutilizar. Lo ve solo él; aplicarlo escribe los gramos en el objetivo.'
 }
 
-// ─── Novedades y avisos ────────────────────────────────────────────────────────────────────────
+Table preparacion_de_plantilla_de_entrenamiento [headercolor: #3B6E8F] {
+  id uuid [pk, default: `gen_random_uuid()`, note: 'Identificador único de la fila.']
+  profesional_id uuid [not null, note: 'El profesional.']
+  plantilla_id uuid [unique, note: 'La plantilla.']
+  version_base_id uuid [note: 'La versión de la que partió.']
+  nombre text [note: 'Nombre visible.']
+  descripcion text [note: 'Descripción, si la hay.']
+  estructura jsonb [not null, note: 'La estructura del molde (días, comidas o sesiones), sin datos de ninguna persona.']
+  cargas CargasDePlantilla [not null, default: 'NO_COPIADAS', note: 'Si el molde copió las cargas o las deja para cada persona.']
+  version integer [not null, default: 1, note: 'Número de versión, correlativo dentro de su serie.']
+  procedencia jsonb [not null, note: 'De dónde vino la fila: la fuente, la superficie (app o website), la operación, el caso de uso y el pedido que la produjo.']
+  momento_de_registro timestamptz(3) [not null, default: `now()`, note: 'Cuándo BE guardó la fila.']
+  momento_de_actualizacion timestamptz(3) [not null, default: `now()`, note: 'Última modificación de la fila.']
+
+  indexes {
+    (profesional_id, momento_de_actualizacion)
+  }
+
+  Note: 'El trabajo en curso de una plantilla de entrenamiento, privado y sin persona, que se guarda solo. Guardar la plantilla crea una versión nueva.'
+}
+
+Table conjunto_de_graficos [headercolor: #3B6E8F] {
+  id uuid [pk, default: `gen_random_uuid()`, note: 'Identificador único de la fila.']
+  profesional_id uuid [not null, note: 'El profesional.']
+  nombre text [not null, note: 'Nombre visible.']
+  contenido jsonb [not null, note: 'Días tipo, comidas y opciones con sus alimentos o recetas.']
+  version integer [not null, default: 1, note: 'Número de versión, correlativo dentro de su serie.']
+  procedencia jsonb [not null, note: 'De dónde vino la fila: la fuente, la superficie (app o website), la operación, el caso de uso y el pedido que la produjo.']
+  momento_de_registro timestamptz(3) [not null, default: `now()`, note: 'Cuándo BE guardó la fila.']
+  momento_de_actualizacion timestamptz(3) [not null, default: `now()`, note: 'Última modificación de la fila.']
+
+  indexes {
+    (profesional_id, momento_de_actualizacion)
+  }
+
+  Note: 'Un enfoque: un conjunto de hasta seis gráficos con nombre, propio del profesional y reutilizable con cualquier persona. Guarda solo referencias, nunca datos de una persona.'
+}
+
+Table eleccion_de_conjunto_de_graficos [headercolor: #3B6E8F] {
+  id uuid [pk, default: `gen_random_uuid()`, note: 'Identificador único de la fila.']
+  profesional_id uuid [not null, note: 'El profesional.']
+  asesorado_id uuid [not null, note: 'La persona.']
+  ambito AmbitoDeEleccionDeGraficos [not null, note: 'Quién pidió: la cuenta autenticada o «PUBLICO».']
+  plan_de_entrenamiento_id uuid [note: 'El plan de entrenamiento.']
+  plan_nutricional_id uuid [note: 'El plan nutricional.']
+  conjunto_id uuid [not null, note: 'El conjunto de gráficos.']
+  version integer [not null, default: 1, note: 'Número de versión, correlativo dentro de su serie.']
+  procedencia jsonb [not null, note: 'De dónde vino la fila: la fuente, la superficie (app o website), la operación, el caso de uso y el pedido que la produjo.']
+  momento_de_registro timestamptz(3) [not null, default: `now()`, note: 'Cuándo BE guardó la fila.']
+  momento_de_actualizacion timestamptz(3) [not null, default: `now()`, note: 'Última modificación de la fila.']
+
+  indexes {
+    (profesional_id, asesorado_id)
+    conjunto_id
+  }
+
+  Note: 'El enfoque que el profesional eligió para una persona o para uno de sus planes con ella. Queda hasta que se cambie.'
+}
+
+// ─── Novedades y avisos ───────────────────────────────────────────────────────────────────────────
 
 Table novedad [headercolor: #4F6B3A] {
   id uuid [pk, default: `gen_random_uuid()`, note: 'Identificador único de la fila.']
@@ -2660,35 +2943,39 @@ Table preferencia_de_recordatorio [headercolor: #4F6B3A] {
   Note: 'Si la persona quiere los recordatorios diarios de registro, por tipo.'
 }
 
-// ─── Relaciones: una por clave foránea (280) ─────────────────────────────────────────────
-// «>» muchos a uno; «-» uno a uno (la columna es única). Todas con delete: restrict.
+// ─── Relaciones: una por clave foránea (326) ─────────────────────────────────────────────
 
-// Identidad y acceso
 Ref: perfil_propio.identidad_id - identidad.id [delete: restrict]
 Ref: perfil_propio.version_efectiva_id - version_de_perfil_propio.id [delete: restrict]
 Ref: version_de_perfil_propio.perfil_propio_id > perfil_propio.id [delete: restrict]
 Ref: metodo_de_acceso.identidad_id > identidad.id [delete: restrict]
+Ref: cambio_de_metodo_de_acceso.metodo_de_acceso_id > metodo_de_acceso.id [delete: restrict]
+Ref: cambio_de_metodo_de_acceso.identidad_id > identidad.id [delete: restrict]
 Ref: credencial_local.metodo_de_acceso_id - metodo_de_acceso.id [delete: restrict]
 Ref: sesion.identidad_id > identidad.id [delete: restrict]
 Ref: reanudacion_de_sesion.sesion_id > sesion.id [delete: restrict]
 Ref: reanudacion_de_sesion.predecesora_id - reanudacion_de_sesion.id [delete: restrict]
 Ref: control_de_sesion.identidad_id - identidad.id [delete: restrict]
-Ref: version_de_texto.reemplaza_a_id - version_de_texto.id [delete: restrict]
-Ref: acto_registrable.identidad_id > identidad.id [delete: restrict]
-Ref: acto_registrable.version_de_texto_id > version_de_texto.id [delete: restrict]
-Ref: acto_registrable.alcance_de_vinculo_id > alcance_de_vinculo.id [delete: restrict]
-Ref: capacidad_de_cliente_declarada.identidad_id > identidad.id [delete: restrict]
 Ref: recuperacion_de_acceso.identidad_id > identidad.id [delete: restrict]
 Ref: recuperacion_de_acceso.administrador_id > identidad.id [delete: restrict]
 Ref: cambio_de_credencial.identidad_id > identidad.id [delete: restrict]
 Ref: cambio_de_credencial.metodo_de_acceso_id > metodo_de_acceso.id [delete: restrict]
 Ref: cambio_de_credencial.recuperacion_id > recuperacion_de_acceso.id [delete: restrict]
-Ref: cambio_de_metodo_de_acceso.metodo_de_acceso_id > metodo_de_acceso.id [delete: restrict]
-Ref: cambio_de_metodo_de_acceso.identidad_id > identidad.id [delete: restrict]
-
-// Administración, derechos y auditoría
+Ref: version_de_texto.reemplaza_a_id - version_de_texto.id [delete: restrict]
+Ref: acto_registrable.identidad_id > identidad.id [delete: restrict]
+Ref: acto_registrable.version_de_texto_id > version_de_texto.id [delete: restrict]
+Ref: acto_registrable.alcance_de_vinculo_id > alcance_de_vinculo.id [delete: restrict]
+Ref: capacidad_de_cliente_declarada.identidad_id > identidad.id [delete: restrict]
+Ref: rol_administrativo.identidad_id > identidad.id [delete: restrict]
+Ref: codigo_de_incorporacion.identidad_id > identidad.id [delete: restrict]
+Ref: factor_totp.identidad_id > identidad.id [delete: restrict]
+Ref: codigo_de_recuperacion.identidad_id > identidad.id [delete: restrict]
+Ref: segundo_factor_de_sesion.sesion_id - sesion.id [delete: restrict]
 Ref: restablecimiento_de_segundo_factor.identidad_id > identidad.id [delete: restrict]
 Ref: restablecimiento_de_segundo_factor.administrador_id > identidad.id [delete: restrict]
+Ref: pedido_de_derecho.titular_id > identidad.id [delete: restrict]
+Ref: pedido_de_derecho.administrador_id > identidad.id [delete: restrict]
+Ref: exportacion_propia.titular_id > identidad.id [delete: restrict]
 Ref: decision_de_acceso.actor_id > identidad.id [delete: restrict]
 Ref: decision_de_acceso.sujeto_id > identidad.id [delete: restrict]
 Ref: decision_de_acceso.alcance_de_vinculo_id > alcance_de_vinculo.id [delete: restrict]
@@ -2697,27 +2984,23 @@ Ref: decision_de_acceso.version_de_consentimiento_id > version_de_consentimiento
 Ref: evento_de_dominio.identidad_id > identidad.id [delete: restrict]
 Ref: solicitud_de_cierre_de_cuenta.identidad_id - identidad.id [delete: restrict]
 Ref: solicitud_de_cierre_de_cuenta.version_de_consecuencias_id > version_de_texto.id [delete: restrict]
-Ref: rol_administrativo.identidad_id > identidad.id [delete: restrict]
-Ref: codigo_de_incorporacion.identidad_id > identidad.id [delete: restrict]
-Ref: factor_totp.identidad_id > identidad.id [delete: restrict]
-Ref: codigo_de_recuperacion.identidad_id > identidad.id [delete: restrict]
-Ref: segundo_factor_de_sesion.sesion_id - sesion.id [delete: restrict]
-Ref: pedido_de_derecho.titular_id > identidad.id [delete: restrict]
-Ref: pedido_de_derecho.administrador_id > identidad.id [delete: restrict]
-Ref: exportacion_propia.titular_id > identidad.id [delete: restrict]
 Ref: incidencia.reportante_id > identidad.id [delete: restrict]
 Ref: incidencia.responsable_id > identidad.id [delete: restrict]
 Ref: cambio_de_incidencia.incidencia_id > incidencia.id [delete: restrict]
 Ref: cambio_de_incidencia.administrador_id > identidad.id [delete: restrict]
-
-// Profesionales, vínculos y consentimiento
 Ref: perfil_profesional.identidad_id - identidad.id [delete: restrict]
+Ref: cambio_de_nombre_profesional.identidad_id > identidad.id [delete: restrict]
+Ref: cambio_de_nombre_profesional.administrador_id > identidad.id [delete: restrict]
 Ref: verificacion_profesional.identidad_id > identidad.id [delete: restrict]
 Ref: habilitacion.identidad_id > identidad.id [delete: restrict]
 Ref: evento_de_verificacion.identidad_id > identidad.id [delete: restrict]
 Ref: evento_de_verificacion.administrador_id > identidad.id [delete: restrict]
-Ref: cambio_de_nombre_profesional.identidad_id > identidad.id [delete: restrict]
-Ref: cambio_de_nombre_profesional.administrador_id > identidad.id [delete: restrict]
+Ref: capacidad_profesional.identidad_id > identidad.id [delete: restrict]
+Ref: capacidad_profesional.predecesora_id - capacidad_profesional.id [delete: restrict]
+Ref: invitacion_de_vinculo.profesional_id > identidad.id [delete: restrict]
+Ref: resolucion_de_invitacion.invitacion_id - invitacion_de_vinculo.id [delete: restrict]
+Ref: resolucion_de_invitacion.actor_id > identidad.id [delete: restrict]
+Ref: resolucion_de_invitacion.solicitud_de_vinculo_id > solicitud_de_vinculo.id [delete: restrict]
 Ref: solicitud_de_vinculo.profesional_id > identidad.id [delete: restrict]
 Ref: solicitud_de_vinculo.asesorado_id > identidad.id [delete: restrict]
 Ref: solicitud_de_vinculo.antecedente_id > solicitud_de_vinculo.id [delete: restrict]
@@ -2735,14 +3018,6 @@ Ref: evento_de_vinculo.solicitud_de_vinculo_id > solicitud_de_vinculo.id [delete
 Ref: evento_de_vinculo.alcance_de_vinculo_id > alcance_de_vinculo.id [delete: restrict]
 Ref: evento_de_vinculo.consentimiento_id > consentimiento.id [delete: restrict]
 Ref: evento_de_vinculo.version_de_consentimiento_id > version_de_consentimiento.id [delete: restrict]
-Ref: capacidad_profesional.identidad_id > identidad.id [delete: restrict]
-Ref: capacidad_profesional.predecesora_id - capacidad_profesional.id [delete: restrict]
-Ref: invitacion_de_vinculo.profesional_id > identidad.id [delete: restrict]
-Ref: resolucion_de_invitacion.invitacion_id - invitacion_de_vinculo.id [delete: restrict]
-Ref: resolucion_de_invitacion.actor_id > identidad.id [delete: restrict]
-Ref: resolucion_de_invitacion.solicitud_de_vinculo_id > solicitud_de_vinculo.id [delete: restrict]
-
-// Proceso de acompañamiento
 Ref: proceso_operativo.profesional_id > identidad.id [delete: restrict]
 Ref: proceso_operativo.asesorado_id > identidad.id [delete: restrict]
 Ref: proceso_operativo.version_de_apertura_id - version_de_plan_nutricional.id [delete: restrict]
@@ -2762,8 +3037,6 @@ Ref: nota_propia.asesorado_id > identidad.id [delete: restrict]
 Ref: nota_propia.ejercicio_id > ejercicio_de_catalogo.id [delete: restrict]
 Ref: archivo_de_nota_propia.nota_id - nota_propia.id [delete: restrict]
 Ref: archivo_de_nota_propia.profesional_id > identidad.id [delete: restrict]
-
-// Nutrición
 Ref: version_de_elemento_nutricional.elemento_id > elemento_de_catalogo_nutricional.id [delete: restrict]
 Ref: version_de_elemento_nutricional.predecesora_id - version_de_elemento_nutricional.id [delete: restrict]
 Ref: evaluacion_nutricional.profesional_id > identidad.id [delete: restrict]
@@ -2791,25 +3064,38 @@ Ref: correccion_de_ingesta.correccion_previa_id - correccion_de_ingesta.id [dele
 Ref: revision_nutricional.proceso_id > proceso_operativo.id [delete: restrict]
 Ref: aplicacion_de_revision.revision_id - revision_nutricional.id [delete: restrict]
 Ref: aplicacion_de_revision.evento_id - evento_de_proceso.id [delete: restrict]
-
-// Recetas, fotos y registro de comidas
+Ref: cita_de_respuesta_en_evaluacion_nutricional.evaluacion_id > evaluacion_nutricional.id [delete: restrict]
+Ref: cita_de_respuesta_en_evaluacion_nutricional.respuesta_id > respuesta_de_formulario.id [delete: restrict]
+Ref: cita_de_respuesta_en_evaluacion_nutricional.rectificacion_id > rectificacion_de_respuesta_de_formulario.id [delete: restrict]
+Ref: calculo_del_objetivo_nutricional.version_de_objetivo_id - version_de_objetivo_nutricional.id [delete: restrict]
+Ref: calculo_del_objetivo_nutricional.evaluacion_antropometrica_id > evaluacion_antropometrica.id [delete: restrict]
 Ref: receta.profesional_id > identidad.id [delete: restrict]
 Ref: version_de_receta.receta_id > receta.id [delete: restrict]
 Ref: version_de_receta.predecesora_id - version_de_receta.id [delete: restrict]
-Ref: medio.propietario_id > identidad.id [delete: restrict]
-Ref: contenido_de_medio.medio_id - medio.id [delete: restrict]
 Ref: asociacion_de_imagen_de_receta.receta_id > receta.id [delete: restrict]
 Ref: asociacion_de_imagen_de_receta.medio_id > medio.id [delete: restrict]
+Ref: medio.propietario_id > identidad.id [delete: restrict]
+Ref: contenido_de_medio.medio_id - medio.id [delete: restrict]
 Ref: evidencia_visual_de_ingesta.ingesta_id > ingesta_nutricional.id [delete: restrict]
 Ref: evidencia_visual_de_ingesta.medio_id - medio.id [delete: restrict]
 Ref: anulacion_de_ingesta.ingesta_id - ingesta_nutricional.id [delete: restrict]
 Ref: rectificacion_de_cantidades.ingesta_id > ingesta_nutricional.id [delete: restrict]
 Ref: rectificacion_de_cantidades.predecesora_id - rectificacion_de_cantidades.id [delete: restrict]
-
-// Antropometría
-Ref: retiro_de_especificacion.especificacion_id - especificacion_antropometrica.id [delete: restrict]
+Ref: variante_de_medio.medio_id > medio.id [delete: restrict]
+Ref: receta_del_recetario.receta_id - receta.id [delete: restrict]
+Ref: receta_del_recetario.propuesta_id - propuesta_al_recetario.id [delete: restrict]
+Ref: receta_del_recetario.administrador_id > identidad.id [delete: restrict]
+Ref: copia_de_receta_del_recetario.receta_id - receta.id [delete: restrict]
+Ref: copia_de_receta_del_recetario.origen_id > receta.id [delete: restrict]
+Ref: propuesta_al_recetario.receta_id > receta.id [delete: restrict]
+Ref: propuesta_al_recetario.version_de_receta_id > version_de_receta.id [delete: restrict]
+Ref: propuesta_al_recetario.profesional_id > identidad.id [delete: restrict]
+Ref: propuesta_al_recetario.medio_id > medio.id [delete: restrict]
+Ref: decision_sobre_propuesta_al_recetario.propuesta_id - propuesta_al_recetario.id [delete: restrict]
+Ref: decision_sobre_propuesta_al_recetario.administrador_id > identidad.id [delete: restrict]
 Ref: version_de_especificacion_antropometrica.especificacion_id > especificacion_antropometrica.id [delete: restrict]
 Ref: version_de_especificacion_antropometrica.predecesora_id - version_de_especificacion_antropometrica.id [delete: restrict]
+Ref: retiro_de_especificacion.especificacion_id - especificacion_antropometrica.id [delete: restrict]
 Ref: evaluacion_antropometrica.profesional_id > identidad.id [delete: restrict]
 Ref: evaluacion_antropometrica.asesorado_id > identidad.id [delete: restrict]
 Ref: medicion_antropometrica.evaluacion_id > evaluacion_antropometrica.id [delete: restrict]
@@ -2823,14 +3109,12 @@ Ref: ejecucion_de_calculo.evaluacion_id > evaluacion_antropometrica.id [delete: 
 Ref: ejecucion_de_calculo.metodo_version_id > version_de_especificacion_antropometrica.id [delete: restrict]
 Ref: ejecucion_de_calculo.autor_id > identidad.id [delete: restrict]
 Ref: ejecucion_de_calculo.reemplaza_a_id - ejecucion_de_calculo.id [delete: restrict]
+Ref: entrada_de_calculo.ejecucion_id > ejecucion_de_calculo.id [delete: restrict]
+Ref: entrada_de_calculo.medicion_id > medicion_antropometrica.id [delete: restrict]
 Ref: referencia_de_calculo.asesorado_id > identidad.id [delete: restrict]
 Ref: referencia_de_calculo.profesional_id > identidad.id [delete: restrict]
 Ref: referencia_de_calculo.ejecucion_id > ejecucion_de_calculo.id [delete: restrict]
 Ref: referencia_de_calculo.predecesora_id - referencia_de_calculo.id [delete: restrict]
-Ref: entrada_de_calculo.ejecucion_id > ejecucion_de_calculo.id [delete: restrict]
-Ref: entrada_de_calculo.medicion_id > medicion_antropometrica.id [delete: restrict]
-
-// Entrenamiento
 Ref: ejercicio_de_catalogo.creado_por_id > identidad.id [delete: restrict]
 Ref: version_de_ejercicio.ejercicio_id > ejercicio_de_catalogo.id [delete: restrict]
 Ref: version_de_ejercicio.predecesora_id - version_de_ejercicio.id [delete: restrict]
@@ -2855,24 +3139,22 @@ Ref: version_de_plan_de_entrenamiento.revision_de_origen_id > revision_de_entren
 Ref: instantanea_de_plan_de_entrenamiento.version_de_plan_id - version_de_plan_de_entrenamiento.id [delete: restrict]
 Ref: borrador_de_ejecucion_de_entrenamiento.asesorado_id > identidad.id [delete: restrict]
 Ref: borrador_de_ejecucion_de_entrenamiento.version_de_plan_id > version_de_plan_de_entrenamiento.id [delete: restrict]
+Ref: evento_de_tiempo_de_entrenamiento.borrador_id > borrador_de_ejecucion_de_entrenamiento.id [delete: restrict]
 Ref: ejecucion_de_entrenamiento.asesorado_id > identidad.id [delete: restrict]
 Ref: ejecucion_de_entrenamiento.version_de_plan_id > version_de_plan_de_entrenamiento.id [delete: restrict]
 Ref: ejecucion_de_entrenamiento.borrador_id - borrador_de_ejecucion_de_entrenamiento.id [delete: restrict]
 Ref: correccion_de_ejecucion_de_entrenamiento.ejecucion_id > ejecucion_de_entrenamiento.id [delete: restrict]
 Ref: correccion_de_ejecucion_de_entrenamiento.correccion_previa_id - correccion_de_ejecucion_de_entrenamiento.id [delete: restrict]
 Ref: correccion_de_ejecucion_de_entrenamiento.autor_id > identidad.id [delete: restrict]
+Ref: nota_de_ejecucion.ejecucion_id > ejecucion_de_entrenamiento.id [delete: restrict]
+Ref: nota_de_ejecucion.asesorado_id > identidad.id [delete: restrict]
 Ref: revision_de_entrenamiento.proceso_id > proceso_operativo.id [delete: restrict]
 Ref: aplicacion_de_revision_de_entrenamiento.revision_id - revision_de_entrenamiento.id [delete: restrict]
 Ref: aplicacion_de_revision_de_entrenamiento.evento_id - evento_de_proceso.id [delete: restrict]
-Ref: evento_de_tiempo_de_entrenamiento.borrador_id > borrador_de_ejecucion_de_entrenamiento.id [delete: restrict]
 Ref: serie_observada.profesional_id > identidad.id [delete: restrict]
 Ref: serie_observada.asesorado_id > identidad.id [delete: restrict]
 Ref: serie_observada.ejercicio_id > ejercicio_de_catalogo.id [delete: restrict]
 Ref: serie_observada.predecesora_id - serie_observada.id [delete: restrict]
-Ref: nota_de_ejecucion.ejecucion_id > ejecucion_de_entrenamiento.id [delete: restrict]
-Ref: nota_de_ejecucion.asesorado_id > identidad.id [delete: restrict]
-
-// Catálogos e importación
 Ref: candidato_de_importacion.profesional_id > identidad.id [delete: restrict]
 Ref: resolucion_de_candidato.candidato_id - candidato_de_importacion.id [delete: restrict]
 Ref: resolucion_de_candidato.autor_id > identidad.id [delete: restrict]
@@ -2880,14 +3162,14 @@ Ref: resolucion_de_candidato.elemento_nutricional_id > elemento_de_catalogo_nutr
 Ref: resolucion_de_candidato.ejercicio_id > ejercicio_de_catalogo.id [delete: restrict]
 Ref: item_externo_de_catalogo.elemento_nutricional_id - elemento_de_catalogo_nutricional.id [delete: restrict]
 Ref: item_externo_de_catalogo.ejercicio_id - ejercicio_de_catalogo.id [delete: restrict]
-Ref: nombre_alternativo_de_ejercicio.ejercicio_id > ejercicio_de_catalogo.id [delete: restrict]
-Ref: nombre_alternativo_de_ejercicio.profesional_id > identidad.id [delete: restrict]
-Ref: retiro_de_nombre_alternativo_de_ejercicio.nombre_id - nombre_alternativo_de_ejercicio.id [delete: restrict]
-Ref: retiro_de_nombre_alternativo_de_ejercicio.profesional_id > identidad.id [delete: restrict]
 Ref: nombre_alternativo_de_alimento.elemento_id > elemento_de_catalogo_nutricional.id [delete: restrict]
 Ref: nombre_alternativo_de_alimento.profesional_id > identidad.id [delete: restrict]
 Ref: retiro_de_nombre_alternativo_de_alimento.nombre_id - nombre_alternativo_de_alimento.id [delete: restrict]
 Ref: retiro_de_nombre_alternativo_de_alimento.profesional_id > identidad.id [delete: restrict]
+Ref: nombre_alternativo_de_ejercicio.ejercicio_id > ejercicio_de_catalogo.id [delete: restrict]
+Ref: nombre_alternativo_de_ejercicio.profesional_id > identidad.id [delete: restrict]
+Ref: retiro_de_nombre_alternativo_de_ejercicio.nombre_id - nombre_alternativo_de_ejercicio.id [delete: restrict]
+Ref: retiro_de_nombre_alternativo_de_ejercicio.profesional_id > identidad.id [delete: restrict]
 Ref: asociacion_de_imagen_de_ejercicio.ejercicio_id > ejercicio_de_catalogo.id [delete: restrict]
 Ref: asociacion_de_imagen_de_ejercicio.version_de_ejercicio_id > version_de_ejercicio.id [delete: restrict]
 Ref: asociacion_de_imagen_de_ejercicio.medio_id > medio.id [delete: restrict]
@@ -2896,8 +3178,18 @@ Ref: asignacion_de_zonas_de_ejercicio.version_de_ejercicio_id > version_de_ejerc
 Ref: asignacion_de_zonas_de_ejercicio.autor_id > identidad.id [delete: restrict]
 Ref: zona_de_ejercicio.asignacion_id > asignacion_de_zonas_de_ejercicio.id [delete: restrict]
 Ref: zona_de_ejercicio.zona_id > zona_muscular.id [delete: restrict]
-
-// Formularios y hábitos
+Ref: grupo_de_alimento.elemento_id > elemento_de_catalogo_nutricional.id [delete: restrict]
+Ref: grupo_de_alimento.autor_id > identidad.id [delete: restrict]
+Ref: alimento_compartido.elemento_id - elemento_de_catalogo_nutricional.id [delete: restrict]
+Ref: alimento_del_canon.elemento_id - elemento_de_catalogo_nutricional.id [delete: restrict]
+Ref: alimento_del_canon.origen_id > elemento_de_catalogo_nutricional.id [delete: restrict]
+Ref: alimento_del_canon.administrador_id > identidad.id [delete: restrict]
+Ref: medidas_caseras_de_alimento.elemento_id > elemento_de_catalogo_nutricional.id [delete: restrict]
+Ref: medidas_caseras_de_alimento.autor_id > identidad.id [delete: restrict]
+Ref: revision_administrativa_de_alimento.elemento_id > elemento_de_catalogo_nutricional.id [delete: restrict]
+Ref: revision_administrativa_de_alimento.version_id > version_de_elemento_nutricional.id [delete: restrict]
+Ref: revision_administrativa_de_alimento.equivalente_id > elemento_de_catalogo_nutricional.id [delete: restrict]
+Ref: revision_administrativa_de_alimento.administrador_id > identidad.id [delete: restrict]
 Ref: version_de_plantilla_de_formulario.plantilla_id > plantilla_de_formulario.id [delete: restrict]
 Ref: version_de_plantilla_de_formulario.predecesora_id - version_de_plantilla_de_formulario.id [delete: restrict]
 Ref: solicitud_de_formulario.profesional_id > identidad.id [delete: restrict]
@@ -2922,17 +3214,19 @@ Ref: destinatario_de_habitos.profesional_id > identidad.id [delete: restrict]
 Ref: pedido_de_acceso_a_habitos.profesional_id > identidad.id [delete: restrict]
 Ref: pedido_de_acceso_a_habitos.asesorado_id > identidad.id [delete: restrict]
 Ref: pedido_de_acceso_a_habitos.alcance_de_vinculo_id > alcance_de_vinculo.id [delete: restrict]
-
-// Lo que se comparte entre áreas
+Ref: vinculo_de_formulario_en_evaluacion.evaluacion_nutricional_id > evaluacion_nutricional.id [delete: restrict]
+Ref: vinculo_de_formulario_en_evaluacion.evaluacion_de_entrenamiento_id > evaluacion_de_entrenamiento.id [delete: restrict]
+Ref: vinculo_de_formulario_en_evaluacion.respuesta_id > respuesta_de_formulario.id [delete: restrict]
+Ref: vinculo_de_formulario_en_evaluacion.rectificacion_id > rectificacion_de_respuesta_de_formulario.id [delete: restrict]
 Ref: autorizacion_de_resumenes.asesorado_id > identidad.id [delete: restrict]
 Ref: autorizacion_de_resumenes.predecesora_id - autorizacion_de_resumenes.id [delete: restrict]
 Ref: autorizacion_de_resumenes.version_de_texto_id > version_de_texto.id [delete: restrict]
+Ref: texto_aceptado_de_resumenes.autorizacion_id > autorizacion_de_resumenes.id [delete: restrict]
+Ref: texto_aceptado_de_resumenes.version_de_texto_id > version_de_texto.id [delete: restrict]
 Ref: destinatario_de_resumenes.autorizacion_id > autorizacion_de_resumenes.id [delete: restrict]
 Ref: destinatario_de_resumenes.alcance_de_vinculo_id > alcance_de_vinculo.id [delete: restrict]
 Ref: destinatario_de_resumenes.origen_id > alcance_de_vinculo.id [delete: restrict]
 Ref: destinatario_de_resumenes.profesional_id > identidad.id [delete: restrict]
-Ref: texto_aceptado_de_resumenes.autorizacion_id > autorizacion_de_resumenes.id [delete: restrict]
-Ref: texto_aceptado_de_resumenes.version_de_texto_id > version_de_texto.id [delete: restrict]
 Ref: pedido_de_acceso_a_plan.profesional_id > identidad.id [delete: restrict]
 Ref: pedido_de_acceso_a_plan.asesorado_id > identidad.id [delete: restrict]
 Ref: pedido_de_acceso_a_plan.alcance_de_vinculo_id > alcance_de_vinculo.id [delete: restrict]
@@ -2942,8 +3236,10 @@ Ref: nota_de_coordinacion.corrige_a_id > nota_de_coordinacion.id [delete: restri
 Ref: destinatario_de_nota.nota_id > nota_de_coordinacion.id [delete: restrict]
 Ref: destinatario_de_nota.destinatario_id > identidad.id [delete: restrict]
 Ref: referencia_de_nota.nota_id > nota_de_coordinacion.id [delete: restrict]
-
-// Herramientas del profesional
+Ref: autorizacion_de_historia_anterior.asesorado_id > identidad.id [delete: restrict]
+Ref: autorizacion_de_historia_anterior.profesional_id > identidad.id [delete: restrict]
+Ref: autorizacion_de_historia_anterior.alcance_de_vinculo_id > alcance_de_vinculo.id [delete: restrict]
+Ref: autorizacion_de_historia_anterior.predecesora_id - autorizacion_de_historia_anterior.id [delete: restrict]
 Ref: plantilla_de_plan_de_entrenamiento.profesional_id > identidad.id [delete: restrict]
 Ref: version_de_plantilla_de_plan_de_entrenamiento.plantilla_id > plantilla_de_plan_de_entrenamiento.id [delete: restrict]
 Ref: version_de_plantilla_de_plan_de_entrenamiento.autor_id > identidad.id [delete: restrict]
@@ -2959,8 +3255,15 @@ Ref: comida_habitual.profesional_id > identidad.id [delete: restrict]
 Ref: vista_de_analisis.profesional_id > identidad.id [delete: restrict]
 Ref: prescripcion_habitual.profesional_id > identidad.id [delete: restrict]
 Ref: reparto_habitual.profesional_id > identidad.id [delete: restrict]
-
-// Novedades y avisos
+Ref: preparacion_de_plantilla_de_entrenamiento.profesional_id > identidad.id [delete: restrict]
+Ref: preparacion_de_plantilla_de_entrenamiento.plantilla_id - plantilla_de_plan_de_entrenamiento.id [delete: restrict]
+Ref: preparacion_de_plantilla_de_entrenamiento.version_base_id > version_de_plantilla_de_plan_de_entrenamiento.id [delete: restrict]
+Ref: conjunto_de_graficos.profesional_id > identidad.id [delete: restrict]
+Ref: eleccion_de_conjunto_de_graficos.profesional_id > identidad.id [delete: restrict]
+Ref: eleccion_de_conjunto_de_graficos.asesorado_id > identidad.id [delete: restrict]
+Ref: eleccion_de_conjunto_de_graficos.plan_de_entrenamiento_id > plan_de_entrenamiento.id [delete: restrict]
+Ref: eleccion_de_conjunto_de_graficos.plan_nutricional_id > plan_nutricional.id [delete: restrict]
+Ref: eleccion_de_conjunto_de_graficos.conjunto_id > conjunto_de_graficos.id [delete: restrict]
 Ref: novedad.destinatario_id > identidad.id [delete: restrict]
 Ref: novedad.fuente_id > identidad.id [delete: restrict]
 Ref: lectura_de_novedad.novedad_id - novedad.id [delete: restrict]
@@ -2969,7 +3272,7 @@ Ref: aviso_push.novedad_id > novedad.id [delete: restrict]
 Ref: aviso_push.suscripcion_id > suscripcion_push.id [delete: restrict]
 Ref: preferencia_de_recordatorio.identidad_id > identidad.id [delete: restrict]
 
-// ─── Conjuntos de valores (102) ─────────────────────────────────────────────
+// ─── Conjuntos de valores (108) ─────────────────────────────────────────────
 
 Enum EstadoOperativoDeCuenta {
   OPERATIVA
@@ -3229,6 +3532,8 @@ Enum TipoDeEventoDeNutricion {
   IngestaAnulada
   CantidadesDeIngestaRectificadas
   BorradorDePlanDescartado
+  ElementoDeCatalogoVersionado
+  ElementoDeCatalogoRetirado
 }
 Enum EstadoDeEvaluacionAntropometrica {
   EN_PREPARACION
@@ -3374,6 +3679,26 @@ Enum OrigenDeNombreAlternativo {
   PROVEEDOR
   PROFESIONAL
 }
+Enum GrupoDeAlimento {
+  CARNES
+  PESCADOS
+  HUEVOS
+  LACTEOS
+  CEREALES
+  LEGUMBRES
+  VERDURAS
+  FRUTAS
+  ACEITES
+  FRUTOS_SECOS
+  DULCES
+  BEBIDAS
+  OTROS
+}
+Enum ResultadoDeRevisionDeAlimento {
+  CERTIFICADO
+  EQUIVALENTE
+  QUITADA
+}
 Enum EstadoDePlantilla {
   ACTIVA
   ARCHIVADA
@@ -3410,6 +3735,14 @@ Enum ProcedenciaDeImagen {
 Enum CambioDeImagenDeReceta {
   ASOCIAR
   RETIRAR
+}
+Enum VarianteDeMedio {
+  MINIATURA
+  GRANDE
+}
+Enum ResultadoDePropuestaAlRecetario {
+  SUMADA
+  RECHAZADA
 }
 Enum CambioDeImagenDeEjercicio {
   ASOCIAR
@@ -3451,6 +3784,11 @@ Enum VistaAnatomica {
 Enum UsoDeVistaDeAnalisis {
   ANALISIS
   INDICADORES_DEL_RESUMEN
+}
+Enum AmbitoDeEleccionDeGraficos {
+  PERSONA
+  PLAN_DE_ENTRENAMIENTO
+  PLAN_NUTRICIONAL
 }
 Enum TipoDeNovedad {
   PLAN_ACTIVADO
@@ -3582,6 +3920,10 @@ Enum AnclaDeNotaPropia {
   EJERCICIO
   COMIDA
 }
+Enum EstadoDeAutorizacionDeHistoriaAnterior {
+  VIGENTE
+  RETIRADA
+}
 
 // ─── Módulos ─────────────────────────────────────────────
 
@@ -3662,6 +4004,8 @@ TableGroup "Nutrición" [color: #3E7D32] {
   revision_nutricional
   aplicacion_de_revision
   evento_de_nutricion
+  cita_de_respuesta_en_evaluacion_nutricional
+  calculo_del_objetivo_nutricional
 }
 
 TableGroup "Recetas, fotos y registro de comidas" [color: #8A6A12] {
@@ -3673,6 +4017,11 @@ TableGroup "Recetas, fotos y registro de comidas" [color: #8A6A12] {
   evidencia_visual_de_ingesta
   anulacion_de_ingesta
   rectificacion_de_cantidades
+  variante_de_medio
+  receta_del_recetario
+  copia_de_receta_del_recetario
+  propuesta_al_recetario
+  decision_sobre_propuesta_al_recetario
 }
 
 TableGroup "Antropometría" [color: #9A4B2E] {
@@ -3722,6 +4071,11 @@ TableGroup "Catálogos e importación" [color: #456B7F] {
   zona_muscular
   asignacion_de_zonas_de_ejercicio
   zona_de_ejercicio
+  grupo_de_alimento
+  alimento_compartido
+  alimento_del_canon
+  medidas_caseras_de_alimento
+  revision_administrativa_de_alimento
 }
 
 TableGroup "Formularios y hábitos" [color: #6B5B2E] {
@@ -3736,6 +4090,7 @@ TableGroup "Formularios y hábitos" [color: #6B5B2E] {
   autorizacion_de_habitos
   destinatario_de_habitos
   pedido_de_acceso_a_habitos
+  vinculo_de_formulario_en_evaluacion
 }
 
 TableGroup "Lo que se comparte entre áreas" [color: #7B3F6E] {
@@ -3746,6 +4101,7 @@ TableGroup "Lo que se comparte entre áreas" [color: #7B3F6E] {
   nota_de_coordinacion
   destinatario_de_nota
   referencia_de_nota
+  autorizacion_de_historia_anterior
 }
 
 TableGroup "Herramientas del profesional" [color: #3B6E8F] {
@@ -3760,6 +4116,9 @@ TableGroup "Herramientas del profesional" [color: #3B6E8F] {
   vista_de_analisis
   prescripcion_habitual
   reparto_habitual
+  preparacion_de_plantilla_de_entrenamiento
+  conjunto_de_graficos
+  eleccion_de_conjunto_de_graficos
 }
 
 TableGroup "Novedades y avisos" [color: #4F6B3A] {
@@ -3769,4 +4128,3 @@ TableGroup "Novedades y avisos" [color: #4F6B3A] {
   aviso_push
   preferencia_de_recordatorio
 }
-
