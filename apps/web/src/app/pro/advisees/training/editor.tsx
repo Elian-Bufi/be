@@ -1482,7 +1482,7 @@ export function EditorDePlan({
     }
   };
   /** DL-196 parte B: los ejercicios de una fase, con sus nombres, para la progresión y la distribución. */
-  const ejerciciosDe = (b: BloqueE) => ejerciciosDeLaFase(b, (p) => nombres[p.exerciseVersionId] ?? 'Ejercicio', nombreDeLaSesion);
+  const ejerciciosDeUnaFase = (b: BloqueE) => ejerciciosDeLaFase(b, (p) => nombres[p.exerciseVersionId] ?? 'Ejercicio', nombreDeLaSesion);
   const aproximacionesDeId = (id: string | null) => aproximacionesDe(plan, id);
   /**
    * DL-196 parte B (E12, E19): aplica lo elegido en el asistente. Desde una copia, «Arrancar donde terminó» corre las
@@ -1495,7 +1495,7 @@ export function EditorDePlan({
       const original = bloques.find((b) => b.blockId === copia.originalId);
       const regla = progresionDeLaFase(plan, copia.originalId);
       if (original && regla) {
-        const ultimas = cargasDeLaUltimaSemana(vistaPrevia(regla, ejerciciosDe(original), semanasDeLaFase(plan, copia.originalId) ?? 4, aproximacionesDeId));
+        const ultimas = cargasDeLaUltimaSemana(vistaPrevia(regla, ejerciciosDeUnaFase(original), semanasDeLaFase(plan, copia.originalId) ?? 4, aproximacionesDeId));
         const nuevas = new Map([...copia.prescripciones].flatMap(([o, c]) => (ultimas.has(o) ? [[c, ultimas.get(o)!] as const] : [])));
         if (nuevas.size > 0) {
           cambiar((x) => {
@@ -2437,7 +2437,7 @@ export function EditorDePlan({
   const progresionDe = (b: BloqueE, n: number) => {
     const regla = progresionDeLaFase(plan, b.blockId);
     const semanas = semanasDeLaFase(plan, b.blockId) ?? 4;
-    const filas = regla ? vistaPrevia(regla, ejerciciosDe(b), semanas, aproximacionesDeId) : [];
+    const filas = regla ? vistaPrevia(regla, ejerciciosDeUnaFase(b), semanas, aproximacionesDeId) : [];
     const conCarga = filas.find((f) => f.semanas.some((x) => x.carga !== null)) ?? null;
     return (
       <div className="progresion-en-el-panel" data-progresion-en-el-panel={regla ? 'con-regla' : 'sin-regla'}>
@@ -3528,7 +3528,7 @@ export function EditorDePlan({
                 fase={nombreDelBloque(b, n)}
                 blockId={id}
                 semanasDeLaFase={semanasDeLaFase(plan, id)}
-                ejercicios={ejerciciosDe(b)}
+                ejercicios={ejerciciosDeUnaFase(b)}
                 aproximacionesDe={aproximacionesDeId}
                 actual={progresionDeLaFase(plan, id)}
                 otras={bloques.flatMap((x, m) => {
@@ -3540,7 +3540,7 @@ export function EditorDePlan({
                     ? {
                         original: copia.original,
                         progresion: reglaOriginal ? progresionParaOtraFase(reglaOriginal, id, copia.prescripciones) : null,
-                        ejercicios: ejerciciosDe(original),
+                        ejercicios: ejerciciosDeUnaFase(original),
                         semanas: semanasDeLaFase(plan, copia.originalId),
                       }
                     : null
