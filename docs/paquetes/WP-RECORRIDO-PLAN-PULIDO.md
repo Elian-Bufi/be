@@ -11,6 +11,10 @@
 >
 > **RP-19 «Sin saltos» (22/11),** rama `wp-recorrido-sin-saltos`, desde `main` (32142486): «cuando hay un error se mueve
 > todo de lugar». Decisiones **RP-D18 a RP-D26, a ratificar**. Detalle en el §7.
+>
+> **RP-24 «Cierre de Nutrición» (22/11),** rama `wp-cierre-de-nutricion`, desde `wp-franjas-promedio-y-elegidas` (RP-23):
+> las acciones sin subrayado, el «?» en la esquina, la imagen de la receta en el editor y lo BAJA que se veía. Decisiones
+> **RP-D90 a RP-D99, a ratificar**. Detalle en el §11.
 
 ## 0. En criollo
 
@@ -563,3 +567,170 @@ bloque de RP-20 y RP-21.
 - Mirarlo en pantalla en los dos temas, con cinco opciones tildadas, a 1280 y a 1920 × 1080 con Windows al 125 %, y con un
   lector de pantalla.
 - La APK no tiene franjas: no cambia.
+
+## 11. RP-24 · Cierre de Nutrición (22/11)
+
+> **El pedido:** Dirección está terminando el recorrido de la planificación de Nutrición y quiere cerrarla con este paquete
+> para pasar a Entrenamiento. Cinco puntos: (1) no usar texto subrayado como enlace para acciones, «a menos que lo
+> amerite: ensucia mucho y da aspecto de web vieja» (el ejemplo: «Cambiar el rango de Desayuno» en «Rangos indicados»);
+> (2) el «?» no va al lado del título, va en la esquina superior derecha de su sección o tarjeta; (3) la imagen de la
+> receta, en el editor del plan; (4) «Ver como la persona»; (5) lo BAJA abierto de las correcciones de Nutrición que se ve
+> en pantalla. **El punto 4 salió del alcance** el mismo día por decisión de Dirección: queda como idea (abajo). Rama
+> `wp-cierre-de-nutricion`, desde `wp-franjas-promedio-y-elegidas` (RP-23, #316, todavía sin integrar), porque toca los
+> mismos archivos. Decisiones **RP-D90 a RP-D99, a ratificar**. Sin operaciones nuevas ni migraciones; no toca la APK.
+
+### En criollo
+
+Las acciones de la planificación dejaron de verse como enlaces azules subrayados: ahora son botones discretos, del color de
+acento, sin borde ni subrayado hasta que el puntero o el teclado los tocan, y del alto de un renglón. Lo único que sigue
+subrayado es lo que lleva a otro lado: el resumen de problemas que salta al campo, «Ver plan», «Ir a Revisiones», «Abrir
+el borrador en Plan», abrir una receta de la lista y los enlaces a otra página. «Rangos indicados» se rediseñó: en cada
+renglón, el nombre (Todo el día, Desayuno…) y a la derecha «Cambiar» (o «Indicar»); abajo, proteínas, carbohidratos y
+grasas en tres columnas, con su ícono, su número y su abreviatura, alineadas entre renglones. El lector de pantalla sigue
+oyendo «Cambiar el rango de Desayuno».
+
+El «?» de una sección va arriba a la derecha y lo que explica aparece flotando debajo, encima de lo que sigue: no corre
+nada (RP-19). Se cierra con Escape, con otro toque o tocando afuera. Una opción que es una receta muestra su miniatura en
+la cabecera y, abierta, «Cargar la imagen» o «Cambiar la imagen», como en el cajón. Y se corrigieron seis cosas chicas que
+se veían: el ajuste del objetivo con signo, el «Hay datos nuevos» de la medianoche, «Usarla ahora» que no volvía, el
+renglón de la versión del objetivo que saltaba, los íconos que faltaban en las tarjetas del cuadro de la opción y el 422
+genérico de Administración.
+
+### Cuándo un enlace lo amerita (el criterio)
+
+| Va subrayado (enlace) | Va como botón (discreto, quieto o secundario) |
+|---|---|
+| Lleva a otra página (`Enlace`, `Link`, `<a href>`) | Cambia algo: cambiar, quitar, duplicar, vaciar, deshacer, usar |
+| Lleva a otra vista de la misma pantalla y se lee dentro de una frase: «Ver plan», «Ir a Revisiones», «Abrir el borrador en Plan», «Ir al resumen» | Abre un cuadro, un cajón o un diálogo («Indicar el rango», «Crear a mano», «Importar») |
+| Salta al lugar de un problema (el resumen de errores: cada renglón es un salto, el patrón de siempre) | Despliega o pliega («Ver», «Ocultar», «Abrir todas», «Ver más») |
+| Abre un elemento de una lista que funciona como índice («Abrir Avena con frutas») | Reintenta, vuelve a leer, vuelve atrás dentro de un cuadro («Volver a la búsqueda»: la vuelta es un botón, como en RP-01) |
+
+En el código, un botón que navega lleva `data-navega` además de `boton--enlace`; todo lo demás es `boton--discreto` (nuevo,
+en `globals.css` junto a `.boton--enlace`). La guardia `scripts/acciones-y-ayudas.test.cjs` recorre el JSX con el
+compilador de TypeScript y falla si en la planificación (Nutrición, Entrenamiento, la evaluación, plantillas, habituales,
+recetas, las piezas de `apps/web/src/app/pro/advisees/` y los componentes que usan: `texto-a-pedido`, `cuadro-enfocado`,
+`campo-de-fecha`, `estados`) vuelve un `boton--enlace` sin `data-navega`, o un `<a>` con `onClick` y sin `href`.
+
+**Lo que pasó a botón (119 lugares en la planificación, más 7 en los componentes):** en Nutrición, «Cambiar el nombre»,
+«Duplicar opción n», «Quitar opción n» y las acciones de inicio de cada comida; «Cambiar el rango de…» e «Indicar el rango
+de…» (la lista y cada comida); «Usarla ahora»; «Cancelar» de una comida habitual; «Borrar la búsqueda» y «Agregar como
+opción: …» del cajón de recetas; «Volver a la opción», «Crear a mano» e «Importar» del cuadro de la opción; «Abrir todas» y
+«Plegar todas»; «Reintentar» y «Volver a leer las tomas» del calculador; «Vaciar» de plantillas y habituales; «Guardar» y
+«Cancelar» de los repartos habituales; «Ver lo que recibe»; «Cerrar», «Ver la comida diferente» y los alimentos del
+buscador en Registros; «Quitar dato» y «Quitar» de los formularios. En Entrenamiento, las mismas acciones del editor (más
+sesión, duplicar el día, deshacer las vueltas o la aplicación, quitar la prescripción, los días del preset, ocultar la
+vuelta), el criterio, los parámetros, la selección de series, la agenda (mover, deshacer, quitar los días), el buscador de
+ejercicios, «Ver los días», «Ver valores», «Ver más sesiones». En la evaluación, «Cambiar la fecha», «Usar la de ahora»,
+«Ver todo», «Volver a leer», «Cambiar», «Ver respuestas», «Desvincular», «Vincular la más nueva». En plantillas, habituales
+y recetas, «Ver»/«Cerrar», «Quitar», «Volver a la lista», «Quitar paso», «Limpiar búsqueda», «Retirar la imagen» y
+«Cargar/Cambiar la imagen». En las piezas compartidas, «Hay datos nuevos · Ver», «Reintentar» del acceso, la versión
+anterior y la siguiente del período, «Ver»/«Ocultar» de la evidencia, «Quitar», «Desmarcar todo», «Mostrar» y «Volver a
+ocultar» las notas propias, «Qué hace cada resultado» y «Atrás» de la galería. En los componentes, «Cambiar» y «Agregar» de
+`TextoAPedido` (la «Nota para la persona · Cambiar»), «Atrás», «Cerrar» y «Cancelar» del cuadro enfocado, «Hoy» del
+calendario, «Reintentar» de los estados y «Cómo se lee esta vista».
+
+**Lo que quedó como enlace (18 lugares), con su porqué:** el resumen de problemas del editor de Nutrición y del de
+Entrenamiento, «Ir a corregir» y los «Ir a…» de la revisión del plan (saltan al lugar del problema); los atajos «Ir al
+editor» e «Ir al panel» de Entrenamiento (saltos de navegación); «Ir al resumen» (Nutrición y Entrenamiento), «Ver plan»,
+el primer plan, «Abrir borrador», «Ir a Revisiones», «Ver registros», «Ver revisiones» y «Abrir el borrador en Plan»
+(cambian de vista, dentro de una frase); «Abrir …» en Mis recetas y en el Recetario de BE (la lista es un índice); y «Ver la
+toma» de la evaluación, un `Enlace` a Antropometría. Fuera de la planificación (Seguimiento, gráficos, Antropometría,
+formularios de la persona, seguridad) no se tocó nada: es un paso siguiente con la misma guardia.
+
+### La regla del «?» en la esquina
+
+- **La pieza:** `EncabezadoConAyuda` (en `components/explicacion-a-pedido.tsx`) arma el renglón del título con el «?» a la
+  derecha. En un grupo sin renglón de título (un `fieldset`, un campo, un aviso), el contenedor lleva
+  `con-ayuda-en-la-esquina` y el «?» se ubica arriba a la derecha, con su lugar reservado para no tapar el texto.
+- **Lo que abre flota** (`lugar="esquina"`): debajo del «?», alineado a su derecha, encima de lo que sigue, con la sombra
+  de los paneles. No ocupa lugar: abrirlo no corre lo que se está editando. Escape lo cierra y devuelve el foco al «?»;
+  también otro toque o tocar afuera.
+- **«Fuente» sigue en la línea** de lo que cita (el nombre del método): es una referencia, no la ayuda de la sección.
+- **Dónde se aplicó:** en todo /pro (los 19 «?» que había): «Rangos y totales», «Rangos indicados» y el «Reparto por
+  comida» (encabezados), la suma de los rangos y «Sugerido» del reparto, la cuenta de los gramos del objetivo, el método,
+  el sexo y el factor del calculador, el «?» del recetario (que estaba adentro del `h2`), el de «Tus habituales» y
+  «Plantillas de entrenamiento», las cargas de una plantilla, cómo se lee la tabla de series, el RPE y los dos avisos de
+  «todavía no se puede activar». El bloque `.titulo-con-ayuda`, que lo ponía al lado del título, se retiró.
+- **La guardia** (`scripts/acciones-y-ayudas.test.cjs`): en /pro y en los componentes, un «?» sin `lugar="esquina"`, un
+  «?» adentro de un título o la clase `titulo-con-ayuda` hacen fallar la prueba.
+
+### La imagen de la receta en el editor
+
+Dirección preguntó si la imagen de la receta se carga «aquí», en el editor del plan. Ahora sí: la opción que es una receta
+muestra su miniatura en la cabecera (del alto del renglón: no la agranda) y, abierta, la misma pieza del cajón
+(`ImagenEnElCajon`): «Cargar la imagen de la receta» o «Cambiar la imagen de la receta», que abre el recuadro de siempre. La
+imagen es de la receta: cambiarla acá la cambia en Mis recetas y en los planes que la ofrecen. Las miniaturas salen de la
+lista propia (API-REC-02, una sola lectura de hasta diez páginas, solo si el plan tiene alguna receta), que ya trae las
+rutas firmadas en lote: **ningún pedido por miniatura** (el límite es de 120 lecturas por minuto). Sin rutas firmadas, el
+plato de respaldo, sin pedir nada (`imagenes-de-las-recetas.ts`).
+
+### Lo BAJA que se veía en pantalla
+
+| Qué | Antes | Ahora |
+|---|---|---|
+| El ajuste del objetivo («Con qué se calculó») | «−300 kcal por día», «+10 % de…» | «Déficit de 300 kcal por día», «Superávit del 10 % de las 2.450 kcal del gasto total», como se escribe en el calculador (`ajusteEnPalabras`) |
+| «Hay datos nuevos» a medianoche | El conteo de registros es «dentro del período»: a las 0:00 el período corre y el conteo cambia sin que nadie registre nada | La huella lleva el período; con otro período, el conteo no se compara (lo nuevo lo dice la fecha del último registro) |
+| `objetivoPedido` | Quedaba en `true` después de guardar: si llegaba otra versión del objetivo, el borrador pasaba a usarla sin «Usarla ahora», y el botón no volvía | Vuelve a `false` cuando el borrador cita el objetivo vigente |
+| El renglón de la versión del objetivo | «Vigente desde…» pasaba a «Versión 3, vigente desde…» al llegar el número y saltaba de renglón, corriendo la tira | Va en su propio renglón (`flex-basis: 100%`) |
+| Los íconos en las tarjetas | El cuadro de la opción («Al instante», «Rango de…») mostraba los macros sin ícono | Cada macro con su ícono, y la fibra con el suyo (RP-07) |
+| El 422 de /admin/recipes | «No está disponible» para todo | «Esta propuesta ya se decidió…», «No se puede sumar: tiene alimentos cargados a mano…» o «No se pudo guardar la decisión…» (`textoDeLaDecision`) |
+
+**Lo que no se hizo, y por qué:**
+
+- **Kerr «quedó dentro del 4 %»:** el texto es la población de los seis métodos de Kerr en el catálogo antropométrico
+  (`scripts/catalogo-antropometrico/catalogo-metodos.cjs` y la migración `20261121150000_kerr_cinco_componentes`). Va en la
+  base: cambiarlo pide una migración nueva del catálogo, que este paquete no hace (sin migraciones). Texto propuesto:
+  «…y la diferencia quedó por debajo del 4 % del peso medido, salvo en fisicoculturistas (8 % del peso medido)».
+- **«Sin anotar» contra «Sin indicar»:** «Sin anotar» está solo en la APK (`apps/mobile/src/selector-de-rpe.tsx`, el
+  selector del RPE). La APK no se toca en este paquete: va en su próxima versión.
+- **El renglón «Indicado» de la comida plegada y el aviso de la cantidad** (RP-19 §7.4, del frente de las barras):
+  siguen anotados; no se vieron en el recorrido de Dirección.
+
+### Decisiones de continuador (a ratificar)
+
+| ID | Decisión | Por qué / alternativa |
+|---|---|---|
+| RP-D90 | Las acciones de la planificación son botones discretos (`boton--discreto`): color de acento, sin borde ni subrayado hasta el puntero o el foco, 2 rem de alto. El subrayado queda para la navegación (tabla de arriba), marcada con `data-navega`. «Rangos indicados»: nombre y acción corta («Cambiar» o «Indicar») en el renglón, y los tres macros en tres columnas iguales debajo; el lector oye la acción completa | Un ícono de lápiz habría pedido un ícono nuevo en la familia (la APK y el website comparten 129) y no dice «indicar» cuando no hay rango. Alternativa: el renglón entero tocable, con una flecha |
+| RP-D91 | El «?» va en la esquina superior derecha de su sección, tarjeta o grupo, y lo que abre flota (no ocupa lugar). Escape, otro toque o tocar afuera lo cierran. «Fuente» sigue en su línea | Desplegado en el lugar, el «?» corría lo de abajo (RP-19). Alternativa: un diálogo, que tapa más y pide cerrarlo |
+| RP-D92 | La miniatura de la receta, en la cabecera de la opción; cargar o cambiar la imagen, con la opción abierta (la misma pieza del cajón). Las rutas, de la lista propia en lote, una vez por pantalla; si vencen (15 minutos), queda el plato hasta volver a abrir el editor | Releer la lista sola cada 15 minutos gasta lecturas sin que nadie mire. Alternativa: releerla al volver a la pestaña |
+| RP-D93 | «Hay datos nuevos» compara el conteo de registros solo dentro del mismo período | El conteo es «dentro del período»: corre solo a medianoche. Alternativa: sacar el conteo de la huella (un registro cargado con fecha de otro día no se notaría) |
+| RP-D94 | Administración dice por qué no se decidió una propuesta (ya decidida, con alimentos cargados a mano, un dato que no se acepta) | Un 422 tiene su explicación; «no disponible» es para la red y el servicio |
+| RP-D95 | El ajuste guardado se dice en palabras y sin signo, como se escribe: «Déficit de 300 kcal por día» | Igual que el calculador (RP-05). Por dentro se sigue guardando con su signo |
+| RP-D96 | «Usarla ahora» se cumple y se apaga cuando el borrador cita el objetivo vigente | Si queda prendido, una versión del objetivo posterior entra sin pedirla |
+| RP-D97 | Las tarjetas del cuadro de la opción llevan el ícono de cada macro y de la fibra | Es la misma cantidad que en el editor (RP-07) |
+| RP-D98 | La versión del objetivo, en su propio renglón | Llega después que el objetivo y cambia de largo. Alternativa: reservar el ancho del texto largo |
+| RP-D99 | «Ver como la persona» queda como idea para después, por decisión de Dirección del 22/11 | Ver abajo |
+
+### Idea para después: «Ver como la persona»
+
+Que el profesional vea el plan en preparación como lo va a ver la persona en la app: una acción en el editor de Nutrición
+que abre un cajón con un marco de teléfono, con el día tipo, las comidas, el carrusel de opciones (flechas, puntitos y
+«Opción n de m»), la foto grande 16:10 o la miniatura de reemplazo, los macros con ícono, número y abreviatura, la nota
+para la persona y «Comí esta opción» inactivo; con los textos de `apps/mobile/src/pantallas/nutricion-hoy.tsx`,
+`carrusel-de-opciones.ts` y `COPY_REGISTRO_DE_COMIDAS`, y «Así lo va a ver {nombre} cuando actives el plan». Solo lectura
+del borrador en pantalla, sin pedidos nuevos salvo las imágenes firmadas (las de RP-D92 ya sirven). Dirección la sacó del
+alcance el 22/11: no se empezó.
+
+### Lo que se probó
+
+- `scripts/acciones-y-ayudas.test.cjs` (nuevo, en `npm test`): la guardia de las acciones y los «?», y una prueba de que
+  reconoce lo que tiene que rechazar.
+- `apps/web/test/cierre-de-nutricion.test.mjs` (nuevo): «Hay datos nuevos» a medianoche, el ajuste en palabras,
+  `objetivoPedido`, el renglón de la versión, los íconos de las tarjetas, el 422 de Administración, «Rangos indicados», el
+  «?» que flota y la miniatura con las rutas en lote (`recetasDelPlan`, `porReceta`).
+- Las pruebas de RP-21, RP-22, RP-07, RP-08, RP-19 y del RPE, al día con la pieza nueva.
+- El recorrido de navegador `cierreDeNutricion` (`test/navegador/recorridos.mjs`): a 1440 con el panel abierto, el «?»
+  del día contra el borde derecho, que al abrirse no corre nada y que Escape cierra y devuelve el foco; «Rangos
+  indicados» con «Cambiar» o «Indicar» sin subrayado y los macros alineados; ningún botón subrayado en el editor ni en el
+  panel salvo los que navegan.
+- Por la memoria del equipo no se corrió el chequeo de tipos completo del website ni el navegador en local: los corre la
+  CI. El CSS se verificó con postcss y `scripts/contraste.test.cjs` (no hay colores nuevos).
+
+### Lo que queda
+
+- Ratificar RP-D90 a RP-D99.
+- Mirarlo en la pantalla de Dirección (1920 × 1080, Windows al 125 %, el navegador del 75 al 100 %), en Claro y en Azul
+  noche, y con un lector de pantalla (el «?» que flota y «Cambiar» con su nombre completo).
+- La misma guardia de acciones, fuera de la planificación (Seguimiento, gráficos, Antropometría, formularios de la
+  persona).
+- Kerr y «Sin anotar» (arriba), y «Ver como la persona» si Dirección la retoma.
