@@ -193,7 +193,7 @@ La conclusión es que la infraestructura no es una barrera. La clave es cuántos
 | Datos de salud en manos de profesionales de la salud (art. 8) | Cada profesional ve solo lo que la persona autorizó en su área. | Cómo encuadran los entrenadores, que no son profesionales de la salud, y el rol de BE como prestador del servicio (art. 25). |
 | Seguridad de los datos (art. 9) | Autorización por área en cada operación, registro de quién hizo qué y segundo factor para Administración; el profesional entra con su contraseña o con Google, con límite de intentos. | Si alcanza. |
 | Acceso en 10 días corridos; rectificación y supresión en 5 días hábiles (arts. 14 y 16) | La persona descarga sus datos y pide su supresión desde la app; las correcciones quedan registradas sin borrar lo anterior. | Los plazos y el procedimiento. |
-| Inscripción de las bases de datos (art. 21) | La inscripción de la base se tramita antes de operar con datos reales. | Si corresponde inscribirla ante la autoridad de control. |
+| Inscripción de las bases de datos (art. 21) | La inscripción de la base ante la Agencia de Acceso a la Información Pública (AAIP) se tramita antes de operar con datos reales. | Si corresponde inscribirla ante la autoridad de control. |
 | Transferencia internacional (art. 12) | Los datos se alojan en Frankfurt, en la Unión Europea, que la autoridad de control considera con protección adecuada. Los proveedores tienen sede en los Estados Unidos. | Si hacen falta cláusulas contractuales con cada proveedor. |
 
 La demostración usa datos sintéticos; los datos reales van en el ambiente de producción, separado.
@@ -203,6 +203,10 @@ La demostración usa datos sintéticos; los datos reales van en el ambiente de p
 1. **Revisión legal**: Un abogado revisa consentimiento, términos, encuadre de los entrenadores e inscripción de la base.
 2. **Ambiente de producción**: Separado del de la demostración, con la restauración de una copia ensayada.
 3. **Abrir de a poco**: Pocos profesionales primero, para encontrar las faltas antes de crecer.
+4. **Consentimiento expreso para datos de salud**: Los textos finales del consentimiento, revisados, en la app y en el website, con su versión registrada.
+5. **Inscripción ante la AAIP**: La base de datos, inscripta antes de recibir el primer dato real.
+
+**Las licencias.** El código de BE es propio, con todos los derechos reservados (Ley 11.723 de Propiedad Intelectual). Los datos de terceros conservan sus licencias: Open Food Facts (ODbL) y wger (CC BY-SA) piden atribución y que lo derivado se comparta igual, y los de USDA son de dominio público. BE muestra la fuente de cada alimento y de cada ejercicio importados.
 
 *Figura 6: Lo que tiene que pasar, en orden, antes de abrir BE a datos reales a escala.*
 
