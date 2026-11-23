@@ -85,6 +85,8 @@ Una persona que quiere mejorar cómo come, cómo entrena y cómo cambia su cuerp
 
 Cuando una profesional de Nutrición abre la ficha de una persona, ve su área con todo el detalle. Si la persona también entrena y se mide con otros profesionales, y lo autoriza, ve además el resumen de esas áreas y su plan vigente, los hábitos que la persona eligió compartirle y las notas que le dejan los otros profesionales. Todo cae sobre la misma línea del tiempo: cada plan activado, cada comida y cada sesión registradas, cada toma y cada revisión, en el orden en que pasaron.
 
+Mientras planifica, el profesional tiene ese contexto a la vista, sin salir del editor, y prepara sus plantillas aun sin una persona. El objetivo de Nutrición puede apoyarse en una toma de Antropometría, con el método y su cita a la vista: BE propone y el profesional decide.
+
 ![Figura 4: La persona entera, en el tiempo, vista por su profesional de Nutrición: su área con todo el detalle y, de las otras, lo que la persona autorizó. Esquema ilustrativo, con datos inventados](pendiente)
 
 ## 2.2 Cada cambio, con su porqué
@@ -150,7 +152,7 @@ BE no diagnostica ni califica, y no decide por el profesional: muestra qué se i
 
 1. **Habilita** (Administración): Habilita al profesional en un área, con un fundamento que queda registrado.
 2. **Invita** (Profesional): Con un link, un QR o un código de un solo uso.
-3. **Acepta y autoriza** (Persona): El vínculo y el permiso del área: dos actos distintos.
+3. **Acepta y autoriza** (Persona): El vínculo y el permiso del área, dos actos distintos; en una sola pantalla, con todo marcado y retirable, decide qué comparte.
 4. **Pide información** (Profesional): Un formulario de inicio; la persona elige quién ve sus hábitos.
 5. **Evalúa y planifica** (Profesional): La evaluación, el objetivo y el plan, en un borrador que se guarda solo.
 6. **Activa** (Profesional): «Revisar y activar…»: la versión queda fija y la persona recibe el aviso.
@@ -182,7 +184,7 @@ La persona usa una app para Android, hecha con React Native y Expo. Los profesio
 
 - **Si no se audita, no ocurre.** La auditoría se escribe en la misma transacción que el dato, con su autor y su momento.
 
-- **Segundo factor.** Obligatorio para Administración, con códigos de recuperación. El profesional también lo usa para entrar al website.
+- **Segundo factor.** Obligatorio para Administración, con códigos de recuperación. El profesional entra con su contraseña o con Google, con el límite de intentos y sesiones que vencen.
 
 - **Contraseñas y tráfico.** Las contraseñas se guardan con un hash (bcrypt), nunca en claro, y todo viaja por HTTPS.
 
@@ -199,6 +201,14 @@ El detalle está en el modelo de datos (14), las clases (15), la arquitectura (1
 *BE ya ordena la historia. El paso siguiente es leer más de lo que una persona puede leer sola.*
 
 Hoy las áreas son Nutrición, Entrenamiento y Antropometría, lo más físico y visible del cambio. La misma forma de trabajar (planes con versiones, registros aparte, tomas con su método y un mismo eje del tiempo) admite sumar otras áreas de la salud: el sueño, los hábitos o el ciclo menstrual, cada una con su autorización. También está prevista la versión para iPhone.
+
+**Lo que viene en la planificación.** Sobre la misma base de planes con versiones y registros aparte, estas son las próximas líneas de trabajo:
+
+- **El carrito de compras familiar.** Un centro familiar donde, si varios integrantes comparten comidas, BE calcula la porción de cada uno con los mismos alimentos de la receta, según el plan de cada persona, y arma el carrito con lo que hace falta. Permite trabajar con familias, desde una pareja hasta familias con varios planes distintos, sin que nadie vea lo que no le corresponde: cada integrante da su propio consentimiento.
+- **La lista de compras semanal.** La suma de lo que el plan indica para la semana, por alimento y en cantidades de compra.
+- **Planificar por porciones o por intercambios.** Además de los gramos, el profesional podrá indicar el plan en porciones o con listas de intercambio, siempre con la opción de seguir trabajando como hoy.
+- **«Ver como la persona».** Desde el editor, ver el plan en preparación tal como lo va a ver la persona en su teléfono, antes de activarlo.
+- **El RPE de la sesión para otros deportes.** Registrar una actividad que no está en el plan (correr, nadar, un partido) con su duración y el esfuerzo percibido de la sesión, para sumarla a la historia del entrenamiento.
 
 Cuanto más se usa BE, más historia hay para leer. Hoy el límite es cuántos datos puede interpretar un profesional. A futuro, con el consentimiento de las personas y sobre datos agregados, el análisis de grandes volúmenes y herramientas de inteligencia artificial supervisadas por el profesional podrían encontrar patrones que hoy no se ven: qué cambios funcionan mejor, para qué personas y en qué contexto. Es una línea de investigación, no una función de BE: hoy ningún dato de salud pasa por un modelo, y cualquier paso en esa dirección necesita su validación y su encuadre legal.
 

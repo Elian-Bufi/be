@@ -117,6 +117,8 @@ Los permisos por área existen porque son datos de salud: la persona acepta cada
 | La historia anterior de su área, con otro profesional | Si la persona lo autoriza, en solo lectura |
 | Borradores, versiones anteriores y notas internas de otra área | Nunca |
 
+Administración no ve datos de salud: de un alimento cargado a mano o de una receta propuesta ve quién la cargó, nunca a qué persona se le indicó.
+
 # 2. Público objetivo
 
 *Quién elige BE, quién lo paga y quién lo usa todos los días.*
@@ -194,16 +196,16 @@ BE tiene tres roles y dos canales. La persona usa la app para Android. El profes
 
 | Funcionalidad | Qué hace | Dónde |
 | --- | --- | --- |
-| Cuenta y acceso | Cuenta con correo o con Google; segundo factor para profesionales y Administración; recuperar el acceso | App y website |
+| Cuenta y acceso | Cuenta con correo o con Google; segundo factor para Administración; recuperar el acceso | App y website |
 | Vínculo e invitación | El profesional invita con un enlace, un QR o un código; la persona acepta o rechaza | El website invita; la app acepta |
-| Consentimiento y permisos | La persona autoriza cada área, ve qué ve cada profesional y quién miró lo que compartió, y retira un permiso cuando quiere | App |
-| Evaluación y objetivo | La evaluación inicial y el objetivo de cada área, con sus versiones | Website |
+| Consentimiento y permisos | La persona autoriza cada área, ve qué ve cada profesional y quién miró lo que compartió, y retira un permiso cuando quiere; al aceptar, una sola pantalla con todo marcado, y un interruptor por cosa en «Quién ve qué» | App |
+| Evaluación y objetivo | La evaluación inicial en tres bloques, con los formularios que respondió la persona vinculados y las «Anotaciones» privadas del profesional, y el objetivo de cada área, con sus versiones; en Nutrición, «Calcular» propone el objetivo con un método publicado y una toma de Antropometría, y el profesional decide | Website |
 | Pedidos de información | Formularios de inicio y pedidos puntuales; la persona elige con quién comparte sus hábitos | El website pide; la app responde |
-| Plan de nutrición | Un borrador que se guarda solo, comidas con opciones y recetas y los totales del día; al activarse, una versión fija | El website arma; la app lo muestra |
-| Plan de entrenamiento | Bloques, sesiones y series con agenda, plantillas y un catálogo de ejercicios con imagen y zonas musculares; se activa como versión | El website arma; la app lo muestra |
+| Plan de nutrición | Un borrador que se guarda solo, comidas con opciones y recetas, lo que aporta cada alimento mientras se arma, las medidas caseras, el reparto por comida y la franja de cada comida frente a su rango; al activarse, una versión fija | El website arma; la app lo muestra |
+| Plan de entrenamiento | Fases, sesiones con bloques («Seguido» o «En vueltas») y series efectivas y de calentamiento, con agenda, plantillas (también sin una persona) y un catálogo de ejercicios con imagen y zonas musculares; el esfuerzo en RIR o en RPE; se activa como versión | El website arma; la app lo muestra |
 | Registro de comidas | La opción del plan, las porciones o una comida diferente con foto; corregir sin borrar | App |
 | Registro de entrenamiento | Serie por serie o de una vez, con descanso, sustituciones y «La vez pasada»; una nota para el profesional | App |
-| Antropometría | Tomas con protocolo y métodos de cálculo con versión; cada medida frente a la primera y a la anterior | El website toma; la app muestra |
+| Antropometría | Elegir los métodos antes de medir; tomas con protocolo y métodos de cálculo con versión, entre ellos Kerr (1988) en cinco masas; cada medida frente a la primera y a la anterior | El website toma; la app muestra |
 | Revisión | Comparar lo indicado con lo registrado y decidir, con evidencia, fundamento y próxima acción | El website; la app la muestra |
 | Seguimiento profesional | Un espacio con lo pendiente; la ficha con el resumen, la línea de tiempo, los registros y las notas propias | Website |
 | Gráficos y comparativas | El historial de cada ejercicio con el 1RM estimado, la alimentación y el cuerpo en el tiempo, «Armá tu gráfico», «Patrones» y los «Enfoques» | Website |
@@ -211,8 +213,9 @@ BE tiene tres roles y dos canales. La persona usa la app para Android. El profes
 | Historia anterior | Con la autorización de la persona, el profesional nuevo ve la historia anterior del área, en solo lectura | La app autoriza; el website la muestra |
 | Derechos de la persona | Ver y descargar su historia, ejercer sus derechos sobre sus datos y cerrar la cuenta | App |
 | Novedades y avisos | Avisos al teléfono sin datos de salud y novedades en la app | App |
-| Catálogos | Alimentos (catálogo propio, Open Food Facts y USDA) y ejercicios; recetas y plantillas de cada profesional | Website |
-| Administración | Habilitar, verificar, suspender y rehabilitar a cada profesional por área, con fundamento | Website |
+| Recetario de BE | Recetas de cocina familiar para todos los profesionales de Nutrición, que se usan como opción del plan o se copian para adaptarlas; cada profesional propone las suyas y Administración decide si las suma | Website |
+| Catálogos | Alimentos (catálogo propio, Open Food Facts y USDA), con lo cargado a mano propio de cada profesional, que se corrige y se retira, y un catálogo verificado que cuida Administración; ejercicios; recetas y plantillas de cada profesional | Website |
+| Administración | Habilitar, verificar, suspender y rehabilitar a cada profesional por área, con fundamento; revisar los alimentos cargados a mano y las propuestas al Recetario de BE | Website |
 | Métrica del servicio | La tasa de ciclos de seguimiento cerrados en 30 días (TVCC-30), calculada de forma reproducible | Servidor |
 
 # 6. Límites
@@ -263,22 +266,23 @@ flowchart LR
 | Website | Next.js 15.5, publicado como sitio estático |
 | App | React Native 0.86 con Expo SDK 57, para Android |
 | Base de datos | PostgreSQL 16, con Prisma 6 y migraciones en orden |
-| Autenticación | Sesiones propias con renovación; entrada con Google verificada por la API; segundo factor con una aplicación de códigos |
+| Autenticación | Sesiones propias con renovación; entrada con Google verificada por la API; segundo factor con una aplicación de códigos para Administración |
+| Licencias | El código de BE, con todos los derechos reservados (Ley 11.723). Los datos de terceros conservan las suyas: Open Food Facts (ODbL) y wger (CC BY-SA), que piden atribución y compartir igual lo derivado, y USDA, de dominio público |
 | Infraestructura | Render, región Frankfurt: el website, la API, la base de datos y una tarea programada de recordatorios |
 | Integración continua | GitHub Actions: tipos, pruebas unitarias y de integración, recorridos en el navegador e imagen de la API en cada cambio |
 | Servicios externos | Catálogos de alimentos y ejercicios (Open Food Facts, USDA y wger) y avisos al teléfono por Expo Push |
 
-- **UN SOLO LENGUAJE · .** Los contratos, los textos y las reglas puras se escriben una vez en un paquete compartido. Una regla no puede decir una cosa en el teléfono y otra en el servidor.
+- **UN SOLO LENGUAJE.** Los contratos, los textos y las reglas puras se escriben una vez en un paquete compartido. Una regla no puede decir una cosa en el teléfono y otra en el servidor.
 
-- **MONOLITO MODULAR · .** Una operación de salud es completa o no ocurre, sin coordinar transacciones entre servicios. Lo elegí por el tamaño del equipo, la escala esperada y las operaciones atómicas entre áreas; puede separarse si eso cambia.
+- **MONOLITO MODULAR.** Una operación de salud es completa o no ocurre, sin coordinar transacciones entre servicios. Lo elegí por el tamaño del equipo, la escala esperada y las operaciones atómicas entre áreas; puede separarse si eso cambia.
 
-- **REGLAS EN LA BASE · .** Claves foráneas sin borrado en cascada, índices únicos parciales y disparadores: la historia no se puede romper ni desde fuera de la API.
+- **REGLAS EN LA BASE.** Claves foráneas sin borrado en cascada, índices únicos parciales y disparadores: la historia no se puede romper ni desde fuera de la API.
 
-- **REACT NATIVE CON EXPO · .** Una app nativa para Android con el mismo lenguaje que el resto, y el mismo código como base para iPhone.
+- **REACT NATIVE CON EXPO.** Una app nativa para Android con el mismo lenguaje que el resto, y el mismo código como base para iPhone.
 
-- **RENDER · .** Despliegue simple y portable, con la base en una red privada.
+- **RENDER.** Despliegue simple y portable, con la base en una red privada.
 
-- **UN SOLO REPOSITORIO · .** Un cambio que toca las tres piezas entra de una vez y se prueba junto.
+- **UN SOLO REPOSITORIO.** Un cambio que toca las tres piezas entra de una vez y se prueba junto.
 
 *Figura 11: Por qué estas tecnologías.*
 
@@ -389,6 +393,14 @@ El desarrollo se apoyó en asistentes de inteligencia artificial para programar,
 **El piloto.** Cinco a ocho profesionales con consultorio propio usan BE con sus personas, con tareas concretas: preparar una consulta, distinguir un día sin registro de uno que se apartó del plan y registrar una revisión. Con eso se fija el precio y se ordena lo que sigue.
 
 **Más áreas y más canales.** La misma forma de trabajar (planes con versiones, registros aparte, tomas con su método y un mismo eje del tiempo) admite sumar otras áreas de la salud: el sueño, los hábitos o el ciclo menstrual, cada una con su autorización. También la versión para iPhone.
+
+**Lo que viene en la planificación.** Sobre la misma base de planes con versiones y registros aparte, estas son las próximas líneas de trabajo:
+
+- **El carrito de compras familiar.** Un centro familiar donde, si varios integrantes comparten comidas, BE calcula la porción de cada uno con los mismos alimentos de la receta, según el plan de cada persona, y arma el carrito con lo que hace falta. Permite trabajar con familias, desde una pareja hasta familias con varios planes distintos, sin que nadie vea lo que no le corresponde: cada integrante da su propio consentimiento.
+- **La lista de compras semanal.** La suma de lo que el plan indica para la semana, por alimento y en cantidades de compra.
+- **Planificar por porciones o por intercambios.** Además de los gramos, el profesional podrá indicar el plan en porciones o con listas de intercambio, siempre con la opción de seguir trabajando como hoy.
+- **«Ver como la persona».** Desde el editor, ver el plan en preparación tal como lo va a ver la persona en su teléfono, antes de activarlo.
+- **El RPE de la sesión para otros deportes.** Registrar una actividad que no está en el plan (correr, nadar, un partido) con su duración y el esfuerzo percibido de la sesión, para sumarla a la historia del entrenamiento.
 
 **Leer más datos.** Cuanto más se usa BE, más historia hay para leer, y hoy el límite es cuántos datos puede interpretar un profesional. A futuro, con el consentimiento de las personas y sobre datos agregados, el análisis de grandes volúmenes y herramientas de inteligencia artificial supervisadas por el profesional podrían encontrar patrones que hoy no se ven: qué cambios funcionan mejor, para qué personas y en qué contexto. Es una línea de investigación, no una función de BE, y cada paso en esa dirección necesita su validación y su encuadre legal.
 
