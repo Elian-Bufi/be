@@ -1130,6 +1130,31 @@ vieja»; y el «?» «no va al lado del título: va en la esquina superior derec
   `lugar="esquina"`, adentro de un título o con `titulo-con-ayuda`. Fuera de la planificación (Seguimiento, gráficos,
   Antropometría) la regla de las acciones vale para lo nuevo; lo de antes se pasa con la misma guardia en un paso siguiente.
 
+### II.15 El recorrido guiado de una interfaz (DL-195, 2026-11-23)
+
+Dirección: «como en las buenas apps, un tutorial para las primeras veces que se usan las interfaces, mostrando sección por
+sección cuál es el flujo. Que todo se oscurezca menos la zona que estamos explicando y aparezca un cartel de fácil lectura».
+
+- **Para qué:** el flujo de una interfaz con varias zonas (un editor), de arriba abajo, la primera vez. No reemplaza a
+  «Cómo se lee esta vista» (lo que significa cada marca) ni a la Guía: dice dónde está cada cosa y qué se hace ahí.
+- **La forma:** `components/recorrido-guiado.tsx`. Todo se oscurece (`--velo-del-recorrido`) menos un hueco con contorno
+  cian sobre la zona del paso; el cartel va al lado, sin taparla y adentro de la ventana, con «Paso n de m», un título,
+  una o dos frases, «Omitir» a la izquierda y «Anterior» / «Siguiente» (o «Terminar») a la derecha, siempre en el mismo
+  lugar («Anterior» apagado en el primero). Es un diálogo modal: Escape omite, las flechas se mueven, Tab no sale del
+  cartel, el foco va al título en cada paso y vuelve adonde estaba al cerrar.
+- **Los textos:** de cinco a siete pasos; cada uno, un título corto y una o dos frases en criollo, que nombran las cosas
+  con las palabras exactas de la pantalla (entre comillas latinas si es un botón o un rótulo). Viven en
+  `packages/domain/src/recorridos-guiados.ts`, con su prueba de términos prohibidos.
+- **Dónde se ancla:** con `data-recorrido="…"` en la zona que se explica (o con el atributo propio `data-<ancla>` que ya tenía). Un paso puede tener varias anclas (la primera
+  que se vea); si no hay ninguna, se saltea y «Paso n de m» no lo cuenta. Si está cortada, la página se desplaza hasta ella
+  (sin animación con `prefers-reduced-motion`).
+- **Cuándo aparece:** solo, la primera vez que el usuario abre esa interfaz; se recuerda **por usuario** en la API
+  (API-RGU-01 y 02), no por navegador. Omitirlo o terminarlo lo da por visto.
+- **«Ver el recorrido»:** `boton--discreto` con el ícono «info», el primero de la barra de comandos del editor, a la
+  izquierda del estado de guardado: un lugar fijo que no se mueve al escribir. Nunca un enlace subrayado.
+- **Nada se corre (RP-19):** el velo, el hueco y el cartel son fijos a la ventana y van en un portal; no se bloquea el
+  desplazamiento de la página, porque sacar la barra de desplazamiento correría todo de costado.
+
 ## Parte III · APK del asesorado
 
 ### III.1 Navegación

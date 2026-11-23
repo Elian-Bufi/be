@@ -81,10 +81,12 @@ import {
   NOTACION_POR_OMISION,
   notacionDe,
   type NotacionDelEsfuerzo,
+  RECORRIDO_DEL_EDITOR_DE_ENTRENAMIENTO,
 } from '@be/domain';
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { ProveedorDeLaNotacion } from '../notacion-del-esfuerzo';
 import { NotacionDelPlan } from './notacion-del-plan';
+import { BotonVerElRecorrido, RecorridoGuiado, useRecorridoGuiado } from '../../../../components/recorrido-guiado';
 import { Ayuda, AvisoFlotante } from '../../../../components/ayuda';
 import { CampoDeNombre } from '../../../../components/campo-de-nombre';
 import { EnPartes } from '../../../../components/en-partes';
@@ -1135,6 +1137,10 @@ export function EditorDePlan({
     plantilla.onDescartada(p.templateId === null || p.baseVersionNumber === null ? PLT.descartadaLaNueva : PLT.descartadosLosCambios(p.baseVersionNumber));
   }
 
+  // DL-195 (GUI-08): el recorrido guiado aparece solo la primera vez que el profesional abre el editor de una versión del
+  // plan (no en la plantilla ni en el asistente).
+  const recorrido = useRecorridoGuiado('training-plan-editor', version !== null && !plantilla && esDelPlan(version) && pasoPedido(parametros.get('asistente')) === null);
+
   if (error === 'no-disponible' && plantilla) return <PreparacionQueYaNoEsta volver={plantilla.volver} />;
   if (error === 'no-disponible') return <NoDisponible />;
   if (error === 'error') return <ErrorConReintento onReintentar={cargar} />;
@@ -2160,6 +2166,8 @@ export function EditorDePlan({
           ) : null}
         </h2>
         <div className="editor-del-plan__acciones">
+          {/* DL-195 (GUI-10): «Ver el recorrido», el primero de la barra: un lugar fijo, que no se mueve con el estado. */}
+          {pasoDelAsistente ? null : <BotonVerElRecorrido alTocar={recorrido.abrir} />}
           <EstadoDeGuardado
             className="editor-del-plan__estado"
             guardando={guardando}
@@ -2511,7 +2519,7 @@ export function EditorDePlan({
 
           </div>
           {bloque ? (
-            <section className="estacion__sesiones" aria-labelledby="titulo-sesiones">
+            <section className="estacion__sesiones" aria-labelledby="titulo-sesiones" data-recorrido="sesiones">
               <div className="estacion__sesiones-cabecera">
                 <h3 id="titulo-sesiones">{CE.sesiones}</h3>
                 {/* ED-24: «+ Sesión», con el nombre en el lugar y Enter. */}
@@ -2838,6 +2846,7 @@ export function EditorDePlan({
                   id="agregar-ejercicios-a-la-sesion"
                   className="boton boton--quieto"
                   data-agregar-ejercicio
+                  data-recorrido="agregar-ejercicio"
                   onClick={() => {
                     setAgregandoEn(null);
                     setAgregando(true);
@@ -2852,6 +2861,7 @@ export function EditorDePlan({
                   type="button"
                   className="boton boton--quieto"
                   data-agregar-bloque-de-la-sesion
+                  data-recorrido="agregar-bloque"
                   aria-disabled={sinAgregarBloque ? true : undefined}
                   aria-describedby={sinAgregarBloque ? `${prefijo}-s${k}-tope-de-bloques` : undefined}
                   onClick={() => {
@@ -3116,6 +3126,9 @@ export function EditorDePlan({
           void prescripcionesHabituales.recargar();
         }}
       />
+
+      {/* DL-195: el recorrido guiado del editor, sobre todo lo demás (va en un portal). */}
+      <RecorridoGuiado definicion={RECORRIDO_DEL_EDITOR_DE_ENTRENAMIENTO} abierto={recorrido.abierto} alCerrar={recorrido.cerrar} />
 
       <AgregarEjercicio
         abierto={agregando && !!sesion}

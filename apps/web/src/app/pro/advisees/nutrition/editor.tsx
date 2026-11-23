@@ -69,6 +69,7 @@ import {
   type VersionDeObjetivo,
   type VersionDePlan,
   type EstimacionDeLasOpcionesResponse,
+  RECORRIDO_DEL_EDITOR_DE_NUTRICION,
 } from '@be/domain';
 import { Enlace } from '../../../../components/enlace';
 import { useCallback, useEffect, useId, useMemo, useRef, useState, type ReactNode } from 'react';
@@ -133,6 +134,7 @@ import { COPY_RANGOS_INDICADOS } from './rangos-indicados';
 import { CuadroDelRangoIndicado, rangoIndicadoDe, RangosIndicados, sePuedeIndicar, useRangosIndicados, type DiaParaLosRangos } from './rangos-indicados-del-plan';
 import { KcalDelObjetivo } from './suma-de-los-rangos';
 import { RepartoPorComida } from './propuesta-de-rangos-del-plan';
+import { BotonVerElRecorrido, RecorridoGuiado, useRecorridoGuiado } from '../../../../components/recorrido-guiado';
 import { RangosYTotales } from './rangos-y-totales';
 import { FranjasDeLaComida } from './franjas-de-la-comida';
 import { COPY_FRANJAS, primeroLasQueEntran, recetaFrenteAlRango } from './franjas-por-comida';
@@ -825,6 +827,9 @@ export function EditorDeBorrador({
     onDescartado();
   }
 
+  // DL-195 (GUI-08): el recorrido guiado aparece solo la primera vez que el profesional abre el editor del plan.
+  const recorrido = useRecorridoGuiado('nutrition-plan-editor', version !== null);
+
   if (error === 'no-disponible') return <NoDisponible />;
   if (error === 'error') return <ErrorConReintento onReintentar={cargar} />;
   if (!version) return <Cargando />;
@@ -1107,6 +1112,8 @@ export function EditorDeBorrador({
           </span>
         </h2>
         <div className="editor-del-plan__acciones">
+          {/* DL-195 (GUI-10): «Ver el recorrido», el primero de la barra: un lugar fijo, que no se mueve con el estado. */}
+          <BotonVerElRecorrido alTocar={recorrido.abrir} />
           <EstadoDeGuardado
             className="editor-del-plan__estado"
             guardando={guardando}
@@ -1244,7 +1251,7 @@ export function EditorDeBorrador({
 
       <div className="editor-de-nutricion__zonas">
       <div className="editor-de-nutricion__principal">
-      <div className="editor-del-plan__dia">
+      <div className="editor-del-plan__dia" data-recorrido="dias-tipo">
         {estructura.length > 0 ? (
           <fieldset className="segmentos segmentos--que-bajan" data-dia-tipo="varios">
             <legend>Día tipo</legend>
@@ -1509,6 +1516,9 @@ export function EditorDeBorrador({
         }
       />
       </div>
+
+      {/* DL-195: el recorrido guiado del editor, sobre todo lo demás (va en un portal). */}
+      <RecorridoGuiado definicion={RECORRIDO_DEL_EDITOR_DE_NUTRICION} abierto={recorrido.abierto} alCerrar={recorrido.cerrar} />
 
       {/* NUP-05: el cuadro del rango indicado, uno solo: lo abren la lista del panel y cada comida. */}
       <CuadroDelRangoIndicado token={token} planId={planId} rangos={rangosIndicados} />
@@ -1837,7 +1847,7 @@ function PanelDeNutricion({
   ] as const;
   const orden = pestanas.map(([clave]) => clave);
   return (
-    <aside className="panel-de-nutricion" aria-label={CE.panel} data-panel-de-nutricion>
+    <aside className="panel-de-nutricion" aria-label={CE.panel} data-panel-de-nutricion data-recorrido="panel-de-nutricion">
       <div
         className="estacion__pestanas"
         role="tablist"

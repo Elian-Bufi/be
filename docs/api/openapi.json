@@ -154357,6 +154357,303 @@
         }
       }
     },
+    "/me/guided-tours": {
+      "get": {
+        "operationId": "API-RGU-01",
+        "summary": "Los recorridos guiados que el usuario de la sesión vio hasta el final (SEEN) u omitió (SKIPPED), con cuándo. Un recorrido que no está, no lo vio: el website lo muestra solo la primera vez que abre esa interfaz. Cada usuario lee solo lo suyo.",
+        "description": "Fuente: Pedido de Dirección del 2026-11-23 («un tutorial para las primeras veces») · WP-RECORRIDOS-GUIADOS GUI-06 · ID propio de BE (familia RGU) · DEUDA_LEGAJO DL-195. AuthN: SESSION.",
+        "security": [
+          {
+            "sesion": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "X-BE-Surface",
+            "in": "header",
+            "required": false,
+            "description": "Superficie declarada (procedencia). Nunca autoriza (DEUDA_LEGAJO DL-022).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "WEB",
+                "APK"
+              ]
+            }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Éxito",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$schema": "https://json-schema.org/draft/2020-12/schema",
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "tourId": {
+                            "type": "string",
+                            "enum": [
+                              "training-plan-editor",
+                              "nutrition-plan-editor"
+                            ]
+                          },
+                          "state": {
+                            "type": "string",
+                            "enum": [
+                              "SEEN",
+                              "SKIPPED"
+                            ]
+                          },
+                          "updatedAt": {
+                            "type": "string",
+                            "format": "date-time",
+                            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                          }
+                        },
+                        "required": [
+                          "tourId",
+                          "state",
+                          "updatedAt"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "ErrorEnvelope: INVALID_REQUEST",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "ErrorEnvelope: AUTHENTICATION_REQUIRED | SESSION_INVALID | SESSION_EXPIRED | SESSION_REVOKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "ErrorEnvelope: INTERNAL_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "ErrorEnvelope: DB_UNAVAILABLE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/me/guided-tours/{tourId}": {
+      "put": {
+        "operationId": "API-RGU-02",
+        "summary": "Marcar un recorrido guiado como visto (SEEN) u omitido (SKIPPED) para el usuario de la sesión. Repetirlo con el mismo estado no cambia nada; con el otro, lo reemplaza. Un recorrido que no existe es 404. Cada usuario marca solo lo suyo.",
+        "description": "Fuente: Pedido de Dirección del 2026-11-23 («un tutorial para las primeras veces») · WP-RECORRIDOS-GUIADOS GUI-06 · ID propio de BE (familia RGU) · DEUDA_LEGAJO DL-195. AuthN: SESSION.",
+        "security": [
+          {
+            "sesion": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "tourId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "X-BE-Surface",
+            "in": "header",
+            "required": false,
+            "description": "Superficie declarada (procedencia). Nunca autoriza (DEUDA_LEGAJO DL-022).",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "WEB",
+                "APK"
+              ]
+            }
+          },
+          {
+            "name": "X-BE-Capabilities",
+            "in": "header",
+            "required": false,
+            "description": "Lo que el cliente sabe mostrar, separado por comas. Sin la cabecera, el cliente no muestra objetivos por serie y un plan que los exige no se le entrega (DL-122, precierre del 2026-10-06). Nunca autoriza.",
+            "schema": {
+              "type": "string",
+              "maxLength": 256
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$schema": "https://json-schema.org/draft/2020-12/schema",
+                "type": "object",
+                "properties": {
+                  "state": {
+                    "type": "string",
+                    "enum": [
+                      "SEEN",
+                      "SKIPPED"
+                    ]
+                  }
+                },
+                "required": [
+                  "state"
+                ],
+                "additionalProperties": false
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Éxito",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$schema": "https://json-schema.org/draft/2020-12/schema",
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "tourId": {
+                          "type": "string",
+                          "enum": [
+                            "training-plan-editor",
+                            "nutrition-plan-editor"
+                          ]
+                        },
+                        "state": {
+                          "type": "string",
+                          "enum": [
+                            "SEEN",
+                            "SKIPPED"
+                          ]
+                        },
+                        "updatedAt": {
+                          "type": "string",
+                          "format": "date-time",
+                          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+                        }
+                      },
+                      "required": [
+                        "tourId",
+                        "state",
+                        "updatedAt"
+                      ],
+                      "additionalProperties": false
+                    }
+                  },
+                  "required": [
+                    "data"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "ErrorEnvelope: INVALID_REQUEST | UNKNOWN_FIELD",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "ErrorEnvelope: AUTHENTICATION_REQUIRED | SESSION_INVALID | SESSION_EXPIRED | SESSION_REVOKED",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "ErrorEnvelope: RESOURCE_NOT_FOUND",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "ErrorEnvelope: INTERNAL_ERROR",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "ErrorEnvelope: DB_UNAVAILABLE",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorEnvelope"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/relationship-invitations": {
       "post": {
         "operationId": "API-INV-01",

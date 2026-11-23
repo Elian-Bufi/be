@@ -125,6 +125,9 @@
   --sombra-suave: 0 1px 2px rgb(10 31 68 / 6%), 0 1px 1px rgb(10 31 68 / 4%);
   --sombra: 0 20px 50px rgb(10 31 68 / 30%);
   --velo: rgb(1 19 37 / 55%);
+  /* DL-195 (WP-RECORRIDOS-GUIADOS): el velo de un recorrido guiado, más oscuro que el de un diálogo: lo que se ve es solo
+     la zona que se explica. Su contorno es el cian de la marca, común a los dos temas (`--cian`). */
+  --velo-del-recorrido: rgb(1 19 37 / 68%);
   /* La sombra que avisa que una línea sigue de costado (`.desplazable-x`): oscura sobre fondo claro, cian sobre navy */
   --sombra-desplazamiento: rgb(10 31 68 / 28%);
   --sombra-desplazamiento-sobre-navy: rgb(39 213 249 / 55%);
@@ -224,6 +227,7 @@
   --sombra: 0 20px 50px rgb(0 0 0 / 45%);
   --sombra-desplazamiento: rgb(39 213 249 / 40%);
   --velo: rgb(0 0 0 / 60%);
+  --velo-del-recorrido: rgb(0 0 0 / 72%);
   --vidrio: #052238e6;
   --vidrio-adentro: #0a2c47f0;
   --vidrio-luz: #ffffff29;
