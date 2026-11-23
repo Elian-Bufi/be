@@ -779,7 +779,7 @@ function SeriesDelEjercicio({
         {seleccionando ? (
           <div className="series-del-editor__elegidas" role="group" aria-label={PL.elegidas(elegidas.size)} data-series-elegidas={elegidas.size}>
             <strong aria-live="polite">{elegidas.size === 0 ? COPY_SELECCION.ninguna : PL.elegidas(elegidas.size)}</strong>
-            <button type="button" className="boton boton--enlace" onClick={() => setElegidas(elegidas.size === p.sets.length ? new Set() : new Set(p.sets.map((_, n) => n)))} data-elegir-todas>
+            <button type="button" className="boton boton--discreto" onClick={() => setElegidas(elegidas.size === p.sets.length ? new Set() : new Set(p.sets.map((_, n) => n)))} data-elegir-todas>
               {elegidas.size === p.sets.length ? COPY_SELECCION.ningunaDeNuevo : COPY_SELECCION.todas}
             </button>
             <label>
@@ -822,7 +822,7 @@ function SeriesDelEjercicio({
                 {COPY_CARGA_DESDE_LA_ESTIMACION.abrirEnLasElegidas}
               </button>
             ) : null}
-            <button type="button" className="boton boton--enlace" onClick={soltar} data-terminar-la-seleccion>
+            <button type="button" className="boton boton--discreto" onClick={soltar} data-terminar-la-seleccion>
               {COPY_SELECCION.listo}
             </button>
             {/* RP-22: el aviso tiene su renglón en la barra: al tocar «Escribir» con algo que no se entiende, la tabla no baja. */}
@@ -1036,7 +1036,7 @@ function SeriesDelEjercicio({
         {/* RP-22: cómo se lee cada valor (C8), el calentamiento (DL-178) y los atajos, detrás de un «?»: Dirección no quiere
             párrafos a la vista. La celda ya dice sola «común», «propio» o «Sin indicar». */}
         {p.sets.length > 0 ? (
-          <ExplicacionAPedido nombre={COPY_DE_LOS_NUMEROS.comoSeLeeLaTabla} como="div">
+          <ExplicacionAPedido nombre={COPY_DE_LOS_NUMEROS.comoSeLeeLaTabla} como="div" lugar="esquina">
             <p className="nota" data-como-se-lee-cada-valor>{PL.comoSeLee}</p>
             <p className="nota" data-ayuda-del-calentamiento>{COPY_TIPOS_DE_SERIE.ayudaDelEditor}</p>
             <p className="nota">{PL.atajo}</p>
@@ -1136,7 +1136,7 @@ function CriterioDelEjercicio({ id, prescripcion: p, onCambiar }: { id: string; 
             <span>{avisoDelCambio.texto}</span>
             <button
               type="button"
-              className="boton boton--enlace"
+              className="boton boton--discreto"
               data-deshacer-el-criterio
               onClick={() => {
                 onCambiar(deshacerElCambioDeCriterio(p, avisoDelCambio));
@@ -1267,14 +1267,14 @@ function LoGeneralDelEjercicio({ id, prescripcion: p, onCambiar }: { id: string;
               maxLength={120}
             />
             <Campo id={`${id}-param-${n}-unidad`} etiqueta="Unidad (si es un número)" value={q.unit ?? ''} onChange={(e) => onCambiar({ professionalParameters: parametros.map((x, m) => (m === n ? { ...x, unit: e.target.value || null } : x)) })} maxLength={20} />
-            <button type="button" className="boton boton--enlace" onClick={() => onCambiar({ professionalParameters: parametros.filter((_, m) => m !== n) })}>
+            <button type="button" className="boton boton--discreto" onClick={() => onCambiar({ professionalParameters: parametros.filter((_, m) => m !== n) })}>
               Quitar parámetro
             </button>
           </div>
         ))}
         {/* DL-122: el descanso tiene su campo propio. Un parámetro «Descanso» que ya existía se conserva tal cual, sin
             reinterpretarlo: ya no se ofrece el atajo que lo creaba. */}
-        <button type="button" className="boton boton--enlace" data-agregar-parametro onClick={() => onCambiar({ professionalParameters: [...parametros, { label: '', value: '', unit: null }] })}>
+        <button type="button" className="boton boton--discreto" data-agregar-parametro onClick={() => onCambiar({ professionalParameters: [...parametros, { label: '', value: '', unit: null }] })}>
           <Icono nombre="mas" tamano={18} />
           Agregar parámetro
         </button>

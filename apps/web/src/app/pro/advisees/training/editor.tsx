@@ -1834,7 +1834,7 @@ export function EditorDePlan({
     const dias = id ? (agendaVisible?.sessions.find((x) => x.sessionId === id)?.weekdays ?? []) : [];
     const delPreset = diasDelPreset[s.label] ?? [];
     return id && dias.length === 0 && delPreset.length > 0 ? (
-      <button type="button" className="boton boton--enlace" data-dias-del-preset onClick={() => cambiarAgenda(ponerDias(agendaVisible, id, delPreset, hoyEn()))}>
+      <button type="button" className="boton boton--discreto" data-dias-del-preset onClick={() => cambiarAgenda(ponerDias(agendaVisible, id, delPreset, hoyEn()))}>
         {CE.confirmarDelPreset(delPreset.map((d) => DIA_LARGO[d]).join(', '))}
       </button>
     ) : null;
@@ -2304,7 +2304,7 @@ export function EditorDePlan({
           <button
             key={zona}
             type="button"
-            className="boton boton--enlace"
+            className="boton boton--enlace" data-navega
             onClick={() => {
               if (zona === 'zona-panel') setPanelAbierto(true);
               document.getElementById(zona)?.focus();
@@ -2329,13 +2329,14 @@ export function EditorDePlan({
       {bloqueadoPorLaApp ? (
         <Aviso tipo="info">
           {/* RP-22 (DL-188): a la vista, el título y qué hacer; el porqué, detrás de un «?». */}
-          <div id="motivo-sin-activar" data-motivo-sin-activar>
+          {/* RP-24 (RP-D91): el «?» en la esquina del aviso, no al lado de su título. */}
+          <div id="motivo-sin-activar" className="con-ayuda-en-la-esquina" data-motivo-sin-activar>
             <p>
-              <strong>{COPY_COMPATIBILIDAD_DE_CLIENTES.activacionBloqueadaTitulo}</strong>{' '}
-              <ExplicacionAPedido nombre="Por qué todavía no se puede activar">
-                {ACTIVACION_BLOQUEADA_POR_LA_APP}
-              </ExplicacionAPedido>
+              <strong>{COPY_COMPATIBILIDAD_DE_CLIENTES.activacionBloqueadaTitulo}</strong>
             </p>
+            <ExplicacionAPedido nombre="Por qué todavía no se puede activar" lugar="esquina">
+              {ACTIVACION_BLOQUEADA_POR_LA_APP}
+            </ExplicacionAPedido>
             <p>{COPY_COMPATIBILIDAD_DE_CLIENTES.queHacer}</p>
           </div>
         </Aviso>
@@ -2346,13 +2347,13 @@ export function EditorDePlan({
       ) : null}
       {calentamientoBloqueado ? (
         <Aviso tipo="info">
-          <div id="motivo-sin-activar-calentamiento" data-calentamiento-bloqueado>
+          <div id="motivo-sin-activar-calentamiento" className="con-ayuda-en-la-esquina" data-calentamiento-bloqueado>
             <p>
-              <strong>{COPY_CALENTAMIENTO_Y_LA_APP.activacionBloqueadaTitulo}</strong>{' '}
-              <ExplicacionAPedido nombre="Por qué todavía no se puede activar">
-                {COPY_CALENTAMIENTO_Y_LA_APP.activacionBloqueada}
-              </ExplicacionAPedido>
+              <strong>{COPY_CALENTAMIENTO_Y_LA_APP.activacionBloqueadaTitulo}</strong>
             </p>
+            <ExplicacionAPedido nombre="Por qué todavía no se puede activar" lugar="esquina">
+              {COPY_CALENTAMIENTO_Y_LA_APP.activacionBloqueada}
+            </ExplicacionAPedido>
             <p>{COPY_CALENTAMIENTO_Y_LA_APP.queHacer}</p>
           </div>
         </Aviso>
@@ -2381,7 +2382,7 @@ export function EditorDePlan({
                       {dondeEsta(p, bloques)} → {PROBLEMA[p.code] ?? 'revisá este elemento'}
                     </>
                   ) : (
-                    <button type="button" className="boton boton--enlace" data-problema onClick={() => irAlProblema(p)}>
+                    <button type="button" className="boton boton--enlace" data-navega data-problema onClick={() => irAlProblema(p)}>
                       {ubicacionDelProblemaDeEntrenamiento(p.path, bloques)} → {PROBLEMA[p.code] ?? 'revisá este elemento'}
                     </button>
                   )}
@@ -2514,7 +2515,7 @@ export function EditorDePlan({
               <div className="estacion__sesiones-cabecera">
                 <h3 id="titulo-sesiones">{CE.sesiones}</h3>
                 {/* ED-24: «+ Sesión», con el nombre en el lugar y Enter. */}
-                <button type="button" className="boton boton--enlace" data-mas-sesion aria-label={CA.agregarSesion} onClick={agregarSesion}>
+                <button type="button" className="boton boton--discreto" data-mas-sesion aria-label={CA.agregarSesion} onClick={agregarSesion}>
                   <Icono nombre="mas" tamano={15} />
                   {CE.masSesion}
                 </button>
@@ -2602,7 +2603,7 @@ export function EditorDePlan({
               </button>
               <button
                 type="button"
-                className="boton boton--enlace"
+                className="boton boton--discreto"
                 data-ocultar-la-vuelta
                 onClick={() => {
                   setVolverALaRevision(null);
@@ -2639,7 +2640,7 @@ export function EditorDePlan({
                       <span>{d.sesiones.length > 0 ? d.sesiones.join(' · ') : CE.sinSesionEseDia}</span>
                       {/* ED-24: «Duplicar el día» copia las sesiones de ese día a otro (Dirección, 2026-11-12). */}
                       {d.sesiones.length > 0 ? (
-                        <button type="button" className="boton boton--enlace estacion__duplicar-el-dia" data-duplicar-el-dia={d.dia} onClick={() => setDuplicandoElDia({ desde: d.dia, hacia: null })}>
+                        <button type="button" className="boton boton--discreto estacion__duplicar-el-dia" data-duplicar-el-dia={d.dia} onClick={() => setDuplicandoElDia({ desde: d.dia, hacia: null })}>
                           <Icono nombre="duplicar" tamano={15} />
                           {DD.accion}
                           <span className="visualmente-oculto"> {DIA_LARGO[d.dia]}</span>
@@ -2735,7 +2736,7 @@ export function EditorDePlan({
                 <InsertarSesionHabitual id={prefijo} sesiones={sesionesHabituales.sesiones} onInsertar={insertarSesion} />
                 <button
                   type="button"
-                  className="boton boton--enlace"
+                  className="boton boton--discreto"
                   onClick={() => {
                     setInsertandoHabitual(false);
                     document.getElementById('agregar-sesion')?.focus();
@@ -2772,7 +2773,7 @@ export function EditorDePlan({
                   <p className="etiqueta-de-dato">
                     <Icono nombre="aplicar" tamano={15} />
                     {COPY_PRESCRIPCION_DE_LA_SESION.paraLosQueAgregues(prescripcionDeEstaSesion.nombre)}
-                    <button type="button" className="boton boton--enlace" onClick={() => setPrescripcionDeLaSesion(({ [claveDeEstaSesion]: _quitada, ...resto }) => resto)}>
+                    <button type="button" className="boton boton--discreto" onClick={() => setPrescripcionDeLaSesion(({ [claveDeEstaSesion]: _quitada, ...resto }) => resto)}>
                       {COPY_PRESCRIPCION_DE_LA_SESION.quitar}
                       <span className="visualmente-oculto"> {prescripcionDeEstaSesion.nombre}</span>
                     </button>
@@ -2986,7 +2987,7 @@ export function EditorDePlan({
         <AvisoFlotante onCerrar={() => setDeshacerLaSesion(null)} seQueda>
           <p>
             {COPY_BLOQUES_DE_LA_SESION.igualadas(deshacerLaSesion.vueltas)}{' '}
-            <button type="button" className="boton boton--enlace" data-deshacer-las-vueltas onClick={deshacerLasVueltas}>
+            <button type="button" className="boton boton--discreto" data-deshacer-las-vueltas onClick={deshacerLasVueltas}>
               <Icono nombre="deshacer" tamano={15} />
               {COPY_PRESETS.deshacer}
             </button>
@@ -2997,7 +2998,7 @@ export function EditorDePlan({
         <AvisoFlotante onCerrar={() => setDeshacer(null)} seQueda>
           <p>
             {deshacer.texto}{' '}
-            <button type="button" className="boton boton--enlace" data-deshacer onClick={deshacerLaAplicacion}>
+            <button type="button" className="boton boton--discreto" data-deshacer onClick={deshacerLaAplicacion}>
               <Icono nombre="deshacer" tamano={15} />
               {COPY_PRESETS.deshacer}
             </button>

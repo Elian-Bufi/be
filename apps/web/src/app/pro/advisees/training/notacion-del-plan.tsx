@@ -34,9 +34,9 @@ export function NotacionDelPlan({ notacion, onCambiar }: { notacion: NotacionDel
         ))}
       </div>
       {/* Un `div` y no un `p`: lo desplegado son párrafos. */}
-      <div className="nota notacion-del-plan__que-es">
+      <div className="nota notacion-del-plan__que-es con-ayuda-en-la-esquina">
         <span>{N.queEs}</span>{' '}
-        <ExplicacionAPedido nombre="Qué es el RPE y cómo se guarda" como="div">
+        <ExplicacionAPedido nombre="Qué es el RPE y cómo se guarda" como="div" lugar="esquina">
           {N.explicacion.map((t) => (
             <p key={t}>{t}</p>
           ))}

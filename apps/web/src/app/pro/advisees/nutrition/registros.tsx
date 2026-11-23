@@ -343,7 +343,7 @@ function Contraste({ contexto, linea, hoy, onReintentarLaLinea, onCambio }: { co
             <aside ref={detalle} className="detalle-del-hecho" aria-labelledby={`${id}-detalle`}>
               <div className="detalle-del-hecho__cabecera">
                 <p className="detalle-del-hecho__rotulo">Detalle del registro</p>
-                <button type="button" className="boton boton--enlace" onClick={() => cerrar(true)}>
+                <button type="button" className="boton boton--discreto" onClick={() => cerrar(true)}>
                   <Icono nombre="cerrar" tamano={18} />
                   Cerrar
                 </button>
@@ -523,7 +523,7 @@ function Fila({ fila, conLaLinea, elegido, onAbrir }: { fila: FilaDeRegistro; co
       )}
       {/* Otra comida diferente registrada en la misma comida: cada registro se abre por separado. */}
       {(opcion ? diferentes : diferentes.slice(1)).map((d) => (
-        <button key={d.id} type="button" className="boton boton--enlace comida-del-dia__otro" data-registro={d.id} aria-current={elegido === d.id ? 'true' : undefined} onClick={() => onAbrir(d)}>
+        <button key={d.id} type="button" className="boton boton--discreto comida-del-dia__otro" data-registro={d.id} aria-current={elegido === d.id ? 'true' : undefined} onClick={() => onAbrir(d)}>
           Ver la comida diferente{d.descripcion ? `: «${d.descripcion}»` : ''}
         </button>
       ))}
@@ -668,7 +668,7 @@ function EstimacionDelProfesional({ ingesta, onCambio }: { ingesta: Ingesta; onC
             <ul className="lista">
               {opciones.slice(0, 6).map((o) => (
                 <li key={o.catalogItemId}>
-                  <button type="button" className="boton boton--enlace" onClick={() => setAlimento(o)}>
+                  <button type="button" className="boton boton--discreto" onClick={() => setAlimento(o)}>
                     {o.name}
                     {/* DL-141: si apareció por un nombre alternativo, cuál: «Palta (aguacate)». */}
                     {o.matchedAlternativeName ? <span className="nombre-alternativo"> ({nombreAlternativoComoAclaracion(o.matchedAlternativeName)})</span> : null}

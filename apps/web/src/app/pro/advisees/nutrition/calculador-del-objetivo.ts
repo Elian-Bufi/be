@@ -228,6 +228,19 @@ export function problemasDelCalculador(v: ValoresDelCalculador, hoy: string): Re
   return p;
 }
 
+/**
+ * RP-24 (RP-D95) · El ajuste guardado, en palabras y sin signo, como se escribe en el calculador: «Déficit de 300 kcal
+ * por día», «Superávit del 10 % de las 2.450 kcal del gasto total». Antes, la referencia del objetivo decía «−300 kcal
+ * por día». Un ajuste de 0 es «Sin ajuste».
+ */
+export function ajusteEnPalabras(ajuste: ParametrosDelCalculo['adjustment'], gastoTotalKcal: number | null, numero: (x: number, decimales: number) => string): string {
+  if (!ajuste || ajuste.value === 0) return 'Sin ajuste';
+  const sentido = ajuste.value < 0 ? 'Déficit' : 'Superávit';
+  const cantidad = Math.abs(ajuste.value);
+  if (ajuste.kind === 'KCAL') return `${sentido} de ${numero(cantidad, 0)} kcal por día`;
+  return `${sentido} del ${numero(cantidad, 1)} % de las ${numero(gastoTotalKcal ?? 0, 0)} kcal del gasto total`;
+}
+
 /** RP-05: el ajuste como lo guarda el contrato, con su signo: un déficit de 300 es −300; mantener, ninguno. */
 export function ajusteEscrito(v: Pick<ValoresDelCalculador, 'ajuste' | 'unidadDelAjuste' | 'valorDelAjuste'>): ParametrosDelCalculo['adjustment'] {
   if (v.ajuste === 'mantener') return null;

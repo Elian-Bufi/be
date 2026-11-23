@@ -199,7 +199,7 @@ function ListaDeLaVezPasada({ veces, hoy, persona, nombre, unidad }: { veces: re
         ))}
       </ol>
       {quedan > 0 ? (
-        <button type="button" className="boton boton--enlace la-vez-pasada__ver-mas" aria-expanded={todas} onClick={() => setTodas((t) => !t)} data-ver-mas-sesiones>
+        <button type="button" className="boton boton--discreto la-vez-pasada__ver-mas" aria-expanded={todas} onClick={() => setTodas((t) => !t)} data-ver-mas-sesiones>
           {todas ? C.verMenos : C.verMas(quedan)}
         </button>
       ) : null}

@@ -163,7 +163,7 @@ export function FechaDeLaEvaluacion({ id, valor, onCambiar, error }: { id: strin
         <Icono nombre="reloj" tamano={15} />
         <span>{EI.hoy(horaDelDia(ahora))}</span>
         <span aria-hidden="true">·</span>
-        <button type="button" className="boton boton--enlace" onClick={() => onCambiar(aCampoLocal(new Date()))} data-cambiar-la-fecha>
+        <button type="button" className="boton boton--discreto" onClick={() => onCambiar(aCampoLocal(new Date()))} data-cambiar-la-fecha>
           {EI.cambiarLaFecha}
           <span className="visualmente-oculto"> la fecha y la hora de la evaluación</span>
         </button>
@@ -173,7 +173,7 @@ export function FechaDeLaEvaluacion({ id, valor, onCambiar, error }: { id: strin
   return (
     <div className="fecha-de-la-evaluacion fecha-de-la-evaluacion--abierta">
       <Campo id={id} etiqueta={EI.etiquetaDeLaFecha} ayuda={EI.ayudaDeLaFecha} type="datetime-local" value={valor} max={aCampoLocal(ahora)} onChange={(e) => onCambiar(e.target.value)} error={error} />
-      <button type="button" className="boton boton--enlace" onClick={() => onCambiar(null)} data-usar-la-de-ahora>
+      <button type="button" className="boton boton--discreto" onClick={() => onCambiar(null)} data-usar-la-de-ahora>
         {EI.usarLaDeAhora}
       </button>
     </div>
@@ -219,7 +219,7 @@ function Respondido({ r, nombre }: { r: FormularioRespondido; nombre: string }) 
         </ul>
       ) : null}
       <Renglones renglones={resumenDelFormulario(r.form.templateKey, renglones)} />
-      <button type="button" className="boton boton--enlace" aria-expanded={abierto} aria-controls={`${id}-todo`} onClick={() => setAbierto((x) => !x)}>
+      <button type="button" className="boton boton--discreto" aria-expanded={abierto} aria-controls={`${id}-todo`} onClick={() => setAbierto((x) => !x)}>
         {abierto ? EI.ocultar : EI.verTodo}
         <span className="visualmente-oculto"> · {r.form.templateName}</span>
       </button>
@@ -257,7 +257,7 @@ export function LoQueConto({
       {lectura.estado === 'error' ? (
         <p className="nota">
           {EI.noSePudoLeer}{' '}
-          <button type="button" className="boton boton--enlace" onClick={onReleer}>
+          <button type="button" className="boton boton--discreto" onClick={onReleer}>
             {EI.volverALeer}
           </button>
         </p>
@@ -363,7 +363,7 @@ export function LoMedido({ lectura, asesoradoId, onReleer }: { lectura: Lectura<
       {lectura.estado === 'error' ? (
         <p className="nota" data-toma-sin-leer>
           {EI.noSePudoLeerLaToma}{' '}
-          <button type="button" className="boton boton--enlace" onClick={onReleer}>
+          <button type="button" className="boton boton--discreto" onClick={onReleer}>
             {EI.volverALeer}
           </button>
         </p>
@@ -427,7 +427,7 @@ function DatoDelCalculo({ d, nombre, cambiado, onCambiar }: { d: DatoParaElCalcu
               {d.alLado.texto} · {origenEnPalabras(d.alLado.origen, nombre, diaCorto)}
             </span>
           ) : null}
-          <button type="button" className="boton boton--enlace dato-del-calculo__cambiar" onClick={() => setBorrador(comoSeEscribe(d))} aria-describedby={`${id}-nombre`} data-cambiar-dato={d.dato}>
+          <button type="button" className="boton boton--discreto dato-del-calculo__cambiar" onClick={() => setBorrador(comoSeEscribe(d))} aria-describedby={`${id}-nombre`} data-cambiar-dato={d.dato}>
             {EI.cambiar}
           </button>
         </>
@@ -663,7 +663,7 @@ export function CompletarAhora({
       <Aviso tipo="error" enfocar>
         <p>{estado.texto}</p>
         <p>
-          <button type="button" className="boton boton--enlace" onClick={() => onTerminar(null)}>
+          <button type="button" className="boton boton--discreto" onClick={() => onTerminar(null)}>
             {EI.volverALaEvaluacion}
           </button>
         </p>

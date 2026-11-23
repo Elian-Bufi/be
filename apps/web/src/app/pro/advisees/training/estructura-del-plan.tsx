@@ -153,7 +153,7 @@ export function EjerciciosDeLaSesion({
               <EnPartes texto={cuentaDeLaSesion(sesion)} />
             </p>
             {ejercicios.length > 1 ? (
-              <button type="button" className="boton boton--enlace" data-todos-los-ejercicios onClick={() => onPedir(pedidoDeAbiertos(ejercicios, todos ? new Set() : new Set(ejercicios.map((e) => e.order)), NINGUN_EJERCICIO))}>
+              <button type="button" className="boton boton--discreto" data-todos-los-ejercicios onClick={() => onPedir(pedidoDeAbiertos(ejercicios, todos ? new Set() : new Set(ejercicios.map((e) => e.order)), NINGUN_EJERCICIO))}>
                 {todos ? C.plegarTodos : C.abrirTodos}
               </button>
             ) : null}

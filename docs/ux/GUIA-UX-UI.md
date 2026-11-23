@@ -746,6 +746,8 @@ crear otro, se usa uno de estos.
 | `.panel` | Un formulario que se abre en el lugar: una sola superficie | Lo que falta elegir de una pregunta |
 | `.acciones--fijas` | Las acciones de un formulario largo, fijas al pie, con el estado de lo guardado | La preparación de una toma: «Todavía no se guardó.» + «Guardar» |
 | `.boton--compacto` | Una acción de fila: el mismo alto táctil (44 px), menos relleno | «Actualizar» en el encabezado de la ficha |
+| `.boton--discreto` (RP-24) | Una acción en un renglón o en una lista, sin subrayado: el subrayado queda para lo que navega (II.14) | «Cambiar» en «Rangos indicados»; «Quitar opción 2» |
+| `EncabezadoConAyuda` · `.con-ayuda-en-la-esquina` (RP-24) | El título de una sección con su «?» en la esquina superior derecha; lo que abre flota (II.14) | «Todo el día · Día de entrenamiento» con «?» en «Rangos y totales» |
 | `.desplazable-x` | Una tabla ancha que se desplaza de costado dentro de su caja, nunca la página. Las sombras de los bordes aparecen solo si hay más, y las tapas que las esconden llevan el color de la superficie donde está (`.seccion`, `.panel`, el detalle al costado, un diálogo): con otro color queda una franja a cada lado | La tabla de etapas; las comidas del contraste; las series de una sesión |
 | `MarcoDelArea` | El marco de una pestaña de área: el camino de vuelta, de quién es, el acceso actual, «Actualizar» con la hora, las secciones con su ícono y la ayuda | «← Volver a la ficha, donde estabas · Nutrición · Asesorado · 5db647» |
 | `useCambiosSinGuardar` | Avisarle al marco que hay algo escrito sin guardar, con su nombre: «Actualizar» pregunta antes de perderlo | «el plan en preparación», «la revisión» |
@@ -1105,6 +1107,28 @@ Dos caminos sobre el mismo borrador y las mismas operaciones: **el asistente** p
 - **Dos salidas, un principal** (ED-32): cuando un cuadro crea algo que puede quedar suelto o entrar donde se lo pidió,
   el principal es lo que se vino a hacer («Guardar la receta y agregarla a Merienda») y la otra salida es secundaria. Si
   la segunda escritura no se puede, el cuadro dice que la primera ya quedó y ofrece reintentar sin repetirla.
+
+### II.14 Acciones sin subrayado y el «?» en la esquina (RP-24, DL-188, 2026-11-22)
+
+Dirección: «no usar texto subrayado como enlace para acciones, a menos que lo amerite: ensucia mucho y da aspecto de web
+vieja»; y el «?» «no va al lado del título: va en la esquina superior derecha».
+
+- **Una acción es un botón.** Cambiar, quitar, duplicar, vaciar, deshacer, abrir un cuadro, desplegar, reintentar o volver
+  dentro de un cuadro: `boton--discreto` (color de acento, sin borde ni subrayado hasta el puntero o el foco, 2 rem de
+  alto, entra en un renglón sin agrandarlo), `boton--quieto` o `boton--secundario`. Si el texto es largo («Cambiar el
+  rango de Desayuno»), se ve corto («Cambiar») y el lector oye el completo (`aria-label`).
+- **Un enlace lo amerita solo si navega:** otra página (`Enlace`), otra vista de la misma pantalla dicha dentro de una
+  frase («Ver plan», «Ir a Revisiones»), el salto al lugar de un problema (el resumen de errores) o el elemento de una lista
+  que es un índice («Abrir Avena con frutas»). Un botón que navega lleva `data-navega` junto a `boton--enlace`.
+- **El «?» de una sección, tarjeta o grupo va en su esquina superior derecha**, nunca al lado ni adentro del título:
+  `EncabezadoConAyuda` (el título a la izquierda, el «?» a la derecha) o, en un grupo sin título propio, el contenedor con
+  `con-ayuda-en-la-esquina`. **Lo que abre flota** debajo del «?», alineado a su derecha, sin ocupar lugar: no corre lo
+  que se está editando (RP-19). Escape lo cierra y devuelve el foco al «?»; también otro toque o tocar afuera.
+- **«Fuente»** sigue en la línea de lo que cita: es la referencia de un nombre, no la ayuda de una sección.
+- **La guardia:** `scripts/acciones-y-ayudas.test.cjs` falla si en la planificación vuelve una acción con
+  `boton--enlace` sin `data-navega` o un `<a>` con `onClick` y sin `href`, y si en /pro vuelve un «?» sin
+  `lugar="esquina"`, adentro de un título o con `titulo-con-ayuda`. Fuera de la planificación (Seguimiento, gráficos,
+  Antropometría) la regla de las acciones vale para lo nuevo; lo de antes se pasa con la misma guardia en un paso siguiente.
 
 ## Parte III · APK del asesorado
 

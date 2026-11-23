@@ -341,6 +341,10 @@ export const COPY_RANGOS_INDICADOS = {
   sinRango: 'Sin rango indicado',
   escribir: (donde: string) => `Indicar el rango de ${donde}`,
   cambiar: (donde: string) => `Cambiar el rango de ${donde}`,
+  // RP-24 (RP-D90): en la lista, la acción se ve corta; el lector oye la completa («Cambiar el rango de Desayuno»).
+  cambiarCorto: 'Cambiar',
+  escribirCorto: 'Indicar',
+  sinLimite: 'Sin límite',
   tituloDelCuadro: (donde: string) => `Rango de ${donde}`,
   unidad: (macro: string) => `Unidad de ${macro}`,
   minimo: (macro: string) => `${macro}, mínimo`,

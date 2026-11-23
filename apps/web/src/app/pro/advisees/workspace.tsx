@@ -172,7 +172,7 @@ export function Workspace() {
       // RP-01: la huella de lo leído; una falla no se compara.
       if (conLaHuella && vinculos && respuesta?.ok && yoId) {
         const dominios = respuesta.datos.data.domains;
-        const huella = huellaDelArea(null, vinculos.map((v) => `${v.scope.code}:${JSON.stringify(estadoDelArea(v, (d) => dominios[CLAVE_DEL_DOMINIO[d]].available))}`), dominios, yoId);
+        const huella = huellaDelArea(null, vinculos.map((v) => `${v.scope.code}:${JSON.stringify(estadoDelArea(v, (d) => dominios[CLAVE_DEL_DOMINIO[d]].available))}`), dominios, yoId, respuesta.datos.data.period);
         if (conLaHuella === 'base' || huellaVista.current === null) huellaVista.current = huella;
         else if (hayDatosNuevos(huellaVista.current, huella)) setHayNuevos(true);
       }
@@ -327,7 +327,7 @@ export function Workspace() {
               <span className="aviso-de-datos-nuevos" data-datos-nuevos>
                 <Icono nombre="actualizar" tamano={15} />
                 {COPY_DATOS_NUEVOS.hay} ·{' '}
-                <button type="button" className="boton boton--enlace" onClick={verLoNuevo} title={COPY_DATOS_NUEVOS.verDetalle}>
+                <button type="button" className="boton boton--discreto" onClick={verLoNuevo} title={COPY_DATOS_NUEVOS.verDetalle}>
                   {COPY_DATOS_NUEVOS.ver}
                 </button>
               </span>
@@ -346,7 +346,7 @@ export function Workspace() {
               <Aviso tipo="error">
                 <p>
                   No pudimos leer el acceso actual.{' '}
-                  <button type="button" className="boton boton--enlace" onClick={consultar}>
+                  <button type="button" className="boton boton--discreto" onClick={consultar}>
                     Reintentar<span className="visualmente-oculto"> la lectura del acceso</span>
                   </button>
                 </p>

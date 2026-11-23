@@ -418,7 +418,7 @@ function Sesiones({
             <aside ref={detalle} className="detalle-del-hecho detalle-de-sesion" aria-labelledby={`${id}-detalle`}>
               <div className="detalle-del-hecho__cabecera">
                 <p className="detalle-del-hecho__rotulo">Detalle del registro</p>
-                <button type="button" className="boton boton--enlace" onClick={() => cerrar(true)}>
+                <button type="button" className="boton boton--discreto" onClick={() => cerrar(true)}>
                   <Icono nombre="cerrar" tamano={18} />
                   Cerrar
                 </button>
@@ -525,7 +525,7 @@ function DiasSinSesion({ dias }: { dias: readonly string[] }) {
     <div className="sesiones__sin-sesion">
       <p>
         <strong>{dias.length === 1 ? 'Un día del período' : `${numero(dias.length)} días del período`} sin sesión registrada.</strong>{' '}
-        <button type="button" className="boton boton--enlace" aria-expanded={abierto} aria-controls={`${id}-dias`} onClick={() => setAbierto(!abierto)}>
+        <button type="button" className="boton boton--discreto" aria-expanded={abierto} aria-controls={`${id}-dias`} onClick={() => setAbierto(!abierto)}>
           {abierto ? 'Ocultar los días' : 'Ver los días'}
         </button>
       </p>

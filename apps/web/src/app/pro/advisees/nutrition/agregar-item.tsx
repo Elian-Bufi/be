@@ -93,7 +93,7 @@ export function CrearManualmente({
       }}
       cabecera={
         <>
-          <button type="button" className="boton boton--enlace agregar-item__volver" onClick={onVolver}>
+          <button type="button" className="boton boton--discreto agregar-item__volver" onClick={onVolver}>
             <Icono nombre="izquierda" tamano={18} />
             Volver a la opción
           </button>

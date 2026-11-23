@@ -264,7 +264,7 @@ export function ResultadoDeLaRevision<R extends string>({
         <span className="resultado-de-revision__titulo" aria-hidden="true">
           Resultado
         </span>
-        <button type="button" className="boton boton--enlace resultado-de-revision__todos" aria-expanded={todos} aria-controls={`${propio}-efectos`} onClick={() => setTodos((t) => !t)}>
+        <button type="button" className="boton boton--discreto resultado-de-revision__todos" aria-expanded={todos} aria-controls={`${propio}-efectos`} onClick={() => setTodos((t) => !t)}>
           Qué hace cada resultado
         </button>
       </div>

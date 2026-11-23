@@ -12,7 +12,7 @@
 import { COPY_HABITUALES, cuentaDeSeries, type EjercicioDeCatalogo, type SesionHabitual } from '@be/domain';
 import { useEffect, useMemo, useState } from 'react';
 import { AvisoFlotante } from '../../../components/ayuda';
-import { ExplicacionAPedido } from '../../../components/explicacion-a-pedido';
+import { EncabezadoConAyuda } from '../../../components/explicacion-a-pedido';
 import { useAvisarALaLista, useCambiosParaSalir, useDetalleConGuardia } from '../../../components/salida-segura';
 import { Cargando, ErrorConReintento, VerMas } from '../../../components/estados';
 import { Aviso, Campo } from '../../../components/formulario';
@@ -61,13 +61,8 @@ export function MisHabitualesDeEntrenamiento({ token, sesionPerdida = nunca }: {
   if (sinArea) return null;
   return (
     <section className="seccion" aria-labelledby="titulo-habituales-entrenamiento">
-      {/* RP-22 (DL-188): quién los ve y qué pasa al editarlos, detrás de un «?» al lado del título. */}
-      <div className="titulo-con-ayuda">
-        <h2 id="titulo-habituales-entrenamiento">{TITULO}</h2>
-        <ExplicacionAPedido nombre="Quién ve tus habituales" como="div">
-          <p className="nota">{COPY_HABITUALES.soloTuyos}</p>
-        </ExplicacionAPedido>
-      </div>
+      {/* RP-22 (DL-188): quién los ve y qué pasa al editarlos, detrás de un «?» (RP-24: en la esquina de la sección). */}
+      <EncabezadoConAyuda nivel={2} id="titulo-habituales-entrenamiento" titulo={TITULO} nombre="Quién ve tus habituales" ayuda={<p className="nota">{COPY_HABITUALES.soloTuyos}</p>} />
       {aviso && aviso.tipo === 'exito' ? (
         <AvisoFlotante onCerrar={() => setAviso(null)}>
           <p>{aviso.texto}</p>
@@ -94,10 +89,10 @@ export function MisHabitualesDeEntrenamiento({ token, sesionPerdida = nunca }: {
                   {COPY_HABITUALES.ejercicios(h.prescriptionCount)} · {h.copiedLoads ? COPY_HABITUALES.conCargas : COPY_HABITUALES.sinCargas} · {COPY_HABITUALES.actualizada(fecha(h.updatedAt))}
                 </p>
                 <div className="acciones">
-                  <button type="button" className="boton boton--enlace" aria-expanded={abiertaId === h.presetId} onClick={() => detalle.antes(() => setAbiertaId(abiertaId === h.presetId ? null : h.presetId))}>
+                  <button type="button" className="boton boton--discreto" aria-expanded={abiertaId === h.presetId} onClick={() => detalle.antes(() => setAbiertaId(abiertaId === h.presetId ? null : h.presetId))}>
                     {abiertaId === h.presetId ? 'Cerrar' : 'Ver'}
                   </button>
-                  <button type="button" className="boton boton--enlace" disabled={quitando === h.presetId} onClick={() => detalle.antes(() => void quitar(h))}>
+                  <button type="button" className="boton boton--discreto" disabled={quitando === h.presetId} onClick={() => detalle.antes(() => void quitar(h))}>
                     {COPY_HABITUALES.quitar}
                   </button>
                 </div>
@@ -245,7 +240,7 @@ function EjerciciosHabituales({ token, onAviso }: { token: string; onAviso: (a: 
                   {e.provenance === 'PROFESSIONAL_MANUAL' ? <span className="nota"> · cargado por vos</span> : null}
                   {!e.available ? <span className="insignia"> no disponible</span> : null}
                 </span>
-                <button type="button" className="boton boton--enlace" disabled={quitando === e.exerciseId} onClick={() => void quitar(e)}>
+                <button type="button" className="boton boton--discreto" disabled={quitando === e.exerciseId} onClick={() => void quitar(e)}>
                   {COPY_HABITUALES.quitar}
                 </button>
               </li>

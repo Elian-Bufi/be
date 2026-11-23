@@ -35,7 +35,7 @@ export function LoQueViajaALaPlantillaParaRevisar({
               return (
                 <li key={x.lugar} data-tipo={x.tipo}>
                   <span className="nota">{x.rotulo}:</span> «{x.texto}»{' '}
-                  <button type="button" className="boton boton--enlace" onClick={() => onVaciar(x)} aria-label={`${accion}: ${x.rotulo}`}>
+                  <button type="button" className="boton boton--discreto" onClick={() => onVaciar(x)} aria-label={`${accion}: ${x.rotulo}`}>
                     {accion}
                   </button>
                 </li>

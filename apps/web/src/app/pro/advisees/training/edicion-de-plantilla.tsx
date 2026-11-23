@@ -130,12 +130,13 @@ export function CabeceraDeLaPlantilla({
             {base !== null ? <p className="nota" data-la-version-sigue>{P.laVersionSigue(base)}</p> : null}
           </div>
         )}
-        <div className="campo editor-de-la-plantilla__cargas titulo-con-ayuda" data-cargas-de-la-plantilla>
+        <div className="campo editor-de-la-plantilla__cargas con-ayuda-en-la-esquina" data-cargas-de-la-plantilla>
           <label>
             <input type="checkbox" checked={metadatos.conCargas} onChange={(e) => onMetadatos({ ...metadatos, conCargas: e.target.checked })} /> {COPY_PLANTILLAS.cargas}
           </label>
-          {/* RP-22: qué pasa con las cargas, detrás de un «?»; lo que hay escrito en esta plantilla sigue a la vista, abajo. */}
-          <ExplicacionAPedido nombre="Qué pasa con las cargas sugeridas" como="div">
+          {/* RP-22: qué pasa con las cargas, detrás de un «?» (RP-24: en la esquina del campo); lo que hay escrito en esta
+              plantilla sigue a la vista, abajo. */}
+          <ExplicacionAPedido nombre="Qué pasa con las cargas sugeridas" como="div" lugar="esquina">
             <p className="nota">{COPY_PLANTILLAS.cargasAyuda}</p>
           </ExplicacionAPedido>
           {cargasEscritas > 0 ? (

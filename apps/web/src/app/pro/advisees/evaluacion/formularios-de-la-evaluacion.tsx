@@ -105,7 +105,7 @@ function FormularioParaElegir({ f, marcado, onAlternar }: { f: FormularioEnElCon
             </span>
           </span>
         </label>
-        <button type="button" className="boton boton--enlace" aria-expanded={abierto} aria-controls={`${id}-respuestas`} onClick={() => setAbierto((x) => !x)}>
+        <button type="button" className="boton boton--discreto" aria-expanded={abierto} aria-controls={`${id}-respuestas`} onClick={() => setAbierto((x) => !x)}>
           {abierto ? C.ocultarRespuestas : C.verRespuestas}
         </button>
       </div>
@@ -155,7 +155,7 @@ export function ElegirFormularios({ area, token, asesoradoId, sesionPerdida, onC
       {lectura.estado === 'error' ? (
         <p className="nota">
           {C.noSePudieronLeer}{' '}
-          <button type="button" className="boton boton--enlace" onClick={() => void leer()}>
+          <button type="button" className="boton boton--discreto" onClick={() => void leer()}>
             {C.volverALeer}
           </button>
         </p>
@@ -215,10 +215,10 @@ function Vinculado({ v, comun, evaluationId, ocupado, onDesvincular, onVincularL
           </span>
         </span>
         <span className="formularios-de-la-evaluacion__acciones">
-          <button type="button" className="boton boton--enlace" aria-expanded={abierto} aria-controls={`${id}-respuestas`} onClick={() => void alternar()}>
+          <button type="button" className="boton boton--discreto" aria-expanded={abierto} aria-controls={`${id}-respuestas`} onClick={() => void alternar()}>
             {abierto ? C.ocultarRespuestas : C.verRespuestas}
           </button>
-          <button type="button" className="boton boton--enlace" aria-label={C.desvincularEste(v.templateName)} disabled={ocupado} onClick={onDesvincular}>
+          <button type="button" className="boton boton--discreto" aria-label={C.desvincularEste(v.templateName)} disabled={ocupado} onClick={onDesvincular}>
             {C.desvincular}
           </button>
         </span>
@@ -226,7 +226,7 @@ function Vinculado({ v, comun, evaluationId, ocupado, onDesvincular, onVincularL
       {v.laterVersion ? (
         <p className="nota formularios-de-la-evaluacion__mas-nueva" data-version-mas-nueva>
           {C.hayUnaMasNueva(diaSinElAnioEnCurso(v.laterVersion.answeredAt))}{' '}
-          <button type="button" className="boton boton--enlace" disabled={ocupado} onClick={onVincularLaMasNueva}>
+          <button type="button" className="boton boton--discreto" disabled={ocupado} onClick={onVincularLaMasNueva}>
             {C.vincularLaMasNueva}
           </button>
         </p>
@@ -328,7 +328,7 @@ export function FormulariosDeLaEvaluacion({ area, token, asesoradoId, sesionPerd
       {lectura.estado === 'error' ? (
         <p className="nota">
           {C.noSePudoLeer}{' '}
-          <button type="button" className="boton boton--enlace" onClick={() => void leer()}>
+          <button type="button" className="boton boton--discreto" onClick={() => void leer()}>
             {C.volverALeer}
           </button>
         </p>
@@ -362,7 +362,7 @@ export function FormulariosDeLaEvaluacion({ area, token, asesoradoId, sesionPerd
           {respondidos.lectura.estado === 'error' ? (
             <p className="nota">
               {C.noSePudoLeer}{' '}
-              <button type="button" className="boton boton--enlace" onClick={() => void respondidos.leer()}>
+              <button type="button" className="boton boton--discreto" onClick={() => void respondidos.leer()}>
                 {C.volverALeer}
               </button>
             </p>

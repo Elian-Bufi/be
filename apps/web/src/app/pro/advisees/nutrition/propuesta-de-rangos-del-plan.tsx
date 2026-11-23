@@ -23,7 +23,7 @@
  */
 import { MACROS_DE_LA_PROPUESTA, numero, type RangoPropuesto, type RangosDelPlan, type ReferenciaYCalculo, type VersionDeObjetivo } from '@be/domain';
 import { useEffect, useId, useMemo, useState } from 'react';
-import { ExplicacionAPedido } from '../../../../components/explicacion-a-pedido';
+import { EncabezadoConAyuda, ExplicacionAPedido } from '../../../../components/explicacion-a-pedido';
 import { Aviso, RenglonDelAviso } from '../../../../components/formulario';
 import { Icono } from '../../../../components/icono';
 import { api } from '../../../../lib/api';
@@ -203,15 +203,21 @@ export function RepartoPorComida({
     setHecho(null);
   };
 
-  // El «?» va al lado del título y no adentro: el título nombra la sección, y la explicación no se le suma al abrirla.
+  // RP-24 (RP-D91): el «?» en la esquina superior derecha de la sección; lo que abre flota y no corre el reparto.
   const encabezado = (
-    <div className="reparto-por-comida__titulo">
-      <h3 id={`${id}-titulo`}>
-        <Icono nombre="objetivo" tamano={18} />
-        {C.titulo}
-      </h3>
-      <ExplicacionAPedido nombre={C.queEsNombre}>{C.queEs}</ExplicacionAPedido>
-    </div>
+    <EncabezadoConAyuda
+      className="reparto-por-comida__titulo"
+      id={`${id}-titulo`}
+      titulo={
+        <>
+          <Icono nombre="objetivo" tamano={18} />
+          {C.titulo}
+        </>
+      }
+      nombre={C.queEsNombre}
+      como="span"
+      ayuda={C.queEs}
+    />
   );
   if (!dia || dia.comidas.length === 0) {
     return (
@@ -263,7 +269,7 @@ export function RepartoPorComida({
         )}
       </span>
       {chequeo.estado === 'sin-rangos' ? null : (
-        <ExplicacionAPedido nombre={C.detalleDeLaSuma} como="div">
+        <ExplicacionAPedido nombre={C.detalleDeLaSuma} como="div" lugar="esquina">
           <SumaDeLosRangosIndicados comidas={comidasConRango} objetivo={objetivo} enDetalle />
         </ExplicacionAPedido>
       )}
@@ -328,7 +334,9 @@ export function RepartoPorComida({
             <button type="button" className="boton boton--quieto boton--compacto" onClick={() => cambiar(porMacro ? repartoInicial(dia, 'sugerido', r.variante) : repartoInicialUnico(dia, 'sugerido', r.variante))}>
               {C.sugerido}
             </button>
-            <ExplicacionAPedido nombre={C.sugerido}>{C.sugeridoAyuda}</ExplicacionAPedido>
+            <ExplicacionAPedido nombre={C.sugerido} lugar="esquina">
+              {C.sugeridoAyuda}
+            </ExplicacionAPedido>
             <span className="reparto-por-comida__margen">
               <label htmlFor={`${id}-tolerancia`}>{C.tolerancia}</label>
               <input

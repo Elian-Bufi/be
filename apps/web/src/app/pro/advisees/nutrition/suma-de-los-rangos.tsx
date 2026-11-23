@@ -153,7 +153,7 @@ export function KcalDelObjetivo({ kcal, gramos, enProporcion = [], compacto = fa
             <span>{C.noCoincidenCorto(k, kcal)}</span>
           </p>
         ) : null}
-        <ExplicacionAPedido nombre={C.cuentaDeLosGramos} como="div">
+        <ExplicacionAPedido nombre={C.cuentaDeLosGramos} como="div" lugar="esquina">
           <p className="kcal-del-objetivo__renglon">
             {C.kcalEnUnRenglon(k)}
             {k.frente && kcal !== null ? (k.frente.coinciden ? ` · ${C.coinciden(kcal)}` : `. ${C.noCoinciden(k, kcal)}`) : '.'}
@@ -225,7 +225,7 @@ export function RangoEnUnRenglon({ de, rango, soloElBoton = false }: { de: strin
         </span>
       )}{' '}
       {rango.alIndicar ? (
-        <button type="button" className="boton boton--enlace" aria-haspopup="dialog" data-indicar-rango onClick={rango.alIndicar}>
+        <button type="button" className="boton boton--discreto" aria-haspopup="dialog" data-indicar-rango onClick={rango.alIndicar}>
           {rango.indicado ? COPY_RANGOS_INDICADOS.cambiar(de) : COPY_RANGOS_INDICADOS.escribir(de)}
         </button>
       ) : rango.porQueNo ? (

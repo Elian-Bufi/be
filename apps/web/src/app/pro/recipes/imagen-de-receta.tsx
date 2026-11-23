@@ -65,10 +65,12 @@ export function ImagenGuardada({
   if (estado.tipo === 'lista') return <img className={clase} src={estado.dataUrl} alt={chica ? '' : `${COPY_RECETAS.imagenDeReferencia}: ${nombre}`} decoding="async" />;
   const texto = estado.tipo === 'cargando' ? COPY_RECETAS.cargandoImagen : estado.tipo === 'fallo' ? `${nombre}: ${COPY_REGISTRO_DE_COMIDAS.imagenNoDisponible}` : `${nombre}: sin imagen de referencia`;
   const paraElLector = chica ? ({ 'aria-hidden': true } as const) : ({ role: 'img', 'aria-label': texto } as const);
+  // Un `span` (el CSS le da su `display`): la miniatura también va dentro del botón de la cabecera de una opción del
+  // editor (RP-24, RP-D92), y un botón solo admite contenido en línea.
   const respaldo = (
-    <div className={`${clase} imagen-de-receta--respaldo${estado.tipo === 'cargando' ? ' imagen-de-receta--cargando' : ''}`} {...paraElLector}>
+    <span className={`${clase} imagen-de-receta--respaldo${estado.tipo === 'cargando' ? ' imagen-de-receta--cargando' : ''}`} {...paraElLector}>
       {estado.tipo === 'cargando' ? null : <Icono nombre="comida" tamano={24} />}
-    </div>
+    </span>
   );
   if (chica || estado.tipo !== 'fallo') return respaldo;
   return (
@@ -76,7 +78,7 @@ export function ImagenGuardada({
       {respaldo}
       <p className="nota">
         {COPY_REGISTRO_DE_COMIDAS.imagenNoDisponible}{' '}
-        <button type="button" className="boton boton--enlace" onClick={() => void recargar()}>
+        <button type="button" className="boton boton--discreto" onClick={() => void recargar()}>
           Reintentar
         </button>
       </p>
@@ -372,7 +374,7 @@ export function ImagenDeLaRecetaNueva({
         <div className="acciones">
           <button
             type="button"
-            className="boton boton--enlace"
+            className="boton boton--discreto"
             disabled={apagado}
             onClick={() => {
               imagen.quitar();
@@ -464,7 +466,7 @@ export function ImagenDeReceta({
       </EleccionDeImagen>
       {guardada ? (
         <div className="acciones">
-          <button type="button" className="boton boton--enlace" onClick={() => setConfirmarRetiro(true)} disabled={ocupado}>
+          <button type="button" className="boton boton--discreto" onClick={() => setConfirmarRetiro(true)} disabled={ocupado}>
             {COPY_RECETAS.retirarImagen}
           </button>
         </div>

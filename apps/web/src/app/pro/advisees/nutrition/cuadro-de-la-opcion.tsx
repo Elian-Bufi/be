@@ -42,6 +42,7 @@ import { CuadroEnfocado } from '../../../../components/cuadro-enfocado';
 import { Enlace } from '../../../../components/enlace';
 import { Aviso } from '../../../../components/formulario';
 import { Icono } from '../../../../components/icono';
+import { ICONO_DEL_MACRO, MACRO_DEL_NUTRIENTE } from './abreviaturas-de-macros';
 import { api } from '../../../../lib/api';
 import { dia as fechaDelDia } from '../../../../lib/formato';
 import { mensajeDeFallo } from '../../../../lib/intento';
@@ -245,7 +246,7 @@ export function CuadroDeLaOpcion({
       ) : null}
       {copia && modo === 'importar' ? (
         <div className="agregar-item__otro" onInput={anotarLoEscrito}>
-          <button type="button" className="boton boton--enlace agregar-item__volver" onClick={() => setModo('opcion')}>
+          <button type="button" className="boton boton--discreto agregar-item__volver" onClick={() => setModo('opcion')}>
             <Icono nombre="izquierda" tamano={18} />
             {C.volver}
           </button>
@@ -298,11 +299,11 @@ export function CuadroDeLaOpcion({
             <BuscadorDeLaOpcion campo={buscador} texto={texto} alEscribir={setTexto} agregado={agregado} habituales={habituales} alSumar={sumar} />
             <p className="nota cuadro-de-la-opcion__otro">
               {C.noEsta}{' '}
-              <button type="button" className="boton boton--enlace" onClick={() => setModo('manual')}>
+              <button type="button" className="boton boton--discreto" onClick={() => setModo('manual')}>
                 {C.crearAMano}
               </button>{' '}
               ·{' '}
-              <button type="button" className="boton boton--enlace" onClick={() => setModo('importar')}>
+              <button type="button" className="boton boton--discreto" onClick={() => setModo('importar')}>
                 {C.importar}
               </button>
             </p>
@@ -321,13 +322,20 @@ export function CuadroDeLaOpcion({
                 <dl className="cuadro-de-la-opcion__totales">
                   {NUTRIENTES_DEL_RANGO.map((n) => (
                     <div key={n}>
-                      <dt>{NOMBRE_DEL_TOTAL[n]}</dt>
+                      {/* RP-24 (RP-D97): en las tarjetas del cuadro, el ícono de cada macro, como en el editor (RP-07). */}
+                      <dt>
+                        <Icono nombre={ICONO_DEL_MACRO[MACRO_DEL_NUTRIENTE[n]]} tamano={15} />
+                        {NOMBRE_DEL_TOTAL[n]}
+                      </dt>
                       <dd>{total[n].exacto === null ? COPY_RANGOS.sinDato : `${formatearCantidad(Number(total[n].exacto), UNIDAD_DEL_TOTAL[n])}`}</dd>
                     </div>
                   ))}
                   {/* La fibra, como en la maqueta 06: lo que falta es «Sin dato», nunca cero. */}
                   <div data-fibra-de-la-opcion>
-                    <dt>{C.fibra}</dt>
+                    <dt>
+                      <Icono nombre="fibra" tamano={15} />
+                      {C.fibra}
+                    </dt>
                     <dd>{fibra === null || fibra.exacto === null ? COPY_RANGOS.sinDato : formatearCantidad(Number(fibra.exacto), 'g')}</dd>
                   </div>
                 </dl>
@@ -338,7 +346,15 @@ export function CuadroDeLaOpcion({
             {rango ? (
               <section className="cuadro-de-la-opcion__tarjeta" aria-labelledby="opcion-rango-de-la-comida">
                 <h3 id="opcion-rango-de-la-comida">{C.rangoDe(comida)}</h3>
-                <p>{NUTRIENTES_DEL_RANGO.map((n) => `${COPY_RANGOS.nutriente[n]}: ${rangoEnUnaCelda(rango[n], n)}`).join(' · ')}</p>
+                <p className="cuadro-de-la-opcion__rango">
+                  {NUTRIENTES_DEL_RANGO.map((n, i) => (
+                    <span key={n} className="cuadro-de-la-opcion__rango-del-macro">
+                      {i > 0 ? <span aria-hidden="true"> · </span> : null}
+                      <Icono nombre={ICONO_DEL_MACRO[MACRO_DEL_NUTRIENTE[n]]} tamano={15} />
+                      {`${COPY_RANGOS.nutriente[n]}: ${rangoEnUnaCelda(rango[n], n)}`}
+                    </span>
+                  ))}
+                </p>
                 <p className="nota">{C.conEstaOpcion}</p>
               </section>
             ) : null}

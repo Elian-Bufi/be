@@ -568,7 +568,7 @@ function pantallas(ids, lugar) {
         // Lo escrito se borra (y con eso deja de estar pendiente) y la barra se oculta.
         const linea = await page.$('[data-linea-de-prescripcion] input');
         if (linea) await vaciar(page, linea);
-        const ocultar = await page.$('[data-volver-a-la-revision] .boton--enlace');
+        const ocultar = await page.$('[data-volver-a-la-revision] :is(.boton--enlace, .boton--discreto)');
         if (ocultar) await ocultar.click();
         await asentar(page);
       },

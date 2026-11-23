@@ -11,7 +11,7 @@ import { CITA_DEL_FACTOR_DE_ACTIVIDAD, FICHA_DEL_METODO_DE_REPOSO, numero, type 
 import { useEffect, useState } from 'react';
 import { ExplicacionAPedido } from '../../../../components/explicacion-a-pedido';
 import { api } from '../../../../lib/api';
-import { avisosDeLaReferencia, datoEnPalabras, diaYMes, masaEnPalabras, parteEnPalabras, PROBLEMA_DEL_CALCULO, reposoEnPalabras } from './calculador-del-objetivo';
+import { ajusteEnPalabras, avisosDeLaReferencia, datoEnPalabras, diaYMes, masaEnPalabras, parteEnPalabras, PROBLEMA_DEL_CALCULO, reposoEnPalabras } from './calculador-del-objetivo';
 import { CantidadDelMacro } from './cantidad-del-macro';
 import { useNutricion } from './nutricion';
 
@@ -109,11 +109,8 @@ export function ReferenciaDelObjetivo({ versionId }: { versionId: string }) {
             <div>
               <dt>Ajuste</dt>
               <dd>
-                {!p.adjustment
-                  ? 'Sin ajuste'
-                  : p.adjustment.kind === 'KCAL'
-                    ? `${p.adjustment.value > 0 ? '+' : ''}${numero(p.adjustment.value, 0)} kcal por día`
-                    : `${p.adjustment.value > 0 ? '+' : ''}${numero(p.adjustment.value, 1)} % de las ${numero(r.totals?.day ?? 0, 0)} kcal del gasto total`}
+                {/* RP-24 (RP-D95): «Déficit de 300 kcal por día», sin signo, como se escribe en el calculador. */}
+                {ajusteEnPalabras(p.adjustment, r.totals?.day ?? null, numero)}
               </dd>
             </div>
             {r.totals && r.energy ? (

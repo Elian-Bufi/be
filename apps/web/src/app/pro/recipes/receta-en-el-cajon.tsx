@@ -30,7 +30,7 @@ export function ImagenEnElCajon({ token, sesionPerdida, receta, onCambio }: Sesi
     <div className="receta-en-el-cajon__imagen" data-imagen-en-el-cajon={receta.recipeId}>
       <ImagenGuardada token={token} medioId={receta.image?.mediaId ?? null} nombre={receta.name} sesionPerdida={sesionPerdida} chica rutas={receta.image?.paths ?? null} />
       {propia ? (
-        <button type="button" className="boton boton--enlace boton--compacto" aria-expanded={abierta} onClick={() => setAbierta((x) => !x)} data-cargar-imagen-en-el-cajon>
+        <button type="button" className="boton boton--discreto boton--compacto" aria-expanded={abierta} onClick={() => setAbierta((x) => !x)} data-cargar-imagen-en-el-cajon>
           <Icono nombre="imagen" tamano={18} />
           {receta.image ? COPY_RECETARIO.cambiarImagenDeLaReceta : COPY_RECETARIO.cargarImagenDeLaReceta}
           <span className="visualmente-oculto"> de {receta.name}</span>
@@ -78,7 +78,7 @@ export function RecetarioEnElCajon({
     return (
       <Aviso tipo="error">
         <p>{estado.texto}</p>
-        <button type="button" className="boton boton--enlace" onClick={() => void recargar()}>
+        <button type="button" className="boton boton--discreto" onClick={() => void recargar()}>
           Reintentar
         </button>
       </Aviso>
@@ -87,9 +87,10 @@ export function RecetarioEnElCajon({
   const visibles = orden(recetasQueCoinciden(estado.recetas, texto));
   return (
     <div data-recetario-en-el-cajon>
-      <p className="nota">
-        {COPY_RECETARIO.soloLectura} <QueEsElRecetario />
-      </p>
+      <div className="nota encabezado-con-ayuda">
+        <p className="encabezado-con-ayuda__titulo">{COPY_RECETARIO.soloLectura}</p>
+        <QueEsElRecetario />
+      </div>
       <p className="nota" role="status" data-cuantas-del-recetario>
         {estado.recetas.length === 0 ? COPY_RECETARIO.sinRecetas : visibles.length === 0 ? COPY_RECETARIO.ninguna(texto) : `${visibles.length} de ${estado.recetas.length} recetas del ${COPY_RECETARIO.recetarioDeBe}`}
       </p>
@@ -110,7 +111,7 @@ export function RecetarioEnElCajon({
               </p>
               {extra(r)}
               <div className="acciones acciones--compactas">
-                <button type="button" className="boton boton--enlace" onClick={() => onElegir(r)} data-agregar-del-recetario>
+                <button type="button" className="boton boton--discreto" onClick={() => onElegir(r)} data-agregar-del-recetario>
                   {COPY_RECETAS.agregarComoOpcion}: {r.name}
                 </button>
                 <button type="button" className="boton boton--secundario boton--compacto" disabled={copiando !== null} onClick={() => void copiar(r)} data-copiar-a-mis-recetas>

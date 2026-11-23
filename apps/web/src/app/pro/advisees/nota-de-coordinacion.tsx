@@ -294,7 +294,7 @@ export function DialogoDeNota({
           {carga.tipo === 'error' ? (
             <p className="campo__error">
               {COPY.noDisponible}{' '}
-              <button type="button" className="boton boton--enlace" onClick={() => void cargar()}>
+              <button type="button" className="boton boton--discreto" onClick={() => void cargar()}>
                 {COPY.reintentar}
               </button>
             </p>
@@ -452,7 +452,7 @@ export function DialogoDeNota({
                 {falloLoCitable ? (
                   <p className="campo__error" role="alert">
                     {T.referenciasNoSeLeyeron}{' '}
-                    <button type="button" className="boton boton--enlace" onClick={() => setVueltaDeLoCitable((v) => v + 1)}>
+                    <button type="button" className="boton boton--discreto" onClick={() => setVueltaDeLoCitable((v) => v + 1)}>
                       {COPY.reintentar}
                       <span className="visualmente-oculto"> {T.referenciasDeQue}</span>
                     </button>

@@ -298,7 +298,7 @@ export function EditorDeReceta({
       <Aviso tipo="info">
         <p>{lectura === 'sin-area' ? COPY_RECETAS.soloNutricion : lectura === 'del-recetario' ? COPY_RECETARIO.soloLectura : 'No pudimos abrir esta receta.'}</p>
         <p>
-          <button type="button" className="boton boton--enlace" onClick={onVolver}>
+          <button type="button" className="boton boton--discreto" onClick={onVolver}>
             {COPY_RECETAS.volverALaLista}
           </button>
         </p>
@@ -313,7 +313,7 @@ export function EditorDeReceta({
       {enElPlan ? null : (
         <>
           <p>
-            <button type="button" className="boton boton--enlace" onClick={() => antesDeSalir(onVolver)}>
+            <button type="button" className="boton boton--discreto" onClick={() => antesDeSalir(onVolver)}>
               ← {COPY_RECETAS.volverALaLista}
             </button>
           </p>
@@ -395,7 +395,7 @@ export function EditorDeReceta({
                   </div>
                   <button
                     type="button"
-                    className="boton boton--enlace"
+                    className="boton boton--discreto"
                     onClick={() => {
                       setIngredientes((lista) => lista.filter((x) => x.clave !== i.clave));
                       cambiar();
@@ -460,7 +460,7 @@ export function EditorDeReceta({
                     <label htmlFor={`receta-paso-${n}`}>Paso {n + 1}</label>
                     <textarea id={`receta-paso-${n}`} value={p} maxLength={500} rows={2} onChange={(e) => (setPasos((l) => l.map((x, k) => (k === n ? e.target.value : x))), cambiar())} />
                   </div>
-                  <button type="button" className="boton boton--enlace" onClick={() => (setPasos((l) => l.filter((_, k) => k !== n)), cambiar())}>
+                  <button type="button" className="boton boton--discreto" onClick={() => (setPasos((l) => l.filter((_, k) => k !== n)), cambiar())}>
                     {COPY_RECETAS.quitarPaso} {n + 1}
                   </button>
                 </li>
@@ -638,7 +638,7 @@ function BuscadorDeAlimentos({
         resultados.alimentos.length === 0 ? (
           <div className="acciones">
             <p className="nota">Ningún alimento coincide con «{resultados.texto}».</p>
-            <button type="button" className="boton boton--enlace" onClick={limpiar}>
+            <button type="button" className="boton boton--discreto" onClick={limpiar}>
               Limpiar búsqueda
             </button>
           </div>
@@ -657,7 +657,7 @@ function BuscadorDeAlimentos({
                 </p>
                 <button
                   type="button"
-                  className="boton boton--enlace"
+                  className="boton boton--discreto"
                   onClick={() => {
                     onElegir(e);
                     setResultados(null);

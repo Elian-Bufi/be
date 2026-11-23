@@ -339,7 +339,7 @@ function ContenidoDeAgregarEjercicio({
   if (modo === 'importar') {
     return (
       <div className="agregar-item__otro">
-        <button type="button" className="boton boton--enlace agregar-item__volver" onClick={() => alCambiarDeModo('buscar')}>
+        <button type="button" className="boton boton--discreto agregar-item__volver" onClick={() => alCambiarDeModo('buscar')}>
           <Icono nombre="izquierda" tamano={18} />
           Volver a la búsqueda
         </button>
@@ -463,7 +463,7 @@ function ContenidoDeAgregarEjercicio({
               </button>
             ))}
             {zonasVigentes.length > 0 ? (
-              <button type="button" className="boton boton--enlace" onClick={() => setZonasElegidas([])}>
+              <button type="button" className="boton boton--discreto" onClick={() => setZonasElegidas([])}>
                 {COPY_ZONAS_DEL_BUSCADOR.todas}
               </button>
             ) : null}
@@ -475,7 +475,7 @@ function ContenidoDeAgregarEjercicio({
         {busqueda.tipo === 'lista' && ejercicios.length > 0 && historial.tipo === 'falla' ? (
           <p className="nota ejercicios-del-catalogo__sin-historial" role="status" data-historial-sin-leer>
             {COPY_HISTORIAL_DEL_BUSCADOR.noSeLeyo}{' '}
-            <button type="button" className="boton boton--enlace" onClick={releerElHistorial}>
+            <button type="button" className="boton boton--discreto" onClick={releerElHistorial}>
               {COPY_HISTORIAL_DEL_BUSCADOR.reintentar}
             </button>
           </p>
@@ -609,7 +609,7 @@ function ContenidoDeAgregarEjercicio({
           {sinResultados ? (
             <span id={`${id}-no-encuentro`}>{V.noEncuentro}</span>
           ) : (
-            <button type="button" id={`${id}-no-encuentro`} className="boton boton--enlace" aria-expanded={noEncuentroAbierto} aria-controls={`${id}-crear-o-importar`} onClick={() => setNoEncuentro((x) => !x)} data-abrir-no-encuentro>
+            <button type="button" id={`${id}-no-encuentro`} className="boton boton--discreto" aria-expanded={noEncuentroAbierto} aria-controls={`${id}-crear-o-importar`} onClick={() => setNoEncuentro((x) => !x)} data-abrir-no-encuentro>
               <Icono nombre={noEncuentroAbierto ? 'abajo' : 'derecha'} tamano={18} />
               {V.noEncuentro}
             </button>
@@ -691,7 +691,7 @@ function CrearManualmente({ id, nombreInicial, onCreado, onVolver }: { id: strin
 
   return (
     <form className="agregar-item__otro" onSubmit={(e) => void crear(e)} noValidate>
-      <button type="button" className="boton boton--enlace agregar-item__volver" onClick={onVolver}>
+      <button type="button" className="boton boton--discreto agregar-item__volver" onClick={onVolver}>
         <Icono nombre="izquierda" tamano={18} />
         Volver a la búsqueda
       </button>
