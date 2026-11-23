@@ -96,6 +96,7 @@ import {
   type RegistrarSuscripcionPushRequest,
   type ReemplazarPreferenciasDeAvisosRequest,
 } from './contratos-novedades';
+import { RecorridosVistosResponseSchema, RecorridoVistoResponseSchema, type MarcarRecorridoRequest, type RecorridoGuiado } from './recorridos-guiados';
 import {
   DestinatariosPosiblesResponseSchema,
   ListaDeNotasPropiasResponseSchema,
@@ -1848,6 +1849,16 @@ export function crearClienteBe(opciones: OpcionesDeCliente) {
     /** API-NOV-06: reemplazarlas. */
     reemplazarPreferenciasDeAvisos(token: string, cuerpo: ReemplazarPreferenciasDeAvisosRequest) {
       return llamar('PUT', '/me/notification-preferences', { token, esquema: PreferenciasDeAvisosResponseSchema, cuerpo });
+    },
+
+    // ─── RGU · recorridos guiados (WP-RECORRIDOS-GUIADOS; DL-195) ───────────────────────────────
+    /** API-RGU-01: los recorridos guiados que el usuario de la sesión vio u omitió. */
+    consultarRecorridosVistos(token: string) {
+      return llamar('GET', '/me/guided-tours', { token, esquema: RecorridosVistosResponseSchema });
+    },
+    /** API-RGU-02: marcar uno como visto u omitido. Repetirlo no cambia nada. */
+    marcarRecorrido(token: string, recorrido: RecorridoGuiado, cuerpo: MarcarRecorridoRequest) {
+      return llamar('PUT', `/me/guided-tours/${encodeURIComponent(recorrido)}`, { token, esquema: RecorridoVistoResponseSchema, cuerpo });
     },
 
     // ─── INV · invitaciones de vínculo (WP-INVITACION; DL-136) ──────────────────────────────────

@@ -1687,6 +1687,138 @@ async function notacionDelEsfuerzo({ p, d, salida }) {
   assert.ok(await p.evaluate(() => document.querySelector('.notacion-del-plan .a-pedido__texto')?.textContent.includes('Zourdos')), 'la fuente está detrás del «?»');
 }
 
+// ─── DL-195 (WP-RECORRIDOS-GUIADOS) · El recorrido guiado del editor de Entrenamiento ──────────────────────────────────
+
+/** El paso que se muestra, su número, dónde está el foco y la geometría del hueco, del cartel y del elemento iluminado. */
+const pasoDelRecorrido = (p) =>
+  p.evaluate(() => {
+    const raiz = document.querySelector('[data-recorrido-guiado]');
+    if (!raiz) return null;
+    const caja = (e) => {
+      if (!e) return null;
+      const r = e.getBoundingClientRect();
+      return { top: r.top, left: r.left, bottom: r.bottom, right: r.right };
+    };
+    const cartel = raiz.querySelector('.recorrido__cartel');
+    return {
+      paso: raiz.dataset.paso,
+      numero: raiz.querySelector('.recorrido__numero')?.textContent ?? '',
+      siguiente: raiz.querySelector('[data-siguiente-del-recorrido]')?.textContent ?? '',
+      lado: cartel?.dataset.lado ?? null,
+      focoEnElCartel: cartel?.contains(document.activeElement) ?? false,
+      rol: cartel?.getAttribute('role'),
+      modal: cartel?.getAttribute('aria-modal'),
+      hueco: caja(raiz.querySelector('.recorrido__hueco')),
+      cartel: caja(cartel),
+      ventana: { ancho: document.documentElement.clientWidth, alto: document.documentElement.clientHeight },
+    };
+  });
+
+/**
+ * Aparece la primera vez; Escape lo omite y la API lo recuerda; «Ver el recorrido» lo vuelve a mostrar; las flechas se
+ * mueven, Tab no sale del cartel y «Terminar» lo cierra; al recargar no aparece. El cartel no tapa el hueco, queda adentro
+ * de la ventana, y nada de la página se corre mientras está abierto (RP-19).
+ */
+async function recorridosGuiados({ p, d, salida }) {
+  const token = await sesionPorApi(d.pro.correo);
+  const vistos = async () => (await pedir('GET', '/me/guided-tours', { token })).data;
+  assert.deepEqual(await vistos(), [], 'la cuenta nueva no vio ningún recorrido');
+
+  await entrar(p, d.pro.correo);
+  await p.goto(`${WEB}/pro/advisees/training?id=${encodeURIComponent(d.ase.id)}&vista=plan`, { waitUntil: 'networkidle2' });
+  // GUI-08: aparece solo, en el primer paso, con el foco en el cartel, y ya ubicado.
+  await p.waitForFunction(() => document.querySelector('.recorrido__cartel')?.dataset.lado, { timeout: ESPERA, polling: 100 });
+  let e = await pasoDelRecorrido(p);
+  assert.equal(e.paso, 'sesiones');
+  assert.match(e.numero, /^Paso 1 de [4-6]$/);
+  assert.equal(e.rol, 'dialog');
+  assert.equal(e.modal, 'true');
+  assert.ok(e.focoEnElCartel, 'el foco está en el cartel');
+  await captura(p, salida, 'recorrido-entrenamiento-paso-1');
+
+  // GUI-02: el cartel no tapa el hueco y queda adentro de la ventana; el hueco rodea a «Sesiones».
+  const comprobarGeometria = async (momento) => {
+    const x = await pasoDelRecorrido(p);
+    // El hueco rodea al elemento en los pasos de un elemento chico: «Sesiones» y «Revisar y activar…».
+    const sesiones = await p.evaluate((selector) => {
+      const el = selector ? [...document.querySelectorAll(selector)].find((n) => !n.closest('[data-recorrido-guiado]') && n.getBoundingClientRect().width > 0) : null;
+      return el ? el.getBoundingClientRect().toJSON() : null;
+    }, x.paso === 'sesiones' ? '[data-recorrido="sesiones"]' : x.paso === 'revisar' ? '[data-revisar-y-activar]' : null);
+    const { hueco: h, cartel: c, ventana: v } = x;
+    assert.ok(c.left >= 0 && c.top >= 0 && c.right <= v.ancho && c.bottom <= v.alto, `${momento}: el cartel sale de la ventana`);
+    if (x.lado !== 'encima') assert.ok(c.right <= h.left || c.left >= h.right || c.bottom <= h.top || c.top >= h.bottom, `${momento}: el cartel tapa el hueco`);
+    if (sesiones) assert.ok(h.top <= sesiones.top + 1 && h.left <= sesiones.left + 1 && h.bottom >= Math.min(sesiones.bottom, v.alto) - 1 && h.right >= sesiones.right - 1, `${momento}: el hueco no rodea al elemento`);
+  };
+  await comprobarGeometria('paso 1');
+
+  // RP-19: con el recorrido abierto, nada de la página cambió de lugar.
+  await p.waitForNetworkIdle({ idleTime: 500, timeout: ESPERA }).catch(() => {});
+  const antes = await lugares(p, '[data-revisar-y-activar], [data-ver-recorrido], [data-mas-sesion]');
+
+  // GUI-03: las flechas avanzan y retroceden; Tab no sale del cartel.
+  await p.keyboard.press('ArrowRight');
+  await p.waitForFunction(() => document.querySelector('[data-recorrido-guiado]')?.dataset.paso !== 'sesiones', { timeout: ESPERA, polling: 100 });
+  e = await pasoDelRecorrido(p);
+  assert.match(e.numero, /^Paso 2 de /);
+  await p.keyboard.press('ArrowLeft');
+  await p.waitForFunction(() => document.querySelector('[data-recorrido-guiado]')?.dataset.paso === 'sesiones', { timeout: ESPERA, polling: 100 });
+  for (let i = 0; i < 6; i++) {
+    await p.keyboard.press('Tab');
+    assert.ok((await pasoDelRecorrido(p)).focoEnElCartel, `Tab ${i + 1}: el foco salió del cartel`);
+  }
+  await p.keyboard.down('Shift');
+  await p.keyboard.press('Tab');
+  await p.keyboard.up('Shift');
+  assert.ok((await pasoDelRecorrido(p)).focoEnElCartel, 'Shift+Tab: el foco salió del cartel');
+
+  // GUI-04: Escape lo omite; la API lo guarda para este usuario.
+  await p.keyboard.press('Escape');
+  await p.waitForFunction(() => !document.querySelector('[data-recorrido-guiado]'), { timeout: ESPERA, polling: 100 });
+  const despues = await lugares(p, '[data-revisar-y-activar], [data-ver-recorrido], [data-mas-sesion]');
+  assert.deepEqual(despues, antes, 'abrir y cerrar el recorrido no corre nada (RP-19)');
+  let marcado = null;
+  for (let i = 0; i < 30 && !marcado; i++) {
+    marcado = (await vistos()).find((x) => x.tourId === 'training-plan-editor') ?? null;
+    if (!marcado) await pausa(200);
+  }
+  assert.equal(marcado?.state, 'SKIPPED', 'omitir queda en la cuenta');
+
+  // GUI-10: «Ver el recorrido» es un botón discreto, sin subrayado, y lo vuelve a mostrar desde el primer paso.
+  const ver = await elemento(p, '[data-ver-recorrido]');
+  assert.equal(await ver.evaluate((b) => b.tagName), 'BUTTON');
+  assert.equal(await ver.evaluate((b) => getComputedStyle(b).textDecorationLine), 'none');
+  await clic(p, '[data-ver-recorrido]');
+  await p.waitForFunction(() => document.querySelector('.recorrido__cartel')?.dataset.lado, { timeout: ESPERA, polling: 100 });
+  e = await pasoDelRecorrido(p);
+  assert.equal(e.paso, 'sesiones');
+  const total = Number(/de (\d+)/.exec(e.numero)[1]);
+  // «Siguiente» hasta el último, que dice «Terminar» y pide «Revisar y activar…».
+  for (let n = 1; n < total; n++) {
+    await clic(p, '[data-siguiente-del-recorrido]');
+    await p.waitForFunction((k) => document.querySelector('.recorrido__numero')?.textContent.startsWith(`Paso ${k} de`), { timeout: ESPERA, polling: 100 }, n + 1);
+    await comprobarGeometria(`paso ${n + 1}`);
+  }
+  e = await pasoDelRecorrido(p);
+  assert.equal(e.paso, 'revisar');
+  assert.equal(e.siguiente, 'Terminar');
+  await captura(p, salida, 'recorrido-entrenamiento-ultimo');
+  await clic(p, '[data-siguiente-del-recorrido]', 'Terminar');
+  await p.waitForFunction(() => !document.querySelector('[data-recorrido-guiado]'), { timeout: ESPERA, polling: 100 });
+  marcado = null;
+  for (let i = 0; i < 30 && marcado?.state !== 'SEEN'; i++) {
+    marcado = (await vistos()).find((x) => x.tourId === 'training-plan-editor') ?? null;
+    if (marcado?.state !== 'SEEN') await pausa(200);
+  }
+  assert.equal(marcado?.state, 'SEEN', 'terminarlo queda en la cuenta');
+
+  // GUI-09: al recargar no aparece; lo recuerda la API, no el navegador.
+  await p.reload({ waitUntil: 'networkidle2' });
+  await elemento(p, '[data-ver-recorrido]');
+  await p.waitForNetworkIdle({ idleTime: 800, timeout: ESPERA }).catch(() => {});
+  assert.equal(await p.evaluate(() => document.querySelector('[data-recorrido-guiado]') === null), true, 'al recargar, el recorrido no aparece');
+  assert.equal(await p.evaluate(() => Object.keys(localStorage).some((k) => k.startsWith('be:recorridos-vistos:'))), false, 'con la API respondiendo, el navegador no guarda nada');
+}
+
 // ─── La corrida ──────────────────────────────────────────────────────────────────────────────────────────────────────
 
 // ─── RP-19 (WP-RECORRIDO-PLAN-PULIDO, DL-188) · Sin saltos ─────────────────────────────────────────────────────────────
@@ -2201,7 +2333,7 @@ async function recetario({ p, d, salida }) {
   assert.equal(delRecetario.image, null, 'la del recetario no cambia');
 }
 
-export const TODOS = { sesion, pistas, borrador, conflicto, descartar, salidaSegura, irACorregir, respuestaPerdida, reintentar, salidaConFallas, primerPlan, planDeNutricionSinAsistente, retorno, grafico, primeraInvitacion, areaSugerida, sesionRevocada, accesoRevocado, faltaUnaParte, completitud, evidencia, administracion, comparacion, comparacionConOpciones, sinSaltos, franjasPorComida, cierreDeNutricion, notacionDelEsfuerzo, recetario };
+export const TODOS = { sesion, pistas, borrador, conflicto, descartar, salidaSegura, irACorregir, respuestaPerdida, reintentar, salidaConFallas, primerPlan, planDeNutricionSinAsistente, retorno, grafico, primeraInvitacion, areaSugerida, sesionRevocada, accesoRevocado, faltaUnaParte, completitud, evidencia, administracion, comparacion, comparacionConOpciones, sinSaltos, franjasPorComida, cierreDeNutricion, notacionDelEsfuerzo, recetario, recorridosGuiados };
 
 /** Errores de la página que no dicen nada del website (los del propio navegador). */
 const IGNORABLES = [/ResizeObserver loop/];

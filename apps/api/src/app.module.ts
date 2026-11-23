@@ -5,6 +5,7 @@ import { AccesoGoogleModule } from './acceso-google/acceso-google.module';
 import { AdministracionModule } from './administracion/administracion.module';
 import { DerechosModule } from './derechos/derechos.module';
 import { IncidenciasModule } from './incidencias/incidencias.module';
+import { RecorridosModule } from './recorridos/recorridos.module';
 import { RecuperacionModule } from './recuperacion/recuperacion.module';
 import { ContactoModule } from './contacto/contacto.module';
 import { ENTORNO, VERSION } from './config/tokens';
@@ -122,6 +123,8 @@ export class AppModule {
         CompartirModule,
         // RF-068 (DL-172): las incidencias administrativas mínimas.
         IncidenciasModule,
+        // WP-RECORRIDOS-GUIADOS (DL-195): los recorridos guiados que vio u omitió cada usuario (familia RGU).
+        RecorridosModule,
       ],
       // 09v7 T16: todo error sale como ErrorEnvelope, sin detalle interno (DL-005).
       providers: [{ provide: APP_FILTER, useClass: FiltroDeErrores }],

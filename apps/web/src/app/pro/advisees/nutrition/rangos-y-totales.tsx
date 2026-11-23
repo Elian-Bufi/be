@@ -53,7 +53,7 @@ export function RangosYTotales({
   const otros = falta.otros.filter((f) => f.motivo !== 'LEYENDO');
   const diaConDato = rangos.comidas.length > 0 && (['energyKcal', 'proteinG', 'carbohydrateG', 'fatG'] as const).some((n) => rangos.dia[n].tipo === 'rango');
   return (
-    <div className="rangos-y-totales">
+    <div className="rangos-y-totales" data-recorrido="rangos-y-totales">
       <section className="rangos-y-totales__dia" aria-labelledby={`${id}-dia`} data-rango-del-dia>
         {/* RP-24 (RP-D91): el «?» en la esquina superior derecha de la sección, no adentro del título ni a su lado. */}
         <EncabezadoConAyuda

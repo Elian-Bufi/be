@@ -231,7 +231,7 @@ export function ComidaDelEditor({
     alAgregarItem(Math.max(0, comida.options.findIndex((o) => o.items.length === 0 && !o.recipeVersionId)));
   };
   return (
-    <section className="comida-del-plan comida-del-editor" data-comida={posicion + 1} data-abierta={abierta ? '' : undefined}>
+    <section className="comida-del-plan comida-del-editor" data-comida={posicion + 1} data-recorrido="comida" data-abierta={abierta ? '' : undefined}>
       <div className="comida-del-editor__cabecera">
         <h3 className="comida-del-plan__titulo">
           <button type="button" id={`abrir-comida-${id}`} className="comida-del-plan__boton" aria-expanded={abierta} aria-controls={`${propio}-cuerpo`} onClick={alAlternar}>
@@ -549,7 +549,7 @@ export function ComidaDelEditor({
                   {COPY_OPCIONES.deAlimentos}
                   <span className="visualmente-oculto"> {COPY_OPCIONES.en(plegada.titulo)}</span>
                 </button>
-                <button type="button" className="boton boton--quieto boton--compacto" data-opcion-de-receta disabled={comida.options.length >= MAXIMO_DE_OPCIONES} onClick={alAgregarReceta}>
+                <button type="button" className="boton boton--quieto boton--compacto" data-opcion-de-receta data-recorrido="opcion-de-receta" disabled={comida.options.length >= MAXIMO_DE_OPCIONES} onClick={alAgregarReceta}>
                   <Icono nombre="receta" tamano={18} />
                   {COPY_OPCIONES.deReceta}
                   <span className="visualmente-oculto"> {COPY_OPCIONES.en(plegada.titulo)}</span>

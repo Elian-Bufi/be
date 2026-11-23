@@ -176,6 +176,13 @@ FAMILIAS_DE_BE.MHA = 'DL-190';
  * alimentos, DL-180), aunque copia su patrón. Se declara aparte para que se integre sin pisar a otra familia en paralelo.
  */
 FAMILIAS_DE_BE.RCT = 'DL-191';
+/**
+ * RGU (DL-195, WP-RECORRIDOS-GUIADOS; pedido de Dirección del 2026-11-23): los recorridos guiados que vio u omitió el
+ * usuario de la sesión, para que aparezcan solos una sola vez por usuario. Una preferencia de la pantalla, sin datos de
+ * salud; el 09 no la tiene, y no es NOV (las preferencias de los avisos). Se declara aparte para que se integre sin pisar a
+ * otra familia en paralelo.
+ */
+FAMILIAS_DE_BE.RGU = 'DL-195';
 
 test('el inventario del 09 tiene 122 operaciones y de cada una se lee su ruta', () => {
   assert.equal(inventario.size, 122);

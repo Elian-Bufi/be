@@ -193,6 +193,7 @@
 | DL-191 | Decisión de Dirección · 2026-11-22 («tus recomendaciones me parecieron perfectas, aplicalas así»; WP-RECETARIO-E-IMAGENES) | DL-119 · DL-120 · DL-180 (el patrón del canon) · DL-152 · REG-06-135 inciso 2 · 08 §21 · Ley 25.326 · Ley 11.723 | Cada foto de una receta se bajaba entera (un JPEG de 1600 px, unos 300 kB) aunque se mostrara en una miniatura; la imagen solo se cargaba en «Mis recetas»; no había recetas de BE para todos ni una forma de proponer una con su foto | **PROGRAMADA en `wp-recetario-e-imagenes` (PR en borrador, sin integrar) · REC-D01 a REC-D17 a ratificar**: la imagen de una receta en dos WebP de calidad 78 (1200 y 400 px), pedidas por variante; los medios de antes, con sus variantes perezosas e idempotentes, y sin variante lo guardado (la APK publicada sigue igual); una sola copia por huella del mismo dueño; el website achica antes de subir; el Recetario de BE (familia propia RCT): lista con rutas firmadas guardables de 6 a 7 horas, copiar con el mismo medio, proponer con la cesión de la foto versionada y registrada, Administración con autor y parecidas; la semilla de las 66 como comando (no se corrió en test); la imagen desde el cajón del plan. Una migración que solo agrega. Pendiente legal: la cesión, con el abogado. Detalle: `docs/paquetes/WP-RECETARIO-E-IMAGENES.md` |
 | DL-193 | Decisión de Dirección · 2026-11-22 (sacar el asistente de 7 pasos de Nutrición; WP-SIN-ASISTENTE-DE-NUTRICION) | RF-030 · RF-031 · UC-P10 · UC-P11 · B10-05 §12 · DL-145 · DL-167 (ED-30) · EDC-11 · EDC-12 | El asistente de Nutrición (ED-30) repetía, en siete pasos, lo que el editor ya hacía; Dirección lo encontró engorroso y anticuado frente a la forma normal | **PROGRAMADA en `wp-sin-asistente-de-nutricion` (PR en borrador, sin integrar) · SAN-D01 a SAN-D10 a ratificar**: sin el asistente de Nutrición (el de Entrenamiento no se toca); todo camino que llevaba a él va a la vista del plan o al editor, y una dirección vieja con `asistente=N` abre la misma vista sin ese parámetro; lo que solo tenía el asistente pasa al editor: «Empezar en blanco» con una versión activa, el objetivo con su versión y su fecha y lo que está en proporción, y «Usarla ahora» para pasar al objetivo vigente. Sin cambios en la API ni en la base: el asistente no guardaba estado propio. Detalle: `docs/paquetes/WP-SIN-ASISTENTE-DE-NUTRICION.md` |
 | DL-194 | Decisión de Dirección · 2026-11-22 (la app para la APK 0.32; WP-APP-0-32) | DL-170 (AV2-21) · DL-173 (PG-04) · DL-188 (RP-07) · DL-190 · DL-191 · DL-192 · DL-152 · B10-06 | Nutrición · Hoy cambiaba de opción con segmentos y una miniatura de 72 dp; el título grande ocupaba lo primero de Nutrición y Entrenamiento; los macros no tenían los íconos del website; la app no mostraba Kerr con sus nombres probados, no preguntaba en RPE ni pedía imágenes livianas | **PROGRAMADA en `wp-app-0-32` (PR en borrador, sin integrar) · A32-D01 a A32-D15 a ratificar**: el carrusel con imán, flechas, «Opción n de m» y puntitos, sin asomo; la foto grande a todo el ancho; el título fijo en la cabecera; los macros con ícono, número y abreviatura; Kerr con sus nombres; la notación RPE con la capacidad `training-effort-notation-1`, mandando el RIR; las imágenes por variante, tolerantes a una API sin DL-191, y la foto de una comida achicada en el teléfono; el script de congelado corregido. La APK 0.32 no se armó en el paquete. Detalle: `docs/paquetes/WP-APP-0-32.md` |
+| DL-195 | Pedido de Dirección · 2026-11-23 («un tutorial para las primeras veces que se usan las interfaces»; WP-RECORRIDOS-GUIADOS) | DL-146 (ayudas cortas) · DL-145 · DL-167 (ED-15, la barra fija) · DL-188 (RP-19 y RP-24) · B10-10 §7 · RNF-ACC-001 | Los editores de los planes se explicaban en «Cómo se lee esta vista» y en la Guía, pero nada mostraba el flujo zona por zona la primera vez; no había un lugar para recordar, por usuario, una preferencia de la pantalla | **PROGRAMADA en `wp-recorridos-guiados` (PR en borrador, sin integrar) · GUI-D01 a GUI-D12 a ratificar**: una pieza propia del website (sin librería) que oscurece todo menos la zona del paso y pone al lado un cartel con «Paso n de m», «Omitir», «Anterior» y «Siguiente»/«Terminar», modal y manejable con el teclado; los recorridos de los editores de Entrenamiento y de Nutrición, de seis pasos cada uno, anclados con `data-recorrido`; aparece solo la primera vez, recordado por usuario en la API (API-RGU-01 y 02, familia propia RGU, una tabla nueva con su migración que solo agrega), con el navegador como respaldo; «Ver el recorrido» en la barra de cada editor. La APK no se tocó (anotado cómo hacerlo). Detalle: `docs/paquetes/WP-RECORRIDOS-GUIADOS.md` |
 
 ---
 
@@ -9382,3 +9383,42 @@ legajo.
 - Armar y publicar la 0.32; congelar sus lecturas, con la prueba de integración cubriendo CMP-01 a 03, HIA-01 a 03,
   RES-09 y 10, sin pedir CON-01 ni 02 a una APK que no las lee, y lo nuevo de la 0.32.
 - Probarla en el teléfono y con TalkBack. Detalle completo: `docs/paquetes/WP-APP-0-32.md`.
+
+## DL-195 — Recorridos guiados: la primera vez en cada editor, zona por zona
+
+**Prioridad:** media (Dirección empieza a recorrer el editor de Entrenamiento y quiere que un profesional nuevo entienda
+el flujo sin que se lo expliquen) · DL-146 · DL-145 · DL-167 (ED-15) · DL-188 (RP-19, RP-24) · B10-10 §7 · RNF-ACC-001 ·
+**Estado:** PEDIDA por Dirección el 2026-11-23 · PROGRAMADA en `wp-recorridos-guiados` (PR en borrador, sin integrar) ·
+GUI-D01 a GUI-D12, **a ratificar**. Si al integrar el número choca con otro paquete, se renumera.
+
+**Qué pidió Dirección.** «Como en las buenas apps, un tutorial para las primeras veces que se usan las interfaces,
+mostrando sección por sección cuál es el flujo. Que todo se oscurezca menos la zona que estamos explicando y aparezca un
+cartel de fácil lectura que explique cómo funciona o qué es. Tiene que aparecer la primera vez, tener un botón de omitir y
+un botón para volver a mostrar el tutorial si lo omitiste».
+
+**Qué dice el legajo.** Nada en contra: es una ayuda de la interfaz (B10-10 deja el sistema visual a BE; RNF-ACC-001 pide
+contraste y manejo con teclado, que la pieza cumple). Lo que se guarda es una preferencia de la pantalla, sin datos de
+salud: no la decide el PDP. El 09 no tiene la operación: es una familia propia de BE (RGU). No se edita el legajo.
+
+**Lo programado.**
+- **GUI-01 a GUI-05 y GUI-11 a GUI-13 · La pieza:** `components/recorrido-guiado.tsx`, propia, sin librería (GUI-D01):
+  el velo con un hueco sobre la zona, el cartel al lado sin taparla y adentro de la ventana, «Paso n de m», «Omitir»,
+  «Anterior» y «Siguiente»/«Terminar»; modal, con Escape, las flechas y Tab atrapado; salta lo que no está y se desplaza
+  hasta lo cortado; con los tokens de los dos temas y un velo nuevo (`--velo-del-recorrido`); nada se corre (RP-19).
+- **GUI-14 y GUI-15 · Los recorridos:** el del editor de Entrenamiento (sesiones y días, bloques «Seguido» y «En vueltas»,
+  el ejercicio y sus series, «Cómo se escribe el esfuerzo», «Agregar ejercicios», «Revisar y activar…») y el de Nutrición
+  (días tipo y comidas, opciones y alimentos, «Reparto por comida» y las franjas, «Rangos y totales», «Opción de receta» y
+  el Recetario de BE, «Revisar y activar…»). Los textos, en `packages/domain/src/recorridos-guiados.ts`.
+- **GUI-06 a GUI-09 · Recordarlo por usuario:** API-RGU-01 (`GET /me/guided-tours`) y API-RGU-02
+  (`PUT /me/guided-tours/{tourId}`), solo lo propio; la tabla `recorrido_guiado_visto` con la migración
+  `20261123120000_recorridos_guiados`, que solo agrega; el navegador guarda solo lo que no se pudo mandar.
+- **GUI-10 · «Ver el recorrido»:** `boton--discreto`, el primero de la barra de comandos de cada editor (GUI-D07).
+- Pruebas: TEST-GUI-001 a 010 (dominio), 011 a 015 (servicio, sin base), 016 a 019 (integración), 020 a 023 (website) y el
+  recorrido de navegador `recorridosGuiados`. La guía de UX suma II.15.
+
+**Lo que queda.**
+- Ratificar GUI-D01 a GUI-D12.
+- Mirarlo en pantalla en los dos temas, a 1280, 1440 y 1920 de ancho, y con un lector de pantalla.
+- La APK, en una versión siguiente: anotado en `docs/paquetes/WP-RECORRIDOS-GUIADOS.md` §8. Otros recorridos (la ficha,
+  Analizar, Antropometría) usan la misma pieza con una definición nueva. Detalle completo:
+  `docs/paquetes/WP-RECORRIDOS-GUIADOS.md`.

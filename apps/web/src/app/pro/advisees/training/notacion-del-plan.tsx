@@ -13,7 +13,7 @@ import { ExplicacionAPedido } from '../../../../components/explicacion-a-pedido'
 
 export function NotacionDelPlan({ notacion, onCambiar }: { notacion: NotacionDelEsfuerzo; onCambiar: (n: NotacionDelEsfuerzo) => void }) {
   return (
-    <fieldset className="notacion-del-plan" data-notacion-del-esfuerzo={notacion}>
+    <fieldset className="notacion-del-plan" data-notacion-del-esfuerzo={notacion} data-recorrido="esfuerzo">
       <legend>{N.titulo}</legend>
       <div className="notacion-del-plan__opciones">
         {NOTACIONES_DEL_ESFUERZO.map((n) => (
