@@ -4,14 +4,14 @@
 
 > Ninguna escritura de salud ocurre sin permiso ni auditoría, porque no depende de que cada servicio se acuerde.
 
-**Autor:** Elián Bufi
-**Carrera:** Analista de Sistemas, Escuela Da Vinci
+**Autor:** Elián Bufi  
+**Carrera:** Analista de Sistemas, Escuela Da Vinci  
 **Fecha:** Noviembre de 2026
 
 > **Resumen.** Dos capas que se distinguen en cada vista: 163 clases de persistencia (los modelos de Prisma) con sus 326 asociaciones, y 119 clases inyectables y 47 controladores en la API. Primero, la persistencia de un vistazo, la forma común de toda escritura de un dato de salud y tres operaciones centrales, clase por clase; al final, el inventario completo, como anexo.
 
-**Entregable:** 15 · Diagrama de clases
-**Fecha:** Noviembre de 2026
+**Entregable:** 15 · Diagrama de clases  
+**Fecha:** Noviembre de 2026  
 **Lo acompaña:** El nivel de los datos está en el entregable 14 (DER); el de los componentes, en el 17.
 
 # Resumen

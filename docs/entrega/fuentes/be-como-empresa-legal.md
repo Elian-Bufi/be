@@ -4,8 +4,8 @@
 
 > Esto no es asesoramiento legal ni contable: es el mapa para llegar a la reunión con el abogado y el contador sabiendo qué preguntar.
 
-**Autor:** Elián Bufi
-**Carrera:** Analista de Sistemas, Escuela Da Vinci
+**Autor:** Elián Bufi  
+**Carrera:** Analista de Sistemas, Escuela Da Vinci  
 **Fecha:** 19 de noviembre de 2026
 
 > **Resumen.** BE ya hace mucho de lo que la ley pide (consentimiento por área con evidencia, «Quién ve qué», borrado, servidores en la Unión Europea), pero todavía no tiene responsable legal, ni textos validados, ni base inscripta ante la AAIP, y su código está en un repositorio público, con su licencia de todos los derechos reservados. Este documento ordena qué hacer primero, quién lo hace y con qué fuentes.

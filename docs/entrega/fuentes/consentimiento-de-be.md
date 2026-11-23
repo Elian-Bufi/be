@@ -4,8 +4,8 @@
 
 > Un consentimiento vale si la persona entiende qué acepta, lo acepta aparte de todo lo demás y lo puede retirar cuando quiera.
 
-**Autor:** Elián Bufi
-**Carrera:** Analista de Sistemas, Escuela Da Vinci
+**Autor:** Elián Bufi  
+**Carrera:** Analista de Sistemas, Escuela Da Vinci  
 **Fecha:** 19 de noviembre de 2026
 **Versión:** Borrador 1
 

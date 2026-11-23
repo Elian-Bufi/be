@@ -4,14 +4,14 @@
 
 > BE ubica, no califica. Muestra dónde está la persona respecto de su plan y de sus tomas anteriores, y la decisión queda en manos de su profesional.
 
-**Autor:** Elián Bufi
-**Carrera:** Analista de Sistemas, Escuela Da Vinci
+**Autor:** Elián Bufi  
+**Carrera:** Analista de Sistemas, Escuela Da Vinci  
 **Fecha:** Noviembre de 2026
 
 > **Resumen.** La app de BE es donde la persona escribe su propia historia. Este documento reúne los 31 requisitos funcionales que la persona usa en la app o que el servidor resuelve para ella, separando lo que hace cada parte, y los 33 no funcionales que los sostienen, cada uno con cómo se comprueba.
 
-**Entregable:** 13 · RF y RNF Mobile
-**Fecha:** Noviembre de 2026
+**Entregable:** 13 · RF y RNF Mobile  
+**Fecha:** Noviembre de 2026  
 **Lo acompaña:** Los requisitos del website, en el documento 12; los casos de uso, en el 10, y los casos de prueba, en el 11. Los requisitos del website están en el documento 12.
 
 # Resumen

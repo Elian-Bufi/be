@@ -4,15 +4,15 @@
 
 > BE ubica, no califica: muestra qué se indicó, qué pasó y qué cambió, y la decisión queda en manos del profesional.
 
-**Autor:** Elián Bufi
-**Carrera:** Analista de Sistemas, Escuela Da Vinci
+**Autor:** Elián Bufi  
+**Carrera:** Analista de Sistemas, Escuela Da Vinci  
 **Fecha:** Noviembre de 2026
 
 > **Resumen.** Un caso de uso cuenta algo que alguien logra con BE, de punta a punta. Son 57, y juntos cuentan el circuito que une a la persona con sus profesionales, la historia que deja en el tiempo y su continuidad cuando cambia de profesional.
 
-**Entregable:** 10 · Casos de uso
-**Fecha:** Noviembre de 2026
-**Lo acompaña:** El .docx editable con el mismo contenido. Los requisitos de cada caso están en los entregables 12 y 13, y sus pruebas en el 11.
+**Entregable:** 10 · Casos de uso  
+**Fecha:** Noviembre de 2026  
+**Lo acompaña:** Los requisitos de cada caso están en los entregables 12 y 13, y sus pruebas en el 11.
 
 # Resumen
 

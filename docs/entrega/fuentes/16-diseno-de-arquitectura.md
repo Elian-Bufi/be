@@ -4,15 +4,15 @@
 
 > Una sola API decide: las aplicaciones nunca hablan con la base.
 
-**Autor:** Elián Bufi
-**Carrera:** Analista de Sistemas, Escuela Da Vinci
+**Autor:** Elián Bufi  
+**Carrera:** Analista de Sistemas, Escuela Da Vinci  
 **Fecha:** Noviembre de 2026
 
 > **Resumen.** Una app Android y un website hablan con una sola API, un monolito modular en NestJS sobre PostgreSQL, desplegada en Render. La app se firma fuera de la nube. De lo general a lo particular: contexto, contenedores, despliegue y el recorrido de una escritura.
 
-**Entregable:** 16 · Diseño de arquitectura
-**Fecha:** Noviembre de 2026
-**Lo acompaña:** El .docx editable. El detalle de cada pieza está en los entregables 14 (datos), 15 (clases) y 17 (componentes).
+**Entregable:** 16 · Diseño de arquitectura  
+**Fecha:** Noviembre de 2026  
+**Lo acompaña:** El detalle de cada pieza está en los entregables 14 (datos), 15 (clases) y 17 (componentes).
 
 # Resumen
 

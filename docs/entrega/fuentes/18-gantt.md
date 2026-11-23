@@ -4,15 +4,14 @@
 
 > Primero entender, después construir: el código empezó cuando la especificación estaba cerrada.
 
-**Autor:** Elián Bufi
-**Carrera:** Analista de Sistemas, Escuela Da Vinci
+**Autor:** Elián Bufi  
+**Carrera:** Analista de Sistemas, Escuela Da Vinci  
 **Fecha:** Noviembre de 2026
 
 > **Resumen.** Ocho etapas, de junio a diciembre de 2026. Primero la especificación completa; después el núcleo, en diez días; dos vueltas de ampliación, una de consolidación, el cierre y la defensa.
 
-**Entregable:** 18 · Gantt
+**Entregable:** 18 · Gantt  
 **Fecha:** Noviembre de 2026
-**Lo acompaña:** El .docx editable con el mismo contenido.
 
 # Resumen
 

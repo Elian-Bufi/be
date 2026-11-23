@@ -4,15 +4,15 @@
 
 > Cada área resuelve lo suyo; lo común está en un solo lugar.
 
-**Autor:** Elián Bufi
-**Carrera:** Analista de Sistemas, Escuela Da Vinci
+**Autor:** Elián Bufi  
+**Carrera:** Analista de Sistemas, Escuela Da Vinci  
 **Fecha:** Noviembre de 2026
 
 > **Resumen.** El nivel 3 del modelo C4. Los 34 módulos de la API con sus rutas y sus dependencias, las zonas del website, los temas de la app y el paquete que comparten las tres, con dos recorridos de punta a punta (un gráfico y la historia anterior) y las interfaces entre los componentes.
 
-**Entregable:** 17 · Diagrama de componentes
-**Fecha:** Noviembre de 2026
-**Lo acompaña:** El .docx editable. El nivel anterior (contenedores) está en el entregable 16; el siguiente (clases), en el 15.
+**Entregable:** 17 · Diagrama de componentes  
+**Fecha:** Noviembre de 2026  
+**Lo acompaña:** El nivel anterior (contenedores) está en el entregable 16; el siguiente (clases), en el 15.
 
 # Resumen
 

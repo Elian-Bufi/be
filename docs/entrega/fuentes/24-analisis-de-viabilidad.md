@@ -4,15 +4,14 @@
 
 > La infraestructura no es la barrera: la clave es cuántos profesionales adoptan BE y a qué precio.
 
-**Autor:** Elián Bufi
-**Carrera:** Analista de Sistemas, Escuela Da Vinci
+**Autor:** Elián Bufi  
+**Carrera:** Analista de Sistemas, Escuela Da Vinci  
 **Fecha:** Noviembre de 2026
 
 > **Resumen.** BE puede arrancar chico: está construido, se verifica en cada cambio y su infraestructura base cuesta unos USD 14 por mes. Para operar con datos reales a escala suma un ambiente de producción y la revisión legal. El precio se fija en el piloto con profesionales.
 
-**Entregable:** 24 · Análisis de viabilidad
+**Entregable:** 24 · Análisis de viabilidad  
 **Fecha:** Noviembre de 2026
-**Lo acompaña:** El .docx editable con el mismo contenido.
 
 # Resumen
 

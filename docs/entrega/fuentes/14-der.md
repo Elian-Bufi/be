@@ -4,14 +4,14 @@
 
 > La historia de la persona se agrega, no se reescribe: por eso se puede leer en el tiempo.
 
-**Autor:** Elián Bufi
-**Carrera:** Analista de Sistemas, Escuela Da Vinci
+**Autor:** Elián Bufi  
+**Carrera:** Analista de Sistemas, Escuela Da Vinci  
 **Fecha:** Noviembre de 2026
 
 > **Resumen.** La base de datos de BE, leída del mismo archivo con el que se crean las migraciones: 163 tablas, 1.490 columnas y 326 claves foráneas, todas dibujadas. De lo macro a lo micro: por qué el modelo guarda la historia de la persona, cómo se relacionan sus módulos y cada tabla con sus campos.
 
-**Entregable:** 14 · DER · Diagrama entidad-relación
-**Fecha:** Noviembre de 2026
+**Entregable:** 14 · DER · Diagrama entidad-relación  
+**Fecha:** Noviembre de 2026  
 **Lo acompaña:** `14-der-fuente.dbml`, en esta misma carpeta: el modelo completo para abrir en dbdiagram.io.
 
 # Resumen

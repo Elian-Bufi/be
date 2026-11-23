@@ -4,15 +4,14 @@
 
 > Si BE no le sirve a uno de los dos, no le sirve a ninguno.
 
-**Autor:** Elián Bufi
-**Carrera:** Analista de Sistemas, Escuela Da Vinci
+**Autor:** Elián Bufi  
+**Carrera:** Analista de Sistemas, Escuela Da Vinci  
 **Fecha:** Noviembre de 2026
 
 > **Resumen.** Dos mapas, uno por usuario, y un cruce de cada dolor con lo que BE hace. Son perfiles de diseño armados desde el dominio y la experiencia del autor como coach; el último capítulo los convierte en las preguntas del piloto.
 
-**Entregable:** 20 · Mapa de empatía
+**Entregable:** 20 · Mapa de empatía  
 **Fecha:** Noviembre de 2026
-**Lo acompaña:** El .docx editable con el mismo contenido.
 
 # Resumen
 

@@ -4,14 +4,14 @@
 
 > BE ubica, no califica: muestra qué se indicó, qué pasó y qué cambió, y la decisión queda en manos del profesional.
 
-**Autor:** Elián Bufi
-**Carrera:** Analista de Sistemas, Escuela Da Vinci
+**Autor:** Elián Bufi  
+**Carrera:** Analista de Sistemas, Escuela Da Vinci  
 **Fecha:** Noviembre de 2026
 
 > **Resumen.** Las tareas del profesional en el website, cada una con su propósito, quién puede hacerla, los pasos con los nombres reales de la pantalla, lo que se ve y qué hacer si algo falla.
 
-**Entregable:** 09 · Manual del profesional
-**Fecha:** Noviembre de 2026
+**Entregable:** 09 · Manual del profesional  
+**Fecha:** Noviembre de 2026  
 **Lo acompaña:** El manual de la persona y el de Administración, en sus archivos. Las cuentas de evaluación y el recorrido completo, en «Cómo probar BE».
 
 # Resumen

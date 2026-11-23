@@ -4,15 +4,15 @@
 
 > BE ubica, no califica: muestra qué se indicó, qué pasó y qué cambió, y la decisión queda en manos del profesional.
 
-**Autor:** Elián Bufi
-**Carrera:** Analista de Sistemas, Escuela Da Vinci
+**Autor:** Elián Bufi  
+**Carrera:** Analista de Sistemas, Escuela Da Vinci  
 **Fecha:** Noviembre de 2026
 
 > **Resumen.** BE reúne en una sola historia, ordenada en el tiempo, lo que se indica y lo que pasa en la alimentación, el entrenamiento y la composición corporal de una persona, para que sus profesionales decidan con todo el contexto.
 
-**Entregable:** 00 · Resumen y guía
-**Fecha:** Noviembre de 2026
-**Lo acompaña:** El .docx editable con el mismo contenido. El documento de tesis y un archivo por cada tema.
+**Entregable:** 00 · Resumen y guía  
+**Fecha:** Noviembre de 2026  
+**Lo acompaña:** El documento de tesis y un archivo por cada tema.
 
 # Resumen
 

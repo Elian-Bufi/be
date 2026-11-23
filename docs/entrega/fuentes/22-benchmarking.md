@@ -4,15 +4,14 @@
 
 > Se compara lo que cada producto publica, no lo que hace en la práctica. Cada dato tiene su fuente.
 
-**Autor:** Elián Bufi
-**Carrera:** Analista de Sistemas, Escuela Da Vinci
+**Autor:** Elián Bufi  
+**Carrera:** Analista de Sistemas, Escuela Da Vinci  
 **Fecha:** Noviembre de 2026
 
 > **Resumen.** BE frente a nueve productos que un profesional podría elegir en su lugar, sobre lo que cada uno publica. El solapamiento es amplio; en ninguno se encontró que la persona decida el acceso por área ni que el plan quede como versión unida a lo registrado, como en BE.
 
-**Entregable:** 22 · Benchmarking
+**Entregable:** 22 · Benchmarking  
 **Fecha:** Noviembre de 2026
-**Lo acompaña:** El .docx editable con el mismo contenido.
 
 # Resumen
 

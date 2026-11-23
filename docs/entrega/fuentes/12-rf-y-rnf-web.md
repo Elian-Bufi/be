@@ -4,14 +4,14 @@
 
 > BE ubica, no califica. Muestra qué se indicó, qué pasó y qué cambió, y la decisión queda en manos del profesional.
 
-**Autor:** Elián Bufi
-**Carrera:** Analista de Sistemas, Escuela Da Vinci
+**Autor:** Elián Bufi  
+**Carrera:** Analista de Sistemas, Escuela Da Vinci  
 **Fecha:** Noviembre de 2026
 
 > **Resumen.** El website es el escritorio del profesional de Nutrición, Entrenamiento y Antropometría, y la consola de Administración. Resuelve 57 requisitos funcionales, 32 propios y 25 compartidos con la app o resueltos por el servidor, y 32 no funcionales, cada uno con su criterio medible, su escenario y su evidencia.
 
-**Entregable:** 12 · RF y RNF Web
-**Fecha:** Noviembre de 2026
+**Entregable:** 12 · RF y RNF Web  
+**Fecha:** Noviembre de 2026  
 **Lo acompaña:** Los requisitos de la app, en el documento 13; los casos de uso, en el 10, y los casos de prueba, en el 11.
 
 # Resumen

@@ -4,14 +4,14 @@
 
 > Una regla de BE vale porque una prueba la ejercita en cada cambio, contra la base de datos real.
 
-**Autor:** Elián Bufi
-**Carrera:** Analista de Sistemas, Escuela Da Vinci
+**Autor:** Elián Bufi  
+**Carrera:** Analista de Sistemas, Escuela Da Vinci  
 **Fecha:** Noviembre de 2026
 
 > **Resumen.** BE se prueba solo en cada cambio, en cinco trabajos de integración continua. En la última corrida de la rama principal corrieron y pasaron 4.881 casos automáticos, contra un PostgreSQL real y en un navegador. Cada caso de prueba de este documento dice qué requisito cubre, cómo se ejecuta, qué se espera y qué dio.
 
-**Entregable:** 11 · Casos de prueba
-**Fecha:** Noviembre de 2026
+**Entregable:** 11 · Casos de prueba  
+**Fecha:** Noviembre de 2026  
 **Lo acompaña:** Los casos de uso de cada caso, en el 10. Los recorridos para hacer a mano, en «Cómo probar BE».
 
 # Resumen

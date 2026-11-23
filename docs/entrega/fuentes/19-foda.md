@@ -4,15 +4,14 @@
 
 > Escrito sin defenderlo: cada debilidad tiene su respuesta y su momento.
 
-**Autor:** Elián Bufi
-**Carrera:** Analista de Sistemas, Escuela Da Vinci
+**Autor:** Elián Bufi  
+**Carrera:** Analista de Sistemas, Escuela Da Vinci  
 **Fecha:** Noviembre de 2026
 
 > **Resumen.** Un FODA de BE como producto. Lo fuerte es la historia de la persona entre áreas, con el porqué de cada cambio; lo débil, lo propio de un producto nuevo de un solo autor. Termina en cuatro estrategias y un orden.
 
-**Entregable:** 19 · FODA
+**Entregable:** 19 · FODA  
 **Fecha:** Noviembre de 2026
-**Lo acompaña:** El .docx editable con el mismo contenido.
 
 # Resumen
 

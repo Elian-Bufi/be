@@ -4,15 +4,14 @@
 
 > Dos perfiles de diseño, inventados, para tomar decisiones y guiar el piloto.
 
-**Autor:** Elián Bufi
-**Carrera:** Analista de Sistemas, Escuela Da Vinci
+**Autor:** Elián Bufi  
+**Carrera:** Analista de Sistemas, Escuela Da Vinci  
 **Fecha:** Noviembre de 2026
 
 > **Resumen.** El comprador es una profesional independiente que acompaña a personas en el tiempo y hoy hace el seguimiento con mensajería y planillas. La persona acompañada no paga, pero sin ella no hay nada que revisar. Cierra con el modelo de cobro y con el método para fijar el precio en el piloto.
 
-**Entregable:** 21 · Buyer persona
+**Entregable:** 21 · Buyer persona  
 **Fecha:** Noviembre de 2026
-**Lo acompaña:** El .docx editable con el mismo contenido.
 
 # Resumen
 

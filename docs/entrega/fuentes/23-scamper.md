@@ -4,15 +4,14 @@
 
 > Las ideas que más diferencian a BE no son las que suman, sino las que sacan o invierten.
 
-**Autor:** Elián Bufi
-**Carrera:** Analista de Sistemas, Escuela Da Vinci
+**Autor:** Elián Bufi  
+**Carrera:** Analista de Sistemas, Escuela Da Vinci  
 **Fecha:** Noviembre de 2026
 
 > **Resumen.** Las siete preguntas de SCAMPER, aplicadas al seguimiento tal como lo hace hoy un profesional, con PDF, planilla y chat. Salieron veintidós ideas y dieciocho son parte de BE. Las que más cambiaron el producto no agregan funciones: sacan o invierten algo.
 
-**Entregable:** 23 · SCAMPER
+**Entregable:** 23 · SCAMPER  
 **Fecha:** Noviembre de 2026
-**Lo acompaña:** El .docx editable con el mismo contenido.
 
 # Resumen
 

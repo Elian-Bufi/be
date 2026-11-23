@@ -4,8 +4,8 @@
 
 > Todo es ficticio y se dice que lo es. Lo que tiene que ser real es la verosimilitud.
 
-**Autor:** Elián Bufi
-**Carrera:** Analista de Sistemas, Escuela Da Vinci
+**Autor:** Elián Bufi  
+**Carrera:** Analista de Sistemas, Escuela Da Vinci  
 **Fecha:** 19 de noviembre de 2026
 
 > **Resumen.** Una profesional de demostración con las tres áreas y catorce meses de uso, cinco personas con historias distintas y creíbles, datos que respetan reglas fisiológicas que se verifican solas y un entorno que se rehace cada noche, separado de todo dato real.
