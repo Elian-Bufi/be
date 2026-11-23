@@ -167,7 +167,7 @@ Cada tarea responde lo mismo, en el mismo orden: **para qué** sirve; **quién**
 
 **Los pasos.**
 
-1. En «Las personas que acompañás», tocar el nombre. Arriba quedan la acción del momento («Preparar la revisión de Nutrición», «Seguir el borrador», «Empezar el plan»), «Pedir información», «Más» y «Actualizar».
+1. En «Las personas que acompañás», tocar el nombre. Arriba quedan la acción del momento («Preparar la revisión de Nutrición», «Seguir el borrador», «Empezar el plan»), «Pedir información» y «Más». Al volver a la pestaña, si hay algo nuevo, BE lo dice con «Hay datos nuevos · Ver».
 2. Elegir el «Período»: «7 días», «30 días», «90 días», «1 año» u «Otro rango».
 3. **«Resumen»:** las tarjetas por área, los indicadores del período, las «Notas recientes del equipo» y «Tus notas».
 4. **«Línea de tiempo»:** todo lo que pasó, en orden. «Ver» filtra «Todo», «Hitos», «Distinto de lo indicado» o «Sin confirmar»; «Buscar en el período» y «Más filtros» acotan.
