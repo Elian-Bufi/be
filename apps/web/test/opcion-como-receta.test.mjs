@@ -48,9 +48,33 @@ test('RP-25: lo que una receta no admite se dice alimento por alimento', () => {
   assert.deepEqual(R.loQueImpide(opcion({ items: [] }), nombres), [R.COPY_OPCION_COMO_RECETA.sinAlimentos]);
   assert.deepEqual(R.loQueImpide(opcion({ items: [], recipeVersionId: 'rv' }), nombres), [R.COPY_OPCION_COMO_RECETA.yaEsReceta]);
   const muchos = opcion({ items: Array.from({ length: 41 }, () => item(GALLETA, 10)) });
+  assert.equal(R.loQueImpide(opcion({ items: [item(GALLETA, 5000)] }), nombres).length, 0, '5000 entra');
   assert.ok(R.loQueImpide(muchos, nombres)[0].includes('hasta 40 alimentos'));
   const notasLargas = opcion({ items: [item(GALLETA, 30, 'g', 'RAW', { note: 'x'.repeat(300) }), item(HUEVO, 50, 'g', 'RAW', { note: 'y'.repeat(300) })] });
   assert.ok(R.loQueImpide(notasLargas, nombres).some((l) => l.includes('admite 500')));
+});
+
+test('RP-25: la cantidad va como el servidor arma la porción del plan (un decimal), y una que no se entiende no viaja', () => {
+  // Con un decimal, igual: la persona ve la misma cantidad y los mismos macros.
+  assert.deepEqual(R.loQueImpide(opcion({ items: [item(GALLETA, 12.5), item(HUEVO, 0.1)] }), nombres), []);
+  // Con más, la porción sería otra (2,25 → 2,3), y 0,04 quedaría en 0: el borrador no se podría guardar.
+  assert.deepEqual(R.loQueImpide(opcion({ items: [item(GALLETA, 2.25)] }), nombres), [
+    'Galleta de arroz: una receta lleva la cantidad con un decimal, y 2,25 g quedaría en 2,3 g. Redondeala en la opción.',
+  ]);
+  assert.match(R.loQueImpide(opcion({ items: [item(GALLETA, 0.04)] }), nombres)[0], /quedaría en 0 g/);
+  // Lo que no se entiende viaja como NaN en el borrador: se dice y no se manda.
+  assert.deepEqual(R.loQueImpide(opcion({ items: [item(GALLETA, Number.NaN)] }), nombres), ['Galleta de arroz: la cantidad no se entiende.']);
+  assert.equal(R.cuerpoDeLaReceta(opcion({ items: [item(GALLETA, 2.25)] }), 0, nombres, versiones).tipo, 'no-se-puede');
+});
+
+test('RP-25: cerrar tras un pedido sin respuesta conserva la clave; al cerrar, el foco va a la cabecera de la opción', () => {
+  const cuadro = leer('app/pro/advisees/nutrition/guardar-como-receta.tsx');
+  assert.match(cuadro, /if \(!intento\.quedoIncierto\(\)\) intento\.descartar\(\);/);
+  assert.doesNotMatch(cuadro, /^\s*intento\.descartar\(\);$/m, 'no se descarta sin mirar si quedó incierto');
+  const editor = leer('app/pro/advisees/nutrition/editor.tsx');
+  assert.match(editor, /focoTrasLaReceta\.current = donde && donde\.i === i \? `[^`]*\[data-opcion-plegable="\$\{donde\.k \+ 1\}"\] \.opcion-plegable__boton`/);
+  // Después del efecto del cuadro que lo cierra, y solo si el foco quedó en el documento.
+  assert.match(editor, /if \(activo && activo !== document\.body\) return;\n\s*document\.querySelector<HTMLElement>\(destino\)\?\.focus\(\);/);
 });
 
 test('RP-25: el cuerpo de API-REC-01 es una porción, con el nombre de la opción y las notas en la descripción', () => {
@@ -138,6 +162,8 @@ test('RP-25: el editor ofrece «Agregar foto» junto a la cabecera y «Guardar c
 });
 
 test('RP-25: los textos no usan palabras prohibidas', () => {
-  const textos = JSON.stringify(Object.values(R.COPY_OPCION_COMO_RECETA).map((v) => (typeof v !== 'function' ? v : ['sinVersion', 'noSePudieron'].some((n) => R.COPY_OPCION_COMO_RECETA[n] === v) ? v(['Huevo']) : v('Huevo', 'g'))));
+  const C = R.COPY_OPCION_COMO_RECETA;
+  const conEjemplo = (v) => (C.sinVersion === v || C.noSePudieron === v ? v(['Huevo']) : C.masDeUnDecimal === v ? v('Huevo', 2.25, 'g') : C.demasiados === v || C.notasLargas === v ? v(41) : v('Huevo', 'g'));
+  const textos = JSON.stringify(Object.values(C).map((v) => (typeof v !== 'function' ? v : conEjemplo(v))));
   for (const p of ['cumplimiento', 'adherencia', 'racha', 'puntaje', 'asesorado', 'estación', '%']) assert.equal(textos.toLowerCase().includes(p), false, p);
 });

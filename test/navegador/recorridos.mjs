@@ -2209,6 +2209,10 @@ async function recetario({ p, d, salida }) {
  */
 async function opcionComoReceta({ p, d, salida }) {
   const token = await sesionPorApi(d.pro.correo);
+  // La opción como estaba guardada: al pasar a ser la receta conserva su identidad, y la persona ve lo mismo.
+  const antes = (await pedir('GET', `/nutrition/plans/${d.borrador.planId}`, { token })).data.dayTypes[0].meals[0].options[0];
+  assert.equal(antes.label, 'Avena');
+  assert.equal(antes.recipe ?? null, null, 'empieza como una opción de alimentos');
   await abrirElBorrador(p, d);
   await abrirComida(p, 1);
   const comida = '.comida-del-editor[data-comida="1"]';
@@ -2229,8 +2233,9 @@ async function opcionComoReceta({ p, d, salida }) {
   const foto = 'dialog[open] [data-foto-de-la-opcion-como-receta]';
   await elemento(p, foto);
   // La receta, en Mis recetas: el nombre de la opción, una porción y los mismos alimentos.
-  const receta = (await pedir('GET', '/nutrition/recipes?limit=50', { token })).data.find((r) => r.name === 'Avena');
-  assert.ok(receta, 'la receta quedó en Mis recetas');
+  const avenas = (await pedir('GET', '/nutrition/recipes?limit=50', { token })).data.filter((r) => r.name === 'Avena');
+  assert.equal(avenas.length, 1, 'una sola receta en Mis recetas');
+  const [receta] = avenas;
   assert.equal(receta.servings, 1);
   assert.deepEqual(receta.ingredients.map((i) => [i.quantity.value, i.quantity.unit, i.preparationState]), [[50, 'g', 'RAW']]);
   // La foto, en el mismo cuadro, con el recuadro de siempre (una imagen sintética, no una comida).
@@ -2247,6 +2252,8 @@ async function opcionComoReceta({ p, d, salida }) {
   await clic(p, 'dialog[open] [data-principal-del-cuadro]', 'Volver al plan');
   // La opción ya es la receta, y su miniatura está en la cabecera, del alto del renglón.
   await p.waitForFunction((s) => Boolean(document.querySelector(`${s}[data-receta] .opcion-plegable__miniatura[data-miniatura-de-la-receta=""] img.imagen-de-receta`)), { timeout: ESPERA, polling: 100 }, renglon);
+  // El acceso que abrió el cuadro ya no está: el foco vuelve a la cabecera de la opción, no al documento.
+  await p.waitForFunction((s) => Boolean(document.activeElement?.matches(`${s} .opcion-plegable__boton`)), { timeout: ESPERA, polling: 100 }, renglon);
   assert.equal(await p.$(acceso), null, 'una receta ya no ofrece «Agregar foto»');
   assert.ok((await p.$eval(`${renglon} .opcion-plegable__fila`, (e) => Math.round(e.getBoundingClientRect().height))) <= altoAntes + 1, 'la miniatura no agranda el renglón');
   await captura(p, salida, 'opcion-como-receta-miniatura-1440');
@@ -2260,6 +2267,12 @@ async function opcionComoReceta({ p, d, salida }) {
   }
   assert.equal(opcion?.recipe?.recipeId, receta.recipeId, 'la opción guardada cita la receta');
   assert.equal(opcion.label, 'Avena');
+  assert.equal(opcion.optionId, antes.optionId, 'conserva su identidad');
+  assert.deepEqual(
+    opcion.items.map((it) => [it.catalogItemId, it.quantity, it.preparationState]),
+    antes.items.map((it) => [it.catalogItemId, it.quantity, it.preparationState]),
+    'la persona ve los mismos alimentos y cantidades',
+  );
 }
 
 export const TODOS = { sesion, pistas, borrador, conflicto, descartar, salidaSegura, irACorregir, respuestaPerdida, reintentar, salidaConFallas, primerPlan, planDeNutricionSinAsistente, retorno, grafico, primeraInvitacion, areaSugerida, sesionRevocada, accesoRevocado, faltaUnaParte, completitud, evidencia, administracion, comparacion, comparacionConOpciones, sinSaltos, franjasPorComida, cierreDeNutricion, notacionDelEsfuerzo, recetario, opcionComoReceta };

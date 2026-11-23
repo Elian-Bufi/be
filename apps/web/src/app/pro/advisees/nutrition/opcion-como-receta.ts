@@ -10,8 +10,9 @@
  *   estado, para **una porción**. Así la porción que arma el servidor para el plan (DL-119, `cantidadDeUnaPorcion`) es la
  *   misma que la persona ya tenía. Las notas de los alimentos pasan a la descripción, que la persona lee junto a la receta.
  * - **Lo que una receta no admite** se dice antes, alimento por alimento, y no se guarda nada: un alimento sin cantidad o
- *   sin estado, una cantidad en unidades (una receta va en gramos o mililitros) o de más de 5000, más de 40 alimentos o
- *   notas que no entran en los 500 caracteres de la descripción.
+ *   sin estado, una cantidad que no se entiende, en unidades (una receta va en gramos o mililitros), con más de un decimal
+ *   (la porción del plan va con uno) o de más de 5000, más de 40 alimentos o notas
+ *   que no entran en los 500 caracteres de la descripción.
  * - **La opción pasa a ser esa receta** en el borrador, como si se la hubiera agregado desde el cajón: conserva su
  *   identidad (`optionId`) y su nombre, y cita la versión 1 (`recipeVersionId`, `items: []`). Viaja con el autoguardado.
  *   Son dos escrituras sin transacción conjunta, como en ED-32: si la opción ya no está, la receta igual quedó en Mis
@@ -55,14 +56,23 @@ export function loQueImpide(o: Pick<Opcion, 'items' | 'recipeVersionId'>, nombre
   for (const it of o.items) {
     const nombre = nombreDe(it, nombres);
     if (!it.quantity) lineas.push(COPY_OPCION_COMO_RECETA.sinCantidad(nombre));
+    // Lo que no se entiende viaja como NaN en el borrador (`conNumero`): no se manda a la receta.
+    else if (!Number.isFinite(it.quantity.value) || it.quantity.value <= 0) lineas.push(COPY_OPCION_COMO_RECETA.cantidadQueNoSeEntiende(nombre));
     else if (it.quantity.unit === 'unit') lineas.push(COPY_OPCION_COMO_RECETA.enUnidades(nombre));
     else if (it.quantity.value > TOPES_DE_LA_RECETA.cantidad) lineas.push(COPY_OPCION_COMO_RECETA.demasiadaCantidad(nombre, it.quantity.unit));
+    // La porción que arma el servidor (`cantidadDeUnaPorcion`, DL-119) va con un decimal: con más, la persona vería otra
+    // cantidad (y otros macros), y una que redondeada da 0 dejaría el borrador sin poder guardarse
+    // (RECIPE_PORTION_NOT_REPRESENTABLE en cada autoguardado).
+    else if (!conUnDecimal(it.quantity.value)) lineas.push(COPY_OPCION_COMO_RECETA.masDeUnDecimal(nombre, it.quantity.value, it.quantity.unit));
     if (!it.preparationState) lineas.push(COPY_OPCION_COMO_RECETA.sinEstado(nombre));
   }
   const notas = descripcionConLasNotas(o.items, nombres);
   if (notas && notas.length > TOPES_DE_LA_RECETA.descripcion) lineas.push(COPY_OPCION_COMO_RECETA.notasLargas(notas.length));
   return lineas;
 }
+
+/** Si la cantidad va con un decimal como mucho: así la porción que arma el servidor es la misma cantidad. */
+const conUnDecimal = (v: number): boolean => Math.abs(Math.round(v * 10) / 10 - v) < 1e-9;
 
 /** Los alimentos como se van a guardar, en renglones: «Huevo, 50 g, Cocido». */
 export function loQueLleva(items: readonly Item[], nombres: Readonly<Record<string, string>>): string[] {
@@ -179,6 +189,9 @@ export const COPY_OPCION_COMO_RECETA = {
   sinCantidad: (alimento: string) => `${alimento}: falta la cantidad.`,
   enUnidades: (alimento: string) => `${alimento}: está en unidades; una receta va en gramos o mililitros.`,
   demasiadaCantidad: (alimento: string, unidad: string) => `${alimento}: una receta admite hasta ${TOPES_DE_LA_RECETA.cantidad} ${unidad} por alimento.`,
+  cantidadQueNoSeEntiende: (alimento: string) => `${alimento}: la cantidad no se entiende.`,
+  masDeUnDecimal: (alimento: string, valor: number, unidad: string) =>
+    `${alimento}: una receta lleva la cantidad con un decimal, y ${String(valor).replace('.', ',')} ${unidad} quedaría en ${String(Math.round(valor * 10) / 10).replace('.', ',')} ${unidad}. Redondeala en la opción.`,
   sinEstado: (alimento: string) => `${alimento}: falta el estado de preparación.`,
   notasLargas: (n: number) => `Las notas de los alimentos suman ${n} caracteres y la descripción de una receta admite ${TOPES_DE_LA_RECETA.descripcion}. Acortalas.`,
   sinVersion: (alimentos: readonly string[]) => `No pudimos usar ${alimentos.join(', ')}: ya no ${alimentos.length === 1 ? 'está' : 'están'} en el catálogo. Cambialo en la opción y volvé a intentar.`,

@@ -373,6 +373,18 @@ export function EditorDeBorrador({
   const [fotoDeLaReceta, setFotoDeLaReceta] = useState<{ readonly receta: Receta; readonly texto: string; readonly aviso: string | null; readonly pendiente: ImagenPendiente | null } | null>(null);
   // RP-25: la opción de alimentos que se guarda como receta (en un cuadro), y por dónde se llegó.
   const [comoReceta, setComoReceta] = useState<PedidoDeGuardarComoReceta | null>(null);
+  // RP-25: guardada como receta, el acceso que abrió el cuadro ya no está («Agregar foto» y «Guardar como receta» solo van
+  // en una opción de alimentos), y al cerrarse el cuadro el navegador dejaría el foco en el documento: va a la cabecera de
+  // la opción. Corre después del efecto del cuadro que lo cierra (el de un hijo va antes que el del padre).
+  const focoTrasLaReceta = useRef<string | null>(null);
+  useEffect(() => {
+    const destino = focoTrasLaReceta.current;
+    if (comoReceta || !destino) return;
+    focoTrasLaReceta.current = null;
+    const activo = document.activeElement;
+    if (activo && activo !== document.body) return;
+    document.querySelector<HTMLElement>(destino)?.focus();
+  }, [comoReceta]);
   // ED-32: cada receta de las opciones del día tipo que se mira, como está hoy, para ofrecer su versión nueva.
   const [recetasVigentes, setRecetasVigentes] = useState<ReadonlyMap<string, RecetaVigente | 'leyendo' | 'falla'>>(() => new Map());
   // API-PLN-01 en la vista previa de la versión nueva (§8.7): la estimación del servidor de las opciones guardadas, de una
@@ -1712,8 +1724,11 @@ export function EditorDeBorrador({
         onGuardada={alGuardarLaOpcionComoReceta}
         onImagen={imagenes.actualizar}
         onCerrar={(hecho) => {
+          const donde = comoReceta ? dondeEstaLaOpcion(estructuraDeAhora.current, comoReceta) : null;
           setComoReceta(null);
           if (hecho) setMensaje({ tipo: 'exito', texto: hecho });
+          // El foco, a la cabecera de la opción si el acceso que abrió el cuadro ya no está (`focoTrasLaReceta`).
+          focoTrasLaReceta.current = donde && donde.i === i ? `.comida-del-editor[data-comida="${donde.j + 1}"] [data-opcion-plegable="${donde.k + 1}"] .opcion-plegable__boton` : null;
         }}
       />
 

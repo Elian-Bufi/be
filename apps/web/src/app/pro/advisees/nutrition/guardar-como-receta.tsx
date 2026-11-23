@@ -9,7 +9,8 @@
  * - Antes de guardar, lo que lleva (una porción) y lo que una receta no admite, alimento por alimento. Con algo que
  *   impide, el botón queda apagado y dice por qué (el cuadro enfocado lo pone a su lado).
  * - La versión del catálogo de cada alimento se lee en el momento (API-ALI-04, por identidad): la receta cita versiones.
- * - Una clave de intento por pedido: un reintento sin respuesta no crea dos recetas (ED-62).
+ * - Una clave de intento por pedido: un reintento sin respuesta no crea dos recetas (ED-62), tampoco después de cerrar
+ *   el cuadro y volver a abrirlo para la misma opción.
  * - El error del pedido tiene su renglón reservado al pie (RP-19): aparecer no corre lo de arriba.
  * La lógica, sin React, en `opcion-como-receta.ts`.
  */
@@ -71,7 +72,9 @@ export function GuardarComoReceta({
     const hecho = guardada ? (guardada.aviso ? `${guardada.texto} ${guardada.aviso}` : guardada.texto) : null;
     setGuardada(null);
     setFallo(null);
-    intento.descartar();
+    // ED-62: si el último pedido quedó sin respuesta, la receta pudo haberse creado. La clave se conserva: al volver a
+    // intentarlo con la misma opción, el servidor devuelve esa receta en vez de crear otra.
+    if (!intento.quedoIncierto()) intento.descartar();
     onCerrar(hecho);
   };
 
