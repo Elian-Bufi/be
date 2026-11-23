@@ -113,7 +113,7 @@ test('TEST-DL178-04 · se guarda solo el calentamiento: un plan sin calentamient
     { repetitions: { value: 12 }, note: null, setKind: 'WARM_UP' },
     { repetitions: { value: 8 }, note: null },
   ]);
-  assert.equal(tieneCalentamiento(sinCampo.contenido.blocks[0]!.sessions[0]!.prescriptions[0]!.sets as readonly { readonly setKind?: 'WARM_UP' }[]), false);
+  assert.equal(tieneCalentamiento(sinCampo.contenido.blocks[0]!.sessions[0]!.prescriptions[0]!.sets as unknown as readonly { readonly setKind?: 'WARM_UP' }[]), false);
   assert.equal(tieneCalentamiento(conCalentamiento.contenido.blocks[0]!.sessions[0]!.prescriptions[0]!.sets), true);
 });
 
