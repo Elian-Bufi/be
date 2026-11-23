@@ -196,14 +196,14 @@ function RecorridoAbierto({ definicion, alCerrar }: { definicion: DefinicionDelR
   const ultimo = indice === pasos.length - 1;
 
   // El foco vuelve adonde estaba al cerrar («Ver el recorrido», o lo que tenía el foco cuando apareció solo).
-  const previo = useRef<Element | null>(null);
+  // Se toma al montar, antes de que el título se lleve el foco.
+  const [previo] = useState<Element | null>(() => document.activeElement);
   useEffect(() => {
-    previo.current = document.activeElement;
     return () => {
-      const el = previo.current;
+      const el = previo;
       if (el instanceof HTMLElement && el.isConnected) el.focus({ preventScroll: true });
     };
-  }, []);
+  }, [previo]);
 
   useEffect(() => {
     if (pasos.length === 0) alCerrar(null);
@@ -239,7 +239,7 @@ function RecorridoAbierto({ definicion, alCerrar }: { definicion: DefinicionDelR
     [indice, pasos.length, alCerrar],
   );
 
-  // Cada paso: si su elemento se fue de la pantalla, se saltea; si está cortado, se desplaza hasta él. El foco va al título.
+  // Cada paso: si su elemento se fue de la pantalla, se saltea; si está cortado, se desplaza hasta él.
   useLayoutEffect(() => {
     if (!paso) return;
     const el = elementoDelAncla(paso.ancla);
@@ -252,8 +252,17 @@ function RecorridoAbierto({ definicion, alCerrar }: { definicion: DefinicionDelR
       el.scrollIntoView({ block: r.height > ventana().alto ? 'start' : 'center', inline: 'nearest', behavior: sinMovimiento() ? 'auto' : 'smooth' });
     }
     medir();
-    titulo.current?.focus({ preventScroll: true });
   }, [paso, pasarDeLargo, medir]);
+
+  // El foco va al título una vez por paso, cuando el cartel ya está ubicado: antes de medir, el cartel está con
+  // `visibility: hidden` y un elemento oculto no toma el foco (el `focus()` no hace nada y el foco queda en la página).
+  const enfocadoEn = useRef<string | null>(null);
+  const ubicado = lugar?.cartel != null;
+  useLayoutEffect(() => {
+    if (!paso || !ubicado || enfocadoEn.current === paso.id) return;
+    enfocadoEn.current = paso.id;
+    titulo.current?.focus({ preventScroll: true });
+  }, [paso, ubicado]);
 
   // Al desplazar (también el desplazamiento suave hacia el paso) o cambiar el tamaño de la ventana, lo sigue. También
   // cuando el elemento o la página cambian de tamaño sin desplazarse: un panel que termina de leer (el reparto, «Rangos y
