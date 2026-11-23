@@ -68,6 +68,16 @@ function elementoDelAncla(ancla: string): HTMLElement | null {
   return null;
 }
 
+/**
+ * Si hay otro diálogo abierto (un `<dialog>` nativo: el «?» de la vista, una confirmación, el cuadro de un rango). Con uno
+ * abierto, el recorrido no aparece solo (espera a que se cierre) y su teclado no se mete: el diálogo está en la capa
+ * superior y deja inerte todo lo demás, así que Escape y Tab son de él.
+ */
+function otroDialogoAbierto(): boolean {
+  for (const d of document.querySelectorAll('dialog[open]')) if (!d.closest('[data-recorrido-guiado]')) return true;
+  return false;
+}
+
 const ventana = () => ({ ancho: document.documentElement.clientWidth, alto: document.documentElement.clientHeight });
 const sinMovimiento = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -99,10 +109,13 @@ export function useRecorridoGuiado(recorrido: IdDelRecorrido, listo: boolean): {
   const [abierto, setAbierto] = useState(false);
   // Se decide una sola vez por montaje: guardar o recargar la versión no lo vuelve a abrir.
   const decidido = useRef(false);
+  // Si el profesional ya lo abrió con «Ver el recorrido» (y quizá lo cerró) mientras se leía la API, no aparece solo otra vez.
+  const tocado = useRef(false);
 
   useEffect(() => {
     if (!listo || !token || !identidadId || decidido.current) return;
     let vigente = true;
+    let espera = 0;
     void (async () => {
       const clave = claveDelRespaldo(identidadId);
       const delNavegador = leerRespaldo(leerDelNavegador(clave));
@@ -114,15 +127,24 @@ export function useRecorridoGuiado(recorrido: IdDelRecorrido, listo: boolean): {
         // Lo que el navegador guardó mientras la API no respondía: ahora queda en la cuenta.
         for (const p of pendientesDeMandar(deLaApi, delNavegador)) void api.marcarRecorrido(token, p, { state: 'SKIPPED' });
       }
-      if (apareceSolo({ estado: 'listo', vistos: r.ok ? unirVistos(deLaApi, delNavegador) : delNavegador, deLaApi: r.ok }, recorrido)) setAbierto(true);
+      if (tocado.current || !apareceSolo({ estado: 'listo', vistos: r.ok ? unirVistos(deLaApi, delNavegador) : delNavegador, deLaApi: r.ok }, recorrido)) return;
+      // Con otro diálogo abierto, espera a que se cierre: no aparece encima ni debajo de él.
+      const abrirSiSePuede = () => {
+        if (!vigente || tocado.current) return;
+        if (otroDialogoAbierto()) espera = window.setTimeout(abrirSiSePuede, 400);
+        else setAbierto(true);
+      };
+      abrirSiSePuede();
     })();
     return () => {
       vigente = false;
+      window.clearTimeout(espera);
     };
   }, [listo, token, identidadId, recorrido]);
 
   const cerrar = useCallback(
     (estado: EstadoDelRecorrido | null) => {
+      tocado.current = true;
       setAbierto(false);
       // `null`: no había ningún paso para mostrar; no se marca, así aparece cuando la pantalla tenga qué mostrar.
       if (estado === null || !token || !identidadId) return;
@@ -135,7 +157,11 @@ export function useRecorridoGuiado(recorrido: IdDelRecorrido, listo: boolean): {
     [token, identidadId, recorrido],
   );
 
-  return { abierto, abrir: useCallback(() => setAbierto(true), []), cerrar };
+  const abrir = useCallback(() => {
+    tocado.current = true;
+    setAbierto(true);
+  }, []);
+  return { abierto, abrir, cerrar };
 }
 
 /** «Ver el recorrido»: discreto y sin subrayado, en un lugar fijo de la interfaz (GUI-10). */
@@ -183,16 +209,26 @@ function RecorridoAbierto({ definicion, alCerrar }: { definicion: DefinicionDelR
     if (pasos.length === 0) alCerrar(null);
   }, [pasos.length, alCerrar]);
 
+  // Un paso cuyo elemento se fue de la pantalla (o dejó de verse) se saltea; después del último, termina.
+  const pasarDeLargo = useCallback(() => {
+    const destino = moverse(indice, pasos.length, 'siguiente');
+    if (destino.tipo === 'fin') alCerrar('SEEN');
+    else setIndice(destino.indice);
+  }, [indice, pasos.length, alCerrar]);
+
   const medir = useCallback(() => {
     if (!paso) return;
     const el = elementoDelAncla(paso.ancla);
-    if (!el) return;
+    if (!el) {
+      pasarDeLargo();
+      return;
+    }
     const v = ventana();
     const r = el.getBoundingClientRect();
     const hueco = huecoDe({ top: r.top, left: r.left, width: r.width, height: r.height }, v);
     const c = cartel.current;
     setLugar({ hueco, cartel: c ? ubicarCartel(hueco, { ancho: c.offsetWidth, alto: c.offsetHeight }, v) : null });
-  }, [paso]);
+  }, [paso, pasarDeLargo]);
 
   const mover = useCallback(
     (movimiento: Movimiento) => {
@@ -208,9 +244,7 @@ function RecorridoAbierto({ definicion, alCerrar }: { definicion: DefinicionDelR
     if (!paso) return;
     const el = elementoDelAncla(paso.ancla);
     if (!el) {
-      const destino = moverse(indice, pasos.length, 'siguiente');
-      if (destino.tipo === 'fin') alCerrar('SEEN');
-      else setIndice(destino.indice);
+      pasarDeLargo();
       return;
     }
     const r = el.getBoundingClientRect();
@@ -219,9 +253,11 @@ function RecorridoAbierto({ definicion, alCerrar }: { definicion: DefinicionDelR
     }
     medir();
     titulo.current?.focus({ preventScroll: true });
-  }, [paso, indice, pasos.length, alCerrar, medir]);
+  }, [paso, pasarDeLargo, medir]);
 
-  // Al desplazar (también el desplazamiento suave hacia el paso) o cambiar el tamaño de la ventana, lo sigue.
+  // Al desplazar (también el desplazamiento suave hacia el paso) o cambiar el tamaño de la ventana, lo sigue. También
+  // cuando el elemento o la página cambian de tamaño sin desplazarse: un panel que termina de leer (el reparto, «Rangos y
+  // totales») corre lo de abajo o agranda la zona, y el hueco quedaría sobre otra cosa.
   useEffect(() => {
     let cuadro = 0;
     const pedir = () => {
@@ -230,16 +266,25 @@ function RecorridoAbierto({ definicion, alCerrar }: { definicion: DefinicionDelR
     };
     window.addEventListener('scroll', pedir, { capture: true, passive: true });
     window.addEventListener('resize', pedir, { passive: true });
+    const tamanos = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(pedir);
+    const el = paso ? elementoDelAncla(paso.ancla) : null;
+    if (tamanos) {
+      tamanos.observe(document.body);
+      if (el) tamanos.observe(el);
+    }
     return () => {
+      tamanos?.disconnect();
       cancelAnimationFrame(cuadro);
       window.removeEventListener('scroll', pedir, { capture: true });
       window.removeEventListener('resize', pedir);
     };
-  }, [medir]);
+  }, [medir, paso]);
 
   // El teclado, en la captura: Escape omite, las flechas se mueven y Tab queda en el cartel.
   useEffect(() => {
     const alTeclear = (e: KeyboardEvent) => {
+      // Con otro diálogo encima (lo abrió un atajo), el teclado es de él: Escape lo cierra a él y no omite el recorrido.
+      if (otroDialogoAbierto()) return;
       if (e.key === 'Escape') {
         e.preventDefault();
         e.stopPropagation();

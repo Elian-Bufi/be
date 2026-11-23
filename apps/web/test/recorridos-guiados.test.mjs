@@ -64,6 +64,12 @@ test('TEST-GUI-022 · «Ver el recorrido» es un botón discreto, y el cartel un
   for (const tecla of ["'Escape'", "'ArrowRight'", "'ArrowLeft'", "'Tab'"]) assert.ok(pieza.includes(tecla), tecla);
   assert.match(pieza, /prefers-reduced-motion/);
   assert.match(pieza, /createPortal/);
+  // Revisión adversaria: no aparece con otro diálogo abierto ni le roba el teclado, y sigue al elemento cuando cambia de
+  // tamaño o se corre sin desplazarse.
+  assert.match(pieza, /querySelectorAll\('dialog\[open\]'\)/);
+  assert.match(pieza, /if \(otroDialogoAbierto\(\)\) return;/);
+  assert.match(pieza, /if \(otroDialogoAbierto\(\)\) espera = window\.setTimeout/);
+  assert.match(pieza, /new ResizeObserver\(pedir\)/);
 });
 
 test('TEST-GUI-023 · el estilo sale de los tokens, va fijo a la ventana y el velo existe en los dos temas', () => {
