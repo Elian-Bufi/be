@@ -71,6 +71,16 @@
      un juicio ni un peso (B10-06 §21). */
   --zona-principal: #1e6bf2;
   --zona-secundaria: #1453c9;
+  /* DL-196 parte B (E13, E20): el mapa de calor de la silueta, de menos a más series por semana. Van sobre el maniquí, que es
+     el mismo en los dos temas: cuatro azules, cada uno a 3:1 o más contra el cuerpo y separados entre sí (ΔE 10 o más). Su
+     muestra en la tabla lleva el borde del maniquí. Las zonas a cuidar van rayadas en un violeta oscuro (ni rojo ni ámbar:
+     ubica, no alarma), y la zona señalada, con un velo de navy. */
+  --calor-1: #4a7fd4;
+  --calor-2: #2f66c8;
+  --calor-3: #1a4fae;
+  --calor-4: #0d3580;
+  --zona-a-cuidar: #5b2a86;
+  --calor-senalada: #011325;
   /* Los días o las sesiones sin dato en un gráfico. Desde WP-TABLERO-ALTA-GAMA (TB-03; DL-163 D-3), lo planificado y
      lo registrado de Entrenamiento van en el color de la métrica, como en «Analizar»: lo distingue la forma (contorno
      discontinuo o rombo hueco contra lleno), no un naranja contra un azul. */

@@ -142,6 +142,10 @@ const PARES_FIGURA = [
   ['zona-principal', 'fondo-suave', NO_TEXTO, 'muestra de la zona principal sobre una tarjeta'],
   ['zona-secundaria', 'fondo-suave', NO_TEXTO, 'muestra rayada de la zona secundaria sobre una tarjeta'],
   ['tenue', 'escena', TEXTO, 'rótulo de cada vista de la figura de zonas («De frente», «De espalda»)'],
+  // DL-196 parte B (E13, E20): los cuatro niveles del mapa de calor y la raya de las zonas a cuidar, sobre el maniquí (su
+  // muestra en la tabla lleva el borde del maniquí, así que se lee contra el mismo color).
+  ...[1, 2, 3, 4].map((n) => [`calor-${n}`, 'figura-cuerpo', NO_TEXTO, `nivel ${n} del mapa de calor sobre el maniquí`]),
+  ['zona-a-cuidar', 'figura-cuerpo', NO_TEXTO, 'raya de una zona a cuidar sobre el maniquí'],
 ];
 
 const PARES_APK = [

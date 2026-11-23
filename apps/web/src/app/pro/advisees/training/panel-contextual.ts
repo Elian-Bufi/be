@@ -24,6 +24,42 @@ export const HERRAMIENTAS_DEL_FOCO: Readonly<Record<FocoDelEditor['tipo'], reado
   ejercicio: ['la-vez-pasada', 'carga-en-el-tiempo'],
 };
 
+/**
+ * DL-196 parte B (EE-D40) · las herramientas de la parte B, por foco. En el plan, la fase y la sesión, el panel las ofrece
+ * en un selector de vistas arriba (almanaque, distribución, progresión y favoritos): es una sola herramienta a la vez, sin
+ * apilar. En un ejercicio van una debajo de la otra: la carga por semana (gráfico X/Y), la carga para N repeticiones y
+ * «La vez pasada».
+ */
+export const HERRAMIENTAS_DE_LA_PARTE_B: Readonly<Record<FocoDelEditor['tipo'], readonly HerramientaDeLaParteB[]>> = {
+  plan: ['favoritos-del-plan'],
+  fase: ['distribucion-por-grupo', 'silueta', 'progresiones-y-descargas', 'favoritos-del-plan'],
+  sesion: ['distribucion-por-grupo', 'silueta', 'progresiones-y-descargas', 'favoritos-del-plan'],
+  ejercicio: ['graficos-x-y'],
+};
+
+/** Las vistas del panel en el plan, la fase y la sesión (EE-D40). */
+export type VistaDelPanel = 'almanaque' | 'distribucion' | 'progresion' | 'favoritos';
+export const VISTAS_DEL_FOCO: Readonly<Record<'plan' | 'fase' | 'sesion', readonly VistaDelPanel[]>> = {
+  plan: ['almanaque', 'favoritos'],
+  fase: ['almanaque', 'distribucion', 'progresion', 'favoritos'],
+  sesion: ['almanaque', 'distribucion', 'progresion', 'favoritos'],
+};
+export const NOMBRE_DE_LA_VISTA: Readonly<Record<VistaDelPanel, string>> = { almanaque: 'Almanaque', distribucion: 'Distribución', progresion: 'Progresión', favoritos: 'Favoritos' };
+
+/** La vista que se muestra: la elegida si ese foco la tiene; si no, el almanaque. */
+export const vistaDelFoco = (foco: FocoDelEditor['tipo'], elegida: VistaDelPanel): VistaDelPanel =>
+  foco === 'ejercicio' ? 'almanaque' : VISTAS_DEL_FOCO[foco].includes(elegida) ? elegida : 'almanaque';
+
+/** ← y → entre las vistas del selector (con Inicio y Fin), como las pestañas. */
+export function vistaPorTecla(vistas: readonly VistaDelPanel[], actual: VistaDelPanel, tecla: string): VistaDelPanel | null {
+  const i = vistas.indexOf(actual);
+  if (tecla === 'ArrowRight') return vistas[(i + 1) % vistas.length] ?? null;
+  if (tecla === 'ArrowLeft') return vistas[(i - 1 + vistas.length) % vistas.length] ?? null;
+  if (tecla === 'Home') return vistas[0] ?? null;
+  if (tecla === 'End') return vistas[vistas.length - 1] ?? null;
+  return null;
+}
+
 export const FOCO_DE_ENTRADA: FocoDelEditor = { tipo: 'plan' };
 
 /** Lo mínimo de un elemento del DOM que hace falta para leer su foco (así se prueba sin navegador). */

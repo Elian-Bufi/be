@@ -9,6 +9,7 @@
  *   el historial del ejercicio y sus gráficos (GR-03 a GR-06).
  * - Nada de lo que hay acá escribe en el plan.
  */
+import type { VezPasada } from '@be/domain';
 import { useId, useState, type ReactNode } from 'react';
 import { Icono } from '../../../../components/icono';
 import type { Resultado } from '../../../../lib/api';
@@ -111,6 +112,10 @@ export function PanelDelEjercicio({
   exerciseId,
   nombre,
   loQueIndica,
+  antes = null,
+  cargaPorSemana = null,
+  despues = null,
+  soloElGrafico = false,
 }: {
   token: string;
   asesoradoId: string;
@@ -118,14 +123,25 @@ export function PanelDelEjercicio({
   exerciseId: string;
   nombre: string;
   loQueIndica: ReactNode;
+  /** DL-196 parte B: lo que va arriba (el aviso de las zonas a cuidar, con su lugar reservado). */
+  antes?: ReactNode;
+  /** DL-196 parte B: la carga por semana de la fase, con lo registrado; en lugar de «La carga en el tiempo». */
+  cargaPorSemana?: ((veces: readonly VezPasada[] | null) => ReactNode) | null;
+  /** DL-196 parte B: lo que va antes de «La vez pasada» (la carga para N repeticiones). */
+  despues?: ReactNode;
+  /** DL-196 parte B (favoritos del plan): solo la carga por semana, sin el marco ni «La vez pasada». */
+  soloElGrafico?: boolean;
 }) {
   const id = useId();
   const { lectura, recargar } = useLaVezPasada(token, asesoradoId, exerciseId, sesionPerdida);
   const [grande, setGrande] = useState(false);
   const carga = lectura.tipo === 'lista' ? puntosDeCarga(lectura.veces) : null;
+  if (soloElGrafico) return <>{cargaPorSemana ? cargaPorSemana(lectura.tipo === 'lista' ? lectura.veces : null) : null}</>;
   return (
     <MarcoDelPanel id={id} deQue={nombre} titulo={T.laVezPasada} onAbrirGrande={() => setGrande(true)}>
-      {carga && carga.puntos.length > 1 ? <CargaEnElTiempo puntos={carga.puntos} unidad={carga.unidad} /> : null}
+      {antes}
+      {cargaPorSemana ? cargaPorSemana(lectura.tipo === 'lista' ? lectura.veces : null) : carga && carga.puntos.length > 1 ? <CargaEnElTiempo puntos={carga.puntos} unidad={carga.unidad} /> : null}
+      {despues}
       <LaVezPasada lectura={lectura} recargar={recargar} nombre={nombre} />
       <CuadroDeLaVezPasada abierto={grande} onCerrar={() => setGrande(false)} token={token} asesoradoId={asesoradoId} sesionPerdida={sesionPerdida} exerciseId={exerciseId} nombre={nombre} loQueIndica={loQueIndica} />
     </MarcoDelPanel>

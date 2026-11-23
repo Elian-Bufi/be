@@ -9648,6 +9648,33 @@ button.comida-del-dia__fila > .icono:last-child {
   font: inherit;
 }
 
+/* DL-196 parte B (E20): «Por músculo» en el catálogo: la silueta chica para tocar un músculo y la lista para el teclado. */
+.agregar-item__por-musculo {
+  white-space: nowrap;
+}
+
+.agregar-item__silueta:not([hidden]) {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 0.75rem 1rem;
+  margin-top: 0.5rem;
+}
+
+.agregar-item__musculo {
+  display: grid;
+  flex: 1 1 12rem;
+  gap: 0.35rem;
+}
+
+.agregar-item__musculo select {
+  max-width: 16rem;
+}
+
+.agregar-item__musculo .nota {
+  margin: 0;
+}
+
 .agregar-item__buscador input::placeholder {
   color: var(--tenue);
   opacity: 1;
@@ -13707,6 +13734,121 @@ details[open] > summary:not([class])::before {
   background: repeating-linear-gradient(135deg, var(--zona-secundaria) 0 2px, transparent 2px 4.5px);
 }
 
+/* ─── DL-196 parte B (E13 y E20): la silueta como mapa ────────────────────────────────────────────────────────────────
+   La misma escena y las mismas capas que la figura de zonas, con cada zona pintada en uno de cuatro niveles (`--calor-1`
+   a `--calor-4`, del más claro al más oscuro, todos a 3:1 o más sobre el maniquí), las zonas a cuidar rayadas encima y la
+   zona señalada (con el puntero o desde la tabla) con un velo. El globo flota encima: no corre nada (RP-19). */
+.figura-de-calor {
+  position: relative;
+  display: inline-block;
+}
+
+.figura-de-calor__vistas {
+  position: relative;
+  display: flex;
+  gap: 0.5rem;
+  padding: 0.75rem 0.85rem 0.5rem;
+  border-radius: 12px;
+  background: var(--escena);
+}
+
+.figura-de-calor__vista {
+  display: grid;
+  justify-items: center;
+  gap: 0.3rem;
+  width: 8.5rem;
+}
+
+.figura-de-calor--chica .figura-de-calor__vista {
+  width: 5.75rem;
+}
+
+.figura-de-calor__lienzo {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 320 / 944;
+}
+
+.figura-de-calor--elegible .figura-de-calor__lienzo[data-senalada] {
+  cursor: pointer;
+}
+
+.figura-de-calor__cuerpo,
+.figura-de-calor__zona {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.figura-de-calor__cuerpo {
+  max-width: none;
+  user-select: none;
+  pointer-events: none;
+}
+
+.figura-de-calor__zona {
+  pointer-events: none;
+  -webkit-mask: var(--mascara) center / 100% 100% no-repeat;
+  mask: var(--mascara) center / 100% 100% no-repeat;
+}
+
+.figura-de-calor__zona--1,
+.figura-de-calor__muestra--1 {
+  background: var(--calor-1);
+}
+
+.figura-de-calor__zona--2,
+.figura-de-calor__muestra--2 {
+  background: var(--calor-2);
+}
+
+.figura-de-calor__zona--3,
+.figura-de-calor__muestra--3 {
+  background: var(--calor-3);
+}
+
+.figura-de-calor__zona--4,
+.figura-de-calor__muestra--4 {
+  background: var(--calor-4);
+}
+
+.figura-de-calor__zona--elegida {
+  background: var(--zona-principal);
+}
+
+.figura-de-calor__zona--a-cuidar,
+.figura-de-calor__muestra--a-cuidar {
+  background: repeating-linear-gradient(45deg, var(--zona-a-cuidar) 0 2.5px, transparent 2.5px 6px);
+}
+
+.figura-de-calor__zona--resaltada {
+  background: var(--calor-senalada);
+  opacity: 0.38;
+}
+
+.figura-de-calor__rotulo {
+  font-size: 0.8rem;
+  color: var(--tenue);
+}
+
+.figura-de-calor__globo {
+  position: absolute;
+  z-index: 2;
+  max-width: 15rem;
+  padding: 0.35rem 0.55rem;
+  border: 1px solid var(--borde);
+  border-radius: 8px;
+  background: var(--superficie);
+  box-shadow: var(--sombra-suave);
+  color: var(--texto);
+  font-size: 0.82rem;
+  line-height: 1.3;
+  pointer-events: none;
+  transform: translate(-50%, calc(-100% - 0.6rem));
+  white-space: nowrap;
+}
+
 /* El detalle de un ejercicio: la imagen y las zonas, lado a lado si entran. */
 .detalle-visual {
   display: flex;
@@ -16702,6 +16844,604 @@ p.cifra-del-espacio__desglose {
   display: flex;
   justify-content: space-between;
   font-size: 0.75rem;
+}
+
+/* ─── DL-196 parte B: las herramientas nuevas del panel ───────────────────────────────────────────────────────────────
+   El selector de vistas (almanaque, distribución, progresión, favoritos) como una fila de pestañas chicas; el gráfico X/Y
+   de las semanas; la carga para N repeticiones; la distribución con la silueta, su tabla y los equilibrios; la estrella
+   de favoritos. Sin colores de juicio: los pares de los equilibrios van en el mismo tono neutro. */
+.selector-de-vistas {
+  display: flex;
+  gap: 0.15rem;
+  padding: 0.2rem;
+  border: 1px solid var(--borde);
+  border-radius: 999px;
+  background: var(--fondo-suave);
+}
+
+.selector-de-vistas__opcion {
+  flex: 1 1 0;
+  min-height: 2rem;
+  padding: 0.2rem 0.6rem;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--tenue);
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.selector-de-vistas__opcion[aria-selected='true'] {
+  background: var(--superficie);
+  box-shadow: var(--sombra-suave);
+  color: var(--texto);
+}
+
+.selector-de-vistas__opcion:focus-visible {
+  outline: 3px solid var(--foco);
+  outline-offset: 1px;
+}
+
+.marco-del-panel__acciones {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: -0.35rem;
+}
+
+.estrella-de-favorito .estrella-de-favorito__dibujo {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.4;
+  stroke-linejoin: round;
+}
+
+.estrella-de-favorito[aria-pressed='true'] .estrella-de-favorito__dibujo {
+  fill: currentColor;
+}
+
+/* El gráfico de las semanas: el dibujo a todo el ancho del panel, la leyenda con las formas y la lectura con su renglón. */
+.grafico-de-semanas {
+  display: grid;
+  gap: 0.35rem;
+  margin: 0;
+}
+
+.grafico-de-semanas__cabecera {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.grafico-de-semanas__titulo {
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.grafico-de-semanas__leyenda {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.85rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--tenue);
+  font-size: 0.78rem;
+}
+
+.grafico-de-semanas__leyenda li {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.grafico-de-semanas__muestra-descarga {
+  display: inline-block;
+  width: 0.75rem;
+  height: 0.75rem;
+  border-radius: 2px;
+  background: var(--banda);
+}
+
+.grafico-de-semanas__dibujo {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 6px;
+  touch-action: pan-y;
+}
+
+.grafico-de-semanas__dibujo:focus-visible {
+  outline: 3px solid var(--foco);
+  outline-offset: 2px;
+}
+
+.grafico-de-semanas__guia {
+  stroke: var(--borde);
+  stroke-width: 1;
+}
+
+.grafico-de-semanas__eje {
+  fill: var(--tenue);
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+}
+
+.grafico-de-semanas__eje--y {
+  text-anchor: end;
+  dominant-baseline: middle;
+}
+
+.grafico-de-semanas__eje--x {
+  text-anchor: middle;
+}
+
+.grafico-de-semanas__eje--unidad {
+  dominant-baseline: hanging;
+}
+
+.grafico-de-semanas__descarga {
+  fill: var(--banda);
+}
+
+.grafico-de-semanas__cursor {
+  stroke: var(--grafico-cursor);
+  stroke-width: 1;
+  stroke-dasharray: 2 3;
+}
+
+.grafico-de-semanas__linea {
+  fill: none;
+  stroke-width: 2;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.grafico-de-semanas__linea--plan {
+  stroke: var(--metrica-1);
+  stroke-dasharray: 5 4;
+}
+
+.grafico-de-semanas__linea--hecho {
+  stroke: var(--metrica-1);
+}
+
+.grafico-de-semanas__linea--estimado {
+  stroke: var(--metrica-2);
+  stroke-width: 1.25;
+  stroke-dasharray: 1 3;
+}
+
+.grafico-de-semanas__punto--plan {
+  fill: var(--superficie);
+  stroke: var(--metrica-1);
+  stroke-width: 1.75;
+}
+
+.grafico-de-semanas__punto--hecho {
+  fill: var(--metrica-1);
+}
+
+.grafico-de-semanas__rombo {
+  fill: var(--metrica-2);
+  stroke: var(--metrica-2);
+  stroke-width: 1.5;
+}
+
+.grafico-de-semanas__rombo--orientativo {
+  fill: var(--superficie);
+}
+
+/* RP-19: la lectura de la semana tiene dos renglones reservados. */
+.grafico-de-semanas__lectura {
+  min-height: 2.6em;
+  margin: 0;
+  font-size: 0.8rem;
+  line-height: 1.3;
+}
+
+.grafico-de-semanas__ver-tabla {
+  justify-self: start;
+}
+
+.grafico-de-semanas__tabla .tabla,
+.asistente-de-progresion__tabla,
+.distribucion-de-la-fase__tabla {
+  margin: 0.25rem 0 0;
+  font-size: 0.82rem;
+}
+
+.grafico-de-semanas__tabla .tabla th,
+.grafico-de-semanas__tabla .tabla td,
+.asistente-de-progresion__tabla th,
+.asistente-de-progresion__tabla td,
+.distribucion-de-la-fase__tabla th,
+.distribucion-de-la-fase__tabla td {
+  padding: 0.3rem 0.45rem;
+}
+
+.grafico-de-semanas__tabla tr[data-descarga] > *,
+.asistente-de-progresion__tabla [data-descarga] {
+  background: var(--banda);
+}
+
+.carga-por-semana__vacia {
+  margin: 0;
+}
+
+/* La carga para N repeticiones: los dos campos en un renglón, el número grande y la cuenta a la vista. */
+.carga-para-repeticiones {
+  position: relative;
+  display: grid;
+  gap: 0.4rem;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid var(--borde);
+  border-radius: 10px;
+}
+
+.carga-para-repeticiones__cabecera {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-right: 2rem;
+}
+
+.carga-para-repeticiones__cabecera .ejercicio-del-plan__subtitulo {
+  margin: 0;
+}
+
+.carga-para-repeticiones__campos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 0.9rem;
+  align-items: center;
+  font-size: 0.88rem;
+}
+
+.carga-para-repeticiones__campos label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.carga-para-repeticiones__campos input,
+.asistente-de-progresion__fila input,
+.asistente-de-progresion__fila select {
+  width: 4.25rem;
+  min-height: 2rem;
+  padding: 0.15rem 0.4rem;
+  border: 1px solid var(--borde-control);
+  border-radius: 6px;
+  background: var(--superficie);
+  color: var(--texto);
+  font: inherit;
+  font-variant-numeric: tabular-nums;
+}
+
+.carga-para-repeticiones__lugar {
+  min-height: 3.4rem;
+}
+
+.carga-para-repeticiones__lugar > p,
+.carga-para-repeticiones__resultado p {
+  margin: 0;
+}
+
+.carga-para-repeticiones__numero {
+  font-size: 1.35rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.carga-para-repeticiones__cuenta {
+  font-variant-numeric: tabular-nums;
+}
+
+.aviso-de-zona-a-cuidar {
+  min-height: 1.3em;
+  margin: 0;
+}
+
+/* La distribución: la silueta con su escala al lado, la tabla debajo y los equilibrios en barras enfrentadas. */
+.distribucion-de-la-fase {
+  position: relative;
+  display: grid;
+  gap: 0.65rem;
+}
+
+.distribucion-de-la-fase__mapa {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.5rem 0.75rem;
+}
+
+.distribucion-de-la-fase__escala {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem;
+  font-size: 0.78rem;
+}
+
+/* La muestra lleva el borde del maniquí: es el color tal como se ve sobre el cuerpo, en Claro y en Azul noche. */
+.distribucion-de-la-fase__nivel {
+  display: inline-block;
+  flex: none;
+  width: 0.9rem;
+  height: 0.9rem;
+  border: 2px solid var(--figura-cuerpo);
+  border-radius: 3px;
+}
+
+.distribucion-de-la-fase__zona {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-weight: 600;
+  text-align: left;
+  cursor: default;
+}
+
+.distribucion-de-la-fase__zona:focus-visible {
+  outline: 3px solid var(--foco);
+  outline-offset: 2px;
+}
+
+
+.distribucion-de-la-fase__a-cuidar {
+  margin: 0;
+}
+
+.equilibrios {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.equilibrios .ejercicio-del-plan__subtitulo {
+  margin: 0;
+}
+
+.equilibrios__lista {
+  display: grid;
+  gap: 0.45rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.equilibrios__par {
+  display: grid;
+  grid-template-columns: minmax(5.5rem, auto) 1fr minmax(5.5rem, auto);
+  align-items: center;
+  gap: 0.15rem 0.5rem;
+  font-size: 0.85rem;
+}
+
+.equilibrios__nombre--derecha {
+  text-align: right;
+}
+
+.equilibrios__barras {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2px;
+  height: 0.6rem;
+}
+
+.equilibrios__barra {
+  display: block;
+  height: 100%;
+  background: var(--grafico-indicado);
+}
+
+.equilibrios__barra--izquierda {
+  justify-self: end;
+  border-radius: 3px 0 0 3px;
+}
+
+.equilibrios__barra--derecha {
+  justify-self: start;
+  border-radius: 0 3px 3px 0;
+}
+
+.equilibrios__valores {
+  grid-column: 1 / -1;
+  font-variant-numeric: tabular-nums;
+}
+
+.reparto-en-la-silueta {
+  display: grid;
+  gap: 0.4rem;
+  margin: 0.5rem 0 0;
+}
+
+.reparto-en-la-silueta figcaption {
+  margin: 0;
+}
+
+/* La progresión en el desplegable de la fase y en el panel: el botón y la regla en un renglón fijo. */
+.fase-del-plan__progresion {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.75rem;
+}
+
+.fase-del-plan__progresion .nota {
+  margin: 0;
+}
+
+.progresion-en-el-panel {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.progresion-en-el-panel > .nota {
+  margin: 0;
+}
+
+.progresion-en-el-panel > .boton {
+  justify-self: start;
+}
+
+.favoritos-del-plan {
+  display: grid;
+  gap: 1rem;
+}
+
+.favoritos-del-plan__grafico {
+  display: grid;
+  gap: 0.4rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--borde);
+}
+
+.favoritos-del-plan__cabecera {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.favoritos-del-plan__cabecera .ejercicio-del-plan__subtitulo {
+  margin: 0;
+}
+
+/* El asistente de la progresión: un cuadro ancho, en bloques cortos, con la vista previa abajo. */
+.asistente-de-progresion__cuerpo {
+  position: relative;
+  display: grid;
+  gap: 1rem;
+}
+
+.asistente-de-progresion__cuerpo fieldset {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.asistente-de-progresion__cuerpo legend {
+  margin-bottom: 0.35rem;
+  padding: 0;
+  font-weight: 700;
+}
+
+.asistente-de-progresion__fila {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1.1rem;
+}
+
+.asistente-de-progresion__fila label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.asistente-de-progresion__que-hace,
+.asistente-de-progresion__aviso {
+  margin: 0;
+}
+
+.asistente-de-progresion__aviso {
+  min-height: 1.3em;
+}
+
+.asistente-de-progresion__otras,
+.asistente-de-progresion__ver {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.asistente-de-progresion__elegidos {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
+  gap: 0.25rem 1rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.asistente-de-progresion__vista-previa {
+  display: grid;
+  gap: 0.6rem;
+  padding-top: 0.9rem;
+  border-top: 1px solid var(--borde);
+}
+
+.asistente-de-progresion__subtitulo {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.asistente-de-progresion__copia {
+  display: grid;
+  gap: 0.35rem;
+  padding: 0.6rem 0.75rem;
+  border-radius: 10px;
+  background: var(--fondo-suave);
+}
+
+.asistente-de-progresion__copia .nota {
+  margin: 0;
+}
+
+/* Los modelos, como un control segmentado: una opción por vez, con su radio escondido detrás del rótulo. */
+.selector-segmentado {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.2rem;
+  padding: 0.2rem;
+  border: 1px solid var(--borde-control);
+  border-radius: 10px;
+}
+
+.selector-segmentado__opcion {
+  position: relative;
+  display: inline-flex;
+}
+
+.selector-segmentado__opcion input {
+  position: absolute;
+  inset: 0;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.selector-segmentado__opcion span {
+  padding: 0.35rem 0.85rem;
+  border-radius: 7px;
+  color: var(--tenue);
+  font-weight: 600;
+}
+
+.selector-segmentado__opcion input:checked + span {
+  background: var(--texto);
+  color: var(--fondo);
+}
+
+.selector-segmentado__opcion input:focus-visible + span {
+  outline: 3px solid var(--foco);
+  outline-offset: 1px;
+}
+
+.casilla {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
 }
 
 /* «Antes de activar», al lado de «Revisar y activar»: el aviso corto y, desplegada, la lista encima de la página. */

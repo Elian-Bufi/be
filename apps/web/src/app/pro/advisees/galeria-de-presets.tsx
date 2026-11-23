@@ -24,6 +24,7 @@ import {
   COPY_PRESETS as C,
   ejercicioPlegadoDelEditor,
   PRESETS_DE_ESTRUCTURA,
+  repartoDeLaEstructura,
   PRESETS_DE_PRESCRIPCION,
   prescripcionDelPreset,
   type EstructuraDePlanDeEntrenamientoEntrada,
@@ -40,6 +41,7 @@ import type { Resultado } from '../../../lib/api';
 import { ICONO_DE_FALLA, motivoDeFalla, razonDeFalla } from '../../../lib/fallas';
 import type { PlantillaParaEmpezar } from './empezar-desde-plantilla';
 import { alcanceDelPreset, alcanceDeLaHabitual, type AlcanceDelPreset } from './alcance-del-preset';
+import { RepartoEnLaSilueta } from './training/panel-de-la-parte-b';
 
 type SesionE = NonNullable<EstructuraDePlanDeEntrenamientoEntrada['blocks'][number]['sessions']>[number];
 type PrescripcionE = SesionE['prescriptions'][number];
@@ -373,6 +375,8 @@ export function GaleriaDePresets({
                     <li key={s.nombre}>{s.nombre}</li>
                   ))}
                 </ul>
+                {/* DL-196 parte B (E13): el reparto semanal típico de la estructura, en la silueta. */}
+                <RepartoEnLaSilueta reparto={repartoDeLaEstructura(elegido.preset)} nombre={elegido.preset.clave} />
                 <p className="nota" data-se-reemplazan={seReemplazan.length}>
                   {seReemplazan.length === 0
                     ? 'No se quita ninguna sesión: las del preset se suman al final.'
