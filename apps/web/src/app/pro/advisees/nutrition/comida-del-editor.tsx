@@ -67,7 +67,7 @@ import { COPY_DE_LOS_EDITORES as E } from '../editar-la-estructura';
 import { COPY_DE_OTRA_COMIDA, MAXIMO_DE_OPCIONES } from './opcion-de-otra-comida';
 import { COPY_VERSION_NUEVA } from './version-nueva-de-la-receta';
 import { aporteDelItem, aporteEnPalabras, aporteEnUnaLinea, cifrasDeLoQueAporta, comidaVacia, composicionEnLaPista, COPY_PLANIFICACION as CP, loQueAportaLaComida, loQueAportaLaComidaEnPalabras, numerosDeLaOpcion, type LineaFrenteAlRango } from './planificacion';
-import { COPY_FRANJAS, franjasDeLaComida } from './franjas-por-comida';
+import { colorDeLaOpcion, COPY_FRANJAS, enLasBarrasEnPalabras, franjasDeLaComida, NOMBRE_DEL_COLOR } from './franjas-por-comida';
 import { FranjasDeLaComida, FranjasQueSeLeen } from './franjas-de-la-comida';
 import { cifrasDelTotal, COPY_RANGOS, faltantesDeLaOpcion, queFaltaEnPalabras, totalEnPalabras, type ComposicionConocida, type RangoPorNutriente, type TotalDeLaOpcion } from './rangos';
 import { rangoEnPalabras } from './rangos-indicados';
@@ -129,6 +129,9 @@ export function ComidaDelEditor({
   alAgregarReceta,
   alQuitarOpcion,
   totalDeLaOpcion,
+  enLasBarras,
+  sePuedeMostrarEnLasBarras,
+  alAlternarEnLasBarras,
 }: {
   /** El prefijo de los identificadores de sus campos: `I-J`, las posiciones del día tipo y de la comida. */
   id: string;
@@ -183,6 +186,12 @@ export function ComidaDelEditor({
   alQuitarOpcion: (k: number) => void;
   /** ED-31: el total de la opción `k`, estimado en el editor. */
   totalDeLaOpcion: (k: number) => TotalDeLaOpcion | null;
+  /** RP-23: las opciones de esta comida (por la clave de su franja) que se muestran en las barras. */
+  enLasBarras: ReadonlySet<string>;
+  /** RP-23: si la opción `k` se puede tildar (ella, su comida y su día tipo, ya guardados). */
+  sePuedeMostrarEnLasBarras: (k: number) => boolean;
+  /** RP-23: tildar o destildar la opción `k`. */
+  alAlternarEnLasBarras: (k: number) => void;
 }) {
   const propio = useId();
   // PG-16 (DL-173): «Anotar sobre esta comida», si el editor tiene las notas propias.
@@ -202,10 +211,13 @@ export function ComidaDelEditor({
   const conAlgo = !!opcion && (opcion.items.length > 0 || !!opcion.recipeVersionId);
   // RP-20: cada opción frente al rango indicado de la comida, una franja por kcal, P, C y G, también plegada. Sale de lo
   // que está en pantalla (cada tecla de una cantidad la mueve); una opción de receta, con la porción de su versión guardada.
-  const paraLaFranja = comida.options.map((o, n) => ({ clave: o.optionId ?? `nueva-${n}`, nombre: pestanaDeLaOpcion(o, n), total: totalDeLaOpcion(n) }));
+  // RP-23: cada opción con su lugar (de ahí su color); la franja de la comida, con el promedio y solo las tildadas.
+  const paraLaFranja = comida.options.map((o, n) => ({ clave: o.optionId ?? `nueva-${n}`, nombre: pestanaDeLaOpcion(o, n), total: totalDeLaOpcion(n), lugar: n }));
   const franjas = franjasDeLaComida(rango.indicado, paraLaFranja);
   // RP-20 (B): la opción abierta sola frente al rango de su comida, en vivo. Reemplaza las líneas de NUP-04.
   const franjasDeLaOpcion = opcion && conAlgo ? franjasDeLaComida(rango.indicado, [paraLaFranja[k]!]) : null;
+  /** RP-23: la casilla de la opción `n`, con su punto de color, si la comida tiene franja. */
+  const conCasillas = !!franjas;
   const vacia = comidaVacia(comida);
   /** NUP-12: «alimentos» abre la primera opción vacía en su cuadro; sin opciones, nace la 1 y se abre. */
   const empezarConAlimentos = () => {
@@ -290,7 +302,7 @@ export function ComidaDelEditor({
           indicarlo va adentro); mientras se leen los rangos, guarda su lugar (RP-D47). */}
       {franjas ? (
         <div className="comida-del-editor__franjas" data-franjas-de-la-comida data-rango-indicado-de-la-comida>
-          <FranjasDeLaComida franjas={franjas} comida={plegada.titulo} />
+          <FranjasDeLaComida franjas={franjas} comida={plegada.titulo} elegidas={enLasBarras} enLasBarras={enLasBarrasEnPalabras(paraLaFranja, enLasBarras)} />
         </div>
       ) : rango.leyendo ? (
         <div className="comida-del-editor__franjas" data-franjas-de-la-comida data-leyendo-el-rango>
@@ -339,28 +351,32 @@ export function ComidaDelEditor({
                     const numeros = totalDeEsta ? numerosDeLaOpcion(totalDeEsta) : null;
                     return (
                       <li key={o.optionId ?? `nueva-${n}`} className="opcion-plegable" data-opcion-plegable={n + 1} data-abierta={abiertaLaOpcion ? '' : undefined} data-receta={o.recipeVersionId ? '' : undefined}>
-                        <h4 className="opcion-plegable__titulo">
-                          <button
-                            type="button"
-                            id={`pestana-${id}-${n}`}
-                            className="opcion-plegable__boton"
-                            aria-expanded={abiertaLaOpcion}
-                            aria-controls={`${propio}-opcion-${n}`}
-                            onClick={() => alElegirOpcion(abiertaLaOpcion ? -1 : n)}
-                          >
-                            {o.recipeVersionId ? <Icono nombre="receta" tamano={18} /> : <Icono nombre="alimento" tamano={18} />}
-                            <span className="opcion-plegable__nombre">{pestanaDeLaOpcion(o, n)}</span>
-                            {numeros ? (
-                              <span className="opcion-plegable__numeros" data-numeros-de-la-opcion>
-                                <span aria-hidden="true">
-                                  <EnPartes texto={numeros.linea} />
+                        {/* RP-23: la casilla y el punto de color, en el renglón de la cabecera (no la agrandan). */}
+                        <div className="opcion-plegable__fila">
+                          {conCasillas ? <CasillaEnLasBarras lugar={n} tildada={enLasBarras.has(paraLaFranja[n]!.clave)} sinGuardar={!sePuedeMostrarEnLasBarras(n)} alAlternar={() => alAlternarEnLasBarras(n)} /> : null}
+                          <h4 className="opcion-plegable__titulo">
+                            <button
+                              type="button"
+                              id={`pestana-${id}-${n}`}
+                              className="opcion-plegable__boton"
+                              aria-expanded={abiertaLaOpcion}
+                              aria-controls={`${propio}-opcion-${n}`}
+                              onClick={() => alElegirOpcion(abiertaLaOpcion ? -1 : n)}
+                            >
+                              {o.recipeVersionId ? <Icono nombre="receta" tamano={18} /> : <Icono nombre="alimento" tamano={18} />}
+                              <span className="opcion-plegable__nombre">{pestanaDeLaOpcion(o, n)}</span>
+                              {numeros ? (
+                                <span className="opcion-plegable__numeros" data-numeros-de-la-opcion>
+                                  <span aria-hidden="true">
+                                    <EnPartes texto={numeros.linea} />
+                                  </span>
+                                  <span className="visualmente-oculto">{numeros.palabras}</span>
                                 </span>
-                                <span className="visualmente-oculto">{numeros.palabras}</span>
-                              </span>
-                            ) : null}
-                            <Icono nombre={abiertaLaOpcion ? 'arriba' : 'abajo'} tamano={18} />
-                          </button>
-                        </h4>
+                              ) : null}
+                              <Icono nombre={abiertaLaOpcion ? 'arriba' : 'abajo'} tamano={18} />
+                            </button>
+                          </h4>
+                        </div>
                         <div id={`${propio}-opcion-${n}`} className="opcion-plegable__cuerpo" hidden={!abiertaLaOpcion}>
                           {abiertaLaOpcion && opcion ? (
                             <div className="opcion-del-editor" data-opcion={k + 1}>
@@ -541,6 +557,27 @@ export function ComidaDelEditor({
         ) : null}
       </div>
     </section>
+  );
+}
+
+/**
+ * RP-23 (RP-D82, RP-D83): la casilla de una opción y su punto de color, junto a su cabecera. Tildada, el punto de la opción
+ * aparece en las barras de la comida y del panel, en ese color. La etiqueta la oye el lector («Mostrar la opción 2 en las
+ * barras de la comida»); a la vista, la casilla y el punto, que dice su color al pasar el puntero.
+ */
+function CasillaEnLasBarras({ lugar, tildada, sinGuardar, alAlternar }: { lugar: number; tildada: boolean; sinGuardar: boolean; alAlternar: () => void }) {
+  const color = colorDeLaOpcion(lugar);
+  const nombreDelColor = NOMBRE_DEL_COLOR[color]!;
+  // Sin guardar, apagada y diciendo por qué: su lugar y su identidad todavía cambian (ver `opciones-en-las-barras.ts`).
+  return (
+    <label className="en-las-barras" data-en-las-barras={lugar + 1} data-sin-guardar={sinGuardar ? '' : undefined} title={sinGuardar ? COPY_FRANJAS.alGuardarseSePuedeMostrar : COPY_FRANJAS.suPunto(lugar + 1, nombreDelColor)}>
+      <input type="checkbox" checked={tildada && !sinGuardar} disabled={sinGuardar} onChange={alAlternar} />
+      <span className="en-las-barras__punto" data-color-de-la-opcion={color} aria-hidden="true" />
+      <span className="visualmente-oculto">
+        {COPY_FRANJAS.mostrarEnLasBarras(lugar + 1, nombreDelColor)}
+        {sinGuardar ? ` ${COPY_FRANJAS.alGuardarseSePuedeMostrar}` : ''}
+      </span>
+    </label>
   );
 }
 

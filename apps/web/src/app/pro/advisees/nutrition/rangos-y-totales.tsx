@@ -9,7 +9,8 @@
  * - **Arriba, el día:** lo que va según la opción que se elija en cada comida, con el ícono de cada cantidad y, si el día
  *   tiene rango indicado, su tramo frente a ese rango (RP-D44).
  * - **Después, cada comida:** su nombre y cuántas opciones tiene, lo que aportan de la que menos a la que más (las que
- *   tienen el dato), y la franja compacta frente a su rango indicado (la de RP-20).
+ *   tienen el dato), y la franja compacta frente a su rango indicado (la de RP-20). RP-23: con la misma regla que la
+ *   comida, la banda y el promedio, y el punto de cada opción tildada, en su color.
  * - **Lo que no suma se dice una vez y en chico:** una comida o una opción sin alimentos va en el renglón de su comida; lo
  *   demás que falta (una cantidad, una composición), en una sola nota al pie.
  * - Todo sale del borrador en pantalla (`rangosDelDia`, en cada render): se mueve con cada tecla. Lo calcula el editor; no
@@ -24,7 +25,7 @@ import { useId } from 'react';
 import { ExplicacionAPedido } from '../../../../components/explicacion-a-pedido';
 import { Icono } from '../../../../components/icono';
 import { FranjasDeLaComida, TramosDelDia } from './franjas-de-la-comida';
-import { armarFranjas, COPY_FRANJAS, loQueFaltaEnElDia, tramosDelDia } from './franjas-por-comida';
+import { armarFranjas, COPY_FRANJAS, enLasBarrasEnPalabras, loQueFaltaEnElDia, tramosDelDia } from './franjas-por-comida';
 import { COPY_RANGOS, queFaltaEnPalabras, type RangosDelDia } from './rangos';
 
 export function RangosYTotales({
@@ -40,7 +41,7 @@ export function RangosYTotales({
   /** El rango indicado del día tipo, si hay. */
   rangoDelDia: Rango | null;
   /** Por comida, en el orden de `rangos.comidas`: su rango indicado y la identidad de cada opción (para no saltar). */
-  comidas: readonly { readonly rango: Rango | null; readonly claves: readonly string[] }[];
+  comidas: readonly { readonly rango: Rango | null; readonly claves: readonly string[]; readonly enLasBarras: ReadonlySet<string> }[];
   /** Cuántas composiciones se están leyendo todavía. */
   leyendo: number;
   /** Si alguna opción del día es de receta: se dice con qué porción se cuenta. */
@@ -85,7 +86,9 @@ export function RangosYTotales({
         <ul className="rangos-y-totales__comidas" aria-label={COPY_RANGOS.tituloDeLasComidas} data-rangos-por-comida>
           {rangos.comidas.map((c, j) => {
             const claves = comidas[j]?.claves ?? [];
-            const f = armarFranjas(comidas[j]?.rango ?? null, c.opciones.map((o, k) => ({ clave: claves[k] ?? String(k), nombre: o.nombre, total: o.total })));
+            const paraLaFranja = c.opciones.map((o, k) => ({ clave: claves[k] ?? String(k), nombre: o.nombre, total: o.total, lugar: k }));
+            const f = armarFranjas(comidas[j]?.rango ?? null, paraLaFranja);
+            const elegidas = comidas[j]?.enLasBarras ?? SIN_ELEGIDAS;
             const vacias = c.opciones.filter((o) => o.total.energyKcal.faltan.some((x) => x.motivo === 'SIN_ALIMENTOS')).length;
             return (
               <li key={j} className="total-de-la-comida" data-comida-del-panel={j + 1}>
@@ -97,7 +100,7 @@ export function RangosYTotales({
                     {c.opciones.length > 0 && f.sinAlimentos ? ` · ${COPY_RANGOS_Y_TOTALES.sinAlimentos}` : vacias > 0 ? ` · ${COPY_RANGOS_Y_TOTALES.vacias(vacias)}` : ''}
                   </span>
                 </p>
-                {c.opciones.length > 0 && !f.sinAlimentos ? <FranjasDeLaComida franjas={f} comida={c.nombre} variante="panel" /> : null}
+                {c.opciones.length > 0 && !f.sinAlimentos ? <FranjasDeLaComida franjas={f} comida={c.nombre} variante="panel" elegidas={elegidas} enLasBarras={enLasBarrasEnPalabras(paraLaFranja, elegidas)} /> : null}
               </li>
             );
           })}
@@ -117,6 +120,9 @@ export function RangosYTotales({
     </div>
   );
 }
+
+/** RP-23: una comida sin nada tildado (por defecto): la banda y el promedio. */
+const SIN_ELEGIDAS: ReadonlySet<string> = new Set();
 
 export const COPY_RANGOS_Y_TOTALES = {
   sinComidas: 'Este día tipo todavía no tiene comidas.',

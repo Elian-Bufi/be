@@ -12,6 +12,9 @@
  *   queda donde estaba, punteada, hasta que llega su composición; mientras se leen los rangos, la franja guarda su lugar.
  * - **Cuatro formas, la misma pieza:** la comida (todas sus opciones), la opción abierta y su cuadro (una sola), el panel
  *   «Rangos y totales» (compacta, con lo que aportan las opciones) y la receta que se elige (una porción).
+ * - **RP-23 (Dirección, 22/11: «se ven muy sucias»):** la comida y el panel dibujan la banda y la raya del promedio, y el
+ *   punto de cada opción tildada, en su color (`elegidas`). La opción abierta, su cuadro y la receta, como estaban.
+ *   Tildar no agrega nada que ocupe lugar: las marcas se superponen en la pista, que tiene su alto.
  */
 import { useRef, type CSSProperties, type ReactNode } from 'react';
 import { Icono } from '../../../../components/icono';
@@ -21,7 +24,9 @@ import {
   COPY_FRANJAS,
   deCuantoACuanto,
   franjasEnPalabras,
+  marcasALaVista,
   porcionEnElRenglon,
+  rayaDelPromedio,
   RENGLONES_DE_LA_FRANJA,
   type BandaEnLaPista,
   type FranjaDelRenglon,
@@ -45,14 +50,18 @@ const en = (desde: number, hasta?: number): CSSProperties => {
   return estilo as CSSProperties;
 };
 
-/** Las cuatro formas (`VarianteDeLaFranja`) están descritas en `franjas-por-comida.ts`. */
-export function FranjasDeLaComida({ franjas, comida, variante = 'comida' }: { franjas: Franjas; comida: string; variante?: VarianteDeLaFranja }) {
+/**
+ * Las cuatro formas (`VarianteDeLaFranja`) están descritas en `franjas-por-comida.ts`. Con `elegidas` (RP-23, la comida y
+ * el panel): la raya del promedio y solo los puntos de las opciones tildadas, en su color; `enLasBarras` es lo que oye el
+ * lector de eso al final (`enLasBarrasEnPalabras`).
+ */
+export function FranjasDeLaComida({ franjas, comida, variante = 'comida', elegidas, enLasBarras }: { franjas: Franjas; comida: string; variante?: VarianteDeLaFranja; elegidas?: ReadonlySet<string>; enLasBarras?: string }) {
   // Dónde estaba la marca de cada opción, por renglón y por su identidad: una opción que se vuelve a leer no salta.
   const recordadas = useRef(new Map<string, number>());
   for (const r of franjas.renglones) for (const m of r.marcas) recordadas.current.set(`${r.renglon}|${m.clave}`, m.posicion);
   return (
     <div className="franjas" data-variante={variante} data-franjas={variante} data-sin-alimentos={franjas.sinAlimentos ? '' : undefined}>
-      <p className="visualmente-oculto">{franjasEnPalabras(franjas, comida, variante)}</p>
+      <p className="visualmente-oculto">{franjasEnPalabras(franjas, comida, variante, enLasBarras)}</p>
       <div className="franjas__renglones" aria-hidden="true">
         {franjas.renglones.map((r, i) => {
           const limites = r.limites ? `${cifraDeLosLimites(r.limites.min, r.limites.max)} ${UNIDAD[r.renglon]}` : 'sin rango';
@@ -75,7 +84,7 @@ export function FranjasDeLaComida({ franjas, comida, variante = 'comida' }: { fr
               <span className="franja__izquierda" title={variante === 'comida' || variante === 'opcion' ? `Rango indicado: ${limites}` : undefined}>
                 {izquierda}
               </span>
-              <Pista r={r} recordadas={recordadas.current} />
+              <Pista r={r} recordadas={recordadas.current} elegidas={elegidas} />
               {derecha === null ? null : (
                 <span className="franja__derecha" title={derecha || undefined} data-resumen-de-la-franja={r.renglon}>
                   {derecha}
@@ -125,26 +134,32 @@ function Banda({ b }: { b: BandaEnLaPista }) {
   return <span className="franja__banda" data-sin-tope={b.sinTope ? '' : undefined} style={en(b.desde, b.hasta)} />;
 }
 
-/** La pista de un renglón: la banda, una marca por opción y la del promedio. */
-function Pista({ r, recordadas }: { r: FranjaDelRenglon; recordadas: ReadonlyMap<string, number> }) {
+/**
+ * La pista de un renglón: la banda, una marca por opción y la del promedio. Con `elegidas` (RP-23): la raya del promedio
+ * (con una sola opción, su valor) y solo las marcas tildadas, cada una con su color.
+ */
+function Pista({ r, recordadas, elegidas }: { r: FranjaDelRenglon; recordadas: ReadonlyMap<string, number>; elegidas?: ReadonlySet<string> }) {
+  const raya = elegidas ? rayaDelPromedio(r) : r.promedio;
+  const marcas = elegidas ? marcasALaVista(r, elegidas) : r.marcas;
   return (
     <span className="franja__pista" data-pista={r.renglon}>
       {r.banda ? <Banda b={r.banda} /> : null}
-      {r.promedio ? (
+      {raya ? (
         <span
           className="franja__promedio"
           data-promedio
-          data-adentro={r.promedio.ubicacion.tipo === 'dentro' ? '' : undefined}
-          data-fijada={r.promedio.fijada ?? undefined}
-          style={en(r.promedio.posicion)}
-          title={COPY_FRANJAS.promedio}
+          data-adentro={raya.ubicacion.tipo === 'dentro' ? '' : undefined}
+          data-fijada={raya.fijada ?? undefined}
+          style={en(raya.posicion)}
+          title={r.promedio ? COPY_FRANJAS.promedio : COPY_FRANJAS.laUnicaOpcion}
         />
       ) : null}
-      {r.marcas.map((m) => (
+      {marcas.map((m) => (
         <span
           key={m.clave}
           className="franja__marca"
           data-marca={m.clave}
+          data-color-de-la-opcion={elegidas && m.color !== null ? m.color : undefined}
           data-adentro={m.ubicacion.tipo === 'dentro' ? '' : undefined}
           data-afuera={m.ubicacion.tipo === 'dentro' ? undefined : m.ubicacion.tipo}
           data-fijada={m.fijada ?? undefined}
@@ -155,6 +170,7 @@ function Pista({ r, recordadas }: { r: FranjaDelRenglon; recordadas: ReadonlyMap
       {/* Lo que se está leyendo queda donde estaba, punteado; sin un lugar conocido no se dibuja (el resumen lo cuenta). */}
       {r.banda
         ? r.esperan.flatMap((e) => {
+            if (elegidas && !elegidas.has(e.clave)) return [];
             const antes = recordadas.get(`${r.renglon}|${e.clave}`);
             return antes === undefined
               ? []
@@ -180,7 +196,8 @@ export function TramosDelDia({ tramos }: { tramos: readonly TramoDelDia[] }) {
             <span className="franja__izquierda">
               <CifraConIcono macro={t.renglon} cifra={t.cifra} sinDato="—" />
             </span>
-            <span className="franja__pista" data-pista={t.renglon}>
+            {/* RP-D84: sin dato, la pista vacía, con su alto: ni la banda sola ni un punto. */}
+            <span className="franja__pista" data-pista={t.renglon} data-sin-dato={t.sinDato ? '' : undefined}>
               {t.banda ? <Banda b={t.banda} /> : null}
               {t.tramo ? (
                 <span

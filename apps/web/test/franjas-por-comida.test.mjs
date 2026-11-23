@@ -232,11 +232,13 @@ const ESTILOS = leer('app/globals.css');
 test('RP-20 · la franja va debajo del encabezado de la comida (plegada también) y dentro de la opción abierta, en vivo', () => {
   // Fuera del botón de la comida, antes de su cuerpo: se ve plegada.
   const cabecera = COMIDA.indexOf('<div className="comida-del-editor__cabecera">');
-  const franja = COMIDA.indexOf('<FranjasDeLaComida franjas={franjas} comida={plegada.titulo} />');
+  // RP-23: con las opciones tildadas y lo que oye el lector de las barras.
+  const franja = COMIDA.indexOf('<FranjasDeLaComida franjas={franjas} comida={plegada.titulo} elegidas={enLasBarras} enLasBarras={enLasBarrasEnPalabras(paraLaFranja, enLasBarras)} />');
+  assert.ok(franja > 0, 'la franja de la comida, con las opciones tildadas');
   const cuerpo = COMIDA.indexOf('className="comida-del-plan__cuerpo comida-del-editor__cuerpo"');
   assert.ok(cabecera < franja && franja < cuerpo, 'entre el encabezado y el cuerpo');
   // Sale del total de cada opción en pantalla (el que cambia con cada tecla), no de lo guardado.
-  assert.match(COMIDA, /const paraLaFranja = comida\.options\.map\(\(o, n\) => \(\{ clave: o\.optionId \?\? `nueva-\$\{n\}`, nombre: pestanaDeLaOpcion\(o, n\), total: totalDeLaOpcion\(n\) \}\)\);/);
+  assert.match(COMIDA, /const paraLaFranja = comida\.options\.map\(\(o, n\) => \(\{ clave: o\.optionId \?\? `nueva-\$\{n\}`, nombre: pestanaDeLaOpcion\(o, n\), total: totalDeLaOpcion\(n\), lugar: n \}\)\);/);
   assert.match(EDITOR, /totalDeLaOpcion=\{\(k\) => rangos\?\.comidas\[j\]\?\.opciones\[k\]\?\.total \?\? null\}/);
   assert.match(EDITOR, /const rangos = dia \? rangosDelDia\(dia, i, composiciones,/);
   // La opción abierta, sola; reemplaza las líneas de NUP-04.
@@ -252,7 +254,7 @@ test('RP-20 · la franja va debajo del encabezado de la comida (plegada también
 
 test('RP-20 · la pieza: lo dibujado para la vista, el texto entero para el lector, y la marca que se lee queda donde estaba', () => {
   assert.match(PIEZA, /<div className="franjas__renglones" aria-hidden="true">/);
-  assert.match(PIEZA, /<p className="visualmente-oculto">\{franjasEnPalabras\(franjas, comida, variante\)\}<\/p>/);
+  assert.match(PIEZA, /<p className="visualmente-oculto">\{franjasEnPalabras\(franjas, comida, variante, enLasBarras\)\}<\/p>/);
   assert.match(PIEZA, /recordadas\.current\.set\(`\$\{r\.renglon\}\|\$\{m\.clave\}`, m\.posicion\)/);
   assert.match(PIEZA, /data-espera=\{e\.motivo\}/);
   // Cada marca dice de qué opción es en su pista.
@@ -281,7 +283,7 @@ test('RP-21 · «Rangos y totales»: el día arriba, cada comida con su franja c
   assert.match(EDITOR, /<RangosYTotales\n\s*rangos=\{rangos\}/);
   assert.doesNotMatch(EDITOR, /panel-de-nutricion__tabla|panel-de-nutricion__del-dia/);
   assert.ok(PANEL.indexOf('data-rango-del-dia') < PANEL.indexOf('data-rangos-por-comida'), 'el día, arriba');
-  assert.match(PANEL, /<FranjasDeLaComida franjas=\{f\} comida=\{c\.nombre\} variante="panel" \/>/);
+  assert.match(PANEL, /<FranjasDeLaComida franjas=\{f\} comida=\{c\.nombre\} variante="panel" elegidas=\{elegidas\} enLasBarras=\{enLasBarrasEnPalabras\(paraLaFranja, elegidas\)\} \/>/);
   // Una comida sin alimentos: una línea, no cuatro «Sin dato».
   assert.match(PANEL, /\{c\.opciones\.length > 0 && !f\.sinAlimentos \? <FranjasDeLaComida/);
   // Las cantidades con su ícono (RP-07).
@@ -361,7 +363,7 @@ test('RP-20 · lo que oye el lector dice dónde está la franja y de dónde sale
   // Sin alimentos, la opción sola no habla de «cada opción».
   const sola = F.franjasDeLaComida(ALMUERZO, [opcion('a', vacia())]);
   assert.equal(F.franjasEnPalabras(sola, 'Almuerzo', 'opcion'), `Esta opción frente al rango de Almuerzo. ${F.COPY_FRANJAS.sinAlimentosLaOpcion}`);
-  assert.match(PIEZA, /\{franjasEnPalabras\(franjas, comida, variante\)\}/);
+  assert.match(PIEZA, /\{franjasEnPalabras\(franjas, comida, variante, enLasBarras\)\}/);
 });
 
 test('RP-21 · sin saltos en el panel: el día tiene siempre su renglón de ayuda y sus cuatro renglones, con dato o sin él', () => {
@@ -370,7 +372,8 @@ test('RP-21 · sin saltos en el panel: el día tiene siempre su renglón de ayud
   assert.equal(tramos.length, 4);
   for (const t of tramos) {
     assert.deepEqual([t.cifra, t.tramo], [null, null]);
-    assert.ok(t.banda, `${t.renglon}: la banda del rango del día sigue a la vista`);
+    // RP-D84: sin dato, la pista vacía: la banda sola, centrada por la escala, era un punto en el medio que no decía nada.
+    assert.deepEqual([t.banda, t.sinDato], [null, true], `${t.renglon}: sin dato, la pista vacía`);
   }
   // En el panel, el día se dibuja igual con dato o sin él: ninguna rama lo cambia por una nota de otro alto.
   const dia = PANEL.slice(PANEL.indexOf('data-rango-del-dia'), PANEL.indexOf('data-rangos-por-comida'));
@@ -405,4 +408,148 @@ test('RP-21 · lo largo, detrás de un «?»: cómo se lee, cómo se suma, las k
 
 test('RP-20 · el cuadro de la opción no se titula con un rango que la comida no tiene', () => {
   assert.match(CUADRO, /<h3 id="opcion-frente-al-rango">\{franjas \? COPY_FRANJAS\.frenteAlRangoDe\(comida\) : COPY_PLANIFICACION\.frenteAlRango\}<\/h3>/);
+});
+
+// ─── RP-23 (22/11): el promedio solo, las opciones que se tildan y sus colores ───────────────────────────────────
+
+const B = await import('../src/app/pro/advisees/nutrition/opciones-en-las-barras.ts');
+const TOKENS = leer('app/tokens.css');
+
+test('RP-23 (RP-D80) · la comida: la banda y la raya del promedio; con una sola opción, su valor; las marcas, solo las tildadas', () => {
+  const opciones = [opcion('a', total(520, 28, 65, 17), 'Opción 1'), { ...opcion('b', total(610, 34, 70, 18), '2 · Pollo'), lugar: 1 }, { ...opcion('c', total(400, 22, 50, 12), 'Opción 3'), lugar: 2 }];
+  const p = renglon(F.franjasDeLaComida(ALMUERZO, opciones), 'protein');
+  // Por defecto no hay nada tildado: ninguna marca, la raya del promedio.
+  assert.deepEqual(F.marcasALaVista(p, new Set()), []);
+  assert.deepEqual([F.rayaDelPromedio(p).valor, F.rayaDelPromedio(p).posicion], [28, 50]);
+  // Tildada la 2: su marca, con su color y su forma (por encima: hueca).
+  const vista = F.marcasALaVista(p, new Set(['b']));
+  assert.deepEqual(
+    vista.map((m) => [m.clave, m.color, m.ubicacion.tipo]),
+    [['b', 2, 'encima']],
+  );
+  // Sin lugar (la receta que se elige, o una opción que no lo dice), sin color.
+  assert.equal(p.marcas[0].color, null);
+  // Una sola opción: la raya es su valor, en su lugar.
+  const una = renglon(F.franjasDeLaComida(ALMUERZO, [opcion('a', total(520, 34, 65, 17))]), 'protein');
+  assert.equal(una.promedio, null);
+  assert.deepEqual([F.rayaDelPromedio(una).valor, F.rayaDelPromedio(una).ubicacion.tipo], [34, 'encima']);
+  // Sin opciones con el dato, ni raya ni marcas.
+  const nada = renglon(F.franjasDeLaComida(ALMUERZO, [opcion('a', vacia())]), 'protein');
+  assert.equal(F.rayaDelPromedio(nada), null);
+});
+
+test('RP-23 (RP-D81) · un color por lugar, de una paleta de cinco que vuelve a empezar, con su nombre, en los dos temas', () => {
+  assert.deepEqual([0, 1, 2, 3, 4, 5, 6].map(F.colorDeLaOpcion), [1, 2, 3, 4, 5, 1, 2]);
+  assert.equal(F.COLORES_DE_LAS_OPCIONES, 5);
+  for (let n = 1; n <= 5; n++) {
+    assert.ok(F.NOMBRE_DEL_COLOR[n], `el color ${n} tiene nombre`);
+    assert.doesNotMatch(F.NOMBRE_DEL_COLOR[n], /rojo|^verde$|ámbar|amarillo|naranja/, 'ningún color de juicio');
+  }
+  // Claro en `:root`, Azul noche en su bloque: los dos definen los cinco.
+  const corte = TOKENS.indexOf("[data-tema='azul-noche'] {");
+  for (let n = 1; n <= 5; n++) {
+    assert.match(TOKENS.slice(0, corte), new RegExp(`--opcion-${n}: #[0-9a-f]{6};`));
+    assert.match(TOKENS.slice(corte), new RegExp(`--opcion-${n}: #[0-9a-f]{6};`));
+  }
+});
+
+test('RP-23 · lo que oye el lector: el promedio primero, cada opción con dónde queda, y qué hay en las barras', () => {
+  const opciones = [{ ...opcion('a', total(520, 28, 65, 17), 'Opción 1'), lugar: 0 }, { ...opcion('b', total(610, 34, 70, 18), 'Opción 2'), lugar: 1 }];
+  const f = F.franjasDeLaComida(ALMUERZO, opciones);
+  assert.equal(renglon(f, 'protein').enPalabras, 'Proteínas: rango indicado 25 a 31 g P. promedio 31 g P, adentro. Opción 1: 28 g P · adentro. Opción 2: 34 g P · por encima, 3 g. 1 de 2 opciones adentro');
+  assert.equal(F.enLasBarrasEnPalabras(opciones, new Set()), 'En las barras, solo el promedio.');
+  assert.equal(F.enLasBarrasEnPalabras(opciones, new Set(['b'])), 'En las barras, el promedio y Opción 2 (violeta).');
+  assert.equal(F.enLasBarrasEnPalabras(opciones, new Set(['a', 'b'])), 'En las barras, el promedio y Opción 1 (azul) y Opción 2 (violeta).');
+  const oido = F.franjasEnPalabras(f, 'Almuerzo', 'comida', F.enLasBarrasEnPalabras(opciones, new Set(['b'])));
+  assert.match(oido, /Opción 1: 28 g P · adentro/, 'la opción sin tildar también se oye');
+  assert.match(oido, /\. En las barras, el promedio y Opción 2 \(violeta\)\.$/);
+  // La etiqueta de la casilla y la pista del punto.
+  assert.equal(F.COPY_FRANJAS.mostrarEnLasBarras(2, 'violeta'), 'Mostrar la opción 2 en las barras de la comida (su punto es violeta)');
+  for (const t of [F.COPY_FRANJAS.mostrarEnLasBarras(2, 'violeta'), F.COPY_FRANJAS.suPunto(2, 'violeta'), F.COPY_FRANJAS.enLasBarrasSoloElPromedio, F.COPY_FRANJAS.comoSeLeeLaFranja]) {
+    assert.deepEqual(d.terminosProhibidosEn(t), [], t);
+    assert.doesNotMatch(t, /%|cumplimiento|adherencia|racha|puntaje|asesorad|estaci[oó]n/i, t);
+  }
+});
+
+test('RP-23 (RP-D82) · las casillas: nada tildado por defecto, se recuerdan por plan en la sesión y un almacenamiento roto no corta nada', () => {
+  const memoria = new Map();
+  const almacen = { getItem: (k) => memoria.get(k) ?? null, setItem: (k, v) => memoria.set(k, v), removeItem: (k) => memoria.delete(k) };
+  assert.equal(B.leerEnLasBarras(almacen, 'plan-1').size, 0);
+  const clave = B.claveEnLasBarras('dia-1', 'comida-2', 'opcion-3');
+  const una = B.alternarEnLasBarras(new Set(), clave);
+  B.guardarEnLasBarras(almacen, 'plan-1', una);
+  assert.deepEqual([...B.leerEnLasBarras(almacen, 'plan-1')], [clave]);
+  assert.equal(B.leerEnLasBarras(almacen, 'plan-2').size, 0, 'cada plan, lo suyo');
+  B.guardarEnLasBarras(almacen, 'plan-1', B.alternarEnLasBarras(una, clave));
+  assert.equal(memoria.size, 0, 'sin nada tildado, no queda nada guardado');
+  // Roto o sin almacenamiento: nada tildado, sin errores.
+  memoria.set('be:nutricion:en-las-barras:plan-3', '{no es json');
+  assert.equal(B.leerEnLasBarras(almacen, 'plan-3').size, 0);
+  const lanza = () => {
+    throw new Error('sin acceso');
+  };
+  const falla = { getItem: lanza, setItem: lanza, removeItem: lanza };
+  assert.equal(B.leerEnLasBarras(falla, 'plan-1').size, 0);
+  assert.doesNotThrow(() => B.guardarEnLasBarras(falla, 'plan-1', una));
+  assert.doesNotThrow(() => B.guardarEnLasBarras(null, 'plan-1', una));
+  // Por comida: la clave de la franja de cada opción tildada, solo las guardadas. Una sin guardar cambia de lugar al quitar,
+  // duplicar o mover, y de identidad al autoguardar: lo recordado con su forma vieja («nueva-2») no pasa a otra opción.
+  const comida = { mealId: 'comida-2', options: [{ optionId: 'opcion-1' }, { optionId: 'opcion-3' }, {}] };
+  const elegidas = new Set([clave, B.claveEnLasBarras('dia-1', 'comida-2', 'nueva-2'), B.claveEnLasBarras('otro', 'comida-2', 'opcion-1')]);
+  assert.deepEqual([...B.enLasBarrasDeLaComida(elegidas, { dayTypeId: 'dia-1' }, comida)], ['opcion-3']);
+  assert.equal(B.enLasBarrasDeLaComida(new Set([B.claveEnLasBarras('nuevo-0', 'nueva-1', 'nueva-0')]), {}, { options: [{}] }).size, 0, 'un día o una comida sin guardar: nada');
+  assert.equal(B.sePuedeMostrarEnLasBarras({ dayTypeId: 'dia-1' }, comida, comida.options[1]), true);
+  assert.equal(B.sePuedeMostrarEnLasBarras({ dayTypeId: 'dia-1' }, comida, comida.options[2]), false, 'la opción sin guardar, apagada');
+  assert.equal(B.sePuedeMostrarEnLasBarras({}, comida, comida.options[1]), false, 'el día sin guardar, apagada');
+  assert.doesNotMatch(EDITOR, /nuevo-${i}`, m.mealId ?? `nueva-/, 'sin claves por lugar');
+  // En la sesión, no para siempre; el estado vive en la pantalla del editor.
+  const FUENTE = leer('app/pro/advisees/nutrition/opciones-en-las-barras.ts');
+  assert.match(FUENTE, /window\.sessionStorage/);
+  assert.doesNotMatch(FUENTE, /localStorage/);
+  assert.match(EDITOR, /const barras = useOpcionesEnLasBarras\(planId\);/);
+});
+
+test('RP-23 · la pieza: con elegidas, la raya del promedio y solo las marcas tildadas, en su color; la opción abierta y la receta, como estaban', () => {
+  assert.match(PIEZA, /const raya = elegidas \? rayaDelPromedio\(r\) : r\.promedio;/);
+  assert.match(PIEZA, /const marcas = elegidas \? marcasALaVista\(r, elegidas\) : r\.marcas;/);
+  assert.match(PIEZA, /data-color-de-la-opcion=\{elegidas && m\.color !== null \? m\.color : undefined\}/);
+  // Lo que se está leyendo, solo si está tildada.
+  assert.match(PIEZA, /if \(elegidas && !elegidas\.has\(e\.clave\)\) return \[\];/);
+  // La opción abierta, el cuadro y la receta no pasan `elegidas`: siguen con su punto en el color del texto.
+  assert.match(COMIDA, /<FranjasDeLaComida franjas=\{franjasDeLaOpcion\} comida=\{plegada\.titulo\} variante="opcion" \/>/);
+  assert.doesNotMatch(CUADRO, /elegidas=/);
+  assert.match(EDITOR, /<FranjasDeLaComida franjas=\{frente\} comida=\{comida\} variante="receta" \/>/);
+});
+
+test('RP-23 (RP-D83) · la casilla y el punto, en el renglón de la cabecera de la opción, con su etiqueta; sin saltos (RP-19)', () => {
+  const fila = COMIDA.slice(COMIDA.indexOf('<div className="opcion-plegable__fila">'), COMIDA.indexOf('<div id={`${propio}-opcion-${n}`}'));
+  assert.ok(fila.indexOf('<CasillaEnLasBarras') > 0 && fila.indexOf('<CasillaEnLasBarras') < fila.indexOf('<h4 className="opcion-plegable__titulo">'), 'la casilla, antes de la cabecera y fuera de su botón');
+  assert.match(fila, /<\/h4>\n\s*<\/div>/);
+  const casilla = COMIDA.slice(COMIDA.indexOf('function CasillaEnLasBarras('), COMIDA.indexOf('function AccionDeInicio('));
+  assert.match(casilla, /<input type="checkbox" checked=\{tildada && !sinGuardar\} disabled=\{sinGuardar\} onChange=\{alAlternar\} \/>/);
+  assert.match(casilla, /<span className="en-las-barras__punto" data-color-de-la-opcion=\{color\} aria-hidden="true" \/>/);
+  assert.match(casilla, /<span className="visualmente-oculto">\s*\{COPY_FRANJAS\.mostrarEnLasBarras\(lugar \+ 1, nombreDelColor\)\}\s*\{sinGuardar \? ` \$\{COPY_FRANJAS\.alGuardarseSePuedeMostrar\}` : ''\}\s*<\/span>/);
+  assert.match(casilla, /title=\{sinGuardar \? COPY_FRANJAS\.alGuardarseSePuedeMostrar : COPY_FRANJAS\.suPunto\(lugar \+ 1, nombreDelColor\)\}/);
+  // Sin guardar, apagada: su lugar y su identidad todavía cambian.
+  assert.match(fila, /sinGuardar=\{!sePuedeMostrarEnLasBarras\(n\)\} alAlternar=\{\(\) => alAlternarEnLasBarras\(n\)\}/);
+  // Los estilos, en el bloque de RP-20 y RP-21: los colores salen de los tokens; la fila no agrega renglones.
+  const bloque = ESTILOS.slice(ESTILOS.indexOf('/* ─── RP-20 y RP-21'));
+  for (let n = 1; n <= 5; n++) assert.match(bloque, new RegExp(`\\[data-color-de-la-opcion='${n}'\\] \\{\\n\\s*--color-de-la-opcion: var\\(--opcion-${n}\\);`));
+  assert.match(bloque, /\.franja__marca\[data-color-de-la-opcion\] \{\n\s*border-color: var\(--color-de-la-opcion\);\n\s*background: var\(--color-de-la-opcion\);/);
+  assert.match(bloque, /\.franja__marca\[data-color-de-la-opcion\]\[data-afuera\] \{\n\s*background: var\(--franja-fondo\);/);
+  assert.match(bloque, /\.opcion-plegable__fila \{\n\s*display: flex;\n\s*align-items: center;\n\}/);
+  assert.match(bloque, /\.en-las-barras \{[\s\S]*?min-height: 2rem;/);
+  assert.doesNotMatch(bloque, /--error|--exito|--peligro/);
+});
+
+test('RP-23 (RP-D84) · el día sin dato: la pista vacía, con su alto; con dato, la banda y el tramo', () => {
+  const sinDato = { tipo: 'sin-dato', faltan: [] };
+  const delDia = rango([90, 120], [180, 280], [50, 70]);
+  const [k] = F.tramosDelDia({ energyKcal: sinDato, proteinG: sinDato, carbohydrateG: sinDato, fatG: sinDato }, delDia);
+  assert.deepEqual([k.banda, k.tramo, k.sinDato], [null, null, true]);
+  assert.ok(k.limites, 'el rango del día sigue: vuelve la banda con el dato');
+  const [conDato] = F.tramosDelDia({ energyKcal: { tipo: 'rango', min: '1850', max: '2420' }, proteinG: sinDato, carbohydrateG: sinDato, fatG: sinDato }, delDia);
+  assert.ok(conDato.banda && conDato.tramo);
+  assert.equal(conDato.sinDato, false);
+  assert.match(PIEZA, /data-sin-dato=\{t\.sinDato \? '' : undefined\}/);
 });

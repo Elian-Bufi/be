@@ -220,6 +220,12 @@ const PARES_GRAFICO = [
   // el músculo (el músculo va en --composicion-libre, que ya tiene sus pares).
   ['composicion-resto', 'superficie', NO_TEXTO, 'el resto de la barra de la última toma (lo óseo y lo residual, o lo que no es grasa ni músculo)'],
   ['composicion-resto', 'fondo-suave', NO_TEXTO, 'el resto de la barra al pasar el puntero por el renglón plegado'],
+  // RP-23 (DL-188; RP-D81): el punto de cada opción en las franjas de la comida (sobre la tarjeta, con su anillo) y en el
+  // panel «Rangos y totales» y junto a la casilla de la opción abierta (sobre el fondo suave).
+  ...[1, 2, 3, 4, 5].flatMap((n) => [
+    [`opcion-${n}`, 'superficie', NO_TEXTO, `el punto de la opción ${n} en la franja de su comida`],
+    [`opcion-${n}`, 'fondo-suave', NO_TEXTO, `el punto de la opción ${n} en el panel y junto a su casilla`],
+  ]),
 ];
 
 /** sRGB → CIELAB (D65), para medir cuán distintos se ven dos colores (ΔE 1976). */
@@ -637,6 +643,29 @@ test('website · los gráficos ya no usan los colores de planificado y registrad
   };
   recorrer(join(RAIZ, 'apps/web/src'));
   assert.deepEqual(usos, []);
+});
+
+/**
+ * RP-23 (DL-188; RP-D81): la paleta de las opciones de una comida. Cada color se distingue de los otros cuatro, de la banda
+ * del rango (el acento), del foco, del error, del éxito y de los enlaces (ΔE 20 o más, en los dos temas), y ninguno tiene
+ * un matiz de juicio: ni rojo (de 345° a 20°), ni ámbar (de 20° a 65°), ni verde (de 65° a 160°). El gris pizarra no
+ * tiene un matiz que juzgue.
+ */
+test('website · los puntos de las opciones se distinguen entre sí y no califican (RP-23)', () => {
+  const fallas = [];
+  const opciones = [1, 2, 3, 4, 5].map((n) => `opcion-${n}`);
+  for (const [nombreDelTema, tema] of Object.entries(temasWeb())) {
+    for (const o of opciones) {
+      assert.ok(tema[o], `${nombreDelTema}: falta el token «${o}»`);
+      for (const otro of ['azul', 'foco', 'error', 'exito', 'enlace', ...opciones.filter((x) => x !== o)]) {
+        const d = deltaE(tema[o], tema[otro]);
+        if (d < 20) fallas.push(`${nombreDelTema} · ${o} ${tema[o]} y ${otro} ${tema[otro]}: ΔE ${d.toFixed(1)}`);
+      }
+      const h = matiz(tema[o]);
+      if (h !== null && (h >= 345 || h < 160)) fallas.push(`${nombreDelTema} · ${o} ${tema[o]}: matiz ${h.toFixed(0)}°`);
+    }
+  }
+  assert.deepEqual(fallas, []);
 });
 
 /** TB-04 (DL-163 D-3): «hoy», en --ahora, no se confunde con ninguna de las tres métricas (ΔE 20 o más, en los dos temas). */

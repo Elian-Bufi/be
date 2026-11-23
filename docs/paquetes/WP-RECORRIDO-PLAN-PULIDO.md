@@ -488,3 +488,78 @@ calentamiento y los atajos) va detrás de un «?». El catálogo de ejercicios, 
   RP-20 (#309) la comida del editor muestra las franjas: la escena espera 30 s y falla. No es de esta rama (no toca
   `nutrition/**`).
 - `docs/DEUDA_LEGAJO.md` (DL-188) no se tocó: al integrar, sumarle RP-22 y RP-D60 a RP-D72.
+
+## 10. RP-23 · El promedio, y las opciones que se eligen (22/11)
+
+> **El pedido:** Dirección, con capturas: las franjas por comida (RP-20 y RP-21) «se ven muy sucias» cuando se juntan
+> todas las opciones. La franja de la comida (plegada o abierta) muestra por macro la banda del rango indicado y la marca
+> del promedio, sin el punto de cada opción; al desplegar la comida, cada opción lleva una casilla y un punto de su color;
+> tildada, su punto aparece en ese color en las cuatro barras, junto al promedio (lleno adentro, hueco afuera). Por
+> defecto no hay nada tildado. La franja dentro de la opción abierta queda como está. El panel «Rangos y totales», con la
+> misma regla. Y un arreglo: el día, cuando todavía no se puede sumar, dibujaba un punto en el medio de cada barra que no
+> significaba nada. Rama `wp-franjas-promedio-y-elegidas`, desde main. Decisiones **RP-D80 a RP-D84, a ratificar**.
+
+### En criollo
+
+Cada comida, debajo de su encabezado, muestra ahora en cada renglón (kcal, P, C y G) solo la banda del rango y una raya:
+el promedio de sus opciones. Al abrir la comida, cada opción tiene a su izquierda una casilla y un punto de color (la 1,
+azul; la 2, violeta; la 3, verde azulado; la 4, magenta; la 5, gris pizarra). Si se tilda, el punto de esa opción aparece
+en su color en las cuatro barras de la comida y en las de su comida en el panel: lleno si queda adentro del rango, hueco si
+queda afuera. El color dice cuál es; la forma, dónde queda. Lo tildado se recuerda mientras la pestaña está abierta, por
+plan. La franja de la opción abierta y la de la receta que se elige no cambiaron. En el panel, el día que todavía no se
+suma deja su pista vacía, con el mismo alto, en vez del punto del medio.
+
+### El punto del medio
+
+Sin dato, el día dibujaba la banda de su rango sola. La escala de la franja va de 0 al doble del centro del rango
+(RP-D42), así que la banda queda siempre en el medio; en la pista angosta del panel, una banda de ±10 % mide lo mismo que
+un punto. Sin el tramo al lado no decía nada: parecía un dato. Ahora, sin dato, la pista queda vacía (más tenue) y vuelve
+la banda con el tramo cuando el día se puede sumar (RP-D84).
+
+### Lo que cambió
+
+| Dónde | Antes | Ahora |
+|---|---|---|
+| La franja de la comida (`comida-del-editor.tsx`, `franjas-de-la-comida.tsx`) | Un punto por opción y la raya del promedio (con dos o más) | La banda y la raya del promedio; con una sola opción, la raya es su valor (`rayaDelPromedio`). Solo las opciones tildadas suman su punto (`marcasALaVista`), en su color (`data-color-de-la-opcion`) |
+| La cabecera de cada opción | El botón desplegable, solo | A su izquierda, en el mismo renglón, la casilla y el punto de color (`CasillaEnLasBarras`), fuera del botón: tildar no abre la opción |
+| El panel «Rangos y totales» (`rangos-y-totales.tsx`) | Un punto por opción en cada comida | La misma regla que la comida: el promedio y las tildadas, en su color |
+| El día en el panel (`tramosDelDia`) | Sin dato, la banda sola en el medio de cada barra | Sin dato, la pista vacía, con su alto (`sinDato`, `data-sin-dato`) |
+| Lo que oye el lector (`franjaDelRenglon`, `franjasEnPalabras`) | El rango, cada opción, el promedio y cuántas adentro | El rango, el promedio, cada opción con dónde queda (todas, tildadas o no) y cuántas adentro; al final, «En las barras, solo el promedio.» o «En las barras, el promedio y Opción 2 (violeta).» |
+| «Cómo se leen los rangos y totales» (el «?» del panel) | «cada punto, una opción» | La banda, la raya del promedio (con una sola opción, su valor) y el punto de cada opción tildada, en su color |
+| Los colores (`tokens.css`) | — | `--opcion-1` a `--opcion-5`, en Claro y en Azul noche, medidos por `scripts/contraste.test.cjs` |
+| El estado (`opciones-en-las-barras.ts`, nuevo) | — | Vive en el editor (`useOpcionesEnLasBarras(planId)`) y se recuerda en `sessionStorage` por plan, con try/catch; sin nada tildado, no queda nada guardado |
+
+Los colores se escriben en `tokens.css` y no en `globals.css`: es el único lugar del website donde se escribe un color
+(lo exige la prueba de contraste, que falla con un color literal fuera de los tokens). `globals.css` los usa, dentro del
+bloque de RP-20 y RP-21.
+
+### Decisiones de continuador (a ratificar)
+
+| ID | Decisión | Por qué / alternativa |
+|---|---|---|
+| RP-D80 | En la comida y en el panel, la raya es el promedio de las opciones con el dato; con una sola, su valor. Los puntos, solo los de las opciones tildadas. El resumen a la derecha («1 de 3 adentro · promedio 28 g P») no cambia | Con una sola opción, sin raya, la comida quedaba con la banda sola. Alternativa: con una sola opción, su punto siempre a la vista |
+| RP-D81 | Cinco colores por lugar (la 1, la 2…), que vuelven a empezar desde la sexta: azul, violeta, verde azulado, magenta y gris pizarra. 3:1 o más contra la tarjeta y el fondo suave; ΔE 20 o más entre sí y contra la banda, el foco, el error, el éxito y los enlaces; ningún matiz de juicio (ni rojo, ni ámbar, ni verde). En Azul noche, las mismas familias, más claras | Una comida rara vez pasa de cinco opciones, y la casilla y el texto dicen de cuál es cada punto. Alternativa: seis o más colores, que ya no se distinguen bien sin caer en el rojo o el verde |
+| RP-D82 | Por defecto no hay nada tildado. Lo tildado vive en la pantalla y se recuerda por plan en `sessionStorage` (mientras la pestaña está abierta), con la clave del día tipo, la comida y la opción. Una opción que todavía no se guardó (o cuya comida o día tipo no se guardaron) tiene la casilla apagada hasta el autoguardado: su lugar cambia al quitar, duplicar o mover, y la marca pasaría a otra opción | La sesión basta para ir y volver o recargar, y no deja restos en la computadora. Alternativa: `localStorage`, que lo recuerda para siempre |
+| RP-D83 | La casilla y el punto van a la izquierda de la cabecera de cada opción, fuera del botón que la despliega, en el mismo renglón (no cambian su alto). La etiqueta la oye el lector: «Mostrar la opción 2 en las barras de la comida (su punto es violeta)»; el punto dice su color al pasar el puntero. Las casillas están si la comida tiene franja | Dentro del botón, tildar abriría la opción. Alternativa: las casillas debajo de la franja de la comida, a la vista también plegada, con un renglón más |
+| RP-D84 | El día en el panel, sin dato: la pista vacía y más tenue, con su alto; vuelve la banda con el tramo. Lo que oye el lector no cambia («Energía del día: sin dato») | La banda sola, centrada por la escala, era el «punto en el medio» que no decía nada. Alternativa: la banda sola, más tenue |
+
+### Lo que se probó
+
+- `apps/web/test/franjas-por-comida.test.mjs`: la raya del promedio sola por defecto, con una opción su valor; solo las
+  tildadas, con su color y su forma; la paleta por lugar, que vuelve a empezar, con sus nombres y en los dos temas; lo que
+  oye el lector (el promedio primero, todas las opciones y qué hay en las barras); las casillas (nada tildado por defecto,
+  por plan en la sesión, un almacenamiento roto que no corta nada, la clave por comida); la casilla fuera del botón, en el
+  renglón de la cabecera, con su etiqueta; los estilos en el bloque de RP-20 y RP-21; el día sin dato con la pista vacía.
+- `scripts/contraste.test.cjs`: los cinco colores contra la tarjeta y el fondo suave en los dos temas, y una prueba nueva:
+  se distinguen entre sí y de la banda, el foco, el error, el éxito y los enlaces, sin matiz de juicio.
+- El recorrido `franjasPorComida`: plegada, solo la raya (ningún punto en la comida ni en el panel); la opción abierta,
+  como estaba; tildar la casilla del arroz suma sus cuatro puntos, en su color, en la comida y en el panel, sin que cambie
+  ningún alto, con el mismo color que el punto de la casilla y recordado en la sesión; con la cantidad vacía, el día deja
+  la pista vacía; después, lo de siempre (la marca se mueve igual en los tres lugares, sin saltos, a cuatro anchos).
+
+### Lo que queda
+
+- Ratificar RP-D80 a RP-D84.
+- Mirarlo en pantalla en los dos temas, con cinco opciones tildadas, a 1280 y a 1920 × 1080 con Windows al 125 %, y con un
+  lector de pantalla.
+- La APK no tiene franjas: no cambia.

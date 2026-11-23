@@ -140,6 +140,7 @@ import { COPY_DE_OTRA_COMIDA, copiaDesdeOtraComida, MAXIMO_DE_OPCIONES, opciones
 import { ComidaDelEditor, type ComidaEnEdicion, type Estructura } from './comida-del-editor';
 import { DialogoGuardarComidaHabitual, InsertarComidaHabitual, useAlimentosHabituales, useComidasHabituales } from './habituales';
 import { NoDisponible, useNutricion } from './nutricion';
+import { claveEnLasBarras, enLasBarrasDeLaComida, sePuedeMostrarEnLasBarras, useOpcionesEnLasBarras } from './opciones-en-las-barras';
 import { COPY_ELEGIR_RECETA, PAGINAS_DE_RECETAS, RECETAS_POR_PAGINA, recetasQueCoinciden } from './recetas-para-elegir';
 import { DialogoGuardarPlantillaNutricional, NotaDeOrigenNutricional } from './plantillas';
 
@@ -268,6 +269,8 @@ export function EditorDeBorrador({
   const persona = usePersonaDelArea();
   // API-PLN-02 y 03: los rangos indicados, con su propia revisión (no esperan al autoguardado).
   const rangosIndicados = useRangosIndicados(token, planId);
+  // RP-23 (RP-D82): qué opciones se muestran en las barras de su comida y del panel. Por defecto, ninguna (el promedio solo).
+  const barras = useOpcionesEnLasBarras(planId);
   // EDC-12 (SAN-04): el número de la versión del objetivo, para decirlo con su fecha.
   const numeroDelObjetivo = useNumeroDelObjetivo(objetivo);
   const propio = useId();
@@ -1315,6 +1318,12 @@ export function EditorDeBorrador({
                 })
               }
               totalDeLaOpcion={(k) => rangos?.comidas[j]?.opciones[k]?.total ?? null}
+              enLasBarras={enLasBarrasDeLaComida(barras.elegidas, dia, m)}
+              sePuedeMostrarEnLasBarras={(k) => sePuedeMostrarEnLasBarras(dia, m, m.options[k] ?? {})}
+              alAlternarEnLasBarras={(k) => {
+                const o = m.options[k];
+                if (o?.optionId && dia.dayTypeId && m.mealId) barras.alternar(claveEnLasBarras(dia.dayTypeId, m.mealId, o.optionId));
+              }}
               alGuardarComoHabitual={() => setGuardarHabitual({ i, j })}
               noSePuedeCopiar={noSePuedeCopiarEn(i, j)}
               noSePuedeUsarHabitual={noSePuedeUsarHabitualEn(i, j)}
@@ -1415,7 +1424,7 @@ export function EditorDeBorrador({
                 rangos={rangos}
                 nombreDelDia={nombreDelDia}
                 rangoDelDia={dia ? rangoIndicadoDe(rangosIndicados.estado, dia.dayTypeId, null) : null}
-                comidas={(dia?.meals ?? []).map((m) => ({ rango: rangoIndicadoDe(rangosIndicados.estado, dia?.dayTypeId, m.mealId), claves: m.options.map((o, k) => o.optionId ?? `nueva-${k}`) }))}
+                comidas={(dia?.meals ?? []).map((m) => ({ rango: rangoIndicadoDe(rangosIndicados.estado, dia?.dayTypeId, m.mealId), claves: m.options.map((o, k) => o.optionId ?? `nueva-${k}`), enLasBarras: dia ? enLasBarrasDeLaComida(barras.elegidas, dia, m) : new Set<string>() }))}
                 leyendo={leyendoComposiciones}
                 conRecetas={tieneRecetas(dia?.meals ?? [])}
               />

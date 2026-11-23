@@ -22025,6 +22025,38 @@ html:has(.estacion:not([data-en-el-asistente])) {
   opacity: 0.7;
 }
 
+/* RP-23 (RP-D80 a RP-D83): en la comida y en el panel, solo las opciones tildadas tienen su punto, en el color de su lugar
+   (la 1, la 2…). El color dice de cuál es; la forma, dónde queda: lleno adentro, hueco afuera, como siempre. Ni rojo ni
+   verde: la paleta (`--opcion-1` a `--opcion-5`) no juzga. El mismo color va en el punto junto a la casilla. */
+[data-color-de-la-opcion='1'] {
+  --color-de-la-opcion: var(--opcion-1);
+}
+
+[data-color-de-la-opcion='2'] {
+  --color-de-la-opcion: var(--opcion-2);
+}
+
+[data-color-de-la-opcion='3'] {
+  --color-de-la-opcion: var(--opcion-3);
+}
+
+[data-color-de-la-opcion='4'] {
+  --color-de-la-opcion: var(--opcion-4);
+}
+
+[data-color-de-la-opcion='5'] {
+  --color-de-la-opcion: var(--opcion-5);
+}
+
+.franja__marca[data-color-de-la-opcion] {
+  border-color: var(--color-de-la-opcion);
+  background: var(--color-de-la-opcion);
+}
+
+.franja__marca[data-color-de-la-opcion][data-afuera] {
+  background: var(--franja-fondo);
+}
+
 /* El promedio de las opciones: una raya más alta que la pista, que no se confunde con un punto. */
 .franja__promedio {
   position: absolute;
@@ -22060,6 +22092,15 @@ html:has(.estacion:not([data-en-el-asistente])) {
   border-right: 5px solid var(--texto);
 }
 
+/* La flecha de un punto de color, en su color. */
+.franja__marca[data-color-de-la-opcion][data-fijada='derecha']::after {
+  border-left-color: var(--color-de-la-opcion);
+}
+
+.franja__marca[data-color-de-la-opcion][data-fijada='izquierda']::after {
+  border-right-color: var(--color-de-la-opcion);
+}
+
 /* El día (RP-21): lo que va según lo que se elija, como un tramo con sus dos puntas. */
 .franja__tramo {
   position: absolute;
@@ -22093,6 +22134,11 @@ html:has(.estacion:not([data-en-el-asistente])) {
   right: -1.5px;
 }
 
+/* RP-D84: el día sin dato: la pista vacía, con su alto, sin la banda que sola era un punto en el medio. */
+.franja__pista[data-sin-dato] {
+  opacity: 0.55;
+}
+
 /* Mientras se leen los rangos: los renglones con su alto, la pista quieta. */
 .franjas[data-leyendo] .franja__pista {
   opacity: 0.55;
@@ -22123,6 +22169,62 @@ html:has(.estacion:not([data-en-el-asistente])) {
 /* La comida: debajo de su encabezado, alineada con su nombre, plegada o abierta. */
 .comida-del-editor__franjas {
   padding: 0 1rem 0.7rem calc(1rem + 20px + 0.75rem);
+}
+
+/* RP-23: la casilla de cada opción y su punto de color, a la izquierda de su cabecera, en el mismo renglón: tildarla no
+   cambia ningún alto (RP-19). La casilla y el punto se tocan juntos; el blanco llega a 24 px (WCAG 2.5.8). */
+.opcion-plegable__fila {
+  display: flex;
+  align-items: center;
+}
+
+.opcion-plegable__fila > .opcion-plegable__titulo {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.en-las-barras {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 0.35rem;
+  min-height: 2rem;
+  padding: 0 0 0 0.85rem;
+  cursor: pointer;
+}
+
+.en-las-barras input {
+  width: 1.05rem;
+  height: 1.05rem;
+  margin: 0;
+}
+
+.en-las-barras:has(input:focus-visible) {
+  border-radius: 6px;
+  outline: 3px solid var(--foco);
+  outline-offset: 2px;
+}
+
+.en-las-barras input:focus-visible {
+  outline: none;
+}
+
+/* Una opción sin guardar todavía: la casilla apagada (su pista dice por qué), con el mismo lugar y alto. */
+.en-las-barras[data-sin-guardar] {
+  cursor: default;
+  opacity: 0.55;
+}
+
+.en-las-barras__punto {
+  width: 0.75rem;
+  height: 0.75rem;
+  border-radius: 50%;
+  background: var(--color-de-la-opcion);
+}
+
+/* La cabecera de la opción ya deja su margen: al lado de la casilla, el botón empieza más cerca. */
+.opcion-plegable__fila > .opcion-plegable__titulo > .opcion-plegable__boton {
+  padding-left: 0.6rem;
 }
 
 /* La opción abierta (B): en su caja, como el total. */
