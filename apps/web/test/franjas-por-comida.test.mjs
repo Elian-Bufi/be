@@ -524,7 +524,8 @@ test('RP-23 · la pieza: con elegidas, la raya del promedio y solo las marcas ti
 test('RP-23 (RP-D83) · la casilla y el punto, en el renglón de la cabecera de la opción, con su etiqueta; sin saltos (RP-19)', () => {
   const fila = COMIDA.slice(COMIDA.indexOf('<div className="opcion-plegable__fila">'), COMIDA.indexOf('<div id={`${propio}-opcion-${n}`}'));
   assert.ok(fila.indexOf('<CasillaEnLasBarras') > 0 && fila.indexOf('<CasillaEnLasBarras') < fila.indexOf('<h4 className="opcion-plegable__titulo">'), 'la casilla, antes de la cabecera y fuera de su botón');
-  assert.match(fila, /<\/h4>\n\s*<\/div>/);
+  // RP-25: después de la cabecera, solo «Agregar foto» de una opción de alimentos (otro botón, fuera del de la cabecera).
+  assert.match(fila, /<\/h4>\n\s*(\{\/\* RP-25[\s\S]*?data-agregar-foto-a-la-opcion[\s\S]*?\) : null\}\n\s*)?<\/div>/);
   const casilla = COMIDA.slice(COMIDA.indexOf('function CasillaEnLasBarras('), COMIDA.indexOf('function AccionDeInicio('));
   assert.match(casilla, /<input type="checkbox" checked=\{tildada && !sinGuardar\} disabled=\{sinGuardar\} onChange=\{alAlternar\} \/>/);
   assert.match(casilla, /<span className="en-las-barras__punto" data-color-de-la-opcion=\{color\} aria-hidden="true" \/>/);

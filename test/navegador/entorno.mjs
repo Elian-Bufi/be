@@ -37,8 +37,14 @@ const CLAVE_DEL_SEGUNDO_FACTOR = randomBytes(32).toString('base64url');
 
 /**
  * Arranca la API compilada (apps/api/dist). El secreto de firma se genera por corrida y no se imprime. Los límites de
- * frecuencia son los de siempre salvo el de altas: cada recorrido registra sus propias cuentas sintéticas, y el
- * limitador se prueba en las pruebas de integración, no acá.
+ * frecuencia son los de siempre salvo dos, que dependen de cuántos recorridos hay y no de lo que prueba cada uno:
+ * - el de altas: cada recorrido registra sus propias cuentas sintéticas;
+ * - el de inicios de sesión **por red** (`RATE_LIMIT_LOGIN_IP_MAX`, 100 cada 15 minutos por defecto): todos los
+ *   recorridos entran desde la misma dirección, varias veces cada uno (por la API al preparar sus datos y por el
+ *   website), y con 30 recorridos la corrida pasaba ese cupo: los últimos recibían 429 RATE_LIMITED al entrar.
+ * Los cupos por cuenta (red + identificador e identificador solo) quedan como en producción: cada recorrido usa sus
+ * cuentas. Son variables de entorno de siempre (docs/DESPLIEGUE.md) y solo se suben en esta API de usar y tirar, que
+ * arranca este archivo; el limitador se prueba en las pruebas de integración, no acá.
  */
 export async function arrancarApi({ demoProfesionales = '', salida }) {
   const env = {
@@ -53,6 +59,7 @@ export async function arrancarApi({ demoProfesionales = '', salida }) {
     BE_DEMO_PROFESIONALES: demoProfesionales,
     BE_CLAVE_DEL_SEGUNDO_FACTOR: CLAVE_DEL_SEGUNDO_FACTOR,
     RATE_LIMIT_REGISTRO_MAX: '200',
+    RATE_LIMIT_LOGIN_IP_MAX: '2000',
   };
   const proceso = spawn(process.execPath, [join(REPO, 'apps/api/dist/main.js')], { cwd: REPO, env, stdio: ['ignore', 'pipe', 'pipe'] });
   const registro = [];

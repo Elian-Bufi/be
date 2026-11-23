@@ -31,11 +31,29 @@ export function porReceta(recetas: readonly Receta[], actualizadas: ReadonlyMap<
   return m;
 }
 
+/**
+ * RP-25: lo que muestra la miniatura de la cabecera. Con las rutas firmadas de la lista, esas (ningún pedido). Una imagen
+ * recién cargada o cambiada en esta pantalla (en el cuerpo de la opción o al guardar una opción como receta) no trae
+ * rutas: API-REC-05 no las firma. Esa sola se pide por su medio (API-MED-03), una vez: es un pedido por cada imagen que se
+ * carga, no por miniatura. Sin imagen, o leída sin rutas, el plato de respaldo.
+ */
+export function imagenDeLaCabecera(
+  receta: Pick<Receta, 'image'> | null,
+  cambiadaAca: boolean,
+): { readonly medioId: string; readonly rutas: NonNullable<Receta['image']>['paths'] | null } | null {
+  const imagen = receta?.image;
+  if (!imagen) return null;
+  if (imagen.paths) return { medioId: imagen.mediaId, rutas: imagen.paths };
+  return cambiadaAca ? { medioId: imagen.mediaId, rutas: null } : null;
+}
+
 export type ImagenesDeLasRecetas = {
   /** La receta de la lista propia, con su imagen y sus rutas firmadas; `null` si no se leyó o no está. */
   readonly de: (recipeId: string) => Receta | null;
   /** Lo que devolvió el recuadro de la imagen al cargarla, cambiarla o retirarla. */
   readonly actualizar: (r: Receta) => void;
+  /** RP-25: si la receta se actualizó en esta pantalla (su imagen se cargó o cambió acá, o se acaba de crear). */
+  readonly cambiadaAca: (recipeId: string) => boolean;
 };
 
 /**
@@ -71,5 +89,6 @@ export function useImagenesDeLasRecetas(token: string, sesionPerdida: (r: Result
   const mapa = porReceta(leidas, actualizadas);
   const de = (recipeId: string) => mapa.get(recipeId) ?? null;
   const actualizar = useCallback((r: Receta) => setActualizadas((m) => new Map(m).set(r.recipeId, r)), []);
-  return { de, actualizar };
+  const cambiadaAca = (recipeId: string) => actualizadas.has(recipeId);
+  return { de, actualizar, cambiadaAca };
 }

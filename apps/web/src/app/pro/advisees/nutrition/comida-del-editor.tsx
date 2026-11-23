@@ -74,6 +74,7 @@ import { rangoEnPalabras } from './rangos-indicados';
 import { NutrientesConIconos, RangoIndicadoConIconos } from './cantidad-del-macro';
 import { RangoEnUnRenglon, type RangoParaIndicar } from './suma-de-los-rangos';
 import { NotasAlLado, useNotasPropias } from '../notas-propias';
+import { COPY_OPCION_COMO_RECETA } from './opcion-como-receta';
 
 export type Estructura = EstructuraDePlanEntrada['dayTypes'];
 export type ComidaEnEdicion = Estructura[number]['meals'][number];
@@ -105,6 +106,7 @@ export function ComidaDelEditor({
   nombres,
   recetas,
   imagenDeLaOpcion,
+  alGuardarComoReceta,
   composiciones,
   origenes,
   rangoDeOpciones,
@@ -150,6 +152,11 @@ export function ComidaDelEditor({
   recetas: Readonly<Record<string, RecetaDeOpcion>>;
   /** RP-24 (RP-D92): la miniatura de una opción de receta, en su cabecera, y en el cuerpo cargar o cambiar la imagen. */
   imagenDeLaOpcion?: (recipeVersionId: string, donde: 'cabecera' | 'cuerpo') => ReactNode;
+  /**
+   * RP-25: guardar la opción de alimentos `k` como receta, desde «Guardar como receta» (en la opción abierta) o desde
+   * «Agregar foto» (en su cabecera, donde una receta muestra su miniatura).
+   */
+  alGuardarComoReceta?: (k: number, origen: 'foto' | 'receta') => void;
   /** NUP-01: la composición de cada alimento y de dónde sale, por su identidad en el catálogo. */
   composiciones: ReadonlyMap<string, ComposicionConocida>;
   origenes: ReadonlyMap<string, string>;
@@ -379,6 +386,21 @@ export function ComidaDelEditor({
                               <Icono nombre={abiertaLaOpcion ? 'arriba' : 'abajo'} tamano={18} />
                             </button>
                           </h4>
+                          {/* RP-25: una opción de alimentos no tiene foto; la foto es de una receta. Al lado de la cabecera
+                              (no adentro: un botón no va dentro de otro), un acceso discreto que la guarda como receta. */}
+                          {alGuardarComoReceta && !o.recipeVersionId && o.items.length > 0 ? (
+                            <button
+                              type="button"
+                              className="boton boton--discreto boton--compacto opcion-plegable__foto"
+                              data-agregar-foto-a-la-opcion={n + 1}
+                              aria-label={COPY_OPCION_COMO_RECETA.agregarFotoA(pestanaDeLaOpcion(o, n))}
+                              title={COPY_OPCION_COMO_RECETA.agregarFotoA(pestanaDeLaOpcion(o, n))}
+                              onClick={() => alGuardarComoReceta(n, 'foto')}
+                            >
+                              <Icono nombre="imagen" tamano={18} />
+                              {COPY_OPCION_COMO_RECETA.agregarFoto}
+                            </button>
+                          ) : null}
                         </div>
                         <div id={`${propio}-opcion-${n}`} className="opcion-plegable__cuerpo" hidden={!abiertaLaOpcion}>
                           {abiertaLaOpcion && opcion ? (
@@ -509,6 +531,12 @@ export function ComidaDelEditor({
                                   <button type="button" className="boton boton--discreto" onClick={() => alEditarNombre({ de: 'opcion', opcion: k })}>
                                     Cambiar el nombre
                                   </button>
+                                  {/* RP-25: la opción de alimentos, en Mis recetas; después puede tener foto. */}
+                                  {alGuardarComoReceta && !opcion.recipeVersionId && opcion.items.length > 0 ? (
+                                    <button type="button" className="boton boton--discreto" data-guardar-como-receta={k + 1} aria-haspopup="dialog" onClick={() => alGuardarComoReceta(k, 'receta')}>
+                                      {COPY_OPCION_COMO_RECETA.guardarComoReceta}
+                                    </button>
+                                  ) : null}
                                   <button type="button" className="boton boton--discreto" data-duplicar-opcion onClick={() => alDuplicarOpcion(k)}>
                                     {E.duplicarOpcion(k)}
                                   </button>
