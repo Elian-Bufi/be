@@ -121,6 +121,15 @@
   --opcion-3: #00796b;
   --opcion-4: #b0287a;
   --opcion-5: #5f6b7a;
+  /* DL-196 (WP-EDITOR-ENTRENAMIENTO, EE-04): el color de cada fase del plan, en el almanaque (el borde de la semana, con
+     un velo del mismo tono) y en el número de la fase. Seis, y después se repiten; además del color, la fase se nombra en
+     la leyenda y en el título de cada semana (WCAG 1.4.1). 3:1 o más contra la tarjeta y el fondo suave. */
+  --fase-1: #0b62a4;
+  --fase-2: #7b3fb5;
+  --fase-3: #00796b;
+  --fase-4: #b0287a;
+  --fase-5: #8a5300;
+  --fase-6: #5f6b7a;
   /* Sombras y velo: no son texto ni bordes de control */
   --sombra-suave: 0 1px 2px rgb(10 31 68 / 6%), 0 1px 1px rgb(10 31 68 / 4%);
   --sombra: 0 20px 50px rgb(10 31 68 / 30%);
@@ -223,6 +232,13 @@
   --opcion-3: #2bb3a3;
   --opcion-4: #f28ac4;
   --opcion-5: #b4bfcc;
+  /* DL-196: las seis fases sobre navy, las mismas familias, más claras. */
+  --fase-1: #7cb8ff;
+  --fase-2: #c9a7ff;
+  --fase-3: #2bb3a3;
+  --fase-4: #f28ac4;
+  --fase-5: #e0b25a;
+  --fase-6: #b4bfcc;
   --sombra-suave: none;
   --sombra: 0 20px 50px rgb(0 0 0 / 45%);
   --sombra-desplazamiento: rgb(39 213 249 / 40%);

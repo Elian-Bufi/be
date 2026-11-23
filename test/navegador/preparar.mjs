@@ -72,6 +72,10 @@ export const RECORRIDOS = {
   // RP-19 (WP-RECORRIDO-PLAN-PULIDO, DL-188): con un error nada cambia de lugar, en el reparto, el objetivo y el calculador.
   // RP-22: también en el editor de Entrenamiento, con un borrador de una sesión con un ejercicio.
   sinSaltos: { habilitado: ['NUTRICION', 'ENTRENAMIENTO'], datos: ['borrador', 'borrador-de-entrenamiento-sin-saltos'] },
+  // DL-196 (WP-EDITOR-ENTRENAMIENTO, parte A): el editor rediseñado (el plan, las fases, el almanaque, «Antes de activar» y
+  // copiar la fase) y las aproximaciones por porcentaje, con el mismo borrador de una sesión con un ejercicio.
+  editorDeEntrenamiento: { habilitado: ['ENTRENAMIENTO'], datos: ['borrador-de-entrenamiento-sin-saltos'] },
+  aproximacionesPorPorcentaje: { habilitado: ['ENTRENAMIENTO'], datos: ['borrador-de-entrenamiento-sin-saltos'] },
   // RP-20 y RP-21 (DL-188): un borrador con el almuerzo en dos opciones y su rango indicado, para las franjas por comida.
   franjasPorComida: { habilitado: ['NUTRICION'], datos: ['franjas'] },
   // RP-24 (DL-188): el mismo borrador, para el «?» en la esquina, «Rangos indicados» y las acciones sin subrayado.

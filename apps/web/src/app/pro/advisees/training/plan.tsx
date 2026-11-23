@@ -309,7 +309,7 @@ export function VistaDePlan() {
             // DL-146: la pista dice por qué es una versión nueva y no una edición (DL-047; UC-P10 V07).
             const crearLaVersion = activa ? <Pista texto={COPY_PISTAS.plan.nuevaVersion}>{botonDeLaVersion}</Pista> : botonDeLaVersion;
             const irAlResumen = (
-              <button type="button" className="boton boton--enlace" data-navega onClick={() => irA('resumen')}>
+              <button type="button" className="boton boton--discreto boton--con-flecha" data-navega onClick={() => irA('resumen')}>
                 {C.irAResumen}
               </button>
             );

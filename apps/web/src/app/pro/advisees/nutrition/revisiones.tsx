@@ -90,7 +90,7 @@ export function VistaDeRevisiones() {
           ) : null}
           {aviso.alPlan ? (
             <p>
-              <button type="button" className="boton boton--enlace" data-navega onClick={() => irA('plan')}>
+              <button type="button" className="boton boton--discreto boton--con-flecha" data-navega onClick={() => irA('plan')}>
                 Abrir el borrador en Plan
               </button>
             </p>

@@ -123,7 +123,8 @@ test('DL-181 · el bloque en el editor: los dos tipos a la vista, las vueltas de
   assert.match(BLOQUE, /indicacionDeVueltas\(/);
   assert.match(BLOQUE, /\{ clave: 'quitar', texto: B\.quitarBloque, detalle: B\.quitarBloqueDetalle/);
   assert.match(EDITOR, /partesDeLaSesion\(sesion\)\.map\(/);
-  assert.match(EDITOR, /COPY_BLOQUES_DE_LA_SESION\.laAppAnterior/);
+  // DL-196 (E3): sin compatibilidad con APK viejas, la nota sobre «la app anterior» ya no va.
+  assert.doesNotMatch(EDITOR, /COPY_BLOQUES_DE_LA_SESION\.laAppAnterior/);
   // Dentro de un bloque, el título del ejercicio es de un nivel más.
   assert.match(EDITOR, /nivel=\{enBloque \? 'h4' : 'h3'\}/);
   assert.match(EJERCICIO, /const Titulo = nivel;/);

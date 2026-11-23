@@ -4,19 +4,13 @@
  * - Lo de antes responde igual: un plan sin calentamiento se guarda sin la clave `setKind` y sale, para el cliente que no
  *   declara `training-set-kinds-1`, exactamente como antes. Con la capacidad, cada serie dice su tipo.
  * - El calentamiento va arriba: una serie de calentamiento después de una efectiva es un 422 sin cambios.
- * - Un plan con calentamiento se guarda con `WARM_UP` solo en esas series; no se activa mientras el titular no haya usado
- *   una APK que lo distinga; no se le entrega a una que no; y lo registrado lleva su tipo.
+ * - Un plan con calentamiento se guarda con `WARM_UP` solo en esas series y lo registrado lleva su tipo. DL-196: se activa
+ *   aunque el titular nunca haya declarado nada, y se le entrega a cualquier pedido (sin la capacidad, sin `setKind`).
  * El cálculo (que el calentamiento no entra en la comparación, en el 1RM estimado ni en las cuentas) lo prueba el dominio
  * (`packages/domain/src/tipos-de-serie.test.ts`); acá, que la API guarda y devuelve lo que ese cálculo necesita.
  */
 import type { INestApplication } from '@nestjs/common';
-import {
-  CAPACIDAD_OBJETIVOS_POR_SERIE,
-  CAPACIDAD_TIPOS_DE_SERIE,
-  COPY_CALENTAMIENTO_Y_LA_APP,
-  PlanConObjetivosResponseSchema,
-  valorDeCapacidades,
-} from '@be/domain';
+import { CAPACIDAD_OBJETIVOS_POR_SERIE, CAPACIDAD_TIPOS_DE_SERIE, PlanConObjetivosResponseSchema, valorDeCapacidades } from '@be/domain';
 import { PrismaClient } from '@prisma/client';
 import { randomUUID } from 'node:crypto';
 import { appDePrueba, claveDeIdempotencia, conSesion } from './soporte-api';
@@ -69,9 +63,8 @@ describe('DL-178 · lo de antes responde igual', () => {
     expect(JSON.stringify(sinLaCapacidad)).not.toContain('setKind');
     const conLaCapacidad = (await conElWebsite(c.pro.token).get(`/api/v1/training/plans/${b.planId}`).expect(200)).body;
     expect(tiposDeLaBanca(conLaCapacidad)).toEqual(['WORKING', 'WORKING', 'WORKING']);
-    // API-SER-01: sin calentamiento no hay nada que esperar de la app de la persona.
-    const detalle = PlanConObjetivosResponseSchema.parse((await conElWebsite(c.pro.token).get(`/api/v1/training/plans/${b.planId}/detail`).expect(200)).body);
-    expect(detalle.data.setKindsDelivery).toEqual({ required: false, adviseeClientCapable: false });
+    // API-SER-01, con su esquema vigente (DL-196: ya no dice nada de la app de la persona).
+    PlanConObjetivosResponseSchema.parse((await conElWebsite(c.pro.token).get(`/api/v1/training/plans/${b.planId}/detail`).expect(200)).body);
     // Y se activa como siempre, sin que la persona haya usado la APK nueva.
     await activarPlanDeEntrenamiento(app, c.pro, b.planId, b.version).expect(200);
   });
@@ -97,7 +90,7 @@ describe('DL-178 · el calentamiento va arriba', () => {
 });
 
 describe('DL-178 · un plan con calentamiento', () => {
-  it('se guarda con WARM_UP solo en el calentamiento; se activa cuando la persona usó la APK que lo distingue; no le llega a una que no; y se registra con su tipo', async () => {
+  it('se guarda con WARM_UP solo en el calentamiento; se activa aunque la persona nunca haya declarado nada (DL-196); le llega a cualquier pedido; y se registra con su tipo', async () => {
     const c = await circuitoListoParaPlanificarEntrenamiento(app, etiqueta('con-calentamiento'));
     const b = await crearBorradorDeEntrenamiento(app, c);
     const guardado = await conSesion(app, c.pro.token)
@@ -111,24 +104,20 @@ describe('DL-178 · un plan con calentamiento', () => {
       { repetitions: { value: 8 }, note: null },
     ]);
     expect(tiposDeLaBanca((await conElWebsite(c.pro.token).get(`/api/v1/training/plans/${b.planId}`).expect(200)).body)).toEqual(['WARM_UP', 'WORKING', 'WORKING']);
-    const detalle = () => conElWebsite(c.pro.token).get(`/api/v1/training/plans/${b.planId}/detail`).expect(200);
-    expect(PlanConObjetivosResponseSchema.parse((await detalle()).body).data.setKindsDelivery).toEqual({ required: true, adviseeClientCapable: false });
+    const detalle = PlanConObjetivosResponseSchema.parse((await conElWebsite(c.pro.token).get(`/api/v1/training/plans/${b.planId}/detail`).expect(200)).body).data;
+    expect(Object.keys(detalle)).not.toContain('setKindsDelivery');
 
-    // Sin la APK nueva, no se activa: el mismo 409 de DL-122, con su motivo, y sin ningún cambio.
-    const clave = claveDeIdempotencia();
-    const rechazo = await activarPlanDeEntrenamiento(app, c.pro, b.planId, version, clave).expect(409);
-    expect(rechazo.body.error).toEqual({ code: 'CLIENT_CAPABILITY_REQUIRED', message: COPY_CALENTAMIENTO_Y_LA_APP.activacionBloqueada });
-    expect(await prisma.instantaneaDePlanDeEntrenamiento.count({ where: { versionDePlanId: b.planId } })).toBe(0);
+    // DL-196: la persona nunca abrió la app ni declaró nada, y el plan se activa (antes, un 409 CLIENT_CAPABILITY_REQUIRED).
+    await activarPlanDeEntrenamiento(app, c.pro, b.planId, version).expect(200);
+    expect(await prisma.instantaneaDePlanDeEntrenamiento.count({ where: { versionDePlanId: b.planId } })).toBe(1);
 
-    // La persona abre «Hoy» con la APK nueva: queda registrado, y con la misma clave se activa.
-    await conLaApk(app, c.ase.token, LA_APK_NUEVA).get('/api/v1/me/training/today').expect(200);
-    expect(PlanConObjetivosResponseSchema.parse((await detalle()).body).data.setKindsDelivery).toEqual({ required: true, adviseeClientCapable: true });
-    await activarPlanDeEntrenamiento(app, c.pro, b.planId, version, clave).expect(200);
-
-    // A una APK que no distingue el calentamiento no le llega: lo vería todo efectivo.
-    const vieja = (await conSesion(app, c.ase.token).get('/api/v1/me/training/today').expect(200)).body;
-    expect(vieja.data.planState).toBe('NOT_AVAILABLE');
-    await conSesion(app, c.ase.token).get(`/api/v1/training/plans/${b.planId}`).expect(404);
+    // Un pedido sin la cabecera también lo recibe: «Hoy» disponible y el detalle, sin `setKind` (lo saca el interceptor).
+    const sinCabecera = (await conSesion(app, c.ase.token).get('/api/v1/me/training/today').expect(200)).body;
+    expect(sinCabecera.data).toMatchObject({ planState: 'AVAILABLE', activePlan: { planId: b.planId } });
+    expect(JSON.stringify(sinCabecera)).not.toContain('setKind');
+    const elPlan = (await conSesion(app, c.ase.token).get(`/api/v1/training/plans/${b.planId}`).expect(200)).body;
+    expect(elPlan.data).toMatchObject({ planId: b.planId, state: 'ACTIVATED' });
+    expect(JSON.stringify(elPlan)).not.toContain('setKind');
 
     // La APK nueva lo ve con su tipo y lo registra así.
     const apk = conLaApk(app, c.ase.token, LA_APK_NUEVA);
@@ -137,9 +126,9 @@ describe('DL-178 · un plan con calentamiento', () => {
       (o) => o.plannedSession.sessionId === 'ses-a',
     )!;
     expect(ocurrencia.plannedSession.prescriptions.find((p) => p.prescriptionId === 'rx-banca')!.sets.map((s) => s.setKind)).toEqual(['WARM_UP', 'WORKING', 'WORKING']);
-    // Revisión adversaria: la sesión sin registrar tampoco le llega a la APK instalada (que muestra los objetivos por serie,
-    // pero no distingue el calentamiento): el mismo 404 que API-TRN-15.
-    await conLaApk(app, c.ase.token, valorDeCapacidades([CAPACIDAD_OBJETIVOS_POR_SERIE])).get(`/api/v1/training/occurrences/${ocurrencia.occurrenceId}/session`).expect(404);
+    // DL-196: la sesión sin registrar también le llega a un cliente que no distingue el calentamiento, sin `setKind`.
+    const sinTipos = (await conLaApk(app, c.ase.token, valorDeCapacidades([CAPACIDAD_OBJETIVOS_POR_SERIE])).get(`/api/v1/training/occurrences/${ocurrencia.occurrenceId}/session`).expect(200)).body;
+    expect(JSON.stringify(sinTipos)).not.toContain('setKind');
     const sesion = (await apk.get(`/api/v1/training/occurrences/${ocurrencia.occurrenceId}/session`).expect(200)).body;
     expect((sesion.data.session.prescriptions as ({ prescriptionId: string } & Sets[number])[]).find((p) => p.prescriptionId === 'rx-banca')!.sets.map((s) => s.setKind)).toEqual([
       'WARM_UP',
@@ -187,6 +176,5 @@ describe('DL-178 · un plan con calentamiento', () => {
     expect((ejecucion.data.original.exercises[0].sets as { setKind?: string }[]).map((s) => s.setKind)).toEqual(['WARM_UP', 'WORKING', 'WORKING']);
     const sinElCampo = (await conSesion(app, c.pro.token).get(`/api/v1/training/executions/${confirmado.body.data.executionId}`).expect(200)).body;
     expect(JSON.stringify(sinElCampo)).not.toContain('setKind');
-    expect(await prisma.capacidadDeClienteDeclarada.count({ where: { identidadId: c.ase.id, capacidad: CAPACIDAD_TIPOS_DE_SERIE } })).toBe(1);
   });
 });

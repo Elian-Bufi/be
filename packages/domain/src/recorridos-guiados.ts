@@ -92,7 +92,7 @@ export const RECORRIDO_DEL_EDITOR_DE_ENTRENAMIENTO: DefinicionDelRecorrido = {
       id: 'sesiones',
       anclas: ['sesiones'],
       titulo: 'Sesiones y días',
-      texto: 'Cada sesión es un renglón de «Sesiones»: tocala para editarla. Con «Agregar sesión» sumás otra, y con los días de abajo elegís cuándo va.',
+      texto: 'Las «Sesiones» de cada fase: elegí una para editarla. Con «Agregar sesión» sumás otra; los días de la semana se eligen arriba, en la misma fase.',
     },
     {
       id: 'bloques',

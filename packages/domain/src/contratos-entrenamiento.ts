@@ -410,6 +410,54 @@ export const AgendaDeEntrenamientoSchema = z.strictObject({
 });
 export type AgendaDeEntrenamiento = z.infer<typeof AgendaDeEntrenamientoSchema>;
 
+/**
+ * DL-196 (WP-EDITOR-ENTRENAMIENTO, EE-D03) · el paso al que se redondean las cargas de las aproximaciones: sin decimales
+ * raros, porque no todos los gimnasios tienen discos chicos. 1 para las mancuernas livianas; 2,5 para la barra y los discos;
+ * 5 (o 10 en libras) para las máquinas de placas.
+ */
+export const PasoDeRedondeoSchema = z.union([z.literal(1), z.literal(2.5), z.literal(5), z.literal(10)]);
+export type PasoDeRedondeo = z.infer<typeof PasoDeRedondeoSchema>;
+
+/**
+ * DL-196 (EE-07) · cómo se arman las aproximaciones de un ejercicio (las series `WARM_UP` antes de las efectivas):
+ * - `FROM_WORKING_LOAD`: BE las calcula desde la carga de trabajo con estos porcentajes, redondeadas al paso;
+ * - `MANUAL`: el profesional escribe cada una. Los porcentajes quedan como estaban, por si vuelve a «Por %».
+ * Las series en sí son las de siempre (`setKind: WARM_UP`): esto solo recuerda cómo se armaron.
+ */
+export const AproximacionesDelEjercicioSchema = z.strictObject({
+  prescriptionId: IdDeNodoSchema,
+  mode: z.enum(['FROM_WORKING_LOAD', 'MANUAL']),
+  workingLoadShares: z.array(z.number().int().min(5).max(95)).max(6),
+  step: PasoDeRedondeoSchema,
+});
+export type AproximacionesDelEjercicio = z.infer<typeof AproximacionesDelEjercicioSchema>;
+
+/**
+ * DL-196 (WP-EDITOR-ENTRENAMIENTO) · la planificación de una versión del plan, aparte de su estructura:
+ * - `startDate` y `weeks`: cuándo empieza el plan y cuántas semanas dura (el fin sale de los dos, EE-D01);
+ * - `goal`: el objetivo general del plan, en palabras del profesional (para la persona; la APK 0.32 todavía no lo muestra);
+ * - `phases`: cuántas semanas dura cada fase (EE-D02), por el identificador de su bloque; las fechas salen solas,
+ *   una fase detrás de la otra desde el inicio (`planificacion-del-plan.ts`);
+ * - `warmUps`: cómo se armaron las aproximaciones de cada ejercicio;
+ * - `privateNotes`: las anotaciones del profesional, del plan y de cada fase. **La persona no las ve:** no salen en
+ *   ninguna lectura del titular ni en su exportación (EE-D05).
+ * Va en el contenido de la versión, como la agenda, y solo en las lecturas del profesional (API-SER-01).
+ */
+export const PlanificacionDelPlanSchema = z.strictObject({
+  startDate: FechaLocalSchema.nullable(),
+  weeks: z.number().int().min(1).max(104).nullable(),
+  goal: TextoOpcional(1000).optional(),
+  phases: z.array(z.strictObject({ blockId: IdDeNodoSchema, weeks: z.number().int().min(1).max(52).nullable() })).max(12),
+  warmUps: z.array(AproximacionesDelEjercicioSchema).max(400).optional(),
+  privateNotes: z
+    .strictObject({
+      plan: TextoOpcional(4000),
+      phases: z.array(z.strictObject({ blockId: IdDeNodoSchema, text: Texto(2000) })).max(12),
+    })
+    .optional(),
+});
+export type PlanificacionDelPlan = z.infer<typeof PlanificacionDelPlanSchema>;
+
 export const VersionDePlanDeEntrenamientoSchema = z.strictObject({
   planId: IdOpaco,
   /** El Plan que agrupa las versiones (DL-046, por homología). */
@@ -456,6 +504,8 @@ export const EditarPlanDeEntrenamientoRequestSchema = z.strictObject({
   agenda: AgendaDeEntrenamientoSchema.nullable().optional(),
   /** DL-192 (RPE-D01): la notación del esfuerzo del borrador. Ausente, no cambia. Lo guardado sigue siendo el RIR. */
   effortNotation: NotacionDelEsfuerzoSchema.optional(),
+  /** DL-196: la planificación del borrador (fechas, semanas de cada fase, objetivo, anotaciones). Ausente, no cambia; `null`, se quita. */
+  planning: PlanificacionDelPlanSchema.nullable().optional(),
 });
 export type EditarPlanDeEntrenamientoRequest = z.infer<typeof EditarPlanDeEntrenamientoRequestSchema>;
 

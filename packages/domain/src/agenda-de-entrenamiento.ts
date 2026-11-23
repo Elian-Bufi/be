@@ -47,9 +47,23 @@ export function diaDeLaSemana(fecha: string): DiaDeLaSemana {
   return DIAS_DE_LA_SEMANA[(domingoEsCero + 6) % 7] as DiaDeLaSemana;
 }
 
+/**
+ * DL-196 (EE-D02) · las semanas en que va cada sesión: las de su fase, cuando la planificación les da fechas
+ * (`ventanasDeLasSesiones`, en `planificacion-del-plan.ts`). Una sesión sin ventana va todas las semanas desde el
+ * inicio, como en los planes de antes.
+ */
+export type VentanasDeLasSesiones = ReadonlyMap<string, { readonly desde: string; readonly hasta: string }>;
+const SIN_VENTANAS: VentanasDeLasSesiones = new Map();
+
+/** Si la fecha cae en la ventana de la sesión (o la sesión no tiene ventana). */
+const enSuVentana = (ventanas: VentanasDeLasSesiones, sessionId: string, fecha: string): boolean => {
+  const v = ventanas.get(sessionId);
+  return v === undefined || (fecha >= v.desde && fecha <= v.hasta);
+};
+
 /** Si la sesión va esa fecha por sus días de la semana, antes de aplicar los movimientos. */
-function porSusDias(agenda: AgendaDeEntrenamiento, sessionId: string, fecha: string): boolean {
-  if (fecha < agenda.startDate) return false;
+function porSusDias(agenda: AgendaDeEntrenamiento, sessionId: string, fecha: string, ventanas: VentanasDeLasSesiones = SIN_VENTANAS): boolean {
+  if (fecha < agenda.startDate || !enSuVentana(ventanas, sessionId, fecha)) return false;
   const sesion = agenda.sessions.find((s) => s.sessionId === sessionId);
   return sesion !== undefined && sesion.weekdays.includes(diaDeLaSemana(fecha));
 }
@@ -59,15 +73,15 @@ function porSusDias(agenda: AgendaDeEntrenamiento, sessionId: string, fecha: str
  * mismo día, en el orden de las sesiones de la agenda. Un movimiento que no parte de una fecha prevista no cuenta (la
  * validación lo rechaza antes de guardar).
  */
-export function fechasPrevistas(agenda: AgendaDeEntrenamiento, desde: string, hasta: string): FechaPrevista[] {
+export function fechasPrevistas(agenda: AgendaDeEntrenamiento, desde: string, hasta: string, ventanas: VentanasDeLasSesiones = SIN_VENTANAS): FechaPrevista[] {
   const inicio = desde < agenda.startDate ? agenda.startDate : desde;
   const previstas = new Map<string, FechaPrevista>();
   for (let fecha = inicio; fecha <= hasta; fecha = diaSiguiente(fecha)) {
     const dia = diaDeLaSemana(fecha);
-    for (const s of agenda.sessions) if (s.weekdays.includes(dia)) previstas.set(`${fecha}|${s.sessionId}`, { sessionId: s.sessionId, date: fecha });
+    for (const s of agenda.sessions) if (s.weekdays.includes(dia) && enSuVentana(ventanas, s.sessionId, fecha)) previstas.set(`${fecha}|${s.sessionId}`, { sessionId: s.sessionId, date: fecha });
   }
   for (const m of agenda.moves) {
-    if (!porSusDias(agenda, m.sessionId, m.from)) continue;
+    if (!porSusDias(agenda, m.sessionId, m.from, ventanas)) continue;
     previstas.delete(`${m.from}|${m.sessionId}`);
     if (m.to >= inicio && m.to <= hasta) previstas.set(`${m.to}|${m.sessionId}`, { sessionId: m.sessionId, date: m.to });
   }
@@ -92,7 +106,7 @@ export interface ProblemaDeAgenda {
  * movimiento que no parte de una fecha prevista, se repite, cae antes del inicio o cae sobre otra fecha prevista de la
  * misma sesión. Vacío si se puede guardar.
  */
-export function problemasDeAgenda(agenda: AgendaDeEntrenamiento, sesionesDelPlan: ReadonlySet<string>): ProblemaDeAgenda[] {
+export function problemasDeAgenda(agenda: AgendaDeEntrenamiento, sesionesDelPlan: ReadonlySet<string>, ventanas: VentanasDeLasSesiones = SIN_VENTANAS): ProblemaDeAgenda[] {
   const problemas: ProblemaDeAgenda[] = [];
   const vistas = new Set<string>();
   agenda.sessions.forEach((s, i) => {
@@ -105,12 +119,12 @@ export function problemasDeAgenda(agenda: AgendaDeEntrenamiento, sesionesDelPlan
   const destinos = new Set<string>();
   agenda.moves.forEach((m, i) => {
     const ruta = `agenda.moves[${i}]`;
-    if (!porSusDias(agenda, m.sessionId, m.from)) problemas.push({ code: 'AGENDA_MOVE_NOT_PLANNED', path: `${ruta}.from` });
+    if (!porSusDias(agenda, m.sessionId, m.from, ventanas)) problemas.push({ code: 'AGENDA_MOVE_NOT_PLANNED', path: `${ruta}.from` });
     if (origenes.has(`${m.sessionId}|${m.from}`)) problemas.push({ code: 'AGENDA_MOVE_DUPLICATED', path: `${ruta}.from` });
     origenes.add(`${m.sessionId}|${m.from}`);
     if (m.to < agenda.startDate) problemas.push({ code: 'AGENDA_MOVE_BEFORE_START', path: `${ruta}.to` });
     // El destino no puede ser una fecha en la que esa sesión ya está, ni el destino de otro movimiento.
-    const yaEsta = porSusDias(agenda, m.sessionId, m.to) && !agenda.moves.some((o) => o.sessionId === m.sessionId && o.from === m.to);
+    const yaEsta = porSusDias(agenda, m.sessionId, m.to, ventanas) && !agenda.moves.some((o) => o.sessionId === m.sessionId && o.from === m.to);
     if (m.to !== m.from && (yaEsta || destinos.has(`${m.sessionId}|${m.to}`))) problemas.push({ code: 'AGENDA_MOVE_COLLISION', path: `${ruta}.to` });
     destinos.add(`${m.sessionId}|${m.to}`);
   });
@@ -170,10 +184,16 @@ export interface AgendaDelDia<E extends EjecucionParaLaAgenda = EjecucionParaLaA
  * próxima fecha de la misma sesión. Una ejecución anterior a la ventana no resuelve nada: con otra versión del plan, una
  * sesión hecha antes de que esta rigiera no adelanta la primera fecha de esta.
  */
-export function agendaDelDia<E extends EjecucionParaLaAgenda>(agenda: AgendaDeEntrenamiento, ejecuciones: readonly E[], hoy: string, vigenteDesde: string): AgendaDelDia<E> {
+export function agendaDelDia<E extends EjecucionParaLaAgenda>(
+  agenda: AgendaDeEntrenamiento,
+  ejecuciones: readonly E[],
+  hoy: string,
+  vigenteDesde: string,
+  ventanas: VentanasDeLasSesiones = SIN_VENTANAS,
+): AgendaDelDia<E> {
   const desde = sumarDias(hoy, -MARGEN_DE_DIAS) < vigenteDesde ? vigenteDesde : sumarDias(hoy, -MARGEN_DE_DIAS);
   const resueltas = resolverFechasPrevistas(
-    fechasPrevistas(agenda, desde, sumarDias(hoy, MARGEN_DE_DIAS)),
+    fechasPrevistas(agenda, desde, sumarDias(hoy, MARGEN_DE_DIAS), ventanas),
     ejecuciones.filter((e) => e.date >= desde),
   );
   const proximaDeLaSesion = (p: FechaPrevista): string | null => resueltas.find((o) => o.sessionId === p.sessionId && o.date > p.date)?.date ?? null;

@@ -512,7 +512,7 @@ describe.each(VERSIONES)('DL-152 · la APK %s, contra la API de hoy', (version) 
     expect(apk.rechazos()).toEqual([]);
   });
 
-  it('un plan con objetivos por serie («Piernas A», DL-122): la APK que no los muestra no lo recibe, en la forma que lee; la que los muestra, con el objetivo de cada serie y la imagen del ejercicio (DL-123)', async () => {
+  it('un plan con objetivos por serie («Piernas A», DL-122): se le entrega a la APK, declare lo que declare (DL-196), en la forma que lee; la que lee API-SER-02, con el objetivo de cada serie y la imagen del ejercicio (DL-123)', async () => {
     const plan = await borradorDeLaDemo(app, etiqueta(`${corta}-piernas`));
     const imagen = IMAGENES_DEL_PAQUETE.find((i) => i.fixtureKey === SESION_DEMO.exercises[0]!.catalogFixtureKey)!;
     const ejercicio = plan.ejercicios.get(imagen.fixtureKey)!;
@@ -525,21 +525,18 @@ describe.each(VERSIONES)('DL-152 · la APK %s, contra la API de hoy', (version) 
     const fecha = hoy.date as string;
     await apk.pide('API-TRN-14-PERIODO', { token, consulta: { periodStart: fecha, periodEnd: fecha } });
     await apk.pide('API-TRN-08', { token, params: { adviseeId: plan.ase.id } });
-    if (!apk.lee('API-SER-02')) {
-      // Sin la capacidad: «Hoy» y el período, no disponibles; el plan, el 404 de lo inexistente.
-      expect(hoy.planState).toBe('NOT_AVAILABLE');
-      await apk.pide('API-TRN-09', { token, params: { planId: plan.planId }, status: 404 });
-    } else {
-      expect(hoy.planState).toBe('AVAILABLE');
-      const ocurrencia = (hoy.occurrences as { occurrenceId: string; plannedSession: { sessionId: string } }[]).find((o) => o.plannedSession.sessionId === SESION_ID)!.occurrenceId;
+    // DL-196 (punto 5): ya no se retiene por la versión de la app. «Hoy», el plan y abrir la sesión, a cualquier APK.
+    expect(hoy.planState).toBe('AVAILABLE');
+    const ocurrencia = (hoy.occurrences as { occurrenceId: string; plannedSession: { sessionId: string } }[]).find((o) => o.plannedSession.sessionId === SESION_ID)!.occurrenceId;
+    if (apk.lee('API-SER-02')) {
       const sesion = (await apk.pide('API-SER-02', { token, params: { occurrenceId: ocurrencia } })).body.data.session;
       const conImagen = (sesion.prescriptions as { prescriptionId: string; image: unknown }[]).find((p) => p.prescriptionId === prescripcionIdDe(SESION_DEMO.exercises[0]!))!;
       expect(conImagen.image).not.toBeNull();
-      await apk.pide('API-TRN-09', { token, params: { planId: plan.planId } });
-      await apk.pide('API-AGE-01', { token });
-      await apk.pide('API-MED-03', { token, params: { mediaId: subida.mediaId } });
-      await apk.pide('API-TRN-15', { token, params: { occurrenceId: ocurrencia }, cuerpo: {}, status: 201 });
     }
+    await apk.pide('API-TRN-09', { token, params: { planId: plan.planId } });
+    if (apk.lee('API-AGE-01')) await apk.pide('API-AGE-01', { token });
+    if (apk.lee('API-MED-03')) await apk.pide('API-MED-03', { token, params: { mediaId: subida.mediaId } });
+    await apk.pide('API-TRN-15', { token, params: { occurrenceId: ocurrencia }, cuerpo: {}, status: 201 });
     expect(apk.rechazos()).toEqual([]);
   });
 

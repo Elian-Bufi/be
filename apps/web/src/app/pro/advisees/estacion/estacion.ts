@@ -101,13 +101,14 @@ export const COPY_ESTACION = {
 
 /** ED-17: la ayuda de primer uso de la estación, de tres renglones; se cierra y se recuerda en el navegador. */
 export const PRIMER_USO_DE_LA_ESTACION = {
-  clave: 'be.primer-uso.estacion.v1',
+  // DL-196: el editor cambió de forma (dos columnas): la ayuda de primer uso se vuelve a mostrar una vez.
+  clave: 'be.primer-uso.estacion.v2',
   // Revisión del tramo 2 de WP-ENTRENAMIENTO-PLANIFICACION: «estación» es jerga del código; en pantalla, «el editor».
   titulo: 'Cómo se usa el editor',
   renglones: [
-    'A la izquierda, la estructura: la fase, las semanas y las sesiones con sus días.',
-    'Al centro, la sesión elegida; arriba de cada ejercicio, la prescripción en una línea.',
-    'A la derecha, lo que impide activar, en vivo. Se guarda sola: guardar no activa.',
+    'Arriba, el plan: cuándo empieza, cuánto dura y qué busca. Debajo, cada fase con sus semanas, sus días y sus sesiones.',
+    'A la derecha, lo que acompaña a lo que tocás: el almanaque del plan o, en un ejercicio, la vez pasada.',
+    'Al lado de «Revisar y activar», lo que impide activar, en vivo. Se guarda sola: guardar no activa.',
   ],
   cerrar: 'Entendido',
   dondeEsta: 'Está también en «Cómo se lee esta vista».',

@@ -47,7 +47,6 @@ import { ZONA_POR_DEFECTO, fechaLocalEn, finDelDiaLocal, inicioDelDiaLocal } fro
 import { nombreDeAsesoradoPara, token, esToken } from '../vinculo/lectura';
 import { CatalogoDeEjerciciosService, type Ambito } from './catalogo.service';
 import { agendaDeLaVersion, type EjecucionDeLaAgenda } from './agenda-del-asesorado';
-import { CompatibilidadDeClientesService, entregaRetenida, seRetieneLaEntrega } from './compatibilidad-de-clientes';
 import { EjecutorDeEntrenamiento, esUuid, exigirA3Vigente } from './ejecutor';
 import { registrarEventoDeEntrenamiento } from './eventos';
 import {
@@ -152,9 +151,8 @@ const comoFecha = (f: string): Date => new Date(`${f}T00:00:00.000Z`);
  * - el borrador solo lo ve su titular: no es evidencia (09v10:980; DL-088);
  * - BE no inventa la hora de una sesión pasada (DL-088);
  * - una «no realizada» de un día pasado no tiene hora: sin una declarada, rige el final de ese día (DL-137 D-5);
- * - un plan con objetivos distintos por serie no se le entrega a un cliente que no los muestra: «Hoy» y el período dicen
- *   que no está disponible, y abrir el borrador es el 404 de lo inexistente. Lo ya registrado no cambia (DL-122, precierre
- *   del 2026-10-06; `compatibilidad-de-clientes.ts`).
+ * - DL-196 (punto 5): el plan se entrega a cualquier pedido del titular, declare o no capacidades. Ya no se retiene por
+ *   la versión de la app (ni por objetivos por serie ni por series de calentamiento).
  */
 @Injectable()
 export class EjecucionesDeEntrenamientoService {
@@ -162,17 +160,12 @@ export class EjecucionesDeEntrenamientoService {
     private readonly ejecutor: EjecutorDeEntrenamiento,
     private readonly pdp: PdpService,
     private readonly catalogo: CatalogoDeEjerciciosService,
-    private readonly compatibilidad: CompatibilidadDeClientesService,
   ) {}
 
   // ─── API-TRN-14 ────────────────────────────────────────────────────────────────────────────
-  /**
-   * Si el cliente declara que muestra los objetivos por serie, después de responder queda registrado: es lo que habilita
-   * activar un plan que los exige (`registrarDeclaracion`, de mejor esfuerzo y fuera de esta lectura).
-   */
-  async hoy(actor: ActorAutenticado, query: Record<string, unknown>, ctx: ContextoDeSolicitud): Promise<HoyDeEntrenamientoResponse> {
+  hoy(actor: ActorAutenticado, query: Record<string, unknown>, ctx: ContextoDeSolicitud): Promise<HoyDeEntrenamientoResponse> {
     sinParametrosDeQuery(query);
-    const respuesta = await this.ejecutor.leer<HoyDeEntrenamientoResponse>({
+    return this.ejecutor.leer<HoyDeEntrenamientoResponse>({
       operacion: 'API-TRN-14',
       casoDeUso: 'UC-P17',
       actor,
@@ -195,13 +188,6 @@ export class EjecucionesDeEntrenamientoService {
           ),
         );
         const versiones = this.versionesPertinentes(plan.versiones, fecha, zona).filter((v) => v.id === efectiva.id || conBorrador.has(v.id));
-        // Si alguna de las que se entregarían exige objetivos por serie y el cliente no los muestra, el plan no está
-        // disponible para él: una forma que las APK instaladas ya conocen, sin ningún valor planificado (DL-122).
-        const retenida = versiones.find((v) => seRetieneLaEntrega(ctx, v.instantanea.contenido));
-        if (retenida) {
-          await this.compatibilidad.registrarRetencion(tx, { operacion: 'API-TRN-14', actorId: actor.identidadId, versionDePlanId: retenida.id }, ctx);
-          return { data: { ...base, planState: 'NOT_AVAILABLE', activePlan: null, occurrences: [] } };
-        }
         return {
           data: {
             ...base,
@@ -212,14 +198,12 @@ export class EjecucionesDeEntrenamientoService {
         };
       },
     });
-    await this.compatibilidad.registrarDeclaracion(actor.identidadId, ctx);
-    return respuesta;
   }
 
   // ─── API-AGE-01 (DL-137) ───────────────────────────────────────────────────────────────────
   /**
    * La agenda del día del titular, con las mismas reglas que «Hoy»: el plan con su Proceso abierto, el PDP de su
-   * profesional, y la versión retenida a un cliente que no muestra los objetivos por serie. Sin agenda, listas vacías.
+   * profesional. Se entrega a cualquier pedido, declare o no capacidades (DL-196). Sin agenda, listas vacías.
    */
   agenda(actor: ActorAutenticado, query: Record<string, unknown>, ctx: ContextoDeSolicitud): Promise<AgendaDeHoyResponse> {
     sinParametrosDeQuery(query);
@@ -238,10 +222,6 @@ export class EjecucionesDeEntrenamientoService {
         if (!(await this.accesoVigente(tx, 'API-AGE-01', actor, plan, ctx))) return { data: { ...vacia, planState: 'NOT_AVAILABLE' } };
         const efectiva = plan.versiones.find((v) => v.id === plan.efectivaId);
         if (!efectiva) return { data: { ...vacia, planState: 'NO_ACTIVE_PLAN' } };
-        if (seRetieneLaEntrega(ctx, efectiva.instantanea.contenido)) {
-          await this.compatibilidad.registrarRetencion(tx, { operacion: 'API-AGE-01', actorId: actor.identidadId, versionDePlanId: efectiva.id }, ctx);
-          return { data: { ...vacia, planState: 'NOT_AVAILABLE' } };
-        }
         const a = await this.agendaDeHoy(tx, actor.identidadId, efectiva, fecha, zona);
         return { data: { date: fecha, timeZone: zona, planState: 'AVAILABLE', planId: efectiva.id, ...(a ?? { startDate: null, today: [], pending: [], upcoming: [] }) } };
       },
@@ -276,12 +256,6 @@ export class EjecucionesDeEntrenamientoService {
         for (let d = comoFecha(periodStart); fechaDe(d) <= periodEnd; d = new Date(d.getTime() + 86_400_000)) {
           fechas.push({ fecha: fechaDe(d), versiones: this.versionesPertinentes(plan.versiones, fechaDe(d), zona) });
         }
-        // Como en «Hoy»: si alguna versión del período exige objetivos por serie y el cliente no los muestra (DL-122).
-        const retenida = fechas.flatMap((f) => f.versiones).find((v) => seRetieneLaEntrega(ctx, v.instantanea.contenido));
-        if (retenida) {
-          await this.compatibilidad.registrarRetencion(tx, { operacion: 'API-TRN-14-PERIODO', actorId: actor.identidadId, versionDePlanId: retenida.id }, ctx);
-          return { data: { period, planState: 'NOT_AVAILABLE', occurrences: [] } };
-        }
         return { data: { period, planState: 'AVAILABLE', occurrences: await this.ocurrencias(tx, actor.identidadId, fechas) } };
       },
     });
@@ -310,9 +284,6 @@ export class EjecucionesDeEntrenamientoService {
         // La decisión queda registrada sobre el recurso real —la versión de la ocurrencia—: el occurrenceId es opaco.
         await this.decidir(tx, 'API-TRN-15', actor, version.plan.profesionalId, actor.identidadId, { tipo: 'VersionDePlanDeEntrenamiento', id: version.id }, ctx);
         const instantanea = version.instantanea.contenido as unknown as InstantaneaDeEntrenamiento;
-        // Un cliente que no muestra los objetivos por serie no abre una sesión de un plan que los exige: el mismo 404 que lo
-        // inexistente, antes de crear nada y antes de los 422 que hablarían del plan (DL-122; el motivo, en la auditoría).
-        if (seRetieneLaEntrega(ctx, instantanea.contenido)) throw entregaRetenida();
         const sesion = sesionDeOcurrenciaApi(instantanea, o.sesionPlanificadaId);
         if (!sesion) throw this.ejecutor.noRevelable({ operacion: 'API-TRN-15', actorId: actor.identidadId, recurso, sujetoId: actor.identidadId }, ctx);
         const plan = await this.planConProcesoAbierto(tx, actor.identidadId, true);

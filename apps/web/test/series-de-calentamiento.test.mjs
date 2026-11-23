@@ -33,24 +33,26 @@ test('DL-178 · marcar «C» sube la serie arriba; las efectivas se numeran 1, 2
     d.rotulosDeLasSeries(marcadas).map((r) => r.corto),
     ['C', '1', '2'],
   );
-  // La planilla usa esas reglas: la casilla «C», el reorden y los rótulos.
+  // La planilla usa esas reglas: la casilla (DL-196: «Aproximación», ya no «C»), el reorden y los rótulos (A1, A2…).
   assert.match(EJERCICIO, /data-marcar-calentamiento=\{n \+ 1\}/);
   assert.match(EJERCICIO, /onCambiar\(\{ sets: conElCalentamientoArriba<Serie>\(sets\) \}\)/);
   assert.match(EJERCICIO, /rotulos\[n\]!\.corto/);
-  assert.match(EJERCICIO, /COPY_TIPOS_DE_SERIE\.ayudaDelEditor/);
+  assert.match(EJERCICIO, /const rotulos = rotulosConAproximaciones\(p\.sets\);/);
+  assert.match(EJERCICIO, /COPY_SELECCION\.ayudaDeLaAproximacion/);
+  assert.doesNotMatch(EJERCICIO, /COPY_TIPOS_DE_SERIE\.marca/);
   // Las celdas se nombran con el rótulo: «Calentamiento: repeticiones», «Serie 1: carga sugerida».
   assert.doesNotMatch(EJERCICIO, /\$\{S\} \$\{n \+ 1\}/);
 });
 
-test('DL-178 · el plan activo y la hoja muestran «C»; el editor avisa antes de activar si la app de la persona no lo distingue', () => {
+test('DL-178 · el plan activo y la hoja muestran «C»; DL-196 (E3): la app de la persona ya no impide activar', () => {
   assert.match(PLAN, /f\.deCalentamiento \? <abbr title=\{COPY_TIPOS_DE_SERIE\.calentamiento\}>/);
-  assert.match(EDITOR, /const calentamientoBloqueado = conCalentamiento && !version\.setKindsDelivery\.adviseeClientCapable;/);
-  assert.match(EDITOR, /COPY_CALENTAMIENTO_Y_LA_APP\.activacionBloqueada/);
+  assert.doesNotMatch(EDITOR, /calentamientoBloqueado|setKindsDelivery|setTargetsDelivery|COPY_CALENTAMIENTO_Y_LA_APP|COPY_COMPATIBILIDAD_DE_CLIENTES/);
+  assert.equal(d.COPY_CALENTAMIENTO_Y_LA_APP, undefined);
   assert.match(EDITOR, /WARM_UP_AFTER_WORKING_SET: '/);
   // El website declara la capacidad: las lecturas de Entrenamiento le llegan con el tipo de cada serie.
   assert.match(API, /capacidades: \[[^\]]*CAPACIDAD_TIPOS_DE_SERIE[,\]]/);
   // Los textos describen, no califican.
-  for (const texto of [...Object.values(d.COPY_TIPOS_DE_SERIE).filter((t) => typeof t === 'string'), ...Object.values(d.COPY_CALENTAMIENTO_Y_LA_APP)]) {
+  for (const texto of Object.values(d.COPY_TIPOS_DE_SERIE).filter((t) => typeof t === 'string')) {
     assert.doesNotMatch(texto, /cumplimiento|adherencia|racha|puntaje|asesorado/i, texto);
   }
 });

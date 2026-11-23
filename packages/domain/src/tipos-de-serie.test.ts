@@ -4,7 +4,6 @@
  */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { planTieneCalentamiento } from './compatibilidad-de-clientes';
 import { compararEjecucion, observacionesDelEjercicio, evolucion } from './comparacion-de-entrenamiento';
 import {
   EjecucionDeEntrenamientoSchema,
@@ -32,6 +31,7 @@ import {
   rotuloPorIndice,
   calentamientoRegistradoFueraDeLugar,
   seriesEfectivas,
+  tieneCalentamiento,
   tipoDeSerie,
 } from './tipos-de-serie';
 
@@ -113,8 +113,8 @@ test('TEST-DL178-04 · se guarda solo el calentamiento: un plan sin calentamient
     { repetitions: { value: 12 }, note: null, setKind: 'WARM_UP' },
     { repetitions: { value: 8 }, note: null },
   ]);
-  assert.equal(planTieneCalentamiento(sinCampo.contenido), false);
-  assert.equal(planTieneCalentamiento(conCalentamiento.contenido), true);
+  assert.equal(tieneCalentamiento(sinCampo.contenido.blocks[0]!.sessions[0]!.prescriptions[0]!.sets as unknown as readonly { readonly setKind?: 'WARM_UP' }[]), false);
+  assert.equal(tieneCalentamiento(conCalentamiento.contenido.blocks[0]!.sessions[0]!.prescriptions[0]!.sets), true);
 });
 
 test('TEST-DL178-05 · la serie registrada: se guarda solo WARM_UP; sale explícita para quien la lee y sin el campo para quien no', () => {

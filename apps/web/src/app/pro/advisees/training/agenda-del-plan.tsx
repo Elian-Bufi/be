@@ -23,6 +23,7 @@ import {
   nombreDeLaFase,
   problemasDeAgenda,
   type AgendaDeEntrenamiento,
+  type VentanasDeLasSesiones,
 } from '@be/domain';
 import { useState, type ReactNode } from 'react';
 import { CampoDeFecha } from '../../../../components/campo-de-fecha';
@@ -129,6 +130,8 @@ export function ProximasFechas({
   onCerrar,
   onCambiar,
   semana = null,
+  ventanas,
+  onInicio,
 }: {
   /** La agenda vigente (`agendaVigente`), con alguna sesión con días. */
   agenda: AgendaDeEntrenamiento;
@@ -139,6 +142,13 @@ export function ProximasFechas({
   onCambiar: (agenda: AgendaDeEntrenamiento | null) => void;
   /** La semana, día por día, con «Duplicar el día» (la dibuja el editor, que tiene ese cuadro). */
   semana?: ReactNode;
+  /**
+   * DL-196 (EE-D02): las semanas en que va cada sesión, las de su fase. Con ellas, las fechas de acá son las mismas que
+   * las del almanaque y las de la persona, y solo se mueve una fecha que de verdad está prevista.
+   */
+  ventanas?: VentanasDeLasSesiones;
+  /** DL-196 (EE-D01): con un plan con inicio, la agenda empieza con el plan: cambiar el inicio acá cambia el del plan. */
+  onInicio?: (fecha: string) => void;
 }) {
   const [moviendo, setMoviendo] = useState<{ readonly sessionId: string; readonly desde: string; readonly hacia: string } | null>(null);
   const [problema, setProblema] = useState<string | null>(null);
@@ -149,6 +159,7 @@ export function ProximasFechas({
   const cambiarInicio = (fecha: string) => {
     if (!/^\d{4}-\d{2}-\d{2}$/.test(fecha)) return;
     setProblema(null);
+    if (onInicio) return onInicio(fecha);
     onCambiar(agendaVigente({ ...agenda, startDate: fecha }, sesiones));
   };
 
@@ -160,7 +171,7 @@ export function ProximasFechas({
     const resto = agenda.moves.filter((m) => m !== previo);
     const moves = origen === moviendo.hacia ? resto : [...resto, { sessionId: moviendo.sessionId, from: origen, to: moviendo.hacia }];
     const nueva = { ...agenda, moves };
-    const problemas = problemasDeAgenda(nueva, ids);
+    const problemas = problemasDeAgenda(nueva, ids, ventanas);
     if (problemas.length > 0) return setProblema(problemas.map((p) => PROBLEMA_DE_AGENDA[p.code]).join('; '));
     setProblema(null);
     setMoviendo(null);
@@ -175,7 +186,7 @@ export function ProximasFechas({
   // Dos semanas, de lunes a domingo, desde la semana de hoy o la del inicio, la que venga después.
   const desde = lunesDe(agenda.startDate > hoy ? agenda.startDate : hoy);
   const dias = Array.from({ length: 14 }, (_, n) => sumarDias(desde, n));
-  const previstas = fechasPrevistas(agenda, desde, dias[dias.length - 1]!);
+  const previstas = fechasPrevistas(agenda, desde, dias[dias.length - 1]!, ventanas);
 
   return (
     <section id="proximas-fechas" className="agenda-del-plan agenda-del-plan--abierta" aria-labelledby="titulo-agenda" data-agenda="editando" data-proximas-fechas>

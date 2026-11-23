@@ -2,6 +2,7 @@ import {
   agendaDelDia,
   CONDICION_DE_SESION_API,
   resolverVistaEfectiva,
+  ventanasDeLasSesiones,
   type AgendaDeEntrenamiento,
   type AgendaDelDia,
   type CondicionDeSesion,
@@ -62,5 +63,7 @@ export async function agendaDeLaVersion(tx: Tx, asesoradoId: string, version: Ve
     const condicion = corregida ? (corregida.contenido as unknown as { condicion: CondicionDeSesion }).condicion : x.condicion;
     return { executionId: x.id, sessionId: x.sesionPlanificadaId, date: fechaDe(x.fechaLocal), condition: CONDICION_DE_SESION_API[condicion] };
   });
-  return { agenda, dia: agendaDelDia(agenda, ejecuciones, hoy, fechaLocalEn(version.activacion, zona)) };
+  // DL-196: con la planificación por semanas, cada sesión va solo en las semanas de su fase; sin ella, todas las semanas.
+  const ventanas = ventanasDeLasSesiones(version.instantanea.contenido.planning, version.instantanea.contenido.blocks);
+  return { agenda, dia: agendaDelDia(agenda, ejecuciones, hoy, fechaLocalEn(version.activacion, zona), ventanas) };
 }

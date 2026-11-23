@@ -9,6 +9,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createHash } from 'node:crypto';
 import { crearClienteBe } from './cliente-http';
+import type { AgendaDeEntrenamiento } from './contratos-entrenamiento';
 import { esNovedadImportante, TIPOS_DE_NOVEDAD } from './contratos-novedades';
 import {
   CompartirResumenesRequestSchema,
@@ -213,6 +214,15 @@ test('TEST-TAG-037 · lo avanzado: semanas de lunes a domingo desde la de la act
     sesionesPorSemanaDeLaAgenda({ startDate: '2026-11-02', sessions: [{ sessionId: 'ses-a', weekdays: ['MONDAY', 'THURSDAY'] }, { sessionId: 'ses-b', weekdays: ['SATURDAY'] }], moves: [] }),
     3,
   );
+  // DL-196 (EE-D02): con fases por semanas, solo las sesiones de la fase que rige ese día; fuera del plan, ninguna.
+  const conFases: AgendaDeEntrenamiento = { startDate: '2026-11-02', sessions: [{ sessionId: 'ses-a', weekdays: ['MONDAY', 'THURSDAY'] }, { sessionId: 'ses-b', weekdays: ['SATURDAY'] }], moves: [] };
+  const ventanas = new Map([
+    ['ses-a', { desde: '2026-11-02', hasta: '2026-11-29' }],
+    ['ses-b', { desde: '2026-11-30', hasta: '2026-12-20' }],
+  ]);
+  assert.equal(sesionesPorSemanaDeLaAgenda(conFases, ventanas, '2026-11-10'), 2);
+  assert.equal(sesionesPorSemanaDeLaAgenda(conFases, ventanas, '2026-12-01'), 1);
+  assert.equal(sesionesPorSemanaDeLaAgenda(conFases, ventanas, '2027-01-04'), null);
 });
 
 test('TEST-TAG-037 · un texto por nivel, cada uno una propuesta pendiente de validación jurídica, con su hash, y dicen lo que hace la implementación', () => {

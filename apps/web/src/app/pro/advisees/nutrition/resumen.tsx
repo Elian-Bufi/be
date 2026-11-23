@@ -181,14 +181,14 @@ function Resumen({
                   return activo ? (
                     <>
                       Versión {numerosDeVersion(versiones).get(activo.planId)} · activada el {fecha(activo.activatedAt as string)}{' '}
-                      <button type="button" className="boton boton--enlace" data-navega onClick={onIrAlPlan}>
+                      <button type="button" className="boton boton--discreto boton--con-flecha" data-navega onClick={onIrAlPlan}>
                         Ver plan
                       </button>
                     </>
                   ) : (
                     <>
                       {COPY_NUTRICION.sinPlanActivo}{' '}
-                      <button type="button" className="boton boton--enlace" data-navega onClick={onIrAlPlan}>
+                      <button type="button" className="boton boton--discreto boton--con-flecha" data-navega onClick={onIrAlPlan}>
                         {COPY_PRIMER_PLAN.titulo}
                       </button>
                     </>
@@ -202,7 +202,7 @@ function Resumen({
               <dt>{COPY_NUTRICION.borrador}</dt>
               <dd>
                 Hay un borrador en preparación. La persona no lo ve.{' '}
-                <button type="button" className="boton boton--enlace" data-navega onClick={onIrAlPlan}>
+                <button type="button" className="boton boton--discreto boton--con-flecha" data-navega onClick={onIrAlPlan}>
                   Abrir borrador
                 </button>
               </dd>
@@ -237,7 +237,7 @@ function Resumen({
                   c.pendingReview.pending ? (
                     <>
                       Pendiente desde el {dia(`${c.pendingReview.since}T12:00:00Z`)}{' '}
-                      <button type="button" className="boton boton--enlace" data-navega onClick={onIrARevisiones}>
+                      <button type="button" className="boton boton--discreto boton--con-flecha" data-navega onClick={onIrARevisiones}>
                         Ir a Revisiones
                       </button>
                     </>

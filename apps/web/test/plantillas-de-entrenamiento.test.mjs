@@ -87,9 +87,11 @@ test('PLT-D12 · sin persona: ni días, ni asistente, ni «Otras áreas», ni ac
   assert.match(EDITOR, /const diasDelPresetDe = \(s: SesionE\) => \{\n\s*if \(plantilla\) return null;/);
   assert.match(EDITOR, /\{plantilla \? \(\n\s*<p className="nota estacion__fechas" data-sin-dias-en-la-plantilla>/);
   assert.match(EDITOR, /const pasoDelAsistente = plantilla \? null : pasoPedido\(parametros\.get\('asistente'\)\);/);
-  assert.match(EDITOR, /\{pestana === 'otras' && asesoradoId !== null \? \(/);
-  assert.match(EDITOR, /\{plantilla \? null : \(\n\s*<div\n\s*className="estacion__pestanas"/);
-  assert.match(EDITOR, /if \(!esDelPlan\(version\)\) return \{ bloqueadoPorLaApp: false, calentamientoBloqueado: false \};/);
+  // DL-196: el panel es contextual, sin pestañas; «Otras áreas», los patrones y el plan (fechas, objetivo) solo con persona.
+  assert.match(EDITOR, /\{!plantilla && asesoradoId !== null \? <OtrasAreas /);
+  assert.match(EDITOR, /\{plantilla \? null : \(\n\s*<DatosDelPlan\n/);
+  // DL-196 (E3): la app de la persona ya no retiene nada, con plantilla o sin ella.
+  assert.doesNotMatch(EDITOR, /bloqueadoPorLaApp|calentamientoBloqueado/);
   // Los cuadros del plan no se abren en una plantilla: cada uno tiene el suyo.
   assert.match(EDITOR, /\{esDelPlan\(version\) \? \(\n\s*<AntesDeActivar\n/);
   assert.match(EDITOR, /\) : \(\n\s*<AntesDeGuardarLaPlantilla\n/);
@@ -253,9 +255,9 @@ test('El detalle usa el ancho: con una plantilla abierta, la sección toma las d
   assert.match(CSS, /@media \(min-width: 64rem\) \{\n  \.detalle-de-la-plantilla-abierta \{\n    display: grid;\n    grid-template-columns: minmax\(0, 3fr\) minmax\(20rem, 2fr\);/);
 });
 
-test('En la plantilla, el panel no es una pestaña sin pestañas: su rótulo no apunta a nada que no esté', () => {
-  // Las pestañas no están en la plantilla (PLT-D12): el panel se rotula solo, sin `role="tabpanel"` ni `aria-labelledby` colgados.
-  assert.match(EDITOR, /\{plantilla \? null : \(\n\s*<div\n\s*className="estacion__pestanas"\n\s*role="tablist"/);
-  assert.match(EDITOR, /<div role=\{plantilla \? undefined : 'tabpanel'\} id="panel-antes" aria-labelledby=\{plantilla \? undefined : 'pestana-antes'\} aria-label=\{plantilla \? COPY_REVISION_DE_LA_PLANTILLA\.titulo : undefined\} data-panel-en-vivo>/);
-  assert.doesNotMatch(EDITOR, /<div role="tabpanel" id="panel-antes" aria-labelledby="pestana-antes"/);
+test('En la plantilla, el panel no es una pestaña: su rótulo no apunta a nada que no esté', () => {
+  // DL-196: ningún editor tiene pestañas en el panel. En la plantilla, el panel es la revisión para guardarla, con su rótulo.
+  assert.doesNotMatch(EDITOR, /role="tablist"\n\s*aria-label=\{CE\.panel\}/);
+  assert.match(EDITOR, /<div aria-label=\{COPY_REVISION_DE_LA_PLANTILLA\.titulo\} data-panel-en-vivo>/);
+  assert.doesNotMatch(EDITOR, /id="panel-antes"/);
 });

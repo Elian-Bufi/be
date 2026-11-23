@@ -18,6 +18,12 @@ export const ANCHO_DEL_PANEL = 440;
 export type ModoDelPanel = 'costado' | 'cajon';
 export const modoDelPanel = (anchoDeVentana: number): ModoDelPanel => (anchoDeVentana >= ANCHO_PARA_EL_COSTADO ? 'costado' : 'cajon');
 
+/**
+ * DL-196 (WP-EDITOR-ENTRENAMIENTO, EE-01; E7 de Dirección): en Entrenamiento el contexto de la persona se abre siempre
+ * como cajón, por encima: al costado comprimía el editor (que ya tiene su panel contextual). Las otras áreas, como antes.
+ */
+export const modoDelPanelEnElArea = (area: string, anchoDeVentana: number): ModoDelPanel => (area === 'ENTRENAMIENTO' ? 'cajon' : modoDelPanel(anchoDeVentana));
+
 /** El ancho que ocupa el panel con esa ventana: al costado, el fijo; como cajón, el fijo o el 92 % si es menos. */
 export function anchoDelPanel(anchoDeVentana: number): number {
   return modoDelPanel(anchoDeVentana) === 'costado' ? ANCHO_DEL_PANEL : Math.min(ANCHO_DEL_PANEL, Math.floor(anchoDeVentana * 0.92));

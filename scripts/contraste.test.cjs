@@ -226,6 +226,11 @@ const PARES_GRAFICO = [
     [`opcion-${n}`, 'superficie', NO_TEXTO, `el punto de la opción ${n} en la franja de su comida`],
     [`opcion-${n}`, 'fondo-suave', NO_TEXTO, `el punto de la opción ${n} en el panel y junto a su casilla`],
   ]),
+  // DL-196 (EE-04): el color de cada fase, en el borde de su semana del almanaque y en el número de la fase.
+  ...[1, 2, 3, 4, 5, 6].flatMap((n) => [
+    [`fase-${n}`, 'superficie', NO_TEXTO, `el borde de las semanas de la fase ${n} en el almanaque y su número`],
+    [`fase-${n}`, 'fondo-suave', NO_TEXTO, `la fase ${n} en la leyenda del almanaque, sobre el fondo suave`],
+  ]),
 ];
 
 /** sRGB → CIELAB (D65), para medir cuán distintos se ven dos colores (ΔE 1976). */

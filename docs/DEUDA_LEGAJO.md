@@ -194,6 +194,7 @@
 | DL-193 | Decisión de Dirección · 2026-11-22 (sacar el asistente de 7 pasos de Nutrición; WP-SIN-ASISTENTE-DE-NUTRICION) | RF-030 · RF-031 · UC-P10 · UC-P11 · B10-05 §12 · DL-145 · DL-167 (ED-30) · EDC-11 · EDC-12 | El asistente de Nutrición (ED-30) repetía, en siete pasos, lo que el editor ya hacía; Dirección lo encontró engorroso y anticuado frente a la forma normal | **PROGRAMADA en `wp-sin-asistente-de-nutricion` (PR en borrador, sin integrar) · SAN-D01 a SAN-D10 a ratificar**: sin el asistente de Nutrición (el de Entrenamiento no se toca); todo camino que llevaba a él va a la vista del plan o al editor, y una dirección vieja con `asistente=N` abre la misma vista sin ese parámetro; lo que solo tenía el asistente pasa al editor: «Empezar en blanco» con una versión activa, el objetivo con su versión y su fecha y lo que está en proporción, y «Usarla ahora» para pasar al objetivo vigente. Sin cambios en la API ni en la base: el asistente no guardaba estado propio. Detalle: `docs/paquetes/WP-SIN-ASISTENTE-DE-NUTRICION.md` |
 | DL-194 | Decisión de Dirección · 2026-11-22 (la app para la APK 0.32; WP-APP-0-32) | DL-170 (AV2-21) · DL-173 (PG-04) · DL-188 (RP-07) · DL-190 · DL-191 · DL-192 · DL-152 · B10-06 | Nutrición · Hoy cambiaba de opción con segmentos y una miniatura de 72 dp; el título grande ocupaba lo primero de Nutrición y Entrenamiento; los macros no tenían los íconos del website; la app no mostraba Kerr con sus nombres probados, no preguntaba en RPE ni pedía imágenes livianas | **PROGRAMADA en `wp-app-0-32` (PR en borrador, sin integrar) · A32-D01 a A32-D15 a ratificar**: el carrusel con imán, flechas, «Opción n de m» y puntitos, sin asomo; la foto grande a todo el ancho; el título fijo en la cabecera; los macros con ícono, número y abreviatura; Kerr con sus nombres; la notación RPE con la capacidad `training-effort-notation-1`, mandando el RIR; las imágenes por variante, tolerantes a una API sin DL-191, y la foto de una comida achicada en el teléfono; el script de congelado corregido. La APK 0.32 no se armó en el paquete. Detalle: `docs/paquetes/WP-APP-0-32.md` |
 | DL-195 | Pedido de Dirección · 2026-11-23 («un tutorial para las primeras veces que se usan las interfaces»; WP-RECORRIDOS-GUIADOS) | DL-146 (ayudas cortas) · DL-145 · DL-167 (ED-15, la barra fija) · DL-188 (RP-19 y RP-24) · B10-10 §7 · RNF-ACC-001 | Los editores de los planes se explicaban en «Cómo se lee esta vista» y en la Guía, pero nada mostraba el flujo zona por zona la primera vez; no había un lugar para recordar, por usuario, una preferencia de la pantalla | **PROGRAMADA en `wp-recorridos-guiados` (PR en borrador, sin integrar) · GUI-D01 a GUI-D12 a ratificar**: una pieza propia del website (sin librería) que oscurece todo menos la zona del paso y pone al lado un cartel con «Paso n de m», «Omitir», «Anterior» y «Siguiente»/«Terminar», modal y manejable con el teclado; los recorridos de los editores de Entrenamiento y de Nutrición, de seis pasos cada uno, anclados con `data-recorrido`; aparece solo la primera vez, recordado por usuario en la API (API-RGU-01 y 02, familia propia RGU, una tabla nueva con su migración que solo agrega), con el navegador como respaldo; «Ver el recorrido» en la barra de cada editor. La APK no se tocó (anotado cómo hacerlo). Detalle: `docs/paquetes/WP-RECORRIDOS-GUIADOS.md` |
+| DL-196 | Recorrido de Dirección · 2026-11-23 (E1 a E20: «la pantalla está muy sobrecargada», «hacerlo como Nutrición»; WP-EDITOR-ENTRENAMIENTO, parte A) | DL-122 · DL-137 · DL-178 · DL-181 · DL-188 (RP-19, RP-22, RP-24) · DL-192 · DL-195 · B10-06 · B10-10 · RNF-ACC-001 | El editor tenía tres columnas con acciones repetidas, sin fechas de inicio y fin ni duración de las fases, con «Antes de activar» como pestaña y trabas por la versión de la app de la persona; el calentamiento era una «C» sin cálculo | **PROGRAMADA en `wp-editor-entrenamiento-a` (PR en borrador, sin integrar) · EE-D01 a EE-D17 a ratificar**: dos columnas como Nutrición; el plan con inicio, duración o fin, objetivo y anotaciones privadas; las fases por semanas en desplegables, con sus días y «Copiar la fase anterior»; el almanaque y el panel contextual; «Antes de activar» al lado del botón; las aproximaciones «Por porcentaje» o «A mano» con redondeo por implemento; la máscara mm:ss y las acciones rápidas; ninguna traba por la versión de la app (quedan solo los recortes de forma de la APK 0.32). La planificación va en el JSON de la versión (sin migración), solo para el profesional. La parte B queda aparte. Detalle: `docs/paquetes/WP-EDITOR-ENTRENAMIENTO.md` |
 
 ---
 
@@ -9437,3 +9438,46 @@ salud: no la decide el PDP. El 09 no tiene la operación: es una familia propia 
 - La APK, en una versión siguiente: anotado en `docs/paquetes/WP-RECORRIDOS-GUIADOS.md` §8. Otros recorridos (la ficha,
   Analizar, Antropometría) usan la misma pieza con una definición nueva. Detalle completo:
   `docs/paquetes/WP-RECORRIDOS-GUIADOS.md`.
+
+## DL-196 — El rediseño del editor de Entrenamiento (parte A): dos columnas, el plan con fechas, el almanaque y las aproximaciones
+
+**Prioridad:** alta (Dirección recorrió el editor el 2026-11-23: «la pantalla está muy sobrecargada»; «la estética es
+primordial: altos estándares») · DL-122 · DL-137 · DL-178 · DL-181 · DL-188 · DL-192 · DL-195 · B10-06 · B10-10 ·
+RNF-ACC-001 · **Estado:** PEDIDA por Dirección el 2026-11-23 · PROGRAMADA en `wp-editor-entrenamiento-a` (PR en borrador,
+sin integrar) · EE-D01 a EE-D17, **a ratificar**. Si al integrar el número choca con otro paquete, se renumera.
+
+**Qué pidió Dirección.** Sacar la columna izquierda y hacerlo como Nutrición, una pantalla que se desplaza con
+desplegables; elegir cuándo empieza y cuándo termina la planificación; la duración de cada fase (decidido: por semanas),
+con su objetivo y sus anotaciones; un almanaque mensual con las fases por semana y las sesiones marcadas; el panel derecho
+contextual; «Antes de activar» de última, al lado de «Revisar y activar»; la «C» como serie de aproximación, calculada por
+BE con un redondeo sin decimales raros; varias series a la vez y acciones rápidas; la máscara mm:ss; y sin ninguna traba
+por la versión de la APK («las APK viejas no se usan»).
+
+**Qué dice el legajo.** Nada en contra: la jerarquía Fase → microciclo opcional → sesión → ejercicio → series y el
+criterio de intensidad no cambian (B10-06); las aproximaciones son las series de calentamiento de DL-178, que se indican, se
+registran y no entran en ninguna cuenta; las fechas de cada fase salen del inicio y de las semanas y no se guardan, como
+las fechas previstas de la agenda (DL-137). No se edita el legajo.
+
+**Lo programado.**
+- **EE-01 a EE-06 · La pantalla:** dos columnas; el plan y las fases en el centro; el almanaque y «La vez pasada» en el
+  panel contextual, con «Abrir grande»; «Antes de activar» junto al botón; el contexto de la persona como cajón.
+- **EE-07 y EE-09 · La planilla:** las aproximaciones «Por porcentaje» o «A mano»; el criterio en un renglón con su «?»
+  (el RPE, primero como escala de esfuerzo percibido); la barra de varias series como frase; las acciones rápidas; la
+  máscara mm:ss; la celda del descanso que ya no se corta.
+- **EE-08 · Sin trabas por la versión de la app:** fuera el 409 al activar y la retención de la entrega; quedan solo los
+  recortes de forma que necesita la APK 0.32. Nutrición no tenía ninguna.
+- **EE-10 y EE-11 · Las reglas:** ningún botón subrayado (la guardia lo exige) y el «?» en la esquina.
+- **EE-12 · Lo que se guarda:** `planning` en el contenido de la versión (sin migración), por API-TRN-10 y en API-SER-01;
+  las anotaciones privadas no salen para la persona, tampoco en la exportación de sus datos. `docs/api/openapi.json`
+  regenerado.
+- Pruebas: TEST-EE-01 a 09 (dominio), 10 a 23 (website), TEST-EE-API-01 a 03 (integración, en la CI) y los recorridos de
+  navegador `editorDeEntrenamiento` y `aproximacionesPorPorcentaje`.
+
+**La APK publicada.** No cambia: lee igual (los campos nuevos no le llegan) y ya no hay nada que la espere para activar.
+
+**Lo que queda.**
+- Ratificar EE-D01 a EE-D17.
+- Mirarlo en pantalla en los dos temas y a los anchos de Dirección, y con un lector de pantalla.
+- La parte B: progresiones y descargas con vista previa, la distribución por grupo muscular con la silueta, la
+  frecuencia, los equilibrios, las estructuras, las zonas a cuidar, el filtro del catálogo por músculo y los gráficos X/Y.
+  Detalle completo: `docs/paquetes/WP-EDITOR-ENTRENAMIENTO.md`.

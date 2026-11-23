@@ -199,7 +199,7 @@ export function MisRecetas() {
                     </p>
                     {r.copiedFrom ? <p className="nota">{COPY_RECETARIO.copiaDe(r.copiedFrom.name)}</p> : null}
                     {r.proposal ? <p className="nota" data-estado-de-la-propuesta={r.proposal.status}>{COPY_RECETARIO.estadoDeLaPropuesta[r.proposal.status](r.proposal.versionNumber)}</p> : null}
-                    <button type="button" className="boton boton--enlace" data-navega onClick={() => ir(`receta=${encodeURIComponent(r.recipeId)}`)}>
+                    <button type="button" className="boton boton--discreto boton--con-flecha" data-navega onClick={() => ir(`receta=${encodeURIComponent(r.recipeId)}`)}>
                       {COPY_RECETAS.abrir} {r.name}
                     </button>
                   </div>

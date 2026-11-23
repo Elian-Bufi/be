@@ -2407,7 +2407,141 @@ async function opcionComoReceta({ p, d, salida }) {
   );
 }
 
-export const TODOS = { sesion, pistas, borrador, conflicto, descartar, salidaSegura, irACorregir, respuestaPerdida, reintentar, salidaConFallas, primerPlan, planDeNutricionSinAsistente, retorno, grafico, primeraInvitacion, areaSugerida, sesionRevocada, accesoRevocado, faltaUnaParte, completitud, evidencia, administracion, comparacion, comparacionConOpciones, sinSaltos, franjasPorComida, cierreDeNutricion, notacionDelEsfuerzo, recetario, opcionComoReceta, recorridosGuiados };
+// ─── DL-196 (WP-EDITOR-ENTRENAMIENTO, parte A) · el editor de Entrenamiento rediseñado ─────────────────────────────────
+
+/** El editor de Entrenamiento del borrador de una sesión con un ejercicio (preparar.mjs: 3 × 8, 60 kg y 90 s comunes). */
+async function abrirElEditorDeEntrenamiento(p, d) {
+  p.on('dialog', (dialogo) => void dialogo.accept());
+  await entrar(p, d.pro.correo);
+  await p.goto(`${WEB}/pro/advisees/training?id=${encodeURIComponent(d.ase.id)}&vista=plan`, { waitUntil: 'networkidle2' });
+  await elemento(p, '[data-datos-del-plan]', null, 60_000);
+  await hidratado(p, '[data-elegir-fase="1"]');
+}
+
+/**
+ * TEST-EE-NAV-01 · dos columnas, como Nutrición (E5, E7): sin la columna izquierda; el plan arriba con su inicio y su
+ * duración; la fase con sus semanas y sus días; el almanaque en el panel, con las semanas de la fase y los días de sesión;
+ * tocar un día lleva a la sesión. «Antes de activar» al lado de «Revisar y activar». «Copiar la fase anterior» suma «Fase
+ * 2» con la sesión. La página no se desplaza más allá del contenido (E1).
+ */
+async function editorDeEntrenamiento({ p, d, salida }) {
+  await abrirElEditorDeEntrenamiento(p, d);
+  assert.equal(await p.$('#zona-estructura'), null, 'sin la columna izquierda');
+  await elemento(p, '[data-marco-del-panel] [data-almanaque]');
+  await elemento(p, '[data-lo-que-impide-activar]');
+  // E1: el editor no tiene un alto fijo: debajo de su contenido no queda una pantalla vacía.
+  const sobra = await p.evaluate(() => document.documentElement.scrollHeight - (document.querySelector('.editor-de-entrenamiento__zonas').getBoundingClientRect().bottom + scrollY));
+  assert.ok(sobra < 320, `debajo del editor sobran ${sobra} px`);
+  // El inicio del plan, hoy, con el calendario de BE; seis semanas.
+  await clic(p, '[data-inicio-del-plan] [data-campo-de-fecha]');
+  await elemento(p, '[data-calendario] button[data-fecha]');
+  await p.keyboard.press('Enter');
+  await p.waitForFunction(() => document.querySelector('[data-inicio-del-plan] [data-campo-de-fecha]')?.dataset.valor, { timeout: ESPERA, polling: 100 });
+  await reemplazarTexto(p, await p.$('[data-semanas-del-plan]'), '6');
+  // La fase abierta: seis semanas, y la sesión el lunes y el jueves.
+  await reemplazarTexto(p, await p.$('[data-semanas-de-la-fase]'), '6');
+  await p.waitForFunction(() => /\d/.test(document.querySelector('[data-fechas-de-la-fase]')?.textContent ?? ''), { timeout: ESPERA, polling: 100 });
+  await clic(p, '[data-dias-de-la-sesion="1"] [data-dia="MONDAY"]');
+  await clic(p, '[data-dias-de-la-sesion="1"] [data-dia="THURSDAY"]');
+  await p.waitForFunction(() => document.querySelector('[data-dias-de-la-sesion="1"] [data-dia="THURSDAY"]')?.getAttribute('aria-pressed') === 'true', { timeout: ESPERA, polling: 100 });
+  // El almanaque: las semanas del color de la fase y, si en este mes no queda un lunes ni un jueves, el mes siguiente.
+  await elemento(p, '[data-almanaque] .almanaque__semana[data-fase="1"]');
+  if ((await p.$$('[data-almanaque] [data-dia-del-almanaque]')).length === 0) await clic(p, '[data-almanaque] [data-mes-siguiente]');
+  await elemento(p, '[data-almanaque] [data-dia-del-almanaque]');
+  const etiqueta = await p.$eval('[data-almanaque] [data-dia-del-almanaque]', (b) => b.getAttribute('aria-label'));
+  assert.match(etiqueta, /Piernas A/, 'el día dice qué sesión es');
+  await esperarGuardado(p);
+  await captura(p, salida, 'editor-entrenamiento-almanaque-1440');
+  // Tocar un día lleva a la sesión: la elige (la primera no se escribe en la dirección) y deja el foco en su menú.
+  await clic(p, '[data-almanaque] [data-dia-del-almanaque]');
+  await p.waitForFunction(() => location.search.includes('sesion=') || Boolean(document.activeElement?.closest('#menu-de-la-sesion')), { timeout: ESPERA, polling: 100 });
+  // La API guardó la planificación y la agenda empieza con el plan.
+  const token = await sesionPorApi(d.pro.correo);
+  const plan = (await pedir('GET', `/training/plans/${d.borradorDeEntrenamiento}/detail`, { token })).data;
+  assert.equal(plan.planning.weeks, 6);
+  assert.equal(plan.planning.phases[0].weeks, 6);
+  assert.equal(plan.agenda.startDate, plan.planning.startDate);
+  assert.deepEqual(plan.agenda.sessions[0].weekdays, ['MONDAY', 'THURSDAY']);
+  // «Antes de activar», desplegado al lado del botón, con su lista; Escape lo cierra.
+  await clic(p, '[data-lo-que-impide-activar]');
+  await elemento(p, '.lo-que-impide-activar__lista:not([hidden]) [data-panel-en-vivo], .lo-que-impide-activar__lista:not([hidden])');
+  await captura(p, salida, 'editor-entrenamiento-antes-de-activar');
+  await p.keyboard.press('Escape');
+  await p.waitForFunction(() => document.querySelector('.lo-que-impide-activar__lista')?.hidden === true, { timeout: ESPERA, polling: 100 });
+  // «Copiar la fase anterior»: «Fase 2», con la misma sesión y sus días.
+  await clic(p, '[data-copiar-la-fase-anterior]');
+  await elemento(p, '[data-fase-del-plan="2"]');
+  assert.match(await p.$eval('[data-fase-del-plan="2"] .fase-del-plan__nombre', (e) => e.textContent), /^Fase 2$/);
+  await elemento(p, '[data-fase-del-plan="2"] [data-dias-de-la-sesion="1"] [data-dia="MONDAY"][aria-pressed="true"]');
+  await esperarGuardado(p);
+  await captura(p, salida, 'editor-entrenamiento-dos-fases');
+  // A 1920 (la pantalla de Dirección), el contexto de la persona no comprime el editor.
+  await p.setViewport({ width: 1920, height: 1080 });
+  await pausa(300);
+  await captura(p, salida, 'editor-entrenamiento-1920');
+}
+
+/**
+ * TEST-EE-NAV-02 · las aproximaciones «Por porcentaje» (E9, E17) desde la carga de trabajo de 60 kg: con la sentadilla
+ * (barra, de a 2,5): 8 × 25, 5 × 35 y 3 × 47,5 kg; de a 5: 3 × 50 kg. Van arriba de las efectivas. La máscara del
+ * descanso («2» es 02:00; «130», 01:30) y las acciones rápidas de la carga (+2,5 kg). El panel sigue al ejercicio.
+ */
+async function aproximacionesPorPorcentaje({ p, d, salida }) {
+  await abrirElEditorDeEntrenamiento(p, d);
+  await clic(p, '.ejercicio-del-editor [id^="abrir-ejercicio-"]');
+  const E = '.ejercicio-del-editor[data-abierta]';
+  await elemento(p, `${E} [data-aproximaciones]`);
+  await hidratado(p, `${E} [data-cuantas-aproximaciones]`);
+  // El panel sigue al ejercicio: «La vez pasada» (sin registros todavía).
+  await p.click(`${E} [data-cuantas-aproximaciones]`);
+  await elemento(p, '[data-foco-del-panel="ejercicio"] [data-la-vez-pasada]');
+  await p.select(`${E} [data-cuantas-aproximaciones]`, '3');
+  await p.waitForFunction((s) => document.querySelector(`${s} [data-vista-previa-de-aproximaciones]`)?.textContent.includes('8 × 25 kg'), { timeout: ESPERA, polling: 100 }, E);
+  const previa = await p.$eval(`${E} [data-vista-previa-de-aproximaciones]`, (e) => e.textContent);
+  assert.match(previa, /5 × 35 kg/);
+  assert.match(previa, /3 × 47,5 kg/);
+  assert.match(await p.$eval(`${E} [data-base-de-las-aproximaciones]`, (e) => e.textContent), /60 kg, la carga de trabajo/);
+  // En la tabla, las tres arriba (A1 a A3) y las efectivas debajo.
+  assert.equal((await p.$$(`${E} tr[data-calentamiento]`)).length, 3);
+  assert.equal(await p.$eval(`${E} tr[data-serie="1"] .series-del-editor__numero`, (e) => e.textContent), 'A1');
+  await captura(p, salida, 'aproximaciones-por-porcentaje');
+  // De a 5: la última, 50 kg.
+  await p.select(`${E} [data-redondeo]`, '5');
+  await p.waitForFunction((s) => document.querySelector(`${s} [data-vista-previa-de-aproximaciones]`)?.textContent.includes('3 × 50 kg'), { timeout: ESPERA, polling: 100 }, E);
+  // La máscara del descanso común: «2» es 02:00 y «130», 01:30.
+  const [cargaComun, descansoComun] = await p.$$(`${E} [data-fila-general] input.celda-de-serie`);
+  await reemplazarTexto(p, descansoComun, '2');
+  await p.waitForFunction((e) => e.value === '02:00', { timeout: ESPERA, polling: 100 }, descansoComun);
+  await reemplazarTexto(p, descansoComun, '130');
+  await p.waitForFunction((e) => e.value === '01:30', { timeout: ESPERA, polling: 100 }, descansoComun);
+  // Las acciones rápidas de la carga común: +2,5 kg, sin perder el foco.
+  await cargaComun.click();
+  await elemento(p, `${E} [data-fila-general] [data-acciones-rapidas="suggestedLoad"] [data-paso="2.5"]`);
+  await captura(p, salida, 'acciones-rapidas-de-la-carga');
+  await p.click(`${E} [data-fila-general] [data-acciones-rapidas="suggestedLoad"] [data-paso="2.5"]`);
+  await p.waitForFunction((e) => e.value === '62,5', { timeout: ESPERA, polling: 100 }, cargaComun);
+  assert.ok(await cargaComun.evaluate((e) => document.activeElement === e), 'el foco sigue en la carga');
+  // La carga de trabajo cambió: las aproximaciones ya no coinciden, se dice y «Recalcular» las pone al día.
+  await elemento(p, `${E} [data-aproximaciones-no-coinciden]`);
+  await clic(p, `${E} [data-recalcular-aproximaciones]`);
+  await p.waitForFunction((s) => !document.querySelector(`${s} [data-aproximaciones-no-coinciden]`), { timeout: ESPERA, polling: 100 }, E);
+  await esperarGuardado(p);
+  // La API: tres series de aproximación arriba, con su carga redondeada de a 5, y cómo se armaron.
+  const token = await sesionPorApi(d.pro.correo);
+  const plan = (await pedir('GET', `/training/plans/${d.borradorDeEntrenamiento}/detail`, { token })).data;
+  const ejercicio = plan.blocks[0].sessions[0].prescriptions[0];
+  // Sin declarar training-set-kinds-1, la API saca `setKind` en el borde (lo de la APK 0.32): se pide como el website.
+  const conTipos = (await pedir('GET', `/training/plans/${d.borradorDeEntrenamiento}/detail`, { token, capacidades: 'training-set-kinds-1' })).data;
+  assert.deepEqual(
+    conTipos.blocks[0].sessions[0].prescriptions[0].sets.filter((s) => s.setKind === 'WARM_UP').map((s) => s.suggestedLoad?.value),
+    [25, 40, 50],
+  );
+  assert.equal(ejercicio.restSeconds, 90, 'el descanso común se guardó como 01:30');
+  assert.deepEqual(plan.planning.warmUps.map((w) => [w.mode, w.step, w.workingLoadShares.join('/')]), [['FROM_WORKING_LOAD', 5, '40/60/80']]);
+  await captura(p, salida, 'aproximaciones-guardadas');
+}
+
+export const TODOS = { sesion, pistas, borrador, conflicto, descartar, salidaSegura, irACorregir, respuestaPerdida, reintentar, salidaConFallas, primerPlan, planDeNutricionSinAsistente, retorno, grafico, primeraInvitacion, areaSugerida, sesionRevocada, accesoRevocado, faltaUnaParte, completitud, evidencia, administracion, comparacion, comparacionConOpciones, sinSaltos, franjasPorComida, cierreDeNutricion, notacionDelEsfuerzo, recetario, opcionComoReceta, recorridosGuiados, editorDeEntrenamiento, aproximacionesPorPorcentaje };
 
 /** Errores de la página que no dicen nada del website (los del propio navegador). */
 const IGNORABLES = [/ResizeObserver loop/];

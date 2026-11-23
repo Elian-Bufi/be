@@ -6,10 +6,11 @@
  * Esta prueba recorre el JSX con el compilador de TypeScript y falla si vuelve alguna de las dos cosas:
  *
  * 1. En la planificación (Nutrición, Entrenamiento, la evaluación, plantillas, habituales, recetas y las piezas compartidas
- *    de la ficha), un elemento con la clase `boton--enlace` tiene que ser navegación: un `Enlace`, un `Link` o un `<a href>`,
- *    o un botón marcado con `data-navega` (va a otra vista, a la lista de la que vino o al lugar de un problema). Una acción
- *    (cambiar, quitar, duplicar, abrir un cuadro, desplegar, reintentar) es un botón: `boton--discreto`, `boton--quieto` o
- *    `boton--secundario`.
+ *    de la ficha), un elemento con la clase `boton--enlace` tiene que ser un enlace de verdad, dentro de una frase: un
+ *    `Enlace`, un `Link` o un `<a href>`. DL-196 (E2, regla más estricta de Dirección del 23/11): un botón nunca va
+ *    subrayado, ni siquiera los «Ir a…» de listas y avisos que llevan a otro lugar (`data-navega`): esos van como
+ *    `boton--discreto` con flecha (`boton--con-flecha`). Una acción (cambiar, quitar, duplicar, abrir un cuadro, desplegar,
+ *    reintentar) es un botón: `boton--discreto`, `boton--quieto` o `boton--secundario`.
  * 2. Un `<a>` no es una acción: no lleva `onClick` sin `href`.
  * 3. En todo /pro y en los componentes, un «?» (`ExplicacionAPedido` sin `boton="Fuente"`) va con `lugar="esquina"`, y
  *    nunca adentro de un título (`h1` a `h6`). La clase `titulo-con-ayuda`, que lo ponía al lado del título, no vuelve.
@@ -92,8 +93,12 @@ function revisar(fuenteTexto, ruta, { planificacion = true, ayudas = true } = {}
       const clase = textoDeLaClase(n.attributes);
       if (planificacion) {
         if (/\bboton--enlace\b/.test(clase)) {
-          const navega = NAVEGACION.has(tag) || (tag === 'a' && atributo(n.attributes, 'href')) || atributo(n.attributes, 'data-navega');
-          if (!navega) acciones.push(`${donde(n)} <${tag}> con boton--enlace: una acción va como botón discreto (o, si navega, con data-navega)`);
+          const enlace = NAVEGACION.has(tag) || (tag === 'a' && atributo(n.attributes, 'href'));
+          if (!enlace) acciones.push(`${donde(n)} <${tag}> con boton--enlace: un botón va como botón discreto (si lleva a otro lugar, con flecha: boton--con-flecha)`);
+        }
+        // DL-196 (E2): lo que lleva a otro lugar desde una lista o un aviso es un botón discreto con su flecha.
+        if (tag === 'button' && atributo(n.attributes, 'data-navega') && !/\bboton--discreto\b/.test(clase)) {
+          acciones.push(`${donde(n)} <button data-navega> sin boton--discreto: un «Ir a…» va como botón discreto con flecha`);
         }
         if (tag === 'a' && atributo(n.attributes, 'onClick') && !atributo(n.attributes, 'href')) acciones.push(`${donde(n)} <a> con onClick y sin href: es un botón`);
       }
@@ -115,16 +120,18 @@ function revisar(fuenteTexto, ruta, { planificacion = true, ayudas = true } = {}
 test('la guardia reconoce lo que tiene que rechazar (y lo que no)', () => {
   const malo = `export const X = () => (<>
     <button type="button" className="boton boton--enlace" onClick={f}>Cambiar el nombre</button>
+    <button type="button" className="boton boton--enlace" data-navega onClick={() => irA('plan')}>Ir a Sesión A</button>
     <a onClick={f}>Quitar</a>
     <div className="titulo-con-ayuda"><h2>T</h2><ExplicacionAPedido nombre="x">y</ExplicacionAPedido></div>
     <h3>Recetario <QueEsElRecetario /></h3>
   </>);`;
   const r = revisar(malo, 'malo.tsx');
-  assert.equal(r.acciones.length, 2, r.acciones.join('\n'));
+  // El «Ir a Sesión A» subrayado cuenta dos veces: subrayado y sin botón discreto (DL-196, E2).
+  assert.equal(r.acciones.length, 4, r.acciones.join('\n'));
   assert.equal(r.ayudas.length, 3, r.ayudas.join('\n'));
   const bueno = `export const X = () => (<>
     <button type="button" className="boton boton--discreto" onClick={f}>Cambiar el nombre</button>
-    <button type="button" className="boton boton--enlace" data-navega onClick={() => irA('plan')}>Ver plan</button>
+    <button type="button" className="boton boton--discreto boton--con-flecha" data-navega onClick={() => irA('plan')}>Ver plan</button>
     <Enlace className="boton boton--enlace" href="/pro">Ver la toma</Enlace>
     <EncabezadoConAyuda titulo="T" nombre="x" ayuda="y" />
     <ExplicacionAPedido nombre="x" lugar="esquina">y</ExplicacionAPedido>
@@ -145,6 +152,7 @@ test('en /pro, el «?» va en la esquina, nunca al lado ni adentro de un título
   assert.doesNotMatch(estilos, /^\.titulo-con-ayuda/m, 'el bloque viejo de .titulo-con-ayuda no vuelve');
   assert.match(estilos, /\.a-pedido--esquina > \.a-pedido__texto:not\(\[hidden\]\) \{[^}]*position: absolute;/, 'lo que abre el «?» flota: no corre lo de abajo');
   assert.match(estilos, /\.boton--discreto \{[^}]*text-decoration: none;/, 'el botón discreto no se subraya');
+  assert.match(estilos, /\.boton--con-flecha::after \{[^}]*content: '›' \/ '';/, 'el «Ir a…» lleva su flecha, que el lector no lee');
 });
 
 module.exports = { revisar };

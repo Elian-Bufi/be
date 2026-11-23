@@ -131,7 +131,7 @@ export function origenDeLaCelda(estado: 'de-lo-general' | 'propio' | 'sin-objeti
   const P = COPY_PLANILLA;
   switch (estado) {
     case 'de-lo-general':
-      return comun ? { placeholder: comun, marca: 'común', descripcion: `Común a todas las series: ${comun}.` } : { placeholder: P.sinIndicar, marca: null, descripcion: 'Sin indicar: no hay un valor común.' };
+      return comun ? { placeholder: comun, marca: 'común', descripcion: `Común a todas las series: ${comun}.` } : { placeholder: '', marca: null, descripcion: 'Sin indicar: no hay un valor común.' };
     case 'sin-objetivo':
       return { placeholder: P.sinIndicar, marca: null, descripcion: comun ? `Sin indicar en esta serie; el valor común es ${comun}.` : 'Sin indicar en esta serie.' };
     case 'propio':

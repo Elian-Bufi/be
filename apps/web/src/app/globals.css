@@ -613,6 +613,15 @@ code {
   cursor: not-allowed;
 }
 
+/* DL-196 (E2): un «Ir a…» de una lista o de un aviso es un botón discreto con flecha, no un texto subrayado. La flecha es
+   decorativa: el lector no la lee. */
+.boton--con-flecha::after {
+  content: '›' / '';
+  margin-inline-start: 0.1rem;
+  font-size: 1.15em;
+  line-height: 1;
+}
+
 /* ─── Formularios (10-B10 §6-§8) ─────────────────────────────────────── */
 .formulario {
   display: flex;
@@ -10910,7 +10919,7 @@ button.comida-del-dia__fila > .icono:last-child {
   align-items: stretch;
 }
 
-.celda-de-objetivo > input {
+.celda-de-objetivo input {
   flex: 1 1 auto;
   width: 100%;
   min-width: 0;
@@ -10927,19 +10936,19 @@ button.comida-del-dia__fila > .icono:last-child {
 
 /* Sin un valor escrito, la celda dice lo que la serie recibe: en gris, lo que toma de lo general; en el color del texto,
    «Sin objetivo» elegido para esa serie. */
-.celda-de-objetivo > input::placeholder {
+.celda-de-objetivo input::placeholder {
   color: var(--texto);
   font-weight: 600;
   opacity: 1;
 }
 
-.celda-de-objetivo > input[data-en-gris]::placeholder {
+.celda-de-objetivo input[data-en-gris]::placeholder {
   color: var(--tenue);
   font-weight: 400;
 }
 
 /* «Sin objetivo» es un texto, no un número: va desde la izquierda y un poco más chico, para entrar en la celda. */
-.celda-de-objetivo > input[data-texto] {
+.celda-de-objetivo input[data-texto] {
   font-size: 0.88rem;
   text-align: left;
 }
@@ -11177,7 +11186,7 @@ button.comida-del-dia__fila > .icono:last-child {
     font-size: 0.9rem;
   }
 
-  .series-del-editor .celda-de-objetivo > input[data-texto] {
+  .series-del-editor .celda-de-objetivo input[data-texto] {
     padding-inline-start: 0.45rem;
     font-size: 0.82rem;
   }
@@ -16076,7 +16085,7 @@ p.cifra-del-espacio__desglose {
    A 1920 × 1080: el centro gana el ancho, hasta 1840 px. Por debajo de 64 rem las zonas se apilan y la página se desplaza. */
 .estacion {
   --estacion-izquierda: 15rem;
-  --estacion-derecha: 20rem;
+  --estacion-derecha: 23rem;
   max-width: 115rem;
 }
 
@@ -16116,18 +16125,9 @@ p.cifra-del-espacio__desglose {
   margin-top: 0.75rem;
 }
 
-@media (min-width: 64.0625rem) {
-  .estacion__zonas {
-    height: calc(100dvh - 14rem);
-    min-height: 30rem;
-  }
-
-  .estacion__zona {
-    min-height: 0;
-    overflow-y: auto;
-    overscroll-behavior: contain;
-  }
-}
+/* DL-196 (E1): la estación ya no tiene un alto fijo («100dvh - 14rem» dejaba la página más larga que su contenido, con
+   un espacio vacío debajo): el centro se desplaza con la página y el panel acompaña pegado arriba (abajo, el bloque de
+   `.editor-de-entrenamiento__zonas`). */
 
 .estacion__zona {
   padding: 0.75rem;
@@ -16145,38 +16145,757 @@ p.cifra-del-espacio__desglose {
   display: none;
 }
 
-/* Por debajo de 1440 (90 rem, que es de las tres zonas): «90rem» con max-width incluía 1440 y le escondía el panel. */
-@media (min-width: 64.0625rem) and (width < 90rem) {
-  .estacion {
-    --estacion-izquierda: 12.5rem;
-  }
-
-  .estacion__zonas {
-    grid-template-columns: var(--estacion-izquierda) minmax(0, 1fr);
-  }
-
-  .estacion__abrir-panel {
-    display: inline-flex;
-  }
-
-  .estacion__panel {
-    position: fixed;
-    inset-block: 6rem 1rem;
-    inset-inline-end: 1rem;
-    z-index: 20;
-    width: var(--estacion-derecha);
-    box-shadow: var(--sombra);
-  }
-
-  .estacion:not([data-panel-abierto]) .estacion__panel {
-    display: none;
-  }
-}
 
 @media (max-width: 64rem) {
   .estacion__zonas {
     grid-template-columns: minmax(0, 1fr);
   }
+}
+
+/* ═══ DL-196 (WP-EDITOR-ENTRENAMIENTO, parte A) · el editor de Entrenamiento en dos columnas, como Nutrición ═══════════
+   E5 y E7: sin la columna izquierda. El centro no es una tarjeta: lo son el plan y cada fase, uno debajo del otro. El
+   panel contextual va a la derecha desde 80 rem, pegado arriba con su propio desplazamiento; por debajo, después del
+   centro. Los colores son los tokens de los dos temas; nada se anima. */
+.editor-de-entrenamiento__zonas {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1rem;
+  margin-top: 0.75rem;
+}
+
+@media (min-width: 80rem) {
+  .editor-de-entrenamiento__zonas {
+    grid-template-columns: minmax(0, 1fr) var(--estacion-derecha);
+    align-items: start;
+  }
+
+  .editor-de-entrenamiento__zonas .estacion__panel {
+    position: sticky;
+    top: 5rem;
+    max-height: calc(100dvh - 6rem);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+}
+
+.editor-de-entrenamiento__zonas .editor-de-entrenamiento__centro {
+  display: grid;
+  align-content: start;
+  gap: 0.9rem;
+  padding: 0;
+  border: 0;
+  background: none;
+}
+
+/* La tarjeta del plan: un renglón plegado con sus fechas; abierta, las fechas en un renglón y los textos lado a lado. */
+.tarjeta-del-editor,
+.fase-del-plan {
+  border: 1px solid var(--borde);
+  border-radius: 14px;
+  background: var(--superficie);
+}
+
+.tarjeta-del-editor__cabecera,
+.fase-del-plan__cabecera {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.35rem 0.6rem 0.35rem 0.35rem;
+}
+
+.tarjeta-del-editor__titulo,
+.fase-del-plan__titulo {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0;
+  font-size: 1rem;
+}
+
+.tarjeta-del-editor__boton,
+.fase-del-plan__boton {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  width: 100%;
+  min-height: 2.75rem;
+  padding: 0.35rem 0.5rem;
+  border: 0;
+  border-radius: 10px;
+  background: none;
+  color: var(--texto);
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+}
+
+.tarjeta-del-editor__boton:hover,
+.fase-del-plan__boton:hover {
+  background: var(--fondo-suave);
+}
+
+.tarjeta-del-editor__nombre,
+.fase-del-plan__nombre {
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.tarjeta-del-editor__resumen,
+.fase-del-plan__resumen {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--tenue);
+  font-size: 0.88rem;
+  font-weight: 400;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tarjeta-del-editor__cuerpo:not([hidden]),
+.fase-del-plan__cuerpo {
+  display: grid;
+  gap: 0.75rem;
+  padding: 0.25rem 1rem 1rem;
+}
+
+.datos-del-plan__fechas,
+.datos-de-la-fase__renglon {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 0.6rem 1rem;
+}
+
+.datos-del-plan__fechas .campo,
+.datos-de-la-fase__renglon .campo,
+.datos-del-plan__fecha .campo {
+  margin: 0;
+}
+
+.datos-del-plan__semanas input {
+  width: 4.5rem;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.datos-del-plan__con-unidad {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.datos-del-plan__notacion {
+  margin-inline-start: auto;
+}
+
+/* RP-19: el renglón de la nota del plan está siempre; vacío, ocupa lo mismo. */
+.datos-del-plan__nota {
+  min-height: 1.3rem;
+  margin: 0;
+}
+
+.datos-del-plan__textos {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.6rem 1rem;
+}
+
+@media (max-width: 48rem) {
+  .datos-del-plan__textos {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.plan-y-fases__texto {
+  margin: 0;
+}
+
+.plan-y-fases__texto textarea {
+  width: 100%;
+  min-height: 3.2rem;
+  resize: vertical;
+}
+
+/* Las anotaciones son privadas: un borde punteado y el candado con «Solo vos», además del rótulo. */
+.plan-y-fases__texto--privado textarea {
+  border-style: dashed;
+}
+
+.plan-y-fases__privado {
+  margin-inline-start: 0.35rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.datos-de-la-fase {
+  display: grid;
+  gap: 0.6rem;
+}
+
+.datos-de-la-fase__fechas {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-height: 2.75rem;
+  margin: 0;
+}
+
+/* Las fases: cada una con su color (el borde y su número), una debajo de la otra. La abierta se nota en el borde. */
+.fases-del-plan {
+  display: grid;
+  gap: 0.6rem;
+}
+
+.fases-del-plan__lista {
+  display: grid;
+  gap: 0.6rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.fase-del-plan {
+  --color-de-la-fase: var(--fase-1);
+  border-inline-start: 4px solid var(--color-de-la-fase);
+}
+
+.fase-del-plan[data-fase='2'],
+.almanaque [data-fase='2'] {
+  --color-de-la-fase: var(--fase-2);
+}
+
+.fase-del-plan[data-fase='3'],
+.almanaque [data-fase='3'] {
+  --color-de-la-fase: var(--fase-3);
+}
+
+.fase-del-plan[data-fase='4'],
+.almanaque [data-fase='4'] {
+  --color-de-la-fase: var(--fase-4);
+}
+
+.fase-del-plan[data-fase='5'],
+.almanaque [data-fase='5'] {
+  --color-de-la-fase: var(--fase-5);
+}
+
+.fase-del-plan[data-fase='6'],
+.almanaque [data-fase='6'] {
+  --color-de-la-fase: var(--fase-6);
+}
+
+.fase-del-plan[data-abierta] {
+  box-shadow: var(--sombra-suave);
+}
+
+.fase-del-plan__numero {
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  border: 2px solid var(--color-de-la-fase);
+  border-radius: 50%;
+  font-size: 0.85rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.fase-del-plan__datos,
+.fase-del-plan__sesiones {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.fase-del-plan__sesiones {
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--borde);
+}
+
+.fases-del-plan__agregar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+/* Los días de la fase: una fila por sesión, una casilla por día. Prendida, llena con la letra de la sesión. */
+.dias-de-la-fase {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.dias-de-la-fase h4 {
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.dias-de-la-fase__tabla {
+  width: auto;
+  border-collapse: separate;
+  border-spacing: 0.25rem;
+}
+
+.dias-de-la-fase__tabla th,
+.dias-de-la-fase__tabla td {
+  padding: 0;
+  border: 0;
+  text-align: center;
+}
+
+.dias-de-la-fase__tabla thead th {
+  color: var(--tenue);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.dias-de-la-fase__sesion {
+  padding-inline-end: 0.75rem;
+  font-weight: 600;
+  text-align: start;
+  white-space: nowrap;
+}
+
+.dias-de-la-fase__letra {
+  display: inline-grid;
+  place-items: center;
+  width: 1.4rem;
+  height: 1.4rem;
+  margin-inline-end: 0.4rem;
+  border: 1px solid var(--borde-control);
+  border-radius: 50%;
+  font-size: 0.75rem;
+}
+
+.dias-de-la-fase__dia {
+  width: 2.25rem;
+  height: 2.25rem;
+  border: 1px solid var(--borde-control);
+  border-radius: 50%;
+  background: transparent;
+  color: var(--texto);
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.dias-de-la-fase__dia[aria-pressed='true'] {
+  border-width: 2px;
+  border-color: var(--azul);
+  background: var(--azul);
+  color: var(--boton-texto);
+}
+
+.dias-de-la-fase__dia:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.dias-de-la-fase__pie {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.75rem;
+}
+
+.dias-de-la-fase__pie:empty {
+  display: none;
+}
+
+/* El panel contextual: de qué es y qué herramienta, con «Abrir grande» a la derecha. */
+.panel-del-editor {
+  display: grid;
+  align-content: start;
+  gap: 0.9rem;
+}
+
+.marco-del-panel {
+  display: grid;
+  gap: 0.6rem;
+}
+
+.marco-del-panel__cabecera {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.marco-del-panel__de-que {
+  margin: 0;
+  overflow: hidden;
+  color: var(--tenue);
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.marco-del-panel__titulo {
+  margin: 0;
+  font-size: 1rem;
+}
+
+/* El almanaque: un mes como un calendario de pared; cada semana con el velo y el borde del color de su fase. */
+.almanaque {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.almanaque__mes {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.almanaque__nombre {
+  margin: 0;
+  font-weight: 700;
+}
+
+.almanaque__meses--varios {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(17rem, 1fr));
+  gap: 1rem;
+}
+
+.almanaque__tabla {
+  width: 100%;
+  table-layout: fixed;
+  border-collapse: separate;
+  border-spacing: 0 0.2rem;
+}
+
+.almanaque__titulo-del-mes {
+  margin-bottom: 0.25rem;
+  font-weight: 700;
+  text-align: start;
+}
+
+.almanaque__tabla th {
+  padding: 0.15rem 0;
+  border: 0;
+  color: var(--tenue);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-align: center;
+}
+
+.almanaque__semana[data-fase] > td {
+  background: color-mix(in srgb, var(--color-de-la-fase) 14%, transparent);
+}
+
+.almanaque__semana[data-fase] > td:first-child {
+  box-shadow: inset 3px 0 0 var(--color-de-la-fase);
+  border-radius: 8px 0 0 8px;
+}
+
+.almanaque__semana[data-fase] > td:last-child {
+  border-radius: 0 8px 8px 0;
+}
+
+.almanaque__dia {
+  height: 2.4rem;
+  padding: 0.1rem;
+  border: 0;
+  text-align: center;
+  vertical-align: middle;
+}
+
+/* Los días de los bordes (de otro mes) se leen más tenues, con el color tenue y no con transparencia: siguen
+   legibles. Un día de sesión de otro mes es un botón y conserva su texto (WCAG 1.4.3). */
+.almanaque__dia:not([data-del-mes]) > .almanaque__numero {
+  color: var(--tenue);
+}
+
+.almanaque__numero {
+  font-size: 0.85rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.almanaque__dia[data-hoy] .almanaque__numero {
+  font-weight: 800;
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 3px;
+}
+
+/* El día de sesión: un círculo con el número y, debajo, la letra de la sesión. */
+.almanaque__sesion {
+  display: inline-grid;
+  place-items: center;
+  width: 2.25rem;
+  height: 2.25rem;
+  padding: 0;
+  border: 2px solid var(--color-de-la-fase, var(--azul));
+  border-radius: 50%;
+  background: var(--superficie);
+  color: var(--texto);
+  font: inherit;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.almanaque__sesion:hover {
+  background: var(--fondo-suave);
+}
+
+.almanaque__letras {
+  font-size: 0.62rem;
+  font-weight: 700;
+}
+
+.almanaque__leyenda {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.75rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.82rem;
+}
+
+.almanaque__leyenda li {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.almanaque__muestra {
+  width: 0.9rem;
+  height: 0.9rem;
+  border-inline-start: 3px solid var(--color-de-la-fase);
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--color-de-la-fase) 14%, transparent);
+}
+
+.almanaque-grande .almanaque__dia {
+  height: 2.8rem;
+}
+
+/* La carga en el tiempo: un dibujo chico, con el eje dicho en texto. */
+.carga-en-el-tiempo {
+  margin: 0;
+}
+
+.carga-en-el-tiempo__dibujo {
+  display: block;
+  width: 100%;
+  height: 5.25rem;
+}
+
+.carga-en-el-tiempo__base {
+  stroke: var(--borde);
+  stroke-width: 1;
+}
+
+.carga-en-el-tiempo__linea {
+  stroke: var(--metrica-1);
+  stroke-width: 2;
+}
+
+.carga-en-el-tiempo__punto {
+  fill: var(--metrica-1);
+}
+
+.carga-en-el-tiempo__eje {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.75rem;
+}
+
+/* «Antes de activar», al lado de «Revisar y activar»: el aviso corto y, desplegada, la lista encima de la página. */
+.lo-que-impide-activar {
+  position: relative;
+}
+
+.lo-que-impide-activar[data-impide] .lo-que-impide-activar__boton {
+  color: var(--error);
+  font-weight: 700;
+}
+
+.lo-que-impide-activar__lista:not([hidden]) {
+  position: absolute;
+  z-index: 30;
+  top: calc(100% + 0.4rem);
+  right: 0;
+  width: min(30rem, 90vw);
+  max-height: min(32rem, 70dvh);
+  overflow-y: auto;
+  padding: 0.5rem 1rem 0.75rem;
+  border: 1px solid var(--borde);
+  border-radius: 12px;
+  background: var(--superficie);
+  box-shadow: var(--sombra);
+}
+
+.lo-que-impide-activar__lista h3 {
+  margin: 0.6rem 0 0.35rem;
+  font-size: 0.95rem;
+}
+
+/* Las aproximaciones, antes de las efectivas: un renglón de campos, los porcentajes y la vista previa con su base. */
+.aproximaciones-del-ejercicio {
+  display: grid;
+  gap: 0.45rem;
+  padding: 0.6rem 0.75rem;
+  border: 1px dashed var(--borde-control);
+  border-radius: 12px;
+}
+
+.aproximaciones-del-ejercicio .ejercicio-del-plan__subtitulo {
+  margin: 0;
+}
+
+.aproximaciones-del-ejercicio__renglon {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: end;
+  gap: 0.5rem 1rem;
+}
+
+.aproximaciones-del-ejercicio__renglon .campo,
+.aproximaciones-del-ejercicio__modo {
+  margin: 0;
+}
+
+.aproximaciones-del-ejercicio__renglon input {
+  width: 5.5rem;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.aproximaciones-del-ejercicio__porcentajes {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem 0.75rem;
+}
+
+.aproximaciones-del-ejercicio__porcentaje {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+}
+
+.aproximaciones-del-ejercicio__porcentaje input {
+  width: 3.25rem;
+  min-height: 2.25rem;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.aproximaciones-del-ejercicio__vista-previa,
+.aproximaciones-del-ejercicio__base {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+}
+
+/* RP-19: el renglón del aviso «ya no coinciden» está reservado mientras se calcula «Por porcentaje». */
+.aproximaciones-del-ejercicio__lugar-del-aviso {
+  min-height: 2.25rem;
+}
+
+.aproximaciones-del-ejercicio__no-coinciden {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.6rem;
+  margin: 0;
+  color: var(--texto);
+}
+
+/* Las aproximaciones en la tabla: agrupadas arriba, en un tono más suave, con un renglón fino que nombra cada grupo. */
+.series-del-editor tr[data-calentamiento] > td,
+.series-del-editor tr[data-calentamiento] > th {
+  background: var(--fondo-suave);
+}
+
+.series-del-editor tr[data-calentamiento] .celda-de-objetivo input,
+.series-del-editor tr[data-calentamiento] .celda-de-serie {
+  font-weight: 400;
+}
+
+.series-del-editor__grupo > td {
+  padding: 0.35rem 0.3rem 0.1rem;
+  color: var(--tenue);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+/* E10: la barra de varias series se lee como una frase. */
+.series-del-editor__frase {
+  font-weight: 600;
+}
+
+/* E11: las acciones rápidas, debajo del campo mientras tiene el foco; no tapan la fila de abajo más que lo justo. */
+.con-acciones-rapidas {
+  position: relative;
+  display: block;
+}
+
+/* En la celda de una serie, el envoltorio ocupa el lugar del campo (antes, el campo era hijo directo de la celda). */
+.celda-de-objetivo > .con-acciones-rapidas {
+  display: flex;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.acciones-rapidas {
+  position: absolute;
+  z-index: 15;
+  top: calc(100% + 0.2rem);
+  left: 0;
+  display: none;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 0.2rem;
+  border: 1px solid var(--borde);
+  border-radius: 999px;
+  background: var(--superficie);
+  box-shadow: var(--sombra-suave);
+  white-space: nowrap;
+}
+
+.con-acciones-rapidas:focus-within > .acciones-rapidas {
+  display: inline-flex;
+}
+
+.acciones-rapidas__paso {
+  min-width: 2.4rem;
+  min-height: 1.9rem;
+  padding: 0 0.4rem;
+  border: 1px solid var(--borde-control);
+  border-radius: 999px;
+  background: var(--superficie);
+  color: var(--texto);
+  font: inherit;
+  font-size: 0.8rem;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+
+.acciones-rapidas__paso:hover {
+  background: var(--fondo-suave);
+}
+
+.acciones-rapidas__unidad {
+  padding-inline: 0.2rem;
+  color: var(--tenue);
+  font-size: 0.75rem;
+}
+
+/* E14: el menú de cada celda, discreto hasta que se usa; la marca «común» o «propio», arriba, chica: el valor entra. */
+.celda-de-objetivo__opciones {
+  display: flex;
+  opacity: 0.35;
+}
+
+.celda-de-objetivo:hover .celda-de-objetivo__opciones,
+.celda-de-objetivo:focus-within .celda-de-objetivo__opciones {
+  opacity: 1;
 }
 
 .estacion__sesiones-cabecera {
@@ -17156,14 +17875,15 @@ p.cifra-del-espacio__desglose {
   content: none;
 }
 
+/* DL-196 (E14): la marca va arriba a la izquierda, chica: antes, al costado, le quitaba 3 rem al valor y «03:00» se cortaba. */
 .celda-de-objetivo__origen {
   position: absolute;
-  inset-inline-start: 0.5rem;
-  top: 50%;
-  transform: translateY(-50%);
+  inset-inline-start: 0.45rem;
+  top: 0.15rem;
   color: var(--tenue);
-  font-size: 0.72rem;
+  font-size: 0.62rem;
   font-weight: 600;
+  line-height: 1;
   letter-spacing: 0.02em;
   pointer-events: none;
 }
@@ -17172,8 +17892,8 @@ p.cifra-del-espacio__desglose {
   color: var(--enlace);
 }
 
-.celda-de-objetivo[data-origen] > input {
-  padding-inline-start: 3.2rem;
+.celda-de-objetivo[data-origen] input {
+  padding-block-start: 0.75rem;
 }
 
 
@@ -20499,11 +21219,7 @@ html:has(.estacion:not([data-en-el-asistente])) {
   gap: 0.2rem;
 }
 
-@media (min-width: 64.0625rem) {
-  .estacion:has(.editor-de-la-plantilla__cabecera) .estacion__zonas {
-    height: calc(100dvh - 19rem);
-  }
-}
+/* DL-196: la plantilla usa el mismo editor en dos columnas, sin alto fijo (E1). */
 
 @media (max-width: 64rem) {
   .editor-de-la-plantilla__datos {

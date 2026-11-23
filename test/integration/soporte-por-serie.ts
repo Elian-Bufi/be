@@ -4,9 +4,8 @@
  * objetivos por serie (`sesion_demo.json`), las tres imágenes con su catálogo (`ejercicios/`) y los casos de tiempos
  * (`casos_tiempos.json`). Los números salen del paquete, no de estas pruebas.
  *
- * El titular usa la APK que muestra el objetivo de cada serie y lo declara (`X-BE-Capabilities`; DL-122, precierre del
- * 2026-10-06): sin eso, «Piernas A» no se activa ni se le entrega. Las APK instaladas, que no lo declaran, se prueban en
- * `compatibilidad-de-clientes.int-spec.ts`.
+ * El titular usa la APK que muestra el objetivo de cada serie y lo declara (`X-BE-Capabilities`). DL-196: eso ya no decide
+ * si «Piernas A» se activa o se le entrega (`compatibilidad-de-clientes.int-spec.ts` lo prueba sin ninguna declaración).
  */
 import type { INestApplication } from '@nestjs/common';
 import { CAPACIDAD_OBJETIVOS_POR_SERIE, HEADER_DE_CAPACIDADES, valorDeCapacidades, type BaseDelRelojApi, type EventoDeTiempo, type InstanteDeEventoApi } from '@be/domain';
@@ -179,8 +178,8 @@ export interface PlanDeLaDemo extends CircuitoParaPlanificar {
 
 /**
  * El borrador de «Piernas A»: TRN-07 sin estructura y TRN-10 con los objetivos por serie, como guarda el editor. Antes, el
- * titular abre «Hoy» con la APK que muestra los objetivos de cada serie (`usarLaApk`), como en la demostración: sin eso el
- * plan no se activa. `apk: false` deja al titular sin haberla usado (las pruebas de compatibilidad).
+ * titular abre «Hoy» con la APK que muestra los objetivos de cada serie (`usarLaApk`), como en la demostración.
+ * `apk: false` deja al titular sin haberla abierto nunca: desde DL-196 el plan se activa igual.
  */
 export async function borradorDeLaDemo(app: INestApplication, etiqueta: string, extra: Record<string, unknown>[] = [], opciones: { apk?: boolean } = {}): Promise<PlanDeLaDemo> {
   const c = await circuitoListoParaPlanificarEntrenamiento(app, etiqueta);
@@ -219,7 +218,7 @@ export function conLaApk(app: INestApplication, token: string, capacidades = CAP
   };
 }
 
-/** El titular abre «Hoy» (API-TRN-14) con esa APK: la API registra que usa un cliente que muestra los objetivos por serie. */
+/** El titular abre «Hoy» (API-TRN-14) con esa APK, como en la demostración. Desde DL-196 la API ya no lo registra. */
 export async function usarLaApk(app: INestApplication, ase: Parte): Promise<void> {
   await conLaApk(app, ase.token).get('/api/v1/me/training/today').expect(200);
 }

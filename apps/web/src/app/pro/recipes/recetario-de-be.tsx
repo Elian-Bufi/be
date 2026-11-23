@@ -115,7 +115,7 @@ export function RecetarioDeBe({ token, sesionPerdida, onAbrir, onCopiada }: Sesi
               <p className="lista__titulo">{r.name}</p>
               <p className="nota">{COPY_RECETAS.porcionesYEnergia(r.servings, nutrienteParaMostrar(r.calculation.perServing.energyKcal, 'energyKcal'))}</p>
               <div className="acciones acciones--compactas">
-                <button type="button" className="boton boton--enlace" data-navega onClick={() => onAbrir(r.recipeId)}>
+                <button type="button" className="boton boton--discreto boton--con-flecha" data-navega onClick={() => onAbrir(r.recipeId)}>
                   {COPY_RECETAS.abrir} {r.name}
                 </button>
                 <button type="button" className="boton boton--secundario boton--compacto" disabled={copiando !== null} onClick={() => void copiar(r)} data-copiar-a-mis-recetas>

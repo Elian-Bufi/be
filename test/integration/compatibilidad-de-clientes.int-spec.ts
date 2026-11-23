@@ -1,35 +1,36 @@
 /**
- * Precierre del 2026-10-06, §2 (DL-122): qué clientes reciben un plan con objetivos por serie, por la API real contra
- * PostgreSQL (`packages/domain/src/compatibilidad-de-clientes.ts`; `apps/api/src/entrenamiento/compatibilidad-de-clientes.ts`).
+ * DL-196 (punto 5; Dirección, 19/11 y 23/11): la versión de la app ya no traba ni retiene nada en Entrenamiento, por la
+ * API real contra PostgreSQL (`packages/domain/src/compatibilidad-de-clientes.ts`;
+ * `apps/api/src/entrenamiento/compatibilidad-de-clientes.ts`).
  *
- * Las APK instaladas (0.13.2 y las candidatas 0.14.0) no mandan `X-BE-Capabilities` y muestran solo los objetivos generales
- * de cada prescripción; la APK que muestra los de cada serie lo declara. Un plan que los exige no se activa mientras su
- * titular no haya usado esa APK, y no se le entrega a un cliente que no los muestra. Lo que ve una APK instalada se valida
- * con su esquema congelado (`packages/domain/fixtures/respuestas-que-lee-la-apk-instalada.json`), no con el vigente.
+ * Antes (DL-122, precierre del 2026-10-06; DL-178), un plan con objetivos distintos por serie o con series de calentamiento
+ * no se activaba mientras su titular no hubiera usado una APK que lo declarara (409 CLIENT_CAPABILITY_REQUIRED), y a un
+ * pedido sin la capacidad «Hoy» y el período decían que no estaba disponible y el detalle y abrir la sesión eran un 404.
+ * Ahora todos usan la última APK: el plan se activa aunque el titular nunca haya declarado nada y se le entrega a cualquier
+ * pedido. Lo que declara el cliente solo moldea la forma (a quien no declara `training-set-kinds-1`, sin `setKind`).
  *
  * «Piernas A» sale del paquete de Dirección (`sesion_demo.json`, con `soporte-por-serie.ts`); el plan sin objetivos por
  * serie es el de siempre (`estructuraDeEntrenamiento`).
  */
 import type { INestApplication } from '@nestjs/common';
-import { COPY_COMPATIBILIDAD_DE_CLIENTES, HEADER_DE_SUPERFICIE, PlanConObjetivosResponseSchema, SesionParaRegistrarResponseSchema } from '@be/domain';
+import { PlanConObjetivosResponseSchema, SesionParaRegistrarResponseSchema } from '@be/domain';
 import { PrismaClient } from '@prisma/client';
 import { randomUUID } from 'node:crypto';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { RAIZ } from './soporte';
-import { appDePrueba, claveDeIdempotencia, conSesion } from './soporte-api';
+import { appDePrueba, conSesion } from './soporte-api';
 import { activarPlanDeEntrenamiento, circuitoListoParaPlanificarEntrenamiento, crearBorradorDeEntrenamiento } from './soporte-entrenamiento';
 import {
   abrirBorrador,
   activar,
   borradorDeLaDemo,
   conLaApk,
-  objetivoDeLaDemo,
+  ejerciciosDeLaDemo,
+  estructuraDeLaDemo,
   ocurrenciaDeHoy,
-  prescripcionIdDe,
   registrarYConfirmar,
   registroDeLaDemo,
-  SESION_DEMO,
   SESION_ID,
   type PlanDeLaDemo,
 } from './soporte-por-serie';
@@ -72,14 +73,13 @@ function comoLaLeeLaApkInstalada(operacion: string, cuerpo: unknown, status = '2
 /** Capacidades que la API no conoce: un cliente futuro puede declararlas, y no le dan nada. */
 const SOLO_DESCONOCIDAS = 'futura-1, otra-capacidad-2';
 
-const capacidadesRegistradas = (identidadId: string) => prisma.capacidadDeClienteDeclarada.findMany({ where: { identidadId } });
-const entregaDe = async (pro: { token: string }, planId: string) =>
-  PlanConObjetivosResponseSchema.parse((await conSesion(app, pro.token).get(`/api/v1/training/plans/${planId}/detail`).expect(200)).body).data.setTargetsDelivery;
-/** Las retenciones auditadas de un actor, con el motivo que el cliente no ve: operación y recurso, ordenadas. */
+/** La API ya no registra lo que declara el cliente: la tabla queda en desuso. */
+const capacidadesRegistradas = (identidadId: string) => prisma.capacidadDeClienteDeclarada.count({ where: { identidadId } });
+/** Los rechazos auditados por la versión de la app (lo que antes dejaban la activación y la entrega retenida). */
 const retenciones = async (actorId: string): Promise<string[]> =>
   (await prisma.registroDeAuditoria.findMany({ where: { actorId, resultado: 'RECHAZO', motivo: 'CLIENT_CAPABILITY_REQUIRED' } })).map((f) => `${f.operacion} ${f.recursoTipo ?? '-'} ${f.recursoId ?? '-'}`).sort();
 
-/** «Piernas A», del paquete, activada: el titular ya usó la APK que muestra los objetivos por serie. */
+/** «Piernas A», del paquete, activada. */
 async function piernasActivada(nombre: string): Promise<PlanDeLaDemo> {
   const plan = await borradorDeLaDemo(app, etiqueta(nombre));
   await activar(app, plan).expect(200);
@@ -88,13 +88,11 @@ async function piernasActivada(nombre: string): Promise<PlanDeLaDemo> {
 
 // ─── Un plan sin objetivos por serie ──────────────────────────────────────────────────────────────
 
-describe('DL-122 · un plan sin objetivos por serie sigue como siempre', () => {
-  it('el titular sin la cabecera ve «Hoy», el período, el detalle y abre la sesión como siempre, en la forma de la APK instalada; el plan se activa sin ningún registro', async () => {
+describe('un plan sin objetivos por serie sigue como siempre', () => {
+  it('el titular sin la cabecera ve «Hoy», el período, el detalle y abre la sesión como siempre, en la forma de la APK instalada; nada se registra', async () => {
     const c = await circuitoListoParaPlanificarEntrenamiento(app, etiqueta('compat-sin-series'));
     const b = await crearBorradorDeEntrenamiento(app, c);
-    expect(await entregaDe(c.pro, b.planId)).toEqual({ required: false, adviseeClientCapable: false });
     await activarPlanDeEntrenamiento(app, c.pro, b.planId, b.version).expect(200);
-    expect(await capacidadesRegistradas(c.ase.id)).toEqual([]);
 
     const instalada = conSesion(app, c.ase.token);
     const hoy = (await instalada.get('/api/v1/me/training/today').expect(200)).body;
@@ -110,125 +108,67 @@ describe('DL-122 · un plan sin objetivos por serie sigue como siempre', () => {
     const ocurrencia = hoy.data.occurrences[0].occurrenceId as string;
     const abierto = (await instalada.put(`/api/v1/training/occurrences/${ocurrencia}/execution-draft`).send({}).expect(201)).body;
     expect(comoLaLeeLaApkInstalada('API-TRN-15', abierto, '201')).toEqual([]);
-    // Ningún pedido sin la cabecera registra nada ni retiene nada.
-    expect(await capacidadesRegistradas(c.ase.id)).toEqual([]);
-    expect(await retenciones(c.ase.id)).toEqual([]);
 
-    // La sesión para registrar (API-SER-02), pedida con la capacidad, sí la registra: también es de la APK que la muestra.
+    // La sesión para registrar (API-SER-02), pedida con la capacidad: sale igual, y la API ya no la registra.
     SesionParaRegistrarResponseSchema.parse((await conLaApk(app, c.ase.token).get(`/api/v1/training/occurrences/${ocurrencia}/session`).expect(200)).body);
-    expect((await capacidadesRegistradas(c.ase.id)).map((r) => r.capacidad)).toEqual(['training-set-targets-1']);
-    expect(await entregaDe(c.pro, b.planId)).toEqual({ required: false, adviseeClientCapable: true });
+    expect(await capacidadesRegistradas(c.ase.id)).toBe(0);
+    expect(await retenciones(c.ase.id)).toEqual([]);
   });
 });
 
-// ─── La activación ────────────────────────────────────────────────────────────────────────────────
+// ─── La activación y la entrega, sin ninguna declaración ─────────────────────────────────────────
 
-describe('DL-122 · un plan que exige objetivos por serie se activa cuando su titular ya usó una APK que los muestra', () => {
-  it('«Piernas A» sin ese registro: 409 CLIENT_CAPABILITY_REQUIRED sin ningún cambio, también al reintentar; abierto «Hoy» con la APK capaz, queda el registro y se activa con la misma clave', async () => {
-    const plan = await borradorDeLaDemo(app, etiqueta('compat-activacion'), [], { apk: false });
-    const pro = conSesion(app, plan.pro.token);
-    expect(await entregaDe(plan.pro, plan.planId)).toEqual({ required: true, adviseeClientCapable: false });
+describe('DL-196 · la versión de la app ya no traba la activación ni retiene la entrega', () => {
+  it('«Piernas A» con calentamiento y objetivos por serie se activa aunque el titular nunca haya declarado nada; «Hoy», el período, la agenda, el detalle, la sesión y abrir el borrador le llegan a un pedido sin la cabecera', async () => {
+    const c = await circuitoListoParaPlanificarEntrenamiento(app, etiqueta('compat-sin-trabas'));
+    const ejercicios = await ejerciciosDeLaDemo(app, c.pro);
+    // «Piernas A» tiene objetivos distintos por serie; se le suma una serie de calentamiento arriba del primer ejercicio.
+    const estructura = estructuraDeLaDemo(ejercicios) as { blocks: { sessions: { prescriptions: { sets: Record<string, unknown>[] }[] }[] }[] };
+    estructura.blocks[0]!.sessions[0]!.prescriptions[0]!.sets.unshift({ repetitions: { value: 12 }, setKind: 'WARM_UP' });
+    const creado = (await conSesion(app, c.pro.token).post(`/api/v1/advisees/${c.ase.id}/training/plans`).send({ objectiveVersionId: c.objectiveVersionId, initialStructure: estructura }).expect(201)).body
+      .data as { planId: string; version: string };
 
-    const clave = claveDeIdempotencia();
-    const rechazo = await activar(app, plan, plan.version, clave).expect(409);
-    expect(rechazo.body.error).toEqual({ code: 'CLIENT_CAPABILITY_REQUIRED', message: COPY_COMPATIBILIDAD_DE_CLIENTES.activacionBloqueada });
-    // Nada cambió: sigue en borrador, sin instantánea, sin vigencia y sin Proceso.
-    expect((await pro.get(`/api/v1/training/plans/${plan.planId}`).expect(200)).body.data).toMatchObject({
-      state: 'DRAFT',
-      version: plan.version,
-      activatedAt: null,
-      snapshotDigest: null,
-      isEffective: false,
-    });
-    expect(await prisma.instantaneaDePlanDeEntrenamiento.count({ where: { versionDePlanId: plan.planId } })).toBe(0);
-    expect(await prisma.planDeEntrenamiento.findFirstOrThrow({ where: { asesoradoId: plan.ase.id } })).toMatchObject({ versionEfectivaId: null });
-    expect(await prisma.procesoOperativo.count({ where: { asesoradoId: plan.ase.id, alcance: 'ENTRENAMIENTO' } })).toBe(0);
-    // Como los otros 409, el rechazo no queda guardado con la clave: el reintento vuelve a decidir y da lo mismo.
-    expect((await activar(app, plan, plan.version, clave).expect(409)).body.error.code).toBe('CLIENT_CAPABILITY_REQUIRED');
-    expect(await prisma.registroDeAuditoria.count({ where: { operacion: 'API-TRN-12', resultado: 'RECHAZO', motivo: 'CLIENT_CAPABILITY_REQUIRED', recursoId: plan.planId } })).toBe(2);
-    expect(await capacidadesRegistradas(plan.ase.id)).toEqual([]);
+    // API-SER-01, con su esquema vigente: ya no dice si el plan le llega a la app de la persona.
+    const detalle = PlanConObjetivosResponseSchema.parse((await conSesion(app, c.pro.token).get(`/api/v1/training/plans/${creado.planId}/detail`).expect(200)).body).data;
+    expect(Object.keys(detalle)).not.toContain('setTargetsDelivery');
+    expect(Object.keys(detalle)).not.toContain('setKindsDelivery');
 
-    // El titular abre «Hoy» con la APK que muestra los objetivos por serie (todavía no tiene un plan vigente).
-    const hoy = await conLaApk(app, plan.ase.token).get('/api/v1/me/training/today').set(HEADER_DE_SUPERFICIE, 'APK').expect(200);
-    expect(hoy.body.data.planState).toBe('NO_ACTIVE_PLAN');
-    const [registro] = await capacidadesRegistradas(plan.ase.id);
-    expect(registro).toMatchObject({ capacidad: 'training-set-targets-1', superficie: 'APK' });
-    expect(registro!.momentoDeUltimaDeclaracion).toEqual(registro!.momentoDePrimeraDeclaracion);
-    expect(await entregaDe(plan.pro, plan.planId)).toEqual({ required: true, adviseeClientCapable: true });
-    // Con la misma clave: el 409 no se había guardado, así que ahora activa.
-    expect((await activar(app, plan, plan.version, clave).expect(200)).body.data).toMatchObject({ planId: plan.planId, state: 'ACTIVATED' });
+    // El titular nunca abrió la app ni declaró nada: se activa igual (antes, 409 CLIENT_CAPABILITY_REQUIRED).
+    expect(await capacidadesRegistradas(c.ase.id)).toBe(0);
+    expect((await activarPlanDeEntrenamiento(app, c.pro, creado.planId, creado.version).expect(200)).body.data).toMatchObject({ planId: creado.planId, state: 'ACTIVATED' });
+    expect(await prisma.instantaneaDePlanDeEntrenamiento.count({ where: { versionDePlanId: creado.planId } })).toBe(1);
 
-    // No escribe en cada pedido: dentro de la hora, la última vez no cambia.
-    await conLaApk(app, plan.ase.token).get('/api/v1/me/training/today').expect(200);
-    expect((await capacidadesRegistradas(plan.ase.id)).map((r) => r.momentoDeUltimaDeclaracion)).toEqual([registro!.momentoDeUltimaDeclaracion]);
-    // Pasada la hora, la actualiza; la primera vez queda.
-    await prisma.$executeRaw`
-      UPDATE "capacidad_de_cliente_declarada" SET "momento_de_primera_declaracion" = now() - interval '2 hours', "momento_de_ultima_declaracion" = now() - interval '2 hours'
-       WHERE "identidad_id" = ${plan.ase.id}::uuid`;
-    const [antes] = await capacidadesRegistradas(plan.ase.id);
-    await conLaApk(app, plan.ase.token).get('/api/v1/me/training/today').expect(200);
-    const [despues] = await capacidadesRegistradas(plan.ase.id);
-    expect(despues!.momentoDePrimeraDeclaracion).toEqual(antes!.momentoDePrimeraDeclaracion);
-    expect(despues!.momentoDeUltimaDeclaracion.getTime()).toBeGreaterThan(antes!.momentoDeUltimaDeclaracion.getTime() + 60 * 60 * 1000);
-    expect(await capacidadesRegistradas(plan.ase.id)).toHaveLength(1);
-  });
-});
-
-// ─── La entrega ───────────────────────────────────────────────────────────────────────────────────
-
-describe('DL-122 · un plan que exige objetivos por serie no se le entrega a un cliente que no los muestra', () => {
-  it('con «Piernas A» activa: sin la cabecera, «Hoy» y el período no disponibles (en la forma de la APK instalada), el detalle y abrir la sesión, el 404 de lo inexistente; con la cabecera, todo, con los objetivos exactos de cada serie', async () => {
-    const plan = await piernasActivada('compat-entrega');
-    const ocurrencia = await ocurrenciaDeHoy(app, plan.ase);
-    const fecha = (await conLaApk(app, plan.ase.token).get('/api/v1/me/training/today').expect(200)).body.data.date as string;
-
-    for (const [cliente, instalada] of [
-      ['sin la cabecera', conSesion(app, plan.ase.token)],
-      ['solo con capacidades desconocidas', conLaApk(app, plan.ase.token, SOLO_DESCONOCIDAS)],
+    let ocurrencia = '';
+    for (const [cliente, pedido] of [
+      ['sin la cabecera', conSesion(app, c.ase.token)],
+      ['solo con capacidades desconocidas', conLaApk(app, c.ase.token, SOLO_DESCONOCIDAS)],
     ] as const) {
-      const hoy = (await instalada.get('/api/v1/me/training/today').expect(200)).body;
-      expect([cliente, hoy.data]).toEqual([cliente, { date: fecha, timeZone: 'America/Argentina/Buenos_Aires', planState: 'NOT_AVAILABLE', activePlan: null, occurrences: [] }]);
-      expect([cliente, comoLaLeeLaApkInstalada('API-TRN-14', hoy)]).toEqual([cliente, []]);
-      const periodo = (await instalada.get(`/api/v1/me/training/occurrences?periodStart=${fecha}&periodEnd=${fecha}`).expect(200)).body;
-      expect([cliente, periodo.data]).toEqual([cliente, { period: { start: fecha, end: fecha, timeZone: 'America/Argentina/Buenos_Aires' }, planState: 'NOT_AVAILABLE', occurrences: [] }]);
-      expect([cliente, comoLaLeeLaApkInstalada('API-TRN-14-PERIODO', periodo)]).toEqual([cliente, []]);
-      // El detalle y abrir la sesión: el mismo 404 que un plan o una ocurrencia que no existen, y nada se crea.
-      const planInexistente = (await instalada.get(`/api/v1/training/plans/${randomUUID()}`).expect(404)).body;
-      expect([cliente, (await instalada.get(`/api/v1/training/plans/${plan.planId}`).expect(404)).body]).toEqual([cliente, planInexistente]);
-      const ocurrenciaInexistente = (await instalada.put('/api/v1/training/occurrences/occ_no-es-una-ocurrencia/execution-draft').send({}).expect(404)).body;
-      expect([cliente, (await instalada.put(`/api/v1/training/occurrences/${ocurrencia}/execution-draft`).send({}).expect(404)).body]).toEqual([cliente, ocurrenciaInexistente]);
-      expect(await prisma.borradorDeEjecucionDeEntrenamiento.count({ where: { asesoradoId: plan.ase.id } })).toBe(0);
+      const hoy = (await pedido.get('/api/v1/me/training/today').expect(200)).body.data;
+      expect([cliente, hoy]).toMatchObject([cliente, { planState: 'AVAILABLE', activePlan: { planId: creado.planId } }]);
+      ocurrencia = (hoy.occurrences as { occurrenceId: string; plannedSession: { sessionId: string } }[]).find((o) => o.plannedSession.sessionId === SESION_ID)!.occurrenceId;
+      const fecha = hoy.date as string;
+      const periodo = (await pedido.get(`/api/v1/me/training/occurrences?periodStart=${fecha}&periodEnd=${fecha}`).expect(200)).body.data;
+      expect([cliente, periodo.planState, (periodo.occurrences as { occurrenceId: string }[]).map((o) => o.occurrenceId)]).toEqual([cliente, 'AVAILABLE', expect.arrayContaining([ocurrencia])]);
+      expect([cliente, (await pedido.get('/api/v1/me/training/agenda').expect(200)).body.data]).toMatchObject([cliente, { planState: 'AVAILABLE', planId: creado.planId }]);
+      const elPlan = (await pedido.get(`/api/v1/training/plans/${creado.planId}`).expect(200)).body;
+      expect([cliente, elPlan.data]).toMatchObject([cliente, { planId: creado.planId, state: 'ACTIVATED' }]);
+      // Sin `training-set-kinds-1`, las series salen sin `setKind`, como siempre: la capacidad solo moldea la forma.
+      expect([cliente, JSON.stringify(elPlan).includes('setKind')]).toEqual([cliente, false]);
+      const sesion = SesionParaRegistrarResponseSchema.parse((await pedido.get(`/api/v1/training/occurrences/${ocurrencia}/session`).expect(200)).body).data.session;
+      expect([cliente, sesion.sessionId]).toEqual([cliente, SESION_ID]);
     }
-    // Cada retención queda auditada con su motivo real, que el cliente no ve: sobre la versión, o sobre la ocurrencia opaca
-    // (que no es un identificador de la base). Dos de cada una: los dos clientes.
-    const unaVez = [
-      `API-TRN-14 VersionDePlanDeEntrenamiento ${plan.planId}`,
-      `API-TRN-14-PERIODO VersionDePlanDeEntrenamiento ${plan.planId}`,
-      `API-TRN-09 VersionDePlanDeEntrenamiento ${plan.planId}`,
-      'API-TRN-15 - -',
-    ];
-    const retenidas = [...unaVez, ...unaVez].sort();
-    expect(await retenciones(plan.ase.id)).toEqual(retenidas);
+    expect((await conSesion(app, c.ase.token).put(`/api/v1/training/occurrences/${ocurrencia}/execution-draft`).send({}).expect(201)).body.data).toMatchObject({ occurrenceId: ocurrencia, state: 'DRAFT' });
 
-    // Con la cabecera: «Hoy» disponible, en la misma forma de siempre; la sesión con el objetivo exacto de cada serie del
-    // paquete; el detalle; y abrir la sesión.
-    const apk = conLaApk(app, plan.ase.token);
-    const hoy = (await apk.get('/api/v1/me/training/today').expect(200)).body;
-    expect(hoy.data).toMatchObject({ planState: 'AVAILABLE', activePlan: { planId: plan.planId } });
-    expect((hoy.data.occurrences as { occurrenceId: string }[]).map((o) => o.occurrenceId)).toEqual([ocurrencia]);
-    expect(comoLaLeeLaApkInstalada('API-TRN-14', hoy)).toEqual([]);
-    const sesion = SesionParaRegistrarResponseSchema.parse((await apk.get(`/api/v1/training/occurrences/${ocurrencia}/session`).expect(200)).body).data.session;
-    expect(sesion.sessionId).toBe(SESION_ID);
-    for (const e of SESION_DEMO.exercises) {
-      const p = sesion.prescriptions.find((x) => x.prescriptionId === prescripcionIdDe(e))!;
-      expect(p.sets.map((s) => [s.setIndex, s.target])).toEqual(e.sets.map((s) => [s.setIndex, objetivoDeLaDemo(s)]));
-    }
-    expect((await apk.get(`/api/v1/training/plans/${plan.planId}`).expect(200)).body.data).toMatchObject({ planId: plan.planId, state: 'ACTIVATED' });
-    expect((await apk.put(`/api/v1/training/occurrences/${ocurrencia}/execution-draft`).send({}).expect(201)).body.data).toMatchObject({ occurrenceId: ocurrencia, state: 'DRAFT' });
-    // Lo que pidió con la cabecera no se retuvo.
-    expect(await retenciones(plan.ase.id)).toEqual(retenidas);
+    // Nada se rechazó ni se registró por la versión de la app.
+    expect(await retenciones(c.ase.id)).toEqual([]);
+    expect(await retenciones(c.pro.id)).toEqual([]);
+    expect(await capacidadesRegistradas(c.ase.id)).toBe(0);
   });
+});
 
+// ─── Lo registrado y las lecturas del profesional ───────────────────────────────────────────────
+
+describe('lo registrado y lo que lee el profesional no dependen de lo que declara el cliente', () => {
   it('lo registrado (TRN-16 a 20, 19-LISTA) y la lista de planes del titular no cambian sin la cabecera; las lecturas del profesional, tampoco', async () => {
     const plan = await piernasActivada('compat-historia');
     const ocurrencia = await ocurrenciaDeHoy(app, plan.ase);
@@ -256,7 +196,7 @@ describe('DL-122 · un plan que exige objetivos por serie no se le entrega a un 
     const correccion = (await instalada.post(`/api/v1/training/executions/${executionId}/corrections`).send({ reason: 'Me equivoqué en una serie.', correction: corregida }).expect(201)).body;
     expect(comoLaLeeLaApkInstalada('API-TRN-20', correccion, '201')).toEqual([]);
 
-    // El profesional nunca pasa por la compuerta: con la cabecera o sin ella, lee lo mismo.
+    // El profesional, con la cabecera o sin ella, lee lo mismo.
     const pro = conSesion(app, plan.pro.token);
     const proConCabecera = conLaApk(app, plan.pro.token);
     for (const ruta of [
