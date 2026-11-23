@@ -5684,6 +5684,113 @@ a.observacion__fila:focus-visible {
   align-items: center;
 }
 
+/* ─── Recorridos guiados (WP-RECORRIDOS-GUIADOS, DL-195) ──────────────────────────────── */
+/* Todo se oscurece menos el hueco, y el cartel va al lado (lo ubica `components/recorrido-guiado.tsx`). Todo es fijo a
+   la ventana y va en un portal: nada de la página se corre al aparecer (RP-19). Los colores son los de los tokens: el
+   cartel es una superficie como la de un diálogo, en los dos temas. */
+.recorrido {
+  position: fixed;
+  inset: 0;
+  z-index: 1100;
+}
+
+/* Toma los clics: mientras se recorre, la pantalla no se toca. */
+.recorrido__bloqueo {
+  position: fixed;
+  inset: 0;
+}
+
+/* El hueco: una sombra enorme alrededor es el velo, y adentro se ve la pantalla tal cual. */
+.recorrido__hueco {
+  position: fixed;
+  border-radius: 10px;
+  box-shadow: 0 0 0 200vmax var(--velo-del-recorrido);
+  outline: 2px solid var(--cian);
+  outline-offset: 0;
+  pointer-events: none;
+}
+
+.recorrido__cartel {
+  position: fixed;
+  width: min(22rem, calc(100vw - 1.5rem));
+  padding: 1rem 1.1rem 0.9rem;
+  border: 1px solid var(--borde);
+  border-radius: 14px;
+  background: var(--superficie);
+  color: var(--texto);
+  box-shadow: var(--sombra);
+}
+
+.recorrido__numero {
+  margin: 0 0 0.25rem;
+  color: var(--tenue);
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.recorrido__titulo {
+  margin: 0 0 0.4rem;
+  font-size: 1.05rem;
+  line-height: 1.3;
+}
+
+.recorrido__titulo:focus {
+  outline: none;
+}
+
+.recorrido__titulo:focus-visible {
+  outline: 2px solid var(--foco);
+  outline-offset: 2px;
+}
+
+.recorrido__texto {
+  margin: 0;
+  line-height: 1.45;
+}
+
+.recorrido__donde-volver {
+  margin: 0.5rem 0 0;
+}
+
+/* «Omitir» a la izquierda; «Anterior» y «Siguiente» a la derecha, siempre en el mismo lugar. */
+.recorrido__acciones {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.9rem;
+}
+
+.recorrido__acciones > :first-child {
+  margin-right: auto;
+}
+
+.recorrido__acciones [aria-disabled='true'] {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* «Ver el recorrido», en la barra del editor: discreto, con su ícono, del alto de los demás. */
+.recorrido__ver {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  white-space: nowrap;
+}
+
+/* Con movimiento permitido, el cartel aparece con un fundido corto; sin él, aparece de una. El hueco no se anima: sigue al
+   elemento cuadro a cuadro mientras la página se desplaza. */
+@media (prefers-reduced-motion: no-preference) {
+  .recorrido__cartel[data-lado] {
+    animation: recorrido-aparece 140ms ease-out;
+  }
+}
+
+@keyframes recorrido-aparece {
+  from {
+    opacity: 0;
+  }
+}
+
 /*
  * La pista (DL-146): el texto corto que aparece al pasar el mouse por un título o una acción, o al llegarle con el
  * teclado. Fija a la ventana (la ubica `components/pista.tsx`), con los colores de la superficie, como las lecturas de

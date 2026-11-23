@@ -305,7 +305,7 @@ export function EjercicioDelEditor({
   const [vezPasada, setVezPasada] = useState(false);
   const Titulo = nivel;
   return (
-    <section className="comida-del-plan ejercicio-del-editor" data-ejercicio={posicion + 1} data-abierta={abierto ? '' : undefined} data-en-bloque={nivel === 'h4' ? '' : undefined}>
+    <section className="comida-del-plan ejercicio-del-editor" data-ejercicio={posicion + 1} data-recorrido="ejercicio" data-abierta={abierto ? '' : undefined} data-en-bloque={nivel === 'h4' ? '' : undefined}>
       <div className="comida-del-editor__cabecera">
         <Titulo className="comida-del-plan__titulo">
           <button type="button" id={`abrir-ejercicio-${id}`} className="comida-del-plan__boton" aria-expanded={abierto} aria-controls={`${propio}-cuerpo`} onClick={alAlternar}>

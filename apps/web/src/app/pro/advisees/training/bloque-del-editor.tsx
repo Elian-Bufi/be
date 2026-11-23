@@ -94,7 +94,7 @@ export function BloqueDelEditor({
     if (n !== null) escribirDescanso(escribirElDescanso(n));
   };
   return (
-    <section className="bloque-del-editor" data-bloque={posicion + 1} data-tipo={bloque.kind} aria-labelledby={`${id}-titulo`}>
+    <section className="bloque-del-editor" data-bloque={posicion + 1} data-recorrido="bloque" data-tipo={bloque.kind} aria-labelledby={`${id}-titulo`}>
       <div className="bloque-del-editor__cabecera">
         <h3 id={`${id}-titulo`} className="bloque-del-editor__titulo" tabIndex={-1}>
           <span className="bloque-del-editor__rotulo">{B.bloque}</span> {nombre}
