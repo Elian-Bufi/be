@@ -862,7 +862,7 @@ function Contenido() {
                   subir={subir}
                 />
               ) : null}
-              {ruta.nombre === 'ejecucion-de-entrenamiento' ? <PantallaDeEjecucionDeEntrenamiento key={ruta.id} token={sesion.token} id={ruta.id} avisoInicial={ruta.aviso} salir={salir} ir={ir} /> : null}
+              {ruta.nombre === 'ejecucion-de-entrenamiento' ? <PantallaDeEjecucionDeEntrenamiento key={ruta.id} token={sesion.token} id={ruta.id} avisoInicial={ruta.aviso} esfuerzo={ruta.esfuerzo} salir={salir} ir={ir} /> : null}
               {ruta.nombre === 'corregir-ejecucion' ? <PantallaDeCorreccion key={ruta.id} token={sesion.token} id={ruta.id} salir={salir} ir={ir} /> : null}
               {ruta.nombre === 'registro-rapido' ? (
                 <PantallaDeRegistroRapido
