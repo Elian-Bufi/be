@@ -115,3 +115,29 @@ export function resumenDeLasAproximaciones(p: Prescripcion): string | null {
   });
   return partes.length > 0 ? `${partes.join(' · ')} ${unidad}` : null;
 }
+
+/**
+ * DL-197 (ET1-D08, F15): las aproximaciones no toman el RIR común. Con el criterio RIR, cada una lleva `rir: null` («sin
+ * objetivo en esta serie»); sin él, ninguna lleva la clave (el contrato no acepta un RIR por serie sin el criterio). Se aplica
+ * a cada cambio del ejercicio: también cuando el criterio aparece después (al escribir el objetivo común heredado del plan).
+ */
+export function conLasAproximacionesSinRir(p: Prescripcion, c: Partial<Prescripcion>): Partial<Prescripcion> {
+  const intensidad = 'intensity' in c ? c.intensity : p.intensity;
+  const conRir = !!intensidad && intensidad.criterion === 'RIR';
+  const series = c.sets ?? p.sets;
+  let cambio = false;
+  const nuevas = series.map((x): Serie => {
+    if (!esDeCalentamiento(x)) return x;
+    if (conRir && x.rir === undefined) {
+      cambio = true;
+      return { ...x, rir: null };
+    }
+    if (!conRir && x.rir === null) {
+      cambio = true;
+      const { rir: _sin, ...resto } = x;
+      return resto as Serie;
+    }
+    return x;
+  });
+  return cambio ? { ...c, sets: nuevas } : c;
+}

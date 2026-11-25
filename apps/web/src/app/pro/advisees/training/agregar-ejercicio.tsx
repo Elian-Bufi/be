@@ -228,7 +228,9 @@ export function AgregarEjercicio({
                 <li key={p}>{p}</li>
               ))}
             </ol>
-            <p className="nota">{AYUDA_DE_AGREGAR.ejemplo}</p>
+            <p className="ayuda-con-ejemplo__ejemplo" data-ejemplo-resuelto>
+              {AYUDA_DE_AGREGAR.ejemplo}
+            </p>
           </>
         ),
       }}

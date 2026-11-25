@@ -2535,6 +2535,8 @@ async function editorDeEntrenamiento({ p, d, salida }) {
   await elemento(p, '[data-tarjeta-de-fase="2"][data-fuera]');
   await esperarGuardado(p);
   await captura(p, salida, 'fases-de-mas-1440');
+  // El aviso flotante de la copia se va solo: no tiene que tapar lo que se toca.
+  await p.waitForFunction(() => !document.querySelector('.aviso-flotante'), { timeout: 30_000, polling: 200 });
   await clic(p, '[data-resolver-fases-de-mas]');
   await elemento(p, '.lo-que-impide-activar__lista:not([hidden]) [data-accion-del-impedimento="llevar-el-plan"]');
   await elemento(p, '.lo-que-impide-activar__lista:not([hidden]) [data-accion-del-impedimento="recortar-la-ultima"]');
@@ -2670,7 +2672,7 @@ async function aproximacionesPorPorcentaje({ p, d, salida }) {
   );
   // DL-197 (F15): sin RIR y con su descanso corto propio.
   assert.ok(
-    conTipos.blocks[0].sessions[0].prescriptions[0].sets.filter((s) => s.setKind === 'WARM_UP').every((s) => s.rir === null && s.restSeconds === 60),
+    conTipos.blocks[0].sessions[0].prescriptions[0].sets.filter((s) => s.setKind === 'WARM_UP').every((s) => (s.rir === null || s.rir === undefined) && s.restSeconds === 60),
     'las aproximaciones no heredan el RIR ni el descanso común',
   );
   assert.equal(ejercicio.restSeconds, 90, 'el descanso común se guardó como 01:30');

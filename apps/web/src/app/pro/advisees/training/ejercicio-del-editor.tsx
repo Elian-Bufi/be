@@ -53,7 +53,7 @@ import {
 } from '@be/domain';
 import { Fragment, useEffect, useId, useRef, useState, type ComponentProps, type FocusEvent, type KeyboardEvent, type ReactNode } from 'react';
 import { SeccionDeAproximaciones } from './aproximaciones-del-ejercicio';
-import { cuantasAproximaciones, resumenDeLasAproximaciones, rotulosConAproximaciones } from './aproximaciones';
+import { conLasAproximacionesSinRir, cuantasAproximaciones, resumenDeLasAproximaciones, rotulosConAproximaciones } from './aproximaciones';
 import { AYUDAS_DEL_EDITOR, ContenidoDeLaAyuda } from './ayudas-del-editor';
 import { cifrasTrasLaTecla, textoDeLaMascara } from './mascara-de-tiempo';
 import { EnPartes } from '../../../../components/en-partes';
@@ -316,7 +316,7 @@ export function EjercicioDelEditor({
   abierto,
   problemas,
   alAlternar,
-  onCambiar,
+  onCambiar: onCambiarTalCual,
   onQuitar,
   esElPrimero,
   esElUltimo,
@@ -379,6 +379,8 @@ export function EjercicioDelEditor({
   /** El ejercicio del catálogo, si ya se conoce (lo trae la versión guardada): con él, la fuerza estimada (§5.8). */
   exerciseId?: string | null;
 }) {
+  // DL-197 (F15): cada cambio deja las aproximaciones sin RIR, en la forma que acepta el contrato.
+  const onCambiar = (c: Partial<PrescripcionE>) => onCambiarTalCual(conLasAproximacionesSinRir(p, c));
   // PLT (DL-182): sin persona (una plantilla), el editor no pasa el ejercicio del catálogo y nada de esto se pide.
   const { token, asesoradoId, sesionPerdida } = useEditorDeEntrenamiento();
   // PG-16 (DL-173): «Anotar sobre este ejercicio», si el editor tiene las notas propias y se sabe qué ejercicio es.

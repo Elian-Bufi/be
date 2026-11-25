@@ -51,11 +51,11 @@ describe('DL-197 · la clasificación del catálogo', () => {
       .send({ name: 'Remo trilimbo clasificado', muscleZones: [], didacticResources: [], provenance: { type: 'MANUAL_ENTRY' }, classification: { muscleGroup: 'BACK', equipment: ['CABLE'], movementPattern: 'PULL', joints: 'MULTI' } })
       .expect(201);
     await s.post('/api/v1/training/exercises').send({ name: 'Remo trilimbo sin clasificar', muscleZones: [], didacticResources: [], provenance: { type: 'MANUAL_ENTRY' } }).expect(201);
-    // Una clasificación con un valor que no existe es un 422.
+    // Una clasificación con un valor que no existe no pasa el esquema: un 400, como todo cuerpo mal formado.
     await s
       .post('/api/v1/training/exercises')
       .send({ name: 'Remo inventado', muscleZones: [], didacticResources: [], provenance: { type: 'MANUAL_ENTRY' }, classification: { muscleGroup: 'NECK', equipment: [], movementPattern: null, joints: null } })
-      .expect(422);
+      .expect(400);
 
     // El catálogo entero, página por página, como lo lee «Agregar ejercicios».
     const todos: EjercicioEncontrado[] = [];
@@ -110,6 +110,6 @@ describe('DL-197 · fases de más y la intensidad del plan', () => {
     expect((await detalle(c.pro.token, b.planId)).planning?.intensity).toBe('PERCENT_RM');
     await pro.patch(`/api/v1/training/plans/${b.planId}`).send({ expectedVersion: r.body.data.version, changes: estructuraConFase(), planning: { startDate: null, weeks: null, goal: null, phases: [], intensity: 'RIR' } }).expect(200);
     expect((await detalle(c.pro.token, b.planId)).planning).toBeNull();
-    await pro.patch(`/api/v1/training/plans/${b.planId}`).send({ expectedVersion: r.body.data.version, changes: estructuraConFase(), planning: { startDate: null, weeks: null, goal: null, phases: [], intensity: 'RPE' } }).expect((x) => expect([409, 422]).toContain(x.status));
+    await pro.patch(`/api/v1/training/plans/${b.planId}`).send({ expectedVersion: r.body.data.version, changes: estructuraConFase(), planning: { startDate: null, weeks: null, goal: null, phases: [], intensity: 'RPE' } }).expect((x) => expect([400, 409]).toContain(x.status));
   });
 });

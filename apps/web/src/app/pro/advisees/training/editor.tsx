@@ -3722,8 +3722,8 @@ export function EditorDePlan({
             if (c.notacion !== notacion) setNotacion(c.notacion);
             if (c.pasarLosDemas) pasarALaIntensidadDelPlan(c.planificacion.intensity);
             setSucio(true);
+            // Sin aviso flotante: lo configurado se lee en «Fases del plan · fechas» (el aviso tapaba la fase).
             setCuadroDelPlan(null);
-            setMensaje({ tipo: 'exito', texto: 'El plan quedó configurado.' });
           }}
           onCerrar={() => setCuadroDelPlan(null)}
         />
