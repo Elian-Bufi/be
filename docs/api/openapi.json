@@ -48084,6 +48084,14 @@
                               "additionalProperties": false
                             }
                           },
+                          "intensity": {
+                            "type": "string",
+                            "enum": [
+                              "RIR",
+                              "PERCENT_RM",
+                              "NONE"
+                            ]
+                          },
                           "privateNotes": {
                             "type": "object",
                             "properties": {
@@ -50229,6 +50237,95 @@
                       "type"
                     ],
                     "additionalProperties": false
+                  },
+                  "classification": {
+                    "type": "object",
+                    "properties": {
+                      "muscleGroup": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "enum": [
+                              "CHEST",
+                              "BACK",
+                              "LEGS",
+                              "SHOULDERS",
+                              "ARMS",
+                              "ABS",
+                              "CALVES",
+                              "CARDIO"
+                            ]
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "equipment": {
+                        "maxItems": 14,
+                        "type": "array",
+                        "items": {
+                          "type": "string",
+                          "enum": [
+                            "BARBELL",
+                            "EZ_BAR",
+                            "DUMBBELL",
+                            "KETTLEBELL",
+                            "CABLE",
+                            "MACHINE",
+                            "BENCH",
+                            "INCLINE_BENCH",
+                            "PULL_UP_BAR",
+                            "BAND",
+                            "MAT",
+                            "SWISS_BALL",
+                            "BODYWEIGHT",
+                            "OTHER"
+                          ]
+                        }
+                      },
+                      "movementPattern": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "enum": [
+                              "PUSH",
+                              "PULL",
+                              "SQUAT",
+                              "HINGE",
+                              "LUNGE",
+                              "CORE",
+                              "CARDIO",
+                              "OTHER"
+                            ]
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "joints": {
+                        "anyOf": [
+                          {
+                            "type": "string",
+                            "enum": [
+                              "SINGLE",
+                              "MULTI"
+                            ]
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      }
+                    },
+                    "required": [
+                      "muscleGroup",
+                      "equipment",
+                      "movementPattern",
+                      "joints"
+                    ],
+                    "additionalProperties": false
                   }
                 },
                 "required": [
@@ -50569,6 +50666,10 @@
                     "type": "string",
                     "maxLength": 40
                   },
+                  "withClassification": {
+                    "type": "boolean",
+                    "const": true
+                  },
                   "limit": {
                     "type": "integer",
                     "minimum": 1,
@@ -50808,6 +50909,95 @@
                             "required": [
                               "loadedBy",
                               "approximateCorrespondence"
+                            ],
+                            "additionalProperties": false
+                          },
+                          "classification": {
+                            "type": "object",
+                            "properties": {
+                              "muscleGroup": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "enum": [
+                                      "CHEST",
+                                      "BACK",
+                                      "LEGS",
+                                      "SHOULDERS",
+                                      "ARMS",
+                                      "ABS",
+                                      "CALVES",
+                                      "CARDIO"
+                                    ]
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "equipment": {
+                                "maxItems": 14,
+                                "type": "array",
+                                "items": {
+                                  "type": "string",
+                                  "enum": [
+                                    "BARBELL",
+                                    "EZ_BAR",
+                                    "DUMBBELL",
+                                    "KETTLEBELL",
+                                    "CABLE",
+                                    "MACHINE",
+                                    "BENCH",
+                                    "INCLINE_BENCH",
+                                    "PULL_UP_BAR",
+                                    "BAND",
+                                    "MAT",
+                                    "SWISS_BALL",
+                                    "BODYWEIGHT",
+                                    "OTHER"
+                                  ]
+                                }
+                              },
+                              "movementPattern": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "enum": [
+                                      "PUSH",
+                                      "PULL",
+                                      "SQUAT",
+                                      "HINGE",
+                                      "LUNGE",
+                                      "CORE",
+                                      "CARDIO",
+                                      "OTHER"
+                                    ]
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              },
+                              "joints": {
+                                "anyOf": [
+                                  {
+                                    "type": "string",
+                                    "enum": [
+                                      "SINGLE",
+                                      "MULTI"
+                                    ]
+                                  },
+                                  {
+                                    "type": "null"
+                                  }
+                                ]
+                              }
+                            },
+                            "required": [
+                              "muscleGroup",
+                              "equipment",
+                              "movementPattern",
+                              "joints"
                             ],
                             "additionalProperties": false
                           }
@@ -92627,6 +92817,14 @@
                                     ],
                                     "additionalProperties": false
                                   }
+                                },
+                                "intensity": {
+                                  "type": "string",
+                                  "enum": [
+                                    "RIR",
+                                    "PERCENT_RM",
+                                    "NONE"
+                                  ]
                                 },
                                 "privateNotes": {
                                   "type": "object",
