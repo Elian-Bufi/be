@@ -209,11 +209,11 @@ test('TEST-PG-009 · «Completar» escribe solo las series del grupo y solo las 
 test('TEST-PG-009 · el editor agrupa lo sin completar en el cuadro y en el panel; el grupo se abre y conserva «Ir»', () => {
   const editor = leer('src/app/pro/advisees/training/editor.tsx');
   // Dentro del cuadro modal, sin «Completar»: su «Deshacer» no se alcanza con el cuadro abierto (revisión de la tanda A).
-  assert.match(editor, /const sinCompletarAlActivar = confirmar \? enGrupos\(loQueQuedaSinCompletarEnEntrenamiento\(bloques\), conSuLugar\)\.map\(\(c\) => \(\{ \.\.\.c, completar: null \}\)\) : \[\];/);
+  assert.match(editor, /const sinCompletarAlActivar = confirmar \? enGrupos\(loQueQuedaSinCompletarEnEntrenamiento\(bloques, herenciaDeLaIntensidad\), conSuLugar\)\.map\(\(c\) => \(\{ \.\.\.c, completar: null \}\)\) : \[\];/);
   // Las filas, con una clave estable: lo abierto no pasa a la fila siguiente.
   assert.doesNotMatch(editor, /sinCompletarEnVivo\.map\(\(x, n\) =>/);
   assert.doesNotMatch(leer('src/app/pro/advisees/cuadro-antes-de-activar.tsx'), /sinCompletar\.map\(\(c, n\) =>/);
-  assert.match(editor, /const sinCompletarEnVivo = enGrupos\(loQueQuedaSinCompletarEnEntrenamiento\(bloques\), enElPanel\);/);
+  assert.match(editor, /const sinCompletarEnVivo = enGrupos\(loQueQuedaSinCompletarEnEntrenamiento\(bloques, herenciaDeLaIntensidad\), enElPanel\);/);
   // Lo que impide activar no cambia: uno por renglón, y el principal cuenta lo mismo.
   assert.match(editor, /\.\.\.impideGuardar\.map\(\(p\) => conSuLugar\(p, PROBLEMA\[p\.code\]/);
   // «Completar» solo para las series sin repeticiones, con la operación de siempre y su «Deshacer».

@@ -31,7 +31,7 @@ export const TEXTO_DE_LO_INCOMPLETO: Readonly<Record<string, string>> = {
   [INCOMPLETO.sinRepeticiones]: 'sin repeticiones fijadas',
   [INCOMPLETO.sinSeries]: 'sin series',
   [INCOMPLETO.seriesYVueltas]: 'sus series efectivas no son tantas como las vueltas de su bloque',
-  [INCOMPLETO.sinIntensidad]: 'sin objetivo de intensidad: en la app se lee «sin criterio de intensidad»',
+  [INCOMPLETO.sinIntensidad]: 'el objetivo de la intensidad del plan, sin indicar: en la app se lee «sin criterio de intensidad»',
 };
 
 /** Los textos de «Revisar el plan» que viven en el website. El nombre del botón está en el dominio (`validarPlan`). */
