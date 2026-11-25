@@ -1,10 +1,13 @@
 import { Injectable } from '@nestjs/common';
 import {
   AsociarImagenDeEjercicioRequestSchema,
+  CambiarClasificacionDeEjercicioRequestSchema,
   CambiarZonasDeEjercicioRequestSchema,
+  CLASIFICACION_VACIA,
   CodigoDeError,
   CuerpoVacioSchema,
   problemasDeZonas,
+  type ClasificacionDeEjercicio,
   type EjercicioPropio,
   type FichaVisualDeEjercicio,
 } from '@be/domain';
@@ -60,7 +63,9 @@ export class ImagenesDeEjercicioService {
         await exigirProfesionalDeEntrenamiento(tx, actor.identidadId);
         const filas = await this.propios(tx, actor.identidadId, null);
         const imagenes = await imagenesDeEjercicios(tx, filas.map((f) => f.ejercicioId), null);
-        return { data: filas.map((f) => ejercicioPropioApi(f, imagenes.get(f.ejercicioId))) };
+        // DL-198 (ET2-11): la clasificación vigente de cada uno, para cambiarla en «Mis ejercicios».
+        const clasificaciones = await clasificacionesVigentes(tx, filas.map((f) => f.ejercicioId));
+        return { data: filas.map((f) => ({ ...ejercicioPropioApi(f, imagenes.get(f.ejercicioId)), ...(clasificaciones.get(f.ejercicioId) ?? { classificationVersion: 0, classification: CLASIFICACION_VACIA }) })) };
       },
     });
   }
@@ -206,6 +211,53 @@ export class ImagenesDeEjercicioService {
     });
   }
 
+  // ─── API-EJE-06 ────────────────────────────────────────────────────────────────────────────
+  /**
+   * DL-198 (ET2-11; ET1-D14): la clasificación de un ejercicio propio, cambiada: la siguiente de su historia por adición
+   * (la anterior no cambia). `expectedClassificationVersion` es la que se vio (0 si nunca tuvo): otra, 409.
+   */
+  clasificar(actor: ActorAutenticado, exerciseId: string, cuerpo: unknown, clave: string | undefined, ctx: ContextoDeSolicitud): Promise<ResultadoIdempotente> {
+    const recurso = { tipo: RECURSO, id: exerciseId };
+    return this.ejecutor.escribirIdempotente({
+      operacion: 'API-EJE-06',
+      casoDeUso: CASO_DE_USO,
+      actor,
+      ctx,
+      recursoIntentado: recurso,
+      clave,
+      esquema: CambiarClasificacionDeEjercicioRequestSchema,
+      cuerpo,
+      huellaExtra: { exerciseId },
+      efecto: async (tx, pedido, procedencia) => {
+        await exigirProfesionalDeEntrenamiento(tx, actor.identidadId);
+        const ejercicioId = await this.propioBloqueado(tx, 'API-EJE-06', actor, exerciseId, ctx);
+        const vigente = (await clasificacionesVigentes(tx, [ejercicioId])).get(ejercicioId)?.classificationVersion ?? 0;
+        if (pedido.expectedClassificationVersion !== vigente) throw errores.conflictoDeVersion();
+        const c = pedido.classification;
+        await sinDuplicar(
+          tx.clasificacionDeEjercicio.create({
+            data: {
+              ejercicioId,
+              numero: vigente + 1,
+              grupoMuscular: c.muscleGroup,
+              equipamiento: [...new Set(c.equipment)],
+              patron: c.movementPattern,
+              articulaciones: c.joints,
+              procedencia: procedencia as unknown as Prisma.InputJsonValue,
+            },
+          }),
+          errores.conflictoDeVersion,
+        );
+        return {
+          estadoHttp: 200,
+          cuerpo: { data: { exerciseId: ejercicioId, classificationVersion: vigente + 1, classification: { ...c, equipment: [...new Set(c.equipment)] } } },
+          sujetoId: null,
+          recurso,
+        };
+      },
+    });
+  }
+
   // ─── Apoyo ─────────────────────────────────────────────────────────────────────────────────
 
   /**
@@ -256,4 +308,19 @@ export class ImagenesDeEjercicioService {
     const [ficha] = await fichasVisuales(tx, [{ ...fila, procedencia: 'PROFESSIONAL_MANUAL', creadoPorId: profesionalId, fuenteExterna: null }]);
     return ficha!;
   }
+}
+
+/** DL-198 (ET2-11): la clasificación vigente (la de número más alto) de cada ejercicio, con su número. */
+async function clasificacionesVigentes(tx: Prisma.TransactionClient, ids: readonly string[]): Promise<Map<string, { classificationVersion: number; classification: ClasificacionDeEjercicio }>> {
+  if (ids.length === 0) return new Map();
+  const filas = await tx.clasificacionDeEjercicio.findMany({ where: { ejercicioId: { in: [...ids] } }, orderBy: [{ ejercicioId: 'asc' }, { numero: 'desc' }] });
+  const r = new Map<string, { classificationVersion: number; classification: ClasificacionDeEjercicio }>();
+  for (const f of filas) {
+    if (r.has(f.ejercicioId)) continue;
+    r.set(f.ejercicioId, {
+      classificationVersion: f.numero,
+      classification: { muscleGroup: f.grupoMuscular, equipment: [...f.equipamiento], movementPattern: f.patron, joints: f.articulaciones },
+    });
+  }
+  return r;
 }

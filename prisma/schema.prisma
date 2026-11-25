@@ -217,6 +217,11 @@ model Identidad {
   /// ED-72 (DL-171): las series que observó como profesional, y las que le observaron como persona.
   seriesObservadasComoProfesional            SerieObservada[]                          @relation("SerieObservadaPorElProfesional")
   seriesObservadasComoAsesorado              SerieObservada[]                          @relation("SerieObservadaDelAsesorado")
+  /// DL-198 (ET2-01 a ET2-04): los 1RM de referencia que sumó como profesional, y los suyos como persona.
+  unosRMComoProfesional                      UnoRMDeReferencia[]                       @relation("UnoRMDeReferenciaDelProfesional")
+  unosRMComoAsesorado                        UnoRMDeReferencia[]                       @relation("UnoRMDeReferenciaDelAsesorado")
+  /// DL-198 (ET2-07 a ET2-09): el esfuerzo de cada sesión que respondió al terminar.
+  esfuerzosDeLaSesion                        EsfuerzoDeSesionDeEntrenamiento[]         @relation("EsfuerzoDeSesionDelAsesorado")
   evaluacionesDeEntrenamientoComoProfesional EvaluacionDeEntrenamiento[]               @relation("EvaluacionDeEntrenamientoDelProfesional")
   evaluacionesDeEntrenamientoComoAsesorado   EvaluacionDeEntrenamiento[]               @relation("EvaluacionDeEntrenamientoDelAsesorado")
   objetivosDeEntrenamientoComoProfesional    ObjetivoDeEntrenamiento[]                 @relation("ObjetivoDeEntrenamientoDelProfesional")
@@ -2142,6 +2147,8 @@ enum TipoDeEventoDeEntrenamiento {
   /// WP-EDITORES-PROFESIONAL (DL-167, ED-13): una prescripción habitual guardada o reemplazada, y quitada.
   PrescripcionHabitualGuardada
   PrescripcionHabitualQuitada
+  /// DL-198 (ET2-01): un 1RM de referencia sumado (una calibración, uno declarado o un registro elegido).
+  UnoRMDeReferenciaSumado
 }
 
 /// D-B (docs/paquetes/WP-07.md): mismos dos nombres de evento que las transiciones de
@@ -2212,6 +2219,8 @@ model EjercicioDeCatalogo {
   notasPropias        NotaPropia[]
   /// DL-197 (ET1-D12): la historia de su clasificación; la vigente es la de número más alto.
   clasificaciones     ClasificacionDeEjercicio[]
+  /// DL-198 (ET2-01): los 1RM de referencia de las personas en este ejercicio.
+  unosRM              UnoRMDeReferencia[]
 
   @@map("ejercicio_de_catalogo")
 }
@@ -2526,6 +2535,8 @@ model EjecucionDeEntrenamiento {
   correcciones  CorreccionDeEjecucionDeEntrenamiento[]
   /// PG-15 (DL-173): las notas que la persona dejó para su profesional. No cambian la ejecución.
   notas         NotaDeEjecucion[]
+  /// DL-198 (ET2-07): el esfuerzo de la sesión que respondió al terminar, si lo respondió. No cambia la ejecución.
+  esfuerzo      EsfuerzoDeSesionDeEntrenamiento?
 
   @@unique([asesoradoId, versionDePlanId, sesionPlanificadaId, fechaLocal])
   @@index([asesoradoId, fechaLocal])
@@ -3422,6 +3433,8 @@ model VersionDePlantillaDePlanDeEntrenamiento {
   plantillaId       String            @map("plantilla_id") @db.Uuid
   numero            Int
   estructura        Json
+  /// DL-198 (ET2-10): la planificación de la versión (semanas, aproximaciones, progresiones, intensidad), sin nada de una persona.
+  planificacion     Json?
   cargas            CargasDePlantilla @default(NO_COPIADAS)
   origen            Json?
   autorId           String            @map("autor_id") @db.Uuid
@@ -3457,6 +3470,8 @@ model PreparacionDePlantillaDeEntrenamiento {
   nombre                 String?
   descripcion            String?
   estructura             Json
+  /// DL-198 (ET2-10): la planificación en preparación; va a la versión al guardarla.
+  planificacion          Json?
   cargas                 CargasDePlantilla @default(NO_COPIADAS)
   version                Int               @default(1)
   procedencia            Json
@@ -4974,6 +4989,71 @@ model SerieObservada {
 
   @@index([asesoradoId, profesionalId, ejercicioId, fechaLocal])
   @@map("serie_observada")
+}
+
+// ─── DL-198 (WP-EDITOR-ENTRENAMIENTO-TANDA-2) · el 1RM de referencia y el esfuerzo de la sesión ─────────────────────────
+
+/// DL-198 (ET2-01 a ET2-04): el 1RM de referencia de una persona en un ejercicio, con el que BE calcula las cargas en % RM.
+/// De solo agregar (ni UPDATE, ni DELETE, ni TRUNCATE): cada valor nuevo es una fila, con su origen, su fecha y su autor;
+/// el que usa BE es el más reciente (o el último registro en rango, que se calcula al leer, ET2-D03).
+/// - `CALIBRATION`: la serie que vio el profesional y la cuenta de Epley (`serie`, `metodo`);
+/// - `DECLARED`: el valor escrito a mano (sin serie ni método);
+/// - `RECORD`: un registro de la persona que el profesional eligió usar (`registro`: la ejecución, la prescripción y la serie).
+/// Cada profesional ve y suma lo propio con la persona (DL-057, como las series observadas).
+model UnoRMDeReferencia {
+  id                String              @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  profesionalId     String              @map("profesional_id") @db.Uuid
+  asesoradoId       String              @map("asesorado_id") @db.Uuid
+  ejercicioId       String              @map("ejercicio_id") @db.Uuid
+  origen            OrigenDelUnoRM
+  valor             Float
+  unidad            String
+  fechaLocal        DateTime            @map("fecha_local") @db.Date
+  /// La serie de la calibración o del registro: `{ load, completedRepetitions, rir }`; nula en lo declarado.
+  serie             Json?
+  /// `{ specification, version, method }` (BE-E1RM v2, EPLEY_V2); nulo en lo declarado.
+  metodo            Json?
+  /// `CORE` o `ORIENTATIVE`; nula en lo declarado.
+  banda             String?
+  /// En un `RECORD`: `{ executionId, prescriptionId, setIndex }`.
+  registro          Json?
+  nota              String?
+  procedencia       Json
+  momentoDeRegistro DateTime            @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+
+  profesional Identidad           @relation("UnoRMDeReferenciaDelProfesional", fields: [profesionalId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  asesorado   Identidad           @relation("UnoRMDeReferenciaDelAsesorado", fields: [asesoradoId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  ejercicio   EjercicioDeCatalogo @relation(fields: [ejercicioId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@index([asesoradoId, profesionalId, ejercicioId, fechaLocal])
+  @@map("uno_rm_de_referencia")
+}
+
+/// DL-198: de dónde sale un 1RM de referencia.
+enum OrigenDelUnoRM {
+  CALIBRATION
+  RECORD
+  DECLARED
+}
+
+/// DL-198 (ET2-07 a ET2-09): el esfuerzo de la sesión (Foster, de 0 a 10) que la persona respondió al terminar, aparte del
+/// RIR de cada serie. Una fila por sesión registrada, de solo agregar: la ejecución registrada no cambia (REG-06-116).
+/// `minutos` con su origen (el cronómetro de la sesión o escrito por la persona), o nulos si no los dio.
+model EsfuerzoDeSesionDeEntrenamiento {
+  id                String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  ejecucionId       String   @unique @map("ejecucion_id") @db.Uuid
+  asesoradoId       String   @map("asesorado_id") @db.Uuid
+  valor             Int
+  minutos           Int?
+  origenDeMinutos   String?  @map("origen_de_minutos")
+  procedencia       Json
+  momentoDeRegistro DateTime @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+
+  ejecucion EjecucionDeEntrenamiento @relation(fields: [ejecucionId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+  asesorado Identidad                @relation("EsfuerzoDeSesionDelAsesorado", fields: [asesoradoId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@index([asesoradoId])
+  @@map("esfuerzo_de_sesion_de_entrenamiento")
 }
 
 // ─── RF-068 · Incidencias administrativas mínimas (DL-172; 09 v0.12 §16) ───────────────────────────────────────────────

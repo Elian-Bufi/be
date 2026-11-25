@@ -6,6 +6,7 @@ import {
   EditarPlantillaRequestSchema,
   normalizarEstructuraDeEntrenamiento,
   nombreNormalizadoDePlantilla,
+  planificacionDeLaPlantillaPodada,
   NuevaVersionDePlantillaRequestSchema,
   problemasDeReferencias,
   referenciasDeEjercicio,
@@ -14,6 +15,7 @@ import {
   type EjercicioCitable,
   type EstructuraDePlanDeEntrenamientoEntrada,
   type OrigenDePlantilla,
+  type PlanificacionDeLaPlantilla,
   type PlantillaDeEntrenamiento,
   type ResumenDePlantillaDeEntrenamiento,
 } from '@be/domain';
@@ -72,7 +74,15 @@ export class PlantillasDeEntrenamientoService {
         const plantillaId = await this.crearConSuPrimeraVersion(
           tx,
           actor.identidadId,
-          { nombre: pedido.name, descripcion: pedido.description ?? null, estructura, conCargas: pedido.copySuggestedLoads === true, origen: pedido.origin ?? null },
+          {
+            nombre: pedido.name,
+            descripcion: pedido.description ?? null,
+            estructura,
+            conCargas: pedido.copySuggestedLoads === true,
+            origen: pedido.origin ?? null,
+            // DL-198 (ET2-10): la planificación, podada contra la estructura y sin nada de una persona.
+            planificacion: planificacionDeLaPlantillaPodada(pedido.planning ?? null, estructura),
+          },
           procedencia,
         );
         return { estadoHttp: 201, cuerpo: { data: await this.leer(tx, actor.identidadId, plantillaId) }, sujetoId: null, recurso: { tipo: RECURSO, id: plantillaId } };
@@ -146,7 +156,13 @@ export class PlantillasDeEntrenamientoService {
         if (fila.estado === 'ARCHIVADA') throw archivada();
         const estructura = await this.estructuraVerificada(tx, actor.identidadId, pedido.structure, pedido.copySuggestedLoads === true);
         if (pedido.origin) await this.exigirVersionDePlanPropia(tx, actor.identidadId, pedido.origin.planVersionId);
-        await this.agregarVersion(tx, actor.identidadId, fila, { estructura, conCargas: pedido.copySuggestedLoads === true, origen: pedido.origin ?? null }, procedencia);
+        await this.agregarVersion(
+          tx,
+          actor.identidadId,
+          fila,
+          { estructura, conCargas: pedido.copySuggestedLoads === true, origen: pedido.origin ?? null, planificacion: planificacionDeLaPlantillaPodada(pedido.planning ?? null, estructura) },
+          procedencia,
+        );
         return { estadoHttp: 201, cuerpo: { data: await this.leer(tx, actor.identidadId, fila.id) }, sujetoId: null, recurso };
       },
     });
@@ -186,13 +202,22 @@ export class PlantillasDeEntrenamientoService {
    * La versión de plantilla que API-TRN-07 aplica con `fromTemplateVersionId`: propia y de una plantilla activa. Lo
    * ajeno o inexistente es 404 neutral; una archivada, 422.
    */
-  async versionParaAplicar(tx: Tx, profesionalId: string, templateVersionId: string): Promise<{ plantillaId: string; versionId: string; estructura: EstructuraDePlanDeEntrenamientoEntrada }> {
+  async versionParaAplicar(
+    tx: Tx,
+    profesionalId: string,
+    templateVersionId: string,
+  ): Promise<{ plantillaId: string; versionId: string; estructura: EstructuraDePlanDeEntrenamientoEntrada; planificacion: PlanificacionDeLaPlantilla | null }> {
     const v = /^[0-9a-f-]{36}$/i.test(templateVersionId)
       ? await tx.versionDePlantillaDePlanDeEntrenamiento.findUnique({ where: { id: templateVersionId }, include: { plantilla: { select: { id: true, profesionalId: true, estado: true } } } })
       : null;
     if (!v || v.plantilla.profesionalId !== profesionalId) throw errores.recursoNoEncontrado();
     if (v.plantilla.estado === 'ARCHIVADA') throw archivada();
-    return { plantillaId: v.plantilla.id, versionId: v.id, estructura: v.estructura as unknown as EstructuraDePlanDeEntrenamientoEntrada };
+    return {
+      plantillaId: v.plantilla.id,
+      versionId: v.id,
+      estructura: v.estructura as unknown as EstructuraDePlanDeEntrenamientoEntrada,
+      planificacion: (v.planificacion as unknown as PlanificacionDeLaPlantilla | null) ?? null,
+    };
   }
 
   // ─── Escrituras compartidas con la preparación (PLT, DL-182) ─────────────
@@ -204,7 +229,15 @@ export class PlantillasDeEntrenamientoService {
   async crearConSuPrimeraVersion(
     tx: Tx,
     profesionalId: string,
-    d: { readonly nombre: string; readonly descripcion: string | null; readonly estructura: EstructuraDePlanDeEntrenamientoEntrada; readonly conCargas: boolean; readonly origen: OrigenDePlantilla | null },
+    d: {
+      readonly nombre: string;
+      readonly descripcion: string | null;
+      readonly estructura: EstructuraDePlanDeEntrenamientoEntrada;
+      readonly conCargas: boolean;
+      readonly origen: OrigenDePlantilla | null;
+      /** DL-198 (ET2-10): la planificación de la versión, ya podada. */
+      readonly planificacion?: PlanificacionDeLaPlantilla | null;
+    },
     procedencia: unknown,
   ): Promise<string> {
     const momento = await momentoDeLaBase(tx);
@@ -221,6 +254,7 @@ export class PlantillasDeEntrenamientoService {
         estructura: d.estructura as unknown as Prisma.InputJsonValue,
         cargas: d.conCargas ? 'COPIADAS' : 'NO_COPIADAS',
         ...(d.origen ? { origen: d.origen as unknown as Prisma.InputJsonValue } : {}),
+        ...(d.planificacion ? { planificacion: d.planificacion as unknown as Prisma.InputJsonValue } : {}),
         autorId: profesionalId,
         procedencia: procedencia as unknown as Prisma.InputJsonValue,
       },
@@ -237,7 +271,7 @@ export class PlantillasDeEntrenamientoService {
     tx: Tx,
     profesionalId: string,
     fila: PlantillaFila,
-    d: { readonly estructura: EstructuraDePlanDeEntrenamientoEntrada; readonly conCargas: boolean; readonly origen: OrigenDePlantilla | null },
+    d: { readonly estructura: EstructuraDePlanDeEntrenamientoEntrada; readonly conCargas: boolean; readonly origen: OrigenDePlantilla | null; readonly planificacion?: PlanificacionDeLaPlantilla | null },
     procedencia: unknown,
   ): Promise<void> {
     const momento = await momentoDeLaBase(tx);
@@ -250,6 +284,7 @@ export class PlantillasDeEntrenamientoService {
         estructura: d.estructura as unknown as Prisma.InputJsonValue,
         cargas: d.conCargas ? 'COPIADAS' : 'NO_COPIADAS',
         ...(d.origen ? { origen: d.origen as unknown as Prisma.InputJsonValue } : {}),
+        ...(d.planificacion ? { planificacion: d.planificacion as unknown as Prisma.InputJsonValue } : {}),
         autorId: profesionalId,
         procedencia: procedencia as unknown as Prisma.InputJsonValue,
       },
@@ -363,7 +398,13 @@ function resumenApi(p: PlantillaFila): ResumenDePlantillaDeEntrenamiento {
 
 function plantillaApi(p: PlantillaFila): PlantillaDeEntrenamiento {
   const v = p.versiones[0];
-  return { ...resumenApi(p), structure: (v?.estructura as unknown as EstructuraDePlanDeEntrenamientoEntrada) ?? { blocks: [] }, exercises: {} };
+  return {
+    ...resumenApi(p),
+    structure: (v?.estructura as unknown as EstructuraDePlanDeEntrenamientoEntrada) ?? { blocks: [] },
+    // DL-198 (ET2-10): la planificación de la versión vigente, o `null`.
+    planning: (v?.planificacion as unknown as PlanificacionDeLaPlantilla | null) ?? null,
+    exercises: {},
+  };
 }
 
 /** Los `exerciseVersionId` que una estructura de entrada referencia. */

@@ -101,6 +101,13 @@ export class EntrenamientoPorSerieController {
     return responder(res, await this.imagenes.cambiarZonas(actorDe(req), exerciseId, cuerpo, clave, contextoDe(req)));
   }
 
+  /** API-EJE-06 (DL-198, ET2-11): la clasificación de un ejercicio propio, cambiada. */
+  @Put('training/exercises/:exerciseId/classification')
+  async clasificar(@Param('exerciseId') exerciseId: string, @Body() cuerpo: unknown, @Headers(HEADER_IDEMPOTENCY_KEY) clave: string | undefined, @Query() query: Record<string, unknown>, @Req() req: Solicitud, @Res({ passthrough: true }) res: Response): Promise<unknown> {
+    sinParametrosDeQuery(query);
+    return responder(res, await this.imagenes.clasificar(actorDe(req), exerciseId, cuerpo, clave, contextoDe(req)));
+  }
+
   /** Límite de consultas protegidas por actor, desde cualquier red (como API-DSH-03). */
   private limitar(req: Solicitud): void {
     this.limitador.consumir('consultaProtegida', null, actorDe(req).identidadId);

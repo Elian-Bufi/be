@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import type { Prisma } from '@prisma/client';
+import { Prisma } from '@prisma/client';
 import {
   AbrirPreparacionDePlantillaRequestSchema,
   CodigoDeError,
@@ -11,6 +11,7 @@ import {
   nombreNormalizadoDePlantilla,
   normalizarEstructuraDeEntrenamiento,
   paraCompletarAlAdaptar,
+  planificacionDeLaPlantillaPodada,
   problemasDeReferencias,
   problemasParaGuardarLaPlantilla,
   referenciasDeEjercicio,
@@ -20,6 +21,7 @@ import {
   type ContenidoDePlanDeEntrenamiento,
   type EjercicioCitable,
   type EstructuraDePlanDeEntrenamientoEntrada,
+  type PlanificacionDeLaPlantilla,
   type PreparacionDePlantilla,
   type ResumenDePreparacionDePlantilla,
   type RevisionDePreparacion,
@@ -94,6 +96,7 @@ export class PreparacionesDePlantillaService {
         let nombre: string | null = null;
         let descripcion: string | null = null;
         let cargas: 'COPIADAS' | 'NO_COPIADAS' = 'NO_COPIADAS';
+        let planificacion: PlanificacionDeLaPlantilla | null = null;
         if (pedido.fromTemplateVersionId) {
           // PLT-D07: «desde una existente» es una copia: otra plantilla, con su propio nombre. Una archivada también se copia.
           const id = pedido.fromTemplateVersionId;
@@ -107,6 +110,8 @@ export class PreparacionesDePlantillaService {
           nombre = nombreDeLaCopia(v.plantilla.nombre);
           descripcion = v.plantilla.descripcion;
           cargas = v.cargas;
+          // DL-198 (ET2-10): la copia lleva también la planificación.
+          planificacion = planificacionDe(v.planificacion);
         }
         const momento = await momentoDeLaBase(tx);
         const fila = await tx.preparacionDePlantillaDeEntrenamiento.create({
@@ -115,6 +120,7 @@ export class PreparacionesDePlantillaService {
             nombre,
             descripcion,
             estructura: conIdentificadores(estructura) as unknown as Prisma.InputJsonValue,
+            ...(planificacion ? { planificacion: planificacion as unknown as Prisma.InputJsonValue } : {}),
             cargas,
             procedencia: procedencia as unknown as Prisma.InputJsonValue,
             momentoDeActualizacion: momento,
@@ -155,6 +161,7 @@ export class PreparacionesDePlantillaService {
             plantillaId: plantilla.id,
             versionBaseId: vigente.id,
             estructura: conIdentificadores(vigente.estructura as unknown as Estructura) as unknown as Prisma.InputJsonValue,
+            ...(planificacionDe(vigente.planificacion) ? { planificacion: vigente.planificacion as Prisma.InputJsonValue } : {}),
             cargas: vigente.cargas,
             procedencia: procedencia as unknown as Prisma.InputJsonValue,
             momentoDeActualizacion: momento,
@@ -238,6 +245,8 @@ export class PreparacionesDePlantillaService {
           where: { id: fila.id, version: fila.version },
           data: {
             estructura: contenido as unknown as Prisma.InputJsonValue,
+            // DL-198 (ET2-10): la planificación, podada contra la estructura. Ausente, no cambia; `null`, se quita.
+            ...(pedido.planning !== undefined ? { planificacion: aColumna(planificacionDeLaPlantillaPodada(pedido.planning, contenido)) } : {}),
             ...(pedido.name !== undefined ? { nombre: pedido.name === '' ? null : pedido.name } : {}),
             ...(pedido.description !== undefined ? { descripcion: pedido.description === '' ? null : pedido.description } : {}),
             ...(pedido.copySuggestedLoads !== undefined ? { cargas: pedido.copySuggestedLoads ? ('COPIADAS' as const) : ('NO_COPIADAS' as const) } : {}),
@@ -308,13 +317,14 @@ export class PreparacionesDePlantillaService {
         const impiden = issues.filter((x) => x.code !== CodigoDeProblemaDeLaPlantilla.TEMPLATE_NAME_TAKEN);
         if (impiden.length > 0) throw noLista(impiden);
         const { estructura, conCargas } = loQueIriaALaVersion(fila);
+        const planificacionDeLaVersion = planificacionDeLaPlantillaPodada(planificacionDe(fila.planificacion), estructura);
         let plantillaId: string;
         if (!plantilla) {
           const nombre = (fila.nombre ?? '').trim();
           await this.plantillas.exigirNombreLibre(tx, actor.identidadId, nombre, null);
-          plantillaId = await this.plantillas.crearConSuPrimeraVersion(tx, actor.identidadId, { nombre, descripcion: fila.descripcion, estructura, conCargas, origen: null }, procedencia);
+          plantillaId = await this.plantillas.crearConSuPrimeraVersion(tx, actor.identidadId, { nombre, descripcion: fila.descripcion, estructura, conCargas, origen: null, planificacion: planificacionDeLaVersion }, procedencia);
         } else {
-          await this.plantillas.agregarVersion(tx, actor.identidadId, plantilla, { estructura, conCargas, origen: null }, procedencia);
+          await this.plantillas.agregarVersion(tx, actor.identidadId, plantilla, { estructura, conCargas, origen: null, planificacion: planificacionDeLaVersion }, procedencia);
           plantillaId = plantilla.id;
         }
         await tx.preparacionDePlantillaDeEntrenamiento.delete({ where: { id: fila.id } });
@@ -436,9 +446,12 @@ export class PreparacionesDePlantillaService {
     }
     if (!nueva && fila.versionBaseId) {
       // PLT-D10: no se guarda una versión igual a la de base.
-      const base = await tx.versionDePlantillaDePlanDeEntrenamiento.findUnique({ where: { id: fila.versionBaseId }, select: { estructura: true, cargas: true } });
+      const base = await tx.versionDePlantillaDePlanDeEntrenamiento.findUnique({ where: { id: fila.versionBaseId }, select: { estructura: true, cargas: true, planificacion: true } });
       const iria = loQueIriaALaVersion(fila);
-      if (base && sinCambiosFrenteALaBase({ estructura: base.estructura, conCargas: base.cargas === 'COPIADAS' }, { estructuraQueIria: iria.estructura, conCargas: iria.conCargas })) {
+      if (base && sinCambiosFrenteALaBase({ estructura: base.estructura, conCargas: base.cargas === 'COPIADAS' }, { estructuraQueIria: iria.estructura, conCargas: iria.conCargas }) &&
+        // DL-198 (ET2-10): un cambio solo de la planificación también es una versión nueva.
+        JSON.stringify(base.planificacion ?? null) === JSON.stringify(planificacionDeLaPlantillaPodada(planificacionDe(fila.planificacion), iria.estructura))
+      ) {
         issues.push({ code: CodigoDeProblemaDeLaPlantilla.TEMPLATE_UNCHANGED, path: 'blocks' });
       }
     }
@@ -456,7 +469,7 @@ export class PreparacionesDePlantillaService {
     for (const [versionId, e] of citables) {
       exercises[versionId] = { exerciseId: e.ejercicioId, exerciseName: e.nombre, available: e.disponible, image: imagenes.get(e.ejercicioId.toLowerCase())?.imagen ?? null };
     }
-    return { ...resumenApi(fila), structure: estructura, exercises };
+    return { ...resumenApi(fila), structure: estructura, planning: planificacionDe(fila.planificacion), exercises };
   }
 }
 
@@ -478,6 +491,11 @@ function conIdentificadores(e: Estructura): Estructura {
 }
 
 const estructuraDe = (fila: PreparacionFila): Estructura => fila.estructura as unknown as Estructura;
+
+/** DL-198 (ET2-10): la planificación guardada en una columna JSON, o `null`. */
+const planificacionDe = (columna: Prisma.JsonValue | null | undefined): PlanificacionDeLaPlantilla | null => (columna as unknown as PlanificacionDeLaPlantilla | null) ?? null;
+/** Lo que se escribe en la columna: el valor, o el NULL de la base. */
+const aColumna = (p: PlanificacionDeLaPlantilla | null): Prisma.InputJsonValue | typeof Prisma.DbNull => (p ? (p as unknown as Prisma.InputJsonValue) : Prisma.DbNull);
 
 /** Lo que iría a la versión al guardarla: la estructura, sin cargas si el interruptor está apagado (D-2 de DL-108). */
 function loQueIriaALaVersion(fila: PreparacionFila): { readonly estructura: Estructura; readonly conCargas: boolean } {

@@ -147,3 +147,22 @@ export function filtrarElCatalogo<E extends EjercicioParaFiltrar>(lista: readonl
 
 /** El catálogo entero en orden alfabético (español, sin distinguir tildes), para la lista de «Agregar ejercicios». */
 export const enOrdenAlfabetico = <E extends { readonly name: string }>(lista: readonly E[]): E[] => [...lista].sort((a, b) => a.name.localeCompare(b.name, 'es', { sensitivity: 'base' }));
+
+// ─── DL-198 (ET2-11; ET1-D14): cambiar la clasificación de un ejercicio propio ────────────────────────────────────────
+
+/**
+ * API-EJE-06: la clasificación nueva de un ejercicio propio, entera (lo que no se elige queda sin decir). Es la siguiente de
+ * su historia por adición: la anterior no cambia. `expectedClassificationVersion` es la que se vio: 0 si nunca tuvo.
+ */
+export const CambiarClasificacionDeEjercicioRequestSchema = z.strictObject({
+  expectedClassificationVersion: z.number().int().min(0),
+  classification: ClasificacionDeEjercicioSchema,
+});
+export type CambiarClasificacionDeEjercicioRequest = z.infer<typeof CambiarClasificacionDeEjercicioRequestSchema>;
+export const ClasificacionDeEjercicioPropioSchema = z.strictObject({
+  exerciseId: z.string().min(1),
+  /** El número de la vigente en su historia (0: sin clasificar). */
+  classificationVersion: z.number().int().min(0),
+  classification: ClasificacionDeEjercicioSchema,
+});
+export const ClasificacionDeEjercicioPropioResponseSchema = z.strictObject({ data: ClasificacionDeEjercicioPropioSchema });

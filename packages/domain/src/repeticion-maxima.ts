@@ -18,7 +18,10 @@
  * - **No es un máximo probado ni una marca** (DL-171, RPE-D06): es la referencia de las cargas. La v1 de «Fuerza estimada»
  *   no cambia (ET2-D01).
  */
+import type { EjecucionDeEntrenamiento } from './contratos-entrenamiento';
+import { registroVigente } from './copy-entrenamiento';
 import { numero } from './formato-numeros';
+import { registradasEfectivas } from './tipos-de-serie';
 import { diaDeLaEstimacion, epley, valorDeEpleyALaVista, type ProcedenciaDelValor, type UnidadDeLaCarga } from './estimacion-de-fuerza';
 import { implementoDelEjercicio, pasoPorOmision, redondearAlPaso, type Implemento } from './planificacion-del-plan';
 
@@ -289,3 +292,36 @@ export const COPY_UNO_RM = {
 
 /** El 1RM de referencia con Epley exacto, sin redondear (para pruebas y para «Cómo se calculó»). */
 export const unoRMExacto = (s: SerieDelUnoRM): number => epley(s.carga.value, s.repeticiones + s.rir);
+
+// ─── Desde las sesiones registradas ─────────────────────────────────────────────────────────
+
+/**
+ * Las sesiones registradas de cada ejercicio, como las mira el registro de la v2: el registro vigente de cada sesión (la
+ * corrección vigente o el original), solo las series efectivas y por series; una sesión no realizada, resumida o que no
+ * se resuelve no aporta. Por `exerciseId` (el ejercicio prescripto: una sustitución no cuenta para ninguno).
+ */
+export function sesionesDeLosRegistros(ejecuciones: readonly EjecucionDeEntrenamiento[]): Map<string, SesionParaElUnoRM[]> {
+  const r = new Map<string, SesionParaElUnoRM[]>();
+  for (const x of ejecuciones) {
+    if (x.effectiveView.kind === 'NOT_RESOLVABLE') continue;
+    const vigente = registroVigente(x);
+    if (vigente.sessionCondition === 'NOT_COMPLETED' || vigente.granularity !== 'SET') continue;
+    for (const e of vigente.exercises) {
+      const prescripcion = x.plannedSession.prescriptions.find((p) => p.prescriptionId === e.prescriptionId);
+      if (!prescripcion || !e.sets || e.sets.length === 0) continue;
+      const series = registradasEfectivas(e.sets, prescripcion.sets).map((s) => ({
+        setIndex: s.setIndex,
+        load: s.load,
+        completedRepetitions: s.completedRepetitions,
+        rir: s.rir,
+        ...(s.recordedAs ? { recordedAs: s.recordedAs } : {}),
+        ...(s.fieldOrigins ? { fieldOrigins: s.fieldOrigins } : {}),
+        sustituido: e.substituted,
+      }));
+      const lista = r.get(prescripcion.exerciseId) ?? [];
+      lista.push({ executionId: x.executionId, fecha: x.date, prescriptionId: e.prescriptionId, series });
+      r.set(prescripcion.exerciseId, lista);
+    }
+  }
+  return r;
+}

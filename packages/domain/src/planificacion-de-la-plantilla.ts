@@ -92,3 +92,19 @@ export function planificacionDesdeLaPlantilla(
   const ejerciciosDelPlan = despues.ejercicios.filter((x): x is string => x !== null);
   return planificacionPodada(traducida, fasesDelPlan, ejerciciosDelPlan);
 }
+
+/**
+ * La planificación de una plantilla podada contra su estructura: sin las fases ni los ejercicios que ya no están (como
+ * `planificacionPodada` en un plan). Una estructura sin identificadores no puede nombrar nada: queda sin planificación.
+ */
+export function planificacionDeLaPlantillaPodada(p: PlanificacionDeLaPlantilla | null | undefined, estructura: EstructuraParaUbicar): PlanificacionDeLaPlantilla | null {
+  if (!p) return null;
+  const { fases, ejercicios } = ubicaciones(estructura);
+  return planificacionParaLaPlantilla(
+    planificacionPodada(
+      { startDate: null, goal: null, ...p },
+      fases.filter((x): x is string => x !== null),
+      ejercicios.filter((x): x is string => x !== null),
+    ),
+  );
+}

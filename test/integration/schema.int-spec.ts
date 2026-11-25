@@ -290,6 +290,9 @@ describe('08 §29 — historia por adición', () => {
     'zona_de_ejercicio',
     // DL-197 (2026-11-25): la clasificación de los ejercicios, historia por adición
     'clasificacion_de_ejercicio',
+    // DL-198 (2026-11-25): el 1RM de referencia y el esfuerzo de la sesión, de solo agregar
+    'uno_rm_de_referencia',
+    'esfuerzo_de_sesion_de_entrenamiento',
     // DL-164 (2026-11-04): la propuesta del profesional (se resuelve con UPDATE; no se borra ni se trunca)
     'propuesta_de_respuesta_de_formulario',
     // DL-165 D-9 (2026-11-05, FR-10): los hábitos de la persona, la autorización para compartirlos y su lista

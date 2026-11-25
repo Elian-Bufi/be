@@ -22,6 +22,9 @@ import { PreparacionesDePlantillaService } from './preparaciones-de-plantilla.se
 import { RevisionesDeEntrenamientoService } from './revisiones.service';
 import { ObjetivosPorSerieService } from './series.service';
 import { TiemposDeSesionService } from './tiempos.service';
+import { EditorDeEntrenamientoTanda2Controller } from './tanda-2.controller';
+import { EsfuerzoDeLaSesionService } from './esfuerzo-de-la-sesion.service';
+import { UnoRMService } from './uno-rm.service';
 
 /**
  * B-08 — Circuito de entrenamiento (06:4947-5786). Como en nutrición, el PDP (AutorizacionModule) y el Proceso
@@ -32,7 +35,7 @@ import { TiemposDeSesionService } from './tiempos.service';
  */
 @Module({
   imports: [SesionModule, IntegracionesModule, MediosModule],
-  controllers: [EntrenamientoController, HabitualesDeEntrenamientoController, EntrenamientoPorSerieController, FuerzaController, NotasDeLaSesionController],
+  controllers: [EntrenamientoController, HabitualesDeEntrenamientoController, EntrenamientoPorSerieController, FuerzaController, NotasDeLaSesionController, EditorDeEntrenamientoTanda2Controller],
   providers: [
     EjecutorDeEntrenamiento,
     CatalogoDeEjerciciosService,
@@ -52,6 +55,9 @@ import { TiemposDeSesionService } from './tiempos.service';
     SeriesObservadasService,
     // PG-15 (DL-173): la nota para tu profe (API-TRN-25 y sus dos lecturas).
     NotasDeLaSesionService,
+    // DL-198: el 1RM de referencia (API-RMX-01 y 02) y el esfuerzo de la sesión (API-ESF-01 y 02).
+    UnoRMService,
+    EsfuerzoDeLaSesionService,
   ],
   // El entorno profesional (AnalisisModule) lee cada sesión con el mismo modelo de API-TRN-19.
   // DL-163 D-13, ampliada (TB-52): el plan compartido (API-RES-06) se lee con la misma lectura que usa la persona.

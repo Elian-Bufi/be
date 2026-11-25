@@ -134,6 +134,10 @@ export async function armarExportacion(tx: Tx, titularId: string, dominios: read
       notasParaSuProfesional: await filas(tx.$queryRaw`
         SELECT to_jsonb(n) - 'procedencia' AS "fila" FROM "nota_de_ejecucion" n
          WHERE n."asesorado_id" = ${titularId}::uuid ORDER BY n."momento_de_registro"`),
+      // DL-198 (ET2-07): el esfuerzo de cada sesión que respondió al terminar.
+      esfuerzosDeLaSesion: await filas(tx.$queryRaw`
+        SELECT to_jsonb(e) - 'procedencia' AS "fila" FROM "esfuerzo_de_sesion_de_entrenamiento" e
+         WHERE e."asesorado_id" = ${titularId}::uuid ORDER BY e."momento_de_registro"`),
     };
   }
   if (dominios.includes('ANTHROPOMETRY')) {

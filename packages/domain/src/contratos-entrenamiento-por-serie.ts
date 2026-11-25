@@ -36,6 +36,7 @@ import {
   VersionDePlanDeEntrenamientoSchema,
 } from './contratos-entrenamiento';
 import { ProcedenciaDeMedioSchema } from './contratos-medios';
+import { ClasificacionDeEjercicioSchema } from './clasificacion-de-ejercicios';
 import { FechaLocalSchema, ZonaHorariaSchema } from './contratos-nutricion';
 
 const Texto = (max: number) => z.string().trim().min(1).max(max);
@@ -105,6 +106,12 @@ export const EjercicioPropioSchema = z.strictObject({
   /** 0 si nunca tuvo imagen. Cada asociación y cada retiro suman uno. */
   imageVersion: z.number().int().min(0),
   image: ImagenDeEjercicioSchema.nullable(),
+  /**
+   * DL-198 (ET2-11): la clasificación vigente y su número (0: sin clasificar), para cambiarla en «Mis ejercicios».
+   * Opcional, para que un website y una API de despliegues distintos se sigan entendiendo.
+   */
+  classificationVersion: z.number().int().min(0).optional(),
+  classification: ClasificacionDeEjercicioSchema.optional(),
 });
 export type EjercicioPropio = z.infer<typeof EjercicioPropioSchema>;
 export const EjercicioPropioResponseSchema = z.strictObject({ data: EjercicioPropioSchema });

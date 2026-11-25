@@ -1,4 +1,4 @@
-import { CAPACIDAD_NOTACION_DEL_ESFUERZO } from '@be/domain';
+import { CAPACIDAD_ESFUERZO_DE_LA_SESION, CAPACIDAD_NOTACION_DEL_ESFUERZO, CAPACIDAD_SEMANA_DE_LA_FASE } from '@be/domain';
 import type { ContextoDeSolicitud } from '../http/contexto';
 
 /**
@@ -22,3 +22,9 @@ import type { ContextoDeSolicitud } from '../http/contexto';
  * cabecera, no: al titular no le sale `effortNotation`, y su app sigue preguntando el RIR, que se guarda igual.
  */
 export const muestraLaNotacionDelEsfuerzo = (ctx: ContextoDeSolicitud): boolean => ctx.capacidades.has(CAPACIDAD_NOTACION_DEL_ESFUERZO);
+
+/** DL-198 (ET2-D07): si el cliente sabe decir en qué semana de la fase está la sesión (`week` de API-SER-02). */
+export const muestraLaSemanaDeLaFase = (ctx: ContextoDeSolicitud): boolean => ctx.capacidades.has(CAPACIDAD_SEMANA_DE_LA_FASE);
+
+/** DL-198 (ET2-07): si el cliente sabe preguntar el esfuerzo de la sesión al terminar (`askSessionEffort` de API-SER-02). */
+export const preguntaElEsfuerzoDeLaSesion = (ctx: ContextoDeSolicitud): boolean => ctx.capacidades.has(CAPACIDAD_ESFUERZO_DE_LA_SESION);
