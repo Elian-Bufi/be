@@ -244,7 +244,7 @@ import {
 } from './contratos-fuerza';
 // DL-198 (WP-EDITOR-ENTRENAMIENTO-TANDA-2): el 1RM de referencia, el esfuerzo de la sesión del profesional y la clasificación de un propio.
 import { UnoRMDeLaPersonaResponseSchema, UnoRMGuardadoResponseSchema, type SumarUnoRMRequest } from './contratos-repeticion-maxima';
-import { EsfuerzosDeLaSesionResponseSchema } from './esfuerzo-de-la-sesion';
+import { EsfuerzoDeLaSesionResponseSchema, EsfuerzosDeLaSesionResponseSchema, type RegistrarEsfuerzoDeLaSesionRequest } from './esfuerzo-de-la-sesion';
 import { ClasificacionDeEjercicioPropioResponseSchema, type CambiarClasificacionDeEjercicioRequest } from './clasificacion-de-ejercicios';
 import { EstimacionDeLasOpcionesResponseSchema } from './contratos-totales-del-plan';
 import { RangosDelPlanResponseSchema, type EscribirRangosRequest } from './contratos-rangos-de-nutricion';
@@ -1186,6 +1186,13 @@ export function crearClienteBe(opciones: OpcionesDeCliente) {
     /** API-ESF-02: el esfuerzo de la sesión del período, para el profesional de Entrenamiento. */
     esfuerzosDeLaSesion(token: string, asesoradoId: string, periodo: { periodStart: string; periodEnd: string }) {
       return llamar('GET', `/advisees/${encodeURIComponent(asesoradoId)}/training/session-efforts${query(periodo)}`, { token, esquema: EsfuerzosDeLaSesionResponseSchema });
+    },
+    /**
+     * API-ESF-01: la persona responde el esfuerzo de una sesión suya ya registrada. Va aparte de confirmar (API-TRN-18 no
+     * cambia), como la nota para tu profe: si falla, la sesión ya quedó registrada. 409: ya estaba respondido.
+     */
+    registrarEsfuerzoDeLaSesion(token: string, executionId: string, cuerpo: RegistrarEsfuerzoDeLaSesionRequest, claveDeIdempotencia: string) {
+      return llamar('POST', `/training/executions/${encodeURIComponent(executionId)}/session-effort`, { token, cuerpo, claveDeIdempotencia, esquema: EsfuerzoDeLaSesionResponseSchema });
     },
 
     // ─── WP-04 · NUT (09v9; CONS §11.2) e INT-NUT-01 ────────────────────────────────────────────
