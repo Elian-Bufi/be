@@ -289,6 +289,12 @@ function redondeoDeLaCuenta(e: EntradasDeLaEstimacion, decimasDelPaso: bigint): 
   return Number(pasos * decimasDelPaso) / 10;
 }
 
+/**
+ * DL-198 (ET2-D02): la cuenta de Epley redondeada al medio kilo (kg) o a la libra (lb), con enteros, para el 1RM de
+ * referencia (`repeticion-maxima.ts`): la misma cuenta exacta que la estimación, sin el «≈».
+ */
+export const valorDeEpleyALaVista = (e: EntradasDeLaEstimacion): number => redondeoDeLaCuenta(e, e.unidad === 'kg' ? 5n : 10n);
+
 /** «≈ 98 kg» o «≈ 86,5 kg» (al medio kilo); «≈ 216 lb» (a la libra entera). Nunca un intervalo ni «±» (RM-22). */
 export function estimacionALaVista(e: EntradasDeLaEstimacion): string {
   return `≈ ${numero(redondeoDeLaCuenta(e, e.unidad === 'kg' ? 5n : 10n), 1)} ${e.unidad}`;

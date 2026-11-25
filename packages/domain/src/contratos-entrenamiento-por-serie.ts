@@ -229,6 +229,14 @@ export const SesionParaRegistrarSchema = z.strictObject({
    * manda se guarda igual: el RIR es el valor de las dos notaciones.
    */
   effortNotation: NotacionDelEsfuerzoSchema.optional(),
+  /**
+   * DL-198 (ET2-D07): en qué semana de su fase cae la ocurrencia, si la fase tiene progresión. Las cargas y repeticiones de
+   * la sesión ya son las de esa semana para todos los clientes; esto es el rótulo, solo para quien declara
+   * `training-week-load-1`. Ausente: la fase no tiene progresión o el cliente no lo pidió.
+   */
+  week: z.strictObject({ phaseWeek: z.number().int().positive(), phaseWeeks: z.number().int().positive(), deload: z.boolean() }).optional(),
+  /** DL-198 (ET2-07): la app pregunta el esfuerzo de la sesión al terminar. Solo `true` y solo para `training-session-effort-1`. */
+  askSessionEffort: z.literal(true).optional(),
 });
 export type SesionParaRegistrar = z.infer<typeof SesionParaRegistrarSchema>;
 export const SesionParaRegistrarResponseSchema = z.strictObject({ data: SesionParaRegistrarSchema });
