@@ -19,6 +19,7 @@
  * Dibuja su contenido solo mientras está abierto: lo que tiene que sobrevivir al cierre vive en quien lo abre.
  */
 import { useEffect, useId, useRef, useState, type ReactNode, type RefObject } from 'react';
+import { ExplicacionAPedido } from './explicacion-a-pedido';
 import { Icono } from './icono';
 import { useSeguirEditando, useTocarAfuera } from './tocar-afuera';
 
@@ -57,6 +58,7 @@ export function CuadroEnfocado({
   atras = null,
   paso = null,
   className = '',
+  ayuda = null,
   onCerrar,
   children,
 }: {
@@ -83,6 +85,11 @@ export function CuadroEnfocado({
   /** El paso que se muestra: cuando cambia con el cuadro abierto, el foco va al título del paso nuevo. */
   paso?: string | null;
   className?: string;
+  /**
+   * DL-197 (F19): el «?» en la esquina de la cabecera, junto a «Cerrar»: solo si se toca, explica paso a paso qué se
+   * configura, con un ejemplo resuelto. Escape cierra la ayuda y no el cuadro.
+   */
+  ayuda?: { readonly nombre: string; readonly contenido: ReactNode } | null;
   onCerrar: () => void;
   children?: ReactNode;
 }) {
@@ -159,6 +166,13 @@ export function CuadroEnfocado({
             {titulo}
           </h2>
         </div>
+        {ayuda ? (
+          <div className="cuadro-enfocado__ayuda" data-ayuda-del-cuadro>
+            <ExplicacionAPedido nombre={ayuda.nombre} como="div" lugar="esquina">
+              {ayuda.contenido}
+            </ExplicacionAPedido>
+          </div>
+        ) : null}
         <button type="button" className="boton boton--discreto cajon__cerrar" onClick={pedirCerrar} disabled={ocupado} data-pide-cerrar>
           <Icono nombre="cerrar" tamano={18} />
           {COPY_CUADRO_ENFOCADO.cerrar}

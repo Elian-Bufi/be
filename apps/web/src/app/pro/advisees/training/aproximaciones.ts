@@ -9,6 +9,8 @@
  *   dice, con «Recalcular»: nada se pisa solo.
  */
 import {
+  DESCANSO_DE_APROXIMACION,
+  aproximacionesAjustadas,
   esDeCalentamiento,
   implementoDelEjercicio,
   pasoPorOmision,
@@ -61,7 +63,7 @@ export function conCantidadAMano(p: Prescripcion, cuantas: number): readonly Ser
   const actuales = p.sets.filter(esDeCalentamiento);
   const efectivas = p.sets.filter((s) => !esDeCalentamiento(s));
   const ultima = actuales[actuales.length - 1];
-  const nuevas: Serie[] = Array.from({ length: Math.max(0, cuantas - actuales.length) }, (): Serie => (ultima ? structuredClone(ultima) : { repetitions: null, setKind: 'WARM_UP' }));
+  const nuevas: Serie[] = Array.from({ length: Math.max(0, cuantas - actuales.length) }, (): Serie => (ultima ? structuredClone(ultima) : { repetitions: null, setKind: 'WARM_UP', rir: null, restSeconds: DESCANSO_DE_APROXIMACION }));
   return [...actuales.slice(0, cuantas), ...nuevas, ...efectivas];
 }
 
@@ -89,4 +91,27 @@ export function rotulosConAproximaciones(series: readonly Serie[]): { readonly c
     efectiva += 1;
     return { corto: String(efectiva), largo: `Serie ${efectiva}`, numero: efectiva };
   });
+}
+
+const coma = (n: number): string => String(n).replace('.', ',');
+
+/** DL-197 (ET1-D07): lo que hubo que ajustar para que ninguna aproximación repita la anterior, en una frase; `null` si nada. */
+export function ajusteDeLasAproximaciones(p: Prescripcion, a: AproximacionesDelEjercicio): string | null {
+  const trabajo = cargaDeTrabajo(p);
+  if (trabajo === null || a.mode !== 'FROM_WORKING_LOAD') return null;
+  const r = aproximacionesAjustadas(trabajo, a.workingLoadShares, a.step);
+  if (r.ajuste === 'MENOS') return `De a ${coma(a.step)}, con ${coma(trabajo)} de trabajo entran ${r.cargas.length} de ${a.workingLoadShares.length} sin repetir una carga. Con un paso más fino entran todas.`;
+  if (r.ajuste === 'BAJADAS') return `Para no repetir una carga, alguna quedó un paso (${coma(a.step)}) más abajo que su porcentaje.`;
+  return null;
+}
+
+/** «8 × 40 · 5 × 60 · 3 × 80 kg»: las aproximaciones de la tabla, en un renglón (F16). Sin aproximaciones, `null`. */
+export function resumenDeLasAproximaciones(p: Prescripcion): string | null {
+  const unidad = unidadDeLaPrescripcion(p);
+  const partes = p.sets.filter(esDeCalentamiento).map((x) => {
+    const reps = x.repetitions && 'value' in x.repetitions ? String(x.repetitions.value) : x.repetitions ? `${x.repetitions.min}-${x.repetitions.max}` : '—';
+    const carga = x.suggestedLoad && Number.isFinite(x.suggestedLoad.value) ? coma(x.suggestedLoad.value) : '—';
+    return `${reps} × ${carga}`;
+  });
+  return partes.length > 0 ? `${partes.join(' · ')} ${unidad}` : null;
 }
