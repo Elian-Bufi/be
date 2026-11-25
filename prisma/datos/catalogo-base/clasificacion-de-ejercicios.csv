@@ -1,0 +1,187 @@
+wgerId;nombre;nombre_en;grupo;equipamiento;patron;articulaciones;nota
+591;Abdominales completos;Sit-ups;Abdomen;Peso corporal;Core;Mono;equipamiento propuesto. Mono por convención aunque suma flexión de cadera
+167;Abdominales crunch;Crunches;Abdomen;Colchoneta;Core;Mono;
+171;Abdominales en banco inclinado;Incline Crunches;Abdomen;Banco inclinado;Core;Mono;
+1412;Abdominales en bicicleta;bicycle crunches;Abdomen;Peso corporal;Core;Mono;
+1202;Abducción de cadera acostado de lado;Side Lying Hip Abduction;Piernas;Peso corporal;Otro;Mono;
+1748;Abducción de cadera en máquina;Machine Hip Abduction;Piernas;Máquina;Otro;Mono;equipamiento propuesto
+12;Aducción de cadera en máquina;Seated Hip Adduction;Piernas;Máquina;Otro;Mono;equipamiento propuesto
+1823;Almeja (clamshell);Clamshell;Abdomen;Peso corporal;Otro;Mono;
+1679;Ángeles en la pared;Wall Angels;Hombros;Peso corporal;Otro;Multi;equipamiento propuesto. Movilidad de hombro y escápula
+1380;Aperturas con banda elástica;Band pull-aparts;Espalda;Banda elástica;Tracción;Mono;
+238;Aperturas con mancuernas;Fly With Dumbbells;Pecho;Mancuernas + Banco;Empuje;Mono;equipamiento propuesto (se suma el banco). Criterio: aislamientos de pecho y de hombro anterior o lateral van como Empuje
+308;Aperturas con mancuernas en banco inclinado;Incline Dumbbell Fly;Pecho;Mancuernas + Banco inclinado;Empuje;Mono;
+135;Aperturas en máquina;Butterfly;Pecho;Máquina;Empuje;Mono;equipamiento propuesto
+1270;Aperturas en polea baja;Low Pulley Cable Fly;Pecho;Polea;Empuje;Mono;
+822;Aperturas posteriores en polea;Cable Rear Delt Fly;Hombros;Polea;Tracción;Mono;Criterio: deltoides posterior como Tracción (abducción horizontal)
+178;Bicho muerto;Deadbug;Abdomen;Peso corporal;Core;Multi;equipamiento propuesto
+1618;Bicicleta fija;Stationary bike cardio;Cardio;Máquina;Cardio;Multi;equipamiento propuesto (wger decía peso corporal)
+1572;Bird dog;Bird Dog;Abdomen;Peso corporal;Core;Multi;
+1392;Buenos días con peso corporal;Good Morning;Piernas;Peso corporal;Bisagra;Multi;Criterio: buenos días y pesos muertos como Multi por convención aunque casi solo se mueve la cadera
+132;Burpees;Burpees;Pecho;Peso corporal;Cardio;Multi;equipamiento propuesto
+1104;Caminata;Walking;Cardio;Peso corporal;Cardio;Multi;
+177;Ciclismo;Cycling;Cardio;Otro;Cardio;Multi;equipamiento propuesto (bicicleta, wger decía peso corporal)
+994;Círculos de brazos;Forward arm circles;Brazos;Peso corporal;Otro;Mono;
+527;Correr;Run;Cardio;Peso corporal;Cardio;Multi;
+530;Correr en cinta;Run - Treadmill;Cardio;Máquina;Cardio;Multi;equipamiento propuesto
+323;Cruce de poleas;Cable Cross-over;Pecho;Polea;Empuje;Mono;
+173;Crunch en polea;Crunches With Cable;Abdomen;Polea;Core;Mono;
+1772;Crunch inverso;Reverse crunch;Abdomen;Peso corporal;Core;Mono;
+1524;Cuerdas de batalla;Battle Ropes;Cardio;Otro;Cardio;Multi;equipamiento propuesto (sogas de batalla)
+1465;Curl araña;Spider Curl;Brazos;Mancuernas + Banco inclinado;Tracción;Mono;equipamiento propuesto (se suman las mancuernas). Criterio: curls de bíceps como Tracción
+202;Curl concentrado con mancuerna;Dumbbell Concentration Curl;Brazos;Mancuernas;Tracción;Mono;
+1192;Curl de bíceps alternado con mancuernas;Alternating Biceps Curls With Dumbbell;Brazos;Mancuernas;Tracción;Mono;
+91;Curl de bíceps con barra;Biceps Curls With Barbell;Brazos;Barra;Tracción;Mono;
+92;Curl de bíceps con mancuernas;Biceps Curls With Dumbbell;Brazos;Mancuernas;Tracción;Mono;
+95;Curl de bíceps en polea;Biceps Curl With Cable;Brazos;Polea;Tracción;Mono;
+51;Curl de muñeca con barra;Barbell Wrist Curl;Brazos;Barra + Banco;Otro;Mono;
+465;Curl en banco Scott;Preacher Curls;Brazos;Barra Z + Banco;Tracción;Mono;equipamiento propuesto (se suma el banco Scott)
+365;Curl femoral acostado;Leg Curls (laying);Piernas;Máquina;Bisagra;Mono;equipamiento propuesto. ¿Bisagra u Otro? Lo puse con la cadena posterior (par de la extensión de cuádriceps como Sentadilla)
+366;Curl femoral sentado;Leg Curls (sitting);Piernas;Máquina;Bisagra;Mono;equipamiento propuesto
+204;Curl inclinado con mancuernas;Dumbbell Incline Curl;Brazos;Mancuernas + Banco inclinado;Tracción;Mono;equipamiento propuesto (se suma el banco inclinado)
+495;Curl invertido;Reverse Curl;Brazos;Barra + Mancuernas;Tracción;Mono;
+272;Curl martillo con mancuernas;Hammer Curls;Brazos;Mancuernas;Tracción;Mono;
+910;Curl nórdico;Nordic Curl;Piernas;Peso corporal;Bisagra;Mono;equipamiento propuesto (hace falta un anclaje para los talones)
+1929;Dominadas asistidas con banda elástica;Assisted Pull-Up;Espalda;Banda elástica + Barra de dominadas;Tracción;Multi;equipamiento propuesto (se suma la barra)
+1696;Dominadas con agarre neutro;Pull-Ups (Neutral Grip);Espalda;Barra de dominadas;Tracción;Multi;equipamiento propuesto
+475;Dominadas con agarre prono;Pull-ups;Espalda;Barra de dominadas;Tracción;Multi;
+152;Dominadas con agarre supino;Chin Up;Espalda;Barra de dominadas;Tracción;Multi;
+377;Elevación de piernas acostado;Leg Raises, Lying;Abdomen;Colchoneta;Core;Mono;
+283;Elevación de piernas colgado;Hanging Leg Raises;Abdomen;Barra de dominadas;Core;Mono;
+1200;Elevación de puntas de pie;Tibialis raises;Pantorrillas;Peso corporal;Otro;Mono;
+978;Elevación de rodillas en barra;Knee Raises;Abdomen;Barra de dominadas;Core;Mono;
+622;Elevación de talones de pie;Standing Calf Raises;Pantorrillas;Peso corporal + Máquina;Otro;Mono;equipamiento propuesto
+590;Elevación de talones sentado;Sitting Calf Raises;Pantorrillas;Máquina;Otro;Mono;equipamiento propuesto
+1654;Elevación lateral en máquina;Machine Lateral Raise;Hombros;Máquina;Empuje;Mono;equipamiento propuesto (wger decía colchoneta)
+1378;Elevación lateral en polea a un brazo;Cable Lateral Raises (Single Arm);Hombros;Polea;Empuje;Mono;unilateral
+256;Elevaciones frontales;Front Raises;Hombros;Barra + Mancuernas;Empuje;Mono;
+348;Elevaciones laterales con mancuernas;Lateral Raises;Hombros;Mancuernas;Empuje;Mono;
+82;Elevaciones posteriores con mancuernas;Bent-over Lateral Raises;Hombros;Banco + Mancuernas;Tracción;Mono;
+962;Elíptico;Elliptical;Cardio;Máquina;Cardio;Multi;equipamiento propuesto (wger decía peso corporal)
+571;Encogimientos de hombros con barra;Shrugs, Barbells;Hombros;Barra;Tracción;Mono;
+572;Encogimientos de hombros con mancuernas;Shrugs, Dumbbells;Hombros;Mancuernas;Tracción;Mono;
+996;Escaladores;Mountain climbers;Pecho;Peso corporal;Cardio;Multi;¿Cardio o Core?
+1873;Estiramiento de cuádriceps;Quad Stretch;Piernas;Peso corporal;Otro;Mono;
+1239;Estiramiento de gemelos de pie;Standing Calf Stretch;Piernas;Peso corporal;Otro;Mono;
+1393;Estiramiento de isquiotibiales a una pierna;Single Leg Hamstring Stretch;Piernas;Peso corporal;Otro;Mono;
+1843;Estiramiento de mariposa;Butterfly Stretch;Piernas;Peso corporal;Otro;Mono;
+1713;Estiramiento de pectoral en el marco de la puerta;Doorway Pectoral Stretch;Pecho;Peso corporal;Otro;Mono;
+1452;Estiramiento de rodilla al pecho;Knee to Chest Stretch;Piernas;Peso corporal;Otro;Mono;
+1960;Estiramiento del flexor de cadera con pie trasero elevado;Rear-foot-elevated Hip Flexor Stretch;Piernas;Peso corporal;Otro;Mono;
+1959;Estiramiento del piriforme sentado;Seated Piriformis Stretch;Piernas;Peso corporal;Otro;Mono;
+369;Extensión de cuádriceps en máquina;Leg Extension;Piernas;Máquina;Sentadilla;Mono;equipamiento propuesto. ¿Sentadilla u Otro? Lo puse como dominante de rodilla
+659;Extensión de tríceps en polea;Triceps Extensions on Cable;Brazos;Polea;Empuje;Mono;
+1185;Extensión de tríceps en polea con soga;Triceps Pushdown;Brazos;Polea;Empuje;Mono;
+1336;Extensión de tríceps sobre la cabeza con mancuerna;Triceps Overhead (Dumbbell);Brazos;Mancuernas;Empuje;Mono;
+1513;Extensión de tríceps sobre la cabeza en polea;Overhead Cable Tricep Extension;Brazos;Polea;Empuje;Mono;
+222;Face pull en polea;Facepull;Hombros;Polea;Tracción;Multi;
+1188;Flexión lateral de tronco con mancuerna;Side bend;Abdomen;Mancuernas;Core;Mono;
+1551;Flexiones de brazos;Push-Up;Pecho;Peso corporal;Empuje;Multi;
+1218;Flexiones de brazos con rodillas apoyadas;knee push-ups;Brazos;Peso corporal;Empuje;Multi;
+386;Flexiones diamante;Diamond push ups;Pecho;Peso corporal;Empuje;Multi;
+282;Flexiones en parada de manos;Handstand Pushup;Hombros;Peso corporal;Empuje;Multi;
+454;Flexiones en pica;Pike Push Ups;Brazos;Peso corporal;Empuje;Multi;
+1111;Flexiones inclinadas;Push-Ups | Incline;Pecho;Banco + Banco inclinado;Empuje;Multi;
+194;Fondos en paralelas;Dips;Pecho;Peso corporal;Empuje;Multi;
+197;Fondos entre bancos;Dips Between Two Benches;Brazos;Banco;Empuje;Multi;
+279;Fortalecedor de agarre;Hand Grip;Brazos;Otro;Otro;Mono;equipamiento propuesto (pinza de mano)
+1244;Gato-vaca (movilidad de la columna);Yoga exercise: Cow-cat;Espalda;Colchoneta;Otro;Mono;Criterio: movilidad solo de columna como Mono
+146;Gemelos en prensa;Calf Press Using Leg Press Machine;Pantorrillas;Máquina;Otro;Mono;equipamiento propuesto
+1193;Giro ruso;Russian Twist;Abdomen;Mancuernas + Colchoneta + Pelota suiza;Core;Mono;
+294;Hip thrust con barra;Hip Thrust;Piernas;Barra + Banco;Bisagra;Mono;¿Mono o Multi? Rodilla fija: solo se mueve la cadera
+301;Hiperextensiones lumbares;Hyperextensions;Espalda;Banco;Bisagra;Mono;equipamiento propuesto (banco de hiperextensiones o banco romano)
+355;Jalón al pecho;Lat Pull Down (Straight Back);Espalda;Polea + Máquina;Tracción;Multi;equipamiento propuesto
+1972;Jalón al pecho a un brazo;Single-Arm Lat Pulldown;Espalda;Polea;Tracción;Multi;unilateral
+723;Jalón al pecho con agarre ancho;Wide-grip Pulldown;Espalda;Polea;Tracción;Multi;
+158;Jalón al pecho con agarre cerrado;Close-grip Lat Pull Down;Espalda;Polea + Máquina;Tracción;Multi;equipamiento propuesto
+1136;Jalón al pecho con agarre neutro;Neutral-grip chest pulldown;Espalda;Polea;Tracción;Multi;
+684;Jalón al pecho con agarre supino;Underhand Lat Pull Down;Espalda;Polea + Máquina;Tracción;Multi;equipamiento propuesto
+1726;Jalón con brazos rectos en polea;Straight-Arm Pulldown (Cable);Espalda;Polea;Tracción;Mono;
+1525;Lanzamiento de balón medicinal al piso;Ball Slams;Cardio;Otro;Cardio;Multi;equipamiento propuesto (balón medicinal)
+145;Leñador en polea;Cable Woodchoppers;Abdomen;Polea;Core;Multi;
+1822;Libro abierto;Open Book;Espalda;Peso corporal;Otro;Multi;
+2480;Natación continua a ritmo suave;Easy Continuous Swim (Freestyle);Cardio;Otro;Cardio;Multi;equipamiento propuesto (pileta)
+990;Patada de glúteo en cuadrupedia;Kneeling kickbacks;Piernas;Peso corporal;Bisagra;Mono;¿Bisagra u Otro? Extensión de cadera aislada
+1131;Patada de glúteo en polea;Cable glute extension;Piernas;Polea;Bisagra;Mono;unilateral
+655;Patada de tríceps con mancuerna;Tricep Dumbbell Kickback;Brazos;Mancuernas;Empuje;Mono;
+1736;Peso muerto a una pierna con mancuerna;Single-Leg Deadlift with Dumbbell;Piernas;Mancuernas;Bisagra;Multi;unilateral
+1003;Peso muerto con kettlebell;Kettlebell deadlifts;Espalda;Kettlebell;Bisagra;Multi;
+627;Peso muerto con piernas rígidas;Stiff-legged Deadlifts;Piernas;Barra;Bisagra;Multi;
+184;Peso muerto convencional;Deadlifts;Espalda;Barra;Bisagra;Multi;
+507;Peso muerto rumano con barra;Romanian Deadlift;Piernas;Barra;Bisagra;Multi;
+1652;Peso muerto rumano con mancuernas;Dumbbell Romanian Deadlift;Piernas;Mancuernas;Bisagra;Multi;
+630;Peso muerto sumo;Sumo Deadlift;Piernas;Barra;Bisagra;Multi;equipamiento propuesto
+1529;Pies a la barra;Toes to bar;Abdomen;Barra de dominadas;Core;Multi;
+1001;Plancha alta;High plank;Pecho;Peso corporal;Core;Multi;Criterio: planchas isométricas como Multi (sostienen hombro cadera y columna). ¿O Mono?
+580;Plancha lateral;Side Plank;Abdomen;Peso corporal;Core;Multi;
+458;Plancha sobre antebrazos;Plank;Abdomen;Peso corporal;Core;Multi;
+1450;Postura de la cobra;Cobra Stretch;Espalda;Peso corporal;Otro;Mono;
+1002;Postura del niño;Child's pose;Espalda;Peso corporal;Otro;Multi;
+371;Prensa de piernas;Leg Press;Piernas;Máquina;Sentadilla;Multi;equipamiento propuesto
+20;Press Arnold;Arnold Shoulder Press;Hombros;Mancuernas;Empuje;Multi;
+76;Press de banca con agarre cerrado;Bench Press Narrow Grip;Brazos;Barra + Banco;Empuje;Multi;
+75;Press de banca con mancuernas;Benchpress Dumbbells;Pecho;Banco + Mancuernas;Empuje;Multi;
+185;Press de banca declinado con barra;Decline Bench Press Barbell;Pecho;Barra + Banco;Empuje;Multi;
+186;Press de banca declinado con mancuernas;Decline Bench Press Dumbbell;Pecho;Banco + Mancuernas;Empuje;Multi;
+538;Press de banca inclinado con barra;Incline Bench Press - Barbell;Pecho;Barra + Banco inclinado;Empuje;Multi;
+73;Press de banca plano con barra;Bench Press;Pecho;Barra + Banco;Empuje;Multi;
+566;Press de hombros con barra;Shoulder Press, Barbell;Hombros;Barra;Empuje;Multi;
+567;Press de hombros con mancuernas;Shoulder Press, Dumbbells;Hombros;Mancuernas;Empuje;Multi;
+543;Press de hombros en máquina;Shoulder Press, on Machine;Hombros;Máquina;Empuje;Multi;equipamiento propuesto
+569;Press de hombros en máquina Smith;Shoulder Press, on Multi Press;Hombros;Máquina + Barra;Empuje;Multi;equipamiento propuesto (máquina Smith)
+1084;Press de pecho en el piso con mancuernas;Dumbbell Floor Press;Pecho;Mancuernas;Empuje;Multi;
+129;Press de pecho en máquina;Chest Press;Pecho;Máquina;Empuje;Multi;equipamiento propuesto
+246;Press francés con barra Z;Skullcrusher SZ-bar;Brazos;Banco + Barra Z;Empuje;Mono;
+245;Press francés con mancuernas;Skullcrusher Dumbbells;Brazos;Banco + Mancuernas;Empuje;Mono;
+537;Press inclinado con mancuernas;Incline Bench Press - Dumbbell;Pecho;Mancuernas + Banco inclinado;Empuje;Multi;
+1194;Press Pallof;Pallof Press;Abdomen;Polea;Core;Multi;
+265;Puente de glúteos;Glute Bridge;Piernas;Peso corporal;Bisagra;Mono;equipamiento propuesto. Mono como el hip thrust
+161;Pullover con mancuerna;Cross-Bench Dumbbell Pullovers;Pecho;Mancuernas + Banco;Tracción;Mono;equipamiento propuesto (se suma el banco). ¿Tracción u Otro? Extensión de hombro (dorsal)
+1440;Push press;Push OHP;Hombros;Barra;Empuje;Multi;
+693;Remo al mentón con barra Z;Upright Row, SZ-bar;Hombros;Barra Z;Tracción;Multi;
+694;Remo al mentón con mancuernas;Upright Row w/ Dumbbells;Hombros;Mancuernas;Tracción;Multi;
+81;Remo con mancuerna a un brazo;Bent Over Dumbbell Rows (Single Arm);Espalda;Banco + Mancuernas;Tracción;Multi;unilateral
+310;Remo con mancuernas en banco inclinado;Incline Dumbbell Row;Espalda;Mancuernas + Banco inclinado;Tracción;Multi;
+513;Remo en T;Rowing, T-bar;Espalda;Barra + Máquina;Tracción;Multi;equipamiento propuesto (barra en mina o máquina de remo en T)
+1093;Remo ergómetro;Rowing Machine;Cardio;Máquina;Cardio;Multi;equipamiento propuesto (wger decía peso corporal)
+83;Remo inclinado con barra, agarre prono;Bent Over Rowing;Espalda;Barra;Tracción;Multi;
+84;Remo inclinado con barra, agarre supino;Bent Over Rowing Reverse;Espalda;Barra;Tracción;Multi;
+1198;Remo invertido;Inverted Rows;Pecho;Peso corporal + Barra;Tracción;Multi;equipamiento propuesto (se suma la barra fija o de Smith)
+448;Remo Pendlay;Pendelay Rows;Espalda;Barra;Tracción;Multi;
+1928;Remo sentado con agarre en V;Seated V-Grip Row;Espalda;Polea;Tracción;Multi;
+394;Remo sentado en polea baja;Long-Pulley (low Row);Espalda;Polea;Tracción;Multi;
+1621;Remo unilateral en polea;Unilateral Cable row;Espalda;Banco + Polea;Tracción;Multi;unilateral
+1006;Retracción cervical;Chin tuck;Espalda;Peso corporal;Otro;Mono;
+983;Rodillas arriba;High knees;Cardio;Peso corporal;Cardio;Multi;
+1715;Rotación externa de hombro con mancuerna;Shoulder External Rotation with Dumbbell;Hombros;Mancuernas;Otro;Mono;¿Otro o Tracción? Manguito rotador
+142;Rotación externa de hombro en polea;Cable External Rotation;Hombros;Polea;Otro;Mono;
+1966;Rotación torácica en media rodilla;1/2 Kneeling Thoracic Rotation;Abdomen;Peso corporal;Otro;Multi;¿Otro o Core? Lo tomé como movilidad
+1573;Rueda abdominal;Ab wheel;Abdomen;Otro;Core;Multi;equipamiento propuesto (rueda abdominal, wger decía peso corporal)
+993;Saltar la soga;Jump rope: basic jumps;Cardio;Otro;Cardio;Multi;equipamiento propuesto (soga, wger decía peso corporal)
+1373;Saltos al cajón;box jumps;Cardio;Peso corporal + Otro;Cardio;Multi;equipamiento propuesto (se suma el cajón)
+320;Saltos de tijera;Jumping Jacks;Piernas;Peso corporal;Cardio;Multi;equipamiento propuesto
+456;Sentadilla a una pierna (pistol);Pistol Squat;Piernas;Peso corporal;Sentadilla;Multi;equipamiento propuesto. unilateral
+977;Sentadilla al cajón;Box squat;Piernas;Peso corporal;Sentadilla;Multi;
+1706;Sentadilla búlgara con mancuernas;Bulgarian Squat with Dumbbells;Piernas;Mancuernas + Banco;Zancada;Multi;equipamiento propuesto (se suma el banco). unilateral
+1312;Sentadilla con peso corporal;Bodyweight Squat HD;Piernas;Peso corporal;Sentadilla;Multi;
+614;Sentadilla con salto;Squat Jumps;Piernas;Peso corporal;Sentadilla;Multi;equipamiento propuesto. ¿Sentadilla o Cardio? Pliométrico
+1407;Sentadilla cosaca;Cossack squat;Piernas;Peso corporal;Zancada;Multi;equipamiento propuesto. ¿Zancada o Sentadilla? Es lateral y carga una pierna por vez
+1747;Sentadilla en máquina Smith;Smith machine squat;Piernas;Máquina + Barra;Sentadilla;Multi;equipamiento propuesto (máquina Smith)
+257;Sentadilla frontal con barra;Front Squats;Piernas;Barra;Sentadilla;Multi;
+203;Sentadilla goblet con mancuerna;Dumbbell Goblet Squat;Piernas;Mancuernas;Sentadilla;Multi;
+1414;Sentadilla hack en máquina;Hack Squats;Piernas;Máquina;Sentadilla;Multi;equipamiento propuesto
+1408;Sentadilla isométrica contra la pared;Wall-sit;Piernas;Peso corporal;Sentadilla;Multi;equipamiento propuesto. isométrico
+632;Sentadilla sumo;Sumo Squats;Piernas;Peso corporal;Sentadilla;Multi;
+615;Sentadilla trasera con barra;Squats;Piernas;Barra;Sentadilla;Multi;
+981;Subidas al cajón;Step-ups;Piernas;Banco;Zancada;Multi;unilateral
+636;Superman;Superman;Espalda;Colchoneta;Core;Mono;
+960;Swing con kettlebell;Kettlebell Swing;Piernas;Kettlebell;Bisagra;Multi;
+650;Thruster con barra;Thruster;Piernas;Barra;Sentadilla;Multi;sentadilla más press. ¿Sentadilla o Empuje?
+545;Tijeras;Scissors;Abdomen;Peso corporal;Core;Mono;equipamiento propuesto
+661;Tríceps en máquina;Triceps on Machine;Brazos;Máquina;Empuje;Mono;equipamiento propuesto
+1584;Trote en el lugar;March or jog in place;Cardio;Peso corporal;Cardio;Multi;
+206;Zancadas caminando con mancuernas;Dumbbell Lunges Walking;Piernas;Mancuernas;Zancada;Multi;
+46;Zancadas con barra;Barbell Lunges Standing;Piernas;Barra;Zancada;Multi;
+205;Zancadas con mancuernas;Dumbbell Lunges Standing;Piernas;Mancuernas;Zancada;Multi;
+984;Zancadas con peso corporal;Lunges;Piernas;Peso corporal;Zancada;Multi;
+999;Zancadas hacia atrás;Reverse lunges;Piernas;Peso corporal;Zancada;Multi;

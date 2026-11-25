@@ -57,6 +57,33 @@ export interface FaseEnElCalendario {
   readonly desde: string;
   readonly hasta: string;
   readonly semanas: number;
+  /**
+   * ET1-D03 (F4): las semanas de la fase que pasan del fin del plan. Sus fechas se cortan en el fin: nada se ubica después.
+   * Ausente o 0, la fase entra entera.
+   */
+  readonly semanasFuera?: number;
+}
+
+/**
+ * ET1-D03 (F4): cuántas semanas suman las fases por encima de la duración del plan (0 si entran o si el plan no tiene
+ * duración). **Con fases de más, el plan no se activa** (Dirección, 2026-11-25): «Antes de activar» lo dice con dos salidas.
+ */
+export function semanasDeMas(planificacion: PlanificacionDelPlan | null | undefined, fases: readonly FaseParaPlanificar[]): number {
+  if (!planificacion?.weeks) return 0;
+  return Math.max(0, semanasQueSumanLasFases(planificacion, fases) - planificacion.weeks);
+}
+
+/**
+ * ET1-D03: «Recortar la última fase»: la última fase con semanas pierde las que sobran. `null` si no alcanza (le quedaría
+ * menos de una semana): entonces se lleva el plan a la suma o se acortan otras fases a mano.
+ */
+export function conLaUltimaFaseRecortada(planificacion: PlanificacionDelPlan, fases: readonly FaseParaPlanificar[]): PlanificacionDelPlan | null {
+  const sobran = semanasDeMas(planificacion, fases);
+  if (sobran === 0) return planificacion;
+  const ultima = [...fases].reverse().find((f) => (semanasDeLaFase(planificacion, f.blockId) ?? 0) > 0);
+  const semanas = ultima ? semanasDeLaFase(planificacion, ultima.blockId)! : 0;
+  if (!ultima?.blockId || semanas - sobran < 1) return null;
+  return { ...planificacion, phases: planificacion.phases.map((p) => (p.blockId === ultima.blockId ? { ...p, weeks: semanas - sobran } : p)) };
 }
 
 /**
@@ -66,6 +93,8 @@ export interface FaseEnElCalendario {
  */
 export function fechasDeLasFases(planificacion: PlanificacionDelPlan | null | undefined, fases: readonly FaseParaPlanificar[]): (FaseEnElCalendario | null)[] {
   const inicio = planificacion?.startDate ?? null;
+  // ET1-D03 (F4): nada después del fin del plan. Una fase que empieza después no tiene fechas; una que lo cruza, se corta.
+  const finDelTodo = inicio && planificacion?.weeks ? finDelPlan(inicio, planificacion.weeks) : null;
   let desde = inicio;
   return fases.map((f, posicion) => {
     const semanas = semanasDeLaFase(planificacion, f.blockId);
@@ -73,9 +102,15 @@ export function fechasDeLasFases(planificacion: PlanificacionDelPlan | null | un
       desde = null;
       return null;
     }
-    const fase: FaseEnElCalendario = { posicion, blockId: f.blockId, desde, hasta: finDelPlan(desde, semanas), semanas };
-    desde = sumarDias(fase.hasta, 1);
-    return fase;
+    const hasta = finDelPlan(desde, semanas);
+    const empieza = desde;
+    desde = sumarDias(hasta, 1);
+    if (finDelTodo && empieza > finDelTodo) return null;
+    if (finDelTodo && hasta > finDelTodo) {
+      const dentro = Math.round((Date.parse(`${finDelTodo}T00:00:00Z`) - Date.parse(`${empieza}T00:00:00Z`)) / 86_400_000 / 7 + 1 / 7);
+      return { posicion, blockId: f.blockId, desde: empieza, hasta: finDelTodo, semanas, semanasFuera: semanas - dentro };
+    }
+    return { posicion, blockId: f.blockId, desde: empieza, hasta, semanas };
   });
 }
 
@@ -86,8 +121,23 @@ const sesionesDeLaFase = (f: FaseParaPlanificar): string[] =>
 /** DL-196: las semanas en que va cada sesión, las de su fase. Solo las sesiones de fases con fechas tienen ventana. */
 export function ventanasDeLasSesiones(planificacion: PlanificacionDelPlan | null | undefined, fases: readonly FaseParaPlanificar[]): VentanasDeLasSesiones {
   const ventanas = new Map<string, { readonly desde: string; readonly hasta: string }>();
-  fechasDeLasFases(planificacion, fases).forEach((fase, n) => {
+  const fechas = fechasDeLasFases(planificacion, fases);
+  const finDelTodo = planificacion?.startDate && planificacion.weeks ? finDelPlan(planificacion.startDate, planificacion.weeks) : null;
+  // ET1-D03 (F4): la fase que queda entera después del fin del plan no va nunca (una ventana vacía), ni en «Hoy» de la
+  // persona: sin ventana, iría todas las semanas.
+  const fueraDelPlan = new Set<number>();
+  if (finDelTodo) {
+    let desde: string | null = planificacion!.startDate;
+    fases.forEach((f, n) => {
+      const semanas = semanasDeLaFase(planificacion, f.blockId);
+      if (desde === null || semanas === null || !f.blockId) return void (desde = null);
+      if (desde > finDelTodo) fueraDelPlan.add(n);
+      desde = sumarDias(finDelPlan(desde, semanas), 1);
+    });
+  }
+  fechas.forEach((fase, n) => {
     if (fase) for (const id of sesionesDeLaFase(fases[n]!)) ventanas.set(id, { desde: fase.desde, hasta: fase.hasta });
+    else if (fueraDelPlan.has(n)) for (const id of sesionesDeLaFase(fases[n]!)) ventanas.set(id, { desde: sumarDias(finDelTodo!, 1), hasta: finDelTodo! });
   });
   return ventanas;
 }
@@ -125,10 +175,11 @@ export function planificacionPodada(
     ...(warmUps.length > 0 ? { warmUps } : {}),
     ...(progressions.length > 0 ? { progressions } : {}),
     ...(favoriteCharts.length > 0 ? { favoriteCharts } : {}),
+    ...(planificacion.intensity && planificacion.intensity !== 'RIR' ? { intensity: planificacion.intensity } : {}),
     ...(notas && (notas.plan?.trim() || notasDeFases.length > 0) ? { privateNotes: { plan: notas.plan?.trim() ? notas.plan : null, phases: notasDeFases } } : {}),
   };
   const vacia =
-    podada.startDate === null && podada.weeks === null && !podada.goal && phases.length === 0 && warmUps.length === 0 && progressions.length === 0 && favoriteCharts.length === 0 && !podada.privateNotes;
+    podada.startDate === null && podada.weeks === null && !podada.goal && phases.length === 0 && warmUps.length === 0 && progressions.length === 0 && favoriteCharts.length === 0 && !podada.privateNotes && !podada.intensity;
   return vacia ? null : podada;
 }
 
@@ -259,13 +310,22 @@ export function implementoDelEjercicio(nombre: string, baseDeCarga?: string | nu
 }
 
 /**
- * EE-D03: el paso del redondeo por omisión. En kg: máquina de placas, 5; barra o discos, 2,5; mancuernas de hasta unos
- * 10 kg, 1 (las más pesadas, 2,5). En libras: máquina, 10; mancuernas de hasta 25 lb, 2,5; lo demás, 5.
+ * EE-D03 y ET1-D06: el paso del redondeo por omisión. En kg: máquina de placas, 5; barra o discos, 2,5; mancuernas de hasta
+ * unos 10 kg, 1 (las más pesadas, 2,5). **Con cargas de trabajo chicas, más fino** (Dirección, 2026-11-25: con 30 kg de
+ * trabajo, de a 5 las aproximaciones se repetían): por debajo de 40 kg, 1 (en una máquina, 2,5; las mancuernas siguen su regla). En libras: máquina, 10;
+ * mancuernas de hasta 25 lb, 2,5; lo demás, 5; por debajo de 90 lb, 2,5 (en una máquina, 5).
  */
 export function pasoPorOmision(implemento: Implemento, cargaDeTrabajo: number | null, unidad: 'kg' | 'lb' = 'kg'): PasoDeRedondeo {
-  if (unidad === 'lb') return implemento === 'MAQUINA' ? 10 : implemento === 'MANCUERNA' && (cargaDeTrabajo ?? 0) <= 25 ? 2.5 : 5;
+  const carga = cargaDeTrabajo ?? 0;
+  // Las mancuernas van de a 1 o 2,5 kg por su propia regla: lo fino es para barras, discos y máquinas.
+  const chica = implemento !== 'MANCUERNA' && carga > 0 && carga < (unidad === 'lb' ? 90 : 40);
+  if (unidad === 'lb') {
+    if (chica) return implemento === 'MAQUINA' ? 5 : 2.5;
+    return implemento === 'MAQUINA' ? 10 : implemento === 'MANCUERNA' && carga <= 25 ? 2.5 : 5;
+  }
+  if (chica) return implemento === 'MAQUINA' ? 2.5 : 1;
   if (implemento === 'MAQUINA') return 5;
-  if (implemento === 'MANCUERNA' && (cargaDeTrabajo ?? 0) <= 10) return 1;
+  if (implemento === 'MANCUERNA' && carga <= 10) return 1;
   return 2.5;
 }
 
@@ -275,35 +335,63 @@ export function redondearAlPaso(valor: number, paso: number): number {
   return Math.round(n * 100) / 100;
 }
 
-/**
- * Las cargas de las aproximaciones: cada porcentaje de la carga de trabajo, redondeado al paso. Ninguna llega a la carga
- * de trabajo ni baja de un paso, y no bajan de una a la siguiente: con cargas chicas, dos pueden quedar iguales.
- */
-export function cargasDeAproximacion(cargaDeTrabajo: number, porcentajes: readonly number[], paso: number): number[] {
-  const tope = redondearAlPaso(cargaDeTrabajo - paso, paso);
-  let anterior = 0;
-  return porcentajes.map((p) => {
-    let c = redondearAlPaso((cargaDeTrabajo * p) / 100, paso);
-    if (c >= cargaDeTrabajo) c = tope;
-    if (c < paso) c = paso;
-    if (c < anterior) c = anterior;
-    anterior = c;
-    return Math.max(0, c);
-  });
+/** Cómo quedaron las cargas frente a los porcentajes: tal cual, alguna más baja para no repetir, o menos aproximaciones. */
+export type AjusteDeLasAproximaciones = 'NINGUNO' | 'BAJADAS' | 'MENOS';
+
+/** Las cargas de las aproximaciones y lo que hubo que ajustar para que suban de a un paso por lo menos. */
+export interface CargasDeAproximacion {
+  readonly cargas: readonly number[];
+  /** De qué porcentajes salió cada carga (con menos aproximaciones, se van las más livianas). */
+  readonly porcentajes: readonly number[];
+  readonly ajuste: AjusteDeLasAproximaciones;
 }
 
-/** Una serie de aproximación como entra al plan: de calentamiento, con sus repeticiones y su carga. */
+/**
+ * ET1-D07: las cargas de las aproximaciones. Cada porcentaje de la carga de trabajo, redondeado al paso, con tres reglas:
+ * ninguna llega a la carga de trabajo (la más alta queda por lo menos un paso abajo), **ninguna repite la carga de la
+ * anterior** (suben de a un paso como mínimo) y ninguna baja de un paso. Si al redondear dos coinciden, la anterior baja un
+ * paso (`BAJADAS`); si no entran todas entre un paso y la carga de trabajo, quedan menos, sin las más livianas (`MENOS`).
+ * Con 30 kg, de a 1 y 40/60/80 %: 12, 18 y 24 kg.
+ */
+export function aproximacionesAjustadas(cargaDeTrabajo: number, porcentajes: readonly number[], paso: number): CargasDeAproximacion {
+  const tope = Math.floor((cargaDeTrabajo - paso) / paso + 1e-9) * paso;
+  const redondeadas = porcentajes.map((p) => Math.min(Math.max(redondearAlPaso((cargaDeTrabajo * p) / 100, paso), paso), tope));
+  // De la más pesada a la más liviana: cada una, por lo menos un paso abajo de la que sigue.
+  const cargas = [...redondeadas];
+  for (let n = cargas.length - 1; n >= 0; n -= 1) {
+    const siguiente = n === cargas.length - 1 ? tope + paso : cargas[n + 1]!;
+    cargas[n] = Math.round(Math.min(cargas[n]!, siguiente - paso) * 100) / 100;
+  }
+  const desde = cargas.findIndex((c) => c >= paso - 1e-9);
+  const quedan = desde < 0 ? [] : cargas.slice(desde);
+  const ajuste: AjusteDeLasAproximaciones = quedan.length < porcentajes.length ? 'MENOS' : quedan.some((c, n) => c !== redondeadas[n]) ? 'BAJADAS' : 'NINGUNO';
+  return { cargas: quedan, porcentajes: desde < 0 ? [] : porcentajes.slice(desde), ajuste };
+}
+
+/** Las cargas de las aproximaciones (`aproximacionesAjustadas`, sin el detalle del ajuste). */
+export const cargasDeAproximacion = (cargaDeTrabajo: number, porcentajes: readonly number[], paso: number): number[] => [...aproximacionesAjustadas(cargaDeTrabajo, porcentajes, paso).cargas];
+
+/** ET1-D08 (F15): el descanso propio de una aproximación por omisión, en segundos: corto, no el común de las efectivas. */
+export const DESCANSO_DE_APROXIMACION = 60;
+
+/**
+ * Una serie de aproximación como entra al plan: de calentamiento, con sus repeticiones y su carga. ET1-D08 (F15): **sin
+ * RIR** (`rir: null`, «sin objetivo en esta serie»: no toma el común) y con su descanso corto propio.
+ */
 export interface SerieDeAproximacion {
   readonly setKind: 'WARM_UP';
   readonly repetitions: { readonly value: number };
   readonly suggestedLoad: { readonly value: number; readonly unit: 'kg' | 'lb' };
+  readonly rir: null;
+  readonly restSeconds: number;
 }
 
 /** Las aproximaciones «Por %», listas para ir arriba de las series efectivas. */
 export function seriesDeAproximacion(cargaDeTrabajo: number, porcentajes: readonly number[], paso: number, unidad: 'kg' | 'lb'): SerieDeAproximacion[] {
-  const cargas = cargasDeAproximacion(cargaDeTrabajo, porcentajes, paso);
-  const repeticiones = REPETICIONES_DE_APROXIMACION[porcentajes.length] ?? [];
-  return cargas.map((c, n) => ({ setKind: 'WARM_UP', repetitions: { value: repeticiones[n] ?? 3 }, suggestedLoad: { value: c, unit: unidad } }));
+  const { cargas } = aproximacionesAjustadas(cargaDeTrabajo, porcentajes, paso);
+  // Con menos, se van las más livianas: las repeticiones son las de las que quedan (las más altas, las de menos repeticiones).
+  const repeticiones = (REPETICIONES_DE_APROXIMACION[porcentajes.length] ?? []).slice(porcentajes.length - cargas.length);
+  return cargas.map((c, n) => ({ setKind: 'WARM_UP', repetitions: { value: repeticiones[n] ?? 3 }, suggestedLoad: { value: c, unit: unidad }, rir: null, restSeconds: DESCANSO_DE_APROXIMACION }));
 }
 
 /** Los porcentajes que se proponen para esa cantidad (entre 1 y 6). */

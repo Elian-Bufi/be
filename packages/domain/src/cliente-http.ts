@@ -22,6 +22,7 @@ import {
   type SolicitarCierreResponse,
   type ValidationIssue,
 } from './contratos';
+import type { ClasificacionDeEjercicio } from './clasificacion-de-ejercicios';
 import {
   LoQueFaltaParaSeguirResponseSchema,
   PerfilPropioResponseSchema,
@@ -1623,13 +1624,20 @@ export function crearClienteBe(opciones: OpcionesDeCliente) {
     buscarEjercicios(token: string, texto: string, zona: string | null = null) {
       return llamar('POST', '/training/exercises/search', { token, esquema: BusquedaDeEjerciciosResponseSchema, cuerpo: zona ? { q: texto, zoneId: zona, limit: 50 } : { q: texto, limit: 20 } });
     },
-    /** API-INT-TRN-01: carga manual, con cero zonas hasta WP-07. */
-    crearEjercicio(token: string, nombre: string, claveDeIdempotencia: string) {
+    /**
+     * DL-197 (ET1-D12): una página del catálogo entero, con la clasificación de cada ejercicio, para «Agregar ejercicios»
+     * (que lista todo al abrir y filtra en el navegador). Sigue el cursor hasta el final quien la llama.
+     */
+    paginaDelCatalogoDeEjercicios(token: string, cursor: string | null) {
+      return llamar('POST', '/training/exercises/search', { token, esquema: BusquedaDeEjerciciosResponseSchema, cuerpo: { q: '', withClassification: true, limit: 50, ...(cursor ? { cursor } : {}) } });
+    },
+    /** API-INT-TRN-01: carga manual, con cero zonas hasta WP-07. DL-197: con su clasificación, si se eligió. */
+    crearEjercicio(token: string, nombre: string, claveDeIdempotencia: string, clasificacion?: ClasificacionDeEjercicio) {
       return llamar('POST', '/training/exercises', {
         token,
         claveDeIdempotencia,
         esquema: EjercicioDeCatalogoResponseSchema,
-        cuerpo: { name: nombre, muscleZones: [], didacticResources: [], provenance: { type: 'MANUAL_ENTRY' } },
+        cuerpo: { name: nombre, muscleZones: [], didacticResources: [], provenance: { type: 'MANUAL_ENTRY' }, ...(clasificacion ? { classification: clasificacion } : {}) },
       });
     },
     /** API-INT-TRN-02: consulta wger y crea un candidato. Los músculos que trae son dato del proveedor. */

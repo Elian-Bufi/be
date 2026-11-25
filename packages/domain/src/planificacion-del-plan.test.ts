@@ -11,6 +11,10 @@ import type { AgendaDeEntrenamiento, PlanificacionDelPlan } from './contratos-en
 import { PlanificacionDelPlanSchema } from './contratos-entrenamiento';
 import {
   cargasDeAproximacion,
+  aproximacionesAjustadas,
+  conLaUltimaFaseRecortada,
+  DESCANSO_DE_APROXIMACION,
+  semanasDeMas,
   fechasDeLasFases,
   finDelPlan,
   implementoDelEjercicio,
@@ -133,11 +137,57 @@ test('TEST-EE-06 · el redondeo de las aproximaciones no deja decimales raros: m
     seriesDeAproximacion(100, porcentajesPara(3), 2.5, 'kg').map((s) => `${s.repetitions.value}×${s.suggestedLoad.value}`),
     ['8×40', '5×60', '3×80'],
   );
+  // ET1-D08 (F15): sin RIR y con su descanso corto propio; no toman el común de las efectivas.
+  assert.ok(seriesDeAproximacion(100, porcentajesPara(3), 2.5, 'kg').every((s) => s.rir === null && s.restSeconds === DESCANSO_DE_APROXIMACION));
   // 87,5 kg en máquina de a 5: 35, 55 (52,5 redondea hacia arriba) y 70; ninguna llega a la de trabajo.
   assert.deepEqual(cargasDeAproximacion(87.5, [40, 60, 80], 5), [35, 55, 70]);
-  assert.deepEqual(cargasDeAproximacion(10, [90, 95], 5), [5, 5]);
-  // Con una carga chica, no bajan de un paso ni bajan de una a la siguiente.
-  assert.deepEqual(cargasDeAproximacion(4, [20, 40, 60], 1), [1, 2, 2]);
+  // ET1-D07: nunca repiten la anterior: si no entran todas entre un paso y la de trabajo, quedan menos (sin las livianas).
+  assert.deepEqual(aproximacionesAjustadas(10, [90, 95], 5), { cargas: [5], porcentajes: [95], ajuste: 'MENOS' });
+  assert.deepEqual(cargasDeAproximacion(4, [20, 40, 60], 1), [1, 2]);
+});
+
+test('TEST-ET1-01 · las aproximaciones de una carga chica (Dirección, 25/11): 30 kg de trabajo dan 12, 18 y 24, nunca dos iguales', () => {
+  // El caso de la captura: con 30 kg de trabajo salió 15, 25 y 25. Ahora el paso por omisión es 1 con menos de 40 kg.
+  assert.equal(pasoPorOmision('BARRA', 30), 1);
+  assert.equal(pasoPorOmision('OTRO', 30), 1);
+  assert.equal(pasoPorOmision('MAQUINA', 30), 2.5);
+  assert.deepEqual(aproximacionesAjustadas(30, [40, 60, 80], 1), { cargas: [12, 18, 24], porcentajes: [40, 60, 80], ajuste: 'NINGUNO' });
+  // Con un paso grueso elegido a mano, la anterior baja un paso para no repetir, y se dice.
+  assert.deepEqual(aproximacionesAjustadas(30, [40, 60, 80], 5), { cargas: [10, 20, 25], porcentajes: [40, 60, 80], ajuste: 'NINGUNO' });
+  assert.deepEqual(aproximacionesAjustadas(30, [50, 75, 85], 5), { cargas: [15, 20, 25], porcentajes: [50, 75, 85], ajuste: 'BAJADAS' });
+  // Ninguna iguala ni pasa la carga de trabajo, y todas suben.
+  for (const trabajo of [12, 20, 30, 37.5, 60, 100, 142.5]) {
+    for (const paso of [1, 2.5, 5, 10]) {
+      for (let n = 1; n <= 6; n += 1) {
+        const { cargas } = aproximacionesAjustadas(trabajo, porcentajesPara(n), paso);
+        cargas.forEach((c, m) => {
+          assert.ok(c < trabajo && c >= paso, `${trabajo} de a ${paso}: ${cargas.join(', ')}`);
+          if (m > 0) assert.ok(c > cargas[m - 1]!, `${trabajo} de a ${paso}: ${cargas.join(', ')}`);
+        });
+      }
+    }
+  }
+  // Con menos aproximaciones, las repeticiones son las de las más pesadas.
+  assert.deepEqual(seriesDeAproximacion(10, [90, 95], 5, 'kg').map((x) => `${x.repetitions.value}×${x.suggestedLoad.value}`), ['3×5']);
+});
+
+test('TEST-ET1-02 · las fases de más (F4): nada después del fin del plan, ni en el almanaque ni en la agenda', () => {
+  const plan: PlanificacionDelPlan = { ...PLAN, weeks: 4, phases: [{ blockId: 'base', weeks: 3 }, { blockId: 'fuerza', weeks: 3 }] };
+  assert.equal(semanasDeMas(plan, FASES), 2);
+  const [base, fuerza] = fechasDeLasFases(plan, FASES);
+  assert.equal(base!.semanasFuera, undefined);
+  // La segunda cruza el fin: se corta en el fin del plan y dice cuántas semanas quedan fuera.
+  assert.equal(fuerza!.hasta, finDelPlan(PLAN.startDate!, 4));
+  assert.equal(fuerza!.semanasFuera, 2);
+  // Recortar la última fase: le quedan 1 semana; si no alcanza, null.
+  assert.deepEqual(conLaUltimaFaseRecortada(plan, FASES)!.phases, [{ blockId: 'base', weeks: 3 }, { blockId: 'fuerza', weeks: 1 }]);
+  assert.equal(conLaUltimaFaseRecortada({ ...plan, weeks: 2 }, FASES), null);
+  // Una fase entera después del fin: sin fechas, y sus sesiones no van ninguna semana (no «todas»).
+  const corto: PlanificacionDelPlan = { ...plan, weeks: 3 };
+  assert.equal(fechasDeLasFases(corto, FASES)[1], null);
+  const ventanas = ventanasDeLasSesiones(corto, FASES);
+  const deFuerza = [...ventanas.entries()].filter(([id]) => FASES[1]!.sessions!.some((x) => x.sessionId === id));
+  assert.ok(deFuerza.length > 0 && deFuerza.every(([, v]) => v.desde > v.hasta));
 });
 
 test('TEST-EE-07 · el paso por omisión sale del implemento: máquina 5, barra 2,5, mancuernas livianas 1', () => {

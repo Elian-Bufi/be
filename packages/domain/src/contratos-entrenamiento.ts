@@ -28,6 +28,7 @@
  * un criterio de prescripción y no una medida de cumplimiento; la prueba de TEST-PRJ-009 lo exceptúa por nombre.
  */
 import { z } from 'zod';
+import { ClasificacionDeEjercicioSchema } from './clasificacion-de-ejercicios';
 import { IdOpaco, Instante } from './contratos';
 import {
   AplicacionDeRevisionSchema,
@@ -490,6 +491,10 @@ export type GraficoFavoritoDelPlan = z.infer<typeof GraficoFavoritoDelPlanSchema
  *   ninguna lectura del titular ni en su exportación (EE-D05).
  * Va en el contenido de la versión, como la agenda, y solo en las lecturas del profesional (API-SER-01).
  */
+/** DL-197 (ET1-D10): la intensidad del plan. */
+export const IntensidadDelPlanSchema = z.enum(['RIR', 'PERCENT_RM', 'NONE']);
+export type IntensidadDelPlan = z.infer<typeof IntensidadDelPlanSchema>;
+
 export const PlanificacionDelPlanSchema = z.strictObject({
   startDate: FechaLocalSchema.nullable(),
   weeks: z.number().int().min(1).max(104).nullable(),
@@ -500,6 +505,12 @@ export const PlanificacionDelPlanSchema = z.strictObject({
   progressions: z.array(ProgresionDeLaFaseSchema).max(12).optional(),
   /** DL-196 parte B (GR-27): los gráficos del editor marcados como favoritos de esta planificación. */
   favoriteCharts: z.array(GraficoFavoritoDelPlanSchema).max(30).optional(),
+  /**
+   * DL-197 (ET1-D10): la intensidad del plan, elegida una vez, que hereda cada ejercicio nuevo: `RIR` (escrito como RIR o
+   * como RPE, según `effortNotation`: DL-192), `PERCENT_RM` o `NONE` («Solo carga y repeticiones»). Ausente, RIR, como
+   * hasta ahora. No cambia el modelo: cada ejercicio sigue guardando su criterio.
+   */
+  intensity: IntensidadDelPlanSchema.optional(),
   privateNotes: z
     .strictObject({
       plan: TextoOpcional(4000),
@@ -612,6 +623,11 @@ export const EjercicioEncontradoSchema = EjercicioDeCatalogoSchema.extend({
   matchedAlternativeName: z.string().nullable(),
   /** DL-141 D-6: quién lo cargó y si su correspondencia con la fuente es aproximada. */
   origin: OrigenEnElBuscadorSchema,
+  /**
+   * DL-197 (ET1-D12): la clasificación (grupo, equipamiento, patrón y articulaciones), **solo si se pidió**
+   * (`withClassification`): la APK 0.32 busca con esta operación y su esquema estricto no la conoce, así que nunca le llega.
+   */
+  classification: ClasificacionDeEjercicioSchema.optional(),
 });
 export type EjercicioEncontrado = z.infer<typeof EjercicioEncontradoSchema>;
 export const BusquedaDeEjerciciosResponseSchema = z.strictObject({ data: z.array(EjercicioEncontradoSchema), page: PaginaSchema });
@@ -627,6 +643,8 @@ export const BusquedaDeEjerciciosRequestSchema = z.strictObject({
    * asignación vigente. Con `q` vacío, todos los de esa zona. Una zona que no existe es un 422 `INVALID_FILTER`.
    */
   zoneId: z.string().max(40).optional(),
+  /** DL-197 (ET1-D12): con `true`, cada ejercicio trae su clasificación. Lo pide el website; la APK 0.32 no lo manda. */
+  withClassification: z.literal(true).optional(),
   limit: z.number().int().min(1).max(50).optional(),
   cursor: z.string().max(400).optional(),
 });
@@ -642,6 +660,8 @@ export const CrearEjercicioRequestSchema = z.strictObject({
   muscleZones: z.array(RelacionConZonaSchema).max(17),
   didacticResources: z.array(z.strictObject({ resourceVersionId: IdOpaco })).max(20),
   provenance: z.strictObject({ type: z.literal('MANUAL_ENTRY') }),
+  /** DL-197 (ET1-D14): la clasificación de un ejercicio propio, opcional; ausente, sin clasificar. */
+  classification: ClasificacionDeEjercicioSchema.optional(),
 });
 export type CrearEjercicioRequest = z.infer<typeof CrearEjercicioRequestSchema>;
 
