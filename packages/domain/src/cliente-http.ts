@@ -242,6 +242,10 @@ import {
   type RegistrarSerieObservadaRequest,
   type SucederSerieObservadaRequest,
 } from './contratos-fuerza';
+// DL-198 (WP-EDITOR-ENTRENAMIENTO-TANDA-2): el 1RM de referencia, el esfuerzo de la sesión del profesional y la clasificación de un propio.
+import { UnoRMDeLaPersonaResponseSchema, UnoRMGuardadoResponseSchema, type SumarUnoRMRequest } from './contratos-repeticion-maxima';
+import { EsfuerzosDeLaSesionResponseSchema } from './esfuerzo-de-la-sesion';
+import { ClasificacionDeEjercicioPropioResponseSchema, type CambiarClasificacionDeEjercicioRequest } from './clasificacion-de-ejercicios';
 import { EstimacionDeLasOpcionesResponseSchema } from './contratos-totales-del-plan';
 import { RangosDelPlanResponseSchema, type EscribirRangosRequest } from './contratos-rangos-de-nutricion';
 import { ObjetivoConReferenciaResponseSchema, ReferenciaDelObjetivoResponseSchema, TomasDeReferenciaResponseSchema, type ObjetivoConReferenciaRequest } from './contratos-objetivo-y-calculador';
@@ -1170,6 +1174,20 @@ export function crearClienteBe(opciones: OpcionesDeCliente) {
       return llamar('POST', `/training/observed-sets/${encodeURIComponent(observationId)}/successors`, { token, cuerpo, claveDeIdempotencia: clave, esquema: SucesionDeSerieObservadaResponseSchema });
     },
 
+    // ─── DL-198 (WP-EDITOR-ENTRENAMIENTO-TANDA-2) · el 1RM de referencia y el esfuerzo de la sesión ─────
+    /** API-RMX-01: el 1RM de referencia de la persona en esos ejercicios (de 1 a 60). */
+    unoRMDeLaPersona(token: string, asesoradoId: string, exerciseIds: readonly string[]) {
+      return llamar('GET', `/advisees/${encodeURIComponent(asesoradoId)}/training/one-rep-max${query({ exerciseIds: [...new Set(exerciseIds)].join(',') })}`, { token, esquema: UnoRMDeLaPersonaResponseSchema });
+    },
+    /** API-RMX-02: sumar uno (calibración, declarado o el registro). */
+    sumarUnoRM(token: string, asesoradoId: string, cuerpo: SumarUnoRMRequest, clave: string) {
+      return llamar('POST', `/advisees/${encodeURIComponent(asesoradoId)}/training/one-rep-max`, { token, cuerpo, claveDeIdempotencia: clave, esquema: UnoRMGuardadoResponseSchema });
+    },
+    /** API-ESF-02: el esfuerzo de la sesión del período, para el profesional de Entrenamiento. */
+    esfuerzosDeLaSesion(token: string, asesoradoId: string, periodo: { periodStart: string; periodEnd: string }) {
+      return llamar('GET', `/advisees/${encodeURIComponent(asesoradoId)}/training/session-efforts${query(periodo)}`, { token, esquema: EsfuerzosDeLaSesionResponseSchema });
+    },
+
     // ─── WP-04 · NUT (09v9; CONS §11.2) e INT-NUT-01 ────────────────────────────────────────────
     /** API-NUT-01. */
     crearEvaluacion(token: string, asesoradoId: string, cuerpo: CrearEvaluacionRequest, claveDeIdempotencia: string) {
@@ -1997,6 +2015,10 @@ export function crearClienteBe(opciones: OpcionesDeCliente) {
     /** API-EJE-04: reemplaza las zonas de un ejercicio propio (la lista completa; vacía quita todas). */
     cambiarZonasDeEjercicio(token: string, exerciseId: string, cuerpo: CambiarZonasDeEjercicioRequest, claveDeIdempotencia: string) {
       return llamar('PUT', `/training/exercises/${encodeURIComponent(exerciseId)}/muscle-zones`, { token, claveDeIdempotencia, esquema: FichaVisualDeEjercicioResponseSchema, cuerpo });
+    },
+    /** API-EJE-06 (DL-198): la clasificación de un ejercicio propio, cambiada (la siguiente de su historia). */
+    cambiarClasificacionDeEjercicio(token: string, exerciseId: string, cuerpo: CambiarClasificacionDeEjercicioRequest, claveDeIdempotencia: string) {
+      return llamar('PUT', `/training/exercises/${encodeURIComponent(exerciseId)}/classification`, { token, claveDeIdempotencia, esquema: ClasificacionDeEjercicioPropioResponseSchema, cuerpo });
     },
     /** API-EJE-05: la ficha visual (zonas e imagen) de 1 a 50 ejercicios, en el orden pedido. */
     fichasVisualesDeEjercicios(token: string, exerciseIds: readonly string[]) {
