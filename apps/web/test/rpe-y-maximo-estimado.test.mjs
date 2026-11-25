@@ -77,7 +77,9 @@ test('TEST-RPE-043 · el editor guarda la notación con el borrador, la provee a
   assert.match(editor, /effortNotation: notacion,/);
   assert.match(editor, /setNotacion\(notacionDe\(r\.datos\.data\.effortNotation\)\)/);
   assert.match(editor, /<ProveedorDeLaNotacion value=\{plantilla \? NOTACION_POR_OMISION : notacion\}>/);
-  assert.match(editor, /<NotacionDelPlan/);
+  // DL-197 (ET1-D10): la notación se elige con la intensidad del plan, en «Configurar plan» (RIR o RPE).
+  assert.match(editor, /if \(c\.notacion !== notacion\) setNotacion\(c\.notacion\);/);
+  assert.match(leer('training/cuadros-del-plan.tsx'), /nombreDeLaIntensidad: \{ RIR: 'RIR', RPE: 'RPE', PERCENT_RM: '% RM', NONE: 'Solo carga y repeticiones' \}/);
   const ejercicio = leer('training/ejercicio-del-editor.tsx');
   // Las celdas del RIR se escriben y se leen en la notación; lo guardado es el RIR.
   assert.match(ejercicio, /escribir=\{rirEnCampo\(notacion\)\}/);

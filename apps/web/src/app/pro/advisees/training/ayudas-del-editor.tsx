@@ -50,7 +50,7 @@ export const AYUDAS_DEL_EDITOR = {
     nombre: 'Qué son las aproximaciones',
     definicion: 'Las series de aproximación van antes de las efectivas, con menos carga, para llegar a la carga de trabajo. Se registran y no entran en ninguna cuenta ni gráfico. No llevan RIR y tienen su propio descanso, corto.',
     pasos: ['Elegí cuántas: BE propone los porcentajes de la carga de trabajo y las repeticiones, que bajan.', 'El redondeo es de a 1, 2,5, 5 o 10: el de su implemento por omisión, más fino con cargas chicas.', 'Ninguna repite la carga de la anterior ni llega a la de trabajo: si no entran, quedan menos y se dice.'],
-    ejemplo: 'Ejemplo: con 30 kg de trabajo y 3 aproximaciones de a 1 kg: 8 × 12, 5 × 18 y 3 × 24 kg (40, 60 y 80 % de 30).',
+    ejemplo: 'Ejemplo: con 30 kg de trabajo y 3 aproximaciones de a 1 kg: 8 × 12, 5 × 18 y 3 × 24 kg (el 40, el 60 y el 80 % de la carga de trabajo).',
   },
   progresion: {
     nombre: 'Qué es una progresión',

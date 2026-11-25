@@ -71,6 +71,7 @@ import { COPY_ESCRITURA_RAPIDA } from './escritura-rapida';
 import { cambioDeCriterio, conElCriterio, COPY_CAMBIO_DE_CRITERIO, deshacerElCambioDeCriterio, sigueElCambio, type CambioDeCriterio } from './cambio-de-criterio';
 import { CuadroEnfocado } from '../../../../components/cuadro-enfocado';
 import { COPY_DETALLE_DEL_EJERCICIO, DetalleDelEjercicio } from '../fuerza/detalle-del-ejercicio';
+import { COPY_CARGA_DESDE_LA_ESTIMACION } from '../fuerza/carga-desde-la-estimacion';
 import type { PrescripcionParaLaCarga } from '../fuerza/fuerza';
 import { COPY_COPIAR } from './copiar-a';
 import { COPY_LA_VEZ_PASADA_EN_EL_EDITOR, CuadroDeLaVezPasada } from './la-vez-pasada';
@@ -527,7 +528,22 @@ export function EjercicioDelEditor({
               </CuadroEnfocado>
             ) : null}
             <CuadroEnfocado abierto={cuadro === 'todas'} forma="dialogo" ancho titulo={E9.todas} sobretitulo={nombre} onCerrar={() => setCuadro(null)}>
-              <EditarTodasLasSeries id={id} prescripcion={p} criterio={criterioEfectivo} onCambiar={onCambiar} onCerrar={() => setCuadro(null)} />
+              <EditarTodasLasSeries
+                id={id}
+                prescripcion={p}
+                criterio={criterioEfectivo}
+                onCambiar={onCambiar}
+                onCerrar={() => setCuadro(null)}
+                onCalcularLaCarga={
+                  conFuerza
+                    ? (elegidas) => {
+                        setCuadro(null);
+                        setSeriesDeLaCarga(elegidas);
+                        setDetalle(true);
+                      }
+                    : null
+                }
+              />
             </CuadroEnfocado>
             <CuadroEnfocado
               abierto={cuadro === 'opciones'}
@@ -1231,7 +1247,22 @@ function CeldaDeIntensidad({
  * DL-197 (F16): «Editar todas las series», en un cuadro. Se eligen las series (las efectivas, por omisión) y se escribe lo
  * que se quiere cambiar: **lo que queda vacío conserva su valor**. «Aplicar» lo escribe en todas las elegidas de una vez.
  */
-function EditarTodasLasSeries({ id, prescripcion: p, criterio, onCambiar, onCerrar }: { id: string; prescripcion: PrescripcionE; criterio: Criterio | null; onCambiar: (c: Partial<PrescripcionE>) => void; onCerrar: () => void }) {
+function EditarTodasLasSeries({
+  id,
+  prescripcion: p,
+  criterio,
+  onCambiar,
+  onCerrar,
+  onCalcularLaCarga = null,
+}: {
+  id: string;
+  prescripcion: PrescripcionE;
+  criterio: Criterio | null;
+  onCambiar: (c: Partial<PrescripcionE>) => void;
+  onCerrar: () => void;
+  /** ED-76 (EDT-56): la carga de las elegidas desde la fuerza estimada; `null` fuera de la lista de la v1. */
+  onCalcularLaCarga?: ((elegidas: readonly number[]) => void) | null;
+}) {
   const notacion = useNotacionDelEsfuerzo();
   const esfuerzo = COPY_NOTACION_DEL_ESFUERZO.etiqueta[notacion];
   const unidad = unidadDe(p);
@@ -1309,6 +1340,12 @@ function EditarTodasLasSeries({ id, prescripcion: p, criterio, onCambiar, onCerr
         {mal ?? COPY_TODAS.loVacio}
       </p>
       <div className="acciones">
+        {onCalcularLaCarga ? (
+          <button type="button" className="boton boton--quieto boton--compacto" data-calcular-la-carga-de-las-elegidas onClick={() => onCalcularLaCarga([...elegidas].sort((a, b) => a - b))}>
+            <Icono nombre="calculado" tamano={18} />
+            {COPY_CARGA_DESDE_LA_ESTIMACION.abrirEnLasElegidas}
+          </button>
+        ) : null}
         <button type="button" className="boton boton--discreto" onClick={onCerrar}>
           Cancelar
         </button>

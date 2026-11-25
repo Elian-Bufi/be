@@ -109,7 +109,9 @@ test('ED-76 · las elegidas en palabras, el principal, y una serie quitada con e
   assert.equal(F.textoDelPrincipalEnLasSeries(72.5, 'kg', [1, 2], 'Press de banca'), 'Escribir 72,5 kg en las series 2 y 3 de Press de banca');
   assert.deepEqual(F.lasElegidasQueQuedan([4, 1, 1, -1, 2], 3), [1, 2]);
   const editor = leer('training/ejercicio-del-editor.tsx');
+  // DL-197 (F16): desde el cuadro «Editar todas las series», con las series elegidas ahí.
   assert.match(editor, /data-calcular-la-carga-de-las-elegidas onClick=\{\(\) => onCalcularLaCarga\(\[\.\.\.elegidas\]\.sort\(\(a, b\) => a - b\)\)\}/);
+  assert.match(editor, /setSeriesDeLaCarga\(elegidas\);\n\s*setDetalle\(true\);/);
   assert.match(leer('fuerza/detalle-del-ejercicio.tsx'), /onEscribirEnLasSeries\(loQueSeEscribeEnLasSeries\(sets, elegidas, \{ value: r\.carga, unit: r\.unidad \}\)\)/);
 });
 

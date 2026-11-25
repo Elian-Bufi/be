@@ -10849,17 +10849,6 @@ button.comida-del-dia__fila > .icono:last-child {
   font-weight: 400;
 }
 
-.series-del-editor thead th:first-child {
-  width: 3rem;
-}
-
-.series-del-editor thead th:nth-child(2) {
-  width: 6rem;
-}
-
-.series-del-editor thead th:not(:first-child):not(:nth-child(2)):not(.series-del-editor__columna-nota):not(.series-del-editor__columna-quitar) {
-  width: 8.5rem;
-}
 
 /* TB-48: las zonas de un ejercicio propio: las 17 en una grilla de campos y, al lado, la figura con lo elegido. */
 .zonas-propias {
@@ -10902,6 +10891,171 @@ button.comida-del-dia__fila > .icono:last-child {
 .series-del-editor .series-del-editor__quitar {
   text-align: right;
 }
+
+/* DL-197 (F14): los anchos van por columna (`<colgroup>`), no por posición: la columna de la aproximación tiene la suya y
+   las demás no se corren. «Serie» lleva su rótulo entero y la nota ocupa lo que sobra. */
+.series-del-editor__col-serie {
+  width: 3.75rem;
+}
+
+.series-del-editor__col-aprox {
+  width: 4.25rem;
+}
+
+.series-del-editor__col-reps {
+  width: 6.25rem;
+}
+
+.series-del-editor__col-carga {
+  width: 8.5rem;
+}
+
+.series-del-editor__col-intensidad {
+  width: 6.5rem;
+}
+
+.series-del-editor__col-descanso {
+  width: 8.5rem;
+}
+
+.series-del-editor__col-nota {
+  width: auto;
+}
+
+.series-del-editor__col-quitar {
+  width: 3rem;
+}
+
+/* F14: los encabezados en un renglón, sin cortarse arriba. */
+.series-del-editor thead th {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
+.series-del-editor__con-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+/* F10: la unidad, un chip en el encabezado de la carga. */
+.chip-de-unidad {
+  min-width: 2.25rem;
+  min-height: 1.75rem;
+  padding: 0 0.45rem;
+  border: 1px solid var(--borde-control);
+  border-radius: 999px;
+  background: var(--superficie);
+  color: var(--texto);
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.chip-de-unidad:hover {
+  background: var(--fondo-suave);
+}
+
+.series-del-editor .series-del-editor__aprox {
+  text-align: center;
+}
+
+.series-del-editor .series-del-editor__aprox input {
+  width: 1.15rem;
+  height: 1.15rem;
+}
+
+.series-del-editor__sin-intensidad {
+  display: inline-block;
+  padding-inline: 0.5rem;
+}
+
+/* F14: la nota de cada serie ocupa su celda entera, sin asomar detrás del botón de quitar. */
+.series-del-editor .series-del-editor__nota .celda-de-serie {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+}
+
+/* DL-197 (F16): debajo de la planilla, tres botones que abren sus cuadros. */
+.ejercicio-del-editor__opciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 0.6rem;
+  align-items: center;
+  margin-top: 0.25rem;
+}
+
+.ejercicio-del-editor__resumen-de-aproximaciones {
+  font-variant-numeric: tabular-nums;
+}
+
+.mas-opciones-del-ejercicio,
+.editar-todas {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.editar-todas__casillas {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 0.9rem;
+}
+
+.editar-todas__casilla {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.editar-todas__casilla[data-calentamiento] {
+  color: var(--tenue);
+}
+
+.editar-todas__campos {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(8rem, 1fr));
+  gap: 0.6rem 0.9rem;
+}
+
+.editar-todas__campos .campo {
+  margin: 0;
+}
+
+.editar-todas__campos input {
+  width: 100%;
+}
+
+.editar-todas__aviso {
+  min-height: 1.3rem;
+  margin: 0;
+}
+
+/* F9: el resalte cubre la tarjeta entera y el chevrón queda en el extremo derecho. */
+.ejercicio-del-editor:hover,
+.ejercicio-del-editor:focus-within {
+  background: var(--fondo-suave);
+}
+
+.ejercicio-del-editor > .comida-del-editor__cabecera {
+  align-items: center;
+}
+
+.ejercicio-del-editor__chevron {
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+  margin-inline-start: auto;
+  color: var(--tenue);
+  cursor: pointer;
+}
+
 
 .series-del-editor tbody th[scope="row"] {
   font-weight: 700;
@@ -11181,22 +11335,26 @@ button.comida-del-dia__fila > .icono:last-child {
     hyphens: auto;
   }
 
-  .series-del-editor thead th:first-child {
-    width: 2.5rem;
+  /* DL-197 (F14): por columna, más justas. RP-22: las repeticiones llevan sus flechitas: con 4 rem, «8-12» no entraba. */
+  .series-del-editor__col-serie {
+    width: 3.5rem;
   }
 
-  /* RP-22: las repeticiones llevan sus flechitas (1,5 rem a la derecha): con 4 rem, «8-12» no entraba. */
-  .series-del-editor thead th:nth-child(2) {
+  .series-del-editor__col-aprox {
+    width: 3.5rem;
+  }
+
+  .series-del-editor__col-reps {
     width: 5rem;
   }
 
-  .series-del-editor thead th:not(:first-child):not(:nth-child(2)):not(.series-del-editor__columna-nota):not(.series-del-editor__columna-quitar) {
-    width: 6.25rem;
+  .series-del-editor__col-carga,
+  .series-del-editor__col-descanso {
+    width: 7rem;
   }
 
-  /* El descanso lleva «Sin objetivo» escrito: un poco más ancho que los números. */
-  .series-del-editor thead th:nth-child(6):not(:first-child):not(:nth-child(2)):not(.series-del-editor__columna-nota):not(.series-del-editor__columna-quitar) {
-    width: 7.5rem;
+  .series-del-editor__col-intensidad {
+    width: 5.25rem;
   }
 
   .series-del-editor thead th.series-del-editor__columna-quitar {
@@ -16503,28 +16661,39 @@ p.cifra-del-espacio__desglose {
   border-inline-start: 4px solid var(--color-de-la-fase);
 }
 
+/* DL-197 (F3): la fase 1 se declara igual que las demás: en el almanaque no tenía su color. */
+.almanaque [data-fase='1'],
+.tarjeta-de-fase[data-fase='1'] {
+  --color-de-la-fase: var(--fase-1);
+}
+
 .fase-del-plan[data-fase='2'],
-.almanaque [data-fase='2'] {
+.almanaque [data-fase='2'],
+.tarjeta-de-fase[data-fase='2'] {
   --color-de-la-fase: var(--fase-2);
 }
 
 .fase-del-plan[data-fase='3'],
-.almanaque [data-fase='3'] {
+.almanaque [data-fase='3'],
+.tarjeta-de-fase[data-fase='3'] {
   --color-de-la-fase: var(--fase-3);
 }
 
 .fase-del-plan[data-fase='4'],
-.almanaque [data-fase='4'] {
+.almanaque [data-fase='4'],
+.tarjeta-de-fase[data-fase='4'] {
   --color-de-la-fase: var(--fase-4);
 }
 
 .fase-del-plan[data-fase='5'],
-.almanaque [data-fase='5'] {
+.almanaque [data-fase='5'],
+.tarjeta-de-fase[data-fase='5'] {
   --color-de-la-fase: var(--fase-5);
 }
 
 .fase-del-plan[data-fase='6'],
-.almanaque [data-fase='6'] {
+.almanaque [data-fase='6'],
+.tarjeta-de-fase[data-fase='6'] {
   --color-de-la-fase: var(--fase-6);
 }
 
@@ -16563,6 +16732,392 @@ p.cifra-del-espacio__desglose {
 }
 
 /* Los días de la fase: una fila por sesión, una casilla por día. Prendida, llena con la letra de la sesión. */
+/* DL-197 (ET1-01): «Fases del plan» y su barra horizontal. Cada fase es una tarjeta con su color arriba y un ancho
+   proporcional a sus semanas; la elegida, resaltada (borde y sombra, no solo el color). Con muchas fases, la barra se
+   desplaza de costado. Lo que pasa del fin del plan va rayado (F4). */
+.barra-de-fases {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.barra-de-fases__cabecera {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1rem;
+  padding-inline-end: 2.5rem;
+}
+
+.barra-de-fases__titulo {
+  flex: 1 1 auto;
+  min-width: 0;
+  margin: 0;
+  font-size: 1.15rem;
+}
+
+.barra-de-fases__rango {
+  color: var(--tenue);
+  font-weight: 400;
+}
+
+.barra-de-fases__acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+/* RP-19: el renglón del aviso de las fases de más está siempre. */
+.barra-de-fases__aviso {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 0.5rem;
+  min-height: 1.6rem;
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.barra-de-fases__barra {
+  display: flex;
+  gap: 0.5rem;
+  padding: 0.25rem 0.15rem 0.6rem;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x proximity;
+}
+
+.tarjeta-de-fase {
+  --color-de-la-fase: var(--fase-1);
+  position: relative;
+  display: grid;
+  flex-basis: 0;
+  align-content: start;
+  gap: 0.2rem;
+  min-width: 9.5rem;
+  min-height: 4.75rem;
+  padding: 0.8rem 0.8rem 0.6rem;
+  overflow: hidden;
+  border: 1px solid var(--borde);
+  border-top: 5px solid var(--color-de-la-fase);
+  border-radius: 12px;
+  background: var(--superficie);
+  color: var(--texto);
+  font: inherit;
+  text-align: start;
+  cursor: pointer;
+  scroll-snap-align: start;
+}
+
+.tarjeta-de-fase:hover {
+  background: var(--fondo-suave);
+}
+
+.tarjeta-de-fase[aria-selected='true'] {
+  border-color: var(--color-de-la-fase);
+  box-shadow: 0 0 0 1px var(--color-de-la-fase), var(--sombra-suave);
+}
+
+.tarjeta-de-fase__nombre {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-width: 0;
+  overflow: hidden;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tarjeta-de-fase__numero {
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  width: 1.4rem;
+  height: 1.4rem;
+  border: 2px solid var(--color-de-la-fase);
+  border-radius: 50%;
+  font-size: 0.75rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.tarjeta-de-fase__semanas {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 0 0.5rem;
+  color: var(--tenue);
+  font-size: 0.85rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.tarjeta-de-fase__cuantas {
+  font-weight: 600;
+}
+
+/* F4 (ET1-D03): la parte que pasa del fin del plan, rayada, a la derecha de la tarjeta. */
+.tarjeta-de-fase[data-fuera]::after {
+  position: absolute;
+  inset: 0 0 0 auto;
+  width: var(--fuera);
+  background: repeating-linear-gradient(135deg, transparent 0 6px, var(--fondo-suave) 6px 12px);
+  border-inline-start: 2px dashed var(--tenue);
+  content: '';
+  pointer-events: none;
+}
+
+/* La fase elegida, debajo de la barra: su cabecera con «Editar fase», «Días de la semana» y el «⋯». */
+.fase-del-plan__acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  align-items: center;
+}
+
+.fase-del-plan__titulo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 0.6rem;
+  padding-inline-start: 0.5rem;
+}
+
+.fase-del-plan__rotulo {
+  color: var(--texto);
+  font-weight: 600;
+}
+
+.fase-del-plan__objetivo,
+.semana-tipo__renglon {
+  margin: 0;
+}
+
+.semana-tipo {
+  display: grid;
+  gap: 0.35rem;
+}
+
+/* ET1-05: las sesiones de la fase como tarjetas, en un renglón que se desplaza; «Nueva sesión» al final. */
+.sesiones-de-la-fase {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.sesiones-de-la-fase__lista {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.tarjeta-de-sesion {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 2.75rem;
+  padding: 0.35rem 0.85rem 0.35rem 0.4rem;
+  border: 1px solid var(--borde);
+  border-radius: 10px;
+  background: var(--superficie);
+  color: var(--texto);
+  font: inherit;
+  cursor: pointer;
+}
+
+.tarjeta-de-sesion:hover {
+  background: var(--fondo-suave);
+}
+
+.tarjeta-de-sesion[aria-selected='true'] {
+  border-color: var(--color-de-la-fase, var(--azul));
+  box-shadow: 0 0 0 1px var(--color-de-la-fase, var(--azul));
+  font-weight: 600;
+}
+
+.tarjeta-de-sesion__letra {
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  width: 1.6rem;
+  height: 1.6rem;
+  border-radius: 50%;
+  background: var(--fondo-suave);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.tarjeta-de-sesion__dias {
+  color: var(--tenue);
+  font-size: 0.85rem;
+  font-weight: 400;
+}
+
+.sesion-elegida__cabecera {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.4rem 0.75rem;
+  margin-top: 0.75rem;
+}
+
+.sesion-elegida__titulo {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+/* DL-197 (ET1-02 a ET1-04): los cuadros del plan. */
+.cuadro-del-plan__cuerpo {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.cuadro-del-plan__nota {
+  min-height: 1.3rem;
+  margin: 0;
+}
+
+.cuadro-del-plan__nombre {
+  flex: 1 1 14rem;
+  margin: 0;
+}
+
+.cuadro-del-plan__nombre input {
+  width: 100%;
+}
+
+.cuadro-del-plan__secundarias,
+.cuadro-del-plan__quitar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  margin-inline-end: auto;
+}
+
+.cuadro-del-plan__quitar p {
+  margin: 0;
+}
+
+.intensidad-del-plan {
+  display: grid;
+  gap: 0.4rem;
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.intensidad-del-plan legend {
+  margin-bottom: 0.35rem;
+  font-weight: 600;
+}
+
+.intensidad-del-plan__que-es {
+  margin: 0;
+}
+
+.intensidad-del-plan__otros {
+  display: grid;
+  gap: 0.25rem;
+  min-height: 1.3rem;
+}
+
+.intensidad-del-plan__otros p {
+  margin: 0;
+}
+
+.intensidad-del-plan__pasar {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+/* Un control segmentado: las opciones juntas, la elegida llena con el color de acción. */
+.control-segmentado {
+  display: inline-flex;
+  flex-wrap: wrap;
+  width: fit-content;
+  max-width: 100%;
+  border: 1px solid var(--borde-control);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.control-segmentado__opcion {
+  min-height: 2.5rem;
+  padding: 0.3rem 0.9rem;
+  border: 0;
+  border-inline-end: 1px solid var(--borde-control);
+  background: var(--superficie);
+  color: var(--texto);
+  font: inherit;
+  cursor: pointer;
+}
+
+.control-segmentado__opcion:last-child {
+  border-inline-end: 0;
+}
+
+.control-segmentado__opcion[aria-checked='true'] {
+  background: var(--boton-fondo);
+  color: var(--boton-texto);
+  font-weight: 600;
+}
+
+/* La matriz de días: la fila lleva su letra y el nombre de la sesión, que se edita ahí. */
+.matriz-de-dias .dias-de-la-fase__sesion {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.matriz-de-dias__sesion {
+  text-align: start;
+}
+
+.matriz-de-dias__nombre {
+  width: 100%;
+  min-width: 8rem;
+}
+
+/* El «?» de un cuadro, en la cabecera, junto a «Cerrar». */
+.cuadro-enfocado__ayuda {
+  position: relative;
+  display: inline-grid;
+  align-self: start;
+  min-width: 2.25rem;
+  min-height: 2.25rem;
+  margin-inline-start: auto;
+}
+
+.ayuda-con-ejemplo__pasos {
+  margin: 0.25rem 0;
+  padding-inline-start: 1.25rem;
+}
+
+.ayuda-con-ejemplo__ejemplo {
+  padding: 0.5rem 0.65rem;
+  border-inline-start: 3px solid var(--borde-control);
+  background: var(--fondo-suave);
+}
+
+/* ET1-D03: las salidas de un impedimento, en «Antes de activar». */
+.revision-del-plan__acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 0.6rem;
+  margin-top: 0.35rem;
+}
+
+.revision-del-plan__accion {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 0.5rem;
+}
+
 .dias-de-la-fase {
   display: grid;
   gap: 0.4rem;
@@ -16650,6 +17205,116 @@ p.cifra-del-espacio__desglose {
   display: grid;
   align-content: start;
   gap: 0.9rem;
+}
+
+/* DL-197 (ET1-09): «Agregar ejercicios», un cuadro central con todo el catálogo: el buscador, los filtros en un renglón y
+   un renglón por ejercicio con su clasificación, la estrella y «Elegir». También en «Catálogo de BE» (F23). */
+.agregar-ejercicios.cuadro-enfocado--dialogo {
+  width: min(56rem, calc(100vw - 2rem));
+}
+
+.catalogo-para-elegir {
+  display: grid;
+  gap: 0.6rem;
+}
+
+.catalogo-para-elegir__buscador .agregar-item__campo {
+  width: 100%;
+}
+
+.catalogo-para-elegir__buscador input {
+  width: 100%;
+}
+
+.catalogo-para-elegir__filtros {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.catalogo-para-elegir__filtro select {
+  min-height: 2.5rem;
+  max-width: 13rem;
+}
+
+.catalogo-para-elegir__favoritos[aria-pressed='true'] {
+  border-color: var(--azul);
+  box-shadow: 0 0 0 1px var(--azul);
+}
+
+/* RP-19: la cuenta en su renglón, siempre. */
+.catalogo-para-elegir__cuenta {
+  min-height: 1.3rem;
+  margin: 0;
+}
+
+.catalogo-para-elegir__lista {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  border-top: 1px solid var(--borde);
+}
+
+.catalogo-para-elegir__ejercicio {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 3.5rem;
+  padding: 0.4rem 0.25rem;
+  border-bottom: 1px solid var(--borde);
+}
+
+.catalogo-para-elegir__ejercicio[data-elegido] {
+  background: var(--fondo-suave);
+}
+
+.catalogo-para-elegir__textos {
+  display: grid;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.catalogo-para-elegir__nombre {
+  overflow: hidden;
+  font-weight: 600;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.catalogo-para-elegir__clasificacion {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.15rem 0.6rem;
+}
+
+.catalogo-para-elegir__estrella[aria-pressed='true'] {
+  color: var(--azul);
+}
+
+.catalogo-para-elegir__elegir {
+  min-width: 6.5rem;
+  border: 1px solid var(--boton-secundario-borde);
+  background: var(--superficie);
+  color: var(--boton-secundario-texto);
+}
+
+.catalogo-para-elegir__elegir[aria-pressed='true'] {
+  border-color: var(--boton-fondo);
+  background: var(--boton-fondo);
+  color: var(--boton-texto);
+}
+
+.clasificacion-nueva {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr));
+  gap: 0.5rem 1rem;
+}
+
+.clasificacion-nueva .campo {
+  margin: 0;
 }
 
 .marco-del-panel {
@@ -16857,22 +17522,50 @@ p.cifra-del-espacio__desglose {
   gap: 0.15rem;
   padding: 0.2rem;
   border: 1px solid var(--borde);
-  border-radius: 999px;
+  border-radius: 12px;
   background: var(--fondo-suave);
 }
 
 .selector-de-vistas__opcion {
+  display: grid;
   flex: 1 1 0;
-  min-height: 2rem;
-  padding: 0.2rem 0.6rem;
+  justify-items: center;
+  gap: 0.1rem;
+  min-width: 0;
+  min-height: 2.75rem;
+  padding: 0.3rem 0.15rem;
   border: 0;
-  border-radius: 999px;
+  border-radius: 10px;
   background: transparent;
   color: var(--tenue);
   font: inherit;
   font-size: 0.85rem;
   font-weight: 600;
   cursor: pointer;
+}
+
+.selector-de-vistas__nombre {
+  max-width: 100%;
+  font-size: 0.72rem;
+  line-height: 1.15;
+  overflow-wrap: anywhere;
+}
+
+/* F6: «Abrir grande», en su propio renglón; el almanaque, fluido: sin desplazamiento de costado en el panel. */
+.marco-del-panel__abrir {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: -0.25rem;
+}
+
+.panel-del-editor {
+  overflow-x: hidden;
+}
+
+.panel-del-editor .almanaque__sesion {
+  width: min(2.25rem, 100%);
+  height: auto;
+  aspect-ratio: 1;
 }
 
 .selector-de-vistas__opcion[aria-selected='true'] {

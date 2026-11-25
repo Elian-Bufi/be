@@ -232,7 +232,8 @@ test('TB-48 · los editores duplican y mueven con el módulo, y lo abierto sigue
   // ejercicio por su posición de antes.
   assert.match(entrenamiento, /dejarAbiertos\(abiertosTrasReordenar\(abiertos, r\.desdeDonde\)\)/);
   assert.match(entrenamiento, /onSubir=\{\(\) => moverEjercicio\(l, -1\)\}/);
-  assert.match(ejercicio, /aria-disabled=\{esElUltimo \|\| undefined\} onClick=\{\(\) => !esElUltimo && onBajar\(\)\}/);
+  // DL-197 (F9): subir y bajar, en «Más», apagados en la punta con su motivo.
+  assert.match(ejercicio, /\{ clave: 'bajar', texto: EDICION\.bajar, alElegir: onBajar, noSePuede: esElUltimo \? E9\.yaEsElUltimo : null \}/);
   assert.doesNotMatch(ejercicio + comida, / disabled=\{es(La|El)(Primer|Ultim)/, 'ningún «Subir» ni «Bajar» con disabled');
   assert.match(ejercicio, /\{ clave: 'duplicar', texto: EDICION\.duplicarEjercicio, alElegir: onDuplicar \}/);
 });

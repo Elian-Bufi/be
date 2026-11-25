@@ -11,7 +11,7 @@
  * en la esquina, que explica paso a paso con un ejemplo resuelto. Lo que se escribe es un borrador del cuadro: entra al
  * plan con el botón principal; cerrar con cambios pregunta.
  */
-import { COPY_NOTACION_DEL_ESFUERZO, DIAS_DE_LA_SEMANA, finDelPlan, type DiaDeLaSemana, type IntensidadDelPlan, type NotacionDelEsfuerzo, type PlanificacionDelPlan } from '@be/domain';
+import { COPY_NOTACION_DEL_ESFUERZO, DIAS_DE_LA_SEMANA, finDelPlan, type DiaDeLaSemana, type NotacionDelEsfuerzo, type PlanificacionDelPlan } from '@be/domain';
 import { useEffect, useId, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
 import { CampoDeFecha } from '../../../../components/campo-de-fecha';
 import { CuadroEnfocado } from '../../../../components/cuadro-enfocado';
@@ -19,10 +19,9 @@ import { Icono } from '../../../../components/icono';
 import { DIA_CORTO, DIA_LARGO } from '../estacion/estacion';
 import { AYUDAS_DEL_EDITOR, ContenidoDeLaAyuda } from './ayudas-del-editor';
 import { conAnotacionesDelPlan, conFin, conInicio, conObjetivo, conSemanasDelPlan } from './fases-del-plan';
+import { guardadoDeLaIntensidad, INTENSIDADES, intensidadElegida, type IntensidadElegida } from './intensidad-del-plan';
 
-/** Las cuatro formas de la intensidad del plan, como se eligen en pantalla (ET1-D10). */
-export type IntensidadElegida = 'RIR' | 'RPE' | 'PERCENT_RM' | 'NONE';
-export const INTENSIDADES: readonly IntensidadElegida[] = ['RIR', 'RPE', 'PERCENT_RM', 'NONE'];
+export { criterioDeLaIntensidad, type IntensidadElegida } from './intensidad-del-plan';
 
 export const COPY_CUADROS_DEL_PLAN = {
   configurar: 'Configurar plan',
@@ -79,17 +78,6 @@ export const leerSemanas = (s: string, maximo: number): number | null => {
   const n = Number(s.trim());
   return s.trim() !== '' && Number.isInteger(n) && n >= 1 && n <= maximo ? n : null;
 };
-
-/** La intensidad elegida en pantalla, de lo guardado: % RM y «Solo carga» en la planificación; RIR o RPE, la notación. */
-export const intensidadElegida = (p: PlanificacionDelPlan, notacion: NotacionDelEsfuerzo): IntensidadElegida =>
-  p.intensity === 'PERCENT_RM' ? 'PERCENT_RM' : p.intensity === 'NONE' ? 'NONE' : notacion;
-
-/** Lo que se guarda de una intensidad elegida: la de la planificación y la notación del esfuerzo (DL-192). */
-export const guardadoDeLaIntensidad = (i: IntensidadElegida, notacionAntes: NotacionDelEsfuerzo): { readonly intensity: IntensidadDelPlan; readonly notacion: NotacionDelEsfuerzo } =>
-  i === 'RIR' || i === 'RPE' ? { intensity: 'RIR', notacion: i } : { intensity: i, notacion: notacionAntes };
-
-/** El criterio que toma un ejercicio con esta intensidad: `RIR`, `PERCENT_RM` o ninguno. */
-export const criterioDeLaIntensidad = (i: IntensidadDelPlan | undefined): 'RIR' | 'PERCENT_RM' | null => (i === 'PERCENT_RM' ? 'PERCENT_RM' : i === 'NONE' ? null : 'RIR');
 
 /** Un área de texto con su rótulo, compacta. */
 function Texto({ id, rotulo, valor, onCambiar, maximo, privado = false, placeholder }: { id: string; rotulo: ReactNode; valor: string | null | undefined; onCambiar: (v: string | null) => void; maximo: number; privado?: boolean; placeholder?: string }) {

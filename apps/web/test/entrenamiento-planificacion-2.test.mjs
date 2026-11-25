@@ -236,7 +236,8 @@ test('C7 · cambiar de RIR a % RM dice qué se quita y se puede deshacer; sin na
   const aRir = CC.cambioDeCriterio(conRm, 'RIR');
   const conUnRir = { ...conRm, ...CC.conElCriterio(conRm, 'RIR'), sets: [{ rir: 2 }] };
   assert.deepEqual(CC.deshacerElCambioDeCriterio(conUnRir, aRir), { intensity: conRm.intensity, sets: [{}] });
-  assert.match(EJERCICIO, /setCambio\(cambioDeCriterio\(p, c\)\);\n\s*onCambiar\(conElCriterio\(p, c\)\);/);
+  // DL-197 (ET1-D11): el criterio se elige en «Más opciones», con la del plan heredada.
+  assert.match(EJERCICIO, /setCambio\(cambioDeCriterio\(p, nuevo\)\);\n\s*onCambiar\(conElCriterio\(p, nuevo\)\);/);
   assert.match(EJERCICIO, /onCambiar\(deshacerElCambioDeCriterio\(p, avisoDelCambio\)\);/);
   assert.match(EJERCICIO, /data-cambio-de-criterio/);
 });
@@ -249,18 +250,17 @@ test('C5 · los días se eligen en un solo lugar: los chips junto a cada sesión
   // La agenda ya no tiene su tabla de días por sesión, ni los elige.
   assert.doesNotMatch(AGENDA, /agenda-del-plan__semana|const alternarDia = /);
   assert.doesNotMatch(AGENDA, /export function AgendaDelPlan/);
-  // DL-196 (EE-02): el editor elige los días en la tabla de días de cada fase y el asistente en sus chips; los dos
-  // escriben la misma agenda con `alternarDia`, desde el inicio del plan.
-  assert.equal((EDITOR.match(/alternarDia\(/g) ?? []).length, 2);
-  assert.equal((EDITOR.match(/agendaDelPlan\(alternarDia\(agendaVisible, id, (d|dia), inicioDeLaAgenda\)\)/g) ?? []).length, 2);
-  assert.match(EDITOR, /<DiasDeLaFase\n/);
+  // DL-197 (ET1-04): el editor elige los días en el cuadro «Días de la semana» (la matriz de la fase) y el asistente en sus
+  // chips; los dos escriben la misma agenda desde el inicio del plan.
+  assert.equal((EDITOR.match(/agendaDelPlan\(alternarDia\(agendaVisible, id, d, inicioDeLaAgenda\)\)/g) ?? []).length, 1);
+  assert.match(EDITOR, /<CuadroDiasDeLaSemana\n/);
   // Arriba de la sesión, ni la tira de la semana suelta ni «Días de entrenamiento»; en el selector de la sesión, tampoco.
   assert.doesNotMatch(EDITOR, /<AgendaDelPlan/);
   assert.doesNotMatch(EDITOR, /data-dias-de-la-sesion|C\.sinDiaAsignado/);
   // El renglón de la sesión no repite los días que dicen sus chips.
   assert.doesNotMatch(EDITOR, /dias\.length > 0 \? dias\.map\(\(d\) => DIA_LARGO\[d\]\)\.join\(', '\) : CE\.sinDia/);
   // DL-196: la tabla de días de la fase, una fila por sesión y una casilla por día (lunes a domingo).
-  const DIAS = fuente('../src/app/pro/advisees/training/plan-y-fases.tsx');
+  const DIAS = fuente('../src/app/pro/advisees/training/cuadros-del-plan.tsx');
   assert.match(DIAS, /aria-pressed=\{s\.dias\.includes\(d\)\}/);
   assert.match(DIAS, /data-dias-de-la-sesion=\{n \+ 1\}/);
 });
@@ -276,7 +276,7 @@ test('C5 · «Ver próximas fechas» a pedido, desde la lista de sesiones: el in
   assert.match(AGENDA, /\{A\.proximasDosSemanas\}/);
   assert.match(AGENDA, /data-quitar-agenda/);
   // DL-196: sin días, lo dice la ayuda de la tabla de días («Una sesión sin días no tiene fecha»), en su «?».
-  assert.match(fuente('../src/app/pro/advisees/training/plan-y-fases.tsx'), /Una sesión sin días no tiene fecha/);
+  assert.match(fuente('../src/app/pro/advisees/training/ayudas-del-editor.tsx'), /Se repite igual todas las semanas de la fase/);
 });
 
 // ─── C6 · el catálogo: la selección a la vista con un pie fijo; crear o importar, aparte ───────────────────────
@@ -300,7 +300,8 @@ test('C6 · crear o importar, bajo «No encuentro el ejercicio», al final de la
   const seccion = CATALOGO.slice(CATALOGO.indexOf('data-no-encuentro'));
   assert.match(seccion, /alCambiarDeModo\('manual'\)\} data-crear-ejercicio/);
   assert.match(seccion, /alCambiarDeModo\('importar'\)\} data-importar-ejercicio/);
-  assert.match(CATALOGO, /const sinResultados = busqueda\.tipo === 'lista' && ejercicios\.length === 0;\n\s*const noEncuentroAbierto = noEncuentro \|\| sinResultados;/);
+  // DL-197 (ET1-09): sobre el catálogo entero, filtrado.
+  assert.match(CATALOGO, /const sinResultados = catalogo\.tipo === 'lista' && ejercicios\.length === 0;\n\s*const noEncuentroAbierto = noEncuentro \|\| sinResultados;/);
   assert.match(CATALOGO, /Podés crearlo o importarlo, en «\{V\.noEncuentro\}»\./);
 });
 
@@ -446,11 +447,10 @@ test('Revisión · escena 10: el selector de la sesión en forma de lista tiene 
 
 test('Revisión · escena 09: «Común» entra en su columna y no se pisa con «en cada serie»', () => {
   // Con 3 rem (2,5 entre 40 y 46 rem), «Común» en negrita no entraba.
-  assert.match(EJERCICIO, /<th scope="col" className="series-del-editor__columna-serie">/);
-  assert.match(regla('.series-del-editor thead th.series-del-editor__columna-serie'), /width: 3\.5rem;/, 'la del contenedor de 40 a 46 rem, que va última');
-  assert.match(CSS, /\.series-del-editor thead th\.series-del-editor__columna-serie \{\n\s*width: 4rem;/);
-  // Las dos reglas nuevas van después de las de siempre (misma especificidad: manda la última).
-  assert.ok(CSS.lastIndexOf('th.series-del-editor__columna-serie') > CSS.lastIndexOf('.series-del-editor thead th:first-child {'));
+  // DL-197 (F14): el ancho va por columna, en el `<colgroup>`; «Común» entra también entre 40 y 46 rem.
+  assert.match(EJERCICIO, /<col className="series-del-editor__col-serie" \/>/);
+  assert.match(regla('.series-del-editor__col-serie'), /width: 3\.5rem;/, 'la del contenedor de 40 a 46 rem, que va última');
+  assert.match(CSS, /\.series-del-editor__col-serie \{\n\s*width: 3\.75rem;/);
   assert.match(escena('09-de-donde-sale-cada-valor'), /se pisa con «/);
 });
 
