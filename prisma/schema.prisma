@@ -2230,9 +2230,63 @@ model VersionDeEjercicio {
   imagenes    AsociacionDeImagenDeEjercicio[]
   /// DL-081: las zonas declaradas para esta versión (REG-06-139).
   asignacionesDeZonas AsignacionDeZonasDeEjercicio[]
+  /// DL-197 (ET1-D12): la clasificación, para los filtros de «Agregar ejercicios». Todo opcional: los propios pueden no
+  /// tenerla; los 186 del catálogo base la reciben de la siembra (20261125120000), con la propuesta de BE a validar.
+  grupoMuscular       GrupoMuscularDeEjercicio?   @map("grupo_muscular")
+  equipamiento        EquipamientoDeEjercicio[]   @default([])
+  patron              PatronDeMovimiento?
+  articulaciones      ArticulacionesDeEjercicio?
 
   @@index([ejercicioId])
   @@map("version_de_ejercicio")
+}
+
+/// DL-197: el grupo muscular de un ejercicio (la categoría de wger).
+enum GrupoMuscularDeEjercicio {
+  CHEST
+  BACK
+  LEGS
+  SHOULDERS
+  ARMS
+  ABS
+  CALVES
+  CARDIO
+}
+
+/// DL-197: con qué se hace un ejercicio.
+enum EquipamientoDeEjercicio {
+  BARBELL
+  EZ_BAR
+  DUMBBELL
+  KETTLEBELL
+  CABLE
+  MACHINE
+  BENCH
+  INCLINE_BENCH
+  PULL_UP_BAR
+  BAND
+  MAT
+  SWISS_BALL
+  BODYWEIGHT
+  OTHER
+}
+
+/// DL-197: el patrón de movimiento.
+enum PatronDeMovimiento {
+  PUSH
+  PULL
+  SQUAT
+  HINGE
+  LUNGE
+  CORE
+  CARDIO
+  OTHER
+}
+
+/// DL-197: mono o multiarticular.
+enum ArticulacionesDeEjercicio {
+  SINGLE
+  MULTI
 }
 
 /// RF-036; REG-06-97. El contenido profesional no lo fija el 09 (09v10:202): JSON validado por allowlist (DL-080).
