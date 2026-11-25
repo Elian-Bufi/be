@@ -4,7 +4,9 @@
  * a sus semanas; lo que pasa del fin del plan, rayado (ET1-D03).
  */
 import { DIAS_DE_LA_SEMANA, nombreDeLaFase, semanasDeLaFase, type DiaDeLaSemana, type FaseEnElCalendario, type FaseParaPlanificar, type PlanificacionDelPlan } from '@be/domain';
-import { colorDeLaFase } from './fases-del-plan';
+
+/** El color de la fase por su posición, de los seis (`--fase-1` a `--fase-6`), como `colorDeLaFase` de `fases-del-plan.ts`. */
+const colorDeLaFase = (posicion: number): number => (posicion % 6) + 1;
 
 /** Una tarjeta de la barra. */
 export interface TarjetaDeFase {

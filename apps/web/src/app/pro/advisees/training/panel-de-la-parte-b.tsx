@@ -211,8 +211,7 @@ export function CargaParaRepeticiones({
     );
   }
   let resultado: ReactNode;
-  if (!conEstimacion) resultado = <p className="nota">El máximo estimado (Epley v1) es solo para los seis ejercicios con barra de su lista: este no está, así que no hay cuenta.</p>;
-  else if (lectura.tipo === 'cargando') resultado = <p className="nota">Leyendo el máximo estimado…</p>;
+  if (lectura.tipo === 'cargando') resultado = <p className="nota">Leyendo el máximo estimado…</p>;
   else if (!valor) resultado = <p className="nota">No hay datos suficientes: hace falta una serie registrada de este ejercicio con carga, repeticiones y RIR de hasta 2 (hasta {TOPE_DE_LA_ESTIMACION} repeticiones equivalentes).</p>;
   else if (!r || !r.hay)
     resultado = (
