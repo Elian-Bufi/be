@@ -64,6 +64,16 @@ test('registrar el borrador lo reemplaza por su ejecución: volver lleva adonde 
   assert.deepEqual(nav.anterior({ nombre: 'sesion-de-entrenamiento', draftId: 'd1', ...sesion }), { nombre: 'entrenamiento' }, 'sin origen, a Entrenamiento de hoy');
 });
 
+test('DL-198: la pregunta del esfuerzo de la sesión es de una sola vez, como el aviso: al volver de la corrección ya no viene', () => {
+  const registrada = { nombre: 'ejecucion-de-entrenamiento', id: 'e1', aviso: 'Sesión registrada.', esfuerzo: { minutos: 60 } };
+  const correccion = nav.navegar(registrada, { nombre: 'corregir-ejecucion', id: 'e1' });
+  assert.deepEqual(nav.anterior(correccion), { nombre: 'ejecucion-de-entrenamiento', id: 'e1' });
+  // Al registrar la corrección se vuelve al detalle con su aviso, y sin la pregunta.
+  const devuelta = nav.navegar(correccion, { nombre: 'ejecucion-de-entrenamiento', id: 'e1', aviso: 'Corrección registrada.' }, 'reemplazar');
+  assert.equal(devuelta.esfuerzo, undefined);
+  assert.equal(devuelta.aviso, 'Corrección registrada.');
+});
+
 test('el botón de volver nombra adónde vuelve', () => {
   assert.equal(nav.textoDeVolverA({ nombre: 'historial-de-entrenamiento' }), 'Volver a Tu historial');
   assert.equal(nav.textoDeVolverA({ nombre: 'inicio' }), 'Volver a Inicio');
