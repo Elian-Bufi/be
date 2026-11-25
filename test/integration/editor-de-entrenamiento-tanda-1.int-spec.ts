@@ -11,6 +11,9 @@ import type { INestApplication } from '@nestjs/common';
 import { BusquedaDeEjerciciosResponseSchema, PlanConObjetivosResponseSchema, type EjercicioEncontrado, type PlanificacionDelPlan } from '@be/domain';
 import { PrismaClient } from '@prisma/client';
 import { randomUUID } from 'node:crypto';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { RAIZ } from './soporte';
 import { appDePrueba, conSesion } from './soporte-api';
 import { activarPlanDeEntrenamiento, circuitoListoParaPlanificarEntrenamiento, crearBorradorDeEntrenamiento, estructuraDeEntrenamiento } from './soporte-entrenamiento';
 import { prepararProfesional } from './soporte-vinculo';
@@ -29,6 +32,7 @@ afterAll(async () => {
 });
 
 const BUSCAR = '/api/v1/training/exercises/search';
+const SEMBRADOS = new Set((JSON.parse(readFileSync(join(RAIZ, 'prisma', 'datos', 'catalogo-base', 'ejercicios.json'), 'utf8')).ejercicios as { wgerId: number }[]).map((e) => String(e.wgerId)));
 
 describe('DL-197 · la clasificación del catálogo', () => {
   it('TEST-ET1-API-01 · solo si se pide; el catálogo entero por el cursor, con los 186 clasificados; un propio la acepta opcional', async () => {
@@ -62,8 +66,9 @@ describe('DL-197 · la clasificación del catálogo', () => {
       if (!pagina.page.hasMore) break;
       cursor = pagina.page.nextCursor;
     }
-    const delCatalogoBase = todos.filter((e) => e.externalSource?.provider === 'WGER');
-    expect(delCatalogoBase.length).toBeGreaterThanOrEqual(186);
+    // Los 186 del catálogo base (otras pruebas importan de wger en la misma base: esos no tienen la siembra).
+    const delCatalogoBase = todos.filter((e) => e.externalSource?.provider === 'WGER' && SEMBRADOS.has(e.externalSource.externalId));
+    expect(delCatalogoBase.length).toBe(186);
     expect(delCatalogoBase.every((e) => e.classification?.muscleGroup && e.classification.movementPattern && e.classification.joints && e.classification.equipment.length > 0)).toBe(true);
     expect(todos.find((e) => e.name === 'Remo trilimbo clasificado')?.classification).toEqual({ muscleGroup: 'BACK', equipment: ['CABLE'], movementPattern: 'PULL', joints: 'MULTI' });
     expect(todos.find((e) => e.name === 'Remo trilimbo sin clasificar')?.classification).toEqual({ muscleGroup: null, equipment: [], movementPattern: null, joints: null });
