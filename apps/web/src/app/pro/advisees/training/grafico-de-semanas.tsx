@@ -68,7 +68,8 @@ export function GraficoDeSemanas({
   const [tabla, setTabla] = useState(false);
   const todos = series.flatMap((s) => s.valores.filter((v): v is number => v !== null));
   const n = Math.max(1, semanas);
-  const marcas = todos.length > 0 ? marcasDelEje(Math.min(...todos), Math.max(...todos)) : [0, 1];
+  // DL-197 (F8, GUIA-UX-UI): la carga y las cantidades se leen desde 0; acercar el eje agranda las diferencias.
+  const marcas = todos.length > 0 ? marcasDelEje(0, Math.max(...todos)) : [0, 1];
   const yMin = marcas[0]!;
   const yMax = marcas[marcas.length - 1]!;
   const ancho = ANCHO - M.izq - M.der;

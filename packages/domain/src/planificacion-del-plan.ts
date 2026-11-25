@@ -166,6 +166,7 @@ export function planificacionPodada(
     const siguen = p.prescriptionIds.filter((id) => hayPrescripcion.has(id));
     return siguen.length > 0 ? [{ ...p, prescriptionIds: siguen }] : [];
   });
+  const sinIntensidad = [...new Set((planificacion.withoutIntensity ?? []).filter((id) => hayPrescripcion.has(id)))];
   const favoriteCharts = (planificacion.favoriteCharts ?? []).filter((g) => (g.kind === 'EXERCISE_LOAD' ? hayPrescripcion.has(g.id) : hayBloque.has(g.id)));
   const podada: PlanificacionDelPlan = {
     startDate: planificacion.startDate,
@@ -176,10 +177,11 @@ export function planificacionPodada(
     ...(progressions.length > 0 ? { progressions } : {}),
     ...(favoriteCharts.length > 0 ? { favoriteCharts } : {}),
     ...(planificacion.intensity && planificacion.intensity !== 'RIR' ? { intensity: planificacion.intensity } : {}),
+    ...(sinIntensidad.length > 0 ? { withoutIntensity: sinIntensidad } : {}),
     ...(notas && (notas.plan?.trim() || notasDeFases.length > 0) ? { privateNotes: { plan: notas.plan?.trim() ? notas.plan : null, phases: notasDeFases } } : {}),
   };
   const vacia =
-    podada.startDate === null && podada.weeks === null && !podada.goal && phases.length === 0 && warmUps.length === 0 && progressions.length === 0 && favoriteCharts.length === 0 && !podada.privateNotes && !podada.intensity;
+    podada.startDate === null && podada.weeks === null && !podada.goal && phases.length === 0 && warmUps.length === 0 && progressions.length === 0 && favoriteCharts.length === 0 && !podada.privateNotes && !podada.intensity && sinIntensidad.length === 0;
   return vacia ? null : podada;
 }
 

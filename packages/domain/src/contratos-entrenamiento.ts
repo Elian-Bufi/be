@@ -511,6 +511,11 @@ export const PlanificacionDelPlanSchema = z.strictObject({
    * hasta ahora. No cambia el modelo: cada ejercicio sigue guardando su criterio.
    */
   intensity: IntensidadDelPlanSchema.optional(),
+  /**
+   * DL-197 (ET1-D11): los ejercicios que, por excepción, no llevan intensidad aunque el plan sí («Sin criterio de
+   * intensidad» en su «Más opciones»). Sin criterio propio y sin estar acá, un ejercicio hereda la del plan.
+   */
+  withoutIntensity: z.array(IdDeNodoSchema).max(400).optional(),
   privateNotes: z
     .strictObject({
       plan: TextoOpcional(4000),

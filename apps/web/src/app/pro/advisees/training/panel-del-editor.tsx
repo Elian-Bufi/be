@@ -44,14 +44,17 @@ export function MarcoDelPanel({ id, deQue, titulo, onAbrirGrande, children }: { 
             {titulo}
           </h3>
         </div>
-        {onAbrirGrande ? (
-          <button type="button" className="boton boton--quieto boton--compacto" onClick={onAbrirGrande} data-abrir-grande>
+      </div>
+      {/* DL-197 (F6): «Abrir grande», en su propio renglón: con el título al lado, el panel se desbordaba. */}
+      {onAbrirGrande ? (
+        <div className="marco-del-panel__abrir">
+          <button type="button" className="boton boton--discreto boton--compacto" onClick={onAbrirGrande} data-abrir-grande>
             <Icono nombre="ver-todo" tamano={18} />
             {T.abrirGrande}
             <span className="visualmente-oculto">: {titulo}</span>
           </button>
-        ) : null}
-      </div>
+        </div>
+      ) : null}
       {children}
     </section>
   );
@@ -67,7 +70,8 @@ const MARGEN = 8;
  */
 export function CargaEnElTiempo({ puntos, unidad }: { puntos: readonly PuntoDeCarga[]; unidad: 'kg' | 'lb' }) {
   const id = useId();
-  const min = Math.min(...puntos.map((p) => p.carga));
+  // DL-197 (F8): desde 0, como todo gráfico de carga (GUIA-UX-UI).
+  const min = 0;
   const max = Math.max(...puntos.map((p) => p.carga));
   const rango = max - min || 1;
   const x = (n: number) => (puntos.length === 1 ? ANCHO / 2 : MARGEN + (n * (ANCHO - 2 * MARGEN)) / (puntos.length - 1));
