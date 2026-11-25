@@ -100,6 +100,9 @@ export const COPY_CATALOGO_PARA_ELEGIR = {
   elegir: 'Elegir',
   elegido: 'Elegido',
   seleccionados: (n: number) => (n === 1 ? '1 seleccionado' : `${n} seleccionados`),
+  /** Revisión adversaria (DL-197): un ejercicio que la sesión ya tiene se puede sumar otra vez, pero se dice. */
+  yaEnLaSesion: 'ya está en la sesión',
+  repetidos: (n: number) => (n === 1 ? '1 ya está en la sesión: entra otra vez' : `${n} ya están en la sesión: entran otra vez`),
   agregarALaSesion: 'Agregar a la sesión',
 } as const;
 
@@ -164,6 +167,9 @@ const AYUDA_DE_AGREGAR = {
   ejemplo: 'Ejemplo: Grupo muscular «Pecho» + Equipamiento «Mancuernas» deja el press y las aperturas con mancuernas; elegís los dos, escribís «3x10 @2» en la prescripción para todos y entran con 3 series de 10 y RIR 2.',
 } as const;
 
+const SIN_NINGUNO: ReadonlySet<string> = new Set();
+const yaEsta = (enLaSesion: ReadonlySet<string>, e: { readonly versionId: string; readonly exerciseId: string }): boolean => enLaSesion.has(e.versionId) || enLaSesion.has(e.exerciseId);
+
 export function AgregarEjercicio({
   abierto,
   deDonde,
@@ -171,7 +177,10 @@ export function AgregarEjercicio({
   onAgregar,
   onCerrar,
   prescripcionDeLaSesion = null,
+  enLaSesion = SIN_NINGUNO,
 }: {
+  /** Los ejercicios que la sesión ya tiene (por versión o por ejercicio del catálogo): se marcan, y elegirlos se dice. */
+  enLaSesion?: ReadonlySet<string>;
   /** ENP-D10: el preset elegido con la sesión vacía; sin una prescripción escrita acá, los ejercicios entran con él. */
   prescripcionDeLaSesion?: string | null;
   abierto: boolean;
@@ -201,6 +210,7 @@ export function AgregarEjercicio({
     setParaTodosAbierta(false);
   }, [abierto]);
   const lectura = linea.trim() === '' ? null : leerPrescripcion(linea);
+  const repetidos = marcados.filter((m) => yaEsta(enLaSesion, m)).length;
   const agregar = () => {
     if (marcados.length === 0) return setFalta(true);
     // Lo que no se entiende no se aplica: se corrige o se borra antes (ED-22, nunca adivina). Nunca un return mudo: el
@@ -248,6 +258,7 @@ export function AgregarEjercicio({
             <div className="agregar-ejercicio__elegidos" data-elegidos={marcados.length}>
               <p className={`agregar-ejercicio__elegidos-titulo${falta && marcados.length === 0 ? ' campo__error' : ''}`} role={falta && marcados.length === 0 ? 'alert' : undefined} data-sin-marcados={falta && marcados.length === 0 ? '' : undefined} data-seleccionados={marcados.length}>
                 {falta && marcados.length === 0 ? V.sinMarcados : COPY_CATALOGO_PARA_ELEGIR.seleccionados(marcados.length)}
+                {repetidos > 0 ? <span className="nota" data-repetidos-en-la-sesion={repetidos}> · {COPY_CATALOGO_PARA_ELEGIR.repetidos(repetidos)}</span> : null}
               </p>
               {marcados.length > 0 ? (
                 <ul className="agregar-item__fichas agregar-ejercicio__fichas-elegidas">
@@ -295,6 +306,7 @@ export function AgregarEjercicio({
         campo={campo}
         habituales={habituales}
         marcados={marcados}
+        enLaSesion={enLaSesion}
         onMarcar={(e) => setMarcados((m) => alternarMarcado(m, e))}
         onCreado={(e) => setMarcados((m) => (m.some((x) => x.versionId === e.versionId) ? m : [...m, e]))}
       />
@@ -309,9 +321,11 @@ function ContenidoDeAgregarEjercicio({
   campo,
   habituales,
   marcados,
+  enLaSesion,
   onMarcar,
   onCreado,
 }: {
+  enLaSesion: ReadonlySet<string>;
   modo: Modo;
   alCambiarDeModo: (m: Modo) => void;
   campo: RefObject<HTMLInputElement | null>;
@@ -531,6 +545,7 @@ function ContenidoDeAgregarEjercicio({
                   <span className="catalogo-para-elegir__nombre">{ej.name}</span>
                   <span className="nota catalogo-para-elegir__clasificacion" data-clasificacion>
                     {renglon ?? COPY_CATALOGO_PARA_ELEGIR.sinClasificar}
+                    {yaEsta(enLaSesion, ej) ? <span data-ya-en-la-sesion> · {COPY_CATALOGO_PARA_ELEGIR.yaEnLaSesion}</span> : null}
                     {conHistorial ? (
                       <span className="ejercicios-del-catalogo__historial" data-con-historial>
                         <Icono nombre="linea-de-tiempo" tamano={15} />
