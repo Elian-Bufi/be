@@ -48092,6 +48092,14 @@
                               "NONE"
                             ]
                           },
+                          "withoutIntensity": {
+                            "maxItems": 400,
+                            "type": "array",
+                            "items": {
+                              "type": "string",
+                              "pattern": "^[A-Za-z0-9_-]{1,64}$"
+                            }
+                          },
                           "privateNotes": {
                             "type": "object",
                             "properties": {
@@ -92825,6 +92833,14 @@
                                     "PERCENT_RM",
                                     "NONE"
                                   ]
+                                },
+                                "withoutIntensity": {
+                                  "maxItems": 400,
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string",
+                                    "pattern": "^[A-Za-z0-9_-]{1,64}$"
+                                  }
                                 },
                                 "privateNotes": {
                                   "type": "object",
