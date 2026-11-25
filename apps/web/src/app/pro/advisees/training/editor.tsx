@@ -1480,7 +1480,9 @@ export function EditorDePlan({
     cambiarPlanificacion(conLaCopia);
     // Los días se copian solo si la copia tiene fechas: sin ellas, sus sesiones irían todas las semanas junto con las de la
     // original, y la persona tendría las dos fases a la vez (EE-D02).
-    const conFechas = (fechasDeLasFases(conLaCopia, [...bloques.slice(0, n), copia.bloque, ...bloques.slice(n)])[n] ?? null) !== null;
+    // DL-197 (ET1-D03): sin contar el fin del plan: una copia que queda fuera tiene sus días igual (no va ninguna semana hasta
+    // que se ajuste el plan, y entonces ya los tiene).
+    const conFechas = (fechasDeLasFases({ ...conLaCopia, weeks: null }, [...bloques.slice(0, n), copia.bloque, ...bloques.slice(n)])[n] ?? null) !== null;
     const conDias = conFechas ? agendaConLaCopia(agendaVisible, copia) : agendaVisible;
     if (conDias !== agendaVisible) cambiarAgenda(conDias);
     const habiaDias = agendaVisible?.sessions.some((s) => copia.sesiones.has(s.sessionId)) ?? false;

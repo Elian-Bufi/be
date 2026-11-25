@@ -2575,7 +2575,9 @@ async function agregarEjerciciosConFiltros({ p, d, salida }) {
   await p.select('dialog[open] [data-filtro="equipamiento"] select', 'BARBELL');
   await p.waitForFunction((n) => Number(document.querySelector('dialog[open] [data-cuenta-del-catalogo]')?.dataset.cuentaDelCatalogo) < n, { timeout: ESPERA, polling: 100 }, todos);
   const renglones = await p.$$eval('dialog[open] [data-clasificacion]', (xs) => xs.map((x) => x.textContent));
-  assert.ok(renglones.length > 0 && renglones.every((t) => t.startsWith('Pecho · Barra')), renglones.join(' | '));
+  // El renglón nombra el equipo principal; el filtro mira todo el equipamiento del ejercicio.
+  assert.ok(renglones.length > 0 && renglones.every((t) => t.startsWith('Pecho · ')), renglones.join(' | '));
+  assert.ok(renglones.some((t) => t.startsWith('Pecho · Barra')), renglones.join(' | '));
   await p.select('dialog[open] [data-filtro="articulaciones"] select', 'MULTI');
   await p.select('dialog[open] [data-filtro="patron"] select', 'PUSH');
   await captura(p, salida, 'agregar-ejercicios-con-filtros');
