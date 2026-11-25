@@ -248,3 +248,14 @@ test('TEST-ET1-21 · revisión adversaria: heredar sin objetivo se dice, vaciar 
   assert.match(CATALOGO, /data-repetidos-en-la-sesion=\{repetidos\}/);
   assert.match(EDITOR, /enLaSesion=\{new Set\(/);
 });
+
+test('TEST-ET1-22 · revisión adversaria: los cuadros no pierden ni borran lo escrito sin decirlo, y el rayado no tapa el texto', () => {
+  // «Configurar plan»: una duración que no se entiende no se guarda como «sin duración».
+  assert.match(CUADROS, /const semanasMal = semanasEscritas !== null && semanasEscritas\.trim\(\) !== '' && leerSemanas\(semanasEscritas, 104\) === null;/);
+  assert.match(CUADROS, /apagado: semanasMal \? T\.semanasDelPlanNoSeEntienden : null,/);
+  // «Editar fase»: con cambios sin guardar, «Duplicar fase» no copia lo viejo en silencio.
+  assert.match(CUADROS, /aria-disabled=\{cambio \|\| undefined\}/);
+  assert.match(CUADROS, /if \(!cambio\) onDuplicar\(\);/);
+  // F4: el rayado de lo que pasa del fin del plan va debajo del nombre y de las semanas.
+  assert.match(CSS, /\.tarjeta-de-fase\[data-fuera\] \.tarjeta-de-fase__nombre,\n\.tarjeta-de-fase\[data-fuera\] \.tarjeta-de-fase__semanas \{\n\s*position: relative;\n\s*z-index: 1;/);
+});

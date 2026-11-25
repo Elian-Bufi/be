@@ -16863,6 +16863,15 @@ p.cifra-del-espacio__desglose {
   border-inline-start: 2px dashed var(--tenue);
   content: '';
   pointer-events: none;
+  z-index: 0;
+}
+
+/* Revisión adversaria (DL-197): el rayado va debajo del texto; encima tapaba la mitad de cada letra (y en una fase entera
+   fuera del plan, su nombre). */
+.tarjeta-de-fase[data-fuera] .tarjeta-de-fase__nombre,
+.tarjeta-de-fase[data-fuera] .tarjeta-de-fase__semanas {
+  position: relative;
+  z-index: 1;
 }
 
 /* La fase elegida, debajo de la barra: su cabecera con «Editar fase», «Días de la semana» y el «⋯». */

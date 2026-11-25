@@ -57,6 +57,7 @@ export const COPY_CUADROS_DEL_PLAN = {
   proposito: 'Propósito',
   guardarFase: 'Guardar fase',
   duplicar: 'Duplicar fase',
+  duplicarConCambios: 'Guardá la fase antes de duplicarla: la copia sale de lo guardado.',
   quitar: 'Quitar fase',
   quitarPregunta: (nombre: string) => `¿Quitar «${nombre}»? Se van sus sesiones y sus ejercicios de esta versión.`,
   quitarSi: 'Sí, quitar la fase',
@@ -64,6 +65,7 @@ export const COPY_CUADROS_DEL_PLAN = {
   laUnica: 'Es la única fase de la versión.',
   faltaElNombre: 'Escribí el nombre de la fase.',
   semanasNoSeEntienden: 'Van de 1 a 52 semanas, en números enteros.',
+  semanasDelPlanNoSeEntienden: 'La duración va de 1 a 104 semanas, en números enteros.',
   dias: 'Días de la semana',
   guardarDias: 'Guardar días',
   sinSesiones: 'Esta fase todavía no tiene sesiones: agregá una y después elegís sus días.',
@@ -145,6 +147,8 @@ export function CuadroConfigurarPlan({
   const intensidadDeAntes = intensidadElegida(planificacion, notacion);
   const cambio = JSON.stringify(p) !== JSON.stringify(planificacion) || intensidad !== intensidadDeAntes || semanasEscritas !== null;
   const fin = p.startDate && p.weeks ? finDelPlan(p.startDate, p.weeks) : '';
+  // Revisión adversaria (DL-197): una duración que no se entiende no se guarda como «sin duración»: se dice y no se guarda.
+  const semanasMal = semanasEscritas !== null && semanasEscritas.trim() !== '' && leerSemanas(semanasEscritas, 104) === null;
   const otros = intensidad !== intensidadDeAntes && !((intensidad === 'RIR' || intensidad === 'RPE') && (intensidadDeAntes === 'RIR' || intensidadDeAntes === 'RPE')) ? conOtraIntensidad(intensidad) : 0;
   const teclasDeLaIntensidad = (e: KeyboardEvent<HTMLButtonElement>, actual: IntensidadElegida) => {
     const n = INTENSIDADES.indexOf(actual);
@@ -166,6 +170,8 @@ export function CuadroConfigurarPlan({
       ayuda={{ nombre: AYUDAS_DEL_EDITOR.plan.nombre, contenido: <ContenidoDeLaAyuda ayuda={AYUDAS_DEL_EDITOR.plan} /> }}
       principal={{
         texto: T.guardarPlan,
+        apagado: semanasMal ? T.semanasDelPlanNoSeEntienden : null,
+        alTocarApagado: () => document.getElementById(`${id}-semanas`)?.focus(),
         alTocar: () => {
           const g = guardadoDeLaIntensidad(intensidad, notacion);
           onGuardar({ planificacion: { ...p, intensity: g.intensity }, notacion: g.notacion, pasarLosDemas: pasar && otros > 0 });
@@ -186,11 +192,14 @@ export function CuadroConfigurarPlan({
                 inputMode="numeric"
                 value={semanasEscritas ?? (p.weeks === null ? '' : String(p.weeks))}
                 aria-describedby={`${id}-unidad ${id}-nota`}
+                aria-invalid={semanasMal || undefined}
                 onChange={(e) => {
                   setSemanasEscritas(e.target.value);
                   setP(conSemanasDelPlan(p, leerSemanas(e.target.value, 104)));
                 }}
-                onBlur={() => setSemanasEscritas(null)}
+                onBlur={() => {
+                  if (!semanasMal) setSemanasEscritas(null);
+                }}
                 data-semanas-del-plan
               />
               <span id={`${id}-unidad`} className="nota">
@@ -205,8 +214,8 @@ export function CuadroConfigurarPlan({
           ) : null}
         </div>
         {/* RP-19: el renglón de la nota está siempre. */}
-        <p id={`${id}-nota`} className="nota datos-del-plan__nota" aria-live="polite" data-nota-del-plan>
-          {!p.startDate ? T.sinInicio : p.weeks && semanasDeLasFases > 0 ? T.lasFasesSuman(semanasDeLasFases, p.weeks) : ' '}
+        <p id={`${id}-nota`} className={semanasMal ? 'campo__error datos-del-plan__nota' : 'nota datos-del-plan__nota'} aria-live="polite" data-nota-del-plan>
+          {semanasMal ? T.semanasDelPlanNoSeEntienden : !p.startDate ? T.sinInicio : p.weeks && semanasDeLasFases > 0 ? T.lasFasesSuman(semanasDeLasFases, p.weeks) : ' '}
         </p>
         <fieldset className="intensidad-del-plan" data-intensidad-del-plan={intensidad}>
           <legend>{T.intensidad}</legend>
@@ -329,7 +338,17 @@ export function CuadroEditarFase({
           </div>
         ) : (
           <div className="cuadro-del-plan__secundarias">
-            <button type="button" className="boton boton--quieto boton--compacto" data-duplicar-fase onClick={onDuplicar}>
+            {/* Revisión adversaria (DL-197): con cambios sin guardar en el cuadro, la copia los perdía sin decirlo. */}
+            <button
+              type="button"
+              className="boton boton--quieto boton--compacto"
+              data-duplicar-fase
+              aria-disabled={cambio || undefined}
+              aria-describedby={cambio ? `${id}-duplicar` : undefined}
+              onClick={() => {
+                if (!cambio) onDuplicar();
+              }}
+            >
               <Icono nombre="duplicar" tamano={18} />
               {T.duplicar}
             </button>
@@ -342,6 +361,11 @@ export function CuadroEditarFase({
                 {T.laUnica}
               </span>
             )}
+            {cambio ? (
+              <span id={`${id}-duplicar`} className="nota" data-duplicar-con-cambios>
+                {T.duplicarConCambios}
+              </span>
+            ) : null}
           </div>
         )
       }
