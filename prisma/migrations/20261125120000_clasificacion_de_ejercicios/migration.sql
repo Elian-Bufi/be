@@ -1,10 +1,13 @@
 -- DL-197 (WP-EDITOR-ENTRENAMIENTO-TANDA-1, ET1-12; docs/paquetes/WP-EDITOR-ENTRENAMIENTO-TANDA-1.md): la clasificación
 -- de los ejercicios, para los filtros de «Agregar ejercicios» (grupo muscular, equipamiento, patrón y articulaciones).
 -- GENERADA por scripts/catalogo-base/generar-clasificacion.mjs desde prisma/datos/catalogo-base/clasificacion-de-ejercicios.csv:
--- no se edita. Migración aditiva: cuatro tipos nuevos y cuatro columnas opcionales; nada de lo anterior se toca.
--- - La siembra va a la versión vigente de cada ejercicio de wger por su ítem externo: la del catálogo base o la de un
---   profesional que lo importó antes. Lo que no está (un ambiente sin el catálogo base) no se toca.
--- - Es la PROPUESTA de BE, a validar por Dirección (ET1-D12): corregirla después es una migración nueva.
+-- no se edita. Migración aditiva: cuatro tipos y una tabla nuevos; nada de lo anterior se toca (el catálogo es
+-- append-only: la clasificación no va en la versión, que no se modifica, sino en su propia historia por adición).
+-- - Cada fila es una clasificación del ejercicio, con su número (1, 2, …); la vigente es la más alta. Corregirla (por
+--   ejemplo, con lo que valide Dirección) es sumar la siguiente, en una migración nueva.
+-- - La siembra va al ejercicio de cada número de wger por su ítem externo: el del catálogo base o el de un profesional
+--   que lo importó antes. Lo que no está (un ambiente sin el catálogo base) no se toca.
+-- - Es la PROPUESTA de BE, a validar por Dirección (ET1-D12).
 
 -- CreateEnum
 CREATE TYPE "GrupoMuscularDeEjercicio" AS ENUM ('CHEST', 'BACK', 'LEGS', 'SHOULDERS', 'ARMS', 'ABS', 'CALVES', 'CARDIO');
@@ -18,18 +21,35 @@ CREATE TYPE "PatronDeMovimiento" AS ENUM ('PUSH', 'PULL', 'SQUAT', 'HINGE', 'LUN
 -- CreateEnum
 CREATE TYPE "ArticulacionesDeEjercicio" AS ENUM ('SINGLE', 'MULTI');
 
--- AlterTable
-ALTER TABLE "version_de_ejercicio" ADD COLUMN     "articulaciones" "ArticulacionesDeEjercicio",
-ADD COLUMN     "equipamiento" "EquipamientoDeEjercicio"[] DEFAULT ARRAY[]::"EquipamientoDeEjercicio"[],
-ADD COLUMN     "grupo_muscular" "GrupoMuscularDeEjercicio",
-ADD COLUMN     "patron" "PatronDeMovimiento";
+-- CreateTable
+CREATE TABLE "clasificacion_de_ejercicio" (
+    "id" UUID NOT NULL DEFAULT gen_random_uuid(),
+    "ejercicio_id" UUID NOT NULL,
+    "numero" INTEGER NOT NULL,
+    "grupo_muscular" "GrupoMuscularDeEjercicio",
+    "equipamiento" "EquipamientoDeEjercicio"[],
+    "patron" "PatronDeMovimiento",
+    "articulaciones" "ArticulacionesDeEjercicio",
+    "procedencia" JSONB NOT NULL,
+    "momento_de_registro" TIMESTAMPTZ(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
 
--- La siembra: 186 ejercicios del catálogo base.
-UPDATE "version_de_ejercicio" v
-   SET "grupo_muscular" = n."grupo"::"GrupoMuscularDeEjercicio",
-       "equipamiento" = n."equipamiento",
-       "patron" = n."patron"::"PatronDeMovimiento",
-       "articulaciones" = n."articulaciones"::"ArticulacionesDeEjercicio"
+    CONSTRAINT "clasificacion_de_ejercicio_pkey" PRIMARY KEY ("id")
+);
+
+-- CreateIndex
+CREATE UNIQUE INDEX "clasificacion_de_ejercicio_ejercicio_id_numero_key" ON "clasificacion_de_ejercicio"("ejercicio_id", "numero");
+
+-- AddForeignKey
+ALTER TABLE "clasificacion_de_ejercicio" ADD CONSTRAINT "clasificacion_de_ejercicio_ejercicio_id_fkey" FOREIGN KEY ("ejercicio_id") REFERENCES "ejercicio_de_catalogo"("id") ON DELETE RESTRICT ON UPDATE RESTRICT;
+
+-- Historia por adición, como el resto del catálogo: ni UPDATE, ni DELETE, ni TRUNCATE.
+CREATE TRIGGER "clasificacion_de_ejercicio_solo_agregar" BEFORE UPDATE OR DELETE ON "clasificacion_de_ejercicio" FOR EACH ROW EXECUTE FUNCTION "be_solo_agregar"();
+CREATE TRIGGER "clasificacion_de_ejercicio_sin_truncate" BEFORE TRUNCATE ON "clasificacion_de_ejercicio" FOR EACH STATEMENT EXECUTE FUNCTION "be_solo_agregar"();
+
+-- La siembra: 186 ejercicios del catálogo base, la primera clasificación de cada uno.
+INSERT INTO "clasificacion_de_ejercicio" ("ejercicio_id", "numero", "grupo_muscular", "equipamiento", "patron", "articulaciones", "procedencia")
+SELECT i."ejercicio_id", 1, n."grupo"::"GrupoMuscularDeEjercicio", n."equipamiento", n."patron"::"PatronDeMovimiento", n."articulaciones"::"ArticulacionesDeEjercicio",
+       jsonb_build_object('fuente', 'migracion', 'siembra', 'WP-EDITOR-ENTRENAMIENTO-TANDA-1 · DL-197 · propuesta de BE, a validar')
   FROM (VALUES
     ('12', 'LEGS', ARRAY['MACHINE']::"EquipamientoDeEjercicio"[], 'OTHER', 'SINGLE'), -- Aducción de cadera en máquina
     ('20', 'SHOULDERS', ARRAY['DUMBBELL']::"EquipamientoDeEjercicio"[], 'PUSH', 'MULTI'), -- Press Arnold
@@ -219,5 +239,5 @@ UPDATE "version_de_ejercicio" v
     ('2480', 'CARDIO', ARRAY['OTHER']::"EquipamientoDeEjercicio"[], 'CARDIO', 'MULTI') -- Natación continua a ritmo suave
   ) AS n("id_externo", "grupo", "equipamiento", "patron", "articulaciones")
   JOIN "item_externo_de_catalogo" i ON i."proveedor" = 'WGER' AND i."id_externo" = n."id_externo"
- WHERE v."ejercicio_id" = i."ejercicio_id"
-   AND NOT EXISTS (SELECT 1 FROM "version_de_ejercicio" s WHERE s."predecesora_id" = v."id");
+ WHERE i."ejercicio_id" IS NOT NULL
+ON CONFLICT DO NOTHING;

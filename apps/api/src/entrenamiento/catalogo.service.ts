@@ -65,8 +65,8 @@ const COLUMNAS = Prisma.sql`e."id"::text AS "ejercicioId", v."id"::text AS "vers
  * clasificación de la versión, que solo se responde si se pidió (`withClassification`).
  */
 const COLUMNAS_DEL_BUSCADOR = Prisma.sql`${COLUMNAS}, ${CORRESPONDENCIA},
-       v."grupo_muscular"::text AS "grupoMuscular", COALESCE(v."equipamiento", ARRAY[]::"EquipamientoDeEjercicio"[])::text[] AS "equipamiento",
-       v."patron"::text AS "patron", v."articulaciones"::text AS "articulaciones"`;
+       (SELECT jsonb_build_object('grupoMuscular', c."grupo_muscular", 'equipamiento', COALESCE(to_jsonb(c."equipamiento"), '[]'::jsonb), 'patron', c."patron", 'articulaciones', c."articulaciones")
+          FROM "clasificacion_de_ejercicio" c WHERE c."ejercicio_id" = e."id" ORDER BY c."numero" DESC LIMIT 1) AS "clasificacion"`;
 
 /** DL-197: las columnas de la clasificación, como las lee el buscador. */
 interface ConClasificacion {
@@ -77,7 +77,8 @@ interface ConClasificacion {
 }
 
 /** DL-197 (ET1-D12): la clasificación de la fila en el contrato; lo que la base no sabe decir, `null` (o sin equipamiento). */
-function clasificacionApi(f: ConClasificacion): ClasificacionDeEjercicio {
+function clasificacionApi(c: ConClasificacion | null): ClasificacionDeEjercicio {
+  const f: ConClasificacion = c ?? { grupoMuscular: null, equipamiento: [], patron: null, articulaciones: null };
   const grupo = GrupoMuscularSchema.safeParse(f.grupoMuscular);
   const patron = PatronDeMovimientoSchema.safeParse(f.patron);
   const articulaciones = ArticulacionesSchema.safeParse(f.articulaciones);
@@ -167,7 +168,7 @@ export class CatalogoDeEjerciciosService {
         matchedAlternativeName: f.nombreAlternativo,
         origin: origenEnElBuscador(f, actor.identidadId),
         // DL-197 (ET1-D12): solo si se pidió: la APK 0.32 busca con esta operación y su esquema estricto no la conoce.
-        ...(conClasificacion ? { classification: clasificacionApi(f as unknown as ConClasificacion) } : {}),
+        ...(conClasificacion ? { classification: clasificacionApi((f as unknown as { clasificacion: ConClasificacion | null }).clasificacion) } : {}),
       })),
       page,
     };
@@ -244,18 +245,23 @@ export class CatalogoDeEjerciciosService {
             ejercicioId: ejercicio.id,
             nombre: pedido.name,
             disponibilidad: 'DISPONIBLE',
-            // DL-197 (ET1-D14): la clasificación de un propio, si se eligió.
-            ...(pedido.classification
-              ? {
-                  grupoMuscular: pedido.classification.muscleGroup,
-                  equipamiento: [...new Set(pedido.classification.equipment)],
-                  patron: pedido.classification.movementPattern,
-                  articulaciones: pedido.classification.joints,
-                }
-              : {}),
             procedencia: { ...procedencia, carga: 'MANUAL' } as unknown as Prisma.InputJsonValue,
           },
         });
+        // DL-197 (ET1-D14): la clasificación de un propio, si se eligió: su primera clasificación.
+        if (pedido.classification) {
+          await tx.clasificacionDeEjercicio.create({
+            data: {
+              ejercicioId: ejercicio.id,
+              numero: 1,
+              grupoMuscular: pedido.classification.muscleGroup,
+              equipamiento: [...new Set(pedido.classification.equipment)],
+              patron: pedido.classification.movementPattern,
+              articulaciones: pedido.classification.joints,
+              procedencia: procedencia as unknown as Prisma.InputJsonValue,
+            },
+          });
+        }
         // Las zonas declaradas al cargarlo son su primera asignación, para esta versión (REG-06-139).
         if (pedido.muscleZones.length > 0) {
           await asignarZonas(tx, { ejercicioId: ejercicio.id, versionDeEjercicioId: version.id, numero: 1, autorId: actor.identidadId, procedencia, zonas: pedido.muscleZones });

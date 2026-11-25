@@ -371,7 +371,10 @@ test('TEST-ET1-03 · la clasificación tiene los 186 ejercicios, con valores con
   for (const e of ejercicios) assert.equal(filas.find((f) => f.wgerId === e.wgerId).grupo, categoria[e.wger.categoria.nombre], e.nombre);
   const sql = readFileSync(new URL(`prisma/migrations/${CARPETA_DE_LA_CLASIFICACION}/migration.sql`, raiz), 'utf8').replace(/\r\n/g, '\n');
   assert.equal(sql, sqlDeLaClasificacion(filas));
-  // Aditiva: ni DROP ni DELETE, y la siembra va a la versión vigente por el ítem externo.
-  assert.doesNotMatch(sql, /\bDROP\b|\bDELETE\b/);
+  // Aditiva: ni DROP ni DELETE FROM, la versión no se toca, y la siembra va al ejercicio por su ítem externo.
+  assert.doesNotMatch(sql, /\bDROP\b|\bDELETE FROM\b|ALTER TABLE "version_de_ejercicio"/);
   assert.match(sql, /JOIN "item_externo_de_catalogo" i ON i."proveedor" = 'WGER'/);
+  // El catálogo es append-only: la clasificación no actualiza la versión, va en su propia historia por adición.
+  assert.doesNotMatch(sql, /\bUPDATE "version_de_ejercicio"/);
+  assert.match(sql, /CREATE TRIGGER "clasificacion_de_ejercicio_solo_agregar"/);
 });

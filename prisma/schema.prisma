@@ -2210,6 +2210,8 @@ model EjercicioDeCatalogo {
   seriesObservadas    SerieObservada[]
   /// PG-16 (DL-173): las notas propias de un profesional atadas a este ejercicio.
   notasPropias        NotaPropia[]
+  /// DL-197 (ET1-D12): la historia de su clasificación; la vigente es la de número más alto.
+  clasificaciones     ClasificacionDeEjercicio[]
 
   @@map("ejercicio_de_catalogo")
 }
@@ -2230,15 +2232,30 @@ model VersionDeEjercicio {
   imagenes    AsociacionDeImagenDeEjercicio[]
   /// DL-081: las zonas declaradas para esta versión (REG-06-139).
   asignacionesDeZonas AsignacionDeZonasDeEjercicio[]
-  /// DL-197 (ET1-D12): la clasificación, para los filtros de «Agregar ejercicios». Todo opcional: los propios pueden no
-  /// tenerla; los 186 del catálogo base la reciben de la siembra (20261125120000), con la propuesta de BE a validar.
-  grupoMuscular       GrupoMuscularDeEjercicio?   @map("grupo_muscular")
-  equipamiento        EquipamientoDeEjercicio[]   @default([])
-  patron              PatronDeMovimiento?
-  articulaciones      ArticulacionesDeEjercicio?
 
   @@index([ejercicioId])
   @@map("version_de_ejercicio")
+}
+
+/// DL-197 (ET1-D12) — La clasificación de un ejercicio, para los filtros de «Agregar ejercicios»: grupo muscular,
+/// equipamiento, patrón y articulaciones, cada dato opcional. Historia por adición, como las zonas (DL-081): cambiarla es
+/// sumar una de número siguiente; la vigente es la más alta. Los 186 del catálogo base la reciben de la siembra
+/// (20261125120000), con la propuesta de BE a validar por Dirección.
+model ClasificacionDeEjercicio {
+  id                String                     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  ejercicioId       String                     @map("ejercicio_id") @db.Uuid
+  numero            Int
+  grupoMuscular     GrupoMuscularDeEjercicio?  @map("grupo_muscular")
+  equipamiento      EquipamientoDeEjercicio[]
+  patron            PatronDeMovimiento?
+  articulaciones    ArticulacionesDeEjercicio?
+  procedencia       Json
+  momentoDeRegistro DateTime                   @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+
+  ejercicio EjercicioDeCatalogo @relation(fields: [ejercicioId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([ejercicioId, numero])
+  @@map("clasificacion_de_ejercicio")
 }
 
 /// DL-197: el grupo muscular de un ejercicio (la categoría de wger).

@@ -2,7 +2,7 @@
  * DL-197 (WP-EDITOR-ENTRENAMIENTO-TANDA-1, ET1-12 y ET1-D12 a ET1-D14) · la clasificación de un ejercicio del catálogo,
  * para los filtros de «Agregar ejercicios»: el grupo muscular (la categoría de wger), el equipamiento, el patrón de
  * movimiento y las articulaciones (mono o multiarticular).
- * - **Los 186 del catálogo base** la traen de la siembra (migración 20261125120000): la categoría y el material de wger y,
+ * - **Los 186 del catálogo base** la traen de la siembra (migración 20261125120000, en su historia por adición): la categoría y el material de wger y,
  *   propuestos por BE con criterio de entrenador, el patrón, las articulaciones y el equipamiento que wger no dice. Esa
  *   propuesta está **a validar por Dirección** (`prisma/datos/catalogo-base/clasificacion-de-ejercicios.csv`).
  * - **Los propios** la aceptan opcional al crearlos (API-INT-TRN-01): sin ella, el ejercicio sigue igual, solo que los filtros
