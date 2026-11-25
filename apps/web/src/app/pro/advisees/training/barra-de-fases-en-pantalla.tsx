@@ -63,7 +63,7 @@ export function BarraDeFases({
             {T.agregar}
           </button>
           {onConfigurar ? (
-            <button type="button" id="configurar-plan" className="boton boton--secundario boton--compacto" data-configurar-plan data-recorrido="editor-entrenamiento-plan" onClick={onConfigurar}>
+            <button type="button" id="configurar-plan" className="boton boton--secundario boton--compacto" data-configurar-plan data-recorrido="esfuerzo" onClick={onConfigurar}>
               <Icono nombre="engranaje" tamano={18} />
               {T.configurar}
             </button>

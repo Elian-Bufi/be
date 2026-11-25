@@ -1663,12 +1663,16 @@ async function notacionDelEsfuerzo({ p, d, salida }) {
   // Lo que se lee del ejercicio: plegado, su renglón («RIR 2», «RPE 8»); abierto, el valor común de la tabla («2», «8»).
   const seLee = (etiqueta, valor) =>
     p.waitForFunction((e, v) => document.body.innerText.includes(`${e} ${v}`) || document.querySelector('[data-rir-general]')?.textContent.trim() === v, { timeout: ESPERA, polling: 200 }, etiqueta, valor);
-  // Nace en RIR: el profesional nunca eligió otra.
-  await elemento(p, '[data-notacion-del-esfuerzo="RIR"]');
-  await hidratado(p, '[data-notacion="RPE"]');
+  // Nace en RIR: el profesional nunca eligió otra. DL-197 (ET1-D10): se elige con la intensidad del plan.
+  await hidratado(p, '[data-configurar-plan]');
   await seLee('RIR', '2');
-  await clic(p, '[data-notacion="RPE"]');
-  await elemento(p, '[data-notacion-del-esfuerzo="RPE"]');
+  await clic(p, '[data-configurar-plan]');
+  await dialogoAbierto(p, 'Configurar plan');
+  await elemento(p, 'dialog[open] [data-intensidad="RIR"][aria-checked="true"]');
+  await clic(p, 'dialog[open] [data-intensidad="RPE"]');
+  await elemento(p, 'dialog[open] [data-intensidad-del-plan="RPE"]');
+  await clic(p, 'dialog[open] [data-principal-del-cuadro]');
+  await dialogoCerrado(p);
   await seLee('RPE', '8');
   await esperarGuardado(p);
   await captura(p, salida, 'notacion-rpe-1440');
@@ -1679,12 +1683,16 @@ async function notacionDelEsfuerzo({ p, d, salida }) {
   assert.deepEqual(plan.blocks[0].sessions[0].prescriptions[0].intensity.target.value, 2, 'el valor guardado sigue siendo el RIR');
   // Al recargar, sigue en RPE.
   await p.reload({ waitUntil: 'networkidle2' });
-  await elemento(p, '[data-notacion-del-esfuerzo="RPE"]');
   await seLee('RPE', '8');
-  // El «?» abre lo largo y las fuentes en su lugar.
-  await clic(p, '.notacion-del-plan .a-pedido__boton');
-  await p.waitForFunction(() => document.querySelector('.notacion-del-plan .a-pedido__texto')?.hidden === false, { timeout: ESPERA, polling: 200 });
-  assert.ok(await p.evaluate(() => document.querySelector('.notacion-del-plan .a-pedido__texto')?.textContent.includes('Zourdos')), 'la fuente está detrás del «?»');
+  // El «?» de «Configurar plan» explica la intensidad con un ejemplo resuelto (RPE = 10 − RIR).
+  await clic(p, '[data-configurar-plan]');
+  await dialogoAbierto(p, 'Configurar plan');
+  await elemento(p, 'dialog[open] [data-intensidad="RPE"][aria-checked="true"]');
+  await clic(p, 'dialog[open] [data-ayuda-del-cuadro] .a-pedido__boton');
+  await p.waitForFunction(() => document.querySelector('dialog[open] [data-ayuda-del-cuadro]')?.textContent.includes('RPE = 10 − RIR') || document.querySelector('dialog[open]')?.textContent.includes('RPE = 10 − RIR'), { timeout: ESPERA, polling: 200 });
+  await p.keyboard.press('Escape');
+  await p.keyboard.press('Escape');
+  await dialogoCerrado(p);
 }
 
 // ─── DL-195 (WP-RECORRIDOS-GUIADOS) · El recorrido guiado del editor de Entrenamiento ──────────────────────────────────
@@ -2000,7 +2008,8 @@ async function sinSaltos({ p, d, salida }) {
   const DE_LA_TABLA = [`${E} [data-fila-general]`, `${E} tr[data-serie]`, `${E} tr[data-serie] input`, `${E} [data-agregar-serie]`, '[data-revisar-y-activar]'];
   const quieta = await fotoDeLugares(p, DE_LA_TABLA);
   assert.equal(await p.$eval(`${E} [data-lo-que-no-se-entiende]`, (e) => e.dataset.renglonDelAviso), 'vacio', 'el renglón del aviso está, vacío');
-  const [cargaComun, descansoComun] = await p.$$(`${E} [data-fila-general] input.celda-de-serie`);
+  const cargaComun = await p.$(`${E} [data-fila-general] input[id$="-carga"]`);
+  const descansoComun = await p.$(`${E} [data-fila-general] input[id$="-descanso"]`);
   // La carga común: «sesenta» no se entiende.
   await reemplazarTexto(p, cargaComun, 'sesenta');
   await p.waitForFunction((s) => document.querySelector(`${s} [data-lo-que-no-se-entiende="1"]`)?.textContent.includes('la carga común'), { timeout: ESPERA, polling: 100 }, E);
@@ -2414,15 +2423,26 @@ async function abrirElEditorDeEntrenamiento(p, d) {
   p.on('dialog', (dialogo) => void dialogo.accept());
   await entrar(p, d.pro.correo);
   await p.goto(`${WEB}/pro/advisees/training?id=${encodeURIComponent(d.ase.id)}&vista=plan`, { waitUntil: 'networkidle2' });
-  await elemento(p, '[data-datos-del-plan]', null, 60_000);
+  await elemento(p, '[data-barra-de-fases]', null, 60_000);
   await hidratado(p, '[data-elegir-fase="1"]');
 }
 
+/** El cuadro abierto, con su título, y el «?» de su esquina, que explica con un ejemplo resuelto (F19). */
+async function cuadroConSuAyuda(p, titulo) {
+  await dialogoAbierto(p, titulo);
+  await clic(p, 'dialog[open] [data-ayuda-del-cuadro] .a-pedido__boton');
+  await p.waitForFunction(() => document.querySelector('dialog[open] [data-ayuda-del-cuadro] [data-ejemplo-resuelto]')?.getBoundingClientRect().width > 0, { timeout: ESPERA, polling: 100 });
+  // Escape cierra la ayuda y no el cuadro.
+  await p.keyboard.press('Escape');
+  await dialogoAbierto(p, titulo);
+}
+
 /**
- * TEST-EE-NAV-01 · dos columnas, como Nutrición (E5, E7): sin la columna izquierda; el plan arriba con su inicio y su
- * duración; la fase con sus semanas y sus días; el almanaque en el panel, con las semanas de la fase y los días de sesión;
- * tocar un día lleva a la sesión. «Antes de activar» al lado de «Revisar y activar». «Copiar la fase anterior» suma «Fase
- * 2» con la sesión. La página no se desplaza más allá del contenido (E1).
+ * TEST-ET1-NAV-01 (DL-197, antes TEST-EE-NAV-01) · la estructura que eligió Dirección: «Fases del plan · fechas» con «Agregar
+ * fase» y «Configurar plan»; la barra de fases (con el teclado); los cuadros «Configurar plan», «Editar fase» y «Días de la
+ * semana» (la matriz, con las flechas), cada uno con su «?»; las sesiones como tarjetas; el almanaque en el panel, con las
+ * semanas de la fase; tocar un día lleva a la sesión; «Duplicar fase» con su progresión; y **con fases de más no se
+ * activa**: el aviso a la vista, lo rayado, «Antes de activar» con sus dos salidas.
  */
 async function editorDeEntrenamiento({ p, d, salida }) {
   await abrirElEditorDeEntrenamiento(p, d);
@@ -2432,18 +2452,43 @@ async function editorDeEntrenamiento({ p, d, salida }) {
   // E1: el editor no tiene un alto fijo: debajo de su contenido no queda una pantalla vacía.
   const sobra = await p.evaluate(() => document.documentElement.scrollHeight - (document.querySelector('.editor-de-entrenamiento__zonas').getBoundingClientRect().bottom + scrollY));
   assert.ok(sobra < 320, `debajo del editor sobran ${sobra} px`);
-  // El inicio del plan, hoy, con el calendario de BE; seis semanas.
-  await clic(p, '[data-inicio-del-plan] [data-campo-de-fecha]');
-  await elemento(p, '[data-calendario] button[data-fecha]');
+  // F6: el panel no se desborda: ni el selector de vistas ni el almanaque piden desplazamiento de costado.
+  assert.ok(await p.$eval('#zona-panel', (e) => e.scrollWidth <= e.clientWidth + 1), 'el panel no se desplaza de costado');
+  await captura(p, salida, 'editor-entrenamiento-barra-de-fases');
+  // «Configurar plan»: el inicio, hoy, con el calendario de BE; seis semanas; la intensidad del plan, RIR.
+  await clic(p, '[data-configurar-plan]');
+  await cuadroConSuAyuda(p, 'Configurar plan');
+  await clic(p, 'dialog[open] [data-inicio-del-plan] [data-campo-de-fecha]');
+  await elemento(p, 'dialog[open] [data-calendario] button[data-fecha]');
   await p.keyboard.press('Enter');
-  await p.waitForFunction(() => document.querySelector('[data-inicio-del-plan] [data-campo-de-fecha]')?.dataset.valor, { timeout: ESPERA, polling: 100 });
-  await reemplazarTexto(p, await p.$('[data-semanas-del-plan]'), '6');
-  // La fase abierta: seis semanas, y la sesión el lunes y el jueves.
-  await reemplazarTexto(p, await p.$('[data-semanas-de-la-fase]'), '6');
-  await p.waitForFunction(() => /\d/.test(document.querySelector('[data-fechas-de-la-fase]')?.textContent ?? ''), { timeout: ESPERA, polling: 100 });
-  await clic(p, '[data-dias-de-la-sesion="1"] [data-dia="MONDAY"]');
-  await clic(p, '[data-dias-de-la-sesion="1"] [data-dia="THURSDAY"]');
-  await p.waitForFunction(() => document.querySelector('[data-dias-de-la-sesion="1"] [data-dia="THURSDAY"]')?.getAttribute('aria-pressed') === 'true', { timeout: ESPERA, polling: 100 });
+  await p.waitForFunction(() => document.querySelector('dialog[open] [data-inicio-del-plan] [data-campo-de-fecha]')?.dataset.valor, { timeout: ESPERA, polling: 100 });
+  await reemplazarTexto(p, await p.$('dialog[open] [data-semanas-del-plan]'), '6');
+  await elemento(p, 'dialog[open] [data-intensidad="RIR"][aria-checked="true"]');
+  await captura(p, salida, 'cuadro-configurar-plan');
+  await clic(p, 'dialog[open] [data-principal-del-cuadro]');
+  await dialogoCerrado(p);
+  // «Editar fase»: seis semanas, con la nota de que se ajustan las siguientes.
+  await clic(p, '[data-editar-fase]');
+  await cuadroConSuAyuda(p, 'Editar fase');
+  await reemplazarTexto(p, await p.$('dialog[open] [data-semanas-de-la-fase]'), '6');
+  assert.match(await p.$eval('dialog[open] [data-nota-de-la-fase]', (e) => e.textContent), /se ajustan las fechas de las fases siguientes/);
+  await captura(p, salida, 'cuadro-editar-fase');
+  await clic(p, 'dialog[open] [data-principal-del-cuadro]');
+  await dialogoCerrado(p);
+  await p.waitForFunction(() => /Semanas 1–6/.test(document.querySelector('[data-tarjeta-de-fase="1"]')?.textContent ?? ''), { timeout: ESPERA, polling: 100 });
+  // «Días de la semana»: la matriz de la fase; la sesión, el lunes y el jueves; las flechas se mueven por la tabla.
+  await clic(p, '[data-abrir-dias-de-la-semana]');
+  await cuadroConSuAyuda(p, 'Días de la semana');
+  await clic(p, 'dialog[open] [data-dias-de-la-sesion="1"] [data-dia="MONDAY"]');
+  await p.keyboard.press('ArrowRight');
+  assert.equal(await p.evaluate(() => document.activeElement?.dataset.dia), 'TUESDAY', 'la flecha pasa al martes');
+  await clic(p, 'dialog[open] [data-dias-de-la-sesion="1"] [data-dia="THURSDAY"]');
+  await elemento(p, 'dialog[open] [data-dias-de-la-sesion="1"] [data-dia="THURSDAY"][aria-pressed="true"]');
+  await captura(p, salida, 'cuadro-dias-de-la-semana');
+  await clic(p, 'dialog[open] [data-principal-del-cuadro]');
+  await dialogoCerrado(p);
+  // Las sesiones como tarjetas, con sus días.
+  await p.waitForFunction(() => /Lun · Jue/.test(document.querySelector('[data-elegir-sesion="1"]')?.textContent ?? ''), { timeout: ESPERA, polling: 100 });
   // El almanaque: las semanas del color de la fase y, si en este mes no queda un lunes ni un jueves, el mes siguiente.
   await elemento(p, '[data-almanaque] .almanaque__semana[data-fase="1"]');
   if ((await p.$$('[data-almanaque] [data-dia-del-almanaque]')).length === 0) await clic(p, '[data-almanaque] [data-mes-siguiente]');
@@ -2452,7 +2497,7 @@ async function editorDeEntrenamiento({ p, d, salida }) {
   assert.match(etiqueta, /Piernas A/, 'el día dice qué sesión es');
   await esperarGuardado(p);
   await captura(p, salida, 'editor-entrenamiento-almanaque-1440');
-  // Tocar un día lleva a la sesión: la elige (la primera no se escribe en la dirección) y deja el foco en su menú.
+  // Tocar un día lleva a la sesión: la elige y deja el foco en su menú.
   await clic(p, '[data-almanaque] [data-dia-del-almanaque]');
   await p.waitForFunction(() => location.search.includes('sesion=') || Boolean(document.activeElement?.closest('#menu-de-la-sesion')), { timeout: ESPERA, polling: 100 });
   // La API guardó la planificación y la agenda empieza con el plan.
@@ -2464,27 +2509,95 @@ async function editorDeEntrenamiento({ p, d, salida }) {
   assert.deepEqual(plan.agenda.sessions[0].weekdays, ['MONDAY', 'THURSDAY']);
   // «Antes de activar», desplegado al lado del botón, con su lista; Escape lo cierra.
   await clic(p, '[data-lo-que-impide-activar]');
-  await elemento(p, '.lo-que-impide-activar__lista:not([hidden]) [data-panel-en-vivo], .lo-que-impide-activar__lista:not([hidden])');
+  await elemento(p, '.lo-que-impide-activar__lista:not([hidden])');
   await captura(p, salida, 'editor-entrenamiento-antes-de-activar');
   await p.keyboard.press('Escape');
   await p.waitForFunction(() => document.querySelector('.lo-que-impide-activar__lista')?.hidden === true, { timeout: ESPERA, polling: 100 });
-  // «Copiar la fase anterior»: «Fase 2», con la misma sesión y sus días.
-  await clic(p, '[data-copiar-la-fase-anterior]');
-  await elemento(p, '[data-fase-del-plan="2"]');
-  // DL-196 parte B (E19): la copia ofrece aplicarle una progresión; se cierra sin aplicar y la copia queda como está.
+  // «Duplicar fase» (en «Editar fase»): «Fase 2» justo después, con la sesión y sus días; ofrece la progresión.
+  await clic(p, '[data-editar-fase]');
+  await dialogoAbierto(p, 'Editar fase');
+  await clic(p, 'dialog[open] [data-duplicar-fase]');
   await dialogoAbierto(p, 'Progresión y descarga');
   await elemento(p, '[data-asistente-de-progresion] [data-desde-la-copia]');
   await captura(p, salida, 'copia-con-progresion');
   await p.keyboard.press('Escape');
   await dialogoCerrado(p);
+  await elemento(p, '[data-tarjeta-de-fase="2"][aria-selected="true"]');
   assert.match(await p.$eval('[data-fase-del-plan="2"] .fase-del-plan__nombre', (e) => e.textContent), /^Fase 2$/);
-  await elemento(p, '[data-fase-del-plan="2"] [data-dias-de-la-sesion="1"] [data-dia="MONDAY"][aria-pressed="true"]');
+  await p.waitForFunction(() => /Lun · Jue/.test(document.querySelector('[data-semana-tipo]')?.textContent ?? ''), { timeout: ESPERA, polling: 100 });
+  // La barra con el teclado: ← vuelve a la fase 1 y la elige.
+  await p.focus('[data-tarjeta-de-fase="2"]');
+  await p.keyboard.press('ArrowLeft');
+  await elemento(p, '[data-tarjeta-de-fase="1"][aria-selected="true"]');
+  assert.equal(await p.evaluate(() => document.activeElement?.dataset.tarjetaDeFase), '1', 'el foco sigue a la fase elegida');
+  // F4: las fases suman 12 semanas y el plan, 6: el aviso a la vista, la fase 2 rayada, y no se activa.
+  await elemento(p, '[data-fases-de-mas="12/6"]');
+  await elemento(p, '[data-tarjeta-de-fase="2"][data-fuera]');
   await esperarGuardado(p);
-  await captura(p, salida, 'editor-entrenamiento-dos-fases');
+  await captura(p, salida, 'fases-de-mas-1440');
+  await clic(p, '[data-resolver-fases-de-mas]');
+  await elemento(p, '.lo-que-impide-activar__lista:not([hidden]) [data-accion-del-impedimento="llevar-el-plan"]');
+  await elemento(p, '.lo-que-impide-activar__lista:not([hidden]) [data-accion-del-impedimento="recortar-la-ultima"]');
+  await captura(p, salida, 'fases-de-mas-antes-de-activar');
+  // La API tampoco la activa.
+  const guardado = (await pedir('GET', `/training/plans/${d.borradorDeEntrenamiento}/detail`, { token })).data;
+  const rechazo = await pedir('POST', `/training/plans/${d.borradorDeEntrenamiento}/activate`, { token, cuerpo: { expectedVersion: guardado.version }, esperado: 422, clave: `et1-${Date.now()}` });
+  assert.ok(JSON.stringify(rechazo).includes('PHASES_EXCEED_PLAN_WEEKS'), 'la API dice por qué no se activa');
+  // «Llevar el plan a 12 semanas»: el aviso se va.
+  await clic(p, '[data-accion-del-impedimento="llevar-el-plan"]');
+  await p.waitForFunction(() => !document.querySelector('[data-fases-de-mas]'), { timeout: ESPERA, polling: 100 });
+  await esperarGuardado(p);
+  assert.equal((await pedir('GET', `/training/plans/${d.borradorDeEntrenamiento}/detail`, { token })).data.planning.weeks, 12);
+  await p.keyboard.press('Escape');
   // A 1920 (la pantalla de Dirección), el contexto de la persona no comprime el editor.
   await p.setViewport({ width: 1920, height: 1080 });
   await pausa(300);
   await captura(p, salida, 'editor-entrenamiento-1920');
+}
+
+/**
+ * TEST-ET1-NAV-02 (DL-197, ET1-09) · «Agregar ejercicios»: un cuadro central que lista todo el catálogo al abrir, los
+ * filtros (grupo muscular, equipamiento, patrón, articulaciones), «Favoritos» con la estrella, la selección múltiple y el pie
+ * «N seleccionados · Cancelar · Agregar a la sesión».
+ */
+async function agregarEjerciciosConFiltros({ p, d, salida }) {
+  await abrirElEditorDeEntrenamiento(p, d);
+  await clic(p, '[data-agregar-ejercicio]');
+  await cuadroConSuAyuda(p, 'Agregar ejercicios');
+  // Al abrir, el catálogo entero: los 186 de BE (y los propios), sin buscar nada.
+  await p.waitForFunction(() => Number(document.querySelector('dialog[open] [data-cuenta-del-catalogo]')?.dataset.cuentaDelCatalogo) >= 186, { timeout: 60_000, polling: 200 });
+  const todos = await p.$eval('dialog[open] [data-cuenta-del-catalogo]', (e) => Number(e.dataset.cuentaDelCatalogo));
+  await captura(p, salida, 'agregar-ejercicios-todo-el-catalogo');
+  // Los filtros: Pecho y Barra; cada renglón dice «Pecho · Barra · …».
+  await p.select('dialog[open] [data-filtro="grupo"] select', 'CHEST');
+  await p.select('dialog[open] [data-filtro="equipamiento"] select', 'BARBELL');
+  await p.waitForFunction((n) => Number(document.querySelector('dialog[open] [data-cuenta-del-catalogo]')?.dataset.cuentaDelCatalogo) < n, { timeout: ESPERA, polling: 100 }, todos);
+  const renglones = await p.$$eval('dialog[open] [data-clasificacion]', (xs) => xs.map((x) => x.textContent));
+  assert.ok(renglones.length > 0 && renglones.every((t) => t.startsWith('Pecho · Barra')), renglones.join(' | '));
+  await p.select('dialog[open] [data-filtro="articulaciones"] select', 'MULTI');
+  await p.select('dialog[open] [data-filtro="patron"] select', 'PUSH');
+  await captura(p, salida, 'agregar-ejercicios-con-filtros');
+  // Dos elegidos: el pie los cuenta.
+  const elegir = await p.$$('dialog[open] [data-marcar-ejercicio]');
+  await elegir[0].click();
+  if (elegir[1]) await elegir[1].click();
+  await p.waitForFunction(() => Number(document.querySelector('dialog[open] [data-seleccionados]')?.dataset.seleccionados) >= 1, { timeout: ESPERA, polling: 100 });
+  // La estrella marca un favorito, y «Favoritos» lo deja solo.
+  await clic(p, 'dialog[open] [data-limpiar-filtros]');
+  await reemplazarTexto(p, await p.$('dialog[open] [data-buscar-en-el-catalogo]'), 'remo');
+  await elemento(p, 'dialog[open] [data-estrella-del-ejercicio]');
+  await clic(p, 'dialog[open] [data-estrella-del-ejercicio][aria-pressed="false"]');
+  await elemento(p, 'dialog[open] [data-estrella-del-ejercicio][aria-pressed="true"]');
+  await reemplazarTexto(p, await p.$('dialog[open] [data-buscar-en-el-catalogo]'), '');
+  await clic(p, 'dialog[open] [data-solo-favoritos]');
+  await p.waitForFunction(() => Number(document.querySelector('dialog[open] [data-cuenta-del-catalogo]')?.dataset.cuentaDelCatalogo) >= 1 && Number(document.querySelector('dialog[open] [data-cuenta-del-catalogo]')?.dataset.cuentaDelCatalogo) < 20, { timeout: ESPERA, polling: 100 });
+  await captura(p, salida, 'agregar-ejercicios-favoritos');
+  // «Agregar a la sesión»: entran, y el cuadro se cierra con el foco de vuelta.
+  const antes = (await p.$$('.ejercicio-del-editor')).length;
+  await clic(p, 'dialog[open] [data-principal-del-cuadro]');
+  await dialogoCerrado(p);
+  await p.waitForFunction((n) => document.querySelectorAll('.ejercicio-del-editor').length > n, { timeout: ESPERA, polling: 100 }, antes);
+  await esperarGuardado(p);
 }
 
 /**
@@ -2496,26 +2609,35 @@ async function aproximacionesPorPorcentaje({ p, d, salida }) {
   await abrirElEditorDeEntrenamiento(p, d);
   await clic(p, '.ejercicio-del-editor [id^="abrir-ejercicio-"]');
   const E = '.ejercicio-del-editor[data-abierta]';
-  await elemento(p, `${E} [data-aproximaciones]`);
-  await hidratado(p, `${E} [data-cuantas-aproximaciones]`);
   // El panel sigue al ejercicio: «La vez pasada» (sin registros todavía).
-  await p.click(`${E} [data-cuantas-aproximaciones]`);
+  await hidratado(p, `${E} [data-fila-general] input[id$="-carga"]`);
+  await p.click(`${E} [data-fila-general] input[id$="-carga"]`);
   await elemento(p, '[data-foco-del-panel="ejercicio"] [data-la-vez-pasada]');
-  await p.select(`${E} [data-cuantas-aproximaciones]`, '3');
-  await p.waitForFunction((s) => document.querySelector(`${s} [data-vista-previa-de-aproximaciones]`)?.textContent.includes('8 × 25 kg'), { timeout: ESPERA, polling: 100 }, E);
-  const previa = await p.$eval(`${E} [data-vista-previa-de-aproximaciones]`, (e) => e.textContent);
+  // DL-197 (F16): «Aproximaciones · 0» abre su cuadro.
+  await clic(p, `${E} [data-abrir-aproximaciones]`);
+  await cuadroConSuAyuda(p, 'Aproximaciones');
+  const A = 'dialog[open]';
+  await p.select(`${A} [data-cuantas-aproximaciones]`, '3');
+  await p.waitForFunction((s) => document.querySelector(`${s} [data-vista-previa-de-aproximaciones]`)?.textContent.includes('8 × 25 kg'), { timeout: ESPERA, polling: 100 }, A);
+  const previa = await p.$eval(`${A} [data-vista-previa-de-aproximaciones]`, (e) => e.textContent);
   assert.match(previa, /5 × 35 kg/);
   assert.match(previa, /3 × 47,5 kg/);
-  assert.match(await p.$eval(`${E} [data-base-de-las-aproximaciones]`, (e) => e.textContent), /60 kg, la carga de trabajo/);
-  // En la tabla, las tres arriba (A1 a A3) y las efectivas debajo.
-  assert.equal((await p.$$(`${E} tr[data-calentamiento]`)).length, 3);
-  assert.equal(await p.$eval(`${E} tr[data-serie="1"] .series-del-editor__numero`, (e) => e.textContent), 'A1');
+  assert.match(await p.$eval(`${A} [data-base-de-las-aproximaciones]`, (e) => e.textContent), /60 kg, la carga de trabajo/);
   await captura(p, salida, 'aproximaciones-por-porcentaje');
   // De a 5: la última, 50 kg.
-  await p.select(`${E} [data-redondeo]`, '5');
-  await p.waitForFunction((s) => document.querySelector(`${s} [data-vista-previa-de-aproximaciones]`)?.textContent.includes('3 × 50 kg'), { timeout: ESPERA, polling: 100 }, E);
+  await p.select(`${A} [data-redondeo]`, '5');
+  await p.waitForFunction((s) => document.querySelector(`${s} [data-vista-previa-de-aproximaciones]`)?.textContent.includes('3 × 50 kg'), { timeout: ESPERA, polling: 100 }, A);
+  await p.keyboard.press('Escape');
+  await dialogoCerrado(p);
+  // En la tabla, las tres arriba (A1 a A3), sin RIR («—», F15) y con su descanso propio; el resumen en el botón.
+  assert.equal((await p.$$(`${E} tr[data-calentamiento]`)).length, 3);
+  assert.equal(await p.$eval(`${E} tr[data-serie="1"] .series-del-editor__numero`, (e) => e.textContent), 'A1');
+  assert.equal((await p.$$(`${E} tr[data-calentamiento] [data-sin-intensidad-en-la-serie]`)).length, 3);
+  assert.match(await p.$eval(`${E} [data-abrir-aproximaciones]`, (e) => e.textContent), /Aproximaciones · 3 · 8 × 25 · 5 × 35 · 3 × 50 kg/);
+  await captura(p, salida, 'aproximaciones-en-la-planilla');
   // La máscara del descanso común: «2» es 02:00 y «130», 01:30.
-  const [cargaComun, descansoComun] = await p.$$(`${E} [data-fila-general] input.celda-de-serie`);
+  const cargaComun = await p.$(`${E} [data-fila-general] input[id$="-carga"]`);
+  const descansoComun = await p.$(`${E} [data-fila-general] input[id$="-descanso"]`);
   await reemplazarTexto(p, descansoComun, '2');
   await p.waitForFunction((e) => e.value === '02:00', { timeout: ESPERA, polling: 100 }, descansoComun);
   await reemplazarTexto(p, descansoComun, '130');
@@ -2528,9 +2650,13 @@ async function aproximacionesPorPorcentaje({ p, d, salida }) {
   await p.waitForFunction((e) => e.value === '62,5', { timeout: ESPERA, polling: 100 }, cargaComun);
   assert.ok(await cargaComun.evaluate((e) => document.activeElement === e), 'el foco sigue en la carga');
   // La carga de trabajo cambió: las aproximaciones ya no coinciden, se dice y «Recalcular» las pone al día.
-  await elemento(p, `${E} [data-aproximaciones-no-coinciden]`);
-  await clic(p, `${E} [data-recalcular-aproximaciones]`);
-  await p.waitForFunction((s) => !document.querySelector(`${s} [data-aproximaciones-no-coinciden]`), { timeout: ESPERA, polling: 100 }, E);
+  await clic(p, `${E} [data-abrir-aproximaciones]`);
+  await dialogoAbierto(p, 'Aproximaciones');
+  await elemento(p, `${A} [data-aproximaciones-no-coinciden]`);
+  await clic(p, `${A} [data-recalcular-aproximaciones]`);
+  await p.waitForFunction((s) => !document.querySelector(`${s} [data-aproximaciones-no-coinciden]`), { timeout: ESPERA, polling: 100 }, A);
+  await p.keyboard.press('Escape');
+  await dialogoCerrado(p);
   await esperarGuardado(p);
   // La API: tres series de aproximación arriba, con su carga redondeada de a 5, y cómo se armaron.
   const token = await sesionPorApi(d.pro.correo);
@@ -2541,6 +2667,11 @@ async function aproximacionesPorPorcentaje({ p, d, salida }) {
   assert.deepEqual(
     conTipos.blocks[0].sessions[0].prescriptions[0].sets.filter((s) => s.setKind === 'WARM_UP').map((s) => s.suggestedLoad?.value),
     [25, 40, 50],
+  );
+  // DL-197 (F15): sin RIR y con su descanso corto propio.
+  assert.ok(
+    conTipos.blocks[0].sessions[0].prescriptions[0].sets.filter((s) => s.setKind === 'WARM_UP').every((s) => s.rir === null && s.restSeconds === 60),
+    'las aproximaciones no heredan el RIR ni el descanso común',
   );
   assert.equal(ejercicio.restSeconds, 90, 'el descanso común se guardó como 01:30');
   assert.deepEqual(plan.planning.warmUps.map((w) => [w.mode, w.step, w.workingLoadShares.join('/')]), [['FROM_WORKING_LOAD', 5, '40/60/80']]);
@@ -2556,7 +2687,11 @@ async function aproximacionesPorPorcentaje({ p, d, salida }) {
  */
 async function progresionYDistribucion({ p, d, salida }) {
   await abrirElEditorDeEntrenamiento(p, d);
-  await reemplazarTexto(p, await p.$('[data-semanas-de-la-fase]'), '6');
+  await clic(p, '[data-editar-fase]');
+  await dialogoAbierto(p, 'Editar fase');
+  await reemplazarTexto(p, await p.$('dialog[open] [data-semanas-de-la-fase]'), '6');
+  await clic(p, 'dialog[open] [data-principal-del-cuadro]');
+  await dialogoCerrado(p);
   // El asistente: lineal de entrada, con la vista previa a la vista.
   await clic(p, '[data-abrir-progresion]');
   await dialogoAbierto(p, 'Progresión y descarga');
@@ -2603,15 +2738,15 @@ async function progresionYDistribucion({ p, d, salida }) {
   await captura(p, salida, 'favoritos-del-plan');
   // El ejercicio: la carga por semana (gráfico X/Y) y la carga para N repeticiones.
   await clic(p, '.ejercicio-del-editor [id^="abrir-ejercicio-"]');
-  await hidratado(p, '.ejercicio-del-editor[data-abierta] [data-cuantas-aproximaciones]');
-  await p.click('.ejercicio-del-editor[data-abierta] [data-cuantas-aproximaciones]');
+  await hidratado(p, '.ejercicio-del-editor[data-abierta] [data-fila-general] input[id$="-carga"]');
+  await p.click('.ejercicio-del-editor[data-abierta] [data-fila-general] input[id$="-carga"]');
   await elemento(p, '[data-foco-del-panel="ejercicio"] [data-carga-para-repeticiones]');
   await elemento(p, '[data-foco-del-panel="ejercicio"] [data-carga-por-semana]');
   await captura(p, salida, 'carga-por-semana-del-ejercicio');
   await esperarGuardado(p);
 }
 
-export const TODOS = { sesion, pistas, borrador, conflicto, descartar, salidaSegura, irACorregir, respuestaPerdida, reintentar, salidaConFallas, primerPlan, planDeNutricionSinAsistente, retorno, grafico, primeraInvitacion, areaSugerida, sesionRevocada, accesoRevocado, faltaUnaParte, completitud, evidencia, administracion, comparacion, comparacionConOpciones, sinSaltos, franjasPorComida, cierreDeNutricion, notacionDelEsfuerzo, recetario, opcionComoReceta, recorridosGuiados, editorDeEntrenamiento, aproximacionesPorPorcentaje, progresionYDistribucion };
+export const TODOS = { sesion, pistas, borrador, conflicto, descartar, salidaSegura, irACorregir, respuestaPerdida, reintentar, salidaConFallas, primerPlan, planDeNutricionSinAsistente, retorno, grafico, primeraInvitacion, areaSugerida, sesionRevocada, accesoRevocado, faltaUnaParte, completitud, evidencia, administracion, comparacion, comparacionConOpciones, sinSaltos, franjasPorComida, cierreDeNutricion, notacionDelEsfuerzo, recetario, opcionComoReceta, recorridosGuiados, editorDeEntrenamiento, aproximacionesPorPorcentaje, progresionYDistribucion, agregarEjerciciosConFiltros };
 
 /** Errores de la página que no dicen nada del website (los del propio navegador). */
 const IGNORABLES = [/ResizeObserver loop/];
