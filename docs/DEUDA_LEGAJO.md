@@ -195,6 +195,7 @@
 | DL-194 | Decisión de Dirección · 2026-11-22 (la app para la APK 0.32; WP-APP-0-32) | DL-170 (AV2-21) · DL-173 (PG-04) · DL-188 (RP-07) · DL-190 · DL-191 · DL-192 · DL-152 · B10-06 | Nutrición · Hoy cambiaba de opción con segmentos y una miniatura de 72 dp; el título grande ocupaba lo primero de Nutrición y Entrenamiento; los macros no tenían los íconos del website; la app no mostraba Kerr con sus nombres probados, no preguntaba en RPE ni pedía imágenes livianas | **PROGRAMADA en `wp-app-0-32` (PR en borrador, sin integrar) · A32-D01 a A32-D15 a ratificar**: el carrusel con imán, flechas, «Opción n de m» y puntitos, sin asomo; la foto grande a todo el ancho; el título fijo en la cabecera; los macros con ícono, número y abreviatura; Kerr con sus nombres; la notación RPE con la capacidad `training-effort-notation-1`, mandando el RIR; las imágenes por variante, tolerantes a una API sin DL-191, y la foto de una comida achicada en el teléfono; el script de congelado corregido. La APK 0.32 no se armó en el paquete. Detalle: `docs/paquetes/WP-APP-0-32.md` |
 | DL-195 | Pedido de Dirección · 2026-11-23 («un tutorial para las primeras veces que se usan las interfaces»; WP-RECORRIDOS-GUIADOS) | DL-146 (ayudas cortas) · DL-145 · DL-167 (ED-15, la barra fija) · DL-188 (RP-19 y RP-24) · B10-10 §7 · RNF-ACC-001 | Los editores de los planes se explicaban en «Cómo se lee esta vista» y en la Guía, pero nada mostraba el flujo zona por zona la primera vez; no había un lugar para recordar, por usuario, una preferencia de la pantalla | **PROGRAMADA en `wp-recorridos-guiados` (PR en borrador, sin integrar) · GUI-D01 a GUI-D12 a ratificar**: una pieza propia del website (sin librería) que oscurece todo menos la zona del paso y pone al lado un cartel con «Paso n de m», «Omitir», «Anterior» y «Siguiente»/«Terminar», modal y manejable con el teclado; los recorridos de los editores de Entrenamiento y de Nutrición, de seis pasos cada uno, anclados con `data-recorrido`; aparece solo la primera vez, recordado por usuario en la API (API-RGU-01 y 02, familia propia RGU, una tabla nueva con su migración que solo agrega), con el navegador como respaldo; «Ver el recorrido» en la barra de cada editor. La APK no se tocó (anotado cómo hacerlo). Detalle: `docs/paquetes/WP-RECORRIDOS-GUIADOS.md` |
 | DL-196 | Recorrido de Dirección · 2026-11-23 (E1 a E20: «la pantalla está muy sobrecargada», «hacerlo como Nutrición»; WP-EDITOR-ENTRENAMIENTO, parte A) | DL-122 · DL-137 · DL-178 · DL-181 · DL-188 (RP-19, RP-22, RP-24) · DL-192 · DL-195 · B10-06 · B10-10 · RNF-ACC-001 | El editor tenía tres columnas con acciones repetidas, sin fechas de inicio y fin ni duración de las fases, con «Antes de activar» como pestaña y trabas por la versión de la app de la persona; el calentamiento era una «C» sin cálculo | **PROGRAMADA en `wp-editor-entrenamiento-a` (PR en borrador, sin integrar) · EE-D01 a EE-D17 a ratificar**: dos columnas como Nutrición; el plan con inicio, duración o fin, objetivo y anotaciones privadas; las fases por semanas en desplegables, con sus días y «Copiar la fase anterior»; el almanaque y el panel contextual; «Antes de activar» al lado del botón; las aproximaciones «Por porcentaje» o «A mano» con redondeo por implemento; la máscara mm:ss y las acciones rápidas; ninguna traba por la versión de la app (quedan solo los recortes de forma de la APK 0.32). La planificación va en el JSON de la versión (sin migración), solo para el profesional. **Parte B PROGRAMADA en `wp-editor-entrenamiento-b` (PR en borrador) · EE-D30 a EE-D43 a ratificar:** progresiones y descargas como regla de la fase con vista previa, copiar + progresión, gráficos X/Y, carga para N repeticiones, la distribución por músculo con la silueta (**desvío de REG-06-139 decidido por Dirección, EE-D34**), frecuencia, equilibrios, estructuras, zonas a cuidar, el catálogo por músculo y los favoritos del plan. Detalle: `docs/paquetes/WP-EDITOR-ENTRENAMIENTO.md` |
+| DL-197 | Recorrido de Dirección · 2026-11-25 (F1 a F25 sobre el editor de DL-196 y la estructura del prototipo que eligió: «Fases del plan» con su barra, cuadros para configurar, las sesiones como tarjetas; WP-EDITOR-ENTRENAMIENTO-TANDA-1) | DL-141 · DL-178 · DL-188 (RP-19) · DL-192 · DL-196 · B10-06 · REG-06-128 · RNF-ACC-001 | La tarjeta del plan descuadrada, el panel que se desbordaba, fases que sumaban más que el plan y se podían activar, aproximaciones que repetían cargas y heredaban el RIR y el descanso común, una planilla con columnas cortadas y demasiados controles a la vista, y un catálogo que no listaba nada hasta buscar ni se podía filtrar | **PROGRAMADA en `wp-editor-entrenamiento-tanda-1` (PR en borrador, sin integrar) · ET1-D01 a ET1-D20 a ratificar:** la barra de fases y los cuadros «Configurar plan», «Editar fase», «Días de la semana», «Agregar ejercicios», «Aproximaciones», «Editar todas las series» y «Más opciones», cada uno con su «?» y un ejemplo resuelto; **con fases de más no se activa** (`PHASES_EXCEED_PLAN_WEEKS`); la intensidad del plan elegida una vez y heredada; aproximaciones que nunca repiten ni llegan a la de trabajo, sin RIR y con su descanso; la clasificación del catálogo (migración aditiva `20261125120000`, **la de los 186 a validar por Elián**); «Catálogo de BE» en «Mis ejercicios»; los ejes desde 0. Detalle: `docs/paquetes/WP-EDITOR-ENTRENAMIENTO-TANDA-1.md` |
 
 ---
 
@@ -9523,3 +9524,54 @@ ejercicio y ½ si es secundario, por cada día en que va la sesión; las aproxim
 **Lo que queda.** Ratificar EE-D30 a EE-D43 (y el desvío de EE-D34); la carga de cada semana en la APK; separar el
 deltoides anterior y posterior si se quiere ese par; la silueta femenina; la pasada de densidad (E5). Detalle:
 `docs/paquetes/WP-EDITOR-ENTRENAMIENTO.md`, parte B.
+
+## DL-197 — Las correcciones del editor de Entrenamiento, tanda 1: la barra de fases, los cuadros, la intensidad del plan y el catálogo con filtros
+
+**Prioridad:** alta («la estética es primordial: altos estándares») · DL-141 · DL-178 · DL-188 · DL-192 · DL-196 · B10-06 ·
+REG-06-128 · RNF-ACC-001 · **Estado:** PEDIDA por Dirección el 2026-11-25 · PROGRAMADA en
+`wp-editor-entrenamiento-tanda-1` (PR en borrador, sin integrar) · ET1-D01 a ET1-D20, **a ratificar**. Si al integrar el
+número choca con otro paquete, se renumera.
+
+**Qué pidió Dirección.** Recorrió el editor de DL-196 y encontró fallas (F1 a F25): la tarjeta del plan descuadrada; las
+fases que no se plegaban; el almanaque sin el color de la fase 1; fases que suman más semanas que el plan (**decidido: no
+se puede activar**); el panel que se desbordaba; la carga para N repeticiones repetida; gráficos que no empezaban en 0; la
+tarjeta del ejercicio con el chevrón corrido; «Unidad de la carga» que rompía el encabezado; bases que parecían datos
+faltantes; avisos que corrían los campos; un % RM sin mínimo; la planilla descentrada con las aproximaciones, que además
+heredaban el RIR y el descanso; demasiados controles a la vista; «de calentamiento» en vez de «aproximaciones»; «?» sin
+ejemplos; el catálogo de BE en «Mis ejercicios»; y filtros del catálogo con datos que no se guardaban. Eligió, de un
+prototipo, «Fases del plan» con una barra horizontal, cuadros para configurar, las sesiones como tarjetas y un «Agregar
+ejercicios» central con todo el catálogo y filtros, y la intensidad del plan elegida una vez. El 25/11 sumó la captura de
+una planilla con 30 kg de trabajo: las aproximaciones salieron 15, 25 y 25.
+
+**Qué dice el legajo.** Nada en contra: la jerarquía del plan, el criterio de intensidad por ejercicio (uno o ninguno,
+REG-06-128) y el RPE como notación del RIR no cambian; las aproximaciones siguen siendo las de DL-178. La clasificación del
+catálogo ordena para buscar y no calcula (09v10:854). No se edita el legajo.
+
+**Lo programado.**
+- **ET1-01 a ET1-05 · La estructura:** «Fases del plan» con la barra (pestañas con el teclado, lo de más rayado), los
+  cuadros «Configurar plan», «Editar fase» (con «Duplicar fase» y «Quitar fase») y «Días de la semana» (la matriz, con el
+  nombre de cada sesión), y las sesiones como tarjetas.
+- **ET1-06 · Fases de más:** no se activa (validar y activar dicen `PHASES_EXCEED_PLAN_WEEKS`); nada se ubica después del
+  fin del plan, tampoco en «Hoy» de la persona; «Antes de activar» con «Llevar el plan a N semanas» y «Recortar la última
+  fase».
+- **ET1-07 · La planilla:** «Común» a la vista y tres cuadros (aproximaciones, todas las series y «Más opciones»); la unidad
+  en un chip; los anchos por columna; las aproximaciones sin RIR, con su descanso, que nunca repiten la carga anterior ni
+  llegan a la de trabajo, con un paso más fino en cargas chicas.
+- **ET1-08 · Los «?»:** definición y ejemplo resuelto; en los cuadros, en la esquina de la cabecera.
+- **ET1-09, ET1-11 y ET1-12 · El catálogo:** «Agregar ejercicios» con todo el catálogo al abrir, los filtros, «Favoritos»
+  y la selección múltiple; «Catálogo de BE» en «Mis ejercicios»; la clasificación en la base (migración aditiva y siembra),
+  con la de los 186 **propuesta por BE y a validar por Elián** (`prisma/datos/catalogo-base/clasificacion-de-ejercicios.csv`).
+- **ET1-10 · La intensidad del plan** (RIR, RPE, % RM o solo carga y repeticiones), heredada por cada ejercicio y con su
+  excepción en «Más opciones», sin cambiar el modelo (`planning.intensity` y `planning.withoutIntensity`).
+- **ET1-13 y ET1-14:** el panel sin desbordes, la carga para N en un renglón si no aplica, los ejes desde 0 (GUIA-UX-UI
+  II.16) y el renglón del profesional con «aproximaciones» y las repeticiones una por una.
+- **La regla de diseño** (GUIA-UX-UI II.16): los cuadros configuran; el panel lateral es para mirar.
+- Pruebas: TEST-ET1-01 a 03 (dominio y catálogo), 10 a 20 (website), TEST-ET1-API-01 a 03 (integración, en la CI) y los
+  recorridos de navegador `editorDeEntrenamiento` y `agregarEjerciciosConFiltros` (más los ajustados).
+
+**La APK publicada.** No cambia: la planificación no le llega; el buscador trae la clasificación solo si se pide, y la
+APK 0.32 no la pide; el renglón de la persona dice lo mismo que antes.
+
+**Lo que queda.** Ratificar ET1-D01 a ET1-D20; validar la clasificación de los 186; mirarlo en pantalla con Dirección;
+la tanda 2 (el 1RM numérico del % RM, editar la clasificación de un propio). Detalle:
+`docs/paquetes/WP-EDITOR-ENTRENAMIENTO-TANDA-1.md`.

@@ -110,13 +110,13 @@ export const RECORRIDO_DEL_EDITOR_DE_ENTRENAMIENTO: DefinicionDelRecorrido = {
       id: 'esfuerzo',
       anclas: ['esfuerzo'],
       titulo: 'La intensidad del plan',
-      texto: 'En «Configurar plan» se elige una vez: RIR, RPE, % RM o solo carga y repeticiones. Cada ejercicio la hereda; uno puede tener otra, en su «Más opciones». RIR y RPE son la misma medida: cambiar de una a otra no cambia ningún número.',
+      texto: 'En «Configurar plan», una vez: RIR, RPE, un porcentaje del 1RM o solo carga y repeticiones. Cada ejercicio la hereda; uno puede tener otra en «Más opciones». RIR y RPE son la misma medida.',
     },
     {
       id: 'catalogo',
       anclas: ['agregar-ejercicio'],
       titulo: 'Agregar ejercicios',
-      texto: 'Abre todo el catálogo: los ejercicios de BE y los tuyos. Buscá por ejercicio, músculo o equipo, o filtrá; «Favoritos» deja tus habituales. Elegí varios y «Agregar a la sesión». Si no está, lo creás a mano.',
+      texto: 'Abre todo el catálogo: los ejercicios de BE y los tuyos. Buscá por ejercicio, músculo o equipo, o filtrá. Elegí varios y «Agregar a la sesión». Si no está, lo creás a mano.',
     },
     {
       id: 'revisar',
