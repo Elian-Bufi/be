@@ -502,6 +502,8 @@ export function EditorDePlan({
   const [fechasAbiertas, setFechasAbiertas] = useState(false);
   // DL-197 (ET1-02 a ET1-04): el cuadro de configuración abierto: el plan, la fase o los días de la semana.
   const [cuadroDelPlan, setCuadroDelPlan] = useState<'plan' | 'fase' | 'dias' | null>(null);
+  // La fase recién agregada: «Editar fase» se abre cuando ya es la elegida, nunca con los datos de la anterior.
+  const [faseQueSeAbre, setFaseQueSeAbre] = useState<number | null>(null);
   const [sucio, setSucio] = useState(false);
   const [guardando, setGuardando] = useState(false);
   // Bloque 3 del encargo de consolidación (2026-10-19): el estado de escritura inequívoco, el conflicto con otra pestaña y
@@ -1461,8 +1463,10 @@ export function EditorDePlan({
     cambiar((x) => (x.push({ blockId: crypto.randomUUID(), label: nombreDeFaseNueva(x), sessions: [] }), x));
     elegirBloque(n);
     setFoco({ tipo: 'fase' });
-    // Nace con un nombre de compromiso y con su campo abierto: lo que se escribe lo reemplaza.
-    setTexto({ de: 'nombre-del-bloque', i: n, j: null, k: null });
+    // DL-197 (ET1-03): nace con un nombre de compromiso y se abre «Editar fase» para cambiarlo (y sus semanas), en cuanto
+    // la fase nueva es la elegida (la dirección cambia en el dibujo siguiente).
+    setFaseQueSeAbre(n);
+    setCuadroDelPlan('fase');
   };
   /** DL-196 (EE-02, E19): la fase anterior, copiada al final, con sus semanas, sus aproximaciones y los días de sus sesiones. */
   const duplicarLaFase = (desde: number) => {
@@ -3726,7 +3730,8 @@ export function EditorDePlan({
       )}
       {bloque ? (
         <CuadroEditarFase
-          abierto={cuadroDelPlan === 'fase'}
+          key={bloque.blockId ?? `fase-${i}`}
+          abierto={cuadroDelPlan === 'fase' && (faseQueSeAbre === null || faseQueSeAbre === i)}
           sobretitulo={persona}
           enLaPlantilla={!!plantilla}
           fase={{ nombre: bloque.label, semanas: semanasDeLaFase(plan, bloque.blockId), objetivo: bloque.purpose ?? null, anotaciones: anotacionesDeLaFase(plan, bloque.blockId) }}
@@ -3737,6 +3742,7 @@ export function EditorDePlan({
           })()}
           sePuedeQuitar={bloques.length > 1}
           onGuardar={(e) => {
+            setFaseQueSeAbre(null);
             cambiar((x) => ((x[i]!.label = e.nombre), (x[i]!.purpose = e.objetivo), x));
             if (!plantilla) conIdDeLaFase((id) => cambiarPlanificacion(conAnotacionesDeLaFase(conSemanasDeLaFase(plan, id, e.semanas), id, e.anotaciones)));
             setCuadroDelPlan(null);
@@ -3749,7 +3755,10 @@ export function EditorDePlan({
             setCuadroDelPlan(null);
             quitarBloque();
           }}
-          onCerrar={() => setCuadroDelPlan(null)}
+          onCerrar={() => {
+            setCuadroDelPlan(null);
+            setFaseQueSeAbre(null);
+          }}
         />
       ) : null}
       {bloque && !plantilla ? (
