@@ -199,6 +199,7 @@
 | DL-198 | Decisiones de Dirección · 2026-11-25 (el 1RM con tres orígenes y la calibración del día cero; lo que la tanda 1 dejó para la tanda 2; WP-EDITOR-ENTRENAMIENTO-TANDA-2) | DL-171 · DL-192 · DL-196 · DL-197 · DL-152 · DL-108 · DL-182 · B10-06 · REG-06-128 · RNF-ACC-001 | El % RM sin un 1RM numérico, la persona que veía siempre la carga de la semana 1, ninguna forma de ver el plan como le llega, el esfuerzo de la sesión afuera (RPE-D09), plantillas que perdían la planificación, la clasificación de un propio que no se podía cambiar y desplegables desparejos | **PROGRAMADA en `wp-editor-entrenamiento-tanda-2` (sale de #324; PR en borrador, sin integrar) · ET2-D01 a ET2-D17 a ratificar:** el 1RM de referencia (`BE-E1RM` v2) con la calibración, el último registro en rango y lo declarado, el más reciente y el aviso si se aleja más del 10 % (API-RMX-01 y 02); el % RM con su base; la carga de cada semana en las lecturas del titular, en los mismos campos; «Ver como la persona»; el esfuerzo de la sesión (Foster, API-ESF-01 y 02); las plantillas con su planificación; la clasificación de un propio (API-EJE-06); migraciones aditivas `20261125125900` y `20261125130000`. Detalle: `docs/paquetes/WP-EDITOR-ENTRENAMIENTO-TANDA-2.md` |
 | DL-199 | Encargo de Dirección · 2026-11-25 (la prueba completa del editor de Entrenamiento; WP-EDITOR-ENTRENAMIENTO-TANDA-3) | DL-191 · DL-196 · DL-197 · DL-198 · DL-178 · DL-152 · DL-155 · B10-06 · REG-06-128 · RNF-ACC-001 | Sin planes completos de BE para empezar, ninguna sugerencia desde lo que hizo la persona, el cardio cargado como series × repeticiones × kg, sin reordenar arrastrando ni «Deshacer», lo BAJA de las tandas 1 y 2 y un editor sobrecargado (E5) | **PROGRAMADA en `wp-editor-entrenamiento-tanda-3` (PR en borrador, sin integrar) · ET3-D01 a ET3-D39 a ratificar:** las Plantillas de BE (cuatro, propuesta a validar por Elián) con las cargas en % RM resueltas con el 1RM de la persona (API-TPB-01 a 04, Administración las ofrece o las retira; migración aditiva `20261126120000`); la sugerencia «+2,5 kg la próxima» con su motivo; el cardio con duración, distancia e intensidad en los parámetros de siempre; reordenar arrastrando o con el teclado y «Deshacer» (Ctrl+Z); lo BAJA; la pasada de densidad. Detalle: `docs/paquetes/WP-EDITOR-ENTRENAMIENTO-TANDA-3.md` |
 | DL-200 | Pedido de Dirección · 2026-11-25 («hay que tildar casilleros para tener más de un resultado… no es práctico»; WP-ANTROPOMETRIA-RESULTADOS) | DL-111 · DL-112 · DL-190 · REG-06-156/157/158 · REG-06-203/204/205 · RF-048 · RF-049 · TEST-PRJ-009 | Cada resultado era una corrida aparte, elegida en una lista y calculada de a una; «Qué vas a calcular» se tildaba por métrica; la densidad no se veía; las masas, el fraccionamiento y lo retirado por DL-112 no estaban; Kerr iba aparte; los resultados no decían su cambio; doce acciones subrayadas | **PROGRAMADA en `wp-antropometria-resultados` (PR en borrador, sin integrar) · AR-D01 a AR-D16 a ratificar**: la cadena de derivaciones del dominio (lo medido, la ecuación, la conversión con Siri y Brožek, las masas y el fraccionamiento en cuatro componentes con Rocha y Würch) para 20 métodos, con las mismas reglas publicadas; la toma con el resumen arriba y cada método en su desplegable, cada valor con su origen, su «?» con la cuenta y lo que le falta, y su cambio desde la anterior; «Qué vas a calcular» por método; guardar en la historia al registrar y desde la toma. Sin API ni migración; la APK 0.32 no cambia. Detalle: `docs/paquetes/WP-ANTROPOMETRIA-RESULTADOS.md` |
+| DL-203 | Decisiones y pedido de Dirección · 2026-11-26 (sacar los microciclos; arreglar la galería de presets; «reutilizar patrones en cada nivel y adaptarlos después»; WP-PRESETS-POR-NIVEL) | DL-109 · DL-167 (ED-11, ED-13) · DL-192 · DL-196 · DL-198 (ET2-D05, ET2-D18) · DL-199 · ED-D2 · B10-06 · 09v10:281-283 | Los microciclos se armaban desde cero, semana por semana; los presets de BE decían «RIR 2» en un plan en RPE o en % RM; «Elegí un preset» repetido y el «?» sin ejemplo; solo se reutilizaban un plan entero y unas series, no una fase ni una sesión | **PROGRAMADA en `entrenamiento/presets-por-nivel` (PR en borrador sobre #329, sin integrar) · PN-D01 a PN-D17 a ratificar**: sin microciclos nuevos (los viejos se leen y se editan); los presets de BE en la intensidad del plan o del ejercicio, con la carga del 1RM en % RM; los presets de fase y de sesión del profesional, sin cargas ni notas, con una sola galería por niveles (Plan, Fase, Sesión, Series) y un solo «Deshacer». API-HAB-06 a 08 con `kind`, sin migración. Detalle: `docs/paquetes/WP-PRESETS-POR-NIVEL.md` |
 
 ---
 
@@ -9697,3 +9698,42 @@ No se edita el legajo.
 fraccionamiento con otra grasa); decidir si la densidad y las masas de cada ecuación se publican como métodos para que
 entren en «Evolución» y «Composición corporal»; mirarlo en pantalla con Dirección. Detalle:
 `docs/paquetes/WP-ANTROPOMETRIA-RESULTADOS.md`.
+
+---
+
+## DL-203 — Los presets en todos los niveles: plan, fase, sesión y series; sin microciclos nuevos
+
+**Prioridad:** alta (Dirección, 2026-11-26: «poder reutilizar patrones en cada nivel y adaptarlos después») · DL-109 ·
+DL-167 (ED-11, ED-13) · DL-192 · DL-196 · DL-197 · DL-198 (ET2-D05, ET2-D18) · DL-199 · ED-D2 · B10-06 · 09v10:281-283 ·
+**Estado:** PEDIDA por Dirección el 2026-11-26 · PROGRAMADA en `entrenamiento/presets-por-nivel` (desde
+`ux/zoom-escritorio`, #329, sin integrar); PR en borrador, sin integrar · PN-D01 a PN-D17, **a ratificar** salvo lo que
+fijó Dirección (sacar los microciclos, el nombre «Presets» y los % de Hipertrofia, Fuerza y Resistencia). Si al integrar
+el número choca con otro paquete, se renumera.
+
+**Qué pidió Dirección.** Tres cosas del mismo día: sacar del editor la organización por microciclos, porque las fases de N
+semanas con su semana tipo, la progresión, la descarga y «Duplicar la fase» la cubren; arreglar la galería de presets de
+prescripción (decían «RIR 2» en cualquier plan, «Elegí un preset para ver qué trae» aparecía dos veces y el «?» no tenía
+ejemplo); y poder guardar y reutilizar una fase y una sesión enteras, con una sola galería por niveles.
+
+**Qué dice el legajo.** Nada en contra. El microciclo es opcional (09v10:281-283, B10-06:275-281): dejar de crearlo no
+cambia el contrato y los planes que lo tienen se siguen leyendo. Los presets propios siguen las reglas de DL-109 y DL-167:
+solo los ve su profesional, sin cargas ni notas (ED-D2, A05), nombre único con reemplazo explícito. BE sigue sin elegir
+ejercicios (ED-D2): no hay presets de BE de fase ni de sesión. No se edita el legajo.
+
+**Lo programado.**
+- **Parte 1 · Sin microciclos nuevos:** fuera «Organizar por microciclos» y «Agregar microciclo»; un plan viejo se elige,
+  se renombra, se quita y se edita por semana; quitar la última semana deja la fase con sus sesiones.
+- **Parte 2 · La galería de series:** los presets de BE en la intensidad del plan o del ejercicio (RIR; RPE = 10 − RIR;
+  % RM con Hipertrofia 70, Fuerza 85, Resistencia 60 y Técnica 50, a ratificar; sin esfuerzo), con la carga del 1RM y el
+  redondeo del plan; `VERSION_DE_LOS_PRESETS_DE_BE` = 3; un solo «Elegí un preset»; el «?» con un ejemplo resuelto.
+- **Parte 3 · Presets por nivel:** «Guardar como preset» en el «⋯» de la fase y de la sesión; la galería con las pestañas
+  Plan, Fase, Sesión y Series, cada una con «De BE» y «Tuyos», abierta en la del lugar; aplicar con «antes → después» si
+  pisa algo y un solo «Deshacer». API-HAB-06 a 08 con `kind` (`SERIES`, `SESION`, `FASE`), sin migración (el nivel va en
+  el JSON guardado), con el límite de 700 KB en API-HAB-07 y la validación como parte de un plan.
+- Pruebas: dominio (`presets-por-nivel.test.ts`, `prescripcion-rapida.test.ts`), web (`presets-por-nivel.test.mjs`,
+  `editores.test.mjs`) y API (`limite-de-cuerpo.spec.ts`).
+
+**Lo que queda.** Ratificar PN-D01 a PN-D17 (sobre todo PN-D04, el % de Técnica; PN-D09, el nombre único entre niveles;
+PN-D10, que las indicaciones y el objetivo de la fase viajen; PN-D14, unificar las sesiones habituales); la prueba de
+integración de los tres niveles contra PostgreSQL; renombrar y quitar estos presets desde «Plantillas y habituales»;
+mirarlo en pantalla con Dirección. Detalle: `docs/paquetes/WP-PRESETS-POR-NIVEL.md`.

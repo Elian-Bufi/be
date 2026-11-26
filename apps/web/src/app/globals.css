@@ -19558,6 +19558,14 @@ p.cifra-del-espacio__desglose {
   margin: 0;
 }
 
+/* DL-203 · lo que trae un preset de sesión o de fase, en la vista previa: un renglón por sesión o por ejercicio. */
+.galeria__lista-del-preset {
+  display: grid;
+  gap: 0.2rem;
+  margin: 0.4rem 0;
+  padding-inline-start: 1.1rem;
+}
+
 /* ═══ ED-14 y ED-20 · El asistente (`asistente/asistente.tsx`): los siete pasos a la vista, una decisión por paso y una
    sola acción principal abajo. Es una vista de la página (EDT-11): la página se desplaza, no las zonas. */
 .estacion[data-en-el-asistente] {

@@ -6,8 +6,17 @@
  * son de cada persona y de cada ejercicio; las notas pueden nombrarla), y lo dice antes. Un nombre en uso se reemplaza
  * solo si el profesional lo elige, con la versión que leyó (`replaces` y `expectedVersion`).
  */
-import { nombreNormalizadoDePlantilla, prescripcionHabitualDe, type EstructuraDePlanDeEntrenamientoEntrada, type GuardarPrescripcionHabitualRequest, type PrescripcionHabitual } from '@be/domain';
-import { useCallback, useEffect, useId, useRef, useState } from 'react';
+import {
+  nombreNormalizadoDePlantilla,
+  prescripcionHabitualDe,
+  type EstructuraDePlanDeEntrenamientoEntrada,
+  type GuardarPrescripcionHabitualRequest,
+  type PrescripcionHabitual,
+  type PresetDeFasePropio,
+  type PresetDeSesionPropio,
+  type PresetPropioDeEntrenamiento,
+} from '@be/domain';
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from 'react';
 import { DialogoDeConfirmacion } from '../../../../components/dialogo';
 import { Aviso, Campo } from '../../../../components/formulario';
 import { api } from '../../../../lib/api';
@@ -27,7 +36,7 @@ export const COPY_PRESCRIPCION_HABITUAL = {
   guardar: 'Guardar la prescripción',
   reemplazar: 'Reemplazar la que se llama así',
   seReemplaza: (nombre: string) => `Ya tenés una prescripción habitual llamada «${nombre}»: se reemplaza por esta.`,
-  nombreTomado: 'Ya tenés una prescripción habitual con ese nombre. Elegí otro nombre o reemplazala.',
+  nombreTomado: 'Ya tenés un preset con ese nombre. Elegí otro nombre o reemplazalo.',
   sinSeries: 'Este ejercicio todavía no tiene series.',
   cancelar: 'Cancelar',
   guardada: (nombre: string) => `Se guardó «${nombre}» en tus presets de prescripción.`,
@@ -35,21 +44,28 @@ export const COPY_PRESCRIPCION_HABITUAL = {
 
 const mismoNombre = (a: string, b: string): boolean => nombreNormalizadoDePlantilla(a) === nombreNormalizadoDePlantilla(b);
 
-/** API-HAB-06: las propias y activas, hasta 200. Sin permiso (403), la lista queda vacía y no es una falla. */
+/**
+ * API-HAB-06: los presets propios y activos, hasta 200. Sin permiso (403), la lista queda vacía y no es una falla. DL-203:
+ * vienen los tres niveles juntos; `lista` son los de series (las prescripciones habituales de siempre), `sesiones` y
+ * `fases` los otros dos, y `todos` sirve para ver si un nombre ya está tomado (es único entre los tres, PN-D09).
+ */
 export function usePrescripcionesHabituales(token: string) {
-  const [estado, setEstado] = useState<{ readonly lista: readonly PrescripcionHabitual[]; readonly lectura: 'cargando' | 'lista' | 'falla' }>({ lista: [], lectura: 'cargando' });
+  const [estado, setEstado] = useState<{ readonly todos: readonly PresetPropioDeEntrenamiento[]; readonly lectura: 'cargando' | 'lista' | 'falla' }>({ todos: [], lectura: 'cargando' });
   const generacion = useRef(0);
   const recargar = useCallback(async () => {
     const esta = ++generacion.current;
     const r = await api.listarPrescripcionesHabituales(token);
     if (esta !== generacion.current) return;
-    if (r.ok) setEstado({ lista: r.datos.data, lectura: 'lista' });
-    else setEstado((e) => ({ lista: e.lista, lectura: r.tipo === 'API' && r.status === 403 ? 'lista' : 'falla' }));
+    if (r.ok) setEstado({ todos: r.datos.data, lectura: 'lista' });
+    else setEstado((e) => ({ todos: e.todos, lectura: r.tipo === 'API' && r.status === 403 ? 'lista' : 'falla' }));
   }, [token]);
   useEffect(() => {
     void recargar();
   }, [recargar]);
-  return { ...estado, recargar };
+  const lista = useMemo(() => estado.todos.filter((p): p is PrescripcionHabitual => p.kind === 'SERIES'), [estado.todos]);
+  const sesiones = useMemo(() => estado.todos.filter((p): p is PresetDeSesionPropio => p.kind === 'SESION'), [estado.todos]);
+  const fases = useMemo(() => estado.todos.filter((p): p is PresetDeFasePropio => p.kind === 'FASE'), [estado.todos]);
+  return { ...estado, lista, sesiones, fases, recargar };
 }
 
 export function DialogoGuardarPrescripcionHabitual({
@@ -102,12 +118,13 @@ export function DialogoGuardarPrescripcionHabitual({
       const lista = await api.listarPrescripcionesHabituales(token);
       const encontrada = lista.ok ? lista.datos.data.find((h) => mismoNombre(h.name, nombre)) : undefined;
       setEnviando(false);
-      if (encontrada) return setConflicto(encontrada);
+      // DL-203: el nombre es único entre los presets de los tres niveles; uno de sesión o de fase no se reemplaza desde acá.
+      if (encontrada?.kind === 'SERIES') return setConflicto(encontrada);
       return setError(C.nombreTomado);
     }
     setEnviando(false);
     if (!r.ok) return setError(mensajeDeFallo(r));
-    onGuardada(r.datos.data);
+    if (r.datos.data.kind === 'SERIES') onGuardada(r.datos.data);
   }
 
   return (

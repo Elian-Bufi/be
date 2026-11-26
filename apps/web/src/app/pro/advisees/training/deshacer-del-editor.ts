@@ -79,6 +79,8 @@ export const COPY_DESHACER = {
   quitasteLaSemana: (nombre: string) => `Quitaste «${nombre}».`,
   pasasteALaIntensidad: (cuantos: number) => (cuantos === 1 ? 'Pasaste 1 ejercicio a la intensidad del plan.' : `Pasaste ${cuantos} ejercicios a la intensidad del plan.`),
   aplicasteLaProgresion: (fase: string) => `Aplicaste la progresión en «${fase}».`,
+  // DL-203: aplicar un preset de sesión o de fase es un cambio grande, con su «Deshacer».
+  aplicasteElPreset: (nombre: string) => `Aplicaste el preset «${nombre}».`,
   deshecho: (grande: string | null) => (grande ? `Se deshizo: ${grande.charAt(0).toLowerCase()}${grande.slice(1)}` : 'Se deshizo el último cambio.'),
   nadaParaDeshacer: 'No hay cambios para deshacer.',
   ayudaDelAtajo: 'Ctrl+Z deshace el último cambio (fuera de un campo de texto).',

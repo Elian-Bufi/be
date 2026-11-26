@@ -60,8 +60,8 @@ export const AYUDAS_DEL_EDITOR = {
   presets: {
     nombre: 'Qué es un preset',
     definicion:
-      'Un preset es algo armado que se reutiliza y se ajusta después. Los de BE son un punto de partida, sin ejercicios ni cargas; los tuyos son los que guardaste. Los de series se leen en la intensidad del plan, o en la del ejercicio si tiene otra.',
-    pasos: ['Tocá un preset para ver qué trae, al costado.', '«Usar» lo aplica. Si pisa algo, primero muestra qué cambia; Ctrl+Z lo deshace.'],
+      'Un preset es algo armado que se reutiliza y se ajusta después: un plan entero (una plantilla), una fase, una sesión o unas series. Los de BE son un punto de partida, sin ejercicios ni cargas; los tuyos son los que guardaste con «Guardar como preset», sin cargas ni notas. Los de series se leen en la intensidad del plan, o en la del ejercicio si tiene otra.',
+    pasos: ['Elegí la pestaña: plan, fase, sesión o series.', 'Tocá un preset para ver qué trae, al costado.', '«Usar» lo aplica. Si pisa algo, primero muestra qué cambia; Ctrl+Z lo deshace.'],
     ejemplo:
       'Ejemplo: «Hipertrofia» en un plan en RPE escribe 4 × 8-12 con RPE 8 y 90 s de descanso. En un plan en % RM escribe 70 % RM: con un 1RM de 100 kg y el redondeo de 2,5, la carga queda en 70 kg.',
   },
