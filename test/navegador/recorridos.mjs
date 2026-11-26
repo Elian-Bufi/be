@@ -1684,12 +1684,12 @@ async function notacionDelEsfuerzo({ p, d, salida }) {
   // Al recargar, sigue en RPE.
   await p.reload({ waitUntil: 'networkidle2' });
   await seLee('RPE', '8');
-  // El «?» de «Configurar plan» explica la intensidad con un ejemplo resuelto (RPE = 10 − RIR).
+  // «Configurar plan» explica la intensidad con un ejemplo resuelto (RPE 8 = 2 en reserva).
   await clic(p, '[data-configurar-plan]');
   await dialogoAbierto(p, 'Configurar plan');
   await elemento(p, 'dialog[open] [data-intensidad="RPE"][aria-checked="true"]');
   await clic(p, 'dialog[open] [data-ayuda-del-cuadro] .a-pedido__boton');
-  await p.waitForFunction(() => document.querySelector('dialog[open] [data-ayuda-del-cuadro]')?.textContent.includes('RPE = 10 − RIR') || document.querySelector('dialog[open]')?.textContent.includes('RPE = 10 − RIR'), { timeout: ESPERA, polling: 200 });
+  await p.waitForFunction(() => document.querySelector('dialog[open] [data-ayuda-del-cuadro]')?.textContent.includes('RPE 8 = 2 en reserva') || document.querySelector('dialog[open]')?.textContent.includes('RPE 8 = 2 en reserva'), { timeout: ESPERA, polling: 200 });
   await p.keyboard.press('Escape');
   await p.keyboard.press('Escape');
   await dialogoCerrado(p);
@@ -2005,6 +2005,11 @@ async function sinSaltos({ p, d, salida }) {
   await p.evaluate(() => document.querySelector('.series-del-editor')?.scrollIntoView({ block: 'center' }));
   await pausa(300);
   const E = '.ejercicio-del-editor[data-abierta]';
+  // El ejercicio nace sin RIR: el renglón dice que falta el objetivo de intensidad (tanda 4). Con el RIR del «Común», vacío.
+  await p.waitForFunction((s) => document.querySelector(`${s} [data-lo-que-no-se-entiende]`)?.textContent.includes('Falta el objetivo de intensidad'), { timeout: ESPERA, polling: 100 }, E);
+  await reemplazarTexto(p, await p.$(`${E} [id$="-objetivo-comun"]`), '2');
+  await p.waitForFunction((s) => document.querySelector(`${s} [data-lo-que-no-se-entiende]`)?.dataset.renglonDelAviso === 'vacio', { timeout: ESPERA, polling: 100 }, E);
+  await esperarGuardado(p);
   const DE_LA_TABLA = [`${E} [data-fila-general]`, `${E} tr[data-serie]`, `${E} tr[data-serie] input`, `${E} [data-agregar-serie]`, '[data-revisar-y-activar]'];
   const quieta = await fotoDeLugares(p, DE_LA_TABLA);
   assert.equal(await p.$eval(`${E} [data-lo-que-no-se-entiende]`, (e) => e.dataset.renglonDelAviso), 'vacio', 'el renglón del aviso está, vacío');
@@ -2847,9 +2852,9 @@ export const TODOS = { sesion, pistas, borrador, conflicto, descartar, salidaSeg
 
 /**
  * TEST-ET2-NAV-01 (DL-198, WP-EDITOR-ENTRENAMIENTO-TANDA-2) · el 1RM de referencia en un ejercicio en % RM: la calibración
- * con su cuenta en vivo (30 kg × 8 a RIR 1 = 39 kg), el renglón con su origen y la base («70 % de 39 kg = 27 kg»), «Poner
- * las cargas»; «Ver como la persona» con la carga de esa semana; y «Pedir el esfuerzo de la sesión al terminar» en
- * «Configurar plan», que la vista de la persona muestra. Lo guardado, por la API.
+ * con su cuenta en vivo (30 kg × 8 a RIR 1 = 39 kg), el renglón con su origen y la base («70 % de 39 kg = 27,5 kg», con el
+ * redondeo de 2,5 kg por omisión), las cargas que se recalculan solas con el 1RM nuevo (ET2-D18); y «Pedir el esfuerzo de
+ * la sesión al terminar» en «Configurar plan». Lo guardado, por la API.
  */
 async function editorTanda2({ p, d, salida }) {
   await abrirElEditorDeEntrenamiento(p, d);
@@ -2876,13 +2881,12 @@ async function editorTanda2({ p, d, salida }) {
   await captura(p, salida, 'uno-rm-calibracion');
   await clic(p, 'dialog[open] [data-principal-del-cuadro]');
   await dialogoCerrado(p);
-  // El renglón: el 1RM con su origen y la base del % RM; «Poner las cargas» escribe 27 kg en la común.
+  // El renglón: el 1RM con su origen y la base del % RM; con el 1RM nuevo, la carga común se recalcula sola: 27,5 kg.
   await elemento(p, `${E} [data-uno-rm-origen="CALIBRATION"]`);
   assert.match(await p.$eval(`${E} [data-uno-rm-vigente]`, (e) => e.textContent), /1RM 39 kg · calculado en la calibración del/);
-  assert.match(await p.$eval(`${E} [data-base-del-porcentaje-texto]`, (e) => e.textContent), /70 % de 39 kg = 27 kg/);
-  await captura(p, salida, 'uno-rm-en-el-ejercicio');
-  await clic(p, `${E} [data-poner-las-cargas]`);
   await p.waitForFunction((s) => document.querySelector(`${s} [data-base-del-porcentaje]`)?.textContent.includes('Las cargas salen de este 1RM'), { timeout: ESPERA, polling: 100 }, E);
+  assert.match(await p.$eval(`${E} [data-base-del-porcentaje-texto]`, (e) => e.textContent), /70 % de 39 kg = 27,5 kg/);
+  await captura(p, salida, 'uno-rm-en-el-ejercicio');
   await esperarGuardado(p);
   // «Configurar plan»: pedir el esfuerzo de la sesión al terminar.
   await clic(p, '[data-configurar-plan]');
@@ -2892,22 +2896,13 @@ async function editorTanda2({ p, d, salida }) {
   await clic(p, 'dialog[open] [data-principal-del-cuadro]');
   await dialogoCerrado(p);
   await esperarGuardado(p);
-  // «Ver como la persona»: la sesión con la carga de 27 kg y, al terminar, la pregunta del esfuerzo.
-  await clic(p, '[data-ver-como-la-persona]');
-  await cuadroConSuAyuda(p, 'Así le llega a la app');
-  await elemento(p, 'dialog[open] [data-vista-ejercicio="1"]');
-  assert.match(await p.$eval('dialog[open] [data-vista-ejercicio="1"]', (e) => e.textContent), /27 kg/);
-  await elemento(p, 'dialog[open] [data-vista-esfuerzo]');
-  await captura(p, salida, 'ver-como-la-persona');
-  await p.keyboard.press('Escape');
-  await dialogoCerrado(p);
   // La API: la opción del plan, la carga y el 1RM guardado con su origen.
   const token = await sesionPorApi(d.pro.correo);
   const plan = (await pedir('GET', `/training/plans/${d.borradorDeEntrenamiento}/detail`, { token })).data;
   assert.equal(plan.planning.askSessionEffort, true);
   const ejercicio = plan.blocks[0].sessions[0].prescriptions[0];
   assert.equal(ejercicio.intensity.criterion, 'PERCENT_RM');
-  assert.deepEqual(ejercicio.suggestedLoad, { value: 27, unit: 'kg' });
+  assert.deepEqual(ejercicio.suggestedLoad, { value: 27.5, unit: 'kg' });
   const unoRM = (await pedir('GET', `/advisees/${d.ase.id}/training/one-rep-max?exerciseIds=${ejercicio.exerciseId}`, { token })).data[0];
   assert.equal(unoRM.current.origin, 'CALIBRATION');
   assert.deepEqual(unoRM.current.value, { value: 39, unit: 'kg' });
@@ -3045,15 +3040,8 @@ async function editorTanda3Cardio({ p, d, salida }) {
   // Plegado: el renglón del cardio.
   await clic(p, `${E2} [id^="abrir-ejercicio-"]`);
   await elemento(p, `${E2} [data-resumen]`, '30 min · 12 km · zona 2');
-  // «Ver como la persona». Con la página bajada, el botón queda debajo de la barra fija del editor: el clic de puppeteer
-  // no lo trae a la vista (lo ve «visible») y caía en la barra. Se lo centra antes, como haría la persona al subir.
-  await p.evaluate(() => document.querySelector('[data-ver-como-la-persona]')?.scrollIntoView({ block: 'center' }));
-  await clic(p, '[data-ver-como-la-persona]');
-  await dialogoAbierto(p, 'Así le llega a la app');
-  await elemento(p, 'dialog[open] [data-vista-cardio]', '30 min · 12 km · zona 2');
-  await captura(p, salida, 'cardio-ver-como-la-persona');
-  await p.keyboard.press('Escape');
-  await dialogoCerrado(p);
+  // «Ver como la persona» está apagado por ahora (MOSTRAR_VISTA_DE_LA_PERSONA = false): ni el botón se ofrece.
+  assert.equal(await p.$('[data-ver-como-la-persona]'), null, '«Ver como la persona» no se ofrece');
   // La API: la carga aplicada y el cardio en los parámetros de BE, con una serie sin repeticiones.
   const token = await sesionPorApi(d.pro.correo);
   const plan = (await pedir('GET', `/training/plans/${d.borradorDeEntrenamiento}/detail`, { token })).data;
