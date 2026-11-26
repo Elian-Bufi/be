@@ -35,7 +35,10 @@ test('TEST-ET3-31 · las de BE se leen la primera vez que se eligen, con su fall
   assert.match(DIALOGO, /COPY_PLANTILLAS_DE_BE\.propuesta/);
   assert.match(DIALOGO, /confirmarDeshabilitado=\{enBe \? !laDeBe : !elegida\}/);
   // La vista tiene un alto reservado y la lista no se corre al elegir (RP-19).
-  assert.match(CSS, /\.plantilla-de-be__vista \{[^}]*min-block-size: 18rem;/);
+  // Un alto fijo: con un mínimo y un tope, elegir agrandaba el diálogo (centrado) y la lista subía.
+  const vista = CSS.slice(CSS.indexOf('.plantilla-de-be__vista {'), CSS.indexOf('}', CSS.indexOf('.plantilla-de-be__vista {')));
+  assert.match(vista, /\n\s*block-size: min\(60vh, 34rem\);/);
+  assert.doesNotMatch(vista, /min-block-size|max-block-size/);
 });
 
 test('TEST-ET3-32 · aplicarla usa API-TPB-02 con la versión que se vio, y el aviso dice lo resuelto, lo que falta y lo que no entró', () => {

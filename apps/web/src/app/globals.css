@@ -9493,10 +9493,11 @@ button.comida-del-dia__fila > .icono:last-child {
   line-height: 1.4;
 }
 
+/* RP-19: un alto fijo, no un mínimo y un tope. Con un mínimo, elegir una plantilla agrandaba el diálogo (centrado) y la
+   lista subía 52 px; con el alto fijo, lo largo se desplaza adentro y nada se corre. */
 .plantilla-de-be__vista {
   grid-area: vista;
-  min-block-size: 18rem;
-  max-block-size: min(60vh, 34rem);
+  block-size: min(60vh, 34rem);
   overflow-y: auto;
   padding: 0.75rem 0.9rem;
   border: 1px solid var(--borde);
@@ -18079,8 +18080,11 @@ p.cifra-del-espacio__desglose {
   width: auto;
 }
 
+/* RP-19: el renglón reservado mide lo mismo que el texto del motivo (con el interlineado heredado, el texto medía 3,6 px
+   más que la reserva y corría lo de abajo). */
 .cardio-del-ejercicio__motivo {
-  min-height: 1.3em;
+  min-height: 1.4em;
+  line-height: 1.4;
   margin: 0;
   color: var(--error);
   font-size: 0.9rem;

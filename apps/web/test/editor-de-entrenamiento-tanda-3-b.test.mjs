@@ -63,7 +63,7 @@ test('TEST-ET3-43 · los campos del cardio: lo que no se entiende no se guarda, 
   assert.match(CARDIO, /<ExplicacionAPedido nombre="Cómo se planifica un ejercicio de cardio" como="div" lugar="esquina">/);
   assert.match(CARDIO, /<p>Ejemplo: ciclismo, 30 min, 12 km, zona 2\./);
   const bloque = CSS.slice(CSS.indexOf('.cardio-del-ejercicio__motivo {'));
-  assert.match(bloque.slice(0, 200), /min-height: 1\.3em/);
+  assert.match(bloque.slice(0, 200), /min-height: 1\.4em;\n\s*line-height: 1\.4;/);
   assert.match(CSS, /\.cardio-del-ejercicio__campos \{\n\s*display: grid;\n\s*grid-template-columns: repeat\(4, minmax\(9rem, 1fr\)\);/);
 });
 
