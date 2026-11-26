@@ -2750,7 +2750,7 @@ async function progresionYDistribucion({ p, d, salida }) {
   await esperarGuardado(p);
 }
 
-export const TODOS = { sesion, pistas, borrador, conflicto, descartar, salidaSegura, irACorregir, respuestaPerdida, reintentar, salidaConFallas, primerPlan, planDeNutricionSinAsistente, retorno, grafico, primeraInvitacion, areaSugerida, sesionRevocada, accesoRevocado, faltaUnaParte, completitud, evidencia, administracion, comparacion, comparacionConOpciones, sinSaltos, franjasPorComida, cierreDeNutricion, notacionDelEsfuerzo, recetario, opcionComoReceta, recorridosGuiados, editorDeEntrenamiento, aproximacionesPorPorcentaje, progresionYDistribucion, agregarEjerciciosConFiltros, editorTanda2 };
+export const TODOS = { sesion, pistas, borrador, conflicto, descartar, salidaSegura, irACorregir, respuestaPerdida, reintentar, salidaConFallas, primerPlan, planDeNutricionSinAsistente, retorno, grafico, primeraInvitacion, areaSugerida, sesionRevocada, accesoRevocado, faltaUnaParte, completitud, evidencia, administracion, comparacion, comparacionConOpciones, sinSaltos, franjasPorComida, cierreDeNutricion, notacionDelEsfuerzo, recetario, opcionComoReceta, recorridosGuiados, editorDeEntrenamiento, aproximacionesPorPorcentaje, progresionYDistribucion, agregarEjerciciosConFiltros, editorTanda2, editorTanda3Reordenar };
 
 /**
  * TEST-ET2-NAV-01 (DL-198, WP-EDITOR-ENTRENAMIENTO-TANDA-2) · el 1RM de referencia en un ejercicio en % RM: la calibración
@@ -2822,6 +2822,92 @@ async function editorTanda2({ p, d, salida }) {
   await p.emulateMediaFeatures([{ name: 'prefers-color-scheme', value: 'dark' }]);
   await pausa(300);
   await captura(p, salida, 'uno-rm-en-el-ejercicio-oscuro');
+}
+
+/**
+ * TEST-ET3-NAV-02 (DL-199, WP-EDITOR-ENTRENAMIENTO-TANDA-3) · reordenar y deshacer: con tres ejercicios en la sesión, el
+ * primero baja con Alt+↓ desde su asa (el foco lo acompaña y el lector oye dónde quedó); el último se arrastra arriba de
+ * todo; Ctrl+Z deshace el arrastre; quitar un ejercicio ofrece «Deshacer» y lo devuelve. Lo guardado, por la API.
+ */
+async function editorTanda3Reordenar({ p, d, salida }) {
+  await abrirElEditorDeEntrenamiento(p, d);
+  // Dos ejercicios más, desde «Agregar ejercicios».
+  await clic(p, '[data-agregar-ejercicio]');
+  await cuadroConSuAyuda(p, 'Agregar ejercicios');
+  await p.waitForFunction(() => Number(document.querySelector('dialog[open] [data-cuenta-del-catalogo]')?.dataset.cuentaDelCatalogo) >= 186, { timeout: 60_000, polling: 200 });
+  const marcar = await p.$$('dialog[open] [data-marcar-ejercicio]');
+  await marcar[0].click();
+  await marcar[1].click();
+  await clic(p, 'dialog[open] [data-principal-del-cuadro]');
+  await dialogoCerrado(p);
+  await p.waitForFunction(() => document.querySelectorAll('.ejercicio-del-editor').length === 3, { timeout: ESPERA, polling: 100 });
+  await esperarGuardado(p);
+  const nombres = () => p.$$eval('.ejercicio-del-editor .comida-del-plan__nombre', (xs) => xs.map((x) => x.textContent));
+  const [a, b, c] = await nombres();
+  // El asa está siempre, en cada ejercicio, con su nombre para el lector.
+  assert.equal((await p.$$('.ejercicio-del-editor [data-asa-de-arrastre]')).length, 3);
+  await captura(p, salida, 'reordenar-las-asas');
+  // Con el teclado: Alt+↓ desde el asa del primero.
+  await p.focus('.ejercicio-del-editor[data-ejercicio="1"] [data-asa-de-arrastre]');
+  await p.keyboard.down('Alt');
+  await p.keyboard.press('ArrowDown');
+  await p.keyboard.up('Alt');
+  await p.waitForFunction((x) => document.querySelectorAll('.ejercicio-del-editor .comida-del-plan__nombre')[1]?.textContent === x, { timeout: ESPERA, polling: 100 }, a);
+  assert.deepEqual(await nombres(), [b, a, c]);
+  assert.match(await p.$eval('[data-anuncio-del-reordenar]', (e) => e.textContent), /quedó en el lugar 2 de 3/);
+  await p.waitForFunction(() => document.activeElement?.matches('.ejercicio-del-editor[data-ejercicio="2"] [data-asa-de-arrastre]'), { timeout: ESPERA, polling: 100 });
+  // Arrastrar: el último, arriba de todo (se suelta en la mitad de arriba del primero).
+  await p.evaluate(
+    () =>
+      new Promise((listo) => {
+        const dt = new DataTransfer();
+        const asa = document.querySelector('.ejercicio-del-editor[data-ejercicio="3"] [data-asa-de-arrastre]');
+        const destino = document.querySelector('.ejercicio-del-editor[data-ejercicio="1"]');
+        const r = destino.getBoundingClientRect();
+        const en = { bubbles: true, cancelable: true, dataTransfer: dt, clientX: r.left + 40, clientY: r.top + 4 };
+        asa.dispatchEvent(new DragEvent('dragstart', en));
+        requestAnimationFrame(() => {
+          destino.dispatchEvent(new DragEvent('dragover', en));
+          requestAnimationFrame(() => {
+            destino.dispatchEvent(new DragEvent('drop', en));
+            asa.dispatchEvent(new DragEvent('dragend', en));
+            listo();
+          });
+        });
+      }),
+  );
+  await p.waitForFunction((x) => document.querySelector('.ejercicio-del-editor .comida-del-plan__nombre')?.textContent === x, { timeout: ESPERA, polling: 100 }, c);
+  assert.deepEqual(await nombres(), [c, b, a]);
+  await captura(p, salida, 'reordenar-arrastrado');
+  // Ctrl+Z, fuera de los campos: vuelve el orden de antes del arrastre.
+  await p.evaluate(() => document.activeElement?.blur());
+  await p.keyboard.down('Control');
+  await p.keyboard.press('KeyZ');
+  await p.keyboard.up('Control');
+  await p.waitForFunction((x) => document.querySelector('.ejercicio-del-editor .comida-del-plan__nombre')?.textContent === x, { timeout: ESPERA, polling: 100 }, b);
+  assert.deepEqual(await nombres(), [b, a, c]);
+  await esperarGuardado(p);
+  // Quitar un ejercicio (desde su «Más») ofrece «Deshacer», flotante, que lo devuelve.
+  await clic(p, '.ejercicio-del-editor[data-ejercicio="3"] [id^="abrir-ejercicio-"]');
+  await p.evaluate(() => [...document.querySelectorAll('.ejercicio-del-editor[data-ejercicio="3"] .menu-de-acciones__boton')].find((x) => x.textContent.includes('Más'))?.click());
+  await p.waitForFunction(() => [...document.querySelectorAll('.ejercicio-del-editor[data-ejercicio="3"] .menu-de-acciones__accion')].some((x) => x.textContent.startsWith('Quitar ')), { timeout: ESPERA, polling: 100 });
+  await p.evaluate(() => [...document.querySelectorAll('.ejercicio-del-editor[data-ejercicio="3"] .menu-de-acciones__accion')].find((x) => x.textContent.startsWith('Quitar '))?.click());
+  await p.waitForFunction(() => document.querySelectorAll('.ejercicio-del-editor').length === 2, { timeout: ESPERA, polling: 100 });
+  await elemento(p, '[data-deshacer-el-ultimo-boton]');
+  assert.ok((await p.$eval('[data-deshacer-el-ultimo]', (e) => e.textContent)).includes(`Quitaste «${c}»`));
+  await captura(p, salida, 'deshacer-tras-quitar');
+  await clic(p, '[data-deshacer-el-ultimo-boton]');
+  await p.waitForFunction(() => document.querySelectorAll('.ejercicio-del-editor').length === 3, { timeout: ESPERA, polling: 100 });
+  assert.deepEqual(await nombres(), [b, a, c]);
+  await esperarGuardado(p);
+  // La API: el orden que quedó.
+  const token = await sesionPorApi(d.pro.correo);
+  const plan = (await pedir('GET', `/training/plans/${d.borradorDeEntrenamiento}/detail`, { token })).data;
+  assert.deepEqual(plan.blocks[0].sessions[0].prescriptions.map((x) => x.exerciseName), [b, a, c]);
+  // En el tema Azul noche, las asas.
+  await p.emulateMediaFeatures([{ name: 'prefers-color-scheme', value: 'dark' }]);
+  await pausa(300);
+  await captura(p, salida, 'reordenar-las-asas-oscuro');
 }
 
 /** Errores de la página que no dicen nada del website (los del propio navegador). */

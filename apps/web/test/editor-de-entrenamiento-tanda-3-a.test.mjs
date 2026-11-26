@@ -42,6 +42,11 @@ test('TEST-ET3-20 · la pila de «Deshacer»: apila lo de antes, junta lo escrit
   assert.equal(r.grande, 'Quitaste «Sentadilla».');
   assert.equal(r.pila.length, 2);
   assert.equal(D.desapilar([]), null);
+  // Mover un ejercicio va aparte: dos movimientos seguidos se deshacen de a uno.
+  let mov = D.apilar([], 'x', 0, null, true);
+  mov = D.apilar(mov, 'y', 100, null, true);
+  assert.deepEqual(mov.map((i) => i.estado), ['x', 'y']);
+  assert.equal(D.apilar(mov, 'z', 200).length, 3);
   // A lo sumo 20: se van los más viejos.
   let larga = [];
   for (let n = 0; n < 30; n += 1) larga = D.apilar(larga, n, n * 2000);
@@ -64,7 +69,8 @@ test('TEST-ET3-21 · Ctrl+Z (o Cmd+Z) deshace fuera de un campo de texto; en un 
   assert.equal(D.esCampoDeTexto(null), false);
   // En el editor: la pila se captura en los tres lugares que cambian lo que se edita, se vacía al cargar y el atajo no
   // actúa en un campo ni en un cuadro abierto.
-  assert.match(EDITOR, /const cambiar = \(f: \(b: Bloques\) => Bloques, grande: string \| null = null\) => \{\n\s*recordar\(grande\);/);
+  assert.match(EDITOR, /const cambiar = \(f: \(b: Bloques\) => Bloques, grande: string \| null = null, aparte = false\) => \{\n\s*recordar\(grande, aparte\);/);
+  assert.match(EDITOR, /cambiar\(\(x\) => \(\(lasSesiones\(x\)\[k\] = r\.sesion\), x\), null, true\);/);
   assert.match(EDITOR, /const cambiarAgenda = \(a: AgendaDeEntrenamiento \| null\) => \{\n\s*recordar\(\);/);
   assert.match(EDITOR, /const cambiarPlanificacion = \(p: PlanificacionDelPlan, grande: string \| null = null\) => \{\n\s*recordar\(grande\);/);
   assert.equal(EDITOR.match(/pilaDeDeshacer\.current = \[\];/g)?.length, 2);

@@ -81,6 +81,8 @@ export const RECORRIDOS = {
   agregarEjerciciosConFiltros: { habilitado: ['ENTRENAMIENTO'], datos: ['borrador-de-entrenamiento-sin-saltos'] },
   // DL-198 (WP-EDITOR-ENTRENAMIENTO-TANDA-2): el 1RM de referencia, «Ver como la persona» y el esfuerzo de la sesión.
   editorTanda2: { habilitado: ['ENTRENAMIENTO'], datos: ['borrador-de-entrenamiento-sin-saltos'] },
+  // DL-199 (WP-EDITOR-ENTRENAMIENTO-TANDA-3): reordenar arrastrando o con el teclado, y «Deshacer».
+  editorTanda3Reordenar: { habilitado: ['ENTRENAMIENTO'], datos: ['borrador-de-entrenamiento-sin-saltos'] },
   // RP-20 y RP-21 (DL-188): un borrador con el almuerzo en dos opciones y su rango indicado, para las franjas por comida.
   franjasPorComida: { habilitado: ['NUTRICION'], datos: ['franjas'] },
   // RP-24 (DL-188): el mismo borrador, para el «?» en la esquina, «Rangos indicados» y las acciones sin subrayado.

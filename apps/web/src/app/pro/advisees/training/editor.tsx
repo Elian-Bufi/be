@@ -693,12 +693,12 @@ export function EditorDePlan({
   });
 
   /** DL-199 (ET3-20): apila cómo estaba antes de un cambio; uno grande muestra «Deshacer» unos segundos. */
-  const recordar = (grande: string | null = null) => {
-    pilaDeDeshacer.current = apilar(pilaDeDeshacer.current, { bloques, planificacion, agenda }, Date.now(), grande);
+  const recordar = (grande: string | null = null, aparte = false) => {
+    pilaDeDeshacer.current = apilar(pilaDeDeshacer.current, { bloques, planificacion, agenda }, Date.now(), grande, aparte);
     if (grande) setAvisoDeDeshacer({ texto: grande, vez: Date.now() });
   };
-  const cambiar = (f: (b: Bloques) => Bloques, grande: string | null = null) => {
-    recordar(grande);
+  const cambiar = (f: (b: Bloques) => Bloques, grande: string | null = null, aparte = false) => {
+    recordar(grande, aparte);
     setBloques((b) => f(structuredClone(b)));
     setDeshacer(null);
     setDeshacerLaSesion(null);
@@ -1748,7 +1748,8 @@ export function EditorDePlan({
   };
   /** DL-181: escribe la sesión que dejó una operación de bloques y hace que lo abierto acompañe a cada ejercicio. */
   const aplicarReordenada = (r: SesionReordenada) => {
-    cambiar((x) => ((lasSesiones(x)[k] = r.sesion), x));
+    // DL-199 (ET3-D20): cada movimiento se deshace solo, aunque vengan seguidos.
+    cambiar((x) => ((lasSesiones(x)[k] = r.sesion), x), null, true);
     dejarAbiertos(abiertosTrasReordenar(abiertos, r.desdeDonde));
     // Revisión del tramo 2: lo escrito sin aplicar en uno sin identificador también acompaña a su ejercicio.
     setLineas((m) => lineasTrasReordenar(m, `${prefijo}-s${k}`, r.desdeDonde));

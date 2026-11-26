@@ -22,19 +22,22 @@ export interface Instantanea<T> {
   readonly momento: number;
   /** El texto del cambio grande («Quitaste «Sentadilla»»), o `null` en un cambio común. */
   readonly grande: string | null;
+  /** Un cambio que no se junta con otros (ni se le juntan): mover un ejercicio. */
+  readonly aparte?: boolean;
 }
 
 /**
  * La pila con lo de antes de un cambio. `antes` es el estado previo al cambio. Un cambio común muy seguido del anterior
- * (común también) no apila: se junta con él.
+ * (común también) no apila: se junta con él. `aparte` (mover un ejercicio, por ejemplo) se apila siempre solo, aunque sea
+ * seguido: cada paso se deshace de a uno.
  */
-export function apilar<T>(pila: readonly Instantanea<T>[], antes: T, ahora: number, grande: string | null = null, maximo = MAXIMO_DE_LA_PILA): Instantanea<T>[] {
+export function apilar<T>(pila: readonly Instantanea<T>[], antes: T, ahora: number, grande: string | null = null, aparte = false, maximo = MAXIMO_DE_LA_PILA): Instantanea<T>[] {
   const ultima = pila[pila.length - 1];
-  if (!grande && ultima && !ultima.grande && ahora - ultima.momento < JUNTAR_MS) {
+  if (!grande && !aparte && ultima && !ultima.grande && !ultima.aparte && ahora - ultima.momento < JUNTAR_MS) {
     // Se junta: se conserva la instantánea de antes del primer cambio de la tanda, con el reloj al día.
     return [...pila.slice(0, -1), { ...ultima, momento: ahora }];
   }
-  const nueva = [...pila, { estado: antes, momento: ahora, grande }];
+  const nueva = [...pila, { estado: antes, momento: ahora, grande, ...(aparte ? { aparte } : {}) }];
   return nueva.length > maximo ? nueva.slice(nueva.length - maximo) : nueva;
 }
 
