@@ -46,13 +46,14 @@ import {
   type ResultadoDelMetodo,
   type SexoDeLaCadena,
 } from '@be/domain';
-import { useId, useMemo, useState } from 'react';
+import { useId, useMemo, useRef, useState } from 'react';
 import { conNumerosPegados } from '../../../../components/en-partes';
 import { ExplicacionAPedido } from '../../../../components/explicacion-a-pedido';
 import { Aviso } from '../../../../components/formulario';
 import { Icono } from '../../../../components/icono';
 import { dia } from '../../../../lib/formato';
-import { useClaveDeIntento } from '../../../../lib/intento';
+import { nuevaClaveDeIdempotencia } from '../../../../lib/api';
+import { ClavesPorPedido } from '../../../../lib/clave-de-intento';
 import { useAntropometria } from './antropometria';
 import { guardarEnLaHistoria, metodosParaGuardar } from './guardar-en-la-historia';
 import { Marca } from './marca';
@@ -103,6 +104,13 @@ export function ResultadosPorMetodo({
   const vigentes = useMemo(() => corridas.filter((c) => c.evaluationId === toma.evaluationId && corridaVigente(c)), [corridas, toma.evaluationId]);
   const sexoGuardado = useMemo(() => sexoDeLasCorridas(vigentes, metodos), [vigentes, metodos]);
   const sexo: SexoDeLaCadena = sexoPedido ?? sexoGuardado ?? 'HOMBRE';
+  // Sin elegir, se lee con las de hombres (AR-D07), pero lo que tiene ecuación por sexo no se guarda hasta que se elija.
+  const sexoElegido = sexoPedido !== null || sexoGuardado !== null;
+  // Una clave por pedido para toda la toma: Rocha y Würch están en el fraccionamiento de varios métodos, y guardar desde uno
+  // y después desde otro (o reintentar tras una respuesta incierta) no calcula dos veces. Mientras uno guarda, los demás esperan.
+  const refDeClaves = useRef<ClavesPorPedido | null>(null);
+  const claves = (refDeClaves.current ??= new ClavesPorPedido(nuevaClaveDeIdempotencia));
+  const [guardandoEn, setGuardandoEn] = useState<string | null>(null);
   const { valores } = useMemo(() => valoresParaLaCadena(toma.measurements), [toma.measurements]);
   const deAntes = useMemo(() => (anterior ? valoresParaLaCadena(anterior.measurements).valores : null), [anterior]);
 
@@ -195,6 +203,10 @@ export function ResultadosPorMetodo({
             cambio={(p) => cambioDesdeAntes(r.programa.clave, p)}
             onAbrir={onAbrir}
             onGuardado={onGuardado}
+            claves={claves}
+            sexoElegido={sexoElegido}
+            guardandoEn={guardandoEn}
+            onGuardando={setGuardandoEn}
           />
         ))}
       </div>
@@ -276,6 +288,10 @@ function MetodoDeLaToma({
   cambio,
   onAbrir,
   onGuardado,
+  claves,
+  sexoElegido,
+  guardandoEn,
+  onGuardando,
 }: {
   resultado: ResultadoDelMetodo;
   abierto: boolean;
@@ -286,23 +302,30 @@ function MetodoDeLaToma({
   cambio: (p: PasoDeLaCadena) => string | null;
   onAbrir: (corridaId: string) => void;
   onGuardado: (texto: string) => Promise<void>;
+  /** Las claves de idempotencia de la toma, compartidas por todos los métodos. */
+  claves: ClavesPorPedido;
+  /** Si las ecuaciones por sexo se eligieron (en la dirección o por lo guardado). */
+  sexoElegido: boolean;
+  /** El método que está guardando, si alguno: mientras tanto, los demás esperan. */
+  guardandoEn: string | null;
+  onGuardando: (clave: string | null) => void;
 }) {
   const { token, asesoradoId, sesionPerdida, accesoRetirado } = useAntropometria();
-  const intento = useClaveDeIntento();
-  const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { programa } = resultado;
   const pasos = pasosDelResultado(resultado);
   const primero = resultado.resumen[0] ?? null;
   const enLaHistoria = pasos.some((p) => corridaDe(p));
-  const paraGuardar = metodosParaGuardar([resultado], toma, metodos, corridas);
+  const paraGuardar = metodosParaGuardar([resultado], toma, metodos, corridas, { claves, sexoElegido });
+  const esperanElSexo = !sexoElegido && metodosParaGuardar([resultado], toma, metodos, corridas, { claves }).length > paraGuardar.length;
+  const guardando = guardandoEn === programa.clave;
   const faltanEnTotal = [...new Set(pasos.flatMap((p) => p.faltan))].length;
 
   async function guardar() {
     setError(null);
-    setGuardando(true);
-    const r = await guardarEnLaHistoria({ token, asesoradoId, toma, metodos: paraGuardar, intento, corta: (res) => sesionPerdida(res) || accesoRetirado(res) });
-    setGuardando(false);
+    onGuardando(programa.clave);
+    const r = await guardarEnLaHistoria({ token, asesoradoId, toma, metodos: paraGuardar, claves, corta: (res) => sesionPerdida(res) || accesoRetirado(res) });
+    onGuardando(null);
     if (r.tipo === 'cortado') return;
     if (r.fallidos.length > 0) setError(`No se pudo guardar: ${r.fallidos.join(', ')}. Lo demás quedó como estaba; probá de nuevo en un momento.`);
     if (r.guardados > 0) await onGuardado(r.guardados === 1 ? `Se guardó 1 resultado de ${programa.nombre} en la historia.` : `Se guardaron ${r.guardados} resultados de ${programa.nombre} en la historia.`);
@@ -346,12 +369,13 @@ function MetodoDeLaToma({
               {paraGuardar.length === 1 ? 'Un resultado de este método tiene' : `${paraGuardar.length} resultados de este método tienen`} su método en el catálogo: guardado en la historia, entra en la evolución y en la app de la persona. Lo
               demás se calcula en el momento, desde lo medido.
             </p>
-            <button type="button" className="boton boton--secundario boton--compacto" onClick={() => void guardar()} disabled={guardando}>
+            <button type="button" className="boton boton--secundario boton--compacto" onClick={() => void guardar()} disabled={guardandoEn !== null}>
               <Icono nombre="guardar" tamano={18} />
               {guardando ? 'Guardando…' : 'Guardar en la historia'}
             </button>
           </div>
         ) : null}
+        {esperanElSexo ? <p className="nota">Para guardar en la historia lo que tiene una ecuación por sexo, elegí arriba las ecuaciones de la persona.</p> : null}
       </div>
     </details>
   );

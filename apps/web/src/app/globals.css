@@ -8158,6 +8158,14 @@ button.comida-del-dia__fila > .icono:last-child {
   margin-top: 0.1rem;
 }
 
+/* El «?» abierto de un paso flota a la izquierda de su botón, desde su propio renglón, y no debajo: ya no empieza tapando
+   el renglón de abajo, y nunca tapa la columna de los «?», que siguen a un toque. Sigue sin ocupar lugar: abrirlo no corre
+   nada (RP-19). */
+.paso-de-la-cadena > .a-pedido--esquina > .a-pedido__texto:not([hidden]) {
+  top: 0;
+  right: calc(100% + 0.35rem);
+}
+
 .metodo-de-la-toma__pie {
   display: flex;
   flex-wrap: wrap;

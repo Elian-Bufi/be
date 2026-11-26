@@ -10,6 +10,8 @@ import { readFileSync } from 'node:fs';
 import test from 'node:test';
 import * as D from '@be/domain';
 
+const { ClavesPorPedido } = await import('../src/lib/clave-de-intento.ts');
+
 const leer = (r) => readFileSync(new URL(`../src/app/pro/advisees/anthropometry/${r}`, import.meta.url), 'utf8');
 const RESULTADOS = leer('resultados-por-metodo.tsx');
 const CALCULOS = leer('calculos.tsx');
@@ -62,12 +64,39 @@ test('AR-04 · las ecuaciones por sexo y la conversión se eligen una vez, con s
 test('AR-05 · guardar en la historia: al registrar lo elegido y, desde la toma, con un botón por método', () => {
   assert.match(GUARDAR, /m\.status === 'SELECTABLE'/);
   assert.match(GUARDAR, /!vigentes\.has\(m\.methodId\)/);
-  assert.match(GUARDAR, /o\.intento\.actual\(`\$\{o\.toma\.evaluationId\}:\$\{metodo\.methodVersionId\}`\)/);
+  // El pedido es el método en la toma con las mediciones que usa: corregir una es otro pedido, con otra clave.
+  assert.match(GUARDAR, /`\$\{toma\.evaluationId\}:\$\{metodo\.methodVersionId\}:\$\{metodo\.requiredInputs\.map/);
+  assert.match(GUARDAR, /o\.claves\.actual\(pedido\)/);
+  assert.match(GUARDAR, /if \(o\.claves\.hecho\(pedido\)\) continue;/);
+  // Sin el sexo elegido, lo que tiene ecuación por sexo no se guarda (DL-111, decisión 5).
+  assert.match(GUARDAR, /o\.sexoElegido !== false \|\| sexoDelMetodo\(m\) === null/);
+  assert.match(RESULTADOS, /metodosParaGuardar\(\[resultado\], toma, metodos, corridas, \{ claves, sexoElegido \}\)/);
+  assert.match(RESULTADOS, /disabled=\{guardandoEn !== null\}/);
   assert.match(RESULTADOS, />\s*\{guardando \? 'Guardando…' : 'Guardar en la historia'\}/);
-  assert.match(PREPARACION, /guardarEnLaHistoria\(\{ token, asesoradoId, toma, metodos: metodosParaGuardar\(resultados, toma, metodos, \[\]\)/);
+  assert.match(PREPARACION, /guardarEnLaHistoria\(\{ token, asesoradoId, toma, metodos: metodosParaGuardar\(resultados, toma, metodos, \[\]\), claves: /);
   assert.match(PREPARACION, /Con la toma, BE guarda en la historia los resultados de/);
   // La toma recién registrada se abre con los métodos elegidos y las ecuaciones de la figura.
   assert.match(PREPARACION, /ecuaciones: sexo === 'MUJER' \? 'mujer' : 'hombre'/);
+});
+
+test('AR-05 · una clave por pedido: el reintento de uno incierto reusa la suya aunque en el medio se manden otros, y lo guardado no se vuelve a mandar', () => {
+  let n = 0;
+  const c = new ClavesPorPedido(() => `clave-${++n}`);
+  const rocha = c.actual('toma-1:rocha');
+  c.registrar('toma-1:rocha', { ok: false, incierto: true });
+  // Otro pedido en el medio (Würch) no le cambia la clave a Rocha.
+  const wurch = c.actual('toma-1:wurch');
+  assert.notEqual(wurch, rocha);
+  c.registrar('toma-1:wurch', { ok: true, incierto: false });
+  assert.equal(c.hecho('toma-1:wurch'), true);
+  assert.equal(c.actual('toma-1:rocha'), rocha, 'el reintento de Rocha reusa su clave');
+  c.registrar('toma-1:rocha', { ok: true, incierto: false });
+  assert.equal(c.hecho('toma-1:rocha'), true);
+  // Un rechazo definitivo no da por hecho el pedido, y el próximo intento usa otra clave.
+  const imc = c.actual('toma-1:imc');
+  c.registrar('toma-1:imc', { ok: false, incierto: false });
+  assert.equal(c.hecho('toma-1:imc'), false);
+  assert.notEqual(c.actual('toma-1:imc'), imc);
 });
 
 test('AR-06 · antes de medir, cada método dice qué pide y qué va a dar; el fraccionamiento se suma con un toque', () => {

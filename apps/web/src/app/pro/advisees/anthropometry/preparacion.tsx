@@ -51,7 +51,8 @@ import { DialogoDeConfirmacion } from '../../../../components/dialogo';
 import { EnPartes, conNumerosPegados } from '../../../../components/en-partes';
 import { Aviso, Campo } from '../../../../components/formulario';
 import { Icono } from '../../../../components/icono';
-import { api, type Resultado } from '../../../../lib/api';
+import { api, nuevaClaveDeIdempotencia, type Resultado } from '../../../../lib/api';
+import { ClavesPorPedido } from '../../../../lib/clave-de-intento';
 import { fecha, numeroEnCampo } from '../../../../lib/formato';
 import { mensajeDeFallo, useClaveDeIntento } from '../../../../lib/intento';
 import { useCambiosSinGuardar } from '../marco-del-area';
@@ -244,6 +245,8 @@ function Preparacion({
 }) {
   const { token, asesoradoId, sesionPerdida, accesoRetirado, parametros, ir } = useAntropometria();
   const intento = useClaveDeIntento();
+  // DL-200: las claves de guardar en la historia, una por método, aparte de la del registro de la toma.
+  const clavesDeGuardar = useRef<ClavesPorPedido | null>(null);
   const protocoloPorDefecto = especificaciones[0]?.versionId ?? '';
   const [escritos, setEscritos] = useState<Record<string, Escrito>>({});
   const [libres, setLibres] = useState<FilaLibre[]>([]);
@@ -518,7 +521,7 @@ function Preparacion({
       const toma = leida.datos.data;
       const { valores } = valoresParaLaCadena(toma.measurements);
       const resultados = elegidas.map((c) => resultadoDelMetodo(c, valores, sexo)).filter((x): x is NonNullable<typeof x> => x !== null);
-      const guardado = await guardarEnLaHistoria({ token, asesoradoId, toma, metodos: metodosParaGuardar(resultados, toma, metodos, []), intento, corta: (x) => sesionPerdida(x) || accesoRetirado(x) });
+      const guardado = await guardarEnLaHistoria({ token, asesoradoId, toma, metodos: metodosParaGuardar(resultados, toma, metodos, []), claves: (clavesDeGuardar.current ??= new ClavesPorPedido(nuevaClaveDeIdempotencia)), corta: (x) => sesionPerdida(x) || accesoRetirado(x) });
       if (guardado.tipo === 'cortado') return setEnviando(false);
       if (guardado.guardados > 0) texto = `${texto} BE guardó ${guardado.guardados === 1 ? '1 resultado' : `${guardado.guardados} resultados`} en la historia.`;
       if (guardado.fallidos.length > 0) texto = `${texto} No se pudo guardar: ${guardado.fallidos.join(', ')}; desde la toma se guarda con un toque.`;

@@ -45,3 +45,42 @@ export class ClaveDeIntento {
     return this.#incierto;
   }
 }
+
+/**
+ * DL-200 (WP-ANTROPOMETRIA-RESULTADOS) · varias escrituras de una vez: guardar en la historia los métodos de una toma, un
+ * pedido por método. Con una sola `ClaveDeIntento`, el pedido siguiente le cambiaba la clave al anterior: si el primero
+ * quedaba incierto, el reintento lo mandaba con otra clave y el servidor lo calculaba dos veces (dos corridas vigentes, dos
+ * puntos en la evolución). Acá cada pedido tiene su clave, que se conserva mientras su respuesta sea incierta aunque se
+ * manden otros en el medio, y lo que ya se guardó en esta pantalla no se vuelve a mandar, aunque la relectura todavía no
+ * haya llegado.
+ */
+export class ClavesPorPedido {
+  #nueva: () => string;
+  #claves = new Map<string, ClaveDeIntento>();
+  #hechos = new Set<string>();
+
+  constructor(nueva: () => string) {
+    this.#nueva = nueva;
+  }
+
+  /** La clave del pedido: la misma mientras no tenga una respuesta definitiva. */
+  actual(pedido: string): string {
+    let c = this.#claves.get(pedido);
+    if (!c) {
+      c = new ClaveDeIntento(this.#nueva);
+      this.#claves.set(pedido, c);
+    }
+    return c.actual();
+  }
+
+  /** Después de la respuesta del pedido: un éxito lo da por hecho; uno incierto conserva su clave para el reintento. */
+  registrar(pedido: string, respuesta: { readonly ok: boolean; readonly incierto: boolean }): void {
+    this.#claves.get(pedido)?.registrar(respuesta.incierto);
+    if (respuesta.ok) this.#hechos.add(pedido);
+  }
+
+  /** Si el pedido ya se guardó desde esta pantalla. */
+  hecho(pedido: string): boolean {
+    return this.#hechos.has(pedido);
+  }
+}
