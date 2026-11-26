@@ -85,7 +85,7 @@ function guardadoApi(f: FilaDeUnoRM, autor: string): UnoRMGuardadoApi {
     set: s ? serieApi(s) : null,
     method: f.metodo ? METODO : null,
     band: (f.banda as BandaDelUnoRM | null) ?? null,
-    record: (f.registro as UnoRMGuardadoApi['record']) ?? null,
+    record: (f.registro as unknown as UnoRMGuardadoApi['record']) ?? null,
     note: f.nota,
     author: { identityId: f.profesionalId, displayName: autor },
     recordedAt: f.momentoDeRegistro.toISOString(),
