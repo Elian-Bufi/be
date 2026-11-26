@@ -9,7 +9,10 @@
  * lectura suya tenga escenario.
  *
  * UF-00 de WP-USO-FINAL (2026-11-11, enmienda de DL-152): mientras Dirección no establezca una estable, la congelada es
- * solo la última distribuida, hoy la 0.29.0-candidata.1 (desde el 2026-11-14; reemplazó a la 0.28.0-candidata.1, que leía
+ * solo la última distribuida, hoy la 0.32.0-candidata.1 (desde el 2026-11-26). La 0.32 deja CON-01 y 02, porque el B2 lo da
+ * la pantalla única de consentimiento, y suma nueve lecturas, con su escenario: CMP-01 a 03 y HIA-01 a 03 en el de compartir
+ * (y CMP-01 y 02 en el del vínculo), RES-09 y 10 en el de las novedades y ESF-01 en el del entrenamiento. Antes fue la
+ * 0.29.0-candidata.1 (desde el 2026-11-14; reemplazó a la 0.28.0-candidata.1, que leía
  * lo mismo que la 0.27.0-candidata.1, que el 2026-11-13 reemplazó a la 0.24.0-candidata.1, que el 2026-11-12 había
  * reemplazado a la 0.23.0-candidata.2 sumando API-ACC-07). La 0.29 suma tres lecturas, con su escenario: quién miró lo
  * compartido (RES-01, PG-12), en el de las novedades, y la nota para tu profe (TRN-25 y TRN-25-PROPIA, PG-15), en el del
@@ -258,9 +261,22 @@ describe.each(VERSIONES)('DL-152 · la APK %s, contra la API de hoy', (version) 
     const versionDelVinculo = async () => (await apk.pide('API-REL-06', { token, params: { relationshipId: vinculoId } })).body.data.version as string;
     await versionDelVinculo();
 
-    // El B2: el requisito y el otorgamiento con la versión que mostró.
-    const requisitos = await apk.pide('API-CON-01', { token, params: { relationshipId: vinculoId } });
-    const b2 = await apk.pide('API-CON-02', { token, params: { relationshipId: vinculoId }, cuerpo: { consentVersionId: requisitos.body.data.consentVersion.id }, status: 201 });
+    // El B2: el requisito y el otorgamiento con la versión que mostró. Desde la 0.32 la APK ya no lo pide aparte (CON-01 y
+    // 02): lo da con la pantalla única de consentimiento (CMP-01 y 02, DL-176), al aceptar, con la propuesta del vínculo.
+    let b2Id: string;
+    if (apk.lee('API-CON-01')) {
+      const requisitos = await apk.pide('API-CON-01', { token, params: { relationshipId: vinculoId } });
+      b2Id = (await apk.pide('API-CON-02', { token, params: { relationshipId: vinculoId }, cuerpo: { consentVersionId: requisitos.body.data.consentVersion.id }, status: 201 })).body.data.consentId as string;
+    } else {
+      const propuesta = (await apk.pide('API-CMP-01', { token, consulta: { relationshipId: vinculoId } })).body.data as { relationshipId: string; version: string; items: { key: string; textId: string; offered: boolean }[] };
+      const elegidas = propuesta.items.filter((i) => i.offered).map((i) => i.key);
+      expect(elegidas).toContain(`AREA_CONSENT:${vinculoId}`);
+      const textos = [...new Set(propuesta.items.filter((i) => elegidas.includes(i.key)).map((i) => i.textId))];
+      await apk.pide('API-CMP-02', { token, cuerpo: { relationshipId: vinculoId, expectedVersion: propuesta.version, acceptedTextIds: textos, choices: elegidas } });
+      await apk.pide('API-CMP-01', { token, consulta: { relationshipId: vinculoId } });
+      const consentimientos = (await apk.pide('API-CON-03', { token })).body.data as { consentId: string; professional: { identityId: string }; state: string }[];
+      b2Id = consentimientos.find((x) => x.professional.identityId === pn.id && x.state === 'ACTIVE')!.consentId;
+    }
     await apk.pide('API-CON-03', { token });
 
     if (apk.lee('API-EVI-01')) {
@@ -276,7 +292,7 @@ describe.each(VERSIONES)('DL-152 · la APK %s, contra la API de hoy', (version) 
     // Pausar, reanudar, revocar el B2 y finalizar, cada paso con la versión que mostró.
     await apk.pide('API-REL-07', { token, params: { relationshipId: vinculoId }, cuerpo: { expectedVersion: await versionDelVinculo(), reason: 'DISPONIBILIDAD' } });
     await apk.pide('API-REL-08', { token, params: { relationshipId: vinculoId }, cuerpo: { expectedVersion: await versionDelVinculo() } });
-    await apk.pide('API-CON-04', { token, params: { consentId: b2.body.data.consentId }, cuerpo: {} });
+    await apk.pide('API-CON-04', { token, params: { consentId: b2Id }, cuerpo: {} });
     await apk.pide('API-CON-03', { token });
     await apk.pide('API-REL-09', { token, params: { relationshipId: vinculoId }, cuerpo: { expectedVersion: await versionDelVinculo(), reason: 'OBJETIVO_CUMPLIDO' } });
     await apk.pide('API-REL-06', { token, params: { relationshipId: vinculoId } });
@@ -475,6 +491,13 @@ describe.each(VERSIONES)('DL-152 · la APK %s, contra la API de hoy', (version) 
       status: 201,
     });
     await apk.pide('API-TRN-19', { token, params: { executionId: ejecucionId } });
+    if (apk.lee('API-ESF-01')) {
+      // El esfuerzo de la sesión (DL-198, desde la 0.32): al terminar, el valor y los minutos del cronómetro. Uno por
+      // sesión: otro intento da el 409 en la forma que la APK reconoce.
+      await apk.pide('API-ESF-01', { token, params: { executionId: ejecucionId }, cuerpo: { rating: 7, durationMinutes: 15, durationSource: 'TIMER' }, status: 201 });
+      const otra = await apk.pide('API-ESF-01', { token, params: { executionId: ejecucionId }, cuerpo: { rating: 5, durationMinutes: null, durationSource: null }, status: 409 });
+      expect(otra.body.error.code).toBe('RESOURCE_CONFLICT');
+    }
     if (apk.lee('API-TRN-25')) {
       // La nota para tu profe (PG-15, desde la 0.29): aparte de confirmar, sobre la sesión ya registrada, con su
       // Idempotency-Key; el reintento con la misma clave da la misma nota. Después, las notas de esa sesión, debajo.
@@ -998,6 +1021,17 @@ describe.each(VERSIONES)('DL-152 · la APK %s, contra la API de hoy', (version) 
       expect(quienVe.professionals.find((p) => p.professional.identityId === ent.id)?.shares).toEqual([expect.objectContaining({ area: 'NUTRICION', level: 'SUMMARY_AND_PLAN' })]);
       expect(quienVe.accesses).toEqual([expect.objectContaining({ professional: expect.objectContaining({ identityId: ent.id }), area: 'NUTRICION' })]);
     }
+    if (apk.lee('API-RES-09')) {
+      // «Te piden ver tu plan» (TB-56, desde la 0.32 en la app): el pedido del antropometrista, en la lista de la persona, y
+      // «No, por ahora» con la versión que vio. Responder otra vez con esa versión: el 409; uno que no existe: el 404.
+      const pedidos = (await apk.pide('API-RES-09', { token })).body.data as { accessRequestId: string; version: string; professional: { identityId: string } }[];
+      const delAnt = pedidos.find((p) => p.professional.identityId === ant.id)!;
+      const noPorAhora = { expectedVersion: delAnt.version, answer: 'NOT_NOW', sharing: null };
+      await apk.pide('API-RES-10', { token, params: { accessRequestId: delAnt.accessRequestId }, cuerpo: noPorAhora });
+      await apk.pide('API-RES-10', { token, params: { accessRequestId: delAnt.accessRequestId }, cuerpo: noPorAhora, status: 409 });
+      await apk.pide('API-RES-10', { token, params: { accessRequestId: randomUUID() }, cuerpo: noPorAhora, status: 404 });
+      expect((await apk.pide('API-RES-09', { token })).body.data).toEqual([]);
+    }
     expect(apk.rechazos()).toEqual([]);
   });
 
@@ -1105,6 +1139,56 @@ describe.each(VERSIONES)('DL-152 · la APK %s, contra la API de hoy', (version) 
       await apk.pide('API-ACC-P1-02', { params: { recoveryId: pedido }, cuerpo: { proof: codigo, newCredential: OTRA_CREDENCIAL_SINTETICA }, status: 204 });
       // Entra con la contraseña nueva.
       await apk.pide('API-ACC-02', { cuerpo: { method: 'LOCAL', identifier: correo, credential: OTRA_CREDENCIAL_SINTETICA }, status: 201 });
+    }
+    expect(apk.rechazos()).toEqual([]);
+  });
+
+  // ─── Compartir y la historia anterior (desde la 0.32) ─────────────────────────────────────────
+
+  siLee('API-CMP-01', 'compartir al aceptar, retirar una cosa y la historia anterior (CMP-01 a 03, HIA-01 a 03, DL-176)', async () => {
+    // Como en WP-COMPARTIR: la persona, sin el A3, tiene a Ruiz en Entrenamiento con su B2; Vera la acompañó en Nutrición
+    // (terminado) y acaba de aceptar a Paz, de Nutrición, sin autorizarlo todavía.
+    const e = etiqueta(`${corta}-cmp`);
+    const ase = await prepararAsesorado(app, e);
+    const token = ase.token;
+    const ruiz = await prepararProfesional(app, `${e}-ruiz`, ['ENTRENAMIENTO']);
+    const vera = await prepararProfesional(app, `${e}-vera`, ['NUTRICION']);
+    const paz = await prepararProfesional(app, `${e}-paz`, ['NUTRICION']);
+    await vinculoCompleto(app, ruiz, ase, 'ENTRENAMIENTO');
+    const deVera = await vinculoCompleto(app, vera, ase, 'NUTRICION');
+    await finalizar(app, token, deVera.vinculoId, await versionDeVinculo(app, token, deVera.vinculoId)).expect(200);
+    const dePaz = (await vinculoCompleto(app, paz, ase, 'NUTRICION', { b2: false })).vinculoId;
+
+    // La pantalla única: la propuesta del vínculo aceptado y «Aceptar y compartir» con lo marcado; el reintento con la misma
+    // clave responde lo mismo. Después, la propuesta de todo (sin vínculo), con lo dado.
+    type Propuesta = { relationshipId: string | null; version: string; items: { key: string; textId: string; offered: boolean; preselected: boolean }[] };
+    const propuesta = (await apk.pide('API-CMP-01', { token, consulta: { relationshipId: dePaz } })).body.data as Propuesta;
+    const marcadas = propuesta.items.filter((i) => i.offered && i.preselected).map((i) => i.key);
+    expect(marcadas).toEqual(expect.arrayContaining(['HEALTH_DATA', `AREA_CONSENT:${dePaz}`, `PREVIOUS_HISTORY:${dePaz}`, `SUMMARY:${ruiz.id}:NUTRICION`]));
+    const toque = { relationshipId: dePaz, expectedVersion: propuesta.version, acceptedTextIds: [...new Set(propuesta.items.filter((i) => marcadas.includes(i.key)).map((i) => i.textId))], choices: marcadas };
+    const clave = `apk-${randomUUID()}`;
+    await apk.pide('API-CMP-02', { token, cuerpo: toque, clave });
+    await apk.pide('API-CMP-02', { token, cuerpo: toque, clave });
+    await apk.pide('API-CMP-01', { token });
+
+    // Retirar una cosa (lo de Nutrición para Ruiz) corta desde ese momento; dos veces, lo mismo.
+    await apk.pide('API-CMP-03', { token, cuerpo: { key: `SUMMARY:${ruiz.id}:NUTRICION` } });
+    await apk.pide('API-CMP-03', { token, cuerpo: { key: `SUMMARY:${ruiz.id}:NUTRICION` } });
+    await apk.pide('API-CMP-01', { token });
+
+    // La historia anterior: dada con el toque, se ve en «Quién ve qué»; retirarla y darla de nuevo, con la versión que vio.
+    if (apk.lee('API-HIA-01')) {
+      type Mia = { text: { id: string }; items: { relationshipId: string; authorization: { state: string; version: string } | null }[] };
+      const mia = async () => (await apk.pide('API-HIA-01', { token })).body.data as Mia;
+      const antes = await mia();
+      const deLaPaz = antes.items.find((i) => i.relationshipId === dePaz)!;
+      expect(deLaPaz.authorization?.state).toBe('GRANTED');
+      await apk.pide('API-HIA-03', { token, params: { relationshipId: dePaz }, cuerpo: { expectedVersion: deLaPaz.authorization!.version } });
+      const retirada = (await mia()).items.find((i) => i.relationshipId === dePaz)!;
+      expect(retirada.authorization?.state).not.toBe('GRANTED');
+      await apk.pide('API-HIA-02', { token, params: { relationshipId: dePaz }, cuerpo: { expectedVersion: 'v9', textVersionId: antes.text.id }, status: 409 });
+      await apk.pide('API-HIA-02', { token, params: { relationshipId: dePaz }, cuerpo: { expectedVersion: retirada.authorization?.version ?? null, textVersionId: antes.text.id } });
+      await mia();
     }
     expect(apk.rechazos()).toEqual([]);
   });
