@@ -26,7 +26,9 @@ import { useCambiosSinGuardar } from '../cambios-sin-guardar';
 import { useDiaDeLaApi } from '../dia-de-la-api';
 import { entrenamientoLocal } from '../entrenamiento-en-curso';
 import { Cargando, ErrorConReintento } from '../estados';
+import { sePreguntaElEsfuerzo } from '../esfuerzo-de-la-sesion';
 import { fechaLarga } from '../formato';
+import { EsfuerzoDeLaSesion } from './esfuerzo-de-la-sesion';
 import { esIncierto, falloDe, useClaveDeIntento } from '../intento';
 import { useAccesoRetirado, useSesionPerdida, type Ir, type Ruta, type Salida } from '../navegacion';
 import {
@@ -545,13 +547,31 @@ export function PantallaDeRegistroRapido({
       </>
     );
   } else if (paso === 'listo' && listo) {
-    contenido = (
-      <Seccion titulo={COPY_ENTRENAMIENTO.sesionRegistrada} icono="guardar">
-        <Parrafo>{textoDelResumen(listo.resumen)}</Parrafo>
-        <Parrafo tenue>{loQueVeTuProfesional(listo.resumen)}</Parrafo>
+    const preguntaElEsfuerzo = sePreguntaElEsfuerzo(lectura.datos.data);
+    const botonesDelFinal = (
+      <>
         <Boton texto={T.verElRegistro} onPress={() => ir({ nombre: 'ejecucion-de-entrenamiento', id: listo.executionId }, 'reemplazar')} />
         <Boton texto={T.volver} tipo="secundario" onPress={() => void volver()} />
-      </Seccion>
+      </>
+    );
+    contenido = (
+      <>
+        <Seccion titulo={COPY_ENTRENAMIENTO.sesionRegistrada} icono="guardar">
+          <Parrafo>{textoDelResumen(listo.resumen)}</Parrafo>
+          <Parrafo tenue>{loQueVeTuProfesional(listo.resumen)}</Parrafo>
+          {preguntaElEsfuerzo ? null : botonesDelFinal}
+        </Seccion>
+        {/*
+          DL-198: si el plan lo pide, el esfuerzo de la sesión, ya registrada, entre el resumen y los botones: así se ve antes
+          de irse. Sin cronómetro en «Ya la hice»: los minutos, si quiere, escritos.
+        */}
+        {preguntaElEsfuerzo ? (
+          <>
+            <EsfuerzoDeLaSesion key={listo.executionId} token={token} executionId={listo.executionId} delCronometro={null} sesionPerdida={sesionPerdida} />
+            {botonesDelFinal}
+          </>
+        ) : null}
+      </>
     );
   } else if (paso === 'como') {
     contenido = (

@@ -37,6 +37,9 @@ import {
   COPY_ENTRENAMIENTO,
   COPY_ENTRENAMIENTO_POR_SERIE,
   COPY_NOTAS_DE_LA_SESION,
+  COPY_ESFUERZO_DE_LA_SESION,
+  esfuerzoEnUnRenglon,
+  type EsfuerzoDeLaSesion,
   COPY_REGISTRO_POR_NIVELES,
   ejerciciosComparables,
   esCargaCompleta,
@@ -85,6 +88,8 @@ import { LineasDePrescripcion, numerosDeVersion } from './plan';
 import { useNotacionDelEsfuerzo } from '../notacion-del-esfuerzo';
 import { DescansosYDuracion, TiemposDeLaSesion, useTiemposDeLaSesion } from './series-y-tiempos';
 import { useNombres } from '../../../../lib/nombres-ocultos';
+import { ExplicacionAPedido } from '../../../../components/explicacion-a-pedido';
+import { GraficoDeLaCargaDeLaSesion } from './grafico-de-la-carga-de-la-sesion';
 
 type Contexto = ContextoDeRevisionDeEntrenamientoResponse['data'];
 
@@ -102,6 +107,9 @@ const SESIONES_DE_UNA_VEZ = 15;
 type NotasLeidas = { readonly tipo: 'cargando' } | { readonly tipo: 'listo'; readonly porSesion: ReadonlyMap<string, readonly NotaDeLaSesion[]> } | { readonly tipo: 'error' };
 
 /** Los objetivos por serie de cada versión del plan que aparece en el período; `null`: esa versión no se pudo leer. */
+/** DL-198 (ET2-08): el esfuerzo de la sesión del período, por sesión; `error`: no se pudo leer (las sesiones se ven igual). */
+type EsfuerzosLeidos = { readonly tipo: 'cargando' } | { readonly tipo: 'listo'; readonly lista: readonly EsfuerzoDeLaSesion[] } | { readonly tipo: 'error' };
+
 type Planes = { readonly tipo: 'cargando' } | { readonly tipo: 'listo'; readonly porVersion: ReadonlyMap<string, PlanConObjetivos | null> };
 
 export function VistaDeEjecuciones() {
@@ -169,6 +177,21 @@ export function VistaDeEjecuciones() {
       vigente = false;
     };
   }, [token, asesoradoId, sesionPerdida, periodoLeido]);
+  // DL-198 (ET2-08): el esfuerzo de la sesión del mismo período, aparte, como las notas.
+  const [esfuerzos, setEsfuerzos] = useState<EsfuerzosLeidos>({ tipo: 'cargando' });
+  useEffect(() => {
+    if (!periodoLeido) return;
+    const [desde, hasta] = periodoLeido.split('|') as [string, string];
+    let vigente = true;
+    setEsfuerzos({ tipo: 'cargando' });
+    void api.esfuerzosDeLaSesion(token, asesoradoId, { periodStart: desde, periodEnd: hasta }).then((x) => {
+      if (!vigente || sesionPerdida(x)) return;
+      setEsfuerzos(x.ok ? { tipo: 'listo', lista: x.datos.data.efforts } : { tipo: 'error' });
+    });
+    return () => {
+      vigente = false;
+    };
+  }, [token, asesoradoId, sesionPerdida, periodoLeido]);
   const reintentarLosPlanes = () => {
     if (planes.tipo !== 'listo') return;
     const sinLeer = [...planes.porVersion].filter(([, plan]) => plan === null).map(([planId]) => planId);
@@ -190,7 +213,7 @@ export function VistaDeEjecuciones() {
         {periodo ? <ControlDePeriodo periodo={periodo} atajos={ATAJOS_DE_UN_AREA} maximoDeDias={MAXIMO_DE_DIAS_DE_UN_AREA} onElegir={elegirPeriodo} /> : null}
       </div>
       <EstadoDeLectura r={r} onReintentar={() => void cargar()}>
-        {contexto ? planes.tipo === 'cargando' ? <Cargando /> : <Sesiones contexto={contexto} planes={planes.porVersion} numeros={numeros} hoy={hoy} pedido={pedido} notas={notas} onReintentarLosPlanes={reintentarLosPlanes} /> : null}
+        {contexto ? planes.tipo === 'cargando' ? <Cargando /> : <Sesiones contexto={contexto} planes={planes.porVersion} numeros={numeros} hoy={hoy} pedido={pedido} notas={notas} esfuerzos={esfuerzos} onReintentarLosPlanes={reintentarLosPlanes} /> : null}
       </EstadoDeLectura>
     </section>
   );
@@ -203,6 +226,7 @@ function Sesiones({
   hoy,
   pedido,
   notas,
+  esfuerzos,
   onReintentarLosPlanes,
 }: {
   contexto: Contexto;
@@ -211,6 +235,7 @@ function Sesiones({
   hoy: string;
   pedido: PeriodoDeUnArea | null;
   notas: NotasLeidas;
+  esfuerzos: EsfuerzosLeidos;
   onReintentarLosPlanes: () => void;
 }) {
   const { asesoradoId, parametros, ir } = useEntrenamiento();
@@ -290,7 +315,7 @@ function Sesiones({
   const tituloDeLaAbierta = abierta ? tituloDeLaSesion(abierta.sesion) : '';
   const contenidoDeLaAbierta =
     abierta && ejecucionAbierta ? (
-      <DetalleDeLaSesion key={abierta.id} fila={abierta} ejecucion={ejecucionAbierta} identidad={identidad} objetivos={objetivosPorVersion.get(abierta.planId) ?? null} version={versionDe(abierta.planId)} notas={notas} />
+      <DetalleDeLaSesion key={abierta.id} fila={abierta} ejecucion={ejecucionAbierta} identidad={identidad} objetivos={objetivosPorVersion.get(abierta.planId) ?? null} version={versionDe(abierta.planId)} notas={notas} esfuerzos={esfuerzos} />
     ) : null;
 
   // A Analizar va con el período que se está mirando, si es uno elegido: allá el ejercicio se elige de nuevo.
@@ -298,6 +323,12 @@ function Sesiones({
 
   return (
     <>
+      {/* DL-198 (ET2-09): la carga de la sesión de Foster, solo si la persona respondió alguna en el período. */}
+      {esfuerzos.tipo === 'listo' && esfuerzos.lista.length > 0 ? (
+        <section className="registros__esfuerzo" aria-label={COPY_ESFUERZO_DE_LA_SESION.titulo} data-esfuerzos-de-la-sesion={esfuerzos.lista.length}>
+          <GraficoDeLaCargaDeLaSesion esfuerzos={esfuerzos.lista} />
+        </section>
+      ) : null}
       <div className="vistas-de-la-linea registros__vistas">
         <div className="vistas-de-la-linea__vistas" role="group" aria-labelledby={`${id}-ver`}>
           <span id={`${id}-ver`} className="vistas-de-la-linea__rotulo">
@@ -562,6 +593,7 @@ function DetalleDeLaSesion({
   objetivos,
   version,
   notas,
+  esfuerzos,
 }: {
   fila: FilaDeSesion;
   ejecucion: EjecucionDeEntrenamiento;
@@ -571,6 +603,8 @@ function DetalleDeLaSesion({
   version: string;
   /** PG-15: las notas de las sesiones del período. */
   notas: NotasLeidas;
+  /** DL-198 (ET2-08): el esfuerzo de la sesión del período. */
+  esfuerzos: EsfuerzosLeidos;
 }) {
   const { deQuien } = useNombres();
   const tiempos = useTiemposDeLaSesion(x.executionId);
@@ -594,6 +628,7 @@ function DetalleDeLaSesion({
         </p>
       ) : null}
       <NotasDeLaPersona notas={notas.tipo === 'listo' ? (notas.porSesion.get(x.executionId) ?? []) : notas.tipo === 'error' ? null : []} ejecucion={x} />
+      <EsfuerzoDeLaSesionEnElDetalle esfuerzos={esfuerzos} executionId={x.executionId} />
       {fila.resumenDeLaSesion ? (
         <p>
           <strong>Resumen de la sesión:</strong> «{fila.resumenDeLaSesion}»
@@ -891,5 +926,27 @@ function NotasDeLaPersona({ notas, ejecucion: x }: { notas: readonly NotaDeLaSes
       </ul>
       <p className="nota">{COPY_NOTAS_DE_LA_SESION.ayudaEnElDetalle}</p>
     </div>
+  );
+}
+
+/**
+ * DL-198 (ET2-08): el esfuerzo de la sesión que respondió la persona al terminar, con la carga de la sesión y su «?».
+ * Si no lo respondió, nada (no es un dato que falta: la app lo pregunta solo si el plan lo pide).
+ */
+function EsfuerzoDeLaSesionEnElDetalle({ esfuerzos, executionId }: { esfuerzos: EsfuerzosLeidos; executionId: string }) {
+  const T = COPY_ESFUERZO_DE_LA_SESION;
+  if (esfuerzos.tipo === 'error') return <p className="nota">No se pudo leer el esfuerzo de la sesión.</p>;
+  const e = esfuerzos.tipo === 'listo' ? esfuerzos.lista.find((x) => x.executionId === executionId) : undefined;
+  if (!e) return null;
+  return (
+    <p className="detalle-de-sesion__esfuerzo con-ayuda-en-la-esquina" data-esfuerzo-de-la-sesion={e.rating}>
+      <strong>{T.titulo}:</strong> {esfuerzoEnUnRenglon(e)}
+      {e.durationSource === 'TIMER' ? <span className="nota"> · minutos del cronómetro</span> : e.durationSource === 'DECLARED' ? <span className="nota"> · minutos escritos por la persona</span> : null}
+      <ExplicacionAPedido nombre={`Qué es el ${T.titulo.toLowerCase()}`} lugar="esquina">
+        <span className="ayuda-con-ejemplo">
+          <span>{T.queEs}</span> <span className="ayuda-con-ejemplo__ejemplo">{T.ejemplo}</span>
+        </span>
+      </ExplicacionAPedido>
+    </p>
   );
 }

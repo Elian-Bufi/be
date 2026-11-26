@@ -36,6 +36,7 @@ import {
   VersionDePlanDeEntrenamientoSchema,
 } from './contratos-entrenamiento';
 import { ProcedenciaDeMedioSchema } from './contratos-medios';
+import { ClasificacionDeEjercicioSchema } from './clasificacion-de-ejercicios';
 import { FechaLocalSchema, ZonaHorariaSchema } from './contratos-nutricion';
 
 const Texto = (max: number) => z.string().trim().min(1).max(max);
@@ -105,6 +106,12 @@ export const EjercicioPropioSchema = z.strictObject({
   /** 0 si nunca tuvo imagen. Cada asociación y cada retiro suman uno. */
   imageVersion: z.number().int().min(0),
   image: ImagenDeEjercicioSchema.nullable(),
+  /**
+   * DL-198 (ET2-11): la clasificación vigente y su número (0: sin clasificar), para cambiarla en «Mis ejercicios».
+   * Opcional, para que un website y una API de despliegues distintos se sigan entendiendo.
+   */
+  classificationVersion: z.number().int().min(0).optional(),
+  classification: ClasificacionDeEjercicioSchema.optional(),
 });
 export type EjercicioPropio = z.infer<typeof EjercicioPropioSchema>;
 export const EjercicioPropioResponseSchema = z.strictObject({ data: EjercicioPropioSchema });
@@ -229,6 +236,14 @@ export const SesionParaRegistrarSchema = z.strictObject({
    * manda se guarda igual: el RIR es el valor de las dos notaciones.
    */
   effortNotation: NotacionDelEsfuerzoSchema.optional(),
+  /**
+   * DL-198 (ET2-D07): en qué semana de su fase cae la ocurrencia, si la fase tiene progresión. Las cargas y repeticiones de
+   * la sesión ya son las de esa semana para todos los clientes; esto es el rótulo, solo para quien declara
+   * `training-week-load-1`. Ausente: la fase no tiene progresión o el cliente no lo pidió.
+   */
+  week: z.strictObject({ phaseWeek: z.number().int().positive(), phaseWeeks: z.number().int().positive(), deload: z.boolean() }).optional(),
+  /** DL-198 (ET2-07): la app pregunta el esfuerzo de la sesión al terminar. Solo `true` y solo para `training-session-effort-1`. */
+  askSessionEffort: z.literal(true).optional(),
 });
 export type SesionParaRegistrar = z.infer<typeof SesionParaRegistrarSchema>;
 export const SesionParaRegistrarResponseSchema = z.strictObject({ data: SesionParaRegistrarSchema });

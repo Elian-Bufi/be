@@ -151,9 +151,12 @@ export function BarraDeLaSesion({ nombre, temporizador, onVerRutina }: { nombre:
  * ejercicio, «Ejercicio 2 de 5 · Serie 3 de 4», la línea de tramos (uno por ejercicio: lo registrado de cada uno, y el
  * actual marcado aparte) y los dos tiempos, el de la sesión y el del ejercicio. Los tiempos no se leen cada segundo: el
  * lector de pantalla dice los minutos.
+ * DL-198: con la semana de la fase («Semana 3 de 6», `esfuerzo-de-la-sesion.ts`), va junto al nombre de la sesión, en el
+ * mismo tono tenue. Las cargas de la sesión ya son las de esa semana: la API las manda así.
  */
 export function FranjaDeLaSesion({
   sesion,
+  semana = null,
   ejercicio,
   posicion,
   tramos,
@@ -163,6 +166,7 @@ export function FranjaDeLaSesion({
   onVerRutina,
 }: {
   sesion: string;
+  semana?: string | null;
   ejercicio: string;
   posicion: string;
   tramos: readonly TramoDelRecorrido[];
@@ -176,7 +180,7 @@ export function FranjaDeLaSesion({
     <Superficie style={[estilos.tarjeta, estilos.franja]}>
       <View style={estilos.cabezaDeLaFranja}>
         <Text style={[estilos.detalle, estilos.textos]} numberOfLines={2}>
-          {sesion}
+          {semana ? `${sesion} · ${semana}` : sesion}
         </Text>
         <Pressable accessibilityRole="button" onPress={onVerRutina} hitSlop={4} style={({ pressed }) => [estilos.verRutina, pressed && estilos.presionado]}>
           <IconoDeRutina color={COLOR.acento} />

@@ -102,7 +102,9 @@ export type Ruta =
       readonly etiqueta?: string;
       readonly desde?: Ruta;
     }
-  | { readonly nombre: 'ejecucion-de-entrenamiento'; readonly id: string; readonly aviso?: string; readonly desde?: Ruta }
+  // DL-198: `esfuerzo`, de una sola vez como el aviso: la sesión recién registrada pregunta el esfuerzo (con los minutos del
+  // cronómetro, si los hay). Al volver a esta pantalla ya no viene: se pregunta una vez.
+  | { readonly nombre: 'ejecucion-de-entrenamiento'; readonly id: string; readonly aviso?: string; readonly esfuerzo?: { readonly minutos: number | null }; readonly desde?: Ruta }
   // PA-04: la corrección de una sesión registrada, en su pantalla. Se abre desde el detalle y vuelve a él.
   | { readonly nombre: 'corregir-ejecucion'; readonly id: string; readonly desde?: Ruta }
   // PA-03 (DL-160, DL-161): «Ya la hice», el registro rápido de una sesión del plan, por pasos y sin cronómetros. Con la
@@ -368,10 +370,10 @@ function sinOrigen(ruta: Ruta): Ruta {
   return resto as Ruta;
 }
 
-/** La ruta como se la recuerda para volver: sin lo que era de una sola vez (un aviso, un pedido). */
+/** La ruta como se la recuerda para volver: sin lo que era de una sola vez (un aviso, la pregunta del esfuerzo, un pedido). */
 function paraVolver(ruta: Ruta): Ruta {
-  if (ruta.nombre === 'ejecucion-de-entrenamiento' && ruta.aviso !== undefined) {
-    const { aviso: _, ...resto } = ruta;
+  if (ruta.nombre === 'ejecucion-de-entrenamiento' && (ruta.aviso !== undefined || ruta.esfuerzo !== undefined)) {
+    const { aviso: _aviso, esfuerzo: _esfuerzo, ...resto } = ruta;
     return resto;
   }
   if (traePedido(ruta)) return { nombre: ruta.nombre } as Ruta;

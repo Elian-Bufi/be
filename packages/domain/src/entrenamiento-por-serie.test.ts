@@ -26,7 +26,8 @@ import { aplicarEventos, calcularTiempos, enVivo, type ContextoDeEventos } from 
 
 test('las operaciones nuevas son de familias propias, con su esquema estricto y su fuente', () => {
   // API-EJE-04 y 05 son de WP-CATALOGO-VISUAL (DL-081, DL-162): se prueban en zonas-musculares.test.ts.
-  const nuevas = OPERACIONES.filter((o) => /^API-(SER|TIE|EJE)-\d{2}$/.test(o.id) && !['API-EJE-04', 'API-EJE-05'].includes(o.id));
+  // API-EJE-06 es de DL-198 (la clasificación de un propio): la prueban editor-de-entrenamiento-tanda-2 y su integración.
+  const nuevas = OPERACIONES.filter((o) => /^API-(SER|TIE|EJE)-\d{2}$/.test(o.id) && !['API-EJE-04', 'API-EJE-05', 'API-EJE-06'].includes(o.id));
   assert.deepEqual(nuevas.map((o) => o.id).sort(), ['API-EJE-01', 'API-EJE-02', 'API-EJE-03', 'API-SER-01', 'API-SER-02', 'API-TIE-01', 'API-TIE-02', 'API-TIE-03', 'API-TIE-04']);
   for (const o of nuevas) {
     assert.ok(o.fuente.includes('DL-12'), o.id);

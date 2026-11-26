@@ -363,6 +363,9 @@ import {
 } from './contratos-entrenamiento-por-serie';
 import { CambiarZonasDeEjercicioRequestSchema, FichaVisualDeEjercicioResponseSchema, FichasVisualesRequestSchema, FichasVisualesResponseSchema } from './contratos-catalogo-visual';
 import { ListaDeZonasMuscularesResponseSchema } from './zonas-musculares';
+import { SumarUnoRMRequestSchema, UnoRMDeLaPersonaResponseSchema, UnoRMGuardadoResponseSchema } from './contratos-repeticion-maxima';
+import { EsfuerzoDeLaSesionResponseSchema, EsfuerzosDeLaSesionResponseSchema, RegistrarEsfuerzoDeLaSesionRequestSchema } from './esfuerzo-de-la-sesion';
+import { CambiarClasificacionDeEjercicioRequestSchema, ClasificacionDeEjercicioPropioResponseSchema } from './clasificacion-de-ejercicios';
 import { HEADER_DE_CAPACIDADES } from './compatibilidad-de-clientes';
 import {
   BusquedaEnLineaDeTiempoRequestSchema,
@@ -2634,6 +2637,33 @@ const DEFINIDAS: readonly Operacion[] = [
     errores: { ...ESCRITURA_REVELABLE, 409: ['VERSION_CONFLICT', 'IDEMPOTENCY_KEY_REUSED'], 422: ['STRENGTH_OBSERVATION_NOT_ESTIMABLE', 'VALIDATION_FAILED'] },
     fuente: 'ID propio de BE (familia FZA) · DEUDA_LEGAJO DL-171 · WP-EDITORES-PROFESIONAL ED-72 · REG-06-205',
   },
+  // ─── WP-EDITOR-ENTRENAMIENTO-TANDA-2 · RMX: el 1RM de referencia (DL-198). Familia propia de BE ─────────────────────
+  {
+    id: 'API-RMX-01',
+    metodo: 'get',
+    ruta: '/advisees/{adviseeId}/training/one-rep-max',
+    resumen:
+      'El 1RM de referencia de la persona en los ejercicios pedidos (hasta 60), con el que BE calcula las cargas en % RM. Por ejercicio: el que usa BE (current: el más reciente entre lo guardado y el último registro en rango), el aviso si un registro más nuevo se aleja más del 10 % de lo guardado (warning: BE sigue con lo guardado y no cambia nada solo), el último registro en rango (lastRecord: la última serie de la persona en ese ejercicio de 8 a 12 repeticiones a RIR 0 a 2, escrita por ella en la app, en las sesiones de los planes de este profesional del último año; BE-E1RM v2, EPLEY_V2; fuera de la barra, ORIENTATIVE) y lo guardado (history, hasta 20, del más reciente al más viejo). Cada profesional ve lo propio. El PDP de Entrenamiento; lo ajeno, el 404 de lo inexistente. La persona no lo recibe.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    query: [{ nombre: 'exerciseIds', descripcion: 'Los ejercicios del catálogo (no sus versiones), separados por comas: de 1 a 60.', schema: { type: 'string' }, obligatorio: true }],
+    exitos: [{ status: 200, schema: UnoRMDeLaPersonaResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST'], 404: ['RESOURCE_NOT_FOUND'] },
+    fuente: 'ID propio de BE (familia RMX) · DEUDA_LEGAJO DL-198 · WP-EDITOR-ENTRENAMIENTO-TANDA-2 ET2-01 a ET2-04',
+  },
+  {
+    id: 'API-RMX-02',
+    metodo: 'post',
+    ruta: '/advisees/{adviseeId}/training/one-rep-max',
+    resumen:
+      'Sumar un 1RM de referencia: una calibración (CALIBRATION: la carga, las repeticiones de 1 a 12 y el RIR de 0 a 2 de una serie que vio el profesional; BE calcula con Epley, 30 × (1 + (8 + 1) / 30) = 39 kg), uno declarado (DECLARED: el valor escrito a mano) o el último registro en rango (RECORD: cuál, y BE lo vuelve a leer y a calcular; si ya no es el último, 422 RECORD_NOT_CURRENT). Una fecha futura: 422 DATE_IN_FUTURE; una serie fuera de rango, 422 con el motivo (REPETICIONES_FUERA, RIR_MAYOR_QUE_2, SIN_CARGA). De solo agregar: nada se edita ni se borra; el nuevo pasa a ser el más reciente. Responde el valor guardado y el estado del ejercicio. El PDP de Entrenamiento; lo ajeno, el 404 de lo inexistente.',
+    autenticacion: 'SESSION',
+    idempotencia: true,
+    request: SumarUnoRMRequestSchema,
+    exitos: [{ status: 201, schema: UnoRMGuardadoResponseSchema }],
+    errores: { ...ESCRITURA_REVELABLE, 409: ['IDEMPOTENCY_KEY_REUSED'], 422: ['VALIDATION_FAILED'] },
+    fuente: 'ID propio de BE (familia RMX) · DEUDA_LEGAJO DL-198 · WP-EDITOR-ENTRENAMIENTO-TANDA-2 ET2-01 a ET2-04',
+  },
   {
     id: 'API-INT-TRN-02',
     metodo: 'post',
@@ -3042,6 +3072,19 @@ const DEFINIDAS: readonly Operacion[] = [
     exitos: [{ status: 200, schema: FichasVisualesResponseSchema }],
     errores: { ...SESION, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 403: ['ACTION_FORBIDDEN'] },
     fuente: 'REG-06-134, 135, 139 · 09v10 §7 y §9 · B10-06 §20, 21 y 59 · DEUDA_LEGAJO DL-081, DL-162',
+  },
+  {
+    id: 'API-EJE-06',
+    metodo: 'put',
+    ruta: '/training/exercises/{exerciseId}/classification',
+    resumen:
+      'Cambiar la clasificación de un ejercicio propio (carga manual): el grupo muscular, el equipamiento, el patrón y las articulaciones, enteros (lo que no se elige queda sin decir). Es la clasificación siguiente de su historia por adición: la anterior no cambia. Exige expectedClassificationVersion (0 si nunca tuvo): otra, 409 VERSION_CONFLICT. Ajeno, sembrado, importado o inexistente: el mismo 404. La de los ejercicios de BE la cura Dirección en una migración, no esta operación.',
+    autenticacion: 'SESSION',
+    idempotencia: true,
+    request: CambiarClasificacionDeEjercicioRequestSchema,
+    exitos: [{ status: 200, schema: ClasificacionDeEjercicioPropioResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 403: ['ACTION_FORBIDDEN'], 404: ['RESOURCE_NOT_FOUND'], 409: ['IDEMPOTENCY_KEY_REUSED', 'VERSION_CONFLICT'] },
+    fuente: 'ID propio de BE (familia EJE) · DEUDA_LEGAJO DL-198 · WP-EDITOR-ENTRENAMIENTO-TANDA-2 ET2-11 (ET1-D14)',
   },
   // ─── WP-07 · FRM (09v16.1 §22). Información profesional pertinente (RF-071) ─────────────────────
   {
@@ -5097,6 +5140,36 @@ const DEFINIDAS: readonly Operacion[] = [
     errores: { ...SESION, 400: ['INVALID_REQUEST'], 403: ['ACTION_FORBIDDEN'], 404: ['RESOURCE_NOT_FOUND'] },
     fuente: 'variante del titular de API-TRN-25 · WP-PULIDO-GRANDES PG-15 (decisión del continuador PG-T64, a ratificar) · ID propio de BE (sufijo PROPIA) · DEUDA_LEGAJO DL-173',
   },
+  // ─── WP-EDITOR-ENTRENAMIENTO-TANDA-2 · ESF: el esfuerzo de la sesión (Foster; DL-198). Familia propia de BE ──────────
+  {
+    id: 'API-ESF-01',
+    metodo: 'post',
+    ruta: '/training/executions/{executionId}/session-effort',
+    resumen:
+      'La persona responde el esfuerzo de una sesión suya ya registrada, al terminar: de 0 a 10 (Foster, CR-10 adaptada), aparte del RIR de cada serie, con los minutos de la sesión y su origen (TIMER, del cronómetro; DECLARED, escritos por ella) o sin minutos. Uno por sesión: otro, 409 RESOURCE_CONFLICT con SESSION_EFFORT_ALREADY_RECORDED. Confirmar la sesión (API-TRN-18) no cambia: esto viaja después, aparte. El PDP del par con su profesional, como corregir; el profesional no responde por ella. Ajena o inexistente: 404.',
+    autenticacion: 'SESSION',
+    idempotencia: true,
+    request: RegistrarEsfuerzoDeLaSesionRequestSchema,
+    exitos: [{ status: 201, schema: EsfuerzoDeLaSesionResponseSchema }],
+    errores: { ...ESCRITURA_REVELABLE, 409: ['IDEMPOTENCY_KEY_REUSED', 'RESOURCE_CONFLICT'] },
+    fuente: 'ID propio de BE (familia ESF) · DEUDA_LEGAJO DL-198 · WP-EDITOR-ENTRENAMIENTO-TANDA-2 ET2-07 a ET2-09 (RPE-D09 de DL-192)',
+  },
+  {
+    id: 'API-ESF-02',
+    metodo: 'get',
+    ruta: '/advisees/{adviseeId}/training/session-efforts',
+    resumen:
+      'Para el profesional de Entrenamiento: el esfuerzo de la sesión que la persona respondió en las sesiones que él ya ve (las registradas en sus planes con ella), de las sesiones con fecha en el período (obligatorio, hasta 366 días), de la más vieja a la más nueva. Cada uno con la carga de la sesión: el esfuerzo por los minutos (Foster, 2001), o null sin minutos. Sin juicio ni promedios. El PDP de Entrenamiento; sin acceso, el 404 de lo inexistente.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    query: [
+      { nombre: 'periodStart', descripcion: 'Fecha local YYYY-MM-DD.', schema: { type: 'string', format: 'date' }, obligatorio: true },
+      { nombre: 'periodEnd', descripcion: 'Fecha local YYYY-MM-DD.', schema: { type: 'string', format: 'date' }, obligatorio: true },
+    ],
+    exitos: [{ status: 200, schema: EsfuerzosDeLaSesionResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST'], 404: ['RESOURCE_NOT_FOUND'] },
+    fuente: 'ID propio de BE (familia ESF) · DEUDA_LEGAJO DL-198 · WP-EDITOR-ENTRENAMIENTO-TANDA-2 ET2-08 y ET2-09',
+  },
   {
     id: 'API-NPP-01',
     metodo: 'post',
@@ -5346,6 +5419,9 @@ const LECTURAS_PROTEGIDAS: ReadonlySet<string> = new Set([
   // WP-PULIDO-GRANDES (DL-173): la nota para el profe y las notas propias del profesional.
   'API-TRN-25-LISTA',
   'API-TRN-25-PROPIA',
+  // WP-EDITOR-ENTRENAMIENTO-TANDA-2 (DL-198).
+  'API-RMX-01',
+  'API-ESF-02',
   'API-NPP-02',
   // WP-CONTEXTO-DE-LA-PERSONA (DL-179).
   'API-CTX-01',

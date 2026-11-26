@@ -89,9 +89,11 @@ test('PLT-D12 · sin persona: ni días, ni asistente, ni «Otras áreas», ni ac
   assert.match(EDITOR, /const pasoDelAsistente = plantilla \? null : pasoPedido\(parametros\.get\('asistente'\)\);/);
   // DL-196: el panel es contextual, sin pestañas; «Otras áreas», los patrones y el plan (fechas, objetivo) solo con persona.
   assert.match(EDITOR, /\{!plantilla && asesoradoId !== null \? <OtrasAreas /);
-  // DL-197: «Configurar plan» (fechas, objetivo, intensidad) y «Días de la semana», solo con persona.
-  assert.match(EDITOR, /\{plantilla \? null : \(\n\s*<CuadroConfigurarPlan\n/);
-  assert.match(EDITOR, /onConfigurar=\{plantilla \? null : \(\) => setCuadroDelPlan\('plan'\)\}/);
+  // DL-197: «Días de la semana», solo con persona. DL-198 (ET2-10): «Configurar plan» también en una plantilla, sin fechas,
+  // objetivo ni anotaciones (la duración, la intensidad y el esfuerzo de la sesión, que guarda con su planificación).
+  assert.match(EDITOR, /<CuadroConfigurarPlan\n\s*enLaPlantilla=\{!!plantilla\}/);
+  assert.match(EDITOR, /onConfigurar=\{\(\) => setCuadroDelPlan\('plan'\)\}/);
+  assert.match(EDITOR, /planning: planificacionParaLaPlantilla\(planificacionQueViaja\(planificacion, bloquesEnviados\)\),/);
   assert.match(EDITOR, /\{bloque && !plantilla \? \(\n\s*<CuadroDiasDeLaSemana\n/);
   // DL-196 (E3): la app de la persona ya no retiene nada, con plantilla o sin ella.
   assert.doesNotMatch(EDITOR, /bloqueadoPorLaApp|calentamientoBloqueado/);

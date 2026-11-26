@@ -145,7 +145,8 @@ test('ENP-D13 · la revisión honesta: nunca «Nada impide activar»; cuatro est
   // La revisión se pide sola cuando lo guardado se queda quieto, no en cada tecla.
   assert.match(EDITOR, /setTimeout\(\(\) => void revisar\(version\), 900\)/);
   // En «Antes de activar», lo mismo: una revisión de otra versión no se muestra como la de esta.
-  assert.match(EDITOR, /revision\?\.estado === 'lista' && revision\.version === version\.version \? revision\.problemas\.map\(\(p\) => conSuLugar/);
+  // DL-198: las fases de más van aparte, con sus dos salidas; el 422 de la API no se repite.
+  assert.match(EDITOR, /revision\?\.estado === 'lista' && revision\.version === version\.version\n\s*\? revision\.problemas\.filter\(\(p\) => !\(p\.code === 'PHASES_EXCEED_PLAN_WEEKS' && fasesDeMas > 0\)\)\.map\(\(p\) => conSuLugar/);
 });
 
 test('C10 · «Lo que trabaja la semana» no está mientras no tenga datos', () => {

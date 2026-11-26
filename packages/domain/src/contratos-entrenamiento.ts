@@ -516,6 +516,11 @@ export const PlanificacionDelPlanSchema = z.strictObject({
    * intensidad» en su «Más opciones»). Sin criterio propio y sin estar acá, un ejercicio hereda la del plan.
    */
   withoutIntensity: z.array(IdDeNodoSchema).max(400).optional(),
+  /**
+   * DL-198 (ET2-07): «Pedir el esfuerzo de la sesión al terminar» (el RPE de la sesión de Foster, de 0 a 10). Ausente, no se
+   * pide. A la app le llega como `askSessionEffort` en API-SER-02, si declara `training-session-effort-1`.
+   */
+  askSessionEffort: z.literal(true).optional(),
   privateNotes: z
     .strictObject({
       plan: TextoOpcional(4000),

@@ -2750,7 +2750,79 @@ async function progresionYDistribucion({ p, d, salida }) {
   await esperarGuardado(p);
 }
 
-export const TODOS = { sesion, pistas, borrador, conflicto, descartar, salidaSegura, irACorregir, respuestaPerdida, reintentar, salidaConFallas, primerPlan, planDeNutricionSinAsistente, retorno, grafico, primeraInvitacion, areaSugerida, sesionRevocada, accesoRevocado, faltaUnaParte, completitud, evidencia, administracion, comparacion, comparacionConOpciones, sinSaltos, franjasPorComida, cierreDeNutricion, notacionDelEsfuerzo, recetario, opcionComoReceta, recorridosGuiados, editorDeEntrenamiento, aproximacionesPorPorcentaje, progresionYDistribucion, agregarEjerciciosConFiltros };
+export const TODOS = { sesion, pistas, borrador, conflicto, descartar, salidaSegura, irACorregir, respuestaPerdida, reintentar, salidaConFallas, primerPlan, planDeNutricionSinAsistente, retorno, grafico, primeraInvitacion, areaSugerida, sesionRevocada, accesoRevocado, faltaUnaParte, completitud, evidencia, administracion, comparacion, comparacionConOpciones, sinSaltos, franjasPorComida, cierreDeNutricion, notacionDelEsfuerzo, recetario, opcionComoReceta, recorridosGuiados, editorDeEntrenamiento, aproximacionesPorPorcentaje, progresionYDistribucion, agregarEjerciciosConFiltros, editorTanda2 };
+
+/**
+ * TEST-ET2-NAV-01 (DL-198, WP-EDITOR-ENTRENAMIENTO-TANDA-2) · el 1RM de referencia en un ejercicio en % RM: la calibración
+ * con su cuenta en vivo (30 kg × 8 a RIR 1 = 39 kg), el renglón con su origen y la base («70 % de 39 kg = 27 kg»), «Poner
+ * las cargas»; «Ver como la persona» con la carga de esa semana; y «Pedir el esfuerzo de la sesión al terminar» en
+ * «Configurar plan», que la vista de la persona muestra. Lo guardado, por la API.
+ */
+async function editorTanda2({ p, d, salida }) {
+  await abrirElEditorDeEntrenamiento(p, d);
+  await clic(p, '.ejercicio-del-editor [id^="abrir-ejercicio-"]');
+  const E = '.ejercicio-del-editor[data-abierta]';
+  // «Más opciones»: el ejercicio en % RM, al 70.
+  await clic(p, `${E} [data-mas-opciones-del-ejercicio]`);
+  await dialogoAbierto(p, 'Más opciones');
+  await p.select('dialog[open] [data-intensidad-del-ejercicio]', 'PERCENT_RM');
+  await hidratado(p, 'dialog[open] [data-criterio-del-ejercicio] input[id$="-objetivo"]');
+  await reemplazarTexto(p, await p.$('dialog[open] [data-criterio-del-ejercicio] input[id$="-objetivo"]'), '70');
+  await p.keyboard.press('Escape');
+  await dialogoCerrado(p);
+  await esperarGuardado(p);
+  // El renglón del 1RM: todavía sin valor.
+  await elemento(p, `${E} [data-uno-rm="listo"][data-uno-rm-origen="NINGUNO"]`);
+  // La calibración, con la cuenta en vivo.
+  await clic(p, `${E} [data-abrir-uno-rm]`);
+  await cuadroConSuAyuda(p, '1RM de referencia');
+  await reemplazarTexto(p, await p.$('dialog[open] [data-calibracion-carga]'), '30');
+  await reemplazarTexto(p, await p.$('dialog[open] [data-calibracion-repeticiones]'), '8');
+  await p.select('dialog[open] [data-calibracion-rir]', '1');
+  await p.waitForFunction(() => document.querySelector('dialog[open] [data-cuenta-del-uno-rm]')?.textContent.includes('30 × (1 + (8 + 1) / 30) = 39 kg'), { timeout: ESPERA, polling: 100 });
+  await captura(p, salida, 'uno-rm-calibracion');
+  await clic(p, 'dialog[open] [data-principal-del-cuadro]');
+  await dialogoCerrado(p);
+  // El renglón: el 1RM con su origen y la base del % RM; «Poner las cargas» escribe 27 kg en la común.
+  await elemento(p, `${E} [data-uno-rm-origen="CALIBRATION"]`);
+  assert.match(await p.$eval(`${E} [data-uno-rm-vigente]`, (e) => e.textContent), /1RM 39 kg · calculado en la calibración del/);
+  assert.match(await p.$eval(`${E} [data-base-del-porcentaje-texto]`, (e) => e.textContent), /70 % de 39 kg = 27 kg/);
+  await captura(p, salida, 'uno-rm-en-el-ejercicio');
+  await clic(p, `${E} [data-poner-las-cargas]`);
+  await p.waitForFunction((s) => document.querySelector(`${s} [data-base-del-porcentaje]`)?.textContent.includes('Las cargas salen de este 1RM'), { timeout: ESPERA, polling: 100 }, E);
+  await esperarGuardado(p);
+  // «Configurar plan»: pedir el esfuerzo de la sesión al terminar.
+  await clic(p, '[data-configurar-plan]');
+  await dialogoAbierto(p, 'Configurar plan');
+  await clic(p, 'dialog[open] [data-pedir-el-esfuerzo]');
+  await elemento(p, 'dialog[open] [data-esfuerzo-de-la-sesion-del-plan="si"]');
+  await clic(p, 'dialog[open] [data-principal-del-cuadro]');
+  await dialogoCerrado(p);
+  await esperarGuardado(p);
+  // «Ver como la persona»: la sesión con la carga de 27 kg y, al terminar, la pregunta del esfuerzo.
+  await clic(p, '[data-ver-como-la-persona]');
+  await cuadroConSuAyuda(p, 'Así le llega a la app');
+  await elemento(p, 'dialog[open] [data-vista-ejercicio="1"]');
+  assert.match(await p.$eval('dialog[open] [data-vista-ejercicio="1"]', (e) => e.textContent), /27 kg/);
+  await elemento(p, 'dialog[open] [data-vista-esfuerzo]');
+  await captura(p, salida, 'ver-como-la-persona');
+  await p.keyboard.press('Escape');
+  await dialogoCerrado(p);
+  // La API: la opción del plan, la carga y el 1RM guardado con su origen.
+  const token = await sesionPorApi(d.pro.correo);
+  const plan = (await pedir('GET', `/training/plans/${d.borradorDeEntrenamiento}/detail`, { token })).data;
+  assert.equal(plan.planning.askSessionEffort, true);
+  const ejercicio = plan.blocks[0].sessions[0].prescriptions[0];
+  assert.equal(ejercicio.intensity.criterion, 'PERCENT_RM');
+  assert.deepEqual(ejercicio.suggestedLoad, { value: 27, unit: 'kg' });
+  const unoRM = (await pedir('GET', `/advisees/${d.ase.id}/training/one-rep-max?exerciseIds=${ejercicio.exerciseId}`, { token })).data[0];
+  assert.equal(unoRM.current.origin, 'CALIBRATION');
+  assert.deepEqual(unoRM.current.value, { value: 39, unit: 'kg' });
+  // En el tema Azul noche, el mismo renglón.
+  await p.emulateMediaFeatures([{ name: 'prefers-color-scheme', value: 'dark' }]);
+  await pausa(300);
+  await captura(p, salida, 'uno-rm-en-el-ejercicio-oscuro');
+}
 
 /** Errores de la página que no dicen nada del website (los del propio navegador). */
 const IGNORABLES = [/ResizeObserver loop/];

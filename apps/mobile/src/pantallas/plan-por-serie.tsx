@@ -16,6 +16,7 @@ import { Cargando } from '../estados';
 import { ImagenDeMedio } from '../imagen-de-medio';
 import { useLecturaRecordada } from '../lecturas';
 import { notacionDeLaLectura, type NotacionDelEsfuerzo } from '../esfuerzo-en-la-app';
+import { rotuloDeLaSemana } from '../esfuerzo-de-la-sesion';
 import { AVISO_SIN_PLAN_POR_SERIE, bandaDeLaSerie, basesDeLaPrescripcion, ejerciciosYSeries, sesionDesdeLaOcurrencia } from '../series-de-la-sesion';
 import { Aviso, Boton, Dato, Desplegable, estilosPorTema, Parrafo } from '../ui';
 import { RESPALDO_DE_EJERCICIO, TecnicaDelEjercicio } from './sesion-enfocada';
@@ -48,8 +49,11 @@ function DetalleDeLaSesion({ ocurrencia, token, sesionPerdida }: { ocurrencia: O
   // DL-192: el RIR de cada serie, en la notación del plan (API-SER-02); sin leerla, RIR.
   const notacion = notacionDeLaLectura(r.ok ? r.datos.data : null);
   const elegida = sesion.prescriptions.find((p) => p.prescriptionId === tecnica) ?? null;
+  // DL-198: la semana de la fase en que cae esta sesión, si la fase tiene progresión. Las cargas ya son las de esa semana.
+  const semana = rotuloDeLaSemana(r.ok ? r.datos.data : null);
   return (
     <View>
+      {semana ? <Parrafo tenue>{semana}</Parrafo> : null}
       {r.ok ? null : (
         <Aviso tipo="info" titulo={AVISO_SIN_PLAN_POR_SERIE}>
           <Boton texto={COPY_ENTRENAMIENTO_POR_SERIE.reintentar} tipo="secundario" onPress={() => void cargar()} />

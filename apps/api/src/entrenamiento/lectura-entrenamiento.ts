@@ -1,5 +1,8 @@
 import {
   bloquesComoSalen,
+  bloquesDeLaSemana,
+  semanaDeLaFase,
+  sesionDeLaSemana,
   CONDICION_DE_SESION_API,
   estadoDeVersionDePlanApi,
   GRANULARIDAD_API,
@@ -26,6 +29,7 @@ import type {
   InstantaneaDeEntrenamiento,
   Prescripcion,
   PrescripcionGuardada,
+  SeriePrescriptaGuardada,
   SesionGuardada,
   SesionPlanificada,
   VersionDeObjetivoDeEntrenamiento,
@@ -243,8 +247,15 @@ export function versionDePlanApi(
   nombreProfesional: string,
   catalogoDeBorrador: ReadonlyMap<string, EjercicioCitable>,
   seguimientoAbierto: boolean,
+  /** DL-198 (ET2-05): para el titular, la fecha de hoy: cada sesión con la carga de esa semana de su fase. */
+  fechaDeLaSemana: string | null = null,
 ): VersionDePlanDeEntrenamiento {
-  const { contenido, resolver } = contenidoDeLaVersion(v, catalogoDeBorrador);
+  const base = contenidoDeLaVersion(v, catalogoDeBorrador);
+  const { resolver } = base;
+  const contenido: ContenidoDePlanDeEntrenamiento =
+    fechaDeLaSemana && base.contenido.planning?.progressions?.length
+      ? { ...base.contenido, blocks: bloquesDeLaSemana(base.contenido.blocks, base.contenido.planning, fechaDeLaSemana, (p: PrescripcionGuardada) => ejercicioDe(resolver, p.exerciseVersionId).exerciseName) }
+      : base.contenido;
   return {
     planId: v.id,
     trainingPlanId: v.planId,
@@ -264,6 +275,16 @@ export function versionDePlanApi(
   };
 }
 
+/**
+ * DL-198 (ET2-05, ET2-D06): una sesión guardada en la semana que rige en esa fecha, con la progresión de su fase. Sin
+ * fecha, sin planificación o sin progresión, la misma sesión: lo de antes sale idéntico.
+ */
+export function sesionEnLaSemana(contenido: ContenidoDePlanDeEntrenamiento, blockId: string, sesion: SesionGuardada, resolver: ResolverDeEjercicio, fecha: string | null | undefined): SesionGuardada {
+  if (!fecha || !contenido.planning?.progressions?.length) return sesion;
+  const semana = semanaDeLaFase(contenido.planning, contenido.blocks, blockId, fecha);
+  return sesionDeLaSemana<SeriePrescriptaGuardada, PrescripcionGuardada, SesionGuardada>(sesion, semana, contenido.planning, (p) => ejercicioDe(resolver, p.exerciseVersionId).exerciseName);
+}
+
 // ─── Ocurrencias, borradores y ejecuciones ───────────────────────────────────────────────────────
 
 /** Lo que guarda el borrador y la ejecución en `contenido`: los ejercicios registrados y el resumen de sesión. */
@@ -277,12 +298,14 @@ export const REGISTRO_VACIO: ContenidoDeRegistro = { exercises: [], sessionSumma
  * La sesión planificada de una ocurrencia, tal como está en la instantánea, ubicada en su bloque y su microciclo. Es
  * la forma mínima que DL-079 exige para poder registrar: las prescripciones con su identificador.
  */
-export function sesionDeOcurrenciaApi(i: InstantaneaDeEntrenamiento, sesionId: string): SesionDeOcurrencia | null {
+export function sesionDeOcurrenciaApi(i: InstantaneaDeEntrenamiento, sesionId: string, fecha: string | null = null): SesionDeOcurrencia | null {
   const u = sesionesDelPlan(i.contenido).find((s) => s.sesion.sessionId === sesionId);
   if (!u) return null;
   const orden = (u.microciclo ? u.microciclo.sessions : u.bloque.sessions).indexOf(u.sesion) + 1;
+  const resolver = resolverDeInstantanea(i);
+  // DL-198 (ET2-05): con la fecha de la ocurrencia, la carga de esa semana de su fase (lo indicado ese día).
   return {
-    ...sesionApi(u.sesion, orden, resolverDeInstantanea(i)),
+    ...sesionApi(sesionEnLaSemana(i.contenido, u.bloque.blockId, u.sesion, resolver, fecha), orden, resolver),
     blockId: u.bloque.blockId,
     blockLabel: u.bloque.label,
     microcycleId: u.microciclo?.microcycleId ?? null,

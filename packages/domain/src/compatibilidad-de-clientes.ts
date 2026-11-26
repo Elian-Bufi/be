@@ -70,6 +70,21 @@ export const CAPACIDAD_BLOQUES_DE_LA_SESION = 'training-session-groups-1';
  */
 export const CAPACIDAD_NOTACION_DEL_ESFUERZO = 'training-effort-notation-1';
 
+/**
+ * DL-198 (WP-EDITOR-ENTRENAMIENTO-TANDA-2, ET2-D07) · el cliente sabe decir en qué semana de la fase está la sesión para
+ * registrar (API-SER-02): lee `week` («Semana 3 de 6 · descarga»). **La carga de esa semana llega a todos**, en los
+ * mismos campos de siempre (otros valores, la misma forma): la capacidad solo suma el rótulo de la semana, que un esquema
+ * estricto que no lo conoce rechazaría. La declara la APK nueva.
+ */
+export const CAPACIDAD_SEMANA_DE_LA_FASE = 'training-week-load-1';
+
+/**
+ * DL-198 (ET2-07 a ET2-09) · el cliente sabe preguntar el esfuerzo de la sesión al terminar (Foster, de 0 a 10) y
+ * mandarlo con API-ESF-01: lee `askSessionEffort` de la sesión para registrar (API-SER-02). Sin la capacidad, la forma de
+ * siempre: la app no pregunta y nada se retiene. La declara la APK nueva.
+ */
+export const CAPACIDAD_ESFUERZO_DE_LA_SESION = 'training-session-effort-1';
+
 export const CAPACIDADES_CONOCIDAS = [
   CAPACIDAD_OBJETIVOS_POR_SERIE,
   CAPACIDAD_FORMULARIOS_FORMATO_3,
@@ -77,6 +92,8 @@ export const CAPACIDADES_CONOCIDAS = [
   CAPACIDAD_TIPOS_DE_SERIE,
   CAPACIDAD_BLOQUES_DE_LA_SESION,
   CAPACIDAD_NOTACION_DEL_ESFUERZO,
+  CAPACIDAD_SEMANA_DE_LA_FASE,
+  CAPACIDAD_ESFUERZO_DE_LA_SESION,
 ] as const;
 export type CapacidadDeCliente = (typeof CAPACIDADES_CONOCIDAS)[number];
 

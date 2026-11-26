@@ -44,6 +44,8 @@ import {
   type ResumenDeVersionDePlanDeEntrenamiento,
   type EvaluacionDeEntrenamiento,
   type VersionDelHistorial,
+  semanasDeMas,
+  semanasQueSumanLasFases,
 } from '@be/domain';
 import { useCallback, useEffect, useRef, useState, type ReactNode } from 'react';
 import { AvisoFlotante } from '../../../../components/ayuda';
@@ -588,6 +590,30 @@ function SesionQueSeMira({
   );
 }
 
+/** DL-198 (pedido de la revisión de #324): lo que se dice de un plan activo con fases que pasan del fin del plan. */
+export const COPY_FASES_DE_MAS_EN_EL_ACTIVO = {
+  aviso: (suman: number, plan: number, fuera: number) =>
+    `Las fases de este plan suman ${suman} semanas y el plan, ${plan}: ${fuera === 1 ? 'la semana que queda' : `las ${fuera} semanas que quedan`} después del fin del plan no le ${fuera === 1 ? 'llega' : 'llegan'} a la persona.`,
+  queHacer: 'Para que le lleguen, armá una versión nueva con el plan más largo o con la última fase más corta.',
+} as const;
+
+/**
+ * DL-198: desde la tanda 1 (ET1-D03), nada de lo que pasa del fin del plan se ubica en la agenda de la persona. Un plan que
+ * ya se activó así no se puede cambiar (está congelado): se avisa en el plan activo, sin juicio, con lo que se puede hacer.
+ */
+export function FasesDeMasEnElPlanActivo({ version }: { version: PlanConObjetivos }) {
+  const fuera = semanasDeMas(version.planning ?? null, version.blocks);
+  if (fuera === 0 || !version.planning?.weeks) return null;
+  return (
+    <p className="nota plan__fases-de-mas" role="note" data-fases-de-mas-en-el-activo={fuera}>
+      <Icono nombre="aviso" tamano={18} />
+      <span>
+        {COPY_FASES_DE_MAS_EN_EL_ACTIVO.aviso(semanasQueSumanLasFases(version.planning, version.blocks), version.planning.weeks, fuera)} {COPY_FASES_DE_MAS_EN_EL_ACTIVO.queHacer}
+      </span>
+    </p>
+  );
+}
+
 function PlanActivo({ version, numero, historial, acciones, aviso }: { version: PlanConObjetivos; numero: number; historial: readonly VersionDelHistorial[]; acciones: ReactNode; aviso: ReactNode }) {
   const { token, asesoradoId, sesionPerdida, parametros, ir } = useEntrenamiento();
   const activadaEl = diaSinElAnioEnCurso(version.activatedAt as string);
@@ -609,6 +635,7 @@ function PlanActivo({ version, numero, historial, acciones, aviso }: { version: 
         </div>
       </div>
       {aviso}
+      <FasesDeMasEnElPlanActivo version={version} />
       <SesionQueSeMira
         version={version}
         pedido={{ bloque: parametros.get('bloque'), micro: parametros.get('micro'), sesion: parametros.get('sesion'), ejercicios: parametros.get('ejercicios') }}

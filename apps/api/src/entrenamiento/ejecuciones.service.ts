@@ -284,7 +284,7 @@ export class EjecucionesDeEntrenamientoService {
         // La decisión queda registrada sobre el recurso real —la versión de la ocurrencia—: el occurrenceId es opaco.
         await this.decidir(tx, 'API-TRN-15', actor, version.plan.profesionalId, actor.identidadId, { tipo: 'VersionDePlanDeEntrenamiento', id: version.id }, ctx);
         const instantanea = version.instantanea.contenido as unknown as InstantaneaDeEntrenamiento;
-        const sesion = sesionDeOcurrenciaApi(instantanea, o.sesionPlanificadaId);
+        const sesion = sesionDeOcurrenciaApi(instantanea, o.sesionPlanificadaId, o.fechaLocal);
         if (!sesion) throw this.ejecutor.noRevelable({ operacion: 'API-TRN-15', actorId: actor.identidadId, recurso, sujetoId: actor.identidadId }, ctx);
         const plan = await this.planConProcesoAbierto(tx, actor.identidadId, true);
         if (!plan || plan.planId !== version.planId) {
@@ -595,7 +595,7 @@ export class EjecucionesDeEntrenamientoService {
         const condicion = interpretarCondicion(r.sessionCondition, 'correction.sessionCondition') as CondicionDeSesion;
         // DL-161: cada serie en su forma, como en el borrador.
         const contenido: ContenidoDeRegistro = { exercises: ejerciciosEnSuForma(r.exercises), sessionSummary: r.sessionSummary };
-        const sesion = sesionDeOcurrenciaApi(x.instantanea, x.sesionPlanificadaId);
+        const sesion = sesionDeOcurrenciaApi(x.instantanea, x.sesionPlanificadaId, x.fechaLocal);
         await this.verificarRegistro(tx, actor, x.asesoradoId === actor.identidadId ? 'ASESORADO' : 'PROFESIONAL', { granularidad, condicion, contenido }, sesion, 'correction.', x.profesionalId);
         // La corrección es un registro completo: cumple lo mismo que una confirmación.
         const minimos = problemasParaConfirmar({ condicion, granularidad, ejercicios: contenido.exercises, resumenDeSesion: contenido.sessionSummary });
@@ -729,7 +729,8 @@ export class EjecucionesDeEntrenamientoService {
       for (const v of versiones) {
         for (const { sesion } of sesionesDelPlan(v.instantanea.contenido)) {
           if (elegida.get(sesion.sessionId) !== v) continue;
-          const plannedSession = sesionDeOcurrenciaApi(v.instantanea, sesion.sessionId) as SesionDeOcurrencia;
+          // DL-198 (ET2-05): lo indicado ese día, con la carga de esa semana de su fase.
+          const plannedSession = sesionDeOcurrenciaApi(v.instantanea, sesion.sessionId, fecha) as SesionDeOcurrencia;
           const b = porClave.get(`${v.id}|${sesion.sessionId}|${fecha}`);
           r.push({
             occurrenceId: codificarOcurrencia({ versionDePlanId: v.id, sesionPlanificadaId: sesion.sessionId, fechaLocal: fecha }),
@@ -803,7 +804,7 @@ export class EjecucionesDeEntrenamientoService {
     if (bloquear) await tx.$queryRaw`SELECT 1 FROM "borrador_de_ejecucion_de_entrenamiento" WHERE "id" = ${encontrado.id}::uuid FOR NO KEY UPDATE`;
     const borrador = await tx.borradorDeEjecucionDeEntrenamiento.findUniqueOrThrow({ where: { id: encontrado.id }, include: { ejecucion: { select: { id: true } } } });
     const instantanea = encontrado.versionDePlan.instantanea?.contenido as unknown as InstantaneaDeEntrenamiento;
-    return { borrador, profesionalId, instantanea, sesion: sesionDeOcurrenciaApi(instantanea, borrador.sesionPlanificadaId) };
+    return { borrador, profesionalId, instantanea, sesion: sesionDeOcurrenciaApi(instantanea, borrador.sesionPlanificadaId, fechaDe(borrador.fechaLocal)) };
   }
 
   /**
@@ -835,6 +836,7 @@ export class EjecucionesDeEntrenamientoService {
       asesoradoId: x.asesoradoId,
       profesionalId,
       sesionPlanificadaId: x.sesionPlanificadaId,
+      fechaLocal: fechaDe(x.fechaLocal),
       instantanea: x.versionDePlan.instantanea?.contenido as unknown as InstantaneaDeEntrenamiento,
     };
   }
@@ -986,7 +988,8 @@ export class EjecucionesDeEntrenamientoService {
     }
     return leidas.map(({ x, original, correcciones }) => {
       const instantanea = x.versionDePlan.instantanea?.contenido as unknown as InstantaneaDeEntrenamiento;
-      const sesion = sesionDeOcurrenciaApi(instantanea, x.sesionPlanificadaId);
+      // DL-198 (ET2-05): lo indicado ese día (la carga de esa semana), contra lo que se compara lo registrado.
+      const sesion = sesionDeOcurrenciaApi(instantanea, x.sesionPlanificadaId, fechaDe(x.fechaLocal));
       const vista = resolverVistaEfectiva(
         x.id,
         correcciones.map(({ fila }) => ({ id: fila.id, originalId: x.id, correccionPreviaId: fila.correccionPreviaId })),

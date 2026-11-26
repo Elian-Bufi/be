@@ -12,12 +12,30 @@
  */
 import { z } from 'zod';
 import { IdOpaco, Instante, ValidationIssueSchema } from './contratos';
-import { EstructuraDePlanDeEntrenamientoEntradaSchema } from './contratos-entrenamiento';
+import { EstructuraDePlanDeEntrenamientoEntradaSchema, PlanificacionDelPlanSchema } from './contratos-entrenamiento';
 import { ImagenDeEjercicioSchema } from './contratos-entrenamiento-por-serie';
 import { PaginaSchema, TokenDeVersionSchema } from './contratos-vinculo';
 
 const Texto = (max: number) => z.string().trim().min(1).max(max);
 const TextoOpcional = (max: number) => z.string().trim().max(max).nullable();
+
+/**
+ * DL-198 (WP-EDITOR-ENTRENAMIENTO-TANDA-2, ET2-10) · la planificación que guarda una plantilla: las semanas del plan y de
+ * cada fase, las aproximaciones, las progresiones, la intensidad del plan y el esfuerzo de la sesión. **Nada de una
+ * persona** (DL-108 D-5): sin fecha de inicio, sin objetivo, sin anotaciones privadas y sin favoritos. Nombra las fases y
+ * los ejercicios de su estructura; al aplicarla, cada uno pasa al suyo del plan nuevo (`planificacionDesdeLaPlantilla`).
+ * Opcional en todo: una plantilla de antes no la tiene, y un website anterior no la manda.
+ */
+export const PlanificacionDeLaPlantillaSchema = PlanificacionDelPlanSchema.pick({
+  weeks: true,
+  phases: true,
+  warmUps: true,
+  progressions: true,
+  intensity: true,
+  withoutIntensity: true,
+  askSessionEffort: true,
+});
+export type PlanificacionDeLaPlantilla = z.infer<typeof PlanificacionDeLaPlantillaSchema>;
 
 export const EstadoDePlantillaSchema = z.enum(['ACTIVE', 'ARCHIVED']);
 export type EstadoDePlantilla = z.infer<typeof EstadoDePlantillaSchema>;
@@ -30,6 +48,8 @@ export const CrearPlantillaDeEntrenamientoRequestSchema = z.strictObject({
   name: Texto(120),
   description: TextoOpcional(1000).optional(),
   structure: EstructuraDePlanDeEntrenamientoEntradaSchema,
+  /** DL-198 (ET2-10): la planificación de la plantilla; ausente, sin planificación. */
+  planning: PlanificacionDeLaPlantillaSchema.nullable().optional(),
   /** D-2: las cargas sugeridas no se copian por defecto; con `true` se conservan como referencia de la plantilla. */
   copySuggestedLoads: z.boolean().optional(),
   /** Si la estructura salió de una versión de plan propia, para dejarlo registrado. */
@@ -40,6 +60,8 @@ export type CrearPlantillaDeEntrenamientoRequest = z.infer<typeof CrearPlantilla
 export const NuevaVersionDePlantillaRequestSchema = z.strictObject({
   expectedVersion: TokenDeVersionSchema,
   structure: EstructuraDePlanDeEntrenamientoEntradaSchema,
+  /** DL-198 (ET2-10): la planificación de la versión nueva; ausente, sin planificación. */
+  planning: PlanificacionDeLaPlantillaSchema.nullable().optional(),
   copySuggestedLoads: z.boolean().optional(),
   origin: OrigenDePlantillaSchema.optional(),
 });
@@ -81,6 +103,8 @@ export type EjercicioDePlantilla = z.infer<typeof EjercicioDePlantillaSchema>;
 export const PlantillaDeEntrenamientoSchema = ResumenDePlantillaDeEntrenamientoSchema.extend({
   /** La estructura tal como se guardó: la misma forma que se manda al crear un plan. */
   structure: EstructuraDePlanDeEntrenamientoEntradaSchema,
+  /** DL-198 (ET2-10): la planificación de la versión vigente, o `null`. Opcional para un website anterior. */
+  planning: PlanificacionDeLaPlantillaSchema.nullable().optional(),
   /** Por `exerciseVersionId`: el nombre vigente en el catálogo y su disponibilidad. Uno que ya no exista no figura. */
   exercises: z.record(IdOpaco, EjercicioDePlantillaSchema),
 });
@@ -117,6 +141,8 @@ export const AbrirPreparacionDePlantillaRequestSchema = z.strictObject({});
 export const GuardarPreparacionDePlantillaRequestSchema = z.strictObject({
   expectedVersion: TokenDeVersionSchema,
   structure: EstructuraDePlanDeEntrenamientoEntradaSchema,
+  /** DL-198 (ET2-10): la planificación en preparación. Ausente, no cambia; `null`, se quita. */
+  planning: PlanificacionDeLaPlantillaSchema.nullable().optional(),
   /** Puede quedar vacío mientras se prepara: el nombre se exige al guardar la plantilla. */
   name: z.string().trim().max(120).optional(),
   description: TextoOpcional(1000).optional(),
@@ -155,6 +181,8 @@ export type ResumenDePreparacionDePlantilla = z.infer<typeof ResumenDePreparacio
 export const PreparacionDePlantillaSchema = ResumenDePreparacionDePlantillaSchema.extend({
   /** La estructura en preparación, con los identificadores que le puso el servidor al guardarla. */
   structure: EstructuraDePlanDeEntrenamientoEntradaSchema,
+  /** DL-198 (ET2-10): la planificación en preparación, o `null`. Opcional para un website anterior. */
+  planning: PlanificacionDeLaPlantillaSchema.nullable().optional(),
   /** Por `exerciseVersionId`, los que este profesional puede citar. */
   exercises: z.record(IdOpaco, EjercicioDeLaPreparacionSchema),
 });

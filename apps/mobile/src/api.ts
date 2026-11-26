@@ -2,7 +2,7 @@
  * Cliente de la API para el APK: base absoluta del perfil de build (API_BASE_URL, eas.json) y superficie APK.
  * La APK va directo a la API por HTTPS, sin CORS (07:645, 790). La definición del cliente es única: @be/domain.
  */
-import { CAPACIDAD_BLOQUES_DE_LA_SESION, CAPACIDAD_FORMULARIOS_FORMATO_3, CAPACIDAD_NOTACION_DEL_ESFUERZO, CAPACIDAD_OBJETIVOS_POR_SERIE, CAPACIDAD_TEXTOS_VIGENTES, CAPACIDAD_TIPOS_DE_SERIE, crearClienteBe } from '@be/domain';
+import { CAPACIDAD_BLOQUES_DE_LA_SESION, CAPACIDAD_ESFUERZO_DE_LA_SESION, CAPACIDAD_FORMULARIOS_FORMATO_3, CAPACIDAD_NOTACION_DEL_ESFUERZO, CAPACIDAD_OBJETIVOS_POR_SERIE, CAPACIDAD_SEMANA_DE_LA_FASE, CAPACIDAD_TEXTOS_VIGENTES, CAPACIDAD_TIPOS_DE_SERIE, crearClienteBe } from '@be/domain';
 import Constants from 'expo-constants';
 import { randomUUID } from 'expo-crypto';
 import { memoria } from './lecturas';
@@ -53,7 +53,19 @@ const fetchQueOlvidaAlEscribir: typeof fetch = async (entrada, init) => {
 // DL-192 (DL-194, APK 0.32): la notación del esfuerzo (`training-effort-notation-1`). Con ella, la API manda
 // `effortNotation` en API-TRN-09 y API-SER-02, y la APK pregunta y muestra el esfuerzo en RIR o en RPE
 // (`esfuerzo-en-la-app.ts`); lo que manda es siempre el RIR, con su `fieldOrigins.rir`.
-const CAPACIDADES = [CAPACIDAD_OBJETIVOS_POR_SERIE, CAPACIDAD_FORMULARIOS_FORMATO_3, CAPACIDAD_TEXTOS_VIGENTES, CAPACIDAD_TIPOS_DE_SERIE, CAPACIDAD_BLOQUES_DE_LA_SESION, CAPACIDAD_NOTACION_DEL_ESFUERZO] as const;
+// DL-198: la semana de la fase (`training-week-load-1`: API-SER-02 manda `week`, el rótulo «Semana 3 de 6»; las cargas ya
+// llegan con la de esa semana para todos) y el esfuerzo de la sesión (`training-session-effort-1`: `askSessionEffort`, y la
+// pregunta al terminar, que se manda con API-ESF-01). Ver `esfuerzo-de-la-sesion.ts`.
+const CAPACIDADES = [
+  CAPACIDAD_OBJETIVOS_POR_SERIE,
+  CAPACIDAD_FORMULARIOS_FORMATO_3,
+  CAPACIDAD_TEXTOS_VIGENTES,
+  CAPACIDAD_TIPOS_DE_SERIE,
+  CAPACIDAD_BLOQUES_DE_LA_SESION,
+  CAPACIDAD_NOTACION_DEL_ESFUERZO,
+  CAPACIDAD_SEMANA_DE_LA_FASE,
+  CAPACIDAD_ESFUERZO_DE_LA_SESION,
+] as const;
 
 export const api = crearClienteBe({ baseUrl: `${extra.apiBaseUrl ?? ''}/api/v1`, superficie: 'APK', capacidades: CAPACIDADES, fetch: fetchQueOlvidaAlEscribir });
 

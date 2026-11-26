@@ -25,6 +25,7 @@ import {
   NOMBRE_DEL_GRUPO_MUSCULAR,
   NOMBRE_DEL_PATRON,
   PATRONES_DE_MOVIMIENTO,
+  clasificacionEnUnRenglon,
   zonasEnUnRenglon,
   type Articulaciones,
   type ClasificacionDeEjercicio,
@@ -51,6 +52,7 @@ import { ImagenDeEjercicio, ImagenGuardadaDeEjercicio } from './imagen-de-ejerci
 import { ZonasDelEjercicio } from './zonas-del-ejercicio';
 import { COPY_ZONAS_PROPIAS } from './zonas-propias';
 import { EsperandoSesion } from '../../../lib/sesion';
+import { COPY_CLASIFICACION_DEL_PROPIO, CuadroDeLaClasificacion } from './clasificacion-del-propio';
 
 type Estado = { tipo: 'cargando' } | { tipo: 'error' } | { tipo: 'sin-area' } | { tipo: 'listo'; ejercicios: EjercicioPropio[] };
 
@@ -78,6 +80,8 @@ export function MisEjercicios() {
   // TB-48: el ejercicio cuyas zonas se están cargando o cambiando: uno por vez, como la imagen.
   const [zonas, setZonas] = useState<string | null>(null);
   const [paraEnfocar, setParaEnfocar] = useState<string | null>(null);
+  // DL-198 (ET2-11): el ejercicio cuya clasificación se cambia, en su cuadro.
+  const [clasificando, setClasificando] = useState<EjercicioPropio | null>(null);
   const intento = useClaveDeIntento();
   const listo = yo.tipo === 'listo';
 
@@ -267,6 +271,10 @@ export function MisEjercicios() {
                       {e.available ? '' : ' · retirado del catálogo'}
                     </p>
                     <ZonasDeLaTarjeta exerciseId={e.exerciseId} fichas={fichas} />
+                    {/* DL-198 (ET2-11): la clasificación, en un renglón (o «Sin indicar»). */}
+                    <p className="nota ejercicio-propio__clasificacion" data-clasificacion-en-la-tarjeta>
+                      {clasificacionEnUnRenglon(e.classification) ?? `Clasificación: ${COPY_CLASIFICACION_DEL_PROPIO.sinIndicar}`}
+                    </p>
                     <div className="ejercicio-propio__acciones">
                       <button
                         type="button"
@@ -291,6 +299,16 @@ export function MisEjercicios() {
                       >
                         <Icono nombre="imagen" tamano={18} />
                         {e.image ? COPY_EJERCICIOS_PROPIOS.cambiarImagen : COPY_EJERCICIOS_PROPIOS.agregarImagen}
+                      </button>
+                      <button
+                        type="button"
+                        id={`clasificacion-de-${e.exerciseId}`}
+                        className="boton boton--quieto boton--compacto"
+                        data-cambiar-clasificacion
+                        onClick={() => setClasificando(e)}
+                      >
+                        <Icono nombre="filtros" tamano={18} />
+                        {clasificacionEnUnRenglon(e.classification) ? COPY_CLASIFICACION_DEL_PROPIO.cambiar : COPY_CLASIFICACION_DEL_PROPIO.clasificar}
                       </button>
                       {/* TB-48: con la ficha visual leída (sus zonas de hoy y el número de la última asignación). */}
                       {fichaDe(e.exerciseId) ? (
@@ -317,6 +335,24 @@ export function MisEjercicios() {
           )
         ) : null}
       </section>
+      {clasificando ? (
+        <CuadroDeLaClasificacion
+          abierto
+          token={token}
+          ejercicio={clasificando}
+          sesionPerdida={sesionPerdida}
+          onCerrar={() => {
+            setParaEnfocar(`clasificacion-de-${clasificando.exerciseId}`);
+            setClasificando(null);
+          }}
+          onGuardada={(x) => {
+            setEstado((s) => (s.tipo === 'listo' ? { tipo: 'listo', ejercicios: s.ejercicios.map((y) => (y.exerciseId === x.exerciseId ? x : y)) } : s));
+            setAviso(COPY_CLASIFICACION_DEL_PROPIO.guardada(x.name));
+            setParaEnfocar(`clasificacion-de-${x.exerciseId}`);
+            setClasificando(null);
+          }}
+        />
+      ) : null}
     </div>
   );
 }

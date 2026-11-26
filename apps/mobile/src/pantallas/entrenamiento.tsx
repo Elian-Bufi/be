@@ -84,6 +84,8 @@ import { Icono } from '../icono';
 import { IconoDeEjercicio } from '../iconos-de-entrenamiento';
 import { DIAS_DE_LA_VEZ_PASADA, lineaDeLaVezPasadaDelEjercicio } from '../la-vez-pasada-en-la-sesion';
 import { notacionDeLaLectura } from '../esfuerzo-en-la-app';
+import { minutosDelCronometro, rotuloDeLaSemana, sePreguntaElEsfuerzo, type LecturaDeLaSemana } from '../esfuerzo-de-la-sesion';
+import { EsfuerzoDeLaSesion } from './esfuerzo-de-la-sesion';
 import { esIncierto, falloDe, useClaveDeIntento } from '../intento';
 import { useLecturaRecordada, useSeleccionRecordada } from '../lecturas';
 import { VISTA_RECORDADA } from '../volver-a-hoy';
@@ -1013,6 +1015,11 @@ export function PantallaDeSesion({
   const hoy = useDiaDeLaApi();
   const modo = local?.modo ?? modoDeLaRuta ?? (fechaDeLaSesion === hoy ? 'en-vivo' : 'otro-dia');
   const [carga, setCarga] = useState<'leyendo' | 'lista' | 'error'>('leyendo');
+  /**
+   * DL-198: lo de API-SER-02 que no es la sesión: la semana de la fase (el rótulo) y si el plan pide el esfuerzo de la
+   * sesión al terminar. Sin la lectura (sin red al entrar), ni rótulo ni pregunta: la sesión se registra igual.
+   */
+  const [delPlan, setDelPlan] = useState<LecturaDeLaSemana | null>(null);
   // Lo escrito vive en el almacén del teléfono (PA-01): acá quedan solo los errores de la última fila que se quiso tildar.
   const [errores, setErrores] = useState<{ readonly setIndex: number; readonly errores: ErroresDeFila } | null>(null);
   /**
@@ -1077,6 +1084,8 @@ export function PantallaDeSesion({
     if (sesionPerdida(s)) return;
     // DL-192: con la notación del esfuerzo del plan, que la API manda porque esta APK declara la capacidad.
     if (s.ok) entrenamientoLocal.fijarSesionDelPlan(draftId, s.datos.data.session, false, notacionDeLaLectura(s.datos.data));
+    // DL-198: la semana y la pregunta del esfuerzo, que la API manda porque esta APK declara sus capacidades.
+    if (s.ok) setDelPlan({ week: s.datos.data.week ?? null, askSessionEffort: s.datos.data.askSessionEffort ?? null });
     if (modo === 'en-vivo') {
       const t = await api.tiemposDelBorrador(token, draftId);
       if (sesionPerdida(t)) return;
@@ -1594,11 +1603,17 @@ export function PantallaDeSesion({
         if (r.tipo === 'API' && r.codigo === 'EXECUTION_ALREADY_REGISTERED') return setAviso({ tipo: 'info', texto: 'Esta sesión ya estaba registrada.' });
         return setAviso({ tipo: 'error', texto: esIncierto(r) ? COPY.resultadoIncierto : falloDe(r).mensaje });
       }
+      // DL-198: si el plan pide el esfuerzo de la sesión, la pantalla de la sesión registrada lo pregunta, con los minutos
+      // del cronómetro (sin pausas) si la sesión fue en vivo. Se toman antes de descartar lo del teléfono.
+      const corridaFinal = entrenamientoLocal.sesion(draftId)?.corrida ?? null;
+      const minutos = modo === 'en-vivo' && corridaFinal ? minutosDelCronometro(calcularTiempos(eventosDeLaCorrida(corridaFinal), () => null).session.withoutPauses) : null;
+      // Una sesión que no se pudo realizar no tiene esfuerzo que contar: no se pregunta (y la API tampoco lo acepta).
+      const esfuerzo = sePreguntaElEsfuerzo(delPlan) && vigente.datos.data.sessionCondition !== 'NOT_COMPLETED' ? { esfuerzo: { minutos } } : {};
       // Registrada: lo del teléfono ya no hace falta.
       entrenamientoLocal.descartar(draftId);
       subir();
       // El registro reemplaza al borrador: volver lleva adonde se había abierto el borrador (Inicio o Entrenamiento).
-      ir({ nombre: 'ejecucion-de-entrenamiento', id: r.datos.data.executionId, aviso: COPY_ENTRENAMIENTO.sesionRegistrada }, 'reemplazar');
+      ir({ nombre: 'ejecucion-de-entrenamiento', id: r.datos.data.executionId, aviso: COPY_ENTRENAMIENTO.sesionRegistrada, ...esfuerzo }, 'reemplazar');
     } finally {
       enCurso.current = false;
       setOcupado(false);
@@ -1811,7 +1826,8 @@ export function PantallaDeSesion({
     return (
       <View>
         <Titulo>{C.titulo}</Titulo>
-        <Parrafo tenue>{`${s.label} · ${fechaCivil(local.fecha)}`}</Parrafo>
+        {/* DL-198: con la semana de la fase, si la tiene: «Torso A · Semana 3 de 6 · la fecha». */}
+        <Parrafo tenue>{[s.label, rotuloDeLaSemana(delPlan), fechaCivil(local.fecha)].filter(Boolean).join(' · ')}</Parrafo>
         {modo === 'en-vivo' && abierta ? dialogoDeMedicion(deOtroProceso ? e.laSesionQuedoAbierta : e.medicionAbierta, abierta) : null}
         {/* Lo escrito sin registrar, antes que todo: se registra de una o se descarta, nunca se pierde en silencio (PA-01). */}
         {porEjercicio.length > 0 ? (
@@ -1933,6 +1949,7 @@ export function PantallaDeSesion({
     <View>
       <FranjaDeLaSesion
         sesion={s.label}
+        semana={rotuloDeLaSemana(delPlan)}
         ejercicio={p.exerciseName}
         posicion={posicionEnLaSesion(indice + 1, s.prescriptions.length, filaActiva, seriesEfectivas(p.sets).length)}
         tramos={tramosDelRecorrido(resumen, p.prescriptionId)}
@@ -2125,7 +2142,22 @@ function Registro({ registro, planificado = [] }: { registro: RegistroDeEjecucio
   );
 }
 
-export function PantallaDeEjecucionDeEntrenamiento({ token, id, avisoInicial, salir, ir }: { token: string; id: string; avisoInicial?: string; salir: (m: Salida) => void; ir: Ir }) {
+export function PantallaDeEjecucionDeEntrenamiento({
+  token,
+  id,
+  avisoInicial,
+  esfuerzo,
+  salir,
+  ir,
+}: {
+  token: string;
+  id: string;
+  avisoInicial?: string;
+  /** DL-198: la sesión recién registrada pregunta el esfuerzo, con los minutos del cronómetro si los hay. */
+  esfuerzo?: { readonly minutos: number | null };
+  salir: (m: Salida) => void;
+  ir: Ir;
+}) {
   const sesionPerdida = useSesionPerdida(salir);
   const [r, setR] = useState<Resultado<{ data: EjecucionDeEntrenamiento }> | null>(null);
   // El aviso llega con la ruta: «Corrección registrada», al volver de la corrección (PA-04).
@@ -2154,6 +2186,11 @@ export function PantallaDeEjecucionDeEntrenamiento({ token, id, avisoInicial, sa
       <Titulo>{x.plannedSession.label}</Titulo>
       <Parrafo tenue>{fechaCivil(x.date)}</Parrafo>
       {aviso ? <Aviso tipo="exito" titulo={aviso} /> : null}
+      {/*
+        DL-198: «¿Qué tan duro fue el entrenamiento, en general?», solo recién registrada y si el plan lo pide. Va antes que
+        la nota: es la pregunta del plan, de un toque; la nota es opcional. Aparte de confirmar, como la nota.
+      */}
+      {esfuerzo ? <EsfuerzoDeLaSesion key={x.executionId} token={token} executionId={x.executionId} delCronometro={esfuerzo.minutos} sesionPerdida={sesionPerdida} /> : null}
       {/* PG-15 (DL-173): «¿Algo para contarle a tu profe?», opcional y aparte de confirmar: la sesión ya quedó registrada. */}
       <NotaParaTuProfe token={token} executionId={x.executionId} zona={x.timeZone} fechaDeLaSesion={x.date} sesionPerdida={sesionPerdida} />
       {vigente ? (

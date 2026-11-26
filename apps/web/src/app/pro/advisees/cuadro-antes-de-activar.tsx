@@ -140,6 +140,27 @@ export function AntesDeActivar({
                         <Icono nombre="derecha" tamano={15} />
                       </button>
                     ) : null}
+                    {/* DL-198: las salidas que lo resuelven acá mismo (las fases de más: llevar el plan o recortar la última). */}
+                    {c.acciones && c.acciones.length > 0 ? (
+                      <span className="revision-del-plan__acciones">
+                        {c.acciones.map((a) => (
+                          <span key={a.clave} className="revision-del-plan__accion">
+                            <button
+                              type="button"
+                              className="boton boton--secundario boton--compacto"
+                              aria-disabled={a.noSePuede ? true : undefined}
+                              onClick={() => {
+                                if (!a.noSePuede) a.alTocar();
+                              }}
+                              data-accion-del-impedimento={a.clave}
+                            >
+                              {a.texto}
+                            </button>
+                            {a.noSePuede ? <span className="nota">{a.noSePuede}</span> : null}
+                          </span>
+                        ))}
+                      </span>
+                    ) : null}
                   </li>
                 ))}
               </ul>

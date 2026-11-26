@@ -217,10 +217,10 @@ export function ejerciciosCitados(sesiones: readonly SesionGuardada[], resolver:
 }
 
 /** La sesión de una instantánea, con su orden dentro de su bloque o microciclo (como `sesionDeOcurrenciaApi`). */
-export function sesionDeLaInstantanea(i: InstantaneaDeEntrenamiento, sesionId: string): { readonly sesion: SesionGuardada; readonly orden: number } | null {
+export function sesionDeLaInstantanea(i: InstantaneaDeEntrenamiento, sesionId: string): { readonly sesion: SesionGuardada; readonly orden: number; readonly blockId: string } | null {
   const u = sesionesDelPlan(i.contenido).find((s) => s.sesion.sessionId === sesionId);
   if (!u) return null;
-  return { sesion: u.sesion, orden: (u.microciclo ? u.microciclo.sessions : u.bloque.sessions).indexOf(u.sesion) + 1 };
+  return { sesion: u.sesion, orden: (u.microciclo ? u.microciclo.sessions : u.bloque.sessions).indexOf(u.sesion) + 1, blockId: u.bloque.blockId };
 }
 
 /** Las filas del catálogo como citables (la misma conversión que usan los servicios de planes y plantillas). */

@@ -171,7 +171,7 @@ test('el contrato de la preparación: estricto, sin nada de una persona, y el no
   for (const ajeno of ['objectiveVersionId', 'nextReviewAt', 'agenda']) assert.equal(GuardarPreparacionDePlantillaRequestSchema.safeParse({ ...guardar, [ajeno]: null }).success, false, ajeno);
   assert.equal(VersionDeLaPreparacionRequestSchema.safeParse({ expectedVersion: 'v0' }).success, false);
   const forma = Object.keys(PreparacionDePlantillaSchema.shape).sort();
-  assert.deepEqual(forma, ['baseVersionId', 'baseVersionNumber', 'copySuggestedLoads', 'createdAt', 'description', 'draftId', 'exercises', 'name', 'sessionCount', 'structure', 'templateId', 'templateState', 'updatedAt', 'version']);
+  assert.deepEqual(forma, ['baseVersionId', 'baseVersionNumber', 'copySuggestedLoads', 'createdAt', 'description', 'draftId', 'exercises', 'name', 'planning', 'sessionCount', 'structure', 'templateId', 'templateState', 'updatedAt', 'version']);
   assert.equal(RevisionDePreparacionResponseSchema.safeParse({ data: { valid: true, version: 'v2', issues: [], toComplete: [] } }).success, true);
 });
 

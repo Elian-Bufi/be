@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import {
+  planificacionDesdeLaPlantilla,
   CodigoDeError,
   CrearPlanDeEntrenamientoRequestSchema,
   EditarPlanDeEntrenamientoRequestSchema,
@@ -44,6 +45,7 @@ import { despuesDelCursor, leerConsultaDeLista, ORDEN_DE_LISTA, paginar } from '
 import { sinParametrosDeQuery } from '../http/validacion';
 import type { ResultadoIdempotente } from '../plataforma/idempotencia.service';
 import { momentoDeLaBase } from '../prisma/concurrencia';
+import { ZONA_POR_DEFECTO, fechaLocalEn } from '../nutricion/zona';
 import { PublicadorDeNovedades } from '../novedades/publicador';
 import { ProcesoService } from '../proceso/proceso.service';
 import { PlantillasDeEntrenamientoService } from './plantillas.service';
@@ -223,6 +225,10 @@ export class PlanesDeEntrenamientoService {
       // La plantilla se vuelve a normalizar con identificadores nuevos: el plan es de la persona, no del molde.
       const plantilla = await this.plantillas.versionParaAplicar(tx, p.profesionalId, p.desdePlantilla);
       contenido = await this.normalizarYVerificar(tx, p.profesionalId, plantilla.estructura);
+      // DL-198 (ET2-10): la planificación de la plantilla, con cada fase y cada ejercicio en el suyo del plan nuevo. La fecha
+      // de inicio la pone el profesional.
+      const planificacion = planificacionDesdeLaPlantilla(plantilla.planificacion, plantilla.estructura, contenido);
+      if (planificacion) contenido = { ...contenido, planning: planificacion };
       origenDePlantilla = { templateId: plantilla.plantillaId, templateVersionId: plantilla.versionId };
     } else if (p.basadaEn) {
       if (p.basadaEn !== plan.versionEfectivaId) throw errores.validacionFallida([{ code: 'BASED_ON_MUST_BE_EFFECTIVE_VERSION', path: 'basedOnPlanId' }]);
@@ -351,7 +357,9 @@ export class PlanesDeEntrenamientoService {
           if (v.plan.profesionalId !== actor.identidadId) throw this.ejecutor.noRevelable({ operacion: 'API-TRN-09', actorId: actor.identidadId, recurso, sujetoId: titular }, ctx);
         }
         // DL-192 (RPE-D08): al titular, la notación solo si su cliente la declara.
-        return { data: await this.leerVersion(tx, v.id, titular !== actor.identidadId, titular !== actor.identidadId || muestraLaNotacionDelEsfuerzo(ctx)) };
+        // DL-198 (ET2-05): al titular, cada sesión con la carga de la semana de hoy de su fase.
+        const hoy = titular === actor.identidadId ? fechaLocalEn(await momentoDeLaBase(tx), ZONA_POR_DEFECTO) : null;
+        return { data: await this.leerVersion(tx, v.id, titular !== actor.identidadId, titular !== actor.identidadId || muestraLaNotacionDelEsfuerzo(ctx), hoy) };
       },
     });
   }
@@ -588,13 +596,13 @@ export class PlanesDeEntrenamientoService {
    * `incluirOrigen`: es una lectura del profesional. `conNotacion` (DL-192): suma `effortNotation`; por omisión, en las del
    * profesional, y al titular solo si su cliente declara `training-effort-notation-1`.
    */
-  async leerVersion(tx: Tx, id: string, incluirOrigen = false, conNotacion = incluirOrigen): Promise<VersionDePlanDeEntrenamiento> {
+  async leerVersion(tx: Tx, id: string, incluirOrigen = false, conNotacion = incluirOrigen, fechaDeLaSemana: string | null = null): Promise<VersionDePlanDeEntrenamiento> {
     const v = (await tx.versionDePlanDeEntrenamiento.findUniqueOrThrow({ where: { id }, include: INCLUIR_PLAN_DE_ENTRENAMIENTO })) as VersionConPlan;
     const catalogo =
       v.estado === 'BORRADOR'
         ? await this.catalogo.citables(tx, v.plan.profesionalId, 'PROFESIONAL', referenciasDeEjercicio(v.contenido as unknown as ContenidoDePlanDeEntrenamiento))
         : new Map();
-    const api = versionDePlanApi(v, await nombreVisibleDe(tx, v.plan.profesionalId), aCitables(catalogo), await seguimientoAbierto(tx, v.plan.profesionalId, v.plan.asesoradoId));
+    const api = versionDePlanApi(v, await nombreVisibleDe(tx, v.plan.profesionalId), aCitables(catalogo), await seguimientoAbierto(tx, v.plan.profesionalId, v.plan.asesoradoId), fechaDeLaSemana);
     const notacion = conNotacion ? { effortNotation: notacionDeLaVersion(v) } : {};
     // El origen de plantilla solo lo ve el profesional: la APK instalada valida con esquemas estrictos que no lo conocen.
     return incluirOrigen ? { ...api, templateOrigin: (v.origenDePlantilla as OrigenDePlanEnPlantilla | null) ?? null, ...notacion } : { ...api, ...notacion };

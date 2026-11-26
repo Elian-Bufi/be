@@ -161,6 +161,12 @@ export * from './agenda-de-entrenamiento';
 export * from './planificacion-del-plan';
 export * from './clasificacion-de-ejercicios';
 export * from './progresiones';
+// DL-198 (WP-EDITOR-ENTRENAMIENTO-TANDA-2): el 1RM de referencia, la carga de cada semana, el esfuerzo de la sesión y la planificación de las plantillas.
+export * from './repeticion-maxima';
+export * from './contratos-repeticion-maxima';
+export * from './carga-de-la-semana';
+export * from './esfuerzo-de-la-sesion';
+export * from './planificacion-de-la-plantilla';
 export * from './distribucion-por-musculo';
 export * from './copy-agenda-de-entrenamiento';
 export * from './copy-primer-plan';

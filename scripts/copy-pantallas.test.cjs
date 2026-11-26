@@ -133,6 +133,9 @@ const DOMINIOS = [
       // PA-03: el registro rápido («Ya la hice»), su pantalla y sus textos.
       inicio('registro-rapido.tsx'),
       movil('registro-rapido.ts'),
+      // DL-198: el esfuerzo de la sesión al terminar y el rótulo de la semana de la fase.
+      inicio('esfuerzo-de-la-sesion.tsx'),
+      movil('esfuerzo-de-la-sesion.ts'),
       // WP-APP-VUELTA-DE-ROSCA (DL-166): la sesión con el descanso automático y el desglose de «Tu historial».
       ...SESION_DE_LA_VUELTA,
       ...INICIO_Y_NOVEDADES,
