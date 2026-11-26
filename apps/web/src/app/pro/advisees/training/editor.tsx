@@ -933,6 +933,22 @@ export function EditorDePlan({
   const puedeGuardar = loQueNoDejaGuardar(bloques).length === 0;
   // ED-03: por qué «Guardar ahora» está apagado, o `null`.
   const sinGuardarAhora = motivoSinGuardarAhora({ guardando, sucio, conflicto });
+  // Ctrl+S (Cmd+S) guarda ya, sin esperar la pausa del autoguardado; si no hay nada que guardar, no hace nada y el navegador
+  // no abre su cuadro de «Guardar página».
+  const guardarYaRef = useRef<() => void>(() => undefined);
+  guardarYaRef.current = () => {
+    if (!sinGuardarAhora) void guardar();
+  };
+  useEffect(() => {
+    const alTocar = (e: KeyboardEvent) => {
+      if (e.defaultPrevented || !(e.ctrlKey || e.metaKey) || e.altKey || e.shiftKey || e.key.toLowerCase() !== 's') return;
+      if (document.querySelector('dialog[open]')) return;
+      e.preventDefault();
+      guardarYaRef.current();
+    };
+    window.addEventListener('keydown', alTocar);
+    return () => window.removeEventListener('keydown', alTocar);
+  }, []);
   const cambiosParaGuardar = useMemo(() => [bloques, agenda, proximaRevision, metadatos, notacion, planificacion], [bloques, agenda, proximaRevision, metadatos, notacion, planificacion]);
   const autoguardado = useAutoguardado({
     habilitado: !!version && sucio && puedeGuardar && !guardando && !conflicto && !confirmar && !activando && !guardarPlantilla && !descartar,
@@ -2832,13 +2848,11 @@ export function EditorDePlan({
         {selectorDeVistas}
         <div id="vista-del-panel" role={vistas.length > 1 ? 'tabpanel' : undefined} aria-labelledby={vistas.length > 1 ? `vista-del-panel-${vista}` : undefined} data-vista-del-panel={vista}>
           {vista === 'distribucion' && bloque ? (
-            <MarcoDelPanel id="panel-de-la-distribucion" deQue={deQueEsLaFase} titulo={NOMBRE_DE_LA_VISTA.distribucion} onAbrirGrande={() => setDistribucionGrande(true)}>
-              <div className="marco-del-panel__acciones">{estrella('PHASE_DISTRIBUTION', bloque.blockId, `la distribución de ${deQueEsLaFase}`)}</div>
+            <MarcoDelPanel id="panel-de-la-distribucion" deQue={deQueEsLaFase} titulo={NOMBRE_DE_LA_VISTA.distribucion} onAbrirGrande={() => setDistribucionGrande(true)} acciones={estrella('PHASE_DISTRIBUTION', bloque.blockId, `la distribución de ${deQueEsLaFase}`)}>
               {distribucionDe(bloque, false)}
             </MarcoDelPanel>
           ) : vista === 'progresion' && bloque ? (
-            <MarcoDelPanel id="panel-de-la-progresion" deQue={deQueEsLaFase} titulo={COPY_PROGRESIONES.titulo} onAbrirGrande={null}>
-              <div className="marco-del-panel__acciones">{estrella('PHASE_PROGRESSION', bloque.blockId, `la progresión de ${deQueEsLaFase}`)}</div>
+            <MarcoDelPanel id="panel-de-la-progresion" deQue={deQueEsLaFase} titulo={COPY_PROGRESIONES.titulo} onAbrirGrande={null} acciones={estrella('PHASE_PROGRESSION', bloque.blockId, `la progresión de ${deQueEsLaFase}`)}>
               {progresionDe(bloque, i)}
             </MarcoDelPanel>
           ) : vista === 'favoritos' ? (
@@ -2924,7 +2938,7 @@ export function EditorDePlan({
         </h2>
         <div className="editor-del-plan__acciones">
           {/* DL-195 (GUI-10): «Ver el recorrido», el primero de la barra: un lugar fijo, que no se mueve con el estado. */}
-          {pasoDelAsistente ? null : <BotonVerElRecorrido alTocar={recorrido.abrir} soloIcono />}
+          {pasoDelAsistente ? null : <BotonVerElRecorrido alTocar={recorrido.abrir} conPalabraCorta />}
           <EstadoDeGuardado
             className="editor-del-plan__estado"
             guardando={guardando}
@@ -2936,26 +2950,8 @@ export function EditorDePlan({
             detalle={detalle}
             onReintentar={() => void guardar()}
           />
-          {/* ED-03 (DJ-6): «Guardar ahora», fijo y secundario junto al estado: guarda sin esperar la pausa. Apagado (con
-              `aria-disabled`, que conserva el foco), dice por qué. */}
-          <button
-            type="button"
-            className="boton boton--secundario"
-            data-guardar-ahora
-            aria-disabled={sinGuardarAhora ? true : undefined}
-            aria-describedby={sinGuardarAhora ? 'motivo-sin-guardar-ahora' : undefined}
-            onClick={() => {
-              if (!sinGuardarAhora) void guardar();
-            }}
-          >
-            <Icono nombre="guardar" tamano={18} />
-            {COPY_GUARDADO.guardarAhora}
-          </button>
-          {sinGuardarAhora ? (
-            <span id="motivo-sin-guardar-ahora" className="visualmente-oculto">
-              {sinGuardarAhora}
-            </span>
-          ) : null}
+          {/* El guardado es automático y el estado lo dice («Guardando…», «Guardado», «No se guardó · Reintentar»). «Guardar ahora»
+              queda en el «…» y con Ctrl+S: la barra es de un solo renglón y no tiene lugar para un botón más (RP-19). */}
           {/* ED-07 (DJ-6): «Revisar y activar…», la única entrada a activar, fija y llena (el único botón lleno de la
               barra). Abre «Antes de activar» siempre, también con algo por corregir o sin guardar, y no cambia de nombre
               ni de lugar mientras se escribe. */}
@@ -2973,11 +2969,13 @@ export function EditorDePlan({
               {COPY_ANTES_DE_ACTIVAR.revisarYActivar}
             </button>
           )}
-          {!pasoDelAsistente && ofreceDescartar(version) ? (
+          {!pasoDelAsistente ? (
             <MenuDeAcciones
               id="mas-de-la-version"
               rotulo={CE.masDeLaVersion}
               acciones={[
+                { clave: 'guardar-ahora', texto: COPY_GUARDADO.guardarAhora, alElegir: () => void guardar(), noSePuede: sinGuardarAhora },
+                ...(!ofreceDescartar(version) ? [] : [
                 { clave: 'estructura', texto: CE.galeriaDeEstructura, alElegir: () => setGaleria({ tarea: 'estructura', ejercicio: null }) },
                 { clave: 'plantilla', texto: `${CE.guardarComoPreset}: ${CE.elPlanComoPlantilla}`, alElegir: () => setGuardarPlantilla(true), noSePuede: antesHayQueCorregir },
                 {
@@ -3000,6 +2998,7 @@ export function EditorDePlan({
                     setDescartar(true);
                   },
                 },
+                ]),
               ]}
             />
           ) : null}

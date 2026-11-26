@@ -10504,41 +10504,72 @@ button.comida-del-dia__fila > .icono:last-child {
   color: var(--tenue);
 }
 
-/* La barra de Entrenamiento tiene diez piezas: título y chip a la izquierda y, a la derecha, todo en UN renglón desde 1280.
-   El lugar del estado sigue reservado (RP-19: nada se corre si aparece o desaparece un aviso), pero más angosto, y «Ver el
-   recorrido» es un ícono con su nombre para el lector y su título. Si aun así no entra, baja entero y a la derecha (RP-22). */
-.estacion [data-barra-de-comandos] .editor-del-plan__estado {
-  width: clamp(6.5rem, 8vw, 14rem);
-  margin-inline-end: 0;
+/* La barra de Entrenamiento (sticky): UN renglón y bajo, siempre, también pegada. A la izquierda el título con su chip (si falta
+   lugar se corta con «…»); a la derecha, «Recorrido», el estado, lo que impide activar, «Revisar y activar…» y el «…», donde
+   está «Guardar ahora» (el guardado es automático; Ctrl+S también guarda). El lugar del estado está reservado (RP-19): nada
+   se corre cuando cambia su texto o aparece un aviso. `--alto-barra-version` es la altura de la barra: el panel de la
+   derecha la descuenta para que su parte de arriba no quede tapada. */
+.estacion {
+  --alto-barra-version: 3.5rem;
 }
 
-/* Botones de la barra más compactos (mismo alto, misma letra): menos relleno a los costados y menos separación. */
 .estacion [data-barra-de-comandos] {
+  flex-wrap: nowrap;
   column-gap: 0.75rem;
+  min-height: var(--alto-barra-version);
+  padding-block: 0.25rem;
+}
+
+.estacion [data-barra-de-comandos] h2 {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .estacion [data-barra-de-comandos] .editor-del-plan__acciones {
+  flex: 0 0 auto;
+  flex-wrap: nowrap;
   gap: 0.35rem;
 }
 
+.estacion [data-barra-de-comandos] .editor-del-plan__estado {
+  width: clamp(11rem, 13vw, 16rem);
+  margin-inline-end: 0;
+}
+
 .estacion [data-barra-de-comandos] .editor-del-plan__acciones .boton:not(.boton--discreto) {
-  padding-inline: 0.65rem;
+  padding-inline: 0.7rem;
 }
 
-.estacion [data-barra-de-comandos] .editor-del-plan__acciones {
-  flex-wrap: nowrap;
+/* El fallo: «Reintentar» es un botón compacto; el detalle técnico, plegado, cuelga debajo de la barra sin mover nada. */
+.estacion [data-barra-de-comandos] .estado-de-guardado__reintentar {
+  flex: none;
+  white-space: nowrap;
 }
 
+.estacion [data-barra-de-comandos] .estado-de-guardado__detalle {
+  position: absolute;
+  z-index: 6;
+  top: calc(100% + 0.25rem);
+  right: 0;
+  max-width: min(30rem, 90vw);
+  padding: 0.25rem 0.6rem;
+  border: 1px solid var(--borde);
+  border-radius: 8px;
+  background: var(--superficie);
+}
+
+/* Menos de 80 rem: «Recorrido» queda con su ícono, su título y su nombre para el lector. */
 @media (max-width: 79.99rem) {
-  .estacion [data-barra-de-comandos] .editor-del-plan__acciones {
-    flex-wrap: wrap;
+  .recorrido__ver .recorrido__palabra {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
   }
-}
-
-.recorrido__ver[data-solo-icono] {
-  min-width: 44px;
-  justify-content: center;
-  padding-inline: 0.6rem;
 }
 
 /* Bloque 3 del encargo: el estado de escritura de un borrador (components/estado-de-guardado.tsx). */
@@ -17135,8 +17166,8 @@ p.cifra-del-espacio__desglose {
 
   .editor-de-entrenamiento__zonas .estacion__panel {
     position: sticky;
-    top: 5rem;
-    max-height: calc(100dvh - 6rem);
+    top: calc(var(--alto-barra-version) + 0.75rem);
+    max-height: calc(100dvh - var(--alto-barra-version) - 1.5rem);
     overflow-y: auto;
     overscroll-behavior: contain;
   }
@@ -17162,8 +17193,9 @@ p.cifra-del-espacio__desglose {
 .tarjeta-del-editor__cabecera,
 .fase-del-plan__cabecera {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.35rem 0.5rem;
   padding: 0.35rem 0.6rem 0.35rem 0.35rem;
 }
 
@@ -17537,15 +17569,26 @@ p.cifra-del-espacio__desglose {
 }
 
 /* La fase elegida, debajo de la barra: su cabecera con «Editar fase», «Días de la semana» y el «⋯». */
+/* «Editar fase», «Días de la semana» y el «…» van juntos en una fila; si no entran, bajan los tres a la vez, nunca uno solo. */
 .fase-del-plan__acciones {
   display: flex;
-  flex-wrap: wrap;
+  flex: 0 0 auto;
+  flex-wrap: nowrap;
   gap: 0.4rem;
   align-items: center;
 }
 
+.fase-del-plan__acciones .boton {
+  white-space: nowrap;
+}
+
+.fase-del-plan__acciones .boton--compacto {
+  padding-inline: 0.65rem;
+}
+
 .fase-del-plan__titulo {
   display: flex;
+  flex: 1 1 14rem;
   flex-wrap: wrap;
   align-items: center;
   gap: 0.25rem 0.6rem;
@@ -18018,10 +18061,27 @@ p.cifra-del-espacio__desglose {
 /* DL-199 (ET3, E5): de qué es y la herramienta, en un renglón: «El plan  Almanaque», sin una línea de rótulo arriba. */
 .marco-del-panel__titulos {
   display: flex;
+  flex: 1 1 auto;
   flex-wrap: wrap;
   align-items: baseline;
   gap: 0 0.5rem;
   min-width: 0;
+}
+
+/* «Abrir grande» y la estrella de favoritos: juntos, compactos y a la derecha del título, en una fila. */
+.marco-del-panel__herramientas {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.marco-del-panel__herramientas .boton {
+  min-height: 2rem;
+  gap: 0.25rem;
+  padding-inline: 0.4rem;
+  font-size: 0.85rem;
+  white-space: nowrap;
 }
 
 /* El almanaque: un mes como un calendario de pared; cada semana con el velo y el borde del color de su fase. */
@@ -18235,7 +18295,6 @@ p.cifra-del-espacio__desglose {
 .marco-del-panel__abrir {
   display: flex;
   justify-content: flex-end;
-  margin-top: -0.25rem;
 }
 
 .panel-del-editor {
@@ -18262,7 +18321,6 @@ p.cifra-del-espacio__desglose {
 .marco-del-panel__acciones {
   display: flex;
   justify-content: flex-end;
-  margin-top: -0.35rem;
 }
 
 .estrella-de-favorito .estrella-de-favorito__dibujo {
@@ -18285,14 +18343,18 @@ p.cifra-del-espacio__desglose {
 
 .grafico-de-semanas__cabecera {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 0.5rem;
 }
 
+/* El título se ajusta por palabras en el lugar que le deja la esquina; nada de partir una palabra. */
 .grafico-de-semanas__titulo {
+  flex: 1 1 auto;
+  min-width: 0;
   font-size: 0.9rem;
   font-weight: 700;
+  text-wrap: balance;
 }
 
 /* DL-199 (ET3, E5): la estrella y el «?» del gráfico, juntos en la esquina superior derecha. */
@@ -18300,7 +18362,16 @@ p.cifra-del-espacio__desglose {
   display: inline-flex;
   flex: none;
   align-items: center;
-  gap: 0.4rem;
+  gap: 0.25rem;
+}
+
+/* «Favorito» compacto: el ícono y la palabra, chicos, sin comerle el lugar al título. */
+.grafico-de-semanas__acciones .estrella-de-favorito {
+  min-height: 2rem;
+  gap: 0.25rem;
+  padding: 0.1rem 0.5rem;
+  font-size: 0.8rem;
+  white-space: nowrap;
 }
 
 .grafico-de-semanas__leyenda {
@@ -18473,9 +18544,8 @@ p.cifra-del-espacio__desglose {
 
 .carga-para-repeticiones--no-aplica > .nota {
   margin: 0;
+  padding-block: 0.65rem;
   min-height: 2.75rem;
-  display: flex;
-  align-items: center;
 }
 
 .carga-para-repeticiones__cabecera {
