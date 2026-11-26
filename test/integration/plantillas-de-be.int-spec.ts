@@ -11,6 +11,7 @@
  */
 import type { INestApplication } from '@nestjs/common';
 import {
+  BusquedaDeEjerciciosResponseSchema,
   ListaDePlantillasDeBeParaAdministrarResponseSchema,
   ListaDePlantillasDeBeResponseSchema,
   PlanConObjetivosResponseSchema,
@@ -148,6 +149,21 @@ describe('DL-199 · las Plantillas de BE', () => {
     await a.post('/admin/training-templates/BE-NO-EXISTE/decisions').set('Idempotency-Key', claveDeIdempotencia()).send({ decision: 'WITHDRAW' }).expect(404);
     // Un profesional no entra a Administración.
     await adm(app, c.pro.token).post('/admin/training-templates/query').send({}).expect((x) => expect([401, 403]).toContain(x.status));
+  });
+
+  it('TEST-ET3-API-06 (ET3-27): la búsqueda con la clasificación dice quién cargó cada ejercicio; sin pedirla, la forma de siempre', async () => {
+    const c = await circuitoListoParaPlanificarEntrenamiento(app, etiqueta('cargado'));
+    const s = conSesion(app, c.pro.token);
+    await s
+      .post('/api/v1/training/exercises')
+      .send({ name: 'Remo propio de la tanda 3', muscleZones: [], didacticResources: [], provenance: { type: 'MANUAL_ENTRY' } })
+      .expect(201);
+    const sin = (await s.post('/api/v1/training/exercises/search').send({ q: 'press de banca plano con barra', limit: 5 }).expect(200)).body.data;
+    expect(Object.hasOwn(sin[0], 'loadedByProfessional')).toBe(false);
+    const deBe = BusquedaDeEjerciciosResponseSchema.parse((await s.post('/api/v1/training/exercises/search').send({ q: 'press de banca plano con barra', limit: 5, withClassification: true }).expect(200)).body).data;
+    expect(deBe[0]).toMatchObject({ name: 'Press de banca plano con barra', loadedByProfessional: false });
+    const propio = BusquedaDeEjerciciosResponseSchema.parse((await s.post('/api/v1/training/exercises/search').send({ q: 'remo propio de la tanda 3', limit: 5, withClassification: true }).expect(200)).body).data;
+    expect(propio[0]).toMatchObject({ name: 'Remo propio de la tanda 3', loadedByProfessional: true });
   });
 
   it('TEST-ET3-API-05: la base no deja reescribir ni borrar lo decidido, ni que lo decida quien no administra', async () => {
