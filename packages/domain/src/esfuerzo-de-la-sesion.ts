@@ -74,6 +74,9 @@ export const textoDelEsfuerzoDeLaSesion = (valor: number): string => ESCALA_DEL_
 export const COPY_ESFUERZO_DE_LA_SESION = {
   opcionDelPlan: 'Pedir el esfuerzo de la sesión al terminar',
   opcionExplicada: 'Al terminar cada sesión, la app le pregunta a la persona qué tan duro fue, de 0 a 10. Es aparte del RIR de cada serie.',
+  /** Tanda 7: con la notación del plan («aparte del RPE de cada serie» en un plan en RPE); sin RIR ni RPE, la intensidad. */
+  opcionExplicadaEn: (notacion: 'RIR' | 'RPE' | null): string =>
+    `Al terminar cada sesión, la app le pregunta a la persona qué tan duro fue, de 0 a 10. Es aparte ${notacion ? `del ${notacion}` : 'de la intensidad'} de cada serie.`,
   pregunta: '¿Qué tan duro fue el entrenamiento, en general?',
   preguntaAclaracion: 'De 0 (reposo) a 10 (máximo). Pensá en toda la sesión, no en la última serie.',
   minutos: 'Minutos de la sesión',

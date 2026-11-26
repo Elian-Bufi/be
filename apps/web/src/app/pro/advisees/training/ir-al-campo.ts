@@ -17,6 +17,9 @@ import { PROBLEMA_DEL_EDITOR_DE_ENTRENAMIENTO as N } from '@be/domain';
 /** El de `INCOMPLETO.sinSeries` (`revisar-el-plan.ts`; la prueba los compara): un módulo puro no importa otro del website. */
 const SIN_SERIES = 'INCOMPLETO_SIN_SERIES';
 
+/** El de `INCOMPLETO.sinIntensidad`: el ejercicio que hereda la intensidad del plan sin objetivo lleva al «Común». */
+const SIN_INTENSIDAD = 'INCOMPLETO_SIN_OBJETIVO_DE_INTENSIDAD';
+
 /** El código de la escritura rápida sin aplicar (C7): lleva a la línea del ejercicio. */
 export const SIN_APLICAR = 'ESCRITURA_RAPIDA_SIN_APLICAR';
 
@@ -46,7 +49,7 @@ export function camposDelProblema(p: { readonly code: string; readonly path: str
     else if (campo === 'note') exactos.push(`${deLaSerie}-nota`);
     else exactos.push(deLaSerie);
   } else if (p.code === SIN_APLICAR) exactos.push(`${ejercicio}-linea`);
-  else if (p.code === N.faltaElObjetivo || campo === 'intensity.target.value') exactos.push(`${ejercicio}-objetivo`, `${ejercicio}-criterio`);
+  else if (p.code === N.faltaElObjetivo || p.code === SIN_INTENSIDAD || campo === 'intensity.target.value') exactos.push(`${ejercicio}-objetivo-comun`, `${ejercicio}-objetivo`, `${ejercicio}-criterio`);
   else if (campo.startsWith('intensity')) exactos.push(`${ejercicio}-criterio`);
   else if (p.code === N.cargaIlegible || campo.startsWith('suggestedLoad')) exactos.push(`${ejercicio}-carga`);
   else if (p.code === N.descansoIlegible || campo === 'restSeconds') exactos.push(`${ejercicio}-descanso`);

@@ -9,7 +9,7 @@
  *   dicen sin rutas técnicas, y el editor lleva al campo.
  * Vive en el website hasta TB-20 (§8.2 del paquete), como `topes-del-plan.ts`. Sin React, para las pruebas.
  */
-import { cardioDe, seriesQueNoSonLasVueltas, type BloqueParaLeer } from '@be/domain';
+import { cardioDe, lasSeriesEfectivasTienenSuRir, seriesQueNoSonLasVueltas, type BloqueParaLeer } from '@be/domain';
 
 /** El código de cada cosa sin completar: no es un problema de la API, y no impide guardar ni activar. */
 export const INCOMPLETO = {
@@ -112,7 +112,8 @@ export function loQueQuedaSinCompletarEnEntrenamiento(bloques: readonly BloqueDe
         if (x.repetitions === null || x.repetitions === undefined) r.push({ code: INCOMPLETO.sinRepeticiones, path: `${rp}.sets[${n}].repetitions` });
       });
       if (vueltas.has(l)) r.push({ code: INCOMPLETO.seriesYVueltas, path: rp });
-      if (herencia?.criterio && (p.intensity ?? null) === null && !(p.prescriptionId && sinIntensidad.has(p.prescriptionId))) r.push({ code: INCOMPLETO.sinIntensidad, path: rp });
+      // Falta solo si alguna serie efectiva no tiene intensidad, ni propia ni heredada: con el RIR del plan y el propio en cada serie, no falta.
+      if (herencia?.criterio && (p.intensity ?? null) === null && !(p.prescriptionId && sinIntensidad.has(p.prescriptionId)) && !(herencia.criterio === 'RIR' && lasSeriesEfectivasTienenSuRir(p as unknown as Parameters<typeof lasSeriesEfectivasTienenSuRir>[0]))) r.push({ code: INCOMPLETO.sinIntensidad, path: rp });
     });
   };
   bloques.forEach((b, i) => {

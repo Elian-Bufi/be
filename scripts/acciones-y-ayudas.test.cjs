@@ -156,4 +156,29 @@ test('en /pro, el «?» va en la esquina, nunca al lado ni adentro de un título
   assert.match(estilos, /\.boton--con-flecha::after \{[^}]*content: '›' \/ '';/, 'el «Ir a…» lleva su flecha, que el lector no lee');
 });
 
+test('II.17 · en un cuadro que se cierra, el «?» va pegado al título, a su derecha, nunca junto a «Cerrar»', () => {
+  const cuadro = readFileSync(join(WEB, 'components/cuadro-enfocado.tsx'), 'utf8');
+  const fuente = ts.createSourceFile('cuadro-enfocado.tsx', cuadro, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
+  const clase = (n) => (ts.isJsxElement(n) ? textoDeLaClase(n.openingElement.attributes) : ts.isJsxSelfClosingElement(n) ? textoDeLaClase(n.attributes) : '');
+  let renglon = null;
+  let cabecera = null;
+  const buscar = (n) => {
+    if (/\bcuadro-enfocado__renglon-del-titulo\b/.test(clase(n))) renglon = n;
+    if (/\bcajon__cabecera\b/.test(clase(n))) cabecera = n;
+    ts.forEachChild(n, buscar);
+  };
+  buscar(fuente);
+  assert.ok(renglon && cabecera, 'el renglón del título y la cabecera del cuadro');
+  const texto = renglon.getText();
+  // En el renglón, el título y después su «?».
+  assert.ok(texto.indexOf('<h2') >= 0 && texto.indexOf('<h2') < texto.indexOf('data-ayuda-del-cuadro'), 'el «?» después del título, en su renglón');
+  assert.doesNotMatch(texto, /cajon__cerrar/, '«Cerrar» no va en el renglón del título');
+  // En la cabecera, el «?» ya no es un hijo suelto al lado de «Cerrar».
+  const hijos = cabecera.children.filter((h) => ts.isJsxElement(h) || ts.isJsxSelfClosingElement(h) || ts.isJsxExpression(h)).map((h) => h.getText());
+  assert.ok(!hijos.some((h) => /data-ayuda-del-cuadro/.test(h) && !/cuadro-enfocado__renglon-del-titulo/.test(h)), 'el «?» no queda junto a «Cerrar»');
+  const estilos = readFileSync(join(WEB, 'app/globals.css'), 'utf8');
+  assert.match(estilos, /\.cuadro-enfocado__renglon-del-titulo \{[^}]*align-items: center;/, 'alineado verticalmente con el título');
+  assert.doesNotMatch(estilos.match(/\.cuadro-enfocado__ayuda \{[^}]*\}/)[0], /margin-inline-start: auto/, 'no se empuja hacia «Cerrar»');
+});
+
 module.exports = { revisar };

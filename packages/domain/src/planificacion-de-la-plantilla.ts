@@ -45,8 +45,10 @@ export function planificacionParaLaPlantilla(p: PlanificacionDelPlan | null | un
     ...(p.intensity && p.intensity !== 'RIR' ? { intensity: p.intensity } : {}),
     ...(p.withoutIntensity?.length ? { withoutIntensity: p.withoutIntensity } : {}),
     ...(p.askSessionEffort ? { askSessionEffort: true as const } : {}),
+    ...(p.loadRounding !== undefined ? { loadRounding: p.loadRounding } : {}),
+    ...(p.loadRoundingByExercise?.length ? { loadRoundingByExercise: p.loadRoundingByExercise } : {}),
   };
-  const vacia = r.weeks === null && r.phases.every((f) => f.weeks === null) && !r.warmUps && !r.progressions && !r.intensity && !r.withoutIntensity && !r.askSessionEffort;
+  const vacia = r.weeks === null && r.phases.every((f) => f.weeks === null) && !r.warmUps && !r.progressions && !r.intensity && !r.withoutIntensity && !r.askSessionEffort && r.loadRounding === undefined && !r.loadRoundingByExercise;
   return vacia ? null : r;
 }
 
@@ -87,6 +89,8 @@ export function planificacionDesdeLaPlantilla(
     ...(p.intensity ? { intensity: p.intensity } : {}),
     ...(p.withoutIntensity ? { withoutIntensity: p.withoutIntensity.map(e) } : {}),
     ...(p.askSessionEffort ? { askSessionEffort: true as const } : {}),
+    ...(p.loadRounding !== undefined ? { loadRounding: p.loadRounding } : {}),
+    ...(p.loadRoundingByExercise ? { loadRoundingByExercise: p.loadRoundingByExercise.map((r) => ({ ...r, prescriptionId: e(r.prescriptionId) })) } : {}),
   };
   const fasesDelPlan = despues.fases.filter((x): x is string => x !== null);
   const ejerciciosDelPlan = despues.ejercicios.filter((x): x is string => x !== null);

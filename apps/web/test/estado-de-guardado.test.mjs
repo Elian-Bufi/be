@@ -81,6 +81,14 @@ test('TEST-EDP-004 · los dos editores: «Guardar ahora», fijo y secundario, co
   for (const ruta of EDITORES) {
     const fuente = leer(ruta);
     assert.match(fuente, /const sinGuardarAhora = motivoSinGuardarAhora\(\{ guardando, sucio, conflicto \}\);/, ruta);
+    if (ruta.includes('training')) {
+      // Entrenamiento: la barra es de un solo renglón. El guardado es automático y el estado lo dice; «Guardar ahora» está en el
+      // «…» (apagado con su motivo cuando no hay nada que guardar) y Ctrl+S también guarda.
+      assert.match(fuente, /\{ clave: 'guardar-ahora', texto: COPY_GUARDADO\.guardarAhora, alElegir: \(\) => void guardar\(\), noSePuede: sinGuardarAhora \}/, ruta);
+      assert.match(fuente, /e\.key\.toLowerCase\(\) !== 's'/, ruta);
+      assert.match(fuente, /detalle=\{detalle\}\n\s*onReintentar=\{\(\) => void guardar\(\)\}/, ruta);
+      continue;
+    }
     // Secundario siempre (no cambia de forma mientras se escribe), apagado con `aria-disabled` y su motivo.
     assert.match(
       fuente,

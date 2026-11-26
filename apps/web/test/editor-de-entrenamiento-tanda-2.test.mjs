@@ -57,8 +57,10 @@ test('TEST-ET2-12 · «Ver como la persona»: la misma cuenta que la API y los t
   assert.match(VISTA, /COPY_ENTRENAMIENTO_POR_SERIE\.planDeLaSerie\(r\.numero\)/);
   assert.match(VISTA, /COPY_ESFUERZO_DE_LA_SESION\.pregunta/);
   assert.doesNotMatch(VISTA, /<input|onCambiar/);
-  assert.match(EDITOR, /data-ver-como-la-persona/);
-  assert.match(EDITOR, /<VistaDeLaPersona\n\s*abierto=\{vistaDeLaPersona\}/);
+  // Apagada por ahora (no se parece a la app real): el componente queda, y el editor solo lo ofrece con la constante en true.
+  assert.match(VISTA, /export const MOSTRAR_VISTA_DE_LA_PERSONA = false;/);
+  assert.match(EDITOR, /\{MOSTRAR_VISTA_DE_LA_PERSONA \? \(\n\s*<button[\s\S]*?data-ver-como-la-persona/);
+  assert.match(EDITOR, /\{MOSTRAR_VISTA_DE_LA_PERSONA && bloque \? \(\n\s*<VistaDeLaPersona\n\s*abierto=\{vistaDeLaPersona\}/);
 });
 
 test('TEST-ET2-13 · el esfuerzo de la sesión: la opción del plan, lo registrado y el gráfico desde 0 con su «?» y su tabla', () => {
