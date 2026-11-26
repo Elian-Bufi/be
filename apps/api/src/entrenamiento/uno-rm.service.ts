@@ -276,7 +276,7 @@ export class UnoRMService {
       return {
         exerciseId,
         current: vigente ? { origin: vigente.origen, value: vigente.valor, localDate: vigente.fecha, band: vigente.banda, set: vigente.serie ? serieApi(vigente.serie) : null, entryId: vigente.entryId } : null,
-        warning: aviso ? { record: registroApi(aviso.registro), differencePercent: aviso.diferencia } : null,
+        warning: aviso ? { record: registroApi(aviso.registro), relativeDifference: aviso.diferencia } : null,
         lastRecord: registro ? registroApi(registro) : null,
         history: propias.slice(0, TOPE_DE_LA_HISTORIA).map((f) => guardadoApi(f, autor)),
       };

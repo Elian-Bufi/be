@@ -69,7 +69,8 @@ export const UnoRMDelEjercicioSchema = z.strictObject({
   exerciseId: IdOpaco,
   current: UnoRMVigenteSchema.nullable(),
   /** ET2-D03: un registro más nuevo que se aleja más del 10 % de lo guardado. BE sigue con lo guardado. */
-  warning: z.strictObject({ record: UnoRMDelRegistroSchema, differencePercent: z.number().int() }).nullable(),
+  /** `relativeDifference`: cuánto se aleja, en centésimas del valor guardado, con su signo (+13: el registro da 13 de cada 100 más). */
+  warning: z.strictObject({ record: UnoRMDelRegistroSchema, relativeDifference: z.number().int() }).nullable(),
   lastRecord: UnoRMDelRegistroSchema.nullable(),
   /** Lo guardado, del más reciente al más viejo (hasta 20). */
   history: z.array(UnoRMGuardadoSchema),

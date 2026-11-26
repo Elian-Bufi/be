@@ -136,7 +136,7 @@ describe('DL-198 · el 1RM de referencia', () => {
     expect(leido.lastRecord).toMatchObject({ value: { value: 44, unit: 'kg' }, localDate: hoy(), setIndex: 2, set: { completedRepetitions: 8, rir: 1 } });
     // 44 frente a 39 es un 13 % más: BE sigue con la calibración y avisa.
     expect(leido.current?.origin).toBe('CALIBRATION');
-    expect(leido.warning?.differencePercent).toBe(13);
+    expect(leido.warning?.relativeDifference).toBe(13);
     // Elegir el registro lo guarda (BE lo vuelve a calcular): pasa a ser el que usa.
     const r = leido.lastRecord!;
     const elegido = UnoRMGuardadoResponseSchema.parse(

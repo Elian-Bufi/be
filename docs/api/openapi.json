@@ -82598,7 +82598,7 @@
                                     ],
                                     "additionalProperties": false
                                   },
-                                  "differencePercent": {
+                                  "relativeDifference": {
                                     "type": "integer",
                                     "minimum": -9007199254740991,
                                     "maximum": 9007199254740991
@@ -82606,7 +82606,7 @@
                                 },
                                 "required": [
                                   "record",
-                                  "differencePercent"
+                                  "relativeDifference"
                                 ],
                                 "additionalProperties": false
                               },
@@ -83764,7 +83764,7 @@
                                       ],
                                       "additionalProperties": false
                                     },
-                                    "differencePercent": {
+                                    "relativeDifference": {
                                       "type": "integer",
                                       "minimum": -9007199254740991,
                                       "maximum": 9007199254740991
@@ -83772,7 +83772,7 @@
                                   },
                                   "required": [
                                     "record",
-                                    "differencePercent"
+                                    "relativeDifference"
                                   ],
                                   "additionalProperties": false
                                 },

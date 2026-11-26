@@ -963,6 +963,8 @@ const OPACO_POR_DECISION = [
   'cuenta.tsx · dialogo',
   'dialogo.tsx · dialogo',
   'dialogo.tsx · opcionElegida',
+  // DL-198: cada opción del esfuerzo de la sesión es un control, como los Segmentos: la receta del vidrio la cubre.
+  'esfuerzo-de-la-sesion.tsx · punto',
   'evidencia-visual.tsx · dialogo',
   'fila-fija.tsx · fila',
   'historia-anterior.tsx · dialogo',

@@ -35,6 +35,7 @@ import { Icono } from '../../../../components/icono';
 import { api, nuevaClaveDeIdempotencia, type Resultado } from '../../../../lib/api';
 import { hoyEnBuenosAires } from '../../../../lib/fecha-en-palabras';
 import { mensajeDeFallo } from '../../../../lib/intento';
+import { useNombres } from '../../../../lib/nombres-ocultos';
 import { useNotacionDelEsfuerzo } from '../notacion-del-esfuerzo';
 import type { PrescripcionE } from './ejercicio-del-editor';
 
@@ -216,13 +217,13 @@ export function RenglonDelUnoRM({
         )}
       </p>
       {aviso && avisoVisto !== claveDelAviso ? (
-        <div className="uno-rm-del-ejercicio__aviso" role="status" data-aviso-del-uno-rm={aviso.differencePercent}>
+        <div className="uno-rm-del-ejercicio__aviso" role="status" data-aviso-del-uno-rm={aviso.relativeDifference}>
           <Icono nombre="info" tamano={18} />
           <span>
             {avisoEnPalabras({
               registro: { valor: aviso.record.value, fecha: aviso.record.localDate, serie: { carga: aviso.record.set.load, repeticiones: aviso.record.set.completedRepetitions, rir: aviso.record.set.rir }, banda: aviso.record.band, executionId: aviso.record.executionId, prescriptionId: aviso.record.prescriptionId, setIndex: aviso.record.setIndex },
               guardado: { entryId: datos?.history[0]?.entryId ?? '', origen: datos?.history[0]?.origin ?? 'CALIBRATION', valor: datos?.history[0]?.value ?? aviso.record.value, fecha: datos?.history[0]?.localDate ?? aviso.record.localDate, registradoEn: '', serie: null, banda: null },
-              diferencia: aviso.differencePercent,
+              diferencia: aviso.relativeDifference,
             })}
           </span>
           <span className="uno-rm-del-ejercicio__acciones-del-aviso">
@@ -275,6 +276,8 @@ export function CuadroDelUnoRM({ abierto, onCerrar, id, nombre, unidad, unoRM }:
   const T = COPY_UNO_RM_EN_EL_EDITOR;
   const propio = useId();
   const notacion = useNotacionDelEsfuerzo();
+  // TEST-TAG-004: el autor de cada valor, como lo dice «Ocultar nombres».
+  const { delProfesional } = useNombres();
   const hoy = hoyEnBuenosAires();
   const datos = unoRM.datos;
   const [origen, setOrigen] = useState<Origen>('CALIBRATION');
@@ -509,7 +512,7 @@ export function CuadroDelUnoRM({ abierto, onCerrar, id, nombre, unidad, unoRM }:
             <ul className="cuadro-del-uno-rm__lista" data-historia-del-uno-rm={datos.history.length}>
               {datos.history.map((h) => (
                 <li key={h.entryId}>
-                  <strong>{enKilos(h.value)}</strong> <span className="nota">· {origenDelUnoRM(h.origin, h.localDate, h.band)} · {h.author.displayName}</span>
+                  <strong>{enKilos(h.value)}</strong> <span className="nota">· {origenDelUnoRM(h.origin, h.localDate, h.band)} · {delProfesional(h.author)}</span>
                   {h.set ? <span className="nota"> · {cuentaDelUnoRM({ carga: h.set.load, repeticiones: h.set.completedRepetitions, rir: h.set.rir })}</span> : null}
                   {h.note ? <span className="nota"> · «{h.note}»</span> : null}
                 </li>

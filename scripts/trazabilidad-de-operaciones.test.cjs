@@ -184,6 +184,14 @@ FAMILIAS_DE_BE.RCT = 'DL-191';
  */
 FAMILIAS_DE_BE.RGU = 'DL-195';
 
+/**
+ * RMX y ESF (DL-198, WP-EDITOR-ENTRENAMIENTO-TANDA-2; decisiones de Dirección del 2026-11-25): el 1RM de referencia de una
+ * persona en un ejercicio (la calibración, el último registro en rango y lo declarado) y el esfuerzo de la sesión (Foster)
+ * que responde la persona al terminar. El 09 no las tiene; API-EJE-06 es de la familia EJE (DL-123), ya declarada.
+ */
+FAMILIAS_DE_BE.RMX = 'DL-198';
+FAMILIAS_DE_BE.ESF = 'DL-198';
+
 test('el inventario del 09 tiene 122 operaciones y de cada una se lee su ruta', () => {
   assert.equal(inventario.size, 122);
   const sinRuta = [...inventario].filter((id) => !del09.has(id));
