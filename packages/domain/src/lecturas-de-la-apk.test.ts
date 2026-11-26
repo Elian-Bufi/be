@@ -58,9 +58,13 @@ const APK = readdirSync(CARPETA)
  * WP-PULIDO-GRANDES), que lee las mismas 98 operaciones con la misma forma y suma el detalle de GOOGLE_EMAIL_MISMATCH
  * (RF-004, DL-172), que solo da API-MET-02: la 0.28 no llama esa operación, así que nunca le llega. Ese mismo día
  * la reemplazó la 0.29.0-candidata.1 (la tanda B de WP-PULIDO-GRANDES y GR-01 de WP-GRAFICOS), que lee esas 98, con la
- * misma forma, y tres más: RES-01 (quién miró, PG-12), TRN-25 y TRN-25-PROPIA (la nota para tu profe, PG-15).
+ * misma forma, y tres más: RES-01 (quién miró, PG-12), TRN-25 y TRN-25-PROPIA (la nota para tu profe, PG-15). La 0.30 y
+ * la 0.31 se publicaron sin congelarse. El 2026-11-26 la reemplazó la 0.32.0-candidata.1 (DL-194 y DL-198: Nutrición Hoy
+ * con el carrusel, el RPE, «Semana N de M» y el esfuerzo de la sesión), que lee 108: deja CON-01 y 02 (el B2 lo da la
+ * pantalla única de consentimiento) y suma nueve, CMP-01 a 03 (DL-176), HIA-01 a 03 (la historia anterior), RES-09 y 10
+ * (los pedidos de ver un plan) y ESF-01 (el esfuerzo de la sesión, DL-198). Cabeceras y textos, iguales.
  */
-const VIGENTES = ['0.29.0-candidata.1'];
+const VIGENTES = ['0.32.0-candidata.1'];
 
 /**
  * Las reglas que el JSON Schema no dice y la prueba de integración revisa aparte (`reglasQueElJsonNoDice` en
