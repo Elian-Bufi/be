@@ -245,7 +245,10 @@ function Sesiones({
   const identidad = useMemo(() => identidadDeVersiones(ejecuciones), [ejecuciones]);
   // DL-192: lo indicado y lo registrado, en la notación del plan de la persona (RIR o RPE); lo guardado es el RIR.
   const notacion = useNotacionDelEsfuerzo();
-  const todas = useMemo(() => componerLasSesiones(ejecuciones, objetivosPorVersion, notacion), [ejecuciones, objetivosPorVersion, notacion]);
+  // DL-202 (EP-D07): las versiones que no le preguntan a la persona el esfuerzo de cada serie; ahí, un RIR sin registrar
+  // no es un dato que falta ni abre la medida del RIR.
+  const sinEsfuerzoPorSerie = useMemo(() => new Set([...planes].filter(([, plan]) => plan?.askSetEffort === false).map(([planId]) => planId)), [planes]);
+  const todas = useMemo(() => componerLasSesiones(ejecuciones, objetivosPorVersion, notacion, sinEsfuerzoPorSerie), [ejecuciones, objetivosPorVersion, notacion, sinEsfuerzoPorSerie]);
   const sinLeer = [...planes].filter(([, plan]) => plan === null).length;
 
   // Los filtros de siempre. El ejercicio se elige por su identidad en el catálogo, no por su nombre: dos ejercicios con
@@ -315,7 +318,7 @@ function Sesiones({
   const tituloDeLaAbierta = abierta ? tituloDeLaSesion(abierta.sesion) : '';
   const contenidoDeLaAbierta =
     abierta && ejecucionAbierta ? (
-      <DetalleDeLaSesion key={abierta.id} fila={abierta} ejecucion={ejecucionAbierta} identidad={identidad} objetivos={objetivosPorVersion.get(abierta.planId) ?? null} version={versionDe(abierta.planId)} notas={notas} esfuerzos={esfuerzos} />
+      <DetalleDeLaSesion key={abierta.id} fila={abierta} ejecucion={ejecucionAbierta} identidad={identidad} objetivos={objetivosPorVersion.get(abierta.planId) ?? null} pideElEsfuerzo={!sinEsfuerzoPorSerie.has(abierta.planId)} version={versionDe(abierta.planId)} notas={notas} esfuerzos={esfuerzos} />
     ) : null;
 
   // A Analizar va con el período que se está mirando, si es uno elegido: allá el ejercicio se elige de nuevo.
@@ -591,6 +594,7 @@ function DetalleDeLaSesion({
   ejecucion: x,
   identidad,
   objetivos,
+  pideElEsfuerzo,
   version,
   notas,
   esfuerzos,
@@ -599,6 +603,8 @@ function DetalleDeLaSesion({
   ejecucion: EjecucionDeEntrenamiento;
   identidad: IdentidadDeVersiones;
   objetivos: ObjetivosDeLaVersion | null;
+  /** DL-202: si su versión le pregunta a la persona el esfuerzo de cada serie. */
+  pideElEsfuerzo: boolean;
   /** «versión 3», o «activado el 3 ago» si el número no se pudo saber. */
   version: string;
   /** PG-15: las notas de las sesiones del período. */
@@ -681,7 +687,7 @@ function DetalleDeLaSesion({
               Ver en un gráfico
             </summary>
             {/* Se dibuja solo abierto: un gráfico dentro de un bloque cerrado no tiene medidas. */}
-            {grafico ? <ComparacionPorSerie ejecucion={x} identidad={identidad} objetivos={objetivos ?? undefined} /> : null}
+            {grafico ? <ComparacionPorSerie ejecucion={x} identidad={identidad} objetivos={objetivos ?? undefined} pideElEsfuerzo={pideElEsfuerzo} /> : null}
           </details>
         ) : null}
         <details>

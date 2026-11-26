@@ -11,7 +11,7 @@
  * en la esquina, que explica paso a paso con un ejemplo resuelto. Lo que se escribe es un borrador del cuadro: entra al
  * plan con el botón principal; cerrar con cambios pregunta.
  */
-import { COPY_ESFUERZO_DE_LA_SESION, COPY_NOTACION_DEL_ESFUERZO, DIAS_DE_LA_SEMANA, finDelPlan, type DiaDeLaSemana, type NotacionDelEsfuerzo, type PlanificacionDelPlan } from '@be/domain';
+import { COPY_ESFUERZO_DE_CADA_SERIE, COPY_ESFUERZO_DE_LA_SESION, COPY_NOTACION_DEL_ESFUERZO, DIAS_DE_LA_SEMANA, finDelPlan, type DiaDeLaSemana, type NotacionDelEsfuerzo, type PlanificacionDelPlan } from '@be/domain';
 import { useEffect, useId, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
 import { CampoDeFecha } from '../../../../components/campo-de-fecha';
 import { CuadroEnfocado } from '../../../../components/cuadro-enfocado';
@@ -117,6 +117,7 @@ export function CuadroConfigurarPlan({
   notacion,
   semanasDeLasFases,
   conOtraIntensidad,
+  pedidoPorLosRegistros = false,
   onGuardar,
   onCerrar,
 }: {
@@ -130,6 +131,11 @@ export function CuadroConfigurarPlan({
   semanasDeLasFases: number;
   /** Cuántos ejercicios del plan tienen un criterio distinto del de esta intensidad. */
   conOtraIntensidad: (i: IntensidadElegida) => number;
+  /**
+   * DL-202 (EP-D02): en un plan sin «Pedir el esfuerzo de cada serie» escrito, si la API lo resolvió encendido porque la
+   * persona ya registró esfuerzos (`askSetEffort` de API-SER-01).
+   */
+  pedidoPorLosRegistros?: boolean;
   onGuardar: (c: PlanConfigurado) => void;
   onCerrar: () => void;
 }) {
@@ -277,6 +283,22 @@ export function CuadroConfigurarPlan({
           </label>
           <p id={`${id}-esfuerzo-nota`} className="nota">
             {COPY_ESFUERZO_DE_LA_SESION.opcionExplicada}
+          </p>
+          {/* DL-202: el esfuerzo de cada serie efectiva, apagado por defecto; ausente, lo resuelto con los registros (EP-D02). */}
+          <label className="casilla-con-explicacion esfuerzo-de-cada-serie-del-plan" data-esfuerzo-de-cada-serie-del-plan={(p.askSetEffort ?? pedidoPorLosRegistros) ? 'si' : 'no'}>
+            <input
+              type="checkbox"
+              checked={p.askSetEffort ?? pedidoPorLosRegistros}
+              aria-describedby={`${id}-esfuerzo-por-serie-nota`}
+              onChange={(e) => setP({ ...p, askSetEffort: e.target.checked })}
+              data-pedir-el-esfuerzo-de-cada-serie
+            />
+            <span>{COPY_ESFUERZO_DE_CADA_SERIE.opcionDelPlan}</span>
+          </label>
+          <p id={`${id}-esfuerzo-por-serie-nota`} className="nota">
+            {COPY_ESFUERZO_DE_CADA_SERIE.opcionExplicada(guardadoDeLaIntensidad(intensidad, notacion).notacion)}
+            {/* Fijo mientras el cuadro está abierto (sale de lo guardado, no de la casilla): nada se mueve al tocarla. */}
+            {planificacion.askSetEffort === undefined && pedidoPorLosRegistros ? ` ${COPY_ESFUERZO_DE_CADA_SERIE.porLosRegistros}` : null}
           </p>
         </div>
         {enLaPlantilla ? null : (

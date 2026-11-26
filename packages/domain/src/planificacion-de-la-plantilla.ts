@@ -45,8 +45,10 @@ export function planificacionParaLaPlantilla(p: PlanificacionDelPlan | null | un
     ...(p.intensity && p.intensity !== 'RIR' ? { intensity: p.intensity } : {}),
     ...(p.withoutIntensity?.length ? { withoutIntensity: p.withoutIntensity } : {}),
     ...(p.askSessionEffort ? { askSessionEffort: true as const } : {}),
+    // DL-202: la plantilla copia «Pedir el esfuerzo de cada serie» si está escrito; ausente, no lo lleva.
+    ...(typeof p.askSetEffort === 'boolean' ? { askSetEffort: p.askSetEffort } : {}),
   };
-  const vacia = r.weeks === null && r.phases.every((f) => f.weeks === null) && !r.warmUps && !r.progressions && !r.intensity && !r.withoutIntensity && !r.askSessionEffort;
+  const vacia = r.weeks === null && r.phases.every((f) => f.weeks === null) && !r.warmUps && !r.progressions && !r.intensity && !r.withoutIntensity && !r.askSessionEffort && r.askSetEffort === undefined;
   return vacia ? null : r;
 }
 
@@ -87,6 +89,7 @@ export function planificacionDesdeLaPlantilla(
     ...(p.intensity ? { intensity: p.intensity } : {}),
     ...(p.withoutIntensity ? { withoutIntensity: p.withoutIntensity.map(e) } : {}),
     ...(p.askSessionEffort ? { askSessionEffort: true as const } : {}),
+    ...(typeof p.askSetEffort === 'boolean' ? { askSetEffort: p.askSetEffort } : {}),
   };
   const fasesDelPlan = despues.fases.filter((x): x is string => x !== null);
   const ejerciciosDelPlan = despues.ejercicios.filter((x): x is string => x !== null);

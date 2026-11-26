@@ -23,7 +23,7 @@ const TextoOpcional = (max: number) => z.string().trim().max(max).nullable();
  * DL-198 (WP-EDITOR-ENTRENAMIENTO-TANDA-2, ET2-10) · la planificación que guarda una plantilla: las semanas del plan y de
  * cada fase, las aproximaciones, las progresiones, la intensidad del plan y el esfuerzo de la sesión. **Nada de una
  * persona** (DL-108 D-5): sin fecha de inicio, sin objetivo, sin anotaciones privadas y sin favoritos. Nombra las fases y
- * los ejercicios de su estructura; al aplicarla, cada uno pasa al suyo del plan nuevo (`planificacionDesdeLaPlantilla`).
+ * los ejercicios de su estructura; DL-202: también «Pedir el esfuerzo de cada serie», si está escrito; al aplicarla, cada uno pasa al suyo del plan nuevo (`planificacionDesdeLaPlantilla`).
  * Opcional en todo: una plantilla de antes no la tiene, y un website anterior no la manda.
  */
 export const PlanificacionDeLaPlantillaSchema = PlanificacionDelPlanSchema.pick({
@@ -34,6 +34,7 @@ export const PlanificacionDeLaPlantillaSchema = PlanificacionDelPlanSchema.pick(
   intensity: true,
   withoutIntensity: true,
   askSessionEffort: true,
+  askSetEffort: true,
 });
 export type PlanificacionDeLaPlantilla = z.infer<typeof PlanificacionDeLaPlantillaSchema>;
 

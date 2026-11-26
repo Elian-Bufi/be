@@ -17,7 +17,7 @@
  * - **Los bloques de la sesión** (DL-181) agrupan lo que se ve en «¿Qué ejercicios hiciste?» y en el final, con su resumen
  *   («En vueltas · 3 vueltas») y no con la indicación para hacerlo. Se registra por ejercicio, como siempre.
  */
-import { COPY, COPY_ENTRENAMIENTO, COPY_ENTRENAMIENTO_POR_SERIE, rotulosDeLasSeries, type Ocurrencia, type PrescripcionConObjetivos, type Resultado, type SesionParaRegistrar } from '@be/domain';
+import { COPY, COPY_ENTRENAMIENTO, COPY_ENTRENAMIENTO_POR_SERIE, rotulosDeLasSeries, seMuestraElEsfuerzoDeLaSerie, type Ocurrencia, type PrescripcionConObjetivos, type Resultado, type SesionParaRegistrar } from '@be/domain';
 import { Children, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { AccessibilityInfo, Text, View } from 'react-native';
 import { api } from '../api';
@@ -196,7 +196,12 @@ export function PantallaDeRegistroRapido({
   }, [token, occurrenceId, sesionPerdida, vuelta]);
 
   // DL-192: con la notación del esfuerzo del plan (API-SER-02): en RPE se elige el RPE y se manda el RIR.
-  const ctx = useMemo((): Contexto | null => (lectura?.ok ? { sesion: lectura.datos.data.session, fecha, hoy, notacion: notacionDeLaLectura(lectura.datos.data) } : null), [lectura, fecha, hoy]);
+  // DL-202: y con si el plan pide el esfuerzo de cada serie (`askSetEffort`); sin pedirlo, las series no tienen ese campo.
+  const ctx = useMemo(
+    (): Contexto | null =>
+      lectura?.ok ? { sesion: lectura.datos.data.session, fecha, hoy, notacion: notacionDeLaLectura(lectura.datos.data), ...(lectura.datos.data.askSetEffort === false ? { pideElEsfuerzo: false } : {}) } : null,
+    [lectura, fecha, hoy],
+  );
   useEffect(() => {
     if (ctx && r === null) setR(respuestasIniciales(ctx));
   }, [ctx, r]);
@@ -458,7 +463,8 @@ export function PantallaDeRegistroRapido({
             <View style={estilos.celdas}>
               {campo('carga', unidad, `Carga en ${unidad} ${rotulo.deLa}`, 'decimal-pad', gris.carga)}
               {campo('repeticiones', COPY_ENTRENAMIENTO_POR_SERIE.columnaRepeticiones, `Repeticiones ${rotulo.deLa}`, 'number-pad', gris.repeticiones)}
-              {notacion === 'RPE' ? (
+              {/* DL-202: el esfuerzo, solo si el plan lo pide y en una serie efectiva (EP-D04). */}
+              {!seMuestraElEsfuerzoDeLaSerie(ctx.pideElEsfuerzo, s.setKind) ? null : notacion === 'RPE' ? (
                 <View style={estilos.celda}>
                   <SelectorDeRpe
                     forma="campo"

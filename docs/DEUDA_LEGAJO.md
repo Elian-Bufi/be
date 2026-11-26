@@ -199,6 +199,7 @@
 | DL-198 | Decisiones de Dirección · 2026-11-25 (el 1RM con tres orígenes y la calibración del día cero; lo que la tanda 1 dejó para la tanda 2; WP-EDITOR-ENTRENAMIENTO-TANDA-2) | DL-171 · DL-192 · DL-196 · DL-197 · DL-152 · DL-108 · DL-182 · B10-06 · REG-06-128 · RNF-ACC-001 | El % RM sin un 1RM numérico, la persona que veía siempre la carga de la semana 1, ninguna forma de ver el plan como le llega, el esfuerzo de la sesión afuera (RPE-D09), plantillas que perdían la planificación, la clasificación de un propio que no se podía cambiar y desplegables desparejos | **PROGRAMADA en `wp-editor-entrenamiento-tanda-2` (sale de #324; PR en borrador, sin integrar) · ET2-D01 a ET2-D17 a ratificar:** el 1RM de referencia (`BE-E1RM` v2) con la calibración, el último registro en rango y lo declarado, el más reciente y el aviso si se aleja más del 10 % (API-RMX-01 y 02); el % RM con su base; la carga de cada semana en las lecturas del titular, en los mismos campos; «Ver como la persona»; el esfuerzo de la sesión (Foster, API-ESF-01 y 02); las plantillas con su planificación; la clasificación de un propio (API-EJE-06); migraciones aditivas `20261125125900` y `20261125130000`. Detalle: `docs/paquetes/WP-EDITOR-ENTRENAMIENTO-TANDA-2.md` |
 | DL-199 | Encargo de Dirección · 2026-11-25 (la prueba completa del editor de Entrenamiento; WP-EDITOR-ENTRENAMIENTO-TANDA-3) | DL-191 · DL-196 · DL-197 · DL-198 · DL-178 · DL-152 · DL-155 · B10-06 · REG-06-128 · RNF-ACC-001 | Sin planes completos de BE para empezar, ninguna sugerencia desde lo que hizo la persona, el cardio cargado como series × repeticiones × kg, sin reordenar arrastrando ni «Deshacer», lo BAJA de las tandas 1 y 2 y un editor sobrecargado (E5) | **PROGRAMADA en `wp-editor-entrenamiento-tanda-3` (PR en borrador, sin integrar) · ET3-D01 a ET3-D39 a ratificar:** las Plantillas de BE (cuatro, propuesta a validar por Elián) con las cargas en % RM resueltas con el 1RM de la persona (API-TPB-01 a 04, Administración las ofrece o las retira; migración aditiva `20261126120000`); la sugerencia «+2,5 kg la próxima» con su motivo; el cardio con duración, distancia e intensidad en los parámetros de siempre; reordenar arrastrando o con el teclado y «Deshacer» (Ctrl+Z); lo BAJA; la pasada de densidad. Detalle: `docs/paquetes/WP-EDITOR-ENTRENAMIENTO-TANDA-3.md` |
 | DL-200 | Pedido de Dirección · 2026-11-25 («hay que tildar casilleros para tener más de un resultado… no es práctico»; WP-ANTROPOMETRIA-RESULTADOS) | DL-111 · DL-112 · DL-190 · REG-06-156/157/158 · REG-06-203/204/205 · RF-048 · RF-049 · TEST-PRJ-009 | Cada resultado era una corrida aparte, elegida en una lista y calculada de a una; «Qué vas a calcular» se tildaba por métrica; la densidad no se veía; las masas, el fraccionamiento y lo retirado por DL-112 no estaban; Kerr iba aparte; los resultados no decían su cambio; doce acciones subrayadas | **PROGRAMADA en `wp-antropometria-resultados` (PR en borrador, sin integrar) · AR-D01 a AR-D16 a ratificar**: la cadena de derivaciones del dominio (lo medido, la ecuación, la conversión con Siri y Brožek, las masas y el fraccionamiento en cuatro componentes con Rocha y Würch) para 20 métodos, con las mismas reglas publicadas; la toma con el resumen arriba y cada método en su desplegable, cada valor con su origen, su «?» con la cuenta y lo que le falta, y su cambio desde la anterior; «Qué vas a calcular» por método; guardar en la historia al registrar y desde la toma. Sin API ni migración; la APK 0.32 no cambia. Detalle: `docs/paquetes/WP-ANTROPOMETRIA-RESULTADOS.md` |
+| DL-202 | Decisión de Dirección · 2026-11-26 («Pedir el esfuerzo de cada serie»; WP-ESFUERZO-POR-SERIE) | DL-192 · DL-196 · DL-198 · DL-178 · DL-161 · DL-171 · REG-06-129 · INV-06-152 | La app preguntaba siempre el esfuerzo de cada serie, también de las aproximaciones y a quien no lo usa; el plan no tenía cómo decir que no; Registros decía «RIR: sin dato» en cada serie de quien no lo escribe | **PROGRAMADA en `entrenamiento/esfuerzo-por-serie` (PR en borrador, sin integrar) · EP-D01 a EP-D09 a ratificar:** la casilla en «Configurar plan», apagada por defecto, con el texto en la notación del plan (`planning.askSetEffort`); los planes de antes, encendidos solo si la persona ya declaró esfuerzos en ese plan (lo resuelve la API en API-SER-01 y API-SER-02); la app sin el campo apagada (la sesión, «Ya la hice», la corrección sin esfuerzos registrados), las aproximaciones nunca, y lo que no se pregunta no se registra; la capacidad `training-set-effort-1`; Registros sin el RIR vacío. Sin migración; la APK no se construyó. Detalle: `docs/paquetes/WP-ESFUERZO-POR-SERIE.md` |
 
 ---
 
@@ -9697,3 +9698,38 @@ No se edita el legajo.
 fraccionamiento con otra grasa); decidir si la densidad y las masas de cada ecuación se publican como métodos para que
 entren en «Evolución» y «Composición corporal»; mirarlo en pantalla con Dirección. Detalle:
 `docs/paquetes/WP-ANTROPOMETRIA-RESULTADOS.md`.
+
+## DL-202 — «Pedir el esfuerzo de cada serie»
+
+**Prioridad:** alta · DL-192 · DL-196 · DL-198 · DL-178 · DL-161 · DL-171 · REG-06-129 · INV-06-152 · **Estado:** DECIDIDA
+por Dirección el 2026-11-26 · PROGRAMADA en `entrenamiento/esfuerzo-por-serie`; PR en borrador, sin integrar · EP-D01 a
+EP-D09, **a ratificar**. Si al integrar el número choca con otro paquete, se renumera.
+
+**Qué decidió Dirección.** Una casilla nueva en «Configurar plan», al lado de «Pedir el esfuerzo de la sesión al
+terminar»: «Pedir el esfuerzo de cada serie», apagada por defecto, con el texto «La app le pregunta a la persona el RPE (o
+el RIR, según el plan) de cada serie efectiva, no de las aproximaciones.». Encendida, la app muestra el campo en cada serie
+efectiva, como hasta ahora; apagada, no lo muestra. Las aproximaciones nunca lo piden. Lo ya registrado se sigue viendo en
+la historia y en la corrección. Las Plantillas de BE y «Duplicar» copian el valor. Los planes de antes: el campo es
+opcional; ausente es apagado, salvo que la persona ya haya registrado esfuerzo en ese plan. En Registros y Revisiones, sin
+columnas vacías de esfuerzo si el plan no lo pide.
+
+**Qué dice el legajo.** Nada en contra. El RIR de una serie realizada es opcional y nunca se infiere (INV-06-152;
+REG-06-129 para el esfuerzo percibido); DL-171 separa lo que escribió la persona de lo que vino del plan. Que el plan decida
+si se pregunta es una opción de prescripción, como la del esfuerzo de la sesión (DL-198, ET2-07). No se edita el legajo.
+
+**Lo programado.**
+- **EP-01 · El dominio** (`esfuerzo-de-cada-serie.ts`): los textos, qué es declarar un esfuerzo, cómo se resuelve la
+  opción de un plan y qué serie muestra el campo.
+- **EP-02 · El contrato:** `planning.askSetEffort` (opcional, `true` o `false`), y `askSetEffort` resuelto en API-SER-01 y,
+  para la app que declara `training-set-effort-1`, en API-SER-02. Lo copian la poda, las plantillas y «Duplicar».
+- **EP-03 · La API:** la resolución de un plan de antes, con las ejecuciones de la persona en ese plan y sus correcciones.
+- **EP-04 · «Configurar plan»:** la casilla, en el bloque del esfuerzo de la sesión.
+- **EP-05 · Registros:** sin «RIR: sin dato» ni la medida del RIR vacía en una versión que no lo pide.
+- **EP-06 y EP-07 · La app:** la sesión, «Ya la hice» y la corrección, encendida y apagada.
+- Pruebas: TEST-EP-01 a 06 (dominio), `scripts/esfuerzo-de-cada-serie.test.mjs` (app), `esfuerzo-de-cada-serie.spec.ts`
+  (API) y `apps/web/test/esfuerzo-de-cada-serie.test.mjs` (website).
+
+**Lo que queda.** Ratificar EP-D01 a EP-D09 (sobre todo EP-D02, cómo se resuelve un plan de antes; EP-D03, apagada no se
+registra el RIR del plan; EP-D04, las aproximaciones dejan de mostrar el campo); construir y publicar la APK (hasta
+entonces, la instalada sigue preguntando el esfuerzo de todas las series); mirarlo en pantalla con Dirección. Detalle:
+`docs/paquetes/WP-ESFUERZO-POR-SERIE.md`.

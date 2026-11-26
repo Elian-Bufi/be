@@ -521,6 +521,13 @@ export const PlanificacionDelPlanSchema = z.strictObject({
    * pide. A la app le llega como `askSessionEffort` en API-SER-02, si declara `training-session-effort-1`.
    */
   askSessionEffort: z.literal(true).optional(),
+  /**
+   * DL-202 (EP-D01, EP-D02): «Pedir el esfuerzo de cada serie» (el RIR o el RPE de cada serie efectiva, según
+   * `effortNotation`; nunca el de las aproximaciones). Se escribe `true` o `false` cuando el profesional toca la casilla.
+   * Ausente (un plan de antes, o uno nuevo sin tocarla): se pide solo si la persona ya declaró el esfuerzo de alguna serie
+   * en ese plan (`pideElEsfuerzoDeCadaSerie`). A la app le llega resuelto como `askSetEffort` en API-SER-02.
+   */
+  askSetEffort: z.boolean().optional(),
   privateNotes: z
     .strictObject({
       plan: TextoOpcional(4000),

@@ -75,7 +75,7 @@ type AlPerderLaSesion = (r: Resultado<unknown>) => boolean;
 type Lectura =
   | null
   | { readonly tipo: 'error'; readonly sinConexion: boolean }
-  | { readonly tipo: 'lista'; readonly x: EjecucionDeEntrenamiento; readonly sesion: SesionConObjetivos; readonly conPlan: boolean; readonly notacion: NotacionDelEsfuerzo };
+  | { readonly tipo: 'lista'; readonly x: EjecucionDeEntrenamiento; readonly sesion: SesionConObjetivos; readonly conPlan: boolean; readonly notacion: NotacionDelEsfuerzo; readonly pideElEsfuerzo: boolean };
 
 /** El lado de la miniatura del ejercicio, en dp. */
 const LADO_DE_LA_IMAGEN = 56;
@@ -98,7 +98,8 @@ export function PantallaDeCorreccion({ token, id, salir, ir }: { token: string; 
     const s = await api.sesionParaRegistrar(token, x.occurrenceId);
     if (sesionPerdida(s)) return;
     // DL-192: con la notación del esfuerzo del plan; sin API-SER-02, RIR.
-    setLectura({ tipo: 'lista', x, sesion: s.ok ? s.datos.data.session : sesionDesdeLaOcurrencia(x.plannedSession), conPlan: s.ok, notacion: notacionDeLaLectura(s.ok ? s.datos.data : null) });
+    // DL-202: y con si el plan pide el esfuerzo de cada serie; sin API-SER-02, como hasta ahora.
+    setLectura({ tipo: 'lista', x, sesion: s.ok ? s.datos.data.session : sesionDesdeLaOcurrencia(x.plannedSession), conPlan: s.ok, notacion: notacionDeLaLectura(s.ok ? s.datos.data : null), pideElEsfuerzo: !(s.ok && s.datos.data.askSetEffort === false) });
   }, [token, id, sesionPerdida]);
 
   useEffect(() => {
@@ -116,6 +117,7 @@ export function PantallaDeCorreccion({ token, id, salir, ir }: { token: string; 
       x={lectura.x}
       sesion={lectura.sesion}
       notacion={lectura.notacion}
+      pideElEsfuerzo={lectura.pideElEsfuerzo}
       conPlan={lectura.conPlan}
       sesionPerdida={sesionPerdida}
       accesoRetirado={accesoRetirado}
@@ -130,6 +132,7 @@ function FormularioDeLaCorreccion({
   x,
   sesion,
   notacion,
+  pideElEsfuerzo,
   conPlan,
   sesionPerdida,
   accesoRetirado,
@@ -140,6 +143,8 @@ function FormularioDeLaCorreccion({
   x: EjecucionDeEntrenamiento;
   sesion: SesionConObjetivos;
   notacion: NotacionDelEsfuerzo;
+  /** DL-202: si el plan pide el esfuerzo de cada serie (API-SER-02). */
+  pideElEsfuerzo: boolean;
   conPlan: boolean;
   sesionPerdida: AlPerderLaSesion;
   accesoRetirado: AlPerderLaSesion;
@@ -147,7 +152,7 @@ function FormularioDeLaCorreccion({
   onRegistrada: () => void;
 }) {
   const base = useMemo(() => registroVigente(x), [x]);
-  const [inicial] = useState(() => estadoInicial(x, sesion, notacion));
+  const [inicial] = useState(() => estadoInicial(x, sesion, notacion, pideElEsfuerzo));
   const [estado, hacer] = useReducer(corregir, inicial);
   const [enviando, setEnviando] = useState(false);
   const [fallo, setFallo] = useState<string | null>(null);
@@ -324,6 +329,8 @@ function TarjetaDelEjercicio({
   const unidad = unidadDelEjercicioEnCorreccion(ej);
   // DL-192: todas las filas llevan la notación del plan (estadoInicial).
   const notacion = ej.filas[0]?.notacion ?? 'RIR';
+  // DL-202: sin pedir el esfuerzo y sin ninguno registrado, el ejercicio no tiene esa columna.
+  const conEsfuerzo = !ej.filas[0]?.sinEsfuerzo;
   // DL-178: el calentamiento se nombra así y las efectivas, con su número efectivo (el tipo de la fila ya junta el registro y el plan).
   const rotuloDe = rotuloPorIndice(ej.filas.map((x) => ({ setIndex: x.setIndex, setKind: x.tipo })));
   return (
@@ -344,7 +351,7 @@ function TarjetaDelEjercicio({
           <Text style={[estilos.columna, estilos.columnaSerie]}>{COPY_ENTRENAMIENTO_POR_SERIE.columnaSerie}</Text>
           <Text style={[estilos.columna, estilos.columnaDato]}>{unidad ?? COPY_ENTRENAMIENTO.carga}</Text>
           <Text style={[estilos.columna, estilos.columnaDato]}>{COPY_ENTRENAMIENTO_POR_SERIE.columnaRepeticiones}</Text>
-          <Text style={[estilos.columna, estilos.columnaDato]}>{textosDelEsfuerzo(notacion).columna}</Text>
+          {conEsfuerzo ? <Text style={[estilos.columna, estilos.columnaDato]}>{textosDelEsfuerzo(notacion).columna}</Text> : null}
           <View style={estilos.columnaCasilla} />
         </View>
       ) : null}
@@ -412,6 +419,8 @@ function FilaDeLaCorreccion({
   const estado = estadoDeLaFila(f);
   // DL-192: en un plan en RPE, el esfuerzo se elige entre las opciones del RPE.
   const notacion = f.notacion ?? 'RIR';
+  // DL-202: los campos de la fila; sin el del esfuerzo si su ejercicio no lo muestra.
+  const campos = f.sinEsfuerzo ? CAMPOS.filter((c) => c.campo !== 'rir') : CAMPOS;
   const tocarLaCasilla = () => {
     const r = alTocarLaCasilla(f);
     if ('errores' in r) noSePudoTildar(r.errores);
@@ -445,7 +454,7 @@ function FilaDeLaCorreccion({
           <View style={estilos.espacio} />
           {casilla}
         </View>
-        {CAMPOS.map(({ campo, teclado }) =>
+        {campos.map(({ campo, teclado }) =>
           campo === 'rir' && notacion === 'RPE' ? (
             <SelectorDeRpe
               key={campo}
@@ -480,7 +489,7 @@ function FilaDeLaCorreccion({
         <View style={estilos.celdaSerie}>
           <Text style={estilos.numeroDeSerie}>{rotulo.corto}</Text>
         </View>
-        {CAMPOS.map(({ campo, teclado }) =>
+        {campos.map(({ campo, teclado }) =>
           campo === 'rir' && notacion === 'RPE' ? (
             <SelectorDeRpe
               key={campo}

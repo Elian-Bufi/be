@@ -1,4 +1,4 @@
-import { CAPACIDAD_ESFUERZO_DE_LA_SESION, CAPACIDAD_NOTACION_DEL_ESFUERZO, CAPACIDAD_SEMANA_DE_LA_FASE } from '@be/domain';
+import { CAPACIDAD_ESFUERZO_DE_CADA_SERIE, CAPACIDAD_ESFUERZO_DE_LA_SESION, CAPACIDAD_NOTACION_DEL_ESFUERZO, CAPACIDAD_SEMANA_DE_LA_FASE } from '@be/domain';
 import type { ContextoDeSolicitud } from '../http/contexto';
 
 /**
@@ -28,3 +28,6 @@ export const muestraLaSemanaDeLaFase = (ctx: ContextoDeSolicitud): boolean => ct
 
 /** DL-198 (ET2-07): si el cliente sabe preguntar el esfuerzo de la sesión al terminar (`askSessionEffort` de API-SER-02). */
 export const preguntaElEsfuerzoDeLaSesion = (ctx: ContextoDeSolicitud): boolean => ctx.capacidades.has(CAPACIDAD_ESFUERZO_DE_LA_SESION);
+
+/** DL-202 (EP-D06): si el cliente sabe no preguntar el esfuerzo de cada serie cuando el plan no lo pide (`askSetEffort`). */
+export const sabeElEsfuerzoDeCadaSerie = (ctx: ContextoDeSolicitud): boolean => ctx.capacidades.has(CAPACIDAD_ESFUERZO_DE_CADA_SERIE);

@@ -3897,6 +3897,7 @@ export function EditorDePlan({
           notacion={notacion}
           semanasDeLasFases={semanasQueSumanLasFases(plan, bloques)}
           conOtraIntensidad={conOtraIntensidad}
+          pedidoPorLosRegistros={!!version && 'askSetEffort' in version && version.askSetEffort === true}
           onGuardar={(c) => {
             alCambiarElPlan(c.planificacion);
             if (c.notacion !== notacion) setNotacion(c.notacion);
