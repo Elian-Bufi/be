@@ -2825,6 +2825,13 @@ async function resultadosAntropometricos({ p, d, salida }) {
   await p.keyboard.press('Escape');
 
   // ── Guardar en la historia ──
+  // Sin las ecuaciones elegidas (la toma no guarda el sexo): «Sin indicar», ningún segmento marcado, y lo que tiene
+  // ecuación por sexo espera a que se elijan. Con «Hombres», se guarda todo.
+  assert.equal(await p.$$eval('.resultados-por-metodo__lectura input[type="radio"][name$="-sexo"]:checked', (xs) => xs.length), 0, 'sin elegir, ningún sexo marcado');
+  assert.match(await p.$eval('.resultados-por-metodo__lectura', (e) => e.innerText), /Sin indicar/);
+  assert.match(await p.$eval(metodo, (e) => e.innerText), /elegí arriba las ecuaciones de la persona/);
+  await clic(p, '.resultados-por-metodo__lectura .segmento', 'Hombres');
+  await p.waitForFunction((m) => !document.querySelector(m)?.innerText.includes('elegí arriba las ecuaciones de la persona'), { timeout: ESPERA }, metodo);
   await clic(p, `${metodo} .metodo-de-la-toma__pie button`, 'Guardar en la historia');
   await elemento(p, `${metodo} [data-paso="suma"] .paso-de-la-cadena__historia`);
   await elemento(p, `${metodo} [data-paso="grasa"] .paso-de-la-cadena__historia`);

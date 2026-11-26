@@ -161,7 +161,7 @@ export function ResultadosPorMetodo({
               <div className="segmentos__fila">
                 {(['HOMBRE', 'MUJER'] as const).map((s) => (
                   <label key={s} className="segmento">
-                    <input type="radio" name={`${id}-sexo`} checked={sexo === s} onChange={() => ir({ ecuaciones: s === 'MUJER' ? 'mujer' : 'hombre' })} />
+                    <input type="radio" name={`${id}-sexo`} checked={sexoElegido && sexo === s} onChange={() => ir({ ecuaciones: s === 'MUJER' ? 'mujer' : 'hombre' })} />
                     {s === 'MUJER' ? 'Mujeres' : 'Hombres'}
                   </label>
                 ))}
@@ -182,7 +182,7 @@ export function ResultadosPorMetodo({
             </fieldset>
           ) : null}
           {hayPorSexo && !sexoPedido ? (
-            <p className="nota resultados-por-metodo__de-donde">{sexoGuardado ? 'Las de los resultados guardados con esta toma.' : 'Elegí las de la persona: la toma no lo guarda.'}</p>
+            <p className="nota resultados-por-metodo__de-donde">{sexoGuardado ? 'Las de los resultados guardados con esta toma.' : 'Sin indicar: hasta que elijas las de la persona, se leen con las de hombres y lo que depende del sexo no se guarda en la historia.'}</p>
           ) : null}
         </div>
       ) : null}
