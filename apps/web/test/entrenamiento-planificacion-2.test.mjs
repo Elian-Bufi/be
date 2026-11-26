@@ -122,9 +122,11 @@ test('C9 · «Ir a…» lleva al campo exacto: el de la serie, el del criterio, 
   // Lo que dice la API, por la ruta.
   assert.deepEqual(campos('SET_RIR_OUT_OF_RANGE', `${ruta}.sets[3].rir`, 3), [`${ej}-serie-3-rir`, ancla]);
   assert.deepEqual(campos('WARM_UP_AFTER_WORKING_SET', `${ruta}.sets[1].setKind`, 1), [`${ej}-serie-1-calentamiento`, ancla]);
-  assert.deepEqual(campos('INTENSITY_TARGET_OUT_OF_RANGE', `${ruta}.intensity.target.value`), [`${ej}-objetivo`, `${ej}-criterio`, ancla]);
+  // Tanda 4: el objetivo de intensidad lleva primero al «Común» de la planilla; si no está dibujado, al del recuadro.
+  assert.deepEqual(campos('INTENSITY_TARGET_OUT_OF_RANGE', `${ruta}.intensity.target.value`), [`${ej}-objetivo-comun`, `${ej}-objetivo`, `${ej}-criterio`, ancla]);
+  assert.deepEqual(campos(R.INCOMPLETO.sinIntensidad, ruta), [`${ej}-objetivo-comun`, `${ej}-objetivo`, `${ej}-criterio`, ancla], 'el que hereda sin objetivo, también');
   assert.deepEqual(campos('INTENSITY_CRITERIA_COMBINED', `${ruta}.intensity.criterion`), [`${ej}-criterio`, ancla]);
-  assert.deepEqual(campos('INTENSITY_TARGET_OUT_OF_RANGE', 'changes.blocks.0.sessions.1.prescriptions.2.intensity.target.value'), [`${ej}-objetivo`, `${ej}-criterio`, ancla], 'también con la ruta del pedido');
+  assert.deepEqual(campos('INTENSITY_TARGET_OUT_OF_RANGE', 'changes.blocks.0.sessions.1.prescriptions.2.intensity.target.value'), [`${ej}-objetivo-comun`, `${ej}-objetivo`, `${ej}-criterio`, ancla], 'también con la ruta del pedido');
   // Sin el criterio RIR, la columna del RIR no está: el criterio, después.
   assert.deepEqual(campos('SET_RIR_WITHOUT_RIR_CRITERION', `${ruta}.sets[0].rir`, 0), [`${ej}-serie-0-rir`, `${ej}-criterio`, ancla]);
   // Lo que ve el editor, por el código; lo que queda sin completar, donde se completa.
@@ -321,7 +323,7 @@ test('C8 · cada valor dice de dónde sale, en la celda: «común», «propio» 
   assert.equal(PL.origenDeLaCelda('no-se-entiende', '2').marca, null);
   // La celda lo usa: la marca a la vista, el texto vacío y lo que oye el lector.
   assert.match(EJERCICIO, /const origen = origenDeLaCelda\(celda\.estado, deLoGeneral\);/);
-  assert.match(EJERCICIO, /<div className="celda-de-objetivo" data-estado=\{celda\.estado\} data-origen=\{marca \?\? undefined\}>/);
+  assert.match(EJERCICIO, /<div className="celda-de-objetivo" data-estado=\{celda\.estado\} data-origen=\{marca \?\? undefined\} data-falta=\{falta \? '' : undefined\}>/);
   assert.match(EJERCICIO, /placeholder=\{origen\.placeholder\}/);
   assert.match(EJERCICIO, /<span className="celda-de-objetivo__origen" aria-hidden="true" data-origen-de-la-celda>/);
   assert.match(EJERCICIO, /\{origen\.descripcion\}/);

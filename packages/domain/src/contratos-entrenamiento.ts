@@ -495,6 +495,30 @@ export type GraficoFavoritoDelPlan = z.infer<typeof GraficoFavoritoDelPlanSchema
 export const IntensidadDelPlanSchema = z.enum(['RIR', 'PERCENT_RM', 'NONE']);
 export type IntensidadDelPlan = z.infer<typeof IntensidadDelPlanSchema>;
 
+/**
+ * ET2-D18 (a ratificar) · a qué carga lógica de gimnasio se redondean las cargas que salen del % RM y del 1RM: `AUTO`, el
+ * paso del implemento (ET1-D06: máquina 5, barra 2,5, mancuernas livianas 1 y, por debajo de 40 kg, 1); o 1, 2,5 o 5, ese paso
+ * siempre. Ausente en el plan: 2,5. Va en la planificación (no en las series): la app de la persona no lo lee.
+ */
+export const RedondeoDeLasCargasSchema = z.union([z.literal('AUTO'), z.literal(1), z.literal(2.5), z.literal(5)]);
+export type RedondeoDeLasCargas = z.infer<typeof RedondeoDeLasCargasSchema>;
+
+/**
+ * ET2-D18 (ratificada el 2026-11-26 con un matiz) · el 1RM con el que se calcularon las cargas de un ejercicio en % RM,
+ * congelado al activar la versión: la API lo completa en API-TRN-12 con el 1RM vigente de cada ejercicio, con su origen, su
+ * fecha y el día de la activación. Un 1RM posterior no cambia las cargas de la versión activa ni su vista; rige para la
+ * versión siguiente. La app de la persona no lo lee (lee las cargas ya calculadas).
+ */
+export const UnoRMDeLaActivacionSchema = z.strictObject({
+  prescriptionId: IdDeNodoSchema,
+  exerciseId: z.string().min(1),
+  value: z.strictObject({ value: z.number().positive().finite(), unit: UnidadDeCargaSchema }),
+  origin: z.enum(['CALIBRATION', 'RECORD', 'DECLARED']),
+  localDate: FechaLocalSchema,
+  activatedOn: FechaLocalSchema,
+});
+export type UnoRMDeLaActivacion = z.infer<typeof UnoRMDeLaActivacionSchema>;
+
 export const PlanificacionDelPlanSchema = z.strictObject({
   startDate: FechaLocalSchema.nullable(),
   weeks: z.number().int().min(1).max(104).nullable(),
@@ -521,6 +545,12 @@ export const PlanificacionDelPlanSchema = z.strictObject({
    * pide. A la app le llega como `askSessionEffort` en API-SER-02, si declara `training-session-effort-1`.
    */
   askSessionEffort: z.literal(true).optional(),
+  /** ET2-D18: «Redondear las cargas a», del plan («Configurar plan»). Ausente: 2,5. */
+  loadRounding: RedondeoDeLasCargasSchema.optional(),
+  /** ET2-D18: la excepción de un ejercicio («Más opciones»), por ejemplo una máquina de a 5. */
+  loadRoundingByExercise: z.array(z.strictObject({ prescriptionId: IdDeNodoSchema, step: RedondeoDeLasCargasSchema })).max(400).optional(),
+  /** ET2-D18: el 1RM congelado al activar, por ejercicio en % RM (`UnoRMDeLaActivacionSchema`). Lo pone la API. */
+  oneRepMaxAtActivation: z.array(UnoRMDeLaActivacionSchema).max(400).optional(),
   privateNotes: z
     .strictObject({
       plan: TextoOpcional(4000),

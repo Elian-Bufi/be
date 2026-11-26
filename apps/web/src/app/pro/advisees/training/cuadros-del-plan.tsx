@@ -11,13 +11,14 @@
  * en la esquina, que explica paso a paso con un ejemplo resuelto. Lo que se escribe es un borrador del cuadro: entra al
  * plan con el botón principal; cerrar con cambios pregunta.
  */
-import { COPY_ESFUERZO_DE_LA_SESION, COPY_NOTACION_DEL_ESFUERZO, DIAS_DE_LA_SEMANA, finDelPlan, type DiaDeLaSemana, type NotacionDelEsfuerzo, type PlanificacionDelPlan } from '@be/domain';
+import { COPY_ESFUERZO_DE_LA_SESION, DIAS_DE_LA_SEMANA, finDelPlan, REDONDEO_POR_OMISION, REDONDEOS_DE_LAS_CARGAS, type DiaDeLaSemana, type NotacionDelEsfuerzo, type PlanificacionDelPlan, type RedondeoDeLasCargas } from '@be/domain';
 import { useEffect, useId, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
 import { CampoDeFecha } from '../../../../components/campo-de-fecha';
 import { CuadroEnfocado } from '../../../../components/cuadro-enfocado';
 import { Icono } from '../../../../components/icono';
 import { DIA_CORTO, DIA_LARGO } from '../estacion/estacion';
 import { AYUDAS_DEL_EDITOR, ContenidoDeLaAyuda } from './ayudas-del-editor';
+import { COPY_REDONDEO } from './ejercicio-del-editor';
 import { conAnotacionesDelPlan, conFin, conInicio, conObjetivo, conSemanasDelPlan } from './fases-del-plan';
 import { guardadoDeLaIntensidad, INTENSIDADES, intensidadElegida, type IntensidadElegida } from './intensidad-del-plan';
 
@@ -41,13 +42,19 @@ export const COPY_CUADROS_DEL_PLAN = {
   nombreDeLaIntensidad: { RIR: 'RIR', RPE: 'RPE', PERCENT_RM: '% RM', NONE: 'Solo carga y repeticiones' } as Readonly<Record<IntensidadElegida, string>>,
   queEsLaIntensidad: {
     RIR: 'Repeticiones en reserva: cuántas más se podrían hacer.',
-    RPE: 'Esfuerzo percibido, del 1 al 10. Se guarda como RIR (RPE = 10 − RIR).',
+    RPE: 'Esfuerzo percibido, de 6 a 10. Equivale a RIR: RPE 8 = 2 en reserva.',
     PERCENT_RM: 'Una parte de la carga máxima para una repetición (1RM).',
     NONE: 'Sin criterio de intensidad: la carga y las repeticiones lo dicen todo.',
   } as Readonly<Record<IntensidadElegida, string>>,
   heredan: 'Cada ejercicio nuevo la toma. Uno puede tener otra, en su «Más opciones».',
-  conOtra: (n: number, nombre: string) => (n === 1 ? `Ya hay 1 ejercicio con otra intensidad: queda como está, salvo que lo pases a ${nombre}.` : `Ya hay ${n} ejercicios con otra intensidad: quedan como están, salvo que los pases a ${nombre}.`),
-  pasarlos: (n: number, nombre: string) => (n === 1 ? `Pasarlo a ${nombre} (se quita su objetivo de intensidad: lo escribís de nuevo)` : `Pasarlos a ${nombre} (se quita su objetivo de intensidad: lo escribís de nuevo)`),
+  conOtra: (n: number, nombre: string) => (n === 1 ? `Hay 1 ejercicio con otra intensidad. Sin pasarlo, queda como está y no se ve en ${nombre}.` : `Hay ${n} ejercicios con otra intensidad. Sin pasarlos, quedan como están y no se ven en ${nombre}.`),
+  /** ET2-D19: pasar de % RM a RIR o RPE (o al revés) pierde el objetivo; se dice cuántos y qué se pierde. */
+  pasarlos: (n: number, nombre: string) =>
+    n === 1
+      ? `Pasar el ejercicio a ${nombre}: pierde el objetivo de intensidad que tiene (el % RM, o el RIR o RPE de sus series) y lo escribís de nuevo.`
+      : `Pasar los ${n} ejercicios a ${nombre}: pierden el objetivo de intensidad que tienen (el % RM, o el RIR o RPE de sus series) y lo escribís de nuevo.`,
+  /** Entre RIR y RPE no se pierde nada (RPE = 10 − RIR, el mismo criterio por dentro): pasa solo, sin casilla. */
+  mismaMedida: (nombre: string) => `Los ejercicios en RIR o RPE pasan solos a ${nombre}: es la misma medida, solo cambia cómo se escribe.`,
   lasFasesSuman: (suman: number, del: number) => (suman === del ? `Las fases ocupan las ${del} semanas.` : suman < del ? `Las fases suman ${suman} de ${del} semanas.` : `Las fases suman ${suman} semanas: ${suman - del} más que el plan. Así no se activa.`),
   editarFase: 'Editar fase',
   nombreDeLaFase: 'Nombre',
@@ -137,14 +144,15 @@ export function CuadroConfigurarPlan({
   const [p, setP] = useState(planificacion);
   const [intensidad, setIntensidad] = useState<IntensidadElegida>(intensidadElegida(planificacion, notacion));
   const [semanasEscritas, setSemanasEscritas] = useState<string | null>(null);
-  const [pasar, setPasar] = useState(false);
+  const [pasar, setPasar] = useState(true);
   // Cada vez que se abre, empieza con lo del plan.
   useEffect(() => {
     if (!abierto) return;
     setP(planificacion);
     setIntensidad(intensidadElegida(planificacion, notacion));
     setSemanasEscritas(null);
-    setPasar(false);
+    // ET2-D19 (a ratificar): la casilla viene marcada: quien cambia la intensidad del plan espera ver el cambio.
+    setPasar(true);
     // Solo al abrir: mientras está abierto, lo que se escribe es el borrador del cuadro.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [abierto]);
@@ -153,7 +161,10 @@ export function CuadroConfigurarPlan({
   const fin = p.startDate && p.weeks ? finDelPlan(p.startDate, p.weeks) : '';
   // Revisión adversaria (DL-197): una duración que no se entiende no se guarda como «sin duración»: se dice y no se guarda.
   const semanasMal = semanasEscritas !== null && semanasEscritas.trim() !== '' && leerSemanas(semanasEscritas, 104) === null;
-  const otros = intensidad !== intensidadDeAntes && !((intensidad === 'RIR' || intensidad === 'RPE') && (intensidadDeAntes === 'RIR' || intensidadDeAntes === 'RPE')) ? conOtraIntensidad(intensidad) : 0;
+  // Con cualquier cambio (también RIR ↔ RPE), cuántos ejercicios tienen un criterio que no es el nuevo: esos pierden el
+  // objetivo al pasarlos (% RM ↔ RIR o RPE). Los de RIR o RPE pasan solos entre sí: es la misma medida (DL-192).
+  const otros = intensidad !== intensidadDeAntes ? conOtraIntensidad(intensidad) : 0;
+  const soloLaNotacion = intensidad !== intensidadDeAntes && (intensidad === 'RIR' || intensidad === 'RPE') && (intensidadDeAntes === 'RIR' || intensidadDeAntes === 'RPE');
   const teclasDeLaIntensidad = (e: KeyboardEvent<HTMLButtonElement>, actual: IntensidadElegida) => {
     const n = INTENSIDADES.indexOf(actual);
     const otra = e.key === 'ArrowRight' || e.key === 'ArrowDown' ? INTENSIDADES[(n + 1) % 4] : e.key === 'ArrowLeft' || e.key === 'ArrowUp' ? INTENSIDADES[(n + 3) % 4] : null;
@@ -256,10 +267,30 @@ export function CuadroConfigurarPlan({
                   {T.pasarlos(otros, T.nombreDeLaIntensidad[intensidad])}
                 </label>
               </>
+            ) : soloLaNotacion ? (
+              <p className="nota" data-solo-la-notacion>{T.mismaMedida(T.nombreDeLaIntensidad[intensidad])}</p>
             ) : null}
           </div>
-          {intensidad === 'RPE' ? <p className="nota">{COPY_NOTACION_DEL_ESFUERZO.queEs}</p> : null}
         </fieldset>
+        {/* ET2-D18: «Redondear las cargas a», para las que salen del % RM y del 1RM; cada ejercicio puede tener su excepción. */}
+        <div className="campo redondeo-de-las-cargas" data-redondeo-del-plan={String(p.loadRounding ?? REDONDEO_POR_OMISION)}>
+          <label htmlFor={`${id}-redondeo`}>{COPY_REDONDEO.delPlan}</label>
+          <select
+            id={`${id}-redondeo`}
+            value={String(p.loadRounding ?? REDONDEO_POR_OMISION)}
+            aria-describedby={`${id}-redondeo-que-es`}
+            onChange={(e) => setP({ ...p, loadRounding: e.target.value === 'AUTO' ? 'AUTO' : (Number(e.target.value) as RedondeoDeLasCargas) })}
+          >
+            {REDONDEOS_DE_LAS_CARGAS.map((r) => (
+              <option key={String(r)} value={String(r)}>
+                {COPY_REDONDEO.opcion(r, 'kg')}
+              </option>
+            ))}
+          </select>
+          <p id={`${id}-redondeo-que-es`} className="nota">
+            {COPY_REDONDEO.queEs}
+          </p>
+        </div>
         {/* DL-198 (ET2-07): el esfuerzo de la sesión (Foster), aparte del RIR de cada serie. */}
         <div className="esfuerzo-de-la-sesion-del-plan" data-esfuerzo-de-la-sesion-del-plan={p.askSessionEffort ? 'si' : 'no'}>
           <label className="casilla-con-explicacion">
@@ -276,7 +307,7 @@ export function CuadroConfigurarPlan({
             <span>{COPY_ESFUERZO_DE_LA_SESION.opcionDelPlan}</span>
           </label>
           <p id={`${id}-esfuerzo-nota`} className="nota">
-            {COPY_ESFUERZO_DE_LA_SESION.opcionExplicada}
+            {COPY_ESFUERZO_DE_LA_SESION.opcionExplicadaEn(intensidad === 'RPE' || intensidad === 'RIR' ? intensidad : null)}
           </p>
         </div>
         {enLaPlantilla ? null : (

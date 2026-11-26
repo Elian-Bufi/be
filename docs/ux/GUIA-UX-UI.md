@@ -1168,7 +1168,7 @@ que solo muestra. La regla vale para todo editor con panel contextual:
 - **El panel lateral es para mirar.** El almanaque, la distribución, los gráficos y «La vez pasada» van en el panel, que
   sigue a lo que se toca en el centro. No se configura nada en el panel; a lo sumo, una estrella (favorito) o «Abrir
   grande».
-- **El «?» del cuadro**, en la esquina de su cabecera, junto a «Cerrar»: solo si se toca, explica paso a paso qué se
+- **El «?» del cuadro**, pegado a su título (II.17; antes iba junto a «Cerrar»): solo si se toca, explica paso a paso qué se
   configura, con **una definición y un ejemplo resuelto** (`ayudas-del-editor.tsx`). Escape cierra la ayuda y no el cuadro.
 - **El centro queda liviano:** una cabecera con las acciones a la derecha, una barra horizontal para elegir (las fases,
   con su color arriba y un ancho proporcional a sus semanas; con el teclado, como pestañas), tarjetas para las sesiones y,
@@ -1180,6 +1180,24 @@ que solo muestra. La regla vale para todo editor con panel contextual:
 chica y la hace parecer un cambio grande: la carga planificada, la realizada, las series o las repeticiones se leen desde
 0. Solo un gráfico del máximo estimado puede acercarse (lo que importa ahí es la tendencia) y, si lo hace, lo dice al lado
 («El eje no empieza en 0»).
+
+### II.17 El «?» de un cuadro que se cierra va pegado al título (2026-11-26)
+
+Dirección: dos botones chicos en la misma esquina, el «?» y «× Cerrar», se confundían; el que buscaba la ayuda cerraba el
+cuadro. Regla general para todo cuadro que se cierra (los de `components/cuadro-enfocado` y los que lo usan, como el
+cajón):
+
+- **El «?» va pegado al título, a su derecha,** arriba a la izquierda del cuadro y **centrado verticalmente con el renglón
+  del título.** Nunca junto a «× Cerrar», que queda solo en la esquina superior derecha.
+- **Vive en el componente compartido:** la cabecera de `CuadroEnfocado` arma el renglón del título
+  (`.cuadro-enfocado__renglon-del-titulo`) con el `h2` y el «?»; todo cuadro que pasa su `ayuda` lo hereda. Ningún cuadro
+  pone su «?» aparte.
+- **Lo que abre flota** debajo del «?», alineado a su izquierda (está del lado izquierdo del cuadro, así no se sale), sin
+  correr el cuerpo (RP-19). Escape cierra la ayuda y no el cuadro.
+- **Vale solo para los cuadros que se cierran.** En una sección, tarjeta o grupo de la página, el «?» sigue en su esquina
+  superior derecha (II.14): ahí no hay un «Cerrar» con el que confundirlo.
+- **La guardia:** `scripts/acciones-y-ayudas.test.cjs` («II.17») falla si el «?» del cuadro sale del renglón del título o
+  vuelve al lado de «Cerrar».
 
 ## Parte III · APK del asesorado
 

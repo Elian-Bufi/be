@@ -30,6 +30,7 @@ import {
   cuentaDeSeries,
   celdaDeObjetivoDelEditor,
   ejercicioPlegadoDelEditor,
+  lasSeriesEfectivasTienenSuRir,
   esLoQueTieneLaCelda,
   leerDescanso,
   leerNumero,
@@ -55,8 +56,14 @@ import {
   sinElCardio,
   CARDIO_SIN_INDICAR,
   COPY_CARDIO,
+  cargaAtadaAlPorcentaje,
+  porcentajeDeLaCarga,
+  REDONDEO_POR_OMISION,
+  REDONDEOS_DE_LAS_CARGAS,
+  type RedondeoDeLasCargas,
+  type UnoRMVigente,
 } from '@be/domain';
-import { Fragment, useEffect, useId, useRef, useState, type ComponentProps, type FocusEvent, type KeyboardEvent, type ReactNode } from 'react';
+import { Fragment, useEffect, useId, useRef, useState, type ComponentProps, type FocusEvent, type KeyboardEvent, type MouseEvent, type ReactNode } from 'react';
 import { SeccionDeAproximaciones } from './aproximaciones-del-ejercicio';
 import { CardioDelEjercicio } from './cardio-del-ejercicio';
 import { conLasAproximacionesSinRir, cuantasAproximaciones, resumenDeLasAproximaciones, rotulosConAproximaciones, serieAlDesmarcarLaAproximacion } from './aproximaciones';
@@ -98,7 +105,7 @@ import {
   textoDeLoQueNoSeEntiende,
 } from './planilla-de-series';
 import { NotasAlLado, useNotasPropias } from '../notas-propias';
-import { UnoRMDelEjercicio } from './uno-rm-del-ejercicio';
+import { UnoRMDelEjercicio, useUnoRM, vigenteDeLosDatos } from './uno-rm-del-ejercicio';
 import { useNotacionDelEsfuerzo } from '../notacion-del-esfuerzo';
 
 export type Bloques = EstructuraDePlanDeEntrenamientoEntrada['blocks'];
@@ -344,8 +351,19 @@ export function EjercicioDelEditor({
   intensidadDelPlan = null,
   sinIntensidad = false,
   onSinIntensidad,
+  redondeo = REDONDEO_POR_OMISION,
+  redondeoPropio = null,
+  onRedondeo,
+  onUnoRMCambiado,
   arrastre = null,
 }: {
+  /** ET2-D18: se guardó un 1RM nuevo de este ejercicio: el editor recalcula las cargas de todo el borrador. */
+  onUnoRMCambiado?: () => void;
+  /** ET2-D18: a qué se redondean las cargas del % RM en este ejercicio (su excepción o la del plan). */
+  redondeo?: RedondeoDeLasCargas;
+  /** ET2-D18: la excepción del ejercicio («Más opciones»); `null`, como el plan. */
+  redondeoPropio?: RedondeoDeLasCargas | null;
+  onRedondeo?: (r: RedondeoDeLasCargas | null) => void;
   /** DL-199 (ET3-22): el asa para arrastrar y las teclas Alt+↑ y Alt+↓ (`arrastrar-ejercicios.tsx`); sin esto, no se arrastra. */
   arrastre?: ArrastreDeLaTarjeta | null;
   /** DL-197 (ET1-D10, ET1-D11): el criterio del plan, que hereda el ejercicio sin criterio propio; `null`, ninguno. */
@@ -418,9 +436,35 @@ export function EjercicioDelEditor({
   const [todasConCambios, setTodasConCambios] = useState(false);
   // DL-197 (ET1-D11): el criterio que rige: el propio o, sin él (y sin la excepción), el del plan.
   const criterioEfectivo: Criterio | null = cardio ? null : ((p.intensity?.criterion as Criterio | undefined) ?? (sinIntensidad ? null : intensidadDelPlan));
+  // ET2-D18: en % RM, el 1RM de referencia lo lee el ejercicio abierto: lo usan su renglón y la planilla, que ata el % RM y
+  // la carga. Plegado o sin persona, no se pide.
+  const conUnoRM = abierto && criterioEfectivo === 'PERCENT_RM' && asesoradoId !== null && exerciseId !== null;
+  const unoRMLeido = useUnoRM({ token, asesoradoId: conUnoRM ? asesoradoId : null, exerciseId: conUnoRM ? exerciseId : null, sesionPerdida });
+  // Un 1RM nuevo (calibración, registro o declarado) avisa al editor: el recálculo va sobre todo el borrador.
+  const unoRM: typeof unoRMLeido = {
+    ...unoRMLeido,
+    sumar: async (cuerpo, clave) => {
+      const falla = await unoRMLeido.sumar(cuerpo, clave);
+      if (falla === null) onUnoRMCambiado?.();
+      return falla;
+    },
+  };
+  const atadura: AtaduraDelPorcentaje | null = conUnoRM ? { vigente: vigenteDeLosDatos(unoRM.datos), leido: unoRM.estado === 'listo', redondeo } : null;
   // Revisión adversaria (DL-197): el que hereda la intensidad del plan sin objetivo todavía se guarda sin criterio (así lo
   // lee la persona): plegado, se dice que falta el objetivo, como en uno con su criterio propio.
-  const avisosDelPlegado = !p.intensity && criterioEfectivo !== null ? [E9.faltaElObjetivoHeredado, ...plegado.avisos] : plegado.avisos;
+  const avisosDelPlegado = !p.intensity && criterioEfectivo !== null && !(criterioEfectivo === 'RIR' && lasSeriesEfectivasTienenSuRir(p)) ? [E9.faltaElObjetivoHeredado, ...plegado.avisos] : plegado.avisos;
+  // Tocar el aviso «Falta el objetivo de intensidad» abre el ejercicio y lleva el foco al «Común» de la planilla (RP-19: el
+  // campo ya está en su lugar; el foco no mueve nada).
+  const pedirElFocoDelComun = useRef(false);
+  useEffect(() => {
+    if (!abierto || !pedirElFocoDelComun.current) return;
+    pedirElFocoDelComun.current = false;
+    window.requestAnimationFrame(() => document.getElementById(`${id}-objetivo-comun`)?.focus());
+  }, [abierto, id]);
+  const alTocarElEncabezado = (e: MouseEvent<HTMLButtonElement>) => {
+    if (!abierto && avisosDelPlegado.some((x) => x.startsWith('Falta el objetivo de intensidad')) && (e.target as HTMLElement).closest('[data-avisos]')) pedirElFocoDelComun.current = true;
+    alAlternar();
+  };
   const Titulo = nivel;
   return (
     // DL-196 (EE-05): el panel de la derecha sigue al ejercicio que se toca (`data-foco`).
@@ -437,7 +481,7 @@ export function EjercicioDelEditor({
       <div className="comida-del-editor__cabecera">
         {arrastre?.asa ?? null}
         <Titulo className="comida-del-plan__titulo">
-          <button type="button" id={`abrir-ejercicio-${id}`} className="comida-del-plan__boton" aria-expanded={abierto} aria-controls={`${propio}-cuerpo`} onClick={alAlternar}>
+          <button type="button" id={`abrir-ejercicio-${id}`} className="comida-del-plan__boton" aria-expanded={abierto} aria-controls={`${propio}-cuerpo`} onClick={alTocarElEncabezado}>
             <Icono nombre="entrenamiento" tamano={20} />
             <span className="comida-del-plan__textos">
               <span className="comida-del-plan__nombre">{nombre}</span>
@@ -519,7 +563,7 @@ export function EjercicioDelEditor({
             {cardio ? (
               <CardioDelEjercicio id={id} nombre={nombre} prescripcion={p} onCambiar={onCambiar} />
             ) : (
-              <SeriesDelEjercicio id={id} nombre={nombre} prescripcion={p} onCambiar={onCambiar} criterio={criterioEfectivo} intensidadDelPlan={intensidadDelPlan} />
+              <SeriesDelEjercicio id={id} nombre={nombre} prescripcion={p} onCambiar={onCambiar} criterio={criterioEfectivo} intensidadDelPlan={intensidadDelPlan} atadura={atadura} />
             )}
             <div className="ejercicio-del-editor__opciones" data-opciones-del-ejercicio>
               {onAproximaciones && !cardio ? (
@@ -543,7 +587,7 @@ export function EjercicioDelEditor({
             </div>
             {/* DL-198 (ET2-01 a ET2-04): en % RM, el 1RM de referencia con su origen y la base de cada carga. */}
             {criterioEfectivo === 'PERCENT_RM' && asesoradoId !== null && exerciseId !== null ? (
-              <UnoRMDelEjercicio id={id} nombre={nombre} prescripcion={p} unidad={unidadDe(p)} token={token} asesoradoId={asesoradoId} exerciseId={exerciseId} sesionPerdida={sesionPerdida} onCambiar={onCambiar} />
+              <UnoRMDelEjercicio id={id} nombre={nombre} prescripcion={p} unidad={unidadDe(p)} unoRM={unoRM} redondeo={redondeo} onCambiar={onCambiar} />
             ) : null}
             {onAproximaciones ? (
               <CuadroEnfocado
@@ -593,6 +637,8 @@ export function EjercicioDelEditor({
                 {/* ENP-D14: el criterio (con su excepción al del plan), la referencia del % RM y las bases. */}
                 {/* DL-199: el cardio no lleva criterio de intensidad de fuerza ni escritura rápida de series. */}
                 {cardio ? null : <CriterioDelEjercicio id={id} nombre={nombre} prescripcion={p} onCambiar={onCambiar} intensidadDelPlan={intensidadDelPlan} sinIntensidad={sinIntensidad} onSinIntensidad={onSinIntensidad} />}
+                {/* ET2-D18: la excepción del redondeo de las cargas del % RM (por ejemplo, una máquina de a 5). */}
+                {!cardio && criterioEfectivo === 'PERCENT_RM' && onRedondeo ? <RedondeoDelEjercicio id={id} unidad={unidadDe(p)} propio={redondeoPropio} onCambiar={onRedondeo} /> : null}
                 {/* ED-22: la escritura rápida. */}
                 {cardio ? null : <LineaDePrescripcion id={id} nombre={nombre} prescripcion={p} texto={onLineaSinAplicar ? lineaSinAplicar : undefined} onTexto={onLineaSinAplicar} onAplicar={(nueva, revisar) => onAplicarLinea(nueva, revisar)} />}
                 <div className="ejercicio-del-editor__general">
@@ -663,8 +709,11 @@ function CeldaDeObjetivo({
   onCambiar,
   paso = null,
   aviso,
+  falta = false,
 }: {
   id: string;
+  /** Falta el objetivo de esta serie (ni propio ni común): la celda se marca, sin cambiar de tamaño. */
+  falta?: boolean;
   /** El nombre del campo: «Serie 2: carga sugerida (kg)». */
   rotulo: string;
   /** De qué son las opciones del botón: «la carga sugerida de la serie 2». */
@@ -704,7 +753,7 @@ function CeldaDeObjetivo({
       id={id}
       aria-label={rotulo}
       aria-describedby={celda.estado === 'no-se-entiende' && aviso ? `${id}-estado ${aviso}` : `${id}-estado`}
-      aria-invalid={celda.estado === 'no-se-entiende' || undefined}
+      aria-invalid={celda.estado === 'no-se-entiende' || falta || undefined}
       inputMode={entero ? 'numeric' : 'decimal'}
       autoComplete="off"
       value={texto}
@@ -728,7 +777,7 @@ function CeldaDeObjetivo({
     />
   );
   return (
-    <div className="celda-de-objetivo" data-estado={celda.estado} data-origen={marca ?? undefined}>
+    <div className="celda-de-objetivo" data-estado={celda.estado} data-origen={marca ?? undefined} data-falta={falta ? '' : undefined}>
       {paso ? <ConAccionesRapidas acciones={<AccionesRapidas campo={paso.campo} unidad={paso.unidad} desde={desde} alAplicar={(n) => alEscribir(escribir(n))} de={queEs} />}>{campo}</ConAccionesRapidas> : campo}
       {marca ? (
         <span className="celda-de-objetivo__origen" aria-hidden="true" data-origen-de-la-celda>
@@ -868,11 +917,14 @@ function SeriesDelEjercicio({
   onCambiar,
   criterio,
   intensidadDelPlan,
+  atadura = null,
 }: {
   id: string;
   nombre: string;
   prescripcion: PrescripcionE;
   onCambiar: (c: Partial<PrescripcionE>) => void;
+  /** ET2-D18: en % RM y con persona, el 1RM y el redondeo con los que el % RM y la carga del «Común» van atados. */
+  atadura?: AtaduraDelPorcentaje | null;
   /** DL-197 (ET1-D11): el criterio que rige el ejercicio: el suyo o, si no tiene, el del plan (heredado); `null`, ninguno. */
   criterio: Criterio | null;
   /** El criterio del plan, para saber si escribir el objetivo crea el criterio propio o lo hereda. */
@@ -945,6 +997,16 @@ function SeriesDelEjercicio({
       ...(p.suggestedLoad ? { suggestedLoad: { ...p.suggestedLoad, unit: otraUnidad } } : {}),
       sets: p.sets.map((x) => (x.suggestedLoad ? { ...x, suggestedLoad: { ...x.suggestedLoad, unit: otraUnidad } } : x)),
     });
+  // ET2-D18: el % RM y la carga del «Común», atados con el 1RM (en la misma unidad). Lo que se guarda como objetivo es el %.
+  const unoRMDeLaCarga: UnoRMVigente['valor'] | null = conPorcentaje && atadura?.vigente && atadura.vigente.valor.unit === unidad ? atadura.vigente.valor : null;
+  const porcentajeComun = conPorcentaje && p.intensity && valido(p.intensity.target.value) ? p.intensity.target.value : null;
+  const cargaDelPorcentajeAtada = (pct: number) =>
+    unoRMDeLaCarga && atadura && pct >= PORCENTAJE_RM_MINIMO && pct <= 100 ? cargaAtadaAlPorcentaje(pct, unoRMDeLaCarga, implementoDelEjercicio(nombre, p.loadBasis ?? null), atadura.redondeo) : null;
+  const [origenDeLaCarga, setOrigenDeLaCarga] = useState<'porcentaje' | 'carga'>('porcentaje');
+  const cargaQueSaleDelPorcentaje = porcentajeComun === null ? null : cargaDelPorcentajeAtada(porcentajeComun);
+  // Lo derivado se marca: la carga «del %» o el % «de la carga», según cuál se escribió.
+  const cargaDerivada = origenDeLaCarga === 'porcentaje' && !!cargaQueSaleDelPorcentaje && p.suggestedLoad?.value === cargaQueSaleDelPorcentaje.value;
+  const porcentajeDerivado = origenDeLaCarga === 'carga' && !!unoRMDeLaCarga && porcentajeComun !== null && porcentajeComun === porcentajeDeLaCarga(p.suggestedLoad, unoRMDeLaCarga);
   /** El objetivo común de la intensidad: escribirlo crea el criterio (heredado del plan o el propio); vaciarlo lo hereda. */
   const cambiarElObjetivoComun = (v: number | null) => {
     if (!criterio) return;
@@ -958,11 +1020,31 @@ function SeriesDelEjercicio({
       if (vuelveAlPlan && criterio === intensidadDelPlan && !conRirEscrito) return onCambiar({ intensity: null, sets: p.sets.map(({ rir: _sinRir, ...x }) => x as Serie) });
       return onCambiar({ intensity: { criterion: criterio, target: { value: Number.NaN, reference: p.intensity?.target.reference ?? null } } as PrescripcionE['intensity'] });
     }
-    onCambiar({ intensity: { criterion: criterio, target: { value: v, reference: p.intensity?.target.reference ?? null } } as PrescripcionE['intensity'] });
+    const intensity = { criterion: criterio, target: { value: v, reference: p.intensity?.target.reference ?? null } } as PrescripcionE['intensity'];
+    // ET2-D18: con el 1RM, escribir el % recalcula la carga del «Común» (un solo cambio: Ctrl+Z vuelve los dos).
+    const carga = cargaDelPorcentajeAtada(v);
+    setOrigenDeLaCarga('porcentaje');
+    onCambiar(carga ? { intensity, suggestedLoad: carga } : { intensity });
   };
+  /** ET2-D18: la carga del «Común» escrita a mano pasa a ser el origen; con el 1RM, el % se deriva (redondeado a 0,5 %). */
+  const cambiarLaCargaComun = (v: number | null) => {
+    const suggestedLoad = v === null ? null : { value: v, unit: unidad };
+    const pct = unoRMDeLaCarga && suggestedLoad ? porcentajeDeLaCarga(suggestedLoad, unoRMDeLaCarga) : null;
+    if (pct === null || pct < PORCENTAJE_RM_MINIMO || pct > 100) return onCambiar({ suggestedLoad });
+    setOrigenDeLaCarga('carga');
+    onCambiar({ suggestedLoad, intensity: { criterion: 'PERCENT_RM', target: { value: pct, reference: p.intensity?.target.reference ?? null } } as PrescripcionE['intensity'] });
+  };
+  // ET2-D18 (ratificada): si cambia el 1RM o el redondeo, el editor recalcula las cargas de todo el borrador (también los
+  // ejercicios plegados), en un solo cambio con su aviso: la planilla no recalcula por su cuenta.
   const aviso = `${id}-no-se-entiende`;
-  const queNoSeEntiende = loQueNoSeEntiendeEnLasSeries(id, p, p.sets.map((_, n) => cual(n)));
-  const textoDelAviso = avisoDeLaIntensidad ?? textoDeLoQueNoSeEntiende(queNoSeEntiende);
+  const queNoSeEntiende = loQueNoSeEntiendeEnLasSeries(id, p, p.sets.map((_, n) => cual(n)), esfuerzo);
+  // Falta el objetivo de intensidad solo si alguna serie efectiva no tiene intensidad, ni propia ni heredada del «Común»: con
+  // el RIR propio en todas, el «Común» vacío no es una falta. Se marca el «Común» y las series que no tienen.
+  const hayEfectivas = p.sets.some((s) => !esDeCalentamiento(s));
+  const comunVacio = !(p.intensity && (p.intensity.criterion as Criterio) === criterio && valido(p.intensity.target.value));
+  const faltaElComun = (conRir || conPorcentaje) && hayEfectivas && comunVacio && !(conRir && lasSeriesEfectivasTienenSuRir(p));
+  const faltaEnLaSerie = (n: number): boolean => faltaElComun && conRir && !esDeCalentamiento(p.sets[n]!) && !valido(p.sets[n]!.rir);
+  const textoDelAviso = avisoDeLaIntensidad ?? textoDeLoQueNoSeEntiende(queNoSeEntiende) ?? (faltaElComun ? COPY_SERIES.faltaElObjetivo(nombreDeLaIntensidadDelCriterio(conRir, esfuerzo)) : null);
   // F14: el colSpan real (con `table-layout: fixed`, 99 desarmaba las columnas) y los anchos por clase, en el colgroup.
   const columnas = 7 + (criterio ? 1 : 0);
   const nombreDeLaIntensidad = conRir ? esfuerzo : conPorcentaje ? ETIQUETA_DE_CRITERIO.PERCENT_RM : '';
@@ -1023,19 +1105,23 @@ function SeriesDelEjercicio({
               <span className="visualmente-oculto">{COPY_SERIES.repeticionesEnCadaSerie}</span>
             </td>
             <td data-etiqueta={`${COPY_SERIES.carga} (${unidad})`}>
-              <CeldaGeneral
-                id={`${id}-carga`}
-                rotulo={`${PL.general}: ${C.cargaSugerida.toLowerCase()} (${unidad})`}
-                valor={p.suggestedLoad ? p.suggestedLoad.value : null}
-                formatear={escribirNumero}
-                interpretar={leerLaCarga}
-                onCambiar={(v) => onCambiar({ suggestedLoad: v === null ? null : { value: v, unit: unidad } })}
-                paso={{ campo: 'suggestedLoad', unidad }}
-                aviso={aviso}
-              />
+              {/* ET2-D18: con el 1RM, la carga del «Común» está atada al %: si sale del %, lo dice («del %»). */}
+              <CeldaAtada atada={!!unoRMDeLaCarga} marca={cargaDerivada ? COPY_SERIES.delPorcentaje : null} explicacion={cargaDerivada ? COPY_SERIES.cargaDelPorcentaje : null}>
+                <CeldaGeneral
+                  id={`${id}-carga`}
+                  rotulo={`${PL.general}: ${C.cargaSugerida.toLowerCase()} (${unidad})`}
+                  valor={p.suggestedLoad ? p.suggestedLoad.value : null}
+                  formatear={escribirNumero}
+                  interpretar={leerLaCarga}
+                  onCambiar={cambiarLaCargaComun}
+                  paso={{ campo: 'suggestedLoad', unidad }}
+                  aviso={aviso}
+                />
+              </CeldaAtada>
             </td>
             {criterio ? (
               <td data-etiqueta={nombreDeLaIntensidad}>
+                <CeldaAtada atada={!!unoRMDeLaCarga} marca={porcentajeDerivado ? COPY_SERIES.deLaCarga : null} explicacion={porcentajeDerivado ? COPY_SERIES.porcentajeDeLaCarga : null}>
                 <CeldaDeIntensidad
                   id={`${id}-objetivo-comun`}
                   rotulo={`${PL.general}: ${nombreDeLaIntensidad} objetivo`}
@@ -1045,7 +1131,9 @@ function SeriesDelEjercicio({
                   onCambiar={cambiarElObjetivoComun}
                   onAviso={setAvisoDeLaIntensidad}
                   aviso={aviso}
+                  falta={faltaElComun}
                 />
+                </CeldaAtada>
               </td>
             ) : null}
             <td data-etiqueta={COPY_ENTRENAMIENTO.descanso}>
@@ -1087,7 +1175,10 @@ function SeriesDelEjercicio({
                 </th>
                 {/* F14: la casilla «Aproximación», en su propia columna. */}
                 <td className="series-del-editor__aprox" data-etiqueta={COPY_SELECCION.aproximacion}>
-                  <input type="checkbox" id={`${id}-serie-${n}-calentamiento`} checked={esDeCalentamiento(s)} onChange={() => marcarCalentamiento(n)} aria-label={`${COPY_SELECCION.aproximacion} (${rotulos[n]!.largo})`} data-marcar-calentamiento={n + 1} />
+                  {/* La casilla de BE (`.casilla-de-be`), no la gris del navegador, en su caja táctil de 44 px (`.casilla-de-celda`). */}
+                  <label className="casilla-de-celda">
+                    <input type="checkbox" className="casilla-de-be" id={`${id}-serie-${n}-calentamiento`} checked={esDeCalentamiento(s)} onChange={() => marcarCalentamiento(n)} aria-label={`${COPY_SELECCION.aproximacion} (${rotulos[n]!.largo})`} data-marcar-calentamiento={n + 1} />
+                  </label>
                 </td>
                 <td data-etiqueta="Repeticiones">
                   <CeldaDeRepeticiones id={`${id}-serie-${n}`} rotulo={`${rotulos[n]!.largo}: repeticiones (un número o un rango, 8-12)`} valor={s.repetitions} onCambiar={(r) => cambiarLaSerie(n, (x) => ({ ...x, repetitions: r }))} aviso={aviso} />
@@ -1120,6 +1211,7 @@ function SeriesDelEjercicio({
                         leer={leerElRir(notacion)}
                         onCambiar={(v) => cambiarElObjetivo(n, 'rir', v)}
                         aviso={aviso}
+                        falta={faltaEnLaSerie(n)}
                       />
                     ) : (
                       <span className="nota series-del-editor__sin-intensidad" data-sin-intensidad-en-la-serie>
@@ -1173,7 +1265,7 @@ function SeriesDelEjercicio({
       </table>
       {/* RP-22: siempre en la página; vacío, ocupa lo mismo. Lo que se marca en una celda no corre las filas ni el pie. */}
       {p.sets.length > 0 || queNoSeEntiende.length > 0 || avisoDeLaIntensidad ? (
-        <RenglonDelAviso id={aviso} tipo={queNoSeEntiende.length > 0 || avisoDeLaIntensidad ? 'error' : 'nota'} anunciar title={textoDelAviso ?? undefined} data-lo-que-no-se-entiende={queNoSeEntiende.length + (avisoDeLaIntensidad ? 1 : 0)}>
+        <RenglonDelAviso id={aviso} tipo={queNoSeEntiende.length > 0 || avisoDeLaIntensidad || faltaElComun ? 'error' : 'nota'} anunciar title={textoDelAviso ?? undefined} data-lo-que-no-se-entiende={queNoSeEntiende.length + (avisoDeLaIntensidad ? 1 : 0)}>
           {textoDelAviso}
         </RenglonDelAviso>
       ) : null}
@@ -1218,7 +1310,75 @@ const COPY_SERIES = {
   comoSeEscribe: 'Las repeticiones, como 8 o 8-12; el descanso, mm:ss («3» es 03:00; «130», 01:30).',
   porcentajeBajo: '¿Quisiste escribir un RIR? El % RM va de 30 a 100: para el RIR, elegilo como intensidad en «Más opciones».',
   porcentajeNoSeEntiende: 'No se entiende el % RM: va un número de 30 a 100.',
+  /** Falta el objetivo: ninguna serie efectiva lo tiene, ni propio ni del «Común». */
+  faltaElObjetivo: (que: string) => `Falta el objetivo de intensidad: escribí el ${que} del «Común» o el de cada serie.`,
+  /** ET2-D18: la marca de lo que sale del otro campo, y lo que oye el lector. */
+  delPorcentaje: 'del % RM',
+  deLaCarga: 'de la carga',
+  cargaDelPorcentaje: 'Sale del % RM y del 1RM: si cambia el 1RM, se recalcula.',
+  porcentajeDeLaCarga: 'Sale de la carga escrita y del 1RM, redondeado a 0,5 % RM.',
 } as const;
+
+/** ET2-D18: el 1RM y el redondeo con los que la planilla ata el % RM y la carga del «Común». */
+export interface AtaduraDelPorcentaje {
+  readonly vigente: UnoRMVigente | null;
+  /** Ya se leyó el 1RM (con o sin valor): recién ahí un cambio es un cambio. */
+  readonly leido: boolean;
+  readonly redondeo: RedondeoDeLasCargas;
+}
+
+/**
+ * ET2-D18: una celda del «Común» atada a la otra. La marca («del %», «de la carga») va arriba a la izquierda, como «común»
+ * y «propio» en las series; su lugar está reservado mientras están atadas, así aparecer no mueve nada (RP-19).
+ */
+function CeldaAtada({ atada, marca, explicacion, children }: { atada: boolean; marca: string | null; explicacion: string | null; children: ReactNode }) {
+  if (!atada) return <>{children}</>;
+  return (
+    <div className="celda-atada" data-derivada={marca ? '' : undefined}>
+      {children}
+      <span className="celda-atada__marca" aria-hidden="true" data-marca-de-la-celda-atada>
+        {marca ?? ''}
+      </span>
+      {explicacion ? <span className="visualmente-oculto">{explicacion}</span> : null}
+    </div>
+  );
+}
+
+/** ET2-D18: «Redondear las cargas a», del plan y, por excepción, de un ejercicio («Más opciones»). */
+export const COPY_REDONDEO = {
+  delPlan: 'Redondear las cargas a',
+  delEjercicio: 'Redondear las cargas de este ejercicio a',
+  comoElPlan: 'Como el plan',
+  automatico: 'Automático (según el implemento)',
+  queEs: 'La carga que sale del % RM y del 1RM se redondea a una carga que se pueda armar en el gimnasio. «Automático» usa el paso del implemento: máquina de a 5, barra de a 2,5 y, por debajo de 40 kg, de a 1.',
+  opcion: (r: RedondeoDeLasCargas, unidad: string): string => (r === 'AUTO' ? COPY_REDONDEO.automatico : `${numeroEnCampo(r)} ${unidad}`),
+} as const;
+
+function RedondeoDelEjercicio({ id, unidad, propio, onCambiar }: { id: string; unidad: string; propio: RedondeoDeLasCargas | null; onCambiar: (r: RedondeoDeLasCargas | null) => void }) {
+  return (
+    <div className="campo redondeo-de-las-cargas" data-redondeo-del-ejercicio={propio ?? 'PLAN'}>
+      <label htmlFor={`${id}-redondeo-de-las-cargas`}>{COPY_REDONDEO.delEjercicio}</label>
+      <select
+        id={`${id}-redondeo-de-las-cargas`}
+        value={propio === null ? 'PLAN' : String(propio)}
+        aria-describedby={`${id}-redondeo-que-es`}
+        onChange={(e) => onCambiar(e.target.value === 'PLAN' ? null : e.target.value === 'AUTO' ? 'AUTO' : (Number(e.target.value) as RedondeoDeLasCargas))}
+      >
+        <option value="PLAN">{COPY_REDONDEO.comoElPlan}</option>
+        {REDONDEOS_DE_LAS_CARGAS.map((r) => (
+          <option key={String(r)} value={String(r)}>
+            {COPY_REDONDEO.opcion(r, unidad)}
+          </option>
+        ))}
+      </select>
+      <p id={`${id}-redondeo-que-es`} className="nota">
+        {COPY_REDONDEO.queEs}
+      </p>
+    </div>
+  );
+}
+
+const nombreDeLaIntensidadDelCriterio = (conRir: boolean, esfuerzo: string): string => (conRir ? esfuerzo : '% RM');
 
 /** F13: el % RM más bajo que se acepta. Debajo, lo más probable es un RIR escrito en el lugar equivocado. */
 export const PORCENTAJE_RM_MINIMO = 30;
@@ -1236,11 +1396,14 @@ function CeldaDeIntensidad({
   onCambiar,
   onAviso,
   aviso,
+  falta = false,
 }: {
   id: string;
   rotulo: string;
   criterio: Criterio;
   notacion: NotacionDelEsfuerzo;
+  /** Falta el objetivo de intensidad (ninguna serie efectiva lo tiene): el campo se marca (borde de aviso y `aria-invalid`), sin cambiar de tamaño. */
+  falta?: boolean;
   valor: number | null;
   onCambiar: (v: number | null) => void;
   onAviso: (texto: string | null) => void;
@@ -1268,13 +1431,15 @@ function CeldaDeIntensidad({
       id={id}
       className="celda-de-serie"
       aria-label={rotulo}
-      aria-invalid={mal || undefined}
-      aria-describedby={mal ? aviso : undefined}
+      aria-invalid={mal || falta || undefined}
+      aria-describedby={mal || falta ? aviso : undefined}
       inputMode="decimal"
       autoComplete="off"
       value={texto}
-      placeholder={criterio === 'PERCENT_RM' ? '75' : notacion === 'RPE' ? '8' : '2'}
+      // Un ejemplo se lee como ejemplo («ej. 2», tenue y en cursiva): nunca parece un valor cargado, tampoco con el aviso.
+      placeholder={criterio === 'PERCENT_RM' ? 'ej. 75' : notacion === 'RPE' ? 'ej. 8' : 'ej. 2'}
       data-objetivo-comun={criterio}
+      data-falta={falta ? '' : undefined}
       data-celda-general-no-se-entiende={mal ? '' : undefined}
       onChange={(e) => alEscribir(e.target.value)}
       onBlur={alSalir}

@@ -164,6 +164,7 @@ export * from './clasificacion-de-ejercicios';
 export * from './progresiones';
 // DL-198 (WP-EDITOR-ENTRENAMIENTO-TANDA-2): el 1RM de referencia, la carga de cada semana, el esfuerzo de la sesión y la planificación de las plantillas.
 export * from './repeticion-maxima';
+export * from './uno-rm-de-la-activacion';
 export * from './contratos-repeticion-maxima';
 // DL-199 (WP-EDITOR-ENTRENAMIENTO-TANDA-3): las Plantillas de BE de Entrenamiento.
 export * from './plantillas-de-be';

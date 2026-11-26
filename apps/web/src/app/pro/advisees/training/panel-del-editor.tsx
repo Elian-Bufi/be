@@ -32,7 +32,7 @@ export const COPY_PANEL_DEL_EDITOR = {
 const T = COPY_PANEL_DEL_EDITOR;
 
 /** El marco del panel: de qué es, qué herramienta muestra y «Abrir grande». */
-export function MarcoDelPanel({ id, deQue, titulo, onAbrirGrande, children }: { id: string; deQue: string; titulo: string; onAbrirGrande: (() => void) | null; children: ReactNode }) {
+export function MarcoDelPanel({ id, deQue, titulo, onAbrirGrande, acciones = null, children }: { id: string; deQue: string; titulo: string; onAbrirGrande: (() => void) | null; /** La estrella de favoritos: va en la misma fila que «Abrir grande». */ acciones?: ReactNode; children: ReactNode }) {
   return (
     <section className="marco-del-panel" aria-labelledby={`${id}-titulo`} data-marco-del-panel>
       <div className="marco-del-panel__cabecera">
@@ -44,17 +44,23 @@ export function MarcoDelPanel({ id, deQue, titulo, onAbrirGrande, children }: { 
             {titulo}
           </h3>
         </div>
+        {/* DL-197 (F6): «Abrir grande» y la estrella van juntos, compactos y a la derecha del título, en una fila: apilados
+            ocupaban dos renglones del panel. */}
+        {onAbrirGrande || acciones ? (
+          <div className="marco-del-panel__herramientas">
+            {onAbrirGrande ? (
+              <div className="marco-del-panel__abrir">
+                <button type="button" className="boton boton--discreto boton--compacto" onClick={onAbrirGrande} data-abrir-grande>
+                  <Icono nombre="ver-todo" tamano={18} />
+                  {T.abrirGrande}
+                  <span className="visualmente-oculto">: {titulo}</span>
+                </button>
+              </div>
+            ) : null}
+            {acciones ? <div className="marco-del-panel__acciones">{acciones}</div> : null}
+          </div>
+        ) : null}
       </div>
-      {/* DL-197 (F6): «Abrir grande», en su propio renglón: con el título al lado, el panel se desbordaba. */}
-      {onAbrirGrande ? (
-        <div className="marco-del-panel__abrir">
-          <button type="button" className="boton boton--discreto boton--compacto" onClick={onAbrirGrande} data-abrir-grande>
-            <Icono nombre="ver-todo" tamano={18} />
-            {T.abrirGrande}
-            <span className="visualmente-oculto">: {titulo}</span>
-          </button>
-        </div>
-      ) : null}
       {children}
     </section>
   );

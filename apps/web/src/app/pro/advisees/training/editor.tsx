@@ -57,6 +57,14 @@ import {
   estructuraConObjetivosComoEntrada,
   falloDeGuardado,
   loQueNoDejaGuardarElEntrenamiento,
+  conElComunDeLasSeries,
+  redondeoDelEjercicio,
+  cambiosDesdeLaActivacion,
+  cargasConElUnoRM,
+  COPY_UNO_RM_DE_LA_ACTIVACION,
+  implementoDelEjercicio as implementoDelEjercicioDelBorrador,
+  sinElUnoRMDeLaActivacion,
+  type UnoRMVigente,
   loQueSeMiraEnElEditor,
   lugarDelProblemaDeEntrenamiento,
   motivoSinGuardarAhora,
@@ -115,7 +123,7 @@ import {
 import { BotonVerElRecorrido, RecorridoGuiado, useRecorridoGuiado } from '../../../../components/recorrido-guiado';
 import { Almanaque, type SesionDelAlmanaque } from './almanaque';
 import { letraDeLaSesion } from './letra-de-la-sesion';
-import { COPY_VISTA_DE_LA_PERSONA, VistaDeLaPersona } from './vista-de-la-persona';
+import { COPY_VISTA_DE_LA_PERSONA, MOSTRAR_VISTA_DE_LA_PERSONA, VistaDeLaPersona } from './vista-de-la-persona';
 import { BarraDeFases } from './barra-de-fases-en-pantalla';
 import { COPY_BARRA_DE_FASES, diasEnCorto, faseConLaTecla, rangoDeLaBarra, tarjetasDeLaBarra } from './barra-de-fases';
 import { criterioDeLaIntensidad, CuadroConfigurarPlan, CuadroDiasDeLaSemana, CuadroEditarFase, type IntensidadElegida } from './cuadros-del-plan';
@@ -168,6 +176,7 @@ import { Icono } from '../../../../components/icono';
 import { MenuDeAcciones } from '../../../../components/menu-de-acciones';
 import { TextoAPedido } from '../../../../components/texto-a-pedido';
 import { api, type Resultado } from '../../../../lib/api';
+import { vigenteDeLosDatos } from './uno-rm-del-ejercicio';
 import { EstadoDeGuardado } from '../../../../components/estado-de-guardado';
 import { useAutoguardado } from '../../../../lib/autoguardado';
 import { diaEnUnaFrase, horaDelDia, rangoCivil } from '../../../../lib/formato';
@@ -779,7 +788,7 @@ export function EditorDePlan({
     if (version && !esDelPlan(version)) return guardarLaPreparacion(automatico, version);
     const base = reenvio?.base ?? version;
     if (!base) return null;
-    const bloquesEnviados = reenvio?.bloques ?? bloques;
+    const bloquesEnviados = conElComunDeLasSeries(reenvio?.bloques ?? bloques);
     // Un nombre vacío o un dato que no se entiende pueden estar en otro bloque, en otra sesión o en un ejercicio
     // plegado: se listan, y cada uno lleva a su lugar. Nada de eso viaja: un dato mal escrito se guardaría como «nada».
     const impide = loQueNoDejaGuardar(bloquesEnviados);
@@ -933,6 +942,22 @@ export function EditorDePlan({
   const puedeGuardar = loQueNoDejaGuardar(bloques).length === 0;
   // ED-03: por qué «Guardar ahora» está apagado, o `null`.
   const sinGuardarAhora = motivoSinGuardarAhora({ guardando, sucio, conflicto });
+  // Ctrl+S (Cmd+S) guarda ya, sin esperar la pausa del autoguardado; si no hay nada que guardar, no hace nada y el navegador
+  // no abre su cuadro de «Guardar página».
+  const guardarYaRef = useRef<() => void>(() => undefined);
+  guardarYaRef.current = () => {
+    if (!sinGuardarAhora) void guardar();
+  };
+  useEffect(() => {
+    const alTocar = (e: KeyboardEvent) => {
+      if (e.defaultPrevented || !(e.ctrlKey || e.metaKey) || e.altKey || e.shiftKey || e.key.toLowerCase() !== 's') return;
+      if (document.querySelector('dialog[open]')) return;
+      e.preventDefault();
+      guardarYaRef.current();
+    };
+    window.addEventListener('keydown', alTocar);
+    return () => window.removeEventListener('keydown', alTocar);
+  }, []);
   const cambiosParaGuardar = useMemo(() => [bloques, agenda, proximaRevision, metadatos, notacion, planificacion], [bloques, agenda, proximaRevision, metadatos, notacion, planificacion]);
   const autoguardado = useAutoguardado({
     habilitado: !!version && sucio && puedeGuardar && !guardando && !conflicto && !confirmar && !activando && !guardarPlantilla && !descartar,
@@ -1193,7 +1218,7 @@ export function EditorDePlan({
    * viaja; un 409 después de un guardado sin respuesta se compara con lo mandado (ED-61) antes de decir «conflicto».
    */
   async function guardarLaPreparacion(automatico: boolean, base: GuardadoDeLaPlantilla, reenvio: { readonly bloques: Bloques; readonly ediciones: number } | null = null): Promise<LoGuardado | null> {
-    const bloquesEnviados = reenvio?.bloques ?? bloques;
+    const bloquesEnviados = conElComunDeLasSeries(reenvio?.bloques ?? bloques);
     const impide = loQueNoDejaGuardar(bloquesEnviados);
     if (impide.length > 0) {
       if (automatico) return null;
@@ -1329,6 +1354,74 @@ export function EditorDePlan({
   // DL-195 (GUI-08): el recorrido guiado aparece solo la primera vez que el profesional abre el editor de una versión del
   // plan (no en la plantilla ni en el asistente).
   const recorrido = useRecorridoGuiado('training-plan-editor', version !== null && !plantilla && esDelPlan(version) && pasoPedido(parametros.get('asistente')) === null);
+
+  // ── ET2-D18 (ratificada el 2026-11-26): en el borrador, las cargas en % RM siguen al 1RM ─────────────────────────
+  // El 1RM de todos los ejercicios en % RM del borrador, también los plegados. Si cambia (o cambia el redondeo), se
+  // recalculan todas las cargas en un solo cambio que se deshace, con su aviso. Al abrir no se toca nada, salvo que el
+  // borrador parta de una versión activada con otro 1RM: ahí se recalcula y se dice qué cambió.
+  const planDelUnoRM = planificacionParaEditar(planificacion);
+  const idsEnPorcentaje = plantilla || asesoradoId === null
+    ? ''
+    : [...new Set(bloques.flatMap((b) => [...(b.sessions ?? []), ...(b.microcycles ?? []).flatMap((m) => m.sessions)]).flatMap((x) => x.prescriptions).filter((q) => q.intensity?.criterion === 'PERCENT_RM').map((q) => ejercicios[q.exerciseVersionId]).filter((x): x is string => !!x))]
+        .sort()
+        .join(',');
+  const [vigentesDelBorrador, setVigentesDelBorrador] = useState<{ readonly mapa: ReadonlyMap<string, UnoRMVigente | null>; readonly vez: number } | null>(null);
+  const [lecturaDelUnoRM, setLecturaDelUnoRM] = useState(0);
+  useEffect(() => {
+    if (!idsEnPorcentaje || asesoradoId === null) return;
+    let vigente = true;
+    void (async () => {
+      const r = await api.unoRMDeLaPersona(token, asesoradoId, idsEnPorcentaje.split(','));
+      if (!vigente || sesionPerdida(r) || !r.ok) return;
+      setVigentesDelBorrador({ mapa: new Map(r.datos.data.map((d) => [d.exerciseId, vigenteDeLosDatos(d)])), vez: Date.now() });
+    })();
+    return () => {
+      vigente = false;
+    };
+  }, [idsEnPorcentaje, lecturaDelUnoRM, token, asesoradoId, sesionPerdida]);
+  const firmaDelRedondeo = JSON.stringify([planDelUnoRM.loadRounding ?? null, planDelUnoRM.loadRoundingByExercise ?? []]);
+  const anteriorDelUnoRM = useRef<{ readonly mapa: ReadonlyMap<string, UnoRMVigente | null>; readonly redondeo: string } | null>(null);
+  useEffect(() => {
+    if (!vigentesDelBorrador) return;
+    const antes = anteriorDelUnoRM.current;
+    anteriorDelUnoRM.current = { mapa: vigentesDelBorrador.mapa, redondeo: firmaDelRedondeo };
+    const recalcular = () =>
+      cargasConElUnoRM(
+        bloques,
+        (q) => {
+          const e = ejercicios[q.exerciseVersionId];
+          const v = e ? (vigentesDelBorrador.mapa.get(e) ?? null) : null;
+          return v ? v.valor : null;
+        },
+        (q) => implementoDelEjercicioDelBorrador(nombres[q.exerciseVersionId] ?? '', q.loadBasis ?? null),
+        (q) => redondeoDelEjercicio(planDelUnoRM, q.prescriptionId),
+      );
+    if (antes === null) {
+      // Al abrir: solo si parte de una versión activada con otro 1RM (la versión nueva toma el vigente y lo dice).
+      const congelados = planDelUnoRM.oneRepMaxAtActivation;
+      if (!congelados) return;
+      const cambios = cambiosDesdeLaActivacion(congelados, vigentesDelBorrador.mapa);
+      // Con el mismo 1RM no se toca nada (al activar, la API vuelve a congelar el vigente).
+      if (cambios.length === 0) return;
+      const r = recalcular();
+      const nombreDe = (exerciseId: string) => nombres[Object.keys(ejercicios).find((k) => ejercicios[k] === exerciseId) ?? ''] ?? 'Ejercicio';
+      const texto = cambios.length === 1 ? COPY_UNO_RM_DE_LA_ACTIVACION.cambio(nombreDe(cambios[0]!.exerciseId), cambios[0]!) : COPY_UNO_RM_DE_LA_ACTIVACION.varios(cambios.length);
+      recordar(texto);
+      if (r.cuantas > 0) setBloques(r.bloques);
+      setPlanificacion(sinElUnoRMDeLaActivacion(planDelUnoRM));
+      setSucio(true);
+      return;
+    }
+    const cambioElUnoRM = [...vigentesDelBorrador.mapa].some(([e, v]) => antes.mapa.has(e) && (antes.mapa.get(e)?.valor.value ?? null) !== (v?.valor.value ?? null));
+    if (!cambioElUnoRM && antes.redondeo === firmaDelRedondeo) return;
+    const r = recalcular();
+    if (r.cuantas === 0) return;
+    recordar(COPY_UNO_RM_DE_LA_ACTIVACION.recalculadas(r.cuantas));
+    setBloques(r.bloques);
+    setSucio(true);
+    // Solo cuando cambia el 1RM leído o el redondeo: lo demás lo cambia quien escribe.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [vigentesDelBorrador, firmaDelRedondeo]);
 
   if (error === 'no-disponible' && plantilla) return <PreparacionQueYaNoEsta volver={plantilla.volver} />;
   if (error === 'no-disponible') return <NoDisponible />;
@@ -1849,6 +1942,17 @@ export function EditorDePlan({
           if (!p.prescriptionId) cambiarEjercicio(l, { prescriptionId: id });
           const otros = (plan.withoutIntensity ?? []).filter((x) => x !== id);
           cambiarPlanificacion({ ...plan, withoutIntensity: sin ? [...otros, id] : otros });
+        }}
+        // ET2-D18: el redondeo de las cargas del % RM, el del plan o la excepción del ejercicio (en la planificación).
+        redondeo={redondeoDelEjercicio(plan, p.prescriptionId)}
+        redondeoPropio={(p.prescriptionId ? plan.loadRoundingByExercise?.find((r) => r.prescriptionId === p.prescriptionId)?.step : undefined) ?? null}
+        // ET2-D18: un 1RM nuevo en este ejercicio se vuelve a leer para todo el borrador (también los plegados).
+        onUnoRMCambiado={() => setLecturaDelUnoRM((n) => n + 1)}
+        onRedondeo={(r) => {
+          const id = p.prescriptionId ?? crypto.randomUUID();
+          if (!p.prescriptionId) cambiarEjercicio(l, { prescriptionId: id });
+          const otros = (plan.loadRoundingByExercise ?? []).filter((x) => x.prescriptionId !== id);
+          cambiarPlanificacion({ ...plan, loadRoundingByExercise: r === null ? otros : [...otros, { prescriptionId: id, step: r }] });
         }}
         // PLT (DL-182): sin persona, sin la fuerza estimada ni «La vez pasada»: el ejercicio del catálogo no se pasa.
         exerciseId={asesoradoId === null ? null : (ejercicios[p.exerciseVersionId] ?? null)}
@@ -2832,13 +2936,11 @@ export function EditorDePlan({
         {selectorDeVistas}
         <div id="vista-del-panel" role={vistas.length > 1 ? 'tabpanel' : undefined} aria-labelledby={vistas.length > 1 ? `vista-del-panel-${vista}` : undefined} data-vista-del-panel={vista}>
           {vista === 'distribucion' && bloque ? (
-            <MarcoDelPanel id="panel-de-la-distribucion" deQue={deQueEsLaFase} titulo={NOMBRE_DE_LA_VISTA.distribucion} onAbrirGrande={() => setDistribucionGrande(true)}>
-              <div className="marco-del-panel__acciones">{estrella('PHASE_DISTRIBUTION', bloque.blockId, `la distribución de ${deQueEsLaFase}`)}</div>
+            <MarcoDelPanel id="panel-de-la-distribucion" deQue={deQueEsLaFase} titulo={NOMBRE_DE_LA_VISTA.distribucion} onAbrirGrande={() => setDistribucionGrande(true)} acciones={estrella('PHASE_DISTRIBUTION', bloque.blockId, `la distribución de ${deQueEsLaFase}`)}>
               {distribucionDe(bloque, false)}
             </MarcoDelPanel>
           ) : vista === 'progresion' && bloque ? (
-            <MarcoDelPanel id="panel-de-la-progresion" deQue={deQueEsLaFase} titulo={COPY_PROGRESIONES.titulo} onAbrirGrande={null}>
-              <div className="marco-del-panel__acciones">{estrella('PHASE_PROGRESSION', bloque.blockId, `la progresión de ${deQueEsLaFase}`)}</div>
+            <MarcoDelPanel id="panel-de-la-progresion" deQue={deQueEsLaFase} titulo={COPY_PROGRESIONES.titulo} onAbrirGrande={null} acciones={estrella('PHASE_PROGRESSION', bloque.blockId, `la progresión de ${deQueEsLaFase}`)}>
               {progresionDe(bloque, i)}
             </MarcoDelPanel>
           ) : vista === 'favoritos' ? (
@@ -2860,7 +2962,7 @@ export function EditorDePlan({
       </>
     );
   /** «Antes de activar» (o «Antes de guardar», en una plantilla): lo que impide y lo que queda sin completar, cada cosa con su «Ir a…». */
-  const listaAntesDeActivar = (
+  const loQueImpide = (
     <>
       {/* DL-199 (ET3, E5): cómo se actualiza esta lista va en el «?» de su esquina, no en un párrafo al pie. */}
       <div className="encabezado-con-ayuda">
@@ -2883,6 +2985,11 @@ export function EditorDePlan({
       </div>
       {/* ENP-D13: el estado de la revisión, siempre dicho; nunca «nada impide» antes de que responda la API. */}
       {revisionEnElPanel}
+    </>
+  );
+  /** Lo que queda sin completar NO impide activar: no entra en «N cosas impiden activar» ni en su lista. */
+  const loQueQuedaSinCompletar = (
+    <>
       <h3>
         {CE.quedaSinCompletar} <span className="nota">· {CE.noImpide}</span>
       </h3>
@@ -2898,6 +3005,13 @@ export function EditorDePlan({
           ))}
         </ul>
       )}
+    </>
+  );
+  /** La edición de una plantilla muestra las dos cosas juntas en su panel; «Antes de activar» solo lo que impide. */
+  const listaAntesDeActivar = (
+    <>
+      {loQueImpide}
+      {loQueQuedaSinCompletar}
     </>
   );
 
@@ -2924,7 +3038,7 @@ export function EditorDePlan({
         </h2>
         <div className="editor-del-plan__acciones">
           {/* DL-195 (GUI-10): «Ver el recorrido», el primero de la barra: un lugar fijo, que no se mueve con el estado. */}
-          {pasoDelAsistente ? null : <BotonVerElRecorrido alTocar={recorrido.abrir} />}
+          {pasoDelAsistente ? null : <BotonVerElRecorrido alTocar={recorrido.abrir} conPalabraCorta />}
           <EstadoDeGuardado
             className="editor-del-plan__estado"
             guardando={guardando}
@@ -2936,26 +3050,8 @@ export function EditorDePlan({
             detalle={detalle}
             onReintentar={() => void guardar()}
           />
-          {/* ED-03 (DJ-6): «Guardar ahora», fijo y secundario junto al estado: guarda sin esperar la pausa. Apagado (con
-              `aria-disabled`, que conserva el foco), dice por qué. */}
-          <button
-            type="button"
-            className="boton boton--secundario"
-            data-guardar-ahora
-            aria-disabled={sinGuardarAhora ? true : undefined}
-            aria-describedby={sinGuardarAhora ? 'motivo-sin-guardar-ahora' : undefined}
-            onClick={() => {
-              if (!sinGuardarAhora) void guardar();
-            }}
-          >
-            <Icono nombre="guardar" tamano={18} />
-            {COPY_GUARDADO.guardarAhora}
-          </button>
-          {sinGuardarAhora ? (
-            <span id="motivo-sin-guardar-ahora" className="visualmente-oculto">
-              {sinGuardarAhora}
-            </span>
-          ) : null}
+          {/* El guardado es automático y el estado lo dice («Guardando…», «Guardado», «No se guardó · Reintentar»). «Guardar ahora»
+              queda en el «…» y con Ctrl+S: la barra es de un solo renglón y no tiene lugar para un botón más (RP-19). */}
           {/* ED-07 (DJ-6): «Revisar y activar…», la única entrada a activar, fija y llena (el único botón lleno de la
               barra). Abre «Antes de activar» siempre, también con algo por corregir o sin guardar, y no cambia de nombre
               ni de lugar mientras se escribe. */}
@@ -2964,7 +3060,7 @@ export function EditorDePlan({
               impiden activar, y despliega la lista. */}
           {pasoDelAsistente ? null : (
             <LoQueImpideActivar cuantos={cuantosImpiden} estado={estadoDeLaRevision} delEditor={delEditor.length} abierto={impideAbierto} onAbrir={setImpideAbierto}>
-              {listaAntesDeActivar}
+              {loQueImpide}
             </LoQueImpideActivar>
           )}
           {pasoDelAsistente ? null : (
@@ -2973,11 +3069,13 @@ export function EditorDePlan({
               {COPY_ANTES_DE_ACTIVAR.revisarYActivar}
             </button>
           )}
-          {!pasoDelAsistente && ofreceDescartar(version) ? (
+          {!pasoDelAsistente ? (
             <MenuDeAcciones
               id="mas-de-la-version"
               rotulo={CE.masDeLaVersion}
               acciones={[
+                { clave: 'guardar-ahora', texto: COPY_GUARDADO.guardarAhora, alElegir: () => void guardar(), noSePuede: sinGuardarAhora },
+                ...(!ofreceDescartar(version) ? [] : [
                 { clave: 'estructura', texto: CE.galeriaDeEstructura, alElegir: () => setGaleria({ tarea: 'estructura', ejercicio: null }) },
                 { clave: 'plantilla', texto: `${CE.guardarComoPreset}: ${CE.elPlanComoPlantilla}`, alElegir: () => setGuardarPlantilla(true), noSePuede: antesHayQueCorregir },
                 {
@@ -3000,6 +3098,7 @@ export function EditorDePlan({
                     setDescartar(true);
                   },
                 },
+                ]),
               ]}
             />
           ) : null}
@@ -3397,10 +3496,12 @@ export function EditorDePlan({
                                   </span>
                                   {nombreDeLaSesion(sesion, k)}
                                 </h4>
-                                <button type="button" className="boton boton--quieto boton--compacto sesion-elegida__ver-como" onClick={() => setVistaDeLaPersona(true)} data-ver-como-la-persona>
-                                  <Icono nombre="ver" tamano={18} />
-                                  {COPY_VISTA_DE_LA_PERSONA.abrir}
-                                </button>
+                                {MOSTRAR_VISTA_DE_LA_PERSONA ? (
+                                  <button type="button" className="boton boton--quieto boton--compacto sesion-elegida__ver-como" onClick={() => setVistaDeLaPersona(true)} data-ver-como-la-persona>
+                                    <Icono nombre="ver" tamano={18} />
+                                    {COPY_VISTA_DE_LA_PERSONA.abrir}
+                                  </button>
+                                ) : null}
                                 <MenuDeAcciones
                                   id="menu-de-la-sesion"
                                   rotulo={`más acciones de la sesión ${nombreDeLaSesion(sesion, k)}`}
@@ -3872,7 +3973,7 @@ export function EditorDePlan({
       <RecorridoGuiado definicion={RECORRIDO_DEL_EDITOR_DE_ENTRENAMIENTO} abierto={recorrido.abierto} alCerrar={recorrido.cerrar} />
 
       {/* DL-198 (ET2-12): «Ver como la persona». */}
-      {bloque ? (
+      {MOSTRAR_VISTA_DE_LA_PERSONA && bloque ? (
         <VistaDeLaPersona
           abierto={vistaDeLaPersona}
           onCerrar={() => setVistaDeLaPersona(false)}

@@ -73,7 +73,7 @@ import { pasoPedido } from '../asistente/paso-que-sigue';
 import { PuntoDePartida } from '../asistente/punto-de-partida';
 import { ProveedorDeNotasPropias } from '../notas-propias';
 import { EstadoDeLectura, useEntrenamiento } from './entrenamiento';
-import { EjerciciosDeLaSesion, SelectorDeNivel, type AccesoALasImagenes } from './estructura-del-plan';
+import { EjerciciosDeLaSesion, SelectorDeNivel, UnoRMDeLaActivacionDelPlan, type AccesoALasImagenes } from './estructura-del-plan';
 import { FormularioDeEvaluacion, FormularioDeObjetivo } from './resumen';
 import { DialogoGuardarPlantilla } from './plantillas';
 import { ZonasDeLaSesion } from './zonas-de-la-sesion';
@@ -577,6 +577,7 @@ function SesionQueSeMira({
   // DL-137: con agenda, qué días va cada sesión y desde cuándo.
   const agenda = version.agenda && version.agenda.sessions.length > 0 ? version.agenda : null;
   const diasDeLaSesion = agenda?.sessions.find((x) => x.sessionId === mira.sesion?.sessionId)?.weekdays ?? [];
+  const unoRMDeLaActivacion = new Map(version.state === 'ACTIVATED' ? (version.planning?.oneRepMaxAtActivation ?? []).map((u) => [u.prescriptionId, u] as const) : []);
   return (
     <>
       {agenda ? (
@@ -620,7 +621,10 @@ function SesionQueSeMira({
         ) : null}
       </div>
       <div className="plan__cuerpo">
-        {mira.sesion ? <EjerciciosDeLaSesion sesion={mira.sesion} pedido={pedido.ejercicios} onPedir={(ejercicios) => alPedir({ ejercicios })} acceso={acceso} nivel={nivel} /> : <div />}
+        {/* ET2-D18: en una versión activada, cada ejercicio en % RM dice el 1RM con el que se activó. */}
+        <UnoRMDeLaActivacionDelPlan.Provider value={unoRMDeLaActivacion}>
+          {mira.sesion ? <EjerciciosDeLaSesion sesion={mira.sesion} pedido={pedido.ejercicios} onPedir={(ejercicios) => alPedir({ ejercicios })} acceso={acceso} nivel={nivel} /> : <div />}
+        </UnoRMDeLaActivacionDelPlan.Provider>
         {/* WP-CATALOGO-VISUAL (etapa 2): las zonas de la sesión, y en la sección «Plan» el historial debajo. */}
         <div className="plan__al-costado">
           {mira.sesion ? <ZonasDeLaSesion sesion={mira.sesion} acceso={acceso} nivel={nivel} /> : null}

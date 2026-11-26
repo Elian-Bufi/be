@@ -69,7 +69,8 @@ test('TEST-EDP-002 · los dos editores: el «⋯», el cuadro, la misma clave en
   ]) {
     const fuente = leer(ruta);
     // El «⋯» solo en una versión que se puede descartar (en el asistente, la barra no lo muestra: ED-14).
-    assert.match(fuente, /\{(?:!pasoDelAsistente && )?ofreceDescartar\(version\) \? \(\n\s*<MenuDeAcciones\n\s*id="mas-de-la-version"/, ruta);
+    // Entrenamiento: el «…» está siempre (lleva «Guardar ahora») y las acciones de descartar solo si se puede.
+    assert.match(fuente, /\{(?:!pasoDelAsistente && )?ofreceDescartar\(version\) \? \(\n\s*<MenuDeAcciones\n\s*id="mas-de-la-version"|\.\.\.\(!ofreceDescartar\(version\) \? \[\] : \[/, ruta);
     // La clave es la del intento: se crea al primer uso, y solo una respuesta definitiva la libera.
     assert.match(fuente, new RegExp(`api\\.${llamada}\\(token, planId, version\\.version, intentoDeDescartar\\.actual\\(\\)\\);\\n\\s*intentoDeDescartar\\.registrar\\(r\\);`), ruta);
     // «Cancelar» (y Escape, que es lo mismo) cierra sin llamar a la API ni tirar la clave de un intento incierto.

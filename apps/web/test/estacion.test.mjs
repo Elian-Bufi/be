@@ -78,10 +78,12 @@ test('TEST-EDP-015 · «Guardar como preset» escribe en lo que ya existe, y lo 
   assert.doesNotMatch(EDITOR, /\/presets|api\.\w*[Pp]reset/);
 });
 
-test('TEST-EDP-054 · la barra: «Guardar ahora» y «Revisar y activar…» con su nombre fijo, y un solo botón lleno', () => {
+test('TEST-EDP-054 · la barra: «Revisar y activar…» con su nombre fijo, un solo botón lleno y «Guardar ahora» en el «…»', () => {
   const barra = EDITOR.slice(EDITOR.indexOf('data-barra-de-comandos'), EDITOR.indexOf('<nav className="estacion__saltos"'));
   assert.equal((barra.match(/boton--primario/g) ?? []).length, 1);
-  assert.match(barra, /\{COPY_GUARDADO\.guardarAhora\}/);
+  // «Guardar ahora» ya no es un botón de la barra (de un solo renglón): está en el «…».
+  assert.doesNotMatch(barra.slice(0, barra.indexOf('// PLT (DL-182)')), /data-guardar-ahora/);
+  assert.match(EDITOR, /clave: 'guardar-ahora', texto: COPY_GUARDADO\.guardarAhora/);
   assert.match(barra, /\{COPY_ANTES_DE_ACTIVAR\.revisarYActivar\}/);
   // Ningún texto de la barra depende del guardado: ni «Guardando…» en un botón ni un cambio de nombre.
   assert.doesNotMatch(barra, /guardando \? |sucio \? '|\{guardando && /);
