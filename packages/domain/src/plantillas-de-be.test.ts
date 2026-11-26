@@ -5,6 +5,8 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { randomUUID } from 'node:crypto';
+import { normalizarEstructuraDeEntrenamiento } from './plan-de-entrenamiento';
 import { EstructuraDePlanDeEntrenamientoEntradaSchema } from './contratos-entrenamiento';
 import { PlanificacionDeLaPlantillaSchema } from './contratos-plantillas';
 import { ListaDePlantillasDeBeResponseSchema, PlanDesdePlantillaDeBeResponseSchema } from './contratos-plantillas-de-be';
@@ -95,7 +97,8 @@ test('TEST-ET3-04: las cargas en % RM salen del 1RM de la persona; sin 1RM, qued
   // Tres aproximaciones arriba de las efectivas, sin RIR y crecientes, menores que la de trabajo.
   const previas = pr.sets.filter((s) => s.setKind === 'WARM_UP');
   assert.equal(previas.length, 3);
-  assert.ok(previas.every((s, i) => s.rir === null && s.suggestedLoad!.value < 65 && (i === 0 || s.suggestedLoad!.value > previas[i - 1]!.suggestedLoad!.value)));
+  // Sin el campo `rir`: con el criterio % RM, la API rechaza una serie que lo traiga (aunque sea `null`).
+  assert.ok(previas.every((s, i) => !('rir' in s) && s.suggestedLoad!.value < 65 && (i === 0 || s.suggestedLoad!.value > previas[i - 1]!.suggestedLoad!.value)));
   // El press de banca no tiene 1RM: sin carga y en la lista.
   const banca = cargas.filter((c) => c.nombre === 'Press de banca plano con barra');
   assert.ok(banca.length > 0 && banca.every((c) => c.estado === 'SIN_UNO_RM'));
@@ -103,6 +106,9 @@ test('TEST-ET3-04: las cargas en % RM salen del 1RM de la persona; sin 1RM, qued
   assert.equal(pb.suggestedLoad, null);
   assert.equal(pb.sets.some((s) => s.setKind === 'WARM_UP'), false);
   assert.equal(EstructuraDePlanDeEntrenamientoEntradaSchema.safeParse(estructura).success, true);
+  // Lo que hace la API con ella antes de guardarla (API-TPB-02): la normalización tiene que aceptarla entera.
+  const normalizada = normalizarEstructuraDeEntrenamiento(estructura, randomUUID);
+  assert.ok(normalizada.ok, JSON.stringify(normalizada.ok ? null : normalizada.issues.slice(0, 3)));
   assert.match(resumenDeLasCargas(cargas), /de \d+ cargas en % RM salen del 1RM de la persona/);
   assert.equal(resumenDeLasCargas([]), 'La plantilla no tiene ejercicios en % RM.');
 });
@@ -157,4 +163,18 @@ test('TEST-ET3-04b: el paso de las aproximaciones sale de la carga y la unidad d
   const banca = libras.r.estructura.blocks[0]!.sessions![0]!.prescriptions[1]!;
   assert.equal(libras.r.planificacion.warmUps!.find((x) => x.prescriptionId === banca.prescriptionId)!.step, 2.5);
   assert.equal(PlanificacionDeLaPlantillaSchema.safeParse(libras.r.planificacion).success, true);
+});
+
+test('TEST-ET3-04c: las cuatro, con 1RM en todos los principales, en kg y en libras, pasan la normalización de la API', () => {
+  const catalogo = catalogoCompleto();
+  const porVersion = new Map([...catalogo.values()].map((c) => [c.exerciseVersionId, { exerciseId: c.exerciseId, nombre: c.nombre }]));
+  for (const unit of ['kg', 'lb'] as const)
+    for (const p of PLANTILLAS_DE_BE) {
+      const a = armarPlantillaDeBe(p, catalogo);
+      const vigentes = new Map([...catalogo.values()].map((c): [string, UnoRMVigente] => [c.exerciseId, { origen: 'DECLARED', valor: { value: 80, unit }, fecha: '2026-11-25', banda: null, serie: null, entryId: 'x' }]));
+      const { estructura, planificacion } = conLasCargasDeLaPlantillaDeBe(a, porVersion, vigentes);
+      const r = normalizarEstructuraDeEntrenamiento(estructura, randomUUID);
+      assert.ok(r.ok, `${p.clave} (${unit}): ${JSON.stringify(r.ok ? null : r.issues.slice(0, 3))}`);
+      assert.equal(PlanificacionDeLaPlantillaSchema.safeParse(planificacion).success, true, `${p.clave} (${unit})`);
+    }
 });

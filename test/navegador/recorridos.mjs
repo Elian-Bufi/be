@@ -2952,7 +2952,9 @@ async function editorTanda3Cardio({ p, d, salida }) {
   // Plegado: el renglón del cardio.
   await clic(p, `${E2} [id^="abrir-ejercicio-"]`);
   await elemento(p, `${E2} [data-resumen]`, '30 min · 12 km · zona 2');
-  // «Ver como la persona».
+  // «Ver como la persona». Con la página bajada, el botón queda debajo de la barra fija del editor: el clic de puppeteer
+  // no lo trae a la vista (lo ve «visible») y caía en la barra. Se lo centra antes, como haría la persona al subir.
+  await p.evaluate(() => document.querySelector('[data-ver-como-la-persona]')?.scrollIntoView({ block: 'center' }));
   await clic(p, '[data-ver-como-la-persona]');
   await dialogoAbierto(p, 'Así le llega a la app');
   await elemento(p, 'dialog[open] [data-vista-cardio]', '30 min · 12 km · zona 2');

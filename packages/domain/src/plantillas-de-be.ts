@@ -400,7 +400,9 @@ export function conLasCargasDeLaPlantillaDeBe(
         return {
           ...pr,
           suggestedLoad: carga,
-          sets: [...previas.map((x) => ({ ...x, repetitions: { ...x.repetitions }, suggestedLoad: { ...x.suggestedLoad } })), ...pr.sets],
+          // Sin `rir`: el criterio es % RM, y una serie con `rir` (aunque sea `null`) la rechaza la normalización de la API
+          // (SET_RIR_WITHOUT_RIR_CRITERION, 422). `seriesDeAproximacion` lo pone para el criterio RIR.
+          sets: [...previas.map(({ rir: _sinRir, ...x }) => ({ ...x, repetitions: { ...x.repetitions }, suggestedLoad: { ...x.suggestedLoad } })), ...pr.sets],
           intensity: { ...pr.intensity, target: { ...pr.intensity.target, reference: { description: unoRMEnUnRenglon(vigente) } } },
         };
       }),
