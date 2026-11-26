@@ -246,6 +246,19 @@ function valor(s: Esquema, o: Opciones): unknown {
   }
 }
 
+/**
+ * DL-201 (PE-D02): una lista de identificadores no repite (un ejercicio lleva como mucho una progresión propia, y la
+ * validación lo rechaza). El texto mínimo repetido se cambia por el siguiente válido que no esté en la lista.
+ */
+function sinRepetir(nuevo: unknown, h: Hueco): unknown {
+  if (typeof nuevo !== 'string' || !h.lista.includes(nuevo)) return nuevo;
+  for (let k = 1; k < 100_000; k++) {
+    const v = `${nuevo}${k}`;
+    if (!h.lista.includes(v) && h.elemento.safeParse(v).success) return v;
+  }
+  return nuevo;
+}
+
 /** Una lista del cuerpo que todavía puede crecer, con el esquema de sus elementos. */
 interface Hueco {
   readonly lista: unknown[];
@@ -300,6 +313,12 @@ function densificar(cuerpo: unknown, s: Esquema, objetivo: number, o: Opciones, 
       if (tam + delta > objetivo) return;
       nuevo = structuredClone(minimoDe(h.elemento).valor);
     }
+    const unico = sinRepetir(nuevo, h);
+    if (unico !== nuevo) {
+      delta += bytes(unico) - bytes(nuevo);
+      if (tam + delta > objetivo) return;
+      nuevo = unico;
+    }
     tam += delta;
     h.lista.push(nuevo);
     huecos(nuevo, h.elemento, abiertos);
@@ -345,7 +364,7 @@ function densificarPorPaquetes(cuerpo: unknown, s: Esquema, objetivo: number, o:
   const llenarLista = (h: Hueco): void => {
     const p = paquete(h.elemento);
     while (h.lista.length < h.tope) {
-      const nuevo = minimoDe(h.elemento);
+      const nuevo = sinRepetir(minimoDe(h.elemento), h);
       const costo = bytes(nuevo) + (h.lista.length ? 1 : 0);
       if (costo > restante) return;
       h.lista.push(nuevo);
