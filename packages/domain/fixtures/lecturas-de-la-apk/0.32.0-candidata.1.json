@@ -1,14 +1,14 @@
 {
  "apk": {
-  "version": "0.29.0-candidata.1",
-  "versionCode": 43,
-  "tag": "be-apk-0.29.0-candidata.1",
-  "commit": "2b5ba831aa5a0f3cc69690a18ac8beef7c059be5"
+  "version": "0.32.0-candidata.1",
+  "versionCode": 46,
+  "tag": "be-apk-0.32.0-candidata.1",
+  "commit": "efb7651033e03026bfe864aeb4dd921461ee5009"
  },
- "origen": "Generado con «node scripts/congelar-lo-que-lee-la-apk.mjs be-apk-0.29.0-candidata.1» desde las fuentes del commit 2b5ba83 (dominio, cliente y APK), con zod 4.6.6. No editar a mano.",
+ "origen": "Generado con «node scripts/congelar-lo-que-lee-la-apk.mjs be-apk-0.32.0-candidata.1» desde las fuentes del commit efb7651 (dominio, cliente y APK), con zod 4.6.6. No editar a mano.",
  "cabeceras": {
   "X-BE-Surface": "APK",
-  "X-BE-Capabilities": "training-set-targets-1,forms-format-3,pending-steps-texts-1"
+  "X-BE-Capabilities": "training-set-targets-1,forms-format-3,pending-steps-texts-1,training-set-kinds-1,training-session-groups-1,training-effort-notation-1,training-week-load-1,training-session-effort-1"
  },
  "textos": {
   "TERMINOS": "terminos-2026-09-demo",
@@ -1535,15 +1535,15 @@
    "noRepresentado": [],
    "pedido": null
   },
-  "API-CON-01": {
+  "API-CMP-01": {
    "metodo": "get",
-   "ruta": "/relationships/{relationshipId}/consent-requirements",
+   "ruta": "/me/sharing-proposal",
    "llamadas": [
-    "consultarRequisitosDeConsentimiento"
+    "loQueSePuedeCompartir"
    ],
    "conSesion": true,
    "conClave": false,
-   "esquema": "RequisitosDeConsentimientoResponseSchema",
+   "esquema": "LoQueSePuedeCompartirResponseSchema",
    "comoElContrato": true,
    "respuesta": {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -1553,134 +1553,499 @@
       "type": "object",
       "properties": {
        "relationshipId": {
-        "type": "string",
-        "minLength": 1
-       },
-       "professional": {
-        "type": "object",
-        "properties": {
-         "identityId": {
+        "anyOf": [
+         {
           "type": "string",
           "minLength": 1
          },
-         "displayName": {
-          "type": "string"
+         {
+          "type": "null"
          }
-        },
-        "required": [
-         "identityId",
-         "displayName"
-        ],
-        "additionalProperties": false
-       },
-       "scope": {
-        "type": "object",
-        "properties": {
-         "code": {
-          "type": "string",
-          "enum": [
-           "NUTRICION",
-           "ENTRENAMIENTO",
-           "ANTROPOMETRIA"
-          ]
-         },
-         "label": {
-          "type": "string"
-         }
-        },
-        "required": [
-         "code",
-         "label"
-        ],
-        "additionalProperties": false
-       },
-       "purpose": {
-        "type": "string",
-        "enum": [
-         "ACOMPANAMIENTO_NUTRICIONAL",
-         "PLANIFICACION_DEL_ENTRENAMIENTO",
-         "EVALUACION_ANTROPOMETRICA"
         ]
        },
-       "consentVersion": {
-        "type": "object",
-        "properties": {
-         "id": {
-          "type": "string",
-          "minLength": 1
-         },
-         "text": {
-          "type": "string"
-         },
-         "textHash": {
-          "type": "string"
-         },
-         "effectiveFrom": {
-          "type": "string",
-          "format": "date-time",
-          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
-         }
-        },
-        "required": [
-         "id",
-         "text",
-         "textHash",
-         "effectiveFrom"
-        ],
-        "additionalProperties": false
+       "version": {
+        "type": "string",
+        "pattern": "^p[0-9a-z]{1,16}$"
        },
-       "pertinentCategories": {
+       "items": {
+        "type": "array",
+        "items": {
+         "oneOf": [
+          {
+           "type": "object",
+           "properties": {
+            "kind": {
+             "type": "string",
+             "const": "HEALTH_DATA"
+            },
+            "key": {
+             "type": "string",
+             "pattern": "^(HEALTH_DATA|AREA_CONSENT:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|SUMMARY:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}:(NUTRICION|ENTRENAMIENTO|ANTROPOMETRIA)|PREVIOUS_HISTORY:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|HABITS:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$"
+            },
+            "given": {
+             "type": "boolean"
+            },
+            "since": {
+             "anyOf": [
+              {
+               "type": "string",
+               "format": "date-time",
+               "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+              },
+              {
+               "type": "null"
+              }
+             ]
+            },
+            "offered": {
+             "type": "boolean"
+            },
+            "preselected": {
+             "type": "boolean"
+            },
+            "textId": {
+             "type": "string",
+             "minLength": 1
+            }
+           },
+           "required": [
+            "kind",
+            "key",
+            "given",
+            "since",
+            "offered",
+            "preselected",
+            "textId"
+           ],
+           "additionalProperties": false
+          },
+          {
+           "type": "object",
+           "properties": {
+            "kind": {
+             "type": "string",
+             "const": "AREA_CONSENT"
+            },
+            "key": {
+             "type": "string",
+             "pattern": "^(HEALTH_DATA|AREA_CONSENT:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|SUMMARY:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}:(NUTRICION|ENTRENAMIENTO|ANTROPOMETRIA)|PREVIOUS_HISTORY:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|HABITS:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$"
+            },
+            "given": {
+             "type": "boolean"
+            },
+            "since": {
+             "anyOf": [
+              {
+               "type": "string",
+               "format": "date-time",
+               "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+              },
+              {
+               "type": "null"
+              }
+             ]
+            },
+            "offered": {
+             "type": "boolean"
+            },
+            "preselected": {
+             "type": "boolean"
+            },
+            "textId": {
+             "type": "string",
+             "minLength": 1
+            },
+            "relationshipId": {
+             "type": "string",
+             "minLength": 1
+            },
+            "professional": {
+             "type": "object",
+             "properties": {
+              "identityId": {
+               "type": "string",
+               "minLength": 1
+              },
+              "displayName": {
+               "type": "string"
+              }
+             },
+             "required": [
+              "identityId",
+              "displayName"
+             ],
+             "additionalProperties": false
+            },
+            "scope": {
+             "type": "object",
+             "properties": {
+              "code": {
+               "type": "string",
+               "enum": [
+                "NUTRICION",
+                "ENTRENAMIENTO",
+                "ANTROPOMETRIA"
+               ]
+              },
+              "label": {
+               "type": "string"
+              }
+             },
+             "required": [
+              "code",
+              "label"
+             ],
+             "additionalProperties": false
+            },
+            "profileNotice": {
+             "type": "string"
+            }
+           },
+           "required": [
+            "kind",
+            "key",
+            "given",
+            "since",
+            "offered",
+            "preselected",
+            "textId",
+            "relationshipId",
+            "professional",
+            "scope",
+            "profileNotice"
+           ],
+           "additionalProperties": false
+          },
+          {
+           "type": "object",
+           "properties": {
+            "kind": {
+             "type": "string",
+             "const": "SUMMARY"
+            },
+            "key": {
+             "type": "string",
+             "pattern": "^(HEALTH_DATA|AREA_CONSENT:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|SUMMARY:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}:(NUTRICION|ENTRENAMIENTO|ANTROPOMETRIA)|PREVIOUS_HISTORY:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|HABITS:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$"
+            },
+            "given": {
+             "type": "boolean"
+            },
+            "since": {
+             "anyOf": [
+              {
+               "type": "string",
+               "format": "date-time",
+               "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+              },
+              {
+               "type": "null"
+              }
+             ]
+            },
+            "offered": {
+             "type": "boolean"
+            },
+            "preselected": {
+             "type": "boolean"
+            },
+            "textId": {
+             "type": "string",
+             "minLength": 1
+            },
+            "recipient": {
+             "type": "object",
+             "properties": {
+              "identityId": {
+               "type": "string",
+               "minLength": 1
+              },
+              "displayName": {
+               "type": "string"
+              }
+             },
+             "required": [
+              "identityId",
+              "displayName"
+             ],
+             "additionalProperties": false
+            },
+            "area": {
+             "type": "string",
+             "enum": [
+              "NUTRICION",
+              "ENTRENAMIENTO",
+              "ANTROPOMETRIA"
+             ]
+            },
+            "level": {
+             "type": "string",
+             "enum": [
+              "SUMMARY",
+              "SUMMARY_AND_PLAN"
+             ]
+            },
+            "givenLevel": {
+             "anyOf": [
+              {
+               "type": "string",
+               "enum": [
+                "SUMMARY",
+                "SUMMARY_AND_PLAN"
+               ]
+              },
+              {
+               "type": "null"
+              }
+             ]
+            },
+            "from": {
+             "minItems": 1,
+             "type": "array",
+             "items": {
+              "type": "object",
+              "properties": {
+               "identityId": {
+                "type": "string",
+                "minLength": 1
+               },
+               "displayName": {
+                "type": "string"
+               }
+              },
+              "required": [
+               "identityId",
+               "displayName"
+              ],
+              "additionalProperties": false
+             }
+            }
+           },
+           "required": [
+            "kind",
+            "key",
+            "given",
+            "since",
+            "offered",
+            "preselected",
+            "textId",
+            "recipient",
+            "area",
+            "level",
+            "givenLevel",
+            "from"
+           ],
+           "additionalProperties": false
+          },
+          {
+           "type": "object",
+           "properties": {
+            "kind": {
+             "type": "string",
+             "const": "PREVIOUS_HISTORY"
+            },
+            "key": {
+             "type": "string",
+             "pattern": "^(HEALTH_DATA|AREA_CONSENT:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|SUMMARY:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}:(NUTRICION|ENTRENAMIENTO|ANTROPOMETRIA)|PREVIOUS_HISTORY:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|HABITS:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$"
+            },
+            "given": {
+             "type": "boolean"
+            },
+            "since": {
+             "anyOf": [
+              {
+               "type": "string",
+               "format": "date-time",
+               "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+              },
+              {
+               "type": "null"
+              }
+             ]
+            },
+            "offered": {
+             "type": "boolean"
+            },
+            "preselected": {
+             "type": "boolean"
+            },
+            "textId": {
+             "type": "string",
+             "minLength": 1
+            },
+            "relationshipId": {
+             "type": "string",
+             "minLength": 1
+            },
+            "professional": {
+             "type": "object",
+             "properties": {
+              "identityId": {
+               "type": "string",
+               "minLength": 1
+              },
+              "displayName": {
+               "type": "string"
+              }
+             },
+             "required": [
+              "identityId",
+              "displayName"
+             ],
+             "additionalProperties": false
+            },
+            "area": {
+             "type": "string",
+             "enum": [
+              "NUTRICION",
+              "ENTRENAMIENTO",
+              "ANTROPOMETRIA"
+             ]
+            }
+           },
+           "required": [
+            "kind",
+            "key",
+            "given",
+            "since",
+            "offered",
+            "preselected",
+            "textId",
+            "relationshipId",
+            "professional",
+            "area"
+           ],
+           "additionalProperties": false
+          },
+          {
+           "type": "object",
+           "properties": {
+            "kind": {
+             "type": "string",
+             "const": "HABITS"
+            },
+            "key": {
+             "type": "string",
+             "pattern": "^(HEALTH_DATA|AREA_CONSENT:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|SUMMARY:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}:(NUTRICION|ENTRENAMIENTO|ANTROPOMETRIA)|PREVIOUS_HISTORY:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|HABITS:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$"
+            },
+            "given": {
+             "type": "boolean"
+            },
+            "since": {
+             "anyOf": [
+              {
+               "type": "string",
+               "format": "date-time",
+               "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+              },
+              {
+               "type": "null"
+              }
+             ]
+            },
+            "offered": {
+             "type": "boolean"
+            },
+            "preselected": {
+             "type": "boolean"
+            },
+            "textId": {
+             "type": "string",
+             "minLength": 1
+            },
+            "recipient": {
+             "type": "object",
+             "properties": {
+              "identityId": {
+               "type": "string",
+               "minLength": 1
+              },
+              "displayName": {
+               "type": "string"
+              }
+             },
+             "required": [
+              "identityId",
+              "displayName"
+             ],
+             "additionalProperties": false
+            }
+           },
+           "required": [
+            "kind",
+            "key",
+            "given",
+            "since",
+            "offered",
+            "preselected",
+            "textId",
+            "recipient"
+           ],
+           "additionalProperties": false
+          }
+         ]
+        }
+       },
+       "texts": {
         "type": "array",
         "items": {
          "type": "object",
          "properties": {
-          "code": {
+          "id": {
+           "type": "string",
+           "minLength": 1
+          },
+          "kind": {
+           "type": "string",
+           "enum": [
+            "HEALTH_DATA",
+            "AREA_CONSENT",
+            "SUMMARY",
+            "SUMMARY_AND_PLAN",
+            "PREVIOUS_HISTORY",
+            "HABITS"
+           ]
+          },
+          "title": {
            "type": "string"
           },
-          "label": {
+          "text": {
            "type": "string"
           },
-          "detailLevel": {
-           "type": "string"
+          "textHash": {
+           "type": "string",
+           "pattern": "^[0-9a-f]{64}$"
+          },
+          "effectiveFrom": {
+           "type": "string",
+           "format": "date-time",
+           "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+          },
+          "approval": {
+           "type": "string",
+           "enum": [
+            "PENDING_APPROVAL",
+            "APPROVED"
+           ]
           }
          },
          "required": [
-          "code",
-          "label",
-          "detailLevel"
+          "id",
+          "kind",
+          "title",
+          "text",
+          "textHash",
+          "effectiveFrom",
+          "approval"
          ],
          "additionalProperties": false
         }
-       },
-       "professionalProfileDisclosure": {
-        "type": "object",
-        "properties": {
-         "profileType": {
-          "type": "string",
-          "enum": [
-           "HEALTH_PROFESSIONAL",
-           "NON_HEALTH_PROFESSIONAL"
-          ]
-         },
-         "notice": {
-          "type": "string"
-         }
-        },
-        "required": [
-         "profileType",
-         "notice"
-        ],
-        "additionalProperties": false
        }
       },
       "required": [
        "relationshipId",
-       "professional",
-       "scope",
-       "purpose",
-       "consentVersion",
-       "pertinentCategories",
-       "professionalProfileDisclosure"
+       "version",
+       "items",
+       "texts"
       ],
       "additionalProperties": false
      }
@@ -1693,15 +2058,15 @@
    "noRepresentado": [],
    "pedido": null
   },
-  "API-CON-02": {
+  "API-CMP-02": {
    "metodo": "post",
-   "ruta": "/relationships/{relationshipId}/consents",
+   "ruta": "/me/sharing-choices",
    "llamadas": [
-    "otorgarConsentimiento"
+    "compartirLoElegido"
    ],
    "conSesion": true,
    "conClave": true,
-   "esquema": "ConsentimientoOtorgadoResponseSchema",
+   "esquema": "LoElegidoCompartidoResponseSchema",
    "comoElContrato": true,
    "respuesta": {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -1710,89 +2075,42 @@
      "data": {
       "type": "object",
       "properties": {
-       "consentId": {
-        "type": "string",
-        "minLength": 1
-       },
-       "relationshipId": {
-        "type": "string",
-        "minLength": 1
-       },
-       "consentVersionId": {
-        "type": "string",
-        "minLength": 1
-       },
-       "state": {
-        "type": "string",
-        "const": "ACTIVE"
-       },
-       "acceptedAt": {
+       "recordedAt": {
         "type": "string",
         "format": "date-time",
         "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
        },
-       "scope": {
-        "type": "object",
-        "properties": {
-         "code": {
-          "type": "string",
-          "enum": [
-           "NUTRICION",
-           "ENTRENAMIENTO",
-           "ANTROPOMETRIA"
-          ]
-         },
-         "label": {
-          "type": "string"
-         }
-        },
-        "required": [
-         "code",
-         "label"
-        ],
-        "additionalProperties": false
-       },
-       "purpose": {
-        "type": "string",
-        "enum": [
-         "ACOMPANAMIENTO_NUTRICIONAL",
-         "PLANIFICACION_DEL_ENTRENAMIENTO",
-         "EVALUACION_ANTROPOMETRICA"
-        ]
-       },
-       "pertinentCategories": {
+       "given": {
         "type": "array",
         "items": {
          "type": "object",
          "properties": {
-          "code": {
-           "type": "string"
+          "key": {
+           "type": "string",
+           "pattern": "^(HEALTH_DATA|AREA_CONSENT:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|SUMMARY:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}:(NUTRICION|ENTRENAMIENTO|ANTROPOMETRIA)|PREVIOUS_HISTORY:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|HABITS:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$"
           },
-          "label": {
-           "type": "string"
-          },
-          "detailLevel": {
-           "type": "string"
+          "kind": {
+           "type": "string",
+           "enum": [
+            "HEALTH_DATA",
+            "AREA_CONSENT",
+            "SUMMARY",
+            "PREVIOUS_HISTORY",
+            "HABITS"
+           ]
           }
          },
          "required": [
-          "code",
-          "label",
-          "detailLevel"
+          "key",
+          "kind"
          ],
          "additionalProperties": false
         }
        }
       },
       "required": [
-       "consentId",
-       "relationshipId",
-       "consentVersionId",
-       "state",
-       "acceptedAt",
-       "scope",
-       "purpose",
-       "pertinentCategories"
+       "recordedAt",
+       "given"
       ],
       "additionalProperties": false
      }
@@ -1807,13 +2125,110 @@
     "$schema": "https://json-schema.org/draft/2020-12/schema",
     "type": "object",
     "properties": {
-     "consentVersionId": {
+     "relationshipId": {
+      "anyOf": [
+       {
+        "type": "string",
+        "minLength": 1
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
+     "expectedVersion": {
       "type": "string",
-      "minLength": 1
+      "pattern": "^p[0-9a-z]{1,16}$"
+     },
+     "acceptedTextIds": {
+      "maxItems": 12,
+      "type": "array",
+      "items": {
+       "type": "string",
+       "minLength": 1
+      }
+     },
+     "choices": {
+      "minItems": 1,
+      "maxItems": 80,
+      "type": "array",
+      "items": {
+       "type": "string",
+       "pattern": "^(HEALTH_DATA|AREA_CONSENT:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|SUMMARY:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}:(NUTRICION|ENTRENAMIENTO|ANTROPOMETRIA)|PREVIOUS_HISTORY:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}|HABITS:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$"
+      }
      }
     },
     "required": [
-     "consentVersionId"
+     "relationshipId",
+     "expectedVersion",
+     "acceptedTextIds",
+     "choices"
+    ],
+    "additionalProperties": false
+   }
+  },
+  "API-CMP-03": {
+   "metodo": "post",
+   "ruta": "/me/sharing-choices/withdrawal",
+   "llamadas": [
+    "dejarDeCompartirUnaCosa"
+   ],
+   "conSesion": true,
+   "conClave": true,
+   "esquema": "UnaCosaRetiradaResponseSchema",
+   "comoElContrato": true,
+   "respuesta": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+     "data": {
+      "type": "object",
+      "properties": {
+       "key": {
+        "type": "string",
+        "pattern": "^(SUMMARY:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}:(NUTRICION|ENTRENAMIENTO|ANTROPOMETRIA)|HABITS:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$"
+       },
+       "withdrawn": {
+        "type": "boolean"
+       },
+       "withdrawnAt": {
+        "anyOf": [
+         {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+         },
+         {
+          "type": "null"
+         }
+        ]
+       }
+      },
+      "required": [
+       "key",
+       "withdrawn",
+       "withdrawnAt"
+      ],
+      "additionalProperties": false
+     }
+    },
+    "required": [
+     "data"
+    ],
+    "additionalProperties": false
+   },
+   "noRepresentado": [],
+   "pedido": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+     "key": {
+      "type": "string",
+      "pattern": "^(SUMMARY:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}:(NUTRICION|ENTRENAMIENTO|ANTROPOMETRIA)|HABITS:[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$"
+     }
+    },
+    "required": [
+     "key"
     ],
     "additionalProperties": false
    }
@@ -2627,6 +3042,147 @@
    },
    "noRepresentado": [],
    "pedido": null
+  },
+  "API-ESF-01": {
+   "metodo": "post",
+   "ruta": "/training/executions/{executionId}/session-effort",
+   "llamadas": [
+    "registrarEsfuerzoDeLaSesion"
+   ],
+   "conSesion": true,
+   "conClave": true,
+   "esquema": "EsfuerzoDeLaSesionResponseSchema",
+   "comoElContrato": true,
+   "respuesta": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+     "data": {
+      "type": "object",
+      "properties": {
+       "executionId": {
+        "type": "string",
+        "minLength": 1
+       },
+       "date": {
+        "type": "string",
+        "format": "date",
+        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+       },
+       "sessionLabel": {
+        "type": "string"
+       },
+       "rating": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 10
+       },
+       "durationMinutes": {
+        "anyOf": [
+         {
+          "type": "integer",
+          "exclusiveMinimum": 0,
+          "maximum": 9007199254740991
+         },
+         {
+          "type": "null"
+         }
+        ]
+       },
+       "durationSource": {
+        "anyOf": [
+         {
+          "type": "string",
+          "enum": [
+           "TIMER",
+           "DECLARED"
+          ]
+         },
+         {
+          "type": "null"
+         }
+        ]
+       },
+       "sessionLoad": {
+        "anyOf": [
+         {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 9007199254740991
+         },
+         {
+          "type": "null"
+         }
+        ]
+       },
+       "recordedAt": {
+        "type": "string",
+        "format": "date-time",
+        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+       }
+      },
+      "required": [
+       "executionId",
+       "date",
+       "sessionLabel",
+       "rating",
+       "durationMinutes",
+       "durationSource",
+       "sessionLoad",
+       "recordedAt"
+      ],
+      "additionalProperties": false
+     }
+    },
+    "required": [
+     "data"
+    ],
+    "additionalProperties": false
+   },
+   "noRepresentado": [],
+   "pedido": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+     "rating": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 10
+     },
+     "durationMinutes": {
+      "anyOf": [
+       {
+        "type": "integer",
+        "minimum": 1,
+        "maximum": 600
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
+     "durationSource": {
+      "anyOf": [
+       {
+        "type": "string",
+        "enum": [
+         "TIMER",
+         "DECLARED"
+        ]
+       },
+       {
+        "type": "null"
+       }
+      ]
+     }
+    },
+    "required": [
+     "rating",
+     "durationMinutes",
+     "durationSource"
+    ],
+    "additionalProperties": false
+   }
   },
   "API-EVI-01": {
    "metodo": "get",
@@ -11284,6 +11840,565 @@
     "additionalProperties": false
    }
   },
+  "API-HIA-01": {
+   "metodo": "get",
+   "ruta": "/me/previous-history",
+   "llamadas": [
+    "miHistoriaAnterior"
+   ],
+   "conSesion": true,
+   "conClave": false,
+   "esquema": "MiHistoriaAnteriorResponseSchema",
+   "comoElContrato": true,
+   "respuesta": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+     "data": {
+      "type": "object",
+      "properties": {
+       "text": {
+        "type": "object",
+        "properties": {
+         "id": {
+          "type": "string"
+         },
+         "title": {
+          "type": "string"
+         },
+         "text": {
+          "type": "string"
+         },
+         "textHash": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+         },
+         "effectiveFrom": {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+         },
+         "approval": {
+          "type": "string",
+          "enum": [
+           "PENDING_APPROVAL",
+           "APPROVED"
+          ]
+         }
+        },
+        "required": [
+         "id",
+         "title",
+         "text",
+         "textHash",
+         "effectiveFrom",
+         "approval"
+        ],
+        "additionalProperties": false
+       },
+       "items": {
+        "type": "array",
+        "items": {
+         "type": "object",
+         "properties": {
+          "relationshipId": {
+           "type": "string",
+           "minLength": 1
+          },
+          "area": {
+           "type": "string",
+           "enum": [
+            "NUTRICION",
+            "ENTRENAMIENTO",
+            "ANTROPOMETRIA"
+           ]
+          },
+          "professional": {
+           "type": "object",
+           "properties": {
+            "identityId": {
+             "type": "string",
+             "minLength": 1
+            },
+            "displayName": {
+             "type": "string"
+            }
+           },
+           "required": [
+            "identityId",
+            "displayName"
+           ],
+           "additionalProperties": false
+          },
+          "relationshipState": {
+           "type": "string",
+           "enum": [
+            "ACEPTADO",
+            "PAUSADO",
+            "FINALIZADO"
+           ]
+          },
+          "hadEarlierProfessional": {
+           "type": "boolean"
+          },
+          "includes": {
+           "type": "array",
+           "items": {
+            "type": "string",
+            "enum": [
+             "PLANS",
+             "RECORDS",
+             "MEASUREMENTS",
+             "DECISIONS"
+            ]
+           }
+          },
+          "authorization": {
+           "anyOf": [
+            {
+             "type": "object",
+             "properties": {
+              "state": {
+               "type": "string",
+               "enum": [
+                "GRANTED",
+                "WITHDRAWN"
+               ]
+              },
+              "version": {
+               "type": "string",
+               "pattern": "^v[1-9]\\d*$"
+              },
+              "since": {
+               "type": "string",
+               "format": "date-time",
+               "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+              }
+             },
+             "required": [
+              "state",
+              "version",
+              "since"
+             ],
+             "additionalProperties": false
+            },
+            {
+             "type": "null"
+            }
+           ]
+          },
+          "accessInEffect": {
+           "type": "boolean"
+          },
+          "lastReadAt": {
+           "anyOf": [
+            {
+             "type": "string",
+             "format": "date-time",
+             "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+            },
+            {
+             "type": "null"
+            }
+           ]
+          }
+         },
+         "required": [
+          "relationshipId",
+          "area",
+          "professional",
+          "relationshipState",
+          "hadEarlierProfessional",
+          "includes",
+          "authorization",
+          "accessInEffect",
+          "lastReadAt"
+         ],
+         "additionalProperties": false
+        }
+       },
+       "accesses": {
+        "type": "array",
+        "items": {
+         "type": "object",
+         "properties": {
+          "professional": {
+           "type": "object",
+           "properties": {
+            "identityId": {
+             "type": "string",
+             "minLength": 1
+            },
+            "displayName": {
+             "type": "string"
+            }
+           },
+           "required": [
+            "identityId",
+            "displayName"
+           ],
+           "additionalProperties": false
+          },
+          "area": {
+           "type": "string",
+           "enum": [
+            "NUTRICION",
+            "ENTRENAMIENTO",
+            "ANTROPOMETRIA"
+           ]
+          },
+          "readAt": {
+           "type": "string",
+           "format": "date-time",
+           "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+          }
+         },
+         "required": [
+          "professional",
+          "area",
+          "readAt"
+         ],
+         "additionalProperties": false
+        }
+       }
+      },
+      "required": [
+       "text",
+       "items",
+       "accesses"
+      ],
+      "additionalProperties": false
+     }
+    },
+    "required": [
+     "data"
+    ],
+    "additionalProperties": false
+   },
+   "noRepresentado": [],
+   "pedido": null
+  },
+  "API-HIA-02": {
+   "metodo": "put",
+   "ruta": "/me/previous-history/{relationshipId}",
+   "llamadas": [
+    "autorizarHistoriaAnterior"
+   ],
+   "conSesion": true,
+   "conClave": true,
+   "esquema": "HistoriaAnteriorDeUnAreaResponseSchema",
+   "comoElContrato": true,
+   "respuesta": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+     "data": {
+      "type": "object",
+      "properties": {
+       "relationshipId": {
+        "type": "string",
+        "minLength": 1
+       },
+       "area": {
+        "type": "string",
+        "enum": [
+         "NUTRICION",
+         "ENTRENAMIENTO",
+         "ANTROPOMETRIA"
+        ]
+       },
+       "professional": {
+        "type": "object",
+        "properties": {
+         "identityId": {
+          "type": "string",
+          "minLength": 1
+         },
+         "displayName": {
+          "type": "string"
+         }
+        },
+        "required": [
+         "identityId",
+         "displayName"
+        ],
+        "additionalProperties": false
+       },
+       "relationshipState": {
+        "type": "string",
+        "enum": [
+         "ACEPTADO",
+         "PAUSADO",
+         "FINALIZADO"
+        ]
+       },
+       "hadEarlierProfessional": {
+        "type": "boolean"
+       },
+       "includes": {
+        "type": "array",
+        "items": {
+         "type": "string",
+         "enum": [
+          "PLANS",
+          "RECORDS",
+          "MEASUREMENTS",
+          "DECISIONS"
+         ]
+        }
+       },
+       "authorization": {
+        "anyOf": [
+         {
+          "type": "object",
+          "properties": {
+           "state": {
+            "type": "string",
+            "enum": [
+             "GRANTED",
+             "WITHDRAWN"
+            ]
+           },
+           "version": {
+            "type": "string",
+            "pattern": "^v[1-9]\\d*$"
+           },
+           "since": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+           }
+          },
+          "required": [
+           "state",
+           "version",
+           "since"
+          ],
+          "additionalProperties": false
+         },
+         {
+          "type": "null"
+         }
+        ]
+       },
+       "accessInEffect": {
+        "type": "boolean"
+       },
+       "lastReadAt": {
+        "anyOf": [
+         {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+         },
+         {
+          "type": "null"
+         }
+        ]
+       }
+      },
+      "required": [
+       "relationshipId",
+       "area",
+       "professional",
+       "relationshipState",
+       "hadEarlierProfessional",
+       "includes",
+       "authorization",
+       "accessInEffect",
+       "lastReadAt"
+      ],
+      "additionalProperties": false
+     }
+    },
+    "required": [
+     "data"
+    ],
+    "additionalProperties": false
+   },
+   "noRepresentado": [],
+   "pedido": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+     "expectedVersion": {
+      "anyOf": [
+       {
+        "type": "string",
+        "pattern": "^v[1-9]\\d*$"
+       },
+       {
+        "type": "null"
+       }
+      ]
+     },
+     "textVersionId": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 120
+     }
+    },
+    "required": [
+     "expectedVersion",
+     "textVersionId"
+    ],
+    "additionalProperties": false
+   }
+  },
+  "API-HIA-03": {
+   "metodo": "post",
+   "ruta": "/me/previous-history/{relationshipId}/withdrawal",
+   "llamadas": [
+    "retirarHistoriaAnterior"
+   ],
+   "conSesion": true,
+   "conClave": true,
+   "esquema": "HistoriaAnteriorDeUnAreaResponseSchema",
+   "comoElContrato": true,
+   "respuesta": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+     "data": {
+      "type": "object",
+      "properties": {
+       "relationshipId": {
+        "type": "string",
+        "minLength": 1
+       },
+       "area": {
+        "type": "string",
+        "enum": [
+         "NUTRICION",
+         "ENTRENAMIENTO",
+         "ANTROPOMETRIA"
+        ]
+       },
+       "professional": {
+        "type": "object",
+        "properties": {
+         "identityId": {
+          "type": "string",
+          "minLength": 1
+         },
+         "displayName": {
+          "type": "string"
+         }
+        },
+        "required": [
+         "identityId",
+         "displayName"
+        ],
+        "additionalProperties": false
+       },
+       "relationshipState": {
+        "type": "string",
+        "enum": [
+         "ACEPTADO",
+         "PAUSADO",
+         "FINALIZADO"
+        ]
+       },
+       "hadEarlierProfessional": {
+        "type": "boolean"
+       },
+       "includes": {
+        "type": "array",
+        "items": {
+         "type": "string",
+         "enum": [
+          "PLANS",
+          "RECORDS",
+          "MEASUREMENTS",
+          "DECISIONS"
+         ]
+        }
+       },
+       "authorization": {
+        "anyOf": [
+         {
+          "type": "object",
+          "properties": {
+           "state": {
+            "type": "string",
+            "enum": [
+             "GRANTED",
+             "WITHDRAWN"
+            ]
+           },
+           "version": {
+            "type": "string",
+            "pattern": "^v[1-9]\\d*$"
+           },
+           "since": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+           }
+          },
+          "required": [
+           "state",
+           "version",
+           "since"
+          ],
+          "additionalProperties": false
+         },
+         {
+          "type": "null"
+         }
+        ]
+       },
+       "accessInEffect": {
+        "type": "boolean"
+       },
+       "lastReadAt": {
+        "anyOf": [
+         {
+          "type": "string",
+          "format": "date-time",
+          "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+         },
+         {
+          "type": "null"
+         }
+        ]
+       }
+      },
+      "required": [
+       "relationshipId",
+       "area",
+       "professional",
+       "relationshipState",
+       "hadEarlierProfessional",
+       "includes",
+       "authorization",
+       "accessInEffect",
+       "lastReadAt"
+      ],
+      "additionalProperties": false
+     }
+    },
+    "required": [
+     "data"
+    ],
+    "additionalProperties": false
+   },
+   "noRepresentado": [],
+   "pedido": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+     "expectedVersion": {
+      "type": "string",
+      "pattern": "^v[1-9]\\d*$"
+     }
+    },
+    "required": [
+     "expectedVersion"
+    ],
+    "additionalProperties": false
+   }
+  },
   "API-ING-01": {
    "metodo": "get",
    "ruta": "/me/nutrition/today/options",
@@ -18539,7 +19654,10 @@
         "anyOf": [
          {
           "type": "string",
-          "const": "image/jpeg"
+          "enum": [
+           "image/jpeg",
+           "image/webp"
+          ]
          },
          {
           "type": "null"
@@ -18712,7 +19830,10 @@
         "anyOf": [
          {
           "type": "string",
-          "const": "image/jpeg"
+          "enum": [
+           "image/jpeg",
+           "image/webp"
+          ]
          },
          {
           "type": "null"
@@ -23392,6 +24513,208 @@
    "noRepresentado": [],
    "pedido": null
   },
+  "API-RES-09": {
+   "metodo": "get",
+   "ruta": "/me/summary-sharing/access-requests",
+   "llamadas": [
+    "pedidosDePlan"
+   ],
+   "conSesion": true,
+   "conClave": false,
+   "esquema": "PedidosDePlanResponseSchema",
+   "comoElContrato": true,
+   "respuesta": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+     "data": {
+      "type": "array",
+      "items": {
+       "type": "object",
+       "properties": {
+        "accessRequestId": {
+         "type": "string",
+         "minLength": 1
+        },
+        "version": {
+         "type": "string",
+         "pattern": "^v[1-9]\\d*$"
+        },
+        "professional": {
+         "type": "object",
+         "properties": {
+          "identityId": {
+           "type": "string",
+           "minLength": 1
+          },
+          "displayName": {
+           "type": "string"
+          }
+         },
+         "required": [
+          "identityId",
+          "displayName"
+         ],
+         "additionalProperties": false
+        },
+        "scope": {
+         "type": "object",
+         "properties": {
+          "code": {
+           "type": "string",
+           "enum": [
+            "NUTRICION",
+            "ENTRENAMIENTO",
+            "ANTROPOMETRIA"
+           ]
+          },
+          "label": {
+           "type": "string"
+          }
+         },
+         "required": [
+          "code",
+          "label"
+         ],
+         "additionalProperties": false
+        },
+        "area": {
+         "type": "string",
+         "enum": [
+          "NUTRICION",
+          "ENTRENAMIENTO"
+         ]
+        },
+        "requestedAt": {
+         "type": "string",
+         "format": "date-time",
+         "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+        }
+       },
+       "required": [
+        "accessRequestId",
+        "version",
+        "professional",
+        "scope",
+        "area",
+        "requestedAt"
+       ],
+       "additionalProperties": false
+      }
+     }
+    },
+    "required": [
+     "data"
+    ],
+    "additionalProperties": false
+   },
+   "noRepresentado": [],
+   "pedido": null
+  },
+  "API-RES-10": {
+   "metodo": "post",
+   "ruta": "/me/summary-sharing/access-requests/{accessRequestId}/answer",
+   "llamadas": [
+    "responderPedidoDePlan"
+   ],
+   "conSesion": true,
+   "conClave": true,
+   "esquema": "PedidoDePlanRespondidoResponseSchema",
+   "comoElContrato": true,
+   "respuesta": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+     "data": {
+      "type": "object",
+      "properties": {
+       "accessRequestId": {
+        "type": "string",
+        "minLength": 1
+       },
+       "answer": {
+        "type": "string",
+        "enum": [
+         "SHARE",
+         "NOT_NOW"
+        ]
+       },
+       "answeredAt": {
+        "type": "string",
+        "format": "date-time",
+        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d:[0-5]\\d(?:\\.\\d+)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+       }
+      },
+      "required": [
+       "accessRequestId",
+       "answer",
+       "answeredAt"
+      ],
+      "additionalProperties": false
+     }
+    },
+    "required": [
+     "data"
+    ],
+    "additionalProperties": false
+   },
+   "noRepresentado": [],
+   "pedido": {
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "type": "object",
+    "properties": {
+     "expectedVersion": {
+      "type": "string",
+      "pattern": "^v[1-9]\\d*$"
+     },
+     "answer": {
+      "type": "string",
+      "enum": [
+       "SHARE",
+       "NOT_NOW"
+      ]
+     },
+     "sharing": {
+      "anyOf": [
+       {
+        "type": "object",
+        "properties": {
+         "expectedVersion": {
+          "anyOf": [
+           {
+            "type": "string",
+            "pattern": "^v[1-9]\\d*$"
+           },
+           {
+            "type": "null"
+           }
+          ]
+         },
+         "textVersionId": {
+          "type": "string",
+          "minLength": 1
+         }
+        },
+        "required": [
+         "expectedVersion",
+         "textVersionId"
+        ],
+        "additionalProperties": false
+       },
+       {
+        "type": "null"
+       }
+      ]
+     }
+    },
+    "required": [
+     "expectedVersion",
+     "answer",
+     "sharing"
+    ],
+    "additionalProperties": false
+   }
+  },
   "API-RGT-01": {
    "metodo": "post",
    "ruta": "/me/data-rights-requests",
@@ -23909,6 +25232,13 @@
                  }
                 ]
                },
+               "setKind": {
+                "type": "string",
+                "enum": [
+                 "WORKING",
+                 "WARM_UP"
+                ]
+               },
                "target": {
                 "type": "object",
                 "properties": {
@@ -24228,6 +25558,17 @@
               "string",
               "null"
              ]
+            },
+            "exerciseGroupId": {
+             "anyOf": [
+              {
+               "type": "string",
+               "pattern": "^[A-Za-z0-9_-]{1,64}$"
+              },
+              {
+               "type": "null"
+              }
+             ]
             }
            },
            "required": [
@@ -24248,6 +25589,66 @@
            ],
            "additionalProperties": false
           }
+         },
+         "exerciseGroups": {
+          "type": "array",
+          "items": {
+           "type": "object",
+           "properties": {
+            "groupId": {
+             "type": "string",
+             "pattern": "^[A-Za-z0-9_-]{1,64}$"
+            },
+            "label": {
+             "type": "string"
+            },
+            "order": {
+             "type": "integer",
+             "exclusiveMinimum": 0,
+             "maximum": 9007199254740991
+            },
+            "kind": {
+             "type": "string",
+             "enum": [
+              "SEQUENTIAL",
+              "ROUNDS"
+             ]
+            },
+            "rounds": {
+             "anyOf": [
+              {
+               "type": "integer",
+               "exclusiveMinimum": 0,
+               "maximum": 9007199254740991
+              },
+              {
+               "type": "null"
+              }
+             ]
+            },
+            "restAfterRoundSeconds": {
+             "anyOf": [
+              {
+               "type": "integer",
+               "minimum": 0,
+               "maximum": 9007199254740991
+              },
+              {
+               "type": "null"
+              }
+             ]
+            }
+           },
+           "required": [
+            "groupId",
+            "label",
+            "order",
+            "kind",
+            "rounds",
+            "restAfterRoundSeconds"
+           ],
+           "additionalProperties": false
+          }
          }
         },
         "required": [
@@ -24258,6 +25659,41 @@
          "prescriptions"
         ],
         "additionalProperties": false
+       },
+       "effortNotation": {
+        "type": "string",
+        "enum": [
+         "RIR",
+         "RPE"
+        ]
+       },
+       "week": {
+        "type": "object",
+        "properties": {
+         "phaseWeek": {
+          "type": "integer",
+          "exclusiveMinimum": 0,
+          "maximum": 9007199254740991
+         },
+         "phaseWeeks": {
+          "type": "integer",
+          "exclusiveMinimum": 0,
+          "maximum": 9007199254740991
+         },
+         "deload": {
+          "type": "boolean"
+         }
+        },
+        "required": [
+         "phaseWeek",
+         "phaseWeeks",
+         "deload"
+        ],
+        "additionalProperties": false
+       },
+       "askSessionEffort": {
+        "type": "boolean",
+        "const": true
        }
       },
       "required": [
@@ -30567,6 +32003,13 @@
            "type": "null"
           }
          ]
+        },
+        "effortNotation": {
+         "type": "string",
+         "enum": [
+          "RIR",
+          "RPE"
+         ]
         }
        },
        "required": [
@@ -30762,6 +32205,13 @@
          }
         ]
        },
+       "effortNotation": {
+        "type": "string",
+        "enum": [
+         "RIR",
+         "RPE"
+        ]
+       },
        "blocks": {
         "type": "array",
         "items": {
@@ -30916,6 +32366,13 @@
                         "string",
                         "null"
                        ]
+                      },
+                      "setKind": {
+                       "type": "string",
+                       "enum": [
+                        "WORKING",
+                        "WARM_UP"
+                       ]
                       }
                      },
                      "required": [
@@ -31056,6 +32513,17 @@
                      "string",
                      "null"
                     ]
+                   },
+                   "exerciseGroupId": {
+                    "anyOf": [
+                     {
+                      "type": "string",
+                      "pattern": "^[A-Za-z0-9_-]{1,64}$"
+                     },
+                     {
+                      "type": "null"
+                     }
+                    ]
                    }
                   },
                   "required": [
@@ -31069,6 +32537,66 @@
                    "suggestedLoad",
                    "professionalParameters",
                    "note"
+                  ],
+                  "additionalProperties": false
+                 }
+                },
+                "exerciseGroups": {
+                 "type": "array",
+                 "items": {
+                  "type": "object",
+                  "properties": {
+                   "groupId": {
+                    "type": "string",
+                    "pattern": "^[A-Za-z0-9_-]{1,64}$"
+                   },
+                   "label": {
+                    "type": "string"
+                   },
+                   "order": {
+                    "type": "integer",
+                    "exclusiveMinimum": 0,
+                    "maximum": 9007199254740991
+                   },
+                   "kind": {
+                    "type": "string",
+                    "enum": [
+                     "SEQUENTIAL",
+                     "ROUNDS"
+                    ]
+                   },
+                   "rounds": {
+                    "anyOf": [
+                     {
+                      "type": "integer",
+                      "exclusiveMinimum": 0,
+                      "maximum": 9007199254740991
+                     },
+                     {
+                      "type": "null"
+                     }
+                    ]
+                   },
+                   "restAfterRoundSeconds": {
+                    "anyOf": [
+                     {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 9007199254740991
+                     },
+                     {
+                      "type": "null"
+                     }
+                    ]
+                   }
+                  },
+                  "required": [
+                   "groupId",
+                   "label",
+                   "order",
+                   "kind",
+                   "rounds",
+                   "restAfterRoundSeconds"
                   ],
                   "additionalProperties": false
                  }
@@ -31202,6 +32730,13 @@
                     "type": [
                      "string",
                      "null"
+                    ]
+                   },
+                   "setKind": {
+                    "type": "string",
+                    "enum": [
+                     "WORKING",
+                     "WARM_UP"
                     ]
                    }
                   },
@@ -31343,6 +32878,17 @@
                   "string",
                   "null"
                  ]
+                },
+                "exerciseGroupId": {
+                 "anyOf": [
+                  {
+                   "type": "string",
+                   "pattern": "^[A-Za-z0-9_-]{1,64}$"
+                  },
+                  {
+                   "type": "null"
+                  }
+                 ]
                 }
                },
                "required": [
@@ -31356,6 +32902,66 @@
                 "suggestedLoad",
                 "professionalParameters",
                 "note"
+               ],
+               "additionalProperties": false
+              }
+             },
+             "exerciseGroups": {
+              "type": "array",
+              "items": {
+               "type": "object",
+               "properties": {
+                "groupId": {
+                 "type": "string",
+                 "pattern": "^[A-Za-z0-9_-]{1,64}$"
+                },
+                "label": {
+                 "type": "string"
+                },
+                "order": {
+                 "type": "integer",
+                 "exclusiveMinimum": 0,
+                 "maximum": 9007199254740991
+                },
+                "kind": {
+                 "type": "string",
+                 "enum": [
+                  "SEQUENTIAL",
+                  "ROUNDS"
+                 ]
+                },
+                "rounds": {
+                 "anyOf": [
+                  {
+                   "type": "integer",
+                   "exclusiveMinimum": 0,
+                   "maximum": 9007199254740991
+                  },
+                  {
+                   "type": "null"
+                  }
+                 ]
+                },
+                "restAfterRoundSeconds": {
+                 "anyOf": [
+                  {
+                   "type": "integer",
+                   "minimum": 0,
+                   "maximum": 9007199254740991
+                  },
+                  {
+                   "type": "null"
+                  }
+                 ]
+                }
+               },
+               "required": [
+                "groupId",
+                "label",
+                "order",
+                "kind",
+                "rounds",
+                "restAfterRoundSeconds"
                ],
                "additionalProperties": false
               }
@@ -31642,6 +33248,95 @@
           "approximateCorrespondence"
          ],
          "additionalProperties": false
+        },
+        "classification": {
+         "type": "object",
+         "properties": {
+          "muscleGroup": {
+           "anyOf": [
+            {
+             "type": "string",
+             "enum": [
+              "CHEST",
+              "BACK",
+              "LEGS",
+              "SHOULDERS",
+              "ARMS",
+              "ABS",
+              "CALVES",
+              "CARDIO"
+             ]
+            },
+            {
+             "type": "null"
+            }
+           ]
+          },
+          "equipment": {
+           "maxItems": 14,
+           "type": "array",
+           "items": {
+            "type": "string",
+            "enum": [
+             "BARBELL",
+             "EZ_BAR",
+             "DUMBBELL",
+             "KETTLEBELL",
+             "CABLE",
+             "MACHINE",
+             "BENCH",
+             "INCLINE_BENCH",
+             "PULL_UP_BAR",
+             "BAND",
+             "MAT",
+             "SWISS_BALL",
+             "BODYWEIGHT",
+             "OTHER"
+            ]
+           }
+          },
+          "movementPattern": {
+           "anyOf": [
+            {
+             "type": "string",
+             "enum": [
+              "PUSH",
+              "PULL",
+              "SQUAT",
+              "HINGE",
+              "LUNGE",
+              "CORE",
+              "CARDIO",
+              "OTHER"
+             ]
+            },
+            {
+             "type": "null"
+            }
+           ]
+          },
+          "joints": {
+           "anyOf": [
+            {
+             "type": "string",
+             "enum": [
+              "SINGLE",
+              "MULTI"
+             ]
+            },
+            {
+             "type": "null"
+            }
+           ]
+          }
+         },
+         "required": [
+          "muscleGroup",
+          "equipment",
+          "movementPattern",
+          "joints"
+         ],
+         "additionalProperties": false
         }
        },
        "required": [
@@ -31699,6 +33394,14 @@
      "q": {
       "type": "string",
       "maxLength": 80
+     },
+     "zoneId": {
+      "type": "string",
+      "maxLength": 40
+     },
+     "withClassification": {
+      "type": "boolean",
+      "const": true
      },
      "limit": {
       "type": "integer",
@@ -31910,6 +33613,13 @@
                     "string",
                     "null"
                    ]
+                  },
+                  "setKind": {
+                   "type": "string",
+                   "enum": [
+                    "WORKING",
+                    "WARM_UP"
+                   ]
                   }
                  },
                  "required": [
@@ -32050,6 +33760,17 @@
                  "string",
                  "null"
                 ]
+               },
+               "exerciseGroupId": {
+                "anyOf": [
+                 {
+                  "type": "string",
+                  "pattern": "^[A-Za-z0-9_-]{1,64}$"
+                 },
+                 {
+                  "type": "null"
+                 }
+                ]
                }
               },
               "required": [
@@ -32063,6 +33784,66 @@
                "suggestedLoad",
                "professionalParameters",
                "note"
+              ],
+              "additionalProperties": false
+             }
+            },
+            "exerciseGroups": {
+             "type": "array",
+             "items": {
+              "type": "object",
+              "properties": {
+               "groupId": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9_-]{1,64}$"
+               },
+               "label": {
+                "type": "string"
+               },
+               "order": {
+                "type": "integer",
+                "exclusiveMinimum": 0,
+                "maximum": 9007199254740991
+               },
+               "kind": {
+                "type": "string",
+                "enum": [
+                 "SEQUENTIAL",
+                 "ROUNDS"
+                ]
+               },
+               "rounds": {
+                "anyOf": [
+                 {
+                  "type": "integer",
+                  "exclusiveMinimum": 0,
+                  "maximum": 9007199254740991
+                 },
+                 {
+                  "type": "null"
+                 }
+                ]
+               },
+               "restAfterRoundSeconds": {
+                "anyOf": [
+                 {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                 },
+                 {
+                  "type": "null"
+                 }
+                ]
+               }
+              },
+              "required": [
+               "groupId",
+               "label",
+               "order",
+               "kind",
+               "rounds",
+               "restAfterRoundSeconds"
               ],
               "additionalProperties": false
              }
@@ -32369,6 +34150,13 @@
                     "string",
                     "null"
                    ]
+                  },
+                  "setKind": {
+                   "type": "string",
+                   "enum": [
+                    "WORKING",
+                    "WARM_UP"
+                   ]
                   }
                  },
                  "required": [
@@ -32509,6 +34297,17 @@
                  "string",
                  "null"
                 ]
+               },
+               "exerciseGroupId": {
+                "anyOf": [
+                 {
+                  "type": "string",
+                  "pattern": "^[A-Za-z0-9_-]{1,64}$"
+                 },
+                 {
+                  "type": "null"
+                 }
+                ]
                }
               },
               "required": [
@@ -32522,6 +34321,66 @@
                "suggestedLoad",
                "professionalParameters",
                "note"
+              ],
+              "additionalProperties": false
+             }
+            },
+            "exerciseGroups": {
+             "type": "array",
+             "items": {
+              "type": "object",
+              "properties": {
+               "groupId": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9_-]{1,64}$"
+               },
+               "label": {
+                "type": "string"
+               },
+               "order": {
+                "type": "integer",
+                "exclusiveMinimum": 0,
+                "maximum": 9007199254740991
+               },
+               "kind": {
+                "type": "string",
+                "enum": [
+                 "SEQUENTIAL",
+                 "ROUNDS"
+                ]
+               },
+               "rounds": {
+                "anyOf": [
+                 {
+                  "type": "integer",
+                  "exclusiveMinimum": 0,
+                  "maximum": 9007199254740991
+                 },
+                 {
+                  "type": "null"
+                 }
+                ]
+               },
+               "restAfterRoundSeconds": {
+                "anyOf": [
+                 {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                 },
+                 {
+                  "type": "null"
+                 }
+                ]
+               }
+              },
+              "required": [
+               "groupId",
+               "label",
+               "order",
+               "kind",
+               "rounds",
+               "restAfterRoundSeconds"
               ],
               "additionalProperties": false
              }
@@ -32887,6 +34746,13 @@
                  }
                 },
                 "additionalProperties": false
+               },
+               "setKind": {
+                "type": "string",
+                "enum": [
+                 "WORKING",
+                 "WARM_UP"
+                ]
                }
               },
               "required": [
@@ -33264,6 +35130,13 @@
                  }
                 },
                 "additionalProperties": false
+               },
+               "setKind": {
+                "type": "string",
+                "enum": [
+                 "WORKING",
+                 "WARM_UP"
+                ]
                }
               },
               "required": [
@@ -33636,6 +35509,13 @@
                  }
                 },
                 "additionalProperties": false
+               },
+               "setKind": {
+                "type": "string",
+                "enum": [
+                 "WORKING",
+                 "WARM_UP"
+                ]
                }
               },
               "required": [
@@ -33951,6 +35831,13 @@
                  }
                 },
                 "additionalProperties": false
+               },
+               "setKind": {
+                "type": "string",
+                "enum": [
+                 "WORKING",
+                 "WARM_UP"
+                ]
                }
               },
               "required": [
@@ -34273,6 +36160,13 @@
                  "string",
                  "null"
                 ]
+               },
+               "setKind": {
+                "type": "string",
+                "enum": [
+                 "WORKING",
+                 "WARM_UP"
+                ]
                }
               },
               "required": [
@@ -34413,6 +36307,17 @@
               "string",
               "null"
              ]
+            },
+            "exerciseGroupId": {
+             "anyOf": [
+              {
+               "type": "string",
+               "pattern": "^[A-Za-z0-9_-]{1,64}$"
+              },
+              {
+               "type": "null"
+              }
+             ]
             }
            },
            "required": [
@@ -34426,6 +36331,66 @@
             "suggestedLoad",
             "professionalParameters",
             "note"
+           ],
+           "additionalProperties": false
+          }
+         },
+         "exerciseGroups": {
+          "type": "array",
+          "items": {
+           "type": "object",
+           "properties": {
+            "groupId": {
+             "type": "string",
+             "pattern": "^[A-Za-z0-9_-]{1,64}$"
+            },
+            "label": {
+             "type": "string"
+            },
+            "order": {
+             "type": "integer",
+             "exclusiveMinimum": 0,
+             "maximum": 9007199254740991
+            },
+            "kind": {
+             "type": "string",
+             "enum": [
+              "SEQUENTIAL",
+              "ROUNDS"
+             ]
+            },
+            "rounds": {
+             "anyOf": [
+              {
+               "type": "integer",
+               "exclusiveMinimum": 0,
+               "maximum": 9007199254740991
+              },
+              {
+               "type": "null"
+              }
+             ]
+            },
+            "restAfterRoundSeconds": {
+             "anyOf": [
+              {
+               "type": "integer",
+               "minimum": 0,
+               "maximum": 9007199254740991
+              },
+              {
+               "type": "null"
+              }
+             ]
+            }
+           },
+           "required": [
+            "groupId",
+            "label",
+            "order",
+            "kind",
+            "rounds",
+            "restAfterRoundSeconds"
            ],
            "additionalProperties": false
           }
@@ -34646,6 +36611,13 @@
                    }
                   },
                   "additionalProperties": false
+                 },
+                 "setKind": {
+                  "type": "string",
+                  "enum": [
+                   "WORKING",
+                   "WARM_UP"
+                  ]
                  }
                 },
                 "required": [
@@ -34930,6 +36902,13 @@
                       }
                      },
                      "additionalProperties": false
+                    },
+                    "setKind": {
+                     "type": "string",
+                     "enum": [
+                      "WORKING",
+                      "WARM_UP"
+                     ]
                     }
                    },
                    "required": [
@@ -35330,6 +37309,13 @@
                     "string",
                     "null"
                    ]
+                  },
+                  "setKind": {
+                   "type": "string",
+                   "enum": [
+                    "WORKING",
+                    "WARM_UP"
+                   ]
                   }
                  },
                  "required": [
@@ -35470,6 +37456,17 @@
                  "string",
                  "null"
                 ]
+               },
+               "exerciseGroupId": {
+                "anyOf": [
+                 {
+                  "type": "string",
+                  "pattern": "^[A-Za-z0-9_-]{1,64}$"
+                 },
+                 {
+                  "type": "null"
+                 }
+                ]
                }
               },
               "required": [
@@ -35483,6 +37480,66 @@
                "suggestedLoad",
                "professionalParameters",
                "note"
+              ],
+              "additionalProperties": false
+             }
+            },
+            "exerciseGroups": {
+             "type": "array",
+             "items": {
+              "type": "object",
+              "properties": {
+               "groupId": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9_-]{1,64}$"
+               },
+               "label": {
+                "type": "string"
+               },
+               "order": {
+                "type": "integer",
+                "exclusiveMinimum": 0,
+                "maximum": 9007199254740991
+               },
+               "kind": {
+                "type": "string",
+                "enum": [
+                 "SEQUENTIAL",
+                 "ROUNDS"
+                ]
+               },
+               "rounds": {
+                "anyOf": [
+                 {
+                  "type": "integer",
+                  "exclusiveMinimum": 0,
+                  "maximum": 9007199254740991
+                 },
+                 {
+                  "type": "null"
+                 }
+                ]
+               },
+               "restAfterRoundSeconds": {
+                "anyOf": [
+                 {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                 },
+                 {
+                  "type": "null"
+                 }
+                ]
+               }
+              },
+              "required": [
+               "groupId",
+               "label",
+               "order",
+               "kind",
+               "rounds",
+               "restAfterRoundSeconds"
               ],
               "additionalProperties": false
              }
@@ -35703,6 +37760,13 @@
                       }
                      },
                      "additionalProperties": false
+                    },
+                    "setKind": {
+                     "type": "string",
+                     "enum": [
+                      "WORKING",
+                      "WARM_UP"
+                     ]
                     }
                    },
                    "required": [
@@ -35987,6 +38051,13 @@
                          }
                         },
                         "additionalProperties": false
+                       },
+                       "setKind": {
+                        "type": "string",
+                        "enum": [
+                         "WORKING",
+                         "WARM_UP"
+                        ]
                        }
                       },
                       "required": [
@@ -36365,6 +38436,13 @@
                  "string",
                  "null"
                 ]
+               },
+               "setKind": {
+                "type": "string",
+                "enum": [
+                 "WORKING",
+                 "WARM_UP"
+                ]
                }
               },
               "required": [
@@ -36505,6 +38583,17 @@
               "string",
               "null"
              ]
+            },
+            "exerciseGroupId": {
+             "anyOf": [
+              {
+               "type": "string",
+               "pattern": "^[A-Za-z0-9_-]{1,64}$"
+              },
+              {
+               "type": "null"
+              }
+             ]
             }
            },
            "required": [
@@ -36518,6 +38607,66 @@
             "suggestedLoad",
             "professionalParameters",
             "note"
+           ],
+           "additionalProperties": false
+          }
+         },
+         "exerciseGroups": {
+          "type": "array",
+          "items": {
+           "type": "object",
+           "properties": {
+            "groupId": {
+             "type": "string",
+             "pattern": "^[A-Za-z0-9_-]{1,64}$"
+            },
+            "label": {
+             "type": "string"
+            },
+            "order": {
+             "type": "integer",
+             "exclusiveMinimum": 0,
+             "maximum": 9007199254740991
+            },
+            "kind": {
+             "type": "string",
+             "enum": [
+              "SEQUENTIAL",
+              "ROUNDS"
+             ]
+            },
+            "rounds": {
+             "anyOf": [
+              {
+               "type": "integer",
+               "exclusiveMinimum": 0,
+               "maximum": 9007199254740991
+              },
+              {
+               "type": "null"
+              }
+             ]
+            },
+            "restAfterRoundSeconds": {
+             "anyOf": [
+              {
+               "type": "integer",
+               "minimum": 0,
+               "maximum": 9007199254740991
+              },
+              {
+               "type": "null"
+              }
+             ]
+            }
+           },
+           "required": [
+            "groupId",
+            "label",
+            "order",
+            "kind",
+            "rounds",
+            "restAfterRoundSeconds"
            ],
            "additionalProperties": false
           }
@@ -36738,6 +38887,13 @@
                    }
                   },
                   "additionalProperties": false
+                 },
+                 "setKind": {
+                  "type": "string",
+                  "enum": [
+                   "WORKING",
+                   "WARM_UP"
+                  ]
                  }
                 },
                 "required": [
@@ -37022,6 +39178,13 @@
                       }
                      },
                      "additionalProperties": false
+                    },
+                    "setKind": {
+                     "type": "string",
+                     "enum": [
+                      "WORKING",
+                      "WARM_UP"
+                     ]
                     }
                    },
                    "required": [
@@ -37408,6 +39571,13 @@
                  }
                 },
                 "additionalProperties": false
+               },
+               "setKind": {
+                "type": "string",
+                "enum": [
+                 "WORKING",
+                 "WARM_UP"
+                ]
                }
               },
               "required": [

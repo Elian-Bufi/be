@@ -123,7 +123,7 @@ describe('DL-192 · la notación vive en la versión del plan', () => {
 });
 
 describe('DL-192 · la APK de hoy y la que viene', () => {
-  it('TEST-RPE-024 · con un plan en RPE, la última APK congelada lee y registra en RIR como siempre, y lo que manda se guarda tal cual; la que declara la notación la recibe', async () => {
+  it('TEST-RPE-024 · con un plan en RPE, la última APK congelada recibe la notación solo si la declara, registra en RIR como siempre y lo que manda se guarda tal cual; la que declara la notación la recibe', async () => {
     const c = await circuitoListoParaPlanificarEntrenamiento(app, etiqueta('apk'));
     const b = await crearBorradorDeEntrenamiento(app, c, { effortNotation: 'RPE' });
     await activarPlanDeEntrenamiento(app, c.pro, b.planId, b.version).expect(200);
@@ -131,13 +131,16 @@ describe('DL-192 · la APK de hoy y la que viene', () => {
     const apk = new LaApk(LA_ULTIMA_APK, () => app);
     const hoy = await apk.pide('API-TRN-14', { token: c.ase.token });
     const ocurrencia = (hoy.body.data.occurrences as { occurrenceId: string; plannedSession: { sessionId: string } }[]).find((o) => o.plannedSession.sessionId === 'ses-a')!.occurrenceId;
+    // Desde la 0.32.0-candidata.1 la APK congelada declara la notación (A32-08, DL-192): la recibe. Una que no la declara, no.
+    const declara = apk.declara(CAPACIDAD_NOTACION_DEL_ESFUERZO);
+    const notacion = (data: Record<string, unknown>) => (Object.hasOwn(data, 'effortNotation') ? data.effortNotation : 'sin notación');
     const plan = await apk.pide('API-TRN-09', { token: c.ase.token, params: { planId: b.planId } });
-    expect(Object.hasOwn(plan.body.data, 'effortNotation')).toBe(false);
+    expect(notacion(plan.body.data)).toBe(declara ? 'RPE' : 'sin notación');
     if (apk.lee('API-SER-02')) {
       const sesion = await apk.pide('API-SER-02', { token: c.ase.token, params: { occurrenceId: ocurrencia } });
-      expect(Object.hasOwn(sesion.body.data, 'effortNotation')).toBe(false);
+      expect(notacion(sesion.body.data)).toBe(declara ? 'RPE' : 'sin notación');
     }
-    // Registra como siempre: el RIR, sin notación.
+    // Registra como siempre: el RIR, sin notación (la APK pregunta en RPE y manda el RIR, A32-08).
     const borrador = await apk.pide('API-TRN-15', { token: c.ase.token, params: { occurrenceId: ocurrencia }, cuerpo: {} });
     const series = [1, 2, 3].map((setIndex) => ({ setIndex, load: { value: 60, unit: 'kg' }, completedRepetitions: 8, rir: 1.5, perceivedExertion: null }));
     const guardado = await apk.pide('API-TRN-17', {
