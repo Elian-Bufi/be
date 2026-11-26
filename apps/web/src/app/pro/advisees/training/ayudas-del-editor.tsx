@@ -57,6 +57,14 @@ export const AYUDAS_DEL_EDITOR = {
     definicion: 'Una regla que cambia la carga, las repeticiones o las series de una semana a la otra dentro de la fase. No crea series nuevas: se lee encima de lo que escribiste.',
     ejemplo: 'Ejemplo: lineal de +2,5 kg por semana desde 60 kg: semana 1, 60; semana 2, 62,5; semana 3, 65; con descarga en la semana 4 al 60 % de la carga de trabajo, esa semana va con 39 kg (redondeado al paso).',
   },
+  presets: {
+    nombre: 'Qué es un preset',
+    definicion:
+      'Un preset es algo armado que se reutiliza y se ajusta después. Los de BE son un punto de partida, sin ejercicios ni cargas; los tuyos son los que guardaste. Los de series se leen en la intensidad del plan, o en la del ejercicio si tiene otra.',
+    pasos: ['Tocá un preset para ver qué trae, al costado.', '«Usar» lo aplica. Si pisa algo, primero muestra qué cambia; Ctrl+Z lo deshace.'],
+    ejemplo:
+      'Ejemplo: «Hipertrofia» en un plan en RPE escribe 4 × 8-12 con RPE 8 y 90 s de descanso. En un plan en % RM escribe 70 % RM: con un 1RM de 100 kg y el redondeo de 2,5, la carga queda en 70 kg.',
+  },
   cargaParaRepeticiones: {
     nombre: 'Qué es la carga para N repeticiones',
     definicion: 'La carga que corresponde a un número de repeticiones y un RIR, calculada desde el último máximo estimado de la persona (Epley v1). Es orientativa: no reemplaza mirar cómo se mueve.',

@@ -19,15 +19,17 @@
  * anterior, con «Atrás».
  */
 import {
-  aplicarPrescripcion,
+  aplicarPresetDeBe,
   aplicarPrescripcionHabitual,
   COPY_PRESETS as C,
+  detalleDelPreset,
   ejercicioPlegadoDelEditor,
+  NOMBRE_DE_LA_INTENSIDAD_DEL_PRESET,
   PRESETS_DE_ESTRUCTURA,
   repartoDeLaEstructura,
   PRESETS_DE_PRESCRIPCION,
-  prescripcionDelPreset,
   type EstructuraDePlanDeEntrenamientoEntrada,
+  type IntensidadDelPreset,
   type PresetDeEstructura,
   type PrescripcionHabitual,
   type PresetDePrescripcion,
@@ -40,8 +42,9 @@ import { BloqueDeEstado, Cargando } from '../../../components/estados';
 import type { Resultado } from '../../../lib/api';
 import { ICONO_DE_FALLA, motivoDeFalla, razonDeFalla } from '../../../lib/fallas';
 import type { PlantillaParaEmpezar } from './empezar-desde-plantilla';
-import { alcanceDelPreset, alcanceDeLaHabitual, type AlcanceDelPreset } from './alcance-del-preset';
+import { alcanceDelPresetDeBe, alcanceDeLaHabitual, type AlcanceDelPreset } from './alcance-del-preset';
 import { RepartoEnLaSilueta } from './training/panel-de-la-parte-b';
+import { AYUDAS_DEL_EDITOR, ContenidoDeLaAyuda } from './training/ayudas-del-editor';
 
 type SesionE = NonNullable<EstructuraDePlanDeEntrenamientoEntrada['blocks'][number]['sessions']>[number];
 type PrescripcionE = SesionE['prescriptions'][number];
@@ -103,6 +106,8 @@ export function GaleriaDePresets({
   habituales,
   prescripcionesHabituales = [],
   plantillas = null,
+  intensidad = 'RIR',
+  intensidadDe = () => intensidad,
   onAplicarPrescripcion,
   onElegirParaLaSesionVacia,
   onAplicarEstructura,
@@ -126,6 +131,10 @@ export function GaleriaDePresets({
   prescripcionesHabituales?: readonly PrescripcionHabitual[];
   /** ED-11: las plantillas de plan, en su pestaña; solo en la galería de estructura y si hay un borrador que reemplazar. */
   plantillas?: PlantillasEnLaGaleria | null;
+  /** DL-203: la intensidad del plan, con la que se leen los presets de BE (RIR, RPE, % RM o sin esfuerzo). */
+  intensidad?: IntensidadDelPreset;
+  /** DL-203: la de cada ejercicio, si cambia la del plan (su criterio propio o «Sin criterio de intensidad»). */
+  intensidadDe?: (p: PrescripcionE) => IntensidadDelPreset;
   onAplicarPrescripcion: (a: AlcanceDelPreset, nombre: string) => void;
   /** ENP-D10: con la sesión vacía, el preset queda para los ejercicios que se agreguen (cómo se aplica a cada uno). */
   onElegirParaLaSesionVacia?: (nombre: string, aplicar: (p: PrescripcionE) => PrescripcionE) => void;
@@ -165,7 +174,7 @@ export function GaleriaDePresets({
   const posiciones = soloElEjercicio && ejercicio !== null ? [ejercicio] : prescripciones.map((_, n) => n);
   const alcance =
     elegido?.tipo === 'BE' && elegido.preset.tipo === 'PRESCRIPCION'
-      ? alcanceDelPreset(prescripciones, posiciones, prescripcionDelPreset(elegido.preset), nombreDe, nombreDeLaSesion)
+      ? alcanceDelPresetDeBe(prescripciones, posiciones, elegido.preset, intensidadDe, nombreDe, nombreDeLaSesion)
       : elegido?.tipo === 'PRESCRIPCION'
         ? alcanceDeLaHabitual(prescripciones, posiciones, elegido.habitual.prescription as Parameters<typeof alcanceDeLaHabitual>[2], nombreDe, nombreDeLaSesion)
         : null;
@@ -195,8 +204,9 @@ export function GaleriaDePresets({
         const h = elegido.habitual.prescription as Parameters<typeof aplicarPrescripcionHabitual>[1];
         onElegirParaLaSesionVacia(elegido.habitual.name, (x) => aplicarPrescripcionHabitual(x, h).prescripcion as PrescripcionE);
       } else if (elegido.preset.tipo === 'PRESCRIPCION') {
-        const leida = prescripcionDelPreset(elegido.preset);
-        onElegirParaLaSesionVacia(elegido.preset.nombre, (x) => aplicarPrescripcion(x, leida).prescripcion as PrescripcionE);
+        // DL-203: cada ejercicio que se agregue lo toma en su intensidad (la del plan, o la suya si la cambia).
+        const preset = elegido.preset;
+        onElegirParaLaSesionVacia(preset.nombre, (x) => aplicarPresetDeBe(x, preset, intensidadDe(x)).prescripcion as PrescripcionE);
       }
       return cerrar();
     }
@@ -228,7 +238,8 @@ export function GaleriaDePresets({
       forma="dialogo"
       ancho
       titulo={titulo}
-      sobretitulo={elegido?.tipo === 'BE' && paso === 'alcance' && elegido.preset.tipo === 'PRESCRIPCION' ? `${elegido.preset.detalle} · ${C.rotuloDeBe} · ${C.noEsRecomendacion}` : null}
+      sobretitulo={elegido?.tipo === 'BE' && paso === 'alcance' && elegido.preset.tipo === 'PRESCRIPCION' ? `${detalleDelPreset(elegido.preset, intensidad)} · ${C.rotuloDeBe} · ${C.noEsRecomendacion}` : null}
+      ayuda={{ nombre: AYUDAS_DEL_EDITOR.presets.nombre, contenido: <ContenidoDeLaAyuda ayuda={AYUDAS_DEL_EDITOR.presets} /> }}
       principal={principal}
       pie={<p className="nota galeria__pie">{C.escribeEnElBorrador(persona ?? 'la persona')}</p>}
       onCerrar={cerrar}
@@ -302,9 +313,7 @@ export function GaleriaDePresets({
                   </p>
                 ) : null}
               </>
-            ) : (
-              <p className="nota">{C.nadaElegido}</p>
-            )}
+            ) : null}
           </aside>
         </div>
       ) : paso === 'elegir' ? (
@@ -317,7 +326,7 @@ export function GaleriaDePresets({
                   <li key={p.clave}>
                     <button type="button" className="galeria__tarjeta" aria-pressed={elegido?.tipo === 'BE' && elegido.preset.clave === p.clave} data-preset={p.clave} onClick={() => setElegido({ tipo: 'BE', preset: p })}>
                       <span className="galeria__nombre">{p.nombre}</span>
-                      <span className="nota">{p.detalle}</span>
+                      <span className="nota">{p.tipo === 'PRESCRIPCION' ? detalleDelPreset(p, intensidad) : p.detalle}</span>
                       <span className="etiqueta-de-dato">{C.rotuloDeBe}</span>
                     </button>
                   </li>
@@ -358,8 +367,14 @@ export function GaleriaDePresets({
             </section>
           </div>
           <aside className="galeria__vista-previa" aria-live="polite" aria-label="Vista previa">
+            {/* DL-203: «Elegí un preset para ver qué trae.» va una sola vez, junto a «Usar» apagado. Acá, con nada elegido,
+                la intensidad con la que se leen los presets de prescripción. */}
             {!elegido ? (
-              <p className="nota">{C.nadaElegido}</p>
+              tarea === 'prescripcion' ? (
+                <p className="nota" data-intensidad-de-los-presets={intensidad}>
+                  {C.enLaIntensidad(NOMBRE_DE_LA_INTENSIDAD_DEL_PRESET[intensidad])}
+                </p>
+              ) : null
             ) : elegido.tipo === 'HABITUAL' ? (
               <>
                 <p>
@@ -386,7 +401,7 @@ export function GaleriaDePresets({
             ) : (
               <>
                 <p>
-                  <strong>{nombreDelElegido}</strong> · {elegido.tipo === 'PRESCRIPCION' ? `${enUnaLinea(elegido.habitual)} · sin cargas` : elegido.tipo === 'BE' && elegido.preset.tipo === 'PRESCRIPCION' ? elegido.preset.detalle : ''}
+                  <strong>{nombreDelElegido}</strong> · {elegido.tipo === 'PRESCRIPCION' ? `${enUnaLinea(elegido.habitual)} · sin cargas` : elegido.tipo === 'BE' && elegido.preset.tipo === 'PRESCRIPCION' ? detalleDelPreset(elegido.preset, intensidad) : ''}
                 </p>
                 {ejercicio !== null ? (
                   <fieldset className="galeria__alcance">
@@ -427,7 +442,7 @@ export function GaleriaDePresets({
                   <td>{antesYDespues(f.cambio.intensidad.antes ?? 'Sin dato', f.cambio.intensidad.despues ?? 'Sin dato')}</td>
                   <td>{antesYDespues(segundos(f.cambio.descanso.antes), segundos(f.cambio.descanso.despues))}</td>
                   <td>
-                    {f.cambio.carga.texto ? `${f.cambio.carga.texto} · se conserva` : 'Sin carga'}
+                    {f.cambio.carga.delUnoRm ? C.cargaQueSaleDelUnoRm : f.cambio.carga.texto ? `${f.cambio.carga.texto} · se conserva` : 'Sin carga'}
                     {f.cambio.carga.revisar ? (
                       <span className="etiqueta-de-dato ejercicio-del-editor__revisar" data-carga-a-revisar>
                         {f.cambio.carga.revisar}

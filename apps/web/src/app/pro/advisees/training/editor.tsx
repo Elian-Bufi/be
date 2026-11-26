@@ -65,6 +65,7 @@ import {
   redondeoDelEjercicio,
   cambiosDesdeLaActivacion,
   cargasConElUnoRM,
+  intensidadParaElPreset,
   COPY_UNO_RM_DE_LA_ACTIVACION,
   implementoDelEjercicio as implementoDelEjercicioDelBorrador,
   sinElUnoRMDeLaActivacion,
@@ -131,6 +132,7 @@ import { COPY_VISTA_DE_LA_PERSONA, MOSTRAR_VISTA_DE_LA_PERSONA, VistaDeLaPersona
 import { BarraDeFases } from './barra-de-fases-en-pantalla';
 import { COPY_BARRA_DE_FASES, diasEnCorto, faseConLaTecla, rangoDeLaBarra, tarjetasDeLaBarra } from './barra-de-fases';
 import { criterioDeLaIntensidad, CuadroConfigurarPlan, CuadroDiasDeLaSemana, CuadroEditarFase, type IntensidadElegida } from './cuadros-del-plan';
+import { intensidadElegida } from './intensidad-del-plan';
 import { AYUDAS_DEL_EDITOR, ContenidoDeLaAyuda } from './ayudas-del-editor';
 import { MarcoDelPanel, PanelDelEjercicio, PatronesAPedido } from './panel-del-editor';
 import { SugerenciaDeProgresionEnElPanel } from './sugerencia-de-progresion';
@@ -607,6 +609,8 @@ export function EditorDePlan({
 
   // ED-11: la galería de presets, abierta desde la sesión (prescripción) o desde la estructura.
   const [galeria, setGaleria] = useState<{ readonly tarea: 'prescripcion' | 'estructura'; readonly ejercicio: number | null } | null>(null);
+  /** DL-203: los ejercicios (del catálogo) que un preset dejó en % RM, a los que les falta la carga que sale del 1RM. */
+  const [cargasPorCalcular, setCargasPorCalcular] = useState<ReadonlySet<string>>(new Set());
   // ED-11 (DJ-8): «Deshacer» de la última aplicación, con las prescripciones de antes por posición. Es la operación
   // inversa, que se autoguarda como cualquier cambio; otro cambio cualquiera la retira, para que devuelva exacto.
   const [deshacer, setDeshacer] = useState<{ readonly texto: string; readonly lugar: Lugar & { readonly k: number }; readonly antes: ReadonlyMap<number, PrescripcionE>; readonly firmas: ReadonlySet<string> } | null>(null);
@@ -1424,6 +1428,31 @@ export function EditorDePlan({
     // Solo cuando cambia el 1RM leído o el redondeo: lo demás lo cambia quien escribe.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [vigentesDelBorrador, firmaDelRedondeo]);
+  // DL-203 (PN-D05): un preset que deja ejercicios en % RM (de BE, de sesión o de fase) no trae cargas: salen del 1RM de
+  // esta persona con el redondeo del plan, en cuanto se lee. No se apila aparte: Ctrl+Z vuelve a antes del preset.
+  useEffect(() => {
+    if (cargasPorCalcular.size === 0) return;
+    if (plantilla || asesoradoId === null) return setCargasPorCalcular(new Set());
+    if (!vigentesDelBorrador) return;
+    const listos = new Set([...cargasPorCalcular].filter((e) => vigentesDelBorrador.mapa.has(e)));
+    if (listos.size === 0) return;
+    const r = cargasConElUnoRM(
+      bloques,
+      (q) => {
+        const e = ejercicios[q.exerciseVersionId];
+        return e && listos.has(e) ? (vigentesDelBorrador.mapa.get(e)?.valor ?? null) : null;
+      },
+      (q) => implementoDelEjercicioDelBorrador(nombres[q.exerciseVersionId] ?? '', q.loadBasis ?? null),
+      (q) => redondeoDelEjercicio(planDelUnoRM, q.prescriptionId),
+    );
+    if (r.cuantas > 0) {
+      setBloques(r.bloques);
+      setSucio(true);
+    }
+    setCargasPorCalcular((s) => new Set([...s].filter((e) => !listos.has(e))));
+    // Solo cuando llega un 1RM o se pide calcular: lo demás lo cambia quien escribe.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [vigentesDelBorrador, cargasPorCalcular]);
 
   if (error === 'no-disponible' && plantilla) return <PreparacionQueYaNoEsta volver={plantilla.volver} />;
   if (error === 'no-disponible') return <NoDisponible />;
@@ -2241,6 +2270,11 @@ export function EditorDePlan({
 
   // ── ED-11: aplicar un preset y deshacerlo ────────────────────────────────────────────────────────────────────
   /** DJ-8: escribe las prescripciones nuevas en la sesión que se mira; «Deshacer» guarda las de antes. */
+  /** DL-203: pide la carga del 1RM para los ejercicios que quedaron en % RM (sin persona, como en una plantilla, no hay). */
+  const calcularLasCargasDe = (ps: readonly PrescripcionE[], versiones: Readonly<Record<string, string>> = ejercicios) => {
+    const ids = ps.filter((q) => q.intensity?.criterion === 'PERCENT_RM').map((q) => versiones[q.exerciseVersionId]).filter((e): e is string => !!e);
+    if (ids.length > 0 && !plantilla && asesoradoId !== null) setCargasPorCalcular((s) => new Set([...s, ...ids]));
+  };
   const aplicarElPreset = (a: AlcanceDelPreset, nombre: string) => {
     const lugar = { i, j, k };
     cambiar((x) => {
@@ -2248,6 +2282,7 @@ export function EditorDePlan({
       s.prescriptions = conLasDeLaPosicion(s.prescriptions, a.nuevas);
       return x;
     });
+    calcularLasCargasDe([...a.nuevas.values()]);
     const filas = a.filas.map((f) => ({ p: a.nuevas.get(f.posicion)!, texto: f.cambio.carga.revisar }));
     marcarCargas(claveDeLaSesion(lugar, k), filas);
     setDeshacer({ texto: `«${nombre}»: ${COPY_PRESETS.aplicado(a.filas.length)}`, lugar, antes: a.antes, firmas: new Set(filas.map((f) => firmaDeLaCarga(f.p))) });
@@ -3792,6 +3827,9 @@ export function EditorDePlan({
             ? { leer: leerPlantillas, borrador: `versión ${numero} en preparación`, reemplazando, error: falloAlReemplazar, noSePuede: plantillasNoSePueden, onReemplazar: (id) => void reemplazarConPlantilla(id) }
             : null
         }
+        // DL-203: los presets de series se leen en la intensidad del plan, o en la del ejercicio si tiene otra.
+        intensidad={intensidadElegida(plan, notacion)}
+        intensidadDe={(p) => intensidadParaElPreset(p, intensidadElegida(plan, notacion), !!p.prescriptionId && (plan.withoutIntensity ?? []).includes(p.prescriptionId))}
         onAplicarPrescripcion={aplicarElPreset}
         onElegirParaLaSesionVacia={(nombre, aplicar) => {
           if (!sesion) return;
@@ -4053,6 +4091,8 @@ export function EditorDePlan({
         onAgregar={(marcados, prescripcion) => {
           if (!sesion) return;
           setNombres((n) => ({ ...n, ...Object.fromEntries(marcados.map((e) => [e.versionId, e.name])) }));
+          // DL-203: el ejercicio del catálogo de cada versión, para leer su 1RM (las cargas del % RM).
+          setEjercicios((x) => ({ ...x, ...Object.fromEntries(marcados.map((e) => [e.versionId, e.exerciseId])) }));
           // ED-21: entran juntos, en el orden marcado; sin prescripción para todos, cada uno con una serie para completar.
           // ENP-D10: sin una escrita en el cajón, con la de la sesión, si se eligió. DL-181: al bloque desde cuyo pie se abrió.
           // DL-199 (ET3-13): los de cardio por su clasificación entran como cardio, con la duración sin indicar.
@@ -4060,6 +4100,8 @@ export function EditorDePlan({
             esDeCardioPorLaClasificacion(marcados[n] as { classification?: { muscleGroup?: string | null } | null }) ? conElCardio(x, CARDIO_SIN_INDICAR) : !prescripcion && prescripcionDeEstaSesion ? prescripcionDeEstaSesion.aplicar(x) : x,
           );
           aplicarReordenada(agregarEjercicios(sesion, nuevas, agregandoEn));
+          // DL-203: con la prescripción de la sesión en % RM, la carga sale del 1RM de la persona.
+          if (!prescripcion && prescripcionDeEstaSesion) calcularLasCargasDe(nuevas, { ...ejercicios, ...Object.fromEntries(marcados.map((e) => [e.versionId, e.exerciseId])) });
         }}
         onCerrar={() => {
           setAgregando(false);
