@@ -18,7 +18,8 @@ const P = await import('../src/app/pro/advisees/training/panel-contextual.ts');
 const leer = (ruta) => readFileSync(new URL(`../src/${ruta}`, import.meta.url), 'utf8').replace(/\r\n/g, '\n');
 const EDITOR = leer('app/pro/advisees/training/editor.tsx');
 const EJERCICIO = leer('app/pro/advisees/training/ejercicio-del-editor.tsx');
-const PLAN_Y_FASES = leer('app/pro/advisees/training/plan-y-fases.tsx');
+// DL-198 (ET1-D20): `plan-y-fases.tsx` se borró; el plan se configura en «Configurar plan» (`cuadros-del-plan.tsx`).
+const PLAN_Y_FASES = leer('app/pro/advisees/training/cuadros-del-plan.tsx');
 const ALMANAQUE = leer('app/pro/advisees/training/almanaque.tsx');
 const PANEL = leer('app/pro/advisees/training/panel-del-editor.tsx');
 const IMPIDE = leer('app/pro/advisees/training/lo-que-impide-activar.tsx');

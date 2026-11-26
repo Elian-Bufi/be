@@ -20,6 +20,7 @@ import {
   vaciarNota,
   type EstructuraDePlanDeEntrenamientoEntrada,
   type OrigenDePlanEnPlantilla,
+  type PlanificacionDeLaPlantilla,
 } from '@be/domain';
 import { useEffect, useId, useState } from 'react';
 import { Ayuda } from '../../../../components/ayuda';
@@ -33,6 +34,7 @@ export function DialogoGuardarPlantilla({
   token,
   abierto,
   estructura: inicial,
+  planificacion = null,
   origen,
   onCerrar,
   onGuardada,
@@ -40,6 +42,8 @@ export function DialogoGuardarPlantilla({
   token: string;
   abierto: boolean;
   estructura: EstructuraDePlanDeEntrenamientoEntrada;
+  /** DL-198 (ET2-10): la planificación del plan, que la plantilla guarda sin nada de la persona. */
+  planificacion?: PlanificacionDeLaPlantilla | null;
   /** La versión de plan de la que sale, para dejarlo registrado; `null` si sale de un borrador sin activar. */
   origen: string | null;
   onCerrar: () => void;
@@ -66,7 +70,14 @@ export function DialogoGuardarPlantilla({
     setError(null);
     const r = await api.crearPlantillaDeEntrenamiento(
       token,
-      { name: nombre.trim(), description: descripcion.trim() || null, structure: estructura, copySuggestedLoads: conCargas, ...(origen ? { origin: { planVersionId: origen } } : {}) },
+      {
+        name: nombre.trim(),
+        description: descripcion.trim() || null,
+        structure: estructura,
+        ...(planificacion ? { planning: planificacion } : {}),
+        copySuggestedLoads: conCargas,
+        ...(origen ? { origin: { planVersionId: origen } } : {}),
+      },
       intento.actual(),
     );
     intento.registrar(r);

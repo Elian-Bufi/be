@@ -6,7 +6,7 @@
  * Uso: npm run test -w @be/web (después de construir @be/domain).
  */
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import test from 'node:test';
 import * as D from '@be/domain';
 
@@ -85,10 +85,8 @@ test('TEST-RPE-043 · el editor guarda la notación con el borrador, la provee a
   assert.match(ejercicio, /escribir=\{rirEnCampo\(notacion\)\}/);
   assert.match(ejercicio, /leer=\{leerElRir\(notacion\)\}/);
   assert.match(ejercicio, /leerRpeEscrito\(t\)/);
-  const selector = leer('training/notacion-del-plan.tsx');
-  // Lo largo y las fuentes, detrás del «?».
-  assert.match(selector, /<ExplicacionAPedido nombre="Qué es el RPE y cómo se guarda" como="div" lugar="esquina">/);
-  assert.match(selector, /aria-pressed=\{n === notacion\}/);
+  // DL-198 (ET1-D20): el selector aparte (`notacion-del-plan.tsx`) se borró: la notación se elige con la intensidad del plan.
+  assert.equal(existsSync(new URL('../src/app/pro/advisees/training/notacion-del-plan.tsx', import.meta.url)), false);
 });
 
 test('TEST-RPE-044 · lo registrado y la fuerza se leen en la notación del plan de la persona', () => {

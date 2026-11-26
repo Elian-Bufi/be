@@ -88,7 +88,8 @@ test('TEST-ET1-12 · la intensidad del plan: RIR y RPE son la notación; % RM y 
   assert.equal(d.planificacionPodada({ ...plan, intensity: 'RIR' }, [], []), null);
   // En pantalla: el control segmentado con las cuatro, y el ejercicio que la hereda.
   assert.match(CUADROS, /role="radiogroup" aria-label=\{T\.intensidad\}/);
-  assert.match(EDITOR, /intensidadDelPlan=\{plantilla \? null : criterioDeLaIntensidad\(plan\.intensity\)\}/);
+  // DL-198 (ET2-10): también en una plantilla, que guarda su intensidad con la planificación.
+  assert.match(EDITOR, /intensidadDelPlan=\{criterioDeLaIntensidad\(plan\.intensity\)\}/);
   assert.match(EJERCICIO, /const criterioEfectivo: Criterio \| null = \(p\.intensity\?\.criterion as Criterio \| undefined\) \?\? \(sinIntensidad \? null : intensidadDelPlan\);/);
   assert.match(EJERCICIO, /laDelPlan: \(nombre: string\) => `La del plan: \$\{nombre\}`/);
 });

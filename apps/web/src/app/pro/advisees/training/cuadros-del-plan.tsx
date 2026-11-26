@@ -11,7 +11,7 @@
  * en la esquina, que explica paso a paso con un ejemplo resuelto. Lo que se escribe es un borrador del cuadro: entra al
  * plan con el botón principal; cerrar con cambios pregunta.
  */
-import { COPY_NOTACION_DEL_ESFUERZO, DIAS_DE_LA_SEMANA, finDelPlan, type DiaDeLaSemana, type NotacionDelEsfuerzo, type PlanificacionDelPlan } from '@be/domain';
+import { COPY_ESFUERZO_DE_LA_SESION, COPY_NOTACION_DEL_ESFUERZO, DIAS_DE_LA_SEMANA, finDelPlan, type DiaDeLaSemana, type NotacionDelEsfuerzo, type PlanificacionDelPlan } from '@be/domain';
 import { useEffect, useId, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
 import { CampoDeFecha } from '../../../../components/campo-de-fecha';
 import { CuadroEnfocado } from '../../../../components/cuadro-enfocado';
@@ -25,6 +25,7 @@ export { criterioDeLaIntensidad, type IntensidadElegida } from './intensidad-del
 
 export const COPY_CUADROS_DEL_PLAN = {
   configurar: 'Configurar plan',
+  enLaPlantilla: 'En una plantilla no hay fechas: el plan de cada persona toma el inicio al usarla.',
   guardarPlan: 'Guardar',
   inicio: 'Inicio',
   duracion: 'Duración',
@@ -109,6 +110,7 @@ export interface PlanConfigurado {
 export function CuadroConfigurarPlan({
   abierto,
   sobretitulo,
+  enLaPlantilla = false,
   planificacion,
   notacion,
   semanasDeLasFases,
@@ -118,6 +120,8 @@ export function CuadroConfigurarPlan({
 }: {
   abierto: boolean;
   sobretitulo: string | null;
+  /** DL-198 (ET2-10): en una plantilla, sin inicio, fin, objetivo ni anotaciones: la duración, la intensidad y el esfuerzo. */
+  enLaPlantilla?: boolean;
   planificacion: PlanificacionDelPlan;
   notacion: NotacionDelEsfuerzo;
   /** Cuántas semanas suman las fases que las tienen. */
@@ -175,9 +179,11 @@ export function CuadroConfigurarPlan({
     >
       <div className="cuadro-del-plan__cuerpo" data-configurar-plan-abierto>
         <div className="datos-del-plan__fechas">
-          <div className="datos-del-plan__fecha" data-inicio-del-plan>
-            <CampoDeFecha id={`${id}-inicio`} etiqueta={T.inicio} value={p.startDate ?? ''} onChange={(f) => setP(conInicio(p, f))} vaciable />
-          </div>
+          {enLaPlantilla ? null : (
+            <div className="datos-del-plan__fecha" data-inicio-del-plan>
+              <CampoDeFecha id={`${id}-inicio`} etiqueta={T.inicio} value={p.startDate ?? ''} onChange={(f) => setP(conInicio(p, f))} vaciable />
+            </div>
+          )}
           <div className="campo datos-del-plan__semanas">
             <label htmlFor={`${id}-semanas`}>{T.duracion}</label>
             <span className="datos-del-plan__con-unidad">
@@ -198,7 +204,7 @@ export function CuadroConfigurarPlan({
               </span>
             </span>
           </div>
-          {p.startDate ? (
+          {p.startDate && !enLaPlantilla ? (
             <div className="datos-del-plan__fecha" data-fin-del-plan>
               <CampoDeFecha id={`${id}-fin`} etiqueta={T.fin} value={fin} min={p.startDate} onChange={(f) => f && setP(conFin(p, f))} />
             </div>
@@ -206,7 +212,7 @@ export function CuadroConfigurarPlan({
         </div>
         {/* RP-19: el renglón de la nota está siempre. */}
         <p id={`${id}-nota`} className="nota datos-del-plan__nota" aria-live="polite" data-nota-del-plan>
-          {!p.startDate ? T.sinInicio : p.weeks && semanasDeLasFases > 0 ? T.lasFasesSuman(semanasDeLasFases, p.weeks) : ' '}
+          {!p.startDate && !enLaPlantilla ? T.sinInicio : p.weeks && semanasDeLasFases > 0 ? T.lasFasesSuman(semanasDeLasFases, p.weeks) : enLaPlantilla ? T.enLaPlantilla : ' '}
         </p>
         <fieldset className="intensidad-del-plan" data-intensidad-del-plan={intensidad}>
           <legend>{T.intensidad}</legend>
@@ -245,10 +251,31 @@ export function CuadroConfigurarPlan({
           </div>
           {intensidad === 'RPE' ? <p className="nota">{COPY_NOTACION_DEL_ESFUERZO.queEs}</p> : null}
         </fieldset>
+        {/* DL-198 (ET2-07): el esfuerzo de la sesión (Foster), aparte del RIR de cada serie. */}
+        <div className="esfuerzo-de-la-sesion-del-plan" data-esfuerzo-de-la-sesion-del-plan={p.askSessionEffort ? 'si' : 'no'}>
+          <label className="casilla-con-explicacion">
+            <input
+              type="checkbox"
+              checked={!!p.askSessionEffort}
+              aria-describedby={`${id}-esfuerzo-nota`}
+              onChange={(e) => {
+                const { askSessionEffort: _antes, ...sin } = p;
+                setP(e.target.checked ? { ...sin, askSessionEffort: true } : sin);
+              }}
+              data-pedir-el-esfuerzo
+            />
+            <span>{COPY_ESFUERZO_DE_LA_SESION.opcionDelPlan}</span>
+          </label>
+          <p id={`${id}-esfuerzo-nota`} className="nota">
+            {COPY_ESFUERZO_DE_LA_SESION.opcionExplicada}
+          </p>
+        </div>
+        {enLaPlantilla ? null : (
         <div className="datos-del-plan__textos">
           <Texto id={`${id}-objetivo`} rotulo={T.objetivo} valor={p.goal} onCambiar={(v) => setP(conObjetivo(p, v))} maximo={1000} placeholder={T.objetivoAyuda} />
           <Texto id={`${id}-anotaciones`} rotulo={<RotuloPrivado texto={T.anotaciones} />} valor={p.privateNotes?.plan} onCambiar={(v) => setP(conAnotacionesDelPlan(p, v))} maximo={4000} privado placeholder={T.anotacionesAyuda} />
         </div>
+        )}
       </div>
     </CuadroEnfocado>
   );
@@ -352,7 +379,7 @@ export function CuadroEditarFase({
           setFalta(f.nombre.trim() === '' ? T.faltaElNombre : T.semanasNoSeEntienden);
           (f.nombre.trim() === '' ? nombre.current : document.getElementById(`${id}-semanas`))?.focus();
         },
-        alTocar: () => onGuardar({ ...f, nombre: f.nombre.trim(), semanas: enLaPlantilla ? null : leerSemanas(semanasEscritas, 52) }),
+        alTocar: () => onGuardar({ ...f, nombre: f.nombre.trim(), semanas: leerSemanas(semanasEscritas, 52) }),
       }}
       onCerrar={onCerrar}
     >
@@ -362,19 +389,15 @@ export function CuadroEditarFase({
             <label htmlFor={`${id}-nombre`}>{T.nombreDeLaFase}</label>
             <input ref={nombre} id={`${id}-nombre`} value={f.nombre} maxLength={120} onChange={(e) => setF({ ...f, nombre: e.target.value })} data-nombre-de-la-fase />
           </div>
-          {enLaPlantilla ? null : (
-            <div className="campo datos-del-plan__semanas">
-              <label htmlFor={`${id}-semanas`}>{T.semanasDeLaFase}</label>
-              <input id={`${id}-semanas`} inputMode="numeric" value={semanasEscritas} aria-describedby={`${id}-ajuste`} aria-invalid={semanasMal || undefined} onChange={(e) => setSemanasEscritas(e.target.value)} data-semanas-de-la-fase />
-            </div>
-          )}
+          <div className="campo datos-del-plan__semanas">
+            <label htmlFor={`${id}-semanas`}>{T.semanasDeLaFase}</label>
+            <input id={`${id}-semanas`} inputMode="numeric" value={semanasEscritas} aria-describedby={`${id}-ajuste`} aria-invalid={semanasMal || undefined} onChange={(e) => setSemanasEscritas(e.target.value)} data-semanas-de-la-fase />
+          </div>
         </div>
-        {enLaPlantilla ? null : (
-          // RP-19: la nota del ajuste (o lo que no se entiende) en su renglón, siempre.
-          <p id={`${id}-ajuste`} className={semanasMal || falta ? 'campo__error cuadro-del-plan__nota' : 'nota cuadro-del-plan__nota'} data-nota-de-la-fase>
-            {semanasMal ? T.semanasNoSeEntienden : falta ?? (fechas ? `${fechas}. ${T.alCambiarLaDuracion}` : T.alCambiarLaDuracion)}
-          </p>
-        )}
+        {/* RP-19: la nota del ajuste (o lo que no se entiende) en su renglón, siempre. */}
+        <p id={`${id}-ajuste`} className={semanasMal || falta ? 'campo__error cuadro-del-plan__nota' : 'nota cuadro-del-plan__nota'} data-nota-de-la-fase>
+          {semanasMal ? T.semanasNoSeEntienden : falta ?? (fechas ? `${fechas}. ${T.alCambiarLaDuracion}` : T.alCambiarLaDuracion)}
+        </p>
         <div className="datos-del-plan__textos">
           <Texto id={`${id}-objetivo`} rotulo={enLaPlantilla ? T.proposito : T.objetivoDeLaFase} valor={f.objetivo} onCambiar={(v) => setF({ ...f, objetivo: v })} maximo={1000} placeholder={T.objetivoDeLaFaseAyuda} />
           {enLaPlantilla ? null : <Texto id={`${id}-anotaciones`} rotulo={<RotuloPrivado texto={T.anotaciones} />} valor={f.anotaciones} onCambiar={(v) => setF({ ...f, anotaciones: v })} maximo={2000} privado />}

@@ -91,6 +91,7 @@ import {
   textoDeLoQueNoSeEntiende,
 } from './planilla-de-series';
 import { NotasAlLado, useNotasPropias } from '../notas-propias';
+import { UnoRMDelEjercicio } from './uno-rm-del-ejercicio';
 import { useNotacionDelEsfuerzo } from '../notacion-del-esfuerzo';
 
 export type Bloques = EstructuraDePlanDeEntrenamientoEntrada['blocks'];
@@ -513,6 +514,10 @@ export function EjercicioDelEditor({
                 {p.intensity && intensidadDelPlan !== null && (p.intensity.criterion as Criterio) !== intensidadDelPlan ? <span className="nota"> · {E9.otraIntensidad}</span> : null}
               </button>
             </div>
+            {/* DL-198 (ET2-01 a ET2-04): en % RM, el 1RM de referencia con su origen y la base de cada carga. */}
+            {criterioEfectivo === 'PERCENT_RM' && asesoradoId !== null && exerciseId !== null ? (
+              <UnoRMDelEjercicio id={id} nombre={nombre} prescripcion={p} unidad={unidadDe(p)} token={token} asesoradoId={asesoradoId} exerciseId={exerciseId} sesionPerdida={sesionPerdida} onCambiar={onCambiar} />
+            ) : null}
             {onAproximaciones ? (
               <CuadroEnfocado
                 abierto={cuadro === 'aproximaciones'}

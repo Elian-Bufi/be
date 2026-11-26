@@ -19055,7 +19055,7 @@ p.cifra-del-espacio__desglose {
 
 .series-del-editor__elegidas select,
 .series-del-editor__elegidas input {
-  min-height: 40px;
+  min-height: 44px; /* DL-198 (ET2-13): el mismo alto que el resto de los campos. */;
   padding: 0.35rem 0.6rem;
   border: 1px solid var(--borde-control);
   border-radius: 8px;
@@ -19076,7 +19076,7 @@ p.cifra-del-espacio__desglose {
 /* DL-181: las vueltas y el descanso del bloque, con el aspecto de los campos (en los dos temas). */
 .bloque-del-editor__campo select,
 .bloque-del-editor__campo input {
-  min-height: 40px;
+  min-height: 44px; /* DL-198 (ET2-13): el mismo alto que el resto de los campos. */;
   padding: 0.35rem 0.6rem;
   border: 1px solid var(--borde-control);
   border-radius: 8px;
@@ -23779,38 +23779,6 @@ html:has(.estacion:not([data-en-el-asistente])) {
   margin-top: 0;
 }
 
-/* DL-192 (WP-RPE-Y-MAXIMO-ESTIMADO, RPE-01): «Cómo se escribe el esfuerzo», al pie de la columna de las sesiones, como las
-   fechas. Dos chips (RIR y RPE) y la explicación corta, con lo largo detrás del «?». El lugar está siempre: abrir la ayuda
-   empuja solo lo de abajo de la columna, nunca la sesión del centro. */
-.notacion-del-plan {
-  display: grid;
-  gap: 0.35rem;
-  margin: 0.75rem 0 0;
-  padding: 0.6rem 0 0;
-  border: 0;
-  border-top: 1px solid var(--borde);
-  min-width: 0;
-}
-
-.notacion-del-plan > legend {
-  padding: 0;
-  font-weight: 600;
-  font-size: 0.9rem;
-}
-
-.notacion-del-plan__opciones {
-  display: flex;
-  gap: 0.35rem;
-}
-
-.notacion-del-plan__opciones .estacion__chip {
-  min-width: 3rem;
-}
-
-.notacion-del-plan__que-es {
-  margin: 0;
-}
-
 /* ─── DL-191 · el Recetario de BE y las imágenes en el cajón del plan (WP-RECETARIO-E-IMAGENES) ───────────────── */
 
 /* «Tus recetas» o «Recetario de BE», y los estados de las propuestas en Administración: dos o tres botones en fila. */
@@ -24856,4 +24824,486 @@ html:has(.estacion:not([data-en-el-asistente])) {
 
 .rangos-y-totales__falta {
   font-size: 0.8rem;
+}
+
+/* ─── DL-198 · WP-EDITOR-ENTRENAMIENTO-TANDA-2 ──────────────────────────────────────────────────────────────────────── */
+
+/* ET2-13 · los desplegables y los campos del editor de Entrenamiento y de sus cuadros, parejos: 44 px de alto, la letra
+   del cuerpo y la flecha de BE con su lugar (varias reglas viejas pisaban el relleno de la derecha y el texto quedaba
+   debajo de la flecha). El texto largo de una opción se corta con «…» en el campo; la lista desplegada lo muestra entero. */
+:is(.editor-de-entrenamiento, .cuadro-del-plan, .cuadro-del-uno-rm, .vista-de-la-persona, .mas-opciones-del-ejercicio, .clasificacion-del-propio, .agregar-ejercicios, .asistente-de-progresion)
+  select:not([multiple]):not([size]) {
+  box-sizing: border-box;
+  min-height: 44px;
+  padding: 0.45rem 2.4rem 0.45rem 0.75rem;
+  border: 1px solid var(--borde-control);
+  border-radius: 8px;
+  background-color: var(--superficie);
+  color: var(--texto);
+  font: inherit;
+  font-size: 1rem;
+  line-height: 1.3;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow: hidden;
+  cursor: pointer;
+}
+
+:is(.editor-de-entrenamiento, .cuadro-del-plan, .cuadro-del-uno-rm, .vista-de-la-persona, .mas-opciones-del-ejercicio, .clasificacion-del-propio, .agregar-ejercicios, .asistente-de-progresion)
+  .campo
+  input:not([type='checkbox']):not([type='radio']) {
+  box-sizing: border-box;
+  min-height: 44px;
+  font-size: 1rem;
+  line-height: 1.3;
+}
+
+:is(.editor-de-entrenamiento, .cuadro-del-plan, .cuadro-del-uno-rm, .vista-de-la-persona, .mas-opciones-del-ejercicio, .clasificacion-del-propio, .agregar-ejercicios, .asistente-de-progresion)
+  select:not([multiple]):not([size]):hover {
+  border-color: var(--texto);
+}
+
+:is(.editor-de-entrenamiento, .cuadro-del-plan, .cuadro-del-uno-rm, .vista-de-la-persona, .mas-opciones-del-ejercicio, .clasificacion-del-propio, .agregar-ejercicios, .asistente-de-progresion)
+  select
+  option {
+  background-color: var(--superficie);
+  color: var(--texto);
+}
+
+/* Un campo con su unidad al lado (la carga de la calibración: «30» y «kg»). */
+.campo__con-unidad {
+  display: flex;
+  gap: 0.4rem;
+  align-items: stretch;
+}
+
+.campo__con-unidad input {
+  flex: 1 1 6rem;
+  min-width: 0;
+}
+
+.campo__con-unidad select:not([multiple]):not([size]) {
+  flex: 0 0 5.5rem;
+  min-width: 5.5rem;
+}
+
+/* Una casilla con su texto, alineados, con lugar para tocarla. */
+.casilla-con-explicacion {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  min-height: 44px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.casilla-con-explicacion input {
+  inline-size: 1.15rem;
+  block-size: 1.15rem;
+  margin: 0;
+  accent-color: var(--boton-fondo);
+}
+
+/* ET2-07 · «Pedir el esfuerzo de la sesión al terminar», en «Configurar plan». */
+.esfuerzo-de-la-sesion-del-plan {
+  display: grid;
+  gap: 0.15rem;
+  padding: 0.75rem 0 0;
+  border-top: 1px solid var(--borde);
+}
+
+.esfuerzo-de-la-sesion-del-plan .nota {
+  margin: 0 0 0 1.7rem;
+}
+
+/* ET2-01 a ET2-04 · el 1RM de referencia en el ejercicio abierto: el valor con su origen y la base del % RM. */
+.uno-rm-del-ejercicio {
+  display: grid;
+  gap: 0.25rem;
+  margin: 0.6rem 0 0;
+  padding: 0.65rem 0.8rem;
+  border: 1px solid var(--borde);
+  border-radius: 10px;
+  background: var(--fondo-suave);
+}
+
+.uno-rm-del-ejercicio__fila {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+  min-height: 44px;
+}
+
+.uno-rm-del-ejercicio__valor {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-width: 0;
+}
+
+.uno-rm-del-ejercicio__valor strong {
+  font-variant-numeric: tabular-nums;
+}
+
+/* RP-19: la base tiene siempre su renglón (vacío, con un espacio). */
+.uno-rm-del-ejercicio__base {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.25rem 0.5rem;
+  min-height: 2.75rem;
+  margin: 0;
+}
+
+.uno-rm-del-ejercicio__base [data-base-del-porcentaje-texto] {
+  color: var(--texto);
+  font-variant-numeric: tabular-nums;
+}
+
+.uno-rm-del-ejercicio__aviso {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.35rem 0.5rem;
+  align-items: start;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid var(--borde-control);
+  border-radius: 8px;
+  background: var(--superficie);
+}
+
+.uno-rm-del-ejercicio__acciones-del-aviso {
+  grid-column: 2;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+/* El cuadro «1RM de referencia». */
+.cuadro-del-uno-rm__cuerpo {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.cuadro-del-uno-rm__seccion {
+  display: grid;
+  gap: 0.6rem;
+}
+
+.cuadro-del-uno-rm__campos {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(9.5rem, 1fr));
+  gap: 0.75rem;
+  align-items: end;
+}
+
+.cuadro-del-uno-rm__campos .campo,
+.cuadro-del-uno-rm__fecha {
+  margin: 0;
+}
+
+.cuadro-del-uno-rm__cuenta {
+  min-height: 2.75rem;
+  margin: 0;
+  padding: 0.6rem 0.8rem;
+  border-radius: 8px;
+  background: var(--fondo-suave);
+  font-variant-numeric: tabular-nums;
+}
+
+.cuadro-del-uno-rm__registro {
+  display: grid;
+  gap: 0.35rem;
+  padding: 0.7rem 0.85rem;
+  border: 1px solid var(--borde);
+  border-radius: 10px;
+}
+
+.cuadro-del-uno-rm__registro p {
+  margin: 0;
+}
+
+.cuadro-del-uno-rm__historia {
+  padding-top: 0.6rem;
+  border-top: 1px solid var(--borde);
+}
+
+.cuadro-del-uno-rm__subtitulo {
+  margin: 0 0 0.35rem;
+  font-size: 0.95rem;
+}
+
+.cuadro-del-uno-rm__lista {
+  display: grid;
+  gap: 0.3rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ET2-12 · «Ver como la persona»: la sesión de una semana, en un marco de teléfono. */
+.sesion-elegida__ver-como {
+  margin-inline-start: auto;
+}
+
+.vista-de-la-persona__cuerpo {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.vista-de-la-persona__elegir {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+  gap: 0.75rem;
+}
+
+.vista-de-la-persona__elegir .campo {
+  margin: 0;
+}
+
+.vista-de-la-persona__regla {
+  display: flex;
+  gap: 0.4rem;
+  align-items: flex-start;
+  margin: 0;
+}
+
+.telefono-de-muestra {
+  justify-self: center;
+  inline-size: min(100%, 24rem);
+  padding: 0.7rem;
+  border: 1px solid var(--borde-control);
+  border-radius: 28px;
+  background: var(--fondo-suave);
+  box-shadow: var(--sombra-suave);
+}
+
+.telefono-de-muestra__pantalla {
+  display: grid;
+  gap: 0.6rem;
+  max-block-size: 34rem;
+  overflow-y: auto;
+  padding: 0.9rem 0.85rem 1rem;
+  border-radius: 20px;
+  background: var(--superficie);
+}
+
+.telefono-de-muestra__sobretitulo {
+  margin: 0;
+  color: var(--tenue);
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.telefono-de-muestra__titulo {
+  margin: 0;
+  font-size: 1.15rem;
+}
+
+.telefono-de-muestra__ejercicios,
+.telefono-de-muestra__series {
+  display: grid;
+  gap: 0.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.telefono-de-muestra__ejercicio {
+  display: grid;
+  gap: 0.3rem;
+  padding: 0.65rem 0.7rem;
+  border: 1px solid var(--borde);
+  border-radius: 12px;
+}
+
+.telefono-de-muestra__ejercicio > p {
+  margin: 0;
+}
+
+.telefono-de-muestra__nombre {
+  font-weight: 700;
+}
+
+.telefono-de-muestra__serie {
+  display: grid;
+  gap: 0.1rem;
+  padding: 0.4rem 0.55rem;
+  border-radius: 8px;
+  background: var(--fondo-suave);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Las de calentamiento, en un tono más suave, como en la app. */
+.telefono-de-muestra__serie[data-calentamiento] {
+  color: var(--tenue);
+}
+
+.telefono-de-muestra__rotulo {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--tenue);
+}
+
+.telefono-de-muestra__descanso {
+  font-size: 0.85rem;
+  color: var(--tenue);
+}
+
+.telefono-de-muestra__al-terminar {
+  display: grid;
+  gap: 0.3rem;
+  padding-top: 0.6rem;
+  border-top: 1px solid var(--borde);
+}
+
+.telefono-de-muestra__al-terminar p {
+  margin: 0;
+}
+
+.telefono-de-muestra__pregunta {
+  font-weight: 700;
+}
+
+.telefono-de-muestra__escala {
+  display: grid;
+  grid-template-columns: repeat(11, minmax(0, 1fr));
+  gap: 0.2rem;
+}
+
+.telefono-de-muestra__escala span {
+  display: grid;
+  place-items: center;
+  min-block-size: 2rem;
+  border: 1px solid var(--borde-control);
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ET2-08 y ET2-09 · el esfuerzo de la sesión en lo registrado y su gráfico. */
+.registros__esfuerzo {
+  margin: 0 0 1rem;
+}
+
+.detalle-de-sesion__esfuerzo {
+  position: relative;
+  padding-inline-end: 2.5rem;
+}
+
+.grafico-de-la-carga-de-la-sesion {
+  position: relative;
+  display: grid;
+  gap: 0.35rem;
+  margin: 0;
+  padding: 0.8rem 0.9rem;
+  border: 1px solid var(--borde);
+  border-radius: 12px;
+  background: var(--superficie);
+}
+
+.grafico-de-la-carga-de-la-sesion__titulo {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding-inline-end: 2.5rem;
+  font-weight: 600;
+}
+
+.grafico-de-la-carga-de-la-sesion__dibujo {
+  inline-size: 100%;
+  block-size: auto;
+  max-block-size: 14rem;
+  overflow: visible;
+}
+
+.grafico-de-la-carga-de-la-sesion__dibujo:focus-visible {
+  outline: 3px solid var(--foco);
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+.grafico-de-la-carga-de-la-sesion__marca line {
+  stroke: var(--borde);
+  stroke-width: 1;
+}
+
+.grafico-de-la-carga-de-la-sesion__marca text,
+.grafico-de-la-carga-de-la-sesion__fecha {
+  fill: var(--tenue);
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+}
+
+.grafico-de-la-carga-de-la-sesion__base {
+  stroke: var(--borde-control);
+  stroke-width: 1;
+}
+
+.grafico-de-la-carga-de-la-sesion__barra {
+  fill: var(--metrica-1);
+}
+
+.grafico-de-la-carga-de-la-sesion__blanco {
+  fill: transparent;
+}
+
+.grafico-de-la-carga-de-la-sesion__cursor {
+  stroke: var(--grafico-cursor);
+  stroke-width: 1.5;
+}
+
+[data-elegida] > .grafico-de-la-carga-de-la-sesion__barra {
+  stroke: var(--superficie);
+  stroke-width: 2;
+  paint-order: stroke;
+}
+
+/* RP-19: la lectura tiene su renglón siempre. */
+.grafico-de-la-carga-de-la-sesion__lectura {
+  min-height: 1.5rem;
+  margin: 0;
+}
+
+/* ET2-11 · la clasificación de un ejercicio propio, en su tarjeta y en su cuadro. */
+.ejercicio-propio__clasificacion {
+  margin: 0;
+}
+
+.clasificacion-del-propio {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.clasificacion-del-propio__selectores {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));
+  gap: 0.75rem;
+}
+
+.clasificacion-del-propio__selectores .campo {
+  margin: 0;
+}
+
+.clasificacion-del-propio__equipamiento {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.clasificacion-del-propio__equipamiento > legend {
+  padding: 0;
+  font-weight: 600;
+}
+
+.clasificacion-del-propio__casillas {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr));
+  gap: 0 0.75rem;
+}
+
+.clasificacion-del-propio__casillas .casilla-con-explicacion {
+  font-weight: 400;
 }

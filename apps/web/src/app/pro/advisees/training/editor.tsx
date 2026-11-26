@@ -107,7 +107,8 @@ import {
 } from '@be/domain';
 import { BotonVerElRecorrido, RecorridoGuiado, useRecorridoGuiado } from '../../../../components/recorrido-guiado';
 import { Almanaque, type SesionDelAlmanaque } from './almanaque';
-import { letraDeLaSesion } from './plan-y-fases';
+import { letraDeLaSesion } from './letra-de-la-sesion';
+import { COPY_VISTA_DE_LA_PERSONA, VistaDeLaPersona } from './vista-de-la-persona';
 import { BarraDeFases } from './barra-de-fases-en-pantalla';
 import { COPY_BARRA_DE_FASES, diasEnCorto, faseConLaTecla, rangoDeLaBarra, tarjetasDeLaBarra } from './barra-de-fases';
 import { criterioDeLaIntensidad, CuadroConfigurarPlan, CuadroDiasDeLaSemana, CuadroEditarFase, type IntensidadElegida } from './cuadros-del-plan';
@@ -145,6 +146,8 @@ import {
   nombreDeFaseNueva,
   planificacionConLaCopia,
   planificacionParaEditar,
+  planificacionDeLaPlantillaComoDelPlan,
+  planificacionParaLaPlantilla,
 } from './fases-del-plan';
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { ProveedorDeLaNotacion } from '../notacion-del-esfuerzo';
@@ -502,6 +505,8 @@ export function EditorDePlan({
   const [fechasAbiertas, setFechasAbiertas] = useState(false);
   // DL-197 (ET1-02 a ET1-04): el cuadro de configuración abierto: el plan, la fase o los días de la semana.
   const [cuadroDelPlan, setCuadroDelPlan] = useState<'plan' | 'fase' | 'dias' | null>(null);
+  // DL-198 (ET2-12): «Ver como la persona», la sesión de una semana tal como le llega a la app (solo lectura).
+  const [vistaDeLaPersona, setVistaDeLaPersona] = useState(false);
   // La fase recién agregada: «Editar fase» se abre cuando ya es la elegida, nunca con los datos de la anterior.
   const [faseQueSeAbre, setFaseQueSeAbre] = useState<number | null>(null);
   const [sucio, setSucio] = useState(false);
@@ -622,6 +627,8 @@ export function EditorDePlan({
       setImagenes(delCatalogo.imagenes);
       setEjercicios(delCatalogo.ejercicios);
       setMetadatos(metadatosDe(p.datos.data));
+      // DL-198 (ET2-10): la planificación de la plantilla (semanas, aproximaciones, progresiones, intensidad).
+      setPlanificacion(planificacionDeLaPlantillaComoDelPlan(p.datos.data.planning ?? null));
       setSucio(false);
       setFallo(false);
       setConflicto(false);
@@ -1121,6 +1128,8 @@ export function EditorDePlan({
       structure: { blocks: bloquesEnviados },
       ...(nueva ? { name: m.nombre.trim(), description: m.descripcion.trim() || null } : {}),
       copySuggestedLoads: m.conCargas,
+      // DL-198 (ET2-10): la planificación viaja con la plantilla, sin nada de una persona.
+      planning: planificacionParaLaPlantilla(planificacionQueViaja(planificacion, bloquesEnviados)),
     });
     if (sesionPerdida(r) || accesoRetirado(r)) {
       setGuardando(false);
@@ -1714,30 +1723,22 @@ export function EditorDePlan({
         nombre={nombre}
         imagen={imagenes[p.exerciseVersionId] ?? null}
         // DL-196 (EE-07): las aproximaciones, con cómo se arman guardado en la planificación (por el identificador del
-        // ejercicio: si todavía no tiene, lo recibe ahora). Una plantilla no tiene planificación.
-        aproximaciones={plantilla ? null : aproximacionesDe(plan, p.prescriptionId)}
-        onAproximaciones={
-          plantilla
-            ? undefined
-            : (c) => {
-                const id = p.prescriptionId ?? crypto.randomUUID();
-                if (!p.prescriptionId) cambiarEjercicio(l, { prescriptionId: id });
-                cambiarPlanificacion(conAproximaciones(plan, { ...c, prescriptionId: id }));
-              }
-        }
+        // ejercicio: si todavía no tiene, lo recibe ahora). DL-198 (ET2-10): también en una plantilla.
+        aproximaciones={aproximacionesDe(plan, p.prescriptionId)}
+        onAproximaciones={(c) => {
+          const id = p.prescriptionId ?? crypto.randomUUID();
+          if (!p.prescriptionId) cambiarEjercicio(l, { prescriptionId: id });
+          cambiarPlanificacion(conAproximaciones(plan, { ...c, prescriptionId: id }));
+        }}
         // DL-197 (ET1-D11): la intensidad del plan, que hereda; la excepción «sin intensidad» vive en la planificación.
-        intensidadDelPlan={plantilla ? null : criterioDeLaIntensidad(plan.intensity)}
-        sinIntensidad={!plantilla && !!p.prescriptionId && (plan.withoutIntensity ?? []).includes(p.prescriptionId)}
-        onSinIntensidad={
-          plantilla
-            ? undefined
-            : (sin) => {
-                const id = p.prescriptionId ?? crypto.randomUUID();
-                if (!p.prescriptionId) cambiarEjercicio(l, { prescriptionId: id });
-                const otros = (plan.withoutIntensity ?? []).filter((x) => x !== id);
-                cambiarPlanificacion({ ...plan, withoutIntensity: sin ? [...otros, id] : otros });
-              }
-        }
+        intensidadDelPlan={criterioDeLaIntensidad(plan.intensity)}
+        sinIntensidad={!!p.prescriptionId && (plan.withoutIntensity ?? []).includes(p.prescriptionId)}
+        onSinIntensidad={(sin) => {
+          const id = p.prescriptionId ?? crypto.randomUUID();
+          if (!p.prescriptionId) cambiarEjercicio(l, { prescriptionId: id });
+          const otros = (plan.withoutIntensity ?? []).filter((x) => x !== id);
+          cambiarPlanificacion({ ...plan, withoutIntensity: sin ? [...otros, id] : otros });
+        }}
         // PLT (DL-182): sin persona, sin la fuerza estimada ni «La vez pasada»: el ejercicio del catálogo no se pasa.
         exerciseId={asesoradoId === null ? null : (ejercicios[p.exerciseVersionId] ?? null)}
         abierto={abiertos.has(l)}
@@ -3027,14 +3028,14 @@ export function EditorDePlan({
           <section className="fases-del-plan" aria-labelledby="titulo-fases">
             <BarraDeFases
               rango={rangoDelPlan}
-              tarjetas={tarjetasDeLaBarra(plantilla ? null : plan, bloques)}
+              tarjetas={tarjetasDeLaBarra(plan, bloques)}
               elegida={i}
               onElegir={(n) => {
                 if (n !== i) elegirBloque(n);
                 setFoco({ tipo: 'fase' });
               }}
               onAgregar={agregarBloque}
-              onConfigurar={plantilla ? null : () => setCuadroDelPlan('plan')}
+              onConfigurar={() => setCuadroDelPlan('plan')}
               deMas={!plantilla && fasesDeMas > 0 ? { suman: semanasQueSumanLasFases(plan, bloques), plan: plan.weeks ?? 0 } : null}
               onResolver={() => setImpideAbierto(true)}
               idDelPanel="fase-abierta"
@@ -3100,8 +3101,8 @@ export function EditorDePlan({
                               <span className="fase-del-plan__rotulo">{plantilla ? 'Propósito' : 'Objetivo'}:</span> {bloque.purpose}
                             </p>
                           ) : null}
-                          {/* DL-196 parte B (E12): la progresión de la fase, a pedido. La regla guardada se lee en un renglón fijo. */}
-                          {!plantilla ? (
+                          {/* DL-196 parte B (E12): la progresión de la fase, a pedido. La regla guardada se lee en un renglón fijo.
+                              DL-198 (ET2-10): también en una plantilla, que la guarda con su planificación. */}
                             <div className="fase-del-plan__progresion" data-progresion-de-la-fase={progresionDeLaFase(plan, bloque.blockId)?.model ?? (progresionDeLaFase(plan, bloque.blockId) ? 'descarga' : 'ninguna')}>
                               <button type="button" className="boton boton--quieto boton--compacto" onClick={() => conIdDeLaFase((id) => setProgresionAbierta({ blockId: id, copia: null }))} data-abrir-progresion>
                                 <Icono nombre="sube" tamano={18} />
@@ -3109,7 +3110,6 @@ export function EditorDePlan({
                               </button>
                               <span className="nota">{progresionDeLaFase(plan, bloque.blockId) ? progresionEnPalabras(progresionDeLaFase(plan, bloque.blockId)!, unidadDeLaFase(ejerciciosDeUnaFase(bloque))) : COPY_PROGRESIONES.sinModelo}</span>
                             </div>
-                          ) : null}
                           {microciclo && j !== null ? (
                             <div className="plan__niveles niveles-del-editor">
                               <SelectorDeNivel
@@ -3253,6 +3253,10 @@ export function EditorDePlan({
                                   </span>
                                   {nombreDeLaSesion(sesion, k)}
                                 </h4>
+                                <button type="button" className="boton boton--quieto boton--compacto sesion-elegida__ver-como" onClick={() => setVistaDeLaPersona(true)} data-ver-como-la-persona>
+                                  <Icono nombre="ver" tamano={18} />
+                                  {COPY_VISTA_DE_LA_PERSONA.abrir}
+                                </button>
                                 <MenuDeAcciones
                                   id="menu-de-la-sesion"
                                   rotulo={`más acciones de la sesión ${nombreDeLaSesion(sesion, k)}`}
@@ -3630,6 +3634,7 @@ export function EditorDePlan({
         token={token}
         abierto={guardarPlantilla}
         estructura={{ blocks: bloques }}
+        planificacion={planificacionParaLaPlantilla(planificacionQueViaja(planificacion, bloques))}
         origen={null}
         onCerrar={() => setGuardarPlantilla(false)}
         onGuardada={() => {
@@ -3710,9 +3715,26 @@ export function EditorDePlan({
       {/* DL-195: el recorrido guiado del editor, sobre todo lo demás (va en un portal). */}
       <RecorridoGuiado definicion={RECORRIDO_DEL_EDITOR_DE_ENTRENAMIENTO} abierto={recorrido.abierto} alCerrar={recorrido.cerrar} />
 
+      {/* DL-198 (ET2-12): «Ver como la persona». */}
+      {bloque ? (
+        <VistaDeLaPersona
+          abierto={vistaDeLaPersona}
+          onCerrar={() => setVistaDeLaPersona(false)}
+          bloque={bloque}
+          bloques={bloques}
+          planificacion={plan}
+          notacion={notacion}
+          persona={persona}
+          sesionInicial={k}
+          nombreDe={(x) => nombres[x.exerciseVersionId] ?? 'Ejercicio'}
+          letraDe={letraDeLaSesion}
+        />
+      ) : null}
+
       {/* DL-197 (ET1-02 a ET1-04): los cuadros de configuración. Los cuadros configuran; el panel, a la derecha, es para mirar. */}
-      {plantilla ? null : (
+      {/* DL-198 (ET2-10): en una plantilla, sin fechas, objetivo ni anotaciones (`enLaPlantilla`). */}
         <CuadroConfigurarPlan
+          enLaPlantilla={!!plantilla}
           abierto={cuadroDelPlan === 'plan'}
           sobretitulo={persona}
           planificacion={plan}
@@ -3729,7 +3751,7 @@ export function EditorDePlan({
           }}
           onCerrar={() => setCuadroDelPlan(null)}
         />
-      )}
+
       {bloque ? (
         <CuadroEditarFase
           key={bloque.blockId ?? `fase-${i}`}
@@ -3746,7 +3768,8 @@ export function EditorDePlan({
           onGuardar={(e) => {
             setFaseQueSeAbre(null);
             cambiar((x) => ((x[i]!.label = e.nombre), (x[i]!.purpose = e.objetivo), x));
-            if (!plantilla) conIdDeLaFase((id) => cambiarPlanificacion(conAnotacionesDeLaFase(conSemanasDeLaFase(plan, id, e.semanas), id, e.anotaciones)));
+            // DL-198 (ET2-10): una plantilla guarda las semanas de la fase; las anotaciones son de un plan con persona.
+            conIdDeLaFase((id) => cambiarPlanificacion(plantilla ? conSemanasDeLaFase(plan, id, e.semanas) : conAnotacionesDeLaFase(conSemanasDeLaFase(plan, id, e.semanas), id, e.anotaciones)));
             setCuadroDelPlan(null);
           }}
           onDuplicar={() => {
