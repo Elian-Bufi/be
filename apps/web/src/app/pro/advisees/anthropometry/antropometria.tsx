@@ -66,7 +66,7 @@ export interface ContextoDeAntropometria {
   /** `true` si una escritura recibió el 404 no revelador: la pestaña pasa a «no disponible» entera. */
   readonly accesoRetirado: (r: Resultado<unknown>) => boolean;
   /** Cambia de vista; con `evaluacionId`, «Tomas» abre esa toma (por su lectura y su autorización habituales). */
-  readonly irA: (vista: Vista, evaluacionId?: string) => void;
+  readonly irA: (vista: Vista, evaluacionId?: string, extra?: Readonly<Record<string, string>>) => void;
   /** Lo que dice la dirección de la página: la toma elegida vive ahí (`evaluacion=`), y «Actualizar» la conserva. */
   readonly parametros: URLSearchParams;
   /**
@@ -112,8 +112,15 @@ export function Antropometria() {
   const retorno = useRetornoALaFicha(id);
   const hrefDe = useCallback((v: Vista) => conVolver(`${ruta}?id=${encodeURIComponent(id)}&vista=${v}`, retorno.valor), [ruta, id, retorno.valor]);
   const irA = useCallback(
-    (v: Vista, evaluacionId?: string) =>
-      cambiarLaDireccion(conVolver(`${ruta}?id=${encodeURIComponent(id)}&vista=${v}${evaluacionId ? `&evaluacion=${encodeURIComponent(evaluacionId)}` : ''}`, retorno.valor)),
+    (v: Vista, evaluacionId?: string, extra?: Readonly<Record<string, string>>) =>
+      cambiarLaDireccion(
+        conVolver(
+          `${ruta}?id=${encodeURIComponent(id)}&vista=${v}${evaluacionId ? `&evaluacion=${encodeURIComponent(evaluacionId)}` : ''}${Object.entries(extra ?? {})
+            .map(([k, x]) => `&${encodeURIComponent(k)}=${encodeURIComponent(x)}`)
+            .join('')}`,
+          retorno.valor,
+        ),
+      ),
     [ruta, id, retorno.valor],
   );
   const [retirado, setRetirado] = useState(false);

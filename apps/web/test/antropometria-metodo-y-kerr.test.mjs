@@ -18,12 +18,13 @@ const CALCULOS = leer('calculos.tsx');
 test('RP-18 · la toma lee los métodos y los de la última toma, y elige antes de medir', () => {
   assert.match(PREPARACION, /api\.metodosHabituales\(token\)/);
   assert.match(PREPARACION, /todasLasPaginas\(\(f\) => api\.listarMetodos\(token, f\)\)/);
-  assert.match(PREPARACION, /<EleccionDeMetodos /);
-  // Sin `metodos=` en la dirección vienen los de la última toma; `ninguno` es no filtrar.
-  assert.match(PREPARACION, /enLaDireccion === null \? familiasHabituales\(/);
+  assert.match(PREPARACION, /<EleccionDeMetodos\s/);
+  // Sin `metodos=` en la dirección vienen los de la última toma; `ninguno` es no filtrar. Desde DL-200 se elige el método
+  // entero (WP-ANTROPOMETRIA-RESULTADOS): los de la última toma se leen por las métricas de sus métodos.
+  assert.match(PREPARACION, /enLaDireccion === null \? habitualesDeLaUltima : /);
   assert.match(PREPARACION, /'ninguno'/);
   // Lo que se ve sale de la unión de los métodos elegidos, con los puntos sueltos y lo que ya tiene dato.
-  assert.match(PREPARACION, /medicionesDeLaEleccion\(familiasDeMetodo, elegidas, \{ sueltas, conDato: conValor \}\)/);
+  assert.match(PREPARACION, /medicionesPedidas\(elegidas\.flatMap\(\(c\) => medicionesDelPrograma\(c, sexo, conFraccionamiento\)\), \{ sueltas, conDato: conValor \}\)/);
   // «+ Otra medición» suma un punto suelto del protocolo o del catálogo.
   assert.match(PREPARACION, />\+ Otra medición</);
   assert.match(PREPARACION, /otrasMediciones\(delProtocolo, /);
@@ -37,7 +38,8 @@ test('RP-18 · elegir no pierde nada: lo que se guarda y lo que se revisa es tod
 });
 
 test('RP-18 · la nota de dónde mide BE el suprailíaco de Jackson y Pollock (D-1) está a la vista al elegir', () => {
-  assert.match(ELECCION, /NOTA_DEL_SITIO\[f\.clave\]/);
+  assert.match(ELECCION, /'jackson-pollock-7': NOTA_DEL_SITIO\['grasa-jackson-pollock-7'\]/);
+  assert.match(ELECCION, /NOTA_DEL_METODO\[p\.clave\]/);
   assert.match(D.NOTA_DEL_SITIO['grasa-jackson-pollock-7'], /cresta ilíaca/);
   assert.match(ELECCION, /Vienen elegidos los de tu última toma/);
   assert.match(ELECCION, /ecuación por sexo/);
@@ -48,22 +50,24 @@ test('RP-18 · si al calcular le faltan medidas al método, BE dice cuáles', ()
   assert.match(CALCULOS, /A este método le faltan \$\{faltantes\.length\} medidas de esta toma/);
 });
 
-test('RP-17 · Kerr en la toma: lo medido primero, las cinco masas, la suma y la diferencia en kg y en %', () => {
-  assert.match(CALCULOS, /fraccionamientoDeKerr\(calculos\.corridas, toma\.evaluationId, toma\.measurements\)/);
-  const tabla = CALCULOS.slice(CALCULOS.indexOf('function KerrEnLaToma'), CALCULOS.indexOf('export function ResultadosDeLaToma'));
-  assert.ok(tabla.indexOf('Peso medido') < tabla.indexOf('f.componentes.map'), 'el peso de la balanza va primero');
-  assert.match(tabla, /Peso estructurado \(la suma de las cinco\)/);
-  assert.match(tabla, /del peso\)/);
-  // Lo inferido, con su ecuación a la vista: la piel tiene una por sexo y la suma cuenta la última registrada, así que la
-  // fila dice con cuál se calculó («Masa de la piel (Kerr), mujeres»), no solo «Masa de la piel (Kerr)».
-  assert.match(tabla, /<th scope="row">\{c\.metodo \?\? nombreDeMetrica\(c\.metrica\)\}<\/th>/);
+test('RP-17 · Kerr en la toma: desde DL-200 es un método más, con sus cinco masas, la suma y la diferencia en kg y en %', () => {
+  // La cadena de Kerr vive en el dominio (`resultados-antropometricos.ts`, con el Phantom en sus pruebas); la toma la dibuja
+  // como a los demás métodos, en su desplegable, y cada masa dice con qué ecuación se calculó (la piel, por sexo).
+  assert.match(CALCULOS, /<ResultadosPorMetodo /);
+  const kerr = D.resultadoDelMetodo('kerr-5c', {}, 'MUJER');
+  assert.deepEqual(
+    kerr.etapas.flatMap((e) => e.pasos.map((p) => p.clave)),
+    ['masa-piel', 'masa-adiposa', 'masa-muscular', 'masa-osea', 'masa-residual', 'peso-estructurado', 'diferencia'],
+  );
+  assert.match(kerr.etapas[0].pasos[0].origen, /Kerr \(1988\), mujeres/);
+  assert.equal(kerr.etapas[1].pasos[1].nombre, 'Diferencia con el peso medido');
 });
 
 test('las palabras de las piezas nuevas no califican ni usan lo prohibido', () => {
   for (const [nombre, texto] of [
     ['eleccion-de-metodos.tsx', ELECCION],
-    // De calculos.tsx, lo nuevo: el bloque de Kerr y el aviso de lo que falta (el resto ya lo mira su propia prueba).
-    ['calculos.tsx', CALCULOS.slice(CALCULOS.indexOf('function KerrEnLaToma'), CALCULOS.indexOf('export function ResultadosDeLaToma')) + CALCULOS.slice(CALCULOS.indexOf('const faltantes'), CALCULOS.indexOf('{C.metodoPide}'))],
+    // De calculos.tsx, lo nuevo: los resultados de la toma (DL-200) y el aviso de lo que falta (el resto ya lo mira su propia prueba).
+    ['calculos.tsx', CALCULOS.slice(CALCULOS.indexOf('export function ResultadosDeLaToma'), CALCULOS.indexOf('export function DetalleDeResultado')) + CALCULOS.slice(CALCULOS.indexOf('const faltantes'), CALCULOS.indexOf('{C.metodoPide}'))],
     ['preparacion.tsx', PREPARACION],
   ]) {
     assert.deepEqual(D.terminosProhibidosDeAntropometriaEn(texto), [], nombre);

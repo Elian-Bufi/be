@@ -47,6 +47,9 @@ export const RECORRIDOS = {
   salidaConFallas: { habilitado: ['NUTRICION'], datos: ['borrador'] },
   retorno: { habilitado: ['NUTRICION'], datos: ['plan-con-revision'] },
   grafico: { habilitado: ['ANTROPOMETRIA'], datos: ['tomas'] },
+  // DL-200 (WP-ANTROPOMETRIA-RESULTADOS): dos tomas con los 7 pliegues de Jackson y Pollock, la edad, el peso, la talla y
+  // los dos diámetros de Rocha, para ver el resultado completo del método sin tildar nada.
+  resultadosAntropometricos: { habilitado: ['ANTROPOMETRIA'], datos: ['tomas-jp7'] },
   // El área sugerida al invitar (bloque 5): sin vínculos, ninguna; con vínculos en una sola de dos áreas, esa.
   primeraInvitacion: { habilitado: ['NUTRICION', 'ENTRENAMIENTO'], vinculos: [], datos: [] },
   areaSugerida: { habilitado: ['NUTRICION', 'ENTRENAMIENTO'], vinculos: ['NUTRICION'], datos: [] },
@@ -326,6 +329,31 @@ async function toma(pro, aseId, fecha, peso) {
   return (await pedir('POST', `/anthropometry/evaluation-drafts/${creada.evaluationId}/register`, { token: pro, cuerpo: { expectedVersion: creada.version } })).data.evaluationId;
 }
 
+/** DL-200 · una toma con varias mediciones, por el flujo de la web (borrador y registro, API-ANT-07 y 11). */
+async function tomaConMediciones(pro, aseId, fecha, mediciones) {
+  const creada = (
+    await pedir('POST', `/advisees/${aseId}/anthropometry/evaluation-drafts`, {
+      token: pro,
+      cuerpo: {
+        occurredAt: instante(fecha, '08:30').toISOString(),
+        specificationVersionId: '3e0b1b56-6e0a-4d1a-8f1a-6a6d2b6a2f10',
+        source: { type: 'DIRECT_CAPTURE' },
+        directMeasurements: Object.entries(mediciones).map(([metricCode, [value, unit]]) => ({ metricCode, value, unit })),
+      },
+    })
+  ).data;
+  return (await pedir('POST', `/anthropometry/evaluation-drafts/${creada.evaluationId}/register`, { token: pro, cuerpo: { expectedVersion: creada.version } })).data.evaluationId;
+}
+
+/** Las dos tomas de DL-200: la de hoy suma 82 mm de pliegues; la anterior, 89 mm y un kilo más. */
+export const TOMA_JP7 = {
+  edad: [30, 'años'], peso: [77, 'kg'], talla: [178, 'cm'],
+  'pliegue-pectoral': [10, 'mm'], 'pliegue-axilar-media': [12, 'mm'], 'pliegue-triceps': [10, 'mm'], 'pliegue-subescapular': [14, 'mm'],
+  'pliegue-abdominal': [16, 'mm'], 'pliegue-cresta-iliaca': [12, 'mm'], 'pliegue-muslo-frontal': [8, 'mm'],
+  'diametro-biestiloideo': [5.8, 'cm'], 'diametro-femur': [9.8, 'cm'],
+};
+const TOMA_JP7_ANTERIOR = Object.fromEntries(Object.entries(TOMA_JP7).map(([k, [v, u]]) => [k, [k.startsWith('pliegue') ? v + 1 : k === 'peso' ? 78 : v, u]]));
+
 export async function datos(estado) {
   const hoy = hoyCivil();
   for (const [recorrido, r] of Object.entries(RECORRIDOS)) {
@@ -578,6 +606,12 @@ export async function datos(estado) {
       // Lo que dice la API, para comparar con la pantalla: el gráfico, la lectura, la tabla y el origen dicen lo mismo.
       const leer = async (metrica) => (await pedir('GET', `/advisees/${e.ase.id}/projections/NUTRITION_PRESCRIBED_VS_RECORDED?metric=${metrica}&periodStart=${dia(7)}&periodEnd=${hoy}`, { token: pro })).data.result;
       e.comparacion = { hoy, desde: dia(7), ayer: dia(1), anteayer: dia(2), haceTres: dia(3), haceSeis: dia(6), almuerzo: almuerzo.label, energia: await leer('ENERGY'), proteinas: await leer('PROTEIN') };
+    }
+    if (r.datos.includes('tomas-jp7')) {
+      e.tomasJp7 = {
+        anterior: await tomaConMediciones(pro, e.ase.id, diaMas(hoy, -14), TOMA_JP7_ANTERIOR),
+        actual: await tomaConMediciones(pro, e.ase.id, diaMas(hoy, -1), TOMA_JP7),
+      };
     }
     if (r.datos.includes('tomas')) {
       const pesos = [

@@ -29,17 +29,14 @@ import {
   datosDelMetodo,
   ETIQUETA_DE_CLASE_DE_DATO,
   ETIQUETA_DE_CONDICION,
-  fraccionamientoDeKerr,
   marcaDeLaClase,
   metodosParaLaToma,
   nombreDeMetrica,
   resultadosDeLaToma,
-  textoDeDiferenciaAntropometrica,
   todasLasPaginas,
   valorDelResultado,
   type CorridaDeCalculoApi,
   type EvaluacionAntropometricaApi,
-  type FraccionamientoDeKerr,
   type MetodoApi,
 } from '@be/domain';
 import { useCallback, useEffect, useState } from 'react';
@@ -55,6 +52,7 @@ import { motivoDelRechazo } from './rechazos-de-antropometria';
 import { useCambiosSinGuardar } from '../marco-del-area';
 import { useAntropometria } from './antropometria';
 import { Marca } from './marca';
+import { ResultadosPorMetodo } from './resultados-por-metodo';
 
 export type Calculos =
   | { readonly tipo: 'cargando' }
@@ -102,94 +100,46 @@ function Valor({ corrida }: { corrida: CorridaDeCalculoApi }) {
 }
 
 /**
- * RP-17 (DL-190) · Kerr (1988), cinco componentes, en la toma: lo medido primero (el peso de la balanza), después cada masa
- * con su método, su suma (el peso estructurado) y la diferencia con el peso medido, en kg y en % del peso, que es como Kerr
- * valida el modelo. La suma no es un método: es la cuenta de los resultados registrados, a la vista. Una diferencia es una
- * resta con signo: no califica.
+ * DL-200 · Los resultados de la toma: arriba, el resumen del método elegido; debajo, cada método con todo lo que da y lo
+ * que se deriva, sin tildar nada (`resultados-por-metodo.tsx`). Al final, plegado, lo guardado en la historia: cada corrida
+ * con su método, que es lo que se abre para ver con qué se calculó o dejarlo como referencia. Kerr (RP-17) es un método
+ * más: sus cinco masas, su suma y la diferencia con el peso medido están en su desplegable.
  */
-function KerrEnLaToma({ f, onAbrir }: { f: FraccionamientoDeKerr; onAbrir: (corridaId: string) => void }) {
-  return (
-    <section className="categoria-de-resultados kerr-de-la-toma" aria-labelledby="titulo-kerr-de-la-toma">
-      <h4 id="titulo-kerr-de-la-toma">Kerr (1988) · cinco componentes</h4>
-      <table className="kerr-de-la-toma__tabla">
-        <tbody>
-          <tr>
-            <th scope="row">Peso medido</th>
-            <td>{f.pesoMedido !== null ? cantidad(f.pesoMedido, 'kg') : 'Sin peso en kg en esta toma'}</td>
-          </tr>
-          {f.componentes.map((c) => (
-            <tr key={c.metrica}>
-              {/* Lo inferido, con su ecuación: la piel tiene una por sexo, y la fila dice con cuál se calculó la que suma. */}
-              <th scope="row">{c.metodo ?? nombreDeMetrica(c.metrica)}</th>
-              <td>
-                {c.valor !== null && c.corridaId ? (
-                  <button type="button" className="boton boton--enlace" onClick={() => onAbrir(c.corridaId!)} aria-label={`${c.metodo ?? nombreDeMetrica(c.metrica)}: ${cantidad(c.valor, 'kg')}`}>
-                    {cantidad(c.valor, 'kg')}
-                  </button>
-                ) : (
-                  'Sin calcular'
-                )}
-              </td>
-            </tr>
-          ))}
-          <tr className="kerr-de-la-toma__suma">
-            <th scope="row">Peso estructurado (la suma de las cinco)</th>
-            <td>{f.pesoEstructurado !== null ? cantidad(f.pesoEstructurado, 'kg') : '—'}</td>
-          </tr>
-          <tr>
-            <th scope="row">Diferencia con el peso medido</th>
-            <td>
-              {f.diferenciaKg !== null && f.diferenciaPorcentaje !== null
-                ? `${textoDeDiferenciaAntropometrica({ delta: f.diferenciaKg, unidad: 'kg' })} (${textoDeDiferenciaAntropometrica({ delta: f.diferenciaPorcentaje, unidad: '%' })} del peso)`
-                : '—'}
-            </td>
-          </tr>
-        </tbody>
-      </table>
-      {f.faltan.length > 0 ? <p className="nota">Para la suma falta calcular {f.faltan.map((n) => n.toLocaleLowerCase('es-AR')).join(', ')}, con «{C.nuevoCalculo}».</p> : null}
-      <p className="nota">
-        La suma de las cinco masas con los valores de cada resultado, frente a la balanza: así valida Kerr el modelo. En 1669 personas dio en promedio 1,1 kg (1,6 %) más
-        que el peso medido.
-      </p>
-    </section>
-  );
-}
-
 export function ResultadosDeLaToma({
   toma,
+  anterior,
   calculos,
   onReintentar,
   onAbrir,
   onCalcular,
+  onGuardado,
 }: {
   toma: EvaluacionAntropometricaApi;
+  /** La toma registrada anterior, si su detalle ya llegó: para el cambio de cada valor. */
+  anterior: EvaluacionAntropometricaApi | null;
   calculos: Calculos;
   onReintentar: () => void;
   /** Abre el detalle de un resultado, por su corrida. */
   onAbrir: (corridaId: string) => void;
   onCalcular: () => void;
+  /** Después de guardar resultados en la historia: el texto para decirlo. */
+  onGuardado: (texto: string) => Promise<void>;
 }) {
   const [verAnteriores, setVerAnteriores] = useState(false);
   const deLaToma = calculos.tipo === 'listo' ? calculos.corridas.filter((c) => c.evaluationId === toma.evaluationId) : [];
   const porId = new Map(deLaToma.map((c) => [c.calculationRunId, c]));
-  // Por categoría del catálogo y por método: el orden neutral del dominio, el mismo de la lámina.
+  // Lo guardado, por categoría del catálogo y por método: el orden neutral del dominio, el mismo de la lámina.
   const secciones = calculos.tipo === 'listo' ? agruparPorCategoria(resultadosDeLaToma(calculos.corridas, calculos.metodos, toma.evaluationId)) : [];
+  const guardados = secciones.reduce((t, s) => t + s.resultados.length, 0);
   const anteriores = deLaToma.filter((c) => !corridaVigente(c));
-  // RP-17: si la toma tiene alguna masa de Kerr calculada, las cinco, su suma y la diferencia con el peso medido.
-  const kerr = calculos.tipo === 'listo' ? fraccionamientoDeKerr(calculos.corridas, toma.evaluationId, toma.measurements) : null;
 
   return (
     <section className="resultados-de-la-toma" aria-labelledby="titulo-resultados">
       <div className="toma-abierta__titulo-de-bloque">
         <h3 id="titulo-resultados">{C.resultadosDerivados}</h3>
         <Marca marca={marcaDeLaClase('DERIVED')} />
-        <p className="nota">{C.cadaUnoConSuMetodo}</p>
+        <p className="nota">Cada método con todo lo que da, desde lo medido: cada valor dice de qué ecuación sale.</p>
         <span className="toma-abierta__acciones-de-bloque">
-          {anteriores.length > 0 ? (
-            <button type="button" className="boton boton--enlace" aria-expanded={verAnteriores} aria-controls="anteriores-sin-efecto" onClick={() => setVerAnteriores((x) => !x)}>
-              {verAnteriores ? C.ocultarAnteriores : C.verAnterioresSinEfecto(anteriores.length)}
-            </button>
-          ) : null}
           {calculos.tipo === 'listo' ? (
             <button type="button" className="boton boton--secundario boton--compacto" onClick={onCalcular} disabled={calculos.metodos.length === 0}>
               <Icono nombre="mas" tamano={18} />
@@ -205,7 +155,7 @@ export function ResultadosDeLaToma({
         <Aviso tipo="error">
           <p>
             {C.resultadosNoCargaron}{' '}
-            <button type="button" className="boton boton--enlace" onClick={onReintentar}>
+            <button type="button" className="boton boton--discreto boton--compacto" onClick={onReintentar}>
               {COPY.reintentar}
             </button>
           </p>
@@ -214,58 +164,78 @@ export function ResultadosDeLaToma({
       {calculos.tipo === 'listo' ? (
         <>
           {!calculos.completa ? <p className="nota">{C.resultadosIncompletos}</p> : null}
-          {calculos.metodos.length === 0 ? <p className="nota">{C.sinMetodosSeleccionables}</p> : null}
-          {secciones.length === 0 ? <p className="nota resultados-de-la-toma__sin-calculos">{C.sinCalculos}</p> : null}
-          <div className="categorias-de-resultados">
-            {secciones.map((s) => (
-              <section key={s.categoria ?? 'OTROS'} className="categoria-de-resultados" data-categoria={s.categoria ?? 'OTROS'}>
-                <h4>{s.categoria ? (C.categoriaDeMetodo[s.categoria] ?? s.categoria) : C.laminaOtrosCalculos}</h4>
-                <ul>
-                  {s.resultados.map((r) => {
-                    const corrida = porId.get(r.corridaId);
-                    if (!corrida) return null;
-                    return (
-                      <li key={r.corridaId}>
+          <ResultadosPorMetodo toma={toma} anterior={anterior} metodos={calculos.metodos} corridas={calculos.corridas} onAbrir={onAbrir} onGuardado={onGuardado} />
+          {guardados > 0 || anteriores.length > 0 ? (
+            <details className="guardados-de-la-toma">
+              <summary>
+                <Icono nombre="abajo" tamano={18} />
+                Guardados en la historia{guardados > 0 ? ` (${guardados})` : ''}
+              </summary>
+              <p className="nota">
+                Cada uno con su método del catálogo, su versión y sus entradas: es lo que entra en la evolución y en la app de la persona. Abrí uno para ver con qué se calculó o dejarlo como referencia.
+              </p>
+              <div className="categorias-de-resultados">
+                {secciones.map((s) => (
+                  <section key={s.categoria ?? 'OTROS'} className="categoria-de-resultados" data-categoria={s.categoria ?? 'OTROS'}>
+                    <h4>{s.categoria ? (C.categoriaDeMetodo[s.categoria] ?? s.categoria) : C.laminaOtrosCalculos}</h4>
+                    <ul>
+                      {s.resultados.map((r) => {
+                        const corrida = porId.get(r.corridaId);
+                        if (!corrida) return null;
+                        return (
+                          <li key={r.corridaId}>
+                            <button
+                              type="button"
+                              className="resultado-de-la-toma"
+                              data-resultado={r.corridaId}
+                              aria-label={[`${r.metodo}: ${r.nombre}, ${valorDelResultado(corrida)}`, ...(corrida.referenceForPurpose ? [C.referenciaAdoptada] : [])].join(' · ')}
+                              onClick={() => onAbrir(r.corridaId)}
+                            >
+                              <span className="resultado-de-la-toma__que">
+                                {/* El nombre de un método puede traer un número («7 pliegues»): no se separa de su palabra. */}
+                                <span className="resultado-de-la-toma__nombre">{conNumerosPegados(r.metodo)}</span>
+                                {corrida.referenceForPurpose ? <span className="etiqueta-de-dato">{C.referenciaAdoptada}</span> : null}
+                              </span>
+                              <Valor corrida={corrida} />
+                            </button>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  </section>
+                ))}
+              </div>
+              {anteriores.length > 0 ? (
+                <button type="button" className="boton boton--discreto boton--compacto" aria-expanded={verAnteriores} aria-controls="anteriores-sin-efecto" onClick={() => setVerAnteriores((x) => !x)}>
+                  {verAnteriores ? C.ocultarAnteriores : C.verAnterioresSinEfecto(anteriores.length)}
+                </button>
+              ) : null}
+              {verAnteriores ? (
+                <div className="anteriores-sin-efecto" id="anteriores-sin-efecto">
+                  <h4>{C.anterioresSinEfecto}</h4>
+                  <p className="nota">{C.explicacionDeAnterioresSinEfecto}</p>
+                  <ul>
+                    {anteriores.map((c) => (
+                      <li key={c.calculationRunId}>
                         <button
                           type="button"
                           className="resultado-de-la-toma"
-                          data-resultado={r.corridaId}
-                          aria-label={[`${r.metodo}: ${r.nombre}, ${valorDelResultado(corrida)}`, ...(corrida.referenceForPurpose ? [C.referenciaAdoptada] : [])].join(' · ')}
-                          onClick={() => onAbrir(r.corridaId)}
+                          data-resultado={c.calculationRunId}
+                          aria-label={`${c.methodName}: ${nombreDeMetrica(c.result.metric)}, ${valorDelResultado(c)} · ${C.calculoNoVigente}`}
+                          onClick={() => onAbrir(c.calculationRunId)}
                         >
                           <span className="resultado-de-la-toma__que">
-                            {/* El nombre de un método puede traer un número («7 pliegues»): no se separa de su palabra. */}
-                            <span className="resultado-de-la-toma__nombre">{conNumerosPegados(r.metodo)}</span>
-                            {corrida.referenceForPurpose ? <span className="etiqueta-de-dato">{C.referenciaAdoptada}</span> : null}
+                            <span className="resultado-de-la-toma__nombre">{conNumerosPegados(c.methodName)}</span>
+                            <span className="etiqueta-de-dato">{C.calculoNoVigente}</span>
                           </span>
-                          <Valor corrida={corrida} />
+                          <Valor corrida={c} />
                         </button>
                       </li>
-                    );
-                  })}
-                </ul>
-              </section>
-            ))}
-            {kerr ? <KerrEnLaToma f={kerr} onAbrir={onAbrir} /> : null}
-          </div>
-          {verAnteriores ? (
-            <div className="anteriores-sin-efecto" id="anteriores-sin-efecto">
-              <h4>{C.anterioresSinEfecto}</h4>
-              <p className="nota">{C.explicacionDeAnterioresSinEfecto}</p>
-              <ul>
-                {anteriores.map((c) => (
-                  <li key={c.calculationRunId}>
-                    <button type="button" className="resultado-de-la-toma" data-resultado={c.calculationRunId} aria-label={`${c.methodName}: ${nombreDeMetrica(c.result.metric)}, ${valorDelResultado(c)} · ${C.calculoNoVigente}`} onClick={() => onAbrir(c.calculationRunId)}>
-                      <span className="resultado-de-la-toma__que">
-                        <span className="resultado-de-la-toma__nombre">{conNumerosPegados(c.methodName)}</span>
-                        <span className="etiqueta-de-dato">{C.calculoNoVigente}</span>
-                      </span>
-                      <Valor corrida={c} />
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            </div>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
+            </details>
           ) : null}
         </>
       ) : null}

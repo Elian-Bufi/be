@@ -7861,29 +7861,373 @@ button.comida-del-dia__fila > .icono:last-child {
   list-style: none;
 }
 
-/* RP-17 (DL-190): Kerr, cinco componentes: lo medido arriba, las cinco masas, la suma y la diferencia. */
-.kerr-de-la-toma__tabla {
-  width: 100%;
-  border-collapse: collapse;
+/* ─── DL-200 (WP-ANTROPOMETRIA-RESULTADOS): los resultados de una toma, método por método ───────────────────────
+   Arriba, cómo se leen (las ecuaciones y la conversión) y el resumen del método, grande; debajo, cada método en su
+   desplegable, con sus etapas en orden y cada paso en un renglón: el nombre y su origen a la izquierda, el valor a la
+   derecha, alineado, y el «?» en la esquina. Nada en rojo ni en verde: lo que falta se dice con el color del texto tenue. */
+.resultados-por-metodo {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.resultados-por-metodo__lectura {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6rem 1.4rem;
+}
+
+.resultados-por-metodo__de-donde {
+  margin: 0;
+}
+
+.resumen-de-la-toma {
+  padding: 0.9rem 1.1rem 1rem;
+  border: 1px solid var(--borde);
+  border-radius: 14px;
+  background: var(--superficie);
+  box-shadow: var(--sombra-suave);
+}
+
+.resumen-de-la-toma__cabecera {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+  margin-bottom: 0.7rem;
+}
+
+.resumen-de-la-toma__cabecera h4 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 650;
+}
+
+.resumen-de-la-toma__rotulo {
+  display: block;
+  color: var(--tenue);
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.resumen-de-la-toma__elegir {
+  margin: 0;
+}
+
+.resumen-de-la-toma__valores {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(11.5rem, 1fr));
+  gap: 0.6rem;
+  margin: 0;
+}
+
+.resumen-de-la-toma__valor {
+  display: grid;
+  align-content: start;
+  gap: 0.15rem;
+  min-width: 0;
+  padding: 0.7rem 0.85rem 0.75rem;
+  border-radius: 10px;
+  background: var(--fondo-suave);
+}
+
+.resumen-de-la-toma__valor dt {
+  color: var(--tenue);
+  font-size: 0.86rem;
+  font-weight: 600;
+}
+
+.resumen-de-la-toma__valor dd {
+  display: grid;
+  gap: 0.1rem;
+  margin: 0;
+}
+
+.resumen-de-la-toma__numero {
+  font-size: 1.55rem;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+}
+
+.resumen-de-la-toma__base,
+.resumen-de-la-toma__origen,
+.resumen-de-la-toma__cambio {
+  color: var(--tenue);
+  font-size: 0.82rem;
+  line-height: 1.35;
+}
+
+.resumen-de-la-toma__base {
+  font-size: 0.86rem;
+}
+
+.resumen-de-la-toma__cambio {
+  color: var(--texto);
   font-variant-numeric: tabular-nums;
 }
 
-.kerr-de-la-toma__tabla th,
-.kerr-de-la-toma__tabla td {
-  padding: 0.3rem 0.4rem;
-  border-bottom: 1px solid var(--borde);
-  text-align: left;
-  font-weight: 400;
+.resultados-por-metodo__lista {
+  display: grid;
+  gap: 0.45rem;
 }
 
-.kerr-de-la-toma__tabla td {
+.resultados-por-metodo__subtitulo {
+  margin: 0.2rem 0 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+}
+
+.metodo-de-la-toma {
+  border: 1px solid var(--borde);
+  border-radius: 12px;
+  background: var(--superficie);
+}
+
+.metodo-de-la-toma[open] {
+  box-shadow: var(--sombra-suave);
+}
+
+.metodo-de-la-toma__cabecera {
+  color: var(--texto);
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-height: 2.75rem;
+  padding: 0.45rem 0.9rem;
+  border-radius: 12px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.metodo-de-la-toma__cabecera::-webkit-details-marker {
+  display: none;
+}
+
+.metodo-de-la-toma__cabecera:hover {
+  background: var(--fondo-suave);
+}
+
+.metodo-de-la-toma__cabecera:focus-visible {
+  outline: 3px solid var(--foco);
+  outline-offset: -3px;
+}
+
+.metodo-de-la-toma__cabecera > .icono {
+  flex: none;
+  color: var(--tenue);
+  transform: rotate(-90deg);
+}
+
+.metodo-de-la-toma[open] > .metodo-de-la-toma__cabecera > .icono {
+  transform: none;
+}
+
+.metodo-de-la-toma__nombre {
+  display: grid;
+  flex: 1 1 auto;
+  min-width: 0;
+  font-weight: 600;
+}
+
+.metodo-de-la-toma__categoria {
+  color: var(--tenue);
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.metodo-de-la-toma__estado {
+  display: flex;
+  flex: none;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.3rem 0.6rem;
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
   text-align: right;
-  white-space: nowrap;
 }
 
-.kerr-de-la-toma__suma th,
-.kerr-de-la-toma__suma td {
+.metodo-de-la-toma__primero {
+  font-weight: 600;
+}
+
+.metodo-de-la-toma__cuerpo {
+  display: grid;
+  gap: 0.7rem;
+  padding: 0.2rem 0.9rem 0.9rem;
+  border-top: 1px solid var(--borde);
+}
+
+.etapa-de-la-cadena__titulo {
+  margin: 0.55rem 0 0.1rem;
+  color: var(--tenue);
+  font-size: 0.78rem;
   font-weight: 650;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.etapa-de-la-cadena__nota {
+  margin: 0 0 0.25rem;
+  font-size: 0.86rem;
+}
+
+.etapa-de-la-cadena__pasos {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.paso-de-la-cadena {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 0.2rem 1rem;
+  min-height: 2.75rem;
+  padding-block: 0.45rem;
+  border-bottom: 1px solid var(--borde);
+}
+
+.etapa-de-la-cadena__pasos > li:last-child .paso-de-la-cadena {
+  border-bottom: 0;
+}
+
+.paso-de-la-cadena__que,
+.paso-de-la-cadena__cuanto {
+  display: grid;
+  gap: 0.1rem;
+  min-width: 0;
+}
+
+.paso-de-la-cadena__cuanto {
+  justify-items: end;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.paso-de-la-cadena__nombre {
+  font-weight: 600;
+}
+
+.paso-de-la-cadena__origen,
+.paso-de-la-cadena__base,
+.paso-de-la-cadena__al-lado,
+.paso-de-la-cadena__cambio,
+.paso-de-la-cadena__sin-valor {
+  color: var(--tenue);
+  font-size: 0.84rem;
+  line-height: 1.35;
+}
+
+.paso-de-la-cadena__valor strong {
+  font-size: 1.08rem;
+  font-weight: 650;
+}
+
+.paso-de-la-cadena__cambio {
+  color: var(--texto);
+}
+
+.paso-de-la-cadena__falta {
+  margin-top: 0.15rem;
+  color: var(--texto);
+  font-size: 0.86rem;
+  line-height: 1.35;
+}
+
+.paso-de-la-cadena__falta::before {
+  content: '';
+  display: inline-block;
+  width: 0.45rem;
+  height: 0.45rem;
+  margin-right: 0.4rem;
+  border: 1.5px solid var(--tenue);
+  border-radius: 50%;
+  vertical-align: 0.05rem;
+}
+
+.paso-de-la-cadena[data-calculado='no'] .paso-de-la-cadena__nombre {
+  color: var(--tenue);
+}
+
+.paso-de-la-cadena__historia {
+  margin-top: 0.1rem;
+}
+
+/* El «?» abierto de un paso flota a la izquierda de su botón, desde su propio renglón, y no debajo: ya no empieza tapando
+   el renglón de abajo, y nunca tapa la columna de los «?», que siguen a un toque. Sigue sin ocupar lugar: abrirlo no corre
+   nada (RP-19). */
+.paso-de-la-cadena > .a-pedido--esquina > .a-pedido__texto:not([hidden]) {
+  top: 0;
+  right: calc(100% + 0.35rem);
+}
+
+.metodo-de-la-toma__pie {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem 1rem;
+  padding-top: 0.6rem;
+  border-top: 1px solid var(--borde);
+}
+
+.metodo-de-la-toma__pie .nota {
+  flex: 1 1 22rem;
+  margin: 0;
+}
+
+.guardados-de-la-toma {
+  margin-top: 0.9rem;
+  padding: 0.2rem 0.9rem 0.6rem;
+  border: 1px solid var(--borde);
+  border-radius: 12px;
+}
+
+.guardados-de-la-toma > summary {
+  color: var(--texto);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 2.75rem;
+  font-weight: 600;
+  cursor: pointer;
+  list-style: none;
+}
+
+.guardados-de-la-toma > summary::-webkit-details-marker {
+  display: none;
+}
+
+/* Un solo chevrón, el del ícono: ni la marca nativa ni la de otros desplegables. */
+.guardados-de-la-toma > summary::marker,
+.metodo-de-la-toma > summary::marker {
+  content: '';
+}
+
+.guardados-de-la-toma > summary::before,
+.guardados-de-la-toma > summary::after,
+.metodo-de-la-toma > summary::before,
+.metodo-de-la-toma > summary::after {
+  content: none;
+}
+
+.guardados-de-la-toma > summary .icono {
+  color: var(--tenue);
+  transform: rotate(-90deg);
+}
+
+.guardados-de-la-toma[open] > summary .icono {
+  transform: none;
+}
+
+.guardados-de-la-toma > summary:focus-visible {
+  outline: 3px solid var(--foco);
+  outline-offset: 2px;
 }
 
 .anteriores-sin-efecto {
@@ -12255,52 +12599,201 @@ button.comida-del-dia__fila > .icono:last-child {
   width: 100%;
 }
 
-/* RP-18 (DL-190): «Qué vas a calcular», arriba de los datos de la toma. */
+/* RP-18 (DL-190) y DL-200: «Qué vas a calcular», arriba de los datos de la toma. Cada método elegido es una tarjeta que
+   dice qué pide y qué va a dar; para elegir, cada método es un botón que se elige o se quita, sin casilleros. */
 .eleccion-de-metodos__elegidos {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.35rem;
-  margin: 0 0 0.4rem;
+  display: grid;
+  gap: 0.5rem;
+  margin: 0.4rem 0 0.6rem;
   padding: 0;
   list-style: none;
 }
 
-.eleccion-de-metodos__elegidos .etiqueta-de-dato {
-  white-space: normal;
+.eleccion-de-metodos__elegidos > li,
+.eleccion-de-metodos__opciones > li {
+  margin: 0;
 }
 
-.eleccion-de-metodos__quitar {
+.metodo-elegido {
+  display: grid;
+  gap: 0.2rem;
+  padding: 0.6rem 0.75rem 0.65rem;
+  border: 1px solid var(--borde);
+  border-radius: 10px;
+  background: var(--fondo-suave);
+}
+
+.metodo-elegido__cabecera {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.metodo-elegido__nombre {
+  font-weight: 650;
+}
+
+.metodo-elegido__quitar {
   display: inline-flex;
-  min-width: 1.5rem;
-  min-height: 1.5rem;
+  flex: none;
   align-items: center;
   justify-content: center;
+  min-width: 2.75rem;
+  min-height: 2.75rem;
   padding: 0;
 }
 
+.metodo-elegido__pide,
+.metodo-elegido__da {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.metodo-elegido__rotulo {
+  margin-right: 0.35rem;
+  color: var(--tenue);
+  font-size: 0.78rem;
+  font-weight: 650;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+/* El ícono a la izquierda, el texto al lado y lo que pide debajo del texto: entra en la columna angosta sin partirse. */
+.eleccion-de-metodos__fraccionamiento {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  justify-content: start;
+  gap: 0.1rem 0.5rem;
+  width: 100%;
+  margin-bottom: 0.5rem;
+  text-align: left;
+}
+
+.eleccion-de-metodos__fraccionamiento-pide {
+  grid-column: 2;
+}
+
+.eleccion-de-metodos__fraccionamiento .eleccion-de-metodos__fraccionamiento-pide {
+  color: var(--tenue);
+  font-size: 0.84rem;
+  font-weight: 500;
+}
+
 .eleccion-de-metodos__lista {
-  margin-top: 0.5rem;
+  display: grid;
+  gap: 0.7rem;
+  margin-top: 0.6rem;
+}
+
+.eleccion-de-metodos__categoria h4 {
+  margin: 0 0 0.3rem;
+  color: var(--tenue);
+  font-size: 0.78rem;
+  font-weight: 650;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 
 .eleccion-de-metodos__opciones {
-  flex-direction: column;
-}
-
-.eleccion-de-metodos__opciones li {
   display: grid;
-  gap: 0 0.5rem;
-  padding: 0.15rem 0;
-}
-
-.eleccion-de-metodos__pide,
-.eleccion-de-metodos__sitio {
+  gap: 0.35rem;
   margin: 0;
-  padding-left: 1.6rem;
-  font-size: 0.88rem;
+  padding: 0;
+  list-style: none;
 }
 
-p.eleccion-de-metodos__sitio {
-  padding-left: 0;
+.eleccion-de-metodos__lista {
+  container-type: inline-size;
+}
+
+/* En la columna de la carga (angosta), lo que pide va debajo del nombre; con lugar, a la derecha. */
+.opcion-de-metodo {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 0.2rem 0.65rem;
+  width: 100%;
+  min-height: 2.75rem;
+  padding: 0.5rem 0.7rem;
+  border: 1.5px solid var(--borde);
+  border-radius: 10px;
+  background: var(--superficie);
+  color: var(--texto);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.opcion-de-metodo:hover {
+  border-color: var(--borde-control);
+}
+
+.opcion-de-metodo:focus-visible {
+  outline: 3px solid var(--foco);
+  outline-offset: 1px;
+}
+
+.opcion-de-metodo[aria-pressed='true'] {
+  border-color: var(--azul);
+  background: var(--fondo-suave);
+}
+
+.opcion-de-metodo__marca {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 1.6rem;
+  height: 1.6rem;
+  border: 1.5px solid var(--borde-control);
+  border-radius: 50%;
+  color: var(--tenue);
+}
+
+.opcion-de-metodo[aria-pressed='true'] .opcion-de-metodo__marca {
+  border-color: var(--azul);
+  background: var(--azul);
+  color: var(--superficie);
+}
+
+.opcion-de-metodo__texto {
+  display: grid;
+  gap: 0.05rem;
+  min-width: 0;
+}
+
+.opcion-de-metodo__nombre {
+  font-weight: 600;
+}
+
+.opcion-de-metodo__da,
+.opcion-de-metodo__pide {
+  color: var(--tenue);
+  font-size: 0.84rem;
+  line-height: 1.35;
+}
+
+.opcion-de-metodo__pide {
+  grid-column: 2;
+}
+
+@container (min-width: 34rem) {
+  .opcion-de-metodo {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+  }
+
+  .opcion-de-metodo__pide {
+    grid-column: auto;
+    max-width: 12rem;
+    text-align: right;
+  }
+}
+
+.eleccion-de-metodos__sitio {
+  margin: 0.15rem 0 0;
+  font-size: 0.86rem;
 }
 
 .datos-de-la-carga__otra {

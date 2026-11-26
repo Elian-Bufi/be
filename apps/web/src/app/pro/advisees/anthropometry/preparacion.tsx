@@ -23,16 +23,20 @@ import {
   ETIQUETA_DE_FAMILIA,
   ETIQUETA_DE_ORIGEN,
   FAMILIA_DE_METRICA,
-  familiasDeMetodos,
-  familiasHabituales,
-  leerEleccion,
+  leerProgramas,
   leerNumero,
-  medicionesDeLaEleccion,
+  medicionesDelPrograma,
+  medicionesPedidas,
   metricasDeLaToma,
   metricasDelProtocolo,
   metricasPorFamilia,
   motivoDeNumeroIlegible,
   otrasMediciones,
+  programasDeLasMetricas,
+  PROGRAMAS_DE_RESULTADO,
+  CLAVE_DEL_FRACCIONAMIENTO,
+  resultadoDelMetodo,
+  valoresParaLaCadena,
   repartirEnElProtocolo,
   todasLasPaginas,
   type Especificacion,
@@ -47,7 +51,8 @@ import { DialogoDeConfirmacion } from '../../../../components/dialogo';
 import { EnPartes, conNumerosPegados } from '../../../../components/en-partes';
 import { Aviso, Campo } from '../../../../components/formulario';
 import { Icono } from '../../../../components/icono';
-import { api, type Resultado } from '../../../../lib/api';
+import { api, nuevaClaveDeIdempotencia, type Resultado } from '../../../../lib/api';
+import { ClavesPorPedido } from '../../../../lib/clave-de-intento';
 import { fecha, numeroEnCampo } from '../../../../lib/formato';
 import { mensajeDeFallo, useClaveDeIntento } from '../../../../lib/intento';
 import { useCambiosSinGuardar } from '../marco-del-area';
@@ -55,6 +60,7 @@ import { EstadoDeLectura, useAntropometria } from './antropometria';
 import { clavesConSitio, clavesDeLaFamilia, type FamiliaDeLaCarga } from './composicion-de-la-carga';
 import { EleccionDeMetodos } from './eleccion-de-metodos';
 import { CampoDeMedicion, FiguraDeLaCarga, idDelValor, type CampoDeLaCarga } from './figura-de-la-carga';
+import { guardarEnLaHistoria, metodosParaGuardar } from './guardar-en-la-historia';
 import { esFechaFutura, FECHA_DE_TOMA_FUTURA, motivoDelRechazo } from './rechazos-de-antropometria';
 
 /** El aviso de la toma. Un error de validación lista los campos que corregir, con un enlace a cada uno. */
@@ -202,11 +208,12 @@ export function VistaDePreparacion({ vuelta }: { vuelta: ReactNode }) {
           aviso={aviso}
           onAviso={setAviso}
           onCambio={cargar}
-          onRegistrada={(evaluationId) => {
+          onRegistrada={(evaluationId, { texto, extra }) => {
             // El aviso se dice en «Tomas», adonde se vuelve con la toma recién registrada abierta: dicho acá, esta vista se
-            // desmontaba antes de que llegara a verse.
-            avisarEnTomas(COPY_ANTROPOMETRIA.registroHecho);
-            irA('evaluaciones', evaluationId);
+            // desmontaba antes de que llegara a verse. DL-200: la toma se abre con los métodos elegidos y las ecuaciones de la
+            // figura, para que el resumen sea el del método con que se midió.
+            avisarEnTomas(texto);
+            irA('evaluaciones', evaluationId, extra);
           }}
         />
       ) : null}
@@ -234,10 +241,12 @@ function Preparacion({
   aviso: AvisoDeLaToma | null;
   onAviso: (a: AvisoDeLaToma | null) => void;
   onCambio: () => Promise<void>;
-  onRegistrada: (evaluationId: string) => void;
+  onRegistrada: (evaluationId: string, despues: { readonly texto: string; readonly extra: Readonly<Record<string, string>> }) => void;
 }) {
   const { token, asesoradoId, sesionPerdida, accesoRetirado, parametros, ir } = useAntropometria();
   const intento = useClaveDeIntento();
+  // DL-200: las claves de guardar en la historia, una por método, aparte de la del registro de la toma.
+  const clavesDeGuardar = useRef<ClavesPorPedido | null>(null);
   const protocoloPorDefecto = especificaciones[0]?.versionId ?? '';
   const [escritos, setEscritos] = useState<Record<string, Escrito>>({});
   const [libres, setLibres] = useState<FilaLibre[]>([]);
@@ -301,15 +310,20 @@ function Preparacion({
   const escritoDe = useCallback((m: MetricaDelProtocolo): Escrito => escritos[m.clave] ?? { valor: '', unidad: m.unidades[0]! }, [escritos]);
   const conDato = new Set(universo.filter((m) => leerNumero(escritoDe(m).valor) !== null).map((m) => m.clave));
 
-  // ── RP-18: qué métodos se eligieron y, con eso, qué mide la toma ──────────────────────────────────────────────────
+  // ── RP-18 y DL-200: qué métodos se eligieron y, con eso, qué mide la toma ──────────────────────────────────────────
   // Viven en la dirección (`metodos=`, `sueltas=`), como la figura y la familia. Sin `metodos=`, vienen los de la última
   // toma del profesional (API-MHA-01); `metodos=ninguno` es no filtrar. Sin ninguno elegido, se ve el protocolo entero.
-  const familiasDeMetodo = useMemo(() => (metodos ? familiasDeMetodos(metodos) : []), [metodos]);
+  // Desde DL-200 se elige el método entero (`jackson-pollock-7`), y `fraccionamiento-4c` suma la talla y los diámetros de
+  // Rocha; una dirección de DL-190, con familias por métrica, se lee como el método que las da.
+  const sexo: SexoDeLaLamina = parametros.get('figura') === 'mujer' ? 'MUJER' : 'HOMBRE';
   const enLaDireccion = parametros.get('metodos');
-  const listaElegida = enLaDireccion === null ? familiasHabituales(familiasDeMetodo, habituales) : enLaDireccion === 'ninguno' ? [] : leerEleccion(enLaDireccion, familiasDeMetodo);
-  const claveDeLaEleccion = listaElegida.join(',');
+  const habitualesDeLaUltima = useMemo(() => (metodos ? programasDeLasMetricas(metodos.filter((m) => habituales.includes(m.methodId)).map((m) => m.output.metric)) : []), [metodos, habituales]);
+  const leida = leerProgramas(enLaDireccion === 'ninguno' ? null : enLaDireccion);
+  const listaElegida = metodos === null ? [] : enLaDireccion === null ? habitualesDeLaUltima : leida.programas;
+  const conFraccionamiento = enLaDireccion !== null && leida.conFraccionamiento;
+  const claveDeLaEleccion = [...listaElegida, conFraccionamiento ? CLAVE_DEL_FRACCIONAMIENTO : ''].join(',');
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  const elegidas = useMemo(() => new Set(listaElegida), [claveDeLaEleccion]);
+  const elegidas = useMemo(() => listaElegida, [claveDeLaEleccion]);
   const textoDeSueltas = parametros.get('sueltas') ?? '';
   const sueltas = useMemo(() => textoDeSueltas.split(',').filter(Boolean), [textoDeSueltas]);
   // Lo que tuvo dato en esta visita sigue a la vista aunque se borre para reescribirlo: el campo no se va mientras se tipea.
@@ -319,11 +333,15 @@ function Preparacion({
   /** Lo que se ve: lo que piden los métodos elegidos (o el protocolo entero), los puntos sueltos y todo lo que ya tiene dato. */
   const metricas = useMemo(() => {
     const conValor = claveDeConDato ? claveDeConDato.split(',') : [];
-    const claves = elegidas.size === 0 ? [...new Set([...delProtocolo.map((m) => m.clave), ...sueltas, ...conValor])] : medicionesDeLaEleccion(familiasDeMetodo, elegidas, { sueltas, conDato: conValor });
+    const claves =
+      elegidas.length === 0
+        ? [...new Set([...delProtocolo.map((m) => m.clave), ...sueltas, ...conValor])]
+        : medicionesPedidas(elegidas.flatMap((c) => medicionesDelPrograma(c, sexo, conFraccionamiento)), { sueltas, conDato: conValor });
     return metricasDeLaToma(universo, claves);
-  }, [elegidas, familiasDeMetodo, sueltas, delProtocolo, universo, claveDeConDato]);
+  }, [elegidas, sexo, conFraccionamiento, sueltas, delProtocolo, universo, claveDeConDato]);
   const otras = otrasMediciones(delProtocolo, metricas.map((m) => m.clave));
-  const elegirMetodos = (lista: readonly string[]) => ir({ metodos: lista.length > 0 ? lista.join(',') : 'ninguno' });
+  const elegirMetodos = (lista: readonly string[], fraccionamiento: boolean) =>
+    ir({ metodos: lista.length > 0 ? [...lista, ...(fraccionamiento ? [CLAVE_DEL_FRACCIONAMIENTO] : [])].join(',') : 'ninguno' });
   const sumarSuelta = (clave: string) => ir({ sueltas: [...new Set([...sueltas, clave])].join(',') });
   const libresConValor = libres.filter((f) => f.metric.trim() && leerNumero(f.value) !== null).length;
   const algoEscrito = Object.values(escritos).some((e) => e.valor.trim() !== '') || libres.length > 0 || contexto.trim() !== '';
@@ -332,7 +350,6 @@ function Preparacion({
 
   // ── La figura: qué familia y qué figura se miran (en la dirección; no son un dato y no se guardan) ─────────────────
   const claves = useMemo(() => metricas.map((m) => m.clave), [metricas]);
-  const sexo: SexoDeLaLamina = parametros.get('figura') === 'mujer' ? 'MUJER' : 'HOMBRE';
   const familias = (['PERIMETROS', 'PLIEGUES'] as const).filter((f) => clavesDeLaFamilia(sexo, f, claves).length > 0);
   const pedida: FamiliaDeLaCarga | null = parametros.get('medidas') === 'pliegues' ? 'PLIEGUES' : parametros.get('medidas') === 'perimetros' ? 'PERIMETROS' : null;
   const familia: FamiliaDeLaCarga | null = pedida && familias.includes(pedida) ? pedida : (familias[0] ?? null);
@@ -491,7 +508,26 @@ function Preparacion({
     setConfirmando(false);
     if (sesionPerdida(res) || accesoRetirado(res)) return;
     if (!res.ok) return avisarDelRechazo(res);
-    onRegistrada(res.datos.data.evaluationId);
+    const registrada = res.datos.data.evaluationId;
+    const extra: Record<string, string> = { ...(elegidas.length > 0 ? { metodos: elegidas.join(',') } : {}), ecuaciones: sexo === 'MUJER' ? 'mujer' : 'hombre' };
+    // DL-200 (AR-05): con la toma registrada, BE guarda en la historia lo que da lo elegido y tiene su método en el catálogo.
+    // Si algo no se pudo guardar, la toma ya está registrada: se dice, y desde «Tomas» se guarda con un toque.
+    if (elegidas.length === 0 || !metodos) return onRegistrada(registrada, { texto: COPY_ANTROPOMETRIA.registroHecho, extra });
+    setEnviando(true);
+    const leida = await api.consultarEvaluacionAntropometrica(token, registrada);
+    if (sesionPerdida(leida)) return setEnviando(false);
+    let texto: string = COPY_ANTROPOMETRIA.registroHecho;
+    if (leida.ok) {
+      const toma = leida.datos.data;
+      const { valores } = valoresParaLaCadena(toma.measurements);
+      const resultados = elegidas.map((c) => resultadoDelMetodo(c, valores, sexo)).filter((x): x is NonNullable<typeof x> => x !== null);
+      const guardado = await guardarEnLaHistoria({ token, asesoradoId, toma, metodos: metodosParaGuardar(resultados, toma, metodos, []), claves: (clavesDeGuardar.current ??= new ClavesPorPedido(nuevaClaveDeIdempotencia)), corta: (x) => sesionPerdida(x) || accesoRetirado(x) });
+      if (guardado.tipo === 'cortado') return setEnviando(false);
+      if (guardado.guardados > 0) texto = `${texto} BE guardó ${guardado.guardados === 1 ? '1 resultado' : `${guardado.guardados} resultados`} en la historia.`;
+      if (guardado.fallidos.length > 0) texto = `${texto} No se pudo guardar: ${guardado.fallidos.join(', ')}; desde la toma se guarda con un toque.`;
+    }
+    setEnviando(false);
+    onRegistrada(registrada, { texto, extra });
   }
 
   /**
@@ -670,7 +706,15 @@ function Preparacion({
 
         <div className="carga-de-la-toma__datos">
           {/* RP-18: los métodos se eligen antes de medir; la figura y la lista piden lo que necesitan. */}
-          <EleccionDeMetodos familias={familiasDeMetodo} elegidas={elegidas} deLaUltimaToma={enLaDireccion === null && elegidas.size > 0} leidos={metodos !== null} onCambiar={elegirMetodos} />
+          <EleccionDeMetodos
+            programas={PROGRAMAS_DE_RESULTADO}
+            elegidos={elegidas}
+            conFraccionamiento={conFraccionamiento}
+            sexo={sexo}
+            deLaUltimaToma={enLaDireccion === null && elegidas.length > 0}
+            leidos={metodos !== null}
+            onCambiar={elegirMetodos}
+          />
           {/* El momento, el protocolo y el origen son de la toma entera: una evaluación es una toma (09v11 §6). */}
           <section className="tarjeta datos-de-la-carga" aria-labelledby="titulo-datos-de-la-toma">
             <h3 id="titulo-datos-de-la-toma">Datos de la toma</h3>
@@ -752,7 +796,7 @@ function Preparacion({
                 />
                 <button
                   type="button"
-                  className="boton boton--enlace"
+                  className="boton boton--discreto boton--compacto"
                   onClick={() => {
                     // Los avisos van por posición: al quitar una fila las demás se corren, así que se descartan y se
                     // recalculan en el próximo guardado, en vez de quedar pegados a la fila equivocada.
@@ -785,7 +829,7 @@ function Preparacion({
             ) : null}
             {/* Una medición fuera del catálogo es la excepción: va junto a los campos, no entre los actos de la toma. */}
             <p className="datos-de-la-carga__agregar">
-              <button type="button" className="boton boton--enlace" onClick={() => setLibres((xs) => [...xs, filaNueva()])} disabled={!protocolo}>
+              <button type="button" className="boton boton--discreto boton--compacto" onClick={() => setLibres((xs) => [...xs, filaNueva()])} disabled={!protocolo}>
                 <Icono nombre="mas" tamano={18} />
                 {metricas.length > 0 ? 'Agregar una que no está en la lista' : COPY_ANTROPOMETRIA.agregarMedicion}
               </button>
@@ -806,6 +850,15 @@ function Preparacion({
         onConfirmar={() => void registrar()}
       >
         <p>{COPY_ANTROPOMETRIA.explicacionDeRegistro}</p>
+        {elegidas.length > 0 ? (
+          <p>
+            Con la toma, BE guarda en la historia los resultados de{' '}
+            {PROGRAMAS_DE_RESULTADO.filter((p) => elegidas.includes(p.clave))
+              .map((p) => `«${p.nombre}»`)
+              .join(', ')}{' '}
+            que tienen su método en el catálogo. Todo lo demás que dan se ve en la toma.
+          </p>
+        ) : null}
       </DialogoDeConfirmacion>
     </div>
   );

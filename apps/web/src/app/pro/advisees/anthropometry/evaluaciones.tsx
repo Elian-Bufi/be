@@ -187,6 +187,10 @@ export function VistaDeEvaluaciones() {
   // Vuelve a la lista sin la toma pedida: saca el parámetro de la dirección y abre la más reciente, como al entrar.
   const volverALaLista = () => irA('evaluaciones');
   const abierta = abiertaId ? detalles.get(abiertaId) : undefined;
+  // DL-200: la toma registrada anterior a la abierta, si su detalle ya llegó: para el cambio de cada resultado.
+  const anteriorId = tomas && abiertaId ? (tomas[tomas.findIndex((t) => t.evaluationId === abiertaId) + 1]?.evaluationId ?? null) : null;
+  const delAnterior = anteriorId ? detalles.get(anteriorId) : undefined;
+  const anterior = delAnterior?.tipo === 'listo' ? delAnterior.toma : null;
   const cuentasDe = (t: ResumenDeEvaluacionApi): string =>
     cuentasDeLaTomaEnPalabras(resumenes.get(t.evaluationId)?.cuentas ?? { mediciones: t.summary.measurementCount, corregidas: null, anuladas: t.summary.annulledCount });
 
@@ -213,7 +217,7 @@ export function VistaDeEvaluaciones() {
             {lista.datos.borrador === 'sin-leer' ? (
               <p className="nota" role="alert">
                 {C.preparacionNoSeLeyo}{' '}
-                <button type="button" className="boton boton--enlace" onClick={() => void releerElBorrador()}>
+                <button type="button" className="boton boton--discreto boton--compacto" onClick={() => void releerElBorrador()}>
                   {COPY.reintentar}
                   <span className="visualmente-oculto"> {C.preparacionDeQue}</span>
                 </button>
@@ -278,7 +282,7 @@ export function VistaDeEvaluaciones() {
                   <Aviso tipo="info" enfocar>
                     <p>
                       {COPY_EVOLUCION.evaluacionNoDisponible}{' '}
-                      <button type="button" className="boton boton--enlace" onClick={volverALaLista}>
+                      <button type="button" className="boton boton--discreto boton--compacto" onClick={volverALaLista}>
                         {COPY_EVOLUCION.volverALaLista}
                       </button>
                     </p>
@@ -288,14 +292,14 @@ export function VistaDeEvaluaciones() {
                   <Aviso tipo="error" enfocar>
                     <p>
                       {COPY_EVOLUCION.evaluacionNoCargo}{' '}
-                      <button type="button" className="boton boton--enlace" onClick={() => void leerDetalle(abiertaId)}>
+                      <button type="button" className="boton boton--discreto boton--compacto" onClick={() => void leerDetalle(abiertaId)}>
                         {COPY.reintentar}
                       </button>
                       {pedida ? (
                         <>
                           {' '}
                           ·{' '}
-                          <button type="button" className="boton boton--enlace" onClick={volverALaLista}>
+                          <button type="button" className="boton boton--discreto boton--compacto" onClick={volverALaLista}>
                             {COPY_EVOLUCION.volverALaLista}
                           </button>
                         </>
@@ -304,7 +308,7 @@ export function VistaDeEvaluaciones() {
                   </Aviso>
                 ) : null}
                 {abierta?.tipo === 'listo' ? (
-                  <TomaAbierta key={abierta.toma.evaluationId} toma={abierta.toma} tomas={paraComparar} calculos={calculos.estado} onReintentarLosCalculos={() => void recargarCalculos()} volverALeer={volverALeer} />
+                  <TomaAbierta key={abierta.toma.evaluationId} toma={abierta.toma} anterior={anterior} tomas={paraComparar} calculos={calculos.estado} onReintentarLosCalculos={() => void recargarCalculos()} volverALeer={volverALeer} />
                 ) : null}
               </div>
             </div>
@@ -363,12 +367,15 @@ const ICONO_DE_FAMILIA: Readonly<Partial<Record<FamiliaDeMedicion, NombreDeIcono
  */
 function TomaAbierta({
   toma,
+  anterior,
   tomas,
   calculos,
   onReintentarLosCalculos,
   volverALeer,
 }: {
   toma: EvaluacionAntropometricaApi;
+  /** DL-200: la toma registrada anterior, si su detalle ya llegó. */
+  anterior: EvaluacionAntropometricaApi | null;
   /** GR-16: las tomas registradas de la lista, con cuándo se tomó cada una. */
   tomas: readonly TomaParaComparar[];
   calculos: Calculos;
@@ -376,7 +383,7 @@ function TomaAbierta({
   volverALeer: (id: string) => Promise<void>;
 }) {
   const { delProfesional } = useNombres();
-  const { irA } = useAntropometria();
+  const { irA, avisarEnTomas } = useAntropometria();
   const [panel, setPanel] = useState<PanelAbierto>(null);
   /** Lo que se acaba de hacer en el panel, dicho adentro: un aviso de la página quedaría detrás del diálogo. */
   const [hecho, setHecho] = useState<string | null>(null);
@@ -420,7 +427,18 @@ function TomaAbierta({
       </div>
       <p className="metadatos toma-abierta__metadatos">{conNumerosPegados(metadatos.join(' · '))}</p>
 
-      <ResultadosDeLaToma toma={toma} calculos={calculos} onReintentar={onReintentarLosCalculos} onAbrir={(id) => setPanel({ tipo: 'resultado', id })} onCalcular={() => setPanel({ tipo: 'calcular' })} />
+      <ResultadosDeLaToma
+        toma={toma}
+        anterior={anterior}
+        calculos={calculos}
+        onReintentar={onReintentarLosCalculos}
+        onAbrir={(id) => setPanel({ tipo: 'resultado', id })}
+        onCalcular={() => setPanel({ tipo: 'calcular' })}
+        onGuardado={async (texto) => {
+          avisarEnTomas(texto);
+          await volverALeer(toma.evaluationId);
+        }}
+      />
 
       <section className="mediciones-de-la-toma" aria-labelledby="titulo-mediciones">
         <div className="toma-abierta__titulo-de-bloque">

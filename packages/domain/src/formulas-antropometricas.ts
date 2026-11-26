@@ -395,3 +395,24 @@ export const REGLAS_ANTROPOMETRICAS: Readonly<Record<string, ReglaDeCalculo>> = 
   'be/kerr-masa-osea@1': masaOseaKerr,
   'be/kerr-masa-residual@1': masaResidualKerr,
 };
+
+/**
+ * DL-200 · las piezas de las ecuaciones, para que `resultados-antropometricos.ts` encadene los pasos de un método (la suma,
+ * la densidad, la conversión, las masas y el fraccionamiento) con **las mismas** cuentas que las reglas publicadas de
+ * arriba, sin copiarlas. Exportarlas no cambia ninguna regla: un método publicado nunca se edita.
+ */
+export const PIEZAS_ANTROPOMETRICAS = {
+  densidadDurninWomersley,
+  densidadJacksonPollock,
+  siri,
+  brozek,
+  porcentajeFaulkner,
+  masaOseaRocha,
+  imc,
+  coeficientesDurninWomersley: DURNIN_WOMERSLEY,
+  coeficientesJacksonPollock: JACKSON_POLLOCK,
+  fraccionResidual: FRACCION_RESIDUAL,
+  yuhaszCarter: YUHASZ_CARTER,
+  rfm: RFM,
+  deurenberg: DEURENBERG,
+} as const;

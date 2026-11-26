@@ -198,6 +198,7 @@
 | DL-197 | Recorrido de Dirección · 2026-11-25 (F1 a F25 sobre el editor de DL-196 y la estructura del prototipo que eligió: «Fases del plan» con su barra, cuadros para configurar, las sesiones como tarjetas; WP-EDITOR-ENTRENAMIENTO-TANDA-1) | DL-141 · DL-178 · DL-188 (RP-19) · DL-192 · DL-196 · B10-06 · REG-06-128 · RNF-ACC-001 | La tarjeta del plan descuadrada, el panel que se desbordaba, fases que sumaban más que el plan y se podían activar, aproximaciones que repetían cargas y heredaban el RIR y el descanso común, una planilla con columnas cortadas y demasiados controles a la vista, y un catálogo que no listaba nada hasta buscar ni se podía filtrar | **PROGRAMADA en `wp-editor-entrenamiento-tanda-1` (PR en borrador, sin integrar) · ET1-D01 a ET1-D20 a ratificar:** la barra de fases y los cuadros «Configurar plan», «Editar fase», «Días de la semana», «Agregar ejercicios», «Aproximaciones», «Editar todas las series» y «Más opciones», cada uno con su «?» y un ejemplo resuelto; **con fases de más no se activa** (`PHASES_EXCEED_PLAN_WEEKS`); la intensidad del plan elegida una vez y heredada; aproximaciones que nunca repiten ni llegan a la de trabajo, sin RIR y con su descanso; la clasificación del catálogo (migración aditiva `20261125120000`, **la de los 186 a validar por Elián**); «Catálogo de BE» en «Mis ejercicios»; los ejes desde 0. Detalle: `docs/paquetes/WP-EDITOR-ENTRENAMIENTO-TANDA-1.md` |
 | DL-198 | Decisiones de Dirección · 2026-11-25 (el 1RM con tres orígenes y la calibración del día cero; lo que la tanda 1 dejó para la tanda 2; WP-EDITOR-ENTRENAMIENTO-TANDA-2) | DL-171 · DL-192 · DL-196 · DL-197 · DL-152 · DL-108 · DL-182 · B10-06 · REG-06-128 · RNF-ACC-001 | El % RM sin un 1RM numérico, la persona que veía siempre la carga de la semana 1, ninguna forma de ver el plan como le llega, el esfuerzo de la sesión afuera (RPE-D09), plantillas que perdían la planificación, la clasificación de un propio que no se podía cambiar y desplegables desparejos | **PROGRAMADA en `wp-editor-entrenamiento-tanda-2` (sale de #324; PR en borrador, sin integrar) · ET2-D01 a ET2-D17 a ratificar:** el 1RM de referencia (`BE-E1RM` v2) con la calibración, el último registro en rango y lo declarado, el más reciente y el aviso si se aleja más del 10 % (API-RMX-01 y 02); el % RM con su base; la carga de cada semana en las lecturas del titular, en los mismos campos; «Ver como la persona»; el esfuerzo de la sesión (Foster, API-ESF-01 y 02); las plantillas con su planificación; la clasificación de un propio (API-EJE-06); migraciones aditivas `20261125125900` y `20261125130000`. Detalle: `docs/paquetes/WP-EDITOR-ENTRENAMIENTO-TANDA-2.md` |
 | DL-199 | Encargo de Dirección · 2026-11-25 (la prueba completa del editor de Entrenamiento; WP-EDITOR-ENTRENAMIENTO-TANDA-3) | DL-191 · DL-196 · DL-197 · DL-198 · DL-178 · DL-152 · DL-155 · B10-06 · REG-06-128 · RNF-ACC-001 | Sin planes completos de BE para empezar, ninguna sugerencia desde lo que hizo la persona, el cardio cargado como series × repeticiones × kg, sin reordenar arrastrando ni «Deshacer», lo BAJA de las tandas 1 y 2 y un editor sobrecargado (E5) | **PROGRAMADA en `wp-editor-entrenamiento-tanda-3` (PR en borrador, sin integrar) · ET3-D01 a ET3-D39 a ratificar:** las Plantillas de BE (cuatro, propuesta a validar por Elián) con las cargas en % RM resueltas con el 1RM de la persona (API-TPB-01 a 04, Administración las ofrece o las retira; migración aditiva `20261126120000`); la sugerencia «+2,5 kg la próxima» con su motivo; el cardio con duración, distancia e intensidad en los parámetros de siempre; reordenar arrastrando o con el teclado y «Deshacer» (Ctrl+Z); lo BAJA; la pasada de densidad. Detalle: `docs/paquetes/WP-EDITOR-ENTRENAMIENTO-TANDA-3.md` |
+| DL-200 | Pedido de Dirección · 2026-11-25 («hay que tildar casilleros para tener más de un resultado… no es práctico»; WP-ANTROPOMETRIA-RESULTADOS) | DL-111 · DL-112 · DL-190 · REG-06-156/157/158 · REG-06-203/204/205 · RF-048 · RF-049 · TEST-PRJ-009 | Cada resultado era una corrida aparte, elegida en una lista y calculada de a una; «Qué vas a calcular» se tildaba por métrica; la densidad no se veía; las masas, el fraccionamiento y lo retirado por DL-112 no estaban; Kerr iba aparte; los resultados no decían su cambio; doce acciones subrayadas | **PROGRAMADA en `wp-antropometria-resultados` (PR en borrador, sin integrar) · AR-D01 a AR-D16 a ratificar**: la cadena de derivaciones del dominio (lo medido, la ecuación, la conversión con Siri y Brožek, las masas y el fraccionamiento en cuatro componentes con Rocha y Würch) para 20 métodos, con las mismas reglas publicadas; la toma con el resumen arriba y cada método en su desplegable, cada valor con su origen, su «?» con la cuenta y lo que le falta, y su cambio desde la anterior; «Qué vas a calcular» por método; guardar en la historia al registrar y desde la toma. Sin API ni migración; la APK 0.32 no cambia. Detalle: `docs/paquetes/WP-ANTROPOMETRIA-RESULTADOS.md` |
 
 ---
 
@@ -9660,3 +9661,39 @@ muestra. La próxima versión puede dibujarlo como tarjeta propia.
 
 **Lo que queda.** Ratificar ET3-D01 a ET3-D39 y validar las cuatro Plantillas de BE; la tarjeta del cardio en la APK;
 mirarlo en pantalla con Dirección. Detalle: `docs/paquetes/WP-EDITOR-ENTRENAMIENTO-TANDA-3.md`.
+
+---
+
+## DL-200 — El resultado completo de cada método, encadenado y sin casilleros
+
+**Prioridad:** alta («la estética es primordial: Elián va a probar todo mañana») · DL-111 · DL-112 · DL-190 · REG-06-156/157/158
+· REG-06-203/204/205 · RF-048 · RF-049 · TEST-PRJ-009 · **Estado:** PEDIDA por Dirección el 2026-11-25 · PROGRAMADA en
+`wp-antropometria-resultados`; PR en borrador, sin integrar · AR-D01 a AR-D16, **a ratificar**. Si al integrar el número
+choca con otro paquete, se renumera.
+
+**Qué pidió Dirección.** «Hoy en día hay que tildar casilleros para tener más de un resultado… no es práctico. Revisá la
+experiencia que le estamos dando a los profesionales en esa área». Su ejemplo: Jackson y Pollock de 7 pliegues entrega de
+una vez la suma, la densidad, el % de grasa (Siri o Brožek), la masa grasa y la libre de grasa y, en una evaluación
+completa, el fraccionamiento en cuatro componentes con Rocha y Würch.
+
+**Qué dice el legajo.** Nada en contra. REG-06-157 (lo medido antes que lo inferido, con su ecuación) ordena las etapas de
+cada método; REG-06-205 (los cálculos conviven, sin «el mejor») ordena los métodos por el catálogo; REG-06-156/158 piden la
+regla versionada y la precisión: cada paso lleva su regla (la publicada o una derivación `be/derivacion/…@1`) y su
+precisión. Un método publicado no se edita (REG-06-203): las cuentas usan las mismas piezas de `formulas-antropometricas.ts`.
+No se edita el legajo.
+
+**Lo programado.**
+- **AR-01 · La cadena de derivaciones** (`resultados-antropometricos.ts`): 20 métodos, cada paso con su origen, su fórmula,
+  la cuenta con los números de la toma, su fuente, su regla y lo que le falta.
+- **AR-02 a AR-04 · La pantalla de la toma:** el resumen, los métodos en desplegables, el «?» en la esquina con un ejemplo
+  resuelto, el cambio desde la anterior, las ecuaciones por sexo y la conversión una vez por toma.
+- **AR-05 · Guardar en la historia** lo que tiene método seleccionable en el catálogo, al registrar y desde la toma.
+- **AR-06 · «Qué vas a calcular» por método**, con lo que pide y lo que va a dar, y el fraccionamiento con un toque.
+- **AR-07 · Sin acciones subrayadas** en el área, con la guardia extendida. **AR-08 · El recorrido** `resultadosAntropometricos`.
+- Pruebas: TEST-AR-01 a 14 (dominio, con Durnin y Womersley, Heath y Carter y Kerr contra lo publicado), TEST-AR-WEB-01 a
+  08 y TEST-AR-NAV-01.
+
+**Lo que queda.** Ratificar AR-D01 a AR-D16 (sobre todo AR-D02, qué se guarda; AR-D03, lo retirado se ve; AR-D05, el
+fraccionamiento con otra grasa); decidir si la densidad y las masas de cada ecuación se publican como métodos para que
+entren en «Evolución» y «Composición corporal»; mirarlo en pantalla con Dirección. Detalle:
+`docs/paquetes/WP-ANTROPOMETRIA-RESULTADOS.md`.

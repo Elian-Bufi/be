@@ -112,8 +112,16 @@ export function medicionesDeLaEleccion(
   elegidas: ReadonlySet<string>,
   extra: { readonly sueltas?: readonly string[]; readonly conDato?: readonly string[] } = {},
 ): string[] {
+  return medicionesPedidas(familias.filter((f) => elegidas.has(f.clave)).flatMap((f) => f.mediciones), extra);
+}
+
+/**
+ * DL-200 · lo mismo para cualquier lista de mediciones pedidas (las de los métodos de `resultados-antropometricos.ts`): peso,
+ * talla y edad; después lo pedido, en el orden del catálogo; al final, los puntos sueltos y lo que ya tiene dato.
+ */
+export function medicionesPedidas(pedidasPorLosMetodos: Iterable<string>, extra: { readonly sueltas?: readonly string[]; readonly conDato?: readonly string[] } = {}): string[] {
   const pedidas = new Set<string>(MEDICIONES_DE_BASE);
-  for (const f of familias) if (elegidas.has(f.clave)) for (const m of f.mediciones) pedidas.add(m);
+  for (const m of pedidasPorLosMetodos) pedidas.add(m);
   const catalogo = Object.keys(NOMBRE_DE_METRICA).filter((c) => c in FAMILIA_DE_METRICA);
   const enOrden = [...catalogo.filter((c) => pedidas.has(c)), ...[...pedidas].filter((c) => !catalogo.includes(c))];
   for (const c of [...(extra.sueltas ?? []), ...(extra.conDato ?? [])]) if (!enOrden.includes(c)) enOrden.push(c);
