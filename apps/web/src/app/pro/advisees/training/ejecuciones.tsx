@@ -943,8 +943,8 @@ function EsfuerzoDeLaSesionEnElDetalle({ esfuerzos, executionId }: { esfuerzos: 
       <strong>{T.titulo}:</strong> {esfuerzoEnUnRenglon(e)}
       {e.durationSource === 'TIMER' ? <span className="nota"> · minutos del cronómetro</span> : e.durationSource === 'DECLARED' ? <span className="nota"> · minutos escritos por la persona</span> : null}
       <ExplicacionAPedido nombre={`Qué es el ${T.titulo.toLowerCase()}`} lugar="esquina">
-        <span className="ayuda-del-editor">
-          <span>{T.queEs}</span> <span className="ayuda-del-editor__ejemplo">{T.ejemplo}</span>
+        <span className="ayuda-con-ejemplo">
+          <span>{T.queEs}</span> <span className="ayuda-con-ejemplo__ejemplo">{T.ejemplo}</span>
         </span>
       </ExplicacionAPedido>
     </p>

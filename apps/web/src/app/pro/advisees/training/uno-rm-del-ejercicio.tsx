@@ -356,14 +356,14 @@ export function CuadroDelUnoRM({ abierto, onCerrar, id, nombre, unidad, unoRM }:
       ayuda={{
         nombre: `Qué es el ${COPY_UNO_RM.titulo}`,
         contenido: (
-          <div className="ayuda-del-editor" data-ayuda-del-uno-rm>
+          <div className="ayuda-con-ejemplo" data-ayuda-del-uno-rm>
             <p>{COPY_UNO_RM.queEs}</p>
             <p>{COPY_UNO_RM.calibracionExplicada}</p>
-            <p className="ayuda-del-editor__ejemplo">{COPY_UNO_RM.calibracionEjemplo}</p>
+            <p className="ayuda-con-ejemplo__ejemplo" data-ejemplo-resuelto>{COPY_UNO_RM.calibracionEjemplo}</p>
             <p>{COPY_UNO_RM.reglaDelRegistro}</p>
             <p>{COPY_UNO_RM.orientativo}</p>
             <p>{COPY_UNO_RM.masReciente}</p>
-            <p className="ayuda-del-editor__ejemplo">{COPY_UNO_RM.ejemploDelPorcentaje}</p>
+            <p className="ayuda-con-ejemplo__ejemplo">{COPY_UNO_RM.ejemploDelPorcentaje}</p>
           </div>
         ),
       }}

@@ -112,7 +112,7 @@ export function VistaDeLaPersona({
       className="vista-de-la-persona"
       titulo={T.titulo}
       sobretitulo={persona}
-      ayuda={{ nombre: `Qué muestra «${T.abrir}»`, contenido: <p className="ayuda-del-editor__ejemplo">{T.ayuda}</p> }}
+      ayuda={{ nombre: `Qué muestra «${T.abrir}»`, contenido: <p className="ayuda-con-ejemplo__ejemplo" data-ejemplo-resuelto>{T.ayuda}</p> }}
       onCerrar={onCerrar}
     >
       <div className="vista-de-la-persona__cuerpo" data-vista-de-la-persona>

@@ -59,8 +59,8 @@ export function GraficoDeLaCargaDeLaSesion({ esfuerzos }: { esfuerzos: readonly 
       <figcaption className="grafico-de-la-carga-de-la-sesion__titulo">
         <span id={`${id}-titulo`}>{T.ejeDelGrafico}</span>
         <ExplicacionAPedido nombre={`Qué es la ${T.cargaDeLaSesion.toLowerCase()}`} como="span" lugar="esquina">
-          <span className="ayuda-del-editor">
-            <span>{T.queEs}</span> <span className="ayuda-del-editor__ejemplo">{T.ejemplo}</span>
+          <span className="ayuda-con-ejemplo">
+            <span>{T.queEs}</span> <span className="ayuda-con-ejemplo__ejemplo">{T.ejemplo}</span>
           </span>
         </ExplicacionAPedido>
       </figcaption>

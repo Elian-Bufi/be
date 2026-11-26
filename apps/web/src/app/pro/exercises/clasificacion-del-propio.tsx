@@ -109,7 +109,7 @@ export function CuadroDeLaClasificacion({
       sobretitulo={ejercicio.name}
       conCambios={cambio}
       ocupado={enviando}
-      ayuda={{ nombre: `Qué es la ${T.titulo.toLowerCase()}`, contenido: <p className="ayuda-del-editor__ejemplo">{T.ayuda}</p> }}
+      ayuda={{ nombre: `Qué es la ${T.titulo.toLowerCase()}`, contenido: <p className="ayuda-con-ejemplo__ejemplo" data-ejemplo-resuelto>{T.ayuda}</p> }}
       principal={{ texto: T.guardar, alTocar: () => void guardar(), apagado: cambio ? null : 'No cambiaste nada.', enviando, textoEnviando: 'Guardando…' }}
       onCerrar={onCerrar}
     >
