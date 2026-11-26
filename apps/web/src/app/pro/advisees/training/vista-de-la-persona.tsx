@@ -9,6 +9,12 @@
  *   recomendado 02:00» (`textoDelPlanDeLaSerie`, `rotulosDeLasSeries`, en la notación del plan).
  * - Lo que la persona no ve (las anotaciones, la regla de la progresión, el 1RM) no aparece.
  */
+/**
+ * Apagada por ahora: el cuadro «Así le llega a la app» no se parece a la app real. Vuelve cuando refleje la app real, con las
+ * imágenes de los ejercicios. El editor no ofrece ninguna entrada (ni el botón de la sesión ni el cuadro) mientras sea `false`.
+ */
+export const MOSTRAR_VISTA_DE_LA_PERSONA = false;
+
 import {
   COPY_ENTRENAMIENTO_POR_SERIE,
   COPY_ESFUERZO_DE_LA_SESION,

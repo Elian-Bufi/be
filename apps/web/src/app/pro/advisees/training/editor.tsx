@@ -115,7 +115,7 @@ import {
 import { BotonVerElRecorrido, RecorridoGuiado, useRecorridoGuiado } from '../../../../components/recorrido-guiado';
 import { Almanaque, type SesionDelAlmanaque } from './almanaque';
 import { letraDeLaSesion } from './letra-de-la-sesion';
-import { COPY_VISTA_DE_LA_PERSONA, VistaDeLaPersona } from './vista-de-la-persona';
+import { COPY_VISTA_DE_LA_PERSONA, MOSTRAR_VISTA_DE_LA_PERSONA, VistaDeLaPersona } from './vista-de-la-persona';
 import { BarraDeFases } from './barra-de-fases-en-pantalla';
 import { COPY_BARRA_DE_FASES, diasEnCorto, faseConLaTecla, rangoDeLaBarra, tarjetasDeLaBarra } from './barra-de-fases';
 import { criterioDeLaIntensidad, CuadroConfigurarPlan, CuadroDiasDeLaSemana, CuadroEditarFase, type IntensidadElegida } from './cuadros-del-plan';
@@ -3396,10 +3396,12 @@ export function EditorDePlan({
                                   </span>
                                   {nombreDeLaSesion(sesion, k)}
                                 </h4>
-                                <button type="button" className="boton boton--quieto boton--compacto sesion-elegida__ver-como" onClick={() => setVistaDeLaPersona(true)} data-ver-como-la-persona>
-                                  <Icono nombre="ver" tamano={18} />
-                                  {COPY_VISTA_DE_LA_PERSONA.abrir}
-                                </button>
+                                {MOSTRAR_VISTA_DE_LA_PERSONA ? (
+                                  <button type="button" className="boton boton--quieto boton--compacto sesion-elegida__ver-como" onClick={() => setVistaDeLaPersona(true)} data-ver-como-la-persona>
+                                    <Icono nombre="ver" tamano={18} />
+                                    {COPY_VISTA_DE_LA_PERSONA.abrir}
+                                  </button>
+                                ) : null}
                                 <MenuDeAcciones
                                   id="menu-de-la-sesion"
                                   rotulo={`más acciones de la sesión ${nombreDeLaSesion(sesion, k)}`}
@@ -3871,7 +3873,7 @@ export function EditorDePlan({
       <RecorridoGuiado definicion={RECORRIDO_DEL_EDITOR_DE_ENTRENAMIENTO} abierto={recorrido.abierto} alCerrar={recorrido.cerrar} />
 
       {/* DL-198 (ET2-12): «Ver como la persona». */}
-      {bloque ? (
+      {MOSTRAR_VISTA_DE_LA_PERSONA && bloque ? (
         <VistaDeLaPersona
           abierto={vistaDeLaPersona}
           onCerrar={() => setVistaDeLaPersona(false)}
