@@ -75,6 +75,11 @@ export interface SemanaDeLaFase {
   readonly progresion: ProgresionDeLaFase;
   readonly semana: number;
   readonly semanas: number;
+  /**
+   * Las semanas de la fase que entran en el plan: en una fase cortada por su fin (ET1-D03), menos que `semanas`. Es la «M»
+   * del rótulo «Semana N de M» que ve la persona, que nunca llega a las de afuera. Ausente: todas (`semanas`).
+   */
+  readonly semanasQueEntran?: number;
 }
 
 /** La semana de la fase `blockId` en esa fecha, con su progresión, si la tiene. */
@@ -84,7 +89,7 @@ export function semanaDeLaFase(planificacion: PlanificacionDelPlan | null | unde
   const fase = fechasDeLasFases(planificacion, fases).find((f) => f?.blockId === blockId) ?? null;
   if (!fase) return null;
   // Una fase cortada por el fin del plan (ET1-D03) tiene sus semanas enteras para la regla: la descarga sigue en la suya.
-  return { progresion, semana: semanaQueRige(fase, fecha), semanas: fase.semanas };
+  return { progresion, semana: semanaQueRige(fase, fecha), semanas: fase.semanas, semanasQueEntran: Math.max(1, fase.semanas - (fase.semanasFuera ?? 0)) };
 }
 
 const conCarga = <S extends SerieDeLaSemana>(s: S, carga: Carga | null): S => ({ ...s, suggestedLoad: carga });

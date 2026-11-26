@@ -270,3 +270,34 @@ test('TEST-ET2-09 · las capacidades nuevas y el contrato de API-RMX-02', () => 
   // Un registro nunca trae su valor desde el cliente.
   assert.equal(SumarUnoRMRequestSchema.safeParse({ origin: 'RECORD', exerciseId: id, executionId: id, prescriptionId: 'p1', setIndex: 1, value: kg(50) }).success, false);
 });
+
+test('TEST-ET2-10 · los bordes (revisión de #325): el 10 % justo, la escala que acepta la base, el % RM en lb y la «M» de una fase cortada', () => {
+  // El umbral es «más del 10 %»: con 100 de base, 110 no avisa y pasa a ser el que se usa; 110,5 avisa.
+  const base = guardado({ valor: kg(100), serie: null });
+  assert.equal(vigenteDelUnoRM([base], registro(110, '2026-12-01')).aviso, null);
+  assert.equal(vigenteDelUnoRM([base], registro(110, '2026-12-01')).vigente?.origen, 'RECORD');
+  assert.equal(vigenteDelUnoRM([base], registro(90, '2026-12-01')).aviso, null);
+  assert.equal(vigenteDelUnoRM([base], registro(110.5, '2026-12-01')).aviso?.diferencia, 11);
+  assert.equal(vigenteDelUnoRM([base], registro(89.5, '2026-12-01')).aviso?.diferencia, -11);
+  // La cuenta que redondea a 0 o pasa de 1000 no calibra (la base la rechazaría con un 500) ni es el registro.
+  assert.deepEqual(calibrar({ carga: kg(0.1), repeticiones: 1, rir: 0 }), { ok: false, motivo: 'FUERA_DE_ESCALA' });
+  assert.deepEqual(calibrar({ carga: kg(900), repeticiones: 12, rir: 2 }), { ok: false, motivo: 'FUERA_DE_ESCALA' });
+  assert.deepEqual(calibrar({ carga: kg(1000), repeticiones: 1, rir: 0 }), { ok: true, valor: kg(1000) });
+  const persona = { load: kg(900), completedRepetitions: 12, rir: 2, fieldOrigins: { load: 'PERSON', completedRepetitions: 'PERSON', rir: 'PERSON' } } as const;
+  assert.equal(entraEnElRegistro(persona), false);
+  assert.equal(entraEnElRegistro({ ...persona, load: kg(100) }), true);
+  assert.deepEqual(terminosProhibidosDeFuerzaEn(COPY_UNO_RM.motivo.FUERA_DE_ESCALA), []);
+  // En lb, al paso de las libras y nunca 0.
+  const lb = (value: number) => ({ value, unit: 'lb' as const });
+  assert.deepEqual(cargaDelPorcentaje(70, lb(225), 'BARRA'), lb(160), '157,5 lb, de a 5 lb');
+  assert.deepEqual(cargaDelPorcentaje(5, lb(20), 'MAQUINA'), lb(5));
+  // Una fase de 6 semanas en un plan de 4: la regla sigue con sus 6, y la persona ve «de 4», las que le llegan.
+  const bloques = [{ blockId: 'f1', microcycles: [], sessions: [{ sessionId: 's1', prescriptions: [presc] }] }];
+  const cortada: PlanificacionDelPlan = { startDate: '2026-11-30', weeks: 4, goal: null, phases: [{ blockId: 'f1', weeks: 6 }], progressions: [lineal] };
+  const s = semanaDeLaFase(cortada, bloques, 'f1', '2027-03-01');
+  assert.equal(s?.semana, 4);
+  assert.equal(s?.semanas, 6);
+  assert.equal(s?.semanasQueEntran, 4);
+  const entera = semanaDeLaFase({ ...cortada, weeks: 6 }, bloques, 'f1', '2026-12-14');
+  assert.equal(entera?.semanasQueEntran, 6);
+});

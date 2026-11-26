@@ -169,6 +169,8 @@ describe('leyendo el código', () => {
     expect(finalizar).not.toMatch(/registrarEsfuerzoDeLaSesion|<EsfuerzoDeLaSesion/);
     // La pregunta se decide con lo que mandó API-SER-02 y llega con la ruta de la sesión registrada.
     expect(finalizar).toContain('sePreguntaElEsfuerzo(delPlan)');
+    // «No pude realizarla» no tiene esfuerzo que contar: no se pregunta (la API lo rechaza con 422 SESSION_NOT_COMPLETED).
+    expect(finalizar).toContain("sessionCondition !== 'NOT_COMPLETED'");
     const pregunta = leer('pantallas', 'esfuerzo-de-la-sesion.tsx');
     expect(pregunta).toContain('api.registrarEsfuerzoDeLaSesion(');
     expect(pregunta).toContain('intento.actual()');
