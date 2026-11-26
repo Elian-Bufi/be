@@ -8,10 +8,12 @@
  * - «Duración»: los minutos (número, unidad «min»), o «Sin indicar» (texto, sin unidad) mientras no se escriben;
  * - «Distancia»: el número con su unidad, «km» o «m» (si no se planifica, no va);
  * - «Intensidad»: «Zona 2», «Esfuerzo 6 de 10» o lo que escriba el profesional (si no se planifica, no va).
- * Y una sola serie efectiva sin repeticiones, sin carga ni criterio de intensidad de fuerza: la persona la tilda al
- * terminar, como una plancha (DL-161). Así lo del cardio viaja igual por todas las lecturas (el plan, «Hoy», el registro
- * por serie, la exportación), por las plantillas, las copias y «Mis habituales», y **la APK congelada lo lee y lo muestra
- * sin cambiar nada** («Duración: 30 min»): no hace falta capacidad, migración ni operación nueva.
+ * Y una sola serie efectiva sin repeticiones, sin carga ni criterio de intensidad de fuerza. Así lo del cardio viaja igual
+ * por todas las lecturas (el plan, «Hoy», el registro por serie, la exportación), por las plantillas, las copias y «Mis
+ * habituales», y **la APK congelada lo lee sin romperse** y lo muestra en el detalle del ejercicio («Duración: 30 min»): no
+ * hace falta capacidad, migración ni operación nueva. Lo que la APK publicada todavía no hace (revisión de DL-199): tildar
+ * «como el plan» una serie sin repeticiones ni carga (`serieDelPlan` en `apps/mobile/src/registro-rapido.ts` devuelve
+ * `null`); para marcarla hecha hay que escribir un dato. La tarjeta propia del cardio queda para su próxima versión.
  *
  * Es puro: lo prueban `editor-de-entrenamiento-tanda-3.test.ts` y las pruebas del website.
  */
@@ -204,7 +206,9 @@ export const COPY_CARDIO = {
   ejemploEnPalabras: 'Por ejemplo, conversacional',
   pasarACardio: 'Cargar como cardio',
   pasarASeries: 'Cargar con series',
-  enLaApp: 'La persona lo ve como «Duración», «Distancia» e «Intensidad» y lo tilda al terminar.',
+  // Revisión de DL-199: la APK publicada no tilda «como el plan» una serie sin repeticiones ni carga (`serieDelPlan`):
+  // para marcarla hecha, la persona tiene que escribir un dato. Se dice; no se promete lo que la app todavía no hace.
+  enLaApp: 'En la app de hoy no se tilda sin escribir (no tiene repeticiones ni carga): la tarjeta propia del cardio llega con la próxima versión.',
   problema: {
     DURACION_FUERA_DE_RANGO: `La duración va de ${numero(LIMITES_DE_LA_DURACION.min)} a ${numero(LIMITES_DE_LA_DURACION.max)} min.`,
     DISTANCIA_FUERA_DE_RANGO: 'La distancia tiene que ser mayor que 0 (hasta 1000 km).',

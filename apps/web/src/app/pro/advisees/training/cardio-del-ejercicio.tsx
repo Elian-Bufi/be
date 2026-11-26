@@ -65,7 +65,9 @@ export function CardioDelEjercicio({ id, nombre, prescripcion: p, onCambiar }: {
       <ExplicacionAPedido nombre="Cómo se planifica un ejercicio de cardio" como="div" lugar="esquina">
         <p>Un ejercicio de cardio se planifica con cuánto dura, la distancia si importa y una intensidad, en lugar de series, repeticiones y carga.</p>
         <p>La intensidad puede ser una zona de frecuencia cardíaca (de 1 a 5), el esfuerzo percibido de 0 a 10 o unas palabras tuyas.</p>
-        <p>Ejemplo: ciclismo, 30 min, 12 km, zona 2. La persona ve «Duración: 30 min», «Distancia: 12 km» e «Intensidad: Zona 2», y lo tilda al terminar.</p>
+        <p>Ejemplo: ciclismo, 30 min, 12 km, zona 2. En el detalle del ejercicio, la persona ve «Duración: 30 min», «Distancia: 12 km» e «Intensidad: Zona 2».</p>
+        {/* Revisión de DL-199: la APK publicada no deja tildar «como el plan» una serie sin repeticiones ni carga (`serieDelPlan`). */}
+        <p>{COPY_CARDIO.enLaApp}</p>
       </ExplicacionAPedido>
       <div className="cardio-del-ejercicio__campos">
         <div className="campo cardio-del-ejercicio__campo">
