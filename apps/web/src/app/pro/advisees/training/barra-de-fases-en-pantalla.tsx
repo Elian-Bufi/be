@@ -81,7 +81,6 @@ export function BarraDeFases({
             <span>{T.deMas(deMas.suman, deMas.plan)}</span>
             <button type="button" className="boton boton--discreto boton--con-flecha" data-navega data-resolver-fases-de-mas onClick={onResolver}>
               {T.resolver}
-              <Icono nombre="derecha" tamano={15} />
             </button>
           </>
         ) : null}

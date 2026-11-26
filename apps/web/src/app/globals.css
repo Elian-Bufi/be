@@ -7187,13 +7187,33 @@ button.comida-del-dia__fila > .icono:last-child {
   min-width: 0;
 }
 
-/* El título, «hoy» y, contra la derecha, pedir un vínculo. Lo que no entra baja entero. */
+/* El título con «hoy» a la izquierda y, contra la derecha, los dos botones. Si no entran juntos, los botones bajan juntos
+   y quedan contra el borde izquierdo, con el mismo margen que el título: el bloque del título crece y empuja a los botones
+   a la derecha solo cuando hay lugar (sin margen automático, que los dejaría sueltos a la derecha al bajar). */
 .espacio-profesional__encabezado {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 0.3rem 1rem;
+  gap: 0.6rem 1.5rem;
   min-height: 44px;
+}
+
+.espacio-profesional__titulo {
+  display: flex;
+  flex: 1 1 auto;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.2rem 1rem;
+  min-width: 0;
+}
+
+.espacio-profesional__acciones {
+  display: flex;
+  flex: 0 1 auto;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
 }
 
 .espacio-profesional h1 {
@@ -7205,10 +7225,6 @@ button.comida-del-dia__fila > .icono:last-child {
 .espacio-profesional__hoy {
   margin: 0;
   color: var(--tenue);
-}
-
-.espacio-profesional__solicitar {
-  margin-left: auto;
 }
 
 /* Dos columnas desde 75 rem (1200 px), el mismo corte que el detalle de la línea de tiempo: a 1280 el directorio va al
@@ -7633,10 +7649,6 @@ button.comida-del-dia__fila > .icono:last-child {
   .pendiente__que {
     display: inline-flex;
     vertical-align: top;
-  }
-
-  .espacio-profesional__solicitar {
-    margin-left: 0;
   }
 }
 
@@ -10490,6 +10502,43 @@ button.comida-del-dia__fila > .icono:last-child {
 
 .editor-del-plan__estado[data-estado="guardado"] {
   color: var(--tenue);
+}
+
+/* La barra de Entrenamiento tiene diez piezas: título y chip a la izquierda y, a la derecha, todo en UN renglón desde 1280.
+   El lugar del estado sigue reservado (RP-19: nada se corre si aparece o desaparece un aviso), pero más angosto, y «Ver el
+   recorrido» es un ícono con su nombre para el lector y su título. Si aun así no entra, baja entero y a la derecha (RP-22). */
+.estacion [data-barra-de-comandos] .editor-del-plan__estado {
+  width: clamp(6.5rem, 8vw, 14rem);
+  margin-inline-end: 0;
+}
+
+/* Botones de la barra más compactos (mismo alto, misma letra): menos relleno a los costados y menos separación. */
+.estacion [data-barra-de-comandos] {
+  column-gap: 0.75rem;
+}
+
+.estacion [data-barra-de-comandos] .editor-del-plan__acciones {
+  gap: 0.35rem;
+}
+
+.estacion [data-barra-de-comandos] .editor-del-plan__acciones .boton:not(.boton--discreto) {
+  padding-inline: 0.65rem;
+}
+
+.estacion [data-barra-de-comandos] .editor-del-plan__acciones {
+  flex-wrap: nowrap;
+}
+
+@media (max-width: 79.99rem) {
+  .estacion [data-barra-de-comandos] .editor-del-plan__acciones {
+    flex-wrap: wrap;
+  }
+}
+
+.recorrido__ver[data-solo-icono] {
+  min-width: 44px;
+  justify-content: center;
+  padding-inline: 0.6rem;
 }
 
 /* Bloque 3 del encargo: el estado de escritura de un borrador (components/estado-de-guardado.tsx). */
@@ -13505,20 +13554,7 @@ details[open] > summary:not([class])::before {
 }
 
 /* ─── Invitar a una persona (WP-INVITACION, DL-136) ───────────────────────────────────── */
-/* «Invitar» es el camino principal del encabezado: va primero y empuja a los dos botones a la derecha. */
-.espacio-profesional__invitar {
-  margin-left: auto;
-}
-
-.espacio-profesional__invitar + .espacio-profesional__solicitar {
-  margin-left: 0.5rem;
-}
-
-@media (max-width: 63.99rem) {
-  .espacio-profesional__invitar {
-    margin-left: 0;
-  }
-}
+/* «Invitar» es el camino principal del encabezado: va primero, dentro de `.espacio-profesional__acciones`. */
 
 .dialogo.invitar {
   width: min(40rem, calc(100vw - 2rem));
@@ -16625,6 +16661,26 @@ p.cifra-del-espacio__desglose {
 
 .cifra-del-espacio .cifra {
   font-variant-numeric: tabular-nums;
+}
+
+/* Zoom y notebooks: la tarjeta se mide por su propio ancho, no por el de la ventana. Con poco lugar, los chips ceden aire
+   (relleno y separación), nunca la letra, para seguir en una fila; si ni así entran, bajan con la misma separación. */
+.cifra-del-espacio {
+  container-type: inline-size;
+}
+
+.cifra-del-espacio__desglose > li {
+  min-width: 0;
+}
+
+@container (max-width: 23rem) {
+  .cifra-del-espacio__desglose {
+    gap: 0.3rem;
+  }
+
+  .cifra-del-espacio__parte {
+    padding-inline: 0.5rem;
+  }
 }
 
 .espacio-profesional__costado {

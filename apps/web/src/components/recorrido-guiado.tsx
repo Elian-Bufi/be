@@ -165,11 +165,13 @@ export function useRecorridoGuiado(recorrido: IdDelRecorrido, listo: boolean): {
 }
 
 /** «Ver el recorrido»: discreto y sin subrayado, en un lugar fijo de la interfaz (GUI-10). */
-export function BotonVerElRecorrido({ alTocar }: { alTocar: () => void }) {
+export function BotonVerElRecorrido({ alTocar, soloIcono }: { alTocar: () => void; soloIcono?: boolean }) {
+  // Con `soloIcono` (la barra de Entrenamiento, que tiene que entrar en un renglón) el texto queda para el lector y para el
+  // título; el botón sigue en el mismo lugar y con el mismo nombre.
   return (
-    <button type="button" className="boton boton--discreto recorrido__ver" data-ver-recorrido onClick={alTocar}>
+    <button type="button" className="boton boton--discreto recorrido__ver" data-ver-recorrido data-solo-icono={soloIcono ? '' : undefined} title={soloIcono ? C.verElRecorrido : undefined} onClick={alTocar}>
       <Icono nombre="info" tamano={18} />
-      {C.verElRecorrido}
+      {soloIcono ? <span className="visualmente-oculto">{C.verElRecorrido}</span> : C.verElRecorrido}
     </button>
   );
 }

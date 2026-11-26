@@ -2924,7 +2924,7 @@ export function EditorDePlan({
         </h2>
         <div className="editor-del-plan__acciones">
           {/* DL-195 (GUI-10): «Ver el recorrido», el primero de la barra: un lugar fijo, que no se mueve con el estado. */}
-          {pasoDelAsistente ? null : <BotonVerElRecorrido alTocar={recorrido.abrir} />}
+          {pasoDelAsistente ? null : <BotonVerElRecorrido alTocar={recorrido.abrir} soloIcono />}
           <EstadoDeGuardado
             className="editor-del-plan__estado"
             guardando={guardando}
