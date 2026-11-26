@@ -141,3 +141,13 @@ export function conLasAproximacionesSinRir(p: Prescripcion, c: Partial<Prescripc
   });
   return cambio ? { ...c, sets: nuevas } : c;
 }
+
+/**
+ * DL-199 (ET3-26, BAJA de la tanda 1) · una aproximación que se desmarca vuelve a ser efectiva **con lo común**: sin el RIR
+ * vacío que llevaba (hereda el de las efectivas) y sin su descanso propio (hereda el común, no los 60 s de ET1-D08). La
+ * carga y las repeticiones que tenía quedan: son lo que el profesional escribió (ET3-D26).
+ */
+export function serieAlDesmarcarLaAproximacion(s: Serie): Serie {
+  const { setKind: _tipo, restSeconds: _descanso, rir, ...resto } = s;
+  return (rir === null || rir === undefined ? resto : { ...resto, rir }) as Serie;
+}

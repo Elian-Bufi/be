@@ -485,9 +485,17 @@ export function CuadroDiasDeLaSemana({
   const id = useId();
   const [filas, setFilas] = useState(sesiones);
   useEffect(() => {
-    if (abierto) setFilas(sesiones);
+    if (abierto) {
+      setFilas(sesiones);
+      setActiva({});
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [abierto]);
+  // DL-199 (ET3-28, BAJA de la tanda 1): una sola parada de Tab por fila (la última celda que tuvo el foco; al abrir, el
+  // nombre). Adentro de la fila y entre filas, las flechas.
+  const [activa, setActiva] = useState<Readonly<Record<number, number>>>({});
+  const paradaDe = (n: number, c: number) => ((activa[n] ?? 0) === c ? 0 : -1);
+  const enfocada = (n: number, c: number) => setActiva((x) => (x[n] === c ? x : { ...x, [n]: c }));
   const cambio = JSON.stringify(filas) !== JSON.stringify(sesiones);
   const sinNombre = filas.some((s) => s.nombre.trim() === '');
   const alternar = (n: number, d: DiaDeLaSemana) =>
@@ -541,6 +549,8 @@ export function CuadroDiasDeLaSemana({
                       maxLength={120}
                       aria-invalid={s.nombre.trim() === '' || undefined}
                       onChange={(e) => setFilas((x) => x.map((y, m) => (m === n ? { ...y, nombre: e.target.value } : y)))}
+                      tabIndex={paradaDe(n, 0)}
+                      onFocus={() => enfocada(n, 0)}
                       onKeyDown={(e) => moverEnLaMatriz(e, id, n, 0, filas.length)}
                       data-nombre-de-la-sesion={n + 1}
                     />
@@ -555,6 +565,8 @@ export function CuadroDiasDeLaSemana({
                         aria-label={T.diaDeLaSesion(d, s.nombre || s.letra)}
                         disabled={!s.id}
                         data-dia={d}
+                        tabIndex={paradaDe(n, c + 1)}
+                        onFocus={() => enfocada(n, c + 1)}
                         onClick={() => alternar(n, d)}
                         onKeyDown={(e) => moverEnLaMatriz(e, id, n, c + 1, filas.length)}
                       >

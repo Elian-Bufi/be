@@ -133,7 +133,8 @@ test('TEST-EE-56 · lo que pidió Dirección: progresión en la fase y al copiar
   // E13: el reparto de las estructuras, en la galería de presets.
   assert.match(GALERIA, /<RepartoEnLaSilueta reparto=\{repartoDeLaEstructura\(elegido\.preset\)\}/);
   // DL-197 (ET1-D13): el catálogo entero, con los filtros del prototipo; «Grupo muscular» reemplaza a la silueta del cajón.
-  assert.match(CATALOGO, /api\.paginaDelCatalogoDeEjercicios\(token, cursor\)/);
+  // DL-199 (ET3-24): el catálogo entero, una vez por sesión (`catalogo-en-la-sesion.ts`).
+  assert.match(CATALOGO, /leerElCatalogoDeLaSesion\(token, sesionPerdida\)/);
   assert.match(CATALOGO, /COPY_CATALOGO_PARA_ELEGIR\.grupo, grupo, NOMBRE_DEL_GRUPO_MUSCULAR/);
 });
 

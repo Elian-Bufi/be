@@ -28,6 +28,7 @@ import { Aviso } from '../../../components/formulario';
 import { Icono } from '../../../components/icono';
 import { api } from '../../../lib/api';
 import { mensajeDeFallo } from '../../../lib/intento';
+import { catalogoDeLaSesion, COPY_CATALOGO_EN_LA_SESION, invalidarElCatalogo, type CatalogoLeido } from '../advisees/training/catalogo-en-la-sesion';
 
 export const COPY_CATALOGO_DE_BE = {
   titulo: 'Catálogo de BE',
@@ -41,28 +42,47 @@ export const COPY_CATALOGO_DE_BE = {
 } as const;
 const T = COPY_CATALOGO_DE_BE;
 
-type Lectura = { readonly tipo: 'cargando' } | { readonly tipo: 'lista'; readonly ejercicios: readonly EjercicioEncontrado[] } | { readonly tipo: 'falla'; readonly motivo: string };
+type Lectura = { readonly tipo: 'cargando' } | { readonly tipo: 'lista'; readonly ejercicios: readonly EjercicioEncontrado[]; readonly completo: boolean } | { readonly tipo: 'falla'; readonly motivo: string };
 
-/** El catálogo entero, página por página (de a 50, con el cursor), con la clasificación de cada ejercicio. */
+/**
+ * DL-199 (ET3-24): el catálogo entero de esta sesión, con la clasificación de cada ejercicio: el que ya se leyó, si está
+ * vigente, o página por página (de a 50, con el cursor). Lo usan este catálogo y «Agregar ejercicios».
+ */
+export function leerElCatalogoDeLaSesion(token: string, sesionPerdida: (r: Resultado<unknown>) => boolean): Promise<CatalogoLeido<EjercicioEncontrado>> {
+  return catalogoDeLaSesion<EjercicioEncontrado>(
+    token,
+    async (cursor) => {
+      const r = await api.paginaDelCatalogoDeEjercicios(token, cursor);
+      if (sesionPerdida(r)) return { ok: false, motivo: '', sesionPerdida: true };
+      if (!r.ok) return { ok: false, motivo: mensajeDeFallo(r) };
+      return { ok: true, data: r.datos.data, hasMore: r.datos.page.hasMore, nextCursor: r.datos.page.nextCursor ?? null };
+    },
+    enOrdenAlfabetico,
+  );
+}
+
+/**
+ * DL-199 (ET3-27, BAJA de la tanda 1): del «Catálogo de BE» es lo que no cargó ningún profesional (el catálogo base); lo
+ * que un profesional importó de wger o cargó a mano es suyo. Con una API que todavía no dice quién lo cargó, lo de antes.
+ */
+export const esDelCatalogoDeBe = (e: EjercicioEncontrado): boolean => (e.loadedByProfessional === undefined ? e.provenance !== 'PROFESSIONAL_MANUAL' : !e.loadedByProfessional);
+
+/** El catálogo entero, con la clasificación de cada ejercicio (una vez por sesión: `leerElCatalogoDeLaSesion`). */
 export function useCatalogoEntero(token: string | null, sesionPerdida: (r: Resultado<unknown>) => boolean) {
   const [lectura, setLectura] = useState<Lectura>({ tipo: 'cargando' });
   const pedido = useRef(0);
-  const leer = useCallback(async () => {
-    if (!token) return;
-    const este = ++pedido.current;
-    setLectura({ tipo: 'cargando' });
-    const leidos: EjercicioEncontrado[] = [];
-    let cursor: string | null = null;
-    for (let vuelta = 0; vuelta < 40; vuelta += 1) {
-      const r = await api.paginaDelCatalogoDeEjercicios(token, cursor);
-      if (este !== pedido.current || sesionPerdida(r)) return;
-      if (!r.ok) return setLectura({ tipo: 'falla', motivo: mensajeDeFallo(r) });
-      leidos.push(...r.datos.data);
-      if (!r.datos.page.hasMore || !r.datos.page.nextCursor) break;
-      cursor = r.datos.page.nextCursor;
-    }
-    setLectura({ tipo: 'lista', ejercicios: enOrdenAlfabetico(leidos) });
-  }, [token, sesionPerdida]);
+  const leer = useCallback(
+    async (reintentar = false) => {
+      if (!token) return;
+      const este = ++pedido.current;
+      if (reintentar) invalidarElCatalogo(token);
+      setLectura((l) => (l.tipo === 'lista' ? l : { tipo: 'cargando' }));
+      const r = await leerElCatalogoDeLaSesion(token, sesionPerdida);
+      if (este !== pedido.current || r.tipo === 'sesion-perdida') return;
+      setLectura(r.tipo === 'falla' ? r : { tipo: 'lista', ejercicios: r.ejercicios, completo: r.completo });
+    },
+    [token, sesionPerdida],
+  );
   useEffect(() => {
     void leer();
     return () => {
@@ -80,8 +100,9 @@ export function CatalogoDeBe({ token, sesionPerdida }: { token: string; sesionPe
   const [equipamiento, setEquipamiento] = useState<Equipamiento | null>(null);
   const [patron, setPatron] = useState<PatronDeMovimiento | null>(null);
   const [articulaciones, setArticulaciones] = useState<Articulaciones | null>(null);
-  // Solo lo del catálogo de BE (lo de wger, sembrado o importado): lo propio está en la otra pestaña.
-  const todos = lectura.tipo === 'lista' ? lectura.ejercicios.filter((e) => e.provenance !== 'PROFESSIONAL_MANUAL') : [];
+  // DL-199 (ET3-27): solo lo que cargó BE (ningún profesional), no según la procedencia: un ejercicio de wger que importó
+  // un profesional es de ese profesional. Sin el dato (una API anterior), como antes: lo que no es manual.
+  const todos = lectura.tipo === 'lista' ? lectura.ejercicios.filter(esDelCatalogoDeBe) : [];
   const lista = filtrarElCatalogo(todos, { texto, grupo, equipamiento, patron, articulaciones, favoritos: null });
   const hayFiltros = texto.trim() !== '' || grupo || equipamiento || patron || articulaciones;
   const filtro = <K extends string>(clave: string, rotulo: string, valor: K | null, opciones: Readonly<Record<K, string>>, alElegir: (v: K | null) => void) => (
@@ -140,12 +161,22 @@ export function CatalogoDeBe({ token, sesionPerdida }: { token: string; sesionPe
         </div>
         <p className="nota catalogo-para-elegir__cuenta" role="status" aria-live="polite">
           {lectura.tipo === 'lista' ? T.cuenta(lista.length, todos.length) : lectura.tipo === 'cargando' ? T.leyendo : ' '}
+          {/* DL-199 (ET3-25): si la lectura cortó a mitad, se dice en el mismo renglón, con «Reintentar». */}
+          {lectura.tipo === 'lista' && !lectura.completo ? (
+            <span data-catalogo-incompleto>
+              {' · '}
+              {COPY_CATALOGO_EN_LA_SESION.incompleto(lectura.ejercicios.length)}{' '}
+              <button type="button" className="boton boton--discreto boton--compacto" onClick={() => void releer(true)}>
+                {COPY_CATALOGO_EN_LA_SESION.reintentar}
+              </button>
+            </span>
+          ) : null}
         </p>
         {lectura.tipo === 'cargando' ? <Cargando /> : null}
         {lectura.tipo === 'falla' ? (
           <Aviso tipo="error">
             <p>No pudimos leer el catálogo. {lectura.motivo}</p>
-            <button type="button" className="boton boton--secundario" onClick={() => void releer()}>
+            <button type="button" className="boton boton--secundario" onClick={() => void releer(true)}>
               Reintentar
             </button>
           </Aviso>

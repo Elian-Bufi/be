@@ -31,6 +31,7 @@ import { RevisionDeAlimentosService } from '../nutricion/revision-de-alimentos.s
 import { RecuperacionService } from '../recuperacion/recuperacion.service';
 import { AccesoAdministrativoService } from './acceso-administrativo.service';
 import { AdministracionService } from './administracion.service';
+import { PlantillasDeBeAdminService } from './plantillas-de-be-admin.service';
 import { actorAdministrativoDe, OperacionAdministrativa, SegundoFactorGuard, SesionAdministrativaGuard, type SolicitudAdministrativa } from './sesion-administrativa.guard';
 
 type Solicitud = SolicitudAdministrativa & SolicitudConContexto;
@@ -57,6 +58,7 @@ export class AdministracionController {
     private readonly incidencias: IncidenciasService,
     private readonly alimentos: RevisionDeAlimentosService,
     private readonly propuestas: PropuestasAlRecetarioService,
+    private readonly plantillasDeBe: PlantillasDeBeAdminService,
   ) {}
 
   /** API-ADM-01 — PUBLIC. */
@@ -362,6 +364,36 @@ export class AdministracionController {
   ): Promise<unknown> {
     sinParametrosDeQuery(query);
     const r = await this.alimentos.sumarAlCanon(actorAdministrativoDe(req), cuerpo, clave, contextoDe(req));
+    res.status(r.estadoHttp);
+    return r.cuerpo;
+  }
+
+  // ─── DL-199 (WP-EDITOR-ENTRENAMIENTO-TANDA-3, ET3-05): las Plantillas de BE de Entrenamiento ─────────────────────────
+
+  /** API-TPB-03 — SESSION_MFA. Todas, con su estado y su historia. */
+  @Post('training-templates/query')
+  @HttpCode(200)
+  @OperacionAdministrativa('API-TPB-03')
+  @UseGuards(SesionAdministrativaGuard, SegundoFactorGuard)
+  consultarPlantillasDeBe(@Body() cuerpo: unknown, @Query() query: Record<string, unknown>, @Req() req: Solicitud): Promise<unknown> {
+    sinParametrosDeQuery(query);
+    return this.plantillasDeBe.consultar(actorAdministrativoDe(req), cuerpo, contextoDe(req));
+  }
+
+  /** API-TPB-04 — SESSION_MFA, Idempotency-Key requerida. Ofrecer o retirar una. */
+  @Post('training-templates/:templateKey/decisions')
+  @OperacionAdministrativa('API-TPB-04')
+  @UseGuards(SesionAdministrativaGuard, SegundoFactorGuard)
+  async decidirSobrePlantillaDeBe(
+    @Param('templateKey') templateKey: string,
+    @Body() cuerpo: unknown,
+    @Headers(HEADER_IDEMPOTENCY_KEY) clave: string | undefined,
+    @Query() query: Record<string, unknown>,
+    @Req() req: Solicitud,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<unknown> {
+    sinParametrosDeQuery(query);
+    const r = await this.plantillasDeBe.decidir(actorAdministrativoDe(req), templateKey, cuerpo, clave, contextoDe(req));
     res.status(r.estadoHttp);
     return r.cuerpo;
   }

@@ -169,6 +169,8 @@ export class CatalogoDeEjerciciosService {
         origin: origenEnElBuscador(f, actor.identidadId),
         // DL-197 (ET1-D12): solo si se pidió: la APK 0.32 busca con esta operación y su esquema estricto no la conoce.
         ...(conClasificacion ? { classification: clasificacionApi((f as unknown as { clasificacion: ConClasificacion | null }).clasificacion) } : {}),
+        // DL-199 (ET3-27): quién lo cargó, con la clasificación (la lectura del website): el «Catálogo de BE» es lo de nadie.
+        ...(conClasificacion ? { loadedByProfessional: f.creadoPorId !== null } : {}),
       })),
       page,
     };

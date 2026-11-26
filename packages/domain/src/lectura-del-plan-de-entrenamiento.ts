@@ -19,6 +19,7 @@ import { ETIQUETA_DE_BASE_DE_CARGA, ETIQUETA_DE_BASE_DE_REPETICIONES, textoDeCar
 import { numero } from './formato-numeros';
 import { COPY_NOTACION_DEL_ESFUERZO, type NotacionDelEsfuerzo } from './notacion-del-esfuerzo';
 import { intensidadPlanificada } from './presentacion-de-prescripcion';
+import { cardioDe, cardioEnPalabras, type ParametroDelCardio } from './cardio-de-la-prescripcion';
 import { COPY_DE_VERSIONES, elegidoPorOrden } from './versiones-de-plan';
 import { COPY_TIPOS_DE_SERIE, cuentaDeSeries, esDeCalentamiento, numerosEfectivos, seriesEfectivas, type ConTipoDeSerie } from './tipos-de-serie';
 
@@ -110,7 +111,14 @@ function repeticionesUnaPorUna(efectivas: readonly { readonly target: { readonly
   return cifras.map((r) => (!r ? '—' : 'value' in r ? numero(r.value, 0) : `${numero(r.min, 0)}–${numero(r.max, 0)}`)).join(' / ');
 }
 
-export function renglonDelEjercicio(p: Pick<PrescripcionConObjetivos, 'sets' | 'intensity'>, notacion: NotacionDelEsfuerzo = 'RIR', opciones: OpcionesDelRenglon = {}): string {
+export function renglonDelEjercicio(
+  p: Pick<PrescripcionConObjetivos, 'sets' | 'intensity'> & { readonly professionalParameters?: readonly ParametroDelCardio[] | null },
+  notacion: NotacionDelEsfuerzo = 'RIR',
+  opciones: OpcionesDelRenglon = {},
+): string {
+  // DL-199 (ET3-14): el cardio se resume con su duración, su distancia y su intensidad («30 min · 5 km · zona 2»).
+  const cardio = cardioDe(p);
+  if (cardio) return cardioEnPalabras(cardio);
   const deCalentamiento = (n: number) => (opciones.delProfesional ? (n === 1 ? '1 aproximación' : `${numero(n)} aproximaciones`) : COPY_TIPOS_DE_SERIE.deCalentamiento(n));
   // DL-178: el renglón resume las series efectivas; el calentamiento se nombra aparte y no entra en el resumen.
   const efectivas = seriesEfectivas(p.sets);

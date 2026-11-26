@@ -364,6 +364,15 @@ import {
 import { CambiarZonasDeEjercicioRequestSchema, FichaVisualDeEjercicioResponseSchema, FichasVisualesRequestSchema, FichasVisualesResponseSchema } from './contratos-catalogo-visual';
 import { ListaDeZonasMuscularesResponseSchema } from './zonas-musculares';
 import { SumarUnoRMRequestSchema, UnoRMDeLaPersonaResponseSchema, UnoRMGuardadoResponseSchema } from './contratos-repeticion-maxima';
+import {
+  ConsultarPlantillasDeBeRequestSchema,
+  CrearPlanDesdePlantillaDeBeRequestSchema,
+  DecidirSobrePlantillaDeBeRequestSchema,
+  ListaDePlantillasDeBeParaAdministrarResponseSchema,
+  ListaDePlantillasDeBeResponseSchema,
+  PlanDesdePlantillaDeBeResponseSchema,
+  PlantillaDeBeParaAdministrarResponseSchema,
+} from './contratos-plantillas-de-be';
 import { EsfuerzoDeLaSesionResponseSchema, EsfuerzosDeLaSesionResponseSchema, RegistrarEsfuerzoDeLaSesionRequestSchema } from './esfuerzo-de-la-sesion';
 import { CambiarClasificacionDeEjercicioRequestSchema, ClasificacionDeEjercicioPropioResponseSchema } from './clasificacion-de-ejercicios';
 import { HEADER_DE_CAPACIDADES } from './compatibilidad-de-clientes';
@@ -1461,6 +1470,32 @@ const DEFINIDAS: readonly Operacion[] = [
       422: ['VALIDATION_FAILED', 'INVALID_STATE_TRANSITION', 'CATALOG_REFERENCE_INVALID'],
     },
     fuente: 'WP-RECETARIO-E-IMAGENES REC-08 · WP-ADMINISTRACION (DL-155) · ID propio de BE (familia RCT) · DEUDA_LEGAJO DL-191',
+  },
+  {
+    id: 'API-TPB-03',
+    metodo: 'post',
+    ruta: '/admin/training-templates/query',
+    resumen:
+      'Todas las Plantillas de BE de Entrenamiento, con su estado (PUBLISHED: se ofrece; WITHDRAWN: retirada) y su historia: cada decisión de Administración con quién (su nombre administrativo), cuándo y por qué. El contenido es el que lee el profesional (API-TPB-01). La consulta va en el cuerpo (vacío) y queda auditada.',
+    autenticacion: 'SESSION_MFA',
+    idempotencia: false,
+    request: ConsultarPlantillasDeBeRequestSchema,
+    exitos: [{ status: 200, schema: ListaDePlantillasDeBeParaAdministrarResponseSchema }],
+    errores: { ...{ 401: ['AUTHENTICATION_REQUIRED', 'SESSION_INVALID', 'SESSION_EXPIRED', 'SESSION_REVOKED'], 403: ['ACTION_FORBIDDEN', 'MFA_REQUIRED'], 503: ['ADMINISTRATION_NOT_AVAILABLE'] }, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'] },
+    fuente: 'WP-EDITOR-ENTRENAMIENTO-TANDA-3 ET3-05 · WP-ADMINISTRACION (DL-155) · ID propio de BE (familia TPB) · DEUDA_LEGAJO DL-199',
+  },
+  {
+    id: 'API-TPB-04',
+    metodo: 'post',
+    ruta: '/admin/training-templates/{templateKey}/decisions',
+    resumen:
+      'Ofrecer (PUBLISH) o retirar (WITHDRAW) una Plantilla de BE de Entrenamiento. Retirarla puede llevar un motivo (reason); ofrecerla no. Retirada, deja de listarse y de aplicarse; los planes que ya salieron de ella no cambian. El mismo estado que ya tiene: 422 INVALID_STATE_TRANSITION. Clave inexistente: 404. Historia por adición; queda auditada, sin los textos.',
+    autenticacion: 'SESSION_MFA',
+    idempotencia: true,
+    request: DecidirSobrePlantillaDeBeRequestSchema,
+    exitos: [{ status: 200, schema: PlantillaDeBeParaAdministrarResponseSchema }],
+    errores: { ...{ 401: ['AUTHENTICATION_REQUIRED', 'SESSION_INVALID', 'SESSION_EXPIRED', 'SESSION_REVOKED'], 403: ['ACTION_FORBIDDEN', 'MFA_REQUIRED'], 503: ['ADMINISTRATION_NOT_AVAILABLE'] }, 400: ['INVALID_REQUEST', 'UNKNOWN_FIELD'], 404: ['RESOURCE_NOT_FOUND'], 409: ['IDEMPOTENCY_KEY_REUSED'], 422: ['VALIDATION_FAILED', 'INVALID_STATE_TRANSITION'] },
+    fuente: 'WP-EDITOR-ENTRENAMIENTO-TANDA-3 ET3-05 · WP-ADMINISTRACION (DL-155) · ID propio de BE (familia TPB) · DEUDA_LEGAJO DL-199',
   },
   {
     id: 'API-INT-NUT-02',
@@ -2663,6 +2698,36 @@ const DEFINIDAS: readonly Operacion[] = [
     exitos: [{ status: 201, schema: UnoRMGuardadoResponseSchema }],
     errores: { ...ESCRITURA_REVELABLE, 409: ['IDEMPOTENCY_KEY_REUSED'], 422: ['VALIDATION_FAILED'] },
     fuente: 'ID propio de BE (familia RMX) · DEUDA_LEGAJO DL-198 · WP-EDITOR-ENTRENAMIENTO-TANDA-2 ET2-01 a ET2-04',
+  },
+  // ─── WP-EDITOR-ENTRENAMIENTO-TANDA-3 · TPB: las Plantillas de BE (DL-199). Familia propia de BE ─────────────────────
+  {
+    id: 'API-TPB-01',
+    metodo: 'get',
+    ruta: '/training/be-templates',
+    resumen:
+      'Las Plantillas de BE de Entrenamiento que se ofrecen: planes completos curados por BE (cuerpo completo, torso y pierna, empuje, tracción y pierna, por grupo muscular), con su división, los días por semana, las semanas, la intensidad del plan y cada fase con su propósito, sus semanas, su progresión en palabras y sus sesiones con los ejercicios («3 × 10 · 65 % RM»). Cada ejercicio con el del catálogo de este entorno (exerciseId) o null si no está. validation: PROPOSAL mientras Dirección no las valide. Para cualquier profesional de Entrenamiento; lo demás, 403. Las retiradas por Administración no se listan.',
+    autenticacion: 'SESSION',
+    idempotencia: false,
+    exitos: [{ status: 200, schema: ListaDePlantillasDeBeResponseSchema }],
+    errores: { ...SESION, 400: ['INVALID_REQUEST'], 403: ['ACTION_FORBIDDEN'] },
+    fuente: 'ID propio de BE (familia TPB) · DEUDA_LEGAJO DL-199 · WP-EDITOR-ENTRENAMIENTO-TANDA-3 ET3-01 y ET3-02',
+  },
+  {
+    id: 'API-TPB-02',
+    metodo: 'post',
+    ruta: '/advisees/{adviseeId}/training/plans/from-be-template',
+    resumen:
+      'Crear el borrador del plan de la persona desde una Plantilla de BE (templateKey y la templateVersion que se vio), como API-TRN-07: el PDP de Entrenamiento, el objetivo efectivo, un solo borrador. La estructura y la planificación (fases por semanas, aproximaciones, progresión e intensidad) se arman con el catálogo de este entorno, y las cargas en % RM se resuelven con el 1RM de referencia de la persona que tiene este profesional (API-RMX-01): la carga común redondeada al paso del implemento, la referencia con el origen del 1RM y las aproximaciones arriba. beTemplate.loads dice, por ejercicio en % RM, la carga con su base («65 % de 100 kg = 65 kg») o WITHOUT_ONE_REP_MAX (queda para completar); unavailableExercises, los que no están en el catálogo y no entraron. Otra versión: 409 RESOURCE_CONFLICT (BE_TEMPLATE_VERSION_CHANGED); retirada: 422 TEMPLATE_ARCHIVED; clave inexistente: 404.',
+    autenticacion: 'SESSION',
+    idempotencia: true,
+    request: CrearPlanDesdePlantillaDeBeRequestSchema,
+    exitos: [{ status: 201, schema: PlanDesdePlantillaDeBeResponseSchema }],
+    errores: {
+      ...ESCRITURA_REVELABLE,
+      409: ['IDEMPOTENCY_KEY_REUSED', 'VERSION_CONFLICT', 'RESOURCE_CONFLICT'],
+      422: ['OBJECTIVE_NOT_EFFECTIVE_OR_COMPATIBLE', 'TRAINING_PLAN_STRUCTURE_INVALID', 'EXERCISE_REFERENCE_INVALID', 'TEMPLATE_ARCHIVED', 'VALIDATION_FAILED'],
+    },
+    fuente: 'ID propio de BE (familia TPB) · DEUDA_LEGAJO DL-199 · WP-EDITOR-ENTRENAMIENTO-TANDA-3 ET3-02 a ET3-04',
   },
   {
     id: 'API-INT-TRN-02',
@@ -5421,6 +5486,8 @@ const LECTURAS_PROTEGIDAS: ReadonlySet<string> = new Set([
   'API-TRN-25-PROPIA',
   // WP-EDITOR-ENTRENAMIENTO-TANDA-2 (DL-198).
   'API-RMX-01',
+  // WP-EDITOR-ENTRENAMIENTO-TANDA-3 (DL-199).
+  'API-TPB-01',
   'API-ESF-02',
   'API-NPP-02',
   // WP-CONTEXTO-DE-LA-PERSONA (DL-179).

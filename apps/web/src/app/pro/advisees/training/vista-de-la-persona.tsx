@@ -30,6 +30,8 @@ import {
   type NotacionDelEsfuerzo,
   type PlanificacionDelPlan,
   type SemanaDeLaFase,
+  cardioDe,
+  cardioEnPalabras,
 } from '@be/domain';
 import { useEffect, useId, useState } from 'react';
 import { CuadroEnfocado } from '../../../../components/cuadro-enfocado';
@@ -112,11 +114,22 @@ export function VistaDeLaPersona({
       className="vista-de-la-persona"
       titulo={T.titulo}
       sobretitulo={persona}
-      ayuda={{ nombre: `Qué muestra «${T.abrir}»`, contenido: <p className="ayuda-con-ejemplo__ejemplo" data-ejemplo-resuelto>{T.ayuda}</p> }}
+      // DL-199 (ET3, E5): qué es esta vista y que muestra lo no guardado van en su «?»; a la vista, la sesión.
+      ayuda={{
+        nombre: `Qué muestra «${T.abrir}»`,
+        contenido: (
+          <>
+            <p>{T.queEs}</p>
+            <p>{T.sinGuardar}</p>
+            <p className="ayuda-con-ejemplo__ejemplo" data-ejemplo-resuelto>
+              {T.ayuda}
+            </p>
+          </>
+        ),
+      }}
       onCerrar={onCerrar}
     >
       <div className="vista-de-la-persona__cuerpo" data-vista-de-la-persona>
-        <p className="nota">{T.queEs}</p>
         {sesiones.length === 0 ? (
           <p className="nota">{T.sinSesiones}</p>
         ) : (
@@ -145,7 +158,7 @@ export function VistaDeLaPersona({
               </div>
             </div>
             <p className="nota vista-de-la-persona__regla" data-vista-con-progresion={progresion ? '' : undefined}>
-              <Icono nombre="info" tamano={15} /> {progresion ? T.conProgresion : T.sinProgresion} {T.sinGuardar}
+              <Icono nombre="info" tamano={15} /> {progresion ? T.conProgresion : T.sinProgresion}
             </p>
             {/* El teléfono: un marco angosto con la sesión, como en la app. */}
             <div className="telefono-de-muestra" role="group" aria-label={`${T.titulo}: ${elegida?.label ?? ''}`}>
@@ -162,6 +175,13 @@ export function VistaDeLaPersona({
                       return (
                         <li key={p.prescriptionId ?? k} className="telefono-de-muestra__ejercicio" data-vista-ejercicio={k + 1}>
                           <p className="telefono-de-muestra__nombre">{nombreDe(p)}</p>
+                          {/* DL-199 (ET3-14): el cardio, con su duración, su distancia y su intensidad; se tilda al terminar. */}
+                          {cardioDe(p) ? (
+                            <p className="telefono-de-muestra__plan" data-vista-cardio>
+                              {cardioEnPalabras(cardioDe(p)!)}
+                            </p>
+                          ) : (
+                            <>
                           <p className="nota">{cuentaDeSeries(p.sets)}</p>
                           <ul className="telefono-de-muestra__series">
                             {objetivos.map((o, n) => {
@@ -176,6 +196,8 @@ export function VistaDeLaPersona({
                               );
                             })}
                           </ul>
+                            </>
+                          )}
                         </li>
                       );
                     })}

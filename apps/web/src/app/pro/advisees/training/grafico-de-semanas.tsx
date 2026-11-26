@@ -13,6 +13,18 @@
  */
 import { numero } from '@be/domain';
 import { useId, useState, type KeyboardEvent, type PointerEvent, type ReactNode } from 'react';
+import { ExplicacionAPedido } from '../../../../components/explicacion-a-pedido';
+
+/**
+ * DL-199 (ET3, pasada de densidad E5): cómo se lee el gráfico va en su «?», en la esquina; el renglón de la lectura
+ * queda reservado y vacío hasta que se elige una semana (para el lector, la indicación sigue ahí, oculta).
+ */
+export const COPY_GRAFICO_DE_SEMANAS = {
+  comoSeLee: 'Cómo se lee el gráfico',
+  indicacion: 'Pasá el puntero, o enfocá el gráfico y usá ← y →, para leer cada semana.',
+  formas: 'Lo planificado va punteado, con puntos huecos; lo realizado, lleno; el máximo estimado, con rombos. La franja de fondo marca la descarga.',
+  ejemplo: 'Ejemplo: con el foco en el gráfico, → tres veces lleva a la semana 3 y abajo se lee «Semana 3: Planificado 65 kg · Realizado 62,5 kg».',
+} as const;
 
 export interface SerieDeSemanas {
   readonly clave: string;
@@ -50,6 +62,7 @@ export function GraficoDeSemanas({
   rotuloDeSemana = (n) => `S${n}`,
   pie = null,
   acciones = null,
+  ayuda = null,
 }: {
   titulo: string;
   semanas: number;
@@ -62,6 +75,8 @@ export function GraficoDeSemanas({
   pie?: ReactNode;
   /** Lo que va a la derecha del título (la estrella de favoritos). */
   acciones?: ReactNode;
+  /** Lo que se suma al «?» del gráfico (el método de lo dibujado, por ejemplo). */
+  ayuda?: ReactNode;
 }) {
   const id = useId();
   const [cursor, setCursor] = useState<number | null>(null);
@@ -104,7 +119,17 @@ export function GraficoDeSemanas({
         <span id={`${id}-titulo`} className="grafico-de-semanas__titulo">
           {titulo}
         </span>
-        {acciones}
+        <span className="grafico-de-semanas__acciones">
+          {acciones}
+          <ExplicacionAPedido nombre={COPY_GRAFICO_DE_SEMANAS.comoSeLee} como="div" lugar="esquina">
+            <p>{COPY_GRAFICO_DE_SEMANAS.indicacion}</p>
+            <p>{COPY_GRAFICO_DE_SEMANAS.formas}</p>
+            {ayuda}
+            <p className="ayuda-con-ejemplo__ejemplo" data-ejemplo-resuelto>
+              {COPY_GRAFICO_DE_SEMANAS.ejemplo}
+            </p>
+          </ExplicacionAPedido>
+        </span>
       </figcaption>
       <ul className="grafico-de-semanas__leyenda" aria-hidden="true">
         {series.map((s) => (
@@ -191,7 +216,7 @@ export function GraficoDeSemanas({
       </svg>
       {/* RP-19: la lectura tiene su renglón reservado; aparece y desaparece sin mover nada. */}
       <p id={`${id}-lectura`} className="grafico-de-semanas__lectura nota" aria-live="polite">
-        {cursor !== null ? lecturaDe(cursor) : 'Pasá el puntero, o enfocá el gráfico y usá ← y →, para leer cada semana.'}
+        {cursor !== null ? lecturaDe(cursor) : <span className="visualmente-oculto">{COPY_GRAFICO_DE_SEMANAS.indicacion}</span>}
       </p>
       {pie}
       <button type="button" className="boton boton--discreto boton--compacto grafico-de-semanas__ver-tabla" aria-expanded={tabla} aria-controls={`${id}-tabla`} onClick={() => setTabla((t) => !t)} data-ver-tabla>

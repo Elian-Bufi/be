@@ -9,7 +9,7 @@
  *   dicen sin rutas técnicas, y el editor lleva al campo.
  * Vive en el website hasta TB-20 (§8.2 del paquete), como `topes-del-plan.ts`. Sin React, para las pruebas.
  */
-import { seriesQueNoSonLasVueltas, type BloqueParaLeer } from '@be/domain';
+import { cardioDe, seriesQueNoSonLasVueltas, type BloqueParaLeer } from '@be/domain';
 
 /** El código de cada cosa sin completar: no es un problema de la API, y no impide guardar ni activar. */
 export const INCOMPLETO = {
@@ -23,6 +23,8 @@ export const INCOMPLETO = {
    * criterio (ET1-D11: no traba el guardado), y así lo lee la persona.
    */
   sinIntensidad: 'INCOMPLETO_SIN_OBJETIVO_DE_INTENSIDAD',
+  // DL-199: un ejercicio de cardio sin la duración escrita.
+  sinDuracion: 'INCOMPLETO_CARDIO_SIN_DURACION',
 } as const;
 
 /** Lo que dice cada una en la lista, después de su lugar: qué falta y, si cambia algo para la persona, qué ve. */
@@ -31,6 +33,7 @@ export const TEXTO_DE_LO_INCOMPLETO: Readonly<Record<string, string>> = {
   [INCOMPLETO.sinRepeticiones]: 'sin repeticiones fijadas',
   [INCOMPLETO.sinSeries]: 'sin series',
   [INCOMPLETO.seriesYVueltas]: 'sus series efectivas no son tantas como las vueltas de su bloque',
+  [INCOMPLETO.sinDuracion]: 'cardio sin la duración: en la app dice «Duración: Sin indicar»',
   [INCOMPLETO.sinIntensidad]: 'el objetivo de la intensidad del plan, sin indicar: en la app se lee «sin criterio de intensidad»',
 };
 
@@ -73,6 +76,9 @@ type SesionDeLaRevision = {
     readonly exerciseGroupId?: string | null;
     readonly prescriptionId?: string | null;
     readonly intensity?: unknown;
+    /** DL-199: con la «Duración» de BE, es cardio (`cardio-de-la-prescripcion.ts`). */
+    readonly professionalParameters?: readonly { readonly label: string; readonly value: string | number; readonly unit?: string | null }[];
+    readonly suggestedLoad?: unknown;
   }[];
   readonly exerciseGroups?: readonly BloqueParaLeer[] | null;
 };
@@ -98,6 +104,9 @@ export function loQueQuedaSinCompletarEnEntrenamiento(bloques: readonly BloqueDe
     const vueltas = new Set(seriesQueNoSonLasVueltas(s).map((x) => x.posicion));
     s.prescriptions.forEach((p, l) => {
       const rp = `${ruta}.prescriptions[${l}]`;
+      // DL-199 (ET3-15): el cardio no lleva repeticiones ni intensidad de fuerza; lo que le falta es la duración.
+      const cardio = cardioDe(p);
+      if (cardio) return void (cardio.duracionMinutos === null ? r.push({ code: INCOMPLETO.sinDuracion, path: rp }) : undefined);
       if (p.sets.length === 0) return void r.push({ code: INCOMPLETO.sinSeries, path: rp });
       p.sets.forEach((x, n) => {
         if (x.repetitions === null || x.repetitions === undefined) r.push({ code: INCOMPLETO.sinRepeticiones, path: `${rp}.sets[${n}].repetitions` });

@@ -8,6 +8,7 @@ import { SesionModule } from '../sesion/sesion.module';
 import { AccesoAdministrativoService } from './acceso-administrativo.service';
 import { AdministracionController } from './administracion.controller';
 import { AdministracionService } from './administracion.service';
+import { PlantillasDeBeAdminService } from './plantillas-de-be-admin.service';
 import { SegundoFactorGuard, SesionAdministrativaGuard } from './sesion-administrativa.guard';
 
 /**
@@ -18,6 +19,6 @@ import { SegundoFactorGuard, SesionAdministrativaGuard } from './sesion-administ
 @Module({
   imports: [SesionModule, ProfesionalModule, DerechosModule, RecuperacionModule, IncidenciasModule, NutricionModule],
   controllers: [AdministracionController],
-  providers: [AccesoAdministrativoService, AdministracionService, SesionAdministrativaGuard, SegundoFactorGuard],
+  providers: [AccesoAdministrativoService, AdministracionService, SesionAdministrativaGuard, SegundoFactorGuard, PlantillasDeBeAdminService],
 })
 export class AdministracionModule {}

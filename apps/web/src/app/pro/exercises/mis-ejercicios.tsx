@@ -53,6 +53,7 @@ import { ZonasDelEjercicio } from './zonas-del-ejercicio';
 import { COPY_ZONAS_PROPIAS } from './zonas-propias';
 import { EsperandoSesion } from '../../../lib/sesion';
 import { COPY_CLASIFICACION_DEL_PROPIO, CuadroDeLaClasificacion } from './clasificacion-del-propio';
+import { invalidarElCatalogo } from '../advisees/training/catalogo-en-la-sesion';
 
 type Estado = { tipo: 'cargando' } | { tipo: 'error' } | { tipo: 'sin-area' } | { tipo: 'listo'; ejercicios: EjercicioPropio[] };
 
@@ -126,6 +127,8 @@ export function MisEjercicios() {
     setCreando(false);
     if (sesionPerdida(r)) return;
     if (!r.ok) return setFallo(mensajeDeFallo(r));
+    // DL-199 (ET3-24): el catálogo de la sesión se vuelve a leer con el nuevo.
+    invalidarElCatalogo();
     setNombre('');
     setClasificacion(SIN_CLASIFICAR);
     setAviso(COPY_EJERCICIOS_PROPIOS.ejercicioCreado);
@@ -346,6 +349,7 @@ export function MisEjercicios() {
             setClasificando(null);
           }}
           onGuardada={(x) => {
+            invalidarElCatalogo();
             setEstado((s) => (s.tipo === 'listo' ? { tipo: 'listo', ejercicios: s.ejercicios.map((y) => (y.exerciseId === x.exerciseId ? x : y)) } : s));
             setAviso(COPY_CLASIFICACION_DEL_PROPIO.guardada(x.name));
             setParaEnfocar(`clasificacion-de-${x.exerciseId}`);

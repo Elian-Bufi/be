@@ -197,6 +197,7 @@
 | DL-196 | Recorrido de Dirección · 2026-11-23 (E1 a E20: «la pantalla está muy sobrecargada», «hacerlo como Nutrición»; WP-EDITOR-ENTRENAMIENTO, parte A) | DL-122 · DL-137 · DL-178 · DL-181 · DL-188 (RP-19, RP-22, RP-24) · DL-192 · DL-195 · B10-06 · B10-10 · RNF-ACC-001 | El editor tenía tres columnas con acciones repetidas, sin fechas de inicio y fin ni duración de las fases, con «Antes de activar» como pestaña y trabas por la versión de la app de la persona; el calentamiento era una «C» sin cálculo | **PROGRAMADA en `wp-editor-entrenamiento-a` (PR en borrador, sin integrar) · EE-D01 a EE-D17 a ratificar**: dos columnas como Nutrición; el plan con inicio, duración o fin, objetivo y anotaciones privadas; las fases por semanas en desplegables, con sus días y «Copiar la fase anterior»; el almanaque y el panel contextual; «Antes de activar» al lado del botón; las aproximaciones «Por porcentaje» o «A mano» con redondeo por implemento; la máscara mm:ss y las acciones rápidas; ninguna traba por la versión de la app (quedan solo los recortes de forma de la APK 0.32). La planificación va en el JSON de la versión (sin migración), solo para el profesional. **Parte B PROGRAMADA en `wp-editor-entrenamiento-b` (PR en borrador) · EE-D30 a EE-D43 a ratificar:** progresiones y descargas como regla de la fase con vista previa, copiar + progresión, gráficos X/Y, carga para N repeticiones, la distribución por músculo con la silueta (**desvío de REG-06-139 decidido por Dirección, EE-D34**), frecuencia, equilibrios, estructuras, zonas a cuidar, el catálogo por músculo y los favoritos del plan. Detalle: `docs/paquetes/WP-EDITOR-ENTRENAMIENTO.md` |
 | DL-197 | Recorrido de Dirección · 2026-11-25 (F1 a F25 sobre el editor de DL-196 y la estructura del prototipo que eligió: «Fases del plan» con su barra, cuadros para configurar, las sesiones como tarjetas; WP-EDITOR-ENTRENAMIENTO-TANDA-1) | DL-141 · DL-178 · DL-188 (RP-19) · DL-192 · DL-196 · B10-06 · REG-06-128 · RNF-ACC-001 | La tarjeta del plan descuadrada, el panel que se desbordaba, fases que sumaban más que el plan y se podían activar, aproximaciones que repetían cargas y heredaban el RIR y el descanso común, una planilla con columnas cortadas y demasiados controles a la vista, y un catálogo que no listaba nada hasta buscar ni se podía filtrar | **PROGRAMADA en `wp-editor-entrenamiento-tanda-1` (PR en borrador, sin integrar) · ET1-D01 a ET1-D20 a ratificar:** la barra de fases y los cuadros «Configurar plan», «Editar fase», «Días de la semana», «Agregar ejercicios», «Aproximaciones», «Editar todas las series» y «Más opciones», cada uno con su «?» y un ejemplo resuelto; **con fases de más no se activa** (`PHASES_EXCEED_PLAN_WEEKS`); la intensidad del plan elegida una vez y heredada; aproximaciones que nunca repiten ni llegan a la de trabajo, sin RIR y con su descanso; la clasificación del catálogo (migración aditiva `20261125120000`, **la de los 186 a validar por Elián**); «Catálogo de BE» en «Mis ejercicios»; los ejes desde 0. Detalle: `docs/paquetes/WP-EDITOR-ENTRENAMIENTO-TANDA-1.md` |
 | DL-198 | Decisiones de Dirección · 2026-11-25 (el 1RM con tres orígenes y la calibración del día cero; lo que la tanda 1 dejó para la tanda 2; WP-EDITOR-ENTRENAMIENTO-TANDA-2) | DL-171 · DL-192 · DL-196 · DL-197 · DL-152 · DL-108 · DL-182 · B10-06 · REG-06-128 · RNF-ACC-001 | El % RM sin un 1RM numérico, la persona que veía siempre la carga de la semana 1, ninguna forma de ver el plan como le llega, el esfuerzo de la sesión afuera (RPE-D09), plantillas que perdían la planificación, la clasificación de un propio que no se podía cambiar y desplegables desparejos | **PROGRAMADA en `wp-editor-entrenamiento-tanda-2` (sale de #324; PR en borrador, sin integrar) · ET2-D01 a ET2-D17 a ratificar:** el 1RM de referencia (`BE-E1RM` v2) con la calibración, el último registro en rango y lo declarado, el más reciente y el aviso si se aleja más del 10 % (API-RMX-01 y 02); el % RM con su base; la carga de cada semana en las lecturas del titular, en los mismos campos; «Ver como la persona»; el esfuerzo de la sesión (Foster, API-ESF-01 y 02); las plantillas con su planificación; la clasificación de un propio (API-EJE-06); migraciones aditivas `20261125125900` y `20261125130000`. Detalle: `docs/paquetes/WP-EDITOR-ENTRENAMIENTO-TANDA-2.md` |
+| DL-199 | Encargo de Dirección · 2026-11-25 (la prueba completa del editor de Entrenamiento; WP-EDITOR-ENTRENAMIENTO-TANDA-3) | DL-191 · DL-196 · DL-197 · DL-198 · DL-178 · DL-152 · DL-155 · B10-06 · REG-06-128 · RNF-ACC-001 | Sin planes completos de BE para empezar, ninguna sugerencia desde lo que hizo la persona, el cardio cargado como series × repeticiones × kg, sin reordenar arrastrando ni «Deshacer», lo BAJA de las tandas 1 y 2 y un editor sobrecargado (E5) | **PROGRAMADA en `wp-editor-entrenamiento-tanda-3` (PR en borrador, sin integrar) · ET3-D01 a ET3-D39 a ratificar:** las Plantillas de BE (cuatro, propuesta a validar por Elián) con las cargas en % RM resueltas con el 1RM de la persona (API-TPB-01 a 04, Administración las ofrece o las retira; migración aditiva `20261126120000`); la sugerencia «+2,5 kg la próxima» con su motivo; el cardio con duración, distancia e intensidad en los parámetros de siempre; reordenar arrastrando o con el teclado y «Deshacer» (Ctrl+Z); lo BAJA; la pasada de densidad. Detalle: `docs/paquetes/WP-EDITOR-ENTRENAMIENTO-TANDA-3.md` |
 
 ---
 
@@ -9617,3 +9618,45 @@ publicarla, se congelan sus lecturas (DL-152).
 
 **Lo que queda.** Ratificar ET2-D01 a ET2-D17; publicar y probar la APK; mirarlo en pantalla con Dirección. Detalle:
 `docs/paquetes/WP-EDITOR-ENTRENAMIENTO-TANDA-2.md`.
+
+---
+
+## DL-199 — El editor de Entrenamiento, tanda 3: las Plantillas de BE, la sugerencia de progresión, el cardio, reordenar y «Deshacer», lo BAJA y la densidad
+
+**Prioridad:** alta (Dirección prueba todo el 2026-11-26: «la calidad tiene que ser excelente y la estética primordial») ·
+DL-152 · DL-155 · DL-178 · DL-191 · DL-196 · DL-197 · DL-198 · B10-06 · REG-06-128 · RNF-ACC-001 · **Estado:** PEDIDA por
+Dirección el 2026-11-25 · PROGRAMADA en `wp-editor-entrenamiento-tanda-3` (salió de la tanda 2, #325, ya integrada); PR en
+borrador, sin integrar · ET3-D01 a ET3-D39, **a ratificar**. Si al integrar el número choca con otro paquete, se renumera.
+
+**Qué pidió Dirección.** Plantillas de BE curadas por Administración, como el Recetario de BE: planes completos (cuerpo
+completo, torso y pierna, empuje, tracción y pierna, por grupo muscular) con su planificación, las cargas en % RM resueltas
+con el 1RM de cada persona y, si no lo tiene, dicho y para completar; una sugerencia de progresión desde lo que hizo la
+persona (doble progresión), que el profesional acepta o descarta; el cardio con duración, distancia e intensidad; reordenar
+arrastrando o con el teclado y «Deshacer»; lo BAJA de las tandas 1 y 2, y menos texto a la vista en el editor (E5).
+
+**Qué dice el legajo.** Nada en contra. Las plantillas de BE son, como las propias (DL-108), un molde sin persona: aplicarla
+crea el borrador de la persona y nada de ella vuelve al molde. El % RM se resuelve con la misma referencia de DL-198 (09v10:356
+enmendado por DL-171, sin tocar el legajo). La sugerencia no prescribe sola: el profesional decide (REG-06-128). El cardio
+usa los «parámetros del profesional» de B10-06:390, con su unidad (REG-06-111). No se edita el legajo.
+
+**Lo programado.**
+- **ET3-01 a ET3-06 · Las Plantillas de BE:** cuatro, datos versionados de BE en el dominio (ET3-D01); el selector «Mis
+  plantillas · Plantillas de BE» en «Empezar desde una plantilla», con la vista de cada una; API-TPB-01 (leerlas) y 02
+  (aplicarla, con las cargas resueltas y el aviso de lo que falta); `/admin/training-templates` con API-TPB-03 y 04 (ofrecer
+  o retirar, con su historia); la tabla de solo agregar `decision_sobre_plantilla_de_be`.
+- **ET3-10 a ET3-12 · La sugerencia de progresión** en el panel del ejercicio, desde «La vez pasada», con «Aplicar» y
+  «Descartar». **ET3-13 a ET3-15 · El cardio** en el editor, en el renglón y en «Ver como la persona», en los parámetros del
+  profesional (sin cambiar el contrato: ET3-D13).
+- **ET3-20 a ET3-23 · «Deshacer» y reordenar** (Ctrl+Z, el aviso de 8 segundos, el asa, Alt+↑/↓). **ET3-24 a ET3-29 · Lo
+  BAJA:** el catálogo en caché y el aviso si corta, el descanso común al desmarcar una aproximación, «Catálogo de BE» por
+  quién lo cargó (`loadedByProfessional`, solo con la clasificación), una parada de Tab por fila en «Días de la semana» y
+  un solo nombre accesible en la barra de fases.
+- **ET3-30 en adelante · La pasada de densidad (E5).**
+- Pruebas: TEST-ET3-01 a 19 (dominio), 20 a 44 (website), TEST-ET3-API-01 a 06 (integración, en la CI) y los recorridos
+  `plantillaDeBe`, `editorTanda3Reordenar` y `editorTanda3Cardio` (TEST-ET3-NAV-01 a 03).
+
+**La APK publicada.** Lee igual: no hay lecturas nuevas que congelar (DL-152). El cardio le llega en los parámetros que ya
+muestra. La próxima versión puede dibujarlo como tarjeta propia.
+
+**Lo que queda.** Ratificar ET3-D01 a ET3-D39 y validar las cuatro Plantillas de BE; la tarjeta del cardio en la APK;
+mirarlo en pantalla con Dirección. Detalle: `docs/paquetes/WP-EDITOR-ENTRENAMIENTO-TANDA-3.md`.

@@ -8,7 +8,7 @@
  * - **Sin sesión:** solo la apariencia.
  * La apariencia es la del website: se guarda en este navegador y no cambia nada más que los colores.
  */
-import { CODIGOS_DE_SESION_ADMINISTRATIVA_NO_VALIDA, COPY, COPY_ADMINISTRACION } from '@be/domain';
+import { CODIGOS_DE_SESION_ADMINISTRATIVA_NO_VALIDA, COPY, COPY_ADMINISTRACION, COPY_PLANTILLAS_DE_BE_EN_ADMINISTRACION } from '@be/domain';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useId, useRef, useState } from 'react';
@@ -150,6 +150,16 @@ export function MenuAdministrativo() {
               <span>
                 Propuestas al Recetario de BE
                 <span className="nota">Sumar al recetario las recetas que propusieron los profesionales</span>
+              </span>
+            </Link>
+          ) : null}
+          {/* DL-199 (ET3-05): las Plantillas de BE de Entrenamiento, para ofrecerlas o retirarlas. */}
+          {vigente && ruta !== '/admin/training-templates' ? (
+            <Link href="/admin/training-templates" className="menu-de-cuenta__opcion">
+              <Icono nombre="plantillas" />
+              <span>
+                {COPY_PLANTILLAS_DE_BE_EN_ADMINISTRACION.menu}
+                <span className="nota">{COPY_PLANTILLAS_DE_BE_EN_ADMINISTRACION.menuNota}</span>
               </span>
             </Link>
           ) : null}

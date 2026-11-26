@@ -119,6 +119,7 @@ export function PanelDelEjercicio({
   antes = null,
   cargaPorSemana = null,
   despues = null,
+  sugerencia = null,
   soloElGrafico = false,
 }: {
   token: string;
@@ -133,6 +134,8 @@ export function PanelDelEjercicio({
   cargaPorSemana?: ((veces: readonly VezPasada[] | null) => ReactNode) | null;
   /** DL-196 parte B: lo que va antes de «La vez pasada» (la carga para N repeticiones). */
   despues?: ReactNode;
+  /** DL-199 (ET3-10): la sugerencia de progresión, con lo que se leyó para «La vez pasada» (`null` mientras se lee). */
+  sugerencia?: ((veces: readonly VezPasada[] | null) => ReactNode) | null;
   /** DL-196 parte B (favoritos del plan): solo la carga por semana, sin el marco ni «La vez pasada». */
   soloElGrafico?: boolean;
 }) {
@@ -144,6 +147,7 @@ export function PanelDelEjercicio({
   return (
     <MarcoDelPanel id={id} deQue={nombre} titulo={T.laVezPasada} onAbrirGrande={() => setGrande(true)}>
       {antes}
+      {sugerencia ? sugerencia(lectura.tipo === 'lista' ? lectura.veces : null) : null}
       {cargaPorSemana ? cargaPorSemana(lectura.tipo === 'lista' ? lectura.veces : null) : carga && carga.puntos.length > 1 ? <CargaEnElTiempo puntos={carga.puntos} unidad={carga.unidad} /> : null}
       {despues}
       <LaVezPasada lectura={lectura} recargar={recargar} nombre={nombre} />
