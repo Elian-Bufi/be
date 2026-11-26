@@ -1313,10 +1313,10 @@ const COPY_SERIES = {
   /** Falta el objetivo: ninguna serie efectiva lo tiene, ni propio ni del «Común». */
   faltaElObjetivo: (que: string) => `Falta el objetivo de intensidad: escribí el ${que} del «Común» o el de cada serie.`,
   /** ET2-D18: la marca de lo que sale del otro campo, y lo que oye el lector. */
-  delPorcentaje: 'del %',
+  delPorcentaje: 'del % RM',
   deLaCarga: 'de la carga',
   cargaDelPorcentaje: 'Sale del % RM y del 1RM: si cambia el 1RM, se recalcula.',
-  porcentajeDeLaCarga: 'Sale de la carga escrita y del 1RM, redondeado a 0,5 %.',
+  porcentajeDeLaCarga: 'Sale de la carga escrita y del 1RM, redondeado a 0,5 % RM.',
 } as const;
 
 /** ET2-D18: el 1RM y el redondeo con los que la planilla ata el % RM y la carga del «Común». */
