@@ -25,8 +25,13 @@ import { errores } from './errores';
  * rutas un cuerpo válido de más de 6.000 elementos de listas se rechaza con TOO_BIG, que el website dice como «demasiado
  * grande para guardarlo de una vez». Un plan real queda muy lejos: el de Nutrición más grande tiene 288 elementos; uno de
  * Entrenamiento de 12 semanas, unos 2.900.
+ *
+ * DL-201 (2026-11-26): con la progresión por ejercicio, el plan de Entrenamiento acepta hasta 200 reglas de progresión, y
+ * su cota (la de EditarPlanDeEntrenamientoRequestSchema y las de las plantillas) sube a 6.461. El techo pasa de 6.000 a
+ * 7.000, con el mismo margen que antes sobre la cota más alta; el trabajo de zod con un cuerpo inválido crece, como mucho,
+ * en la misma proporción (sin medir de nuevo).
  */
-export const MAXIMO_DE_ELEMENTOS = 6000;
+export const MAXIMO_DE_ELEMENTOS = 7000;
 
 /**
  * El piso: hasta tantos elementos, el cuerpo siempre se valida. Así un cuerpo chico con una lista donde no va (`roles:

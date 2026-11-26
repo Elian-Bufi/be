@@ -24,7 +24,7 @@ import type { IncomingMessage } from 'node:http';
  *
  * Lo que no cambia:
  * - la validación del contrato, con sus topes por lista (7 días tipo, 12 comidas, 40 ítems…);
- * - la cota de elementos de `validacion.ts`, con el mismo techo para todas las rutas: un cuerpo con más de 6.000
+ * - la cota de elementos de `validacion.ts`, con el mismo techo para todas las rutas: un cuerpo con más de 7.000
  *   elementos de listas se rechaza con TOO_BIG sin recorrerlo. Así el trabajo de zod por pedido no crece con el límite.
  *   Un plan real queda muy lejos: el de Nutrición más grande tiene 288 elementos; el de Entrenamiento de 12 semanas,
  *   unos 2.900.
