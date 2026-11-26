@@ -3188,6 +3188,67 @@ it('TEST-CT (WP-RECETARIO-E-IMAGENES, DL-191): RCT-01 a 05 y MED-03 con la varia
   await request(servidor).post(`/api/v1/nutrition/recipe-book/${sumada.recipeBookRecipeId}/copies`).set('Authorization', `Bearer ${otra.token}`).send({}).expect(400); // sin clave
 });
 
+it('TEST-CT (WP-EDITOR-ENTRENAMIENTO-TANDA-2, DL-198): RMX-01 y 02, ESF-01 y 02 y EJE-06, con éxitos y errores declarados', async () => {
+  const servidor = app.getHttpServer();
+  const ajeno = randomUUID();
+  const c = await circuitoConPlanDeEntrenamientoActivo(app, 'contrato-tanda-2');
+  const ase = conSesion(app, c.ase.token);
+  const pro = conSesion(app, c.pro.token);
+  const detalle = (await pro.get(`/api/v1/training/plans/${c.planId}/detail`).expect(200)).body.data;
+  const exerciseId = detalle.blocks[0].sessions[0].prescriptions[0].exerciseId as string;
+  // RMX-01
+  const rm = `/api/v1/advisees/${c.ase.id}/training/one-rep-max`;
+  await pro.get(`${rm}?exerciseIds=${exerciseId}`).expect(200);
+  await pro.get(rm).expect(400);
+  await pro.get(`/api/v1/advisees/${ajeno}/training/one-rep-max?exerciseIds=${exerciseId}`).expect(404);
+  await request(servidor).get(`${rm}?exerciseIds=${exerciseId}`).expect(401);
+  // RMX-02
+  const hoy = (await ase.get('/api/v1/me/training/today').expect(200)).body.data;
+  const calibracion = { origin: 'CALIBRATION', exerciseId, localDate: hoy.date, load: { value: 30, unit: 'kg' }, completedRepetitions: 8, rir: 1 };
+  const claveDelRm = claveDeIdempotencia();
+  await pro.post(rm, claveDelRm).send(calibracion).expect(201);
+  await pro.post(rm, claveDelRm).send({ ...calibracion, rir: 2 }).expect(409);
+  await pro.post(rm).send({ ...calibracion, completedRepetitions: 15 }).expect(422);
+  await pro.post(rm).send({ ...calibracion, extra: 1 }).expect(400);
+  await pro.post(`/api/v1/advisees/${ajeno}/training/one-rep-max`).send(calibracion).expect(404);
+  await request(servidor).post(rm).set('Idempotency-Key', claveDeIdempotencia()).send(calibracion).expect(401);
+  // ESF-01: una sesión registrada por la persona.
+  const borrador = (await ase.put(`/api/v1/training/occurrences/${hoy.occurrences[0].occurrenceId}/execution-draft`).send({}).expect(201)).body.data;
+  const serie = { setIndex: 1, load: { value: 60, unit: 'kg' }, completedRepetitions: 8, rir: 2, perceivedExertion: null };
+  const guardado = (
+    await ase
+      .patch(`/api/v1/training/execution-drafts/${borrador.draftId}`)
+      .send({ expectedVersion: borrador.version, changes: { granularity: 'SET', exercises: [{ prescriptionId: 'rx-banca', performedExerciseVersionId: CATALOGO_DE_EJERCICIOS.pressDeBanca, sets: [serie] }], sessionCondition: 'COMPLETED' } })
+      .expect(200)
+  ).body.data;
+  const executionId = (await ase.post(`/api/v1/training/execution-drafts/${borrador.draftId}/confirm`).send({ expectedVersion: guardado.version }).expect(201)).body.data.executionId as string;
+  const esfuerzo = `/api/v1/training/executions/${executionId}/session-effort`;
+  const cuerpo = { rating: 7, durationMinutes: 60, durationSource: 'TIMER' };
+  const claveDelEsfuerzo = claveDeIdempotencia();
+  await ase.post(esfuerzo).send({ rating: 11, durationMinutes: null, durationSource: null }).expect(400);
+  await pro.post(esfuerzo).send(cuerpo).expect(404);
+  await ase.post(`/api/v1/training/executions/${ajeno}/session-effort`).send(cuerpo).expect(404);
+  await ase.post(esfuerzo, claveDelEsfuerzo).send(cuerpo).expect(201);
+  await ase.post(esfuerzo, claveDelEsfuerzo).send({ ...cuerpo, rating: 6 }).expect(409); // IDEMPOTENCY_KEY_REUSED
+  await ase.post(esfuerzo).send(cuerpo).expect(409); // RESOURCE_CONFLICT: ya tiene su esfuerzo
+  await request(servidor).post(esfuerzo).set('Idempotency-Key', claveDeIdempotencia()).send(cuerpo).expect(401);
+  // ESF-02
+  const esfuerzos = `/api/v1/advisees/${c.ase.id}/training/session-efforts`;
+  await pro.get(`${esfuerzos}?periodStart=${hoy.date}&periodEnd=${hoy.date}`).expect(200);
+  await pro.get(esfuerzos).expect(400);
+  await pro.get(`/api/v1/advisees/${ajeno}/training/session-efforts?periodStart=${hoy.date}&periodEnd=${hoy.date}`).expect(404);
+  await request(servidor).get(`${esfuerzos}?periodStart=${hoy.date}&periodEnd=${hoy.date}`).expect(401);
+  // EJE-06
+  const propio = (await pro.post('/api/v1/training/exercises').send({ name: 'Remo del contrato', muscleZones: [], didacticResources: [], provenance: { type: 'MANUAL_ENTRY' } }).expect(201)).body.data;
+  const clasificacion = { expectedClassificationVersion: 0, classification: { muscleGroup: 'BACK', equipment: ['DUMBBELL'], movementPattern: 'PULL', joints: 'MULTI' } };
+  const ruta = `/api/v1/training/exercises/${propio.exerciseId}/classification`;
+  await pro.put(ruta).send(clasificacion).expect(200);
+  await pro.put(ruta).send(clasificacion).expect(409);
+  await pro.put(ruta).send({ ...clasificacion, extra: 1 }).expect(400);
+  await pro.put(`/api/v1/training/exercises/${ajeno}/classification`).send(clasificacion).expect(404);
+  await request(servidor).put(ruta).set('Idempotency-Key', claveDeIdempotencia()).send(clasificacion).expect(401);
+});
+
 it('TEST-CT: todo (status, código) observado está declarado para su operación; los éxitos coinciden con el contrato', () => {
   const noDeclaradas: string[] = [];
   const porOperacion = new Map<string, Set<string>>();

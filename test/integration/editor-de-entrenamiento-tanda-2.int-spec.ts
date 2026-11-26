@@ -57,9 +57,12 @@ async function planActivo(c: CircuitoParaPlanificar, planning: (blockId: string)
   const leido = await detalle(c.pro.token, b.planId);
   const blockId = leido.blocks[0]!.blockId;
   const banca = leido.blocks[0]!.sessions[0]!.prescriptions.find((p) => p.prescriptionId === 'rx-banca')!;
+  // La estructura con el identificador de la fase: sin él, la API le pondría otro y la planificación quedaría sin su fase.
+  const changes = estructuraDeEntrenamiento() as { blocks: Record<string, unknown>[] };
+  changes.blocks[0]!.blockId = blockId;
   const conPlan = await conSesion(app, c.pro.token)
     .patch(`/api/v1/training/plans/${b.planId}`)
-    .send({ expectedVersion: b.version, changes: estructuraDeEntrenamiento(), planning: planning(blockId) })
+    .send({ expectedVersion: b.version, changes, planning: planning(blockId) })
     .expect(200);
   await activarPlanDeEntrenamiento(app, c.pro, b.planId, conPlan.body.data.version).expect(200);
   return { planId: b.planId, blockId, exerciseId: banca.exerciseId };
