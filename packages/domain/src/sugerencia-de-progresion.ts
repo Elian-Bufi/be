@@ -144,7 +144,8 @@ export const COPY_SUGERENCIA_DE_PROGRESION = {
   aplicar: 'Aplicar',
   descartar: 'Descartar',
   aplicada: (hasta: string) => `La carga común quedó en ${hasta}.`,
-  descartada: 'Descartaste la sugerencia: no vuelve a aparecer por esta vez registrada.',
+  // Lo descartado se recuerda en esta pestaña (sessionStorage): en otra pestaña o en otra sesión vuelve a evaluarse.
+  descartada: 'Descartaste la sugerencia: en esta pestaña no vuelve a aparecer por esta vez registrada.',
   queEs: 'Doble progresión: cuando la persona hace todas las series con las repeticiones pedidas (el tope del rango) y el esfuerzo pedido, la próxima vez sube la carga un paso.',
   ejemplo: 'Ejemplo: pediste 3 × 8–10 a RIR 2 con 60 kg; la última vez hizo 10, 10 y 10 a RIR 2 o más con 60 kg. BE sugiere 62,5 kg. Si alguna serie quedó en 9, no sugiere nada.',
   nuncaSolo: 'BE no cambia nada solo: la aplicás o la descartás.',
