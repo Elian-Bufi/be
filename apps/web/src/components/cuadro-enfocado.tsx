@@ -86,7 +86,7 @@ export function CuadroEnfocado({
   paso?: string | null;
   className?: string;
   /**
-   * DL-197 (F19): el «?» en la esquina de la cabecera, junto a «Cerrar»: solo si se toca, explica paso a paso qué se
+   * DL-197 (F19) y II.17: el «?» pegado al título, a su derecha (nunca junto a «Cerrar»): solo si se toca, explica paso a paso qué se
    * configura, con un ejemplo resuelto. Escape cierra la ayuda y no el cuadro.
    */
   ayuda?: { readonly nombre: string; readonly contenido: ReactNode } | null;
@@ -162,17 +162,21 @@ export function CuadroEnfocado({
             </button>
           ) : null}
           {sobretitulo ? <p className="cajon__sobretitulo">{sobretitulo}</p> : null}
-          <h2 id={`${id}-titulo`} ref={tituloRef} tabIndex={-1}>
-            {titulo}
-          </h2>
-        </div>
-        {ayuda ? (
-          <div className="cuadro-enfocado__ayuda" data-ayuda-del-cuadro>
-            <ExplicacionAPedido nombre={ayuda.nombre} como="div" lugar="esquina">
-              {ayuda.contenido}
-            </ExplicacionAPedido>
+          {/* II.17: en un cuadro que se cierra, el «?» va pegado al título, a su derecha y alineado con él; nunca junto a
+              «Cerrar» (se confundían: dos botones chicos en la misma esquina). */}
+          <div className="cuadro-enfocado__renglon-del-titulo">
+            <h2 id={`${id}-titulo`} ref={tituloRef} tabIndex={-1}>
+              {titulo}
+            </h2>
+            {ayuda ? (
+              <div className="cuadro-enfocado__ayuda" data-ayuda-del-cuadro>
+                <ExplicacionAPedido nombre={ayuda.nombre} como="div" lugar="esquina">
+                  {ayuda.contenido}
+                </ExplicacionAPedido>
+              </div>
+            ) : null}
           </div>
-        ) : null}
+        </div>
         <button type="button" className="boton boton--discreto cajon__cerrar" onClick={pedirCerrar} disabled={ocupado} data-pide-cerrar>
           <Icono nombre="cerrar" tamano={18} />
           {COPY_CUADRO_ENFOCADO.cerrar}
