@@ -1,6 +1,6 @@
 /**
  * WP-EDITOR-ENTRENAMIENTO-TANDA-3 (DL-199) · sin React: la sugerencia de progresión en el panel del ejercicio y el cardio
- * en el editor (TEST-ET3-20 a TEST-ET3-24). Las cuentas viven en el dominio y tienen sus pruebas allá
+ * en el editor (TEST-ET3-40 a TEST-ET3-44). Las cuentas viven en el dominio y tienen sus pruebas allá
  * (`packages/domain/src/editor-de-entrenamiento-tanda-3.test.ts`).
  *
  * Uso: npm run test -w @be/web (después de construir @be/domain).
@@ -20,7 +20,7 @@ const VISTA = leer('app/pro/advisees/training/vista-de-la-persona.tsx');
 const REVISAR = leer('app/pro/advisees/revisar-el-plan.ts');
 const CSS = leer('app/globals.css');
 
-test('TEST-ET3-20 · la sugerencia sale de la lectura de «La vez pasada» y va en el panel del ejercicio, arriba de la carga', () => {
+test('TEST-ET3-40 · la sugerencia sale de la lectura de «La vez pasada» y va en el panel del ejercicio, arriba de la carga', () => {
   assert.match(PANEL, /\{sugerencia \? sugerencia\(lectura\.tipo === 'lista' \? lectura\.veces : null\) : null\}/);
   assert.match(EDITOR, /<SugerenciaDeProgresionEnElPanel\n/);
   // Con una progresión en la fase no se sugiere (ET3-D12); el cardio no la lleva; una plantilla no tiene persona.
@@ -28,7 +28,7 @@ test('TEST-ET3-20 · la sugerencia sale de la lectura de «La vez pasada» y va 
   assert.match(EDITOR, /plantilla \|\| foco\.tipo !== 'ejercicio' \|\| cardioDe\(ejercicioEnFoco\)/);
 });
 
-test('TEST-ET3-21 · nunca cambia nada sola: «Aplicar» escribe por el cambio del editor y «Descartar» se recuerda por la vez', () => {
+test('TEST-ET3-41 · nunca cambia nada sola: «Aplicar» escribe por el cambio del editor y «Descartar» se recuerda por la vez', () => {
   assert.match(EDITOR, /onAplicar=\{\(sugerida\) => cambiarEjercicio\(l, conLaCargaSubida\(ejercicioEnFoco, sugerida\)\)\}/);
   assert.match(SUGERENCIA, /claveDeLaSugerencia\(exerciseId, s\)/);
   assert.match(SUGERENCIA, /window\.sessionStorage\.setItem\(CLAVE_DE_LO_DESCARTADO/);
@@ -43,7 +43,7 @@ test('TEST-ET3-21 · nunca cambia nada sola: «Aplicar» escribe por el cambio d
   assert.doesNotMatch(bloque, /--exito|--error|#[0-9a-f]{3,6}/i);
 });
 
-test('TEST-ET3-22 · el cardio en el editor: los campos del cardio en lugar de la planilla, sin aproximaciones ni criterio de fuerza', () => {
+test('TEST-ET3-42 · el cardio en el editor: los campos del cardio en lugar de la planilla, sin aproximaciones ni criterio de fuerza', () => {
   assert.match(EJERCICIO, /\{cardio \? \(\n\s*<CardioDelEjercicio id=\{id\} nombre=\{nombre\} prescripcion=\{p\} onCambiar=\{onCambiar\} \/>\n\s*\) : \(\n\s*<SeriesDelEjercicio /);
   assert.match(EJERCICIO, /\{onAproximaciones && !cardio \? \(/);
   assert.match(EJERCICIO, /\{p\.sets\.length > 1 && !cardio \? \(/);
@@ -56,7 +56,7 @@ test('TEST-ET3-22 · el cardio en el editor: los campos del cardio en lugar de l
   assert.match(EDITOR, /esDeCardioPorLaClasificacion\(marcados\[n\][^)]*\) \? conElCardio\(x, CARDIO_SIN_INDICAR\)/);
 });
 
-test('TEST-ET3-23 · los campos del cardio: lo que no se entiende no se guarda, el motivo en un renglón reservado y el lugar del valor siempre', () => {
+test('TEST-ET3-43 · los campos del cardio: lo que no se entiende no se guarda, el motivo en un renglón reservado y el lugar del valor siempre', () => {
   assert.match(CARDIO, /<p id=\{`\$\{id\}-cardio-motivo`\} className="cardio-del-ejercicio__motivo" role="status"/);
   assert.match(CARDIO, /data-valor-de-la-intensidad=\{tipo\}/);
   assert.match(CARDIO, /aria-invalid=\{duracionMal \|\| undefined\}/);
@@ -67,7 +67,7 @@ test('TEST-ET3-23 · los campos del cardio: lo que no se entiende no se guarda, 
   assert.match(CSS, /\.cardio-del-ejercicio__campos \{\n\s*display: grid;\n\s*grid-template-columns: repeat\(4, minmax\(9rem, 1fr\)\);/);
 });
 
-test('TEST-ET3-24 · «Ver como la persona» y «Antes de activar» con el cardio: su renglón y, si falta, la duración', () => {
+test('TEST-ET3-44 · «Ver como la persona» y «Antes de activar» con el cardio: su renglón y, si falta, la duración', () => {
   assert.match(VISTA, /\{cardioDe\(p\) \? \(\n\s*<p className="telefono-de-muestra__plan" data-vista-cardio>/);
   assert.match(REVISAR, /if \(cardio\) return void \(cardio\.duracionMinutos === null \? r\.push\(\{ code: INCOMPLETO\.sinDuracion, path: rp \}\) : undefined\);/);
   const sinDuracion = { prescriptions: [{ sets: [{ repetitions: null }], professionalParameters: [{ label: 'Duración', value: 'Sin indicar' }] }] };

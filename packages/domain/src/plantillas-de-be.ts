@@ -445,3 +445,41 @@ export function plantillaDeBeParaLaApi(p: PlantillaDeBe, catalogo: ReadonlyMap<s
     })),
   };
 }
+
+/** Los textos de las Plantillas de BE en el website (ET3-02 y ET3-03). */
+export const COPY_PLANTILLAS_DE_BE = {
+  deDonde: 'De dónde es la plantilla',
+  mias: 'Mis plantillas',
+  deBe: 'Plantillas de BE',
+  queTraen: 'Planes completos de BE, con sus fases, aproximaciones y progresión. Las cargas en % RM salen del 1RM de la persona.',
+  propuesta: 'Propuesta, a validar por Elián',
+  detalle: (division: string, dias: number, semanas: number): string => `${division} · ${dias} ${dias === 1 ? 'día' : 'días'} por semana · ${semanas} semanas`,
+  dias: (sugeridos: string): string => `Días sugeridos: ${sugeridos}. Se eligen en «Días de la semana».`,
+  semanas: (n: number): string => `${n} ${n === 1 ? 'semana' : 'semanas'}`,
+  elegiUna: 'Elegí una para ver sus fases, sus sesiones y sus ejercicios.',
+  noDisponible: 'no está en el catálogo: no entra',
+  ninguna: 'Por ahora no hay Plantillas de BE para ofrecer.',
+  noCargaron: 'No se pudieron leer las Plantillas de BE.',
+  aplicada: (resumen: string): string => `Borrador creado desde la Plantilla de BE. ${resumen} La persona no lo ve hasta que lo actives.`,
+  paraCompletar: (nombres: readonly string[]): string => `Sin 1RM, para completar: ${nombres.join(', ')}.`,
+  noEntraron: (nombres: readonly string[]): string => `No entraron (no están en el catálogo): ${nombres.join(', ')}.`,
+} as const;
+
+/** Los textos de las Plantillas de BE en la consola de Administración (ET3-05). */
+export const COPY_PLANTILLAS_DE_BE_EN_ADMINISTRACION = {
+  titulo: 'Plantillas de BE',
+  bajada: 'Los planes completos de Entrenamiento que BE ofrece a todos los profesionales. Retirar una la saca del diálogo «Empezar desde una plantilla»; los planes que ya salieron de ella no cambian.',
+  menu: 'Plantillas de BE',
+  menuNota: 'Ofrecer o retirar los planes de Entrenamiento de BE',
+  estado: { PUBLISHED: 'Se ofrece', WITHDRAWN: 'Retirada' } as const,
+  version: (n: number): string => `Versión ${n}`,
+  verContenido: 'Las fases, las sesiones y los ejercicios',
+  historia: 'Lo decidido',
+  sinHistoria: 'Se ofrece desde la semilla: nadie decidió nada todavía.',
+  motivo: 'Por qué se retira (opcional)',
+  retirar: 'Retirar',
+  ofrecer: 'Volver a ofrecer',
+  retirada: (nombre: string): string => `«${nombre}» quedó retirada.`,
+  ofrecida: (nombre: string): string => `«${nombre}» se vuelve a ofrecer.`,
+  yaEstaba: 'Ya estaba así: otra sesión lo decidió antes. Volvé a cargar la página.',
+} as const;

@@ -9458,6 +9458,118 @@ button.comida-del-dia__fila > .icono:last-child {
   margin: 0;
 }
 
+/* ─── DL-199 (ET3-02): las Plantillas de BE en el mismo diálogo ─────────────────────────────────────────────────────
+   La lista a la izquierda y lo que trae la elegida a la derecha (debajo, si no entra). La vista tiene un alto mínimo
+   reservado: elegir otra no corre la lista (RP-19). La marca «Propuesta» va en la segunda columna, sin color de juicio. */
+.plantillas-de-be {
+  display: grid;
+  grid-template-columns: minmax(16rem, 1fr) minmax(0, 1.4fr);
+  grid-template-areas:
+    'nota nota'
+    'lista vista';
+  gap: 0.75rem 1rem;
+  align-items: start;
+}
+
+.plantillas-de-be > .nota {
+  grid-area: nota;
+  margin: 0;
+}
+
+.plantillas-de-be__lista {
+  grid-area: lista;
+  margin: 0;
+}
+
+.plantilla-de-be__propuesta {
+  grid-column: 2;
+  justify-self: start;
+  margin-top: 0.25rem;
+  padding: 0.1rem 0.5rem;
+  border: 1px solid var(--borde-control);
+  border-radius: 999px;
+  color: var(--tenue);
+  font-size: 0.8125rem;
+  line-height: 1.4;
+}
+
+.plantilla-de-be__vista {
+  grid-area: vista;
+  min-block-size: 18rem;
+  max-block-size: min(60vh, 34rem);
+  overflow-y: auto;
+  padding: 0.75rem 0.9rem;
+  border: 1px solid var(--borde);
+  border-radius: 10px;
+  background: var(--fondo-suave);
+}
+
+.plantilla-de-be__vista > p {
+  margin: 0 0 0.5rem;
+}
+
+.plantilla-de-be__descripcion {
+  font-weight: 550;
+}
+
+.plantilla-de-be__fase + .plantilla-de-be__fase {
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--borde);
+}
+
+.plantilla-de-be__titulo-de-fase {
+  margin: 0 0 0.4rem;
+  font-size: 1rem;
+}
+
+.plantilla-de-be__sesiones {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(13rem, 1fr));
+  gap: 0.5rem 0.9rem;
+}
+
+.plantilla-de-be__nombre-de-sesion {
+  margin: 0 0 0.2rem;
+  font-weight: 650;
+}
+
+.plantilla-de-be__ejercicios {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  font-size: 0.9375rem;
+}
+
+.plantilla-de-be__ejercicios li {
+  padding: 0.1rem 0;
+}
+
+.plantilla-de-be-admin__cabecera {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.25rem 0.5rem;
+}
+
+.plantilla-de-be-admin__cabecera .lista__titulo {
+  margin: 0;
+}
+
+.plantilla-de-be-admin__historia {
+  margin-top: 0.5rem;
+}
+
+@media (max-width: 52rem) {
+  .plantillas-de-be {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-areas:
+      'nota'
+      'lista'
+      'vista';
+  }
+}
+
 /* ═══ Entrenamiento · Plan (WP-ESCRITORIO-AREAS, parte 6; maqueta 24) ═══════════════════════════════════════════════
    Usa el armado de Nutrición · Plan (el encabezado, el selector de versión, el renglón que se abre y el historial) y
    suma lo propio: los niveles entre los que se elige (bloque, microciclo y sesión) y, en un ejercicio abierto, la tabla

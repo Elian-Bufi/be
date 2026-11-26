@@ -21,6 +21,8 @@
  *   ejercicios, arriba del historial; en la ficha, debajo de los ejercicios.
  */
 import {
+  COPY_PLANTILLAS_DE_BE,
+  resumenDeLasCargas,
   COPY_PISTAS,
   COPY_AGENDA_DE_ENTRENAMIENTO,
   COPY_PRIMER_PLAN,
@@ -256,6 +258,44 @@ export function VistaDePlan() {
     await cargar();
   }
 
+  /**
+   * DL-199 (ET3-02 y ET3-03): el borrador desde una Plantilla de BE (API-TPB-02). BE resuelve las cargas en % RM con el 1RM
+   * de la persona; el aviso dice cuántas salieron de ahí, cuáles quedan para completar y qué no entró.
+   */
+  async function aplicarDeBe(clave: string, version: number) {
+    if (!objetivo) {
+      setFalloDesdePlantilla(motivoSinObjetivo);
+      return;
+    }
+    setCreando(true);
+    setFalloDesdePlantilla(null);
+    const res = await api.crearPlanDesdePlantillaDeBe(token, asesoradoId, { objectiveVersionId: objetivo, templateKey: clave, templateVersion: version }, intentoDeAplicar.actual(`be:${clave}`));
+    intentoDeAplicar.registrar(res);
+    setCreando(false);
+    if (sesionPerdida(res) || accesoRetirado(res)) return;
+    if (!res.ok) {
+      setFalloDesdePlantilla(mensajeDeFallo(res));
+      return;
+    }
+    const { loads, unavailableExercises } = res.datos.beTemplate;
+    const sinUnoRM = [...new Set(loads.filter((l) => l.status === 'WITHOUT_ONE_REP_MAX').map((l) => l.exerciseName))];
+    const partes = [
+      COPY_PLANTILLAS_DE_BE.aplicada(resumenDeLasCargas(loads.map((l) => ({ estado: l.status === 'RESOLVED' ? ('RESUELTA' as const) : ('SIN_UNO_RM' as const) })))),
+      sinUnoRM.length > 0 ? COPY_PLANTILLAS_DE_BE.paraCompletar(sinUnoRM) : null,
+      unavailableExercises.length > 0 ? COPY_PLANTILLAS_DE_BE.noEntraron(unavailableExercises) : null,
+    ].filter((x): x is string => x !== null);
+    setDesdePlantilla(false);
+    setAviso({ tipo: 'exito', texto: partes.join(' ') });
+    ir({ ...TODO_LO_ELEGIDO, asistente: parametros.get('asistente') ? '2' : null });
+    await cargar();
+  }
+
+  const leerPlantillasDeBe = useCallback(async () => {
+    const res = await api.plantillasDeBe(token);
+    if (sesionPerdida(res) || !res.ok) return res as Resultado<never>;
+    return { ok: true as const, datos: res.datos.data };
+  }, [token, sesionPerdida]);
+
   const leerPlantillas = useCallback(async (): Promise<Resultado<readonly PlantillaParaEmpezar[]>> => {
     const res = await todasLasPaginas((f) => api.listarPlantillasDeEntrenamiento(token, { state: 'ACTIVE', ...f }));
     // Con la sesión vencida la pantalla ya redirige: el resultado se devuelve igual, para no dejar el diálogo cargando.
@@ -472,6 +512,7 @@ export function VistaDePlan() {
                   error={falloDesdePlantilla}
                   onCerrar={() => setDesdePlantilla(false)}
                   onAplicar={(id) => void aplicar(id)}
+                  deBe={{ leer: leerPlantillasDeBe, onAplicar: (clave, version) => void aplicarDeBe(clave, version) }}
                 />
               </div>
             );
