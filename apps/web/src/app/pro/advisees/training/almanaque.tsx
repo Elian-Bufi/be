@@ -22,7 +22,8 @@ export const COPY_ALMANAQUE = {
   titulo: 'Almanaque',
   anterior: 'Mes anterior',
   siguiente: 'Mes siguiente',
-  sinFechas: 'Elegí el inicio del plan y las semanas de cada fase: acá se ven las semanas de cada fase y los días de sesión.',
+  // DL-199 (ET3, E5): una sola indicación, con dónde se hace; qué muestra el almanaque se ve cuando tiene fechas.
+  sinFechas: 'Sin fechas todavía: elegí el inicio en «Configurar plan».',
   hoy: 'hoy',
   delDia: (fecha: string, sesiones: readonly string[], fase: string | null) =>
     `${diaConSuSemana(fecha)}: ${sesiones.join(' y ')}${fase ? `, ${fase}` : ''}. Ir a la sesión.`,

@@ -374,7 +374,8 @@ export function CuadroDelUnoRM({ abierto, onCerrar, id, nombre, unidad, unoRM }:
       onCerrar={onCerrar}
     >
       <div className="cuadro-del-uno-rm__cuerpo" data-cuadro-del-uno-rm={origen}>
-        <p className="nota" id={`${propio}-que`}>
+        {/* DL-199 (ET3, E5): qué es el 1RM ya está en el «?» del cuadro; acá queda para el lector, que lo oye con los orígenes. */}
+        <p className="visualmente-oculto" id={`${propio}-que`}>
           {COPY_UNO_RM.queEs}
         </p>
         <div className="control-segmentado" role="radiogroup" aria-label={T.queOrigen} aria-describedby={`${propio}-que`}>

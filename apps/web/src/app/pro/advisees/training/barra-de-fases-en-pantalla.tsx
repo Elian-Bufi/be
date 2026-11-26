@@ -87,7 +87,7 @@ export function BarraDeFases({
         ) : null}
       </p>
       {tarjetas.length > 0 ? (
-        <div ref={barra} className="barra-de-fases__barra" role="tablist" aria-label={T.barra} aria-labelledby="titulo-fases" data-barra-de-fases={tarjetas.length}>
+        <div ref={barra} className="barra-de-fases__barra" role="tablist" aria-label={T.barra} data-barra-de-fases={tarjetas.length}>
           {tarjetas.map((t) => {
             const es = t.posicion === elegida;
             return (

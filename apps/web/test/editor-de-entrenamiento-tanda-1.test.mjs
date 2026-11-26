@@ -90,7 +90,7 @@ test('TEST-ET1-12 · la intensidad del plan: RIR y RPE son la notación; % RM y 
   assert.match(CUADROS, /role="radiogroup" aria-label=\{T\.intensidad\}/);
   // DL-198 (ET2-10): también en una plantilla, que guarda su intensidad con la planificación.
   assert.match(EDITOR, /intensidadDelPlan=\{criterioDeLaIntensidad\(plan\.intensity\)\}/);
-  assert.match(EJERCICIO, /const criterioEfectivo: Criterio \| null = \(p\.intensity\?\.criterion as Criterio \| undefined\) \?\? \(sinIntensidad \? null : intensidadDelPlan\);/);
+  assert.match(EJERCICIO, /const criterioEfectivo: Criterio \| null = cardio \? null : \(\(p\.intensity\?\.criterion as Criterio \| undefined\) \?\? \(sinIntensidad \? null : intensidadDelPlan\)\);/);
   assert.match(EJERCICIO, /laDelPlan: \(nombre: string\) => `La del plan: \$\{nombre\}`/);
 });
 
@@ -171,7 +171,8 @@ test('TEST-ET1-16 · el catálogo: todo al abrir, los filtros del prototipo, «F
   assert.match(CATALOGO, /<CuadroEnfocado\n\s*abierto=\{abierto\}\n\s*forma="dialogo"/);
   assert.match(CATALOGO, /buscar: 'Buscar por ejercicio, músculo o equipo…'/);
   assert.match(CATALOGO, /agregarALaSesion: 'Agregar a la sesión'/);
-  assert.match(CATALOGO, /const r = await api\.paginaDelCatalogoDeEjercicios\(token, cursor\);/);
+  // DL-199 (ET3-24): el catálogo entero, una vez por sesión (`catalogo-en-la-sesion.ts`).
+  assert.match(CATALOGO, /const r = await leerElCatalogoDeLaSesion\(token, sesionPerdida\);/);
   assert.match(CATALOGO, /data-estrella-del-ejercicio/);
   // F23: «Catálogo de BE» en «Mis ejercicios», con su selector de origen, y la clasificación opcional de los propios.
   assert.match(MIS, /\{ clave: 'catalogo', texto: 'Catálogo de BE', icono: 'tilde' \}/);

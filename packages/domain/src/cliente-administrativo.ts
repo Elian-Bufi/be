@@ -30,6 +30,7 @@ import { RecuperacionAsistidaResponseSchema, type EmitirRecuperacionAsistidaRequ
 import { DetalleDeIncidenciaResponseSchema, ListaAdministrativaDeIncidenciasResponseSchema, type CambiarEstadoDeIncidenciaRequest, type ConsultarIncidenciasRequest } from './incidencias';
 import { SegundoFactorRestablecidoResponseSchema, type RestablecerSegundoFactorRequest } from './segundo-factor-del-profesional';
 import type { Alcance } from './alcance';
+import { ListaDePlantillasDeBeParaAdministrarResponseSchema, PlantillaDeBeParaAdministrarResponseSchema } from './contratos-plantillas-de-be';
 import {
   AlimentoDelCanonResponseSchema,
   AlimentoParaRevisarResponseSchema,
@@ -242,6 +243,14 @@ export function crearClienteAdministrativo(opciones: { readonly baseUrl: string;
     /** API-RCT-05 — sumar o no sumar una propuesta, una sola vez, con su clave de idempotencia (DL-191). */
     decidirPropuesta(token: string, propuestaId: string, pedido: DecidirPropuestaRequest, claveDeIdempotencia: string) {
       return llamar('POST', `/admin/recipe-proposals/${encodeURIComponent(propuestaId)}/decisions`, { token, cuerpo: pedido, claveDeIdempotencia, esquema: PropuestaParaRevisarResponseSchema });
+    },
+    /** API-TPB-03 — las Plantillas de BE de Entrenamiento, con su estado y su historia (DL-199). */
+    plantillasDeBe(token: string) {
+      return llamar('POST', '/admin/training-templates/query', { token, cuerpo: {}, esquema: ListaDePlantillasDeBeParaAdministrarResponseSchema });
+    },
+    /** API-TPB-04 — ofrecer o retirar una Plantilla de BE, con su clave de idempotencia (DL-199). */
+    decidirSobrePlantillaDeBe(token: string, clave: string, pedido: { decision: 'PUBLISH' | 'WITHDRAW'; reason?: string | null }, claveDeIdempotencia: string) {
+      return llamar('POST', `/admin/training-templates/${encodeURIComponent(clave)}/decisions`, { token, cuerpo: pedido, claveDeIdempotencia, esquema: PlantillaDeBeParaAdministrarResponseSchema });
     },
   };
 }

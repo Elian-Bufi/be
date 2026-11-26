@@ -191,6 +191,11 @@ FAMILIAS_DE_BE.RGU = 'DL-195';
  */
 FAMILIAS_DE_BE.RMX = 'DL-198';
 FAMILIAS_DE_BE.ESF = 'DL-198';
+/**
+ * TPB (DL-199, WP-EDITOR-ENTRENAMIENTO-TANDA-3): las Plantillas de BE de Entrenamiento, curadas por BE y ofrecidas o
+ * retiradas por Administración, y empezar el plan de una persona desde una. El 09 no las tiene.
+ */
+FAMILIAS_DE_BE.TPB = 'DL-199';
 
 test('el inventario del 09 tiene 122 operaciones y de cada una se lee su ruta', () => {
   assert.equal(inventario.size, 122);

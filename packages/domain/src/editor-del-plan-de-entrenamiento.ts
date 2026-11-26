@@ -15,6 +15,7 @@ import { nombreDeLaFase } from './copy-entrenamiento';
 import { comidasAbiertasEnElEditor, pedidoDeComidasDelEditor, posicionPedida, type ProblemaDelEditor } from './editor-del-plan-de-nutricion';
 import { renglonDelEjercicio } from './lectura-del-plan-de-entrenamiento';
 import { cuentaDeSeries } from './tipos-de-serie';
+import { cardioDe, cardioEnPalabras, problemasDelCardio, COPY_CARDIO } from './cardio-de-la-prescripcion';
 import { objetivosEfectivos, type SerieParaResolver } from './objetivos-por-serie';
 import { nombreDelBloqueDeLaSesion } from './bloques-de-la-sesion';
 
@@ -27,6 +28,8 @@ interface SerieDelEditor extends SerieParaResolver {
 interface ParametroDelEditor {
   readonly label: string;
   readonly value: string | number;
+  /** DL-199: la unidad, que marca la duración del cardio («min»). */
+  readonly unit?: string | null;
 }
 export interface EjercicioDelEditor {
   readonly intensity: { readonly criterion: string; readonly target: { readonly value: number; readonly reference?: { readonly description: string } | null } } | null;
@@ -281,6 +284,12 @@ const unoOVarios = (n: number, uno: string, varios: string): string => (n === 1 
  * `problemas` son los de «Validar» que cayeron en este ejercicio. DL-192: el resumen, en la notación del plan.
  */
 export function ejercicioPlegadoDelEditor(p: EjercicioDelEditor, problemas: number, notacion: 'RIR' | 'RPE' = 'RIR'): EjercicioPlegadoDelEditor {
+  // DL-199 (ET3-14): el cardio plegado dice su duración, su distancia y su intensidad; sin series ni intensidad de fuerza.
+  const cardio = cardioDe(p);
+  if (cardio) {
+    const delCardio = problemasDelCardio(cardio).map((x) => COPY_CARDIO.problema[x]);
+    return { resumen: cardioEnPalabras(cardio), avisos: [...delCardio, ...(problemas > 0 ? [unoOVarios(problemas, 'problema para revisar', 'problemas para revisar')] : [])] };
+  }
   const propios = loQueNoDejaGuardarDelEjercicio(p, '');
   const faltaElObjetivo = propios.some((x) => x.code === P.faltaElObjetivo);
   const parametros = propios.filter((x) => x.code === P.parametroIncompleto).length;

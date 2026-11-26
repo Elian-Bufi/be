@@ -139,12 +139,9 @@ export function CargaPorSemana({
         series={series}
         descargas={plan.flatMap((p, k) => (p.descarga ? [k + 1] : []))}
         acciones={acciones}
-        pie={
-          <p className="nota">
-            {!fase ? 'La fase no tiene fechas: lo realizado no se ubica en sus semanas. ' : ''}
-            {conEstimacion ? `El máximo estimado es Epley v1: solo series de hasta ${TOPE_DE_LA_ESTIMACION} repeticiones equivalentes con RIR de hasta 2; de más de ${TOPE_DEL_NUCLEO}, orientativo (rombo hueco).` : ''}
-          </p>
-        }
+        // DL-199 (ET3, E5): a la vista, solo lo que cambia la lectura (la fase sin fechas); el método, en el «?» del gráfico.
+        pie={!fase ? <p className="nota">La fase no tiene fechas: lo realizado no se ubica en sus semanas.</p> : null}
+        ayuda={conEstimacion ? <p>El máximo estimado es Epley v1: solo series de hasta {TOPE_DE_LA_ESTIMACION} repeticiones equivalentes con RIR de hasta 2; de más de {TOPE_DEL_NUCLEO}, orientativo (rombo hueco).</p> : null}
       />
     </div>
   );
@@ -399,7 +396,9 @@ export function DistribucionDeLaFase({
       ) : null}
       {!chica && onVerEstructuras ? (
         <button type="button" className="boton boton--discreto boton--con-flecha" onClick={onVerEstructuras} data-ver-estructuras>
-          {D.estructuras}: cuerpo entero, torso / piernas, empuje / tirón / piernas y por grupo muscular
+          {D.estructuras}
+          {/* DL-199 (ET3, E5): la lista de estructuras, para el lector; a la vista, el nombre del botón. */}
+          <span className="visualmente-oculto">: cuerpo entero, torso / piernas, empuje / tirón / piernas y por grupo muscular</span>
         </button>
       ) : null}
     </div>

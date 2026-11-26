@@ -1,5 +1,10 @@
 import { Injectable } from '@nestjs/common';
 import {
+  armarPlantillaDeBe,
+  conLasCargasDeLaPlantillaDeBe,
+  CrearPlanDesdePlantillaDeBeRequestSchema,
+  type PlanificacionDeLaPlantilla,
+  type PlanDesdePlantillaDeBeResponse,
   planificacionDesdeLaPlantilla,
   CodigoDeError,
   CrearPlanDeEntrenamientoRequestSchema,
@@ -49,6 +54,8 @@ import { ZONA_POR_DEFECTO, fechaLocalEn } from '../nutricion/zona';
 import { PublicadorDeNovedades } from '../novedades/publicador';
 import { ProcesoService } from '../proceso/proceso.service';
 import { PlantillasDeEntrenamientoService } from './plantillas.service';
+import { catalogoDeLasPlantillasDeBe, plantillaDeBeParaAplicar } from './plantillas-de-be';
+import { UnoRMService } from './uno-rm.service';
 import type { ActorAutenticado } from '../sesion/sesion.guard';
 import { esToken } from '../vinculo/lectura';
 import { CatalogoDeEjerciciosService } from './catalogo.service';
@@ -141,6 +148,7 @@ export class PlanesDeEntrenamientoService {
     private readonly procesos: ProcesoService,
     private readonly plantillas: PlantillasDeEntrenamientoService,
     private readonly novedades: PublicadorDeNovedades,
+    private readonly unoRM: UnoRMService,
   ) {}
 
   // ─── API-TRN-07 ────────────────────────────────────────────────────────────────────────────
@@ -181,6 +189,72 @@ export class PlanesDeEntrenamientoService {
     });
   }
 
+  // ─── API-TPB-02 (DL-199) ───────────────────────────────────────────────────────────────────
+  /**
+   * DL-199 (ET3-02 a ET3-04) · el borrador del plan de la persona desde una Plantilla de BE: la misma creación que API-TRN-07
+   * (el PDP de Entrenamiento con la persona, el objetivo efectivo, un solo borrador, el hecho y la auditoría), con la
+   * estructura y la planificación de la plantilla armadas con el catálogo de este entorno y **las cargas en % RM resueltas
+   * con el 1RM de referencia de la persona** que tiene este profesional (DL-198). Responde además qué cargas salieron del 1RM
+   * (con su base), cuáles quedan para completar y qué ejercicios no entraron.
+   */
+  crearDesdePlantillaDeBe(actor: ActorAutenticado, adviseeId: string, cuerpo: unknown, clave: string | undefined, ctx: ContextoDeSolicitud): Promise<ResultadoIdempotente> {
+    return this.ejecutor.escribirIdempotente({
+      operacion: 'API-TPB-02',
+      casoDeUso: 'UC-P15',
+      actor,
+      ctx,
+      recursoIntentado: { tipo: 'Asesorado', id: adviseeId },
+      clave,
+      esquema: CrearPlanDesdePlantillaDeBeRequestSchema,
+      cuerpo,
+      huellaExtra: { adviseeId },
+      efecto: async (tx, pedido, procedencia) => {
+        const asesoradoId = await this.decidir(tx, 'API-TPB-02', actor, actor.identidadId, adviseeId, { tipo: 'Asesorado', id: adviseeId }, ctx);
+        const plantilla = await plantillaDeBeParaAplicar(tx, pedido.templateKey, pedido.templateVersion);
+        const catalogo = await catalogoDeLasPlantillasDeBe(tx, [plantilla]);
+        const armada = armarPlantillaDeBe(plantilla, catalogo);
+        const porVersion = new Map([...catalogo.values()].map((c) => [c.exerciseVersionId, { exerciseId: c.exerciseId, nombre: c.nombre }]));
+        const vigentes = await this.unoRM.vigentesDe(tx, actor.identidadId, asesoradoId, [...catalogo.values()].map((c) => c.exerciseId));
+        const { estructura, planificacion, cargas } = conLasCargasDeLaPlantillaDeBe(armada, porVersion, vigentes);
+        const version = await this.crearVersionBorrador(tx, {
+          profesionalId: actor.identidadId,
+          asesoradoId,
+          objetivoVersionId: pedido.objectiveVersionId,
+          estructura: null,
+          basadaEn: null,
+          desdePlantillaDeBe: { estructura, planificacion },
+          proximaRevision: null,
+          revisionDeOrigenId: null,
+          procedencia,
+          notacion: pedido.effortNotation ?? null,
+        });
+        const leida = await this.leerVersion(tx, version, true);
+        // Los identificadores de la plantilla pasan a los del plan nuevo por su lugar (como la planificación).
+        const delPlan = new Map<string, string>();
+        const deLaPlantilla = estructura.blocks.flatMap((b) => (b.sessions ?? []).flatMap((s) => s.prescriptions.map((x) => x.prescriptionId ?? '')));
+        const nuevas = leida.blocks.flatMap((b) => b.sessions.flatMap((s) => s.prescriptions.map((x) => x.prescriptionId)));
+        deLaPlantilla.forEach((id, n) => {
+          const nueva = nuevas[n];
+          if (id && nueva) delPlan.set(id, nueva);
+        });
+        const respuesta: PlanDesdePlantillaDeBeResponse = {
+          data: leida,
+          beTemplate: {
+            key: plantilla.clave,
+            version: plantilla.version,
+            loads: cargas.map((c) =>
+              c.estado === 'RESUELTA'
+                ? { prescriptionId: delPlan.get(c.prescriptionId) ?? c.prescriptionId, exerciseName: c.nombre, oneRepMaxShare: c.porcentaje, status: 'RESOLVED' as const, load: c.carga, basis: c.base }
+                : { prescriptionId: delPlan.get(c.prescriptionId) ?? c.prescriptionId, exerciseName: c.nombre, oneRepMaxShare: c.porcentaje, status: 'WITHOUT_ONE_REP_MAX' as const },
+            ),
+            unavailableExercises: [...armada.noDisponibles],
+          },
+        };
+        return { estadoHttp: 201, cuerpo: respuesta, sujetoId: asesoradoId, recurso: { tipo: RECURSO, id: version } };
+      },
+    });
+  }
+
   /**
    * CrearBorrador (06:5157): versión editable, no vigente, sucesora de la efectiva si la hay. Un solo borrador por plan
    * (la base lo exige con un índice parcial). La usan API-TRN-07 y la aplicación de AJUSTAR o SUSTITUIR.
@@ -196,6 +270,8 @@ export class PlanesDeEntrenamientoService {
       basadaEn: string | null;
       /** PF-09 (DL-108): versión de plantilla propia desde la que nace el borrador, o `null`. */
       desdePlantilla?: string | null;
+      /** DL-199: la estructura (con sus cargas resueltas) y la planificación de una Plantilla de BE, armadas. */
+      desdePlantillaDeBe?: { readonly estructura: EstructuraDePlanDeEntrenamientoEntrada; readonly planificacion: PlanificacionDeLaPlantilla } | null;
       proximaRevision: string | null;
       revisionDeOrigenId: string | null;
       procedencia: Procedencia;
@@ -221,7 +297,12 @@ export class PlanesDeEntrenamientoService {
     }
     let contenido: ContenidoDePlanDeEntrenamiento;
     let origenDePlantilla: OrigenDePlanEnPlantilla | null = null;
-    if (p.desdePlantilla) {
+    if (p.desdePlantillaDeBe) {
+      // DL-199: como una plantilla propia, con identificadores nuevos; la planificación pasa a cada fase y ejercicio por su lugar.
+      contenido = await this.normalizarYVerificar(tx, p.profesionalId, p.desdePlantillaDeBe.estructura);
+      const planificacion = planificacionDesdeLaPlantilla(p.desdePlantillaDeBe.planificacion, p.desdePlantillaDeBe.estructura, contenido);
+      if (planificacion) contenido = { ...contenido, planning: planificacion };
+    } else if (p.desdePlantilla) {
       // La plantilla se vuelve a normalizar con identificadores nuevos: el plan es de la persona, no del molde.
       const plantilla = await this.plantillas.versionParaAplicar(tx, p.profesionalId, p.desdePlantilla);
       contenido = await this.normalizarYVerificar(tx, p.profesionalId, plantilla.estructura);

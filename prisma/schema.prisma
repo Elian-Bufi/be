@@ -345,6 +345,8 @@ model Identidad {
   propuestasAlRecetario     PropuestaAlRecetario[]              @relation("PropuestaAlRecetarioDelProfesional")
   recetasSumadasAlRecetario RecetaDelRecetario[]                @relation("RecetaDelRecetarioDelAdministrador")
   decisionesSobrePropuestas DecisionSobrePropuestaAlRecetario[] @relation("DecisionSobrePropuestaDelAdministrador")
+  // DL-199 (WP-EDITOR-ENTRENAMIENTO-TANDA-3): lo que decidió, como administradora, sobre cada Plantilla de BE.
+  decisionesSobrePlantillasDeBe DecisionSobrePlantillaDeBe[] @relation("DecisionSobrePlantillaDeBeDelAdministrador")
 
   @@map("identidad")
 }
@@ -3484,6 +3486,32 @@ model PreparacionDePlantillaDeEntrenamiento {
 
   @@index([profesionalId, momentoDeActualizacion])
   @@map("preparacion_de_plantilla_de_entrenamiento")
+}
+
+/// DL-199 (ET3-D01) · si una Plantilla de BE se ofrece o se retira.
+enum EstadoDePlantillaDeBe {
+  PUBLICADA
+  RETIRADA
+}
+
+/// DL-199 (WP-EDITOR-ENTRENAMIENTO-TANDA-3, ET3-05) — Lo que decide Administración sobre una Plantilla de BE de
+/// Entrenamiento: ofrecerla o retirarla. Las plantillas son datos versionados de BE (`packages/domain/src/plantillas-de-be.ts`);
+/// esta tabla solo guarda su estado, por clave. La vigente es la última decisión; sin ninguna, se ofrece (la semilla es una
+/// propuesta publicada, a validar por Dirección). Historia por adición: ni UPDATE, ni DELETE, ni TRUNCATE; la decide un
+/// administrador con su rol vigente.
+model DecisionSobrePlantillaDeBe {
+  id                String                @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  clave             String
+  estado            EstadoDePlantillaDeBe
+  motivo            String?
+  administradorId   String                @map("administrador_id") @db.Uuid
+  procedencia       Json
+  momentoDeRegistro DateTime              @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+
+  administrador Identidad @relation("DecisionSobrePlantillaDeBeDelAdministrador", fields: [administradorId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@index([clave, momentoDeRegistro])
+  @@map("decision_sobre_plantilla_de_be")
 }
 
 /// D-2 en nutrición: si la versión de plantilla conserva las cantidades (nunca un booleano: TEST-RUN-003).

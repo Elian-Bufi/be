@@ -68,6 +68,11 @@ import {
   conProgresion,
   progresionDeLaFase,
   progresionEnPalabras,
+  cardioDe,
+  conLaCargaSubida,
+  conElCardio,
+  CARDIO_SIN_INDICAR,
+  esDeCardioPorLaClasificacion,
   progresionParaOtraFase,
   seAplicaA,
   sinProgresion,
@@ -116,6 +121,7 @@ import { COPY_BARRA_DE_FASES, diasEnCorto, faseConLaTecla, rangoDeLaBarra, tarje
 import { criterioDeLaIntensidad, CuadroConfigurarPlan, CuadroDiasDeLaSemana, CuadroEditarFase, type IntensidadElegida } from './cuadros-del-plan';
 import { AYUDAS_DEL_EDITOR, ContenidoDeLaAyuda } from './ayudas-del-editor';
 import { MarcoDelPanel, PanelDelEjercicio, PatronesAPedido } from './panel-del-editor';
+import { SugerenciaDeProgresionEnElPanel } from './sugerencia-de-progresion';
 import { FOCO_DE_ENTRADA, focoDelElemento, mismoFoco, NOMBRE_DE_LA_VISTA, VISTAS_DEL_FOCO, vistaDelFoco, vistaPorTecla, type FocoDelEditor, type VistaDelPanel } from './panel-contextual';
 import { AsistenteDeProgresion, type AplicacionDeLaProgresion } from './asistente-de-progresion';
 import { GraficoDeSemanas } from './grafico-de-semanas';
@@ -198,6 +204,9 @@ import { AntesDeActivar } from '../cuadro-antes-de-activar';
 import { CuadroDelDescarte } from '../cuadro-del-descarte';
 import { ofreceDescartar, resultadoDelDescarte, textoDelDescarteQueNoSeHizo } from '../descartar-el-borrador';
 import { conLosIdentificadoresNuevos, cualMande, huellaDelGuardado, type CuerpoDelGuardado } from '../es-lo-que-mande';
+import { apilar, COPY_DESHACER, DESHACER_A_LA_VISTA_MS, desapilar, esCampoDeTexto, esDeshacer, type Instantanea } from './deshacer-del-editor';
+import { moverHasta } from './reordenar';
+import { useArrastreDeEjercicios, type SesionQueSeArrastra } from './arrastrar-ejercicios';
 import { COPY_RESULTADO_DE_ACTIVAR, hayQueReleer, loQuePasoAlActivar, type VersionReleida } from '../resultado-de-activar';
 import { useCambiosSinGuardar, usePersonaDelArea } from '../marco-del-area';
 import { AVISO_DE_LOS_TOPES, esUnTope, motivoSinAgregarBloque, TEXTO_DE_LOS_TOPES, TOPES_DE_ENTRENAMIENTO, topesPasadosDeEntrenamiento } from '../topes-del-plan';
@@ -220,6 +229,9 @@ import { hoyEn } from '../seguimiento/estado';
 import { agendaVigente, COPY_PROXIMAS_FECHAS, ProximasFechas, sesionesParaLaAgenda } from './agenda-del-plan';
 import { AgregarEjercicio } from './agregar-ejercicio';
 import { EjercicioDelEditor, type BloqueE, type Bloques, type PrescripcionE, type SesionE } from './ejercicio-del-editor';
+
+/** DL-199 (ET3-20): lo que vuelve con «Deshacer»: la estructura, la planificación y la agenda. */
+type LoQueSeDeshace = { readonly bloques: Bloques; readonly planificacion: PlanificacionDelPlan | null; readonly agenda: AgendaDeEntrenamiento | null };
 import { BloqueDelEditor } from './bloque-del-editor';
 import {
   abiertosTrasReordenar,
@@ -598,6 +610,10 @@ export function EditorDePlan({
   // o su lugar: `escritura-rapida.ts`), en la estación y en el paso 4 del asistente. Plegar, ir a otra sesión o a otra
   // pestaña no lo borra; salir o activar lo pregunta.
   const [lineas, setLineas] = useState<LineasSinAplicar>({});
+  // DL-199 (ET3-20, ET3-21): «Deshacer» del último cambio: la pila de cómo estaba (la estructura, la planificación y la
+  // agenda) y, después de un cambio grande, el aviso con «Deshacer» unos segundos.
+  const pilaDeDeshacer = useRef<Instantanea<LoQueSeDeshace>[]>([]);
+  const [avisoDeDeshacer, setAvisoDeDeshacer] = useState<{ readonly texto: string; readonly vez: number } | null>(null);
   const siguienteRef = useRef<((n: PasoDelAsistente) => Promise<void>) | null>(null);
   // ED-20: «Desde un preset» (paso 1) llega al paso 2 con la galería de estructuras abierta, una vez.
   // TEST-EDP-017: «Siguiente» pedido mientras viajaba un autoguardado decide cuando ese guardado termina.
@@ -629,6 +645,8 @@ export function EditorDePlan({
       setMetadatos(metadatosDe(p.datos.data));
       // DL-198 (ET2-10): la planificación de la plantilla (semanas, aproximaciones, progresiones, intensidad).
       setPlanificacion(planificacionDeLaPlantillaComoDelPlan(p.datos.data.planning ?? null));
+      pilaDeDeshacer.current = [];
+      setAvisoDeDeshacer(null);
       setSucio(false);
       setFallo(false);
       setConflicto(false);
@@ -647,6 +665,8 @@ export function EditorDePlan({
     setAgenda(r.datos.data.agenda);
     setNotacion(notacionDe(r.datos.data.effortNotation));
     setPlanificacion(r.datos.data.planning ?? null);
+    pilaDeDeshacer.current = [];
+    setAvisoDeDeshacer(null);
     setSucio(false);
     setFallo(false);
     setConflicto(false);
@@ -678,7 +698,13 @@ export function EditorDePlan({
     setParaEnfocar(null);
   });
 
-  const cambiar = (f: (b: Bloques) => Bloques) => {
+  /** DL-199 (ET3-20): apila cómo estaba antes de un cambio; uno grande muestra «Deshacer» unos segundos. */
+  const recordar = (grande: string | null = null, aparte = false) => {
+    pilaDeDeshacer.current = apilar(pilaDeDeshacer.current, { bloques, planificacion, agenda }, Date.now(), grande, aparte);
+    if (grande) setAvisoDeDeshacer({ texto: grande, vez: Date.now() });
+  };
+  const cambiar = (f: (b: Bloques) => Bloques, grande: string | null = null, aparte = false) => {
+    recordar(grande, aparte);
     setBloques((b) => f(structuredClone(b)));
     setDeshacer(null);
     setDeshacerLaSesion(null);
@@ -687,6 +713,61 @@ export function EditorDePlan({
     setMensaje(null);
     setParaEnfocar(null);
   };
+  /**
+   * DL-199 (ET3-20): lo que el guardado creó (los identificadores del servidor) también en lo apilado: si no, deshacer
+   * devolvería un ejercicio sin su identificador y el guardado siguiente lo crearía de nuevo (con sus aproximaciones y su
+   * agenda sueltas).
+   */
+  const conLosIdentificadoresEnLaPila = (enviados: Bloques, guardados: Bloques) => {
+    pilaDeDeshacer.current = pilaDeDeshacer.current.map((x) => ({ ...x, estado: { ...x.estado, bloques: conLosIdentificadoresNuevos(x.estado.bloques, enviados, guardados) } }));
+  };
+  /** DL-199 (ET3-20): vuelve a como estaba antes del último cambio. */
+  const deshacerElUltimo = () => {
+    const r = desapilar(pilaDeDeshacer.current);
+    if (!r) return setMensaje({ tipo: 'info', texto: COPY_DESHACER.nadaParaDeshacer });
+    pilaDeDeshacer.current = r.pila;
+    setBloques(r.estado.bloques);
+    setPlanificacion(r.estado.planificacion);
+    setAgenda(r.estado.agenda);
+    setDeshacer(null);
+    setDeshacerLaSesion(null);
+    setAvisoDeDeshacer(null);
+    setSucio(true);
+    setProblemas(null);
+    setParaEnfocar(null);
+    setMensaje({ tipo: 'exito', texto: COPY_DESHACER.deshecho(r.grande) });
+  };
+  // DL-199 (ET3-21): el aviso se va solo a los ocho segundos, salvo que el foco o el puntero estén en él.
+  useEffect(() => {
+    if (!avisoDeDeshacer) return;
+    let reloj: ReturnType<typeof setTimeout>;
+    const intentar = () => {
+      const aviso = document.querySelector('[data-deshacer-el-ultimo]')?.closest('.aviso-flotante');
+      if (aviso && (aviso.contains(document.activeElement) || aviso.matches(':hover'))) reloj = setTimeout(intentar, 2000);
+      else setAvisoDeDeshacer((a) => (a?.vez === avisoDeDeshacer.vez ? null : a));
+    };
+    reloj = setTimeout(intentar, DESHACER_A_LA_VISTA_MS);
+    return () => clearTimeout(reloj);
+  }, [avisoDeDeshacer]);
+  // DL-199 (ET3-22, ET3-23): arrastrar los ejercicios de la sesión que se mira (la sesión se pone al día en cada dibujo).
+  const sesionQueSeArrastra = useRef<SesionQueSeArrastra | null>(null);
+  const arrastre = useArrastreDeEjercicios(() => sesionQueSeArrastra.current);
+  const deshacerRef = useRef(deshacerElUltimo);
+  deshacerRef.current = deshacerElUltimo;
+  // DL-199 (ET3-D22): Ctrl+Z (Cmd+Z) deshace fuera de un campo de texto y fuera de un cuadro abierto (lo de adentro de un
+  // cuadro es su borrador; en un campo, el navegador deshace lo escrito).
+  useEffect(() => {
+    const alTocar = (e: KeyboardEvent) => {
+      if (!esDeshacer(e) || e.defaultPrevented) return;
+      const foco = document.activeElement as HTMLElement | null;
+      if (esCampoDeTexto(foco) || foco?.closest('dialog, [role="dialog"], [role="alertdialog"]')) return;
+      if (document.querySelector('dialog[open]')) return;
+      e.preventDefault();
+      deshacerRef.current();
+    };
+    window.addEventListener('keydown', alTocar);
+    return () => window.removeEventListener('keydown', alTocar);
+  }, []);
 
   /**
    * Guarda (PATCH) y devuelve la versión nueva, o `null` si falló. `reenvio` (ED-61): lo escrito después de un guardado
@@ -782,6 +863,7 @@ export function EditorDePlan({
             setBloques(aEntrada(guardada));
             // C7: lo escrito sin aplicar en un ejercicio que recién recibió su identificador pasa a él.
             setLineas((m) => lineasConLosIdentificadores(m, bloquesEnviados, aEntrada(guardada)));
+            conLosIdentificadoresEnLaPila(bloquesEnviados, aEntrada(guardada));
             setAgenda(guardada.agenda);
             setPlanificacion(guardada.planning ?? null);
             setSucio(false);
@@ -835,6 +917,7 @@ export function EditorDePlan({
         setBloques(aEntrada(detalle.datos.data));
         // C7: lo escrito sin aplicar en un ejercicio que recién recibió su identificador pasa a él.
         setLineas((m) => lineasConLosIdentificadores(m, bloquesEnviados, aEntrada(detalle.datos.data)));
+        conLosIdentificadoresEnLaPila(bloquesEnviados, aEntrada(detalle.datos.data));
         setAgenda(detalle.datos.data.agenda);
         setPlanificacion(detalle.datos.data.planning ?? null);
       }
@@ -1099,6 +1182,7 @@ export function EditorDePlan({
       setBloques(bloquesDeLaPreparacion(p));
       // C7: lo escrito sin aplicar en un ejercicio que recién recibió su identificador pasa a él.
       setLineas((m) => lineasConLosIdentificadores(m, bloquesEnviados, bloquesDeLaPreparacion(p)));
+      conLosIdentificadoresEnLaPila(bloquesEnviados, bloquesDeLaPreparacion(p));
       setSucio(false);
     }
     return guardada;
@@ -1258,6 +1342,7 @@ export function EditorDePlan({
   // C5: la agenda con alguna sesión con días (sin ninguna, al guardar viaja como «sin días»).
   const agendaConDias = agendaVisible && agendaVisible.sessions.length > 0 ? agendaVisible : null;
   const cambiarAgenda = (a: AgendaDeEntrenamiento | null) => {
+    recordar();
     setAgenda(a);
     // Revisión del tramo 2: sin ninguna sesión con días, «Próximas fechas» se cierra (si no, volvía a abrirse sola con
     // el próximo día elegido).
@@ -1268,7 +1353,8 @@ export function EditorDePlan({
   };
   // ── DL-196: la planificación, las fechas de cada fase y las semanas en que va cada sesión ──────────────────────
   const plan = planificacionParaEditar(planificacion);
-  const cambiarPlanificacion = (p: PlanificacionDelPlan) => {
+  const cambiarPlanificacion = (p: PlanificacionDelPlan, grande: string | null = null) => {
+    recordar(grande);
     setPlanificacion(p);
     setSucio(true);
     setProblemas(null);
@@ -1544,7 +1630,7 @@ export function EditorDePlan({
       }
     }
     p = a.progresion ? conProgresion(p, a.progresion) : sinProgresion(p, blockId);
-    cambiarPlanificacion(p);
+    cambiarPlanificacion(p, a.progresion ? COPY_DESHACER.aplicasteLaProgresion(nombre) : null);
     setProgresionAbierta(null);
     setMensaje({ tipo: 'exito', texto: a.progresion ? COPY_PROGRESIONES.aplicada(nombre) : COPY_PROGRESIONES.quitada(nombre) });
   };
@@ -1559,12 +1645,13 @@ export function EditorDePlan({
    */
   const pasarALaIntensidadDelPlan = (i2: PlanificacionDelPlan['intensity']) => {
     const criterio = criterioDeLaIntensidad(i2);
+    const cuantos = bloques.flatMap((b) => [...(b.sessions ?? []), ...(b.microcycles ?? []).flatMap((m) => m.sessions)]).flatMap((x) => x.prescriptions).filter((q) => q.intensity && q.intensity.criterion !== criterio).length;
     cambiar((x) => {
       for (const b of x)
         for (const ses of [...(b.sessions ?? []), ...(b.microcycles ?? []).flatMap((m) => m.sessions)])
           ses.prescriptions = ses.prescriptions.map((q) => (q.intensity && q.intensity.criterion !== criterio ? { ...q, intensity: null, sets: q.sets.map(({ rir: _r, ...y }) => y) } : q));
       return x;
-    });
+    }, cuantos > 0 ? COPY_DESHACER.pasasteALaIntensidad(cuantos) : null);
   };
   /** GR-27 (DL-196 parte B): marca o desmarca un gráfico del panel como favorito de este plan. */
   const alternarFavorito = (kind: 'EXERCISE_LOAD' | 'PHASE_PROGRESSION' | 'PHASE_DISTRIBUTION', id: string | null | undefined) => {
@@ -1573,7 +1660,7 @@ export function EditorDePlan({
   const estrella = (kind: 'EXERCISE_LOAD' | 'PHASE_PROGRESSION' | 'PHASE_DISTRIBUTION', id: string | null | undefined, deQue: string) =>
     !plantilla && id ? <EstrellaDeFavorito marcado={esFavorito(plan, { kind, id })} onCambiar={() => alternarFavorito(kind, id)} deQue={deQue} /> : null;
   const quitarBloque = () => {
-    cambiar((x) => (x.splice(i, 1), x));
+    cambiar((x) => (x.splice(i, 1), x), COPY_DESHACER.quitasteLaFase(bloque?.label || `Fase ${i + 1}`));
     elegirBloque(Math.max(0, i - 1));
   };
   /** TB-48: también con sesiones sueltas, que pasan a la «Semana 1» con sus identificadores (la agenda no pierde sus días). */
@@ -1590,7 +1677,7 @@ export function EditorDePlan({
   };
   const quitarMicrociclo = () => {
     if (j === null) return;
-    cambiar((x) => (x[i]!.microcycles!.splice(j, 1), x));
+    cambiar((x) => (x[i]!.microcycles!.splice(j, 1), x), COPY_DESHACER.quitasteLaSemana(bloque?.microcycles?.[j]?.label || `Semana ${j + 1}`));
     elegirMicrociclo(Math.max(0, j - 1));
   };
   const agregarSesion = () => {
@@ -1612,7 +1699,7 @@ export function EditorDePlan({
     setMensaje({ tipo: 'exito', texto: SV.armadas(cuantas, n) });
   };
   const quitarSesion = () => {
-    cambiar((x) => (lasSesiones(x).splice(k, 1), x));
+    cambiar((x) => (lasSesiones(x).splice(k, 1), x), COPY_DESHACER.quitasteLaSesion(sesion?.label || `Sesión ${k + 1}`));
     elegirSesion(Math.max(0, k - 1));
   };
   /** TB-48: la copia de la sesión va justo después, y se la mira con su nombre a la vista para cambiarlo. */
@@ -1652,7 +1739,7 @@ export function EditorDePlan({
     const p = sesion?.prescriptions[l];
     // Revisión del tramo 2: lo escrito en los de más abajo que todavía no tienen identificador sube con ellos.
     if (p && sesion) setLineas((m) => lineasTrasReordenar(conLaLinea(m, claveDeLaLinea(`${prefijo}-s${k}`, l, p.prescriptionId), ''), `${prefijo}-s${k}`, ordenTrasQuitar(sesion.prescriptions.length, l)));
-    cambiar((x) => (lasSesiones(x)[k]!.prescriptions.splice(l, 1), x));
+    cambiar((x) => (lasSesiones(x)[k]!.prescriptions.splice(l, 1), x), COPY_DESHACER.quitasteElEjercicio(p ? (nombres[p.exerciseVersionId] ?? 'el ejercicio') : 'el ejercicio'));
     // Lo abierto acompaña a su ejercicio: los de más abajo suben un lugar.
     dejarAbiertos(posicionesTrasQuitar(abiertos, l));
   };
@@ -1667,11 +1754,28 @@ export function EditorDePlan({
   };
   /** DL-181: escribe la sesión que dejó una operación de bloques y hace que lo abierto acompañe a cada ejercicio. */
   const aplicarReordenada = (r: SesionReordenada) => {
-    cambiar((x) => ((lasSesiones(x)[k] = r.sesion), x));
+    // DL-199 (ET3-D20): cada movimiento se deshace solo, aunque vengan seguidos.
+    cambiar((x) => ((lasSesiones(x)[k] = r.sesion), x), null, true);
     dejarAbiertos(abiertosTrasReordenar(abiertos, r.desdeDonde));
     // Revisión del tramo 2: lo escrito sin aplicar en uno sin identificador también acompaña a su ejercicio.
     setLineas((m) => lineasTrasReordenar(m, `${prefijo}-s${k}`, r.desdeDonde));
   };
+  // DL-199 (ET3-22): soltar un ejercicio en otro lugar es subirlo o bajarlo de a un paso, con la regla de «Subir» y «Bajar»
+  // (un bloque no se rompe); Alt+↑ y Alt+↓, un paso. El foco vuelve al asa del ejercicio movido.
+  sesionQueSeArrastra.current = sesion
+    ? {
+        largo: sesion.prescriptions.length,
+        alMover: (desde, hasta) => {
+          const r = moverHasta(sesion, sesion.prescriptions.length, desde, hasta, moverEnLaSesion);
+          if (!r) return null;
+          aplicarReordenada(r);
+          return r.posicion;
+        },
+        nombreDe: (l) => nombres[sesion.prescriptions[l]?.exerciseVersionId ?? ''] ?? 'Ejercicio',
+        idDelAsa: (l) => `asa-${prefijo}-s${k}-p${l}`,
+        alEnfocar: (id) => setParaEnfocar(id),
+      }
+    : null;
   // ── DL-181: los bloques de la sesión ─────────────────────────────────────────────────────────────────────────
   const claveDelBloque = (groupId: string) => `${prefijo}-s${k}-${groupId}`;
   // §7: el tope de bloques de la sesión (el del contrato), dicho antes de tocar.
@@ -1757,6 +1861,7 @@ export function EditorDePlan({
         }}
         onCambiar={(c) => cambiarEjercicio(l, c)}
         onQuitar={() => quitarEjercicio(l)}
+        arrastre={arrastre.para(l)}
         esElPrimero={moverEnLaSesion(sesion, l, -1) === null}
         esElUltimo={moverEnLaSesion(sesion, l, 1) === null}
         onSubir={() => moverEjercicio(l, -1)}
@@ -2686,6 +2791,26 @@ export function EditorDePlan({
         nombre={nombres[ejercicioEnFoco.exerciseVersionId] ?? 'Ejercicio'}
         loQueIndica={<EnPartes texto={ejercicioPlegadoDelEditor(ejercicioEnFoco, 0, notacion).resumen} />}
         antes={<AvisoDeZonaACuidar token={token} sesionPerdida={sesionPerdida} exerciseId={ejercicioDelCatalogo} aCuidar={aCuidar} />}
+        // DL-199 (ET3-10 a ET3-12): la sugerencia de progresión desde lo que hizo la persona; nunca cambia nada sola. El cardio no la lleva.
+        sugerencia={
+          plantilla || foco.tipo !== 'ejercicio' || cardioDe(ejercicioEnFoco)
+            ? null
+            : (veces) => {
+                const l = foco.l;
+                const regla = bloque ? progresionDeLaFase(plan, bloque.blockId) : null;
+                return (
+                  <SugerenciaDeProgresionEnElPanel
+                    veces={veces}
+                    exerciseId={ejercicioDelCatalogo}
+                    prescripcion={ejercicioEnFoco}
+                    nombre={nombres[ejercicioEnFoco.exerciseVersionId] ?? ''}
+                    notacion={notacion}
+                    conProgresionDeLaFase={!!regla && regla.model !== null && seAplicaA(regla, ejercicioEnFoco.prescriptionId)}
+                    onAplicar={(sugerida) => cambiarEjercicio(l, conLaCargaSubida(ejercicioEnFoco, sugerida))}
+                  />
+                );
+              }
+        }
         cargaPorSemana={plantilla ? null : cargaPorSemanaDe(i, ejercicioEnFoco, ejercicioDelCatalogo)}
         despues={
           plantilla ? null : (
@@ -2737,16 +2862,25 @@ export function EditorDePlan({
   /** «Antes de activar» (o «Antes de guardar», en una plantilla): lo que impide y lo que queda sin completar, cada cosa con su «Ir a…». */
   const listaAntesDeActivar = (
     <>
-      {plantilla ? (
-        <h3 data-revision-para-guardar>
-          <Icono nombre="revision" tamano={15} /> {COPY_REVISION_DE_LA_PLANTILLA.titulo}
-        </h3>
-      ) : (
-        <h3>
-          <Icono nombre="revision" tamano={15} />
-          {COPY_REVISION_DEL_PLAN.titulo}
-        </h3>
-      )}
+      {/* DL-199 (ET3, E5): cómo se actualiza esta lista va en el «?» de su esquina, no en un párrafo al pie. */}
+      <div className="encabezado-con-ayuda">
+        {plantilla ? (
+          <h3 data-revision-para-guardar>
+            <Icono nombre="revision" tamano={15} /> {COPY_REVISION_DE_LA_PLANTILLA.titulo}
+          </h3>
+        ) : (
+          <h3>
+            <Icono nombre="revision" tamano={15} />
+            {COPY_REVISION_DEL_PLAN.titulo}
+          </h3>
+        )}
+        <ExplicacionAPedido nombre="Cómo se actualiza esta revisión" como="div" lugar="esquina">
+          <p data-revision-en-vivo>{plantilla ? PLT.sinPersona : CE.enVivo(persona)}</p>
+          <p className="ayuda-con-ejemplo__ejemplo" data-ejemplo-resuelto>
+            Ejemplo: escribís el RIR que faltaba en un ejercicio; al guardarse solo el plan, la revisión vuelve a correr y ese renglón de «Queda sin completar» se va.
+          </p>
+        </ExplicacionAPedido>
+      </div>
       {/* ENP-D13: el estado de la revisión, siempre dicho; nunca «nada impide» antes de que responda la API. */}
       {revisionEnElPanel}
       <h3>
@@ -2764,7 +2898,6 @@ export function EditorDePlan({
           ))}
         </ul>
       )}
-      <p className="nota">{plantilla ? PLT.sinPersona : CE.enVivo(persona)}</p>
     </>
   );
 
@@ -3359,7 +3492,15 @@ export function EditorDePlan({
                                 </button>
                               </div>
                             ) : null}
-                            {sesion ? (
+                          </div>
+                          {sesion ? (
+                            <div className="estacion__acciones-de-la-sesion">
+                              {/* ED-11: la galería de presets de prescripción, para la sesión que se mira. ENP-D10: con la sesión vacía, también. */}
+                              <button type="button" className="boton boton--quieto boton--compacto" data-galeria-de-prescripcion onClick={() => setGaleria({ tarea: 'prescripcion', ejercicio: null })}>
+                                <Icono nombre="plantillas" tamano={18} />
+                                {CE.presets}
+                              </button>
+                              {/* DL-199 (ET3, E5): las indicaciones, en el mismo renglón que «Presets»; con texto o abiertas, toman el renglón entero. */}
                               <TextoAPedido
                                 id={`${prefijo}-s${k}-indicaciones`}
                                 rotulo={COPY_ENTRENAMIENTO.indicacionesDeLaSesion}
@@ -3372,15 +3513,6 @@ export function EditorDePlan({
                                 alCambiar={(v) => cambiar((x) => ((lasSesiones(x)[k]!.instructions = v), x))}
                                 alCerrar={dejarDeCambiar}
                               />
-                            ) : null}
-                          </div>
-                          {sesion ? (
-                            <div className="estacion__acciones-de-la-sesion">
-                              {/* ED-11: la galería de presets de prescripción, para la sesión que se mira. ENP-D10: con la sesión vacía, también. */}
-                              <button type="button" className="boton boton--quieto boton--compacto" data-galeria-de-prescripcion onClick={() => setGaleria({ tarea: 'prescripcion', ejercicio: null })}>
-                                <Icono nombre="plantillas" tamano={18} />
-                                {CE.presets}
-                              </button>
                               {prescripcionDeEstaSesion && claveDeEstaSesion ? (
                                 <div className="estacion__prescripcion-de-la-sesion con-ayuda-en-la-esquina" data-prescripcion-de-la-sesion>
                                   <p className="etiqueta-de-dato">
@@ -3537,6 +3669,19 @@ export function EditorDePlan({
             <button type="button" className="boton boton--discreto" data-deshacer-las-vueltas onClick={deshacerLasVueltas}>
               <Icono nombre="deshacer" tamano={15} />
               {COPY_PRESETS.deshacer}
+            </button>
+          </p>
+        </AvisoFlotante>
+      ) : null}
+      {arrastre.anuncio}
+      {/* DL-199 (ET3-21): después de un cambio grande, «Deshacer» unos segundos, flotante (no corre nada: RP-19). */}
+      {avisoDeDeshacer && !deshacer && !deshacerLaSesion ? (
+        <AvisoFlotante key={avisoDeDeshacer.vez} onCerrar={() => setAvisoDeDeshacer(null)} seQueda>
+          <p data-deshacer-el-ultimo>
+            {avisoDeDeshacer.texto}{' '}
+            <button type="button" className="boton boton--discreto" data-deshacer-el-ultimo-boton onClick={deshacerElUltimo} aria-keyshortcuts="Control+Z">
+              <Icono nombre="deshacer" tamano={15} />
+              {COPY_DESHACER.deshacer}
             </button>
           </p>
         </AvisoFlotante>
@@ -3832,7 +3977,10 @@ export function EditorDePlan({
           setNombres((n) => ({ ...n, ...Object.fromEntries(marcados.map((e) => [e.versionId, e.name])) }));
           // ED-21: entran juntos, en el orden marcado; sin prescripción para todos, cada uno con una serie para completar.
           // ENP-D10: sin una escrita en el cajón, con la de la sesión, si se eligió. DL-181: al bloque desde cuyo pie se abrió.
-          const nuevas = prescripcionesDeLosMarcados(marcados, prescripcion).map((x) => (!prescripcion && prescripcionDeEstaSesion ? prescripcionDeEstaSesion.aplicar(x) : x));
+          // DL-199 (ET3-13): los de cardio por su clasificación entran como cardio, con la duración sin indicar.
+          const nuevas = prescripcionesDeLosMarcados(marcados, prescripcion).map((x, n) =>
+            esDeCardioPorLaClasificacion(marcados[n] as { classification?: { muscleGroup?: string | null } | null }) ? conElCardio(x, CARDIO_SIN_INDICAR) : !prescripcion && prescripcionDeEstaSesion ? prescripcionDeEstaSesion.aplicar(x) : x,
+          );
           aplicarReordenada(agregarEjercicios(sesion, nuevas, agregandoEn));
         }}
         onCerrar={() => {

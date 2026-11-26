@@ -2843,7 +2843,7 @@ async function resultadosAntropometricos({ p, d, salida }) {
   await captura(p, salida, 'ar-en-la-historia');
 }
 
-export const TODOS = { sesion, pistas, borrador, conflicto, descartar, salidaSegura, irACorregir, respuestaPerdida, reintentar, salidaConFallas, primerPlan, planDeNutricionSinAsistente, retorno, grafico, primeraInvitacion, areaSugerida, sesionRevocada, accesoRevocado, faltaUnaParte, completitud, evidencia, administracion, comparacion, comparacionConOpciones, sinSaltos, franjasPorComida, cierreDeNutricion, notacionDelEsfuerzo, recetario, opcionComoReceta, recorridosGuiados, editorDeEntrenamiento, aproximacionesPorPorcentaje, progresionYDistribucion, agregarEjerciciosConFiltros, editorTanda2, resultadosAntropometricos };
+export const TODOS = { sesion, pistas, borrador, conflicto, descartar, salidaSegura, irACorregir, respuestaPerdida, reintentar, salidaConFallas, primerPlan, planDeNutricionSinAsistente, retorno, grafico, primeraInvitacion, areaSugerida, sesionRevocada, accesoRevocado, faltaUnaParte, completitud, evidencia, administracion, comparacion, comparacionConOpciones, sinSaltos, franjasPorComida, cierreDeNutricion, notacionDelEsfuerzo, recetario, opcionComoReceta, recorridosGuiados, editorDeEntrenamiento, aproximacionesPorPorcentaje, progresionYDistribucion, agregarEjerciciosConFiltros, editorTanda2, editorTanda3Reordenar, editorTanda3Cardio, plantillaDeBe, resultadosAntropometricos };
 
 /**
  * TEST-ET2-NAV-01 (DL-198, WP-EDITOR-ENTRENAMIENTO-TANDA-2) · el 1RM de referencia en un ejercicio en % RM: la calibración
@@ -2917,8 +2917,210 @@ async function editorTanda2({ p, d, salida }) {
   await captura(p, salida, 'uno-rm-en-el-ejercicio-oscuro');
 }
 
+/**
+ * TEST-ET3-NAV-02 (DL-199, WP-EDITOR-ENTRENAMIENTO-TANDA-3) · reordenar y deshacer: con tres ejercicios en la sesión, el
+ * primero baja con Alt+↓ desde su asa (el foco lo acompaña y el lector oye dónde quedó); el último se arrastra arriba de
+ * todo; Ctrl+Z deshace el arrastre; quitar un ejercicio ofrece «Deshacer» y lo devuelve. Lo guardado, por la API.
+ */
+async function editorTanda3Reordenar({ p, d, salida }) {
+  await abrirElEditorDeEntrenamiento(p, d);
+  // Dos ejercicios más, desde «Agregar ejercicios».
+  await clic(p, '[data-agregar-ejercicio]');
+  await cuadroConSuAyuda(p, 'Agregar ejercicios');
+  await p.waitForFunction(() => Number(document.querySelector('dialog[open] [data-cuenta-del-catalogo]')?.dataset.cuentaDelCatalogo) >= 186, { timeout: 60_000, polling: 200 });
+  const marcar = await p.$$('dialog[open] [data-marcar-ejercicio]');
+  await marcar[0].click();
+  await marcar[1].click();
+  await clic(p, 'dialog[open] [data-principal-del-cuadro]');
+  await dialogoCerrado(p);
+  await p.waitForFunction(() => document.querySelectorAll('.ejercicio-del-editor').length === 3, { timeout: ESPERA, polling: 100 });
+  await esperarGuardado(p);
+  const nombres = () => p.$$eval('.ejercicio-del-editor .comida-del-plan__nombre', (xs) => xs.map((x) => x.textContent));
+  const [a, b, c] = await nombres();
+  // El asa está siempre, en cada ejercicio, con su nombre para el lector.
+  assert.equal((await p.$$('.ejercicio-del-editor [data-asa-de-arrastre]')).length, 3);
+  await captura(p, salida, 'reordenar-las-asas');
+  // Con el teclado: Alt+↓ desde el asa del primero.
+  await p.focus('.ejercicio-del-editor[data-ejercicio="1"] [data-asa-de-arrastre]');
+  await p.keyboard.down('Alt');
+  await p.keyboard.press('ArrowDown');
+  await p.keyboard.up('Alt');
+  await p.waitForFunction((x) => document.querySelectorAll('.ejercicio-del-editor .comida-del-plan__nombre')[1]?.textContent === x, { timeout: ESPERA, polling: 100 }, a);
+  assert.deepEqual(await nombres(), [b, a, c]);
+  assert.match(await p.$eval('[data-anuncio-del-reordenar]', (e) => e.textContent), /quedó en el lugar 2 de 3/);
+  await p.waitForFunction(() => document.activeElement?.matches('.ejercicio-del-editor[data-ejercicio="2"] [data-asa-de-arrastre]'), { timeout: ESPERA, polling: 100 });
+  // Arrastrar: el último, arriba de todo (se suelta en la mitad de arriba del primero).
+  await p.evaluate(
+    () =>
+      new Promise((listo) => {
+        const dt = new DataTransfer();
+        const asa = document.querySelector('.ejercicio-del-editor[data-ejercicio="3"] [data-asa-de-arrastre]');
+        const destino = document.querySelector('.ejercicio-del-editor[data-ejercicio="1"]');
+        const r = destino.getBoundingClientRect();
+        const en = { bubbles: true, cancelable: true, dataTransfer: dt, clientX: r.left + 40, clientY: r.top + 4 };
+        asa.dispatchEvent(new DragEvent('dragstart', en));
+        requestAnimationFrame(() => {
+          destino.dispatchEvent(new DragEvent('dragover', en));
+          requestAnimationFrame(() => {
+            destino.dispatchEvent(new DragEvent('drop', en));
+            asa.dispatchEvent(new DragEvent('dragend', en));
+            listo();
+          });
+        });
+      }),
+  );
+  await p.waitForFunction((x) => document.querySelector('.ejercicio-del-editor .comida-del-plan__nombre')?.textContent === x, { timeout: ESPERA, polling: 100 }, c);
+  assert.deepEqual(await nombres(), [c, b, a]);
+  await captura(p, salida, 'reordenar-arrastrado');
+  // Ctrl+Z, fuera de los campos: vuelve el orden de antes del arrastre.
+  await p.evaluate(() => document.activeElement?.blur());
+  await p.keyboard.down('Control');
+  await p.keyboard.press('KeyZ');
+  await p.keyboard.up('Control');
+  await p.waitForFunction((x) => document.querySelector('.ejercicio-del-editor .comida-del-plan__nombre')?.textContent === x, { timeout: ESPERA, polling: 100 }, b);
+  assert.deepEqual(await nombres(), [b, a, c]);
+  await esperarGuardado(p);
+  // Quitar un ejercicio (desde su «Más») ofrece «Deshacer», flotante, que lo devuelve.
+  await clic(p, '.ejercicio-del-editor[data-ejercicio="3"] [id^="abrir-ejercicio-"]');
+  await p.evaluate(() => [...document.querySelectorAll('.ejercicio-del-editor[data-ejercicio="3"] .menu-de-acciones__boton')].find((x) => x.textContent.includes('Más'))?.click());
+  await p.waitForFunction(() => [...document.querySelectorAll('.ejercicio-del-editor[data-ejercicio="3"] .menu-de-acciones__accion')].some((x) => x.textContent.startsWith('Quitar ')), { timeout: ESPERA, polling: 100 });
+  await p.evaluate(() => [...document.querySelectorAll('.ejercicio-del-editor[data-ejercicio="3"] .menu-de-acciones__accion')].find((x) => x.textContent.startsWith('Quitar '))?.click());
+  await p.waitForFunction(() => document.querySelectorAll('.ejercicio-del-editor').length === 2, { timeout: ESPERA, polling: 100 });
+  await elemento(p, '[data-deshacer-el-ultimo-boton]');
+  assert.ok((await p.$eval('[data-deshacer-el-ultimo]', (e) => e.textContent)).includes(`Quitaste «${c}»`));
+  await captura(p, salida, 'deshacer-tras-quitar');
+  await clic(p, '[data-deshacer-el-ultimo-boton]');
+  await p.waitForFunction(() => document.querySelectorAll('.ejercicio-del-editor').length === 3, { timeout: ESPERA, polling: 100 });
+  assert.deepEqual(await nombres(), [b, a, c]);
+  await esperarGuardado(p);
+  // La API: el orden que quedó.
+  const token = await sesionPorApi(d.pro.correo);
+  const plan = (await pedir('GET', `/training/plans/${d.borradorDeEntrenamiento}/detail`, { token })).data;
+  assert.deepEqual(plan.blocks[0].sessions[0].prescriptions.map((x) => x.exerciseName), [b, a, c]);
+  // En el tema Azul noche, las asas.
+  await p.emulateMediaFeatures([{ name: 'prefers-color-scheme', value: 'dark' }]);
+  await pausa(300);
+  await captura(p, salida, 'reordenar-las-asas-oscuro');
+}
+
+/**
+ * TEST-ET3-NAV-03 (DL-199, WP-EDITOR-ENTRENAMIENTO-TANDA-3) · la sugerencia de progresión y el cardio. La persona registró
+ * hoy 3 × 8 con 60 kg de «Sentadilla del recorrido»: en el panel del ejercicio, «+2,5 kg la próxima» con su motivo;
+ * «Aplicar» deja la común en 62,5 kg (nada cambia solo). El ciclismo pasa a cardio desde «Más»: 30 min, 12 km, zona 2;
+ * plegado dice «30 min · 12 km · zona 2» y «Ver como la persona» lo muestra igual. Lo guardado, por la API: los parámetros
+ * de BE y una sola serie sin repeticiones.
+ */
+async function editorTanda3Cardio({ p, d, salida }) {
+  await abrirElEditorDeEntrenamiento(p, d);
+  const E1 = '.ejercicio-del-editor[data-ejercicio="1"]';
+  const E2 = '.ejercicio-del-editor[data-ejercicio="2"]';
+  // La sugerencia, en el panel del ejercicio abierto.
+  await clic(p, `${E1} [id^="abrir-ejercicio-"]`);
+  await elemento(p, '[data-sugerencia-de-progresion="62.5"]', null, 60_000);
+  const sugerencia = await p.$eval('[data-sugerencia-de-progresion]', (e) => e.textContent);
+  assert.match(sugerencia, /\+2,5 kg la próxima/);
+  assert.match(sugerencia, /Hizo las 3 series con 8 repeticiones y 60 kg el \d+ [a-z]{3}\./);
+  await capturaEnLosDosTemas(p, salida, 'sugerencia-de-progresion');
+  await clic(p, '[data-aplicar-sugerencia]');
+  await elemento(p, '[data-sugerencia-de-progresion="hecha"]', 'La carga común quedó en 62,5 kg.');
+  await esperarGuardado(p);
+  // El cardio: el ciclismo, desde «Más», con su duración, su distancia y su zona.
+  await clic(p, `${E2} [id^="abrir-ejercicio-"]`);
+  await clic(p, `${E2} .comida-del-editor__acciones .menu-de-acciones__boton`, 'Más');
+  await clic(p, `${E2} .menu-de-acciones[data-abierto] .menu-de-acciones__accion`, 'Cargar como cardio');
+  await elemento(p, `${E2} [data-cardio-del-ejercicio]`);
+  assert.equal(await p.$(`${E2} [data-abrir-aproximaciones]`), null, 'el cardio no tiene aproximaciones');
+  await reemplazarTexto(p, await p.$(`${E2} [data-campo="duracion-del-cardio"]`), '30');
+  await reemplazarTexto(p, await p.$(`${E2} [data-campo="distancia-del-cardio"]`), '12');
+  await p.select(`${E2} [data-campo="tipo-de-intensidad-del-cardio"]`, 'ZONA');
+  await elemento(p, `${E2} [data-campo="zona-del-cardio"]`);
+  // Lo que no se entiende no se guarda: el motivo, en su renglón reservado, sin correr nada.
+  const antes = await p.$eval(`${E2} [data-opciones-del-ejercicio]`, (e) => e.getBoundingClientRect().top);
+  await reemplazarTexto(p, await p.$(`${E2} [data-campo="duracion-del-cardio"]`), '700');
+  await elemento(p, `${E2} [data-motivo-del-cardio]`, 'La duración va de');
+  assert.equal(await p.$eval(`${E2} [data-opciones-del-ejercicio]`, (e) => e.getBoundingClientRect().top), antes, 'RP-19: el motivo no corre lo de abajo');
+  await reemplazarTexto(p, await p.$(`${E2} [data-campo="duracion-del-cardio"]`), '30');
+  await esperarGuardado(p);
+  await capturaEnLosDosTemas(p, salida, 'cardio-en-el-editor');
+  // Plegado: el renglón del cardio.
+  await clic(p, `${E2} [id^="abrir-ejercicio-"]`);
+  await elemento(p, `${E2} [data-resumen]`, '30 min · 12 km · zona 2');
+  // «Ver como la persona». Con la página bajada, el botón queda debajo de la barra fija del editor: el clic de puppeteer
+  // no lo trae a la vista (lo ve «visible») y caía en la barra. Se lo centra antes, como haría la persona al subir.
+  await p.evaluate(() => document.querySelector('[data-ver-como-la-persona]')?.scrollIntoView({ block: 'center' }));
+  await clic(p, '[data-ver-como-la-persona]');
+  await dialogoAbierto(p, 'Así le llega a la app');
+  await elemento(p, 'dialog[open] [data-vista-cardio]', '30 min · 12 km · zona 2');
+  await captura(p, salida, 'cardio-ver-como-la-persona');
+  await p.keyboard.press('Escape');
+  await dialogoCerrado(p);
+  // La API: la carga aplicada y el cardio en los parámetros de BE, con una serie sin repeticiones.
+  const token = await sesionPorApi(d.pro.correo);
+  const plan = (await pedir('GET', `/training/plans/${d.borradorDeEntrenamiento}/detail`, { token })).data;
+  const [sentadilla, ciclismo] = plan.blocks[0].sessions[0].prescriptions;
+  assert.deepEqual(sentadilla.suggestedLoad, { value: 62.5, unit: 'kg' });
+  assert.deepEqual(
+    ciclismo.professionalParameters.map((q) => [q.label, q.value, q.unit ?? null]),
+    [
+      ['Duración', 30, 'min'],
+      ['Distancia', 12, 'km'],
+      ['Intensidad', 'Zona 2', null],
+    ],
+  );
+  assert.equal(ciclismo.sets.length, 1);
+  // El detalle trae cada serie con su objetivo efectivo (`target`), no con `repetitions` suelto.
+  assert.equal(ciclismo.sets[0].target.repetitions, null);
+  assert.equal(ciclismo.sets[0].target.suggestedLoad ?? null, null);
+  assert.equal(ciclismo.intensity, null);
+}
+
 /** Errores de la página que no dicen nada del website (los del propio navegador). */
 const IGNORABLES = [/ResizeObserver loop/];
+
+/**
+ * TEST-ET3-NAV-01 (DL-199, WP-EDITOR-ENTRENAMIENTO-TANDA-3) · una Plantilla de BE con el % RM resuelto: sin plan, «Empezar
+ * desde una plantilla» › «Plantillas de BE» lista las de BE con la marca de propuesta; elegir «Cuerpo completo» muestra
+ * sus fases y sesiones sin correr la lista (RP-19); aplicarla crea el borrador y el aviso dice cuántas cargas salieron del
+ * 1RM de la persona y cuáles quedan para completar. Por la API: la sentadilla con 65 kg (65 % de 100 kg) y sus tres
+ * aproximaciones, el press de banca sin carga y la planificación de la plantilla (8 semanas, dos fases, % RM).
+ */
+async function plantillaDeBe({ p, d, salida }) {
+  p.on('dialog', (dialogo) => void dialogo.accept());
+  await entrar(p, d.pro.correo);
+  await p.goto(`${WEB}/pro/advisees/training?id=${encodeURIComponent(d.ase.id)}&vista=plan`, { waitUntil: 'networkidle2' });
+  await clic(p, '[data-empezar-desde-plantilla]');
+  await dialogoAbierto(p, 'Empezar desde una plantilla');
+  await clic(p, 'dialog[open] [data-origen-de-be]');
+  await elemento(p, 'dialog[open] [data-plantilla-de-be="BE-CUERPO-COMPLETO"]');
+  assert.match(await p.$eval('dialog[open] [data-plantilla-de-be="BE-CUERPO-COMPLETO"]', (e) => e.textContent), /Propuesta, a validar por Elián/);
+  const antes = await p.$eval('dialog[open] [data-plantilla-de-be="BE-TORSO-PIERNA"]', (e) => e.getBoundingClientRect().top);
+  await clic(p, 'dialog[open] [data-plantilla-de-be="BE-CUERPO-COMPLETO"]');
+  await elemento(p, 'dialog[open] [data-vista-de-la-plantilla-de-be] .plantilla-de-be__fase', 'Base');
+  const despues = await p.$eval('dialog[open] [data-plantilla-de-be="BE-TORSO-PIERNA"]', (e) => e.getBoundingClientRect().top);
+  assert.ok(Math.abs(despues - antes) < 1, `elegir una no corre la lista (${antes} → ${despues})`);
+  assert.match(await p.$eval('dialog[open] [data-vista-de-la-plantilla-de-be]', (e) => e.textContent), /Sentadilla trasera con barra\s*3 × 10 · 65 % RM/);
+  await capturaEnLosDosTemas(p, salida, 'plantillas-de-be-dialogo');
+  await clic(p, 'dialog[open] button.boton--primario', 'Crear el borrador desde esta plantilla');
+  await dialogoCerrado(p);
+  await esperarTexto(p, 'salen del 1RM de la persona');
+  await esperarTexto(p, 'Sin 1RM, para completar:');
+  // La API: el borrador con la carga resuelta, sus aproximaciones y la planificación de la plantilla.
+  const token = await sesionPorApi(d.pro.correo);
+  const borrador = (await pedir('GET', `/advisees/${d.ase.id}/training/plans?state=DRAFT`, { token })).data[0];
+  // Sin declarar training-set-kinds-1, la API saca `setKind` en el borde (lo de la APK 0.32): se pide como el website.
+  const plan = (await pedir('GET', `/training/plans/${borrador.planId}/detail`, { token, capacidades: 'training-set-kinds-1' })).data;
+  assert.equal(plan.planning.weeks, 8);
+  assert.equal(plan.planning.intensity, 'PERCENT_RM');
+  assert.deepEqual(plan.planning.phases.map((f) => f.weeks), [4, 4]);
+  const [sentadilla, banca] = plan.blocks[0].sessions[0].prescriptions;
+  assert.deepEqual(sentadilla.suggestedLoad, { value: 65, unit: 'kg' });
+  assert.equal(sentadilla.sets.filter((s) => s.setKind === 'WARM_UP').length, 3);
+  assert.equal(banca.suggestedLoad, null);
+  // En el editor, la barra con las dos fases de la plantilla.
+  await elemento(p, '[data-barra-de-fases]', null, 60_000);
+  await elemento(p, '[data-elegir-fase="2"]');
+  await capturaEnLosDosTemas(p, salida, 'plantilla-de-be-aplicada');
+}
 
 export async function correrRecorridos({ estado, salida, chrome, solo = null }) {
   mkdirSync(salida, { recursive: true });

@@ -81,6 +81,7 @@ import {
   registrarLibre,
 } from './soporte-nutricion';
 import { ProcesoService } from '../../apps/api/src/proceso/proceso.service';
+import { fechaLocalEn, ZONA_POR_DEFECTO } from '../../apps/api/src/nutricion/zona';
 import {
   activarPlanDeEntrenamiento,
   CATALOGO_DE_EJERCICIOS,
@@ -3247,6 +3248,54 @@ it('TEST-CT (WP-EDITOR-ENTRENAMIENTO-TANDA-2, DL-198): RMX-01 y 02, ESF-01 y 02 
   await pro.put(ruta).send({ ...clasificacion, extra: 1 }).expect(400);
   await pro.put(`/api/v1/training/exercises/${ajeno}/classification`).send(clasificacion).expect(404);
   await request(servidor).put(ruta).set('Idempotency-Key', claveDeIdempotencia()).send(clasificacion).expect(401);
+});
+
+it('TEST-CT (WP-EDITOR-ENTRENAMIENTO-TANDA-3, DL-199): TPB-01 a 04 — las Plantillas de BE, con éxitos y errores declarados', async () => {
+  const servidor = app.getHttpServer();
+  const ajeno = randomUUID();
+  const c = await circuitoListoParaPlanificarEntrenamiento(app, 'contrato-tpb');
+  const pro = conSesion(app, c.pro.token);
+  // TPB-01
+  const lista = (await pro.get('/api/v1/training/be-templates').expect(200)).body.data as { key: string; version: number; phases: { sessions: { exercises: { exerciseId: string | null }[] }[] }[] }[];
+  await pro.get('/api/v1/training/be-templates?x=1').expect(400);
+  await conSesion(app, c.ase.token).get('/api/v1/training/be-templates').expect(403);
+  await request(servidor).get('/api/v1/training/be-templates').expect(401);
+  // TPB-02, con el 1RM de la sentadilla (las aproximaciones «Por %» entran resueltas).
+  const cuerpoCompleto = lista.find((p) => p.key === 'BE-CUERPO-COMPLETO')!;
+  const sentadilla = cuerpoCompleto.phases[0]!.sessions[0]!.exercises[0]!.exerciseId!;
+  await pro.post(`/api/v1/advisees/${c.ase.id}/training/one-rep-max`).send({ origin: 'DECLARED', exerciseId: sentadilla, localDate: fechaLocalEn(new Date(), ZONA_POR_DEFECTO), value: { value: 100, unit: 'kg' }, note: null }).expect(201);
+  const ruta = `/api/v1/advisees/${c.ase.id}/training/plans/from-be-template`;
+  const pedido = { objectiveVersionId: c.objectiveVersionId, templateKey: cuerpoCompleto.key, templateVersion: cuerpoCompleto.version };
+  await pro.post(ruta).send({ ...pedido, extra: 1 }).expect(400);
+  await pro.post(`/api/v1/advisees/${ajeno}/training/plans/from-be-template`).send(pedido).expect(404);
+  await pro.post(ruta).send({ ...pedido, templateKey: 'BE-NO-EXISTE' }).expect(404);
+  await pro.post(ruta).send({ ...pedido, templateVersion: cuerpoCompleto.version + 1 }).expect(409); // RESOURCE_CONFLICT: otra versión
+  await request(servidor).post(ruta).set('Idempotency-Key', claveDeIdempotencia()).send(pedido).expect(401);
+  // TPB-03 y 04: Administración retira una (TPB-02 da 422 TEMPLATE_ARCHIVED) y la vuelve a ofrecer.
+  const a = await administradorListo(app, prisma, `ct-tpb-${randomUUID().slice(0, 6)}`);
+  const admin = adm(app, a.token);
+  await admin.post('/admin/training-templates/query').send({}).expect(200);
+  await admin.post('/admin/training-templates/query').send({ extra: 1 }).expect(400); // UNKNOWN_FIELD
+  const clave = 'BE-EMPUJE-TRACCION-PIERNA';
+  const decidir = (cuerpo: Record<string, unknown>, k = claveDeIdempotencia(), cual = clave) => admin.post(`/admin/training-templates/${cual}/decisions`).set('Idempotency-Key', k).send(cuerpo);
+  const claveDelRetiro = claveDeIdempotencia();
+  const empuje = lista.find((p) => p.key === clave)!;
+  try {
+    await decidir({ decision: 'WITHDRAW', reason: 'Contrato' }, claveDelRetiro).expect(200);
+    await decidir({ decision: 'WITHDRAW', reason: 'Otro motivo' }, claveDelRetiro).expect(409); // IDEMPOTENCY_KEY_REUSED
+    await decidir({ decision: 'WITHDRAW' }).expect(422); // INVALID_STATE_TRANSITION
+    await decidir({ decision: 'PUBLISH', reason: 'no va' }).expect(422); // VALIDATION_FAILED
+    await decidir({ decision: 'WITHDRAW' }, claveDeIdempotencia(), 'BE-NO-EXISTE').expect(404);
+    await decidir({ decision: 'WITHDRAW', extra: 1 }).expect(400);
+    await pro.post(ruta).send({ ...pedido, templateKey: clave, templateVersion: empuje.version }).expect(422); // TEMPLATE_ARCHIVED
+  } finally {
+    await decidir({ decision: 'PUBLISH' }).expect(200);
+  }
+  // TPB-02: el borrador, y un segundo es 409 (un solo borrador por plan).
+  const claveDelBorrador = claveDeIdempotencia();
+  await pro.post(ruta, claveDelBorrador).send(pedido).expect(201);
+  await pro.post(ruta, claveDelBorrador).send({ ...pedido, effortNotation: 'RPE' }).expect(409); // IDEMPOTENCY_KEY_REUSED
+  await pro.post(ruta).send(pedido).expect(409); // RESOURCE_CONFLICT
 });
 
 it('TEST-CT: todo (status, código) observado está declarado para su operación; los éxitos coinciden con el contrato', () => {
