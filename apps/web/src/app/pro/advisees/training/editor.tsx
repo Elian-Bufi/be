@@ -13,8 +13,12 @@
  *
  * **La composición (WP-ESCRITORIO-AREAS, parte 8; maqueta 28).** Se mira una sesión por vez —la del bloque y, si el
  * bloque los usa, del microciclo elegidos—, con sus ejercicios plegados: cada uno dice en un renglón lo que piden sus
- * series, con lo escrito y todavía sin guardar. Lo que se usa de vez en cuando (cambiar un nombre, quitar, organizar por
- * microciclos, guardar como plantilla o como habitual) va en un menú. Hace lo mismo que antes:
+ * series, con lo escrito y todavía sin guardar. Lo que se usa de vez en cuando (cambiar un nombre, quitar, guardar como
+ * plantilla, como habitual o como preset) va en un menú. Hace lo mismo que antes:
+ * - **Sin microciclos nuevos (DL-203, PN-D01; Dirección, 26/11):** el editor ya no organiza una fase por microciclos ni
+ *   agrega semanas: las fases de N semanas con su semana tipo, la progresión, la descarga y «Duplicar la fase» lo
+ *   cubren. Un plan que ya los tiene se lee y se edita igual (elegir la semana, cambiarle el nombre o quitarla, y sus
+ *   sesiones), pero no se crea ninguno.
  * - **Lo que se mira vive en la dirección,** por su posición: `bloque`, `micro`, `sesion` y los ejercicios abiertos
  *   (`ejercicios`). «Actualizar» y volver atrás lo conservan. Al entrar no hay ningún ejercicio abierto.
  * - **Lo que no deja guardar se lista con su lugar,** antes de pedirle nada a la API: un nombre vacío, el objetivo de
@@ -227,9 +231,7 @@ import {
   copiaDeLaSesion,
   copiaDelEjercicio,
   duplicarEn,
-  loQuePasaConLasSesiones,
   mover,
-  organizadoEnMicrociclos,
   posicionesTrasInsertar,
   posicionesTrasMover,
   posicionesTrasQuitar,
@@ -1756,21 +1758,12 @@ export function EditorDePlan({
     cambiar((x) => (x.splice(i, 1), x), COPY_DESHACER.quitasteLaFase(bloque?.label || `Fase ${i + 1}`));
     elegirBloque(Math.max(0, i - 1));
   };
-  /** TB-48: también con sesiones sueltas, que pasan a la «Semana 1» con sus identificadores (la agenda no pierde sus días). */
-  const organizarPorMicrociclos = () => {
-    cambiar((x) => ((x[i] = organizadoEnMicrociclos(x[i]!)), x));
-    elegirMicrociclo(0);
-    setTexto({ de: 'nombre-del-microciclo', i, j: 0, k: null });
-  };
-  const agregarMicrociclo = () => {
-    const n = bloque?.microcycles?.length ?? 0;
-    cambiar((x) => ((x[i]!.microcycles ??= []).push({ label: `Semana ${n + 1}`, purpose: null, sessions: [] }), x));
-    elegirMicrociclo(n);
-    setTexto({ de: 'nombre-del-microciclo', i, j: n, k: null });
-  };
+  // DL-203 (PN-D01): ni «Organizar por microciclos» ni «Agregar microciclo». Un plan viejo con semanas las conserva:
+  // se eligen, se renombran, se quitan y sus sesiones se editan; no nace ninguna nueva.
   const quitarMicrociclo = () => {
     if (j === null) return;
-    cambiar((x) => (x[i]!.microcycles!.splice(j, 1), x), COPY_DESHACER.quitasteLaSemana(bloque?.microcycles?.[j]?.label || `Semana ${j + 1}`));
+    // Al quitar la última semana, la fase vuelve a tener sus sesiones directamente (DL-203): no queda una lista vacía.
+    cambiar((x) => (x[i]!.microcycles!.splice(j, 1), x[i]!.microcycles!.length === 0 && delete x[i]!.microcycles, x), COPY_DESHACER.quitasteLaSemana(bloque?.microcycles?.[j]?.label || `Semana ${j + 1}`));
     elegirMicrociclo(Math.max(0, j - 1));
   };
   const agregarSesion = () => {
@@ -3318,19 +3311,7 @@ export function EditorDePlan({
                           id="menu-del-bloque"
                           rotulo={`más acciones de la fase ${nombreDelBloque(bloque, i)}`}
                           acciones={[
-                            // Un bloque organiza sus sesiones bajo microciclos o directamente, nunca las dos cosas (09v10:281-283).
-                            ...(mira.conMicrociclos
-                              ? []
-                              : [
-                                  {
-                                    clave: 'microciclos',
-                                    texto: 'Organizar por microciclos',
-                                    alElegir: organizarPorMicrociclos,
-                                    // TB-48: se ofrece siempre; si el bloque ya tiene sesiones, dice adónde van.
-                                    detalle: loQuePasaConLasSesiones(sesiones.length),
-                                    noSePuede: sesiones.length > TOPES_DE_ENTRENAMIENTO.sesionesDelMicrociclo ? E.topeDelMicrociclo(TOPES_DE_ENTRENAMIENTO.sesionesDelMicrociclo, sesiones.length) : null,
-                                  },
-                                ]),
+                            // DL-203 (PN-D01): sin «Organizar por microciclos»; la fase de N semanas con su semana tipo lo cubre.
                             { clave: 'duplicar', texto: 'Duplicar la fase', alElegir: () => duplicarLaFase(i) },
                             { clave: 'quitar', texto: 'Quitar esta fase', alElegir: quitarBloque, noSePuede: bloques.length <= 1 ? 'Es la única fase de la versión.' : null },
                           ]}
@@ -3362,10 +3343,6 @@ export function EditorDePlan({
                                 elegido={{ order: j + 1, label: nombreDelMicrociclo(microciclo, j) }}
                                 onElegir={(o) => elegirMicrociclo(o - 1)}
                               >
-                                <button type="button" className="boton boton--quieto boton--compacto" data-agregar-microciclo onClick={agregarMicrociclo}>
-                                  <Icono nombre="mas" tamano={18} />
-                                  {COPY_ENTRENAMIENTO.agregarMicrociclo}
-                                </button>
                                 <MenuDeAcciones
                                   id="menu-del-microciclo"
                                   rotulo={`más acciones del microciclo ${nombreDelMicrociclo(microciclo, j)}`}
