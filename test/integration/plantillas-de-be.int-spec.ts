@@ -23,6 +23,7 @@ import {
 } from '@be/domain';
 import { PrismaClient } from '@prisma/client';
 import { randomUUID } from 'node:crypto';
+import request from 'supertest';
 import { fechaLocalEn, ZONA_POR_DEFECTO } from '../../apps/api/src/nutricion/zona';
 import { appDePrueba, claveDeIdempotencia, conSesion } from './soporte-api';
 import { adm, administradorListo } from './soporte-administracion';
@@ -113,14 +114,17 @@ describe('DL-199 · las Plantillas de BE', () => {
     const otro = await circuitoListoParaPlanificarEntrenamiento(app, etiqueta('otro'));
     const ruta = `/api/v1/advisees/${c.ase.id}/training/plans/from-be-template`;
     const pedido = { objectiveVersionId: c.objectiveVersionId, templateKey: CUERPO_COMPLETO.clave, templateVersion: CUERPO_COMPLETO.version };
-    await conSesion(app, otro.pro.token).post(ruta).set('Idempotency-Key', claveDeIdempotencia()).send(pedido).expect(404);
-    await conSesion(app, otro.pro.token).post(`/api/v1/advisees/${randomUUID()}/training/plans/from-be-template`).set('Idempotency-Key', claveDeIdempotencia()).send(pedido).expect(404);
+    const ajena = await conSesion(app, otro.pro.token).post(ruta).set('Idempotency-Key', claveDeIdempotencia()).send(pedido).expect(404);
+    const inexistente = await conSesion(app, otro.pro.token).post(`/api/v1/advisees/${randomUUID()}/training/plans/from-be-template`).set('Idempotency-Key', claveDeIdempotencia()).send(pedido).expect(404);
+    // El mismo 404: ni el código ni el mensaje dicen que la persona existe.
+    expect({ code: ajena.body.error.code, message: ajena.body.error.message }).toEqual({ code: inexistente.body.error.code, message: inexistente.body.error.message });
     const pro = conSesion(app, c.pro.token);
     const version = await pro.post(ruta).set('Idempotency-Key', claveDeIdempotencia()).send({ ...pedido, templateVersion: 99 }).expect(409);
     expect(version.body.error.details).toMatchObject({ currentVersion: CUERPO_COMPLETO.version });
     await pro.post(ruta).set('Idempotency-Key', claveDeIdempotencia()).send({ ...pedido, templateKey: 'BE-NO-EXISTE' }).expect(404);
     await pro.post(ruta).set('Idempotency-Key', claveDeIdempotencia()).send({ ...pedido, templateKey: 'otra' }).expect(400);
-    await pro.post(ruta).send(pedido).expect(400);
+    // Sin Idempotency-Key (`conSesion` la pone siempre: el pedido va a mano).
+    await request(app.getHttpServer()).post(ruta).set('Authorization', `Bearer ${c.pro.token}`).send(pedido).expect(400);
     // La persona tampoco la aplica sobre sí misma.
     await conSesion(app, c.ase.token).post(ruta).set('Idempotency-Key', claveDeIdempotencia()).send(pedido).expect((x) => expect([403, 404]).toContain(x.status));
   });
