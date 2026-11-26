@@ -215,14 +215,14 @@ export class PlanesDeEntrenamientoService {
         const armada = armarPlantillaDeBe(plantilla, catalogo);
         const porVersion = new Map([...catalogo.values()].map((c) => [c.exerciseVersionId, { exerciseId: c.exerciseId, nombre: c.nombre }]));
         const vigentes = await this.unoRM.vigentesDe(tx, actor.identidadId, asesoradoId, [...catalogo.values()].map((c) => c.exerciseId));
-        const { estructura, cargas } = conLasCargasDeLaPlantillaDeBe(armada, porVersion, vigentes);
+        const { estructura, planificacion, cargas } = conLasCargasDeLaPlantillaDeBe(armada, porVersion, vigentes);
         const version = await this.crearVersionBorrador(tx, {
           profesionalId: actor.identidadId,
           asesoradoId,
           objetivoVersionId: pedido.objectiveVersionId,
           estructura: null,
           basadaEn: null,
-          desdePlantillaDeBe: { estructura, planificacion: armada.planificacion },
+          desdePlantillaDeBe: { estructura, planificacion },
           proximaRevision: null,
           revisionDeOrigenId: null,
           procedencia,

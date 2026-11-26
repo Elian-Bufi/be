@@ -371,8 +371,11 @@ export function conLasCargasDeLaPlantillaDeBe(
   armada: PlantillaDeBeArmada,
   ejercicioDeLaVersion: ReadonlyMap<string, { readonly exerciseId: string; readonly nombre: string }>,
   vigentes: ReadonlyMap<string, UnoRMVigente | null>,
-): { readonly estructura: EstructuraDePlanDeEntrenamientoEntrada; readonly cargas: readonly CargaResuelta[] } {
+): { readonly estructura: EstructuraDePlanDeEntrenamientoEntrada; readonly planificacion: PlanificacionDeLaPlantilla; readonly cargas: readonly CargaResuelta[] } {
   const cargas: CargaResuelta[] = [];
+  // El paso de las aproximaciones, ya con la carga y la unidad de la persona (como «Por %» en el editor): al armar no se
+  // las conocía, y con una carga chica (menos de 40 kg) o en libras el paso por omisión es otro.
+  const pasos = new Map<string, PasoDeRedondeo>();
   const aproximaciones = new Map((armada.planificacion.warmUps ?? []).map((w) => [w.prescriptionId, w]));
   const blocks = armada.estructura.blocks.map((b) => ({
     ...b,
@@ -391,7 +394,9 @@ export function conLasCargasDeLaPlantillaDeBe(
         const carga = cargaDelPorcentajeDe(porcentaje, vigente.valor, nombre, pr.loadBasis ?? null);
         cargas.push({ prescriptionId: pr.prescriptionId, nombre, porcentaje, estado: 'RESUELTA', carga, base: `${numero(porcentaje)} % de ${numero(vigente.valor.value, 2)} ${vigente.valor.unit} = ${numero(carga.value, 2)} ${carga.unit}` });
         const w = aproximaciones.get(pr.prescriptionId);
-        const previas = w ? seriesDeAproximacion(carga.value, w.workingLoadShares, w.step, carga.unit) : [];
+        const paso = w ? pasoPorOmision(implementoDelEjercicio(nombre, pr.loadBasis ?? null), carga.value, carga.unit) : null;
+        if (w && paso !== null) pasos.set(pr.prescriptionId, paso);
+        const previas = w && paso !== null ? seriesDeAproximacion(carga.value, w.workingLoadShares, paso, carga.unit) : [];
         return {
           ...pr,
           suggestedLoad: carga,
@@ -401,7 +406,8 @@ export function conLasCargasDeLaPlantillaDeBe(
       }),
     })),
   }));
-  return { estructura: { blocks }, cargas };
+  const warmUps = armada.planificacion.warmUps?.map((w) => (pasos.has(w.prescriptionId) ? { ...w, step: pasos.get(w.prescriptionId)! } : w));
+  return { estructura: { blocks }, planificacion: warmUps ? { ...armada.planificacion, warmUps } : armada.planificacion, cargas };
 }
 
 /** El resumen de lo que se resolvió, en un renglón (ET3-03): «4 de 6 cargas con el 1RM de la persona». */

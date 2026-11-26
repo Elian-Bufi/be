@@ -129,3 +129,32 @@ test('TEST-ET3-06: en pantalla, sin las palabras que BE no usa y todo «%» con 
   const api = JSON.stringify(PLANTILLAS_DE_BE.map((p) => plantillaDeBeParaLaApi(p, catalogoCompleto(), 'PUBLISHED')));
   for (const m of api.matchAll(/(\d+) %(?! RM| de la carga)/g)) assert.fail(`«${m[0]}» sin su base`);
 });
+
+test('TEST-ET3-04b: el paso de las aproximaciones sale de la carga y la unidad de la persona (cargas chicas y libras), sin repetir una carga', () => {
+  const catalogo = catalogoCompleto();
+  const a = armarPlantillaDeBe(PLANTILLAS_DE_BE[0]!, catalogo);
+  const porVersion = new Map([...catalogo.values()].map((c) => [c.exerciseVersionId, { exerciseId: c.exerciseId, nombre: c.nombre }]));
+  const con = (valor: { value: number; unit: 'kg' | 'lb' }) => {
+    const vigente: UnoRMVigente = { origen: 'CALIBRATION', valor, fecha: '2026-11-25', banda: null, serie: null, entryId: 'x' };
+    const r = conLasCargasDeLaPlantillaDeBe(a, porVersion, new Map([['ej-615', vigente]]));
+    const pr = r.estructura.blocks[0]!.sessions![0]!.prescriptions[0]!;
+    const w = r.planificacion.warmUps!.find((x) => x.prescriptionId === pr.prescriptionId)!;
+    return { pr, w, r };
+  };
+  // Una carga chica con barra (65 % de 40 kg = 26 kg): de a 1 kg, como «Por %» en el editor.
+  const chica = con({ value: 40, unit: 'kg' });
+  assert.equal(chica.w.step, 1);
+  const previasChica = chica.pr.sets.filter((s) => s.setKind === 'WARM_UP').map((s) => s.suggestedLoad!.value);
+  assert.equal(new Set(previasChica).size, previasChica.length);
+  assert.ok(previasChica.every((v) => Number.isInteger(v) && v < chica.pr.suggestedLoad!.value));
+  // En libras (65 % de 225 lb), de a 5 lb y en libras.
+  const libras = con({ value: 225, unit: 'lb' });
+  assert.equal(libras.w.step, 5);
+  const previasLb = libras.pr.sets.filter((s) => s.setKind === 'WARM_UP');
+  assert.ok(previasLb.every((s) => s.suggestedLoad!.unit === 'lb' && s.suggestedLoad!.value % 5 === 0));
+  assert.equal(new Set(previasLb.map((s) => s.suggestedLoad!.value)).size, previasLb.length);
+  // Sin 1RM, el paso queda el del armado (no hay carga para elegir otro).
+  const banca = libras.r.estructura.blocks[0]!.sessions![0]!.prescriptions[1]!;
+  assert.equal(libras.r.planificacion.warmUps!.find((x) => x.prescriptionId === banca.prescriptionId)!.step, 2.5);
+  assert.equal(PlanificacionDeLaPlantillaSchema.safeParse(libras.r.planificacion).success, true);
+});
