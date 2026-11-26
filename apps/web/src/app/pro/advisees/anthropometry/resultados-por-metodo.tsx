@@ -24,6 +24,7 @@ import {
   cuentaDeEjemplo,
   diferenciaDelPaso,
   leerProgramas,
+  medicionesDelPrograma,
   marcaDeLaClase,
   metodosConResultado,
   pasosDelResultado,
@@ -114,8 +115,12 @@ export function ResultadosPorMetodo({
   const resultados = useMemo(() => claves.map((c) => resultadoDelMetodo(c, valores, sexo, conversion)!).filter(Boolean), [claves, valores, sexo, conversion]);
   const anteriores = useMemo(() => new Map(deAntes ? claves.map((c) => [c, resultadoDelMetodo(c, deAntes, sexo, conversion)!] as const) : []), [claves, deAntes, sexo, conversion]);
 
-  // El resumen: el método pedido; si no, el elegido para la toma, el guardado, o el primero de grasa que da algo.
-  const deGrasa = resultados.find((r) => r.programa.categoria === 'GRASA' && r.calculado)?.programa.clave;
+  // El resumen: el método pedido; si no, el elegido para la toma, el guardado, o el de grasa que usa más de lo medido (con
+  // los 7 pliegues de Jackson y Pollock, el de 7 y no el de 3: es lo que el profesional midió, no «el mejor»; AR-D06).
+  const usaDeLoMedido = (r: ResultadoDelMetodo) => medicionesDelPrograma(r.programa.clave, sexo).filter((c) => Object.hasOwn(valores, c)).length;
+  const deGrasa = resultados
+    .filter((r) => r.programa.categoria === 'GRASA' && r.calculado)
+    .reduce<ResultadoDelMetodo | null>((elegido, r) => (!elegido || usaDeLoMedido(r) > usaDeLoMedido(elegido) ? r : elegido), null)?.programa.clave;
   const principal = [resumenPedido, ...elegidos, ...usados, deGrasa, claves[0]].find((c): c is string => !!c && claves.includes(c)) ?? null;
   const delResumen = resultados.find((r) => r.programa.clave === principal) ?? null;
   const hayConversion = resultados.some((r) => r.programa.conConversion && r.calculado);

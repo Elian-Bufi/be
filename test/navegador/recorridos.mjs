@@ -2750,7 +2750,93 @@ async function progresionYDistribucion({ p, d, salida }) {
   await esperarGuardado(p);
 }
 
-export const TODOS = { sesion, pistas, borrador, conflicto, descartar, salidaSegura, irACorregir, respuestaPerdida, reintentar, salidaConFallas, primerPlan, planDeNutricionSinAsistente, retorno, grafico, primeraInvitacion, areaSugerida, sesionRevocada, accesoRevocado, faltaUnaParte, completitud, evidencia, administracion, comparacion, comparacionConOpciones, sinSaltos, franjasPorComida, cierreDeNutricion, notacionDelEsfuerzo, recetario, opcionComoReceta, recorridosGuiados, editorDeEntrenamiento, aproximacionesPorPorcentaje, progresionYDistribucion, agregarEjerciciosConFiltros, editorTanda2 };
+/**
+ * TEST-AR-NAV-01 (DL-200, WP-ANTROPOMETRIA-RESULTADOS) · Jackson y Pollock, 7 pliegues, de punta a punta, sin tildar nada:
+ * - antes de medir, «Qué vas a calcular»: elegir el método es un botón; la tarjeta dice qué pide (7 pliegues, la edad y el
+ *   peso) y qué va a dar, la figura pide esos 7 pliegues y no otros, y el fraccionamiento suma los dos diámetros de Rocha;
+ * - en la toma registrada (82 mm de pliegues, 30 años, 77 kg), el resumen arriba (12,0 % del peso corporal, 9,3 kg, 67,7 kg,
+ *   82,0 mm) con el cambio desde la toma anterior, y el método abierto con sus cinco etapas: la suma, la densidad, el % de
+ *   grasa con Brožek al lado, las masas y los cuatro componentes;
+ * - Brožek con un toque: los números cambian en su lugar, sin mover el renglón (RP-19);
+ * - el «?» de la densidad, en la esquina, con la cuenta de esta toma;
+ * - «Guardar en la historia» guarda lo que tiene su método en el catálogo, y la API lo confirma.
+ * Capturas en Claro y Azul noche.
+ */
+async function resultadosAntropometricos({ p, d, salida }) {
+  await entrar(p, d.pro.correo);
+  const base = `${WEB}/pro/advisees/anthropometry?id=${encodeURIComponent(d.ase.id)}`;
+
+  // ── Antes de medir ──
+  await p.goto(`${base}&vista=preparacion&metodos=ninguno`, { waitUntil: 'networkidle2' });
+  // Sin ningún método elegido, la lista viene abierta.
+  await hidratado(p, '[data-opcion-de-metodo="jackson-pollock-7"]');
+  await clic(p, '[data-opcion-de-metodo="jackson-pollock-7"]');
+  await elemento(p, '[data-metodo-elegido="jackson-pollock-7"]');
+  assert.equal(await p.$$eval('[data-eleccion-de-metodos] input[type="checkbox"]', (xs) => xs.length), 0, 'elegir no tiene casilleros');
+  const tarjeta = await p.$eval('[data-metodo-elegido="jackson-pollock-7"]', (e) => e.innerText);
+  assert.match(tarjeta, /7 pliegues, la edad y el peso/);
+  assert.match(tarjeta, /Densidad corporal/);
+  assert.match(tarjeta, /% de grasa \(Siri y Brožek\)/);
+  const pide = ['pliegue-pectoral', 'pliegue-axilar-media', 'pliegue-triceps', 'pliegue-subescapular', 'pliegue-abdominal', 'pliegue-cresta-iliaca', 'pliegue-muslo-frontal', 'peso', 'edad'];
+  await p.waitForFunction((claves) => claves.every((c) => document.getElementById(`ant-valor-${c}`)), { timeout: ESPERA }, pide);
+  assert.equal(await p.evaluate(() => !!document.getElementById('ant-valor-pliegue-biceps')), false, 'un pliegue que JP7 no pide no aparece');
+  await clic(p, '[data-fraccionamiento]');
+  await p.waitForFunction(() => ['diametro-biestiloideo', 'diametro-femur'].every((c) => document.getElementById(`ant-valor-${c}`)), { timeout: ESPERA });
+  assert.match(await p.$eval('[data-metodo-elegido="jackson-pollock-7"]', (e) => e.innerText), /2 diámetros/);
+  await enLosDosTemas(p, salida, 'ar-que-vas-a-calcular');
+
+  // ── La toma registrada ──
+  await p.goto(`${base}&vista=evaluaciones&evaluacion=${encodeURIComponent(d.tomasJp7.actual)}`, { waitUntil: 'networkidle2' });
+  await elemento(p, '[data-resumen-de-la-toma="jackson-pollock-7"]');
+  assert.equal(await p.$$eval('.resultados-de-la-toma input[type="checkbox"]', (xs) => xs.length), 0, 'los resultados no tienen casilleros');
+  // El cambio desde la anterior llega cuando se lee su detalle.
+  await p.waitForFunction(() => document.querySelector('[data-resumen-de-la-toma]')?.textContent.includes('puntos'), { timeout: ESPERA });
+  const resumen = await p.$eval('[data-resumen-de-la-toma]', (e) => e.innerText);
+  for (const t of ['% de grasa', '12,0 %', 'del peso corporal', '9,3 kg', '67,7 kg', '82,0 mm', '−1,1 puntos', 'Convertida con Siri (1961)']) assert.ok(resumen.includes(t), `el resumen dice «${t}»: ${resumen}`);
+  const metodo = '[data-metodo="jackson-pollock-7"]';
+  assert.equal(await p.$eval(metodo, (e) => e.open), true, 'el método del resumen viene abierto');
+  assert.deepEqual(await p.$$eval(`${metodo} [data-etapa]`, (xs) => xs.map((x) => x.dataset.etapa)), ['MEDIDO', 'ECUACION', 'CONVERSION', 'MASAS', 'FRACCIONAMIENTO']);
+  const paso = (clave) => p.$eval(`${metodo} [data-paso="${clave}"]`, (e) => e.innerText);
+  assert.match(await paso('densidad'), /1,0714 g\/cm³/);
+  assert.match(await paso('densidad'), /Jackson y Pollock \(1978\), hombres/);
+  assert.match(await paso('grasa'), /Con Brožek: 12,4 %/);
+  assert.match(await paso('masa-libre-de-grasa'), /67,7 kg/);
+  assert.match(await paso('masa-osea'), /12,3 kg/);
+  assert.match(await paso('masa-muscular'), /36,9 kg/);
+  await enLosDosTemas(p, salida, 'ar-resultados-jp7');
+
+  // ── Brožek con un toque: nada se corre ──
+  const lugar = () => p.$eval(`${metodo} [data-paso="masa-muscular"]`, (e) => Math.round(e.getBoundingClientRect().top + window.scrollY));
+  const antes = await lugar();
+  await clic(p, '.resultados-por-metodo__lectura .segmento', 'Brožek');
+  await p.waitForFunction((m) => document.querySelector(`${m} [data-paso="grasa"] .paso-de-la-cadena__valor`)?.textContent.includes('12,4'), { timeout: ESPERA }, metodo);
+  assert.match(await paso('masa-muscular'), /36,6 kg/);
+  assert.ok(Math.abs((await lugar()) - antes) <= 1, 'cambiar la conversión no mueve los renglones');
+  await clic(p, '.resultados-por-metodo__lectura .segmento', 'Siri');
+  await p.waitForFunction((m) => document.querySelector(`${m} [data-paso="grasa"] .paso-de-la-cadena__valor`)?.textContent.includes('12,0'), { timeout: ESPERA }, metodo);
+
+  // ── El «?» de la densidad: la fórmula y la cuenta con esta toma ──
+  await clic(p, `${metodo} [data-paso="densidad"] .a-pedido__boton`);
+  await p.waitForFunction((m) => {
+    const t = document.querySelector(`${m} [data-paso="densidad"] .a-pedido__texto`);
+    return t && !t.hidden && t.textContent.includes('Con esta toma.') && t.textContent.includes('1,071');
+  }, { timeout: ESPERA }, metodo);
+  await captura(p, salida, 'ar-ayuda-de-la-densidad');
+  await p.keyboard.press('Escape');
+
+  // ── Guardar en la historia ──
+  await clic(p, `${metodo} .metodo-de-la-toma__pie button`, 'Guardar en la historia');
+  await elemento(p, `${metodo} [data-paso="suma"] .paso-de-la-cadena__historia`);
+  await elemento(p, `${metodo} [data-paso="grasa"] .paso-de-la-cadena__historia`);
+  const token = await sesionPorApi(d.pro.correo);
+  const corridas = (await pedir('GET', `/advisees/${d.ase.id}/calculations`, { token })).data.filter((c) => c.evaluationId === d.tomasJp7.actual);
+  const metricas = corridas.map((c) => c.result.metric).sort();
+  assert.deepEqual(metricas, ['grasa-jackson-pollock-7', 'masa-osea-rocha', 'suma-7-pliegues-jackson-pollock'], `lo guardado: ${metricas.join(', ')}`);
+  assert.equal(corridas.find((c) => c.result.metric === 'grasa-jackson-pollock-7').result.magnitude.value, 12);
+  await captura(p, salida, 'ar-en-la-historia');
+}
+
+export const TODOS = { sesion, pistas, borrador, conflicto, descartar, salidaSegura, irACorregir, respuestaPerdida, reintentar, salidaConFallas, primerPlan, planDeNutricionSinAsistente, retorno, grafico, primeraInvitacion, areaSugerida, sesionRevocada, accesoRevocado, faltaUnaParte, completitud, evidencia, administracion, comparacion, comparacionConOpciones, sinSaltos, franjasPorComida, cierreDeNutricion, notacionDelEsfuerzo, recetario, opcionComoReceta, recorridosGuiados, editorDeEntrenamiento, aproximacionesPorPorcentaje, progresionYDistribucion, agregarEjerciciosConFiltros, editorTanda2, resultadosAntropometricos };
 
 /**
  * TEST-ET2-NAV-01 (DL-198, WP-EDITOR-ENTRENAMIENTO-TANDA-2) · el 1RM de referencia en un ejercicio en % RM: la calibración
