@@ -286,7 +286,7 @@ export function ejercicioPlegadoDelEditor(p: EjercicioDelEditor, problemas: numb
   const parametros = propios.filter((x) => x.code === P.parametroIncompleto).length;
   const ilegibles = propios.length - parametros - (faltaElObjetivo ? 1 : 0);
   return {
-    resumen: faltaElObjetivo || ilegibles > 0 ? cuentaDeSeries(p.sets) : renglonDelEjercicio(comoLoLeeElPlan(p), notacion),
+    resumen: faltaElObjetivo || ilegibles > 0 ? cuentaDeSeries(p.sets) : renglonDelEjercicio(comoLoLeeElPlan(p), notacion, { delProfesional: true }),
     avisos: [
       ...(faltaElObjetivo ? ['Falta el objetivo de intensidad'] : []),
       ...(ilegibles > 0 ? [unoOVarios(ilegibles, 'dato que no se entiende', 'datos que no se entienden')] : []),

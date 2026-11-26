@@ -2210,6 +2210,8 @@ model EjercicioDeCatalogo {
   seriesObservadas    SerieObservada[]
   /// PG-16 (DL-173): las notas propias de un profesional atadas a este ejercicio.
   notasPropias        NotaPropia[]
+  /// DL-197 (ET1-D12): la historia de su clasificación; la vigente es la de número más alto.
+  clasificaciones     ClasificacionDeEjercicio[]
 
   @@map("ejercicio_de_catalogo")
 }
@@ -2233,6 +2235,75 @@ model VersionDeEjercicio {
 
   @@index([ejercicioId])
   @@map("version_de_ejercicio")
+}
+
+/// DL-197 (ET1-D12) — La clasificación de un ejercicio, para los filtros de «Agregar ejercicios»: grupo muscular,
+/// equipamiento, patrón y articulaciones, cada dato opcional. Historia por adición, como las zonas (DL-081): cambiarla es
+/// sumar una de número siguiente; la vigente es la más alta. Los 186 del catálogo base la reciben de la siembra
+/// (20261125120000), con la propuesta de BE a validar por Dirección.
+model ClasificacionDeEjercicio {
+  id                String                     @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  ejercicioId       String                     @map("ejercicio_id") @db.Uuid
+  numero            Int
+  grupoMuscular     GrupoMuscularDeEjercicio?  @map("grupo_muscular")
+  equipamiento      EquipamientoDeEjercicio[]
+  patron            PatronDeMovimiento?
+  articulaciones    ArticulacionesDeEjercicio?
+  procedencia       Json
+  momentoDeRegistro DateTime                   @default(now()) @map("momento_de_registro") @db.Timestamptz(3)
+
+  ejercicio EjercicioDeCatalogo @relation(fields: [ejercicioId], references: [id], onDelete: Restrict, onUpdate: Restrict)
+
+  @@unique([ejercicioId, numero])
+  @@map("clasificacion_de_ejercicio")
+}
+
+/// DL-197: el grupo muscular de un ejercicio (la categoría de wger).
+enum GrupoMuscularDeEjercicio {
+  CHEST
+  BACK
+  LEGS
+  SHOULDERS
+  ARMS
+  ABS
+  CALVES
+  CARDIO
+}
+
+/// DL-197: con qué se hace un ejercicio.
+enum EquipamientoDeEjercicio {
+  BARBELL
+  EZ_BAR
+  DUMBBELL
+  KETTLEBELL
+  CABLE
+  MACHINE
+  BENCH
+  INCLINE_BENCH
+  PULL_UP_BAR
+  BAND
+  MAT
+  SWISS_BALL
+  BODYWEIGHT
+  OTHER
+}
+
+/// DL-197: el patrón de movimiento.
+enum PatronDeMovimiento {
+  PUSH
+  PULL
+  SQUAT
+  HINGE
+  LUNGE
+  CORE
+  CARDIO
+  OTHER
+}
+
+/// DL-197: mono o multiarticular.
+enum ArticulacionesDeEjercicio {
+  SINGLE
+  MULTI
 }
 
 /// RF-036; REG-06-97. El contenido profesional no lo fija el 09 (09v10:202): JSON validado por allowlist (DL-080).

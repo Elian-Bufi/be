@@ -14,8 +14,29 @@
  *   leída: las 17 zonas del catálogo con su rol y la figura de siempre al lado (`zonas-del-ejercicio.tsx`, API-EJE-04).
  *   Al cerrar, el foco vuelve a ese botón.
  */
-import { COPY_EJERCICIOS_PROPIOS, COPY_FIGURA_DE_ZONAS, zonasEnUnRenglon, type EjercicioPropio } from '@be/domain';
+import {
+  ARTICULACIONES,
+  COPY_EJERCICIOS_PROPIOS,
+  COPY_FIGURA_DE_ZONAS,
+  EQUIPAMIENTOS,
+  GRUPOS_MUSCULARES,
+  NOMBRE_DE_LAS_ARTICULACIONES,
+  NOMBRE_DEL_EQUIPAMIENTO,
+  NOMBRE_DEL_GRUPO_MUSCULAR,
+  NOMBRE_DEL_PATRON,
+  PATRONES_DE_MOVIMIENTO,
+  zonasEnUnRenglon,
+  type Articulaciones,
+  type ClasificacionDeEjercicio,
+  type EjercicioPropio,
+  type Equipamiento,
+  type GrupoMuscular,
+  type PatronDeMovimiento,
+} from '@be/domain';
+import { usePathname, useSearchParams } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
+import { Pestanas } from '../../../components/pestanas';
+import { CatalogoDeBe } from './catalogo-de-be';
 import { AvisoFlotante } from '../../../components/ayuda';
 import { Cargando, ErrorConReintento } from '../../../components/estados';
 import { Aviso, Campo } from '../../../components/formulario';
@@ -33,8 +54,18 @@ import { EsperandoSesion } from '../../../lib/sesion';
 
 type Estado = { tipo: 'cargando' } | { tipo: 'error' } | { tipo: 'sin-area' } | { tipo: 'listo'; ejercicios: EjercicioPropio[] };
 
+type Vista = 'propios' | 'catalogo';
+
+/** DL-197 (ET1-D14): la clasificación opcional de un ejercicio propio, al crearlo. */
+const SIN_CLASIFICAR: ClasificacionDeEjercicio = { muscleGroup: null, equipment: [], movementPattern: null, joints: null };
+
 export function MisEjercicios() {
   const { token, sesionPerdida, yo, cargarYo } = useEspacioProfesional('/pro/exercises');
+  // DL-197 (F23): la pestaña, en la dirección, como en Recetas.
+  const parametros = useSearchParams();
+  const ruta = usePathname();
+  const vista: Vista = parametros.get('vista') === 'catalogo' ? 'catalogo' : 'propios';
+  const [clasificacion, setClasificacion] = useState<ClasificacionDeEjercicio>(SIN_CLASIFICAR);
   const [estado, setEstado] = useState<Estado>({ tipo: 'cargando' });
   const [aviso, setAviso] = useState<string | null>(null);
   const [nombre, setNombre] = useState('');
@@ -85,12 +116,14 @@ export function MisEjercicios() {
     if (!nombre.trim()) return setFallo('Escribí el nombre del ejercicio.');
     setCreando(true);
     setFallo(null);
-    const r = await api.crearEjercicio(token, nombre.trim(), intento.actual());
+    const conAlgo = clasificacion.muscleGroup || clasificacion.equipment.length > 0 || clasificacion.movementPattern || clasificacion.joints;
+    const r = await api.crearEjercicio(token, nombre.trim(), intento.actual(), conAlgo ? clasificacion : undefined);
     intento.registrar(r);
     setCreando(false);
     if (sesionPerdida(r)) return;
     if (!r.ok) return setFallo(mensajeDeFallo(r));
     setNombre('');
+    setClasificacion(SIN_CLASIFICAR);
     setAviso(COPY_EJERCICIOS_PROPIOS.ejercicioCreado);
     await cargar();
   }
@@ -116,8 +149,42 @@ export function MisEjercicios() {
     );
   }
 
+  const pestanas = (
+    <Pestanas<Vista>
+      etiqueta="Ejercicios"
+      vistas={[
+        { clave: 'propios', texto: 'Mis ejercicios', icono: 'entrenamiento' },
+        { clave: 'catalogo', texto: 'Catálogo de BE', icono: 'tilde' },
+      ]}
+      actual={vista}
+      href={(c) => (c === 'catalogo' ? `${ruta}?vista=catalogo` : ruta)}
+    />
+  );
+  if (vista === 'catalogo') {
+    return (
+      <div className="secciones">
+        {pestanas}
+        <CatalogoDeBe token={token} sesionPerdida={sesionPerdida} />
+      </div>
+    );
+  }
+  const elegir = <K extends string>(clave: string, rotulo: string, valores: readonly K[], nombres: Readonly<Record<K, string>>, valor: K | null, alElegir: (v: K | null) => void) => (
+    <div className="campo">
+      <label htmlFor={`ejercicio-nuevo-${clave}`}>{rotulo}</label>
+      <select id={`ejercicio-nuevo-${clave}`} value={valor ?? ''} onChange={(e) => alElegir((e.target.value || null) as K | null)} data-clasificacion-nueva={clave}>
+        <option value="">Sin indicar</option>
+        {valores.map((v) => (
+          <option key={v} value={v}>
+            {nombres[v]}
+          </option>
+        ))}
+      </select>
+    </div>
+  );
+
   return (
     <div className="secciones">
+      {pestanas}
       {aviso ? (
         <AvisoFlotante onCerrar={() => setAviso(null)}>
           <p>{aviso}</p>
@@ -131,6 +198,15 @@ export function MisEjercicios() {
           <legend>{COPY_EJERCICIOS_PROPIOS.crearEjercicio}</legend>
           <div className="fila-de-dato">
             <Campo id="ejercicio-nuevo" etiqueta={COPY_EJERCICIOS_PROPIOS.nombreDelEjercicio} value={nombre} onChange={(e) => setNombre(e.target.value)} maxLength={120} error={fallo ?? undefined} />
+          </div>
+          {/* DL-197 (ET1-D14): la clasificación, opcional: la usan los filtros de «Agregar ejercicios». */}
+          <div className="clasificacion-nueva" data-clasificacion-del-propio>
+            {elegir<GrupoMuscular>('grupo', 'Grupo muscular', GRUPOS_MUSCULARES, NOMBRE_DEL_GRUPO_MUSCULAR, clasificacion.muscleGroup, (v) => setClasificacion((c) => ({ ...c, muscleGroup: v })))}
+            {elegir<Equipamiento>('equipamiento', 'Equipamiento', EQUIPAMIENTOS, NOMBRE_DEL_EQUIPAMIENTO, clasificacion.equipment[0] ?? null, (v) => setClasificacion((c) => ({ ...c, equipment: v ? [v] : [] })))}
+            {elegir<PatronDeMovimiento>('patron', 'Patrón', PATRONES_DE_MOVIMIENTO, NOMBRE_DEL_PATRON, clasificacion.movementPattern, (v) => setClasificacion((c) => ({ ...c, movementPattern: v })))}
+            {elegir<Articulaciones>('articulaciones', 'Articulaciones', ARTICULACIONES, NOMBRE_DE_LAS_ARTICULACIONES, clasificacion.joints, (v) => setClasificacion((c) => ({ ...c, joints: v })))}
+          </div>
+          <div className="fila-de-dato">
             <div className="acciones">
               <button type="button" className="boton boton--primario" onClick={() => void crear()} disabled={creando}>
                 {COPY_EJERCICIOS_PROPIOS.crearEjercicio}

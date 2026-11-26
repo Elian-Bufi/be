@@ -86,8 +86,10 @@ test('RP-22 · lo que sale de los límites del contrato no se entiende: una carg
   assert.match(EJERCICIO, /interpretar=\{leerLaCarga\}/);
   // «Escribir en N series» lee con los mismos límites: antes dejaba pasar «-5» o «61:00», que el contrato rechaza al
   // guardar (el autoguardado fallaba con lo escrito a la vista y sin marca).
-  const elegidas = EJERCICIO.slice(EJERCICIO.indexOf('const escribirEnLasElegidas'), EJERCICIO.indexOf('const pedirQuitar'));
-  assert.match(elegidas, /campo === 'restSeconds' \? leerDescansoDeLaSerie\(valor\) : campo === 'suggestedLoad' \? leerCargaDeLaSerie\(valor\)/);
+  // DL-197 (F16): ahora desde el cuadro «Editar todas las series».
+  const elegidas = EJERCICIO.slice(EJERCICIO.indexOf('function EditarTodasLasSeries('), EJERCICIO.indexOf('const COPY_TODAS'));
+  assert.match(elegidas, /const c = leerCargaDeLaSerie\(valores\.carga\);/);
+  assert.match(elegidas, /const d = leerDescansoDeLaSerie\(valores\.descanso\);/);
   assert.doesNotMatch(elegidas, /leerDescanso\(valor\)/);
 });
 
@@ -119,12 +121,10 @@ test('RP-22 · la planilla de series: ningún aviso dentro de una fila; el rengl
   const general = EJERCICIO.slice(EJERCICIO.indexOf('function CeldaGeneral('), EJERCICIO.indexOf('function CeldaDeRepeticiones('));
   assert.doesNotMatch(general, /campo__error/);
   // El renglón, siempre en la página con series, con `aria-live` (el lector lo oye) y nombrado por cada celda mal escrita.
-  assert.match(EJERCICIO, /<RenglonDelAviso id=\{aviso\} tipo=\{queNoSeEntiende\.length > 0 \? 'error' : 'nota'\} anunciar/);
+  assert.match(EJERCICIO, /<RenglonDelAviso id=\{aviso\} tipo=\{queNoSeEntiende\.length > 0 \|\| avisoDeLaIntensidad \? 'error' : 'nota'\} anunciar/);
   assert.match(EJERCICIO, /aria-describedby=\{celda\.estado === 'no-se-entiende' && aviso \? `\$\{id\}-estado \$\{aviso\}` : `\$\{id\}-estado`\}/);
-  // La barra de las elegidas: el aviso en su renglón, siempre (al tocar «Escribir», la tabla no baja).
-  const barra = EJERCICIO.slice(EJERCICIO.indexOf('data-series-elegidas'), EJERCICIO.indexOf('<table className="tabla series-del-editor"'));
-  assert.match(barra, /<RenglonDelAviso id=\{`\$\{id\}-elegidas-no-se-entiende`\}/);
-  assert.doesNotMatch(barra, /\{noSeEntiende \? \(\n\s*<p/);
+  // DL-197 (F16): «Editar todas las series», en su cuadro: el aviso en su renglón, siempre.
+  assert.match(EJERCICIO, /<p className=\{mal \? 'campo__error editar-todas__aviso' : 'nota editar-todas__aviso'\}/);
   // El objetivo del criterio avisa al pie del recuadro (en la fila, desalineaba los campos alineados por abajo).
   assert.match(EJERCICIO, /avisoAparte=\{\{ id: `\$\{id\}-objetivo-aviso`, onMal: setObjetivoMal \}\}/);
   assert.match(EJERCICIO, /<RenglonDelAviso id=\{`\$\{id\}-objetivo-aviso`\}/);
@@ -190,7 +190,8 @@ test('RP-22 · la evaluación de Entrenamiento: un `id` por problema en el resum
 
 test('RP-22 · el catálogo a 1280: «Agregar» sin marcar lo dice en el título de los elegidos, y el cajón es más ancho', () => {
   const catalogo = leer('app/pro/advisees/training/agregar-ejercicio.tsx');
-  assert.match(catalogo, /\{falta && marcados\.length === 0 \? V\.sinMarcados : marcados\.length === 0 \? V\.ningunoElegido : V\.elegidos\(marcados\.length\)\}/);
+  // DL-197 (ET1-09): «N seleccionados» en el pie del cuadro central.
+  assert.match(catalogo, /\{falta && marcados\.length === 0 \? V\.sinMarcados : COPY_CATALOGO_PARA_ELEGIR\.seleccionados\(marcados\.length\)\}/);
   const pie = catalogo.slice(catalogo.indexOf('pie={'), catalogo.indexOf('<ContenidoDeAgregarEjercicio'));
   assert.equal((pie.match(/V\.sinMarcados/g) ?? []).length, 1, 'un solo lugar para el aviso');
   assert.match(RP22, /@media \(min-width: 80rem\) and \(max-width: 89\.99rem\) \{\n\s*\.cajon:has\(\.agregar-ejercicio\) \{\n\s*width: min\(35rem, 100vw\);/);
@@ -229,6 +230,7 @@ test('RP-22 · a 1440 con el panel abierto (la tabla entre 40 y 46 rem), las rep
   const angosta = CSS.slice(CSS.indexOf('@container ejercicios (40rem < width <= 46rem) {'));
   const bloque = angosta.slice(0, angosta.indexOf('\n}\n'));
   // Con 4 rem y la flechita (1,5 rem), «8-12» no entraba; «Repeticiones» pisaba «Carga sugerida» (la captura de la CI).
-  assert.match(bloque, /\.series-del-editor thead th:nth-child\(2\) \{\n\s*width: 5rem;/);
+  // DL-197 (F14): por columna (`<colgroup>`), ya no por posición.
+  assert.match(bloque, /\.series-del-editor__col-reps \{\n\s*width: 5rem;/);
   assert.match(bloque, /\.series-del-editor thead th \{\n\s*hyphens: auto;/);
 });

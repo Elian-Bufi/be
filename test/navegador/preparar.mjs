@@ -77,6 +77,8 @@ export const RECORRIDOS = {
   editorDeEntrenamiento: { habilitado: ['ENTRENAMIENTO'], datos: ['borrador-de-entrenamiento-sin-saltos'] },
   aproximacionesPorPorcentaje: { habilitado: ['ENTRENAMIENTO'], datos: ['borrador-de-entrenamiento-sin-saltos'] },
   progresionYDistribucion: { habilitado: ['ENTRENAMIENTO'], datos: ['borrador-de-entrenamiento-sin-saltos'] },
+  // DL-197 (WP-EDITOR-ENTRENAMIENTO-TANDA-1): «Agregar ejercicios» con todo el catálogo y sus filtros.
+  agregarEjerciciosConFiltros: { habilitado: ['ENTRENAMIENTO'], datos: ['borrador-de-entrenamiento-sin-saltos'] },
   // RP-20 y RP-21 (DL-188): un borrador con el almuerzo en dos opciones y su rango indicado, para las franjas por comida.
   franjasPorComida: { habilitado: ['NUTRICION'], datos: ['franjas'] },
   // RP-24 (DL-188): el mismo borrador, para el «?» en la esquina, «Rangos indicados» y las acciones sin subrayado.

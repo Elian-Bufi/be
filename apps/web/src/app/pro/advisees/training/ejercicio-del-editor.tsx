@@ -48,10 +48,13 @@ import {
   leerRpeEscrito,
   type NotacionDelEsfuerzo,
   type AproximacionesDelEjercicio,
+  DESCANSO_DE_APROXIMACION,
+  implementoDelEjercicio,
 } from '@be/domain';
 import { Fragment, useEffect, useId, useRef, useState, type ComponentProps, type FocusEvent, type KeyboardEvent, type ReactNode } from 'react';
 import { SeccionDeAproximaciones } from './aproximaciones-del-ejercicio';
-import { rotulosConAproximaciones } from './aproximaciones';
+import { conLasAproximacionesSinRir, cuantasAproximaciones, resumenDeLasAproximaciones, rotulosConAproximaciones } from './aproximaciones';
+import { AYUDAS_DEL_EDITOR, ContenidoDeLaAyuda } from './ayudas-del-editor';
 import { cifrasTrasLaTecla, textoDeLaMascara } from './mascara-de-tiempo';
 import { EnPartes } from '../../../../components/en-partes';
 import { Campo, RenglonDelAviso } from '../../../../components/formulario';
@@ -86,8 +89,6 @@ import {
   loQueSePierdeAlQuitarLaSerie,
   origenDeLaCelda,
   textoDeLoQueNoSeEntiende,
-  volverALoGeneral,
-  type ObjetivoDeLaSerie,
 } from './planilla-de-series';
 import { NotasAlLado, useNotasPropias } from '../notas-propias';
 import { useNotacionDelEsfuerzo } from '../notacion-del-esfuerzo';
@@ -315,7 +316,7 @@ export function EjercicioDelEditor({
   abierto,
   problemas,
   alAlternar,
-  onCambiar,
+  onCambiar: onCambiarTalCual,
   onQuitar,
   esElPrimero,
   esElUltimo,
@@ -332,7 +333,15 @@ export function EjercicioDelEditor({
   onLineaSinAplicar,
   aproximaciones = null,
   onAproximaciones,
+  intensidadDelPlan = null,
+  sinIntensidad = false,
+  onSinIntensidad,
 }: {
+  /** DL-197 (ET1-D10, ET1-D11): el criterio del plan, que hereda el ejercicio sin criterio propio; `null`, ninguno. */
+  intensidadDelPlan?: Criterio | null;
+  /** El ejercicio no lleva intensidad aunque el plan sí (la excepción, en «Más opciones»). */
+  sinIntensidad?: boolean;
+  onSinIntensidad?: (sin: boolean) => void;
   /** DL-196 (EE-07): cómo se arman las aproximaciones (de la planificación) y cómo se guarda; sin esto, no se ofrecen. */
   aproximaciones?: AproximacionesDelEjercicio | null;
   onAproximaciones?: (c: Omit<AproximacionesDelEjercicio, 'prescriptionId'>) => void;
@@ -370,6 +379,8 @@ export function EjercicioDelEditor({
   /** El ejercicio del catálogo, si ya se conoce (lo trae la versión guardada): con él, la fuerza estimada (§5.8). */
   exerciseId?: string | null;
 }) {
+  // DL-197 (F15): cada cambio deja las aproximaciones sin RIR, en la forma que acepta el contrato.
+  const onCambiar = (c: Partial<PrescripcionE>) => onCambiarTalCual(conLasAproximacionesSinRir(p, c));
   // PLT (DL-182): sin persona (una plantilla), el editor no pasa el ejercicio del catálogo y nada de esto se pide.
   const { token, asesoradoId, sesionPerdida } = useEditorDeEntrenamiento();
   // PG-16 (DL-173): «Anotar sobre este ejercicio», si el editor tiene las notas propias y se sabe qué ejercicio es.
@@ -388,6 +399,15 @@ export function EjercicioDelEditor({
   // fuerza estimada sigue solo en la lista de la v1 (GR-T70).
   const conLaVezPasada = !conFuerza && exerciseId !== null;
   const [vezPasada, setVezPasada] = useState(false);
+  // DL-197 (F16): uno de los tres cuadros del ejercicio abierto: las aproximaciones, todas las series o «Más opciones».
+  const [cuadro, setCuadro] = useState<'aproximaciones' | 'todas' | 'opciones' | null>(null);
+  // ET1-D05 (revisión adversaria): «Editar todas las series» con algo escrito sin aplicar pregunta antes de cerrarse.
+  const [todasConCambios, setTodasConCambios] = useState(false);
+  // DL-197 (ET1-D11): el criterio que rige: el propio o, sin él (y sin la excepción), el del plan.
+  const criterioEfectivo: Criterio | null = (p.intensity?.criterion as Criterio | undefined) ?? (sinIntensidad ? null : intensidadDelPlan);
+  // Revisión adversaria (DL-197): el que hereda la intensidad del plan sin objetivo todavía se guarda sin criterio (así lo
+  // lee la persona): plegado, se dice que falta el objetivo, como en uno con su criterio propio.
+  const avisosDelPlegado = !p.intensity && criterioEfectivo !== null ? [E9.faltaElObjetivoHeredado, ...plegado.avisos] : plegado.avisos;
   const Titulo = nivel;
   return (
     // DL-196 (EE-05): el panel de la derecha sigue al ejercicio que se toca (`data-foco`).
@@ -425,28 +445,17 @@ export function EjercicioDelEditor({
               ) : null}
               {/* RP-19 (DL-196): abierto, lo que no se entiende lo dicen la celda marcada y el renglón reservado debajo de la
                   tabla. Si además apareciera acá mientras se escribe, la cabecera pasaba a dos renglones y corría las series. */}
-              {!abierto && plegado.avisos.length > 0 ? (
+              {!abierto && avisosDelPlegado.length > 0 ? (
                 <span className="comida-del-editor__avisos" data-avisos>
                   <Icono nombre="aviso" tamano={18} />
-                  <EnPartes texto={plegado.avisos.join(' · ')} />
+                  <EnPartes texto={avisosDelPlegado.join(' · ')} />
                 </span>
               ) : null}
             </span>
-            <Icono nombre={abierto ? 'arriba' : 'abajo'} tamano={18} />
           </button>
         </Titulo>
         {abierto ? (
           <div className="comida-del-editor__acciones">
-            {/* Se apagan con `aria-disabled`: al llegar a la punta, el botón que se tocó conserva el foco. */}
-            <button type="button" className="boton boton--quieto boton--compacto" aria-disabled={esElPrimero || undefined} onClick={() => !esElPrimero && onSubir()}>
-              <Icono nombre="ordenar" tamano={18} />
-              {EDICION.subir}
-              <span className="visualmente-oculto"> {nombre}</span>
-            </button>
-            <button type="button" className="boton boton--quieto boton--compacto" aria-disabled={esElUltimo || undefined} onClick={() => !esElUltimo && onBajar()} data-bajar>
-              {EDICION.bajar}
-              <span className="visualmente-oculto"> {nombre}</span>
-            </button>
             {/* ENP-D16 (C4): «Copiar» a la vista, con un verbo para cada copia (ED-23, V3 E-02). */}
             {onCopiar ? (
               <MenuDeAcciones
@@ -468,6 +477,9 @@ export function EjercicioDelEditor({
                 ...(conFuerza ? [{ clave: 'detalle', texto: COPY_DETALLE_DEL_EJERCICIO.abrir, alElegir: () => setDetalle(true) }] : []),
                 ...(conLaVezPasada ? [{ clave: 'la-vez-pasada', texto: COPY_LA_VEZ_PASADA_EN_EL_EDITOR.abrir, alElegir: () => setVezPasada(true) }] : []),
                 ...(notasPropias && exerciseId !== null ? [{ clave: 'anotar', texto: COPY_NOTAS_PROPIAS.anotarSobreElEjercicio, alElegir: () => notasPropias.anotar({ tipo: 'EXERCISE', exerciseId, nombre }) }] : []),
+                // DL-197 (F9): subir y bajar, en «Más»: la cabecera queda con el nombre, «Copiar», «Más» y el chevrón.
+                { clave: 'subir', texto: EDICION.subir, alElegir: onSubir, noSePuede: esElPrimero ? E9.yaEsElPrimero : null },
+                { clave: 'bajar', texto: EDICION.bajar, alElegir: onBajar, noSePuede: esElUltimo ? E9.yaEsElUltimo : null },
                 { clave: 'duplicar', texto: EDICION.duplicarEjercicio, alElegir: onDuplicar },
                 ...accionesDelBloque,
                 { clave: 'quitar', texto: `Quitar ${nombre}`, alElegir: onQuitar },
@@ -475,57 +487,95 @@ export function EjercicioDelEditor({
             />
           </div>
         ) : null}
+        {/* DL-197 (F9): el chevrón, siempre en el extremo derecho; el que se toca es el nombre (el botón de arriba). */}
+        <span className="ejercicio-del-editor__chevron" aria-hidden="true" onClick={alAlternar}>
+          <Icono nombre={abierto ? 'arriba' : 'abajo'} tamano={18} />
+        </span>
       </div>
       {/* PG-16: las notas propias atadas a este ejercicio, a la vista aunque esté plegado. */}
       <NotasAlLado ejercicio={exerciseId} />
       <div id={`${propio}-cuerpo`} className="comida-del-plan__cuerpo ejercicio-del-editor__cuerpo" hidden={!abierto}>
         {abierto ? (
           <>
-            {conFuerza ? (
-              <p className="ejercicio-del-editor__fuerza">
-                <button type="button" className="boton boton--quieto boton--compacto" data-detalle-con-fuerza onClick={() => setDetalle(true)}>
-                  <Icono nombre="estimado" tamano={18} />
-                  {COPY_DETALLE_DEL_EJERCICIO.abrir}
-                  <span className="visualmente-oculto"> de {nombre}</span>
+            <SeriesDelEjercicio id={id} nombre={nombre} prescripcion={p} onCambiar={onCambiar} criterio={criterioEfectivo} intensidadDelPlan={intensidadDelPlan} />
+            <div className="ejercicio-del-editor__opciones" data-opciones-del-ejercicio>
+              {onAproximaciones ? (
+                <button type="button" className="boton boton--quieto boton--compacto" onClick={() => setCuadro('aproximaciones')} data-abrir-aproximaciones={cuantasAproximaciones(p)}>
+                  <Icono nombre="sube" tamano={18} />
+                  {E9.aproximaciones(cuantasAproximaciones(p))}
+                  {resumenDeLasAproximaciones(p) ? <span className="nota ejercicio-del-editor__resumen-de-aproximaciones"> · {resumenDeLasAproximaciones(p)}</span> : null}
                 </button>
-              </p>
-            ) : conLaVezPasada ? (
-              <p className="ejercicio-del-editor__fuerza">
-                <button type="button" className="boton boton--quieto boton--compacto" data-la-vez-pasada-del-ejercicio onClick={() => setVezPasada(true)}>
-                  <Icono nombre="linea-de-tiempo" tamano={18} />
-                  {COPY_LA_VEZ_PASADA_EN_EL_EDITOR.abrir}
-                  <span className="visualmente-oculto"> de {nombre}</span>
+              ) : null}
+              {p.sets.length > 1 ? (
+                <button type="button" className="boton boton--quieto boton--compacto" onClick={() => setCuadro('todas')} data-editar-todas-las-series>
+                  <Icono nombre="lista" tamano={18} />
+                  {E9.todas}
                 </button>
-              </p>
-            ) : null}
-            {/* ENP-D14 (C2): el criterio, la unidad y las bases de la carga y de las repeticiones, arriba de las series que
-                dependen de ellos; la tabla de series ocupa todo el ancho, sin desplazamiento propio. */}
-            <CriterioDelEjercicio id={id} prescripcion={p} onCambiar={onCambiar} />
-            {/* ED-22: la prescripción en una línea, arriba de las series que escribe. */}
-            <LineaDePrescripcion id={id} nombre={nombre} prescripcion={p} texto={onLineaSinAplicar ? lineaSinAplicar : undefined} onTexto={onLineaSinAplicar} onAplicar={(nueva, revisar) => onAplicarLinea(nueva, revisar)} />
-            {/* DL-196 (EE-07): las aproximaciones, antes de las efectivas. */}
-            {onAproximaciones ? <SeccionDeAproximaciones id={id} nombre={nombre} prescripcion={p} config={aproximaciones} onCambiar={onCambiar} onConfig={onAproximaciones} /> : null}
-            <SeriesDelEjercicio
-              id={id}
-              nombre={nombre}
-              prescripcion={p}
-              onCambiar={onCambiar}
-              onCalcularLaCarga={
-                conFuerza
-                  ? (elegidas) => {
-                      setSeriesDeLaCarga(elegidas);
-                      setDetalle(true);
-                    }
-                  : null
-              }
-            />
-            <div className="ejercicio-del-editor__general">
-              <p className="ejercicio-del-plan__subtitulo">
-                {COPY_CRITERIO_ARRIBA.notasYParametros} <span className="nota">Opcional</span>
-              </p>
-              {imagen ? <ImagenGuardadaDeEjercicio token={token} medioId={imagen.mediaId} nombre={nombre} textoAlternativo={imagen.altText} sesionPerdida={sesionPerdida} chica /> : null}
-              <LoGeneralDelEjercicio id={id} prescripcion={p} onCambiar={onCambiar} />
+              ) : null}
+              <button type="button" className="boton boton--quieto boton--compacto" onClick={() => setCuadro('opciones')} data-mas-opciones-del-ejercicio>
+                <Icono nombre="opciones" tamano={18} />
+                {E9.masOpciones}
+                {p.intensity && intensidadDelPlan !== null && (p.intensity.criterion as Criterio) !== intensidadDelPlan ? <span className="nota"> · {E9.otraIntensidad}</span> : null}
+              </button>
             </div>
+            {onAproximaciones ? (
+              <CuadroEnfocado
+                abierto={cuadro === 'aproximaciones'}
+                forma="dialogo"
+                ancho
+                titulo={E9.tituloAproximaciones}
+                sobretitulo={nombre}
+                ayuda={{ nombre: AYUDAS_DEL_EDITOR.aproximaciones.nombre, contenido: <ContenidoDeLaAyuda ayuda={AYUDAS_DEL_EDITOR.aproximaciones} /> }}
+                onCerrar={() => setCuadro(null)}
+              >
+                <SeccionDeAproximaciones id={id} nombre={nombre} prescripcion={p} config={aproximaciones} onCambiar={onCambiar} onConfig={onAproximaciones} />
+                <p className="nota" data-aproximaciones-en-la-tabla>
+                  {resumenDeLasAproximaciones(p) ? E9.enLaTabla(resumenDeLasAproximaciones(p)!) : E9.sinAproximaciones}
+                </p>
+              </CuadroEnfocado>
+            ) : null}
+            <CuadroEnfocado abierto={cuadro === 'todas'} forma="dialogo" ancho titulo={E9.todas} sobretitulo={nombre} conCambios={todasConCambios} onCerrar={() => setCuadro(null)}>
+              <EditarTodasLasSeries
+                id={id}
+                prescripcion={p}
+                criterio={criterioEfectivo}
+                onCambiar={onCambiar}
+                onCerrar={() => setCuadro(null)}
+                onConCambios={setTodasConCambios}
+                onCalcularLaCarga={
+                  conFuerza
+                    ? (elegidas) => {
+                        setCuadro(null);
+                        setSeriesDeLaCarga(elegidas);
+                        setDetalle(true);
+                      }
+                    : null
+                }
+              />
+            </CuadroEnfocado>
+            <CuadroEnfocado
+              abierto={cuadro === 'opciones'}
+              forma="dialogo"
+              ancho
+              titulo={E9.masOpciones}
+              sobretitulo={nombre}
+              ayuda={{ nombre: AYUDAS_DEL_EDITOR.intensidad.nombre, contenido: <ContenidoDeLaAyuda ayuda={AYUDAS_DEL_EDITOR.intensidad} /> }}
+              onCerrar={() => setCuadro(null)}
+            >
+              <div className="mas-opciones-del-ejercicio" data-mas-opciones>
+                {/* ENP-D14: el criterio (con su excepción al del plan), la referencia del % RM y las bases. */}
+                <CriterioDelEjercicio id={id} nombre={nombre} prescripcion={p} onCambiar={onCambiar} intensidadDelPlan={intensidadDelPlan} sinIntensidad={sinIntensidad} onSinIntensidad={onSinIntensidad} />
+                {/* ED-22: la escritura rápida. */}
+                <LineaDePrescripcion id={id} nombre={nombre} prescripcion={p} texto={onLineaSinAplicar ? lineaSinAplicar : undefined} onTexto={onLineaSinAplicar} onAplicar={(nueva, revisar) => onAplicarLinea(nueva, revisar)} />
+                <div className="ejercicio-del-editor__general">
+                  <p className="ejercicio-del-plan__subtitulo">
+                    {COPY_CRITERIO_ARRIBA.notasYParametros} <span className="nota">Opcional</span>
+                  </p>
+                  {imagen ? <ImagenGuardadaDeEjercicio token={token} medioId={imagen.mediaId} nombre={nombre} textoAlternativo={imagen.altText} sesionPerdida={sesionPerdida} chica /> : null}
+                  <LoGeneralDelEjercicio id={id} prescripcion={p} onCambiar={onCambiar} />
+                </div>
+              </div>
+            </CuadroEnfocado>
           </>
         ) : null}
       </div>
@@ -788,77 +838,57 @@ function SeriesDelEjercicio({
   nombre,
   prescripcion: p,
   onCambiar,
-  onCalcularLaCarga = null,
+  criterio,
+  intensidadDelPlan,
 }: {
   id: string;
   nombre: string;
   prescripcion: PrescripcionE;
   onCambiar: (c: Partial<PrescripcionE>) => void;
-  /** ED-76 (EDT-56): abre el cálculo de la carga para las series elegidas; `null` fuera de la lista de la v1. */
-  onCalcularLaCarga?: ((elegidas: readonly number[]) => void) | null;
+  /** DL-197 (ET1-D11): el criterio que rige el ejercicio: el suyo o, si no tiene, el del plan (heredado); `null`, ninguno. */
+  criterio: Criterio | null;
+  /** El criterio del plan, para saber si escribir el objetivo crea el criterio propio o lo hereda. */
+  intensidadDelPlan: Criterio | null;
 }) {
-  const conRir = (p.intensity?.criterion as Criterio | undefined) === 'RIR';
+  const conRir = criterio === 'RIR';
+  const conPorcentaje = criterio === 'PERCENT_RM';
   // DL-192: el RIR se escribe y se lee en la notación del plan; lo guardado sigue siendo el RIR.
   const notacion = useNotacionDelEsfuerzo();
   const esfuerzo = COPY_NOTACION_DEL_ESFUERZO.etiqueta[notacion];
   const unidad = unidadDe(p);
   const valido = (n: number | null | undefined): n is number => typeof n === 'number' && !Number.isNaN(n);
-  // Lo que toma de lo general una serie que no tiene el suyo. Si lo general está mal escrito, todavía no hay qué tomar.
   const cargaGeneral = p.suggestedLoad && valido(p.suggestedLoad.value) ? numeroEnCampo(p.suggestedLoad.value) : null;
   const rirGeneral = conRir && p.intensity && valido(p.intensity.target.value) ? rirEnCampo(notacion)(p.intensity.target.value) : null;
   const descansoGeneral = valido(p.restSeconds) ? textoDeSegundos(p.restSeconds) : null;
-  // DL-178: las efectivas se numeran 1, 2, 3 como siempre; las de calentamiento llevan «C» y van arriba.
   // DL-196 (EE-07): las aproximaciones se rotulan A1, A2…; las efectivas, 1, 2, 3 como siempre.
   const rotulos = rotulosConAproximaciones(p.sets);
   const cual = (n: number): string => (rotulos[n]?.numero == null ? `la ${rotulos[n]?.largo.toLowerCase() ?? 'aproximación'}` : `la serie ${rotulos[n]!.numero}`);
   const primeraEfectiva = p.sets.some(esDeCalentamiento) ? p.sets.findIndex((s) => !esDeCalentamiento(s)) : -1;
   const cambiarLaSerie = (n: number, f: (s: Serie) => Serie) => onCambiar({ sets: p.sets.map((x, m) => (m === n ? f(x) : x)) });
-  /** DL-178: marca o desmarca una serie como calentamiento; el calentamiento sube arriba, sin cambiar el orden de cada tipo. */
+  /**
+   * DL-178: marca o desmarca una serie como aproximación; las aproximaciones suben arriba. DL-197 (F15): marcada, no lleva
+   * RIR («—», no el común) y toma su descanso corto propio si no tenía uno.
+   */
   const marcarCalentamiento = (n: number) => {
-    setElegidas(new Set());
     const sets = p.sets.map((x, m): Serie => {
       if (m !== n) return x;
       const { setKind: _tipo, ...resto } = x;
-      return esDeCalentamiento(x) ? resto : { ...resto, setKind: 'WARM_UP' };
+      if (esDeCalentamiento(x)) {
+        const { rir, ...sinRir } = resto;
+        return (rir === null ? sinRir : resto) as Serie;
+      }
+      return { ...resto, setKind: 'WARM_UP', rir: null, restSeconds: resto.restSeconds ?? DESCANSO_DE_APROXIMACION };
     });
     onCambiar({ sets: conElCalentamientoArriba<Serie>(sets) });
   };
-  // ED-23: las series elegidas, para escribirles un valor o devolverlas a lo general; y la serie que se va a quitar.
-  const [elegidas, setElegidas] = useState<ReadonlySet<number>>(new Set());
-  // ENP-D16 (C4): «Seleccionar series» a la vista; las casillas y la barra aparecen al pedirlo.
-  const [seleccionando, setSeleccionando] = useState(false);
-  const [campo, setCampo] = useState<ObjetivoDeLaSerie | 'repetitions'>('repetitions');
-  const [valor, setValor] = useState('');
-  const [noSeEntiende, setNoSeEntiende] = useState(false);
   const [quitando, setQuitando] = useState<number | null>(null);
-  const elegir = (n: number) =>
-    setElegidas((e) => {
-      const x = new Set(e);
-      if (!x.delete(n)) x.add(n);
-      return x;
-    });
-  const escribirEnLasElegidas = () => {
-    // ENP-D16: las repeticiones (un número o un rango) también se escriben en todas las elegidas.
-    if (campo === 'repetitions') {
-      const r = leerReps(valor);
-      if (r === null || noSeEntiendenLasReps(r)) return setNoSeEntiende(true);
-      setNoSeEntiende(false);
-      return onCambiar({ sets: p.sets.map((x, m) => (elegidas.has(m) ? { ...x, repetitions: r } : x)) });
-    }
-    // RP-22: con los mismos límites que las celdas (la carga desde 0; el descanso, hasta 60:00). Antes, «Escribir en 3
-    // series» dejaba pasar una carga negativa o un descanso de más de una hora, que el contrato rechaza al guardar.
-    const leido = campo === 'restSeconds' ? leerDescansoDeLaSerie(valor) : campo === 'suggestedLoad' ? leerCargaDeLaSerie(valor) : campo === 'rir' ? leerElRir(notacion)(valor) : leerNumero(valor);
-    if (leido === null) return setNoSeEntiende(true);
-    setNoSeEntiende(false);
-    onCambiar({ sets: escribirEnLasSeries(p.sets, elegidas, campo, campo === 'suggestedLoad' ? { value: leido, unit: unidad } : leido) });
-  };
-  /** TEST-EDP-056: con valores propios, quitar los nombra antes y pide confirmar; sin ellos, quita. */
+  // F13: lo que no se entiende del objetivo común (un % RM de menos de 30), en el mismo renglón reservado.
+  const [avisoDeLaIntensidad, setAvisoDeLaIntensidad] = useState<string | null>(null);
   const pedirQuitar = (n: number) => {
     if (loQueSePierdeAlQuitarLaSerie(p.sets, n)) return setQuitando(n);
     quitar(n);
   };
   const quitar = (n: number) => {
-    setElegidas(new Set());
     setQuitando(null);
     onCambiar({ sets: sinLaSerie(p.sets, n) });
   };
@@ -870,223 +900,173 @@ function SeriesDelEjercicio({
     e.preventDefault();
     onCambiar({ sets: copiarHaciaAbajo(p.sets, celda.serie, celda.campo) });
   };
-  /** Cambia un objetivo de una serie con sus tres estados: `undefined` quita la clave (la serie toma de lo general). */
-  const cambiarElObjetivo = (n: number, campo: 'rir' | 'suggestedLoad' | 'restSeconds', valor: unknown) =>
+  const cambiarElObjetivo = (n: number, campo: 'rir' | 'suggestedLoad' | 'restSeconds', valor: unknown) => {
+    // DL-197: un RIR de una serie con el criterio heredado del plan crea el criterio propio (el objetivo común falta).
+    if (campo === 'rir' && valor !== undefined && !p.intensity) {
+      return onCambiar({ intensity: { criterion: 'RIR', target: { value: Number.NaN, reference: null } } as PrescripcionE['intensity'], sets: p.sets.map((x, m) => (m === n ? ({ ...x, rir: valor } as Serie) : x)) });
+    }
     cambiarLaSerie(n, (x) => {
       const copia: Record<string, unknown> = { ...x };
       if (valor === undefined) delete copia[campo];
       else copia[campo] = valor;
       return copia as Serie;
     });
-  const soltar = () => {
-    setElegidas(new Set());
-    setSeleccionando(false);
-    setNoSeEntiende(false);
   };
-  // RP-22 (RP-19): lo que no se entiende en las celdas se dice en un renglón reservado debajo de la tabla; cada celda se
-  // marca en su lugar. Antes, el aviso de la fila Común aparecía dentro de la celda y alargaba la fila mientras se escribía.
+  /** DL-197 (F10): la unidad, en un chip del encabezado de la carga: cambiarla no convierte los números. */
+  const otraUnidad = unidad === 'kg' ? 'lb' : 'kg';
+  const cambiarLaUnidad = () =>
+    onCambiar({
+      ...(p.suggestedLoad ? { suggestedLoad: { ...p.suggestedLoad, unit: otraUnidad } } : {}),
+      sets: p.sets.map((x) => (x.suggestedLoad ? { ...x, suggestedLoad: { ...x.suggestedLoad, unit: otraUnidad } } : x)),
+    });
+  /** El objetivo común de la intensidad: escribirlo crea el criterio (heredado del plan o el propio); vaciarlo lo hereda. */
+  const cambiarElObjetivoComun = (v: number | null) => {
+    if (!criterio) return;
+    const propio = (p.intensity?.criterion as Criterio | undefined) ?? null;
+    if (v === null) {
+      const vuelveAlPlan = propio === null || propio === intensidadDelPlan;
+      // Revisión adversaria (DL-197): sin criterio propio, ninguna serie puede llevar la clave `rir` (el contrato rechaza el
+      // guardado con SET_RIR_WITHOUT_RIR_CRITERION). Si alguna tiene un RIR escrito, el criterio queda sin objetivo («Falta
+      // el objetivo», como antes) y ese RIR no se pierde; si solo hay «sin objetivo en esta serie», la clave se va con él.
+      const conRirEscrito = p.sets.some((x) => typeof x.rir === 'number');
+      if (vuelveAlPlan && criterio === intensidadDelPlan && !conRirEscrito) return onCambiar({ intensity: null, sets: p.sets.map(({ rir: _sinRir, ...x }) => x as Serie) });
+      return onCambiar({ intensity: { criterion: criterio, target: { value: Number.NaN, reference: p.intensity?.target.reference ?? null } } as PrescripcionE['intensity'] });
+    }
+    onCambiar({ intensity: { criterion: criterio, target: { value: v, reference: p.intensity?.target.reference ?? null } } as PrescripcionE['intensity'] });
+  };
   const aviso = `${id}-no-se-entiende`;
   const queNoSeEntiende = loQueNoSeEntiendeEnLasSeries(id, p, p.sets.map((_, n) => cual(n)));
-  const textoDelAviso = textoDeLoQueNoSeEntiende(queNoSeEntiende);
+  const textoDelAviso = avisoDeLaIntensidad ?? textoDeLoQueNoSeEntiende(queNoSeEntiende);
+  // F14: el colSpan real (con `table-layout: fixed`, 99 desarmaba las columnas) y los anchos por clase, en el colgroup.
+  const columnas = 7 + (criterio ? 1 : 0);
+  const nombreDeLaIntensidad = conRir ? esfuerzo : conPorcentaje ? ETIQUETA_DE_CRITERIO.PERCENT_RM : '';
   return (
-    <div className="ejercicio-del-editor__series" data-seleccionando={seleccionando ? '' : undefined}>
+    <div className="ejercicio-del-editor__series">
       {p.sets.length === 0 ? <p className="nota">{C.sinSeries}</p> : null}
-      <>
-        {p.sets.length > 1 && !seleccionando ? (
-          <div className="series-del-editor__seleccionar">
-            <button type="button" className="boton boton--quieto boton--compacto" onClick={() => setSeleccionando(true)} data-seleccionar-series>
-              <Icono nombre="lista" tamano={18} />
-              {COPY_SELECCION.seleccionar}
-              <span className="visualmente-oculto"> de {nombre}</span>
-            </button>
-          </div>
-        ) : null}
-        {seleccionando ? (
-          // DL-196 (E10): la barra se lee como una frase: «En las 2 series elegidas, poner [campo] en [valor] → Aplicar».
-          <div className="series-del-editor__elegidas con-ayuda-en-la-esquina" role="group" aria-label={PL.elegidas(elegidas.size)} data-series-elegidas={elegidas.size}>
-            <span className="series-del-editor__frase" aria-live="polite">
-              {elegidas.size === 0 ? COPY_SELECCION.ninguna : COPY_SELECCION.enLasElegidas(elegidas.size)}
-            </span>
-            <span className="series-del-editor__frase" aria-hidden="true">
-              {COPY_SELECCION.poner}
-            </span>
-            <label>
-              <span className="visualmente-oculto">{PL.campo}</span>
-              <select value={campo} onChange={(e) => setCampo(e.target.value as ObjetivoDeLaSerie | 'repetitions')} data-campo-de-las-elegidas>
-                <option value="repetitions">{COPY_SELECCION.repeticiones}</option>
-                <option value="restSeconds">{COPY_ENTRENAMIENTO.descanso}</option>
-                <option value="suggestedLoad">{C.cargaSugerida}</option>
-                {conRir ? <option value="rir">{esfuerzo}</option> : null}
-              </select>
-            </label>
-            <span className="series-del-editor__frase" aria-hidden="true">
-              {COPY_SELECCION.en}
-            </span>
-            <label>
-              <span className="visualmente-oculto">{PL.valor}</span>
-              <input
-                className="celda-de-serie"
-                value={valor}
-                placeholder={campo === 'restSeconds' ? '02:00' : campo === 'repetitions' ? '8 u 8-12' : ''}
-                aria-describedby={noSeEntiende ? `${id}-elegidas-no-se-entiende` : undefined}
-                aria-invalid={noSeEntiende || undefined}
-                onChange={(e) => setValor(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault();
-                    escribirEnLasElegidas();
-                  }
-                }}
+      <table className="tabla series-del-editor" onKeyDown={alTeclear} data-columnas={columnas}>
+        <caption className="visualmente-oculto">Las series de {nombre}, con el objetivo que recibe la persona en cada una</caption>
+        <colgroup>
+          <col className="series-del-editor__col-serie" />
+          <col className="series-del-editor__col-aprox" />
+          <col className="series-del-editor__col-reps" />
+          <col className="series-del-editor__col-carga" />
+          {criterio ? <col className="series-del-editor__col-intensidad" /> : null}
+          <col className="series-del-editor__col-descanso" />
+          <col className="series-del-editor__col-nota" />
+          <col className="series-del-editor__col-quitar" />
+        </colgroup>
+        <thead>
+          <tr>
+            <th scope="col">{COPY_ENTRENAMIENTO_POR_SERIE.columnaSerie}</th>
+            <th scope="col" title={COPY_SELECCION.ayudaDeLaAproximacion}>
+              {COPY_SELECCION.aprox}
+            </th>
+            <th scope="col">{COPY_SELECCION.repeticiones}</th>
+            <th scope="col">
+              <span className="series-del-editor__con-chip">
+                {COPY_SERIES.carga}
+                <button type="button" className="chip-de-unidad" onClick={cambiarLaUnidad} aria-label={COPY_SERIES.unidad(unidad, otraUnidad)} title={COPY_SERIES.unidad(unidad, otraUnidad)} data-unidad-de-la-carga={unidad}>
+                  {unidad}
+                </button>
+              </span>
+            </th>
+            {criterio ? (
+              <th scope="col" data-columna-de-intensidad={criterio}>
+                {nombreDeLaIntensidad}
+              </th>
+            ) : null}
+            <th scope="col">{COPY_ENTRENAMIENTO.descanso}</th>
+            <th scope="col">{C.nota}</th>
+            <th scope="col">
+              <span className="visualmente-oculto">Quitar</span>
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {/* ED-23 y C8: la fila «Común». Lo que tiene es lo que toman las series sin valor propio. */}
+          <tr className="series-del-editor__general" data-fila-general>
+            <th scope="row" data-etiqueta={COPY_ENTRENAMIENTO_POR_SERIE.columnaSerie}>
+              {PL.general}
+              <span className="visualmente-oculto"> {PL.generalDetalle}</span>
+            </th>
+            <td />
+            <td data-etiqueta="Repeticiones">
+              <span className="nota" aria-hidden="true">
+                —
+              </span>
+              <span className="visualmente-oculto">{COPY_SERIES.repeticionesEnCadaSerie}</span>
+            </td>
+            <td data-etiqueta={`${COPY_SERIES.carga} (${unidad})`}>
+              <CeldaGeneral
+                id={`${id}-carga`}
+                rotulo={`${PL.general}: ${C.cargaSugerida.toLowerCase()} (${unidad})`}
+                valor={p.suggestedLoad ? p.suggestedLoad.value : null}
+                formatear={escribirNumero}
+                interpretar={leerLaCarga}
+                onCambiar={(v) => onCambiar({ suggestedLoad: v === null ? null : { value: v, unit: unidad } })}
+                paso={{ campo: 'suggestedLoad', unidad }}
+                aviso={aviso}
               />
-            </label>
-            <button type="button" className="boton boton--secundario boton--compacto" aria-disabled={elegidas.size === 0 || undefined} onClick={() => elegidas.size > 0 && escribirEnLasElegidas()} data-escribir-en-las-elegidas>
-              <Icono nombre="derecha" tamano={15} />
-              {COPY_SELECCION.aplicar}
-              <span className="visualmente-oculto"> {elegidas.size > 0 ? COPY_SELECCION.escribirEn(elegidas.size) : ''}</span>
-            </button>
-            <button type="button" className="boton boton--quieto boton--compacto" onClick={() => setElegidas(elegidas.size === p.sets.length ? new Set() : new Set(p.sets.map((_, n) => n)))} data-elegir-todas>
-              {elegidas.size === p.sets.length ? COPY_SELECCION.ningunaDeNuevo : COPY_SELECCION.todas}
-            </button>
-            {campo !== 'repetitions' ? (
-              <button type="button" className="boton boton--quieto boton--compacto" aria-disabled={elegidas.size === 0 || undefined} onClick={() => elegidas.size > 0 && onCambiar({ sets: volverALoGeneral(p.sets, elegidas) })} data-volver-a-lo-general>
-                {PL.volverALoGeneral}
-              </button>
-            ) : null}
-            {onCalcularLaCarga ? (
-              <button type="button" className="boton boton--quieto boton--compacto" data-calcular-la-carga-de-las-elegidas onClick={() => onCalcularLaCarga([...elegidas].sort((a, b) => a - b))}>
-                <Icono nombre="calculado" tamano={18} />
-                {COPY_CARGA_DESDE_LA_ESTIMACION.abrirEnLasElegidas}
-              </button>
-            ) : null}
-            <button type="button" className="boton boton--quieto boton--compacto" onClick={soltar} data-terminar-la-seleccion>
-              {COPY_SELECCION.listo}
-            </button>
-            <ExplicacionAPedido nombre="Cómo se cambian varias series a la vez" como="div" lugar="esquina">
-              <p>{COPY_SELECCION.ayuda}</p>
-              <p>{COPY_SELECCION.ayudaComun}</p>
-            </ExplicacionAPedido>
-            {/* RP-22: el aviso tiene su renglón en la barra: al tocar «Escribir» con algo que no se entiende, la tabla no baja. */}
-            <RenglonDelAviso id={`${id}-elegidas-no-se-entiende`} tipo={noSeEntiende ? 'error' : 'nota'} className="aviso-de-las-elegidas" role="alert">
-              {noSeEntiende ? (campo === 'repetitions' ? COPY_SELECCION.repeticionesNoSeEntienden : campo === 'suggestedLoad' ? COPY_SELECCION.cargaNoSeEntiende : campo === 'restSeconds' ? COPY_SELECCION.descansoNoSeEntiende : PL.noSeEntiende) : null}
-            </RenglonDelAviso>
-          </div>
-        ) : null}
-        <table className="tabla series-del-editor" onKeyDown={alTeclear}>
-          <caption className="visualmente-oculto">Las series de {nombre}, con el objetivo que recibe la persona en cada una</caption>
-          <thead>
-            <tr>
-              {seleccionando ? (
-                <th scope="col" className="series-del-editor__columna-elegir">
-                  <span className="visualmente-oculto">Elegir</span>
-                </th>
-              ) : null}
-              {/* Revisión del tramo 2: la columna lleva el rótulo «Común» de su fila: con 3 rem, «Común» se pisaba con «en
-                  cada serie» de la columna de al lado. */}
-              <th scope="col" className="series-del-editor__columna-serie">
-                {COPY_ENTRENAMIENTO_POR_SERIE.columnaSerie}
-              </th>
-              <th scope="col">
-                Repeticiones <span className="nota">8 u 8-12</span>
-              </th>
-              <th scope="col">
-                {C.cargaSugerida} <span className="nota">{unidad}</span>
-              </th>
-              {conRir ? (
-                <th scope="col">
-                  {esfuerzo} <span className="nota">{RANGO_DEL_ESFUERZO[notacion]}</span>
-                </th>
-              ) : null}
-              <th scope="col">
-                {COPY_ENTRENAMIENTO.descanso} <span className="nota">mm:ss</span>
-              </th>
-              <th scope="col" className="series-del-editor__columna-nota">
-                {C.nota}
-              </th>
-              <th scope="col" className="series-del-editor__columna-quitar">
-                <span className="visualmente-oculto">Quitar</span>
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {/* ED-23 y C8: la fila «Común», dentro de la tabla. Lo que tiene es lo que toman las series sin valor propio. */}
-            <tr className="series-del-editor__general" data-fila-general>
-              {seleccionando ? <td className="series-del-editor__elegir" /> : null}
-              <th scope="row" data-etiqueta={COPY_ENTRENAMIENTO_POR_SERIE.columnaSerie}>
-                {PL.general}
-                <span className="visualmente-oculto"> {PL.generalDetalle}</span>
-              </th>
-              <td data-etiqueta="Repeticiones">
-                <span className="nota">{PL.repeticionesPorSerie}</span>
-              </td>
-              <td data-etiqueta={`${C.cargaSugerida} (${unidad})`}>
-                <CeldaGeneral
-                  id={`${id}-carga`}
-                  rotulo={`${PL.general}: ${C.cargaSugerida.toLowerCase()} (${unidad})`}
-                  valor={p.suggestedLoad ? p.suggestedLoad.value : null}
-                  formatear={escribirNumero}
-                  interpretar={leerLaCarga}
-                  onCambiar={(v) => onCambiar({ suggestedLoad: v === null ? null : { value: v, unit: unidad } })}
-                  paso={{ campo: 'suggestedLoad', unidad }}
+            </td>
+            {criterio ? (
+              <td data-etiqueta={nombreDeLaIntensidad}>
+                <CeldaDeIntensidad
+                  id={`${id}-objetivo-comun`}
+                  rotulo={`${PL.general}: ${nombreDeLaIntensidad} objetivo`}
+                  criterio={criterio}
+                  notacion={notacion}
+                  valor={p.intensity && (p.intensity.criterion as Criterio) === criterio ? p.intensity.target.value : null}
+                  onCambiar={cambiarElObjetivoComun}
+                  onAviso={setAvisoDeLaIntensidad}
                   aviso={aviso}
                 />
               </td>
-              {conRir ? (
-                <td data-etiqueta={esfuerzo}>
-                  {/* El RIR común es el objetivo del criterio, que se escribe arriba de la tabla (ENP-D14). */}
-                  <span data-rir-general>{rirGeneral ?? '—'}</span> <span className="nota">{PL.rirDeLaIntensidad}</span>
-                </td>
-              ) : null}
-              <td data-etiqueta={COPY_ENTRENAMIENTO.descanso}>
-                <CeldaGeneral
-                  id={`${id}-descanso`}
-                  rotulo={`${PL.general}: ${COPY_ENTRENAMIENTO.descanso.toLowerCase()} (como 02:30, o en segundos)`}
-                  valor={p.restSeconds ?? null}
-                  formatear={escribirElDescanso}
-                  interpretar={leerElDescanso}
-                  onCambiar={(v) => onCambiar({ restSeconds: v })}
-                  paso={{ campo: 'restSeconds' }}
-                  aviso={aviso}
-                />
-              </td>
-              <td className="series-del-editor__nota">
-                <span className="nota">{PL.notaDeLoGeneral}</span>
-              </td>
-              <td />
-            </tr>
-            {p.sets.map((s, n) => (
-              <Fragment key={n}>
-              {/* DL-196 (EE-07): las aproximaciones van agrupadas arriba; un renglón fino separa las efectivas. */}
+            ) : null}
+            <td data-etiqueta={COPY_ENTRENAMIENTO.descanso}>
+              <CeldaGeneral
+                id={`${id}-descanso`}
+                rotulo={`${PL.general}: ${COPY_ENTRENAMIENTO.descanso.toLowerCase()} (como 02:30, o en segundos)`}
+                valor={p.restSeconds ?? null}
+                formatear={escribirElDescanso}
+                interpretar={leerElDescanso}
+                onCambiar={(v) => onCambiar({ restSeconds: v })}
+                paso={{ campo: 'restSeconds' }}
+                aviso={aviso}
+              />
+            </td>
+            <td className="series-del-editor__nota">
+              <span className="nota" aria-hidden="true">
+                —
+              </span>
+            </td>
+            <td />
+          </tr>
+          {p.sets.map((s, n) => (
+            <Fragment key={n}>
               {n === 0 && primeraEfectiva > 0 ? (
                 <tr className="series-del-editor__grupo" aria-hidden="true">
-                  <td colSpan={99}>{COPY_SELECCION.grupoAproximaciones}</td>
+                  <td colSpan={columnas}>{COPY_SELECCION.grupoAproximaciones}</td>
                 </tr>
               ) : null}
               {n === primeraEfectiva && n > 0 ? (
                 <tr className="series-del-editor__grupo" aria-hidden="true">
-                  <td colSpan={99}>{COPY_SELECCION.grupoEfectivas}</td>
+                  <td colSpan={columnas}>{COPY_SELECCION.grupoEfectivas}</td>
                 </tr>
               ) : null}
-              <tr data-serie={n + 1} data-elegida={elegidas.has(n) ? '' : undefined} data-calentamiento={esDeCalentamiento(s) ? '' : undefined}>
-                {seleccionando ? (
-                  <td className="series-del-editor__elegir">
-                    <input type="checkbox" checked={elegidas.has(n)} onChange={() => elegir(n)} aria-label={PL.elegir(n + 1)} />
-                  </td>
-                ) : null}
+              <tr data-serie={n + 1} data-calentamiento={esDeCalentamiento(s) ? '' : undefined}>
                 <th scope="row" data-etiqueta={COPY_ENTRENAMIENTO_POR_SERIE.columnaSerie}>
                   <span className="series-del-editor__numero" title={rotulos[n]!.largo}>
                     {rotulos[n]!.corto}
                   </span>
-                  {/* DL-178 y DL-196 (E9): la casilla marca la serie como aproximación: se registra y no entra en los cálculos. */}
-                  <label className="series-del-editor__calentamiento" title={COPY_SELECCION.ayudaDeLaAproximacion}>
-                    <input type="checkbox" id={`${id}-serie-${n}-calentamiento`} checked={esDeCalentamiento(s)} onChange={() => marcarCalentamiento(n)} data-marcar-calentamiento={n + 1} />
-                    <span aria-hidden="true">{COPY_SELECCION.aprox}</span>
-                    <span className="visualmente-oculto">{`${COPY_SELECCION.aproximacion} (${rotulos[n]!.largo})`}</span>
-                  </label>
                 </th>
+                {/* F14: la casilla «Aproximación», en su propia columna. */}
+                <td className="series-del-editor__aprox" data-etiqueta={COPY_SELECCION.aproximacion}>
+                  <input type="checkbox" id={`${id}-serie-${n}-calentamiento`} checked={esDeCalentamiento(s)} onChange={() => marcarCalentamiento(n)} aria-label={`${COPY_SELECCION.aproximacion} (${rotulos[n]!.largo})`} data-marcar-calentamiento={n + 1} />
+                </td>
                 <td data-etiqueta="Repeticiones">
                   <CeldaDeRepeticiones id={`${id}-serie-${n}`} rotulo={`${rotulos[n]!.largo}: repeticiones (un número o un rango, 8-12)`} valor={s.repetitions} onCambiar={(r) => cambiarLaSerie(n, (x) => ({ ...x, repetitions: r }))} aviso={aviso} />
                 </td>
-                <td data-etiqueta={`${C.cargaSugerida} (${unidad})`}>
+                <td data-etiqueta={`${COPY_SERIES.carga} (${unidad})`}>
                   <CeldaDeObjetivo
                     id={`${id}-serie-${n}-carga`}
                     rotulo={`${rotulos[n]!.largo}: carga sugerida (${unidad})`}
@@ -1100,19 +1080,27 @@ function SeriesDelEjercicio({
                     aviso={aviso}
                   />
                 </td>
-                {conRir ? (
-                  <td data-etiqueta={esfuerzo}>
-                    <CeldaDeObjetivo
-                      id={`${id}-serie-${n}-rir`}
-                      rotulo={`${rotulos[n]!.largo}: ${esfuerzo} objetivo (${RANGO_DEL_ESFUERZO[notacion]})`}
-                      queEs={`el ${esfuerzo} de ${cual(n)}`}
-                      valor={s.rir}
-                      deLoGeneral={rirGeneral}
-                      escribir={rirEnCampo(notacion)}
-                      leer={leerElRir(notacion)}
-                      onCambiar={(v) => cambiarElObjetivo(n, 'rir', v)}
-                      aviso={aviso}
-                    />
+                {criterio ? (
+                  <td data-etiqueta={nombreDeLaIntensidad}>
+                    {/* F15: una aproximación no lleva RIR («—»), salvo que se le haya escrito uno; el % RM es el común. */}
+                    {conRir && !(esDeCalentamiento(s) && (s.rir === null || s.rir === undefined)) ? (
+                      <CeldaDeObjetivo
+                        id={`${id}-serie-${n}-rir`}
+                        rotulo={`${rotulos[n]!.largo}: ${esfuerzo} objetivo (${RANGO_DEL_ESFUERZO[notacion]})`}
+                        queEs={`el ${esfuerzo} de ${cual(n)}`}
+                        valor={s.rir}
+                        deLoGeneral={rirGeneral}
+                        escribir={rirEnCampo(notacion)}
+                        leer={leerElRir(notacion)}
+                        onCambiar={(v) => cambiarElObjetivo(n, 'rir', v)}
+                        aviso={aviso}
+                      />
+                    ) : (
+                      <span className="nota series-del-editor__sin-intensidad" data-sin-intensidad-en-la-serie>
+                        <span aria-hidden="true">—</span>
+                        <span className="visualmente-oculto">{esDeCalentamiento(s) ? COPY_SERIES.aproximacionSinRir : COPY_SERIES.porcentajeComun}</span>
+                      </span>
+                    )}
                   </td>
                 ) : null}
                 <td data-etiqueta={COPY_ENTRENAMIENTO.descanso}>
@@ -1131,7 +1119,6 @@ function SeriesDelEjercicio({
                   />
                 </td>
                 <td data-etiqueta={C.nota} className="series-del-editor__nota">
-                  {/* La nota por serie ya viajaba en el contrato y se conservaba al guardar, pero no se podía escribir (DL-105). */}
                   <input
                     id={`${id}-serie-${n}-nota`}
                     className="celda-de-serie"
@@ -1141,7 +1128,6 @@ function SeriesDelEjercicio({
                     onChange={(e) => cambiarLaSerie(n, (x) => ({ ...x, note: e.target.value || null }))}
                   />
                 </td>
-                {/* TB-48: cada serie se quita en su fila, también una del medio; las de abajo pasan a numerarse una menos. */}
                 <td className="series-del-editor__quitar">
                   <button
                     type="button"
@@ -1155,19 +1141,16 @@ function SeriesDelEjercicio({
                   </button>
                 </td>
               </tr>
-              </Fragment>
-            ))}
-          </tbody>
-        </table>
-        {/* RP-22: siempre en la página; vacío, ocupa lo mismo. Lo que se marca en una celda no corre las filas ni el pie. */}
-        {p.sets.length > 0 || queNoSeEntiende.length > 0 ? (
-          // Un solo renglón, de alto fijo: si en un ancho muy justo no entra, se corta con «…» y el texto entero queda en el
-          // título (y el lector lo lee entero, también desde la celda, por `aria-describedby`).
-          <RenglonDelAviso id={aviso} tipo={queNoSeEntiende.length > 0 ? 'error' : 'nota'} anunciar title={textoDelAviso ?? undefined} data-lo-que-no-se-entiende={queNoSeEntiende.length}>
-            {textoDelAviso}
-          </RenglonDelAviso>
-        ) : null}
-      </>
+            </Fragment>
+          ))}
+        </tbody>
+      </table>
+      {/* RP-22: siempre en la página; vacío, ocupa lo mismo. Lo que se marca en una celda no corre las filas ni el pie. */}
+      {p.sets.length > 0 || queNoSeEntiende.length > 0 || avisoDeLaIntensidad ? (
+        <RenglonDelAviso id={aviso} tipo={queNoSeEntiende.length > 0 || avisoDeLaIntensidad ? 'error' : 'nota'} anunciar title={textoDelAviso ?? undefined} data-lo-que-no-se-entiende={queNoSeEntiende.length + (avisoDeLaIntensidad ? 1 : 0)}>
+          {textoDelAviso}
+        </RenglonDelAviso>
+      ) : null}
       {/* TEST-EDP-056: lo que se pierde se dice antes, con «Cancelar» enfocado; cancelar no toca nada. */}
       <CuadroEnfocado
         abierto={quitando !== null}
@@ -1181,17 +1164,15 @@ function SeriesDelEjercicio({
         <p data-lo-que-se-pierde>{quitando !== null ? loQueSePierdeAlQuitarLaSerie(p.sets, quitando) : null}</p>
       </CuadroEnfocado>
       <div className="ejercicio-del-editor__pie-de-series">
-        {/* Una serie nueva copia las repeticiones de la anterior; sus objetivos propios no se copian: toma de lo general. */}
-        <button type="button" id={`${id}-agregar-serie`} className="boton boton--secundario" data-agregar-serie onClick={() => onCambiar({ sets: [...p.sets, { repetitions: p.sets[p.sets.length - 1]?.repetitions ?? null }] })}>
+        <button type="button" id={`${id}-agregar-serie`} className="boton boton--secundario boton--compacto" data-agregar-serie onClick={() => onCambiar({ sets: [...p.sets, { repetitions: p.sets[p.sets.length - 1]?.repetitions ?? null }] })}>
           <Icono nombre="mas" tamano={18} />
           Agregar serie
         </button>
-        {/* RP-22: cómo se lee cada valor (C8), el calentamiento (DL-178) y los atajos, detrás de un «?»: Dirección no quiere
-            párrafos a la vista. La celda ya dice sola «común», «propio» o «Sin indicar». */}
         {p.sets.length > 0 ? (
           <ExplicacionAPedido nombre={COPY_DE_LOS_NUMEROS.comoSeLeeLaTabla} como="div" lugar="esquina">
             <p className="nota" data-como-se-lee-cada-valor>{PL.comoSeLee}</p>
             <p className="nota" data-ayuda-del-calentamiento>{COPY_SELECCION.ayudaDeLaAproximacion}</p>
+            <p className="nota">{COPY_SERIES.comoSeEscribe}</p>
             <p className="nota">{PL.atajo}</p>
             <p className="nota">{COPY_DE_LOS_NUMEROS.flechasEnLaTabla}</p>
           </ExplicacionAPedido>
@@ -1200,6 +1181,210 @@ function SeriesDelEjercicio({
     </div>
   );
 }
+
+/** DL-197 (F10, F13, F14, F15): los textos nuevos de la planilla. */
+const COPY_SERIES = {
+  carga: 'Carga',
+  unidad: (de: string, a: string) => `Unidad de la carga: ${de}. Tocá para pasar a ${a} (no convierte los números).`,
+  repeticionesEnCadaSerie: 'Las repeticiones van en cada serie.',
+  aproximacionSinRir: 'Sin RIR: es una aproximación.',
+  porcentajeComun: 'El % RM es el común de la fila de arriba.',
+  comoSeEscribe: 'Las repeticiones, como 8 o 8-12; el descanso, mm:ss («3» es 03:00; «130», 01:30).',
+  porcentajeBajo: '¿Quisiste escribir un RIR? El % RM va de 30 a 100: para el RIR, elegilo como intensidad en «Más opciones».',
+  porcentajeNoSeEntiende: 'No se entiende el % RM: va un número de 30 a 100.',
+} as const;
+
+/** F13: el % RM más bajo que se acepta. Debajo, lo más probable es un RIR escrito en el lugar equivocado. */
+export const PORCENTAJE_RM_MINIMO = 30;
+
+/**
+ * DL-197 (F16): el objetivo común de la intensidad, en la fila «Común» de la planilla: el RIR (o el RPE, en la notación del
+ * plan) o el % RM. Vacío no es cero: el ejercicio hereda el criterio del plan sin objetivo todavía.
+ */
+function CeldaDeIntensidad({
+  id,
+  rotulo,
+  criterio,
+  notacion,
+  valor,
+  onCambiar,
+  onAviso,
+  aviso,
+}: {
+  id: string;
+  rotulo: string;
+  criterio: Criterio;
+  notacion: NotacionDelEsfuerzo;
+  valor: number | null;
+  onCambiar: (v: number | null) => void;
+  onAviso: (texto: string | null) => void;
+  aviso: string;
+}) {
+  const formatear = (v: number | null) => (v === null || Number.isNaN(v) ? '' : criterio === 'RIR' ? rirEnCampo(notacion)(v) : numeroEnCampo(v));
+  const interpretar = (t: string): number | null => {
+    if (t.trim() === '') return null;
+    if (criterio === 'RIR') return leerElRir(notacion)(t) ?? Number.NaN;
+    const n = leerNumero(t);
+    return n === null || n < PORCENTAJE_RM_MINIMO || n > 100 ? Number.NaN : n;
+  };
+  const { texto, alEscribir, alSalir } = useTextoInterpretado(valor, { clave: `${criterio}:${valor}`, formatear, interpretar, mismo: mismoNumero, alCambiar: onCambiar, normalizarAlSalir: true });
+  const mal = texto.trim() !== '' && Number.isNaN(interpretar(texto));
+  useEffect(() => {
+    if (!mal) return onAviso(null);
+    const n = leerNumero(texto);
+    onAviso(criterio === 'PERCENT_RM' ? (n !== null && n >= 0 && n < PORCENTAJE_RM_MINIMO ? COPY_SERIES.porcentajeBajo : COPY_SERIES.porcentajeNoSeEntiende) : `No se entiende el ${COPY_NOTACION_DEL_ESFUERZO.etiqueta[notacion]}: va de ${RANGO_DEL_ESFUERZO[notacion]}.`);
+    // El aviso depende solo de lo escrito.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [mal, texto]);
+  useEffect(() => () => onAviso(null), [onAviso]);
+  return (
+    <input
+      id={id}
+      className="celda-de-serie"
+      aria-label={rotulo}
+      aria-invalid={mal || undefined}
+      aria-describedby={mal ? aviso : undefined}
+      inputMode="decimal"
+      autoComplete="off"
+      value={texto}
+      placeholder={criterio === 'PERCENT_RM' ? '75' : notacion === 'RPE' ? '8' : '2'}
+      data-objetivo-comun={criterio}
+      data-celda-general-no-se-entiende={mal ? '' : undefined}
+      onChange={(e) => alEscribir(e.target.value)}
+      onBlur={alSalir}
+    />
+  );
+}
+
+/**
+ * DL-197 (F16): «Editar todas las series», en un cuadro. Se eligen las series (las efectivas, por omisión) y se escribe lo
+ * que se quiere cambiar: **lo que queda vacío conserva su valor**. «Aplicar» lo escribe en todas las elegidas de una vez.
+ */
+function EditarTodasLasSeries({
+  id,
+  prescripcion: p,
+  criterio,
+  onCambiar,
+  onCerrar,
+  onCalcularLaCarga = null,
+  onConCambios,
+}: {
+  id: string;
+  prescripcion: PrescripcionE;
+  criterio: Criterio | null;
+  onCambiar: (c: Partial<PrescripcionE>) => void;
+  onCerrar: () => void;
+  /** ED-76 (EDT-56): la carga de las elegidas desde la fuerza estimada; `null` fuera de la lista de la v1. */
+  onCalcularLaCarga?: ((elegidas: readonly number[]) => void) | null;
+  /** Si hay algo escrito sin aplicar: el cuadro pregunta antes de cerrarse (ET1-D05). Al cerrarse, vuelve a `false`. */
+  onConCambios?: (conCambios: boolean) => void;
+}) {
+  const notacion = useNotacionDelEsfuerzo();
+  const esfuerzo = COPY_NOTACION_DEL_ESFUERZO.etiqueta[notacion];
+  const unidad = unidadDe(p);
+  const rotulos = rotulosConAproximaciones(p.sets);
+  const [elegidas, setElegidas] = useState<ReadonlySet<number>>(() => new Set(p.sets.flatMap((s, n) => (esDeCalentamiento(s) ? [] : [n]))));
+  const [valores, setValores] = useState({ reps: '', carga: '', rir: '', descanso: '', nota: '' });
+  const [mal, setMal] = useState<string | null>(null);
+  const escrito = Object.values(valores).some((v) => v.trim() !== '');
+  useEffect(() => {
+    onConCambios?.(escrito);
+  }, [escrito, onConCambios]);
+  useEffect(() => () => onConCambios?.(false), [onConCambios]);
+  const campo = (clave: keyof typeof valores, rotulo: string, ejemplo: string) => (
+    <div className="campo editar-todas__campo">
+      <label htmlFor={`${id}-todas-${clave}`}>{rotulo}</label>
+      <input id={`${id}-todas-${clave}`} value={valores[clave]} placeholder={ejemplo} autoComplete="off" onChange={(e) => setValores((v) => ({ ...v, [clave]: e.target.value }))} data-todas={clave} />
+    </div>
+  );
+  const aplicar = () => {
+    if (elegidas.size === 0) return setMal(COPY_TODAS.ninguna);
+    let sets = p.sets;
+    if (valores.reps.trim()) {
+      const r = leerReps(valores.reps);
+      if (r === null || noSeEntiendenLasReps(r)) return setMal(COPY_SELECCION.repeticionesNoSeEntienden);
+      sets = sets.map((x, m) => (elegidas.has(m) ? { ...x, repetitions: r } : x));
+    }
+    if (valores.carga.trim()) {
+      const c = leerCargaDeLaSerie(valores.carga);
+      if (c === null) return setMal(COPY_SELECCION.cargaNoSeEntiende);
+      sets = escribirEnLasSeries(sets, elegidas, 'suggestedLoad', { value: c, unit: unidad });
+    }
+    if (valores.rir.trim() && criterio === 'RIR') {
+      const r = leerElRir(notacion)(valores.rir);
+      if (r === null) return setMal(`No se entiende el ${esfuerzo}: va de ${RANGO_DEL_ESFUERZO[notacion]}.`);
+      sets = escribirEnLasSeries(sets, elegidas, 'rir', r);
+    }
+    if (valores.descanso.trim()) {
+      const d = leerDescansoDeLaSerie(valores.descanso);
+      if (d === null) return setMal(COPY_SELECCION.descansoNoSeEntiende);
+      sets = escribirEnLasSeries(sets, elegidas, 'restSeconds', d);
+    }
+    if (valores.nota.trim()) sets = sets.map((x, m) => (elegidas.has(m) ? { ...x, note: valores.nota.trim() } : x));
+    onCambiar({ sets, ...(valores.rir.trim() && criterio === 'RIR' && !p.intensity ? { intensity: { criterion: 'RIR', target: { value: Number.NaN, reference: null } } as PrescripcionE['intensity'] } : {}) });
+    onCerrar();
+  };
+  return (
+    <div className="editar-todas" data-editar-todas-las-series>
+      <fieldset className="editar-todas__series">
+        <legend>{COPY_TODAS.cuales}</legend>
+        <div className="editar-todas__casillas">
+          {p.sets.map((s, n) => (
+            <label key={n} className="editar-todas__casilla" data-calentamiento={esDeCalentamiento(s) ? '' : undefined}>
+              <input
+                type="checkbox"
+                checked={elegidas.has(n)}
+                onChange={() =>
+                  setElegidas((e) => {
+                    const x = new Set(e);
+                    if (!x.delete(n)) x.add(n);
+                    return x;
+                  })
+                }
+                data-elegir-serie={n + 1}
+              />
+              {rotulos[n]!.corto}
+              <span className="visualmente-oculto"> ({rotulos[n]!.largo})</span>
+            </label>
+          ))}
+        </div>
+      </fieldset>
+      <div className="editar-todas__campos">
+        {campo('reps', COPY_SELECCION.repeticiones, '8 u 8-12')}
+        {campo('carga', `${COPY_SERIES.carga} (${unidad})`, '60')}
+        {criterio === 'RIR' ? campo('rir', esfuerzo, notacion === 'RPE' ? '8' : '2') : null}
+        {campo('descanso', COPY_ENTRENAMIENTO.descanso, '02:00')}
+        {campo('nota', C.nota, '')}
+      </div>
+      {/* RP-19: el renglón del aviso, siempre. */}
+      <p className={mal ? 'campo__error editar-todas__aviso' : 'nota editar-todas__aviso'} role={mal ? 'alert' : undefined}>
+        {mal ?? COPY_TODAS.loVacio}
+      </p>
+      <div className="acciones">
+        {onCalcularLaCarga ? (
+          <button type="button" className="boton boton--quieto boton--compacto" data-calcular-la-carga-de-las-elegidas onClick={() => onCalcularLaCarga([...elegidas].sort((a, b) => a - b))}>
+            <Icono nombre="calculado" tamano={18} />
+            {COPY_CARGA_DESDE_LA_ESTIMACION.abrirEnLasElegidas}
+          </button>
+        ) : null}
+        <button type="button" className="boton boton--discreto" onClick={onCerrar}>
+          Cancelar
+        </button>
+        <button type="button" className="boton boton--primario" onClick={aplicar} data-aplicar-a-todas>
+          {COPY_TODAS.aplicar(elegidas.size)}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+const COPY_TODAS = {
+  titulo: 'Editar todas las series',
+  cuales: 'En qué series',
+  loVacio: 'Lo que dejes vacío conserva su valor en cada serie.',
+  ninguna: 'Elegí por lo menos una serie.',
+  aplicar: (n: number) => (n === 1 ? 'Aplicar a 1 serie' : `Aplicar a ${n} series`),
+} as const;
 
 /** ENP-D16 (C4): la edición conjunta de series. */
 const COPY_SELECCION = {
@@ -1228,9 +1413,24 @@ const COPY_SELECCION = {
   descansoNoSeEntiende: 'No se entiende: va como 02:30, o en segundos, hasta 60:00.',
 } as const;
 
+/** DL-197 (F9, F16): los textos de la tarjeta del ejercicio. */
+const E9 = {
+  yaEsElPrimero: 'Ya es el primero.',
+  yaEsElUltimo: 'Ya es el último.',
+  aproximaciones: (n: number) => `Aproximaciones · ${n}`,
+  tituloAproximaciones: 'Aproximaciones',
+  todas: 'Editar todas las series',
+  masOpciones: 'Más opciones',
+  otraIntensidad: 'otra intensidad',
+  enLaTabla: (r: string) => `En la tabla: ${r}.`,
+  sinAproximaciones: 'Todavía no tiene aproximaciones.',
+  /** Hereda la intensidad del plan y todavía no tiene objetivo: la persona lo lee sin criterio hasta que se escriba. */
+  faltaElObjetivoHeredado: 'Falta el objetivo de intensidad del plan',
+} as const;
+
 /** ENP-D14: los textos del criterio arriba de las series. */
 const COPY_CRITERIO_ARRIBA = {
-  titulo: 'Criterio, unidad y bases de las series',
+  titulo: 'Intensidad y bases de las series',
   notasYParametros: 'Notas y parámetros',
   // DL-196 (E8 y E16): todas las explicaciones del renglón, en el «?» de la esquina, con un ejemplo de cada dato.
   queEsCadaDato: 'Qué es cada dato del criterio',
@@ -1244,85 +1444,113 @@ const COPY_CRITERIO_ARRIBA = {
   objetivo: (rango: string) => `Objetivo: con un criterio elegido, es necesario. En esta escala va de ${rango}; en % RM, hasta 100.`,
   unidad: 'Unidad: la de todas las cargas del ejercicio. Cambiarla no convierte los números.',
   bases:
-    'Carga: si es una sola mancuerna o implemento, por mancuerna (cuando son dos) o el total externo. Repeticiones: si son por serie o por lado. «Sin indicar» deja que se lean como siempre.',
-  carga: 'Carga',
-  repeticiones: 'Repeticiones',
+    'La carga es: una sola mancuerna o implemento, por mancuerna (cuando son dos) o la carga externa total. Las repeticiones son: por serie o por lado. Sin elegir, se toma la del implemento (por mancuerna en las mancuernas; si no, la total) y por serie.',
+  // F11: no parecen datos que faltan.
+  carga: 'La carga es…',
+  repeticiones: 'Las repeticiones son…',
+  porOmision: (etiqueta: string) => `${etiqueta.charAt(0).toUpperCase()}${etiqueta.slice(1)} (por omisión)`,
+  laDelPlan: (nombre: string) => `La del plan: ${nombre}`,
+  soloCargaYRepeticiones: 'solo carga y repeticiones',
 } as const;
 
+type EleccionDeIntensidad = 'PLAN' | 'RIR' | 'PERCENT_RM' | 'SIN';
+
 /**
- * ENP-D14 (C2 de Dirección) · El criterio arriba de las series: el criterio de intensidad con su objetivo (y la referencia
- * del % RM), la unidad de la carga y cómo se cuentan la carga y las repeticiones. Van antes de la tabla porque definen cómo
- * se lee cada serie, y a la vista: no se esconden a un clic.
+ * ENP-D14 y DL-197 (ET1-D11, F11 a F13) · En «Más opciones» del ejercicio: la intensidad (la del plan, que se hereda, u otra
+ * por excepción) con su objetivo y la referencia del % RM, y cómo se cuentan la carga y las repeticiones. La unidad va en
+ * el chip del encabezado de la carga (F10).
  */
-function CriterioDelEjercicio({ id, prescripcion: p, onCambiar }: { id: string; prescripcion: PrescripcionE; onCambiar: (c: Partial<PrescripcionE>) => void }) {
-  const criterio = (p.intensity?.criterion as Criterio | undefined) ?? '';
-  const unidad = unidadDe(p);
+function CriterioDelEjercicio({
+  id,
+  nombre,
+  prescripcion: p,
+  onCambiar,
+  intensidadDelPlan,
+  sinIntensidad,
+  onSinIntensidad,
+}: {
+  id: string;
+  nombre: string;
+  prescripcion: PrescripcionE;
+  onCambiar: (c: Partial<PrescripcionE>) => void;
+  intensidadDelPlan: Criterio | null;
+  sinIntensidad: boolean;
+  onSinIntensidad?: (sin: boolean) => void;
+}) {
+  const propio = (p.intensity?.criterion as Criterio | undefined) ?? null;
   // DL-192: en un plan en RPE, el criterio RIR se elige y se escribe como RPE; lo guardado sigue siendo el RIR.
   const notacion = useNotacionDelEsfuerzo();
   const nombreDelCriterio = (c: Criterio): string => (c === 'RIR' ? COPY_NOTACION_DEL_ESFUERZO.etiqueta[notacion] : ETIQUETA_DE_CRITERIO[c]);
+  const delPlan = intensidadDelPlan ? nombreDelCriterio(intensidadDelPlan) : COPY_CRITERIO_ARRIBA.soloCargaYRepeticiones;
+  const eleccion: EleccionDeIntensidad = propio ? (propio === intensidadDelPlan ? 'PLAN' : propio) : sinIntensidad && intensidadDelPlan !== null ? 'SIN' : 'PLAN';
   // C7: lo que se quitó al cambiar de criterio, con «Deshacer», mientras siga el criterio elegido.
   const [cambio, setCambio] = useState<CambioDeCriterio<PrescripcionE['intensity']> | null>(null);
   const avisoDelCambio = cambio && sigueElCambio(p, cambio) ? cambio : null;
-  // RP-22 (RP-19): el aviso del objetivo que no se entiende va al pie del recuadro, en su renglón reservado: debajo del
-  // campo desalineaba la fila (los campos se alinean por abajo) y bajaba las series mientras se escribía.
   const [objetivoMal, setObjetivoMal] = useState(false);
+  const elegir = (e: EleccionDeIntensidad) => {
+    // Elegir no trae un objetivo: el número lo escribe el profesional (09v10:339-340). Sin RIR, el RIR de cada serie se
+    // quita (sería un segundo criterio, REG-06-128). Lo que se quita se dice, con «Deshacer».
+    const nuevo: Criterio | '' = e === 'PLAN' || e === 'SIN' ? '' : e === intensidadDelPlan ? '' : e;
+    const hereda = nuevo === '' && e !== 'SIN';
+    // Heredar el del plan cuando el propio ya es ese: no cambia nada.
+    if (hereda && propio === intensidadDelPlan && propio !== null) return onSinIntensidad?.(false);
+    setCambio(cambioDeCriterio(p, nuevo));
+    onCambiar(conElCriterio(p, nuevo));
+    onSinIntensidad?.(e === 'SIN');
+  };
+  // F11: lo que se toma sin elegir, del implemento.
+  const cargaPorOmision = implementoDelEjercicio(nombre, null) === 'MANCUERNA' ? 'PER_IMPLEMENT' : 'TOTAL_EXTERNAL';
   return (
-    // DL-196 (E8): un solo renglón compacto; lo que explica cada dato, en el «?» de la esquina.
     <div className="criterio-del-ejercicio con-ayuda-en-la-esquina" role="group" aria-label={COPY_CRITERIO_ARRIBA.titulo} data-criterio-del-ejercicio>
-        <ExplicacionAPedido nombre={COPY_CRITERIO_ARRIBA.queEsCadaDato} como="div" lugar="esquina">
-          <p>{COPY_CRITERIO_ARRIBA.intensidad}</p>
-          <p data-ayuda-del-rpe>{COPY_CRITERIO_ARRIBA.rpe}</p>
-          <p>{COPY_CRITERIO_ARRIBA.rpeYRir}</p>
-          <p>{COPY_CRITERIO_ARRIBA.rir}</p>
-          <p>{COPY_CRITERIO_ARRIBA.porcentaje}</p>
-          <p>{COPY_CRITERIO_ARRIBA.objetivo(RANGO_DEL_ESFUERZO[notacion])}</p>
-          <p>{COPY_CRITERIO_ARRIBA.unidad}</p>
-          <p>{COPY_CRITERIO_ARRIBA.bases}</p>
-        </ExplicacionAPedido>
-        <div className="lo-general-del-editor__par">
-          <div className="campo">
-            <label htmlFor={`${id}-criterio`}>{COPY_ENTRENAMIENTO.intensidad}</label>
-            <select
-              id={`${id}-criterio`}
-              value={criterio}
-              onChange={(e) => {
-                const c = e.target.value as Criterio | '';
-                // Elegir el criterio no trae un objetivo: el número lo escribe el profesional (09v10:339-340). Sin el
-                // criterio RIR, el RIR de cada serie no tiene sentido: se quita, porque sería un segundo criterio
-                // (REG-06-128). C7: lo que se quita se dice, con «Deshacer»; sin nada que perder, no se dice nada.
-                setCambio(cambioDeCriterio(p, c));
-                onCambiar(conElCriterio(p, c));
-              }}
-            >
-              <option value="">{COPY_ENTRENAMIENTO.sinCriterio}</option>
-              {(Object.keys(ETIQUETA_DE_CRITERIO) as Criterio[]).map((c) => (
+      <ExplicacionAPedido nombre={COPY_CRITERIO_ARRIBA.queEsCadaDato} como="div" lugar="esquina">
+        <p>{COPY_CRITERIO_ARRIBA.intensidad}</p>
+        <p data-ayuda-del-rpe>{COPY_CRITERIO_ARRIBA.rpe}</p>
+        <p>{COPY_CRITERIO_ARRIBA.rpeYRir}</p>
+        <p>{COPY_CRITERIO_ARRIBA.rir}</p>
+        <p>{COPY_CRITERIO_ARRIBA.porcentaje}</p>
+        <p>{COPY_CRITERIO_ARRIBA.objetivo(RANGO_DEL_ESFUERZO[notacion])}</p>
+        <p>{COPY_CRITERIO_ARRIBA.bases}</p>
+      </ExplicacionAPedido>
+      <div className="lo-general-del-editor__par">
+        <div className="campo">
+          <label htmlFor={`${id}-criterio`}>{COPY_ENTRENAMIENTO.intensidad}</label>
+          <select id={`${id}-criterio`} value={eleccion} onChange={(e) => elegir(e.target.value as EleccionDeIntensidad)} data-intensidad-del-ejercicio={eleccion}>
+            <option value="PLAN">{COPY_CRITERIO_ARRIBA.laDelPlan(delPlan)}</option>
+            {(Object.keys(ETIQUETA_DE_CRITERIO) as Criterio[])
+              .filter((c) => c !== intensidadDelPlan)
+              .map((c) => (
                 <option key={c} value={c}>
                   {nombreDelCriterio(c)}
                 </option>
               ))}
-            </select>
-          </div>
-          {p.intensity ? (
-            <CampoInterpretado
-              id={`${id}-objetivo`}
-              etiqueta={`${COPY_ENTRENAMIENTO.objetivoDeIntensidad} (${nombreDelCriterio(criterio as Criterio)})`}
-              // Con un criterio elegido, el objetivo no es opcional: vacío no es cero. DL-196 (E8): el rango, en el «?».
-              inputMode="decimal"
-              valor={p.intensity.target.value}
-              clave={String(p.intensity.target.value)}
-              // DL-192: en RPE, «8» se guarda como RIR 2; «6 o menos», como RIR 4.
-              formatear={criterio === 'RIR' && notacion === 'RPE' ? (v) => (v === null || Number.isNaN(v) ? '' : esfuerzoEnCampo(v, 'RPE')) : escribirNumero}
-              interpretar={(t) => (criterio === 'RIR' && notacion === 'RPE' ? (t.trim() === '' ? Number.NaN : (leerRpeEscrito(t) ?? Number.NaN)) : (leerValor(t) ?? Number.NaN))}
-              mismo={mismoNumero}
-              noSeEntiende={criterio === 'RIR' && notacion === 'RPE' ? 'No se entiende: va un RPE de 6 a 10, de a medio punto, o «6 o menos».' : 'No se entiende: va un número.'}
-              avisoAparte={{ id: `${id}-objetivo-aviso`, onMal: setObjetivoMal }}
-              onCambiar={(v) => onCambiar({ intensity: { ...p.intensity!, target: { ...p.intensity!.target, value: v } } })}
-            />
-          ) : null}
+            {intensidadDelPlan !== null ? <option value="SIN">{COPY_ENTRENAMIENTO.sinCriterio}</option> : null}
+          </select>
         </div>
-        {/* C7: qué se quitó al cambiar de criterio, con «Deshacer», que devuelve el criterio y los valores de antes. */}
+        {p.intensity ? (
+          <CampoInterpretado
+            id={`${id}-objetivo`}
+            etiqueta={`${COPY_ENTRENAMIENTO.objetivoDeIntensidad} (${nombreDelCriterio(propio!)})`}
+            inputMode="decimal"
+            valor={p.intensity.target.value}
+            clave={String(p.intensity.target.value)}
+            formatear={propio === 'RIR' && notacion === 'RPE' ? (v) => (v === null || Number.isNaN(v) ? '' : esfuerzoEnCampo(v, 'RPE')) : escribirNumero}
+            interpretar={(t) => {
+              if (propio === 'RIR' && notacion === 'RPE') return t.trim() === '' ? Number.NaN : (leerRpeEscrito(t) ?? Number.NaN);
+              const v = leerValor(t) ?? Number.NaN;
+              // F13: un % RM de menos de 30 no se guarda: lo más probable es un RIR escrito acá.
+              return propio === 'PERCENT_RM' && v < PORCENTAJE_RM_MINIMO ? Number.NaN : v;
+            }}
+            mismo={mismoNumero}
+            noSeEntiende={propio === 'RIR' && notacion === 'RPE' ? 'No se entiende: va un RPE de 6 a 10, de a medio punto, o «6 o menos».' : propio === 'PERCENT_RM' ? COPY_SERIES.porcentajeBajo : 'No se entiende: va un número.'}
+            avisoAparte={{ id: `${id}-objetivo-aviso`, onMal: setObjetivoMal }}
+            onCambiar={(v) => onCambiar({ intensity: { ...p.intensity!, target: { ...p.intensity!.target, value: v } } })}
+          />
+        ) : null}
+      </div>
+      {/* F12 (RP-19): el renglón del aviso del cambio de criterio está siempre: aparecer no corre los campos. */}
+      <p className="nota criterio-del-ejercicio__aviso" role="status" data-cambio-de-criterio={avisoDelCambio ? '' : undefined}>
         {avisoDelCambio ? (
-          <p className="nota criterio-del-ejercicio__aviso" role="status" data-cambio-de-criterio>
+          <>
             <span>{avisoDelCambio.texto}</span>
             <button
               type="button"
@@ -1336,86 +1564,66 @@ function CriterioDelEjercicio({ id, prescripcion: p, onCambiar }: { id: string; 
               <Icono nombre="deshacer" tamano={15} />
               {COPY_CAMBIO_DE_CRITERIO.deshacer}
             </button>
-          </p>
-        ) : null}
-        {p.intensity && criterio === 'PERCENT_RM' ? (
-          <Campo
-            id={`${id}-referencia`}
-            etiqueta={`${COPY_ENTRENAMIENTO.referenciaDeRm} (opcional)`}
-            placeholder="1RM estimado por…"
-            value={p.intensity.target.reference?.description ?? ''}
-            onChange={(e) => onCambiar({ intensity: { ...p.intensity!, target: { ...p.intensity!.target, reference: e.target.value ? { description: e.target.value } : null } } })}
-            maxLength={500}
-          />
-        ) : null}
-        <div className="lo-general-del-editor__par">
-          <div className="lo-general-del-editor__carga">
-            <div className="campo">
-              <label htmlFor={`${id}-unidad`}>{PL.unidadDeLaCarga}</label>
-              {/* Una sola unidad por prescripción: cambiarla cambia también la de las series, sin convertir números. */}
-              <select
-                id={`${id}-unidad`}
-                value={unidad}
-                onChange={(e) => {
-                  const u = e.target.value as 'kg' | 'lb';
-                  onCambiar({
-                    ...(p.suggestedLoad ? { suggestedLoad: { ...p.suggestedLoad, unit: u } } : {}),
-                    sets: p.sets.map((x) => (x.suggestedLoad ? { ...x, suggestedLoad: { ...x.suggestedLoad, unit: u } } : x)),
-                  });
-                }}
-              >
-                <option value="kg">kg</option>
-                <option value="lb">lb</option>
-              </select>
-            </div>
-          </div>
+          </>
+        ) : (
+          ' '
+        )}
+      </p>
+      {p.intensity && propio === 'PERCENT_RM' ? (
+        <Campo
+          id={`${id}-referencia`}
+          etiqueta={`${COPY_ENTRENAMIENTO.referenciaDeRm} (opcional)`}
+          placeholder="1RM estimado por…"
+          value={p.intensity.target.reference?.description ?? ''}
+          onChange={(e) => onCambiar({ intensity: { ...p.intensity!, target: { ...p.intensity!.target, reference: e.target.value ? { description: e.target.value } : null } } })}
+          maxLength={500}
+        />
+      ) : null}
+      {/* F11: «La carga es…» y «Las repeticiones son…», con lo que se toma sin elegir a la vista (no parece un dato que falta). */}
+      <div className="criterio-del-ejercicio__bases" data-bases>
+        <div className="campo">
+          <label htmlFor={`${id}-base-carga`}>{COPY_CRITERIO_ARRIBA.carga}</label>
+          <select
+            id={`${id}-base-carga`}
+            value={p.loadBasis ?? ''}
+            onChange={(e) => {
+              const b = BaseDeCargaSchema.safeParse(e.target.value);
+              onCambiar({ loadBasis: b.success ? b.data : null });
+            }}
+          >
+            <option value="">{COPY_CRITERIO_ARRIBA.porOmision(ETIQUETA_DE_BASE_DE_CARGA[cargaPorOmision])}</option>
+            {BaseDeCargaSchema.options.map((b) => (
+              <option key={b} value={b}>
+                {ETIQUETA_DE_BASE_DE_CARGA[b]}
+              </option>
+            ))}
+          </select>
         </div>
-        {/* ENP-D14: las bases, a la vista y en el mismo renglón: cambian cómo se leen la carga y las repeticiones de abajo. */}
-          <div className="criterio-del-ejercicio__bases" data-bases>
-            <div className="campo">
-              <label htmlFor={`${id}-base-carga`}>{COPY_CRITERIO_ARRIBA.carga}</label>
-              <select
-                id={`${id}-base-carga`}
-                value={p.loadBasis ?? ''}
-                onChange={(e) => {
-                  const b = BaseDeCargaSchema.safeParse(e.target.value);
-                  onCambiar({ loadBasis: b.success ? b.data : null });
-                }}
-              >
-                <option value="">Sin indicar</option>
-                {BaseDeCargaSchema.options.map((b) => (
-                  <option key={b} value={b}>
-                    {ETIQUETA_DE_BASE_DE_CARGA[b]}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="campo">
-              <label htmlFor={`${id}-base-reps`}>{COPY_CRITERIO_ARRIBA.repeticiones}</label>
-              <select
-                id={`${id}-base-reps`}
-                value={p.repetitionBasis ?? ''}
-                onChange={(e) => {
-                  const b = BaseDeRepeticionesSchema.safeParse(e.target.value);
-                  onCambiar({ repetitionBasis: b.success ? b.data : null });
-                }}
-              >
-                <option value="">Sin indicar</option>
-                {BaseDeRepeticionesSchema.options.map((b) => (
-                  <option key={b} value={b}>
-                    {ETIQUETA_DE_BASE_DE_REPETICIONES[b]}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-        {/* RP-22: con un criterio elegido, el renglón del aviso de su objetivo está siempre, al pie del recuadro. Dice de qué
-            campo es: ya no va debajo de él. */}
-        {p.intensity ? (
-          <RenglonDelAviso id={`${id}-objetivo-aviso`} tipo={objetivoMal ? 'error' : 'nota'} className="criterio-del-ejercicio__aviso-del-objetivo" data-objetivo-no-se-entiende={objetivoMal ? '' : undefined}>
-            {objetivoMal ? 'No se entiende el objetivo: va un número.' : null}
-          </RenglonDelAviso>
-        ) : null}
+        <div className="campo">
+          <label htmlFor={`${id}-base-reps`}>{COPY_CRITERIO_ARRIBA.repeticiones}</label>
+          <select
+            id={`${id}-base-reps`}
+            value={p.repetitionBasis ?? ''}
+            onChange={(e) => {
+              const b = BaseDeRepeticionesSchema.safeParse(e.target.value);
+              onCambiar({ repetitionBasis: b.success ? b.data : null });
+            }}
+          >
+            <option value="">{COPY_CRITERIO_ARRIBA.porOmision(ETIQUETA_DE_BASE_DE_REPETICIONES.PER_SET)}</option>
+            {BaseDeRepeticionesSchema.options.map((b) => (
+              <option key={b} value={b}>
+                {ETIQUETA_DE_BASE_DE_REPETICIONES[b]}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+      {/* RP-22: con un criterio propio, el renglón del aviso de su objetivo está siempre, al pie del recuadro. */}
+      {p.intensity ? (
+        <RenglonDelAviso id={`${id}-objetivo-aviso`} tipo={objetivoMal ? 'error' : 'nota'} className="criterio-del-ejercicio__aviso-del-objetivo" data-objetivo-no-se-entiende={objetivoMal ? '' : undefined}>
+          {objetivoMal ? (propio === 'PERCENT_RM' ? COPY_SERIES.porcentajeBajo : 'No se entiende el objetivo: va un número.') : null}
+        </RenglonDelAviso>
+      ) : null}
     </div>
   );
 }

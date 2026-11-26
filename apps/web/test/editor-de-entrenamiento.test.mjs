@@ -106,8 +106,9 @@ test('TEST-EE-12 · copiar la fase anterior: identificadores nuevos, las mismas 
   assert.equal(F.anotacionesDeLaFase(conCopia, copia.bloque.blockId), null);
   const agenda = { startDate: '2026-11-30', sessions: [{ sessionId: 's1', weekdays: ['MONDAY', 'THURSDAY'] }], moves: [] };
   assert.deepEqual(F.agendaConLaCopia(agenda, copia).sessions[1], { sessionId: s.sessionId, weekdays: ['MONDAY', 'THURSDAY'] });
-  // En el editor: «Copiar la fase anterior», al pie de las fases, una sola vez.
-  assert.equal((EDITOR.match(/data-copiar-la-fase-anterior/g) ?? []).length, 1);
+  // DL-197 (ET1-03): «Duplicar fase», en el cuadro «Editar fase» y en el «⋯» de la fase; la copia va justo después.
+  assert.match(EDITOR, /const duplicarLaFase = \(desde: number\) => \{/);
+  assert.match(EDITOR, /cambiar\(\(x\) => \(x\.splice\(n, 0, copia\.bloque\), x\)\);/);
 });
 
 test('TEST-EE-13 · lo que se escribe del plan: el fin cambia la duración; las anotaciones vacías se quitan', () => {
@@ -153,8 +154,9 @@ test('TEST-EE-14 · las aproximaciones «Por %» desde la carga de trabajo, con 
   assert.deepEqual(A.rotulosConAproximaciones(sets).map((r) => r.corto), ['A1', 'A2', 'A3', '1', '2']);
   // Sin carga de trabajo, no hay qué calcular.
   assert.equal(A.conAproximacionesCalculadas({ ...p, suggestedLoad: null }, config), null);
-  // En pantalla: la sección va antes de las series, con «Por %» y «A mano», la base a la vista y el «?» en la esquina.
-  assert.ok(EJERCICIO.indexOf('<SeccionDeAproximaciones') < EJERCICIO.indexOf('<SeriesDelEjercicio'));
+  // DL-197 (F16): las aproximaciones van en su cuadro, que se abre con «Aproximaciones · 3» debajo de la planilla.
+  assert.match(EJERCICIO, /data-abrir-aproximaciones=\{cuantasAproximaciones\(p\)\}/);
+  assert.ok(EJERCICIO.indexOf('<SeriesDelEjercicio id=') < EJERCICIO.indexOf('<SeccionDeAproximaciones'));
   assert.match(APROXIMACIONES, /porPorcentaje: 'Por porcentaje'/);
   assert.match(APROXIMACIONES, /aMano: 'A mano'/);
   assert.match(APROXIMACIONES, /data-base-de-las-aproximaciones/);
@@ -218,11 +220,12 @@ test('TEST-EE-17 · «Antes de activar» al lado de «Revisar y activar», con c
 test('TEST-EE-18 · cada acción una sola vez: «Agregar sesión» y «Agregar fase» (E7)', () => {
   // «Agregar sesión» es el menú de la fase abierta (con sesión elegida o sin ninguna, uno u otro): ya no está «+ Sesión».
   assert.doesNotMatch(EDITOR, /data-mas-sesion/);
+  // DL-197: «Nueva sesión» al final de las tarjetas (o en la fase sin sesiones); «Agregar fase», en la cabecera de las fases.
   assert.equal((EDITOR.match(/\{agregarUnaSesion\}/g) ?? []).length, 2);
-  assert.equal((EDITOR.match(/\{agregarUnBloque\}/g) ?? []).length, 1);
+  assert.equal((EDITOR.match(/onAgregar=\{agregarBloque\}/g) ?? []).length, 1);
   // E4: «Qué es una fase» y «Qué es un bloque» van al «?», no en un renglón.
   assert.doesNotMatch(EDITOR, /<Ayuda titulo=/);
-  assert.match(EDITOR, /nombre="Qué es una fase"/);
+  assert.match(leer('app/pro/advisees/training/barra-de-fases-en-pantalla.tsx'), /nombre="Qué es una fase"/);
   assert.match(EDITOR, /<ExplicacionAPedido nombre="Qué es un bloque" como="div" lugar="esquina">/);
 });
 
@@ -244,10 +247,9 @@ test('TEST-EE-20 · el criterio en un renglón: sin ayudas sueltas; el RPE, prim
 });
 
 test('TEST-EE-21 · varias series a la vez se leen como una frase; las acciones rápidas de carga y descanso (E10, E11)', () => {
-  assert.match(EJERCICIO, /enLasElegidas: \(n: number\) => \(n === 1 \? 'En la serie elegida,' : `En las \$\{n\} series elegidas,`\)/);
-  assert.match(EJERCICIO, /poner: 'poner'/);
-  assert.match(EJERCICIO, /aplicar: 'Aplicar'/);
-  assert.match(EJERCICIO, /<ExplicacionAPedido nombre="Cómo se cambian varias series a la vez"/);
+  // DL-197 (F16): «Editar todas las series» es un cuadro; lo vacío conserva su valor.
+  assert.match(EJERCICIO, /loVacio: 'Lo que dejes vacío conserva su valor en cada serie\.'/);
+  assert.match(EJERCICIO, /<EditarTodasLasSeries\n\s*id=\{id\}/);
   assert.match(EJERCICIO, /const PASOS_RAPIDOS = \{ suggestedLoad: \[-5, -2\.5, -1, 1, 2\.5, 5\], restSeconds: \[-15, -5, 5, 15\] \} as const;/);
   // Los pasos no se llevan el foco del campo.
   assert.match(EJERCICIO, /onMouseDown=\{\(e\) => e\.preventDefault\(\)\}/);

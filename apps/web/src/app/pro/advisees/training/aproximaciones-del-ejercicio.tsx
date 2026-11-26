@@ -20,6 +20,7 @@ import {
   cuantasAproximaciones,
   PASOS_DE_REDONDEO,
   unidadDeLaPrescripcion,
+  ajusteDeLasAproximaciones,
 } from './aproximaciones';
 import type { PrescripcionE } from './ejercicio-del-editor';
 
@@ -188,6 +189,12 @@ export function SeccionDeAproximaciones({
             .filter((s) => s.setKind === 'WARM_UP')
             .map((s) => T.vistaPrevia(s.repetitions && 'value' in s.repetitions ? s.repetitions.value : 0, s.suggestedLoad?.value ?? 0, unidad))
             .join(' · ')}
+        </p>
+      ) : null}
+      {/* DL-197 (ET1-D07): si alguna bajó para no repetir, o entran menos, se dice en su renglón reservado (RP-19). */}
+      {actual.mode === 'FROM_WORKING_LOAD' ? (
+        <p className="nota aproximaciones-del-ejercicio__ajuste" role="status" data-ajuste-de-aproximaciones>
+          {ajusteDeLasAproximaciones(p, { ...actual, prescriptionId: '' }) ?? ' '}
         </p>
       ) : null}
       {/* RP-19: el aviso tiene su renglón reservado mientras se calcula «Por porcentaje»: al tocar una carga de la tabla,

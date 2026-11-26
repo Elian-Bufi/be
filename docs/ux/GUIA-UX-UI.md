@@ -1155,6 +1155,32 @@ sección cuál es el flujo. Que todo se oscurezca menos la zona que estamos expl
 - **Nada se corre (RP-19):** el velo, el hueco y el cartel son fijos a la ventana y van en un portal; no se bloquea el
   desplazamiento de la página, porque sacar la barra de desplazamiento correría todo de costado.
 
+### II.16 Los cuadros configuran; el panel lateral es para mirar (DL-197, 2026-11-25)
+
+Dirección eligió, del prototipo del editor de Entrenamiento, una estructura con cuadros de configuración y un panel lateral
+que solo muestra. La regla vale para todo editor con panel contextual:
+
+- **Los cuadros son para configurar.** Lo que se elige una vez y cambia de a ratos (las fechas y la intensidad del plan,
+  el nombre y las semanas de una fase, los días de la semana, las aproximaciones o las opciones de un ejercicio) va en un
+  cuadro (`components/cuadro-enfocado`): título, «Cerrar», cuerpo y un pie con los botones («Cancelar» y un solo
+  principal). Lo que se escribe es un borrador del cuadro: entra con el principal; cerrar con cambios pregunta; Escape
+  cierra y el foco vuelve a quien lo abrió.
+- **El panel lateral es para mirar.** El almanaque, la distribución, los gráficos y «La vez pasada» van en el panel, que
+  sigue a lo que se toca en el centro. No se configura nada en el panel; a lo sumo, una estrella (favorito) o «Abrir
+  grande».
+- **El «?» del cuadro**, en la esquina de su cabecera, junto a «Cerrar»: solo si se toca, explica paso a paso qué se
+  configura, con **una definición y un ejemplo resuelto** (`ayudas-del-editor.tsx`). Escape cierra la ayuda y no el cuadro.
+- **El centro queda liviano:** una cabecera con las acciones a la derecha, una barra horizontal para elegir (las fases,
+  con su color arriba y un ancho proporcional a sus semanas; con el teclado, como pestañas), tarjetas para las sesiones y,
+  en cada ejercicio, la planilla con «Común» y tres botones que abren sus cuadros.
+- **Nada se corre (RP-19):** los avisos de un cuadro (el nombre que falta, el ajuste de las aproximaciones, el cambio de
+  criterio) tienen su renglón reservado.
+
+**Los ejes de los gráficos de carga y de cantidades empiezan en 0** (DL-197, F8). Acercar el eje agranda una diferencia
+chica y la hace parecer un cambio grande: la carga planificada, la realizada, las series o las repeticiones se leen desde
+0. Solo un gráfico del máximo estimado puede acercarse (lo que importa ahí es la tendencia) y, si lo hace, lo dice al lado
+(«El eje no empieza en 0»).
+
 ## Parte III · APK del asesorado
 
 ### III.1 Navegación

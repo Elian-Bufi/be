@@ -159,6 +159,7 @@ export * from './tvcc30';
 export * from './contratos-invitaciones';
 export * from './agenda-de-entrenamiento';
 export * from './planificacion-del-plan';
+export * from './clasificacion-de-ejercicios';
 export * from './progresiones';
 export * from './distribucion-por-musculo';
 export * from './copy-agenda-de-entrenamiento';

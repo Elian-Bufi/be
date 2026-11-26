@@ -144,6 +144,6 @@ test('TEST-GUI-010 · los pasos pedidos, en orden y con los nombres de la pantal
     ['dias-tipo', 'opciones', 'reparto', 'rangos-y-totales', 'recetas', 'revisar'],
   );
   const textoDe = (d: typeof E) => d.pasos.map((p) => `${p.titulo} ${p.texto}`).join(' ');
-  for (const nombre of ['«Sesiones»', '«Agregar sesión»', '«Seguido»', '«En vueltas»', 'Cómo se escribe el esfuerzo', 'Agregar ejercicios', 'Revisar y activar…', '«Común»']) assert.ok(textoDe(E).includes(nombre), nombre);
+  for (const nombre of ['«Nueva sesión»', '«Días de la semana»', '«Seguido»', '«En vueltas»', 'La intensidad del plan', 'Agregar ejercicios', 'Revisar y activar…', '«Común»']) assert.ok(textoDe(E).includes(nombre), nombre);
   for (const nombre of ['Días tipo', 'Reparto por comida', 'Rangos y totales', '«Opción de receta»', 'Recetario de BE', 'Revisar y activar…']) assert.ok(textoDe(N).includes(nombre), nombre);
 });

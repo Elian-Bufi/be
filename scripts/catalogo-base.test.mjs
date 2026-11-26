@@ -357,3 +357,24 @@ test('las migraciones van después de la última de main, y cada inserción igno
     assert.doesNotMatch(sql, /^\s*(UPDATE|DELETE|ALTER|DROP|CREATE|TRUNCATE)\b/im);
   }
 });
+
+// ─── DL-197 (ET1-12): la clasificación de los 186, propuesta de BE a validar por Dirección ──────────────────────────────
+test('TEST-ET1-03 · la clasificación tiene los 186 ejercicios, con valores conocidos, y la migración es la que sale de la tabla', async () => {
+  const { leerLaClasificacion, sqlDeLaClasificacion, CARPETA_DE_LA_CLASIFICACION } = await import('./catalogo-base/generar-clasificacion.mjs');
+  const raiz = new URL('../', import.meta.url);
+  const ejercicios = JSON.parse(readFileSync(new URL('prisma/datos/catalogo-base/ejercicios.json', raiz), 'utf8')).ejercicios;
+  const { filas, problemas } = leerLaClasificacion(readFileSync(new URL('prisma/datos/catalogo-base/clasificacion-de-ejercicios.csv', raiz), 'utf8'), ejercicios);
+  assert.deepEqual(problemas, []);
+  assert.equal(filas.length, 186);
+  // El grupo es la categoría de wger, sin cambios.
+  const categoria = { Chest: 'CHEST', Back: 'BACK', Legs: 'LEGS', Shoulders: 'SHOULDERS', Arms: 'ARMS', Abs: 'ABS', Calves: 'CALVES', Cardio: 'CARDIO' };
+  for (const e of ejercicios) assert.equal(filas.find((f) => f.wgerId === e.wgerId).grupo, categoria[e.wger.categoria.nombre], e.nombre);
+  const sql = readFileSync(new URL(`prisma/migrations/${CARPETA_DE_LA_CLASIFICACION}/migration.sql`, raiz), 'utf8').replace(/\r\n/g, '\n');
+  assert.equal(sql, sqlDeLaClasificacion(filas));
+  // Aditiva: ni DROP ni DELETE FROM, la versión no se toca, y la siembra va al ejercicio por su ítem externo.
+  assert.doesNotMatch(sql, /\bDROP\b|\bDELETE FROM\b|ALTER TABLE "version_de_ejercicio"/);
+  assert.match(sql, /JOIN "item_externo_de_catalogo" i ON i."proveedor" = 'WGER'/);
+  // El catálogo es append-only: la clasificación no actualiza la versión, va en su propia historia por adición.
+  assert.doesNotMatch(sql, /\bUPDATE "version_de_ejercicio"/);
+  assert.match(sql, /CREATE TRIGGER "clasificacion_de_ejercicio_solo_agregar"/);
+});

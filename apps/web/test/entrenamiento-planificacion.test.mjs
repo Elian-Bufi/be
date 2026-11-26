@@ -40,7 +40,8 @@ test('ENP-D15 · cada «Agregar» dice qué agrega', () => {
   assert.equal(d.COPY_ENTRENAMIENTO.agregarSesion, 'Agregar sesión');
   assert.equal(d.COPY_ENTRENAMIENTO.agregarEjercicio, 'Agregar ejercicios');
   assert.equal(d.COPY_BLOQUES_DE_LA_SESION.agregarBloque, 'Agregar bloque');
-  assert.match(EDITOR, /texto=\{COPY_ENTRENAMIENTO\.agregarSesion\}/);
+  // DL-197 (ET1-05): «Nueva sesión», al final de las tarjetas de las sesiones.
+  assert.match(EDITOR, /texto=\{COPY_SEMANA_TIPO\.nuevaSesion\}/);
   assert.doesNotMatch(EDITOR, /texto="Agregar"/);
 });
 
@@ -152,20 +153,20 @@ test('C10 · «Lo que trabaja la semana» no está mientras no tenga datos', () 
   assert.doesNotMatch(EDITOR, /id="panel-semana"/);
 });
 
-test('ENP-D14 · el criterio, la unidad y las bases van arriba de las series, a la vista; la tabla tiene todo el ancho', () => {
-  const cuerpo = EJERCICIO.slice(EJERCICIO.indexOf('<CriterioDelEjercicio'), EJERCICIO.indexOf('<SeriesDelEjercicio'));
-  assert.ok(cuerpo.length > 0, 'el criterio va antes de las series');
+test('ENP-D14, enmendada por DL-197 (F16): la planilla con «Común» a la vista; el criterio y las bases, en «Más opciones»', () => {
+  // DL-197: al abrir un ejercicio se ve la planilla; la unidad va en un chip del encabezado de la carga (F10).
+  assert.ok(EJERCICIO.indexOf('<SeriesDelEjercicio id=') < EJERCICIO.indexOf('<CriterioDelEjercicio id='));
+  assert.match(EJERCICIO, /data-unidad-de-la-carga=\{unidad\}/);
   assert.doesNotMatch(EJERCICIO, /<details className="a-un-clic"[^>]*data-bases>/, 'las bases ya no están a un clic');
   assert.match(CSS, /\.ejercicio-del-editor__cuerpo:not\(\[hidden\]\) \{\n  grid-template-columns: minmax\(0, 1fr\);/);
 });
 
 test('ENP-D16 · «Copiar» a la vista y la edición conjunta de series, con las repeticiones y los rangos', () => {
   assert.match(EJERCICIO, /texto="Copiar"/);
-  assert.match(EJERCICIO, /data-seleccionar-series/);
-  assert.match(EJERCICIO, /<option value="repetitions">/);
-  assert.match(EJERCICIO, /const r = leerReps\(valor\);/);
-  // Las casillas aparecen al pedirlas.
-  assert.match(EJERCICIO, /\{seleccionando \? \(\n\s*<td className="series-del-editor__elegir">/);
+  // DL-197 (F16): «Editar todas las series», un cuadro con las series elegidas y los datos (las repeticiones, con rangos).
+  assert.match(EJERCICIO, /data-editar-todas-las-series/);
+  assert.match(EJERCICIO, /const r = leerReps\(valores\.reps\);/);
+  assert.match(EJERCICIO, /data-elegir-serie=\{n \+ 1\}/);
 });
 
 test('ENP-D10 · con la sesión vacía, el preset se puede usar y queda para los ejercicios que se agreguen', () => {

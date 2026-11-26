@@ -29,6 +29,8 @@ export interface Impedimento {
   /** El nombre del lugar al que lleva «Ir a…» («Sesión B»); `null` si es del plan entero. */
   readonly destino: string | null;
   readonly ir: (() => void) | null;
+  /** DL-197 (ET1-D03): las salidas de un impedimento que se resuelve acá mismo («Llevar el plan a 12 semanas»). */
+  readonly acciones?: readonly { readonly clave: string; readonly texto: string; readonly alTocar: () => void; readonly noSePuede?: string | null }[];
 }
 
 export const COPY_REVISION_DEL_PLAN = {
@@ -116,6 +118,27 @@ export function RevisionDelPlan({
               <Icono nombre="derecha" tamano={15} />
               {T.irA(x.destino)}
             </button>
+          ) : null}
+          {x.acciones && x.acciones.length > 0 ? (
+            <span className="revision-del-plan__acciones">
+              {x.acciones.map((a) => (
+                <span key={a.clave} className="revision-del-plan__accion">
+                  <button
+                    type="button"
+                    className="boton boton--secundario boton--compacto"
+                    aria-disabled={a.noSePuede ? true : undefined}
+                    title={a.noSePuede ?? undefined}
+                    onClick={() => {
+                      if (!a.noSePuede) a.alTocar();
+                    }}
+                    data-accion-del-impedimento={a.clave}
+                  >
+                    {a.texto}
+                  </button>
+                  {a.noSePuede ? <span className="nota">{a.noSePuede}</span> : null}
+                </span>
+              ))}
+            </span>
           ) : null}
         </li>
       ))}

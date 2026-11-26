@@ -94,13 +94,30 @@ export function encabezadoDelEjercicio(p: Pick<PrescripcionConObjetivos, 'sets' 
  * - Sin criterio de intensidad, lo dice. Con % RM, la intensidad es la general: no hay un % RM por serie.
  * - DL-192: en un plan en RPE, el RIR se escribe en RPE («RPE 8», «RPE por serie»).
  */
-export function renglonDelEjercicio(p: Pick<PrescripcionConObjetivos, 'sets' | 'intensity'>, notacion: NotacionDelEsfuerzo = 'RIR'): string {
+/**
+ * DL-197 (F18): el renglón del profesional, en el editor del plan: las aproximaciones se nombran como tales («+ 3
+ * aproximaciones») y las repeticiones que cambian de una serie a otra se dicen («repeticiones 8-8-6-6»). Sin esta opción, el
+ * renglón es el de siempre, el que lee también la APK (sus textos no cambian).
+ */
+export interface OpcionesDelRenglon {
+  readonly delProfesional?: boolean;
+}
+
+/** «8-8-6-6» si todas son una cifra; con rangos, «8–10 / 6–8». */
+function repeticionesUnaPorUna(efectivas: readonly { readonly target: { readonly repetitions: { readonly value: number } | { readonly min: number; readonly max: number } | null } }[]): string {
+  const cifras = efectivas.map((s) => s.target.repetitions);
+  if (cifras.every((r) => r && 'value' in r)) return cifras.map((r) => numero((r as { value: number }).value, 0)).join('-');
+  return cifras.map((r) => (!r ? '—' : 'value' in r ? numero(r.value, 0) : `${numero(r.min, 0)}–${numero(r.max, 0)}`)).join(' / ');
+}
+
+export function renglonDelEjercicio(p: Pick<PrescripcionConObjetivos, 'sets' | 'intensity'>, notacion: NotacionDelEsfuerzo = 'RIR', opciones: OpcionesDelRenglon = {}): string {
+  const deCalentamiento = (n: number) => (opciones.delProfesional ? (n === 1 ? '1 aproximación' : `${numero(n)} aproximaciones`) : COPY_TIPOS_DE_SERIE.deCalentamiento(n));
   // DL-178: el renglón resume las series efectivas; el calentamiento se nombra aparte y no entra en el resumen.
   const efectivas = seriesEfectivas(p.sets);
   const calentamiento = p.sets.length - efectivas.length;
   const cuantas = efectivas.length;
-  if (cuantas === 0) return calentamiento > 0 ? COPY_TIPOS_DE_SERIE.deCalentamiento(calentamiento) : COPY_DEL_PLAN_DE_ENTRENAMIENTO.sinSeries;
-  const cantidadDeSeries = (n: number) => (calentamiento > 0 ? COPY_TIPOS_DE_SERIE.efectivas(n) : cantidadDeSeriesComun(n));
+  if (cuantas === 0) return calentamiento > 0 ? deCalentamiento(calentamiento) : COPY_DEL_PLAN_DE_ENTRENAMIENTO.sinSeries;
+  const cantidadDeSeries = (n: number) => (calentamiento > 0 && !opciones.delProfesional ? COPY_TIPOS_DE_SERIE.efectivas(n) : cantidadDeSeriesComun(n));
   const repeticiones = efectivas.map((s) => textoDeRepeticiones(s.target.repetitions));
   const cargas = efectivas.map((s) => textoDeCarga(s.target.suggestedLoad));
   const rires = efectivas.map((s) => textoDeRir(s.target.rir, notacion));
@@ -112,10 +129,13 @@ export function renglonDelEjercicio(p: Pick<PrescripcionConObjetivos, 'sets' | '
   if (todoIgual) partes.push(repeticiones[0] ? `${numero(cuantas)} × ${repeticiones[0]}` : `${cantidadDeSeries(cuantas)} ${COPY_ENTRENAMIENTO.sinRepeticionesFijadas}`);
   else {
     partes.push(cantidadDeSeries(cuantas));
-    if (!todasIguales(repeticiones)) porSerie.push('repeticiones');
+    if (!todasIguales(repeticiones)) {
+      if (opciones.delProfesional) partes.push(`repeticiones ${repeticionesUnaPorUna(efectivas)}`);
+      else porSerie.push('repeticiones');
+    }
     else partes.push(repeticiones[0] ?? COPY_ENTRENAMIENTO.sinRepeticionesFijadas);
   }
-  if (calentamiento > 0) partes[0] = `${partes[0]} + ${COPY_TIPOS_DE_SERIE.deCalentamiento(calentamiento)}`;
+  if (calentamiento > 0) partes[0] = `${partes[0]} + ${deCalentamiento(calentamiento)}`;
   if (!todasIguales(cargas)) porSerie.push('carga');
   else if (cargas[0]) partes.push(cargas[0]);
   if (!p.intensity) partes.push(SIN_CRITERIO);

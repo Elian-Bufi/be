@@ -97,6 +97,9 @@ import {
   planificacionPodada,
   semanasDeLaFase,
   semanasQueSumanLasFases,
+  semanasDeMas,
+  conLaUltimaFaseRecortada,
+  finDelPlan,
   ventanasDeLasSesiones,
   type MesDelAlmanaque,
   type PlanificacionDelPlan,
@@ -104,7 +107,11 @@ import {
 } from '@be/domain';
 import { BotonVerElRecorrido, RecorridoGuiado, useRecorridoGuiado } from '../../../../components/recorrido-guiado';
 import { Almanaque, type SesionDelAlmanaque } from './almanaque';
-import { DatosDeLaFase, DatosDelPlan, DiasDeLaFase, letraDeLaSesion } from './plan-y-fases';
+import { letraDeLaSesion } from './plan-y-fases';
+import { BarraDeFases } from './barra-de-fases-en-pantalla';
+import { COPY_BARRA_DE_FASES, diasEnCorto, faseConLaTecla, rangoDeLaBarra, tarjetasDeLaBarra } from './barra-de-fases';
+import { criterioDeLaIntensidad, CuadroConfigurarPlan, CuadroDiasDeLaSemana, CuadroEditarFase, type IntensidadElegida } from './cuadros-del-plan';
+import { AYUDAS_DEL_EDITOR, ContenidoDeLaAyuda } from './ayudas-del-editor';
 import { MarcoDelPanel, PanelDelEjercicio, PatronesAPedido } from './panel-del-editor';
 import { FOCO_DE_ENTRADA, focoDelElemento, mismoFoco, NOMBRE_DE_LA_VISTA, VISTAS_DEL_FOCO, vistaDelFoco, vistaPorTecla, type FocoDelEditor, type VistaDelPanel } from './panel-contextual';
 import { AsistenteDeProgresion, type AplicacionDeLaProgresion } from './asistente-de-progresion';
@@ -141,13 +148,12 @@ import {
 } from './fases-del-plan';
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { ProveedorDeLaNotacion } from '../notacion-del-esfuerzo';
-import { NotacionDelPlan } from './notacion-del-plan';
 import { AvisoFlotante } from '../../../../components/ayuda';
 import { CampoDeNombre } from '../../../../components/campo-de-nombre';
 import { EnPartes } from '../../../../components/en-partes';
 import { Cargando, ErrorConReintento } from '../../../../components/estados';
 import { Aviso } from '../../../../components/formulario';
-import { EncabezadoConAyuda, ExplicacionAPedido } from '../../../../components/explicacion-a-pedido';
+import { ExplicacionAPedido } from '../../../../components/explicacion-a-pedido';
 import { CuadroEnfocado } from '../../../../components/cuadro-enfocado';
 import { Icono } from '../../../../components/icono';
 import { MenuDeAcciones } from '../../../../components/menu-de-acciones';
@@ -316,6 +322,7 @@ const PROBLEMA: Readonly<Record<string, string>> = {
   BLOCK_REQUIRED: 'no tiene ninguna fase',
   SESSION_REQUIRED: 'no tiene sesiones',
   PRESCRIPTION_REQUIRED: 'no tiene ejercicios',
+  PHASES_EXCEED_PLAN_WEEKS: 'las fases suman más semanas que el plan: ajustá la duración o las fases',
   // DL-181: los bloques de la sesión.
   ...PROBLEMA_DE_BLOQUES,
   SESSIONS_AND_MICROCYCLES_IN_BLOCK: 'si la fase tiene microciclos, las sesiones van dentro de ellos',
@@ -493,6 +500,10 @@ export function EditorDePlan({
   // DL-196 (EE-06): la lista de «Antes de activar», desplegada al lado de «Revisar y activar».
   const [impideAbierto, setImpideAbierto] = useState(false);
   const [fechasAbiertas, setFechasAbiertas] = useState(false);
+  // DL-197 (ET1-02 a ET1-04): el cuadro de configuración abierto: el plan, la fase o los días de la semana.
+  const [cuadroDelPlan, setCuadroDelPlan] = useState<'plan' | 'fase' | 'dias' | null>(null);
+  // La fase recién agregada: «Editar fase» se abre cuando ya es la elegida, nunca con los datos de la anterior.
+  const [faseQueSeAbre, setFaseQueSeAbre] = useState<number | null>(null);
   const [sucio, setSucio] = useState(false);
   const [guardando, setGuardando] = useState(false);
   // Bloque 3 del encargo de consolidación (2026-10-19): el estado de escritura inequívoco, el conflicto con otra pestaña y
@@ -1256,6 +1267,10 @@ export function EditorDePlan({
   };
   const fechasDeFases = fechasDeLasFases(plan, bloques);
   const ventanas = ventanasDeLasSesiones(plan, bloques);
+  // DL-197 (ET1-D03, F4): las semanas que las fases pasan del plan; con alguna, no se activa.
+  const fasesDeMas = plantilla ? 0 : semanasDeMas(plan, bloques);
+  // Revisión adversaria (DL-197): los que heredan la intensidad del plan sin objetivo todavía quedan «sin completar».
+  const herenciaDeLaIntensidad = plantilla ? null : { criterio: criterioDeLaIntensidad(plan.intensity), sinIntensidad: plan.withoutIntensity ?? [] };
   // La agenda empieza con el plan: si el plan tiene inicio, la agenda lo toma (los días se eligen en cada fase).
   const inicioDeLaAgenda = plan.startDate ?? hoyEn();
   const agendaDelPlan = (a: AgendaDeEntrenamiento | null): AgendaDeEntrenamiento | null => (a && plan.startDate && a.startDate !== plan.startDate ? { ...a, startDate: plan.startDate } : a);
@@ -1362,7 +1377,7 @@ export function EditorDePlan({
   // PG-10: los iguales del mismo ejercicio, en un renglón. Dentro del cuadro modal no se ofrece «Completar»: su
   // «Deshacer» vive en el aviso flotante, que con el cuadro abierto queda inerte y fuera del alcance del lector (revisión
   // de la tanda A). Cada aviso conserva su «Ir»; «Completar» sigue en el panel y en el asistente.
-  const sinCompletarAlActivar = confirmar ? enGrupos(loQueQuedaSinCompletarEnEntrenamiento(bloques), conSuLugar).map((c) => ({ ...c, completar: null })) : [];
+  const sinCompletarAlActivar = confirmar ? enGrupos(loQueQuedaSinCompletarEnEntrenamiento(bloques, herenciaDeLaIntensidad), conSuLugar).map((c) => ({ ...c, completar: null })) : [];
   // PLT (DL-182): «Antes de guardar». Lo de la plantilla entera se dice sin lugar; el nombre lleva a su campo.
   const enLaPlantilla = (p: ValidationIssue, texto: string): CosaParaRevisar =>
     DE_LA_PLANTILLA.has(p.path) ? { texto: texto.charAt(0).toUpperCase() + texto.slice(1), ir: p.path === 'name' ? irDesdeElCuadro(p) : null } : conSuLugar(p, texto);
@@ -1450,21 +1465,26 @@ export function EditorDePlan({
     cambiar((x) => (x.push({ blockId: crypto.randomUUID(), label: nombreDeFaseNueva(x), sessions: [] }), x));
     elegirBloque(n);
     setFoco({ tipo: 'fase' });
-    // Nace con un nombre de compromiso y con su campo abierto: lo que se escribe lo reemplaza.
-    setTexto({ de: 'nombre-del-bloque', i: n, j: null, k: null });
+    // DL-197 (ET1-03): nace con un nombre de compromiso y se abre «Editar fase» para cambiarlo (y sus semanas), en cuanto
+    // la fase nueva es la elegida (la dirección cambia en el dibujo siguiente).
+    setFaseQueSeAbre(n);
+    setCuadroDelPlan('fase');
   };
   /** DL-196 (EE-02, E19): la fase anterior, copiada al final, con sus semanas, sus aproximaciones y los días de sus sesiones. */
-  const copiarLaFaseAnterior = () => {
-    const original = bloques[bloques.length - 1];
+  const duplicarLaFase = (desde: number) => {
+    const original = bloques[desde];
     if (!original) return;
-    const n = bloques.length;
+    // DL-197 (ET1-03): la copia va justo después de la original (antes, «Copiar la fase anterior» la ponía al final).
+    const n = desde + 1;
     const copia = copiarLaFase(original, nombreDeFaseNueva(bloques), () => crypto.randomUUID());
-    cambiar((x) => (x.push(copia.bloque), x));
+    cambiar((x) => (x.splice(n, 0, copia.bloque), x));
     const conLaCopia = planificacionConLaCopia(plan, original.blockId, copia);
     cambiarPlanificacion(conLaCopia);
     // Los días se copian solo si la copia tiene fechas: sin ellas, sus sesiones irían todas las semanas junto con las de la
     // original, y la persona tendría las dos fases a la vez (EE-D02).
-    const conFechas = (fechasDeLasFases(conLaCopia, [...bloques, copia.bloque])[n] ?? null) !== null;
+    // DL-197 (ET1-D03): sin contar el fin del plan: una copia que queda fuera tiene sus días igual (no va ninguna semana hasta
+    // que se ajuste el plan, y entonces ya los tiene).
+    const conFechas = (fechasDeLasFases({ ...conLaCopia, weeks: null }, [...bloques.slice(0, n), copia.bloque, ...bloques.slice(n)])[n] ?? null) !== null;
     const conDias = conFechas ? agendaConLaCopia(agendaVisible, copia) : agendaVisible;
     if (conDias !== agendaVisible) cambiarAgenda(conDias);
     const habiaDias = agendaVisible?.sessions.some((s) => copia.sesiones.has(s.sessionId)) ?? false;
@@ -1474,12 +1494,12 @@ export function EditorDePlan({
       tipo: 'exito',
       texto:
         conFechas || !habiaDias
-          ? `«${nombreDelBloque(original, n - 1)}» copiada como «${copia.bloque.label}», con sus sesiones, sus semanas y sus días.`
-          : `«${nombreDelBloque(original, n - 1)}» copiada como «${copia.bloque.label}», con sus sesiones. Los días no se copiaron: sin el inicio del plan y las semanas de cada fase, las dos fases irían todas las semanas a la vez.`,
+          ? `«${nombreDelBloque(original, desde)}» copiada como «${copia.bloque.label}», con sus sesiones, sus semanas y sus días.`
+          : `«${nombreDelBloque(original, desde)}» copiada como «${copia.bloque.label}», con sus sesiones. Los días no se copiaron: sin el inicio del plan y las semanas de cada fase, las dos fases irían todas las semanas a la vez.`,
     });
     // DL-196 parte B (E19): con la copia hecha, se ofrece aplicarle una progresión (o seguir la de la original).
     if (!plantilla && copia.bloque.blockId) {
-      setProgresionAbierta({ blockId: copia.bloque.blockId, copia: { original: nombreDelBloque(original, n - 1), originalId: original.blockId ?? null, prescripciones: copia.prescripciones } });
+      setProgresionAbierta({ blockId: copia.bloque.blockId, copia: { original: nombreDelBloque(original, desde), originalId: original.blockId ?? null, prescripciones: copia.prescripciones } });
     }
   };
   /** DL-196 parte B: los ejercicios de una fase, con sus nombres, para la progresión y la distribución. */
@@ -1513,6 +1533,24 @@ export function EditorDePlan({
     cambiarPlanificacion(p);
     setProgresionAbierta(null);
     setMensaje({ tipo: 'exito', texto: a.progresion ? COPY_PROGRESIONES.aplicada(nombre) : COPY_PROGRESIONES.quitada(nombre) });
+  };
+  /** DL-197 (ET1-D10): cuántos ejercicios del plan tienen un criterio propio distinto del de esta intensidad. */
+  const conOtraIntensidad = (i2: IntensidadElegida): number => {
+    const criterio = i2 === 'RIR' || i2 === 'RPE' ? 'RIR' : i2 === 'PERCENT_RM' ? 'PERCENT_RM' : null;
+    return bloques.flatMap((b) => [...(b.sessions ?? []), ...(b.microcycles ?? []).flatMap((m) => m.sessions)]).flatMap((x) => x.prescriptions).filter((q) => q.intensity && q.intensity.criterion !== criterio).length;
+  };
+  /**
+   * DL-197 (ET1-D10): «Pasarlos» a la intensidad del plan: los que tenían otra quedan sin criterio propio (heredan la del
+   * plan, sin objetivo todavía: no traba el guardado) y sin el RIR de sus series, como al cambiar de criterio.
+   */
+  const pasarALaIntensidadDelPlan = (i2: PlanificacionDelPlan['intensity']) => {
+    const criterio = criterioDeLaIntensidad(i2);
+    cambiar((x) => {
+      for (const b of x)
+        for (const ses of [...(b.sessions ?? []), ...(b.microcycles ?? []).flatMap((m) => m.sessions)])
+          ses.prescriptions = ses.prescriptions.map((q) => (q.intensity && q.intensity.criterion !== criterio ? { ...q, intensity: null, sets: q.sets.map(({ rir: _r, ...y }) => y) } : q));
+      return x;
+    });
   };
   /** GR-27 (DL-196 parte B): marca o desmarca un gráfico del panel como favorito de este plan. */
   const alternarFavorito = (kind: 'EXERCISE_LOAD' | 'PHASE_PROGRESSION' | 'PHASE_DISTRIBUTION', id: string | null | undefined) => {
@@ -1689,6 +1727,19 @@ export function EditorDePlan({
                 cambiarPlanificacion(conAproximaciones(plan, { ...c, prescriptionId: id }));
               }
         }
+        // DL-197 (ET1-D11): la intensidad del plan, que hereda; la excepción «sin intensidad» vive en la planificación.
+        intensidadDelPlan={plantilla ? null : criterioDeLaIntensidad(plan.intensity)}
+        sinIntensidad={!plantilla && !!p.prescriptionId && (plan.withoutIntensity ?? []).includes(p.prescriptionId)}
+        onSinIntensidad={
+          plantilla
+            ? undefined
+            : (sin) => {
+                const id = p.prescriptionId ?? crypto.randomUUID();
+                if (!p.prescriptionId) cambiarEjercicio(l, { prescriptionId: id });
+                const otros = (plan.withoutIntensity ?? []).filter((x) => x !== id);
+                cambiarPlanificacion({ ...plan, withoutIntensity: sin ? [...otros, id] : otros });
+              }
+        }
         // PLT (DL-182): sin persona, sin la fuerza estimada ni «La vez pasada»: el ejercicio del catálogo no se pasa.
         exerciseId={asesoradoId === null ? null : (ejercicios[p.exerciseVersionId] ?? null)}
         abierto={abiertos.has(l)}
@@ -1853,17 +1904,11 @@ export function EditorDePlan({
     setParaEnfocar(camposDelProblema(p, `b${l.bloque}${l.microciclo === null ? '' : `-m${l.microciclo}`}-s${l.sesion}-p${l.ejercicio}`, l.serie));
   };
 
-  const agregarUnBloque = (
-    <button type="button" className="boton boton--quieto boton--compacto" data-agregar-bloque onClick={agregarBloque}>
-      <Icono nombre="mas" tamano={18} />
-      {COPY_ENTRENAMIENTO.agregarBloque}
-    </button>
-  );
   const agregarUnaSesion = (
     <MenuDeAcciones
       id="agregar-sesion"
       rotulo="agregar una sesión"
-      texto={COPY_ENTRENAMIENTO.agregarSesion}
+      texto={COPY_SEMANA_TIPO.nuevaSesion}
       icono="mas"
       conFlecha
       alineado="izquierda"
@@ -1923,17 +1968,50 @@ export function EditorDePlan({
     const sePuedeIr = lugarDelProblemaDeEntrenamiento(p.path).bloque !== null || alNombre;
     return { lugar, texto: PROBLEMA[p.code] ?? 'revisá este elemento', destino: sePuedeIr ? (alNombre ? PLT.irAlNombre : destinoDelLugar(lugar)) : null, ir: sePuedeIr ? () => irDesdeElPanel(p) : null };
   };
+  const fasesDeMasRecortadas = fasesDeMas > 0 ? conLaUltimaFaseRecortada(plan, bloques) : null;
+  const ultimaConSemanas = [...bloques].map((b, n) => ({ b, n })).reverse().find(({ b }) => (semanasDeLaFase(plan, b.blockId) ?? 0) > 0);
   const delEditor: Impedimento[] = [
+    ...(fasesDeMas > 0
+      ? [
+          {
+            lugar: 'Plan',
+            texto: COPY_FASES_DE_MAS.texto(semanasQueSumanLasFases(plan, bloques), plan.weeks ?? 0),
+            destino: null,
+            ir: null,
+            acciones: [
+              {
+                texto: COPY_FASES_DE_MAS.llevar(semanasQueSumanLasFases(plan, bloques)),
+                alTocar: () => {
+                  const n = semanasQueSumanLasFases(plan, bloques);
+                  alCambiarElPlan({ ...plan, weeks: n });
+                  setMensaje({ tipo: 'exito', texto: COPY_FASES_DE_MAS.llevado(n) });
+                },
+                clave: 'llevar-el-plan',
+              },
+              {
+                texto: COPY_FASES_DE_MAS.recortar,
+                noSePuede: fasesDeMasRecortadas ? null : COPY_FASES_DE_MAS.noAlcanza,
+                alTocar: () => {
+                  if (!fasesDeMasRecortadas || !ultimaConSemanas) return;
+                  cambiarPlanificacion(fasesDeMasRecortadas);
+                  setMensaje({ tipo: 'exito', texto: COPY_FASES_DE_MAS.recortada(nombreDelBloque(ultimaConSemanas.b, ultimaConSemanas.n), semanasDeLaFase(fasesDeMasRecortadas, ultimaConSemanas.b.blockId) ?? 0) });
+                },
+                clave: 'recortar-la-ultima',
+              },
+            ],
+          } satisfies Impedimento,
+        ]
+      : []),
     ...impideGuardar.map(impedimento),
     // C7: la escritura rápida sin aplicar, con «Ir a…» a su línea.
     ...sinAplicar.map((x) => ({ ...impedimento(x.issue), texto: x.texto })),
   ];
-  const delServidor: Impedimento[] = revisionVigente?.estado === 'lista' ? revisionVigente.problemas.map(impedimento) : [];
+  const delServidor: Impedimento[] = revisionVigente?.estado === 'lista' ? revisionVigente.problemas.filter((p) => !(p.code === 'PHASES_EXCEED_PLAN_WEEKS' && fasesDeMas > 0)).map(impedimento) : [];
   const cuantosImpiden = delEditor.length + delServidor.length;
   const revisionEnElPanel = (
     <RevisionDelPlan estado={estadoDeLaRevision} sinGuardar={sucio} delServidor={delServidor} delEditor={delEditor} motivoSinRevisar={motivoSinRevisar} guardando={guardando} onRevisar={() => void revisarAhora()} para={plantilla ? 'guardar' : 'activar'} />
   );
-  const sinCompletarEnVivo = enGrupos(loQueQuedaSinCompletarEnEntrenamiento(bloques), enElPanel);
+  const sinCompletarEnVivo = enGrupos(loQueQuedaSinCompletarEnEntrenamiento(bloques, herenciaDeLaIntensidad), enElPanel);
   /** El nombre de una sesión por su identificador, como lo dice la agenda. */
   const nombreDeLaSesionPorId = (id: string): string => sesionesDeLaAgenda.find((x) => x.sessionId === id)?.nombre ?? C.sesion;
 
@@ -2349,6 +2427,47 @@ export function EditorDePlan({
     return [semanas ? `${semanas} ${semanas === 1 ? 'semana' : 'semanas'}` : COPY_FASES.sinSemanas, ...(fechas ? [rangoCivil(fechas.desde, fechas.hasta)] : []), sesionesDelBloque(b)].join(' · ');
   };
   const nombresDeLasFases = bloques.map(nombreDelBloque);
+  // DL-197 (ET1-01): el rango del plan para la cabecera, las fases de más (F4) y la semana tipo de la fase elegida.
+  const rangoDelPlan = plantilla ? null : rangoDeLaBarra(fechasDeFases, rangoCivil, plan.startDate, plan.startDate && plan.weeks ? finDelPlan(plan.startDate, plan.weeks) : null);
+  const diasDe = (x: SesionE): readonly DiaDeLaSemana[] => (x.sessionId ? (agendaVisible?.sessions.find((y) => y.sessionId === x.sessionId)?.weekdays ?? []) : []);
+  const semanaTipo = sesiones.flatMap((x, m) => (diasDe(x).length > 0 ? [`${letraDeLaSesion(m)} ${diasEnCorto(diasDe(x))}`] : []));
+  /** DL-197 (ET1-05): las sesiones de la fase como tarjetas («A Torso · Lun · Jue»); la elegida, resaltada. */
+  const tarjetasDeSesiones = (
+    <div className="sesiones-de-la-fase" data-sesiones-de-la-fase={sesiones.length}>
+      <div className="sesiones-de-la-fase__lista" role="tablist" aria-label={COPY_SEMANA_TIPO.sesionesDeLaFase}>
+        {sesiones.map((x, m) => (
+          <button
+            key={x.sessionId ?? `sesion-${m}`}
+            type="button"
+            role="tab"
+            id={`tarjeta-de-sesion-${m + 1}`}
+            className="tarjeta-de-sesion"
+            aria-selected={m === k}
+            tabIndex={m === k ? 0 : -1}
+            data-elegir-sesion={m + 1}
+            onClick={() => {
+              if (m !== k) elegirSesion(m);
+              setFoco({ tipo: 'sesion' });
+            }}
+            onKeyDown={(e) => {
+              const otra = faseConLaTecla(m, sesiones.length, e.key);
+              if (otra === null) return;
+              e.preventDefault();
+              elegirSesion(otra);
+              document.getElementById(`tarjeta-de-sesion-${otra + 1}`)?.focus();
+            }}
+          >
+            <span className="tarjeta-de-sesion__letra" aria-hidden="true">
+              {letraDeLaSesion(m)}
+            </span>
+            <span className="tarjeta-de-sesion__nombre">{nombreDeLaSesion(x, m)}</span>
+            {diasDe(x).length > 0 ? <span className="tarjeta-de-sesion__dias">{diasEnCorto(diasDe(x))}</span> : null}
+          </button>
+        ))}
+      </div>
+      {agregarUnaSesion}
+    </div>
+  );
   const sesionesDelAlmanaque = new Map<string, SesionDelAlmanaque>(
     bloques.flatMap((b, n) =>
       [...(b.sessions ?? []), ...(b.microcycles ?? []).flatMap((m) => m.sessions)].flatMap((s, m) => (s.sessionId ? [[s.sessionId, { nombre: nombreDeLaSesion(s, m), letra: letraDeLaSesion(m), fase: n }] as const] : [])),
@@ -2538,7 +2657,9 @@ export function EditorDePlan({
             }}
             data-vista={v}
           >
-            {NOMBRE_DE_LA_VISTA[v]}
+            {/* DL-197 (F6): un control segmentado compacto: el ícono arriba y el nombre entero abajo (nada se corta). */}
+            <Icono nombre={ICONO_DE_LA_VISTA[v]} tamano={18} />
+            <span className="selector-de-vistas__nombre">{NOMBRE_DE_LA_VISTA[v]}</span>
           </button>
         ))}
       </div>
@@ -2904,77 +3025,57 @@ export function EditorDePlan({
           ) : null}
           {/* ED-17: lo que antes se repetía en un párrafo fijo va en una ayuda de primer uso que se cierra. */}
           {plantilla ? <PrimerUso {...PRIMER_USO_DE_LA_PLANTILLA} /> : <PrimerUso {...PRIMER_USO_DE_LA_ESTACION} />}
-          {/* DL-196 (EE-03): el plan, arriba: inicio, duración o fin, objetivo, anotaciones y la notación del esfuerzo. Una
-              plantilla no tiene fechas ni persona. */}
-          {plantilla ? null : (
-            <DatosDelPlan
-              planificacion={plan}
-              onCambiar={alCambiarElPlan}
-              semanasDeLasFases={semanasQueSumanLasFases(plan, bloques)}
-              abiertoDeEntrada={!plan.startDate}
-              notacion={
-                // DL-192 (RPE-01): cómo se escribe el esfuerzo en esta versión.
-                <NotacionDelPlan
-                  notacion={notacion}
-                  onCambiar={(n) => {
-                    setNotacion(n);
-                    setSucio(true);
-                    setMensaje(null);
-                  }}
-                />
-              }
-            />
-          )}
-          {/* DL-196 (EE-02): las fases, en desplegables ordenados; la abierta es la que se mira (`bloque` en la dirección). */}
-          <section className="fases-del-plan" aria-labelledby="titulo-fases" data-recorrido="editor-entrenamiento-fases">
-            <EncabezadoConAyuda
-              nivel={3}
-              id="titulo-fases"
-              titulo={COPY_FASES.titulo}
-              nombre="Qué es una fase"
-              como="div"
+          {/* DL-197 (ET1-01): «Fases del plan» con su barra horizontal; debajo, la fase elegida (su pestaña). */}
+          <section className="fases-del-plan" aria-labelledby="titulo-fases">
+            <BarraDeFases
+              rango={rangoDelPlan}
+              tarjetas={tarjetasDeLaBarra(plantilla ? null : plan, bloques)}
+              elegida={i}
+              onElegir={(n) => {
+                if (n !== i) elegirBloque(n);
+                setFoco({ tipo: 'fase' });
+              }}
+              onAgregar={agregarBloque}
+              onConfigurar={plantilla ? null : () => setCuadroDelPlan('plan')}
+              deMas={!plantilla && fasesDeMas > 0 ? { suman: semanasQueSumanLasFases(plan, bloques), plan: plan.weeks ?? 0 } : null}
+              onResolver={() => setImpideAbierto(true)}
+              idDelPanel="fase-abierta"
               ayuda={
                 <>
+                  <ContenidoDeLaAyuda ayuda={AYUDAS_DEL_EDITOR.fase} />
                   <p data-que-es-la-fase>{COPY_ENTRENAMIENTO.queEsLaFase}</p>
                   <p>{plantilla ? COPY_FASES.ayudaEnLaPlantilla : COPY_FASES.ayuda}</p>
                 </>
               }
             />
             {bloques.length === 0 ? <p className="nota">{C.sinBloques}</p> : null}
-            <ol className="fases-del-plan__lista">
-              {bloques.map((b, n) => {
-                const abierta = n === i;
-                return (
-                  <li key={b.blockId ?? `fase-${n}`} className="fase-del-plan" data-fase={colorDeLaFase(n)} data-abierta={abierta ? '' : undefined} data-fase-del-plan={n + 1}>
+            {bloque ? (
+                  <div className="fase-del-plan" data-fase={colorDeLaFase(i)} data-abierta="" data-fase-del-plan={i + 1}>
                     <div className="fase-del-plan__cabecera" data-foco="fase">
                       <h3 className="fase-del-plan__titulo">
-                        <button
-                          type="button"
-                          className="fase-del-plan__boton"
-                          aria-expanded={abierta}
-                          aria-controls={abierta ? 'fase-abierta' : undefined}
-                          onClick={() => {
-                            if (!abierta) elegirBloque(n);
-                            setFoco({ tipo: 'fase' });
-                          }}
-                          data-elegir-fase={n + 1}
-                        >
-                          <span className="fase-del-plan__numero" aria-hidden="true">
-                            {n + 1}
-                          </span>
-                          <span className="fase-del-plan__nombre">{nombreDelBloque(b, n)}</span>
-                          <span className="fase-del-plan__resumen">
-                            <EnPartes texto={resumenDeLaFase(b, n)} />
-                          </span>
-                          <Icono nombre={abierta ? 'arriba' : 'abajo'} tamano={18} />
-                        </button>
+                        <span className="fase-del-plan__numero" aria-hidden="true">
+                          {i + 1}
+                        </span>
+                        <span className="fase-del-plan__nombre">{nombreDelBloque(bloque, i)}</span>
+                        <span className="fase-del-plan__resumen">
+                          <EnPartes texto={resumenDeLaFase(bloque, i)} />
+                        </span>
                       </h3>
-                      {abierta && bloque ? (
+                      <div className="fase-del-plan__acciones">
+                        <button type="button" id="editar-fase" className="boton boton--secundario boton--compacto" onClick={() => setCuadroDelPlan('fase')} data-editar-fase>
+                          <Icono nombre="texto" tamano={18} />
+                          {COPY_BARRA_DE_FASES.editar}
+                        </button>
+                        {plantilla ? null : (
+                          <button type="button" id="dias-de-la-semana" className="boton boton--quieto boton--compacto" onClick={() => setCuadroDelPlan('dias')} data-abrir-dias-de-la-semana>
+                            <Icono nombre="calendario" tamano={18} />
+                            {COPY_BARRA_DE_FASES.dias}
+                          </button>
+                        )}
                         <MenuDeAcciones
                           id="menu-del-bloque"
                           rotulo={`más acciones de la fase ${nombreDelBloque(bloque, i)}`}
                           acciones={[
-                            { clave: 'nombre', texto: 'Cambiar el nombre', alElegir: () => setTexto({ de: 'nombre-del-bloque', ...delBloque }) },
                             // Un bloque organiza sus sesiones bajo microciclos o directamente, nunca las dos cosas (09v10:281-283).
                             ...(mira.conMicrociclos
                               ? []
@@ -2988,51 +3089,19 @@ export function EditorDePlan({
                                     noSePuede: sesiones.length > TOPES_DE_ENTRENAMIENTO.sesionesDelMicrociclo ? E.topeDelMicrociclo(TOPES_DE_ENTRENAMIENTO.sesionesDelMicrociclo, sesiones.length) : null,
                                   },
                                 ]),
+                            { clave: 'duplicar', texto: 'Duplicar la fase', alElegir: () => duplicarLaFase(i) },
                             { clave: 'quitar', texto: 'Quitar esta fase', alElegir: quitarBloque, noSePuede: bloques.length <= 1 ? 'Es la única fase de la versión.' : null },
                           ]}
                         />
-                      ) : null}
+                      </div>
                     </div>
-                    {abierta && bloque ? (
-                      <div id="fase-abierta" className="fase-del-plan__cuerpo">
-                        {seCambia('nombre-del-bloque', delBloque) || bloque.label.trim() === '' ? (
-                          <CampoDeNombre
-                            id={`b${i}-nombre`}
-                            etiqueta="Nombre de la fase"
-                            valor={bloque.label}
-                            maximo={120}
-                            enfocar={seCambia('nombre-del-bloque', delBloque)}
-                            despues="menu-del-bloque"
-                            alEmpezar={() => setTexto({ de: 'nombre-del-bloque', ...delBloque })}
-                            alCambiar={(v) => cambiar((x) => ((x[i]!.label = v), x))}
-                            alTerminar={dejarDeCambiar}
-                          />
-                        ) : null}
+                      <div id="fase-abierta" className="fase-del-plan__cuerpo" role="tabpanel" aria-labelledby={`tarjeta-de-fase-${i + 1}`}>
                         <div className="fase-del-plan__datos" data-foco="fase">
-                          {plantilla ? (
-                            <TextoAPedido
-                              id={`b${i}-proposito`}
-                              rotulo={C.proposito}
-                              queEs="un propósito"
-                              valor={bloque.purpose ?? null}
-                              maximo={1000}
-                              abierto={seCambia('proposito-del-bloque', delBloque)}
-                              alAbrir={() => setTexto({ de: 'proposito-del-bloque', ...delBloque })}
-                              alCambiar={(v) => cambiar((x) => ((x[i]!.purpose = v), x))}
-                              alCerrar={dejarDeCambiar}
-                            />
-                          ) : (
-                            <DatosDeLaFase
-                              id={`b${i}`}
-                              semanas={semanasDeLaFase(plan, bloque.blockId)}
-                              fechas={fechasDeFases[i] ?? null}
-                              objetivo={bloque.purpose}
-                              anotaciones={anotacionesDeLaFase(plan, bloque.blockId)}
-                              onSemanas={(s) => conIdDeLaFase((id) => cambiarPlanificacion(conSemanasDeLaFase(plan, id, s)))}
-                              onObjetivo={(v) => cambiar((x) => ((x[i]!.purpose = v), x))}
-                              onAnotaciones={(v) => conIdDeLaFase((id) => cambiarPlanificacion(conAnotacionesDeLaFase(plan, id, v)))}
-                            />
-                          )}
+                          {bloque.purpose?.trim() ? (
+                            <p className="nota fase-del-plan__objetivo" data-objetivo-de-la-fase>
+                              <span className="fase-del-plan__rotulo">{plantilla ? 'Propósito' : 'Objetivo'}:</span> {bloque.purpose}
+                            </p>
+                          ) : null}
                           {/* DL-196 parte B (E12): la progresión de la fase, a pedido. La regla guardada se lee en un renglón fijo. */}
                           {!plantilla ? (
                             <div className="fase-del-plan__progresion" data-progresion-de-la-fase={progresionDeLaFase(plan, bloque.blockId)?.model ?? (progresionDeLaFase(plan, bloque.blockId) ? 'descarga' : 'ninguna')}>
@@ -3099,50 +3168,44 @@ export function EditorDePlan({
                               {PLT.sinDias}
                             </p>
                           ) : (
-                            <DiasDeLaFase
-                              id={`${prefijo}-dias`}
-                              sesiones={sesiones.map((s, m) => ({
-                                id: s.sessionId ?? null,
-                                nombre: nombreDeLaSesion(s, m),
-                                letra: letraDeLaSesion(m),
-                                dias: s.sessionId ? (agendaVisible?.sessions.find((x) => x.sessionId === s.sessionId)?.weekdays ?? []) : [],
-                              }))}
-                              onAlternar={(id, dia) => cambiarAgenda(agendaDelPlan(alternarDia(agendaVisible, id, dia, inicioDeLaAgenda)))}
-                              pie={
-                                <div className="dias-de-la-fase__pie">
-                                  {sesiones.map((s) => (
-                                    <Fragment key={s.sessionId ?? s.label}>{diasDelPresetDe(s)}</Fragment>
-                                  ))}
-                                  {sesiones.flatMap((s) => {
-                                    const compartidos = s.sessionId ? diasCompartidos(agendaVisible, s.sessionId, nombreDeLaSesionPorId) : [];
-                                    return compartidos.length > 0
-                                      ? [
-                                          <p key={s.sessionId} className="nota" data-dia-compartido>
-                                            {CE.compartido(compartidos)}
-                                          </p>,
-                                        ]
-                                      : [];
-                                  })}
-                                  {agendaConDias ? (
-                                    <button
-                                      id="ver-proximas-fechas"
-                                      type="button"
-                                      className="boton boton--discreto"
-                                      aria-expanded={fechasAbiertas}
-                                      aria-controls={fechasAbiertas ? 'proximas-fechas' : undefined}
-                                      data-ver-proximas-fechas
-                                      onClick={() => {
-                                        setFechasAbiertas(!fechasAbiertas);
-                                        if (!fechasAbiertas) setParaEnfocar('titulo-agenda');
-                                      }}
-                                    >
-                                      <Icono nombre="calendario" tamano={15} />
-                                      {fechasAbiertas ? COPY_PROXIMAS_FECHAS.ocultar : COPY_PROXIMAS_FECHAS.ver}
-                                    </button>
-                                  ) : null}
-                                </div>
-                              }
-                            />
+                            <div className="semana-tipo" data-semana-tipo>
+                              <p className="nota semana-tipo__renglon">
+                                <span className="fase-del-plan__rotulo">{COPY_SEMANA_TIPO.titulo}:</span>{' '}
+                                {semanaTipo.length > 0 ? semanaTipo.join(' · ') : COPY_SEMANA_TIPO.sinDias}
+                              </p>
+                              <div className="dias-de-la-fase__pie">
+                                {sesiones.map((s) => (
+                                  <Fragment key={s.sessionId ?? s.label}>{diasDelPresetDe(s)}</Fragment>
+                                ))}
+                                {sesiones.flatMap((s) => {
+                                  const compartidos = s.sessionId ? diasCompartidos(agendaVisible, s.sessionId, nombreDeLaSesionPorId) : [];
+                                  return compartidos.length > 0
+                                    ? [
+                                        <p key={s.sessionId} className="nota" data-dia-compartido>
+                                          {CE.compartido(compartidos)}
+                                        </p>,
+                                      ]
+                                    : [];
+                                })}
+                                {agendaConDias ? (
+                                  <button
+                                    id="ver-proximas-fechas"
+                                    type="button"
+                                    className="boton boton--discreto"
+                                    aria-expanded={fechasAbiertas}
+                                    aria-controls={fechasAbiertas ? 'proximas-fechas' : undefined}
+                                    data-ver-proximas-fechas
+                                    onClick={() => {
+                                      setFechasAbiertas(!fechasAbiertas);
+                                      if (!fechasAbiertas) setParaEnfocar('titulo-agenda');
+                                    }}
+                                  >
+                                    <Icono nombre="calendario" tamano={15} />
+                                    {fechasAbiertas ? COPY_PROXIMAS_FECHAS.ocultar : COPY_PROXIMAS_FECHAS.ver}
+                                  </button>
+                                ) : null}
+                              </div>
+                            </div>
                           )}
                           {/* C5: lo que sale de los días, a pedido: el inicio, la semana con «Duplicar el día» (ED-24) y las
                               dos semanas que siguen. */}
@@ -3183,8 +3246,15 @@ export function EditorDePlan({
                         <div className="fase-del-plan__sesiones" data-foco="sesion" data-recorrido="sesiones">
                           <div className="plan__niveles niveles-del-editor">
                             {sesion ? (
-                              <SelectorDeNivel nivel="sesion" rotulo={C.sesion} opciones={paraElegir(sesiones.map(nombreDeLaSesion))} elegido={{ order: k + 1, label: nombreDeLaSesion(sesion, k) }} onElegir={(o) => elegirSesion(o - 1)}>
-                                {agregarUnaSesion}
+                              <>
+                              {tarjetasDeSesiones}
+                              <div className="sesion-elegida__cabecera" data-sesion-elegida={k + 1}>
+                                <h4 className="sesion-elegida__titulo">
+                                  <span className="tarjeta-de-sesion__letra" aria-hidden="true">
+                                    {letraDeLaSesion(k)}
+                                  </span>
+                                  {nombreDeLaSesion(sesion, k)}
+                                </h4>
                                 <MenuDeAcciones
                                   id="menu-de-la-sesion"
                                   rotulo={`más acciones de la sesión ${nombreDeLaSesion(sesion, k)}`}
@@ -3205,7 +3275,8 @@ export function EditorDePlan({
                                 <span className="nota nivel-del-plan__cuenta" data-cuenta-de-la-sesion>
                                   <EnPartes texto={cuentaDeLaSesion(sesion)} />
                                 </span>
-                              </SelectorDeNivel>
+                              </div>
+                              </>
                             ) : (
                               <div className="nivel-del-plan" data-nivel="sesion" data-forma="ninguna">
                                 <span className="nivel-del-plan__rotulo">{C.sesion}</span>
@@ -3409,21 +3480,8 @@ export function EditorDePlan({
                           ) : null}
                         </div>
                       </div>
-                    ) : null}
-                  </li>
-                );
-              })}
-            </ol>
-            {/* DL-196 (EE-02, E19): «Agregar fase», con la opción de copiar la anterior, una sola vez, al pie de las fases. */}
-            <div className="fases-del-plan__agregar">
-              {agregarUnBloque}
-              {bloques.length > 0 ? (
-                <button type="button" className="boton boton--quieto boton--compacto" data-copiar-la-fase-anterior onClick={copiarLaFaseAnterior}>
-                  <Icono nombre="duplicar" tamano={18} />
-                  {COPY_FASES.copiarLaAnterior}
-                </button>
-              ) : null}
-            </div>
+                  </div>
+            ) : null}
           </section>
         </div>
         {/* DL-196 (EE-05): el panel contextual. «Antes de activar» ya no es una pestaña: va al lado de «Revisar y activar». */}
@@ -3654,11 +3712,89 @@ export function EditorDePlan({
       {/* DL-195: el recorrido guiado del editor, sobre todo lo demás (va en un portal). */}
       <RecorridoGuiado definicion={RECORRIDO_DEL_EDITOR_DE_ENTRENAMIENTO} abierto={recorrido.abierto} alCerrar={recorrido.cerrar} />
 
+      {/* DL-197 (ET1-02 a ET1-04): los cuadros de configuración. Los cuadros configuran; el panel, a la derecha, es para mirar. */}
+      {plantilla ? null : (
+        <CuadroConfigurarPlan
+          abierto={cuadroDelPlan === 'plan'}
+          sobretitulo={persona}
+          planificacion={plan}
+          notacion={notacion}
+          semanasDeLasFases={semanasQueSumanLasFases(plan, bloques)}
+          conOtraIntensidad={conOtraIntensidad}
+          onGuardar={(c) => {
+            alCambiarElPlan(c.planificacion);
+            if (c.notacion !== notacion) setNotacion(c.notacion);
+            if (c.pasarLosDemas) pasarALaIntensidadDelPlan(c.planificacion.intensity);
+            setSucio(true);
+            // Sin aviso flotante: lo configurado se lee en «Fases del plan · fechas» (el aviso tapaba la fase).
+            setCuadroDelPlan(null);
+          }}
+          onCerrar={() => setCuadroDelPlan(null)}
+        />
+      )}
+      {bloque ? (
+        <CuadroEditarFase
+          key={bloque.blockId ?? `fase-${i}`}
+          abierto={cuadroDelPlan === 'fase' && (faseQueSeAbre === null || faseQueSeAbre === i)}
+          sobretitulo={persona}
+          enLaPlantilla={!!plantilla}
+          fase={{ nombre: bloque.label, semanas: semanasDeLaFase(plan, bloque.blockId), objetivo: bloque.purpose ?? null, anotaciones: anotacionesDeLaFase(plan, bloque.blockId) }}
+          fechas={(() => {
+            const t = tarjetasDeLaBarra(plan, bloques)[i];
+            const fechas = fechasDeFases[i];
+            return [t && t.desde !== null && t.hasta !== null ? COPY_BARRA_DE_FASES.semanas(t.desde, t.hasta) : null, fechas ? rangoCivil(fechas.desde, fechas.hasta) : null].filter(Boolean).join(' · ') || null;
+          })()}
+          sePuedeQuitar={bloques.length > 1}
+          onGuardar={(e) => {
+            setFaseQueSeAbre(null);
+            cambiar((x) => ((x[i]!.label = e.nombre), (x[i]!.purpose = e.objetivo), x));
+            if (!plantilla) conIdDeLaFase((id) => cambiarPlanificacion(conAnotacionesDeLaFase(conSemanasDeLaFase(plan, id, e.semanas), id, e.anotaciones)));
+            setCuadroDelPlan(null);
+          }}
+          onDuplicar={() => {
+            setCuadroDelPlan(null);
+            duplicarLaFase(i);
+          }}
+          onQuitar={() => {
+            setCuadroDelPlan(null);
+            quitarBloque();
+          }}
+          onCerrar={() => {
+            setCuadroDelPlan(null);
+            setFaseQueSeAbre(null);
+          }}
+        />
+      ) : null}
+      {bloque && !plantilla ? (
+        <CuadroDiasDeLaSemana
+          abierto={cuadroDelPlan === 'dias'}
+          sobretitulo={persona}
+          fase={[nombreDelBloque(bloque, i), resumenDeLaFase(bloque, i)].join(' · ')}
+          sesiones={sesiones.map((x, m) => ({ id: x.sessionId ?? null, letra: letraDeLaSesion(m), nombre: nombreDeLaSesion(x, m), dias: diasDe(x) }))}
+          onGuardar={(filas) => {
+            cambiar((x) => {
+              lasSesiones(x).forEach((y, m) => {
+                const nuevo = filas[m]?.nombre;
+                if (nuevo && nuevo !== y.label) y.label = nuevo;
+              });
+              return x;
+            });
+            let a = agendaVisible;
+            for (const fila of filas) if (fila.id) a = ponerDias(a, fila.id, fila.dias, inicioDeLaAgenda);
+            if (a !== agendaVisible) cambiarAgenda(agendaDelPlan(a));
+            setCuadroDelPlan(null);
+          }}
+          onCerrar={() => setCuadroDelPlan(null)}
+        />
+      ) : null}
+
       <AgregarEjercicio
         abierto={agregando && !!sesion}
         deDonde={dondeSeAgrega}
         habituales={ejerciciosHabituales}
         prescripcionDeLaSesion={prescripcionDeEstaSesion?.nombre ?? null}
+        // Revisión adversaria (DL-197): lo que la sesión ya tiene se marca en la lista, por versión y por ejercicio.
+        enLaSesion={new Set((sesion?.prescriptions ?? []).flatMap((q) => [q.exerciseVersionId, ...(ejercicios[q.exerciseVersionId] ? [ejercicios[q.exerciseVersionId]!] : [])]))}
         onAgregar={(marcados, prescripcion) => {
           if (!sesion) return;
           setNombres((n) => ({ ...n, ...Object.fromEntries(marcados.map((e) => [e.versionId, e.name])) }));
@@ -3784,6 +3920,27 @@ export function EditorDePlantilla({ plantilla }: { readonly plantilla: EdicionDe
 const sinPersona = (): void => undefined;
 
 /** DL-196: los textos del plan y sus fases en el editor. */
+/** DL-197 (ET1-04): la semana tipo de la fase, en un renglón; la matriz va en el cuadro «Días de la semana». */
+const COPY_SEMANA_TIPO = {
+  titulo: 'Semana tipo',
+  sinDias: 'todavía sin días: elegilos en «Días de la semana»',
+  sesionesDeLaFase: 'Las sesiones de la fase: elegí una para verla',
+  nuevaSesion: 'Nueva sesión',
+} as const;
+
+/** DL-197 (ET1-D03, F4): «Antes de activar» con las fases de más, y sus dos salidas. */
+const COPY_FASES_DE_MAS = {
+  texto: (suman: number, plan: number) => `las fases suman ${suman} semanas y el plan dura ${plan}: lo de después del fin no tendría fechas`,
+  llevar: (n: number) => `Llevar el plan a ${n} semanas`,
+  recortar: 'Recortar la última fase',
+  noAlcanza: 'A la última fase le quedaría menos de una semana: acortá otras fases o llevá el plan a la suma.',
+  llevado: (n: number) => `El plan pasó a ${n} semanas: las fases entran enteras.`,
+  recortada: (nombre: string, n: number) => `«${nombre}» quedó con ${n} ${n === 1 ? 'semana' : 'semanas'}: las fases entran en el plan.`,
+} as const;
+
+/** DL-197 (F6): el ícono de cada vista del panel. */
+const ICONO_DE_LA_VISTA: Readonly<Record<VistaDelPanel, 'calendario' | 'entrenamiento' | 'sube' | 'habitual'>> = { almanaque: 'calendario', distribucion: 'entrenamiento', progresion: 'sube', favoritos: 'habitual' };
+
 const COPY_FASES = {
   titulo: 'Fases',
   elPlan: 'El plan',

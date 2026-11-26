@@ -232,7 +232,8 @@ test('TB-48 · los editores duplican y mueven con el módulo, y lo abierto sigue
   // ejercicio por su posición de antes.
   assert.match(entrenamiento, /dejarAbiertos\(abiertosTrasReordenar\(abiertos, r\.desdeDonde\)\)/);
   assert.match(entrenamiento, /onSubir=\{\(\) => moverEjercicio\(l, -1\)\}/);
-  assert.match(ejercicio, /aria-disabled=\{esElUltimo \|\| undefined\} onClick=\{\(\) => !esElUltimo && onBajar\(\)\}/);
+  // DL-197 (F9): subir y bajar, en «Más», apagados en la punta con su motivo.
+  assert.match(ejercicio, /\{ clave: 'bajar', texto: EDICION\.bajar, alElegir: onBajar, noSePuede: esElUltimo \? E9\.yaEsElUltimo : null \}/);
   assert.doesNotMatch(ejercicio + comida, / disabled=\{es(La|El)(Primer|Ultim)/, 'ningún «Subir» ni «Bajar» con disabled');
   assert.match(ejercicio, /\{ clave: 'duplicar', texto: EDICION\.duplicarEjercicio, alElegir: onDuplicar \}/);
 });
@@ -308,7 +309,7 @@ test('TB-48 · «Validar plan» pasa a «Revisar el plan», y lo sin completar n
   assert.match(leerDelDominio('copy-entrenamiento.ts'), /noJuzga: 'Revisar el plan mira su forma, no su calidad/);
   // ED-07 (DJ-6): lo sin completar lo dice «Antes de activar», aparte de lo que impide y sin bloquear el principal.
   // PG-10 (WP-PULIDO-GRANDES): en Entrenamiento, los iguales del mismo ejercicio van en un renglón (`enGrupos`).
-  for (const [archivo, calculo] of [['nutrition/editor.tsx', 'loQueQuedaSinCompletarEnNutricion(estructura).map('], ['training/editor.tsx', 'enGrupos(loQueQuedaSinCompletarEnEntrenamiento(bloques), conSuLugar)']]) {
+  for (const [archivo, calculo] of [['nutrition/editor.tsx', 'loQueQuedaSinCompletarEnNutricion(estructura).map('], ['training/editor.tsx', 'enGrupos(loQueQuedaSinCompletarEnEntrenamiento(bloques, herenciaDeLaIntensidad), conSuLugar)']]) {
     const editor = leer(archivo);
     assert.ok(editor.includes(`const sinCompletarAlActivar = confirmar ? ${calculo}`), archivo);
     assert.match(editor, /sinCompletar=\{sinCompletarAlActivar\}/, archivo);

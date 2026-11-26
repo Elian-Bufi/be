@@ -1,6 +1,11 @@
 import { Inject, Injectable } from '@nestjs/common';
 import {
+  ArticulacionesSchema,
   CrearEjercicioRequestSchema,
+  EquipamientoSchema,
+  GrupoMuscularSchema,
+  PatronDeMovimientoSchema,
+  type ClasificacionDeEjercicio,
   esZonaMuscular,
   ordenarZonasDeEjercicio,
   problemasDeZonas,
@@ -55,8 +60,38 @@ const COLUMNAS = Prisma.sql`e."id"::text AS "ejercicioId", v."id"::text AS "vers
        e."procedencia"::text AS "procedencia", e."creado_por_id"::text AS "creadoPorId", v."momento_de_registro" AS "momentoDeRegistro",
        v."procedencia" -> 'fuenteExterna' AS "fuenteExterna"`;
 
-/** Las del buscador suman la correspondencia con la fuente, para el origen de la fila (DL-141 D-6). */
-const COLUMNAS_DEL_BUSCADOR = Prisma.sql`${COLUMNAS}, ${CORRESPONDENCIA}`;
+/**
+ * Las del buscador suman la correspondencia con la fuente, para el origen de la fila (DL-141 D-6), y (DL-197) la
+ * clasificación de la versión, que solo se responde si se pidió (`withClassification`).
+ */
+const COLUMNAS_DEL_BUSCADOR = Prisma.sql`${COLUMNAS}, ${CORRESPONDENCIA},
+       (SELECT jsonb_build_object('grupoMuscular', c."grupo_muscular", 'equipamiento', COALESCE(to_jsonb(c."equipamiento"), '[]'::jsonb), 'patron', c."patron", 'articulaciones', c."articulaciones")
+          FROM "clasificacion_de_ejercicio" c WHERE c."ejercicio_id" = e."id" ORDER BY c."numero" DESC LIMIT 1) AS "clasificacion"`;
+
+/** DL-197: las columnas de la clasificación, como las lee el buscador. */
+interface ConClasificacion {
+  readonly grupoMuscular: string | null;
+  readonly equipamiento: readonly string[] | null;
+  readonly patron: string | null;
+  readonly articulaciones: string | null;
+}
+
+/** DL-197 (ET1-D12): la clasificación de la fila en el contrato; lo que la base no sabe decir, `null` (o sin equipamiento). */
+function clasificacionApi(c: ConClasificacion | null): ClasificacionDeEjercicio {
+  const f: ConClasificacion = c ?? { grupoMuscular: null, equipamiento: [], patron: null, articulaciones: null };
+  const grupo = GrupoMuscularSchema.safeParse(f.grupoMuscular);
+  const patron = PatronDeMovimientoSchema.safeParse(f.patron);
+  const articulaciones = ArticulacionesSchema.safeParse(f.articulaciones);
+  return {
+    muscleGroup: grupo.success ? grupo.data : null,
+    equipment: (f.equipamiento ?? []).flatMap((e) => {
+      const x = EquipamientoSchema.safeParse(e);
+      return x.success ? [x.data] : [];
+    }),
+    movementPattern: patron.success ? patron.data : null,
+    joints: articulaciones.success ? articulaciones.data : null,
+  };
+}
 
 /**
  * Catálogo propio de ejercicios (RF-037; API-TRN-13 y API-INT-TRN-01).
@@ -122,12 +157,21 @@ export class CatalogoDeEjerciciosService {
    * sustitución de la APK: cuando se publique una APK con esa lectura, su forma queda congelada (DL-152) y un campo nuevo
    * va en otra operación.
    */
-  async buscar(actor: ActorAutenticado, query: Record<string, unknown>, zona: string | null = null): Promise<{ data: EjercicioEncontrado[]; page: unknown }> {
+  async buscar(actor: ActorAutenticado, query: Record<string, unknown>, zona: string | null = null, conClasificacion = false): Promise<{ data: EjercicioEncontrado[]; page: unknown }> {
     // DL-196 parte B (EE-D41): el filtro por zona de la silueta; una zona que no es de las 17 es un 422.
     if (zona !== null && !esZonaMuscular(zona)) throw errores.validacionFallida([{ code: 'INVALID_FILTER', path: 'zoneId' }]);
     const { filas, page } = await this.buscarFilas(actor, query, zona);
     const visual = await visualDeEjercicios(this.lector(), filas.map((f) => f.ejercicioId));
-    return { data: filas.map((f) => ({ ...ejercicioApi(f, visual(f.ejercicioId)), matchedAlternativeName: f.nombreAlternativo, origin: origenEnElBuscador(f, actor.identidadId) })), page };
+    return {
+      data: filas.map((f) => ({
+        ...ejercicioApi(f, visual(f.ejercicioId)),
+        matchedAlternativeName: f.nombreAlternativo,
+        origin: origenEnElBuscador(f, actor.identidadId),
+        // DL-197 (ET1-D12): solo si se pidió: la APK 0.32 busca con esta operación y su esquema estricto no la conoce.
+        ...(conClasificacion ? { classification: clasificacionApi((f as unknown as { clasificacion: ConClasificacion | null }).clasificacion) } : {}),
+      })),
+      page,
+    };
   }
 
   // ─── API-EJE-05 ────────────────────────────────────────────────────────────────────────────
@@ -204,6 +248,20 @@ export class CatalogoDeEjerciciosService {
             procedencia: { ...procedencia, carga: 'MANUAL' } as unknown as Prisma.InputJsonValue,
           },
         });
+        // DL-197 (ET1-D14): la clasificación de un propio, si se eligió: su primera clasificación.
+        if (pedido.classification) {
+          await tx.clasificacionDeEjercicio.create({
+            data: {
+              ejercicioId: ejercicio.id,
+              numero: 1,
+              grupoMuscular: pedido.classification.muscleGroup,
+              equipamiento: [...new Set(pedido.classification.equipment)],
+              patron: pedido.classification.movementPattern,
+              articulaciones: pedido.classification.joints,
+              procedencia: procedencia as unknown as Prisma.InputJsonValue,
+            },
+          });
+        }
         // Las zonas declaradas al cargarlo son su primera asignación, para esta versión (REG-06-139).
         if (pedido.muscleZones.length > 0) {
           await asignarZonas(tx, { ejercicioId: ejercicio.id, versionDeEjercicioId: version.id, numero: 1, autorId: actor.identidadId, procedencia, zonas: pedido.muscleZones });

@@ -37,6 +37,7 @@ import {
   type VezPasada,
   type ZonasACuidar,
 } from '@be/domain';
+import { AYUDAS_DEL_EDITOR, ContenidoDeLaAyuda } from './ayudas-del-editor';
 import { useId, useState, type ReactNode } from 'react';
 import { ExplicacionAPedido } from '../../../../components/explicacion-a-pedido';
 import { FiguraDeCalor } from '../../../../components/figura-de-calor';
@@ -141,9 +142,7 @@ export function CargaPorSemana({
         pie={
           <p className="nota">
             {!fase ? 'La fase no tiene fechas: lo realizado no se ubica en sus semanas. ' : ''}
-            {conEstimacion
-              ? `El máximo estimado es Epley v1: solo series de hasta ${TOPE_DE_LA_ESTIMACION} repeticiones equivalentes con RIR de hasta 2; de más de ${TOPE_DEL_NUCLEO}, orientativo (rombo hueco).`
-              : 'El máximo estimado (Epley v1) es solo para los seis ejercicios con barra de su lista.'}
+            {conEstimacion ? `El máximo estimado es Epley v1: solo series de hasta ${TOPE_DE_LA_ESTIMACION} repeticiones equivalentes con RIR de hasta 2; de más de ${TOPE_DEL_NUCLEO}, orientativo (rombo hueco).` : ''}
           </p>
         }
       />
@@ -184,9 +183,35 @@ export function CargaParaRepeticiones({
   const valor = lectura.tipo === 'lista' ? valorDeLaTarjeta(lectura.apagado?.puntos ?? [], lectura.encendido?.puntos ?? []) : null;
   const paso = PASOS_DEL_REDONDEO[unidad][0]!;
   const r = valor && valor.estimate.load.unit === unidad ? cargaParaRepeticiones(valor.estimate.value, unidad, leer(reps), rir, paso) : null;
+  const ayuda = (
+    <ExplicacionAPedido nombre={AYUDAS_DEL_EDITOR.cargaParaRepeticiones.nombre} como="div" lugar="esquina">
+      <ContenidoDeLaAyuda
+        ayuda={AYUDAS_DEL_EDITOR.cargaParaRepeticiones}
+        extra={
+          <>
+            <p>
+              {enRpe
+                ? 'El RPE es la escala de esfuerzo percibido; en la escala anclada a las repeticiones en reserva, RPE 8 equivale a dejar 2 (RIR 2).'
+                : 'El RIR son las repeticiones que quedan en reserva al terminar la serie.'}
+            </p>
+            <p>Solo con RIR de 0 a 2 y hasta {TOPE_DE_LA_ESTIMACION} repeticiones equivalentes; de más de {TOPE_DEL_NUCLEO}, es orientativa. Es para los seis ejercicios con barra de la lista del método.</p>
+          </>
+        }
+      />
+    </ExplicacionAPedido>
+  );
+  if (!conEstimacion) {
+    return (
+      <section className="carga-para-repeticiones carga-para-repeticiones--no-aplica con-ayuda-en-la-esquina" aria-label="Carga para N repeticiones" data-carga-para-repeticiones="no-aplica">
+        <p className="nota">
+          <span className="carga-para-repeticiones__rotulo">Carga para N repeticiones:</span> no aplica a este ejercicio.
+        </p>
+        {ayuda}
+      </section>
+    );
+  }
   let resultado: ReactNode;
-  if (!conEstimacion) resultado = <p className="nota">El máximo estimado (Epley v1) es solo para los seis ejercicios con barra de su lista: este no está, así que no hay cuenta.</p>;
-  else if (lectura.tipo === 'cargando') resultado = <p className="nota">Leyendo el máximo estimado…</p>;
+  if (lectura.tipo === 'cargando') resultado = <p className="nota">Leyendo el máximo estimado…</p>;
   else if (!valor) resultado = <p className="nota">No hay datos suficientes: hace falta una serie registrada de este ejercicio con carga, repeticiones y RIR de hasta 2 (hasta {TOPE_DE_LA_ESTIMACION} repeticiones equivalentes).</p>;
   else if (!r || !r.hay)
     resultado = (
@@ -210,16 +235,7 @@ export function CargaParaRepeticiones({
         <h4 id={`${id}-titulo`} className="ejercicio-del-plan__subtitulo">
           Carga para N repeticiones
         </h4>
-        <ExplicacionAPedido nombre="Cómo se calcula la carga para N repeticiones" como="div" lugar="esquina">
-          <p>Sale del último máximo estimado de la persona (Epley v1): carga = máximo × 30 ÷ (30 + repeticiones + RIR).</p>
-          <p>
-            {enRpe
-              ? 'El RPE es la escala de esfuerzo percibido; en la escala anclada a las repeticiones en reserva, RPE 8 equivale a dejar 2 (RIR 2).'
-              : 'El RIR son las repeticiones que quedan en reserva al terminar la serie.'}
-          </p>
-          <p>Ejemplo: con un máximo estimado de 100 kg, 8 repeticiones con RIR 2 → 100 × 30 ÷ 40 = 75 kg. Se redondea hacia abajo, al paso de la barra.</p>
-          <p>Solo con RIR de 0 a 2 y hasta {TOPE_DE_LA_ESTIMACION} repeticiones equivalentes; de más de {TOPE_DEL_NUCLEO}, es orientativa.</p>
-        </ExplicacionAPedido>
+        {ayuda}
       </div>
       <div className="carga-para-repeticiones__campos">
         <label>

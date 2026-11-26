@@ -28,6 +28,7 @@ import type {
 import { CAMPOS_CON_ORIGEN } from './contratos-entrenamiento';
 import type { PlanConObjetivos } from './contratos-entrenamiento-por-serie';
 import { problemasDeObjetivosPorSerie } from './objetivos-por-serie';
+import { semanasDeMas } from './planificacion-del-plan';
 import { calentamientoFueraDeLugar, tipoGuardado } from './tipos-de-serie';
 import {
   bloqueDelEjercicioGuardado,
@@ -169,6 +170,8 @@ export const CodigoDeProblemaDePlanDeEntrenamiento = {
   BLOCK_REQUIRED: 'BLOCK_REQUIRED',
   SESSION_REQUIRED: 'SESSION_REQUIRED',
   PRESCRIPTION_REQUIRED: 'PRESCRIPTION_REQUIRED',
+  // DL-197 (ET1-D03, F4): las fases suman más semanas que el plan. No se activa (Dirección, 2026-11-25).
+  PHASES_EXCEED_PLAN_WEEKS: 'PHASES_EXCEED_PLAN_WEEKS',
   // DL-181: los bloques de la sesión (`bloques-de-la-sesion.ts`). Los dos primeros, al guardar; los otros, al validar.
   ...CodigoDeProblemaDeBloque,
 } as const;
@@ -326,6 +329,8 @@ export function prescripcionesDelPlan(contenido: ContenidoDePlanDeEntrenamiento)
 export function problemasDeCompletitud(contenido: ContenidoDePlanDeEntrenamiento): ValidationIssue[] {
   const issues: ValidationIssue[] = [];
   if (contenido.blocks.length === 0) issues.push({ code: P.BLOCK_REQUIRED, path: 'blocks' });
+  // DL-197 (ET1-D03): con fases que pasan del fin del plan, no se activa: lo de después del fin no tendría fechas.
+  if (semanasDeMas(contenido.planning, contenido.blocks) > 0) issues.push({ code: P.PHASES_EXCEED_PLAN_WEEKS, path: 'planning.phases' });
   contenido.blocks.forEach((b, i) => {
     if (b.microcycles.length === 0 && b.sessions.length === 0) issues.push({ code: P.SESSION_REQUIRED, path: `blocks[${i}].sessions` });
     b.microcycles.forEach((m, j) => {
