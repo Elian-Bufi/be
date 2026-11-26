@@ -68,6 +68,8 @@ import { api } from '../../../../lib/api';
 import { ComoLeerlo } from '../graficos/como-leerlo';
 import { diaYMes } from '../graficos/eje-de-fechas';
 import { unAnioAntes } from '../fuerza/lectura-de-fuerza';
+import { COPY_CATALOGO_EN_LA_SESION, invalidarElCatalogo } from './catalogo-en-la-sesion';
+import { leerElCatalogoDeLaSesion } from '../../exercises/catalogo-de-be';
 import { hoyEn } from '../seguimiento/estado';
 import { mensajeDeFallo, useClaveDeIntento } from '../../../../lib/intento';
 import { useEditorDeEntrenamiento } from './entrenamiento';
@@ -79,7 +81,8 @@ import { busquedasDeParecidos, COPY_EJERCICIO_PROPIO as EP, elQueSeLlamaIgual, h
 type Modo = 'buscar' | 'manual' | 'importar';
 
 /** DL-197: el catálogo entero, leído al abrir. */
-type LecturaDelCatalogo = { readonly tipo: 'cargando' } | { readonly tipo: 'lista'; readonly ejercicios: readonly EjercicioEncontrado[] } | { readonly tipo: 'falla'; readonly motivo: string };
+/** DL-199 (ET3-25): la lista dice si quedó entera; si cortó a mitad, se avisa con «Reintentar». */
+type LecturaDelCatalogo = { readonly tipo: 'cargando' } | { readonly tipo: 'lista'; readonly ejercicios: readonly EjercicioEncontrado[]; readonly completo?: boolean } | { readonly tipo: 'falla'; readonly motivo: string };
 
 /** DL-197 (ET1-09): los textos de «Agregar ejercicios», como en el prototipo que eligió Dirección. */
 export const COPY_CATALOGO_PARA_ELEGIR = {
@@ -358,22 +361,21 @@ function ContenidoDeAgregarEjercicio({
     if (modo === 'buscar') campo.current?.focus({ preventScroll: true });
   }, [modo, campo]);
 
-  /** El catálogo entero, página por página (de a 50, con el cursor). Una lectura que falla lo dice y se reintenta. */
-  const leerElCatalogo = useCallback(async () => {
-    const esta = ++pedido.current;
-    setCatalogo({ tipo: 'cargando' });
-    const leidos: EjercicioEncontrado[] = [];
-    let cursor: string | null = null;
-    for (let vuelta = 0; vuelta < 40; vuelta += 1) {
-      const r = await api.paginaDelCatalogoDeEjercicios(token, cursor);
-      if (esta !== pedido.current || sesionPerdida(r)) return;
-      if (!r.ok) return setCatalogo({ tipo: 'falla', motivo: mensajeDeFallo(r) });
-      leidos.push(...r.datos.data);
-      if (!r.datos.page.hasMore || !r.datos.page.nextCursor) break;
-      cursor = r.datos.page.nextCursor;
-    }
-    setCatalogo({ tipo: 'lista', ejercicios: enOrdenAlfabetico(leidos) });
-  }, [token, sesionPerdida]);
+  /**
+   * El catálogo entero, página por página (de a 50, con el cursor). DL-199 (ET3-24): una vez por sesión
+   * (`catalogo-en-la-sesion.ts`); `reintentar` lo vuelve a pedir. Una lectura que falla lo dice y se reintenta.
+   */
+  const leerElCatalogo = useCallback(
+    async (reintentar = false) => {
+      const esta = ++pedido.current;
+      if (reintentar) invalidarElCatalogo(token);
+      setCatalogo((c) => (c.tipo === 'lista' ? c : { tipo: 'cargando' }));
+      const r = await leerElCatalogoDeLaSesion(token, sesionPerdida);
+      if (esta !== pedido.current || r.tipo === 'sesion-perdida') return;
+      setCatalogo(r.tipo === 'falla' ? r : { tipo: 'lista', ejercicios: r.ejercicios, completo: r.completo });
+    },
+    [token, sesionPerdida],
+  );
   useEffect(() => {
     void leerElCatalogo();
     return () => {
@@ -391,9 +393,11 @@ function ContenidoDeAgregarEjercicio({
     campo.current?.focus();
   };
   const elegir = (e: EjercicioDeCatalogo) => {
+    // DL-199 (ET3-24): lo creado o importado hace que la próxima lectura del catálogo vaya a la API.
+    invalidarElCatalogo(token);
     onCreado(e);
     setCreado(e.name);
-    setCatalogo((c) => (c.tipo === 'lista' && !c.ejercicios.some((x) => x.exerciseId === e.exerciseId) ? { tipo: 'lista', ejercicios: enOrdenAlfabetico([...c.ejercicios, { ...e, matchedAlternativeName: null, origin: { loadedBy: 'YOU', approximateCorrespondence: null } }]) } : c));
+    setCatalogo((c) => (c.tipo === 'lista' && !c.ejercicios.some((x) => x.exerciseId === e.exerciseId) ? { ...c, ejercicios: enOrdenAlfabetico([...c.ejercicios, { ...e, matchedAlternativeName: null, origin: { loadedBy: 'YOU', approximateCorrespondence: null }, loadedByProfessional: true }]) } : c));
   };
 
   if (modo === 'manual') {
@@ -488,6 +492,16 @@ function ContenidoDeAgregarEjercicio({
       <p className="nota catalogo-para-elegir__cuenta" role="status" aria-live="polite" data-cuenta-del-catalogo={catalogo.tipo === 'lista' ? ejercicios.length : ''}>
         {catalogo.tipo === 'lista' ? COPY_CATALOGO_PARA_ELEGIR.cuenta(ejercicios.length, todos.length) : catalogo.tipo === 'cargando' ? COPY_CATALOGO_PARA_ELEGIR.leyendo : ' '}
         {creado ? ` · ${V.creadoYMarcado(creado)}` : ''}
+        {/* DL-199 (ET3-25): si la lectura cortó a mitad, se dice en el mismo renglón, con «Reintentar». */}
+        {catalogo.tipo === 'lista' && catalogo.completo === false ? (
+          <span data-catalogo-incompleto>
+            {' · '}
+            {COPY_CATALOGO_EN_LA_SESION.incompleto(catalogo.ejercicios.length)}{' '}
+            <button type="button" className="boton boton--discreto boton--compacto" onClick={() => void leerElCatalogo(true)}>
+              {COPY_CATALOGO_EN_LA_SESION.reintentar}
+            </button>
+          </span>
+        ) : null}
         {marcados.length > 0 ? <span className="visualmente-oculto">{` · ${V.marcados(marcados.length)}: ${marcados.map((m) => m.name).join(', ')}.`}</span> : null}
       </p>
       {soloFavoritos && habituales.lectura === 'falla' ? (
@@ -503,7 +517,7 @@ function ContenidoDeAgregarEjercicio({
       {catalogo.tipo === 'falla' ? (
         <Aviso tipo="error">
           <p>No pudimos leer el catálogo. {catalogo.motivo}</p>
-          <button type="button" className="boton boton--secundario" onClick={() => void leerElCatalogo()}>
+          <button type="button" className="boton boton--secundario" onClick={() => void leerElCatalogo(true)}>
             Reintentar
           </button>
         </Aviso>

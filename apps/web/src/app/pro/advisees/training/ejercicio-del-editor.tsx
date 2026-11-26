@@ -53,7 +53,7 @@ import {
 } from '@be/domain';
 import { Fragment, useEffect, useId, useRef, useState, type ComponentProps, type FocusEvent, type KeyboardEvent, type ReactNode } from 'react';
 import { SeccionDeAproximaciones } from './aproximaciones-del-ejercicio';
-import { conLasAproximacionesSinRir, cuantasAproximaciones, resumenDeLasAproximaciones, rotulosConAproximaciones } from './aproximaciones';
+import { conLasAproximacionesSinRir, cuantasAproximaciones, resumenDeLasAproximaciones, rotulosConAproximaciones, serieAlDesmarcarLaAproximacion } from './aproximaciones';
 import { AYUDAS_DEL_EDITOR, ContenidoDeLaAyuda } from './ayudas-del-editor';
 import { cifrasTrasLaTecla, textoDeLaMascara } from './mascara-de-tiempo';
 import { EnPartes } from '../../../../components/en-partes';
@@ -67,6 +67,7 @@ import { COPY_DE_LOS_EDITORES as EDICION, sinLaSerie } from '../editar-la-estruc
 import { ImagenGuardadaDeEjercicio } from '../../exercises/imagen-de-ejercicio';
 import { useEditorDeEntrenamiento } from './entrenamiento';
 import { LineaDePrescripcion } from './linea-de-prescripcion';
+import type { ArrastreDeLaTarjeta } from './arrastrar-ejercicios';
 import { COPY_ESCRITURA_RAPIDA } from './escritura-rapida';
 import { cambioDeCriterio, conElCriterio, COPY_CAMBIO_DE_CRITERIO, deshacerElCambioDeCriterio, sigueElCambio, type CambioDeCriterio } from './cambio-de-criterio';
 import { CuadroEnfocado } from '../../../../components/cuadro-enfocado';
@@ -343,7 +344,10 @@ export function EjercicioDelEditor({
   /** El ejercicio no lleva intensidad aunque el plan sí (la excepción, en «Más opciones»). */
   sinIntensidad?: boolean;
   onSinIntensidad?: (sin: boolean) => void;
+  arrastre = null,
   /** DL-196 (EE-07): cómo se arman las aproximaciones (de la planificación) y cómo se guarda; sin esto, no se ofrecen. */
+  /** DL-199 (ET3-22): el asa para arrastrar y las teclas Alt+↑ y Alt+↓ (`arrastrar-ejercicios.tsx`); sin esto, no se arrastra. */
+  arrastre?: ArrastreDeLaTarjeta | null;
   aproximaciones?: AproximacionesDelEjercicio | null;
   onAproximaciones?: (c: Omit<AproximacionesDelEjercicio, 'prescriptionId'>) => void;
   /** C7: lo escrito en la escritura rápida y todavía sin aplicar; vive en el editor (`escritura-rapida.ts`). */
@@ -428,8 +432,10 @@ export function EjercicioDelEditor({
             <span className="comida-del-plan__textos">
               <span className="comida-del-plan__nombre">{nombre}</span>
               {/* Plegado dice lo que piden sus series; abierto, cuántas son: el detalle está abajo. */}
+      {...(arrastre?.propsDeLaTarjeta ?? {})}
               <span className="comida-del-plan__cuenta" data-resumen>
                 <EnPartes texto={abierto ? cuentaDeSeries(p.sets) : plegado.resumen} />
+        {arrastre?.asa ?? null}
               </span>
               {revisar ? (
                 <span className="etiqueta-de-dato ejercicio-del-editor__revisar" data-carga-a-revisar>
@@ -878,10 +884,8 @@ function SeriesDelEjercicio({
     const sets = p.sets.map((x, m): Serie => {
       if (m !== n) return x;
       const { setKind: _tipo, ...resto } = x;
-      if (esDeCalentamiento(x)) {
-        const { rir, ...sinRir } = resto;
-        return (rir === null ? sinRir : resto) as Serie;
-      }
+      // DL-199 (ET3-26): desmarcada, vuelve a ser efectiva con lo común: sin el RIR vacío ni el descanso propio.
+      if (esDeCalentamiento(x)) return serieAlDesmarcarLaAproximacion(resto) as Serie;
       return { ...resto, setKind: 'WARM_UP', rir: null, restSeconds: resto.restSeconds ?? DESCANSO_DE_APROXIMACION };
     });
     onCambiar({ sets: conElCalentamientoArriba<Serie>(sets) });

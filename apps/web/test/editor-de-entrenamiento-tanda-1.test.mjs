@@ -171,7 +171,8 @@ test('TEST-ET1-16 · el catálogo: todo al abrir, los filtros del prototipo, «F
   assert.match(CATALOGO, /<CuadroEnfocado\n\s*abierto=\{abierto\}\n\s*forma="dialogo"/);
   assert.match(CATALOGO, /buscar: 'Buscar por ejercicio, músculo o equipo…'/);
   assert.match(CATALOGO, /agregarALaSesion: 'Agregar a la sesión'/);
-  assert.match(CATALOGO, /const r = await api\.paginaDelCatalogoDeEjercicios\(token, cursor\);/);
+  // DL-199 (ET3-24): el catálogo entero, una vez por sesión (`catalogo-en-la-sesion.ts`).
+  assert.match(CATALOGO, /const r = await leerElCatalogoDeLaSesion\(token, sesionPerdida\);/);
   assert.match(CATALOGO, /data-estrella-del-ejercicio/);
   // F23: «Catálogo de BE» en «Mis ejercicios», con su selector de origen, y la clasificación opcional de los propios.
   assert.match(MIS, /\{ clave: 'catalogo', texto: 'Catálogo de BE', icono: 'tilde' \}/);

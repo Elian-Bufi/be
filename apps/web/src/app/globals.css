@@ -25329,3 +25329,48 @@ html:has(.estacion:not([data-en-el-asistente])) {
   background: var(--fondo-suave);
   color: var(--texto);
 }
+
+/* ─── DL-199 · WP-EDITOR-ENTRENAMIENTO-TANDA-3 (fork A): reordenar arrastrando ─────────────────────────────────────── */
+/* ET3-22: el asa está siempre (RP-19: aparecer al pasar el mouse correría el título), con 44 px de toque. */
+.ejercicio-del-editor__asa {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  inline-size: 2rem;
+  min-block-size: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 0.4rem;
+  background: transparent;
+  color: var(--tenue);
+  cursor: grab;
+  touch-action: none;
+}
+
+.ejercicio-del-editor__asa:hover {
+  color: var(--texto);
+  background: var(--fondo-suave);
+}
+
+.ejercicio-del-editor__asa:active {
+  cursor: grabbing;
+}
+
+.ejercicio-del-editor__asa:focus-visible {
+  outline: 3px solid var(--foco);
+  outline-offset: 1px;
+}
+
+/* El que se arrastra queda tenue; dónde cae, una línea hecha con una sombra: no ocupa lugar. */
+.ejercicio-del-editor[data-arrastrando] {
+  opacity: 0.55;
+}
+
+.ejercicio-del-editor[data-soltar='arriba'] {
+  box-shadow: 0 -3px 0 0 var(--azul);
+}
+
+.ejercicio-del-editor[data-soltar='abajo'] {
+  box-shadow: 0 3px 0 0 var(--azul);
+}

@@ -638,6 +638,11 @@ export const EjercicioEncontradoSchema = EjercicioDeCatalogoSchema.extend({
    * (`withClassification`): la APK 0.32 busca con esta operación y su esquema estricto no la conoce, así que nunca le llega.
    */
   classification: ClasificacionDeEjercicioSchema.optional(),
+  /**
+   * DL-199 (ET3-27): si lo cargó un profesional (a mano o importándolo de wger) y no BE; el «Catálogo de BE» es lo que no
+   * cargó nadie. Viaja con la clasificación (`withClassification`, la lectura del website): a la APK no le llega.
+   */
+  loadedByProfessional: z.boolean().optional(),
 });
 export type EjercicioEncontrado = z.infer<typeof EjercicioEncontradoSchema>;
 export const BusquedaDeEjerciciosResponseSchema = z.strictObject({ data: z.array(EjercicioEncontradoSchema), page: PaginaSchema });
