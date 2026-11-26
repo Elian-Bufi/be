@@ -23,6 +23,7 @@ import {
   type ValidationIssue,
 } from './contratos';
 import type { ClasificacionDeEjercicio } from './clasificacion-de-ejercicios';
+import { CrearPlanDesdePlantillaDeBeRequestSchema, ListaDePlantillasDeBeResponseSchema, PlanDesdePlantillaDeBeResponseSchema } from './contratos-plantillas-de-be';
 import {
   LoQueFaltaParaSeguirResponseSchema,
   PerfilPropioResponseSchema,
@@ -1605,6 +1606,14 @@ export function crearClienteBe(opciones: OpcionesDeCliente) {
     /** API-TRN-07: el borrador es el mismo recurso del plan, en DRAFT. */
     crearPlanDeEntrenamiento(token: string, asesoradoId: string, cuerpo: z.input<typeof CrearPlanDeEntrenamientoRequestSchema>, claveDeIdempotencia: string) {
       return llamar('POST', `/advisees/${encodeURIComponent(asesoradoId)}/training/plans`, { token, claveDeIdempotencia, esquema: PlanDeEntrenamientoResponseSchema, cuerpo });
+    },
+    /** API-TPB-01 (DL-199): las Plantillas de BE de Entrenamiento que se ofrecen. */
+    plantillasDeBe(token: string) {
+      return llamar('GET', '/training/be-templates', { token, esquema: ListaDePlantillasDeBeResponseSchema });
+    },
+    /** API-TPB-02 (DL-199): el borrador del plan de la persona desde una Plantilla de BE, con las cargas en % RM resueltas. */
+    crearPlanDesdePlantillaDeBe(token: string, asesoradoId: string, cuerpo: z.input<typeof CrearPlanDesdePlantillaDeBeRequestSchema>, claveDeIdempotencia: string) {
+      return llamar('POST', `/advisees/${encodeURIComponent(asesoradoId)}/training/plans/from-be-template`, { token, claveDeIdempotencia, esquema: PlanDesdePlantillaDeBeResponseSchema, cuerpo });
     },
     /** API-TRN-08. */
     listarPlanesDeEntrenamiento(token: string, asesoradoId: string, filtro: { state?: 'DRAFT' | 'ACTIVATED'; cursor?: string } = {}) {

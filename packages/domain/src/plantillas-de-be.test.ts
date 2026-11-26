@@ -118,7 +118,7 @@ test('TEST-ET3-05: la lectura para la pantalla y el contrato de la respuesta', (
   const sinCatalogo = plantillaDeBeParaLaApi(PLANTILLAS_DE_BE[0]!, new Map(), 'WITHDRAWN');
   assert.equal(sinCatalogo.phases[0]!.sessions[0]!.exercises[0]!.exerciseId, null);
   assert.equal(
-    PlanDesdePlantillaDeBeResponseSchema.shape.beTemplate.safeParse({ key: 'BE-CUERPO-COMPLETO', version: 1, loads: [{ prescriptionId: 'a', exerciseName: 'x', percentRm: 70, status: 'WITHOUT_ONE_REP_MAX' }], unavailableExercises: [] }).success,
+    PlanDesdePlantillaDeBeResponseSchema.shape.beTemplate.safeParse({ key: 'BE-CUERPO-COMPLETO', version: 1, loads: [{ prescriptionId: 'a', exerciseName: 'x', oneRepMaxShare: 70, status: 'WITHOUT_ONE_REP_MAX' }], unavailableExercises: [] }).success,
     true,
   );
 });

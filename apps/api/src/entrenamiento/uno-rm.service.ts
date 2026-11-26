@@ -18,6 +18,7 @@ import {
   type UnoRMDeLaPersonaResponse,
   type UnoRMGuardado,
   type UnoRMGuardadoApi,
+  type UnoRMVigente,
 } from '@be/domain';
 import type { Prisma, UnoRMDeReferencia as FilaDeUnoRM } from '@prisma/client';
 import { ejecucionesDelPeriodo } from '../analisis/fuentes';
@@ -251,6 +252,17 @@ export class UnoRMService {
       },
     });
     return new Map(filas.map((f) => [f.id, { nombre: f.versiones[0]?.nombre ?? '', equipamiento: [...(f.clasificaciones[0]?.equipamiento ?? [])] }]));
+  }
+
+  /**
+   * DL-199 (ET3-03) · el 1RM que usa BE en cada ejercicio, para resolver las cargas en % RM al aplicar una Plantilla de BE
+   * (API-TPB-02). La misma regla que API-RMX-01 (`vigenteDelUnoRM`), dentro de la transacción de quien la aplica, que ya
+   * decidió el permiso. `null`: sin 1RM.
+   */
+  async vigentesDe(tx: Tx, profesionalId: string, asesoradoId: string, ids: readonly string[]): Promise<Map<string, UnoRMVigente | null>> {
+    if (ids.length === 0) return new Map();
+    const de = await this.delosEjercicios(tx, profesionalId, asesoradoId, [...new Set(ids)]);
+    return new Map(de.map((e) => [e.exerciseId, e.current ? { origen: e.current.origin, valor: e.current.value, fecha: e.current.localDate, banda: e.current.band, serie: null, entryId: e.current.entryId } : null]));
   }
 
   /** Lo de cada ejercicio pedido: el vigente, el aviso, el último registro y lo guardado. */

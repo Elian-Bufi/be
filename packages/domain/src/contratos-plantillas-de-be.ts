@@ -27,7 +27,7 @@ const EjercicioDeLaPlantillaDeBeSchema = z.strictObject({
   name: z.string(),
   /** «3 × 10 · 65 % RM» o «3 × 8–10». */
   prescription: z.string(),
-  percentRm: z.number().nullable(),
+  oneRepMaxShare: z.number().nullable(),
 });
 
 export const PlantillaDeBeSchema = z.strictObject({
@@ -68,8 +68,8 @@ export const CrearPlanDesdePlantillaDeBeRequestSchema = z.strictObject({
 export type CrearPlanDesdePlantillaDeBeRequest = z.infer<typeof CrearPlanDesdePlantillaDeBeRequestSchema>;
 
 export const CargaResueltaSchema = z.discriminatedUnion('status', [
-  z.strictObject({ prescriptionId: z.string(), exerciseName: z.string(), percentRm: z.number(), status: z.literal('RESOLVED'), load: CargaSchema, basis: z.string() }),
-  z.strictObject({ prescriptionId: z.string(), exerciseName: z.string(), percentRm: z.number(), status: z.literal('WITHOUT_ONE_REP_MAX') }),
+  z.strictObject({ prescriptionId: z.string(), exerciseName: z.string(), oneRepMaxShare: z.number(), status: z.literal('RESOLVED'), load: CargaSchema, basis: z.string() }),
+  z.strictObject({ prescriptionId: z.string(), exerciseName: z.string(), oneRepMaxShare: z.number(), status: z.literal('WITHOUT_ONE_REP_MAX') }),
 ]);
 export const PlanDesdePlantillaDeBeResponseSchema = z.strictObject({
   data: VersionDePlanDeEntrenamientoSchema,

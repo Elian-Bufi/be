@@ -1,4 +1,6 @@
 import { Module } from '@nestjs/common';
+import { PlantillasDeBeController } from './plantillas-de-be.controller';
+import { PlantillasDeBeService } from './plantillas-de-be.service';
 import { IntegracionesModule } from '../integraciones/integraciones.module';
 import { MediosModule } from '../medios/medios.module';
 import { SesionModule } from '../sesion/sesion.module';
@@ -35,7 +37,7 @@ import { UnoRMService } from './uno-rm.service';
  */
 @Module({
   imports: [SesionModule, IntegracionesModule, MediosModule],
-  controllers: [EntrenamientoController, HabitualesDeEntrenamientoController, EntrenamientoPorSerieController, FuerzaController, NotasDeLaSesionController, EditorDeEntrenamientoTanda2Controller],
+  controllers: [EntrenamientoController, HabitualesDeEntrenamientoController, EntrenamientoPorSerieController, FuerzaController, NotasDeLaSesionController, EditorDeEntrenamientoTanda2Controller, PlantillasDeBeController],
   providers: [
     EjecutorDeEntrenamiento,
     CatalogoDeEjerciciosService,
@@ -58,6 +60,8 @@ import { UnoRMService } from './uno-rm.service';
     // DL-198: el 1RM de referencia (API-RMX-01 y 02) y el esfuerzo de la sesión (API-ESF-01 y 02).
     UnoRMService,
     EsfuerzoDeLaSesionService,
+    // DL-199: las Plantillas de BE (API-TPB-01; API-TPB-02 va en el servicio de planes).
+    PlantillasDeBeService,
   ],
   // El entorno profesional (AnalisisModule) lee cada sesión con el mismo modelo de API-TRN-19.
   // DL-163 D-13, ampliada (TB-52): el plan compartido (API-RES-06) se lee con la misma lectura que usa la persona.

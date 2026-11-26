@@ -439,7 +439,7 @@ export function plantillaDeBeParaLaApi(p: PlantillaDeBe, catalogo: ReadonlyMap<s
         label: s.nombre,
         exercises: s.ejercicios.map((e) => {
           const c = catalogo.get(e.wger);
-          return { exerciseId: c?.exerciseId ?? null, name: c?.nombre ?? e.nombre, prescription: renglonDelEjercicioDeBe(e), percentRm: e.porcentaje };
+          return { exerciseId: c?.exerciseId ?? null, name: c?.nombre ?? e.nombre, prescription: renglonDelEjercicioDeBe(e), oneRepMaxShare: e.porcentaje };
         }),
       })),
     })),
