@@ -15,6 +15,7 @@ import {
   problemasDeReferencias,
   problemasParaGuardarLaPlantilla,
   referenciasDeEjercicio,
+  serializacionCanonica,
   sesionesDeLaEstructura,
   sinCambiosFrenteALaBase,
   sinCargasSugeridas,
@@ -449,8 +450,9 @@ export class PreparacionesDePlantillaService {
       const base = await tx.versionDePlantillaDePlanDeEntrenamiento.findUnique({ where: { id: fila.versionBaseId }, select: { estructura: true, cargas: true, planificacion: true } });
       const iria = loQueIriaALaVersion(fila);
       if (base && sinCambiosFrenteALaBase({ estructura: base.estructura, conCargas: base.cargas === 'COPIADAS' }, { estructuraQueIria: iria.estructura, conCargas: iria.conCargas }) &&
-        // DL-198 (ET2-10): un cambio solo de la planificación también es una versión nueva.
-        JSON.stringify(base.planificacion ?? null) === JSON.stringify(planificacionDeLaPlantillaPodada(planificacionDe(fila.planificacion), iria.estructura))
+        // DL-198 (ET2-10): un cambio solo de la planificación también es una versión nueva. Se compara en forma canónica:
+        // JSONB devuelve las claves en su propio orden, y `JSON.stringify` las veía distintas aunque no lo fueran.
+        planificacionCanonica(base.planificacion) === planificacionCanonica(planificacionDeLaPlantillaPodada(planificacionDe(fila.planificacion), iria.estructura))
       ) {
         issues.push({ code: CodigoDeProblemaDeLaPlantilla.TEMPLATE_UNCHANGED, path: 'blocks' });
       }
@@ -494,6 +496,8 @@ const estructuraDe = (fila: PreparacionFila): Estructura => fila.estructura as u
 
 /** DL-198 (ET2-10): la planificación guardada en una columna JSON, o `null`. */
 const planificacionDe = (columna: Prisma.JsonValue | null | undefined): PlanificacionDeLaPlantilla | null => (columna as unknown as PlanificacionDeLaPlantilla | null) ?? null;
+/** La planificación en bytes comparables: claves ordenadas y sin lo `undefined` (que JSONB no guarda). */
+const planificacionCanonica = (p: unknown): string => serializacionCanonica(JSON.parse(JSON.stringify(p ?? null)) as unknown);
 /** Lo que se escribe en la columna: el valor, o el NULL de la base. */
 const aColumna = (p: PlanificacionDeLaPlantilla | null): Prisma.InputJsonValue | typeof Prisma.DbNull => (p ? (p as unknown as Prisma.InputJsonValue) : Prisma.DbNull);
 

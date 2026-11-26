@@ -1607,7 +1607,8 @@ export function PantallaDeSesion({
       // del cronómetro (sin pausas) si la sesión fue en vivo. Se toman antes de descartar lo del teléfono.
       const corridaFinal = entrenamientoLocal.sesion(draftId)?.corrida ?? null;
       const minutos = modo === 'en-vivo' && corridaFinal ? minutosDelCronometro(calcularTiempos(eventosDeLaCorrida(corridaFinal), () => null).session.withoutPauses) : null;
-      const esfuerzo = sePreguntaElEsfuerzo(delPlan) ? { esfuerzo: { minutos } } : {};
+      // Una sesión que no se pudo realizar no tiene esfuerzo que contar: no se pregunta (y la API tampoco lo acepta).
+      const esfuerzo = sePreguntaElEsfuerzo(delPlan) && vigente.datos.data.sessionCondition !== 'NOT_COMPLETED' ? { esfuerzo: { minutos } } : {};
       // Registrada: lo del teléfono ya no hace falta.
       entrenamientoLocal.descartar(draftId);
       subir();

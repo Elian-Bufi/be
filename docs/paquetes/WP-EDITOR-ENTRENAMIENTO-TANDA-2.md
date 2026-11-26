@@ -118,3 +118,19 @@ igual (ET2-D01).
   corrieron localmente `tsc` de la API, del website ni de la APK, `next build` ni los recorridos; los corre la CI.
 - Después: pasar la «Fuerza estimada» a la v2 si Dirección lo pide (ET2-D01), y corregir un esfuerzo de la sesión ya
   respondido (ET2-D11).
+
+## 6. Revisión adversaria (2026-11-25)
+
+- **El 1RM fuera de lo que guarda la base:** una calibración o un registro cuya cuenta da 0 (una carga de décimas) o más
+  de 1000 respondía un 500 por la restricción `uno_rm_de_referencia_valor`. Ahora no calibra (422 `FUERA_DE_ESCALA`, junto
+  a la carga) ni es el registro (`ESCALA_DEL_UNO_RM`).
+- **El aviso del 10 %, con redondeo simétrico:** −10,5 % se decía «10 % menos»; ahora «11 % menos», como +10,5 % es «11 %
+  más».
+- **«No pude realizarla» no lleva el esfuerzo:** la app ya no lo pregunta después de una sesión no realizada, y API-ESF-01 la
+  rechaza con 422 `SESSION_NOT_COMPLETED` (según lo que hoy rige: la última corrección o el original). Sin esto, el gráfico
+  del profesional mostraba la carga de una sesión que no hubo.
+- **Una plantilla sin cambios** (PLT-D10) se comparaba con `JSON.stringify` contra lo que devuelve JSONB, que ordena las
+  claves a su manera: una edición sin cambios de una plantilla con planificación se guardaba como versión nueva. Ahora la
+  comparación es canónica.
+- **«Semana N de M» en una fase cortada por el fin del plan:** la «M» es la de las semanas que entran (la persona nunca ve
+  las de afuera); la regla sigue con las semanas enteras de la fase (`semanasQueEntran`).

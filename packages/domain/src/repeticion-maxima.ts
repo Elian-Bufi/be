@@ -34,6 +34,13 @@ export const RANGO_DEL_REGISTRO = { repeticionesMinimas: 8, repeticionesMaximas:
 export const RANGO_DE_LA_CALIBRACION = { repeticionesMinimas: 1, repeticionesMaximas: 12, rirMaximo: 2 } as const;
 /** ET2-D03: desde cuánto se avisa que un registro se aleja de lo guardado (en % del valor guardado). */
 export const UMBRAL_DEL_AVISO = 10;
+/**
+ * Lo que la base acepta como 1RM (`uno_rm_de_referencia_valor`: más de 0 y hasta 1000, en kg o en lb). Una serie cuya
+ * cuenta queda afuera (una carga de décimas que redondea a 0, o 900 kg × 12) no calibra ni es el registro: sin esto, la
+ * API respondía un 500 por la restricción de la base en lugar del 422 con su motivo.
+ */
+export const ESCALA_DEL_UNO_RM = { minimoExclusivo: 0, maximo: 1000 } as const;
+const enEscala = (valor: number): boolean => Number.isFinite(valor) && valor > ESCALA_DEL_UNO_RM.minimoExclusivo && valor <= ESCALA_DEL_UNO_RM.maximo;
 
 export type OrigenDelUnoRM = 'CALIBRATION' | 'RECORD' | 'DECLARED';
 /** `CORE`: con barra; `ORIENTATIVE`: fuera de la barra (Dirección: «fuera de la barra se marca orientativo»). */
@@ -97,7 +104,7 @@ export interface AvisoDelUnoRM {
 // ─── La cuenta ──────────────────────────────────────────────────────────────────────────────
 
 /** Por qué una serie no sirve para calibrar o para el registro. */
-export type MotivoFueraDelUnoRM = 'SIN_CARGA' | 'REPETICIONES_FUERA' | 'SIN_RIR' | 'RIR_MAYOR_QUE_2';
+export type MotivoFueraDelUnoRM = 'SIN_CARGA' | 'REPETICIONES_FUERA' | 'SIN_RIR' | 'RIR_MAYOR_QUE_2' | 'FUERA_DE_ESCALA';
 
 /** El 1RM de una serie con Epley, redondeado al medio kilo (o a la libra): 30 × (1 + (8 + 1) / 30) = 39. */
 export function unoRMDeLaSerie(s: SerieDelUnoRM): number {
@@ -115,7 +122,9 @@ const fueraDelRango = (s: SerieDelUnoRM, rango: { readonly repeticionesMinimas: 
 /** La calibración: el 1RM de la serie, o por qué no se puede calibrar con ella. */
 export function calibrar(s: SerieDelUnoRM): { readonly ok: true; readonly valor: CargaDelUnoRM } | { readonly ok: false; readonly motivo: MotivoFueraDelUnoRM } {
   const motivo = fueraDelRango(s, RANGO_DE_LA_CALIBRACION);
-  return motivo ? { ok: false, motivo } : { ok: true, valor: { value: unoRMDeLaSerie(s), unit: s.carga.unit } };
+  if (motivo) return { ok: false, motivo };
+  const valor = unoRMDeLaSerie(s);
+  return enEscala(valor) ? { ok: true, valor: { value: valor, unit: s.carga.unit } } : { ok: false, motivo: 'FUERA_DE_ESCALA' };
 }
 
 /**
@@ -138,7 +147,8 @@ export function entraEnElRegistro(s: SerieRegistradaParaElUnoRM): s is SerieRegi
   if (!s.load || s.completedRepetitions === null || s.rir === null) return false;
   const o = s.fieldOrigins;
   if (!o || o.load !== 'PERSON' || o.completedRepetitions !== 'PERSON' || o.rir !== 'PERSON') return false;
-  return fueraDelRango({ carga: s.load, repeticiones: s.completedRepetitions, rir: s.rir }, RANGO_DEL_REGISTRO) === null;
+  const serie = { carga: s.load, repeticiones: s.completedRepetitions, rir: s.rir };
+  return fueraDelRango(serie, RANGO_DEL_REGISTRO) === null && enEscala(unoRMDeLaSerie(serie));
 }
 
 /** Una sesión registrada de un ejercicio, con sus series en orden. */
@@ -202,7 +212,9 @@ export function vigenteDelUnoRM(guardados: readonly UnoRMGuardado[], registro: U
   if (!ultimo) return { vigente: registro ? delRegistro(registro) : null, aviso: null };
   if (!registro || registro.fecha <= ultimo.fecha) return { vigente: delGuardado(ultimo), aviso: null };
   if (registro.valor.unit !== ultimo.valor.unit) return { vigente: delGuardado(ultimo), aviso: null };
-  const diferencia = Math.round(((registro.valor.value - ultimo.valor.value) / ultimo.valor.value) * 100);
+  // Redondeo simétrico: −10,5 % es «11 % menos», como +10,5 % es «11 % más» (`Math.round` lleva −10,5 a −10).
+  const cruda = ((registro.valor.value - ultimo.valor.value) / ultimo.valor.value) * 100;
+  const diferencia = Math.sign(cruda) * Math.round(Math.abs(cruda));
   if (Math.abs(registro.valor.value - ultimo.valor.value) * 100 > UMBRAL_DEL_AVISO * ultimo.valor.value) {
     return { vigente: delGuardado(ultimo), aviso: { registro, guardado: ultimo, diferencia } };
   }
@@ -285,6 +297,7 @@ export const COPY_UNO_RM = {
     REPETICIONES_FUERA: 'Van de 1 a 12 repeticiones.',
     SIN_RIR: 'Falta el RIR.',
     RIR_MAYOR_QUE_2: 'Con RIR mayor que 2 no se calibra.',
+    FUERA_DE_ESCALA: 'Con esta serie, la cuenta da un 1RM de 0 o de más de 1000: revisá la carga.',
   } as Readonly<Record<MotivoFueraDelUnoRM, string>>,
   historial: 'Valores anteriores',
   ejemploDelPorcentaje: 'Ejemplo: con un 1RM de 39 kg, 70 % RM son 27,3 kg, que se redondean a 27 kg (de a 1 kg).',

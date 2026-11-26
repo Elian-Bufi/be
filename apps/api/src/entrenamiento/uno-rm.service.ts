@@ -104,7 +104,7 @@ const registroApi = (r: UnoRMDelRegistro): UnoRMDelRegistroApi => ({
 });
 
 /** Dónde está el dato que impide calibrar, para el 422 (la pantalla lo pone junto a su campo). */
-const LUGAR_DEL_MOTIVO: Readonly<Record<string, string>> = { SIN_CARGA: 'load', REPETICIONES_FUERA: 'completedRepetitions', SIN_RIR: 'rir', RIR_MAYOR_QUE_2: 'rir' };
+const LUGAR_DEL_MOTIVO: Readonly<Record<string, string>> = { SIN_CARGA: 'load', REPETICIONES_FUERA: 'completedRepetitions', SIN_RIR: 'rir', RIR_MAYOR_QUE_2: 'rir', FUERA_DE_ESCALA: 'load' };
 
 /**
  * DL-198 (WP-EDITOR-ENTRENAMIENTO-TANDA-2, ET2-01 a ET2-04) · el 1RM de referencia: API-RMX-01 y 02, familia propia de BE.

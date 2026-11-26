@@ -19,6 +19,8 @@ import {
   EsfuerzosDeLaSesionResponseSchema,
   PlanConObjetivosResponseSchema,
   PlantillaDeEntrenamientoResponseSchema,
+  PreparacionDePlantillaResponseSchema,
+  RevisionDePreparacionResponseSchema,
   UnoRMDeLaPersonaResponseSchema,
   UnoRMGuardadoResponseSchema,
   valorDeCapacidades,
@@ -229,6 +231,23 @@ describe('DL-198 · el esfuerzo de la sesión', () => {
     await conSesion(app, otroPro.token).get(`/api/v1/advisees/${c.ase.id}/training/session-efforts?${periodo}`).expect(404);
     await conSesion(app, c.pro.token).get(`/api/v1/advisees/${c.ase.id}/training/session-efforts`).expect(400);
   });
+
+  it('TEST-ET2-API-05b · una sesión registrada como «No pude realizarla» no lleva el esfuerzo de la sesión (revisión de #325)', async () => {
+    const c = await circuitoListoParaPlanificarEntrenamiento(app, etiqueta('esfuerzo-no'));
+    await planActivo(c, (blockId) => ({ startDate: hoy(), weeks: 4, phases: [{ blockId, weeks: 4 }], askSessionEffort: true }));
+    const ase = conSesion(app, c.ase.token);
+    const hoyLeido = await ase.get('/api/v1/me/training/today').expect(200);
+    const ocurrencia = (hoyLeido.body.data.occurrences as { occurrenceId: string; plannedSession: { sessionId: string } }[]).find((o) => o.plannedSession.sessionId === 'ses-a')!.occurrenceId;
+    const borrador = await ase.put(`/api/v1/training/occurrences/${ocurrencia}/execution-draft`).send({}).expect((r) => expect([200, 201]).toContain(r.status));
+    const guardado = await ase
+      .patch(`/api/v1/training/execution-drafts/${borrador.body.data.draftId}`)
+      .send({ expectedVersion: borrador.body.data.version, changes: { sessionCondition: 'NOT_COMPLETED' } })
+      .expect(200);
+    const confirmada = await ase.post(`/api/v1/training/execution-drafts/${borrador.body.data.draftId}/confirm`).send({ expectedVersion: guardado.body.data.version }).expect(201);
+    const no = await ase.post(`/api/v1/training/executions/${confirmada.body.data.executionId}/session-effort`).send({ rating: 5, durationMinutes: null, durationSource: null }).expect(422);
+    expect(no.body.error.details.issues[0].code).toBe('SESSION_NOT_COMPLETED');
+    expect(await prisma.esfuerzoDeSesionDeEntrenamiento.count({ where: { asesoradoId: c.ase.id } })).toBe(0);
+  });
 });
 
 describe('DL-198 · las plantillas con su planificación y la clasificación de un propio', () => {
@@ -258,6 +277,12 @@ describe('DL-198 · las plantillas con su planificación y la clasificación de 
     expect(plan.planning).toMatchObject({ startDate: null, weeks: 6, phases: [{ blockId: fase, weeks: 6 }], intensity: 'PERCENT_RM', askSessionEffort: true });
     expect(plan.planning?.progressions?.[0]).toMatchObject({ blockId: fase, model: 'LINEAR' });
     expect(plan.planning?.progressions?.[0]?.prescriptionIds).toEqual([plan.blocks[0]!.sessions[0]!.prescriptions[0]!.prescriptionId]);
+    // Editarla sin cambiar nada no es una versión nueva (PLT-D10), aunque la base devuelva las claves de la planificación en
+    // otro orden (JSONB): la comparación es canónica.
+    const p = PreparacionDePlantillaResponseSchema.parse((await conSesion(app, c.pro.token).put(`/api/v1/training/plan-templates/${t.templateId}/draft`).send({}).expect(201)).body).data;
+    expect(p.planning).toMatchObject({ weeks: 6, intensity: 'PERCENT_RM', askSessionEffort: true });
+    const revision = await conSesion(app, c.pro.token).post(`/api/v1/training/plan-template-drafts/${p.draftId}/review`).send({ expectedVersion: p.version }).expect(200);
+    expect(RevisionDePreparacionResponseSchema.parse(revision.body).data.issues).toEqual([{ code: 'TEMPLATE_UNCHANGED', path: 'blocks' }]);
   });
 
   it('TEST-ET2-API-07 · la clasificación de un propio se cambia con la versión que se vio; lo ajeno, el 404', async () => {

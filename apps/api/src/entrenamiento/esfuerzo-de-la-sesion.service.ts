@@ -56,7 +56,15 @@ function esfuerzoApi(f: FilaConEjecucion): EsfuerzoDeLaSesion {
   };
 }
 
-const CON_LA_EJECUCION = { ejecucion: { select: { fechaLocal: true, sesionPlanificadaId: true, versionDePlan: { select: { instantanea: { select: { contenido: true } } } } } } } as const;
+/** Cómo resultó la sesión según lo que hoy rige: la última corrección de su cadena (REG-06-15) o el registro original. */
+async function condicionVigente(tx: Prisma.TransactionClient, ejecucionId: string): Promise<string | null> {
+  const correcciones = await tx.correccionDeEjecucionDeEntrenamiento.findMany({ where: { ejecucionId }, select: { id: true, correccionPreviaId: true, contenido: true } });
+  const terminal = correcciones.find((c) => !correcciones.some((s) => s.correccionPreviaId === c.id));
+  if (terminal) return (terminal.contenido as unknown as { condicion?: string } | null)?.condicion ?? null;
+  return (await tx.ejecucionDeEntrenamiento.findUniqueOrThrow({ where: { id: ejecucionId }, select: { condicion: true } })).condicion;
+}
+
+const CON_LA_EJECUCION ={ ejecucion: { select: { fechaLocal: true, sesionPlanificadaId: true, versionDePlan: { select: { instantanea: { select: { contenido: true } } } } } } } as const;
 
 /**
  * DL-198 (WP-EDITOR-ENTRENAMIENTO-TANDA-2, ET2-07 a ET2-09) · el esfuerzo de la sesión (Foster): API-ESF-01 y 02.
@@ -92,6 +100,11 @@ export class EsfuerzoDeLaSesionService {
       efecto: async (tx, pedido, procedencia) => {
         const x = await this.ejecuciones.ejecucionRevelable(tx, 'API-ESF-01', actor, executionId, ctx);
         if (x.asesoradoId !== actor.identidadId) throw this.ejecutor.noRevelable({ operacion: 'API-ESF-01', actorId: actor.identidadId, recurso, sujetoId: x.asesoradoId }, ctx);
+        // Una sesión que no se realizó (lo que hoy rige: la última corrección o el original) no tiene esfuerzo ni carga de
+        // la sesión: si no, el gráfico del profesional mostraría la carga de una sesión que no hubo.
+        if ((await condicionVigente(tx, x.id)) === 'NO_REALIZADA') {
+          throw new ErrorDeApi(422, CodigoDeError.VALIDATION_FAILED, 'Una sesión que no se realizó no lleva el esfuerzo de la sesión.', { issues: [{ code: 'SESSION_NOT_COMPLETED', path: 'rating' }] });
+        }
         const yaEsta = () => new ErrorDeApi(409, CodigoDeError.RESOURCE_CONFLICT, 'Esta sesión ya tiene su esfuerzo guardado.', { issues: [{ code: 'SESSION_EFFORT_ALREADY_RECORDED', path: 'rating' }] });
         if (await tx.esfuerzoDeSesionDeEntrenamiento.findUnique({ where: { ejecucionId: x.id }, select: { id: true } })) throw yaEsta();
         const creada = await sinDuplicar(
