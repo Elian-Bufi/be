@@ -114,11 +114,22 @@ export function VistaDeLaPersona({
       className="vista-de-la-persona"
       titulo={T.titulo}
       sobretitulo={persona}
-      ayuda={{ nombre: `Qué muestra «${T.abrir}»`, contenido: <p className="ayuda-con-ejemplo__ejemplo" data-ejemplo-resuelto>{T.ayuda}</p> }}
+      // DL-199 (ET3, E5): qué es esta vista y que muestra lo no guardado van en su «?»; a la vista, la sesión.
+      ayuda={{
+        nombre: `Qué muestra «${T.abrir}»`,
+        contenido: (
+          <>
+            <p>{T.queEs}</p>
+            <p>{T.sinGuardar}</p>
+            <p className="ayuda-con-ejemplo__ejemplo" data-ejemplo-resuelto>
+              {T.ayuda}
+            </p>
+          </>
+        ),
+      }}
       onCerrar={onCerrar}
     >
       <div className="vista-de-la-persona__cuerpo" data-vista-de-la-persona>
-        <p className="nota">{T.queEs}</p>
         {sesiones.length === 0 ? (
           <p className="nota">{T.sinSesiones}</p>
         ) : (
@@ -147,7 +158,7 @@ export function VistaDeLaPersona({
               </div>
             </div>
             <p className="nota vista-de-la-persona__regla" data-vista-con-progresion={progresion ? '' : undefined}>
-              <Icono nombre="info" tamano={15} /> {progresion ? T.conProgresion : T.sinProgresion} {T.sinGuardar}
+              <Icono nombre="info" tamano={15} /> {progresion ? T.conProgresion : T.sinProgresion}
             </p>
             {/* El teléfono: un marco angosto con la sesión, como en la app. */}
             <div className="telefono-de-muestra" role="group" aria-label={`${T.titulo}: ${elegida?.label ?? ''}`}>

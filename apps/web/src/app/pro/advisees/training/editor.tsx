@@ -2862,16 +2862,25 @@ export function EditorDePlan({
   /** «Antes de activar» (o «Antes de guardar», en una plantilla): lo que impide y lo que queda sin completar, cada cosa con su «Ir a…». */
   const listaAntesDeActivar = (
     <>
-      {plantilla ? (
-        <h3 data-revision-para-guardar>
-          <Icono nombre="revision" tamano={15} /> {COPY_REVISION_DE_LA_PLANTILLA.titulo}
-        </h3>
-      ) : (
-        <h3>
-          <Icono nombre="revision" tamano={15} />
-          {COPY_REVISION_DEL_PLAN.titulo}
-        </h3>
-      )}
+      {/* DL-199 (ET3, E5): cómo se actualiza esta lista va en el «?» de su esquina, no en un párrafo al pie. */}
+      <div className="encabezado-con-ayuda">
+        {plantilla ? (
+          <h3 data-revision-para-guardar>
+            <Icono nombre="revision" tamano={15} /> {COPY_REVISION_DE_LA_PLANTILLA.titulo}
+          </h3>
+        ) : (
+          <h3>
+            <Icono nombre="revision" tamano={15} />
+            {COPY_REVISION_DEL_PLAN.titulo}
+          </h3>
+        )}
+        <ExplicacionAPedido nombre="Cómo se actualiza esta revisión" como="div" lugar="esquina">
+          <p data-revision-en-vivo>{plantilla ? PLT.sinPersona : CE.enVivo(persona)}</p>
+          <p className="ayuda-con-ejemplo__ejemplo" data-ejemplo-resuelto>
+            Ejemplo: escribís el RIR que faltaba en un ejercicio; al guardarse solo el plan, la revisión vuelve a correr y ese renglón de «Queda sin completar» se va.
+          </p>
+        </ExplicacionAPedido>
+      </div>
       {/* ENP-D13: el estado de la revisión, siempre dicho; nunca «nada impide» antes de que responda la API. */}
       {revisionEnElPanel}
       <h3>
@@ -2889,7 +2898,6 @@ export function EditorDePlan({
           ))}
         </ul>
       )}
-      <p className="nota">{plantilla ? PLT.sinPersona : CE.enVivo(persona)}</p>
     </>
   );
 
@@ -3484,7 +3492,15 @@ export function EditorDePlan({
                                 </button>
                               </div>
                             ) : null}
-                            {sesion ? (
+                          </div>
+                          {sesion ? (
+                            <div className="estacion__acciones-de-la-sesion">
+                              {/* ED-11: la galería de presets de prescripción, para la sesión que se mira. ENP-D10: con la sesión vacía, también. */}
+                              <button type="button" className="boton boton--quieto boton--compacto" data-galeria-de-prescripcion onClick={() => setGaleria({ tarea: 'prescripcion', ejercicio: null })}>
+                                <Icono nombre="plantillas" tamano={18} />
+                                {CE.presets}
+                              </button>
+                              {/* DL-199 (ET3, E5): las indicaciones, en el mismo renglón que «Presets»; con texto o abiertas, toman el renglón entero. */}
                               <TextoAPedido
                                 id={`${prefijo}-s${k}-indicaciones`}
                                 rotulo={COPY_ENTRENAMIENTO.indicacionesDeLaSesion}
@@ -3497,15 +3513,6 @@ export function EditorDePlan({
                                 alCambiar={(v) => cambiar((x) => ((lasSesiones(x)[k]!.instructions = v), x))}
                                 alCerrar={dejarDeCambiar}
                               />
-                            ) : null}
-                          </div>
-                          {sesion ? (
-                            <div className="estacion__acciones-de-la-sesion">
-                              {/* ED-11: la galería de presets de prescripción, para la sesión que se mira. ENP-D10: con la sesión vacía, también. */}
-                              <button type="button" className="boton boton--quieto boton--compacto" data-galeria-de-prescripcion onClick={() => setGaleria({ tarea: 'prescripcion', ejercicio: null })}>
-                                <Icono nombre="plantillas" tamano={18} />
-                                {CE.presets}
-                              </button>
                               {prescripcionDeEstaSesion && claveDeEstaSesion ? (
                                 <div className="estacion__prescripcion-de-la-sesion con-ayuda-en-la-esquina" data-prescripcion-de-la-sesion>
                                   <p className="etiqueta-de-dato">

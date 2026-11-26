@@ -17465,6 +17465,15 @@ p.cifra-del-espacio__desglose {
   font-size: 1rem;
 }
 
+/* DL-199 (ET3, E5): de qué es y la herramienta, en un renglón: «El plan  Almanaque», sin una línea de rótulo arriba. */
+.marco-del-panel__titulos {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0 0.5rem;
+  min-width: 0;
+}
+
 /* El almanaque: un mes como un calendario de pared; cada semana con el velo y el borde del color de su fase. */
 .almanaque {
   display: grid;
@@ -17736,6 +17745,14 @@ p.cifra-del-espacio__desglose {
   font-weight: 700;
 }
 
+/* DL-199 (ET3, E5): la estrella y el «?» del gráfico, juntos en la esquina superior derecha. */
+.grafico-de-semanas__acciones {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  gap: 0.4rem;
+}
+
 .grafico-de-semanas__leyenda {
   display: flex;
   flex-wrap: wrap;
@@ -17895,6 +17912,20 @@ p.cifra-del-espacio__desglose {
   padding: 0.65rem 0.75rem;
   border: 1px solid var(--borde);
   border-radius: 10px;
+}
+
+/* DL-199 (ET3, E5): cuando no aplica, un renglón con su «?», sin el marco de una herramienta que no hay. */
+.carga-para-repeticiones--no-aplica {
+  padding-block: 0;
+  padding-inline-start: 0;
+  border: 0;
+}
+
+.carga-para-repeticiones--no-aplica > .nota {
+  margin: 0;
+  min-height: 2.75rem;
+  display: flex;
+  align-items: center;
 }
 
 .carga-para-repeticiones__cabecera {
@@ -18389,6 +18420,12 @@ p.cifra-del-espacio__desglose {
 .lo-que-impide-activar__lista h3 {
   margin: 0.6rem 0 0.35rem;
   font-size: 0.95rem;
+}
+
+/* DL-199 (ET3, E5): el título de la revisión con su «?» en la esquina (cómo se actualiza la lista). */
+.lo-que-impide-activar__lista > .encabezado-con-ayuda,
+[data-panel-en-vivo] > .encabezado-con-ayuda {
+  align-items: center;
 }
 
 /* Las aproximaciones, antes de las efectivas: un renglón de campos, los porcentajes y la vista previa con su base. */
@@ -19262,6 +19299,16 @@ p.cifra-del-espacio__desglose {
 .estacion__acciones-de-la-sesion {
   flex-wrap: wrap;
   align-items: center;
+}
+
+/* DL-199 (ET3, E5): «Agregar indicaciones de la sesión», en el renglón de «Presets»; con texto o abierto, a lo ancho. */
+.estacion__acciones-de-la-sesion > .texto-a-pedido {
+  margin: 0;
+}
+
+.estacion__acciones-de-la-sesion > .texto-a-pedido:has(.texto-a-pedido__texto),
+.estacion__acciones-de-la-sesion > .texto-a-pedido--abierto {
+  flex-basis: 100%;
 }
 
 .estacion__prescripcion-de-la-sesion {
