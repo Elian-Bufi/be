@@ -5,9 +5,9 @@ import { join } from 'node:path';
 import { calcularReceta } from './lectura-recetas';
 
 /**
- * DL-191 (REC-09, REC-D11) · **la semilla del Recetario de BE**: las 66 recetas de cocina familiar (las 16 originales y
- * las 50 de la ampliación del 2026-10-28), del repertorio de `EVIDENCIA/DASHBOARD-PROFESIONAL/herramientas/datos/recetas/`.
- * - Idempotente: cada receta se reconoce por su código editorial (R001 a R066), guardado en `clave_de_semilla`; otra corrida
+ * DL-191 (REC-09, REC-D11) · **la semilla del Recetario de BE**: las 150 recetas de cocina familiar (las 16 originales,
+ * las 50 de la ampliación del 2026-10-28 y las 84 del 2026-11-26), del repertorio de `EVIDENCIA/DASHBOARD-PROFESIONAL/herramientas/datos/recetas/`.
+ * - Idempotente: cada receta se reconoce por su código editorial (R001 a R151, sin R150), guardado en `clave_de_semilla`; otra corrida
  *   no crea nada que ya esté.
  * - Recalcula con el mismo cálculo que la API (`calcularReceta`, SUM_SOURCE_PER_100G_V1) sobre la versión del catálogo que
  *   cita cada ingrediente, y la cita por identidad y versión, nunca por nombre. Si una versión no está (o se retiró), la
@@ -44,12 +44,13 @@ interface RecetaDelManifiesto {
   readonly ingredientes: RecetaDeLaSemilla['ingredientes'];
 }
 
-/** Las 66, en el orden editorial: las 16 originales (R001 a R016, por su número) y las 50 de la ampliación (R017 a R066). */
+/** Las 150, en el orden editorial: las 16 originales (R001 a R016, por su número), las 50 de la ampliación (R017 a R066) y las 84 del recetario del 2026-11-26 (R067 a R151, sin R150). */
 export function leerSemillaDelRecetario(raiz: string): RecetaDeLaSemilla[] {
   const leer = (ruta: string) => JSON.parse(readFileSync(join(raiz, CARPETA_DE_LAS_RECETAS, ruta), 'utf8')) as { recetas: RecetaDelManifiesto[] };
   const originales = leer('manifiesto.json').recetas.map((r) => ({ ...r, codigo: `R${String(r.numero).padStart(3, '0')}` }));
   const ampliacion = leer(join('ampliacion-2026-10-28', 'manifiesto.json')).recetas;
-  return [...originales, ...ampliacion].map((r) => ({
+  const recetario = leer(join('recetario-2026-11-26', 'manifiesto.json')).recetas;
+  return [...originales, ...ampliacion, ...recetario].map((r) => ({
     codigo: r.codigo!,
     nombre: r.nombre,
     descripcion: r.descripcion?.trim() || null,

@@ -4,7 +4,7 @@
  *   pedidas por variante; los medios de antes (JPEG de 1600 px) siguen sirviéndose sin variante, como los pide la APK
  *   publicada, y sus variantes se generan la primera vez; la foto de una comida no cambia.
  * - Una sola copia por huella, sin filtrar entre dueños distintos.
- * - El Recetario de BE: la semilla de las 66 (idempotente), la lista con las rutas ya firmadas y guardables, «Copiar a Mis
+ * - El Recetario de BE: la semilla de las 150 (idempotente), la lista con las rutas ya firmadas y guardables, «Copiar a Mis
  *   recetas» con la misma imagen, proponer con la cesión de la foto, Administración que suma o rechaza, una receta del
  *   recetario como opción del plan y lo que ve la persona.
  * - La autorización: otro profesional recibe el mismo 404 que un recurso inexistente, salvo en el recetario, que es de
@@ -191,15 +191,15 @@ describe('DL-191 · el Recetario de BE', () => {
     persona = await prepararAsesorado(app, 'rec-persona', { a3: true });
   });
 
-  it('TEST-REC-014 · la semilla carga las 66 recetas sin profesional ni foto, y otra corrida no cambia nada', async () => {
+  it('TEST-REC-014 · la semilla carga las 150 recetas sin profesional ni foto, y otra corrida no cambia nada', async () => {
     const recetas = leerSemillaDelRecetario(RAIZ);
     const primera = await sembrarRecetario(admin, recetas, { prueba: 'TEST-REC-014' });
     expect(primera.conProblemas).toEqual([]);
-    expect(primera.creadas.length + primera.yaEstaban.length).toBe(66);
+    expect(primera.creadas.length + primera.yaEstaban.length).toBe(recetas.length);
     const segunda = await sembrarRecetario(admin, recetas, { prueba: 'TEST-REC-014, otra vez' });
     expect(segunda).toEqual({ creadas: [], yaEstaban: recetas.map((r) => r.codigo), conProblemas: [] });
     const semilla = await prisma.recetaDelRecetario.findMany({ where: { claveDeSemilla: { not: null } }, include: { receta: { include: { versiones: true, imagenes: true } } } });
-    expect(semilla).toHaveLength(66);
+    expect(semilla).toHaveLength(recetas.length);
     for (const s of semilla) {
       expect(s.receta.profesionalId).toBeNull();
       expect(s.administradorId).toBeNull();
@@ -214,7 +214,7 @@ describe('DL-191 · el Recetario de BE', () => {
     expect(lista.data.every((r: { origin: string }) => r.origin === 'BE_RECIPE_BOOK')).toBe(true);
     expect(lista.page.hasMore).toBe(true);
     const resto = (await conSesion(app, b.token).get(`/api/v1/nutrition/recipe-book?limit=50&cursor=${lista.page.nextCursor}`).expect(200)).body;
-    expect(lista.data.length + resto.data.length).toBeGreaterThanOrEqual(66);
+    expect(lista.data.length + resto.data.length).toBeGreaterThanOrEqual(100);
     const avena = (await conSesion(app, b.token).get(`/api/v1/nutrition/recipe-book?q=${encodeURIComponent('AVENA cocida')}`).expect(200)).body.data;
     expect(avena.map((r: { name: string }) => r.name)).toContain('Avena cocida con banana y canela');
     await conSesion(app, persona.token).get('/api/v1/nutrition/recipe-book').expect(403);
