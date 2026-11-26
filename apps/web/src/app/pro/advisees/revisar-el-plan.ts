@@ -18,6 +18,11 @@ export const INCOMPLETO = {
   sinSeries: 'INCOMPLETO_SIN_SERIES',
   /** DL-181 (ENP-D05): en un bloque «En vueltas», un ejercicio con más o menos series efectivas que vueltas. */
   seriesYVueltas: 'INCOMPLETO_SERIES_Y_VUELTAS',
+  /**
+   * DL-197 (revisión adversaria): un ejercicio que hereda la intensidad del plan y todavía no tiene objetivo. Se guarda sin
+   * criterio (ET1-D11: no traba el guardado), y así lo lee la persona.
+   */
+  sinIntensidad: 'INCOMPLETO_SIN_OBJETIVO_DE_INTENSIDAD',
 } as const;
 
 /** Lo que dice cada una en la lista, después de su lugar: qué falta y, si cambia algo para la persona, qué ve. */
@@ -26,6 +31,7 @@ export const TEXTO_DE_LO_INCOMPLETO: Readonly<Record<string, string>> = {
   [INCOMPLETO.sinRepeticiones]: 'sin repeticiones fijadas',
   [INCOMPLETO.sinSeries]: 'sin series',
   [INCOMPLETO.seriesYVueltas]: 'sus series efectivas no son tantas como las vueltas de su bloque',
+  [INCOMPLETO.sinIntensidad]: 'el objetivo de la intensidad del plan, sin indicar: en la app se lee «sin criterio de intensidad»',
 };
 
 /** Los textos de «Revisar el plan» que viven en el website. El nombre del botón está en el dominio (`validarPlan`). */
@@ -62,13 +68,31 @@ export function loQueQuedaSinCompletarEnNutricion(dias: readonly DiaDeLaRevision
 }
 
 type SesionDeLaRevision = {
-  readonly prescriptions: readonly { readonly sets: readonly { readonly repetitions: unknown; readonly setKind?: 'WORKING' | 'WARM_UP' | null }[]; readonly exerciseGroupId?: string | null }[];
+  readonly prescriptions: readonly {
+    readonly sets: readonly { readonly repetitions: unknown; readonly setKind?: 'WORKING' | 'WARM_UP' | null }[];
+    readonly exerciseGroupId?: string | null;
+    readonly prescriptionId?: string | null;
+    readonly intensity?: unknown;
+  }[];
   readonly exerciseGroups?: readonly BloqueParaLeer[] | null;
 };
 type BloqueDeLaRevision = { readonly sessions?: readonly SesionDeLaRevision[]; readonly microcycles?: readonly { readonly sessions: readonly SesionDeLaRevision[] }[] };
 
-/** Entrenamiento: cada ejercicio sin series y cada serie sin repeticiones fijadas, en el orden de la estructura. */
-export function loQueQuedaSinCompletarEnEntrenamiento(bloques: readonly BloqueDeLaRevision[]): Lugar[] {
+/**
+ * DL-197 (ET1-D10, ET1-D11): la intensidad del plan que heredan los ejercicios sin criterio propio (`null`, ninguna) y los
+ * que no la llevan por excepción («Sin criterio de intensidad», en `planning.withoutIntensity`).
+ */
+export interface HerenciaDeLaIntensidad {
+  readonly criterio: 'RIR' | 'PERCENT_RM' | null;
+  readonly sinIntensidad: readonly string[];
+}
+
+/**
+ * Entrenamiento: cada ejercicio sin series y cada serie sin repeticiones fijadas, en el orden de la estructura. Con la
+ * intensidad del plan (DL-197), también cada ejercicio que la hereda sin objetivo todavía.
+ */
+export function loQueQuedaSinCompletarEnEntrenamiento(bloques: readonly BloqueDeLaRevision[], herencia: HerenciaDeLaIntensidad | null = null): Lugar[] {
+  const sinIntensidad = new Set(herencia?.sinIntensidad ?? []);
   const r: Lugar[] = [];
   const sesion = (s: SesionDeLaRevision, ruta: string) => {
     const vueltas = new Set(seriesQueNoSonLasVueltas(s).map((x) => x.posicion));
@@ -79,6 +103,7 @@ export function loQueQuedaSinCompletarEnEntrenamiento(bloques: readonly BloqueDe
         if (x.repetitions === null || x.repetitions === undefined) r.push({ code: INCOMPLETO.sinRepeticiones, path: `${rp}.sets[${n}].repetitions` });
       });
       if (vueltas.has(l)) r.push({ code: INCOMPLETO.seriesYVueltas, path: rp });
+      if (herencia?.criterio && (p.intensity ?? null) === null && !(p.prescriptionId && sinIntensidad.has(p.prescriptionId))) r.push({ code: INCOMPLETO.sinIntensidad, path: rp });
     });
   };
   bloques.forEach((b, i) => {

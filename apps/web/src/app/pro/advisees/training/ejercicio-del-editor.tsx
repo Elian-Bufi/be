@@ -402,8 +402,13 @@ export function EjercicioDelEditor({
   const [vezPasada, setVezPasada] = useState(false);
   // DL-197 (F16): uno de los tres cuadros del ejercicio abierto: las aproximaciones, todas las series o «Más opciones».
   const [cuadro, setCuadro] = useState<'aproximaciones' | 'todas' | 'opciones' | null>(null);
+  // ET1-D05 (revisión adversaria): «Editar todas las series» con algo escrito sin aplicar pregunta antes de cerrarse.
+  const [todasConCambios, setTodasConCambios] = useState(false);
   // DL-197 (ET1-D11): el criterio que rige: el propio o, sin él (y sin la excepción), el del plan.
   const criterioEfectivo: Criterio | null = (p.intensity?.criterion as Criterio | undefined) ?? (sinIntensidad ? null : intensidadDelPlan);
+  // Revisión adversaria (DL-197): el que hereda la intensidad del plan sin objetivo todavía se guarda sin criterio (así lo
+  // lee la persona): plegado, se dice que falta el objetivo, como en uno con su criterio propio.
+  const avisosDelPlegado = !p.intensity && criterioEfectivo !== null ? [E9.faltaElObjetivoHeredado, ...plegado.avisos] : plegado.avisos;
   const Titulo = nivel;
   return (
     // DL-196 (EE-05): el panel de la derecha sigue al ejercicio que se toca (`data-foco`).
@@ -441,10 +446,10 @@ export function EjercicioDelEditor({
               ) : null}
               {/* RP-19 (DL-196): abierto, lo que no se entiende lo dicen la celda marcada y el renglón reservado debajo de la
                   tabla. Si además apareciera acá mientras se escribe, la cabecera pasaba a dos renglones y corría las series. */}
-              {!abierto && plegado.avisos.length > 0 ? (
+              {!abierto && avisosDelPlegado.length > 0 ? (
                 <span className="comida-del-editor__avisos" data-avisos>
                   <Icono nombre="aviso" tamano={18} />
-                  <EnPartes texto={plegado.avisos.join(' · ')} />
+                  <EnPartes texto={avisosDelPlegado.join(' · ')} />
                 </span>
               ) : null}
             </span>
@@ -534,13 +539,14 @@ export function EjercicioDelEditor({
                 </p>
               </CuadroEnfocado>
             ) : null}
-            <CuadroEnfocado abierto={cuadro === 'todas'} forma="dialogo" ancho titulo={E9.todas} sobretitulo={nombre} onCerrar={() => setCuadro(null)}>
+            <CuadroEnfocado abierto={cuadro === 'todas'} forma="dialogo" ancho titulo={E9.todas} sobretitulo={nombre} conCambios={todasConCambios} onCerrar={() => setCuadro(null)}>
               <EditarTodasLasSeries
                 id={id}
                 prescripcion={p}
                 criterio={criterioEfectivo}
                 onCambiar={onCambiar}
                 onCerrar={() => setCuadro(null)}
+                onConCambios={setTodasConCambios}
                 onCalcularLaCarga={
                   conFuerza
                     ? (elegidas) => {
@@ -924,7 +930,12 @@ function SeriesDelEjercicio({
     const propio = (p.intensity?.criterion as Criterio | undefined) ?? null;
     if (v === null) {
       const vuelveAlPlan = propio === null || propio === intensidadDelPlan;
-      return onCambiar(vuelveAlPlan && criterio === intensidadDelPlan ? { intensity: null } : { intensity: { criterion: criterio, target: { value: Number.NaN, reference: p.intensity?.target.reference ?? null } } as PrescripcionE['intensity'] });
+      // Revisión adversaria (DL-197): sin criterio propio, ninguna serie puede llevar la clave `rir` (el contrato rechaza el
+      // guardado con SET_RIR_WITHOUT_RIR_CRITERION). Si alguna tiene un RIR escrito, el criterio queda sin objetivo («Falta
+      // el objetivo», como antes) y ese RIR no se pierde; si solo hay «sin objetivo en esta serie», la clave se va con él.
+      const conRirEscrito = p.sets.some((x) => typeof x.rir === 'number');
+      if (vuelveAlPlan && criterio === intensidadDelPlan && !conRirEscrito) return onCambiar({ intensity: null, sets: p.sets.map(({ rir: _sinRir, ...x }) => x as Serie) });
+      return onCambiar({ intensity: { criterion: criterio, target: { value: Number.NaN, reference: p.intensity?.target.reference ?? null } } as PrescripcionE['intensity'] });
     }
     onCambiar({ intensity: { criterion: criterio, target: { value: v, reference: p.intensity?.target.reference ?? null } } as PrescripcionE['intensity'] });
   };
@@ -1261,6 +1272,7 @@ function EditarTodasLasSeries({
   onCambiar,
   onCerrar,
   onCalcularLaCarga = null,
+  onConCambios,
 }: {
   id: string;
   prescripcion: PrescripcionE;
@@ -1269,6 +1281,8 @@ function EditarTodasLasSeries({
   onCerrar: () => void;
   /** ED-76 (EDT-56): la carga de las elegidas desde la fuerza estimada; `null` fuera de la lista de la v1. */
   onCalcularLaCarga?: ((elegidas: readonly number[]) => void) | null;
+  /** Si hay algo escrito sin aplicar: el cuadro pregunta antes de cerrarse (ET1-D05). Al cerrarse, vuelve a `false`. */
+  onConCambios?: (conCambios: boolean) => void;
 }) {
   const notacion = useNotacionDelEsfuerzo();
   const esfuerzo = COPY_NOTACION_DEL_ESFUERZO.etiqueta[notacion];
@@ -1277,6 +1291,11 @@ function EditarTodasLasSeries({
   const [elegidas, setElegidas] = useState<ReadonlySet<number>>(() => new Set(p.sets.flatMap((s, n) => (esDeCalentamiento(s) ? [] : [n]))));
   const [valores, setValores] = useState({ reps: '', carga: '', rir: '', descanso: '', nota: '' });
   const [mal, setMal] = useState<string | null>(null);
+  const escrito = Object.values(valores).some((v) => v.trim() !== '');
+  useEffect(() => {
+    onConCambios?.(escrito);
+  }, [escrito, onConCambios]);
+  useEffect(() => () => onConCambios?.(false), [onConCambios]);
   const campo = (clave: keyof typeof valores, rotulo: string, ejemplo: string) => (
     <div className="campo editar-todas__campo">
       <label htmlFor={`${id}-todas-${clave}`}>{rotulo}</label>
@@ -1410,6 +1429,8 @@ const E9 = {
   otraIntensidad: 'otra intensidad',
   enLaTabla: (r: string) => `En la tabla: ${r}.`,
   sinAproximaciones: 'Todavía no tiene aproximaciones.',
+  /** Hereda la intensidad del plan y todavía no tiene objetivo: la persona lo lee sin criterio hasta que se escriba. */
+  faltaElObjetivoHeredado: 'Falta el objetivo de intensidad del plan',
 } as const;
 
 /** ENP-D14: los textos del criterio arriba de las series. */

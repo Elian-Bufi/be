@@ -108,8 +108,23 @@ describe('DL-197 · fases de más y la intensidad del plan', () => {
       .send({ expectedVersion: b.version, changes: estructuraConFase(), planning: { startDate: null, weeks: null, goal: null, phases: [], intensity: 'PERCENT_RM' } })
       .expect(200);
     expect((await detalle(c.pro.token, b.planId)).planning?.intensity).toBe('PERCENT_RM');
-    await pro.patch(`/api/v1/training/plans/${b.planId}`).send({ expectedVersion: r.body.data.version, changes: estructuraConFase(), planning: { startDate: null, weeks: null, goal: null, phases: [], intensity: 'RIR' } }).expect(200);
+    const conRir = await pro
+      .patch(`/api/v1/training/plans/${b.planId}`)
+      .send({ expectedVersion: r.body.data.version, changes: estructuraConFase(), planning: { startDate: null, weeks: null, goal: null, phases: [], intensity: 'RIR' } })
+      .expect(200);
     expect((await detalle(c.pro.token, b.planId)).planning).toBeNull();
-    await pro.patch(`/api/v1/training/plans/${b.planId}`).send({ expectedVersion: r.body.data.version, changes: estructuraConFase(), planning: { startDate: null, weeks: null, goal: null, phases: [], intensity: 'RPE' } }).expect((x) => expect([400, 409]).toContain(x.status));
+    // RPE no es una intensidad del plan: es una forma de escribir el RIR (DL-192, `effortNotation`). Con la versión vigente
+    // (revisión adversaria: con una vieja, el 409 de la versión tapaba si el esquema lo rechazaba), un 400 del esquema.
+    await pro
+      .patch(`/api/v1/training/plans/${b.planId}`)
+      .send({ expectedVersion: conRir.body.data.version, changes: estructuraConFase(), planning: { startDate: null, weeks: null, goal: null, phases: [], intensity: 'RPE' } })
+      .expect(400);
+    // La excepción por ejercicio de un ejercicio que no está en el plan se poda al guardar: no queda colgada.
+    await pro
+      .patch(`/api/v1/training/plans/${b.planId}`)
+      .send({ expectedVersion: conRir.body.data.version, changes: estructuraConFase(), planning: { startDate: null, weeks: null, goal: null, phases: [], intensity: 'PERCENT_RM', withoutIntensity: [randomUUID()] } })
+      .expect(200);
+    expect((await detalle(c.pro.token, b.planId)).planning).toEqual(expect.objectContaining({ intensity: 'PERCENT_RM' }));
+    expect((await detalle(c.pro.token, b.planId)).planning?.withoutIntensity).toBeUndefined();
   });
 });

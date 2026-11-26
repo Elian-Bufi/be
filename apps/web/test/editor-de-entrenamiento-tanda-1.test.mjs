@@ -223,3 +223,40 @@ test('TEST-ET1-20 · las palabras de BE en lo nuevo, y cada «%» con su base', 
     for (const t of textos.filter((x) => !x.includes('/'))) assert.doesNotMatch(t, /\bvolumen\b|cumplimiento|adherencia|\bracha\b|puntaje|asesorad|estaci[oó]n\b/i, `${nombre}: ${t}`);
   }
 });
+
+test('TEST-ET1-21 · revisión adversaria: heredar sin objetivo se dice, vaciar el común no traba el guardado, lo escrito no se pierde y lo repetido se marca', async () => {
+  const R = await import('../src/app/pro/advisees/revisar-el-plan.ts');
+  const ejercicio = (prescriptionId, intensity) => ({ prescriptionId, intensity, sets: [{ repetitions: { value: 8 } }] });
+  const bloques = [{ sessions: [{ prescriptions: [ejercicio('hereda', null), ejercicio('excepcion', null), ejercicio('propio', { criterion: 'RIR', target: { value: 2, reference: null } })] }] }];
+  // Con la intensidad del plan, el que la hereda sin objetivo queda «sin completar» (no impide activar); la excepción y el
+  // de criterio propio, no. Sin intensidad del plan (o en una plantilla), nada.
+  assert.deepEqual(R.loQueQuedaSinCompletarEnEntrenamiento(bloques, { criterio: 'RIR', sinIntensidad: ['excepcion'] }), [{ code: R.INCOMPLETO.sinIntensidad, path: 'blocks[0].sessions[0].prescriptions[0]' }]);
+  assert.deepEqual(R.loQueQuedaSinCompletarEnEntrenamiento(bloques, { criterio: null, sinIntensidad: [] }), []);
+  assert.deepEqual(R.loQueQuedaSinCompletarEnEntrenamiento(bloques), []);
+  assert.ok(R.TEXTO_DE_LO_INCOMPLETO[R.INCOMPLETO.sinIntensidad]);
+  assert.match(EDITOR, /loQueQuedaSinCompletarEnEntrenamiento\(bloques, herenciaDeLaIntensidad\), enElPanel\)/);
+  // Plegado, el que hereda sin objetivo lo dice.
+  assert.match(EJERCICIO, /const avisosDelPlegado = !p\.intensity && criterioEfectivo !== null \? \[E9\.faltaElObjetivoHeredado/);
+  // Vaciar el objetivo común con un RIR escrito en alguna serie deja el criterio sin objetivo (no un RIR por serie sin
+  // criterio, que el contrato rechaza); sin RIR escrito, se va el criterio con las claves `rir`.
+  assert.match(EJERCICIO, /const conRirEscrito = p\.sets\.some\(\(x\) => typeof x\.rir === 'number'\);/);
+  assert.match(EJERCICIO, /onCambiar\(\{ intensity: null, sets: p\.sets\.map\(\(\{ rir: _sinRir, \.\.\.x \}\) => x as Serie\) \}\)/);
+  // «Editar todas las series» con algo escrito pregunta antes de cerrarse (ET1-D05).
+  assert.match(EJERCICIO, /titulo=\{E9\.todas\} sobretitulo=\{nombre\} conCambios=\{todasConCambios\}/);
+  assert.match(EJERCICIO, /onConCambios=\{setTodasConCambios\}/);
+  // «Agregar ejercicios» marca lo que la sesión ya tiene y lo cuenta en el pie: entra igual, pero se dice.
+  assert.match(CATALOGO, /data-ya-en-la-sesion/);
+  assert.match(CATALOGO, /data-repetidos-en-la-sesion=\{repetidos\}/);
+  assert.match(EDITOR, /enLaSesion=\{new Set\(/);
+});
+
+test('TEST-ET1-22 · revisión adversaria: los cuadros no pierden ni borran lo escrito sin decirlo, y el rayado no tapa el texto', () => {
+  // «Configurar plan»: una duración que no se entiende no se guarda como «sin duración».
+  assert.match(CUADROS, /const semanasMal = semanasEscritas !== null && semanasEscritas\.trim\(\) !== '' && leerSemanas\(semanasEscritas, 104\) === null;/);
+  assert.match(CUADROS, /apagado: semanasMal \? T\.semanasDelPlanNoSeEntienden : null,/);
+  // «Editar fase»: con cambios sin guardar, «Duplicar fase» no copia lo viejo en silencio.
+  assert.match(CUADROS, /aria-disabled=\{cambio \|\| undefined\}/);
+  assert.match(CUADROS, /if \(!cambio\) onDuplicar\(\);/);
+  // F4: el rayado de lo que pasa del fin del plan va debajo del nombre y de las semanas.
+  assert.match(CSS, /\.tarjeta-de-fase\[data-fuera\] \.tarjeta-de-fase__nombre,\n\.tarjeta-de-fase\[data-fuera\] \.tarjeta-de-fase__semanas \{\n\s*position: relative;\n\s*z-index: 1;/);
+});

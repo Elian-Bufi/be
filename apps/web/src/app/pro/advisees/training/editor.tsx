@@ -1278,6 +1278,8 @@ export function EditorDePlan({
   const ventanas = ventanasDeLasSesiones(plan, bloques);
   // DL-197 (ET1-D03, F4): las semanas que las fases pasan del plan; con alguna, no se activa.
   const fasesDeMas = plantilla ? 0 : semanasDeMas(plan, bloques);
+  // Revisión adversaria (DL-197): los que heredan la intensidad del plan sin objetivo todavía quedan «sin completar».
+  const herenciaDeLaIntensidad = plantilla ? null : { criterio: criterioDeLaIntensidad(plan.intensity), sinIntensidad: plan.withoutIntensity ?? [] };
   // La agenda empieza con el plan: si el plan tiene inicio, la agenda lo toma (los días se eligen en cada fase).
   const inicioDeLaAgenda = plan.startDate ?? hoyEn();
   const agendaDelPlan = (a: AgendaDeEntrenamiento | null): AgendaDeEntrenamiento | null => (a && plan.startDate && a.startDate !== plan.startDate ? { ...a, startDate: plan.startDate } : a);
@@ -1384,7 +1386,7 @@ export function EditorDePlan({
   // PG-10: los iguales del mismo ejercicio, en un renglón. Dentro del cuadro modal no se ofrece «Completar»: su
   // «Deshacer» vive en el aviso flotante, que con el cuadro abierto queda inerte y fuera del alcance del lector (revisión
   // de la tanda A). Cada aviso conserva su «Ir»; «Completar» sigue en el panel y en el asistente.
-  const sinCompletarAlActivar = confirmar ? enGrupos(loQueQuedaSinCompletarEnEntrenamiento(bloques), conSuLugar).map((c) => ({ ...c, completar: null })) : [];
+  const sinCompletarAlActivar = confirmar ? enGrupos(loQueQuedaSinCompletarEnEntrenamiento(bloques, herenciaDeLaIntensidad), conSuLugar).map((c) => ({ ...c, completar: null })) : [];
   // PLT (DL-182): «Antes de guardar». Lo de la plantilla entera se dice sin lugar; el nombre lleva a su campo.
   const enLaPlantilla = (p: ValidationIssue, texto: string): CosaParaRevisar =>
     DE_LA_PLANTILLA.has(p.path) ? { texto: texto.charAt(0).toUpperCase() + texto.slice(1), ir: p.path === 'name' ? irDesdeElCuadro(p) : null } : conSuLugar(p, texto);
@@ -2010,7 +2012,7 @@ export function EditorDePlan({
   const revisionEnElPanel = (
     <RevisionDelPlan estado={estadoDeLaRevision} sinGuardar={sucio} delServidor={delServidor} delEditor={delEditor} motivoSinRevisar={motivoSinRevisar} guardando={guardando} onRevisar={() => void revisarAhora()} para={plantilla ? 'guardar' : 'activar'} />
   );
-  const sinCompletarEnVivo = enGrupos(loQueQuedaSinCompletarEnEntrenamiento(bloques), enElPanel);
+  const sinCompletarEnVivo = enGrupos(loQueQuedaSinCompletarEnEntrenamiento(bloques, herenciaDeLaIntensidad), enElPanel);
   /** El nombre de una sesión por su identificador, como lo dice la agenda. */
   const nombreDeLaSesionPorId = (id: string): string => sesionesDeLaAgenda.find((x) => x.sessionId === id)?.nombre ?? C.sesion;
 
@@ -3814,6 +3816,8 @@ export function EditorDePlan({
         deDonde={dondeSeAgrega}
         habituales={ejerciciosHabituales}
         prescripcionDeLaSesion={prescripcionDeEstaSesion?.nombre ?? null}
+        // Revisión adversaria (DL-197): lo que la sesión ya tiene se marca en la lista, por versión y por ejercicio.
+        enLaSesion={new Set((sesion?.prescriptions ?? []).flatMap((q) => [q.exerciseVersionId, ...(ejercicios[q.exerciseVersionId] ? [ejercicios[q.exerciseVersionId]!] : [])]))}
         onAgregar={(marcados, prescripcion) => {
           if (!sesion) return;
           setNombres((n) => ({ ...n, ...Object.fromEntries(marcados.map((e) => [e.versionId, e.name])) }));
