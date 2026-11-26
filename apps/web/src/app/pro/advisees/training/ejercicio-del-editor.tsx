@@ -1042,7 +1042,7 @@ function SeriesDelEjercicio({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [claveDelUnoRM]);
   const aviso = `${id}-no-se-entiende`;
-  const queNoSeEntiende = loQueNoSeEntiendeEnLasSeries(id, p, p.sets.map((_, n) => cual(n)));
+  const queNoSeEntiende = loQueNoSeEntiendeEnLasSeries(id, p, p.sets.map((_, n) => cual(n)), esfuerzo);
   // Falta el objetivo de intensidad solo si alguna serie efectiva no tiene intensidad, ni propia ni heredada del «Común»: con
   // el RIR propio en todas, el «Común» vacío no es una falta. Se marca el «Común» y las series que no tienen.
   const hayEfectivas = p.sets.some((s) => !esDeCalentamiento(s));

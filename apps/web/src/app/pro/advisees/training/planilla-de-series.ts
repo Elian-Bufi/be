@@ -228,6 +228,7 @@ const COMO_SE_ESCRIBE = {
   repetitions: 'de 1 a 1000, o un rango como 8-12',
   suggestedLoad: 'un número desde 0',
   rir: 'un número',
+  rpe: 'de 6 a 10, de a medio punto, o «6 o menos»',
   restSeconds: 'como 02:30 o en segundos, hasta 60:00',
 } as const;
 
@@ -245,7 +246,8 @@ const esNaN = (n: unknown): boolean => typeof n === 'number' && Number.isNaN(n);
  * en su lugar; el texto va a un renglón reservado debajo de la tabla (`textoDeLoQueNoSeEntiende`), para que la fila no
  * crezca mientras se escribe.
  */
-export function loQueNoSeEntiendeEnLasSeries(prefijo: string, p: PrescripcionDeLaPlanilla, rotulos: readonly string[]): readonly CeldaQueNoSeEntiende[] {
+/** `esfuerzo`: cómo se nombra el RIR en la notación del plan («RPE» en un plan en RPE: nada de RIR a la vista). */
+export function loQueNoSeEntiendeEnLasSeries(prefijo: string, p: PrescripcionDeLaPlanilla, rotulos: readonly string[], esfuerzo = 'RIR'): readonly CeldaQueNoSeEntiende[] {
   const celdas: CeldaQueNoSeEntiende[] = [];
   if (esNaN(p.suggestedLoad?.value)) celdas.push({ id: `${prefijo}-carga`, que: 'la carga común', como: COMO_SE_ESCRIBE.suggestedLoad });
   if (esNaN(p.restSeconds)) celdas.push({ id: `${prefijo}-descanso`, que: 'el descanso común', como: COMO_SE_ESCRIBE.restSeconds });
@@ -254,7 +256,7 @@ export function loQueNoSeEntiendeEnLasSeries(prefijo: string, p: PrescripcionDeL
     const r = s.repetitions;
     if (r && ('value' in r ? esNaN(r.value) : esNaN(r.min) || esNaN(r.max))) celdas.push({ id: `${prefijo}-serie-${n}`, que: `las repeticiones de ${de}`, como: COMO_SE_ESCRIBE.repetitions });
     if (esNaN(s.suggestedLoad?.value)) celdas.push({ id: `${prefijo}-serie-${n}-carga`, que: `la carga de ${de}`, como: COMO_SE_ESCRIBE.suggestedLoad });
-    if (esNaN(s.rir)) celdas.push({ id: `${prefijo}-serie-${n}-rir`, que: `el RIR de ${de}`, como: COMO_SE_ESCRIBE.rir });
+    if (esNaN(s.rir)) celdas.push({ id: `${prefijo}-serie-${n}-rir`, que: `el ${esfuerzo} de ${de}`, como: esfuerzo === 'RPE' ? COMO_SE_ESCRIBE.rpe : COMO_SE_ESCRIBE.rir });
     if (esNaN(s.restSeconds)) celdas.push({ id: `${prefijo}-serie-${n}-descanso`, que: `el descanso de ${de}`, como: COMO_SE_ESCRIBE.restSeconds });
   });
   return celdas;
