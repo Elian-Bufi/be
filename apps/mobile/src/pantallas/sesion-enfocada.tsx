@@ -26,6 +26,7 @@ import {
   COPY_ENTRENAMIENTO,
   COPY_ENTRENAMIENTO_POR_SERIE,
   COPY_INTEGRACIONES,
+  seMuestraElEsfuerzoDeLaSerie,
   COPY_REGISTRO_DE_COMIDAS,
   duracionParaMostrar,
   ETIQUETA_DE_CALIDAD_DE_TIEMPO,
@@ -383,12 +384,18 @@ export function TablaDeSeries({
   ocupado,
   acciones,
   notacion = 'RIR',
+  pideElEsfuerzo = true,
 }: {
   filas: readonly FilaDeLaTabla[];
   activa: number;
   unidad: Unidad;
   /** DL-192: cómo se escribe el esfuerzo en el plan; en RPE, la columna dice «RPE» y el esfuerzo se elige. */
   notacion?: NotacionDelEsfuerzo;
+  /**
+   * DL-202: si el plan pide el esfuerzo de cada serie. Sin eso, la tabla no tiene la columna del esfuerzo; con eso, la
+   * tiene, y en una aproximación la celda va vacía, sin campo (EP-D04).
+   */
+  pideElEsfuerzo?: boolean;
   /** Lo escrito en cada fila de este ejercicio, por número de serie. */
   escritas: ReadonlyMap<number, FilaEscrita>;
   /** Los errores de la última fila que se quiso tildar. */
@@ -407,7 +414,7 @@ export function TablaDeSeries({
           <Text style={[estilos.columna, estilos.columnaSerie]}>{COPY_ENTRENAMIENTO_POR_SERIE.columnaSerie}</Text>
           <Text style={[estilos.columna, estilos.columnaDato]}>{unidad}</Text>
           <Text style={[estilos.columna, estilos.columnaDato]}>{COPY_ENTRENAMIENTO_POR_SERIE.columnaRepeticiones}</Text>
-          <Text style={[estilos.columna, estilos.columnaDato]}>{textosDelEsfuerzo(notacion).columna}</Text>
+          {pideElEsfuerzo ? <Text style={[estilos.columna, estilos.columnaDato]}>{textosDelEsfuerzo(notacion).columna}</Text> : null}
           <Text style={[estilos.columna, estilos.columnaDato]} numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.8}>
             {TEXTOS_DE_LA_SESION.columnaTiempo}
           </Text>
@@ -427,6 +434,7 @@ export function TablaDeSeries({
           ocupado,
           acciones,
           notacion,
+          pideElEsfuerzo,
         };
         return disposicion === 'tabla' ? <FilaDeTabla key={f.setIndex} {...props} /> : <TarjetaDeSerie key={f.setIndex} {...props} />;
       })}
@@ -447,6 +455,8 @@ interface PropsDeFila {
   ocupado: boolean;
   acciones: AccionesDeLaTabla;
   notacion: NotacionDelEsfuerzo;
+  /** DL-202: si el plan pide el esfuerzo de cada serie (la columna está). */
+  pideElEsfuerzo: boolean;
 }
 
 const CAMPOS: readonly { readonly campo: 'carga' | 'repeticiones' | 'rir'; readonly teclado: KeyboardTypeOptions }[] = [
@@ -477,8 +487,11 @@ function estiloDeLaFila(f: FilaDeLaTabla, activa: boolean) {
   return [activa ? estilos.filaActiva : estilos.filaQuieta, registrada && estilos.filaRegistrada, registrada && activa && estilos.filaRegistradaActiva, f.estado === 'en-conflicto' && estilos.filaEnConflicto];
 }
 
-function FilaDeTabla({ fila: f, activa, unidad, escrita, errores, relojEnCurso, relojDisponible, escribiendoTiempo, ocupado, acciones, notacion }: PropsDeFila) {
+function FilaDeTabla({ fila: f, activa, unidad, escrita, errores, relojEnCurso, relojDisponible, escribiendoTiempo, ocupado, acciones, notacion, pideElEsfuerzo }: PropsDeFila) {
   const p = placeholdersDeLaSerie(f.objetivo, unidad, notacion);
+  // DL-202: sin la columna del esfuerzo, la fila tampoco la tiene; en una aproximación, la celda queda sin campo.
+  const campos = pideElEsfuerzo ? CAMPOS : CAMPOS.filter((c) => c.campo !== 'rir');
+  const conEsfuerzo = seMuestraElEsfuerzoDeLaSerie(pideElEsfuerzo, f.tipo);
   const estado = f.estado === 'guardada' ? null : f.estado === 'sin-registrar' ? (!activa && escrita && hayAlgoEscrito(escrita) ? TEXTOS_DE_LA_SESION.escritaSinRegistrar : null) : textoDeEstadoDeFila(f);
   const editable = activa && f.estado === 'sin-registrar';
   const r = textoRegistrado(f, notacion);
@@ -499,8 +512,12 @@ function FilaDeTabla({ fila: f, activa, unidad, escrita, errores, relojEnCurso, 
           <Text style={estilos.numeroDeSerie}>{marcaDeLaFila(f)}</Text>
         </Pressable>
         {editable ? (
-          CAMPOS.map(({ campo, teclado }) =>
-            // DL-192: en un plan en RPE, el esfuerzo se elige entre las opciones del RPE; lo demás se escribe.
+          campos.map(({ campo, teclado }) =>
+            campo === 'rir' && !conEsfuerzo ? (
+              <View key={campo} style={[estilos.celda, estilos.celdaQuieta]} importantForAccessibility="no-hide-descendants">
+                <Text style={estilos.placeholder}>—</Text>
+              </View>
+            ) : // DL-192: en un plan en RPE, el esfuerzo se elige entre las opciones del RPE; lo demás se escribe.
             campo === 'rir' && notacion === 'RPE' ? (
               <SelectorDeRpe
                 key={campo}
@@ -519,7 +536,7 @@ function FilaDeTabla({ fila: f, activa, unidad, escrita, errores, relojEnCurso, 
         ) : (
           // Tocar los datos de una fila la enfoca. El lector de pantalla ya los oye en el número de la serie.
           <Pressable accessible={false} importantForAccessibility="no-hide-descendants" onPress={() => acciones.onEnfocar(f.setIndex)} style={estilos.datosDeLaFila}>
-            {CAMPOS.map(({ campo }) => (
+            {campos.map(({ campo }) => (
               <View key={campo} style={[estilos.celda, f.registrada ? estilos.celdaRegistrada : estilos.celdaQuieta]}>
                 {f.registrada ? (
                   <Text style={estilos.valorRegistrado}>{r[campo]}</Text>
@@ -674,8 +691,11 @@ function CeldaEditable({
 }
 
 /** Con la letra grande: cada serie en su tarjeta, con sus cuatro campos, el reloj y la casilla de ui.tsx. */
-function TarjetaDeSerie({ fila: f, activa, unidad, escrita, errores, relojEnCurso, relojDisponible, ocupado, acciones, notacion }: PropsDeFila) {
+function TarjetaDeSerie({ fila: f, activa, unidad, escrita, errores, relojEnCurso, relojDisponible, ocupado, acciones, notacion, pideElEsfuerzo }: PropsDeFila) {
   const t = TEXTOS_DE_LA_SESION;
+  // DL-202: el esfuerzo, si el plan lo pide o si ya está registrado; para escribirlo, nunca en una aproximación.
+  const conEsfuerzo = seMuestraElEsfuerzoDeLaSerie(pideElEsfuerzo, f.tipo);
+  const campos = (['carga', 'repeticiones', 'rir', 'tiempo'] as const).filter((c) => c !== 'rir' || pideElEsfuerzo || (f.registrada?.rir ?? null) !== null);
   const p = placeholdersDeLaSerie(f.objetivo, unidad, notacion);
   const estado = activa ? COPY_ENTRENAMIENTO_POR_SERIE.serieActual : f.estado === 'sin-registrar' ? (escrita && hayAlgoEscrito(escrita) ? t.escritaSinRegistrar : null) : textoDeEstadoDeFila(f);
   // La tildada sin escribir nada lleva «como el plan» en su título; la escrita, nada más (DL-161).
@@ -703,7 +723,9 @@ function TarjetaDeSerie({ fila: f, activa, unidad, escrita, errores, relojEnCurs
     return (
       <Superficie style={estilos.tarjetaDeSerie} encima={estilos.tarjetaActiva}>
         <Text style={estilos.tituloDeTarjeta}>{titulo}</Text>
-        {(['carga', 'repeticiones', 'rir', 'tiempo'] as const).map((campo) =>
+        {campos
+          .filter((c) => c !== 'rir' || conEsfuerzo)
+          .map((campo) =>
           campo === 'rir' && notacion === 'RPE' ? (
             <SelectorDeRpe
               key={campo}
@@ -745,7 +767,7 @@ function TarjetaDeSerie({ fila: f, activa, unidad, escrita, errores, relojEnCurs
     <Superficie style={estilos.tarjetaDeSerie} encima={[(f.estado === 'guardada' || f.estado === 'pendiente-de-enviar') && estilos.tarjetaRegistrada, activa && estilos.tarjetaActiva]}>
       <Pressable accessibilityRole="button" accessibilityState={{ selected: activa }} accessibilityLabel={fraseDeLaFila(f, unidad, activa, escrita, notacion)} onPress={() => acciones.onEnfocar(f.setIndex)} style={({ pressed }) => [pressed && estilos.presionado]}>
         <Text style={estilos.tituloDeTarjeta}>{titulo}</Text>
-        {(['carga', 'repeticiones', 'rir', 'tiempo'] as const).map((campo) => (
+        {campos.map((campo) => (
           <View key={campo} style={estilos.parDeTarjeta} importantForAccessibility="no-hide-descendants">
             <Text style={estilos.etiquetaDeTarjeta}>{etiquetaDe(campo)}</Text>
             <Text style={f.registrada || (escrita?.[campo] ?? '').trim() !== '' ? estilos.valorRegistrado : estilos.placeholder}>{valor(campo)}</Text>
@@ -798,7 +820,7 @@ export function BandaDelPlan({ banda }: { banda: ReturnType<typeof bandaDeLaSeri
  * guarda lo planificado, cómo se deshace, que el tiempo es opcional y la ayuda del RIR con su ejemplo, literales del
  * encargo, sin abreviar.
  */
-export function AyudaDeLaTabla({ notacion = 'RIR' }: { notacion?: NotacionDelEsfuerzo } = {}) {
+export function AyudaDeLaTabla({ notacion = 'RIR', pideElEsfuerzo = true }: { notacion?: NotacionDelEsfuerzo; /** DL-202: sin pedir el esfuerzo de cada serie, sin su ayuda. */ pideElEsfuerzo?: boolean } = {}) {
   const e = COPY_ENTRENAMIENTO_POR_SERIE;
   const esfuerzo = textosDelEsfuerzo(notacion);
   const t = TEXTOS_DE_LA_SESION;
@@ -810,7 +832,7 @@ export function AyudaDeLaTabla({ notacion = 'RIR' }: { notacion?: NotacionDelEsf
       <Parrafo>{t.ayudaDestildar}</Parrafo>
       <Parrafo>{t.ayudaTiempo}</Parrafo>
       {/* En RIR, la ayuda y el ejemplo literales de Dirección; en RPE (DL-192), los mismos dichos en esa notación. */}
-      <Parrafo>{notacion === 'RIR' ? `${e.rirTitulo}: ${e.rirAyuda}. ${e.rirEjemplo}.` : `${esfuerzo.titulo}: ${esfuerzo.ayuda}. ${esfuerzo.ejemplo}.`}</Parrafo>
+      {pideElEsfuerzo ? <Parrafo>{notacion === 'RIR' ? `${e.rirTitulo}: ${e.rirAyuda}. ${e.rirEjemplo}.` : `${esfuerzo.titulo}: ${esfuerzo.ayuda}. ${esfuerzo.ejemplo}.`}</Parrafo> : null}
       <Parrafo tenue>{t.ayudaGuardado}</Parrafo>
     </Ayuda>
   );

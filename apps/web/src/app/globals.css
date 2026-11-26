@@ -26285,6 +26285,11 @@ html:has(.estacion:not([data-en-el-asistente])) {
   margin: 0 0 0 1.7rem;
 }
 
+/* DL-202 · «Pedir el esfuerzo de cada serie», en el mismo bloque, debajo del esfuerzo de la sesión. */
+.esfuerzo-de-la-sesion-del-plan .esfuerzo-de-cada-serie-del-plan {
+  margin-top: 0.5rem;
+}
+
 /* ET2-01 a ET2-04 · el 1RM de referencia en el ejercicio abierto: el valor con su origen y la base del % RM. */
 .uno-rm-del-ejercicio {
   display: grid;

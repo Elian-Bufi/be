@@ -361,6 +361,9 @@ export function EjercicioDelEditor({
   progresionPropia = null,
   onProgresion,
 }: {
+  /** DL-201: su progresión propia en pocas palabras (plegado), si tiene; y abrir «Progresión…» con este ejercicio elegido. */
+  progresionPropia?: string | null;
+  onProgresion?: () => void;
   /** ET2-D18: se guardó un 1RM nuevo de este ejercicio: el editor recalcula las cargas de todo el borrador. */
   onUnoRMCambiado?: () => void;
   /** ET2-D18: a qué se redondean las cargas del % RM en este ejercicio (su excepción o la del plan). */
@@ -368,9 +371,6 @@ export function EjercicioDelEditor({
   /** ET2-D18: la excepción del ejercicio («Más opciones»); `null`, como el plan. */
   redondeoPropio?: RedondeoDeLasCargas | null;
   onRedondeo?: (r: RedondeoDeLasCargas | null) => void;
-  /** DL-201: su progresión propia en pocas palabras (plegado), si tiene; y abrir «Progresión…» con este ejercicio elegido. */
-  progresionPropia?: string | null;
-  onProgresion?: () => void;
   /** DL-199 (ET3-22): el asa para arrastrar y las teclas Alt+↑ y Alt+↓ (`arrastrar-ejercicios.tsx`); sin esto, no se arrastra. */
   arrastre?: ArrastreDeLaTarjeta | null;
   /** DL-197 (ET1-D10, ET1-D11): el criterio del plan, que hereda el ejercicio sin criterio propio; `null`, ninguno. */
@@ -1328,10 +1328,10 @@ const COPY_SERIES = {
   /** Falta el objetivo: ninguna serie efectiva lo tiene, ni propio ni del «Común». */
   faltaElObjetivo: (que: string) => `Falta el objetivo de intensidad: escribí el ${que} del «Común» o el de cada serie.`,
   /** ET2-D18: la marca de lo que sale del otro campo, y lo que oye el lector. */
-  delPorcentaje: 'del %',
+  delPorcentaje: 'del % RM',
   deLaCarga: 'de la carga',
   cargaDelPorcentaje: 'Sale del % RM y del 1RM: si cambia el 1RM, se recalcula.',
-  porcentajeDeLaCarga: 'Sale de la carga escrita y del 1RM, redondeado a 0,5 %.',
+  porcentajeDeLaCarga: 'Sale de la carga escrita y del 1RM, redondeado a 0,5 % RM.',
 } as const;
 
 /** ET2-D18: el 1RM y el redondeo con los que la planilla ata el % RM y la carga del «Común». */

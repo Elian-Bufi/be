@@ -20,11 +20,11 @@ import { ZONA_POR_DEFECTO, fechaLocalEn } from '../nutricion/zona';
 import { momentoDeLaBase } from '../prisma/concurrencia';
 import type { ActorAutenticado } from '../sesion/sesion.guard';
 import { CatalogoDeEjerciciosService } from './catalogo.service';
-import { muestraLaNotacionDelEsfuerzo, muestraLaSemanaDeLaFase, preguntaElEsfuerzoDeLaSesion } from './compatibilidad-de-clientes';
+import { muestraLaNotacionDelEsfuerzo, muestraLaSemanaDeLaFase, preguntaElEsfuerzoDeLaSesion, sabeElEsfuerzoDeCadaSerie } from './compatibilidad-de-clientes';
 import { EjecucionesDeEntrenamientoService } from './ejecuciones.service';
 import { EjecutorDeEntrenamiento, esUuid, exigirA3Vigente } from './ejecutor';
 import { contenidoDeLaVersion, INCLUIR_PLAN_DE_ENTRENAMIENTO, nombreVisibleDe, resolverDeInstantanea, seguimientoAbierto, sesionEnLaSemana, versionDePlanApi } from './lectura-entrenamiento';
-import { aCitables, bloquesConObjetivosApi, ejerciciosCitados, imagenesDeEjercicios, sesionConObjetivosApi, sesionDeLaInstantanea } from './lectura-por-serie';
+import { aCitables, bloquesConObjetivosApi, ejerciciosCitados, imagenesDeEjercicios, pideElEsfuerzoDeCadaSerieDelPlan, sesionConObjetivosApi, sesionDeLaInstantanea } from './lectura-por-serie';
 
 type Tx = Prisma.TransactionClient;
 
@@ -94,6 +94,8 @@ export class ObjetivosPorSerieService {
             effortNotation: notacionDe(contenido.effortNotation),
             // DL-196: la planificación, con las anotaciones privadas: esta lectura es solo del profesional autor.
             planning: contenido.planning ?? null,
+            // DL-202 (EP-D02): si pide el esfuerzo de cada serie, resuelto como le llega a la app.
+            askSetEffort: await pideElEsfuerzoDeCadaSerieDelPlan(tx, contenido.planning, titular, v.planId),
           },
         };
       },
@@ -170,6 +172,9 @@ export class ObjetivosPorSerieService {
             ...(semana && muestraLaSemanaDeLaFase(ctx) ? { week: { phaseWeek: semana.semana, phaseWeeks: semana.semanasQueEntran ?? semana.semanas, deload: esSemanaDeDescarga(semana, ubicada.sesion.prescriptions.map((p) => p.prescriptionId)) } } : {}),
             // DL-198 (ET2-07): la app pregunta el esfuerzo de la sesión al terminar, si el plan lo pide y ella sabe.
             ...(planning?.askSessionEffort && preguntaElEsfuerzoDeLaSesion(ctx) ? { askSessionEffort: true as const } : {}),
+            // DL-202 (EP-D02, EP-D06): si pregunta el esfuerzo de cada serie efectiva, solo a quien lo sabe leer; la APK que
+            // no lo declara lo sigue preguntando, como hasta ahora.
+            ...(sabeElEsfuerzoDeCadaSerie(ctx) ? { askSetEffort: await pideElEsfuerzoDeCadaSerieDelPlan(tx, planning, actor.identidadId, version.planId) } : {}),
           },
         };
       },

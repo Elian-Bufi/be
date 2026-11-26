@@ -226,9 +226,10 @@ test('5 · la APK declara training-effort-notation-1 y lee la notación de API-S
   const api = fuente('apps/mobile/src/api.ts');
   assert.match(api, /const CAPACIDADES = \[[^\]]*CAPACIDAD_NOTACION_DEL_ESFUERZO[^\]]*\] as const;/);
   const entrenamiento = fuente('apps/mobile/src/pantallas/entrenamiento.tsx');
-  assert.match(entrenamiento, /entrenamientoLocal\.fijarSesionDelPlan\(draftId, s\.datos\.data\.session, false, notacionDeLaLectura\(s\.datos\.data\)\)/);
+  // DL-202: con un argumento más, si el plan pide el esfuerzo de cada serie (scripts/esfuerzo-de-cada-serie.test.mjs).
+  assert.match(entrenamiento, /entrenamientoLocal\.fijarSesionDelPlan\(draftId, s\.datos\.data\.session, false, notacionDeLaLectura\(s\.datos\.data\)(, s\.datos\.data\.askSetEffort)?\)/);
   assert.match(entrenamiento, /const notacion = local\?\.notacion \?\? 'RIR';/);
-  for (const llamada of [/serieAlTildar\(escrita, f\.objetivo, f\.setIndex, unidadDeLaFila, f\.tipo, notacion\)/, /alTerminarLaSerie\([^)]*f\.numero, notacion\)/, /<TablaDeSeries\s+notacion=\{notacion\}/, /<AyudaDeLaTabla notacion=\{notacion\} \/>/]) assert.match(entrenamiento, llamada);
+  for (const llamada of [/serieAlTildar\(escrita, f\.objetivo, f\.setIndex, unidadDeLaFila, f\.tipo, notacion[,)]/, /alTerminarLaSerie\([^)]*f\.numero, notacion[,)]/, /<TablaDeSeries\s+notacion=\{notacion\}/, /<AyudaDeLaTabla notacion=\{notacion\}( pideElEsfuerzo=\{pideElEsfuerzo\})? \/>/]) assert.match(entrenamiento, llamada);
   assert.match(entrenamiento, /lineasDePrescripcion\(p, \{ notacion \}\)/, 'lo planificado, con el texto del dominio en la notación');
   assert.match(fuente('apps/mobile/src/pantallas/historial.tsx'), /const notacion = notacionDeLaLectura\(plan\);/, 'API-TRN-09');
   assert.match(fuente('apps/mobile/src/pantallas/plan-por-serie.tsx'), /notacionDeLaLectura\(r\.ok \? r\.datos\.data : null\)/, 'API-SER-02');

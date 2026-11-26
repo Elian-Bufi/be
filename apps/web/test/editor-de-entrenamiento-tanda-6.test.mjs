@@ -26,7 +26,7 @@ test('T6-01 · escribir el % recalcula la carga, y escribir la carga recalcula e
 });
 
 test('T6-02 · lo derivado se ve: «del %» en la carga o «de la carga» en el %, con su lugar reservado (RP-19)', () => {
-  assert.match(EJERCICIO, /delPorcentaje: 'del %'/);
+  assert.match(EJERCICIO, /delPorcentaje: 'del % RM'/);
   assert.match(EJERCICIO, /deLaCarga: 'de la carga'/);
   assert.match(EJERCICIO, /<span className="celda-atada__marca" aria-hidden="true" data-marca-de-la-celda-atada>\n\s*\{marca \?\? ''\}/);
   assert.match(CSS, /\.celda-atada__marca \{[^}]*position: absolute;/);

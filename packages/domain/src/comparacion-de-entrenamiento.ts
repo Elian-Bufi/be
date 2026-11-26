@@ -429,12 +429,13 @@ export function seriesParaGraficar(c: ComparacionDeEjercicio, medida: Medida): S
 }
 
 /** Lo que aporta cada lado de una comparación a las medidas: lo planificado, lo registrado, o los dos. */
-function medidasDe(partes: readonly { readonly c: ComparacionDeEjercicio; readonly plan: boolean; readonly registro: boolean }[]): Medida[] {
+function medidasDe(partes: readonly { readonly c: ComparacionDeEjercicio; readonly plan: boolean; readonly registro: boolean }[], pideElEsfuerzo = true): Medida[] {
   const unidades = new Set<'kg' | 'lb'>();
   let rir = false;
   for (const { c, plan, registro } of partes) {
     if (plan && c.cargaSugerida) unidades.add(c.cargaSugerida.unit);
-    if (plan && c.rirObjetivo !== null) rir = true;
+    // DL-202 (EP-D07): sin pedirle el esfuerzo de cada serie a la persona, el RIR indicado solo no abre la medida.
+    if (plan && pideElEsfuerzo && c.rirObjetivo !== null) rir = true;
     if (!registro) continue;
     for (const f of c.filas) {
       if (f.registrada.tipo !== 'registrada') continue;
@@ -450,8 +451,11 @@ function medidasDe(partes: readonly { readonly c: ComparacionDeEjercicio; readon
 }
 
 /** Las medidas que tienen algún dato, planificado o registrado, en estas comparaciones: repeticiones, carga por unidad y RIR. */
-export function medidasDisponibles(comparaciones: readonly ComparacionDeEjercicio[]): Medida[] {
-  return medidasDe(comparaciones.map((c) => ({ c, plan: true, registro: true })));
+export function medidasDisponibles(comparaciones: readonly ComparacionDeEjercicio[], pideElEsfuerzo = true): Medida[] {
+  return medidasDe(
+    comparaciones.map((c) => ({ c, plan: true, registro: true })),
+    pideElEsfuerzo,
+  );
 }
 
 export const claveDeMedida = (m: Medida): string => (m.variable === 'carga' ? `carga-${m.unidad}` : m.variable);

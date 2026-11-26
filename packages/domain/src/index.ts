@@ -172,6 +172,7 @@ export * from './contratos-plantillas-de-be';
 export * from './carga-de-la-semana';
 export * from './graficos-del-ejercicio';
 export * from './esfuerzo-de-la-sesion';
+export * from './esfuerzo-de-cada-serie';
 export * from './planificacion-de-la-plantilla';
 export * from './distribucion-por-musculo';
 export * from './copy-agenda-de-entrenamiento';

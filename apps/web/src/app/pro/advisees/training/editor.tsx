@@ -2068,17 +2068,6 @@ export function EditorDePlan({
           const otros = (plan.withoutIntensity ?? []).filter((x) => x !== id);
           cambiarPlanificacion({ ...plan, withoutIntensity: sin ? [...otros, id] : otros });
         }}
-        // ET2-D18: el redondeo de las cargas del % RM, el del plan o la excepción del ejercicio (en la planificación).
-        redondeo={redondeoDelEjercicio(plan, p.prescriptionId)}
-        redondeoPropio={(p.prescriptionId ? plan.loadRoundingByExercise?.find((r) => r.prescriptionId === p.prescriptionId)?.step : undefined) ?? null}
-        // ET2-D18: un 1RM nuevo en este ejercicio se vuelve a leer para todo el borrador (también los plegados).
-        onUnoRMCambiado={() => setLecturaDelUnoRM((n) => n + 1)}
-        onRedondeo={(r) => {
-          const id = p.prescriptionId ?? crypto.randomUUID();
-          if (!p.prescriptionId) cambiarEjercicio(l, { prescriptionId: id });
-          const otros = (plan.loadRoundingByExercise ?? []).filter((x) => x.prescriptionId !== id);
-          cambiarPlanificacion({ ...plan, loadRoundingByExercise: r === null ? otros : [...otros, { prescriptionId: id, step: r }] });
-        }}
         // DL-201: su progresión propia, plegado, y «Progresión…» en su «Más», con el ejercicio ya elegido.
         progresionPropia={(() => {
           const propia = bloque ? reglaPropiaDe(plan, bloque.blockId, p.prescriptionId) : null;
@@ -2093,6 +2082,17 @@ export function EditorDePlan({
                 conIdDeLaFase((fase) => setProgresionAbierta({ blockId: fase, prescriptionId: id, copia: null }));
               }
         }
+        // ET2-D18: el redondeo de las cargas del % RM, el del plan o la excepción del ejercicio (en la planificación).
+        redondeo={redondeoDelEjercicio(plan, p.prescriptionId)}
+        redondeoPropio={(p.prescriptionId ? plan.loadRoundingByExercise?.find((r) => r.prescriptionId === p.prescriptionId)?.step : undefined) ?? null}
+        // ET2-D18: un 1RM nuevo en este ejercicio se vuelve a leer para todo el borrador (también los plegados).
+        onUnoRMCambiado={() => setLecturaDelUnoRM((n) => n + 1)}
+        onRedondeo={(r) => {
+          const id = p.prescriptionId ?? crypto.randomUUID();
+          if (!p.prescriptionId) cambiarEjercicio(l, { prescriptionId: id });
+          const otros = (plan.loadRoundingByExercise ?? []).filter((x) => x.prescriptionId !== id);
+          cambiarPlanificacion({ ...plan, loadRoundingByExercise: r === null ? otros : [...otros, { prescriptionId: id, step: r }] });
+        }}
         // PLT (DL-182): sin persona, sin la fuerza estimada ni «La vez pasada»: el ejercicio del catálogo no se pasa.
         exerciseId={asesoradoId === null ? null : (ejercicios[p.exerciseVersionId] ?? null)}
         abierto={abiertos.has(l)}
@@ -4229,6 +4229,7 @@ export function EditorDePlan({
           notacion={notacion}
           semanasDeLasFases={semanasQueSumanLasFases(plan, bloques)}
           conOtraIntensidad={conOtraIntensidad}
+          pedidoPorLosRegistros={!!version && 'askSetEffort' in version && version.askSetEffort === true}
           onGuardar={(c) => {
             alCambiarElPlan(c.planificacion);
             if (c.notacion !== notacion) setNotacion(c.notacion);

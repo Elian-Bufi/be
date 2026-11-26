@@ -45,6 +45,7 @@ import {
   COPY_TIPOS_DE_SERIE,
   seriesEfectivas,
   rotulosDeLasSeries,
+  seMuestraElEsfuerzoDeLaSerie,
 } from '@be/domain';
 import { fechaCorta } from './formato';
 import { esfuerzoParaMostrar, rotuloDelEsfuerzo, type NotacionDelEsfuerzo } from './esfuerzo-en-la-app';
@@ -191,13 +192,14 @@ export function lineaDelPlan(p: Pick<PrescripcionConObjetivos, 'sets'>, notacion
  * La serie que se registra «con lo planificado» (DL-161 `AS_PLANNED`): la carga, las repeticiones y el RIR del objetivo
  * de esa serie, tal como se vieron. Un rango no es un número: con «10–12 rep.» las repeticiones quedan sin informar.
  * `null` si el plan no trae ni carga ni un número de repeticiones: esa serie no se puede tildar sin escribir.
+ * DL-202 (EP-D03, EP-D04): sin pedirle el esfuerzo de cada serie, o en una aproximación, sin el RIR del objetivo.
  */
-export function serieDelPlan(s: SerieConObjetivo): SerieEjecutadaApi | null {
+export function serieDelPlan(s: SerieConObjetivo, pideElEsfuerzo: boolean | null = true): SerieEjecutadaApi | null {
   const t = s.target;
   const repeticiones = t.repetitions && 'value' in t.repetitions ? t.repetitions.value : null;
   const carga = t.suggestedLoad ? { value: t.suggestedLoad.value, unit: t.suggestedLoad.unit } : null;
   if (repeticiones === null && carga === null) return null;
-  const rir = t.rir !== null && t.rir >= 0 && t.rir <= 20 ? t.rir : null;
+  const rir = seMuestraElEsfuerzoDeLaSerie(pideElEsfuerzo, s.setKind) && t.rir !== null && t.rir >= 0 && t.rir <= 20 ? t.rir : null;
   // DL-178: una de calentamiento se registra con su tipo; una efectiva, sin el campo, como siempre.
   return { setIndex: s.setIndex, load: carga, completedRepetitions: repeticiones, rir, perceivedExertion: null, recordedAs: 'AS_PLANNED', ...(s.setKind === 'WARM_UP' ? { setKind: 'WARM_UP' as const } : {}) };
 }
@@ -243,6 +245,8 @@ export interface Contexto {
   readonly hoy: string;
   /** DL-192: la notación del esfuerzo del plan (API-SER-02, `effortNotation`); sin ella, RIR. Lo que se manda es el RIR. */
   readonly notacion?: NotacionDelEsfuerzo;
+  /** DL-202: si el plan pide el esfuerzo de cada serie (API-SER-02, `askSetEffort`); ausente, sí, como hasta ahora. */
+  readonly pideElEsfuerzo?: boolean;
 }
 
 /** Desde una pendiente o desde «Registrar otro día», el día es el de esa ocurrencia: no se cambia. */
@@ -494,6 +498,7 @@ function seriesDelDetalle(
   errores: Record<string, ErroresDeFila>,
   primerProblema: { motivo: string | null; ejercicio: string | null },
   notacion: NotacionDelEsfuerzo = 'RIR',
+  pideElEsfuerzo: boolean | null = true,
 ): SerieEjecutadaApi[] {
   const unidad = unidadDelEjercicio(p);
   const series: SerieEjecutadaApi[] = [];
@@ -505,7 +510,7 @@ function seriesDelDetalle(
     const escrita = r.escrita;
     const algoEscrito = escrita.carga.trim() !== '' || escrita.repeticiones.trim() !== '' || escrita.rir.trim() !== '';
     if (!algoEscrito) {
-      const delPlan = serieDelPlan(s);
+      const delPlan = serieDelPlan(s, pideElEsfuerzo);
       if (delPlan) series.push(delPlan);
       else {
         errores[claveDeSerie(p.prescriptionId, s.setIndex)] = { fila: COPY_ENTRENAMIENTO_POR_SERIE.faltaUnDato };
@@ -515,7 +520,7 @@ function seriesDelDetalle(
       continue;
     }
     // Lo escrito y, en lo que quedó vacío, lo planificado que se veía en gris: la regla de la casilla de la sesión.
-    const leida = serieAlTildar(escrita, s.target, s.setIndex, unidad, tipoDeSerie(s), notacion);
+    const leida = serieAlTildar(escrita, s.target, s.setIndex, unidad, tipoDeSerie(s), notacion, seMuestraElEsfuerzoDeLaSerie(pideElEsfuerzo, tipoDeSerie(s)));
     if (!leida.ok) {
       errores[claveDeSerie(p.prescriptionId, s.setIndex)] = leida.errores;
       primerProblema.motivo ??= leida.errores.fila ? T.faltaUnDato(p.exerciseName, n) : T.revisaUnValor(p.exerciseName, n);
@@ -551,7 +556,7 @@ export function armarRegistro(ctx: Contexto, r: Respuestas, ahora: Date): Regist
       continue;
     }
     if (!e.cambio && seRegistraConElPlan(p)) {
-      exercises.push({ prescriptionId: p.prescriptionId, performedExerciseVersionId: p.exerciseVersionId, sets: p.sets.flatMap((s) => serieDelPlan(s) ?? []) });
+      exercises.push({ prescriptionId: p.prescriptionId, performedExerciseVersionId: p.exerciseVersionId, sets: p.sets.flatMap((s) => serieDelPlan(s, ctx.pideElEsfuerzo) ?? []) });
       continue;
     }
     const hechas = p.sets.filter((s) => e.series[s.setIndex]?.hecha).length;
@@ -559,7 +564,7 @@ export function armarRegistro(ctx: Contexto, r: Respuestas, ahora: Date): Regist
     if (seriesEfectivas(p.sets).some((s) => !e.series[s.setIndex]?.hecha)) todoCompleto = false;
     // Con todas sus series destildadas, el ejercicio no se hizo: no se manda (SET_REQUIRED).
     if (hechas === 0) continue;
-    const sets = seriesDelDetalle(p, e, errores, primerProblema, ctx.notacion);
+    const sets = seriesDelDetalle(p, e, errores, primerProblema, ctx.notacion, ctx.pideElEsfuerzo);
     if (sets.length > 0) exercises.push({ prescriptionId: p.prescriptionId, performedExerciseVersionId: p.exerciseVersionId, sets });
   }
   if (primerProblema.motivo) return { ok: false, paso: todo ? 'revisar' : 'detalle', motivo: primerProblema.motivo, errores, ...(todo && primerProblema.ejercicio ? { ejercicio: primerProblema.ejercicio } : {}) };
