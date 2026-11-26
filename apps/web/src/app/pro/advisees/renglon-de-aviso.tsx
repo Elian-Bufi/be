@@ -18,6 +18,8 @@ export interface CosaParaRevisar {
   readonly detalle?: readonly CosaParaRevisar[];
   /** Si el grupo se puede completar de una vez: cuántas series y qué hacer con lo escrito (un error, o `null`). */
   readonly completar?: { readonly cuantas: number; readonly alCompletar: (valor: string) => string | null } | null;
+  /** DL-198: las salidas que lo resuelven ahí mismo («Llevar el plan a 12 semanas», «Recortar la última fase»). */
+  readonly acciones?: readonly { readonly clave: string; readonly texto: string; readonly alTocar: () => void; readonly noSePuede?: string | null }[];
 }
 
 export function RenglonDeAviso({ cosa, textoIr, claseIr = 'boton boton--discreto', conIcono = false }: { cosa: CosaParaRevisar; textoIr: string; claseIr?: string; conIcono?: boolean }) {

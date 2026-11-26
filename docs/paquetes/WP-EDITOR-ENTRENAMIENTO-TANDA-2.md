@@ -1,7 +1,7 @@
 # WP-EDITOR-ENTRENAMIENTO-TANDA-2 · El editor de Entrenamiento, tanda 2 (DL-198)
 
 **Estado:** PROGRAMADO en `wp-editor-entrenamiento-tanda-2`, que sale de la tanda 1 (`wp-editor-entrenamiento-tanda-1`, PR
-#324, en revisión). PR en borrador, sin integrar. Las decisiones ET2-D01 a ET2-D16 están **a ratificar** por Dirección.
+#324, en revisión). PR en borrador, sin integrar. Las decisiones ET2-D01 a ET2-D17 están **a ratificar** por Dirección.
 
 **Origen.** Las decisiones de Dirección del 2026-11-25 sobre Entrenamiento (Elián, licenciado y entrenador): el 1RM se
 estima por cálculo en todos los ejercicios con carga externa, con el último registro en rango (RIR 0 a 2, de 8 a 12
@@ -18,7 +18,7 @@ igual (ET2-D01).
 
 ---
 
-## 1. Requisitos (ET2-01 a ET2-13)
+## 1. Requisitos (ET2-01 a ET2-15)
 
 | Id | Requisito | Dónde |
 | --- | --- | --- |
@@ -35,6 +35,8 @@ igual (ET2-D01).
 | ET2-11 | **La clasificación de un propio, editable** (ET1-D14): en «Mis ejercicios», «Cambiar la clasificación», en un cuadro; es la siguiente de su historia por adición (API-EJE-06). | `clasificacion-de-ejercicios.ts`, `imagenes.service.ts`, `clasificacion-del-propio.tsx`, `mis-ejercicios.tsx` |
 | ET2-12 | **«Ver como la persona»:** la sesión de una semana de la fase tal como le llega a la app (los ejercicios, cada serie con su objetivo, la carga de esa semana, RIR o RPE, las aproximaciones y, si el plan lo pide, la pregunta del esfuerzo), en un cuadro de solo lectura con los textos de la APK. | `vista-de-la-persona.tsx`, `editor.tsx` |
 | ET2-13 | **Selectores y campos parejos** en el editor de Entrenamiento y sus cuadros: 44 px, la letra del cuerpo, la flecha de BE con su lugar, el texto largo con «…»; las filas compactas de la planilla y de los bloques, también a 44 px. Se borraron `plan-y-fases.tsx` y `notacion-del-plan.tsx` (ET1-D20). | `globals.css` (bloque DL-198), `letra-de-la-sesion.ts` |
+| ET2-14 | **Las fases de más, también en el cuadro «Antes de activar»:** el impedimento con sus dos salidas, «Llevar el plan a N semanas» y «Recortar la última fase» (pedido de la revisión de #324). | `cuadro-antes-de-activar.tsx`, `renglon-de-aviso.tsx` (`acciones`), `editor.tsx` (`accionesDeLasFasesDeMas`) |
+| ET2-15 | **Un plan activo con fases de más avisa:** desde la tanda 1 nada se ubica después del fin del plan, y la persona deja de ver lo que queda afuera; en «Plan activo», un renglón lo dice con lo que se puede hacer (una versión nueva). | `plan.tsx` (`FasesDeMasEnElPlanActivo`) |
 
 ## 2. El contrato
 
@@ -61,7 +63,7 @@ igual (ET2-D01).
 - La exportación de la persona suma `entrenamiento.esfuerzosDeLaSesion`.
 - `docs/api/openapi.json` regenerado.
 
-## 3. Decisiones a ratificar (ET2-D01 a ET2-D16)
+## 3. Decisiones a ratificar (ET2-D01 a ET2-D17)
 
 | Id | Decisión |
 | --- | --- |
@@ -80,6 +82,7 @@ igual (ET2-D01).
 | ET2-D13 | **«Ver como la persona»** es un cuadro de solo lectura en la cabecera de la sesión elegida, con la sesión y la semana en desplegables; muestra lo del editor aunque no se haya guardado. También en una plantilla (sin persona). |
 | ET2-D14 | **La clasificación de un propio:** el equipamiento en casillas (el principal y los apoyos); el grupo, el patrón y las articulaciones en desplegables con «Sin indicar». Con la versión que se vio (otra pestaña: 409). La de los ejercicios de BE no se edita acá: la cura Dirección en una migración. |
 | ET2-D15 | **Los desplegables y los campos** del editor y sus cuadros, a 44 px, con la flecha de BE y su relleno (varias reglas viejas lo pisaban); las filas compactas de la planilla y de los bloques, de 40 a 44 px. |
+| ET2-D17 | **Un plan activo con fases de más no se cambia** (está congelado, REG-06-112): se avisa en «Plan activo», en un renglón sin color de juicio, con la salida (una versión nueva con el plan más largo o la última fase más corta). En el cuadro «Antes de activar», las fases de más van primero, con las mismas dos salidas del panel, y el 422 de la API no se repite. |
 | ET2-D16 | **`letraDeLaSesion`** pasó a `letra-de-la-sesion.ts`; `plan-y-fases.tsx`, `notacion-del-plan.tsx` y su CSS se borraron, y sus pruebas de fuente apuntan a lo que los reemplazó. |
 
 ## 4. Pruebas
@@ -94,7 +97,7 @@ igual (ET2-D01).
   titular en los mismos campos, el rótulo con la capacidad, la base para el profesional y **la última APK congelada sin
   rechazos**), 05 (el esfuerzo de la sesión), 06 (las plantillas) y 07 (la clasificación de un propio). Y
   `schema.int-spec.ts`: las dos tablas nuevas no se truncan.
-- **Website** (`apps/web/test/editor-de-entrenamiento-tanda-2.test.mjs`): TEST-ET2-10 a 18. Se ajustaron las pruebas de
+- **Website** (`apps/web/test/editor-de-entrenamiento-tanda-2.test.mjs`): TEST-ET2-10 a 19. Se ajustaron las pruebas de
   fuente de la tanda 1, de las plantillas y del RPE que describían lo anterior.
 - **APK** (jest, `apps/mobile/src/esfuerzo-de-la-sesion.test.ts`, 20 casos) y `scripts/historial-navegacion.test.mjs` (la
   pregunta es de una sola vez); `scripts/copy-pantallas.test.cjs` mira las pantallas nuevas.
@@ -105,7 +108,7 @@ igual (ET2-D01).
 
 ## 5. Lo que queda
 
-- Ratificar ET2-D01 a ET2-D16; en particular, el umbral del 10 % (ET2-D03) y que 12 a RIR 2 entre en la v2 (ET2-D04).
+- Ratificar ET2-D01 a ET2-D17; en particular, el umbral del 10 % (ET2-D03) y que 12 a RIR 2 entre en la v2 (ET2-D04).
 - **La APK:** subir la versión y el `versionCode`, taggear `be-apk-<versión>`, congelar lo que lee con `node
   scripts/congelar-lo-que-lee-la-apk.mjs be-apk-<versión>` (DL-152), actualizar `VIGENTES` en `lecturas-de-la-apk.test.ts`,
   y probar en el teléfono contra test: una fase con progresión (el rótulo y las cargas de esa semana), un plan con el

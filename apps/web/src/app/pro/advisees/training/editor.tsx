@@ -1377,10 +1377,15 @@ export function EditorDePlan({
   // app de la persona (la API todavía la espera).
   // C7: la escritura rápida sin aplicar no se activa ni se pierde: se resuelve antes, con «Ir a…» a su línea.
   const sinAplicar = lineasSinAplicar.map((x) => ({ issue: { code: SIN_APLICAR, path: x.ruta } as ValidationIssue, texto: COPY_ESCRITURA_RAPIDA.pendiente(x.texto) }));
+  // DL-198 (pedido de la revisión de #324): las fases de más, con sus dos salidas también en el cuadro «Antes de activar».
+  const fasesDeMasEnElCuadro = fasesDeMas > 0 ? [{ texto: COPY_FASES_DE_MAS.texto(semanasQueSumanLasFases(plan, bloques), plan.weeks ?? 0), ir: null, acciones: accionesDeLasFasesDeMas() }] : [];
   const impidenActivar = [
+    ...fasesDeMasEnElCuadro,
     ...impideGuardar.map((p) => conSuLugar(p, PROBLEMA[p.code] ?? 'revisá este elemento')),
     ...sinAplicar.map((x) => conSuLugar(x.issue, x.texto)),
-    ...(revision?.estado === 'lista' && revision.version === version.version ? revision.problemas.map((p) => conSuLugar(p, PROBLEMA[p.code] ?? 'revisá este elemento')) : []),
+    ...(revision?.estado === 'lista' && revision.version === version.version
+      ? revision.problemas.filter((p) => !(p.code === 'PHASES_EXCEED_PLAN_WEEKS' && fasesDeMas > 0)).map((p) => conSuLugar(p, PROBLEMA[p.code] ?? 'revisá este elemento'))
+      : []),
   ];
   // TB-48: lo que queda sin completar no impide nada; se dice aparte, cada cosa con su lugar.
   // PG-10: los iguales del mismo ejercicio, en un renglón. Dentro del cuadro modal no se ofrece «Completar»: su
@@ -1969,8 +1974,6 @@ export function EditorDePlan({
     const sePuedeIr = lugarDelProblemaDeEntrenamiento(p.path).bloque !== null || alNombre;
     return { lugar, texto: PROBLEMA[p.code] ?? 'revisá este elemento', destino: sePuedeIr ? (alNombre ? PLT.irAlNombre : destinoDelLugar(lugar)) : null, ir: sePuedeIr ? () => irDesdeElPanel(p) : null };
   };
-  const fasesDeMasRecortadas = fasesDeMas > 0 ? conLaUltimaFaseRecortada(plan, bloques) : null;
-  const ultimaConSemanas = [...bloques].map((b, n) => ({ b, n })).reverse().find(({ b }) => (semanasDeLaFase(plan, b.blockId) ?? 0) > 0);
   const delEditor: Impedimento[] = [
     ...(fasesDeMas > 0
       ? [
@@ -1979,7 +1982,19 @@ export function EditorDePlan({
             texto: COPY_FASES_DE_MAS.texto(semanasQueSumanLasFases(plan, bloques), plan.weeks ?? 0),
             destino: null,
             ir: null,
-            acciones: [
+            acciones: accionesDeLasFasesDeMas(),
+          } satisfies Impedimento,
+        ]
+      : []),
+    ...impideGuardar.map(impedimento),
+    // C7: la escritura rápida sin aplicar, con «Ir a…» a su línea.
+    ...sinAplicar.map((x) => ({ ...impedimento(x.issue), texto: x.texto })),
+  ];
+  /** ET1-D03: las dos salidas de las fases de más, en el panel y en el cuadro «Antes de activar» (DL-198). */
+  function accionesDeLasFasesDeMas(): NonNullable<Impedimento['acciones']> {
+    const recortadas = conLaUltimaFaseRecortada(plan, bloques);
+    const ultima = [...bloques].map((b, n) => ({ b, n })).reverse().find(({ b }) => (semanasDeLaFase(plan, b.blockId) ?? 0) > 0);
+    return [
               {
                 texto: COPY_FASES_DE_MAS.llevar(semanasQueSumanLasFases(plan, bloques)),
                 alTocar: () => {
@@ -1991,22 +2006,16 @@ export function EditorDePlan({
               },
               {
                 texto: COPY_FASES_DE_MAS.recortar,
-                noSePuede: fasesDeMasRecortadas ? null : COPY_FASES_DE_MAS.noAlcanza,
+                noSePuede: recortadas ? null : COPY_FASES_DE_MAS.noAlcanza,
                 alTocar: () => {
-                  if (!fasesDeMasRecortadas || !ultimaConSemanas) return;
-                  cambiarPlanificacion(fasesDeMasRecortadas);
-                  setMensaje({ tipo: 'exito', texto: COPY_FASES_DE_MAS.recortada(nombreDelBloque(ultimaConSemanas.b, ultimaConSemanas.n), semanasDeLaFase(fasesDeMasRecortadas, ultimaConSemanas.b.blockId) ?? 0) });
+                  if (!recortadas || !ultima) return;
+                  cambiarPlanificacion(recortadas);
+                  setMensaje({ tipo: 'exito', texto: COPY_FASES_DE_MAS.recortada(nombreDelBloque(ultima.b, ultima.n), semanasDeLaFase(recortadas, ultima.b.blockId) ?? 0) });
                 },
                 clave: 'recortar-la-ultima',
               },
-            ],
-          } satisfies Impedimento,
-        ]
-      : []),
-    ...impideGuardar.map(impedimento),
-    // C7: la escritura rápida sin aplicar, con «Ir a…» a su línea.
-    ...sinAplicar.map((x) => ({ ...impedimento(x.issue), texto: x.texto })),
-  ];
+    ];
+  }
   const delServidor: Impedimento[] = revisionVigente?.estado === 'lista' ? revisionVigente.problemas.filter((p) => !(p.code === 'PHASES_EXCEED_PLAN_WEEKS' && fasesDeMas > 0)).map(impedimento) : [];
   const cuantosImpiden = delEditor.length + delServidor.length;
   const revisionEnElPanel = (

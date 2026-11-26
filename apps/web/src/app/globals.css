@@ -25316,3 +25316,16 @@ html:has(.estacion:not([data-en-el-asistente])) {
 .clasificacion-del-propio__casillas .casilla-con-explicacion {
   font-weight: 400;
 }
+
+/* DL-198 · el plan activo con fases que pasan del fin del plan: un renglón con su ícono, sin color de juicio. */
+.plan__fases-de-mas {
+  display: flex;
+  gap: 0.5rem;
+  align-items: flex-start;
+  margin: 0.5rem 0 0.75rem;
+  padding: 0.6rem 0.8rem;
+  border: 1px solid var(--borde-control);
+  border-radius: 8px;
+  background: var(--fondo-suave);
+  color: var(--texto);
+}

@@ -111,3 +111,14 @@ test('TEST-ET2-18 · las palabras de BE en las pantallas nuevas: sin «volumen»
   }
   for (const t of Object.values(D.COPY_UNO_RM)) if (typeof t === 'string') assert.deepEqual(D.terminosProhibidosDeFuerzaEn(t), [], t);
 });
+
+test('TEST-ET2-19 · las fases de más: sus dos salidas también en el cuadro «Antes de activar», y el aviso en un plan activo', () => {
+  const CUADRO = leer('app/pro/advisees/cuadro-antes-de-activar.tsx');
+  assert.match(CUADRO, /c\.acciones\.map\(\(a\) => \(/);
+  assert.match(CUADRO, /data-accion-del-impedimento=\{a\.clave\}/);
+  assert.match(EDITOR, /const impidenActivar = \[\n\s*\.\.\.fasesDeMasEnElCuadro,/);
+  assert.match(EDITOR, /acciones: accionesDeLasFasesDeMas\(\)/);
+  const PLAN = leer('app/pro/advisees/training/plan.tsx');
+  assert.match(PLAN, /<FasesDeMasEnElPlanActivo version=\{version\} \/>/);
+  assert.match(PLAN, /const fuera = semanasDeMas\(version\.planning \?\? null, version\.blocks\);/);
+});
