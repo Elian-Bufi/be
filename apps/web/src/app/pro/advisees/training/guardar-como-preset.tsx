@@ -31,8 +31,8 @@ export const COPY_GUARDAR_COMO_PRESET = {
   ejemplo: (tipo: 'SESION' | 'FASE') => (tipo === 'SESION' ? 'Por ejemplo, «Torso A · fuerza».' : 'Por ejemplo, «Base de 4 semanas · 3 días».'),
   seGuarda: (tipo: 'SESION' | 'FASE') =>
     tipo === 'SESION'
-      ? 'Se guardan los ejercicios con sus series, repeticiones y objetivos, el criterio de intensidad (en % RM, el %), los descansos, los bloques, las aproximaciones y las indicaciones. Lo ves solo vos.'
-      : 'Se guardan el nombre, las semanas, las sesiones con sus ejercicios y sus series, los días de cada sesión, la progresión de la fase y las aproximaciones. En % RM se guarda el %. Lo ves solo vos.',
+      ? 'Se guardan los ejercicios con sus series, repeticiones y objetivos, el criterio de intensidad (en % RM, el porcentaje), los descansos, los bloques, las aproximaciones y las indicaciones. Lo ves solo vos.'
+      : 'Se guardan el nombre, las semanas, las sesiones con sus ejercicios y sus series, los días de cada sesión, la progresión de la fase y las aproximaciones. En % RM se guarda el porcentaje. Lo ves solo vos.',
   noSeGuarda: (que: readonly string[]) => `No se guardan ${que.join(' ni ')}.`,
   escritos: (cuales: readonly string[]) => `Se guardan también ${cuales.join(', ')}: revisá que no nombren a la persona, porque el preset se usa en otros planes.`,
   guardar: 'Guardar el preset',

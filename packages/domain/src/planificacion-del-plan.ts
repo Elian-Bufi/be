@@ -183,13 +183,15 @@ export function planificacionPodada(
     ...(sinIntensidad.length > 0 ? { withoutIntensity: sinIntensidad } : {}),
     // DL-198 (ET2-07): pedir el esfuerzo de la sesión al terminar.
     ...(planificacion.askSessionEffort ? { askSessionEffort: true as const } : {}),
+    // DL-202 (EP-D02): pedir el esfuerzo de cada serie, con sus dos valores; ausente se resuelve con los registros.
+    ...(typeof planificacion.askSetEffort === 'boolean' ? { askSetEffort: planificacion.askSetEffort } : {}),
     ...(planificacion.loadRounding !== undefined ? { loadRounding: planificacion.loadRounding } : {}),
     ...(redondeos.length > 0 ? { loadRoundingByExercise: redondeos } : {}),
     ...(congelados.length > 0 ? { oneRepMaxAtActivation: congelados } : {}),
     ...(notas && (notas.plan?.trim() || notasDeFases.length > 0) ? { privateNotes: { plan: notas.plan?.trim() ? notas.plan : null, phases: notasDeFases } } : {}),
   };
   const vacia =
-    podada.startDate === null && podada.weeks === null && !podada.goal && phases.length === 0 && warmUps.length === 0 && progressions.length === 0 && favoriteCharts.length === 0 && !podada.privateNotes && !podada.intensity && sinIntensidad.length === 0 && !podada.askSessionEffort && podada.loadRounding === undefined && redondeos.length === 0 && congelados.length === 0;
+    podada.startDate === null && podada.weeks === null && !podada.goal && phases.length === 0 && warmUps.length === 0 && progressions.length === 0 && favoriteCharts.length === 0 && !podada.privateNotes && !podada.intensity && sinIntensidad.length === 0 && !podada.askSessionEffort && podada.askSetEffort === undefined && podada.loadRounding === undefined && redondeos.length === 0 && congelados.length === 0;
   return vacia ? null : podada;
 }
 

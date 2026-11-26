@@ -18992,39 +18992,144 @@ p.cifra-del-espacio__desglose {
   margin: 0;
 }
 
-/* El asistente de la progresión: un cuadro ancho, en bloques cortos, con la vista previa abajo. */
+/* DL-201 · el cuadro de la progresión: ancho, en dos columnas (la configuración a la izquierda y la vista previa a la
+   derecha, en vivo) y sin desplazarse a 1280 × 720. La cabecera y el pie van en un renglón; si la lista de ejercicios es
+   larga, se desplaza solo ella. */
+.asistente-de-progresion.cuadro-enfocado--dialogo.dialogo--ancho {
+  width: min(78rem, calc(100vw - 2rem));
+  max-height: calc(100dvh - 1.5rem);
+}
+
+.asistente-de-progresion .cajon__cabecera {
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.5rem;
+  padding: 0.6rem 1.25rem 0.5rem;
+}
+
+.asistente-de-progresion .cajon__cabecera h2 {
+  font-size: 1.15rem;
+}
+
+/* El «?» pegado al título, arriba a la izquierda, y lejos de «Cerrar», que queda solo a la derecha. Lo desplegado se
+   abre hacia la derecha, dentro del cuadro. */
+.asistente-de-progresion .cuadro-enfocado__ayuda {
+  align-self: center;
+  margin-inline-start: 0;
+}
+
+.asistente-de-progresion .cuadro-enfocado__ayuda .a-pedido--esquina > .a-pedido__texto:not([hidden]) {
+  right: auto;
+  left: 0;
+}
+
+.asistente-de-progresion .cajon__cerrar {
+  margin-inline-start: auto;
+}
+
+.asistente-de-progresion .cajon__cuerpo {
+  padding-block: 0.5rem;
+}
+
+.asistente-de-progresion .cajon__pie {
+  flex-wrap: nowrap;
+  padding: 0.55rem 1.25rem 0.65rem;
+}
+
+.asistente-de-progresion__pie {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.asistente-de-progresion__pie .nota {
+  margin: 0;
+}
+
 .asistente-de-progresion__cuerpo {
   position: relative;
   display: grid;
-  gap: 1rem;
+  grid-template-columns: minmax(0, 33rem) minmax(0, 1fr);
+  gap: 1.5rem;
+  align-items: start;
+}
+
+/* Con menos ancho que un escritorio, una columna debajo de la otra. */
+@media (max-width: 60rem) {
+  .asistente-de-progresion__cuerpo {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.asistente-de-progresion__configuracion {
+  display: grid;
+  gap: 0.6rem;
+  min-width: 0;
 }
 
 .asistente-de-progresion__cuerpo fieldset {
   position: relative;
   display: grid;
-  gap: 0.5rem;
+  gap: 0.35rem;
+  min-width: 0;
   margin: 0;
   padding: 0;
   border: 0;
 }
 
 .asistente-de-progresion__cuerpo legend {
-  margin-bottom: 0.35rem;
+  margin-bottom: 0.25rem;
   padding: 0;
   font-weight: 700;
 }
 
-.asistente-de-progresion__fila {
+.asistente-de-progresion__fila,
+.asistente-de-progresion__modos {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 0.5rem 1.1rem;
+  gap: 0.35rem 1.1rem;
 }
 
-.asistente-de-progresion__fila label {
+.asistente-de-progresion__modos {
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.asistente-de-progresion__fila label,
+.asistente-de-progresion__modos label {
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
+}
+
+.asistente-de-progresion__modos input[type='number'] {
+  width: 4.25rem;
+  min-height: 2rem;
+  padding: 0.15rem 0.4rem;
+  border: 1px solid var(--borde-control);
+  border-radius: 6px;
+  background: var(--superficie);
+  color: var(--texto);
+  font: inherit;
+}
+
+/* El selector de modelo, en una fila: las cuatro opciones entran en la columna sin partirse. */
+.asistente-de-progresion__selector {
+  display: flex;
+  flex-wrap: nowrap;
+}
+
+.asistente-de-progresion__selector .selector-segmentado__opcion {
+  flex: 1 1 auto;
+}
+
+.asistente-de-progresion__selector .selector-segmentado__opcion span {
+  flex: 1 1 auto;
+  padding: 0.35rem 0.6rem;
+  text-align: center;
+  white-space: nowrap;
 }
 
 .asistente-de-progresion__que-hace,
@@ -19036,32 +19141,85 @@ p.cifra-del-espacio__desglose {
   min-height: 1.3em;
 }
 
-.asistente-de-progresion__otras,
-.asistente-de-progresion__ver {
+.asistente-de-progresion__otras {
   display: flex;
   flex-wrap: wrap;
   gap: 0.4rem;
 }
 
+/* Las casillas de «Ejercicios elegidos», por sesión. Si son muchas, se desplaza solo la lista. */
 .asistente-de-progresion__elegidos {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
-  gap: 0.25rem 1rem;
+  gap: 0.4rem;
+  max-height: 10.5rem;
+  overflow-y: auto;
+  padding: 0.4rem 0.6rem;
+  border: 1px solid var(--borde);
+  border-radius: 8px;
+}
+
+.asistente-de-progresion__nombre-de-la-sesion {
+  margin: 0;
+  color: var(--tenue);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.asistente-de-progresion__sesion ul {
+  display: grid;
+  gap: 0.1rem;
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
+.asistente-de-progresion__sesion .casilla {
+  min-height: 2rem;
+}
+
+.asistente-de-progresion__propia {
+  font-size: 0.78rem;
+  white-space: nowrap;
+}
+
 .asistente-de-progresion__vista-previa {
   display: grid;
-  gap: 0.6rem;
-  padding-top: 0.9rem;
-  border-top: 1px solid var(--borde);
+  gap: 0.5rem;
+  min-width: 0;
+  padding-left: 1.5rem;
+  border-left: 1px solid var(--borde);
+}
+
+@media (max-width: 60rem) {
+  .asistente-de-progresion__vista-previa {
+    padding: 0.9rem 0 0;
+    border-left: 0;
+    border-top: 1px solid var(--borde);
+  }
 }
 
 .asistente-de-progresion__subtitulo {
   margin: 0;
   font-size: 1rem;
+}
+
+.asistente-de-progresion__muestra {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-weight: 600;
+}
+
+.asistente-de-progresion__muestra select {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-weight: 400;
+}
+
+.asistente-de-progresion__marca-de-descarga {
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 600;
 }
 
 .asistente-de-progresion__copia {
@@ -19074,6 +19232,56 @@ p.cifra-del-espacio__desglose {
 
 .asistente-de-progresion__copia .nota {
   margin: 0;
+}
+
+/* Las casillas y los radios del cuadro, con el estilo de BE (los tokens del tema) y no los grises del navegador. El
+   radio del selector de modelo queda escondido detrás de su rótulo. */
+.asistente-de-progresion input:is([type='checkbox'], [type='radio']):not(.selector-segmentado__opcion input) {
+  appearance: none;
+  flex: none;
+  display: inline-grid;
+  place-content: center;
+  inline-size: 1.15rem;
+  block-size: 1.15rem;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  border: 2px solid var(--borde-control);
+  border-radius: 4px;
+  background: var(--superficie);
+  cursor: pointer;
+}
+
+.asistente-de-progresion input[type='radio']:not(.selector-segmentado__opcion input) {
+  border-radius: 50%;
+}
+
+.asistente-de-progresion input:is([type='checkbox'], [type='radio']):not(.selector-segmentado__opcion input):checked {
+  border-color: var(--boton-fondo);
+  background: var(--boton-fondo);
+}
+
+.asistente-de-progresion input[type='radio']:not(.selector-segmentado__opcion input):checked {
+  box-shadow: inset 0 0 0 3px var(--superficie);
+}
+
+.asistente-de-progresion input[type='checkbox']:checked::before {
+  content: '';
+  inline-size: 0.32rem;
+  block-size: 0.62rem;
+  margin-top: -0.12rem;
+  border: solid var(--boton-texto);
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+.asistente-de-progresion input:is([type='checkbox'], [type='radio']):not(.selector-segmentado__opcion input):focus-visible {
+  outline: 3px solid var(--foco);
+  outline-offset: 2px;
+}
+
+.asistente-de-progresion input:is([type='checkbox'], [type='radio']):not(.selector-segmentado__opcion input):hover {
+  border-color: var(--texto);
 }
 
 /* Los modelos, como un control segmentado: una opción por vez, con su radio escondido detrás del rótulo. */
@@ -25948,6 +26156,11 @@ html:has(.estacion:not([data-en-el-asistente])) {
 
 .esfuerzo-de-la-sesion-del-plan .nota {
   margin: 0 0 0 1.7rem;
+}
+
+/* DL-202 · «Pedir el esfuerzo de cada serie», en el mismo bloque, debajo del esfuerzo de la sesión. */
+.esfuerzo-de-la-sesion-del-plan .esfuerzo-de-cada-serie-del-plan {
+  margin-top: 0.5rem;
 }
 
 /* ET2-01 a ET2-04 · el 1RM de referencia en el ejercicio abierto: el valor con su origen y la base del % RM. */

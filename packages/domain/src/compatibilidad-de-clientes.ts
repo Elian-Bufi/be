@@ -85,6 +85,13 @@ export const CAPACIDAD_SEMANA_DE_LA_FASE = 'training-week-load-1';
  */
 export const CAPACIDAD_ESFUERZO_DE_LA_SESION = 'training-session-effort-1';
 
+/**
+ * DL-202 (WP-ESFUERZO-POR-SERIE, EP-D06) · el cliente sabe no preguntar el esfuerzo de cada serie cuando el plan no lo
+ * pide: lee `askSetEffort` de la sesión para registrar (API-SER-02). Sin la capacidad, la forma de siempre (su esquema
+ * estricto rechazaría el campo) y la app lo sigue preguntando, como hasta ahora: nada se retiene. La declara la APK nueva.
+ */
+export const CAPACIDAD_ESFUERZO_DE_CADA_SERIE = 'training-set-effort-1';
+
 export const CAPACIDADES_CONOCIDAS = [
   CAPACIDAD_OBJETIVOS_POR_SERIE,
   CAPACIDAD_FORMULARIOS_FORMATO_3,
@@ -94,6 +101,7 @@ export const CAPACIDADES_CONOCIDAS = [
   CAPACIDAD_NOTACION_DEL_ESFUERZO,
   CAPACIDAD_SEMANA_DE_LA_FASE,
   CAPACIDAD_ESFUERZO_DE_LA_SESION,
+  CAPACIDAD_ESFUERZO_DE_CADA_SERIE,
 ] as const;
 export type CapacidadDeCliente = (typeof CAPACIDADES_CONOCIDAS)[number];
 

@@ -110,6 +110,11 @@ export interface SesionLocal {
    * (la sesión general de «Hoy», una sesión guardada por una APK anterior), RIR. Lo que se manda es siempre el RIR.
    */
   readonly notacion: NotacionDelEsfuerzo;
+  /**
+   * DL-202: si el plan pide el esfuerzo de cada serie (`askSetEffort` de API-SER-02). Ausente (sin leerla, o una sesión
+   * guardada por una APK anterior), se pide, como hasta ahora.
+   */
+  readonly pideElEsfuerzo?: boolean;
   /** El último borrador leído o guardado (API-TRN-16 y 17). */
   readonly borrador: BorradorDeEjecucion | null;
   readonly corrida: Corrida;
@@ -285,6 +290,8 @@ function leerSesion(v: unknown): SesionLocal | null {
     objetivosGenerales: x.objetivosGenerales === true,
     // Tolerante: lo que no es `RPE` (también lo que falta, de una APK anterior) es RIR.
     notacion: notacionDe(x.notacion),
+    // DL-202: solo un `false` guardado apaga el esfuerzo de cada serie; lo demás, como hasta ahora.
+    ...(x.pideElEsfuerzo === false ? { pideElEsfuerzo: false } : {}),
     borrador: borrador?.data ?? null,
     corrida: { registrados, pendientes },
     series,
@@ -901,12 +908,14 @@ export function crearAlmacenDeEntrenamiento(deps: DependenciasDelAlmacen) {
      * La sesión de API-SER-02. Los objetivos generales nunca reemplazan a los de cada serie. DL-192: con la notación del
      * plan (`effortNotation`); sin ella (la sesión general de «Hoy»), queda la que ya tenía.
      */
-    fijarSesionDelPlan(draftId: string, sesion: SesionConObjetivos, objetivosGenerales: boolean, notacion?: NotacionDelEsfuerzo): void {
+    fijarSesionDelPlan(draftId: string, sesion: SesionConObjetivos, objetivosGenerales: boolean, notacion?: NotacionDelEsfuerzo, pideElEsfuerzo?: boolean): void {
       cambiar(draftId, (x) => {
         if (objetivosGenerales && x.sesion && !x.objetivosGenerales) return x;
         const nueva = notacion ?? x.notacion;
+        // DL-202: si el plan pide el esfuerzo de cada serie; sin el dato (la sesión general de «Hoy»), queda lo que tenía.
+        const esfuerzo = pideElEsfuerzo === undefined ? x.pideElEsfuerzo : pideElEsfuerzo;
         // Lo escrito antes de saber la notación pasa a la nueva con el mismo RIR: un «8» de RIR no se lee como RPE 8.
-        return { ...x, sesion, objetivosGenerales, notacion: nueva, escritas: escritasEnOtraNotacion(x.escritas, x.notacion, nueva) };
+        return { ...x, sesion, objetivosGenerales, notacion: nueva, escritas: escritasEnOtraNotacion(x.escritas, x.notacion, nueva), ...(esfuerzo === undefined ? {} : { pideElEsfuerzo: esfuerzo }) };
       });
     },
     /**
