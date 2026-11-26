@@ -12,11 +12,14 @@
 import type { INestApplication } from '@nestjs/common';
 import {
   BusquedaDeEjerciciosResponseSchema,
+  CAPACIDAD_TIPOS_DE_SERIE,
+  HEADER_DE_CAPACIDADES,
   ListaDePlantillasDeBeParaAdministrarResponseSchema,
   ListaDePlantillasDeBeResponseSchema,
   PlanConObjetivosResponseSchema,
   PlanDesdePlantillaDeBeResponseSchema,
   PLANTILLAS_DE_BE,
+  valorDeCapacidades,
 } from '@be/domain';
 import { PrismaClient } from '@prisma/client';
 import { randomUUID } from 'node:crypto';
@@ -84,7 +87,10 @@ describe('DL-199 · las Plantillas de BE', () => {
     expect(deLaSentadilla[1]).toMatchObject({ status: 'RESOLVED', oneRepMaxShare: 77, load: { value: 77.5, unit: 'kg' } });
     expect(r.beTemplate.loads.filter((l) => l.exerciseName === 'Press de banca plano con barra').every((l) => l.status === 'WITHOUT_ONE_REP_MAX')).toBe(true);
 
-    const detalle = PlanConObjetivosResponseSchema.parse((await pro.get(`/api/v1/training/plans/${r.data.planId}/detail`).expect(200)).body).data;
+    // Como el website: sin declarar training-set-kinds-1, la API saca `setKind` en el borde (lo de la APK 0.32).
+    const detalle = PlanConObjetivosResponseSchema.parse(
+      (await pro.get(`/api/v1/training/plans/${r.data.planId}/detail`).set(HEADER_DE_CAPACIDADES, valorDeCapacidades([CAPACIDAD_TIPOS_DE_SERIE])).expect(200)).body,
+    ).data;
     expect(detalle.planning).toMatchObject({ weeks: 8, intensity: 'PERCENT_RM' });
     expect(detalle.planning?.phases.map((f) => f.weeks)).toEqual([4, 4]);
     expect(detalle.planning?.progressions?.length).toBe(2);

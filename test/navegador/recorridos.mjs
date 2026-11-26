@@ -2975,7 +2975,9 @@ async function editorTanda3Cardio({ p, d, salida }) {
     ],
   );
   assert.equal(ciclismo.sets.length, 1);
-  assert.equal(ciclismo.sets[0].repetitions, null);
+  // El detalle trae cada serie con su objetivo efectivo (`target`), no con `repetitions` suelto.
+  assert.equal(ciclismo.sets[0].target.repetitions, null);
+  assert.equal(ciclismo.sets[0].target.suggestedLoad ?? null, null);
   assert.equal(ciclismo.intensity, null);
 }
 
@@ -3012,7 +3014,8 @@ async function plantillaDeBe({ p, d, salida }) {
   // La API: el borrador con la carga resuelta, sus aproximaciones y la planificación de la plantilla.
   const token = await sesionPorApi(d.pro.correo);
   const borrador = (await pedir('GET', `/advisees/${d.ase.id}/training/plans?state=DRAFT`, { token })).data[0];
-  const plan = (await pedir('GET', `/training/plans/${borrador.planId}/detail`, { token })).data;
+  // Sin declarar training-set-kinds-1, la API saca `setKind` en el borde (lo de la APK 0.32): se pide como el website.
+  const plan = (await pedir('GET', `/training/plans/${borrador.planId}/detail`, { token, capacidades: 'training-set-kinds-1' })).data;
   assert.equal(plan.planning.weeks, 8);
   assert.equal(plan.planning.intensity, 'PERCENT_RM');
   assert.deepEqual(plan.planning.phases.map((f) => f.weeks), [4, 4]);
