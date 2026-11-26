@@ -150,4 +150,31 @@ Las de la pasada de densidad (ET3-D30 en adelante), en §6.
 
 ## 6. La pasada de densidad del editor (E5)
 
-PENDIENTE de completar con lo que dejó la pasada.
+Menos texto a la vista, las explicaciones detrás del «?» de la esquina (con su ejemplo resuelto) y un renglón menos donde
+se podía, sin cambiar comportamiento ni atributos `data-*`. Se partió de las capturas de los recorridos de la CI de #325.
+
+| Id | Requisito | Dónde |
+| --- | --- | --- |
+| ET3-30 | **Los gráficos de semanas** (la carga por semana, la progresión en el panel y en el asistente): la indicación del teclado y la nota del método pasan a un «?» en la esquina del gráfico, junto a la estrella, con cómo se leen las formas y un ejemplo resuelto. El renglón de la lectura queda reservado (RP-19). | `grafico-de-semanas.tsx`, `panel-de-la-parte-b.tsx` |
+| ET3-31 | **El panel:** de qué es y la herramienta («El plan · Almanaque») en un renglón; «Carga para N repeticiones» que no aplica, en un renglón con su «?»; «Estructuras» sin la lista a la vista; el almanaque sin fechas, en una línea («Sin fechas todavía: elegí el inicio en «Configurar plan».»). | `panel-de-la-parte-b.tsx`, `almanaque.tsx`, `globals.css` |
+| ET3-32 | **«Revisión para activar»:** cómo se actualiza pasa al «?» del título. | `editor.tsx` |
+| ET3-33 | **La sesión:** «Agregar indicaciones de la sesión» en el renglón de «Presets». | `editor.tsx`, `globals.css` |
+| ET3-34 | **«Ver como la persona» y el 1RM:** la explicación general se dice una vez, en su «?». | `vista-de-la-persona.tsx`, `uno-rm-del-ejercicio.tsx` |
+
+| Id | Decisión |
+| --- | --- |
+| ET3-D30 | El «?» de cada gráfico de semanas es fijo (cómo se lee y un ejemplo) y quien lo usa le suma su método. |
+| ET3-D31 | Sin una semana elegida, el renglón de la lectura queda vacío pero reservado; la indicación la oye el lector. |
+| ET3-D32 | «Carga para N repeticiones» que no aplica: un renglón, sin tarjeta. |
+| ET3-D33 | En el panel, de qué es y la herramienta van en un solo renglón. |
+| ET3-D34 | «Estructuras», sin la lista a la vista. |
+| ET3-D35 | Cómo se actualiza la revisión va en el «?» del título, no en un párrafo al pie. |
+| ET3-D36 | Las indicaciones de la sesión van en el renglón de «Presets» (el tabulador pasa primero por «Presets»). |
+| ET3-D37 | En «Ver como la persona» y en el cuadro del 1RM, la explicación general se dice una sola vez, en el «?». |
+| ET3-D38 | El almanaque sin fechas dice dónde se eligen, en una línea. |
+| ET3-D39 | La barra de fases, el ejercicio y la planilla no se tocaron: ya tenían sus «?» en la esquina y lo que muestran son datos o acciones. |
+
+**Quedó para decidir con Dirección:** la tarjeta «Cómo se usa el editor» (aparece una vez y se cierra con «Entendido»;
+dejarle solo el título es un cambio del componente común `primer-uso.tsx`); «La vez pasada» repetido en el título del
+marco y en su sección; el «?» de la tabla de series, al lado de «Agregar serie» y no en la esquina; y, en el popover de la
+revisión, lo que abre el «?» puede pedir desplazar dentro del popover. Mirarlo en las capturas de la CI.
