@@ -50,9 +50,15 @@ import {
   type AproximacionesDelEjercicio,
   DESCANSO_DE_APROXIMACION,
   implementoDelEjercicio,
+  cardioDe,
+  conElCardio,
+  sinElCardio,
+  CARDIO_SIN_INDICAR,
+  COPY_CARDIO,
 } from '@be/domain';
 import { Fragment, useEffect, useId, useRef, useState, type ComponentProps, type FocusEvent, type KeyboardEvent, type ReactNode } from 'react';
 import { SeccionDeAproximaciones } from './aproximaciones-del-ejercicio';
+import { CardioDelEjercicio } from './cardio-del-ejercicio';
 import { conLasAproximacionesSinRir, cuantasAproximaciones, resumenDeLasAproximaciones, rotulosConAproximaciones, serieAlDesmarcarLaAproximacion } from './aproximaciones';
 import { AYUDAS_DEL_EDITOR, ContenidoDeLaAyuda } from './ayudas-del-editor';
 import { cifrasTrasLaTecla, textoDeLaMascara } from './mascara-de-tiempo';
@@ -61,13 +67,13 @@ import { Campo, RenglonDelAviso } from '../../../../components/formulario';
 import { ExplicacionAPedido } from '../../../../components/explicacion-a-pedido';
 import { ConFlechas } from '../../../../components/flechas-del-numero';
 import { Icono } from '../../../../components/icono';
+import type { ArrastreDeLaTarjeta } from './arrastrar-ejercicios';
 import { MenuDeAcciones, type AccionDelMenu } from '../../../../components/menu-de-acciones';
 import { numeroEnCampo } from '../../../../lib/formato';
 import { COPY_DE_LOS_EDITORES as EDICION, sinLaSerie } from '../editar-la-estructura';
 import { ImagenGuardadaDeEjercicio } from '../../exercises/imagen-de-ejercicio';
 import { useEditorDeEntrenamiento } from './entrenamiento';
 import { LineaDePrescripcion } from './linea-de-prescripcion';
-import type { ArrastreDeLaTarjeta } from './arrastrar-ejercicios';
 import { COPY_ESCRITURA_RAPIDA } from './escritura-rapida';
 import { cambioDeCriterio, conElCriterio, COPY_CAMBIO_DE_CRITERIO, deshacerElCambioDeCriterio, sigueElCambio, type CambioDeCriterio } from './cambio-de-criterio';
 import { CuadroEnfocado } from '../../../../components/cuadro-enfocado';
@@ -338,16 +344,16 @@ export function EjercicioDelEditor({
   intensidadDelPlan = null,
   sinIntensidad = false,
   onSinIntensidad,
+  arrastre = null,
 }: {
+  /** DL-199 (ET3-22): el asa para arrastrar y las teclas Alt+↑ y Alt+↓ (`arrastrar-ejercicios.tsx`); sin esto, no se arrastra. */
+  arrastre?: ArrastreDeLaTarjeta | null;
   /** DL-197 (ET1-D10, ET1-D11): el criterio del plan, que hereda el ejercicio sin criterio propio; `null`, ninguno. */
   intensidadDelPlan?: Criterio | null;
   /** El ejercicio no lleva intensidad aunque el plan sí (la excepción, en «Más opciones»). */
   sinIntensidad?: boolean;
   onSinIntensidad?: (sin: boolean) => void;
-  arrastre = null,
   /** DL-196 (EE-07): cómo se arman las aproximaciones (de la planificación) y cómo se guarda; sin esto, no se ofrecen. */
-  /** DL-199 (ET3-22): el asa para arrastrar y las teclas Alt+↑ y Alt+↓ (`arrastrar-ejercicios.tsx`); sin esto, no se arrastra. */
-  arrastre?: ArrastreDeLaTarjeta | null;
   aproximaciones?: AproximacionesDelEjercicio | null;
   onAproximaciones?: (c: Omit<AproximacionesDelEjercicio, 'prescriptionId'>) => void;
   /** C7: lo escrito en la escritura rápida y todavía sin aplicar; vive en el editor (`escritura-rapida.ts`). */
@@ -394,6 +400,8 @@ export function EjercicioDelEditor({
   // DL-192: el renglón del ejercicio plegado, en la notación del plan.
   const notacionDelPlan = useNotacionDelEsfuerzo();
   const plegado = ejercicioPlegadoDelEditor(p, problemas, notacionDelPlan);
+  // DL-199 (ET3-13 a ET3-15): un ejercicio de cardio se planifica con su duración, su distancia y su intensidad.
+  const cardio = cardioDe(p);
   // ED-75: el detalle con la fuerza estimada, solo en los ejercicios de la lista de la v1 (RM-16).
   const conFuerza = exerciseId !== null && entraEnLaEstimacion(exerciseId);
   // ED-76 (EDT-56): las series elegidas en la planilla para las que se calcula la carga; `null`, la fila general.
@@ -409,7 +417,7 @@ export function EjercicioDelEditor({
   // ET1-D05 (revisión adversaria): «Editar todas las series» con algo escrito sin aplicar pregunta antes de cerrarse.
   const [todasConCambios, setTodasConCambios] = useState(false);
   // DL-197 (ET1-D11): el criterio que rige: el propio o, sin él (y sin la excepción), el del plan.
-  const criterioEfectivo: Criterio | null = (p.intensity?.criterion as Criterio | undefined) ?? (sinIntensidad ? null : intensidadDelPlan);
+  const criterioEfectivo: Criterio | null = cardio ? null : ((p.intensity?.criterion as Criterio | undefined) ?? (sinIntensidad ? null : intensidadDelPlan));
   // Revisión adversaria (DL-197): el que hereda la intensidad del plan sin objetivo todavía se guarda sin criterio (así lo
   // lee la persona): plegado, se dice que falta el objetivo, como en uno con su criterio propio.
   const avisosDelPlegado = !p.intensity && criterioEfectivo !== null ? [E9.faltaElObjetivoHeredado, ...plegado.avisos] : plegado.avisos;
@@ -424,18 +432,18 @@ export function EjercicioDelEditor({
       data-en-bloque={nivel === 'h4' ? '' : undefined}
       data-foco="ejercicio"
       data-foco-ejercicio={posicion}
+      {...(arrastre?.propsDeLaTarjeta ?? {})}
     >
       <div className="comida-del-editor__cabecera">
+        {arrastre?.asa ?? null}
         <Titulo className="comida-del-plan__titulo">
           <button type="button" id={`abrir-ejercicio-${id}`} className="comida-del-plan__boton" aria-expanded={abierto} aria-controls={`${propio}-cuerpo`} onClick={alAlternar}>
             <Icono nombre="entrenamiento" tamano={20} />
             <span className="comida-del-plan__textos">
               <span className="comida-del-plan__nombre">{nombre}</span>
               {/* Plegado dice lo que piden sus series; abierto, cuántas son: el detalle está abajo. */}
-      {...(arrastre?.propsDeLaTarjeta ?? {})}
               <span className="comida-del-plan__cuenta" data-resumen>
-                <EnPartes texto={abierto ? cuentaDeSeries(p.sets) : plegado.resumen} />
-        {arrastre?.asa ?? null}
+                <EnPartes texto={abierto ? (cardio ? COPY_CARDIO.titulo : cuentaDeSeries(p.sets)) : plegado.resumen} />
               </span>
               {revisar ? (
                 <span className="etiqueta-de-dato ejercicio-del-editor__revisar" data-carga-a-revisar>
@@ -488,6 +496,10 @@ export function EjercicioDelEditor({
                 { clave: 'subir', texto: EDICION.subir, alElegir: onSubir, noSePuede: esElPrimero ? E9.yaEsElPrimero : null },
                 { clave: 'bajar', texto: EDICION.bajar, alElegir: onBajar, noSePuede: esElUltimo ? E9.yaEsElUltimo : null },
                 { clave: 'duplicar', texto: EDICION.duplicarEjercicio, alElegir: onDuplicar },
+                // DL-199 (ET3-D15): pasar de series a cardio y al revés; lo de antes no se guarda aparte (se escribe de nuevo).
+                cardio
+                  ? { clave: 'a-series', texto: COPY_CARDIO.pasarASeries, alElegir: () => onCambiar(sinElCardio(p)) }
+                  : { clave: 'a-cardio', texto: COPY_CARDIO.pasarACardio, alElegir: () => onCambiar(conElCardio(p, CARDIO_SIN_INDICAR)) },
                 ...accionesDelBloque,
                 { clave: 'quitar', texto: `Quitar ${nombre}`, alElegir: onQuitar },
               ]}
@@ -504,16 +516,20 @@ export function EjercicioDelEditor({
       <div id={`${propio}-cuerpo`} className="comida-del-plan__cuerpo ejercicio-del-editor__cuerpo" hidden={!abierto}>
         {abierto ? (
           <>
-            <SeriesDelEjercicio id={id} nombre={nombre} prescripcion={p} onCambiar={onCambiar} criterio={criterioEfectivo} intensidadDelPlan={intensidadDelPlan} />
+            {cardio ? (
+              <CardioDelEjercicio id={id} nombre={nombre} prescripcion={p} onCambiar={onCambiar} />
+            ) : (
+              <SeriesDelEjercicio id={id} nombre={nombre} prescripcion={p} onCambiar={onCambiar} criterio={criterioEfectivo} intensidadDelPlan={intensidadDelPlan} />
+            )}
             <div className="ejercicio-del-editor__opciones" data-opciones-del-ejercicio>
-              {onAproximaciones ? (
+              {onAproximaciones && !cardio ? (
                 <button type="button" className="boton boton--quieto boton--compacto" onClick={() => setCuadro('aproximaciones')} data-abrir-aproximaciones={cuantasAproximaciones(p)}>
                   <Icono nombre="sube" tamano={18} />
                   {E9.aproximaciones(cuantasAproximaciones(p))}
                   {resumenDeLasAproximaciones(p) ? <span className="nota ejercicio-del-editor__resumen-de-aproximaciones"> · {resumenDeLasAproximaciones(p)}</span> : null}
                 </button>
               ) : null}
-              {p.sets.length > 1 ? (
+              {p.sets.length > 1 && !cardio ? (
                 <button type="button" className="boton boton--quieto boton--compacto" onClick={() => setCuadro('todas')} data-editar-todas-las-series>
                   <Icono nombre="lista" tamano={18} />
                   {E9.todas}
@@ -575,9 +591,10 @@ export function EjercicioDelEditor({
             >
               <div className="mas-opciones-del-ejercicio" data-mas-opciones>
                 {/* ENP-D14: el criterio (con su excepción al del plan), la referencia del % RM y las bases. */}
-                <CriterioDelEjercicio id={id} nombre={nombre} prescripcion={p} onCambiar={onCambiar} intensidadDelPlan={intensidadDelPlan} sinIntensidad={sinIntensidad} onSinIntensidad={onSinIntensidad} />
+                {/* DL-199: el cardio no lleva criterio de intensidad de fuerza ni escritura rápida de series. */}
+                {cardio ? null : <CriterioDelEjercicio id={id} nombre={nombre} prescripcion={p} onCambiar={onCambiar} intensidadDelPlan={intensidadDelPlan} sinIntensidad={sinIntensidad} onSinIntensidad={onSinIntensidad} />}
                 {/* ED-22: la escritura rápida. */}
-                <LineaDePrescripcion id={id} nombre={nombre} prescripcion={p} texto={onLineaSinAplicar ? lineaSinAplicar : undefined} onTexto={onLineaSinAplicar} onAplicar={(nueva, revisar) => onAplicarLinea(nueva, revisar)} />
+                {cardio ? null : <LineaDePrescripcion id={id} nombre={nombre} prescripcion={p} texto={onLineaSinAplicar ? lineaSinAplicar : undefined} onTexto={onLineaSinAplicar} onAplicar={(nueva, revisar) => onAplicarLinea(nueva, revisar)} />}
                 <div className="ejercicio-del-editor__general">
                   <p className="ejercicio-del-plan__subtitulo">
                     {COPY_CRITERIO_ARRIBA.notasYParametros} <span className="nota">Opcional</span>

@@ -17843,6 +17843,106 @@ p.cifra-del-espacio__desglose {
   font-variant-numeric: tabular-nums;
 }
 
+/* DL-199 (ET3-10) · la sugerencia de progresión en el panel del ejercicio: un dato neutro, sin color de juicio; el «?» en
+   la esquina y los botones en un renglón que no cambia de alto al aplicar o descartar (RP-19). */
+.sugerencia-de-progresion {
+  position: relative;
+  display: grid;
+  gap: 0.3rem;
+  padding: 0.65rem 2.5rem 0.65rem 0.75rem;
+  border: 1px solid var(--borde);
+  border-radius: 10px;
+  background: var(--fondo-suave);
+}
+
+.sugerencia-de-progresion--hecha {
+  padding-right: 0.75rem;
+}
+
+.sugerencia-de-progresion--hecha p,
+.sugerencia-de-progresion__sobretitulo,
+.sugerencia-de-progresion__titulo,
+.sugerencia-de-progresion__motivo {
+  margin: 0;
+}
+
+.sugerencia-de-progresion__sobretitulo {
+  color: var(--tenue);
+  font-size: 0.85rem;
+}
+
+.sugerencia-de-progresion__titulo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.5rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.sugerencia-de-progresion__hasta {
+  font-weight: 400;
+}
+
+.sugerencia-de-progresion__acciones {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 44px;
+}
+
+/* DL-199 (ET3-13) · el cardio de un ejercicio: cuatro campos en una grilla de anchos fijos (elegir el tipo de intensidad
+   no corre nada: el lugar del valor está siempre) y el motivo en un renglón reservado (RP-19). */
+.cardio-del-ejercicio {
+  position: relative;
+  display: grid;
+  gap: 0.5rem;
+  padding-right: 2.5rem;
+}
+
+.cardio-del-ejercicio .ejercicio-del-plan__subtitulo {
+  margin: 0;
+}
+
+.cardio-del-ejercicio__campos {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(9rem, 1fr));
+  gap: 0.5rem 0.75rem;
+  align-items: end;
+}
+
+@media (max-width: 1100px) {
+  .cardio-del-ejercicio__campos {
+    grid-template-columns: repeat(2, minmax(9rem, 1fr));
+  }
+}
+
+.cardio-del-ejercicio__campo {
+  min-width: 0;
+}
+
+.cardio-del-ejercicio__campo input,
+.cardio-del-ejercicio__campo select {
+  min-height: 44px;
+  width: 100%;
+  min-width: 0;
+}
+
+.cardio-del-ejercicio__campo .datos-del-plan__con-unidad input {
+  width: 6rem;
+}
+
+.cardio-del-ejercicio__campo .datos-del-plan__con-unidad select {
+  width: auto;
+}
+
+.cardio-del-ejercicio__motivo {
+  min-height: 1.3em;
+  margin: 0;
+  color: var(--error);
+  font-size: 0.9rem;
+}
+
 .aviso-de-zona-a-cuidar {
   min-height: 1.3em;
   margin: 0;

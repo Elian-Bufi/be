@@ -2750,7 +2750,7 @@ async function progresionYDistribucion({ p, d, salida }) {
   await esperarGuardado(p);
 }
 
-export const TODOS = { sesion, pistas, borrador, conflicto, descartar, salidaSegura, irACorregir, respuestaPerdida, reintentar, salidaConFallas, primerPlan, planDeNutricionSinAsistente, retorno, grafico, primeraInvitacion, areaSugerida, sesionRevocada, accesoRevocado, faltaUnaParte, completitud, evidencia, administracion, comparacion, comparacionConOpciones, sinSaltos, franjasPorComida, cierreDeNutricion, notacionDelEsfuerzo, recetario, opcionComoReceta, recorridosGuiados, editorDeEntrenamiento, aproximacionesPorPorcentaje, progresionYDistribucion, agregarEjerciciosConFiltros, editorTanda2, editorTanda3Reordenar };
+export const TODOS = { sesion, pistas, borrador, conflicto, descartar, salidaSegura, irACorregir, respuestaPerdida, reintentar, salidaConFallas, primerPlan, planDeNutricionSinAsistente, retorno, grafico, primeraInvitacion, areaSugerida, sesionRevocada, accesoRevocado, faltaUnaParte, completitud, evidencia, administracion, comparacion, comparacionConOpciones, sinSaltos, franjasPorComida, cierreDeNutricion, notacionDelEsfuerzo, recetario, opcionComoReceta, recorridosGuiados, editorDeEntrenamiento, aproximacionesPorPorcentaje, progresionYDistribucion, agregarEjerciciosConFiltros, editorTanda2, editorTanda3Reordenar, editorTanda3Cardio };
 
 /**
  * TEST-ET2-NAV-01 (DL-198, WP-EDITOR-ENTRENAMIENTO-TANDA-2) · el 1RM de referencia en un ejercicio en % RM: la calibración
@@ -2908,6 +2908,73 @@ async function editorTanda3Reordenar({ p, d, salida }) {
   await p.emulateMediaFeatures([{ name: 'prefers-color-scheme', value: 'dark' }]);
   await pausa(300);
   await captura(p, salida, 'reordenar-las-asas-oscuro');
+}
+
+/**
+ * TEST-ET3-NAV-03 (DL-199, WP-EDITOR-ENTRENAMIENTO-TANDA-3) · la sugerencia de progresión y el cardio. La persona registró
+ * hoy 3 × 8 con 60 kg de «Sentadilla del recorrido»: en el panel del ejercicio, «+2,5 kg la próxima» con su motivo;
+ * «Aplicar» deja la común en 62,5 kg (nada cambia solo). El ciclismo pasa a cardio desde «Más»: 30 min, 12 km, zona 2;
+ * plegado dice «30 min · 12 km · zona 2» y «Ver como la persona» lo muestra igual. Lo guardado, por la API: los parámetros
+ * de BE y una sola serie sin repeticiones.
+ */
+async function editorTanda3Cardio({ p, d, salida }) {
+  await abrirElEditorDeEntrenamiento(p, d);
+  const E1 = '.ejercicio-del-editor[data-ejercicio="1"]';
+  const E2 = '.ejercicio-del-editor[data-ejercicio="2"]';
+  // La sugerencia, en el panel del ejercicio abierto.
+  await clic(p, `${E1} [id^="abrir-ejercicio-"]`);
+  await elemento(p, '[data-sugerencia-de-progresion="62.5"]', null, 60_000);
+  const sugerencia = await p.$eval('[data-sugerencia-de-progresion]', (e) => e.textContent);
+  assert.match(sugerencia, /\+2,5 kg la próxima/);
+  assert.match(sugerencia, /Hizo las 3 series con 8 repeticiones y 60 kg el \d+ [a-z]{3}\./);
+  await capturaEnLosDosTemas(p, salida, 'sugerencia-de-progresion');
+  await clic(p, '[data-aplicar-sugerencia]');
+  await elemento(p, '[data-sugerencia-de-progresion="hecha"]', 'La carga común quedó en 62,5 kg.');
+  await esperarGuardado(p);
+  // El cardio: el ciclismo, desde «Más», con su duración, su distancia y su zona.
+  await clic(p, `${E2} [id^="abrir-ejercicio-"]`);
+  await clic(p, `${E2} .comida-del-editor__acciones .menu-de-acciones__boton`, 'Más');
+  await clic(p, `${E2} .menu-de-acciones[data-abierto] .menu-de-acciones__accion`, 'Cargar como cardio');
+  await elemento(p, `${E2} [data-cardio-del-ejercicio]`);
+  assert.equal(await p.$(`${E2} [data-abrir-aproximaciones]`), null, 'el cardio no tiene aproximaciones');
+  await reemplazarTexto(p, await p.$(`${E2} [data-campo="duracion-del-cardio"]`), '30');
+  await reemplazarTexto(p, await p.$(`${E2} [data-campo="distancia-del-cardio"]`), '12');
+  await p.select(`${E2} [data-campo="tipo-de-intensidad-del-cardio"]`, 'ZONA');
+  await elemento(p, `${E2} [data-campo="zona-del-cardio"]`);
+  // Lo que no se entiende no se guarda: el motivo, en su renglón reservado, sin correr nada.
+  const antes = await p.$eval(`${E2} [data-opciones-del-ejercicio]`, (e) => e.getBoundingClientRect().top);
+  await reemplazarTexto(p, await p.$(`${E2} [data-campo="duracion-del-cardio"]`), '700');
+  await elemento(p, `${E2} [data-motivo-del-cardio]`, 'La duración va de');
+  assert.equal(await p.$eval(`${E2} [data-opciones-del-ejercicio]`, (e) => e.getBoundingClientRect().top), antes, 'RP-19: el motivo no corre lo de abajo');
+  await reemplazarTexto(p, await p.$(`${E2} [data-campo="duracion-del-cardio"]`), '30');
+  await esperarGuardado(p);
+  await capturaEnLosDosTemas(p, salida, 'cardio-en-el-editor');
+  // Plegado: el renglón del cardio.
+  await clic(p, `${E2} [id^="abrir-ejercicio-"]`);
+  await elemento(p, `${E2} [data-resumen]`, '30 min · 12 km · zona 2');
+  // «Ver como la persona».
+  await clic(p, '[data-ver-como-la-persona]');
+  await dialogoAbierto(p, 'Así le llega a la app');
+  await elemento(p, 'dialog[open] [data-vista-cardio]', '30 min · 12 km · zona 2');
+  await captura(p, salida, 'cardio-ver-como-la-persona');
+  await p.keyboard.press('Escape');
+  await dialogoCerrado(p);
+  // La API: la carga aplicada y el cardio en los parámetros de BE, con una serie sin repeticiones.
+  const token = await sesionPorApi(d.pro.correo);
+  const plan = (await pedir('GET', `/training/plans/${d.borradorDeEntrenamiento}/detail`, { token })).data;
+  const [sentadilla, ciclismo] = plan.blocks[0].sessions[0].prescriptions;
+  assert.deepEqual(sentadilla.suggestedLoad, { value: 62.5, unit: 'kg' });
+  assert.deepEqual(
+    ciclismo.professionalParameters.map((q) => [q.label, q.value, q.unit ?? null]),
+    [
+      ['Duración', 30, 'min'],
+      ['Distancia', 12, 'km'],
+      ['Intensidad', 'Zona 2', null],
+    ],
+  );
+  assert.equal(ciclismo.sets.length, 1);
+  assert.equal(ciclismo.sets[0].repetitions, null);
+  assert.equal(ciclismo.intensity, null);
 }
 
 /** Errores de la página que no dicen nada del website (los del propio navegador). */

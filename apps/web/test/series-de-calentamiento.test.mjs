@@ -64,5 +64,6 @@ test('DL-178 · revisión adversaria: lo registrado se rotula por setIndex y con
   assert.doesNotMatch(EJECUCIONES, /rotulosDeLasSeries\(todas\)/);
   const r = d.rotuloPorIndice([{ setIndex: 1, setKind: 'WARM_UP' }, { setIndex: 2 }, { setIndex: 3 }, { setIndex: 1 }, { setIndex: 3 }]);
   assert.deepEqual([r(1).largo, r(3).largo], ['Calentamiento', 'Serie 2']);
-  assert.match(EJERCICIO, /abierto \? cuentaDeSeries\(p\.sets\) : plegado\.resumen/);
+  // DL-199: el cardio abierto dice «Cardio» en lugar de la cuenta de las series.
+  assert.match(EJERCICIO, /abierto \? \(cardio \? COPY_CARDIO\.titulo : cuentaDeSeries\(p\.sets\)\) : plegado\.resumen/);
 });

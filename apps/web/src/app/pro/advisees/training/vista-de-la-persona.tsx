@@ -30,6 +30,8 @@ import {
   type NotacionDelEsfuerzo,
   type PlanificacionDelPlan,
   type SemanaDeLaFase,
+  cardioDe,
+  cardioEnPalabras,
 } from '@be/domain';
 import { useEffect, useId, useState } from 'react';
 import { CuadroEnfocado } from '../../../../components/cuadro-enfocado';
@@ -162,6 +164,13 @@ export function VistaDeLaPersona({
                       return (
                         <li key={p.prescriptionId ?? k} className="telefono-de-muestra__ejercicio" data-vista-ejercicio={k + 1}>
                           <p className="telefono-de-muestra__nombre">{nombreDe(p)}</p>
+                          {/* DL-199 (ET3-14): el cardio, con su duración, su distancia y su intensidad; se tilda al terminar. */}
+                          {cardioDe(p) ? (
+                            <p className="telefono-de-muestra__plan" data-vista-cardio>
+                              {cardioEnPalabras(cardioDe(p)!)}
+                            </p>
+                          ) : (
+                            <>
                           <p className="nota">{cuentaDeSeries(p.sets)}</p>
                           <ul className="telefono-de-muestra__series">
                             {objetivos.map((o, n) => {
@@ -176,6 +185,8 @@ export function VistaDeLaPersona({
                               );
                             })}
                           </ul>
+                            </>
+                          )}
                         </li>
                       );
                     })}

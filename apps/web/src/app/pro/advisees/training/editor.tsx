@@ -68,6 +68,11 @@ import {
   conProgresion,
   progresionDeLaFase,
   progresionEnPalabras,
+  cardioDe,
+  conLaCargaSubida,
+  conElCardio,
+  CARDIO_SIN_INDICAR,
+  esDeCardioPorLaClasificacion,
   progresionParaOtraFase,
   seAplicaA,
   sinProgresion,
@@ -116,6 +121,7 @@ import { COPY_BARRA_DE_FASES, diasEnCorto, faseConLaTecla, rangoDeLaBarra, tarje
 import { criterioDeLaIntensidad, CuadroConfigurarPlan, CuadroDiasDeLaSemana, CuadroEditarFase, type IntensidadElegida } from './cuadros-del-plan';
 import { AYUDAS_DEL_EDITOR, ContenidoDeLaAyuda } from './ayudas-del-editor';
 import { MarcoDelPanel, PanelDelEjercicio, PatronesAPedido } from './panel-del-editor';
+import { SugerenciaDeProgresionEnElPanel } from './sugerencia-de-progresion';
 import { FOCO_DE_ENTRADA, focoDelElemento, mismoFoco, NOMBRE_DE_LA_VISTA, VISTAS_DEL_FOCO, vistaDelFoco, vistaPorTecla, type FocoDelEditor, type VistaDelPanel } from './panel-contextual';
 import { AsistenteDeProgresion, type AplicacionDeLaProgresion } from './asistente-de-progresion';
 import { GraficoDeSemanas } from './grafico-de-semanas';
@@ -2785,6 +2791,26 @@ export function EditorDePlan({
         nombre={nombres[ejercicioEnFoco.exerciseVersionId] ?? 'Ejercicio'}
         loQueIndica={<EnPartes texto={ejercicioPlegadoDelEditor(ejercicioEnFoco, 0, notacion).resumen} />}
         antes={<AvisoDeZonaACuidar token={token} sesionPerdida={sesionPerdida} exerciseId={ejercicioDelCatalogo} aCuidar={aCuidar} />}
+        // DL-199 (ET3-10 a ET3-12): la sugerencia de progresión desde lo que hizo la persona; nunca cambia nada sola. El cardio no la lleva.
+        sugerencia={
+          plantilla || foco.tipo !== 'ejercicio' || cardioDe(ejercicioEnFoco)
+            ? null
+            : (veces) => {
+                const l = foco.l;
+                const regla = bloque ? progresionDeLaFase(plan, bloque.blockId) : null;
+                return (
+                  <SugerenciaDeProgresionEnElPanel
+                    veces={veces}
+                    exerciseId={ejercicioDelCatalogo}
+                    prescripcion={ejercicioEnFoco}
+                    nombre={nombres[ejercicioEnFoco.exerciseVersionId] ?? ''}
+                    notacion={notacion}
+                    conProgresionDeLaFase={!!regla && regla.model !== null && seAplicaA(regla, ejercicioEnFoco.prescriptionId)}
+                    onAplicar={(sugerida) => cambiarEjercicio(l, conLaCargaSubida(ejercicioEnFoco, sugerida))}
+                  />
+                );
+              }
+        }
         cargaPorSemana={plantilla ? null : cargaPorSemanaDe(i, ejercicioEnFoco, ejercicioDelCatalogo)}
         despues={
           plantilla ? null : (
@@ -3944,7 +3970,10 @@ export function EditorDePlan({
           setNombres((n) => ({ ...n, ...Object.fromEntries(marcados.map((e) => [e.versionId, e.name])) }));
           // ED-21: entran juntos, en el orden marcado; sin prescripción para todos, cada uno con una serie para completar.
           // ENP-D10: sin una escrita en el cajón, con la de la sesión, si se eligió. DL-181: al bloque desde cuyo pie se abrió.
-          const nuevas = prescripcionesDeLosMarcados(marcados, prescripcion).map((x) => (!prescripcion && prescripcionDeEstaSesion ? prescripcionDeEstaSesion.aplicar(x) : x));
+          // DL-199 (ET3-13): los de cardio por su clasificación entran como cardio, con la duración sin indicar.
+          const nuevas = prescripcionesDeLosMarcados(marcados, prescripcion).map((x, n) =>
+            esDeCardioPorLaClasificacion(marcados[n] as { classification?: { muscleGroup?: string | null } | null }) ? conElCardio(x, CARDIO_SIN_INDICAR) : !prescripcion && prescripcionDeEstaSesion ? prescripcionDeEstaSesion.aplicar(x) : x,
+          );
           aplicarReordenada(agregarEjercicios(sesion, nuevas, agregandoEn));
         }}
         onCerrar={() => {

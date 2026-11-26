@@ -83,6 +83,8 @@ export const RECORRIDOS = {
   editorTanda2: { habilitado: ['ENTRENAMIENTO'], datos: ['borrador-de-entrenamiento-sin-saltos'] },
   // DL-199 (WP-EDITOR-ENTRENAMIENTO-TANDA-3): reordenar arrastrando o con el teclado, y «Deshacer».
   editorTanda3Reordenar: { habilitado: ['ENTRENAMIENTO'], datos: ['borrador-de-entrenamiento-sin-saltos'] },
+  // DL-199: el cardio y la sugerencia de progresión, con una sesión ya registrada por la persona (3 × 8 con 60 kg).
+  editorTanda3Cardio: { habilitado: ['ENTRENAMIENTO'], datos: ['entrenamiento-registrado'] },
   // RP-20 y RP-21 (DL-188): un borrador con el almuerzo en dos opciones y su rango indicado, para las franjas por comida.
   franjasPorComida: { habilitado: ['NUTRICION'], datos: ['franjas'] },
   // RP-24 (DL-188): el mismo borrador, para el «?» en la esquina, «Rangos indicados» y las acciones sin subrayado.
@@ -386,6 +388,57 @@ export async function datos(estado) {
       const serie = { repetitions: { value: 8 } };
       const estructura = { blocks: [{ label: 'Fase 1', sessions: [{ label: 'Piernas A', prescriptions: [{ exerciseVersionId: ejercicio, sets: [serie, serie, serie], intensity: null, suggestedLoad: { value: 60, unit: 'kg' }, restSeconds: 90 }] }] }] };
       e.borradorDeEntrenamiento = (await pedir('POST', `/advisees/${e.ase.id}/training/plans`, { token: pro, cuerpo: { objectiveVersionId: objetivo, initialStructure: estructura } })).data.planId;
+    }
+    if (r.datos.includes('entrenamiento-registrado')) {
+      // DL-199 (editorTanda3Cardio): un plan activo con «Sentadilla del recorrido» 3 × 8 con 60 kg y un ciclismo propio; la
+      // persona registra hoy las tres series (8, 8 y 8 con 60 kg, RIR 2) desde la APK; y el borrador sucesor, que es el que
+      // abre el editor. Así «La vez pasada» tiene una vez y BE sugiere +2,5 kg. Todo sintético.
+      const evaluacion = (
+        await pedir('POST', `/advisees/${e.ase.id}/training/evaluations`, {
+          token: pro,
+          cuerpo: { occurredAt: new Date(Date.now() - 2 * 3600_000).toISOString(), assessment: { entries: [{ concept: 'Días por semana', value: 3, unit: 'días', source: 'REPORTED' }] }, evidenceReferences: [], professionalNotes: 'Datos sintéticos del recorrido de navegador.' },
+        })
+      ).data.evaluationId;
+      const objetivo = (
+        await pedir('POST', `/advisees/${e.ase.id}/training/objectives`, {
+          token: pro,
+          cuerpo: { evaluationId: evaluacion, effectiveFrom: new Date(Date.now() - 3600_000).toISOString(), effectiveUntil: null, objective: { statement: 'Objetivo sintético del recorrido de navegador.' }, rationale: 'Datos sintéticos del recorrido de navegador.' },
+        })
+      ).data.versionId;
+      const crear = async (name) => (await pedir('POST', '/training/exercises', { token: pro, cuerpo: { name, muscleZones: [], didacticResources: [], provenance: { type: 'MANUAL_ENTRY' } } })).data.versionId;
+      const sentadilla = await crear('Sentadilla del recorrido');
+      const ciclismo = await crear('Ciclismo del recorrido');
+      const serie = { repetitions: { value: 8 } };
+      const estructura = {
+        blocks: [
+          {
+            label: 'Fase 1',
+            sessions: [
+              {
+                label: 'Piernas A',
+                prescriptions: [
+                  { prescriptionId: 'rx-sentadilla', exerciseVersionId: sentadilla, sets: [serie, serie, serie], intensity: null, suggestedLoad: { value: 60, unit: 'kg' }, restSeconds: 90 },
+                  { prescriptionId: 'rx-ciclismo', exerciseVersionId: ciclismo, sets: [serie], intensity: null },
+                ],
+              },
+            ],
+          },
+        ],
+      };
+      const activo = (await pedir('POST', `/advisees/${e.ase.id}/training/plans`, { token: pro, cuerpo: { objectiveVersionId: objetivo, initialStructure: estructura } })).data;
+      await pedir('POST', `/training/plans/${activo.planId}/activate`, { token: pro, cuerpo: { expectedVersion: activo.version } });
+      const [ocurrencia] = (await pedir('GET', '/me/training/today', { token: ase, superficie: 'APK' })).data.occurrences;
+      const borrador = (await pedir('PUT', `/training/occurrences/${ocurrencia.occurrenceId}/execution-draft`, { token: ase, superficie: 'APK', cuerpo: {}, clave: false })).data;
+      const hecha = (n) => ({ setIndex: n, load: { value: 60, unit: 'kg' }, completedRepetitions: 8, rir: 2, perceivedExertion: null });
+      const guardado = (
+        await pedir('PATCH', `/training/execution-drafts/${borrador.draftId}`, {
+          token: ase,
+          superficie: 'APK',
+          cuerpo: { expectedVersion: borrador.version, changes: { granularity: 'SET', sessionCondition: 'COMPLETED', exercises: [{ prescriptionId: 'rx-sentadilla', performedExerciseVersionId: sentadilla, sets: [1, 2, 3].map(hecha) }] } },
+        })
+      ).data;
+      await pedir('POST', `/training/execution-drafts/${borrador.draftId}/confirm`, { token: ase, superficie: 'APK', cuerpo: { expectedVersion: guardado.version } });
+      e.borradorDeEntrenamiento = (await pedir('POST', `/advisees/${e.ase.id}/training/plans`, { token: pro, cuerpo: { objectiveVersionId: objetivo, basedOnPlanId: activo.planId } })).data.planId;
     }
     if (r.datos.includes('plan-con-revision')) {
       const { objetivo } = await evaluacionYObjetivo(pro, e.ase.id);
