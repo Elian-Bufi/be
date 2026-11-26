@@ -121,7 +121,8 @@ test('TEST-EE-56 · lo que pidió Dirección: progresión en la fase y al copiar
   assert.match(GRAFICO, /grafico-de-semanas__linea--\$\{s\.forma\}/);
   assert.match(GRAFICO, /tabIndex=\{0\}\n\s*onKeyDown=\{alTeclado\}/);
   assert.match(GRAFICO, /data-ver-tabla/);
-  assert.match(PARTE_B, /orientativas: porSemana\.map/);
+  // DL-204: con las semanas de antes del inicio delante (vacías).
+  assert.match(PARTE_B, /orientativas: \[\.\.\.vacias\(antes\)\.map\(\(\) => false\), \.\.\.porSemana\.map/);
   // E7: la carga para N repeticiones, con la cuenta y los límites del método.
   assert.match(PARTE_B, /cargaParaRepeticiones\(valor\.estimate\.value/);
   assert.match(PARTE_B, /FUERA_DE_LOS_LIMITES/);

@@ -18585,6 +18585,29 @@ p.cifra-del-espacio__desglose {
   fill: var(--metrica-1);
 }
 
+/* DL-204 (GE-D04): lo planificado antes del inicio, punteado y tenue, con puntos huecos. */
+.grafico-de-semanas__linea--antes {
+  stroke: var(--tenue);
+  stroke-width: 1.5;
+  stroke-dasharray: 2 3;
+}
+
+.grafico-de-semanas__punto--antes {
+  fill: var(--superficie);
+  stroke: var(--tenue);
+  stroke-width: 1.5;
+}
+
+/* DL-204: el inicio de la fase, una línea vertical con su rótulo arriba. */
+.grafico-de-semanas__separador line {
+  stroke: var(--tenue);
+  stroke-width: 1;
+}
+
+.grafico-de-semanas__eje--separador {
+  dominant-baseline: hanging;
+}
+
 .grafico-de-semanas__rombo {
   fill: var(--metrica-2);
   stroke: var(--metrica-2);
@@ -18630,6 +18653,110 @@ p.cifra-del-espacio__desglose {
 
 .carga-por-semana__vacia {
   margin: 0;
+}
+
+/* DL-204 (GE-01): la regla que rige, arriba del gráfico, y «Cambiar progresión…» a su derecha. */
+.carga-por-semana {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.carga-por-semana__regla {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.25rem 0.5rem;
+}
+
+.carga-por-semana__regla-texto {
+  margin: 0;
+  font-size: 0.85rem;
+}
+
+.carga-por-semana__regla-rotulo {
+  color: var(--tenue);
+}
+
+/* RP-19: el renglón de los registros está siempre, con su alto; cambia de texto sin mover nada. */
+.carga-por-semana__registros {
+  min-height: 1.3em;
+  margin: 0;
+  font-size: 0.8rem;
+  line-height: 1.3;
+}
+
+/* DL-204 (GE-05 a GE-08): «Serie por serie», debajo de la carga por semana, con el estilo del gráfico de las semanas. */
+.serie-por-serie {
+  margin-top: 0.5rem;
+}
+
+.serie-por-serie__controles {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.85rem;
+}
+
+.serie-por-serie__semana {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.82rem;
+}
+
+.serie-por-serie__semana select {
+  min-height: 2rem;
+  padding-block: 0.1rem;
+  font-size: 0.82rem;
+}
+
+.serie-por-serie__barra {
+  fill: var(--metrica-1);
+  stroke: var(--metrica-1);
+  stroke-width: 1;
+}
+
+/* Las aproximaciones, en un tono más suave: el mismo color con menos relleno y el borde entero (3:1 contra el fondo). */
+.serie-por-serie__barra--aproximacion {
+  fill-opacity: 0.35;
+}
+
+.serie-por-serie__hecho {
+  fill: var(--metrica-2);
+  stroke: var(--superficie);
+  stroke-width: 1.5;
+}
+
+.serie-por-serie__muestra {
+  display: inline-block;
+  width: 0.75rem;
+  height: 0.75rem;
+  border: 1px solid var(--metrica-1);
+  border-radius: 2px;
+  background: var(--metrica-1);
+}
+
+.serie-por-serie__muestra--aproximacion {
+  background: var(--fondo-suave);
+}
+
+.serie-por-serie__cursor {
+  fill: var(--banda);
+}
+
+.serie-por-serie__uno-rm line {
+  stroke: var(--tenue);
+  stroke-width: 1.25;
+  stroke-dasharray: 4 3;
+}
+
+.serie-por-serie__uno-rm-rotulo {
+  text-anchor: end;
+}
+
+.serie-por-serie__vacia {
+  margin: 0.5rem 0 0;
 }
 
 /* La carga para N repeticiones: los dos campos en un renglón, el número grande y la cuenta a la vista. */

@@ -201,6 +201,7 @@
 | DL-200 | Pedido de Dirección · 2026-11-25 («hay que tildar casilleros para tener más de un resultado… no es práctico»; WP-ANTROPOMETRIA-RESULTADOS) | DL-111 · DL-112 · DL-190 · REG-06-156/157/158 · REG-06-203/204/205 · RF-048 · RF-049 · TEST-PRJ-009 | Cada resultado era una corrida aparte, elegida en una lista y calculada de a una; «Qué vas a calcular» se tildaba por métrica; la densidad no se veía; las masas, el fraccionamiento y lo retirado por DL-112 no estaban; Kerr iba aparte; los resultados no decían su cambio; doce acciones subrayadas | **PROGRAMADA en `wp-antropometria-resultados` (PR en borrador, sin integrar) · AR-D01 a AR-D16 a ratificar**: la cadena de derivaciones del dominio (lo medido, la ecuación, la conversión con Siri y Brožek, las masas y el fraccionamiento en cuatro componentes con Rocha y Würch) para 20 métodos, con las mismas reglas publicadas; la toma con el resumen arriba y cada método en su desplegable, cada valor con su origen, su «?» con la cuenta y lo que le falta, y su cambio desde la anterior; «Qué vas a calcular» por método; guardar en la historia al registrar y desde la toma. Sin API ni migración; la APK 0.32 no cambia. Detalle: `docs/paquetes/WP-ANTROPOMETRIA-RESULTADOS.md` |
 | DL-201 | Pedido de Dirección · 2026-11-26 («Progresión…» en un cuadro ancho y por ejercicio, con el patrón de la intensidad; WP-PROGRESION-POR-EJERCICIO) | DL-196 parte B (EE-D30) · DL-197 (ET1-D11, ET1-D17, ET1-D20) · DL-199 · B10-06 | «Progresión…» se abría en el panel lateral angosto, con desplazamiento; la regla era una por fase y «Los ejercicios elegidos» dejaba a los demás sin regla: no se podía dar a un ejercicio una progresión distinta de la de su fase ni dejarlo quieto | **PROGRAMADA en `entrenamiento/progresion-por-ejercicio` (PR en borrador, sin integrar) · PE-D01 a PE-D15 a ratificar:** un cuadro ancho en dos columnas (la configuración y la vista previa en vivo), con el «?» pegado al título; la regla de la fase (`prescriptionIds` en `null`) la hereda cada ejercicio y una regla propia la pisa, o lo deja «Sin progresión»; como mucho una propia por ejercicio, validado en el contrato; hasta 200 reglas; se abre también desde el «Más» del ejercicio; «Deshacer», «Duplicar fase» y las Plantillas de BE las llevan. Sin migración; la APK no cambia. Detalle: `docs/paquetes/WP-PROGRESION-POR-EJERCICIO.md` |
 | DL-203 | Decisiones y pedido de Dirección · 2026-11-26 (sacar los microciclos; arreglar la galería de presets; «reutilizar patrones en cada nivel y adaptarlos después»; WP-PRESETS-POR-NIVEL) | DL-109 · DL-167 (ED-11, ED-13) · DL-192 · DL-196 · DL-198 (ET2-D05, ET2-D18) · DL-199 · ED-D2 · B10-06 · 09v10:281-283 | Los microciclos se armaban desde cero, semana por semana; los presets de BE decían «RIR 2» en un plan en RPE o en % RM; «Elegí un preset» repetido y el «?» sin ejemplo; solo se reutilizaban un plan entero y unas series, no una fase ni una sesión | **PROGRAMADA en `entrenamiento/presets-por-nivel` (PR en borrador sobre #329, sin integrar) · PN-D01 a PN-D17 a ratificar**: sin microciclos nuevos (los viejos se leen y se editan); los presets de BE en la intensidad del plan o del ejercicio, con la carga del 1RM en % RM; los presets de fase y de sesión del profesional, sin cargas ni notas, con una sola galería por niveles (Plan, Fase, Sesión, Series) y un solo «Deshacer». API-HAB-06 a 08 con `kind`, sin migración. Detalle: `docs/paquetes/WP-PRESETS-POR-NIVEL.md` |
+| DL-204 | Pedido de Dirección · 2026-11-26 (la progresión en «La carga por semana», un gráfico «Serie por serie» y lo anterior y lo realizado en los dos; WP-GRAFICOS-DEL-EJERCICIO) | DL-196 parte B (E7, E18) · DL-197 (ET1-D17, ET1-D20) · DL-198 · DL-201 · DL-174 · B10-06 · RNF-ACC-001 | El gráfico del ejercicio no decía qué progresión lo regía ni llevaba a cambiarla; no había forma de ver las series una por una con su carga y su parte del 1RM; lo de antes del plan y lo realizado no se veían junto a lo planificado | **PROGRAMADA en `entrenamiento/graficos-del-ejercicio` (PR en borrador sobre #332, con #330 unida; sin integrar) · GE-D01 a GE-D12 a ratificar:** la regla que rige con su origen y «Cambiar progresión…» (el cuadro ancho de DL-201 con el ejercicio elegido); hasta 12 semanas antes del inicio, lo planificado antes (la instantánea de cada sesión registrada) y lo realizado (lo más alto de cada semana), con el separador y la leyenda fija; «Serie por serie» con A1… y S1…, desde 0, el 1RM punteado, «25 kg · 25 % del 1RM», el selector de semana y lo realizado encima. Sin API nueva ni migración; la APK no cambia. Detalle: `docs/paquetes/WP-GRAFICOS-DEL-EJERCICIO.md` |
 
 ---
 
@@ -9775,3 +9776,44 @@ ejercicios (ED-D2): no hay presets de BE de fase ni de sesión. No se edita el l
 PN-D10, que las indicaciones y el objetivo de la fase viajen; PN-D14, unificar las sesiones habituales); la prueba de
 integración de los tres niveles contra PostgreSQL; renombrar y quitar estos presets desde «Plantillas y habituales»;
 mirarlo en pantalla con Dirección. Detalle: `docs/paquetes/WP-PRESETS-POR-NIVEL.md`.
+
+---
+
+## DL-204 — Los gráficos del ejercicio: la progresión, la serie por serie y la historia
+
+**Prioridad:** alta (Dirección prueba el editor de Entrenamiento de punta a punta) · DL-196 parte B (E7, E18) · DL-197
+(ET1-D17, ET1-D20) · DL-198 · DL-201 · DL-174 · B10-06 · RNF-ACC-001 · **Estado:** PEDIDA por Dirección el 2026-11-26 ·
+PROGRAMADA en `entrenamiento/graficos-del-ejercicio` (desde `entrenamiento/presets-por-nivel`, #332, con
+`entrenamiento/progresion-por-ejercicio`, #330, unida); PR en borrador, sin integrar · GE-D01 a GE-D12, **a ratificar**.
+Si al integrar el número choca con otro paquete, se renumera.
+
+**Qué pidió Dirección.** Tres cosas en el panel del ejercicio del editor. Que «La carga por semana» diga arriba qué
+progresión rige al ejercicio (la propia o la de la fase), marque la descarga, dibuje la progresión semana a semana y tenga
+«Cambiar progresión…», que abre el cuadro ancho de DL-201 con el ejercicio elegido. Un gráfico nuevo, «Serie por serie»,
+con las aproximaciones y las efectivas en orden, la carga desde 0, el 1RM de referencia punteado, el tooltip con la carga
+y su parte del 1RM y un selector de semana. Y, en los dos, lo anterior y lo realizado, con la regla «ubica, no califica».
+
+**Qué dice el legajo.** Nada en contra. Los gráficos siguen las reglas de honestidad de WP-GRAFICOS (DL-174): solo lo
+registrado, sin flechas ni juicios, lo que no hay queda sin dato. El «%» va con su base (B10-06:418-423; DL-198, ET2-D08).
+No se edita el legajo.
+
+**Lo programado.**
+- **GE-01 y GE-02 · La regla y el botón:** «Progresión: Lineal · +2,5 kg/sem · descarga S4 (la de la fase)» y «Cambiar
+  progresión…», solo en el panel del ejercicio abierto (no en los favoritos ni en el cardio).
+- **GE-03 y GE-04 · La historia:** hasta 12 semanas antes del inicio de la fase, desde la más vieja con dato: lo
+  planificado antes (la carga de trabajo en la instantánea de cada sesión registrada, con la carga de esa semana) en línea
+  tenue punteada y lo realizado (lo más alto de cada semana) en puntos llenos, sin línea. La línea «Inicio del plan» o
+  «Inicio de la fase»; la leyenda siempre con los tres; «Sin registros todavía» en un renglón reservado. Sin lectura
+  nueva: es la misma de «La vez pasada» (API-TRN-21, 91 días, con su alcance).
+- **GE-05 a GE-07 · Serie por serie:** barras por serie (A1… más suaves, S1…), desde 0, el 1RM vigente punteado con «1RM
+  101,5 kg», el tooltip «25 kg · 25 % del 1RM», el selector de semana con la progresión que rige (`prescripcionDeLaSemana`)
+  y lo realizado de la vez más reciente de esa semana en un punto sobre cada serie. Con el teclado, su lectura y «Ver la
+  tabla».
+- **GE-08:** «% del 1RM» entra en la regla de los términos prohibidos como porcentaje con su base.
+- Pruebas: dominio (`graficos-del-ejercicio.test.ts`, TEST-GE-01 a 08) y web (`graficos-del-ejercicio.test.mjs`,
+  TEST-GE-WEB-01 a 07).
+
+**Lo que queda.** Ratificar GE-D01 a GE-D12 (sobre todo GE-D02, qué es «planificado antes»; GE-D04, lo realizado sin
+línea; GE-D09, barras y punto); mirarlo en pantalla con Dirección en los dos temas; si se quiere lo planificado antes en
+semanas sin sesión registrada, una lectura de solo lectura de las versiones anteriores del plan. Detalle:
+`docs/paquetes/WP-GRAFICOS-DEL-EJERCICIO.md`.
