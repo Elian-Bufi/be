@@ -457,7 +457,7 @@ export function CuadroDelUnoRM({ abierto, onCerrar, id, nombre, unidad, unoRM }:
                 {datos.lastRecord.band === 'ORIENTATIVE' ? <p className="nota">{COPY_UNO_RM.orientativo}</p> : null}
                 {datos.current?.origin === 'RECORD' && datos.current.entryId === null ? (
                   <p className="nota">
-                    <Icono nombre="tilde" tamano={16} /> {T.vigente}
+                    <Icono nombre="tilde" tamano={15} /> {T.vigente}
                   </p>
                 ) : (
                   <UsarElRegistro unoRM={unoRM} registro={datos.lastRecord} exerciseId={datos.exerciseId} texto={T.usarEste} />

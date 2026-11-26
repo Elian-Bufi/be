@@ -104,6 +104,8 @@ import {
   type MesDelAlmanaque,
   type PlanificacionDelPlan,
   RECORRIDO_DEL_EDITOR_DE_ENTRENAMIENTO,
+  planificacionDeLaPlantillaComoDelPlan,
+  planificacionParaLaPlantilla,
 } from '@be/domain';
 import { BotonVerElRecorrido, RecorridoGuiado, useRecorridoGuiado } from '../../../../components/recorrido-guiado';
 import { Almanaque, type SesionDelAlmanaque } from './almanaque';
@@ -146,8 +148,6 @@ import {
   nombreDeFaseNueva,
   planificacionConLaCopia,
   planificacionParaEditar,
-  planificacionDeLaPlantillaComoDelPlan,
-  planificacionParaLaPlantilla,
 } from './fases-del-plan';
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { ProveedorDeLaNotacion } from '../notacion-del-esfuerzo';
