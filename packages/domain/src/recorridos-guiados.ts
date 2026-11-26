@@ -49,6 +49,8 @@ export const esRecorridoGuiado = (x: unknown): x is RecorridoGuiado => typeof x 
 
 export const COPY_RECORRIDOS_GUIADOS = {
   verElRecorrido: 'Ver el recorrido',
+  /** La palabra corta del botón cuando la barra no tiene lugar para la frase entera. */
+  recorridoCorto: 'Recorrido',
   omitir: 'Omitir',
   anterior: 'Anterior',
   siguiente: 'Siguiente',

@@ -48617,7 +48617,7 @@
                             }
                           },
                           "progressions": {
-                            "maxItems": 12,
+                            "maxItems": 200,
                             "type": "array",
                             "items": {
                               "type": "object",
@@ -48825,6 +48825,132 @@
                           "askSessionEffort": {
                             "type": "boolean",
                             "const": true
+                          },
+                          "askSetEffort": {
+                            "type": "boolean"
+                          },
+                          "loadRounding": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "const": "AUTO"
+                              },
+                              {
+                                "type": "number",
+                                "const": 1
+                              },
+                              {
+                                "type": "number",
+                                "const": 2.5
+                              },
+                              {
+                                "type": "number",
+                                "const": 5
+                              }
+                            ]
+                          },
+                          "loadRoundingByExercise": {
+                            "maxItems": 400,
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "prescriptionId": {
+                                  "type": "string",
+                                  "pattern": "^[A-Za-z0-9_-]{1,64}$"
+                                },
+                                "step": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string",
+                                      "const": "AUTO"
+                                    },
+                                    {
+                                      "type": "number",
+                                      "const": 1
+                                    },
+                                    {
+                                      "type": "number",
+                                      "const": 2.5
+                                    },
+                                    {
+                                      "type": "number",
+                                      "const": 5
+                                    }
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "prescriptionId",
+                                "step"
+                              ],
+                              "additionalProperties": false
+                            }
+                          },
+                          "oneRepMaxAtActivation": {
+                            "maxItems": 400,
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "prescriptionId": {
+                                  "type": "string",
+                                  "pattern": "^[A-Za-z0-9_-]{1,64}$"
+                                },
+                                "exerciseId": {
+                                  "type": "string",
+                                  "minLength": 1
+                                },
+                                "value": {
+                                  "type": "object",
+                                  "properties": {
+                                    "value": {
+                                      "type": "number",
+                                      "exclusiveMinimum": 0
+                                    },
+                                    "unit": {
+                                      "type": "string",
+                                      "enum": [
+                                        "kg",
+                                        "lb"
+                                      ]
+                                    }
+                                  },
+                                  "required": [
+                                    "value",
+                                    "unit"
+                                  ],
+                                  "additionalProperties": false
+                                },
+                                "origin": {
+                                  "type": "string",
+                                  "enum": [
+                                    "CALIBRATION",
+                                    "RECORD",
+                                    "DECLARED"
+                                  ]
+                                },
+                                "localDate": {
+                                  "type": "string",
+                                  "format": "date",
+                                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                                },
+                                "activatedOn": {
+                                  "type": "string",
+                                  "format": "date",
+                                  "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                                }
+                              },
+                              "required": [
+                                "prescriptionId",
+                                "exerciseId",
+                                "value",
+                                "origin",
+                                "localDate",
+                                "activatedOn"
+                              ],
+                              "additionalProperties": false
+                            }
                           },
                           "privateNotes": {
                             "type": "object",
@@ -52932,7 +53058,7 @@
                             }
                           },
                           "progressions": {
-                            "maxItems": 12,
+                            "maxItems": 200,
                             "type": "array",
                             "items": {
                               "type": "object",
@@ -53114,6 +53240,67 @@
                           "askSessionEffort": {
                             "type": "boolean",
                             "const": true
+                          },
+                          "askSetEffort": {
+                            "type": "boolean"
+                          },
+                          "loadRounding": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "const": "AUTO"
+                              },
+                              {
+                                "type": "number",
+                                "const": 1
+                              },
+                              {
+                                "type": "number",
+                                "const": 2.5
+                              },
+                              {
+                                "type": "number",
+                                "const": 5
+                              }
+                            ]
+                          },
+                          "loadRoundingByExercise": {
+                            "maxItems": 400,
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "prescriptionId": {
+                                  "type": "string",
+                                  "pattern": "^[A-Za-z0-9_-]{1,64}$"
+                                },
+                                "step": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string",
+                                      "const": "AUTO"
+                                    },
+                                    {
+                                      "type": "number",
+                                      "const": 1
+                                    },
+                                    {
+                                      "type": "number",
+                                      "const": 2.5
+                                    },
+                                    {
+                                      "type": "number",
+                                      "const": 5
+                                    }
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "prescriptionId",
+                                "step"
+                              ],
+                              "additionalProperties": false
+                            }
                           }
                         },
                         "required": [
@@ -54258,7 +54445,7 @@
                                   }
                                 },
                                 "progressions": {
-                                  "maxItems": 12,
+                                  "maxItems": 200,
                                   "type": "array",
                                   "items": {
                                     "type": "object",
@@ -54440,6 +54627,67 @@
                                 "askSessionEffort": {
                                   "type": "boolean",
                                   "const": true
+                                },
+                                "askSetEffort": {
+                                  "type": "boolean"
+                                },
+                                "loadRounding": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string",
+                                      "const": "AUTO"
+                                    },
+                                    {
+                                      "type": "number",
+                                      "const": 1
+                                    },
+                                    {
+                                      "type": "number",
+                                      "const": 2.5
+                                    },
+                                    {
+                                      "type": "number",
+                                      "const": 5
+                                    }
+                                  ]
+                                },
+                                "loadRoundingByExercise": {
+                                  "maxItems": 400,
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "properties": {
+                                      "prescriptionId": {
+                                        "type": "string",
+                                        "pattern": "^[A-Za-z0-9_-]{1,64}$"
+                                      },
+                                      "step": {
+                                        "anyOf": [
+                                          {
+                                            "type": "string",
+                                            "const": "AUTO"
+                                          },
+                                          {
+                                            "type": "number",
+                                            "const": 1
+                                          },
+                                          {
+                                            "type": "number",
+                                            "const": 2.5
+                                          },
+                                          {
+                                            "type": "number",
+                                            "const": 5
+                                          }
+                                        ]
+                                      }
+                                    },
+                                    "required": [
+                                      "prescriptionId",
+                                      "step"
+                                    ],
+                                    "additionalProperties": false
+                                  }
                                 }
                               },
                               "required": [
@@ -55987,7 +56235,7 @@
                                   }
                                 },
                                 "progressions": {
-                                  "maxItems": 12,
+                                  "maxItems": 200,
                                   "type": "array",
                                   "items": {
                                     "type": "object",
@@ -56169,6 +56417,67 @@
                                 "askSessionEffort": {
                                   "type": "boolean",
                                   "const": true
+                                },
+                                "askSetEffort": {
+                                  "type": "boolean"
+                                },
+                                "loadRounding": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string",
+                                      "const": "AUTO"
+                                    },
+                                    {
+                                      "type": "number",
+                                      "const": 1
+                                    },
+                                    {
+                                      "type": "number",
+                                      "const": 2.5
+                                    },
+                                    {
+                                      "type": "number",
+                                      "const": 5
+                                    }
+                                  ]
+                                },
+                                "loadRoundingByExercise": {
+                                  "maxItems": 400,
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "properties": {
+                                      "prescriptionId": {
+                                        "type": "string",
+                                        "pattern": "^[A-Za-z0-9_-]{1,64}$"
+                                      },
+                                      "step": {
+                                        "anyOf": [
+                                          {
+                                            "type": "string",
+                                            "const": "AUTO"
+                                          },
+                                          {
+                                            "type": "number",
+                                            "const": 1
+                                          },
+                                          {
+                                            "type": "number",
+                                            "const": 2.5
+                                          },
+                                          {
+                                            "type": "number",
+                                            "const": 5
+                                          }
+                                        ]
+                                      }
+                                    },
+                                    "required": [
+                                      "prescriptionId",
+                                      "step"
+                                    ],
+                                    "additionalProperties": false
+                                  }
                                 }
                               },
                               "required": [
@@ -57491,7 +57800,7 @@
                                   }
                                 },
                                 "progressions": {
-                                  "maxItems": 12,
+                                  "maxItems": 200,
                                   "type": "array",
                                   "items": {
                                     "type": "object",
@@ -57673,6 +57982,67 @@
                                 "askSessionEffort": {
                                   "type": "boolean",
                                   "const": true
+                                },
+                                "askSetEffort": {
+                                  "type": "boolean"
+                                },
+                                "loadRounding": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string",
+                                      "const": "AUTO"
+                                    },
+                                    {
+                                      "type": "number",
+                                      "const": 1
+                                    },
+                                    {
+                                      "type": "number",
+                                      "const": 2.5
+                                    },
+                                    {
+                                      "type": "number",
+                                      "const": 5
+                                    }
+                                  ]
+                                },
+                                "loadRoundingByExercise": {
+                                  "maxItems": 400,
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "properties": {
+                                      "prescriptionId": {
+                                        "type": "string",
+                                        "pattern": "^[A-Za-z0-9_-]{1,64}$"
+                                      },
+                                      "step": {
+                                        "anyOf": [
+                                          {
+                                            "type": "string",
+                                            "const": "AUTO"
+                                          },
+                                          {
+                                            "type": "number",
+                                            "const": 1
+                                          },
+                                          {
+                                            "type": "number",
+                                            "const": 2.5
+                                          },
+                                          {
+                                            "type": "number",
+                                            "const": 5
+                                          }
+                                        ]
+                                      }
+                                    },
+                                    "required": [
+                                      "prescriptionId",
+                                      "step"
+                                    ],
+                                    "additionalProperties": false
+                                  }
                                 }
                               },
                               "required": [
@@ -61528,7 +61898,7 @@
                             }
                           },
                           "progressions": {
-                            "maxItems": 12,
+                            "maxItems": 200,
                             "type": "array",
                             "items": {
                               "type": "object",
@@ -61710,6 +62080,67 @@
                           "askSessionEffort": {
                             "type": "boolean",
                             "const": true
+                          },
+                          "askSetEffort": {
+                            "type": "boolean"
+                          },
+                          "loadRounding": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "const": "AUTO"
+                              },
+                              {
+                                "type": "number",
+                                "const": 1
+                              },
+                              {
+                                "type": "number",
+                                "const": 2.5
+                              },
+                              {
+                                "type": "number",
+                                "const": 5
+                              }
+                            ]
+                          },
+                          "loadRoundingByExercise": {
+                            "maxItems": 400,
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "prescriptionId": {
+                                  "type": "string",
+                                  "pattern": "^[A-Za-z0-9_-]{1,64}$"
+                                },
+                                "step": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string",
+                                      "const": "AUTO"
+                                    },
+                                    {
+                                      "type": "number",
+                                      "const": 1
+                                    },
+                                    {
+                                      "type": "number",
+                                      "const": 2.5
+                                    },
+                                    {
+                                      "type": "number",
+                                      "const": 5
+                                    }
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "prescriptionId",
+                                "step"
+                              ],
+                              "additionalProperties": false
+                            }
                           }
                         },
                         "required": [
@@ -62854,7 +63285,7 @@
                                   }
                                 },
                                 "progressions": {
-                                  "maxItems": 12,
+                                  "maxItems": 200,
                                   "type": "array",
                                   "items": {
                                     "type": "object",
@@ -63036,6 +63467,67 @@
                                 "askSessionEffort": {
                                   "type": "boolean",
                                   "const": true
+                                },
+                                "askSetEffort": {
+                                  "type": "boolean"
+                                },
+                                "loadRounding": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string",
+                                      "const": "AUTO"
+                                    },
+                                    {
+                                      "type": "number",
+                                      "const": 1
+                                    },
+                                    {
+                                      "type": "number",
+                                      "const": 2.5
+                                    },
+                                    {
+                                      "type": "number",
+                                      "const": 5
+                                    }
+                                  ]
+                                },
+                                "loadRoundingByExercise": {
+                                  "maxItems": 400,
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "properties": {
+                                      "prescriptionId": {
+                                        "type": "string",
+                                        "pattern": "^[A-Za-z0-9_-]{1,64}$"
+                                      },
+                                      "step": {
+                                        "anyOf": [
+                                          {
+                                            "type": "string",
+                                            "const": "AUTO"
+                                          },
+                                          {
+                                            "type": "number",
+                                            "const": 1
+                                          },
+                                          {
+                                            "type": "number",
+                                            "const": 2.5
+                                          },
+                                          {
+                                            "type": "number",
+                                            "const": 5
+                                          }
+                                        ]
+                                      }
+                                    },
+                                    "required": [
+                                      "prescriptionId",
+                                      "step"
+                                    ],
+                                    "additionalProperties": false
+                                  }
                                 }
                               },
                               "required": [
@@ -64533,7 +65025,7 @@
                                   }
                                 },
                                 "progressions": {
-                                  "maxItems": 12,
+                                  "maxItems": 200,
                                   "type": "array",
                                   "items": {
                                     "type": "object",
@@ -64715,6 +65207,67 @@
                                 "askSessionEffort": {
                                   "type": "boolean",
                                   "const": true
+                                },
+                                "askSetEffort": {
+                                  "type": "boolean"
+                                },
+                                "loadRounding": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string",
+                                      "const": "AUTO"
+                                    },
+                                    {
+                                      "type": "number",
+                                      "const": 1
+                                    },
+                                    {
+                                      "type": "number",
+                                      "const": 2.5
+                                    },
+                                    {
+                                      "type": "number",
+                                      "const": 5
+                                    }
+                                  ]
+                                },
+                                "loadRoundingByExercise": {
+                                  "maxItems": 400,
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "properties": {
+                                      "prescriptionId": {
+                                        "type": "string",
+                                        "pattern": "^[A-Za-z0-9_-]{1,64}$"
+                                      },
+                                      "step": {
+                                        "anyOf": [
+                                          {
+                                            "type": "string",
+                                            "const": "AUTO"
+                                          },
+                                          {
+                                            "type": "number",
+                                            "const": 1
+                                          },
+                                          {
+                                            "type": "number",
+                                            "const": 2.5
+                                          },
+                                          {
+                                            "type": "number",
+                                            "const": 5
+                                          }
+                                        ]
+                                      }
+                                    },
+                                    "required": [
+                                      "prescriptionId",
+                                      "step"
+                                    ],
+                                    "additionalProperties": false
+                                  }
                                 }
                               },
                               "required": [
@@ -66410,7 +66963,7 @@
                                   }
                                 },
                                 "progressions": {
-                                  "maxItems": 12,
+                                  "maxItems": 200,
                                   "type": "array",
                                   "items": {
                                     "type": "object",
@@ -66592,6 +67145,67 @@
                                 "askSessionEffort": {
                                   "type": "boolean",
                                   "const": true
+                                },
+                                "askSetEffort": {
+                                  "type": "boolean"
+                                },
+                                "loadRounding": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string",
+                                      "const": "AUTO"
+                                    },
+                                    {
+                                      "type": "number",
+                                      "const": 1
+                                    },
+                                    {
+                                      "type": "number",
+                                      "const": 2.5
+                                    },
+                                    {
+                                      "type": "number",
+                                      "const": 5
+                                    }
+                                  ]
+                                },
+                                "loadRoundingByExercise": {
+                                  "maxItems": 400,
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "properties": {
+                                      "prescriptionId": {
+                                        "type": "string",
+                                        "pattern": "^[A-Za-z0-9_-]{1,64}$"
+                                      },
+                                      "step": {
+                                        "anyOf": [
+                                          {
+                                            "type": "string",
+                                            "const": "AUTO"
+                                          },
+                                          {
+                                            "type": "number",
+                                            "const": 1
+                                          },
+                                          {
+                                            "type": "number",
+                                            "const": 2.5
+                                          },
+                                          {
+                                            "type": "number",
+                                            "const": 5
+                                          }
+                                        ]
+                                      }
+                                    },
+                                    "required": [
+                                      "prescriptionId",
+                                      "step"
+                                    ],
+                                    "additionalProperties": false
+                                  }
                                 }
                               },
                               "required": [
@@ -67901,7 +68515,7 @@
                                   }
                                 },
                                 "progressions": {
-                                  "maxItems": 12,
+                                  "maxItems": 200,
                                   "type": "array",
                                   "items": {
                                     "type": "object",
@@ -68083,6 +68697,67 @@
                                 "askSessionEffort": {
                                   "type": "boolean",
                                   "const": true
+                                },
+                                "askSetEffort": {
+                                  "type": "boolean"
+                                },
+                                "loadRounding": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string",
+                                      "const": "AUTO"
+                                    },
+                                    {
+                                      "type": "number",
+                                      "const": 1
+                                    },
+                                    {
+                                      "type": "number",
+                                      "const": 2.5
+                                    },
+                                    {
+                                      "type": "number",
+                                      "const": 5
+                                    }
+                                  ]
+                                },
+                                "loadRoundingByExercise": {
+                                  "maxItems": 400,
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "properties": {
+                                      "prescriptionId": {
+                                        "type": "string",
+                                        "pattern": "^[A-Za-z0-9_-]{1,64}$"
+                                      },
+                                      "step": {
+                                        "anyOf": [
+                                          {
+                                            "type": "string",
+                                            "const": "AUTO"
+                                          },
+                                          {
+                                            "type": "number",
+                                            "const": 1
+                                          },
+                                          {
+                                            "type": "number",
+                                            "const": 2.5
+                                          },
+                                          {
+                                            "type": "number",
+                                            "const": 5
+                                          }
+                                        ]
+                                      }
+                                    },
+                                    "required": [
+                                      "prescriptionId",
+                                      "step"
+                                    ],
+                                    "additionalProperties": false
+                                  }
                                 }
                               },
                               "required": [
@@ -69519,7 +70194,7 @@
                                   }
                                 },
                                 "progressions": {
-                                  "maxItems": 12,
+                                  "maxItems": 200,
                                   "type": "array",
                                   "items": {
                                     "type": "object",
@@ -69701,6 +70376,67 @@
                                 "askSessionEffort": {
                                   "type": "boolean",
                                   "const": true
+                                },
+                                "askSetEffort": {
+                                  "type": "boolean"
+                                },
+                                "loadRounding": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string",
+                                      "const": "AUTO"
+                                    },
+                                    {
+                                      "type": "number",
+                                      "const": 1
+                                    },
+                                    {
+                                      "type": "number",
+                                      "const": 2.5
+                                    },
+                                    {
+                                      "type": "number",
+                                      "const": 5
+                                    }
+                                  ]
+                                },
+                                "loadRoundingByExercise": {
+                                  "maxItems": 400,
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "properties": {
+                                      "prescriptionId": {
+                                        "type": "string",
+                                        "pattern": "^[A-Za-z0-9_-]{1,64}$"
+                                      },
+                                      "step": {
+                                        "anyOf": [
+                                          {
+                                            "type": "string",
+                                            "const": "AUTO"
+                                          },
+                                          {
+                                            "type": "number",
+                                            "const": 1
+                                          },
+                                          {
+                                            "type": "number",
+                                            "const": 2.5
+                                          },
+                                          {
+                                            "type": "number",
+                                            "const": 5
+                                          }
+                                        ]
+                                      }
+                                    },
+                                    "required": [
+                                      "prescriptionId",
+                                      "step"
+                                    ],
+                                    "additionalProperties": false
+                                  }
                                 }
                               },
                               "required": [
@@ -71032,7 +71768,7 @@
                             }
                           },
                           "progressions": {
-                            "maxItems": 12,
+                            "maxItems": 200,
                             "type": "array",
                             "items": {
                               "type": "object",
@@ -71214,6 +71950,67 @@
                           "askSessionEffort": {
                             "type": "boolean",
                             "const": true
+                          },
+                          "askSetEffort": {
+                            "type": "boolean"
+                          },
+                          "loadRounding": {
+                            "anyOf": [
+                              {
+                                "type": "string",
+                                "const": "AUTO"
+                              },
+                              {
+                                "type": "number",
+                                "const": 1
+                              },
+                              {
+                                "type": "number",
+                                "const": 2.5
+                              },
+                              {
+                                "type": "number",
+                                "const": 5
+                              }
+                            ]
+                          },
+                          "loadRoundingByExercise": {
+                            "maxItems": 400,
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "prescriptionId": {
+                                  "type": "string",
+                                  "pattern": "^[A-Za-z0-9_-]{1,64}$"
+                                },
+                                "step": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string",
+                                      "const": "AUTO"
+                                    },
+                                    {
+                                      "type": "number",
+                                      "const": 1
+                                    },
+                                    {
+                                      "type": "number",
+                                      "const": 2.5
+                                    },
+                                    {
+                                      "type": "number",
+                                      "const": 5
+                                    }
+                                  ]
+                                }
+                              },
+                              "required": [
+                                "prescriptionId",
+                                "step"
+                              ],
+                              "additionalProperties": false
+                            }
                           }
                         },
                         "required": [
@@ -72372,7 +73169,7 @@
                                   }
                                 },
                                 "progressions": {
-                                  "maxItems": 12,
+                                  "maxItems": 200,
                                   "type": "array",
                                   "items": {
                                     "type": "object",
@@ -72554,6 +73351,67 @@
                                 "askSessionEffort": {
                                   "type": "boolean",
                                   "const": true
+                                },
+                                "askSetEffort": {
+                                  "type": "boolean"
+                                },
+                                "loadRounding": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string",
+                                      "const": "AUTO"
+                                    },
+                                    {
+                                      "type": "number",
+                                      "const": 1
+                                    },
+                                    {
+                                      "type": "number",
+                                      "const": 2.5
+                                    },
+                                    {
+                                      "type": "number",
+                                      "const": 5
+                                    }
+                                  ]
+                                },
+                                "loadRoundingByExercise": {
+                                  "maxItems": 400,
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "properties": {
+                                      "prescriptionId": {
+                                        "type": "string",
+                                        "pattern": "^[A-Za-z0-9_-]{1,64}$"
+                                      },
+                                      "step": {
+                                        "anyOf": [
+                                          {
+                                            "type": "string",
+                                            "const": "AUTO"
+                                          },
+                                          {
+                                            "type": "number",
+                                            "const": 1
+                                          },
+                                          {
+                                            "type": "number",
+                                            "const": 2.5
+                                          },
+                                          {
+                                            "type": "number",
+                                            "const": 5
+                                          }
+                                        ]
+                                      }
+                                    },
+                                    "required": [
+                                      "prescriptionId",
+                                      "step"
+                                    ],
+                                    "additionalProperties": false
+                                  }
                                 }
                               },
                               "required": [
@@ -74220,7 +75078,7 @@
                                   }
                                 },
                                 "progressions": {
-                                  "maxItems": 12,
+                                  "maxItems": 200,
                                   "type": "array",
                                   "items": {
                                     "type": "object",
@@ -74402,6 +75260,67 @@
                                 "askSessionEffort": {
                                   "type": "boolean",
                                   "const": true
+                                },
+                                "askSetEffort": {
+                                  "type": "boolean"
+                                },
+                                "loadRounding": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string",
+                                      "const": "AUTO"
+                                    },
+                                    {
+                                      "type": "number",
+                                      "const": 1
+                                    },
+                                    {
+                                      "type": "number",
+                                      "const": 2.5
+                                    },
+                                    {
+                                      "type": "number",
+                                      "const": 5
+                                    }
+                                  ]
+                                },
+                                "loadRoundingByExercise": {
+                                  "maxItems": 400,
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "properties": {
+                                      "prescriptionId": {
+                                        "type": "string",
+                                        "pattern": "^[A-Za-z0-9_-]{1,64}$"
+                                      },
+                                      "step": {
+                                        "anyOf": [
+                                          {
+                                            "type": "string",
+                                            "const": "AUTO"
+                                          },
+                                          {
+                                            "type": "number",
+                                            "const": 1
+                                          },
+                                          {
+                                            "type": "number",
+                                            "const": 2.5
+                                          },
+                                          {
+                                            "type": "number",
+                                            "const": 5
+                                          }
+                                        ]
+                                      }
+                                    },
+                                    "required": [
+                                      "prescriptionId",
+                                      "step"
+                                    ],
+                                    "additionalProperties": false
+                                  }
                                 }
                               },
                               "required": [
@@ -100724,7 +101643,7 @@
                                   }
                                 },
                                 "progressions": {
-                                  "maxItems": 12,
+                                  "maxItems": 200,
                                   "type": "array",
                                   "items": {
                                     "type": "object",
@@ -100933,6 +101852,132 @@
                                   "type": "boolean",
                                   "const": true
                                 },
+                                "askSetEffort": {
+                                  "type": "boolean"
+                                },
+                                "loadRounding": {
+                                  "anyOf": [
+                                    {
+                                      "type": "string",
+                                      "const": "AUTO"
+                                    },
+                                    {
+                                      "type": "number",
+                                      "const": 1
+                                    },
+                                    {
+                                      "type": "number",
+                                      "const": 2.5
+                                    },
+                                    {
+                                      "type": "number",
+                                      "const": 5
+                                    }
+                                  ]
+                                },
+                                "loadRoundingByExercise": {
+                                  "maxItems": 400,
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "properties": {
+                                      "prescriptionId": {
+                                        "type": "string",
+                                        "pattern": "^[A-Za-z0-9_-]{1,64}$"
+                                      },
+                                      "step": {
+                                        "anyOf": [
+                                          {
+                                            "type": "string",
+                                            "const": "AUTO"
+                                          },
+                                          {
+                                            "type": "number",
+                                            "const": 1
+                                          },
+                                          {
+                                            "type": "number",
+                                            "const": 2.5
+                                          },
+                                          {
+                                            "type": "number",
+                                            "const": 5
+                                          }
+                                        ]
+                                      }
+                                    },
+                                    "required": [
+                                      "prescriptionId",
+                                      "step"
+                                    ],
+                                    "additionalProperties": false
+                                  }
+                                },
+                                "oneRepMaxAtActivation": {
+                                  "maxItems": 400,
+                                  "type": "array",
+                                  "items": {
+                                    "type": "object",
+                                    "properties": {
+                                      "prescriptionId": {
+                                        "type": "string",
+                                        "pattern": "^[A-Za-z0-9_-]{1,64}$"
+                                      },
+                                      "exerciseId": {
+                                        "type": "string",
+                                        "minLength": 1
+                                      },
+                                      "value": {
+                                        "type": "object",
+                                        "properties": {
+                                          "value": {
+                                            "type": "number",
+                                            "exclusiveMinimum": 0
+                                          },
+                                          "unit": {
+                                            "type": "string",
+                                            "enum": [
+                                              "kg",
+                                              "lb"
+                                            ]
+                                          }
+                                        },
+                                        "required": [
+                                          "value",
+                                          "unit"
+                                        ],
+                                        "additionalProperties": false
+                                      },
+                                      "origin": {
+                                        "type": "string",
+                                        "enum": [
+                                          "CALIBRATION",
+                                          "RECORD",
+                                          "DECLARED"
+                                        ]
+                                      },
+                                      "localDate": {
+                                        "type": "string",
+                                        "format": "date",
+                                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                                      },
+                                      "activatedOn": {
+                                        "type": "string",
+                                        "format": "date",
+                                        "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))$"
+                                      }
+                                    },
+                                    "required": [
+                                      "prescriptionId",
+                                      "exerciseId",
+                                      "value",
+                                      "origin",
+                                      "localDate",
+                                      "activatedOn"
+                                    ],
+                                    "additionalProperties": false
+                                  }
+                                },
                                 "privateNotes": {
                                   "type": "object",
                                   "properties": {
@@ -100989,6 +102034,9 @@
                               "type": "null"
                             }
                           ]
+                        },
+                        "askSetEffort": {
+                          "type": "boolean"
                         }
                       },
                       "required": [
@@ -101856,6 +102904,9 @@
                         "askSessionEffort": {
                           "type": "boolean",
                           "const": true
+                        },
+                        "askSetEffort": {
+                          "type": "boolean"
                         }
                       },
                       "required": [

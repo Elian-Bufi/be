@@ -30,8 +30,16 @@ import {
   COPY_TIPOS_DE_SERIE,
   COPY_BLOQUES_DE_LA_SESION,
   COPY_NOTACION_DEL_ESFUERZO,
+  unoRMDeLaActivacionEnUnRenglon,
+  type UnoRMDeLaActivacion,
 } from '@be/domain';
-import { useId, type ReactNode } from 'react';
+import { createContext, useContext, useId, type ReactNode } from 'react';
+
+/**
+ * ET2-D18 (ratificada): en una versión activada, el 1RM congelado de cada ejercicio en % RM, por su prescripción. Un 1RM
+ * posterior no cambia sus cargas ni lo que se lee acá: «1RM 101,5 kg · el de la activación (26 nov)».
+ */
+export const UnoRMDeLaActivacionDelPlan = createContext<ReadonlyMap<string, UnoRMDeLaActivacion>>(new Map());
 import { useNotacionDelEsfuerzo } from '../notacion-del-esfuerzo';
 import { EnPartes, conNumerosPegados } from '../../../../components/en-partes';
 import { Icono } from '../../../../components/icono';
@@ -207,6 +215,7 @@ function EjercicioDelPlan({ prescripcion: p, abierto, onAlternar, acceso, nivel 
   const { filas, conRir, conNota } = seriesDelEjercicio(p, notacion);
   const general = loGeneralDelEjercicio(p, notacion);
   const sinObjetivo = <span className="tenue">{COPY_ENTRENAMIENTO_POR_SERIE.sinObjetivo}</span>;
+  const congelado = useContext(UnoRMDeLaActivacionDelPlan).get(p.prescriptionId) ?? null;
   return (
     <section className="comida-del-plan ejercicio-del-plan" data-ejercicio={p.order} data-abierta={abierto ? '' : undefined}>
       <Titulo className="comida-del-plan__titulo">
@@ -269,6 +278,11 @@ function EjercicioDelPlan({ prescripcion: p, abierto, onAlternar, acceso, nivel 
             </div>
             <div className="ejercicio-del-plan__general">
               <p className="ejercicio-del-plan__subtitulo">{C.loGeneral}</p>
+              {congelado ? (
+                <p className="nota" data-uno-rm-de-la-activacion>
+                  {unoRMDeLaActivacionEnUnRenglon(congelado)}
+                </p>
+              ) : null}
               {p.image ? <ImagenGuardadaDeEjercicio token={acceso.token} medioId={p.image.mediaId} nombre={p.exerciseName} textoAlternativo={p.image.altText} sesionPerdida={acceso.sesionPerdida} chica /> : null}
               <dl className="lo-general-del-ejercicio">
                 {general.map((g, i) => (

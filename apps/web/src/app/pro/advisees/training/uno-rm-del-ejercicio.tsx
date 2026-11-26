@@ -15,7 +15,10 @@ import {
   avisoEnPalabras,
   baseDelPorcentaje,
   calibrar,
-  cargaDelPorcentajeDe,
+  cargaAtadaAlPorcentaje,
+  implementoDelEjercicio,
+  REDONDEO_POR_OMISION,
+  SIN_UNO_RM_PARA_LAS_CARGAS,
   COPY_UNO_RM,
   cuentaDelUnoRM,
   esfuerzoEnCampo,
@@ -24,6 +27,7 @@ import {
   origenDelUnoRM,
   unoRMEnUnRenglon,
   type NotacionDelEsfuerzo,
+  type RedondeoDeLasCargas,
   type SumarUnoRMRequest,
   type UnoRMDelEjercicio,
   type UnoRMVigente,
@@ -105,11 +109,19 @@ const enKilos = (c: { readonly value: number; readonly unit: Unidad }): string =
 /** «RIR 1» o, en un plan en RPE, «RPE 9». */
 const esfuerzoEnPalabras = (rir: number, notacion: NotacionDelEsfuerzo): string => (notacion === 'RPE' ? `RPE ${esfuerzoEnCampo(rir, 'RPE')}` : `RIR ${numero(rir, 2)}`);
 
-/** La carga que pide el % RM con el 1RM vigente, o `null` si falta algo o las unidades no coinciden. */
-export function cargaQuePideElPorcentaje(p: PrescripcionE, vigente: UnoRMVigente | null, nombre: string): { readonly value: number; readonly unit: Unidad } | null {
+/** El 1RM que usa BE, de lo que leyó API-RMX-01; `null` si todavía no hay. */
+export function vigenteDeLosDatos(datos: UnoRMDelEjercicio | null): UnoRMVigente | null {
+  return datos?.current ? { origen: datos.current.origin, valor: datos.current.value, fecha: datos.current.localDate, banda: datos.current.band, serie: null, entryId: datos.current.entryId } : null;
+}
+
+/**
+ * La carga que pide el % RM con el 1RM vigente, redondeada como dice el plan o el ejercicio (ET2-D18), o `null` si falta
+ * algo o las unidades no coinciden.
+ */
+export function cargaQuePideElPorcentaje(p: PrescripcionE, vigente: UnoRMVigente | null, nombre: string, redondeo: RedondeoDeLasCargas = REDONDEO_POR_OMISION): { readonly value: number; readonly unit: Unidad } | null {
   const pct = p.intensity?.criterion === 'PERCENT_RM' ? p.intensity.target.value : null;
   if (!vigente || pct === null || !Number.isFinite(pct) || pct <= 0) return null;
-  return cargaDelPorcentajeDe(pct, vigente.valor, nombre, p.loadBasis ?? null);
+  return cargaAtadaAlPorcentaje(pct, vigente.valor, implementoDelEjercicio(nombre, p.loadBasis ?? null), redondeo);
 }
 
 /** Las cargas de las efectivas desde el 1RM: la común, y sin cargas propias en las efectivas (las aproximaciones quedan). */
@@ -143,6 +155,7 @@ export function RenglonDelUnoRM({
   prescripcion: p,
   unidad,
   unoRM,
+  redondeo = REDONDEO_POR_OMISION,
   onCambiar,
 }: {
   id: string;
@@ -150,15 +163,17 @@ export function RenglonDelUnoRM({
   prescripcion: PrescripcionE;
   unidad: Unidad;
   unoRM: ReturnType<typeof useUnoRM>;
+  /** ET2-D18: el redondeo de las cargas del ejercicio (el suyo o el del plan). */
+  redondeo?: RedondeoDeLasCargas;
   onCambiar: (c: Partial<PrescripcionE>) => void;
 }) {
   const T = COPY_UNO_RM_EN_EL_EDITOR;
   const [cuadro, setCuadro] = useState(false);
   const [avisoVisto, setAvisoVisto] = useState<string | null>(null);
   const { estado, datos } = unoRM;
-  const vigente = datos?.current ? { origen: datos.current.origin, valor: datos.current.value, fecha: datos.current.localDate, banda: datos.current.band, serie: null, entryId: datos.current.entryId } : null;
+  const vigente = vigenteDeLosDatos(datos);
   const otraUnidad = !!vigente && vigente.valor.unit !== unidad;
-  const carga = otraUnidad ? null : cargaQuePideElPorcentaje(p, vigente, nombre);
+  const carga = otraUnidad ? null : cargaQuePideElPorcentaje(p, vigente, nombre, redondeo);
   const pct = p.intensity?.target.value ?? null;
   const aviso = datos?.warning ?? null;
   const claveDelAviso = aviso ? `${aviso.record.executionId}|${aviso.record.setIndex}` : null;
@@ -212,6 +227,9 @@ export function RenglonDelUnoRM({
           </>
         ) : vigente ? (
           T.sinPorcentaje
+        ) : estado === 'listo' ? (
+          // ET2-D18: sin 1RM, el % queda solo y la carga se escribe aparte; se dice en una línea.
+          <span data-sin-uno-rm>{SIN_UNO_RM_PARA_LAS_CARGAS}</span>
         ) : (
           ' '
         )}
@@ -534,12 +552,10 @@ export function UnoRMDelEjercicio(o: {
   nombre: string;
   prescripcion: PrescripcionE;
   unidad: Unidad;
-  token: string;
-  asesoradoId: string;
-  exerciseId: string;
-  sesionPerdida: (r: Resultado<unknown>) => boolean;
+  /** ET2-D18: lo lee el ejercicio (`useUnoRM`), porque la planilla también lo usa para atar el % RM y la carga. */
+  unoRM: ReturnType<typeof useUnoRM>;
+  redondeo: RedondeoDeLasCargas;
   onCambiar: (c: Partial<PrescripcionE>) => void;
 }) {
-  const unoRM = useUnoRM({ token: o.token, asesoradoId: o.asesoradoId, exerciseId: o.exerciseId, sesionPerdida: o.sesionPerdida });
-  return <RenglonDelUnoRM id={o.id} nombre={o.nombre} prescripcion={o.prescripcion} unidad={o.unidad} unoRM={unoRM} onCambiar={o.onCambiar} />;
+  return <RenglonDelUnoRM id={o.id} nombre={o.nombre} prescripcion={o.prescripcion} unidad={o.unidad} unoRM={o.unoRM} redondeo={o.redondeo} onCambiar={o.onCambiar} />;
 }

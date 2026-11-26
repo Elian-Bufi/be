@@ -43,7 +43,7 @@ export const AYUDAS_DEL_EDITOR = {
   },
   intensidad: {
     nombre: 'Qué es la intensidad del plan',
-    definicion: 'Cómo se indica qué tan exigente es cada serie. RIR: las repeticiones en reserva. RPE: el esfuerzo percibido, del 1 al 10 (BE guarda el RIR: RPE = 10 − RIR). % RM: una parte de la carga máxima para una repetición. «Solo carga y repeticiones»: sin criterio de intensidad.',
+    definicion: 'Cómo se indica qué tan exigente es cada serie. RIR: las repeticiones en reserva. RPE: el esfuerzo percibido, de 6 a 10 (equivale a RIR: RPE 8 = 2 en reserva). % RM: una parte de la carga máxima para una repetición. «Solo carga y repeticiones»: sin criterio de intensidad.',
     ejemplo: 'Ejemplo: 4 × 8 con 60 kg y RIR 2 quiere decir que en cada serie quedan 2 repeticiones más posibles; en RPE se escribe «RPE 8», y es lo mismo. En % RM, con un 1RM de 100 kg, 75 % RM son 75 kg.',
   },
   aproximaciones: {

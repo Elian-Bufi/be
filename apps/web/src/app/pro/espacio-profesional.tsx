@@ -134,12 +134,15 @@ const DE_LA_CARTERA = { limite: 50, paginas: 4 } as const;
 const DE_UNA_LISTA = { limite: 20, paginas: 10 } as const;
 
 /** El título de la página está en todos sus estados: sin sesión, cargando, con una falla o sin espacio profesional. */
-function Pagina({ children, alLado }: { children: ReactNode; alLado?: ReactNode }) {
+function Pagina({ children, fecha, acciones }: { children: ReactNode; fecha?: ReactNode; acciones?: ReactNode }) {
   return (
     <div className="espacio-profesional">
       <div className="espacio-profesional__encabezado">
-        <h1>Espacio profesional</h1>
-        {alLado}
+        <div className="espacio-profesional__titulo">
+          <h1>Espacio profesional</h1>
+          {fecha}
+        </div>
+        {acciones ? <div className="espacio-profesional__acciones">{acciones}</div> : null}
       </div>
       {children}
     </div>
@@ -316,9 +319,9 @@ export function EspacioProfesional() {
 
   return (
     <Pagina
-      alLado={
+      fecha={hoy ? <p className="espacio-profesional__hoy">Hoy, {diaConSuSemana(hoy)}</p> : null}
+      acciones={
         <>
-          {hoy ? <p className="espacio-profesional__hoy">Hoy, {diaConSuSemana(hoy)}</p> : null}
           <button type="button" className={`boton ${conCajon ? 'boton--secundario' : 'boton--primario'} espacio-profesional__invitar`} aria-haspopup="dialog" onClick={() => setInvitar(true)}>
             <Icono nombre="persona" tamano={20} />
             {/* ED-41: dos caminos distintos, dichos en el botón. */}

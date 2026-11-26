@@ -7187,13 +7187,33 @@ button.comida-del-dia__fila > .icono:last-child {
   min-width: 0;
 }
 
-/* El título, «hoy» y, contra la derecha, pedir un vínculo. Lo que no entra baja entero. */
+/* El título con «hoy» a la izquierda y, contra la derecha, los dos botones. Si no entran juntos, los botones bajan juntos
+   y quedan contra el borde izquierdo, con el mismo margen que el título: el bloque del título crece y empuja a los botones
+   a la derecha solo cuando hay lugar (sin margen automático, que los dejaría sueltos a la derecha al bajar). */
 .espacio-profesional__encabezado {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 0.3rem 1rem;
+  gap: 0.6rem 1.5rem;
   min-height: 44px;
+}
+
+.espacio-profesional__titulo {
+  display: flex;
+  flex: 1 1 auto;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.2rem 1rem;
+  min-width: 0;
+}
+
+.espacio-profesional__acciones {
+  display: flex;
+  flex: 0 1 auto;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem;
+  min-width: 0;
 }
 
 .espacio-profesional h1 {
@@ -7205,10 +7225,6 @@ button.comida-del-dia__fila > .icono:last-child {
 .espacio-profesional__hoy {
   margin: 0;
   color: var(--tenue);
-}
-
-.espacio-profesional__solicitar {
-  margin-left: auto;
 }
 
 /* Dos columnas desde 75 rem (1200 px), el mismo corte que el detalle de la línea de tiempo: a 1280 el directorio va al
@@ -7633,10 +7649,6 @@ button.comida-del-dia__fila > .icono:last-child {
   .pendiente__que {
     display: inline-flex;
     vertical-align: top;
-  }
-
-  .espacio-profesional__solicitar {
-    margin-left: 0;
   }
 }
 
@@ -9204,6 +9216,37 @@ button.comida-del-dia__fila > .icono:last-child {
   display: none;
 }
 
+/* La casilla de BE: el borde de los campos sobre la superficie y, marcada, el azul del botón con su tilde (no la gris del
+   navegador, que en Azul noche se leía apagada). La misma caja marcada o no: el cambio de estado no mueve nada. */
+input[type='checkbox'].casilla-de-be {
+  appearance: none;
+  flex: none;
+  box-sizing: border-box;
+  width: 1.15rem;
+  height: 1.15rem;
+  margin: 0;
+  border: 1.5px solid var(--borde-control);
+  border-radius: 4px;
+  background: var(--superficie) center / 100% 100% no-repeat;
+  cursor: pointer;
+}
+
+input[type='checkbox'].casilla-de-be:checked {
+  border-color: var(--boton-fondo);
+  background-color: var(--boton-fondo);
+  background-image: var(--tilde-de-casilla);
+}
+
+input[type='checkbox'].casilla-de-be:focus-visible {
+  outline: 3px solid var(--foco);
+  outline-offset: 2px;
+}
+
+input[type='checkbox'].casilla-de-be:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .preguntas-del-pedido__seccion th {
   height: auto;
   padding: 0.7rem 0 0.3rem;
@@ -10492,6 +10535,83 @@ button.comida-del-dia__fila > .icono:last-child {
   color: var(--tenue);
 }
 
+/* La barra de Entrenamiento (sticky): UN renglón y bajo, siempre, también pegada. A la izquierda el título con su chip (si falta
+   lugar se corta con «…»); a la derecha, «Recorrido», el estado, lo que impide activar, «Revisar y activar…» y el «…», donde
+   está «Guardar ahora» (el guardado es automático; Ctrl+S también guarda). El lugar del estado está reservado (RP-19): nada
+   se corre cuando cambia su texto o aparece un aviso. `--alto-barra-version` es la altura de la barra: el panel de la
+   derecha la descuenta para que su parte de arriba no quede tapada. */
+.estacion {
+  --alto-barra-version: 3.5rem;
+}
+
+.estacion [data-barra-de-comandos] {
+  flex-wrap: nowrap;
+  column-gap: 0.75rem;
+  min-height: var(--alto-barra-version);
+  padding-block: 0.25rem;
+}
+
+.estacion [data-barra-de-comandos] h2 {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.estacion [data-barra-de-comandos] .editor-del-plan__acciones {
+  flex: 0 0 auto;
+  flex-wrap: nowrap;
+  gap: 0.35rem;
+}
+
+.estacion [data-barra-de-comandos] .editor-del-plan__estado {
+  width: clamp(11rem, 13vw, 16rem);
+  margin-inline-end: 0;
+}
+
+.estacion [data-barra-de-comandos] .editor-del-plan__acciones .boton:not(.boton--discreto) {
+  padding-inline: 0.7rem;
+}
+
+/* El fallo: «Reintentar» es un botón compacto, de ancho fijo, y su lugar sale del ancho del estado (RP-19): el estado
+   se achica lo que mide el botón más el espacio entre los dos, así ni el estado ni lo de al lado se corren al aparecer.
+   El detalle técnico, plegado, cuelga debajo de la barra sin mover nada. */
+.estacion [data-barra-de-comandos] .editor-del-plan__estado[data-con-reintentar] {
+  width: calc(clamp(11rem, 13vw, 16rem) - 7.5rem - 0.35rem);
+}
+
+.estacion [data-barra-de-comandos] .estado-de-guardado__reintentar {
+  flex: none;
+  justify-content: center;
+  width: 7.5rem;
+  padding-inline: 0.4rem;
+  white-space: nowrap;
+}
+
+.estacion [data-barra-de-comandos] .estado-de-guardado__detalle {
+  position: absolute;
+  z-index: 6;
+  top: calc(100% + 0.25rem);
+  right: 0;
+  max-width: min(30rem, 90vw);
+  padding: 0.25rem 0.6rem;
+  border: 1px solid var(--borde);
+  border-radius: 8px;
+  background: var(--superficie);
+}
+
+/* Menos de 80 rem: «Recorrido» queda con su ícono, su título y su nombre para el lector. */
+@media (max-width: 79.99rem) {
+  .recorrido__ver .recorrido__palabra {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+}
+
 /* Bloque 3 del encargo: el estado de escritura de un borrador (components/estado-de-guardado.tsx). */
 .estado-de-guardado {
   display: inline-flex;
@@ -11420,9 +11540,9 @@ button.comida-del-dia__fila > .icono:last-child {
   text-align: center;
 }
 
-.series-del-editor .series-del-editor__aprox input {
-  width: 1.15rem;
-  height: 1.15rem;
+/* «Aprox.»: la casilla de BE (`.casilla-de-be`), centrada en su caja de 44 px (`.casilla-de-celda`). */
+.series-del-editor .series-del-editor__aprox .casilla-de-celda {
+  vertical-align: middle;
 }
 
 .series-del-editor__sin-intensidad {
@@ -11583,6 +11703,14 @@ button.comida-del-dia__fila > .icono:last-child {
 .celda-de-objetivo input[data-en-gris]::placeholder {
   color: var(--tenue);
   font-weight: 400;
+}
+
+/* El «Común» vacío: su ejemplo («ej. 2») se lee como ejemplo, tenue y sin negrita, nunca como un valor cargado. */
+.series-del-editor .celda-de-serie[data-objetivo-comun]::placeholder {
+  color: var(--tenue);
+  font-style: italic;
+  font-weight: 400;
+  opacity: 0.85;
 }
 
 /* «Sin objetivo» es un texto, no un número: va desde la izquierda y un poco más chico, para entrar en la celda. */
@@ -13505,20 +13633,7 @@ details[open] > summary:not([class])::before {
 }
 
 /* ─── Invitar a una persona (WP-INVITACION, DL-136) ───────────────────────────────────── */
-/* «Invitar» es el camino principal del encabezado: va primero y empuja a los dos botones a la derecha. */
-.espacio-profesional__invitar {
-  margin-left: auto;
-}
-
-.espacio-profesional__invitar + .espacio-profesional__solicitar {
-  margin-left: 0.5rem;
-}
-
-@media (max-width: 63.99rem) {
-  .espacio-profesional__invitar {
-    margin-left: 0;
-  }
-}
+/* «Invitar» es el camino principal del encabezado: va primero, dentro de `.espacio-profesional__acciones`. */
 
 .dialogo.invitar {
   width: min(40rem, calc(100vw - 2rem));
@@ -16627,6 +16742,26 @@ p.cifra-del-espacio__desglose {
   font-variant-numeric: tabular-nums;
 }
 
+/* Zoom y notebooks: la tarjeta se mide por su propio ancho, no por el de la ventana. Con poco lugar, los chips ceden aire
+   (relleno y separación), nunca la letra, para seguir en una fila; si ni así entran, bajan con la misma separación. */
+.cifra-del-espacio {
+  container-type: inline-size;
+}
+
+.cifra-del-espacio__desglose > li {
+  min-width: 0;
+}
+
+@container (max-width: 23rem) {
+  .cifra-del-espacio__desglose {
+    gap: 0.3rem;
+  }
+
+  .cifra-del-espacio__parte {
+    padding-inline: 0.5rem;
+  }
+}
+
 .espacio-profesional__costado {
   display: flex;
   flex-direction: column;
@@ -17079,8 +17214,8 @@ p.cifra-del-espacio__desglose {
 
   .editor-de-entrenamiento__zonas .estacion__panel {
     position: sticky;
-    top: 5rem;
-    max-height: calc(100dvh - 6rem);
+    top: calc(var(--alto-barra-version) + 0.75rem);
+    max-height: calc(100dvh - var(--alto-barra-version) - 1.5rem);
     overflow-y: auto;
     overscroll-behavior: contain;
   }
@@ -17106,8 +17241,9 @@ p.cifra-del-espacio__desglose {
 .tarjeta-del-editor__cabecera,
 .fase-del-plan__cabecera {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.35rem 0.5rem;
   padding: 0.35rem 0.6rem 0.35rem 0.35rem;
 }
 
@@ -17481,15 +17617,26 @@ p.cifra-del-espacio__desglose {
 }
 
 /* La fase elegida, debajo de la barra: su cabecera con «Editar fase», «Días de la semana» y el «⋯». */
+/* «Editar fase», «Días de la semana» y el «…» van juntos en una fila; si no entran, bajan los tres a la vez, nunca uno solo. */
 .fase-del-plan__acciones {
   display: flex;
-  flex-wrap: wrap;
+  flex: 0 0 auto;
+  flex-wrap: nowrap;
   gap: 0.4rem;
   align-items: center;
 }
 
+.fase-del-plan__acciones .boton {
+  white-space: nowrap;
+}
+
+.fase-del-plan__acciones .boton--compacto {
+  padding-inline: 0.65rem;
+}
+
 .fase-del-plan__titulo {
   display: flex;
+  flex: 1 1 14rem;
   flex-wrap: wrap;
   align-items: center;
   gap: 0.25rem 0.6rem;
@@ -17692,19 +17839,70 @@ p.cifra-del-espacio__desglose {
   text-align: start;
 }
 
+/* El nombre de la sesión, con el estilo de campo de BE (no el gris del navegador): borde de los controles, superficie y
+   el alto de los círculos de los días, así la fila no crece. Sin nombre, el borde de aviso por sombra: no cambia de tamaño. */
 .matriz-de-dias__nombre {
+  box-sizing: border-box;
   width: 100%;
   min-width: 8rem;
+  height: 2.25rem;
+  padding: 0.3rem 0.6rem;
+  border: 1px solid var(--borde-control);
+  border-radius: 8px;
+  background: var(--superficie);
+  color: var(--texto);
+  font: inherit;
+  font-weight: 600;
 }
 
-/* El «?» de un cuadro, en la cabecera, junto a «Cerrar». */
+.matriz-de-dias__nombre:hover {
+  border-color: var(--texto);
+}
+
+.matriz-de-dias__nombre[aria-invalid='true'] {
+  border-color: var(--error);
+  box-shadow: inset 0 0 0 1px var(--error);
+}
+
+/* «Días de la semana» compacto: sin el margen de los párrafos entre el título, la fase y la matriz, ni debajo de ella (el
+   renglón del aviso sigue reservado, RP-19). */
+.cuadro-del-plan__cuerpo[data-dias-de-la-fase] {
+  gap: 0.4rem;
+}
+
+.cuadro-del-plan__cuerpo[data-dias-de-la-fase] > p {
+  margin: 0;
+}
+
+.cuadro-del-plan__cuerpo[data-dias-de-la-fase] > .matriz-de-dias {
+  margin: 0;
+}
+
+.matriz-de-dias td {
+  vertical-align: middle;
+}
+
+/* II.17: el «?» de un cuadro que se cierra va pegado al título, a su derecha y centrado con su renglón; nunca junto a
+   «Cerrar». Lo que abre flota debajo, alineado a la izquierda del «?» (está a la izquierda del cuadro: no se sale). */
+.cuadro-enfocado__renglon-del-titulo {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
 .cuadro-enfocado__ayuda {
   position: relative;
   display: inline-grid;
-  align-self: start;
+  flex: none;
+  place-items: center;
   min-width: 2.25rem;
   min-height: 2.25rem;
-  margin-inline-start: auto;
+}
+
+.cuadro-enfocado__ayuda > .a-pedido--esquina > .a-pedido__texto:not([hidden]) {
+  right: auto;
+  left: 0;
 }
 
 .ayuda-con-ejemplo__pasos {
@@ -17780,22 +17978,30 @@ p.cifra-del-espacio__desglose {
   font-size: 0.75rem;
 }
 
+/* Cada día, la misma caja vacío o elegido: centrado en su celda (no en la línea de base del texto, que bajaba el elegido) y
+   con el mismo borde; el elegido se marca con color y una sombra interna. Cambiar de estado no mueve nada (RP-19). */
 .dias-de-la-fase__dia {
+  box-sizing: border-box;
+  display: inline-grid;
+  place-items: center;
   width: 2.25rem;
   height: 2.25rem;
+  padding: 0;
+  vertical-align: middle;
   border: 1px solid var(--borde-control);
   border-radius: 50%;
   background: transparent;
   color: var(--texto);
   font: inherit;
   font-weight: 700;
+  line-height: 1;
   cursor: pointer;
 }
 
 .dias-de-la-fase__dia[aria-pressed='true'] {
-  border-width: 2px;
   border-color: var(--azul);
   background: var(--azul);
+  box-shadow: inset 0 0 0 1px var(--azul);
   color: var(--boton-texto);
 }
 
@@ -17962,10 +18168,27 @@ p.cifra-del-espacio__desglose {
 /* DL-199 (ET3, E5): de qué es y la herramienta, en un renglón: «El plan  Almanaque», sin una línea de rótulo arriba. */
 .marco-del-panel__titulos {
   display: flex;
+  flex: 1 1 auto;
   flex-wrap: wrap;
   align-items: baseline;
   gap: 0 0.5rem;
   min-width: 0;
+}
+
+/* «Abrir grande» y la estrella de favoritos: juntos, compactos y a la derecha del título, en una fila. */
+.marco-del-panel__herramientas {
+  display: flex;
+  flex: none;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.marco-del-panel__herramientas .boton {
+  min-height: 2rem;
+  gap: 0.25rem;
+  padding-inline: 0.4rem;
+  font-size: 0.85rem;
+  white-space: nowrap;
 }
 
 /* El almanaque: un mes como un calendario de pared; cada semana con el velo y el borde del color de su fase. */
@@ -18179,7 +18402,6 @@ p.cifra-del-espacio__desglose {
 .marco-del-panel__abrir {
   display: flex;
   justify-content: flex-end;
-  margin-top: -0.25rem;
 }
 
 .panel-del-editor {
@@ -18206,7 +18428,6 @@ p.cifra-del-espacio__desglose {
 .marco-del-panel__acciones {
   display: flex;
   justify-content: flex-end;
-  margin-top: -0.35rem;
 }
 
 .estrella-de-favorito .estrella-de-favorito__dibujo {
@@ -18229,14 +18450,18 @@ p.cifra-del-espacio__desglose {
 
 .grafico-de-semanas__cabecera {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
   gap: 0.5rem;
 }
 
+/* El título se ajusta por palabras en el lugar que le deja la esquina; nada de partir una palabra. */
 .grafico-de-semanas__titulo {
+  flex: 1 1 auto;
+  min-width: 0;
   font-size: 0.9rem;
   font-weight: 700;
+  text-wrap: balance;
 }
 
 /* DL-199 (ET3, E5): la estrella y el «?» del gráfico, juntos en la esquina superior derecha. */
@@ -18244,7 +18469,16 @@ p.cifra-del-espacio__desglose {
   display: inline-flex;
   flex: none;
   align-items: center;
-  gap: 0.4rem;
+  gap: 0.25rem;
+}
+
+/* «Favorito» compacto: el ícono y la palabra, chicos, sin comerle el lugar al título. */
+.grafico-de-semanas__acciones .estrella-de-favorito {
+  min-height: 2rem;
+  gap: 0.25rem;
+  padding: 0.1rem 0.5rem;
+  font-size: 0.8rem;
+  white-space: nowrap;
 }
 
 .grafico-de-semanas__leyenda {
@@ -18417,9 +18651,8 @@ p.cifra-del-espacio__desglose {
 
 .carga-para-repeticiones--no-aplica > .nota {
   margin: 0;
+  padding-block: 0.65rem;
   min-height: 2.75rem;
-  display: flex;
-  align-items: center;
 }
 
 .carga-para-repeticiones__cabecera {
@@ -18759,39 +18992,144 @@ p.cifra-del-espacio__desglose {
   margin: 0;
 }
 
-/* El asistente de la progresión: un cuadro ancho, en bloques cortos, con la vista previa abajo. */
+/* DL-201 · el cuadro de la progresión: ancho, en dos columnas (la configuración a la izquierda y la vista previa a la
+   derecha, en vivo) y sin desplazarse a 1280 × 720. La cabecera y el pie van en un renglón; si la lista de ejercicios es
+   larga, se desplaza solo ella. */
+.asistente-de-progresion.cuadro-enfocado--dialogo.dialogo--ancho {
+  width: min(78rem, calc(100vw - 2rem));
+  max-height: calc(100dvh - 1.5rem);
+}
+
+.asistente-de-progresion .cajon__cabecera {
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.5rem;
+  padding: 0.6rem 1.25rem 0.5rem;
+}
+
+.asistente-de-progresion .cajon__cabecera h2 {
+  font-size: 1.15rem;
+}
+
+/* El «?» pegado al título, arriba a la izquierda, y lejos de «Cerrar», que queda solo a la derecha. Lo desplegado se
+   abre hacia la derecha, dentro del cuadro. */
+.asistente-de-progresion .cuadro-enfocado__ayuda {
+  align-self: center;
+  margin-inline-start: 0;
+}
+
+.asistente-de-progresion .cuadro-enfocado__ayuda .a-pedido--esquina > .a-pedido__texto:not([hidden]) {
+  right: auto;
+  left: 0;
+}
+
+.asistente-de-progresion .cajon__cerrar {
+  margin-inline-start: auto;
+}
+
+.asistente-de-progresion .cajon__cuerpo {
+  padding-block: 0.5rem;
+}
+
+.asistente-de-progresion .cajon__pie {
+  flex-wrap: nowrap;
+  padding: 0.55rem 1.25rem 0.65rem;
+}
+
+.asistente-de-progresion__pie {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+.asistente-de-progresion__pie .nota {
+  margin: 0;
+}
+
 .asistente-de-progresion__cuerpo {
   position: relative;
   display: grid;
-  gap: 1rem;
+  grid-template-columns: minmax(0, 33rem) minmax(0, 1fr);
+  gap: 1.5rem;
+  align-items: start;
+}
+
+/* Con menos ancho que un escritorio, una columna debajo de la otra. */
+@media (max-width: 60rem) {
+  .asistente-de-progresion__cuerpo {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+.asistente-de-progresion__configuracion {
+  display: grid;
+  gap: 0.6rem;
+  min-width: 0;
 }
 
 .asistente-de-progresion__cuerpo fieldset {
   position: relative;
   display: grid;
-  gap: 0.5rem;
+  gap: 0.35rem;
+  min-width: 0;
   margin: 0;
   padding: 0;
   border: 0;
 }
 
 .asistente-de-progresion__cuerpo legend {
-  margin-bottom: 0.35rem;
+  margin-bottom: 0.25rem;
   padding: 0;
   font-weight: 700;
 }
 
-.asistente-de-progresion__fila {
+.asistente-de-progresion__fila,
+.asistente-de-progresion__modos {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 0.5rem 1.1rem;
+  gap: 0.35rem 1.1rem;
 }
 
-.asistente-de-progresion__fila label {
+.asistente-de-progresion__modos {
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.asistente-de-progresion__fila label,
+.asistente-de-progresion__modos label {
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
+}
+
+.asistente-de-progresion__modos input[type='number'] {
+  width: 4.25rem;
+  min-height: 2rem;
+  padding: 0.15rem 0.4rem;
+  border: 1px solid var(--borde-control);
+  border-radius: 6px;
+  background: var(--superficie);
+  color: var(--texto);
+  font: inherit;
+}
+
+/* El selector de modelo, en una fila: las cuatro opciones entran en la columna sin partirse. */
+.asistente-de-progresion__selector {
+  display: flex;
+  flex-wrap: nowrap;
+}
+
+.asistente-de-progresion__selector .selector-segmentado__opcion {
+  flex: 1 1 auto;
+}
+
+.asistente-de-progresion__selector .selector-segmentado__opcion span {
+  flex: 1 1 auto;
+  padding: 0.35rem 0.6rem;
+  text-align: center;
+  white-space: nowrap;
 }
 
 .asistente-de-progresion__que-hace,
@@ -18803,32 +19141,85 @@ p.cifra-del-espacio__desglose {
   min-height: 1.3em;
 }
 
-.asistente-de-progresion__otras,
-.asistente-de-progresion__ver {
+.asistente-de-progresion__otras {
   display: flex;
   flex-wrap: wrap;
   gap: 0.4rem;
 }
 
+/* Las casillas de «Ejercicios elegidos», por sesión. Si son muchas, se desplaza solo la lista. */
 .asistente-de-progresion__elegidos {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(15rem, 1fr));
-  gap: 0.25rem 1rem;
+  gap: 0.4rem;
+  max-height: 10.5rem;
+  overflow-y: auto;
+  padding: 0.4rem 0.6rem;
+  border: 1px solid var(--borde);
+  border-radius: 8px;
+}
+
+.asistente-de-progresion__nombre-de-la-sesion {
+  margin: 0;
+  color: var(--tenue);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.asistente-de-progresion__sesion ul {
+  display: grid;
+  gap: 0.1rem;
   margin: 0;
   padding: 0;
   list-style: none;
 }
 
+.asistente-de-progresion__sesion .casilla {
+  min-height: 2rem;
+}
+
+.asistente-de-progresion__propia {
+  font-size: 0.78rem;
+  white-space: nowrap;
+}
+
 .asistente-de-progresion__vista-previa {
   display: grid;
-  gap: 0.6rem;
-  padding-top: 0.9rem;
-  border-top: 1px solid var(--borde);
+  gap: 0.5rem;
+  min-width: 0;
+  padding-left: 1.5rem;
+  border-left: 1px solid var(--borde);
+}
+
+@media (max-width: 60rem) {
+  .asistente-de-progresion__vista-previa {
+    padding: 0.9rem 0 0;
+    border-left: 0;
+    border-top: 1px solid var(--borde);
+  }
 }
 
 .asistente-de-progresion__subtitulo {
   margin: 0;
   font-size: 1rem;
+}
+
+.asistente-de-progresion__muestra {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  font-weight: 600;
+}
+
+.asistente-de-progresion__muestra select {
+  flex: 1 1 auto;
+  min-width: 0;
+  font-weight: 400;
+}
+
+.asistente-de-progresion__marca-de-descarga {
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 600;
 }
 
 .asistente-de-progresion__copia {
@@ -18841,6 +19232,56 @@ p.cifra-del-espacio__desglose {
 
 .asistente-de-progresion__copia .nota {
   margin: 0;
+}
+
+/* Las casillas y los radios del cuadro, con el estilo de BE (los tokens del tema) y no los grises del navegador. El
+   radio del selector de modelo queda escondido detrás de su rótulo. */
+.asistente-de-progresion input:is([type='checkbox'], [type='radio']):not(.selector-segmentado__opcion input) {
+  appearance: none;
+  flex: none;
+  display: inline-grid;
+  place-content: center;
+  inline-size: 1.15rem;
+  block-size: 1.15rem;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  border: 2px solid var(--borde-control);
+  border-radius: 4px;
+  background: var(--superficie);
+  cursor: pointer;
+}
+
+.asistente-de-progresion input[type='radio']:not(.selector-segmentado__opcion input) {
+  border-radius: 50%;
+}
+
+.asistente-de-progresion input:is([type='checkbox'], [type='radio']):not(.selector-segmentado__opcion input):checked {
+  border-color: var(--boton-fondo);
+  background: var(--boton-fondo);
+}
+
+.asistente-de-progresion input[type='radio']:not(.selector-segmentado__opcion input):checked {
+  box-shadow: inset 0 0 0 3px var(--superficie);
+}
+
+.asistente-de-progresion input[type='checkbox']:checked::before {
+  content: '';
+  inline-size: 0.32rem;
+  block-size: 0.62rem;
+  margin-top: -0.12rem;
+  border: solid var(--boton-texto);
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+.asistente-de-progresion input:is([type='checkbox'], [type='radio']):not(.selector-segmentado__opcion input):focus-visible {
+  outline: 3px solid var(--foco);
+  outline-offset: 2px;
+}
+
+.asistente-de-progresion input:is([type='checkbox'], [type='radio']):not(.selector-segmentado__opcion input):hover {
+  border-color: var(--texto);
 }
 
 /* Los modelos, como un control segmentado: una opción por vez, con su radio escondido detrás del rótulo. */
@@ -20095,6 +20536,33 @@ p.cifra-del-espacio__desglose {
 
 .celda-de-objetivo[data-origen] input {
   padding-block-start: 0.75rem;
+}
+
+/* ET2-D18: en % RM con 1RM, la carga y el % del «Común» van atados; lo que sale del otro campo lo dice arriba a la
+   izquierda («del %», «de la carga»), como «común» y «propio». El lugar de la marca está siempre (RP-19). */
+.celda-atada {
+  position: relative;
+}
+
+.celda-atada > input,
+.celda-atada .celda-de-serie {
+  padding-block-start: 0.75rem;
+}
+
+.celda-atada__marca {
+  position: absolute;
+  inset-inline-start: 0.45rem;
+  top: 0.15rem;
+  color: var(--tenue);
+  font-size: 0.62rem;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: 0.02em;
+  pointer-events: none;
+}
+
+.celda-atada[data-derivada] .celda-de-serie {
+  color: var(--tenue);
 }
 
 
@@ -24887,6 +25355,7 @@ html:has(.estacion:not([data-en-el-asistente])) {
 
 /* Una celda que no se entiende: el borde sigue de 1,5 px y el resto del rojo es una sombra (antes, 2 px corrían el valor). */
 .celda-de-objetivo[data-estado='no-se-entiende'],
+.celda-de-objetivo[data-falta],
 .ejercicio-del-editor__series .celda-de-serie[aria-invalid='true'],
 .bloque-del-editor__campo input[aria-invalid='true'],
 .agregar-ejercicio__para-todos > input[aria-invalid='true'] {

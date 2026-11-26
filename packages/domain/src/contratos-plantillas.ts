@@ -35,6 +35,8 @@ export const PlanificacionDeLaPlantillaSchema = PlanificacionDelPlanSchema.pick(
   withoutIntensity: true,
   askSessionEffort: true,
   askSetEffort: true,
+  loadRounding: true,
+  loadRoundingByExercise: true,
 });
 export type PlanificacionDeLaPlantilla = z.infer<typeof PlanificacionDeLaPlantillaSchema>;
 

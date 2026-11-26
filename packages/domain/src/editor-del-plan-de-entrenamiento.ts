@@ -184,6 +184,34 @@ const noSeEntiende = (n: number | null | undefined): boolean => typeof n === 'nu
 const sinNombre = (x: { readonly label: string }): boolean => x.label.trim() === '';
 const incompleto = (q: ParametroDelEditor): boolean => q.label.trim() === '' || (typeof q.value === 'string' ? q.value.trim() === '' : !Number.isFinite(q.value));
 
+const esElComunDeRir = (p: Pick<EjercicioDelEditor, 'intensity'>): boolean => !!p.intensity && p.intensity.criterion.trim().toUpperCase() === 'RIR';
+const tieneSuRir = (x: SerieDelEditor): boolean => typeof x.rir === 'number' && Number.isFinite(x.rir);
+
+/**
+ * El objetivo de intensidad de una serie efectiva (no de aproximación) está cubierto si la serie tiene su RIR propio. Falta el
+ * objetivo solo si alguna serie efectiva no tiene intensidad, ni propia ni heredada del «Común». Con `true`, el «Común» vacío
+ * no es una falta: ninguna serie lo toma. Sin series efectivas no hay nada que cubrir (devuelve `false`).
+ */
+export function lasSeriesEfectivasTienenSuRir(p: Pick<EjercicioDelEditor, 'sets'>): boolean {
+  const efectivas = p.sets.filter((x) => x.setKind !== 'WARM_UP');
+  return efectivas.length > 0 && efectivas.every(tieneSuRir);
+}
+
+/**
+ * El contrato guarda un criterio con su objetivo común; si ninguna serie efectiva lo toma (todas traen su RIR), el común es un
+ * dato que no usa nadie, pero el contrato lo pide. Al mandar, queda el RIR de la primera serie efectiva: no cambia el objetivo
+ * de ninguna serie (cada una usa el suyo). Lo demás viaja tal cual.
+ */
+export function conElComunDeLasSeries<B extends BloqueDelEditor>(bloques: readonly B[]): B[] {
+  const ejercicio = (p: EjercicioDelEditor): EjercicioDelEditor => {
+    if (!p.intensity || !esElComunDeRir(p) || !noSeEntiende(p.intensity.target.value) || !lasSeriesEfectivasTienenSuRir(p)) return p;
+    const primera = p.sets.find((x) => x.setKind !== 'WARM_UP')!;
+    return { ...p, intensity: { ...p.intensity, target: { ...p.intensity.target, value: primera.rir as number } } };
+  };
+  const sesion = <S extends SesionDelEditor>(x: S): S => ({ ...x, prescriptions: x.prescriptions.map(ejercicio) });
+  return bloques.map((b) => ({ ...b, ...(b.sessions ? { sessions: b.sessions.map(sesion) } : {}), ...(b.microcycles ? { microcycles: b.microcycles.map((m) => ({ ...m, sessions: m.sessions.map(sesion) })) } : {}) })) as B[];
+}
+
 /**
  * Lo que no deja guardar de un ejercicio, en el orden en que se ve: lo general y después cada serie. `ruta` es la del
  * ejercicio. Con un criterio elegido, su objetivo no es opcional (09v10:339-340): vacío o mal escrito, falta. Un campo
@@ -192,7 +220,8 @@ const incompleto = (q: ParametroDelEditor): boolean => q.label.trim() === '' || 
  */
 export function loQueNoDejaGuardarDelEjercicio(p: EjercicioDelEditor, ruta: string): readonly ProblemaDelEditor[] {
   const problemas: ProblemaDelEditor[] = [];
-  if (noSeEntiende(p.intensity?.target.value)) problemas.push({ code: P.faltaElObjetivo, path: ruta });
+  // Falta el objetivo solo si alguna serie efectiva no tiene intensidad, ni propia ni del «Común» (con RIR, todas las series con el suyo bastan).
+  if (noSeEntiende(p.intensity?.target.value) && !(esElComunDeRir(p) && lasSeriesEfectivasTienenSuRir(p))) problemas.push({ code: P.faltaElObjetivo, path: ruta });
   if (noSeEntiende(p.suggestedLoad?.value)) problemas.push({ code: P.cargaIlegible, path: ruta });
   if (noSeEntiende(p.restSeconds)) problemas.push({ code: P.descansoIlegible, path: ruta });
   (p.professionalParameters ?? []).forEach((q, n) => {

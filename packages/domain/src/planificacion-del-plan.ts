@@ -167,6 +167,9 @@ export function planificacionPodada(
     return siguen.length > 0 ? [{ ...p, prescriptionIds: siguen }] : [];
   });
   const sinIntensidad = [...new Set((planificacion.withoutIntensity ?? []).filter((id) => hayPrescripcion.has(id)))];
+  // ET2-D18: la excepción del redondeo de un ejercicio que ya no está se va (una por ejercicio: la última).
+  const redondeos = [...new Map((planificacion.loadRoundingByExercise ?? []).filter((r) => hayPrescripcion.has(r.prescriptionId)).map((r) => [r.prescriptionId, r] as const)).values()];
+  const congelados = (planificacion.oneRepMaxAtActivation ?? []).filter((u) => hayPrescripcion.has(u.prescriptionId));
   const favoriteCharts = (planificacion.favoriteCharts ?? []).filter((g) => (g.kind === 'EXERCISE_LOAD' ? hayPrescripcion.has(g.id) : hayBloque.has(g.id)));
   const podada: PlanificacionDelPlan = {
     startDate: planificacion.startDate,
@@ -182,10 +185,13 @@ export function planificacionPodada(
     ...(planificacion.askSessionEffort ? { askSessionEffort: true as const } : {}),
     // DL-202 (EP-D02): pedir el esfuerzo de cada serie, con sus dos valores; ausente se resuelve con los registros.
     ...(typeof planificacion.askSetEffort === 'boolean' ? { askSetEffort: planificacion.askSetEffort } : {}),
+    ...(planificacion.loadRounding !== undefined ? { loadRounding: planificacion.loadRounding } : {}),
+    ...(redondeos.length > 0 ? { loadRoundingByExercise: redondeos } : {}),
+    ...(congelados.length > 0 ? { oneRepMaxAtActivation: congelados } : {}),
     ...(notas && (notas.plan?.trim() || notasDeFases.length > 0) ? { privateNotes: { plan: notas.plan?.trim() ? notas.plan : null, phases: notasDeFases } } : {}),
   };
   const vacia =
-    podada.startDate === null && podada.weeks === null && !podada.goal && phases.length === 0 && warmUps.length === 0 && progressions.length === 0 && favoriteCharts.length === 0 && !podada.privateNotes && !podada.intensity && sinIntensidad.length === 0 && !podada.askSessionEffort && podada.askSetEffort === undefined;
+    podada.startDate === null && podada.weeks === null && !podada.goal && phases.length === 0 && warmUps.length === 0 && progressions.length === 0 && favoriteCharts.length === 0 && !podada.privateNotes && !podada.intensity && sinIntensidad.length === 0 && !podada.askSessionEffort && podada.askSetEffort === undefined && podada.loadRounding === undefined && redondeos.length === 0 && congelados.length === 0;
   return vacia ? null : podada;
 }
 
