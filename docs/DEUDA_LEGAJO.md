@@ -196,6 +196,7 @@
 | DL-195 | Pedido de Dirección · 2026-11-23 («un tutorial para las primeras veces que se usan las interfaces»; WP-RECORRIDOS-GUIADOS) | DL-146 (ayudas cortas) · DL-145 · DL-167 (ED-15, la barra fija) · DL-188 (RP-19 y RP-24) · B10-10 §7 · RNF-ACC-001 | Los editores de los planes se explicaban en «Cómo se lee esta vista» y en la Guía, pero nada mostraba el flujo zona por zona la primera vez; no había un lugar para recordar, por usuario, una preferencia de la pantalla | **PROGRAMADA en `wp-recorridos-guiados` (PR en borrador, sin integrar) · GUI-D01 a GUI-D12 a ratificar**: una pieza propia del website (sin librería) que oscurece todo menos la zona del paso y pone al lado un cartel con «Paso n de m», «Omitir», «Anterior» y «Siguiente»/«Terminar», modal y manejable con el teclado; los recorridos de los editores de Entrenamiento y de Nutrición, de seis pasos cada uno, anclados con `data-recorrido`; aparece solo la primera vez, recordado por usuario en la API (API-RGU-01 y 02, familia propia RGU, una tabla nueva con su migración que solo agrega), con el navegador como respaldo; «Ver el recorrido» en la barra de cada editor. La APK no se tocó (anotado cómo hacerlo). Detalle: `docs/paquetes/WP-RECORRIDOS-GUIADOS.md` |
 | DL-196 | Recorrido de Dirección · 2026-11-23 (E1 a E20: «la pantalla está muy sobrecargada», «hacerlo como Nutrición»; WP-EDITOR-ENTRENAMIENTO, parte A) | DL-122 · DL-137 · DL-178 · DL-181 · DL-188 (RP-19, RP-22, RP-24) · DL-192 · DL-195 · B10-06 · B10-10 · RNF-ACC-001 | El editor tenía tres columnas con acciones repetidas, sin fechas de inicio y fin ni duración de las fases, con «Antes de activar» como pestaña y trabas por la versión de la app de la persona; el calentamiento era una «C» sin cálculo | **PROGRAMADA en `wp-editor-entrenamiento-a` (PR en borrador, sin integrar) · EE-D01 a EE-D17 a ratificar**: dos columnas como Nutrición; el plan con inicio, duración o fin, objetivo y anotaciones privadas; las fases por semanas en desplegables, con sus días y «Copiar la fase anterior»; el almanaque y el panel contextual; «Antes de activar» al lado del botón; las aproximaciones «Por porcentaje» o «A mano» con redondeo por implemento; la máscara mm:ss y las acciones rápidas; ninguna traba por la versión de la app (quedan solo los recortes de forma de la APK 0.32). La planificación va en el JSON de la versión (sin migración), solo para el profesional. **Parte B PROGRAMADA en `wp-editor-entrenamiento-b` (PR en borrador) · EE-D30 a EE-D43 a ratificar:** progresiones y descargas como regla de la fase con vista previa, copiar + progresión, gráficos X/Y, carga para N repeticiones, la distribución por músculo con la silueta (**desvío de REG-06-139 decidido por Dirección, EE-D34**), frecuencia, equilibrios, estructuras, zonas a cuidar, el catálogo por músculo y los favoritos del plan. Detalle: `docs/paquetes/WP-EDITOR-ENTRENAMIENTO.md` |
 | DL-197 | Recorrido de Dirección · 2026-11-25 (F1 a F25 sobre el editor de DL-196 y la estructura del prototipo que eligió: «Fases del plan» con su barra, cuadros para configurar, las sesiones como tarjetas; WP-EDITOR-ENTRENAMIENTO-TANDA-1) | DL-141 · DL-178 · DL-188 (RP-19) · DL-192 · DL-196 · B10-06 · REG-06-128 · RNF-ACC-001 | La tarjeta del plan descuadrada, el panel que se desbordaba, fases que sumaban más que el plan y se podían activar, aproximaciones que repetían cargas y heredaban el RIR y el descanso común, una planilla con columnas cortadas y demasiados controles a la vista, y un catálogo que no listaba nada hasta buscar ni se podía filtrar | **PROGRAMADA en `wp-editor-entrenamiento-tanda-1` (PR en borrador, sin integrar) · ET1-D01 a ET1-D20 a ratificar:** la barra de fases y los cuadros «Configurar plan», «Editar fase», «Días de la semana», «Agregar ejercicios», «Aproximaciones», «Editar todas las series» y «Más opciones», cada uno con su «?» y un ejemplo resuelto; **con fases de más no se activa** (`PHASES_EXCEED_PLAN_WEEKS`); la intensidad del plan elegida una vez y heredada; aproximaciones que nunca repiten ni llegan a la de trabajo, sin RIR y con su descanso; la clasificación del catálogo (migración aditiva `20261125120000`, **la de los 186 a validar por Elián**); «Catálogo de BE» en «Mis ejercicios»; los ejes desde 0. Detalle: `docs/paquetes/WP-EDITOR-ENTRENAMIENTO-TANDA-1.md` |
+| DL-198 | Decisiones de Dirección · 2026-11-25 (el 1RM con tres orígenes y la calibración del día cero; lo que la tanda 1 dejó para la tanda 2; WP-EDITOR-ENTRENAMIENTO-TANDA-2) | DL-171 · DL-192 · DL-196 · DL-197 · DL-152 · DL-108 · DL-182 · B10-06 · REG-06-128 · RNF-ACC-001 | El % RM sin un 1RM numérico, la persona que veía siempre la carga de la semana 1, ninguna forma de ver el plan como le llega, el esfuerzo de la sesión afuera (RPE-D09), plantillas que perdían la planificación, la clasificación de un propio que no se podía cambiar y desplegables desparejos | **PROGRAMADA en `wp-editor-entrenamiento-tanda-2` (sale de #324; PR en borrador, sin integrar) · ET2-D01 a ET2-D16 a ratificar:** el 1RM de referencia (`BE-E1RM` v2) con la calibración, el último registro en rango y lo declarado, el más reciente y el aviso si se aleja más del 10 % (API-RMX-01 y 02); el % RM con su base; la carga de cada semana en las lecturas del titular, en los mismos campos; «Ver como la persona»; el esfuerzo de la sesión (Foster, API-ESF-01 y 02); las plantillas con su planificación; la clasificación de un propio (API-EJE-06); migraciones aditivas `20261125125900` y `20261125130000`. Detalle: `docs/paquetes/WP-EDITOR-ENTRENAMIENTO-TANDA-2.md` |
 
 ---
 
@@ -9575,3 +9576,44 @@ APK 0.32 no la pide; el renglón de la persona dice lo mismo que antes.
 **Lo que queda.** Ratificar ET1-D01 a ET1-D20; validar la clasificación de los 186; mirarlo en pantalla con Dirección;
 la tanda 2 (el 1RM numérico del % RM, editar la clasificación de un propio). Detalle:
 `docs/paquetes/WP-EDITOR-ENTRENAMIENTO-TANDA-1.md`.
+
+---
+
+## DL-198 — El editor de Entrenamiento, tanda 2: el 1RM de referencia, la carga de cada semana, «Ver como la persona», el esfuerzo de la sesión y las plantillas con su planificación
+
+**Prioridad:** alta («la estética es primordial: altos estándares») · DL-152 · DL-171 · DL-182 · DL-192 · DL-196 · DL-197 ·
+B10-06 · REG-06-128 · RNF-ACC-001 · **Estado:** PEDIDA por Dirección el 2026-11-25 · PROGRAMADA en
+`wp-editor-entrenamiento-tanda-2`, que sale de la tanda 1 (#324); PR en borrador, sin integrar · ET2-D01 a ET2-D16, **a
+ratificar**. Si al integrar el número choca con otro paquete, se renumera.
+
+**Qué pidió Dirección.** Que el 1RM se estime por cálculo en todos los ejercicios con carga externa, con el último registro
+de la persona en rango (RIR 0 a 2, de 8 a 12 repeticiones), que también se pueda declarar y que el profesional lo pueda
+**calcular** en una calibración del día cero («30 kg × 8 a RIR 1 → 39 kg, calculado en la calibración del 25/11»), con el
+origen siempre a la vista. Además, lo que la tanda 1 dejó: el % RM con ese 1RM, la carga de cada semana en la app, ver el
+plan como le llega a la persona, el esfuerzo de la sesión, las plantillas con su planificación, la clasificación de un
+propio editable y los desplegables prolijos.
+
+**Qué dice el legajo.** Nada en contra. 09v10:356 («No se fija fórmula propia de estimación de RM») ya se enmendó con
+DL-171 sin tocar el legajo; la v2 es otra versión del mismo método con su identidad (REG-06-203). La progresión sigue siendo
+una regla de la fase y la prescripción, la de la instantánea (REG-06-112): la carga de la semana se calcula al leer, con la
+misma regla, sin reescribir nada. No se edita el legajo.
+
+**Lo programado.**
+- **ET2-01 a ET2-04 · El 1RM de referencia:** los tres orígenes, el más reciente, el aviso que no cambia nada solo, el %
+  RM con su base y «Poner las cargas»; tabla de solo agregar `uno_rm_de_referencia`; API-RMX-01 y 02.
+- **ET2-05 y ET2-06 · La carga de cada semana:** las lecturas del titular la entregan en los mismos campos; con
+  `training-week-load-1`, el rótulo de la semana; la APK lo muestra.
+- **ET2-07 a ET2-09 · El esfuerzo de la sesión:** la opción del plan, la pregunta al terminar (`training-session-effort-1`),
+  la tabla `esfuerzo_de_sesion_de_entrenamiento`, API-ESF-01 y 02, lo registrado y el gráfico de la carga de la sesión.
+- **ET2-10 · Las plantillas con su planificación** (columna `planificacion`), también en su editor.
+- **ET2-11 · La clasificación de un propio** (API-EJE-06). **ET2-12 · «Ver como la persona».** **ET2-13 · Los
+  desplegables parejos** y sin `plan-y-fases.tsx` ni `notacion-del-plan.tsx`.
+- Pruebas: TEST-ET2-01 a 09 (dominio), 10 a 18 (website), TEST-ET2-API-01 a 07 (integración, en la CI), el recorrido
+  `editorTanda2` (TEST-ET2-NAV-01) y las de la APK.
+
+**La APK publicada.** Lee igual: las cargas de la semana le llegan en los campos que ya conoce, y lo nuevo (`week`,
+`askSessionEffort`) solo sale con su capacidad (TEST-ET2-API-04). La APK nueva declara las dos y llama API-ESF-01; al
+publicarla, se congelan sus lecturas (DL-152).
+
+**Lo que queda.** Ratificar ET2-D01 a ET2-D16; publicar y probar la APK; mirarlo en pantalla con Dirección. Detalle:
+`docs/paquetes/WP-EDITOR-ENTRENAMIENTO-TANDA-2.md`.
