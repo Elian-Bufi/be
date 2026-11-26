@@ -237,9 +237,9 @@ export function cargaDelPorcentaje(porcentaje: number, unoRM: CargaDelUnoRM, imp
 export const cargaDelPorcentajeDe = (porcentaje: number, unoRM: CargaDelUnoRM, nombre: string, baseDeCarga?: string | null, paso?: number): CargaDelUnoRM =>
   cargaDelPorcentaje(porcentaje, unoRM, implementoDelEjercicio(nombre, baseDeCarga), paso);
 
-// ─── El % RM y la carga, atados (ET2-D05) ─────────────────────────────────────────────────────────
+// ─── El % RM y la carga, atados (ET2-D18) ─────────────────────────────────────────────────────────
 
-/** ET2-D05: «Redondear las cargas a», si el plan no lo dice. */
+/** ET2-D18: «Redondear las cargas a», si el plan no lo dice. */
 export const REDONDEO_POR_OMISION: RedondeoDeLasCargas = 2.5;
 
 /** Las opciones de «Redondear las cargas a», en el orden en que se muestran. */
@@ -274,7 +274,7 @@ export function porcentajeDeLaCarga(carga: CargaDelUnoRM | null | undefined, uno
   return Math.round((carga.value / unoRM.value) * 200) / 2;
 }
 
-/** ET2-D05: sin 1RM, el % queda solo y la carga se escribe aparte. */
+/** ET2-D18: sin 1RM, el % queda solo y la carga se escribe aparte. */
 export const SIN_UNO_RM_PARA_LAS_CARGAS = 'Sin 1RM: cargalo para calcular las cargas.';
 
 // ─── En palabras ────────────────────────────────────────────────────────────────────────────

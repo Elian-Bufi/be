@@ -1,5 +1,5 @@
 /**
- * Tanda 6 del editor de Entrenamiento (ET2-D05, a ratificar) · sin React: el % RM y la carga del «Común», atados con el
+ * Tanda 6 del editor de Entrenamiento (ET2-D18, a ratificar) · sin React: el % RM y la carga del «Común», atados con el
  * 1RM en las dos direcciones, y «Redondear las cargas a» en el plan y en «Más opciones». Las cuentas viven en el dominio
  * (`packages/domain/src/porcentaje-y-carga-atados.test.ts`).
  *
@@ -33,12 +33,13 @@ test('T6-02 · lo derivado se ve: «del %» en la carga o «de la carga» en el 
   assert.match(CSS, /\.celda-atada > input,\n\.celda-atada \.celda-de-serie \{\n\s*padding-block-start: 0\.75rem;/);
 });
 
-test('T6-03 · si cambia el 1RM o el redondeo, las cargas se actualizan solas; al abrir no se toca nada', () => {
-  assert.match(EJERCICIO, /const claveDelUnoRM = atadura\?\.leido \?/);
-  assert.match(EJERCICIO, /if \(antes === null \|\| antes === claveDelUnoRM \|\| !unoRMDeLaCarga\) return;/);
+test('T6-03 · el 1RM lo lee el ejercicio abierto; el recálculo por un 1RM nuevo es del editor (tanda 8)', () => {
+  // La planilla ya no recalcula por su cuenta: avisa al editor, que recalcula todo el borrador (ver tanda 8).
+  assert.doesNotMatch(EJERCICIO, /const claveDelUnoRM = /);
+  assert.ok(EJERCICIO.includes('if (falla === null) onUnoRMCambiado?.();'));
   // El 1RM lo lee el ejercicio abierto y lo comparten el renglón y la planilla.
-  assert.match(EJERCICIO, /const conUnoRM = abierto && criterioEfectivo === 'PERCENT_RM' && asesoradoId !== null && exerciseId !== null;/);
-  assert.match(EJERCICIO, /<UnoRMDelEjercicio id=\{id\} nombre=\{nombre\} prescripcion=\{p\} unidad=\{unidadDe\(p\)\} unoRM=\{unoRM\} redondeo=\{redondeo\} onCambiar=\{onCambiar\} \/>/);
+  assert.ok(EJERCICIO.includes("const conUnoRM = abierto && criterioEfectivo === 'PERCENT_RM' && asesoradoId !== null && exerciseId !== null;"));
+  assert.ok(EJERCICIO.includes('<UnoRMDelEjercicio id={id} nombre={nombre} prescripcion={p} unidad={unidadDe(p)} unoRM={unoRM} redondeo={redondeo} onCambiar={onCambiar} />'));
 });
 
 test('T6-04 · sin 1RM, el % queda solo y se dice en una línea', () => {

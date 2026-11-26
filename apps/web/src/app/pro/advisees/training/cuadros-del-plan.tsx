@@ -48,7 +48,7 @@ export const COPY_CUADROS_DEL_PLAN = {
   } as Readonly<Record<IntensidadElegida, string>>,
   heredan: 'Cada ejercicio nuevo la toma. Uno puede tener otra, en su «Más opciones».',
   conOtra: (n: number, nombre: string) => (n === 1 ? `Hay 1 ejercicio con otra intensidad. Sin pasarlo, queda como está y no se ve en ${nombre}.` : `Hay ${n} ejercicios con otra intensidad. Sin pasarlos, quedan como están y no se ven en ${nombre}.`),
-  /** ET2-D06: pasar de % RM a RIR o RPE (o al revés) pierde el objetivo; se dice cuántos y qué se pierde. */
+  /** ET2-D19: pasar de % RM a RIR o RPE (o al revés) pierde el objetivo; se dice cuántos y qué se pierde. */
   pasarlos: (n: number, nombre: string) =>
     n === 1
       ? `Pasar el ejercicio a ${nombre}: pierde el objetivo de intensidad que tiene (el % RM, o el RIR o RPE de sus series) y lo escribís de nuevo.`
@@ -151,7 +151,7 @@ export function CuadroConfigurarPlan({
     setP(planificacion);
     setIntensidad(intensidadElegida(planificacion, notacion));
     setSemanasEscritas(null);
-    // ET2-D06 (a ratificar): la casilla viene marcada: quien cambia la intensidad del plan espera ver el cambio.
+    // ET2-D19 (a ratificar): la casilla viene marcada: quien cambia la intensidad del plan espera ver el cambio.
     setPasar(true);
     // Solo al abrir: mientras está abierto, lo que se escribe es el borrador del cuadro.
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -272,7 +272,7 @@ export function CuadroConfigurarPlan({
             ) : null}
           </div>
         </fieldset>
-        {/* ET2-D05: «Redondear las cargas a», para las que salen del % RM y del 1RM; cada ejercicio puede tener su excepción. */}
+        {/* ET2-D18: «Redondear las cargas a», para las que salen del % RM y del 1RM; cada ejercicio puede tener su excepción. */}
         <div className="campo redondeo-de-las-cargas" data-redondeo-del-plan={String(p.loadRounding ?? REDONDEO_POR_OMISION)}>
           <label htmlFor={`${id}-redondeo`}>{COPY_REDONDEO.delPlan}</label>
           <select

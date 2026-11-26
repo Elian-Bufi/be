@@ -59,6 +59,12 @@ import {
   loQueNoDejaGuardarElEntrenamiento,
   conElComunDeLasSeries,
   redondeoDelEjercicio,
+  cambiosDesdeLaActivacion,
+  cargasConElUnoRM,
+  COPY_UNO_RM_DE_LA_ACTIVACION,
+  implementoDelEjercicio as implementoDelEjercicioDelBorrador,
+  sinElUnoRMDeLaActivacion,
+  type UnoRMVigente,
   loQueSeMiraEnElEditor,
   lugarDelProblemaDeEntrenamiento,
   motivoSinGuardarAhora,
@@ -170,6 +176,7 @@ import { Icono } from '../../../../components/icono';
 import { MenuDeAcciones } from '../../../../components/menu-de-acciones';
 import { TextoAPedido } from '../../../../components/texto-a-pedido';
 import { api, type Resultado } from '../../../../lib/api';
+import { vigenteDeLosDatos } from './uno-rm-del-ejercicio';
 import { EstadoDeGuardado } from '../../../../components/estado-de-guardado';
 import { useAutoguardado } from '../../../../lib/autoguardado';
 import { diaEnUnaFrase, horaDelDia, rangoCivil } from '../../../../lib/formato';
@@ -1348,6 +1355,74 @@ export function EditorDePlan({
   // plan (no en la plantilla ni en el asistente).
   const recorrido = useRecorridoGuiado('training-plan-editor', version !== null && !plantilla && esDelPlan(version) && pasoPedido(parametros.get('asistente')) === null);
 
+  // ── ET2-D18 (ratificada el 2026-11-26): en el borrador, las cargas en % RM siguen al 1RM ─────────────────────────
+  // El 1RM de todos los ejercicios en % RM del borrador, también los plegados. Si cambia (o cambia el redondeo), se
+  // recalculan todas las cargas en un solo cambio que se deshace, con su aviso. Al abrir no se toca nada, salvo que el
+  // borrador parta de una versión activada con otro 1RM: ahí se recalcula y se dice qué cambió.
+  const planDelUnoRM = planificacionParaEditar(planificacion);
+  const idsEnPorcentaje = plantilla || asesoradoId === null
+    ? ''
+    : [...new Set(bloques.flatMap((b) => [...(b.sessions ?? []), ...(b.microcycles ?? []).flatMap((m) => m.sessions)]).flatMap((x) => x.prescriptions).filter((q) => q.intensity?.criterion === 'PERCENT_RM').map((q) => ejercicios[q.exerciseVersionId]).filter((x): x is string => !!x))]
+        .sort()
+        .join(',');
+  const [vigentesDelBorrador, setVigentesDelBorrador] = useState<{ readonly mapa: ReadonlyMap<string, UnoRMVigente | null>; readonly vez: number } | null>(null);
+  const [lecturaDelUnoRM, setLecturaDelUnoRM] = useState(0);
+  useEffect(() => {
+    if (!idsEnPorcentaje || asesoradoId === null) return;
+    let vigente = true;
+    void (async () => {
+      const r = await api.unoRMDeLaPersona(token, asesoradoId, idsEnPorcentaje.split(','));
+      if (!vigente || sesionPerdida(r) || !r.ok) return;
+      setVigentesDelBorrador({ mapa: new Map(r.datos.data.map((d) => [d.exerciseId, vigenteDeLosDatos(d)])), vez: Date.now() });
+    })();
+    return () => {
+      vigente = false;
+    };
+  }, [idsEnPorcentaje, lecturaDelUnoRM, token, asesoradoId, sesionPerdida]);
+  const firmaDelRedondeo = JSON.stringify([planDelUnoRM.loadRounding ?? null, planDelUnoRM.loadRoundingByExercise ?? []]);
+  const anteriorDelUnoRM = useRef<{ readonly mapa: ReadonlyMap<string, UnoRMVigente | null>; readonly redondeo: string } | null>(null);
+  useEffect(() => {
+    if (!vigentesDelBorrador) return;
+    const antes = anteriorDelUnoRM.current;
+    anteriorDelUnoRM.current = { mapa: vigentesDelBorrador.mapa, redondeo: firmaDelRedondeo };
+    const recalcular = () =>
+      cargasConElUnoRM(
+        bloques,
+        (q) => {
+          const e = ejercicios[q.exerciseVersionId];
+          const v = e ? (vigentesDelBorrador.mapa.get(e) ?? null) : null;
+          return v ? v.valor : null;
+        },
+        (q) => implementoDelEjercicioDelBorrador(nombres[q.exerciseVersionId] ?? '', q.loadBasis ?? null),
+        (q) => redondeoDelEjercicio(planDelUnoRM, q.prescriptionId),
+      );
+    if (antes === null) {
+      // Al abrir: solo si parte de una versión activada con otro 1RM (la versión nueva toma el vigente y lo dice).
+      const congelados = planDelUnoRM.oneRepMaxAtActivation;
+      if (!congelados) return;
+      const cambios = cambiosDesdeLaActivacion(congelados, vigentesDelBorrador.mapa);
+      // Con el mismo 1RM no se toca nada (al activar, la API vuelve a congelar el vigente).
+      if (cambios.length === 0) return;
+      const r = recalcular();
+      const nombreDe = (exerciseId: string) => nombres[Object.keys(ejercicios).find((k) => ejercicios[k] === exerciseId) ?? ''] ?? 'Ejercicio';
+      const texto = cambios.length === 1 ? COPY_UNO_RM_DE_LA_ACTIVACION.cambio(nombreDe(cambios[0]!.exerciseId), cambios[0]!) : COPY_UNO_RM_DE_LA_ACTIVACION.varios(cambios.length);
+      recordar(texto);
+      if (r.cuantas > 0) setBloques(r.bloques);
+      setPlanificacion(sinElUnoRMDeLaActivacion(planDelUnoRM));
+      setSucio(true);
+      return;
+    }
+    const cambioElUnoRM = [...vigentesDelBorrador.mapa].some(([e, v]) => antes.mapa.has(e) && (antes.mapa.get(e)?.valor.value ?? null) !== (v?.valor.value ?? null));
+    if (!cambioElUnoRM && antes.redondeo === firmaDelRedondeo) return;
+    const r = recalcular();
+    if (r.cuantas === 0) return;
+    recordar(COPY_UNO_RM_DE_LA_ACTIVACION.recalculadas(r.cuantas));
+    setBloques(r.bloques);
+    setSucio(true);
+    // Solo cuando cambia el 1RM leído o el redondeo: lo demás lo cambia quien escribe.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [vigentesDelBorrador, firmaDelRedondeo]);
+
   if (error === 'no-disponible' && plantilla) return <PreparacionQueYaNoEsta volver={plantilla.volver} />;
   if (error === 'no-disponible') return <NoDisponible />;
   if (error === 'error') return <ErrorConReintento onReintentar={cargar} />;
@@ -1868,9 +1943,11 @@ export function EditorDePlan({
           const otros = (plan.withoutIntensity ?? []).filter((x) => x !== id);
           cambiarPlanificacion({ ...plan, withoutIntensity: sin ? [...otros, id] : otros });
         }}
-        // ET2-D05: el redondeo de las cargas del % RM, el del plan o la excepción del ejercicio (en la planificación).
+        // ET2-D18: el redondeo de las cargas del % RM, el del plan o la excepción del ejercicio (en la planificación).
         redondeo={redondeoDelEjercicio(plan, p.prescriptionId)}
         redondeoPropio={(p.prescriptionId ? plan.loadRoundingByExercise?.find((r) => r.prescriptionId === p.prescriptionId)?.step : undefined) ?? null}
+        // ET2-D18: un 1RM nuevo en este ejercicio se vuelve a leer para todo el borrador (también los plegados).
+        onUnoRMCambiado={() => setLecturaDelUnoRM((n) => n + 1)}
         onRedondeo={(r) => {
           const id = p.prescriptionId ?? crypto.randomUUID();
           if (!p.prescriptionId) cambiarEjercicio(l, { prescriptionId: id });

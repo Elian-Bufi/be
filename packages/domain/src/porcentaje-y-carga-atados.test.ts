@@ -1,5 +1,5 @@
 /**
- * Tanda 6 del editor de Entrenamiento (ET2-D05, a ratificar) · el % RM y la carga, atados en las dos direcciones, con el
+ * Tanda 6 del editor de Entrenamiento (ET2-D18, a ratificar) · el % RM y la carga, atados en las dos direcciones, con el
  * redondeo «a una carga lógica de gimnasio» del plan y su excepción por ejercicio.
  */
 import { test } from 'node:test';

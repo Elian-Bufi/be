@@ -115,7 +115,7 @@ export function vigenteDeLosDatos(datos: UnoRMDelEjercicio | null): UnoRMVigente
 }
 
 /**
- * La carga que pide el % RM con el 1RM vigente, redondeada como dice el plan o el ejercicio (ET2-D05), o `null` si falta
+ * La carga que pide el % RM con el 1RM vigente, redondeada como dice el plan o el ejercicio (ET2-D18), o `null` si falta
  * algo o las unidades no coinciden.
  */
 export function cargaQuePideElPorcentaje(p: PrescripcionE, vigente: UnoRMVigente | null, nombre: string, redondeo: RedondeoDeLasCargas = REDONDEO_POR_OMISION): { readonly value: number; readonly unit: Unidad } | null {
@@ -163,7 +163,7 @@ export function RenglonDelUnoRM({
   prescripcion: PrescripcionE;
   unidad: Unidad;
   unoRM: ReturnType<typeof useUnoRM>;
-  /** ET2-D05: el redondeo de las cargas del ejercicio (el suyo o el del plan). */
+  /** ET2-D18: el redondeo de las cargas del ejercicio (el suyo o el del plan). */
   redondeo?: RedondeoDeLasCargas;
   onCambiar: (c: Partial<PrescripcionE>) => void;
 }) {
@@ -228,7 +228,7 @@ export function RenglonDelUnoRM({
         ) : vigente ? (
           T.sinPorcentaje
         ) : estado === 'listo' ? (
-          // ET2-D05: sin 1RM, el % queda solo y la carga se escribe aparte; se dice en una línea.
+          // ET2-D18: sin 1RM, el % queda solo y la carga se escribe aparte; se dice en una línea.
           <span data-sin-uno-rm>{SIN_UNO_RM_PARA_LAS_CARGAS}</span>
         ) : (
           ' '
@@ -552,7 +552,7 @@ export function UnoRMDelEjercicio(o: {
   nombre: string;
   prescripcion: PrescripcionE;
   unidad: Unidad;
-  /** ET2-D05: lo lee el ejercicio (`useUnoRM`), porque la planilla también lo usa para atar el % RM y la carga. */
+  /** ET2-D18: lo lee el ejercicio (`useUnoRM`), porque la planilla también lo usa para atar el % RM y la carga. */
   unoRM: ReturnType<typeof useUnoRM>;
   redondeo: RedondeoDeLasCargas;
   onCambiar: (c: Partial<PrescripcionE>) => void;

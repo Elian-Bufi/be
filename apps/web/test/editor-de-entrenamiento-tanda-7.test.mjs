@@ -1,5 +1,5 @@
 /**
- * Tanda 7 del editor de Entrenamiento · el plan en RPE: «Pasarlos a…» también para RIR y RPE (ET2-D06, a ratificar), entre
+ * Tanda 7 del editor de Entrenamiento · el plan en RPE: «Pasarlos a…» también para RIR y RPE (ET2-D19, a ratificar), entre
  * RIR y RPE sin casilla (es la misma medida), un solo texto del RPE y el esfuerzo de la sesión en la notación del plan.
  *
  * Uso: npm run test -w @be/web (después de construir @be/domain).
@@ -23,7 +23,7 @@ test('T7-01 · con cualquier cambio de intensidad se cuentan los que pierden el 
   assert.match(CUADROS, /`Hay \$\{n\} ejercicios con otra intensidad\./);
 });
 
-test('T7-02 · ET2-D06: la casilla «Pasarlos» viene marcada', () => {
+test('T7-02 · ET2-D19: la casilla «Pasarlos» viene marcada', () => {
   assert.match(CUADROS, /const \[pasar, setPasar\] = useState\(true\);/);
   assert.match(CUADROS, /setPasar\(true\);\n\s*\/\/ Solo al abrir/);
 });
