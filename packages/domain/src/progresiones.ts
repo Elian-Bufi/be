@@ -131,21 +131,92 @@ export function semanasDelEjercicio(p: ProgresionDeLaFase, base: BaseDelEjercici
   return filas;
 }
 
-/** La progresión guardada de una fase, si tiene. */
+/**
+ * La regla de la fase (la general, que hereda cada ejercicio), si tiene. DL-201: las reglas propias de los ejercicios no
+ * cuentan acá (`reglasPropias`, `progresionDelEjercicio`).
+ */
 export const progresionDeLaFase = (p: PlanificacionDelPlan | null | undefined, blockId: string | null | undefined): ProgresionDeLaFase | null =>
-  (blockId ? p?.progressions?.find((x) => x.blockId === blockId) : undefined) ?? null;
+  (blockId ? p?.progressions?.find((x) => x.blockId === blockId && x.prescriptionIds === null) : undefined) ?? null;
 
-/** La planificación con la progresión de esa fase (una por fase: la nueva reemplaza a la anterior). */
-export function conProgresion(p: PlanificacionDelPlan, progresion: ProgresionDeLaFase): PlanificacionDelPlan {
-  return { ...p, progressions: [...(p.progressions ?? []).filter((x) => x.blockId !== progresion.blockId), progresion] };
+/** DL-201: las reglas propias de los ejercicios de una fase (las que pisan la de la fase). */
+export const reglasPropias = (p: PlanificacionDelPlan | null | undefined, blockId: string | null | undefined): ProgresionDeLaFase[] =>
+  blockId ? (p?.progressions ?? []).filter((x) => x.blockId === blockId && x.prescriptionIds !== null) : [];
+
+/** DL-201: la regla propia de un ejercicio, si tiene (como mucho una: `ProgresionesDelPlanSchema`). */
+export const reglaPropiaDe = (p: PlanificacionDelPlan | null | undefined, blockId: string | null | undefined, prescriptionId: string | null | undefined): ProgresionDeLaFase | null =>
+  (prescriptionId ? reglasPropias(p, blockId).find((x) => x.prescriptionIds!.includes(prescriptionId)) : undefined) ?? null;
+
+/** De dónde sale la progresión de un ejercicio: la suya, la de su fase o ninguna. */
+export type OrigenDeLaProgresion = 'PROPIA' | 'FASE' | 'NINGUNA';
+
+/**
+ * DL-201 (PE-D03) · la progresión que rige para un ejercicio: la propia; si no, la de la fase; si no, ninguna. Una propia
+ * «Sin progresión» (sin modelo ni descarga) rige igual: deja al ejercicio quieto aunque la fase tenga una.
+ */
+export function progresionDelEjercicio(
+  p: PlanificacionDelPlan | null | undefined,
+  blockId: string | null | undefined,
+  prescriptionId: string | null | undefined,
+): { readonly regla: ProgresionDeLaFase | null; readonly origen: OrigenDeLaProgresion } {
+  const propia = reglaPropiaDe(p, blockId, prescriptionId);
+  if (propia) return { regla: propia, origen: 'PROPIA' };
+  const deLaFase = progresionDeLaFase(p, blockId);
+  return deLaFase ? { regla: deLaFase, origen: 'FASE' } : { regla: null, origen: 'NINGUNA' };
 }
 
-/** La planificación sin la progresión de esa fase. */
-export function sinProgresion(p: PlanificacionDelPlan, blockId: string): PlanificacionDelPlan {
-  const resto = (p.progressions ?? []).filter((x) => x.blockId !== blockId);
+/** Si la regla cambia algo: un modelo, o al menos la descarga. «Sin progresión» no cambia nada. */
+export const cambiaAlgo = (p: ProgresionDeLaFase | null | undefined): p is ProgresionDeLaFase => !!p && (p.model !== null || p.deload !== null);
+
+const mismosEjercicios = (a: readonly string[] | null, b: readonly string[] | null): boolean =>
+  a === null || b === null ? a === b : a.length === b.length && a.every((x) => b.includes(x));
+
+/** Saca una regla del arreglo: la de la fase, o la propia de esos mismos ejercicios. */
+const sinLaRegla = (lista: readonly ProgresionDeLaFase[], r: ProgresionDeLaFase): ProgresionDeLaFase[] =>
+  lista.filter((x) => !(x.blockId === r.blockId && mismosEjercicios(x.prescriptionIds, r.prescriptionIds)));
+
+/** Las propias sin esos ejercicios; la que queda vacía se va. La de la fase queda. */
+const sinEsosEjercicios = (lista: readonly ProgresionDeLaFase[], ids: readonly string[]): ProgresionDeLaFase[] => {
+  const fuera = new Set(ids);
+  return lista.flatMap((x) => {
+    if (x.prescriptionIds === null) return [x];
+    const quedan = x.prescriptionIds.filter((id) => !fuera.has(id));
+    return quedan.length === x.prescriptionIds.length ? [x] : quedan.length > 0 ? [{ ...x, prescriptionIds: quedan }] : [];
+  });
+};
+
+const conLista = (p: PlanificacionDelPlan, lista: readonly ProgresionDeLaFase[]): PlanificacionDelPlan => {
   const { progressions: _antes, ...sin } = p;
-  return resto.length > 0 ? { ...sin, progressions: resto } : sin;
+  return lista.length > 0 ? { ...sin, progressions: [...lista] } : sin;
+};
+
+/**
+ * La planificación con una regla. La de la fase reemplaza a la de la fase; una propia saca a sus ejercicios de cualquier
+ * otra propia (DL-201: un ejercicio lleva una sola) y, si una queda vacía, se va. `reemplaza`: la regla que se estaba
+ * editando (la propia de otros ejercicios, si cambió la elección), que se saca primero.
+ */
+export function conProgresion(p: PlanificacionDelPlan, progresion: ProgresionDeLaFase, reemplaza: ProgresionDeLaFase | null = null): PlanificacionDelPlan {
+  let lista = p.progressions ?? [];
+  if (reemplaza) lista = sinLaRegla(lista, reemplaza);
+  lista =
+    progresion.prescriptionIds === null
+      ? lista.filter((x) => !(x.blockId === progresion.blockId && x.prescriptionIds === null))
+      : sinEsosEjercicios(lista, progresion.prescriptionIds);
+  return conLista(p, [...lista, progresion]);
 }
+
+/** La planificación sin ninguna progresión de esa fase (ni la de la fase ni las propias). */
+export function sinProgresion(p: PlanificacionDelPlan, blockId: string): PlanificacionDelPlan {
+  return conLista(p, (p.progressions ?? []).filter((x) => x.blockId !== blockId));
+}
+
+/** DL-201: la planificación sin esa regla (la de la fase, o la propia de esos ejercicios); lo demás queda. */
+export const sinLaProgresion = (p: PlanificacionDelPlan, regla: ProgresionDeLaFase): PlanificacionDelPlan => conLista(p, sinLaRegla(p.progressions ?? [], regla));
+
+/**
+ * DL-201 · los ejercicios vuelven a heredar la regla de su fase: salen de su regla propia (y la propia que queda vacía se
+ * va). Es «Usar la de la fase».
+ */
+export const sinReglaPropia = (p: PlanificacionDelPlan, prescriptionIds: readonly string[]): PlanificacionDelPlan => conLista(p, sinEsosEjercicios(p.progressions ?? [], prescriptionIds));
 
 /**
  * La progresión de una fase llevada a otra (la copia, E19): la misma regla, con los ejercicios elegidos traducidos a los
@@ -156,10 +227,23 @@ export function progresionParaOtraFase(p: ProgresionDeLaFase, blockId: string, p
   return { ...p, blockId, prescriptionIds: elegidos && elegidos.length > 0 ? elegidos : null };
 }
 
+/**
+ * DL-201 (PE-D08) · las reglas propias de una fase, llevadas a su copia («Duplicar la fase»): cada una con los ejercicios
+ * de la copia. La que no tiene ninguno traducido no se copia (no pasa a valer para toda la fase). La regla de la fase no
+ * va acá: la copia la elige en el cuadro que se abre al copiar (E19).
+ */
+export function reglasPropiasParaLaCopia(p: PlanificacionDelPlan | null | undefined, original: string, copia: string, prescripciones: ReadonlyMap<string, string>): ProgresionDeLaFase[] {
+  return reglasPropias(p, original).flatMap((r) => {
+    const ids = r.prescriptionIds!.flatMap((id) => (prescripciones.has(id) ? [prescripciones.get(id)!] : []));
+    return ids.length > 0 ? [{ ...r, blockId: copia, prescriptionIds: ids }] : [];
+  });
+}
+
 // ─── En palabras ─────────────────────────────────────────────────────────────────────────────
 
 export const COPY_PROGRESIONES = {
   titulo: 'Progresión y descarga',
+  tituloCorto: 'Progresión',
   abrir: 'Progresión…',
   modelos: {
     LINEAR: 'Lineal',
@@ -181,7 +265,15 @@ export const COPY_PROGRESIONES = {
   descargaQueHace: 'Una semana más liviana dentro de la fase. La que sigue retoma la progresión donde quedó.',
   descargaEjemplo: 'Ejemplo: semana 4 al 60 % de la carga de trabajo de la semana 3: con 87,5 kg, 52,5 kg. O las mismas cargas con 2 series menos.',
   aToda: 'Toda la fase',
-  aLosElegidos: 'Los ejercicios elegidos',
+  aLosElegidos: 'Ejercicios elegidos',
+  seAplicaA: 'Se aplica a',
+  propia: 'Regla propia',
+  conPropias: (n: number) => (n === 1 ? '1 ejercicio con progresión propia' : `${n} ejercicios con progresión propia`),
+  aplicarA: (n: number) => (n === 1 ? 'Aplicar a 1 ejercicio' : `Aplicar a ${n} ejercicios`),
+  usarLaDeLaFase: 'Usar la de la fase',
+  volvieronALaFase: (n: number) => (n === 1 ? 'El ejercicio vuelve a seguir la regla de la fase.' : `Los ${n} ejercicios vuelven a seguir la regla de la fase.`),
+  aplicadaA: (n: number) => (n === 1 ? 'La progresión quedó en 1 ejercicio.' : `La progresión quedó en ${n} ejercicios.`),
+  ejemploDeMuestra: 'Ejercicio de muestra',
   vistaPrevia: 'Vista previa',
   sinCarga: 'sin carga',
   semana: (n: number) => `Semana ${n}`,
@@ -192,7 +284,7 @@ export const COPY_PROGRESIONES = {
   usarLaDe: (fase: string) => `Usar la de «${fase}»`,
   aplicada: (fase: string) => `La progresión quedó en «${fase}».`,
   quitada: (fase: string) => `«${fase}» quedó sin progresión.`,
-  comoSeVe: 'Se guarda como regla de la fase: se ve en el editor y en los gráficos. La persona ve, por ahora, la carga de la sesión.',
+  comoSeVe: 'Se guarda como regla: la persona ve la carga de cada semana.',
   redondeo: (paso: string, unidad: string) => `Cargas redondeadas de a ${paso} ${unidad}, como las aproximaciones.`,
   sinSemanas: 'La fase todavía no tiene semanas: decí cuántas para ver la vista previa.',
   fueraDeLaFase: (semana: number, semanas: number) => `La descarga va en la semana ${semana}, y la fase tiene ${semanas}: no se aplica.`,
@@ -217,6 +309,24 @@ export function progresionEnPalabras(p: ProgresionDeLaFase, unidad: 'kg' | 'lb')
         : `descarga en la semana ${p.deload.week} (${p.deload.setsRemoved} ${p.deload.setsRemoved === 1 ? 'serie' : 'series'} menos)`,
     );
   }
+  return partes.join(' · ') || COPY_PROGRESIONES.sinModelo;
+}
+
+/**
+ * DL-201 · la regla en pocas palabras, para el ejercicio plegado: «↑ +2,5 kg/sem», «↑ 8-12 reps, +2,5 kg», «↑ Ondulante»,
+ * «Descarga S4», «Sin progresión».
+ */
+export function progresionCorta(p: ProgresionDeLaFase, unidad: 'kg' | 'lb'): string {
+  const partes: string[] = [];
+  if (p.model === 'LINEAR') {
+    const pasos = [p.loadStep ? `+${numero(p.loadStep, 2)} ${unidad}` : null, p.repStep ? `+${p.repStep} rep` : null].filter(Boolean);
+    partes.push(pasos.length > 0 ? `↑ ${pasos.join(' y ')}/sem` : `↑ ${COPY_PROGRESIONES.modelos.LINEAR}`);
+  } else if (p.model === 'DOUBLE' && p.repRange) {
+    partes.push(`↑ ${p.repRange.min}-${p.repRange.max} reps, +${numero(p.loadStep ?? 0, 2)} ${unidad}`);
+  } else if (p.model === 'UNDULATING') {
+    partes.push(`↑ ${COPY_PROGRESIONES.modelos.UNDULATING}`);
+  }
+  if (p.deload) partes.push(partes.length > 0 ? `descarga S${p.deload.week}` : `Descarga S${p.deload.week}`);
   return partes.join(' · ') || COPY_PROGRESIONES.sinModelo;
 }
 

@@ -94,8 +94,13 @@ import {
   CARDIO_SIN_INDICAR,
   esDeCardioPorLaClasificacion,
   progresionParaOtraFase,
-  seAplicaA,
-  sinProgresion,
+  cambiaAlgo,
+  progresionCorta,
+  progresionDelEjercicio,
+  reglaPropiaDe,
+  reglasPropias,
+  sinLaProgresion,
+  sinReglaPropia,
   zonasACuidar as zonasACuidarDelFormulario,
   type ZonasACuidar,
   type VezPasada,
@@ -160,6 +165,7 @@ import {
   sesionesParaDistribuir,
   unidadDeLaFase,
   vistaPrevia,
+  vistaPreviaDeLaFase,
 } from './progresion-del-editor';
 import { LoQueImpideActivar } from './lo-que-impide-activar';
 import {
@@ -519,6 +525,8 @@ export function EditorDePlan({
   const [distribucionGrande, setDistribucionGrande] = useState(false);
   const [progresionAbierta, setProgresionAbierta] = useState<{
     readonly blockId: string;
+    /** DL-201: abierto desde «Más» de un ejercicio, con ese ejercicio elegido. */
+    readonly prescriptionId?: string | null;
     readonly copia: { readonly original: string; readonly originalId: string | null; readonly prescripciones: ReadonlyMap<string, string> } | null;
   } | null>(null);
   const [aCuidar, setACuidar] = useState<ZonasACuidar | null>(null);
@@ -1749,9 +1757,9 @@ export function EditorDePlan({
     const copia = progresionAbierta?.copia ?? null;
     if (a.arrancarDondeTermino && copia?.originalId) {
       const original = bloques.find((b) => b.blockId === copia.originalId);
-      const regla = progresionDeLaFase(plan, copia.originalId);
-      if (original && regla) {
-        const ultimas = cargasDeLaUltimaSemana(vistaPrevia(regla, ejerciciosDeUnaFase(original), semanasDeLaFase(plan, copia.originalId) ?? 4, aproximacionesDeId));
+      if (original) {
+        // DL-201: cada ejercicio de la original con la regla que lo rige (la propia, si no la de la fase).
+        const ultimas = cargasDeLaUltimaSemana(vistaPreviaDeLaFase(plan, copia.originalId, ejerciciosDeUnaFase(original), semanasDeLaFase(plan, copia.originalId) ?? 4, aproximacionesDeId));
         const nuevas = new Map([...copia.prescripciones].flatMap(([o, c]) => (ultimas.has(o) ? [[c, ultimas.get(o)!] as const] : [])));
         if (nuevas.size > 0) {
           cambiar((x) => {
@@ -1764,10 +1772,35 @@ export function EditorDePlan({
         }
       }
     }
-    p = a.progresion ? conProgresion(p, a.progresion) : sinProgresion(p, blockId);
-    cambiarPlanificacion(p, a.progresion ? COPY_DESHACER.aplicasteLaProgresion(nombre) : null);
+    // DL-201: la regla de la fase (o quitarla), o la propia de los ejercicios elegidos. Una propia «Sin progresión» solo
+    // tiene sentido si la fase tiene una: si no, los ejercicios simplemente quedan sin regla propia.
+    const deLaFase = progresionDeLaFase(p, blockId);
+    const elegidos = a.progresion?.prescriptionIds ?? null;
+    let deshacer: string;
+    let aviso: string;
+    if (a.progresion && elegidos) {
+      if (cambiaAlgo(a.progresion) || deLaFase) p = conProgresion(p, a.progresion, a.reemplaza);
+      else p = sinReglaPropia(a.reemplaza ? sinLaProgresion(p, a.reemplaza) : p, elegidos);
+      deshacer = COPY_DESHACER.aplicasteLaProgresionA(elegidos.length);
+      aviso = COPY_PROGRESIONES.aplicadaA(elegidos.length);
+    } else if (a.progresion) {
+      p = conProgresion(p, a.progresion);
+      deshacer = COPY_DESHACER.aplicasteLaProgresion(nombre);
+      aviso = COPY_PROGRESIONES.aplicada(nombre);
+    } else {
+      p = deLaFase ? sinLaProgresion(p, deLaFase) : p;
+      deshacer = COPY_DESHACER.quitasteLaProgresion(nombre);
+      aviso = COPY_PROGRESIONES.quitada(nombre);
+    }
+    cambiarPlanificacion(p, deshacer);
     setProgresionAbierta(null);
-    setMensaje({ tipo: 'exito', texto: a.progresion ? COPY_PROGRESIONES.aplicada(nombre) : COPY_PROGRESIONES.quitada(nombre) });
+    setMensaje({ tipo: 'exito', texto: aviso });
+  };
+  /** DL-201: «Usar la de la fase»: los ejercicios dejan su regla propia y vuelven a heredar la de su fase. */
+  const usarLaDeLaFase = (ids: readonly string[]) => {
+    cambiarPlanificacion(sinReglaPropia(plan, ids), COPY_DESHACER.volvisteALaDeLaFase(ids.length));
+    setProgresionAbierta(null);
+    setMensaje({ tipo: 'exito', texto: COPY_PROGRESIONES.volvieronALaFase(ids.length) });
   };
   /** DL-197 (ET1-D10): cuántos ejercicios del plan tienen un criterio propio distinto del de esta intensidad. */
   const conOtraIntensidad = (i2: IntensidadElegida): number => {
@@ -2041,6 +2074,20 @@ export function EditorDePlan({
           const otros = (plan.loadRoundingByExercise ?? []).filter((x) => x.prescriptionId !== id);
           cambiarPlanificacion({ ...plan, loadRoundingByExercise: r === null ? otros : [...otros, { prescriptionId: id, step: r }] });
         }}
+        // DL-201: su progresión propia, plegado, y «Progresión…» en su «Más», con el ejercicio ya elegido.
+        progresionPropia={(() => {
+          const propia = bloque ? reglaPropiaDe(plan, bloque.blockId, p.prescriptionId) : null;
+          return propia ? progresionCorta(propia, baseDelEjercicio(p, nombre, null).unidad) : null;
+        })()}
+        onProgresion={
+          cardioDe(p)
+            ? undefined
+            : () => {
+                const id = p.prescriptionId ?? crypto.randomUUID();
+                if (!p.prescriptionId) cambiarEjercicio(l, { prescriptionId: id });
+                conIdDeLaFase((fase) => setProgresionAbierta({ blockId: fase, prescriptionId: id, copia: null }));
+              }
+        }
         // PLT (DL-182): sin persona, sin la fuerza estimada ni «La vez pasada»: el ejercicio del catálogo no se pasa.
         exerciseId={asesoradoId === null ? null : (ejercicios[p.exerciseVersionId] ?? null)}
         abierto={abiertos.has(l)}
@@ -2823,9 +2870,10 @@ export function EditorDePlan({
   const planDelEjercicio = (b: BloqueE, q: PrescripcionE) => {
     const nombre = nombres[q.exerciseVersionId] ?? 'Ejercicio';
     const semanas = semanasDeLaFase(plan, b.blockId) ?? 4;
-    const regla = progresionDeLaFase(plan, b.blockId);
+    // DL-201: la regla que rige para este ejercicio (la propia; si no, la de la fase).
+    const { regla } = progresionDelEjercicio(plan, b.blockId, q.prescriptionId);
     const base = baseDelEjercicio(q, nombre, aproximacionesDeId(q.prescriptionId ?? null));
-    const filas = regla && seAplicaA(regla, q.prescriptionId) ? vistaPrevia(regla, [{ prescriptionId: q.prescriptionId ?? null, nombre, sesion: '', prescripcion: q }], semanas, aproximacionesDeId)[0]?.semanas : null;
+    const filas = cambiaAlgo(regla) ? vistaPrevia(regla, [{ prescriptionId: q.prescriptionId ?? null, nombre, sesion: '', prescripcion: q }], semanas, aproximacionesDeId)[0]?.semanas : null;
     return {
       nombre,
       unidad: base.unidad,
@@ -2868,12 +2916,16 @@ export function EditorDePlan({
   /** La progresión de una fase en el panel: la regla en palabras y su curva en el primer ejercicio con carga. */
   const progresionDe = (b: BloqueE, n: number) => {
     const regla = progresionDeLaFase(plan, b.blockId);
+    const propias = reglasPropias(plan, b.blockId).reduce((t, r) => t + (r.prescriptionIds?.length ?? 0), 0);
     const semanas = semanasDeLaFase(plan, b.blockId) ?? 4;
-    const filas = regla ? vistaPrevia(regla, ejerciciosDeUnaFase(b), semanas, aproximacionesDeId) : [];
+    const filas = b.blockId ? vistaPreviaDeLaFase(plan, b.blockId, ejerciciosDeUnaFase(b), semanas, aproximacionesDeId) : [];
     const conCarga = filas.find((f) => f.semanas.some((x) => x.carga !== null)) ?? null;
     return (
-      <div className="progresion-en-el-panel" data-progresion-en-el-panel={regla ? 'con-regla' : 'sin-regla'}>
-        <p className="nota">{regla ? progresionEnPalabras(regla, conCarga?.unidad ?? 'kg') : `${nombreDelBloque(b, n)} no tiene progresión: la carga de trabajo queda igual todas las semanas.`}</p>
+      <div className="progresion-en-el-panel" data-progresion-en-el-panel={regla || propias > 0 ? 'con-regla' : 'sin-regla'}>
+        <p className="nota">
+          {regla ? progresionEnPalabras(regla, conCarga?.unidad ?? 'kg') : propias > 0 ? `${nombreDelBloque(b, n)} no tiene regla de la fase.` : `${nombreDelBloque(b, n)} no tiene progresión: la carga de trabajo queda igual todas las semanas.`}
+          {propias > 0 ? ` · ${COPY_PROGRESIONES.conPropias(propias)}` : null}
+        </p>
         {conCarga ? (
           <GraficoDeSemanas
             titulo={`${conCarga.nombre}: la carga planificada por semana`}
@@ -2994,7 +3046,7 @@ export function EditorDePlan({
             ? null
             : (veces) => {
                 const l = foco.l;
-                const regla = bloque ? progresionDeLaFase(plan, bloque.blockId) : null;
+                const regla = bloque ? progresionDelEjercicio(plan, bloque.blockId, ejercicioEnFoco.prescriptionId).regla : null;
                 return (
                   <SugerenciaDeProgresionEnElPanel
                     veces={veces}
@@ -3002,7 +3054,7 @@ export function EditorDePlan({
                     prescripcion={ejercicioEnFoco}
                     nombre={nombres[ejercicioEnFoco.exerciseVersionId] ?? ''}
                     notacion={notacion}
-                    conProgresionDeLaFase={!!regla && regla.model !== null && seAplicaA(regla, ejercicioEnFoco.prescriptionId)}
+                    conProgresionDeLaFase={!!regla && regla.model !== null}
                     onAplicar={(sugerida) => cambiarEjercicio(l, conLaCargaSubida(ejercicioEnFoco, sugerida))}
                   />
                 );
@@ -3442,7 +3494,11 @@ export function EditorDePlan({
                                 <Icono nombre="sube" tamano={18} />
                                 {COPY_PROGRESIONES.abrir}
                               </button>
-                              <span className="nota">{progresionDeLaFase(plan, bloque.blockId) ? progresionEnPalabras(progresionDeLaFase(plan, bloque.blockId)!, unidadDeLaFase(ejerciciosDeUnaFase(bloque))) : COPY_PROGRESIONES.sinModelo}</span>
+                              <span className="nota" data-reglas-propias={reglasPropias(plan, bloque.blockId).reduce((t, r) => t + (r.prescriptionIds?.length ?? 0), 0) || undefined}>
+                                {progresionDeLaFase(plan, bloque.blockId) ? progresionEnPalabras(progresionDeLaFase(plan, bloque.blockId)!, unidadDeLaFase(ejerciciosDeUnaFase(bloque))) : COPY_PROGRESIONES.sinModelo}
+                                {/* DL-201: cuántos ejercicios tienen la suya. */}
+                                {reglasPropias(plan, bloque.blockId).length > 0 ? ` · ${COPY_PROGRESIONES.conPropias(reglasPropias(plan, bloque.blockId).reduce((t, r) => t + (r.prescriptionIds?.length ?? 0), 0))}` : null}
+                              </span>
                             </div>
                           {microciclo && j !== null ? (
                             <div className="plan__niveles niveles-del-editor">
@@ -3961,14 +4017,17 @@ export function EditorDePlan({
             const reglaOriginal = copia?.originalId ? progresionDeLaFase(plan, copia.originalId) : null;
             return (
               <AsistenteDeProgresion
+                key={`${id}-${progresionAbierta.prescriptionId ?? 'fase'}`}
                 abierto
+                plan={plan}
+                desdeElEjercicio={progresionAbierta.prescriptionId ?? null}
+                onUsarLaDeLaFase={usarLaDeLaFase}
                 persona={persona}
                 fase={nombreDelBloque(b, n)}
                 blockId={id}
                 semanasDeLaFase={semanasDeLaFase(plan, id)}
                 ejercicios={ejerciciosDeUnaFase(b)}
                 aproximacionesDe={aproximacionesDeId}
-                actual={progresionDeLaFase(plan, id)}
                 otras={bloques.flatMap((x, m) => {
                   const r = x.blockId && x.blockId !== id ? progresionDeLaFase(plan, x.blockId) : null;
                   return r ? [{ fase: nombreDelBloque(x, m), progresion: r }] : [];
