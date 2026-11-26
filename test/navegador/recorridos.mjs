@@ -2750,7 +2750,7 @@ async function progresionYDistribucion({ p, d, salida }) {
   await esperarGuardado(p);
 }
 
-export const TODOS = { sesion, pistas, borrador, conflicto, descartar, salidaSegura, irACorregir, respuestaPerdida, reintentar, salidaConFallas, primerPlan, planDeNutricionSinAsistente, retorno, grafico, primeraInvitacion, areaSugerida, sesionRevocada, accesoRevocado, faltaUnaParte, completitud, evidencia, administracion, comparacion, comparacionConOpciones, sinSaltos, franjasPorComida, cierreDeNutricion, notacionDelEsfuerzo, recetario, opcionComoReceta, recorridosGuiados, editorDeEntrenamiento, aproximacionesPorPorcentaje, progresionYDistribucion, agregarEjerciciosConFiltros, editorTanda2, editorTanda3Reordenar, editorTanda3Cardio };
+export const TODOS = { sesion, pistas, borrador, conflicto, descartar, salidaSegura, irACorregir, respuestaPerdida, reintentar, salidaConFallas, primerPlan, planDeNutricionSinAsistente, retorno, grafico, primeraInvitacion, areaSugerida, sesionRevocada, accesoRevocado, faltaUnaParte, completitud, evidencia, administracion, comparacion, comparacionConOpciones, sinSaltos, franjasPorComida, cierreDeNutricion, notacionDelEsfuerzo, recetario, opcionComoReceta, recorridosGuiados, editorDeEntrenamiento, aproximacionesPorPorcentaje, progresionYDistribucion, agregarEjerciciosConFiltros, editorTanda2, editorTanda3Reordenar, editorTanda3Cardio, plantillaDeBe };
 
 /**
  * TEST-ET2-NAV-01 (DL-198, WP-EDITOR-ENTRENAMIENTO-TANDA-2) · el 1RM de referencia en un ejercicio en % RM: la calibración
@@ -2979,6 +2979,50 @@ async function editorTanda3Cardio({ p, d, salida }) {
 
 /** Errores de la página que no dicen nada del website (los del propio navegador). */
 const IGNORABLES = [/ResizeObserver loop/];
+
+/**
+ * TEST-ET3-NAV-01 (DL-199, WP-EDITOR-ENTRENAMIENTO-TANDA-3) · una Plantilla de BE con el % RM resuelto: sin plan, «Empezar
+ * desde una plantilla» › «Plantillas de BE» lista las de BE con la marca de propuesta; elegir «Cuerpo completo» muestra
+ * sus fases y sesiones sin correr la lista (RP-19); aplicarla crea el borrador y el aviso dice cuántas cargas salieron del
+ * 1RM de la persona y cuáles quedan para completar. Por la API: la sentadilla con 65 kg (65 % de 100 kg) y sus tres
+ * aproximaciones, el press de banca sin carga y la planificación de la plantilla (8 semanas, dos fases, % RM).
+ */
+async function plantillaDeBe({ p, d, salida }) {
+  p.on('dialog', (dialogo) => void dialogo.accept());
+  await entrar(p, d.pro.correo);
+  await p.goto(`${WEB}/pro/advisees/training?id=${encodeURIComponent(d.ase.id)}&vista=plan`, { waitUntil: 'networkidle2' });
+  await clic(p, '[data-empezar-desde-plantilla]');
+  await dialogoAbierto(p, 'Empezar desde una plantilla');
+  await clic(p, 'dialog[open] [data-origen-de-be]');
+  await elemento(p, 'dialog[open] [data-plantilla-de-be="BE-CUERPO-COMPLETO"]');
+  assert.match(await p.$eval('dialog[open] [data-plantilla-de-be="BE-CUERPO-COMPLETO"]', (e) => e.textContent), /Propuesta, a validar por Elián/);
+  const antes = await p.$eval('dialog[open] [data-plantilla-de-be="BE-TORSO-PIERNA"]', (e) => e.getBoundingClientRect().top);
+  await clic(p, 'dialog[open] [data-plantilla-de-be="BE-CUERPO-COMPLETO"]');
+  await elemento(p, 'dialog[open] [data-vista-de-la-plantilla-de-be] .plantilla-de-be__fase', 'Base');
+  const despues = await p.$eval('dialog[open] [data-plantilla-de-be="BE-TORSO-PIERNA"]', (e) => e.getBoundingClientRect().top);
+  assert.ok(Math.abs(despues - antes) < 1, `elegir una no corre la lista (${antes} → ${despues})`);
+  assert.match(await p.$eval('dialog[open] [data-vista-de-la-plantilla-de-be]', (e) => e.textContent), /Sentadilla trasera con barra\s*3 × 10 · 65 % RM/);
+  await capturaEnLosDosTemas(p, salida, 'plantillas-de-be-dialogo');
+  await clic(p, 'dialog[open] button.boton--primario', 'Crear el borrador desde esta plantilla');
+  await dialogoCerrado(p);
+  await esperarTexto(p, 'salen del 1RM de la persona');
+  await esperarTexto(p, 'Sin 1RM, para completar:');
+  // La API: el borrador con la carga resuelta, sus aproximaciones y la planificación de la plantilla.
+  const token = await sesionPorApi(d.pro.correo);
+  const borrador = (await pedir('GET', `/advisees/${d.ase.id}/training/plans?state=DRAFT`, { token })).data[0];
+  const plan = (await pedir('GET', `/training/plans/${borrador.planId}/detail`, { token })).data;
+  assert.equal(plan.planning.weeks, 8);
+  assert.equal(plan.planning.intensity, 'PERCENT_RM');
+  assert.deepEqual(plan.planning.phases.map((f) => f.weeks), [4, 4]);
+  const [sentadilla, banca] = plan.blocks[0].sessions[0].prescriptions;
+  assert.deepEqual(sentadilla.suggestedLoad, { value: 65, unit: 'kg' });
+  assert.equal(sentadilla.sets.filter((s) => s.setKind === 'WARM_UP').length, 3);
+  assert.equal(banca.suggestedLoad, null);
+  // En el editor, la barra con las dos fases de la plantilla.
+  await elemento(p, '[data-barra-de-fases]', null, 60_000);
+  await elemento(p, '[data-elegir-fase="2"]');
+  await capturaEnLosDosTemas(p, salida, 'plantilla-de-be-aplicada');
+}
 
 export async function correrRecorridos({ estado, salida, chrome, solo = null }) {
   mkdirSync(salida, { recursive: true });
