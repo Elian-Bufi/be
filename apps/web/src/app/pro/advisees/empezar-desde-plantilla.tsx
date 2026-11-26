@@ -199,7 +199,9 @@ function PlantillasDeBe({
           </label>
         ))}
       </fieldset>
-      <div className="plantilla-de-be__vista" aria-live="polite" data-vista-de-la-plantilla-de-be>
+      {/* Sin aria-live: elegir con las flechas le leía el plan entero en cada opción (la opción elegida ya se anuncia). Se
+          desplaza adentro (alto fijo, RP-19): una región con foco, para recorrerla con el teclado. */}
+      <div className="plantilla-de-be__vista" role="region" aria-label={laElegida ? laElegida.name : COPY_PLANTILLAS_DE_BE.deBe} tabIndex={0} data-vista-de-la-plantilla-de-be>
         {!laElegida ? (
           <p className="nota">{COPY_PLANTILLAS_DE_BE.elegiUna}</p>
         ) : (
