@@ -11,13 +11,14 @@
  * en la esquina, que explica paso a paso con un ejemplo resuelto. Lo que se escribe es un borrador del cuadro: entra al
  * plan con el botón principal; cerrar con cambios pregunta.
  */
-import { COPY_ESFUERZO_DE_LA_SESION, COPY_NOTACION_DEL_ESFUERZO, DIAS_DE_LA_SEMANA, finDelPlan, type DiaDeLaSemana, type NotacionDelEsfuerzo, type PlanificacionDelPlan } from '@be/domain';
+import { COPY_ESFUERZO_DE_LA_SESION, COPY_NOTACION_DEL_ESFUERZO, DIAS_DE_LA_SEMANA, finDelPlan, REDONDEO_POR_OMISION, REDONDEOS_DE_LAS_CARGAS, type DiaDeLaSemana, type NotacionDelEsfuerzo, type PlanificacionDelPlan, type RedondeoDeLasCargas } from '@be/domain';
 import { useEffect, useId, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
 import { CampoDeFecha } from '../../../../components/campo-de-fecha';
 import { CuadroEnfocado } from '../../../../components/cuadro-enfocado';
 import { Icono } from '../../../../components/icono';
 import { DIA_CORTO, DIA_LARGO } from '../estacion/estacion';
 import { AYUDAS_DEL_EDITOR, ContenidoDeLaAyuda } from './ayudas-del-editor';
+import { COPY_REDONDEO } from './ejercicio-del-editor';
 import { conAnotacionesDelPlan, conFin, conInicio, conObjetivo, conSemanasDelPlan } from './fases-del-plan';
 import { guardadoDeLaIntensidad, INTENSIDADES, intensidadElegida, type IntensidadElegida } from './intensidad-del-plan';
 
@@ -260,6 +261,25 @@ export function CuadroConfigurarPlan({
           </div>
           {intensidad === 'RPE' ? <p className="nota">{COPY_NOTACION_DEL_ESFUERZO.queEs}</p> : null}
         </fieldset>
+        {/* ET2-D05: «Redondear las cargas a», para las que salen del % RM y del 1RM; cada ejercicio puede tener su excepción. */}
+        <div className="campo redondeo-de-las-cargas" data-redondeo-del-plan={String(p.loadRounding ?? REDONDEO_POR_OMISION)}>
+          <label htmlFor={`${id}-redondeo`}>{COPY_REDONDEO.delPlan}</label>
+          <select
+            id={`${id}-redondeo`}
+            value={String(p.loadRounding ?? REDONDEO_POR_OMISION)}
+            aria-describedby={`${id}-redondeo-que-es`}
+            onChange={(e) => setP({ ...p, loadRounding: e.target.value === 'AUTO' ? 'AUTO' : (Number(e.target.value) as RedondeoDeLasCargas) })}
+          >
+            {REDONDEOS_DE_LAS_CARGAS.map((r) => (
+              <option key={String(r)} value={String(r)}>
+                {COPY_REDONDEO.opcion(r, 'kg')}
+              </option>
+            ))}
+          </select>
+          <p id={`${id}-redondeo-que-es`} className="nota">
+            {COPY_REDONDEO.queEs}
+          </p>
+        </div>
         {/* DL-198 (ET2-07): el esfuerzo de la sesión (Foster), aparte del RIR de cada serie. */}
         <div className="esfuerzo-de-la-sesion-del-plan" data-esfuerzo-de-la-sesion-del-plan={p.askSessionEffort ? 'si' : 'no'}>
           <label className="casilla-con-explicacion">

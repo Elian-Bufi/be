@@ -20330,6 +20330,33 @@ p.cifra-del-espacio__desglose {
   padding-block-start: 0.75rem;
 }
 
+/* ET2-D05: en % RM con 1RM, la carga y el % del «Común» van atados; lo que sale del otro campo lo dice arriba a la
+   izquierda («del %», «de la carga»), como «común» y «propio». El lugar de la marca está siempre (RP-19). */
+.celda-atada {
+  position: relative;
+}
+
+.celda-atada > input,
+.celda-atada .celda-de-serie {
+  padding-block-start: 0.75rem;
+}
+
+.celda-atada__marca {
+  position: absolute;
+  inset-inline-start: 0.45rem;
+  top: 0.15rem;
+  color: var(--tenue);
+  font-size: 0.62rem;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: 0.02em;
+  pointer-events: none;
+}
+
+.celda-atada[data-derivada] .celda-de-serie {
+  color: var(--tenue);
+}
+
 
 /* C11: «Sesiones vacías», en la sesión vacía de la fase: la cantidad y «Armar Sesión A, B y C». */
 .estacion__sesiones-vacias {

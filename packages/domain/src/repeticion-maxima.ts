@@ -18,7 +18,7 @@
  * - **No es un máximo probado ni una marca** (DL-171, RPE-D06): es la referencia de las cargas. La v1 de «Fuerza estimada»
  *   no cambia (ET2-D01).
  */
-import type { EjecucionDeEntrenamiento } from './contratos-entrenamiento';
+import type { EjecucionDeEntrenamiento, PlanificacionDelPlan, RedondeoDeLasCargas } from './contratos-entrenamiento';
 import { registroVigente } from './copy-entrenamiento';
 import { numero } from './formato-numeros';
 import { registradasEfectivas } from './tipos-de-serie';
@@ -236,6 +236,46 @@ export function cargaDelPorcentaje(porcentaje: number, unoRM: CargaDelUnoRM, imp
 /** La carga de una serie en % RM con el nombre del ejercicio (para deducir el implemento) y su base de carga. */
 export const cargaDelPorcentajeDe = (porcentaje: number, unoRM: CargaDelUnoRM, nombre: string, baseDeCarga?: string | null, paso?: number): CargaDelUnoRM =>
   cargaDelPorcentaje(porcentaje, unoRM, implementoDelEjercicio(nombre, baseDeCarga), paso);
+
+// ─── El % RM y la carga, atados (ET2-D05) ─────────────────────────────────────────────────────────
+
+/** ET2-D05: «Redondear las cargas a», si el plan no lo dice. */
+export const REDONDEO_POR_OMISION: RedondeoDeLasCargas = 2.5;
+
+/** Las opciones de «Redondear las cargas a», en el orden en que se muestran. */
+export const REDONDEOS_DE_LAS_CARGAS: readonly RedondeoDeLasCargas[] = ['AUTO', 1, 2.5, 5];
+
+/** El redondeo de un ejercicio: su excepción («Más opciones»), o el del plan, o 2,5. */
+export function redondeoDelEjercicio(planificacion: Pick<PlanificacionDelPlan, 'loadRounding' | 'loadRoundingByExercise'> | null | undefined, prescriptionId: string | null | undefined): RedondeoDeLasCargas {
+  const propio = prescriptionId ? planificacion?.loadRoundingByExercise?.find((r) => r.prescriptionId === prescriptionId) : undefined;
+  return propio?.step ?? planificacion?.loadRounding ?? REDONDEO_POR_OMISION;
+}
+
+/**
+ * El paso con el que se redondea una carga: el elegido o, en `AUTO`, el del implemento para esa carga (ET1-D06). La regla
+ * de 1 kg por debajo de 40 kg es del automático: con 2,5 elegido, 30 kg siguen yendo de a 2,5.
+ */
+export function pasoDeLasCargas(redondeo: RedondeoDeLasCargas, implemento: Implemento, carga: number | null, unidad: 'kg' | 'lb' = 'kg'): number {
+  return redondeo === 'AUTO' ? pasoPorOmision(implemento, carga, unidad) : redondeo;
+}
+
+/** La carga que pide un % RM con el 1RM y el redondeo del ejercicio: 1RM × %, redondeada (nunca 0). */
+export function cargaAtadaAlPorcentaje(porcentaje: number, unoRM: CargaDelUnoRM, implemento: Implemento, redondeo: RedondeoDeLasCargas): CargaDelUnoRM {
+  const cruda = (unoRM.value * porcentaje) / 100;
+  return cargaDelPorcentaje(porcentaje, unoRM, implemento, pasoDeLasCargas(redondeo, implemento, cruda, unoRM.unit));
+}
+
+/**
+ * El % RM que corresponde a una carga escrita a mano: carga ÷ 1RM, redondeado a 0,5 %. `null` sin un 1RM positivo, con
+ * otra unidad o sin carga.
+ */
+export function porcentajeDeLaCarga(carga: CargaDelUnoRM | null | undefined, unoRM: CargaDelUnoRM | null | undefined): number | null {
+  if (!carga || !unoRM || carga.unit !== unoRM.unit || !(unoRM.value > 0) || !Number.isFinite(carga.value) || carga.value <= 0) return null;
+  return Math.round((carga.value / unoRM.value) * 200) / 2;
+}
+
+/** ET2-D05: sin 1RM, el % queda solo y la carga se escribe aparte. */
+export const SIN_UNO_RM_PARA_LAS_CARGAS = 'Sin 1RM: cargalo para calcular las cargas.';
 
 // ─── En palabras ────────────────────────────────────────────────────────────────────────────
 

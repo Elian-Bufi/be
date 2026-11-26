@@ -58,6 +58,7 @@ import {
   falloDeGuardado,
   loQueNoDejaGuardarElEntrenamiento,
   conElComunDeLasSeries,
+  redondeoDelEjercicio,
   loQueSeMiraEnElEditor,
   lugarDelProblemaDeEntrenamiento,
   motivoSinGuardarAhora,
@@ -1866,6 +1867,15 @@ export function EditorDePlan({
           if (!p.prescriptionId) cambiarEjercicio(l, { prescriptionId: id });
           const otros = (plan.withoutIntensity ?? []).filter((x) => x !== id);
           cambiarPlanificacion({ ...plan, withoutIntensity: sin ? [...otros, id] : otros });
+        }}
+        // ET2-D05: el redondeo de las cargas del % RM, el del plan o la excepción del ejercicio (en la planificación).
+        redondeo={redondeoDelEjercicio(plan, p.prescriptionId)}
+        redondeoPropio={(p.prescriptionId ? plan.loadRoundingByExercise?.find((r) => r.prescriptionId === p.prescriptionId)?.step : undefined) ?? null}
+        onRedondeo={(r) => {
+          const id = p.prescriptionId ?? crypto.randomUUID();
+          if (!p.prescriptionId) cambiarEjercicio(l, { prescriptionId: id });
+          const otros = (plan.loadRoundingByExercise ?? []).filter((x) => x.prescriptionId !== id);
+          cambiarPlanificacion({ ...plan, loadRoundingByExercise: r === null ? otros : [...otros, { prescriptionId: id, step: r }] });
         }}
         // PLT (DL-182): sin persona, sin la fuerza estimada ni «La vez pasada»: el ejercicio del catálogo no se pasa.
         exerciseId={asesoradoId === null ? null : (ejercicios[p.exerciseVersionId] ?? null)}

@@ -495,6 +495,14 @@ export type GraficoFavoritoDelPlan = z.infer<typeof GraficoFavoritoDelPlanSchema
 export const IntensidadDelPlanSchema = z.enum(['RIR', 'PERCENT_RM', 'NONE']);
 export type IntensidadDelPlan = z.infer<typeof IntensidadDelPlanSchema>;
 
+/**
+ * ET2-D05 (a ratificar) · a qué carga lógica de gimnasio se redondean las cargas que salen del % RM y del 1RM: `AUTO`, el
+ * paso del implemento (ET1-D06: máquina 5, barra 2,5, mancuernas livianas 1 y, por debajo de 40 kg, 1); o 1, 2,5 o 5, ese paso
+ * siempre. Ausente en el plan: 2,5. Va en la planificación (no en las series): la app de la persona no lo lee.
+ */
+export const RedondeoDeLasCargasSchema = z.union([z.literal('AUTO'), z.literal(1), z.literal(2.5), z.literal(5)]);
+export type RedondeoDeLasCargas = z.infer<typeof RedondeoDeLasCargasSchema>;
+
 export const PlanificacionDelPlanSchema = z.strictObject({
   startDate: FechaLocalSchema.nullable(),
   weeks: z.number().int().min(1).max(104).nullable(),
@@ -521,6 +529,10 @@ export const PlanificacionDelPlanSchema = z.strictObject({
    * pide. A la app le llega como `askSessionEffort` en API-SER-02, si declara `training-session-effort-1`.
    */
   askSessionEffort: z.literal(true).optional(),
+  /** ET2-D05: «Redondear las cargas a», del plan («Configurar plan»). Ausente: 2,5. */
+  loadRounding: RedondeoDeLasCargasSchema.optional(),
+  /** ET2-D05: la excepción de un ejercicio («Más opciones»), por ejemplo una máquina de a 5. */
+  loadRoundingByExercise: z.array(z.strictObject({ prescriptionId: IdDeNodoSchema, step: RedondeoDeLasCargasSchema })).max(400).optional(),
   privateNotes: z
     .strictObject({
       plan: TextoOpcional(4000),
