@@ -167,7 +167,7 @@ export class ObjetivosPorSerieService {
             session: sesionConObjetivosApi(sesion, ubicada.orden, resolver, imagenes),
             // DL-192 (RPE-D08): solo al cliente que la declara; la APK instalada la rechazaría y sigue en RIR.
             ...(muestraLaNotacionDelEsfuerzo(ctx) ? { effortNotation: notacionDe(instantanea.contenido.effortNotation) } : {}),
-            ...(semana && muestraLaSemanaDeLaFase(ctx) ? { week: { phaseWeek: semana.semana, phaseWeeks: semana.semanasQueEntran ?? semana.semanas, deload: esSemanaDeDescarga(semana) } } : {}),
+            ...(semana && muestraLaSemanaDeLaFase(ctx) ? { week: { phaseWeek: semana.semana, phaseWeeks: semana.semanasQueEntran ?? semana.semanas, deload: esSemanaDeDescarga(semana, ubicada.sesion.prescriptions.map((p) => p.prescriptionId)) } } : {}),
             // DL-198 (ET2-07): la app pregunta el esfuerzo de la sesión al terminar, si el plan lo pide y ella sabe.
             ...(planning?.askSessionEffort && preguntaElEsfuerzoDeLaSesion(ctx) ? { askSessionEffort: true as const } : {}),
           },

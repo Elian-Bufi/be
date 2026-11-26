@@ -5,7 +5,10 @@
  * estructura del borrador y se escriben los textos de las celdas.
  */
 import {
+  cambiaAlgo,
   esDeCalentamiento,
+  progresionDelEjercicio,
+  reglaPropiaDe,
   implementoDelEjercicio,
   numero,
   pasoPorOmision,
@@ -102,6 +105,32 @@ export function vistaPrevia(
       const base = baseDelEjercicio(e.prescripcion, e.nombre, aproximacionesDe(e.prescriptionId));
       return { prescriptionId: e.prescriptionId, nombre: e.nombre, unidad: base.unidad, paso: base.paso, semanas: semanasDelEjercicio(p, base, semanas) };
     });
+}
+
+/**
+ * DL-201 · la vista previa de una fase con las reglas que rigen para cada ejercicio (la propia, si no la de la fase): solo
+ * los ejercicios con una regla que cambia algo.
+ */
+export function vistaPreviaDeLaFase(
+  plan: PlanificacionDelPlan,
+  blockId: string,
+  ejercicios: readonly EjercicioDeLaFase[],
+  semanas: number,
+  aproximacionesDe: (id: string | null) => AproximacionesDelEjercicio | null,
+): FilaDeLaVistaPrevia[] {
+  return ejercicios.flatMap((e) => {
+    const { regla } = progresionDelEjercicio(plan, blockId, e.prescriptionId);
+    return cambiaAlgo(regla) ? vistaPrevia(regla, [e], semanas, aproximacionesDe) : [];
+  });
+}
+
+/**
+ * DL-201 · los ejercicios a los que llega una regla nueva: con la de la fase, los que no tienen una propia; con una propia,
+ * los elegidos.
+ */
+export function ejerciciosAfectados(plan: PlanificacionDelPlan, blockId: string, ejercicios: readonly EjercicioDeLaFase[], elegidos: readonly string[] | null): EjercicioDeLaFase[] {
+  if (elegidos !== null) return ejercicios.filter((e) => !!e.prescriptionId && elegidos.includes(e.prescriptionId));
+  return ejercicios.filter((e) => !reglaPropiaDe(plan, blockId, e.prescriptionId));
 }
 
 /** «82,5 kg × 6», «82,5 kg × 6 · 2 series», «× 8» (sin carga), «—». */

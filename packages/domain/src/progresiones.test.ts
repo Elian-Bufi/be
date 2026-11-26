@@ -92,8 +92,9 @@ test('TEST-EE-34 · a qué se aplica, guardar, quitar y llevarla a la copia de l
   assert.ok(!seAplicaA(elegidos, 'p2'));
   const plan: PlanificacionDelPlan = { startDate: null, weeks: null, goal: null, phases: [] };
   const con = conProgresion(conProgresion(plan, toda), { ...elegidos, blockId: 'fase-1' });
-  assert.equal(con.progressions?.length, 1, 'una por fase');
-  assert.deepEqual(progresionDeLaFase(con, 'fase-1')?.prescriptionIds, ['p1']);
+  // DL-201: la de la fase y la propia de p1 conviven; la de la fase es la general.
+  assert.equal(con.progressions?.length, 2, 'la de la fase y la propia');
+  assert.equal(progresionDeLaFase(con, 'fase-1')?.prescriptionIds, null);
   assert.equal(sinProgresion(con, 'fase-1').progressions, undefined);
   const copia = progresionParaOtraFase(elegidos, 'fase-2', new Map([['p1', 'q1']]));
   assert.deepEqual([copia.blockId, copia.prescriptionIds], ['fase-2', ['q1']]);

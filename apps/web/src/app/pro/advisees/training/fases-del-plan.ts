@@ -12,6 +12,7 @@ import {
   COPY_ENTRENAMIENTO,
   nombreDeLaFase,
   PLANIFICACION_VACIA,
+  reglasPropiasParaLaCopia,
   semanasHasta,
   type AgendaDeEntrenamiento,
   type AproximacionesDelEjercicio,
@@ -105,7 +106,10 @@ export function copiarLaFase(bloque: Bloque, nombre: string, nuevoId: () => stri
   return { bloque: copia, sesiones, prescripciones };
 }
 
-/** La planificación con la copia: las mismas semanas que la original y sus aproximaciones, con los ejercicios nuevos. */
+/**
+ * La planificación con la copia: las mismas semanas que la original, sus aproximaciones y las progresiones propias de sus
+ * ejercicios (DL-201), con los ejercicios nuevos.
+ */
 export function planificacionConLaCopia(p: PlanificacionDelPlan, original: string | null | undefined, copia: FaseCopiada): PlanificacionDelPlan {
   const semanas = original ? (p.phases.find((f) => f.blockId === original)?.weeks ?? null) : null;
   const conSemanas = conSemanasDeLaFase(p, copia.bloque.blockId!, semanas);
@@ -113,7 +117,10 @@ export function planificacionConLaCopia(p: PlanificacionDelPlan, original: strin
     const nuevo = copia.prescripciones.get(w.prescriptionId);
     return nuevo ? [{ ...w, prescriptionId: nuevo }] : [];
   });
-  return copiadas.length > 0 ? { ...conSemanas, warmUps: [...(conSemanas.warmUps ?? []), ...copiadas] } : conSemanas;
+  const conAproximaciones = copiadas.length > 0 ? { ...conSemanas, warmUps: [...(conSemanas.warmUps ?? []), ...copiadas] } : conSemanas;
+  // DL-201 (PE-D08): las reglas propias de los ejercicios van con sus copias; la de la fase se elige al copiar (E19).
+  const propias = original ? reglasPropiasParaLaCopia(p, original, copia.bloque.blockId!, copia.prescripciones) : [];
+  return propias.length > 0 ? { ...conAproximaciones, progressions: [...(conAproximaciones.progressions ?? []), ...propias] } : conAproximaciones;
 }
 
 /** La agenda con la copia: cada sesión copiada, los mismos días que su original. Los movimientos no se copian. */
