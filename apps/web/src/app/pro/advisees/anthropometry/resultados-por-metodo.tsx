@@ -109,7 +109,7 @@ export function ResultadosPorMetodo({
   // Una clave por pedido para toda la toma: Rocha y Würch están en el fraccionamiento de varios métodos, y guardar desde uno
   // y después desde otro (o reintentar tras una respuesta incierta) no calcula dos veces. Mientras uno guarda, los demás esperan.
   const refDeClaves = useRef<ClavesPorPedido | null>(null);
-  const claves = (refDeClaves.current ??= new ClavesPorPedido(nuevaClaveDeIdempotencia));
+  const clavesDeGuardar = (refDeClaves.current ??= new ClavesPorPedido(nuevaClaveDeIdempotencia));
   const [guardandoEn, setGuardandoEn] = useState<string | null>(null);
   const { valores } = useMemo(() => valoresParaLaCadena(toma.measurements), [toma.measurements]);
   const deAntes = useMemo(() => (anterior ? valoresParaLaCadena(anterior.measurements).valores : null), [anterior]);
@@ -203,7 +203,7 @@ export function ResultadosPorMetodo({
             cambio={(p) => cambioDesdeAntes(r.programa.clave, p)}
             onAbrir={onAbrir}
             onGuardado={onGuardado}
-            claves={claves}
+            claves={clavesDeGuardar}
             sexoElegido={sexoElegido}
             guardandoEn={guardandoEn}
             onGuardando={setGuardandoEn}
