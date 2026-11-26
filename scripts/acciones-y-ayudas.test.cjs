@@ -36,7 +36,8 @@ function archivos(dir, recursivo = true) {
 
 /** La planificación y sus piezas compartidas: donde una acción no se escribe como enlace. */
 const PLANIFICACION = [
-  ...['advisees/nutrition', 'advisees/training', 'advisees/evaluacion', 'templates', 'recipes'].flatMap((d) => archivos(join(WEB, 'app/pro', d))),
+  // DL-200: Antropometría también (las acciones de la toma, sus resultados y «Qué vas a calcular»).
+  ...['advisees/nutrition', 'advisees/training', 'advisees/evaluacion', 'advisees/anthropometry', 'templates', 'recipes'].flatMap((d) => archivos(join(WEB, 'app/pro', d))),
   ...archivos(join(WEB, 'app/pro/advisees'), false),
   ...['texto-a-pedido.tsx', 'cuadro-enfocado.tsx', 'campo-de-fecha.tsx', 'estados.tsx', 'explicacion-a-pedido.tsx'].map((n) => join(WEB, 'components', n)),
 ];

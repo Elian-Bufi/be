@@ -351,7 +351,7 @@ function Lamina({ evaluaciones, nombre, pedida }: { evaluaciones: readonly Resum
           notas.push(
             <p key="calculos" className="nota">
               {COPY.errorDeVista}{' '}
-              <button type="button" className="boton boton--enlace" onClick={() => void calculos.reintentar()}>
+              <button type="button" className="boton boton--discreto boton--compacto" onClick={() => void calculos.reintentar()}>
                 {COPY.reintentar}
               </button>
             </p>,

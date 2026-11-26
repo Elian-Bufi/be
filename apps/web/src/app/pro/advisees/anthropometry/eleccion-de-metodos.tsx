@@ -1,124 +1,174 @@
 'use client';
 
 /**
- * RP-18 (DL-190) · «Qué vas a calcular», arriba de los datos de la toma: el profesional elige uno o varios métodos antes de
- * medir y la figura y la lista piden solo lo que necesitan, más peso, talla y edad. Vienen elegidos los de su última toma
- * (API-MHA-01); sin ninguno elegido se ve el protocolo entero, como antes. Elegir no esconde lo medido.
+ * «Qué vas a calcular», arriba de los datos de la toma (RP-18, DL-190; DL-200, AR-06): el profesional elige el método
+ * antes de medir y la figura y la lista piden exactamente lo que necesita, más peso, talla y edad.
  *
- * Se elige por familia: las variantes por sexo de un método van juntas, y la ecuación se elige al calcular con la figura
- * de la toma (Hombre o Mujer). Al lado de cada método que lo necesita va dónde mide BE el sitio que las fuentes nombran
- * distinto (el suprailíaco de Jackson y Pollock, en la cresta ilíaca: D-1), para que el profesional sepa si coincide con su
- * práctica. Nada de esta pieza ordena por «mejor»: el orden es el del catálogo (REG-06-205).
+ * Desde DL-200 se elige **el método entero**, no cada resultado: «Jackson y Pollock, 7 pliegues» pide sus 7 pliegues, la
+ * edad y el peso, y da la suma, la densidad, el % de grasa (con Siri y Brožek), la masa grasa y la libre de grasa. Cada
+ * método dice, antes de medir, qué pide y qué va a dar. El fraccionamiento en cuatro componentes (Rocha y Würch) se suma
+ * con un toque y pide la talla y dos diámetros más. Nada se tilda: cada método es un botón que se elige o se quita.
+ *
+ * Vienen elegidos los de la última toma del profesional (API-MHA-01); sin ninguno, se ve el protocolo entero. Al lado de
+ * cada método que lo necesita va dónde mide BE el sitio que las fuentes nombran distinto (el suprailíaco de Jackson y
+ * Pollock, en la cresta ilíaca: D-1). El orden es el del catálogo, nunca por «mejor» (REG-06-205).
  */
-import { COPY_ANTROPOMETRIA as C, CONJUNTOS_DE_METODOS, NOTA_DEL_SITIO, type FamiliaDeMetodo } from '@be/domain';
+import {
+  COPY_ANTROPOMETRIA as C,
+  loQuePideEnPalabras,
+  loQueVaADar,
+  medicionesDelPrograma,
+  NOTA_DEL_SITIO,
+  TITULO_DE_LA_CATEGORIA,
+  type CategoriaDePrograma,
+  type ProgramaDeResultado,
+  type SexoDeLaCadena,
+} from '@be/domain';
 import { useId, useState } from 'react';
 import { conNumerosPegados } from '../../../../components/en-partes';
+import { ExplicacionAPedido } from '../../../../components/explicacion-a-pedido';
 import { Icono } from '../../../../components/icono';
 
+/** La nota de dónde mide BE un sitio, por método (las de DL-190 estaban por familia de métrica). */
+const NOTA_DEL_METODO: Readonly<Record<string, string | undefined>> = {
+  'jackson-pollock-7': NOTA_DEL_SITIO['grasa-jackson-pollock-7'],
+  'jackson-pollock-3': NOTA_DEL_SITIO['suma-7-pliegues-jackson-pollock'],
+  'lee-perimetros': NOTA_DEL_SITIO['masa-muscular-esqueletica-lee'],
+  'kerr-5c': [NOTA_DEL_SITIO['masa-muscular-kerr'], NOTA_DEL_SITIO['masa-residual-kerr']].filter(Boolean).join(' '),
+};
+
 export function EleccionDeMetodos({
-  familias,
-  elegidas,
+  programas,
+  elegidos,
+  conFraccionamiento,
+  sexo,
   deLaUltimaToma,
   leidos,
   onCambiar,
 }: {
-  familias: readonly FamiliaDeMetodo[];
-  elegidas: ReadonlySet<string>;
+  programas: readonly ProgramaDeResultado[];
+  elegidos: readonly string[];
+  conFraccionamiento: boolean;
+  /** El de la figura de la toma: con él se sabe qué pliegues pide un método por sexo (JP3). */
+  sexo: SexoDeLaCadena;
   /** Si lo elegido es lo que vino de la última toma del profesional, sin tocar. */
   deLaUltimaToma: boolean;
   /** `false` si los métodos no se pudieron leer: la toma muestra el protocolo entero. */
   leidos: boolean;
-  onCambiar: (elegidas: readonly string[]) => void;
+  onCambiar: (elegidos: readonly string[], conFraccionamiento: boolean) => void;
 }) {
   const id = useId();
-  const [abierta, setAbierta] = useState(elegidas.size === 0 && leidos && familias.length > 0);
-  const elegidasEnOrden = familias.filter((f) => elegidas.has(f.clave));
-  const porSexo = elegidasEnOrden.filter((f) => f.porSexo);
-  const notas = elegidasEnOrden.filter((f) => NOTA_DEL_SITIO[f.clave]);
-  const alternar = (clave: string) => onCambiar(familias.filter((f) => (f.clave === clave ? !elegidas.has(f.clave) : elegidas.has(f.clave))).map((f) => f.clave));
-  const conjuntos = CONJUNTOS_DE_METODOS.filter((c) => c.familias.every((f) => familias.some((x) => x.clave === f)));
-  const alternarConjunto = (deLaFamilia: readonly string[]) => {
-    const todas = deLaFamilia.every((f) => elegidas.has(f));
-    onCambiar(familias.filter((f) => (deLaFamilia.includes(f.clave) ? !todas : elegidas.has(f.clave))).map((f) => f.clave));
-  };
-  const categorias = [...new Set(familias.map((f) => f.categoria))];
+  const [abierta, setAbierta] = useState(elegidos.length === 0 && leidos);
+  const enOrden = programas.filter((p) => elegidos.includes(p.clave));
+  const fraccionables = enOrden.filter((p) => p.conFraccionamiento);
+  const alternar = (clave: string) =>
+    onCambiar(
+      programas.filter((p) => (p.clave === clave ? !elegidos.includes(p.clave) : elegidos.includes(p.clave))).map((p) => p.clave),
+      conFraccionamiento,
+    );
+  const categorias = [...new Set(programas.map((p) => p.categoria))] as CategoriaDePrograma[];
+  const porSexo = enOrden.filter((p) => p.porSexo);
 
   return (
-    <section className="tarjeta datos-de-la-carga eleccion-de-metodos" aria-labelledby={`${id}-titulo`}>
+    <section className="tarjeta datos-de-la-carga eleccion-de-metodos con-ayuda-en-la-esquina" aria-labelledby={`${id}-titulo`} data-eleccion-de-metodos>
       <h3 id={`${id}-titulo`}>Qué vas a calcular</h3>
+      <ExplicacionAPedido nombre="Cómo se elige qué calcular" como="div" lugar="esquina">
+        <p>Elegí el método y la figura pide exactamente lo que necesita, más peso, talla y edad. BE calcula todo lo que el método da, en orden: lo medido, la ecuación, la conversión y las masas.</p>
+        <p>
+          Un ejemplo resuelto: con «Jackson y Pollock, 7 pliegues», un hombre de 30 años y 77 kg cuyos pliegues suman 82 mm tiene una densidad de 1,0714 g/cm³, un % de grasa del 12,0 % del peso corporal
+          con Siri (12,4 % con Brožek), 9,3 kg de masa grasa y 67,7 kg de masa libre de grasa.
+        </p>
+        <p>Al registrar la toma, BE guarda en la historia los resultados que tienen su método en el catálogo.</p>
+      </ExplicacionAPedido>
       {!leidos ? (
         <p className="nota">No se pudieron leer los métodos: se ve todo el protocolo.</p>
-      ) : elegidasEnOrden.length === 0 ? (
+      ) : enOrden.length === 0 ? (
         <p className="nota">Elegí uno o varios métodos y la figura marca solo lo que piden, más peso, talla y edad. Sin ninguno, se ve todo el protocolo.</p>
       ) : (
         <>
           <ul className="eleccion-de-metodos__elegidos" aria-label="Métodos elegidos">
-            {elegidasEnOrden.map((f) => (
-              <li key={f.clave} className="etiqueta-de-dato">
-                {conNumerosPegados(f.nombre)}
-                <button type="button" className="boton boton--enlace eleccion-de-metodos__quitar" aria-label={`Quitar ${f.nombre}`} onClick={() => alternar(f.clave)}>
-                  <Icono nombre="cerrar" tamano={18} />
-                </button>
-              </li>
-            ))}
+            {enOrden.map((p) => {
+              const pide = medicionesDelPrograma(p.clave, sexo, conFraccionamiento);
+              const da = loQueVaADar(p.clave, conFraccionamiento);
+              return (
+                <li key={p.clave} className="metodo-elegido" data-metodo-elegido={p.clave}>
+                  <div className="metodo-elegido__cabecera">
+                    <span className="metodo-elegido__nombre">{conNumerosPegados(p.nombre)}</span>
+                    <button type="button" className="boton boton--quieto boton--compacto metodo-elegido__quitar" aria-label={`Quitar ${p.nombre}`} onClick={() => alternar(p.clave)}>
+                      <Icono nombre="cerrar" tamano={18} />
+                    </button>
+                  </div>
+                  <p className="metodo-elegido__pide">
+                    <span className="metodo-elegido__rotulo">Pide</span> {loQuePideEnPalabras(pide)}
+                  </p>
+                  <p className="metodo-elegido__da">
+                    <span className="metodo-elegido__rotulo">Vas a obtener</span> {da.join(' · ')}
+                  </p>
+                  {NOTA_DEL_METODO[p.clave] ? (
+                    <p className="nota eleccion-de-metodos__sitio">
+                      <strong>Dónde mide BE:</strong> {NOTA_DEL_METODO[p.clave]}
+                    </p>
+                  ) : null}
+                </li>
+              );
+            })}
           </ul>
-          <p className="nota">
-            {deLaUltimaToma ? 'Vienen elegidos los de tu última toma. ' : ''}La figura y la lista piden lo que necesitan estos métodos, más peso, talla y edad.
-          </p>
-          {porSexo.length > 0 ? (
+          {fraccionables.length > 0 ? (
+            <button
+              type="button"
+              className={`boton boton--compacto eleccion-de-metodos__fraccionamiento ${conFraccionamiento ? 'boton--secundario' : 'boton--quieto'}`}
+              aria-pressed={conFraccionamiento}
+              onClick={() => onCambiar(elegidos, !conFraccionamiento)}
+              data-fraccionamiento
+            >
+              <Icono nombre={conFraccionamiento ? 'tilde' : 'mas'} tamano={18} />
+              {conFraccionamiento ? 'Con el fraccionamiento en cuatro componentes' : 'Sumar el fraccionamiento en cuatro componentes'}
+              <span className="eleccion-de-metodos__fraccionamiento-pide">{conFraccionamiento ? 'talla y 2 diámetros' : '+ talla y 2 diámetros'}</span>
+            </button>
+          ) : null}
+          {deLaUltimaToma || porSexo.length > 0 ? (
             <p className="nota">
-              {porSexo.length === 1 ? `«${porSexo[0]!.nombre}» tiene una ecuación por sexo` : 'Algunos tienen una ecuación por sexo'}: al calcular se usa la de la figura de la toma ({C.figuraHombre} o {C.figuraMujer}).
+              {deLaUltimaToma ? 'Vienen elegidos los de tu última toma. ' : ''}
+              {porSexo.length > 0
+                ? `${porSexo.length === 1 ? `«${porSexo[0]!.nombre}» tiene una ecuación por sexo` : 'Algunos tienen una ecuación por sexo'}: se usa la de la figura de la toma (${sexo === 'MUJER' ? C.figuraMujer : C.figuraHombre}).`
+                : ''}
             </p>
           ) : null}
-          {notas.map((f) => (
-            <p key={f.clave} className="nota eleccion-de-metodos__sitio">
-              <strong>Dónde mide BE · {f.nombre}:</strong> {NOTA_DEL_SITIO[f.clave]}
-            </p>
-          ))}
         </>
       )}
-      {leidos && familias.length > 0 ? (
+      {leidos ? (
         <button type="button" className="boton boton--secundario boton--compacto" aria-expanded={abierta} aria-controls={`${id}-lista`} onClick={() => setAbierta((x) => !x)}>
           <Icono nombre={abierta ? 'arriba' : 'abajo'} tamano={18} />
-          {abierta ? 'Listo' : elegidasEnOrden.length === 0 ? 'Elegir métodos' : 'Cambiar los métodos'}
+          {abierta ? 'Listo' : enOrden.length === 0 ? 'Elegir métodos' : 'Cambiar los métodos'}
         </button>
       ) : null}
       {abierta && leidos ? (
         <div id={`${id}-lista`} className="eleccion-de-metodos__lista">
-          {conjuntos.length > 0 ? (
-            <fieldset className="lamina__tomas">
-              <legend>De un toque</legend>
-              <ul>
-                {conjuntos.map((c) => (
-                  <li key={c.clave}>
-                    <label>
-                      <input type="checkbox" checked={c.familias.every((f) => elegidas.has(f))} onChange={() => alternarConjunto(c.familias)} /> {conNumerosPegados(c.nombre)}
-                    </label>
-                  </li>
-                ))}
-              </ul>
-            </fieldset>
-          ) : null}
           {categorias.map((categoria) => (
-            <fieldset key={categoria ?? 'OTROS'} className="lamina__tomas">
-              <legend>{categoria ? (C.categoriaDeMetodo[categoria] ?? categoria) : C.laminaOtrosCalculos}</legend>
+            <section key={categoria} className="eleccion-de-metodos__categoria" aria-label={TITULO_DE_LA_CATEGORIA[categoria]}>
+              <h4>{TITULO_DE_LA_CATEGORIA[categoria]}</h4>
               <ul className="eleccion-de-metodos__opciones">
-                {familias
-                  .filter((f) => f.categoria === categoria)
-                  .map((f) => (
-                    <li key={f.clave}>
-                      <label>
-                        <input type="checkbox" checked={elegidas.has(f.clave)} onChange={() => alternar(f.clave)} /> {conNumerosPegados(f.nombre)}
-                      </label>
-                      <span className="nota eleccion-de-metodos__pide">
-                        {f.mediciones.length} {f.mediciones.length === 1 ? 'medida' : 'medidas'}
-                        {f.porSexo ? ' · por sexo' : ''}
-                      </span>
-                      {NOTA_DEL_SITIO[f.clave] ? <span className="nota eleccion-de-metodos__sitio">{NOTA_DEL_SITIO[f.clave]}</span> : null}
-                    </li>
-                  ))}
+                {programas
+                  .filter((p) => p.categoria === categoria)
+                  .map((p) => {
+                    const elegido = elegidos.includes(p.clave);
+                    return (
+                      <li key={p.clave}>
+                        <button type="button" className="opcion-de-metodo" aria-pressed={elegido} onClick={() => alternar(p.clave)} data-opcion-de-metodo={p.clave}>
+                          <span className="opcion-de-metodo__marca" aria-hidden="true">
+                            <Icono nombre={elegido ? 'tilde' : 'mas'} tamano={18} />
+                          </span>
+                          <span className="opcion-de-metodo__texto">
+                            <span className="opcion-de-metodo__nombre">{conNumerosPegados(p.nombre)}</span>
+                            <span className="opcion-de-metodo__da">{p.da}</span>
+                          </span>
+                          <span className="opcion-de-metodo__pide">{loQuePideEnPalabras(medicionesDelPrograma(p.clave, sexo))}</span>
+                        </button>
+                      </li>
+                    );
+                  })}
               </ul>
-            </fieldset>
+            </section>
           ))}
         </div>
       ) : null}

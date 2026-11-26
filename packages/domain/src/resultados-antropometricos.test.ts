@@ -14,6 +14,8 @@ import { REGLAS_ANTROPOMETRICAS, type ValoresDeEntrada } from './formulas-antrop
 import {
   diferenciaDelPaso,
   leerProgramas,
+  cuentaDeEjemplo,
+  loQuePideEnPalabras,
   loQueVaADar,
   medicionesDelPrograma,
   metodosConResultado,
@@ -310,4 +312,11 @@ test('las palabras del resultado no califican', () => {
   for (const palabra of ['normal', 'ideal', 'sobrepeso', 'obesidad', 'cumplimiento', 'adherencia', 'puntaje', 'asesorado', 'mejor', 'riesgo']) {
     assert.ok(!textos.some((t) => t.toLocaleLowerCase('es-AR').includes(palabra)), palabra);
   }
+});
+
+test('lo que pide en palabras y el ejemplo resuelto del «?» cuando la toma no tiene los datos', () => {
+  assert.equal(loQuePideEnPalabras(medicionesDelPrograma('jackson-pollock-7', 'HOMBRE')), '7 pliegues, la edad y el peso');
+  assert.equal(loQuePideEnPalabras(medicionesDelPrograma('jackson-pollock-7', 'HOMBRE', true)), '7 pliegues, 2 diámetros, la edad, el peso y la talla');
+  assert.match(cuentaDeEjemplo('jackson-pollock-7', 'HOMBRE', 'densidad') ?? '', /= 1,078263 g\/cm³ \(persona de ejemplo de la ficha: hombre de 22 años y 72 kg\)/);
+  assert.match(cuentaDeEjemplo('kerr-5c', 'MUJER', 'masa-muscular') ?? '', /kg/);
 });

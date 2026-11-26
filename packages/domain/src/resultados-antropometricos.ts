@@ -43,7 +43,7 @@ import {
   REGLAS_ANTROPOMETRICAS,
   type ValoresDeEntrada,
 } from './formulas-antropometricas';
-import { nombreDeMetrica, UNIDAD_DE_METRICA } from './nombres-de-metricas';
+import { FAMILIA_DE_METRICA, nombreDeMetrica, UNIDAD_DE_METRICA } from './nombres-de-metricas';
 
 /** El sexo de la ecuación. No es un dato de la toma: lo elige el profesional (como en `metodos-de-la-toma.ts`). */
 export type SexoDeLaCadena = 'HOMBRE' | 'MUJER';
@@ -1007,4 +1007,48 @@ export function diferenciaDelPaso(ahora: Pick<PasoDeLaCadena, 'valor' | 'decimal
   const absoluto = numeroConPrecision(Math.abs(delta), ahora.decimales);
   if (ahora.unidad === '%') return `${signo}${absoluto} ${Math.abs(delta) === 1 ? 'punto' : 'puntos'}`;
   return `${signo}${absoluto}${ahora.unidad ? ` ${ahora.unidad}` : ''}`;
+}
+
+/** «7 pliegues, la edad y el peso»: lo que pide un método, contado por familia, para leerlo de un vistazo. */
+export function loQuePideEnPalabras(claves: readonly string[]): string {
+  const cuenta = (familia: string, uno: string, varios: string) => {
+    const k = claves.filter((c) => FAMILIA_DE_METRICA[c] === familia).length;
+    return k === 0 ? [] : [`${k} ${k === 1 ? uno : varios}`];
+  };
+  const sueltas = claves.filter((c) => !['PLIEGUES', 'PERIMETROS', 'DIAMETROS'].includes(FAMILIA_DE_METRICA[c] ?? '')).map((c) => (c === 'edad' ? 'la edad' : medicionConArticulo(c)));
+  return enumerar([...cuenta('PLIEGUES', 'pliegue', 'pliegues'), ...cuenta('PERIMETROS', 'perímetro', 'perímetros'), ...cuenta('DIAMETROS', 'diámetro', 'diámetros'), ...sueltas]);
+}
+
+/**
+ * Las personas de prueba de la ficha de métodos (H1 y M2, §1), con las siete mediciones de Kerr: con ellas se resuelve el
+ * ejemplo del «?» cuando la toma todavía no tiene los datos de un paso. Son datos de prueba publicados en la ficha, no de
+ * ninguna persona.
+ */
+const EJEMPLO: Readonly<Record<SexoDeLaCadena, ValoresDeEntrada>> = {
+  HOMBRE: {
+    edad: 22, peso: 72, talla: 176, 'talla-sentado': 91,
+    'pliegue-pectoral': 6, 'pliegue-axilar-media': 7.5, 'pliegue-triceps': 8, 'pliegue-subescapular': 10, 'pliegue-biceps': 4, 'pliegue-cresta-iliaca': 12,
+    'pliegue-supraespinal': 7, 'pliegue-abdominal': 14.5, 'pliegue-muslo-frontal': 11, 'pliegue-pantorrilla': 6.5,
+    'perimetro-brazo-relajado': 30, 'perimetro-brazo-flexionado': 33.5, 'perimetro-antebrazo': 27, 'perimetro-pecho': 95, 'perimetro-cintura': 78, 'perimetro-cadera': 94,
+    'perimetro-muslo': 53, 'perimetro-pantorrilla': 37, 'perimetro-cabeza': 57, 'perimetro-muslo-gluteo': 56.5,
+    'diametro-humero': 7, 'diametro-biestiloideo': 5.7, 'diametro-femur': 9.6, 'diametro-biacromial': 40.5, 'diametro-biiliocrestal': 28.5, 'diametro-torax-transverso': 29, 'diametro-torax-anteroposterior': 19,
+  },
+  MUJER: {
+    edad: 34, peso: 64, talla: 166, 'talla-sentado': 87,
+    'pliegue-pectoral': 10, 'pliegue-axilar-media': 12, 'pliegue-triceps': 19, 'pliegue-subescapular': 14, 'pliegue-biceps': 8, 'pliegue-cresta-iliaca': 20,
+    'pliegue-supraespinal': 14, 'pliegue-abdominal': 22, 'pliegue-muslo-frontal': 27, 'pliegue-pantorrilla': 17,
+    'perimetro-brazo-relajado': 28, 'perimetro-brazo-flexionado': 29, 'perimetro-antebrazo': 24, 'perimetro-pecho': 90, 'perimetro-cintura': 74, 'perimetro-cadera': 100,
+    'perimetro-muslo': 56, 'perimetro-pantorrilla': 36, 'perimetro-cabeza': 55, 'perimetro-muslo-gluteo': 59,
+    'diametro-humero': 6.1, 'diametro-biestiloideo': 5, 'diametro-femur': 8.9, 'diametro-biacromial': 36, 'diametro-biiliocrestal': 28, 'diametro-torax-transverso': 26, 'diametro-torax-anteroposterior': 17,
+  },
+};
+
+/**
+ * La cuenta de un paso resuelta con la persona de ejemplo de la ficha, para el «?» de un paso que en esta toma no se pudo
+ * calcular. Con la toma completa, el «?» muestra la cuenta con sus propios números (`PasoDeLaCadena.cuenta`).
+ */
+export function cuentaDeEjemplo(programa: string, sexo: SexoDeLaCadena, paso: string, conversion: ConversionDeDensidad = 'SIRI'): string | null {
+  const r = resultadoDelMetodo(programa, EJEMPLO[sexo], sexo, conversion);
+  const p = r ? pasosDelResultado(r).find((x) => x.clave === paso) : undefined;
+  return p?.cuenta ? `${p.cuenta} (persona de ejemplo de la ficha: ${deSexo(sexo, 'hombre de 22 años y 72 kg', 'mujer de 34 años y 64 kg')})` : null;
 }

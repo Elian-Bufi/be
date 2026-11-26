@@ -428,7 +428,7 @@ function Tabla({ preparada, grupo, zonaHoraria, elegidaId, onElegir }: { prepara
                 </td>
                 <td data-etiqueta="Acciones">
                   {f.observacion.punto.comparabilityGroup === grupo ? (
-                    <button type="button" className="boton boton--enlace" onClick={() => onElegir(f.observacion.punto.sourceId)} aria-label={`${COPY_EVOLUCION.elegirEnTabla}: ${fechaEnZona(f.observacion.punto.occurredAt, zonaHoraria)}`}>
+                    <button type="button" className="boton boton--discreto boton--compacto" onClick={() => onElegir(f.observacion.punto.sourceId)} aria-label={`${COPY_EVOLUCION.elegirEnTabla}: ${fechaEnZona(f.observacion.punto.occurredAt, zonaHoraria)}`}>
                       {COPY_EVOLUCION.elegirEnTabla}
                     </button>
                   ) : (
