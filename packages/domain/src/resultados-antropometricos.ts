@@ -63,6 +63,7 @@ export const TITULO_DE_LA_ETAPA: Readonly<Record<EtapaDeLaCadena, string>> = {
 
 /** Un valor que se lee al lado del principal: el % de grasa con la otra conversión, o una masa en % del peso. */
 export interface ValorAlLado {
+  /** «Con Brožek»; vacío si el valor ya dice qué es por su base («16,4 % del peso corporal»). */
   readonly nombre: string;
   readonly valor: number;
   readonly unidad: string;
@@ -285,7 +286,7 @@ const deSexo = (s: SexoDeLaCadena, h: string, m: string) => (s === 'HOMBRE' ? h 
 const sufijo = (s: SexoDeLaCadena) => (s === 'HOMBRE' ? 'H' : 'M');
 
 /** Un valor en % del peso corporal, al lado de una masa en kg. */
-function enPorcentajeDelPeso(v: ValoresDeEntrada, nombre = 'En % del peso corporal') {
+function enPorcentajeDelPeso(v: ValoresDeEntrada, nombre = '') {
   return (kg: number): readonly ValorAlLado[] =>
     (v.peso ?? 0) > 0 ? [{ nombre, valor: aplicarPrecision((kg / v.peso!) * 100, { decimales: 1, modo: 'MEDIO_ARRIBA' }), unidad: '%', base: BASE_DEL_PESO, decimales: 1, formula: `${n(kg, 2)} kg ÷ ${n(v.peso!)} kg × 100` }] : [];
 }
@@ -729,12 +730,12 @@ const kerr: Armador = (v, sexo) => {
     antes: [estructurado],
     calcular: () => de(estructurado) - v.peso!,
     cuenta: (x) => `${n(de(estructurado), 2)} − ${n(v.peso!)} = ${n(x, 2)} kg`,
-    alLado: (x) => (v.peso! > 0 ? [{ nombre: 'En % del peso medido', valor: aplicarPrecision((x / v.peso!) * 100, { decimales: 1, modo: 'MEDIO_ARRIBA' }), unidad: '%', base: 'del peso medido', decimales: 1, formula: null }] : []),
+    alLado: (x) => (v.peso! > 0 ? [{ nombre: '', valor: aplicarPrecision((x / v.peso!) * 100, { decimales: 1, modo: 'MEDIO_ARRIBA' }), unidad: '%', base: 'del peso medido', decimales: 1, formula: null }] : []),
   });
   // Cada masa en % del peso estructurado: así se lee la composición de Kerr, que suma 100 %.
   const conProporcion = pasos.map((p): PasoDeLaCadena =>
     p.crudo !== null && estructurado.crudo !== null
-      ? { ...p, alLado: [{ nombre: 'En % del peso estructurado', valor: aplicarPrecision((p.crudo / estructurado.crudo) * 100, { decimales: 1, modo: 'MEDIO_ARRIBA' }), unidad: '%', base: 'del peso estructurado', decimales: 1, formula: null }] }
+      ? { ...p, alLado: [{ nombre: '', valor: aplicarPrecision((p.crudo / estructurado.crudo) * 100, { decimales: 1, modo: 'MEDIO_ARRIBA' }), unidad: '%', base: 'del peso estructurado', decimales: 1, formula: null }] }
       : p,
   );
   return {

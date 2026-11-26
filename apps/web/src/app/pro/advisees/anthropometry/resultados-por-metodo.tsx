@@ -394,8 +394,9 @@ function PasoDeLaToma({
               {paso.base ? <span className="paso-de-la-cadena__base"> {paso.base}</span> : null}
             </span>
             {paso.alLado.map((x) => (
-              <span key={x.nombre} className="paso-de-la-cadena__al-lado">
-                {x.nombre}: {textoDelValorAlLado(x)}
+              <span key={`${x.nombre}-${x.base}`} className="paso-de-la-cadena__al-lado">
+                {x.nombre ? `${x.nombre}: ` : ''}
+                {textoDelValorAlLado(x)}
               </span>
             ))}
             {cambio !== null ? <span className="paso-de-la-cadena__cambio">{cambio} desde la anterior</span> : null}
