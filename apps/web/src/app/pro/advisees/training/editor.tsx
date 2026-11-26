@@ -57,6 +57,7 @@ import {
   estructuraConObjetivosComoEntrada,
   falloDeGuardado,
   loQueNoDejaGuardarElEntrenamiento,
+  conElComunDeLasSeries,
   loQueSeMiraEnElEditor,
   lugarDelProblemaDeEntrenamiento,
   motivoSinGuardarAhora,
@@ -779,7 +780,7 @@ export function EditorDePlan({
     if (version && !esDelPlan(version)) return guardarLaPreparacion(automatico, version);
     const base = reenvio?.base ?? version;
     if (!base) return null;
-    const bloquesEnviados = reenvio?.bloques ?? bloques;
+    const bloquesEnviados = conElComunDeLasSeries(reenvio?.bloques ?? bloques);
     // Un nombre vacío o un dato que no se entiende pueden estar en otro bloque, en otra sesión o en un ejercicio
     // plegado: se listan, y cada uno lleva a su lugar. Nada de eso viaja: un dato mal escrito se guardaría como «nada».
     const impide = loQueNoDejaGuardar(bloquesEnviados);
@@ -1209,7 +1210,7 @@ export function EditorDePlan({
    * viaja; un 409 después de un guardado sin respuesta se compara con lo mandado (ED-61) antes de decir «conflicto».
    */
   async function guardarLaPreparacion(automatico: boolean, base: GuardadoDeLaPlantilla, reenvio: { readonly bloques: Bloques; readonly ediciones: number } | null = null): Promise<LoGuardado | null> {
-    const bloquesEnviados = reenvio?.bloques ?? bloques;
+    const bloquesEnviados = conElComunDeLasSeries(reenvio?.bloques ?? bloques);
     const impide = loQueNoDejaGuardar(bloquesEnviados);
     if (impide.length > 0) {
       if (automatico) return null;
@@ -2874,7 +2875,7 @@ export function EditorDePlan({
       </>
     );
   /** «Antes de activar» (o «Antes de guardar», en una plantilla): lo que impide y lo que queda sin completar, cada cosa con su «Ir a…». */
-  const listaAntesDeActivar = (
+  const loQueImpide = (
     <>
       {/* DL-199 (ET3, E5): cómo se actualiza esta lista va en el «?» de su esquina, no en un párrafo al pie. */}
       <div className="encabezado-con-ayuda">
@@ -2897,6 +2898,11 @@ export function EditorDePlan({
       </div>
       {/* ENP-D13: el estado de la revisión, siempre dicho; nunca «nada impide» antes de que responda la API. */}
       {revisionEnElPanel}
+    </>
+  );
+  /** Lo que queda sin completar NO impide activar: no entra en «N cosas impiden activar» ni en su lista. */
+  const loQueQuedaSinCompletar = (
+    <>
       <h3>
         {CE.quedaSinCompletar} <span className="nota">· {CE.noImpide}</span>
       </h3>
@@ -2912,6 +2918,13 @@ export function EditorDePlan({
           ))}
         </ul>
       )}
+    </>
+  );
+  /** La edición de una plantilla muestra las dos cosas juntas en su panel; «Antes de activar» solo lo que impide. */
+  const listaAntesDeActivar = (
+    <>
+      {loQueImpide}
+      {loQueQuedaSinCompletar}
     </>
   );
 
@@ -2960,7 +2973,7 @@ export function EditorDePlan({
               impiden activar, y despliega la lista. */}
           {pasoDelAsistente ? null : (
             <LoQueImpideActivar cuantos={cuantosImpiden} estado={estadoDeLaRevision} delEditor={delEditor.length} abierto={impideAbierto} onAbrir={setImpideAbierto}>
-              {listaAntesDeActivar}
+              {loQueImpide}
             </LoQueImpideActivar>
           )}
           {pasoDelAsistente ? null : (

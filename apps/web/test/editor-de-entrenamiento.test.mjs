@@ -216,6 +216,11 @@ test('TEST-EE-17 · «Antes de activar» al lado de «Revisar y activar», con c
   // Va antes del botón lleno, en la barra; ya no hay pestañas en el panel.
   assert.ok(EDITOR.indexOf('<LoQueImpideActivar') < EDITOR.indexOf('data-revisar-y-activar'));
   assert.doesNotMatch(EDITOR, /CE\.pestanaAntes|role="tab"[^\n]*pestana-\$\{clave\}/);
+  // Tanda 4: el cuadro «N cosas impiden activar» lista solo lo bloqueante; lo que queda sin completar no va ahí.
+  assert.match(EDITOR, /onAbrir=\{setImpideAbierto\}>\s*\{loQueImpide\}\s*<\/LoQueImpideActivar>/);
+  const impide = EDITOR.slice(EDITOR.indexOf('const loQueImpide = ('), EDITOR.indexOf('const loQueQuedaSinCompletar = ('));
+  assert.ok(impide.length > 0);
+  assert.doesNotMatch(impide, /quedaSinCompletar|noImpide/);
 });
 
 test('TEST-EE-18 · cada acción una sola vez: «Agregar sesión» y «Agregar fase» (E7)', () => {

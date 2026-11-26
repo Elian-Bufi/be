@@ -30,6 +30,7 @@ import {
   cuentaDeSeries,
   celdaDeObjetivoDelEditor,
   ejercicioPlegadoDelEditor,
+  lasSeriesEfectivasTienenSuRir,
   esLoQueTieneLaCelda,
   leerDescanso,
   leerNumero,
@@ -56,7 +57,7 @@ import {
   CARDIO_SIN_INDICAR,
   COPY_CARDIO,
 } from '@be/domain';
-import { Fragment, useEffect, useId, useRef, useState, type ComponentProps, type FocusEvent, type KeyboardEvent, type ReactNode } from 'react';
+import { Fragment, useEffect, useId, useRef, useState, type ComponentProps, type FocusEvent, type KeyboardEvent, type MouseEvent, type ReactNode } from 'react';
 import { SeccionDeAproximaciones } from './aproximaciones-del-ejercicio';
 import { CardioDelEjercicio } from './cardio-del-ejercicio';
 import { conLasAproximacionesSinRir, cuantasAproximaciones, resumenDeLasAproximaciones, rotulosConAproximaciones, serieAlDesmarcarLaAproximacion } from './aproximaciones';
@@ -420,7 +421,19 @@ export function EjercicioDelEditor({
   const criterioEfectivo: Criterio | null = cardio ? null : ((p.intensity?.criterion as Criterio | undefined) ?? (sinIntensidad ? null : intensidadDelPlan));
   // Revisión adversaria (DL-197): el que hereda la intensidad del plan sin objetivo todavía se guarda sin criterio (así lo
   // lee la persona): plegado, se dice que falta el objetivo, como en uno con su criterio propio.
-  const avisosDelPlegado = !p.intensity && criterioEfectivo !== null ? [E9.faltaElObjetivoHeredado, ...plegado.avisos] : plegado.avisos;
+  const avisosDelPlegado = !p.intensity && criterioEfectivo !== null && !(criterioEfectivo === 'RIR' && lasSeriesEfectivasTienenSuRir(p)) ? [E9.faltaElObjetivoHeredado, ...plegado.avisos] : plegado.avisos;
+  // Tocar el aviso «Falta el objetivo de intensidad» abre el ejercicio y lleva el foco al «Común» de la planilla (RP-19: el
+  // campo ya está en su lugar; el foco no mueve nada).
+  const pedirElFocoDelComun = useRef(false);
+  useEffect(() => {
+    if (!abierto || !pedirElFocoDelComun.current) return;
+    pedirElFocoDelComun.current = false;
+    window.requestAnimationFrame(() => document.getElementById(`${id}-objetivo-comun`)?.focus());
+  }, [abierto, id]);
+  const alTocarElEncabezado = (e: MouseEvent<HTMLButtonElement>) => {
+    if (!abierto && avisosDelPlegado.some((x) => x.startsWith('Falta el objetivo de intensidad')) && (e.target as HTMLElement).closest('[data-avisos]')) pedirElFocoDelComun.current = true;
+    alAlternar();
+  };
   const Titulo = nivel;
   return (
     // DL-196 (EE-05): el panel de la derecha sigue al ejercicio que se toca (`data-foco`).
@@ -437,7 +450,7 @@ export function EjercicioDelEditor({
       <div className="comida-del-editor__cabecera">
         {arrastre?.asa ?? null}
         <Titulo className="comida-del-plan__titulo">
-          <button type="button" id={`abrir-ejercicio-${id}`} className="comida-del-plan__boton" aria-expanded={abierto} aria-controls={`${propio}-cuerpo`} onClick={alAlternar}>
+          <button type="button" id={`abrir-ejercicio-${id}`} className="comida-del-plan__boton" aria-expanded={abierto} aria-controls={`${propio}-cuerpo`} onClick={alTocarElEncabezado}>
             <Icono nombre="entrenamiento" tamano={20} />
             <span className="comida-del-plan__textos">
               <span className="comida-del-plan__nombre">{nombre}</span>
@@ -663,8 +676,11 @@ function CeldaDeObjetivo({
   onCambiar,
   paso = null,
   aviso,
+  falta = false,
 }: {
   id: string;
+  /** Falta el objetivo de esta serie (ni propio ni común): la celda se marca, sin cambiar de tamaño. */
+  falta?: boolean;
   /** El nombre del campo: «Serie 2: carga sugerida (kg)». */
   rotulo: string;
   /** De qué son las opciones del botón: «la carga sugerida de la serie 2». */
@@ -704,7 +720,7 @@ function CeldaDeObjetivo({
       id={id}
       aria-label={rotulo}
       aria-describedby={celda.estado === 'no-se-entiende' && aviso ? `${id}-estado ${aviso}` : `${id}-estado`}
-      aria-invalid={celda.estado === 'no-se-entiende' || undefined}
+      aria-invalid={celda.estado === 'no-se-entiende' || falta || undefined}
       inputMode={entero ? 'numeric' : 'decimal'}
       autoComplete="off"
       value={texto}
@@ -728,7 +744,7 @@ function CeldaDeObjetivo({
     />
   );
   return (
-    <div className="celda-de-objetivo" data-estado={celda.estado} data-origen={marca ?? undefined}>
+    <div className="celda-de-objetivo" data-estado={celda.estado} data-origen={marca ?? undefined} data-falta={falta ? '' : undefined}>
       {paso ? <ConAccionesRapidas acciones={<AccionesRapidas campo={paso.campo} unidad={paso.unidad} desde={desde} alAplicar={(n) => alEscribir(escribir(n))} de={queEs} />}>{campo}</ConAccionesRapidas> : campo}
       {marca ? (
         <span className="celda-de-objetivo__origen" aria-hidden="true" data-origen-de-la-celda>
@@ -962,7 +978,13 @@ function SeriesDelEjercicio({
   };
   const aviso = `${id}-no-se-entiende`;
   const queNoSeEntiende = loQueNoSeEntiendeEnLasSeries(id, p, p.sets.map((_, n) => cual(n)));
-  const textoDelAviso = avisoDeLaIntensidad ?? textoDeLoQueNoSeEntiende(queNoSeEntiende);
+  // Falta el objetivo de intensidad solo si alguna serie efectiva no tiene intensidad, ni propia ni heredada del «Común»: con
+  // el RIR propio en todas, el «Común» vacío no es una falta. Se marca el «Común» y las series que no tienen.
+  const hayEfectivas = p.sets.some((s) => !esDeCalentamiento(s));
+  const comunVacio = !(p.intensity && (p.intensity.criterion as Criterio) === criterio && valido(p.intensity.target.value));
+  const faltaElComun = (conRir || conPorcentaje) && hayEfectivas && comunVacio && !(conRir && lasSeriesEfectivasTienenSuRir(p));
+  const faltaEnLaSerie = (n: number): boolean => faltaElComun && conRir && !esDeCalentamiento(p.sets[n]!) && !valido(p.sets[n]!.rir);
+  const textoDelAviso = avisoDeLaIntensidad ?? textoDeLoQueNoSeEntiende(queNoSeEntiende) ?? (faltaElComun ? COPY_SERIES.faltaElObjetivo(nombreDeLaIntensidadDelCriterio(conRir, esfuerzo)) : null);
   // F14: el colSpan real (con `table-layout: fixed`, 99 desarmaba las columnas) y los anchos por clase, en el colgroup.
   const columnas = 7 + (criterio ? 1 : 0);
   const nombreDeLaIntensidad = conRir ? esfuerzo : conPorcentaje ? ETIQUETA_DE_CRITERIO.PERCENT_RM : '';
@@ -1045,6 +1067,7 @@ function SeriesDelEjercicio({
                   onCambiar={cambiarElObjetivoComun}
                   onAviso={setAvisoDeLaIntensidad}
                   aviso={aviso}
+                  falta={faltaElComun}
                 />
               </td>
             ) : null}
@@ -1087,7 +1110,10 @@ function SeriesDelEjercicio({
                 </th>
                 {/* F14: la casilla «Aproximación», en su propia columna. */}
                 <td className="series-del-editor__aprox" data-etiqueta={COPY_SELECCION.aproximacion}>
-                  <input type="checkbox" id={`${id}-serie-${n}-calentamiento`} checked={esDeCalentamiento(s)} onChange={() => marcarCalentamiento(n)} aria-label={`${COPY_SELECCION.aproximacion} (${rotulos[n]!.largo})`} data-marcar-calentamiento={n + 1} />
+                  {/* La casilla de BE (`.casilla-de-be`), no la gris del navegador, en su caja táctil de 44 px (`.casilla-de-celda`). */}
+                  <label className="casilla-de-celda">
+                    <input type="checkbox" className="casilla-de-be" id={`${id}-serie-${n}-calentamiento`} checked={esDeCalentamiento(s)} onChange={() => marcarCalentamiento(n)} aria-label={`${COPY_SELECCION.aproximacion} (${rotulos[n]!.largo})`} data-marcar-calentamiento={n + 1} />
+                  </label>
                 </td>
                 <td data-etiqueta="Repeticiones">
                   <CeldaDeRepeticiones id={`${id}-serie-${n}`} rotulo={`${rotulos[n]!.largo}: repeticiones (un número o un rango, 8-12)`} valor={s.repetitions} onCambiar={(r) => cambiarLaSerie(n, (x) => ({ ...x, repetitions: r }))} aviso={aviso} />
@@ -1120,6 +1146,7 @@ function SeriesDelEjercicio({
                         leer={leerElRir(notacion)}
                         onCambiar={(v) => cambiarElObjetivo(n, 'rir', v)}
                         aviso={aviso}
+                        falta={faltaEnLaSerie(n)}
                       />
                     ) : (
                       <span className="nota series-del-editor__sin-intensidad" data-sin-intensidad-en-la-serie>
@@ -1173,7 +1200,7 @@ function SeriesDelEjercicio({
       </table>
       {/* RP-22: siempre en la página; vacío, ocupa lo mismo. Lo que se marca en una celda no corre las filas ni el pie. */}
       {p.sets.length > 0 || queNoSeEntiende.length > 0 || avisoDeLaIntensidad ? (
-        <RenglonDelAviso id={aviso} tipo={queNoSeEntiende.length > 0 || avisoDeLaIntensidad ? 'error' : 'nota'} anunciar title={textoDelAviso ?? undefined} data-lo-que-no-se-entiende={queNoSeEntiende.length + (avisoDeLaIntensidad ? 1 : 0)}>
+        <RenglonDelAviso id={aviso} tipo={queNoSeEntiende.length > 0 || avisoDeLaIntensidad || faltaElComun ? 'error' : 'nota'} anunciar title={textoDelAviso ?? undefined} data-lo-que-no-se-entiende={queNoSeEntiende.length + (avisoDeLaIntensidad ? 1 : 0)}>
           {textoDelAviso}
         </RenglonDelAviso>
       ) : null}
@@ -1218,7 +1245,11 @@ const COPY_SERIES = {
   comoSeEscribe: 'Las repeticiones, como 8 o 8-12; el descanso, mm:ss («3» es 03:00; «130», 01:30).',
   porcentajeBajo: '¿Quisiste escribir un RIR? El % RM va de 30 a 100: para el RIR, elegilo como intensidad en «Más opciones».',
   porcentajeNoSeEntiende: 'No se entiende el % RM: va un número de 30 a 100.',
+  /** Falta el objetivo: ninguna serie efectiva lo tiene, ni propio ni del «Común». */
+  faltaElObjetivo: (que: string) => `Falta el objetivo de intensidad: escribí el ${que} del «Común» o el de cada serie.`,
 } as const;
+
+const nombreDeLaIntensidadDelCriterio = (conRir: boolean, esfuerzo: string): string => (conRir ? esfuerzo : '% RM');
 
 /** F13: el % RM más bajo que se acepta. Debajo, lo más probable es un RIR escrito en el lugar equivocado. */
 export const PORCENTAJE_RM_MINIMO = 30;
@@ -1236,11 +1267,14 @@ function CeldaDeIntensidad({
   onCambiar,
   onAviso,
   aviso,
+  falta = false,
 }: {
   id: string;
   rotulo: string;
   criterio: Criterio;
   notacion: NotacionDelEsfuerzo;
+  /** Falta el objetivo de intensidad (ninguna serie efectiva lo tiene): el campo se marca (borde de aviso y `aria-invalid`), sin cambiar de tamaño. */
+  falta?: boolean;
   valor: number | null;
   onCambiar: (v: number | null) => void;
   onAviso: (texto: string | null) => void;
@@ -1268,13 +1302,15 @@ function CeldaDeIntensidad({
       id={id}
       className="celda-de-serie"
       aria-label={rotulo}
-      aria-invalid={mal || undefined}
-      aria-describedby={mal ? aviso : undefined}
+      aria-invalid={mal || falta || undefined}
+      aria-describedby={mal || falta ? aviso : undefined}
       inputMode="decimal"
       autoComplete="off"
       value={texto}
-      placeholder={criterio === 'PERCENT_RM' ? '75' : notacion === 'RPE' ? '8' : '2'}
+      // Un ejemplo se lee como ejemplo («ej. 2», tenue y en cursiva): nunca parece un valor cargado, tampoco con el aviso.
+      placeholder={criterio === 'PERCENT_RM' ? 'ej. 75' : notacion === 'RPE' ? 'ej. 8' : 'ej. 2'}
       data-objetivo-comun={criterio}
+      data-falta={falta ? '' : undefined}
       data-celda-general-no-se-entiende={mal ? '' : undefined}
       onChange={(e) => alEscribir(e.target.value)}
       onBlur={alSalir}

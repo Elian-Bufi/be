@@ -9216,6 +9216,37 @@ button.comida-del-dia__fila > .icono:last-child {
   display: none;
 }
 
+/* La casilla de BE: el borde de los campos sobre la superficie y, marcada, el azul del botón con su tilde (no la gris del
+   navegador, que en Azul noche se leía apagada). La misma caja marcada o no: el cambio de estado no mueve nada. */
+input[type='checkbox'].casilla-de-be {
+  appearance: none;
+  flex: none;
+  box-sizing: border-box;
+  width: 1.15rem;
+  height: 1.15rem;
+  margin: 0;
+  border: 1.5px solid var(--borde-control);
+  border-radius: 4px;
+  background: var(--superficie) center / 100% 100% no-repeat;
+  cursor: pointer;
+}
+
+input[type='checkbox'].casilla-de-be:checked {
+  border-color: var(--boton-fondo);
+  background-color: var(--boton-fondo);
+  background-image: var(--tilde-de-casilla);
+}
+
+input[type='checkbox'].casilla-de-be:focus-visible {
+  outline: 3px solid var(--foco);
+  outline-offset: 2px;
+}
+
+input[type='checkbox'].casilla-de-be:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .preguntas-del-pedido__seccion th {
   height: auto;
   padding: 0.7rem 0 0.3rem;
@@ -10543,9 +10574,18 @@ button.comida-del-dia__fila > .icono:last-child {
   padding-inline: 0.7rem;
 }
 
-/* El fallo: «Reintentar» es un botón compacto; el detalle técnico, plegado, cuelga debajo de la barra sin mover nada. */
+/* El fallo: «Reintentar» es un botón compacto, de ancho fijo, y su lugar sale del ancho del estado (RP-19): el estado
+   se achica lo que mide el botón más el espacio entre los dos, así ni el estado ni lo de al lado se corren al aparecer.
+   El detalle técnico, plegado, cuelga debajo de la barra sin mover nada. */
+.estacion [data-barra-de-comandos] .editor-del-plan__estado[data-con-reintentar] {
+  width: calc(clamp(11rem, 13vw, 16rem) - 7.5rem - 0.35rem);
+}
+
 .estacion [data-barra-de-comandos] .estado-de-guardado__reintentar {
   flex: none;
+  justify-content: center;
+  width: 7.5rem;
+  padding-inline: 0.4rem;
   white-space: nowrap;
 }
 
@@ -11500,9 +11540,9 @@ button.comida-del-dia__fila > .icono:last-child {
   text-align: center;
 }
 
-.series-del-editor .series-del-editor__aprox input {
-  width: 1.15rem;
-  height: 1.15rem;
+/* «Aprox.»: la casilla de BE (`.casilla-de-be`), centrada en su caja de 44 px (`.casilla-de-celda`). */
+.series-del-editor .series-del-editor__aprox .casilla-de-celda {
+  vertical-align: middle;
 }
 
 .series-del-editor__sin-intensidad {
@@ -11663,6 +11703,14 @@ button.comida-del-dia__fila > .icono:last-child {
 .celda-de-objetivo input[data-en-gris]::placeholder {
   color: var(--tenue);
   font-weight: 400;
+}
+
+/* El «Común» vacío: su ejemplo («ej. 2») se lee como ejemplo, tenue y sin negrita, nunca como un valor cargado. */
+.series-del-editor .celda-de-serie[data-objetivo-comun]::placeholder {
+  color: var(--tenue);
+  font-style: italic;
+  font-weight: 400;
+  opacity: 0.85;
 }
 
 /* «Sin objetivo» es un texto, no un número: va desde la izquierda y un poco más chico, para entrar en la celda. */
@@ -25013,6 +25061,7 @@ html:has(.estacion:not([data-en-el-asistente])) {
 
 /* Una celda que no se entiende: el borde sigue de 1,5 px y el resto del rojo es una sombra (antes, 2 px corrían el valor). */
 .celda-de-objetivo[data-estado='no-se-entiende'],
+.celda-de-objetivo[data-falta],
 .ejercicio-del-editor__series .celda-de-serie[aria-invalid='true'],
 .bloque-del-editor__campo input[aria-invalid='true'],
 .agregar-ejercicio__para-todos > input[aria-invalid='true'] {

@@ -121,7 +121,7 @@ test('RP-22 · la planilla de series: ningún aviso dentro de una fila; el rengl
   const general = EJERCICIO.slice(EJERCICIO.indexOf('function CeldaGeneral('), EJERCICIO.indexOf('function CeldaDeRepeticiones('));
   assert.doesNotMatch(general, /campo__error/);
   // El renglón, siempre en la página con series, con `aria-live` (el lector lo oye) y nombrado por cada celda mal escrita.
-  assert.match(EJERCICIO, /<RenglonDelAviso id=\{aviso\} tipo=\{queNoSeEntiende\.length > 0 \|\| avisoDeLaIntensidad \? 'error' : 'nota'\} anunciar/);
+  assert.match(EJERCICIO, /<RenglonDelAviso id=\{aviso\} tipo=\{queNoSeEntiende\.length > 0 \|\| avisoDeLaIntensidad \|\| faltaElComun \? 'error' : 'nota'\} anunciar/);
   assert.match(EJERCICIO, /aria-describedby=\{celda\.estado === 'no-se-entiende' && aviso \? `\$\{id\}-estado \$\{aviso\}` : `\$\{id\}-estado`\}/);
   // DL-197 (F16): «Editar todas las series», en su cuadro: el aviso en su renglón, siempre.
   assert.match(EJERCICIO, /<p className=\{mal \? 'campo__error editar-todas__aviso' : 'nota editar-todas__aviso'\}/);
