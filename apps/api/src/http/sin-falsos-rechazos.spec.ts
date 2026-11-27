@@ -250,16 +250,42 @@ function valor(s: Esquema, o: Opciones): unknown {
  * DL-201 (PE-D02): un identificador no se repite ni en su lista ni en las otras listas del mismo esquema (un ejercicio
  * lleva como mucho una progresión propia: dos reglas no comparten ejercicio, y la validación lo rechaza). El texto mínimo
  * repetido se cambia por el siguiente válido que no esté usado. `todas`: las listas del cuerpo conocidas hasta ahora.
+ * Lo usado se lleva en un registro por esquema (y el próximo sufijo por texto), para no recorrer todas las listas en cada
+ * elemento: recorrerlas llevó la corrida a más de una hora. Lo que se anota y después no entra queda anotado: solo vuelve
+ * más estricta la regla.
  */
+interface Registro {
+  readonly usados: Map<Esquema, Set<string>>;
+  readonly siguiente: Map<string, number>;
+}
+const registros = new WeakMap<readonly Hueco[], Registro>();
+function registroDe(todas: readonly Hueco[]): Registro {
+  let r = registros.get(todas);
+  if (!r) {
+    r = { usados: new Map(), siguiente: new Map() };
+    registros.set(todas, r);
+  }
+  return r;
+}
 function sinRepetir(nuevo: unknown, h: Hueco, todas: readonly Hueco[] = [h]): unknown {
   if (typeof nuevo !== 'string') return nuevo;
-  const hermanas = todas.filter((x) => x.elemento === h.elemento);
-  if (!hermanas.includes(h)) hermanas.push(h);
-  const usado = (v: string): boolean => hermanas.some((x) => x.lista.includes(v));
-  if (!usado(nuevo)) return nuevo;
-  for (let k = 1; k < 100_000; k++) {
+  const r = registroDe(todas);
+  let usados = r.usados.get(h.elemento);
+  if (!usados) {
+    usados = new Set();
+    r.usados.set(h.elemento, usados);
+  }
+  if (!usados.has(nuevo)) {
+    usados.add(nuevo);
+    return nuevo;
+  }
+  for (let k = r.siguiente.get(nuevo) ?? 1; k < 1_000_000; k++) {
     const v = `${nuevo}${k}`;
-    if (!usado(v) && h.elemento.safeParse(v).success) return v;
+    if (!usados.has(v) && h.elemento.safeParse(v).success) {
+      r.siguiente.set(nuevo, k + 1);
+      usados.add(v);
+      return v;
+    }
   }
   return nuevo;
 }
@@ -267,19 +293,56 @@ function sinRepetir(nuevo: unknown, h: Hueco, todas: readonly Hueco[] = [h]): un
 /**
  * Cada texto repetido entre listas del mismo esquema pasa al siguiente libre: lo que ya trae el cuerpo armado y lo que
  * trae cada elemento nuevo adentro (una regla nueva llega con su ejercicio mínimo, el mismo que la anterior). Mira solo
- * `revisar` (por defecto, todas) y devuelve los bytes que sumó.
+ * `revisar` (por defecto, todas; la primera vez, siempre todas, para armar el registro) y devuelve los bytes que sumó.
  */
 function desrepetir(todas: readonly Hueco[], revisar: readonly Hueco[] = todas): number {
   let suma = 0;
   for (const h of revisar)
     h.lista.forEach((v, i) => {
       if (typeof v !== 'string') return;
-      h.lista[i] = undefined;
       const u = sinRepetir(v, h, todas);
       h.lista[i] = u;
       suma += bytes(u) - bytes(v);
     });
   return suma;
+}
+
+/**
+ * DL-201 (PE-D02) · las progresiones de un plan no se pisan: una sola regla general por fase y, por fase, cada ejercicio
+ * en una sola regla propia. Es una regla entre elementos de la lista, que el generador (elemento por elemento) no ve:
+ * se sacan las reglas y los ejercicios que la rompen, en cualquier `progressions` del cuerpo. Solo achica el cuerpo: el
+ * resultado sigue siendo válido y de hasta 16 KB si el original lo era.
+ */
+function sinProgresionesPisadas(v: unknown): void {
+  if (Array.isArray(v)) {
+    v.forEach(sinProgresionesPisadas);
+    return;
+  }
+  if (v === null || typeof v !== 'object') return;
+  const o = v as Record<string, unknown>;
+  if (Array.isArray(o.progressions)) {
+    const deLaFase = new Set<unknown>();
+    const propias = new Set<string>();
+    o.progressions = (o.progressions as Record<string, unknown>[]).filter((p) => {
+      if (p === null || typeof p !== 'object') return true;
+      if (p.prescriptionIds === null || p.prescriptionIds === undefined) {
+        if (deLaFase.has(p.blockId)) return false;
+        deLaFase.add(p.blockId);
+        return true;
+      }
+      const ids: unknown = p.prescriptionIds;
+      if (!Array.isArray(ids)) return true;
+      const quedan = ids.filter((id: unknown) => {
+        const clave = `${String(p.blockId)}|${String(id)}`;
+        if (propias.has(clave)) return false;
+        propias.add(clave);
+        return true;
+      });
+      p.prescriptionIds = quedan;
+      return quedan.length > 0;
+    });
+  }
+  Object.values(o).forEach(sinProgresionesPisadas);
 }
 
 /** Una lista del cuerpo que todavía puede crecer, con el esquema de sus elementos. */
@@ -582,6 +645,7 @@ describe('#206 · la cota de elementos no rechaza ningún cuerpo válido de hast
     const schema = (dominio as unknown as Record<string, Esquema>)[nombre];
     const r: Resumen = { cuerpos: 0, fueraDelLimite: 0, cercaDelLimite: 0, justo: 0, maxElementos: 0, menorMargen: Infinity };
     for (const { nombre: caso, cuerpo } of casos(schema, 7919 * (i + 1))) {
+      sinProgresionesPisadas(cuerpo);
       const parseado = schema.safeParse(cuerpo);
       // Tiene que ser un cuerpo que el contrato acepta: si no, el generador está mal.
       expect([caso, parseado.success, parseado.success ? '' : JSON.stringify(parseado.error.issues.slice(0, 2))]).toEqual([caso, true, '']);
