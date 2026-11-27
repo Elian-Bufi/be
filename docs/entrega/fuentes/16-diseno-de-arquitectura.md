@@ -21,8 +21,8 @@
 BE son tres aplicaciones que comparten un solo servidor: la app de la persona, el website del profesional y de Administración, y la API, que es la única que toca la base de datos. Importa porque BE guarda datos de salud: cada escritura tiene que pasar por el mismo control de permiso y dejar la misma auditoría, sin excepciones, y eso es más fácil de garantizar con una sola puerta.
 
 - **3** aplicaciones: app, website y API
-- **34** módulos: de un monolito modular
-- **335** operaciones: en la especificación OpenAPI
+- **35** módulos: de un monolito modular
+- **346** operaciones: en la especificación OpenAPI
 - **1** nube: Render, región Frankfurt
 
 *Fuente: El repositorio: apps/api/src (módulos y controladores), docs/api/openapi.json y prisma/schema.prisma.*
@@ -100,8 +100,8 @@ Hacia afuera, BE manda lo mínimo. Ningún servicio externo recibe datos de salu
 | --- | --- | --- |
 | App de la persona | Android · React Native y Expo | Cinco pestañas: Inicio, Nutrición, Entrenamiento, Evolución y Perfil. Guarda la sesión en el almacenamiento seguro del teléfono. |
 | Website | Next.js · exportación estática | Escritorio del profesional y Administración. No tiene servidor propio: es un sitio estático que pide todo a la API. |
-| API | NestJS · TypeScript | Monolito modular de 34 módulos. Autoriza cada operación, aplica las reglas de cada área y audita en la misma transacción. |
-| Base de datos | PostgreSQL 16 · Prisma | 163 tablas. Además de guardar, rechaza por sí misma las escrituras que romperían la historia. |
+| API | NestJS · TypeScript | Monolito modular de 35 módulos. Autoriza cada operación, aplica las reglas de cada área y audita en la misma transacción. |
+| Base de datos | PostgreSQL 16 · Prisma | 168 tablas. Además de guardar, rechaza por sí misma las escrituras que romperían la historia. |
 | Recordatorios | Tarea programada | Tres veces por día le pide a la API que envíe los recordatorios del día. |
 | @be/domain | Paquete TypeScript | Contratos de cada operación, textos y reglas puras. Lo compilan la app, el website y la API; de él sale la especificación OpenAPI. |
 
@@ -125,10 +125,10 @@ Escritorio del profesional y Administración. Reanuda la sesión con una cookie 
 Tres veces por día pide a la API los recordatorios del día`"]
     API["`**API**
 [NestJS · TypeScript · monolito modular]
-34 módulos por dominio. Autoriza cada operación, aplica las reglas y audita en la misma transacción`"]
+35 módulos por dominio. Autoriza cada operación, aplica las reglas y audita en la misma transacción`"]
     DB["`**Base de datos**
 [PostgreSQL 16 · Prisma]
-163 tablas, 102 migraciones. Rechaza por sí misma lo que rompería la historia`"]
+168 tablas, 107 migraciones. Rechaza por sí misma lo que rompería la historia`"]
   end
   EXP["`**Expo Push**`"]
   OFF["`**Open Food Facts · USDA · wger**`"]

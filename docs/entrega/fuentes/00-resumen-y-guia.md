@@ -87,6 +87,10 @@ Cuando una profesional de Nutrición abre la ficha de una persona, ve su área c
 
 Mientras planifica, el profesional tiene ese contexto a la vista, sin salir del editor, y prepara sus plantillas aun sin una persona. El objetivo de Nutrición puede apoyarse en una toma de Antropometría, con el método y su cita a la vista: BE propone y el profesional decide.
 
+En Entrenamiento, el plan se arma por fases sobre un almanaque: cada fase con sus semanas, sus fechas, su objetivo y sus sesiones, y el plan con su forma de indicar la intensidad, elegida una vez (RIR, RPE, % RM o solo carga). Con el 1RM de referencia de cada ejercicio (calculado en una calibración, tomado del último registro de la persona o declarado), las cargas en % RM se calculan solas y se redondean al disco que hay en el gimnasio. Las aproximaciones se calculan como porcentaje de la carga de trabajo; las progresiones y las semanas de descarga se aplican a una fase con su vista previa, y la carga de cada semana le llega así a la persona. El profesional puede empezar desde una de sus plantillas o desde las Plantillas de BE, sumar ejercicios de cardio con su duración e intensidad, y pedirle a la persona el esfuerzo de la sesión al terminar. Cada editor tiene un recorrido guiado para la primera vez.
+
+En Antropometría, cada método da su resultado completo y encadenado en la misma toma: de la suma de pliegues a la densidad, el porcentaje de grasa sobre el peso corporal, la masa grasa y la libre de grasa, cada paso con su fórmula, la cuenta con los números de la toma y su fuente.
+
 ![Figura 4: La persona entera, en el tiempo, vista por su profesional de Nutrición: su área con todo el detalle y, de las otras, lo que la persona autorizó. Esquema ilustrativo, con datos inventados](pendiente)
 
 ## 2.2 Cada cambio, con su porqué
@@ -100,8 +104,8 @@ Un plan activado no se modifica: el siguiente es otra versión, y la anterior qu
 Los gráficos de BE ponen todas las áreas sobre un mismo eje de fechas, con las versiones de cada plan de fondo. Aparecen donde el profesional decide:
 
 - **Al planificar.** Al elegir un ejercicio, el buscador avisa si la persona ya lo hizo, y el editor muestra «La vez pasada»: qué hizo serie por serie, con qué carga y con cuántas repeticiones en reserva.
-- **En cada área.** La evolución del 1RM estimado de cada ejercicio (Epley, versión 1), lo registrado en la alimentación con el objetivo de cada período de fondo, y cada toma antropométrica frente a la primera y a la anterior.
-- **Entre áreas.** En «Analizar», «Armá tu gráfico» pone dos o tres series alineadas, una debajo de la otra, o superpuestas en el mismo gráfico cuando comparten el eje. Por ejemplo, los carbohidratos de una temporada y el 1RM estimado de esas mismas semanas.
+- **En cada área.** La evolución del 1RM estimado de cada ejercicio (con la fórmula de Epley, desde una serie: carga × (1 + (repeticiones + RIR) / 30)), lo registrado en la alimentación con el objetivo de cada período de fondo, y cada toma antropométrica frente a la primera y a la anterior.
+- **Entre áreas.** En «Analizar», «Armá tu gráfico» pone dos o tres series alineadas, una debajo de la otra, o superpuestas en el mismo gráfico cuando comparten el eje. Por ejemplo, los carbohidratos de un período y el 1RM estimado de esas mismas semanas.
 - **Para seguir un tema.** La cinta del tiempo marca, arriba de todos los gráficos, los cambios de plan, las tomas, las revisiones y las notas. Cada profesional guarda sus «Enfoques»: los gráficos que quiere seguir para una persona o para un plan.
 
 Cada cruce entre áreas dice «Coinciden en el tiempo; esto no prueba que una cosa cause la otra» y muestra qué más cambió en ese período. El gráfico ayuda a formular una hipótesis; la decisión es del profesional.
@@ -163,13 +167,15 @@ BE no diagnostica ni califica, y no decide por el profesional: muestra qué se i
 
 *Figura 10: El recorrido entre Administración, un profesional y una persona, de punta a punta.*
 
-Cada paso tiene su tarea en los manuales y su caso de uso en el archivo 10. El video recorre el ciclo entero.
+Cada paso tiene su tarea en el manual del profesional (09) o en «Cómo probar BE», y su caso de uso en el archivo 10.
 
 # 4. Cómo está construido
 
 *Una app, un website, una sola API y una base de datos que hace respetar las reglas.*
 
 La persona usa una app para Android, hecha con React Native y Expo. Los profesionales y Administración usan un website pensado para la computadora, hecho con Next.js. Las dos hablan con una sola API, en NestJS, que autoriza cada pedido, escribe y deja la auditoría en la misma transacción, sobre una base PostgreSQL. Todo corre en la nube, en Render, y un paquete compartido define los contratos y los textos que usan las tres piezas.
+
+En cifras: la API es un monolito de **35 módulos** con **346 operaciones** publicadas en su especificación; la base tiene **168 tablas**, **115 conjuntos de valores** y **107 migraciones**. La especificación funcional reúne **57 casos de uso**, **66 requisitos funcionales** (57 del website y 31 de la app, algunos compartidos) y **100 casos de prueba**.
 
 1. **Llega el pedido** (Sistema): Con la sesión, que se valida, y una clave contra duplicados.
 2. **Valida el contrato** (Sistema): Si el pedido no tiene la forma acordada, se rechaza ahí.
@@ -220,6 +226,8 @@ Cuanto más se usa BE, más historia hay para leer. Hoy el límite es cuántos d
 
 El documento de tesis reúne los catorce apartados que pide la Escuela Da Vinci, en su orden. Cada tema tiene además su archivo propio, con el desarrollo completo y sus figuras. Los dos salen de las mismas fuentes, así que dicen lo mismo.
 
+Los apartados 01 a 08 del instructivo (los integrantes y los enlaces a la documentación, a la app, al website y al repositorio, con las cuentas de prueba) no tienen archivo propio: son un enlace o una o dos líneas dentro del documento de tesis, y los enlaces están también al final de este documento.
+
 **Tabla 2.** Qué hay en cada archivo.
 
 | Archivo | Qué encontrás |
@@ -227,19 +235,19 @@ El documento de tesis reúne los catorce apartados que pide la Escuela Da Vinci,
 | Documento de tesis | Los catorce apartados del instructivo, en orden: el Acta, los requisitos, los casos de uso y de prueba, los diagramas, el Gantt, los enlaces y las cuentas de evaluación |
 | 00 · Resumen y guía | Este documento: qué es BE, qué aporta y cómo recorrer la entrega |
 | 03 · Acta del proyecto | Público, uso previsto, objetivo, alcance, límites, tecnologías, mercado, competencia y roles |
-| 09 · Manuales | Uno por rol (la persona, el profesional y Administración) y uno completo, con pantallas reales |
+| 09 · Manual del profesional | Las tareas del profesional en el website, paso a paso, con los nombres de la pantalla |
 | 10 · Casos de uso | Los actores, el diagrama y cada caso con su flujo |
 | 11 · Casos de prueba | Cómo se prueba BE y el resultado de cada caso |
 | 12 y 13 · Requisitos | Lo que hace el website y lo que hace la app, con sus requisitos no funcionales |
 | 14 a 17 · Diagramas | El modelo de datos, las clases, la arquitectura y los componentes |
 | 18 · Gantt | El cronograma del proyecto |
 | 19 a 24 · Negocio | FODA, mapa de empatía, buyer persona, benchmarking, SCAMPER y viabilidad |
-| Cómo probar BE | Las cuentas de evaluación y qué probar con cada rol |
+| Cómo probar BE | Las cuentas de evaluación y qué probar con cada rol, en el website y en la app |
 
 ## 6.1 Tres maneras de leerla
 
 - **En diez minutos:** este documento.
-- **En una hora:** el Acta (03), los manuales del profesional y de la persona (09) y el video.
+- **En una hora:** el Acta (03), el manual del profesional (09) y «Cómo probar BE», con el recorrido de la app.
 - **La parte técnica:** los requisitos (12 y 13), los casos de uso y de prueba (10 y 11) y los diagramas (14 a 17).
 
 ## 6.2 Los enlaces

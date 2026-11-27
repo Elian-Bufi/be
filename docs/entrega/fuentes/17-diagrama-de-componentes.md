@@ -8,7 +8,7 @@
 **Carrera:** Analista de Sistemas, Escuela Da Vinci  
 **Fecha:** Noviembre de 2026
 
-> **Resumen.** El nivel 3 del modelo C4. Los 34 módulos de la API con sus rutas y sus dependencias, las zonas del website, los temas de la app y el paquete que comparten las tres, con dos recorridos de punta a punta (un gráfico y la historia anterior) y las interfaces entre los componentes.
+> **Resumen.** El nivel 3 del modelo C4. Los 35 módulos de la API con sus rutas y sus dependencias, las zonas del website, los temas de la app y el paquete que comparten las tres, con dos recorridos de punta a punta (un gráfico y la historia anterior) y las interfaces entre los componentes.
 
 **Entregable:** 17 · Diagrama de componentes  
 **Fecha:** Noviembre de 2026  
@@ -22,9 +22,9 @@ Este documento baja un nivel respecto del de arquitectura: de las piezas que se 
 
 La forma sigue a lo que BE ofrece. Nutrición, Entrenamiento y Antropometría son módulos hermanos que guardan la historia de la misma persona (los planes por versiones, lo que registró y sus tomas) sobre el mismo eje del tiempo. Análisis los lee juntos para los gráficos y la línea del tiempo, sin escribir en ellos, y Gráficos guarda los enfoques de cada profesional. Y el permiso se decide en un solo lugar, el punto único de decisión: la misma regla vale para cada área, para cada gráfico y para la historia anterior, que un profesional nuevo ve solo si la persona lo autoriza.
 
-- **31** módulos: en la API
-- **339** rutas HTTP: 335 en la especificación pública
-- **34** páginas: del website
+- **35** módulos: en la API
+- **350** rutas HTTP: 346 en la especificación pública
+- **39** páginas: del website
 - **49** pantallas: de la app
 
 *Fuente: El repositorio: apps/api/src (módulos y controladores), docs/api/openapi.json, apps/web/src/app y apps/mobile/src/pantallas.*
@@ -59,9 +59,9 @@ reanudación con cookie httpOnly, autoguardado y manejo de fallas`"]
   subgraph API["API · NestJS · monolito modular"]
     direction TB
     C1["`**Controladores**
-la interfaz HTTP: 339 rutas, 335 de ellas en la especificación pública`"]
+la interfaz HTTP: 350 rutas, 346 de ellas en la especificación pública`"]
     C2["`**Servicios por módulo**
-119 clases inyectables en los 34 módulos; cada uno resuelve un caso de su área`"]
+123 clases inyectables en los 35 módulos; cada uno resuelve un caso de su área`"]
     C3["`**Ejecutor de dominio**
 una sola transacción: autorización, efecto, auditoría e idempotencia`"]
     C4["`**Punto de decisión (PDP)**
@@ -76,9 +76,9 @@ Google, Expo Push, Open Food Facts, wger y correo`"]
   end
   subgraph DB["PostgreSQL 16"]
     direction LR
-    D1["`**163 tablas**
+    D1["`**168 tablas**
 con disparadores, restricciones e índices únicos parciales`"]
-    D2["`**102 migraciones**
+    D2["`**107 migraciones**
 se aplican en orden al arrancar la API`"]
   end
   DOM["`**@be/domain**
@@ -117,9 +117,9 @@ Paquete compartido que se compila con la app, el website y la API: los contratos
 
 # 1. La API, módulo por módulo
 
-*Un monolito modular: una sola aplicación dividida en 34 módulos de NestJS, agrupados de lo que ve la persona a lo que sostiene a todos.*
+*Un monolito modular: una sola aplicación dividida en 35 módulos de NestJS, agrupados de lo que ve la persona a lo que sostiene a todos.*
 
-![Figura 2: Los 34 módulos de la API en cinco franjas, con sus rutas HTTP y sus clases inyectables. La barra es proporcional a las rutas; los de fondo gris son globales](pendiente)
+![Figura 2: Los 35 módulos de la API en cinco franjas, con sus rutas HTTP y sus clases inyectables. La barra es proporcional a las rutas; los de fondo gris son globales](pendiente)
 
 ## 1.1 Las dependencias
 
@@ -170,7 +170,7 @@ flowchart LR
 
 ## 1.2 Cada módulo, en una fila
 
-**Tabla 1.** Los 34 módulos: sus rutas HTTP, las clases inyectables que registra cada uno (el detalle de las clases está en el entregable 15), su responsabilidad y el módulo del DER donde están sus tablas (entregable 14).
+**Tabla 1.** Los 35 módulos: sus rutas HTTP, las clases inyectables que registra cada uno (el detalle de las clases está en el entregable 15), su responsabilidad y el módulo del DER donde están sus tablas (entregable 14).
 
 | Módulo | Rutas | Clases | Responsabilidad | Tablas (módulo del DER) |
 | --- | --- | --- | --- | --- |
@@ -181,7 +181,7 @@ flowchart LR
 | Derechos | 6 | 2 | Pedidos de la persona sobre sus datos y descarga propia. | Administración, derechos y auditoría |
 | Contacto | 1 | 0 | Ayuda y contacto. | — |
 | Incidencias | 2 | 1 | Avisar un problema, como persona o como profesional, y ver los avisos propios. | Administración, derechos y auditoría |
-| Administración | 29 | 4 | Habilita profesionales por área, con su propia sesión y segundo factor; atiende los pedidos de derechos, la recuperación asistida del acceso las incidencias, la revisión de los alimentos cargados a mano y las propuestas al Recetario de BE. | Administración, derechos y auditoría |
+| Administración | 31 | 5 | Habilita profesionales por área, con su propia sesión y segundo factor; atiende los pedidos de derechos, la recuperación asistida del acceso las incidencias, la revisión de los alimentos cargados a mano, las propuestas al Recetario de BE y qué Plantillas de BE de Entrenamiento se ofrecen. | Administración, derechos y auditoría |
 | Profesional | 0 | 2 | Verificación y habilitación del profesional. | Profesionales, vínculos y consentimiento |
 | Vínculo | 14 | 3 | Solicitudes, vínculos por área e invitaciones. | Profesionales, vínculos y consentimiento |
 | Consentimiento | 12 | 4 | Consentimientos por área, de datos de salud y de fotos de comidas. | Profesionales, vínculos y consentimiento |
@@ -189,7 +189,7 @@ flowchart LR
 | Resúmenes | 9 | 2 | El resumen y el plan vigente que la persona comparte de otras áreas. | Lo que se comparte entre áreas |
 | Historia anterior | 4 | 2 | La historia anterior de un área para el profesional nuevo: la persona la autoriza o la retira y ve cuándo la miró; el profesional la lee en solo lectura. | Lo que se comparte entre áreas |
 | Nutrición | 69 | 16 | Catálogo, alimentos propios y su revisión, evaluaciones, objetivos con su cálculo, planes con sus rangos, registro de comidas, recetas y el Recetario de BE con sus propuestas, plantillas, habituales y revisiones. | Nutrición; Recetas, fotos y registro de comidas |
-| Entrenamiento | 75 | 16 | Catálogo, evaluaciones, objetivos, planes con fases, bloques y la notación del esfuerzo, plantillas sin persona, sesión en curso, series, fuerza estimada, notas de la sesión, habituales y revisiones. | Entrenamiento; Catálogos e importación |
+| Entrenamiento | 82 | 18 | Catálogo con su clasificación, evaluaciones, objetivos, planes por fases con su planificación (progresiones, descargas y aproximaciones), la intensidad del plan, el 1RM de referencia, plantillas sin persona y Plantillas de BE, sesión en curso, series, el esfuerzo de la sesión, fuerza estimada, notas de la sesión, habituales y revisiones. | Entrenamiento; Catálogos e importación |
 | Antropometría | 20 | 7 | Tomas, mediciones, métodos (con Kerr y los métodos habituales de cada profesional), cálculos y evolución. | Antropometría |
 | Formularios | 25 | 8 | Formularios, propuestas del profesional, respuestas y hábitos. | Formularios y hábitos |
 | Medios | 5 | 3 | Subida y entrega de imágenes privadas, con las dos medidas livianas de la imagen de una receta. | Recetas, fotos y registro de comidas |
@@ -208,16 +208,17 @@ flowchart LR
 | Compartir | 3 | 2 | La pantalla única de compartir al aceptar y dejar de compartir una cosa sola desde «Quién ve qué». | Profesionales, vínculos y consentimiento |
 | Contexto de la persona | 2 | 2 | El panel del editor: lo de la persona, en solo lectura y con el permiso del área. | Formularios y hábitos; Antropometría |
 | Evaluación con formularios | 4 | 2 | Vincula a la evaluación inicial los formularios que la persona respondió. | Formularios y hábitos |
+| Recorridos guiados | 2 | 1 | Recuerda, por usuario, qué recorrido guiado de cada editor vio u omitió, para mostrarlo solo la primera vez. | Herramientas del profesional |
 
 > **Las clases globales.** Dos interceptores sacan, para la app que no los conoce, el tipo de serie y los bloques de la sesión; se registran en la aplicación, sin módulo propio.
 
-> **Rutas y operaciones.** Las 339 rutas son los decoradores HTTP de los controladores. La especificación pública (OpenAPI) tiene 335 operaciones: no incluye las tres de salud del servicio (`/health`, `/health/live` y `/health/ready`) ni la tarea interna que disparan los recordatorios (`/internal/reminder-runs`). Las otras 299 coinciden una a una con las rutas.
+> **Rutas y operaciones.** Las 350 rutas son los decoradores HTTP de los controladores. La especificación pública (OpenAPI) tiene 346 operaciones: no incluye las tres de salud del servicio (`/health`, `/health/live` y `/health/ready`) ni la tarea interna que disparan los recordatorios (`/internal/reminder-runs`). Las otras 346 coinciden una a una con las rutas.
 
 # 2. El website y la app
 
 *Los dos clientes tienen la misma forma: pantallas que delegan en un cliente de la API, que se ocupa de la sesión, de la clave de idempotencia y de la versión esperada de las escrituras.*
 
-## 2.1 El website: 38 páginas en cinco zonas
+## 2.1 El website: 39 páginas en cinco zonas
 
 El website es un sitio estático hecho con Next.js: cada página se genera al compilar y, en el navegador, pide sus datos a la API. Las rutas de las páginas están, en su mayoría, en inglés, y la interfaz, en español.
 
@@ -229,7 +230,7 @@ El website es un sitio estático hecho con Next.js: cada página se genera al co
 | Cuenta de la persona | 6 | `/account` · `/account/news` · `/account/privacy` · `/account/relationships` (y `consent`, `detail`) | Novedades, privacidad, vínculos y consentimientos desde la web. |
 | Escritorio del profesional | 7 | `/pro` · `/pro/advisees` · `…/nutrition` · `…/training` · `…/anthropometry` · `…/forms` · `…/previous-history` | Tablero, cartera y la ficha de cada persona por área, con sus editores (en Nutrición, el reparto por comida y las franjas de cada comida; en todos, el panel «Contexto de…»), sus gráficos, «Patrones» y la historia anterior. |
 | Herramientas del profesional | 8 | `/pro/recipes` · `/pro/foods` · `/pro/exercises` · `/pro/templates` · `/pro/templates/training` · `/pro/news` · `/pro/security` · `/pro/guia` | «Mis recetas» y el Recetario de BE, «Mis alimentos», ejercicios propios, plantillas (también la de entrenamiento sin persona), novedades, seguridad y guía de uso. |
-| Administración | 8 | `/admin` · `/admin/professional` · `/admin/access` · `/admin/incidents` · `/admin/rights` · `/admin/security` · `/admin/foods` · `/admin/recipes` | Profesionales por área, accesos, incidencias, pedidos de derechos, seguridad, «Alimentos» y «Propuestas al Recetario de BE». |
+| Administración | 9 | `/admin` · `/admin/professional` · `/admin/access` · `/admin/incidents` · `/admin/rights` · `/admin/security` · `/admin/foods` · `/admin/recipes` · `/admin/training-templates` | Profesionales por área, accesos, incidencias, pedidos de derechos, seguridad, «Alimentos» y «Propuestas al Recetario de BE». |
 
 La ruta `/pro/advisees` está en inglés; en la interfaz, esa sección se llama «Personas».
 
@@ -301,7 +302,7 @@ El módulo Historia anterior usa las lecturas de Nutrición y de Entrenamiento (
 
 | Interfaz | Ofrece | Usa | Cómo |
 | --- | --- | --- | --- |
-| API HTTP | API | App y website | HTTPS con JSON; 335 operaciones en la especificación OpenAPI. Según la escritura, la clave de idempotencia evita que un doble envío se registre dos veces, y la versión esperada, que una edición pise a otra. |
+| API HTTP | API | App y website | HTTPS con JSON; 346 operaciones en la especificación OpenAPI. Según la escritura, la clave de idempotencia evita que un doble envío se registre dos veces, y la versión esperada, que una edición pise a otra. |
 | Contratos | @be/domain | App, website y API | Tipos y esquemas compartidos al compilar; la verificación automática falla si la especificación publicada se desvía. |
 | Acceso a datos | Prisma | Módulos de la API | Cliente generado desde el esquema; las consultas corren dentro de la transacción del ejecutor. |
 | Tareas internas | API | Tarea programada de los recordatorios | HTTPS con un secreto de tareas que genera Render. |

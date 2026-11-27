@@ -79,8 +79,8 @@ Un plan activado no se modifica: el siguiente es otra versión, y la anterior qu
 Los gráficos de BE ponen todas las áreas sobre un mismo eje de fechas, con las versiones de cada plan de fondo, y aparecen donde el profesional decide:
 
 - **Al planificar.** Al elegir un ejercicio, el buscador avisa si la persona ya lo hizo, y el editor muestra «La vez pasada»: qué hizo serie por serie, con qué carga y con cuántas repeticiones en reserva.
-- **En cada área.** La evolución del 1RM estimado de cada ejercicio (Epley, versión 1), lo registrado en la alimentación con el objetivo de cada período de fondo, y cada toma antropométrica frente a la primera y a la anterior.
-- **Entre áreas.** En «Analizar», «Armá tu gráfico» pone dos o tres series alineadas, una debajo de la otra, o superpuestas en el mismo gráfico cuando comparten el eje. Por ejemplo, los carbohidratos de una temporada y el 1RM estimado de esas mismas semanas.
+- **En cada área.** La evolución del 1RM estimado de cada ejercicio (con la fórmula de Epley, desde una serie: carga × (1 + (repeticiones + RIR) / 30)), lo registrado en la alimentación con el objetivo de cada período de fondo, y cada toma antropométrica frente a la primera y a la anterior.
+- **Entre áreas.** En «Analizar», «Armá tu gráfico» pone dos o tres series alineadas, una debajo de la otra, o superpuestas en el mismo gráfico cuando comparten el eje. Por ejemplo, los carbohidratos de un período y el 1RM estimado de esas mismas semanas.
 - **Para seguir un tema.** La cinta del tiempo marca, arriba de todos los gráficos, los cambios de plan, las tomas, las revisiones y las notas. Cada profesional guarda sus «Enfoques»: los gráficos que quiere seguir para una persona o para un plan.
 
 Cada cruce entre áreas dice «Coinciden en el tiempo; esto no prueba que una cosa cause la otra» y muestra qué más cambió en ese período. El gráfico ayuda a formular una hipótesis; la decisión es del profesional.
@@ -202,12 +202,12 @@ BE tiene tres roles y dos canales. La persona usa la app para Android. El profes
 | Evaluación y objetivo | La evaluación inicial en tres bloques, con los formularios que respondió la persona vinculados y las «Anotaciones» privadas del profesional, y el objetivo de cada área, con sus versiones; en Nutrición, «Calcular» propone el objetivo con un método publicado y una toma de Antropometría, y el profesional decide | Website |
 | Pedidos de información | Formularios de inicio y pedidos puntuales; la persona elige con quién comparte sus hábitos | El website pide; la app responde |
 | Plan de nutrición | Un borrador que se guarda solo, comidas con opciones y recetas, lo que aporta cada alimento mientras se arma, las medidas caseras, el reparto por comida y la franja de cada comida frente a su rango; al activarse, una versión fija | El website arma; la app lo muestra |
-| Plan de entrenamiento | Fases, sesiones con bloques («Seguido» o «En vueltas») y series efectivas y de calentamiento, con agenda, plantillas (también sin una persona) y un catálogo de ejercicios con imagen y zonas musculares; el esfuerzo en RIR o en RPE; se activa como versión | El website arma; la app lo muestra |
+| Plan de entrenamiento | Un editor por fases sobre un almanaque: el inicio y la duración del plan, cada fase con sus semanas, su objetivo y sus días, y sesiones con bloques («Seguido» o «En vueltas»), series de aproximación y efectivas. La intensidad del plan se elige una vez (RIR, RPE, % RM o solo carga); con el 1RM de referencia de cada ejercicio (calibración, último registro o declarado) las cargas en % RM se calculan y se redondean al disco elegido. Progresiones y semanas de descarga con vista previa, la carga de cada semana, la distribución de las series por músculo sobre la silueta, ejercicios de cardio con duración e intensidad, reordenar y deshacer; plantillas propias (también sin una persona) y Plantillas de BE; un catálogo de ejercicios con imagen, zonas musculares y filtros. Se activa como versión, con el 1RM congelado | El website arma; la app lo muestra |
 | Registro de comidas | La opción del plan, las porciones o una comida diferente con foto; corregir sin borrar | App |
-| Registro de entrenamiento | Serie por serie o de una vez, con descanso, sustituciones y «La vez pasada»; una nota para el profesional | App |
-| Antropometría | Elegir los métodos antes de medir; tomas con protocolo y métodos de cálculo con versión, entre ellos Kerr (1988) en cinco masas; cada medida frente a la primera y a la anterior | El website toma; la app muestra |
+| Registro de entrenamiento | Serie por serie o de una vez, con descanso, sustituciones y «La vez pasada», con la carga de esa semana; el esfuerzo de la sesión al terminar, si el plan lo pide; una nota para el profesional | App |
+| Antropometría | Elegir los métodos antes de medir; tomas con protocolo y métodos de cálculo publicados, entre ellos Kerr (1988) en cinco masas; el resultado completo y encadenado de cada método en la misma toma (de la suma de pliegues a la densidad, el porcentaje de grasa sobre el peso corporal, la masa grasa y la libre de grasa), cada paso con su fórmula, su cuenta y su fuente; cada medida frente a la primera y a la anterior | El website toma; la app muestra |
 | Revisión | Comparar lo indicado con lo registrado y decidir, con evidencia, fundamento y próxima acción | El website; la app la muestra |
-| Seguimiento profesional | Un espacio con lo pendiente; la ficha con el resumen, la línea de tiempo, los registros y las notas propias | Website |
+| Seguimiento profesional | Un espacio con lo pendiente; la ficha con el resumen, la línea de tiempo, los registros y las notas propias; un recorrido guiado la primera vez en cada editor | Website |
 | Gráficos y comparativas | El historial de cada ejercicio con el 1RM estimado, la alimentación y el cuerpo en el tiempo, «Armá tu gráfico», «Patrones» y los «Enfoques» | Website |
 | Coordinación entre áreas | Con el permiso de la persona: el resumen y el plan vigente de las otras áreas, y notas entre profesionales | Website |
 | Historia anterior | Con la autorización de la persona, el profesional nuevo ve la historia anterior del área, en solo lectura | La app autoriza; el website la muestra |
@@ -215,7 +215,7 @@ BE tiene tres roles y dos canales. La persona usa la app para Android. El profes
 | Novedades y avisos | Avisos al teléfono sin datos de salud y novedades en la app | App |
 | Recetario de BE | Recetas de cocina familiar para todos los profesionales de Nutrición, que se usan como opción del plan o se copian para adaptarlas; cada profesional propone las suyas y Administración decide si las suma | Website |
 | Catálogos | Alimentos (catálogo propio, Open Food Facts y USDA), con lo cargado a mano propio de cada profesional, que se corrige y se retira, y un catálogo verificado que cuida Administración; ejercicios; recetas y plantillas de cada profesional | Website |
-| Administración | Habilitar, verificar, suspender y rehabilitar a cada profesional por área, con fundamento; revisar los alimentos cargados a mano y las propuestas al Recetario de BE | Website |
+| Administración | Habilitar, verificar, suspender y rehabilitar a cada profesional por área, con fundamento; revisar los alimentos cargados a mano y las propuestas al Recetario de BE; decidir qué Plantillas de BE de Entrenamiento se ofrecen | Website |
 | Métrica del servicio | La tasa de ciclos de seguimiento cerrados en 30 días (TVCC-30), calculada de forma reproducible | Servidor |
 
 # 6. Límites
@@ -274,9 +274,9 @@ flowchart LR
 
 - **UN SOLO LENGUAJE.** Los contratos, los textos y las reglas puras se escriben una vez en un paquete compartido. Una regla no puede decir una cosa en el teléfono y otra en el servidor.
 
-- **MONOLITO MODULAR.** Una operación de salud es completa o no ocurre, sin coordinar transacciones entre servicios. Lo elegí por el tamaño del equipo, la escala esperada y las operaciones atómicas entre áreas; puede separarse si eso cambia.
+- **MONOLITO MODULAR.** 35 módulos y 346 operaciones publicadas. Una operación de salud es completa o no ocurre, sin coordinar transacciones entre servicios. Lo elegí por el tamaño del equipo, la escala esperada y las operaciones atómicas entre áreas; puede separarse si eso cambia.
 
-- **REGLAS EN LA BASE.** Claves foráneas sin borrado en cascada, índices únicos parciales y disparadores: la historia no se puede romper ni desde fuera de la API.
+- **REGLAS EN LA BASE.** 168 tablas, 115 conjuntos de valores y 107 migraciones en orden. Claves foráneas sin borrado en cascada, índices únicos parciales y disparadores: la historia no se puede romper ni desde fuera de la API.
 
 - **REACT NATIVE CON EXPO.** Una app nativa para Android con el mismo lenguaje que el resto, y el mismo código como base para iPhone.
 
