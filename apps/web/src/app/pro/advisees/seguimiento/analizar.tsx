@@ -11,7 +11,7 @@
  *   sigue la regla del catálogo (`composicionPermitida`): el mismo eje de fechas (una serie agrupada por semana va solo
  *   con otras semanales), hasta tres series y dos unidades, un eje a cada lado; dos series comparten eje si comparten
  *   familia y unidad (la regla de DL-126, ampliada: GR-T04). Una vista guardada con `OVERLAY` era de una sola unidad y
- *   se ve igual. El selector ofrece el catálogo (el 1RM estimado, con un ejercicio de la lista de la v1), y la frase de
+ *   se ve igual. El selector ofrece el catálogo (el 1RM estimado, con un ejercicio de la lista de la estimación), y la frase de
  *   la coincidencia reemplaza la de antes (GR-T06);
  * - la referencia del cambio relativo es un rango del período (los primeros N días o un rango fijo), separado del
  *   intervalo que se ve: acercar, alejar o restablecer el gráfico no la mueve; cambia solo con «Aplicar» (DL-126);

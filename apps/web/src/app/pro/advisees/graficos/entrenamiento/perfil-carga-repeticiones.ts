@@ -1,14 +1,14 @@
 /**
  * GR-06 · El perfil carga-repeticiones de la persona en el ejercicio (WP-GRAFICOS fase 2, rama B; DL-174). Lo puro: los
  * puntos (en X, las repeticiones equivalentes; en Y, la carga), qué series entran, las últimas 4 semanas aparte, las
- * curvas de igual 1RM estimado (Epley v1) «de la fórmula» y la geometría del dibujo.
+ * curvas de igual 1RM estimado (Epley) «de la fórmula» y la geometría del dibujo.
  *
  * - Entran solo las series que escribió la persona (ED-70: la carga, las repeticiones y el RIR con procedencia PERSON;
  *   nada tildado sin escribir) con RIR de 0 a 2 (GR-T37). Lo precargado del plan nunca entra.
  * - Un ejercicio y una unidad por gráfico: kg y lb nunca van juntas.
- * - Las curvas son de la fórmula, no de la persona, y solo para los ejercicios de la lista de la v1 (RM-16; GR-T38): fuera
+ * - Las curvas son de la fórmula, no de la persona, y solo para los ejercicios de la lista de la estimación (RM-16; GR-T38): fuera
  *   de la lista, BE no estima. Van hasta 12 repeticiones equivalentes, el tope de la estimación.
- * - No destaca ninguna serie sobre otra ni estima otra cosa que Epley v1.
+ * - No destaca ninguna serie sobre otra ni estima otra cosa que Epley.
  *
  * Las series salen del comparador (API-TRN-21 y API-SER-01): todas las series de cada sesión, con su procedencia (GR-T36).
  *
@@ -144,7 +144,7 @@ export interface CurvaDeLaFormula {
 const PASO_DE_LAS_CURVAS: Readonly<Record<'kg' | 'lb', number>> = { kg: 5, lb: 10 };
 
 /**
- * Hasta tres curvas de igual 1RM estimado (Epley v1), como guía de lectura: la más baja, la del medio y la más alta de las
+ * Hasta tres curvas de igual 1RM estimado (Epley), como guía de lectura: la más baja, la del medio y la más alta de las
  * estimaciones de los puntos, redondeadas. Cada una une, de 1 a 12 repeticiones equivalentes, la carga que daría esa
  * estimación con la fórmula (con una, la carga es la estimación). Son de la fórmula, no de la persona.
  */

@@ -1,7 +1,7 @@
 /**
  * Los textos de los cruces y de «Dos etapas» (WP-GRAFICOS fase 2, DL-174; GR-24, SP-01 y SP-02). Ubican, nunca califican:
  * cada uno pasa por `terminosProhibidosEnUnGrafico` con las áreas de su gráfico (TEST-GRF-072). Con Nutrición, sin el
- * signo de porcentaje; con Entrenamiento, «1RM estimado (Epley v1)» y nunca una marca; con Antropometría, el error de
+ * signo de porcentaje; con Entrenamiento, «1RM estimado (Epley)» y nunca una marca; con Antropometría, el error de
  * medición dicho en cada cambio. La frase de la coincidencia es la del dominio, exacta.
  */
 import { FRASE_DE_LA_COINCIDENCIA } from '@be/domain';
@@ -54,7 +54,7 @@ export const COPY_DE_LOS_CRUCES = {
     ],
   },
   carbohidratosYFuerza: {
-    titulo: 'Carbohidratos registrados y 1RM estimado (Epley v1), en el mismo tiempo',
+    titulo: 'Carbohidratos registrados y 1RM estimado (Epley), en el mismo tiempo',
     pregunta: 'En la temporada en que cambiaron los carbohidratos, ¿también se movió el 1RM estimado?',
     ventana:
       'Dos etapas seguidas del objetivo nutricional, separadas por un cambio de versión, de 3 semanas o más cada una (la parte que cae en el período). Una sola ventana, sin mirar además el efecto del día anterior.',
@@ -64,7 +64,7 @@ export const COPY_DE_LOS_CRUCES = {
       'Un día con algún dato faltante o con una comida del plan sin registro no entra en la mediana: se cuenta y se dice. Un día sin registros es un hueco, no un cero.',
       'Es la historia de una sola persona en el tiempo, no un experimento.',
     ],
-    sinEjercicio: 'Elegí un ejercicio de la lista de la v1 para ver su 1RM estimado al lado de los carbohidratos.',
+    sinEjercicio: 'Elegí un ejercicio de la lista de la estimación para ver su 1RM estimado al lado de los carbohidratos.',
     faltaVentana: {
       SIN_CAMBIO_DE_OBJETIVO: 'En el período no cambió el objetivo nutricional: la lectura se arma con dos etapas del objetivo, de 3 semanas o más cada una.',
       ETAPAS_CORTAS: 'Ninguna pareja de etapas seguidas del objetivo llega a 3 semanas por lado en el período: la lectura se arma con dos de 3 semanas o más.',
@@ -72,7 +72,7 @@ export const COPY_DE_LOS_CRUCES = {
     sinLoIndicado: 'No se pudo leer lo indicado en cada versión del plan de entrenamiento: no se sabe si cambió el RIR indicado.',
     sinDiferenciaTodavia: 'Todavía no alcanza para decir cuánto se mueve la estimación entre sesiones de una misma versión: hacen falta 4 sesiones o más.',
     diferenciaEntreSesiones: (texto: string) => `Entre sesiones de la misma versión aparecen diferencias de hasta ${texto}.`,
-    carriles: { carbohidratos: 'Carbohidratos registrados', energia: 'Calorías registradas', fuerza: '1RM estimado (Epley v1)' },
+    carriles: { carbohidratos: 'Carbohidratos registrados', energia: 'Calorías registradas', fuerza: '1RM estimado (Epley)' },
   },
   energiaYPeso: {
     titulo: 'Calorías registradas y peso, de toma a toma',

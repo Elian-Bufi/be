@@ -59,7 +59,7 @@ export const AYUDAS_DEL_EDITOR = {
   },
   cargaParaRepeticiones: {
     nombre: 'Qué es la carga para N repeticiones',
-    definicion: 'La carga que corresponde a un número de repeticiones y un RIR, calculada desde el último máximo estimado de la persona (Epley v1). Es orientativa: no reemplaza mirar cómo se mueve.',
+    definicion: 'La carga que corresponde a un número de repeticiones y un RIR, calculada desde el último máximo estimado de la persona (Epley). Es orientativa: no reemplaza mirar cómo se mueve.',
     ejemplo: 'Ejemplo: con un máximo estimado de 100 kg, para 8 repeticiones con RIR 2: 100 × 30 ÷ (30 + 8 + 2) = 75 kg, redondeado hacia abajo al paso de la barra.',
   },
 } as const satisfies Readonly<Record<string, AyudaConEjemplo>>;

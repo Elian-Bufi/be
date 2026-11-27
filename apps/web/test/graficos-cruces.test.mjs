@@ -251,7 +251,7 @@ test('TEST-GRF-063 · SP-01 existe solo en el caso 1, y el caso negado no se ofr
     assert.equal(sp01.ofrecido(contexto(a, { ejercicios: [ejercicioDelPeriodo(SENTADILLA)] })), false, 'no se ofrece: ni en gris ni con candado');
   }
   assert.equal(sp01.ofrecido(contexto(CASO_1_SP01, { ejercicios: [ejercicioDelPeriodo(SENTADILLA)] })), true);
-  assert.equal(sp01.ofrecido(contexto(CASO_1_SP01, { ejercicios: [ejercicioDelPeriodo(OTRO_EJERCICIO)] })), false, 'sin un ejercicio de la lista de la v1, no hay 1RM estimado');
+  assert.equal(sp01.ofrecido(contexto(CASO_1_SP01, { ejercicios: [ejercicioDelPeriodo(OTRO_EJERCICIO)] })), false, 'sin un ejercicio de la lista de la estimación, no hay 1RM estimado');
   // GR-24 se ofrece con un área con plan propio; sin ninguno, no.
   const gr24 = delRegistro('GR-24');
   assert.equal(gr24.ofrecido(contexto(acceso(['NUTRICION'], { NUTRICION: true }))), true);
@@ -360,7 +360,7 @@ test('TEST-GRF-065 · SP-01: las calorías van al lado de los carbohidratos, el 
     l.lineas[0],
     'Etapa A (objetivo desde el 1/8, 31 días): mediana de carbohidratos registrados de 260 g/día, con los 24 días que tienen cantidades en todos sus registros y ninguna comida del plan sin registro (7 quedaron afuera: 3 sin registro y 4 con algún dato faltante).',
   );
-  assert.match(l.lineas[1], /^En Sentadilla trasera con barra, en la etapa A, el 1RM estimado \(Epley v1\) estuvo entre ≈ [\d,]+ y ≈ [\d,]+ kg en 6 sesiones, con RIR registrado de mediana 1 y series de 5 repeticiones\.$/);
+  assert.match(l.lineas[1], /^En Sentadilla trasera con barra, en la etapa A, el 1RM estimado \(Epley\) estuvo entre ≈ [\d,]+ y ≈ [\d,]+ kg en 6 sesiones, con RIR registrado de mediana 1 y series de 5 repeticiones\.$/);
   assert.match(l.lineas[3], /1 sesión orientativa \(de más de 10 a 12 repeticiones equivalentes\) se ve/);
   assert.ok(l.lineas.includes('Entre sesiones de la misma versión aparecen diferencias de hasta 2 kg.'), l.lineas.join('\n'));
   assert.ok(l.lineas.includes('Las calorías registradas, con el mismo criterio de días: mediana de 2.000 kcal/día en la etapa A y de 2.200 kcal/día en la B.'));
@@ -707,7 +707,7 @@ test('TEST-GRF-075 · el despacho: lo del diccionario se lee como siempre y lo q
   assert.equal(A.caminoDeLaLectura('entrenamiento.1rm-estimado'), 'CATALOGO');
   assert.equal(A.caminoDeLaLectura('entrenamiento.rir-indicado'), 'CATALOGO');
   assert.equal(A.caminoDeLaLectura('entrenamiento.no-existe'), null);
-  assert.equal(A.definicionDeLaSerie('entrenamiento.1rm-estimado').nombre, '1RM estimado (Epley v1)');
+  assert.equal(A.definicionDeLaSerie('entrenamiento.1rm-estimado').nombre, '1RM estimado (Epley)');
   assert.equal(A.definicionDeLaSerie('nutricion.energia').nombre, 'Calorías registradas');
   const series = leer(join(SEGUIMIENTO, 'series.ts'));
   assert.match(series, /if \(caminoDeLaLectura\(p\.ref\.metricId\) !== 'CATALOGO'\) return leerSerie\(token, asesoradoId, p, periodo\);/);
@@ -1007,11 +1007,11 @@ test('TEST-GRVD-003 · GR-12 y GR-13 en «Analizar», y «Ver la relación» con
   // Sin tomas de peso, SP-02 no está; sin Antropometría propia, tampoco los g/kg.
   assert.deepEqual(ids(relacion, PG.contextoDelRegistro(CASO_1_SP02, { ejercicios: null, antropometria: [] })), []);
   assert.deepEqual(ids(nutri, PG.contextoDelRegistro(acceso(['NUTRICION', 'ANTROPOMETRIA'], { NUTRICION: true }), { ejercicios: null, antropometria: [{ metricCode: 'peso', observations: 3 }] })), ['nutricion.energia-por-dia', 'nutricion.macros-en-paneles']);
-  // El caso 1 de SP-01: con un ejercicio de la lista de la v1, sí; con otro, no.
+  // El caso 1 de SP-01: con un ejercicio de la lista de la estimación, sí; con otro, no.
   const conLaV1 = PG.contextoDelRegistro(CASO_1_SP01, { ejercicios: [ejercicioDelPeriodo(OTRO_EJERCICIO), ejercicioDelPeriodo(SENTADILLA)], antropometria: null });
   assert.deepEqual(ids(relacion, conLaV1), ['cruce.carbohidratos-y-fuerza']);
   assert.deepEqual(ids(relacion, PG.contextoDelRegistro(CASO_1_SP01, { ejercicios: [ejercicioDelPeriodo(OTRO_EJERCICIO)], antropometria: null })), []);
-  // El ejercicio de SP-01: el más registrado de la lista de la v1, o el elegido; nunca uno fuera de la lista.
+  // El ejercicio de SP-01: el más registrado de la lista de la estimación, o el elegido; nunca uno fuera de la lista.
   assert.deepEqual(PG.ejercicioDelCruce([ejercicioDelPeriodo(OTRO_EJERCICIO), ejercicioDelPeriodo(SENTADILLA)], null), { exerciseKey: `e:${SENTADILLA}`, nombre: 'Sentadilla trasera con barra', unidad: 'kg', serie: null });
   assert.equal(PG.ejercicioDelCruce([ejercicioDelPeriodo(SENTADILLA)], `e:${OTRO_EJERCICIO}`).exerciseKey, `e:${SENTADILLA}`);
   assert.equal(PG.ejercicioDelCruce([ejercicioDelPeriodo(OTRO_EJERCICIO)], null), null);

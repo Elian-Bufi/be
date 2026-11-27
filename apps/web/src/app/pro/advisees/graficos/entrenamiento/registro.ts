@@ -2,7 +2,7 @@
  * Los gráficos de Entrenamiento (rama B: GR-02, GR-03, GR-05 y GR-06), para el registro común (`registros.ts`). Lo edita solo esa rama.
  *
  * - Se ofrecen con el alcance de Entrenamiento y sesiones registradas del período (caso 1: las lecturas ya traen solo lo
- *   de los planes de quien mira). GR-02, además, solo si hay un ejercicio de la lista de la v1 (RM-16). Un área sin
+ *   de los planes de quien mira). GR-02, además, solo si hay un ejercicio de la lista de la estimación (RM-16). Un área sin
  *   acceso no los ofrece: no aparecen, ni en gris ni con candado.
  * - Cada gráfico se carga recién cuando se dibuja (`lazy`, con su espera): quien solo pregunta qué se ofrece no carga los
  *   gráficos. Por eso este archivo no tiene JSX: lo importan las pruebas (`graficos-*.test.mjs`) sin compilar nada.
@@ -26,7 +26,7 @@ function diferido(cargar: () => Promise<ComponentType<PropsDelGrafico>>): Compon
 /** Con el alcance de Entrenamiento y algún ejercicio con sesiones registradas en el período. */
 export const conEntrenamiento = (c: ContextoDelRegistro): boolean => c.acceso.alcances.includes('ENTRENAMIENTO') && (c.ejercicios ?? []).some((e) => e.sessions > 0);
 
-/** Lo anterior y, además, algún ejercicio de la lista de la v1 con sesiones: el 1RM estimado solo existe para ellos. */
+/** Lo anterior y, además, algún ejercicio de la lista de la estimación con sesiones: el 1RM estimado solo existe para ellos. */
 export const conUnoDeLaLista = (c: ContextoDelRegistro): boolean =>
   conEntrenamiento(c) &&
   (c.ejercicios ?? []).some((e) => {

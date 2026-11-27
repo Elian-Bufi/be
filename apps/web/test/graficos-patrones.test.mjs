@@ -99,12 +99,12 @@ test('TEST-GRF-094 · un área sin acceso no deja rastro: ni tarjeta, ni hueco, 
   assert.equal(P.tarjetasDelEnfoque([enfoque[5]], ENTRENADOR, REGISTRO_DE_GRAFICOS).enElTiempo.length, 0);
 });
 
-test('TEST-GRF-095 · el ejercicio de un gráfico guardado: «el más registrado» del período (de la lista de la v1 para el 1RM estimado) y uno fijo solo con sesiones (mutación: el más registrado de todos para el 1RM, o dibujar un fijo sin sesiones)', () => {
+test('TEST-GRF-095 · el ejercicio de un gráfico guardado: «el más registrado» del período (de la lista de la estimación para el 1RM estimado) y uno fijo solo con sesiones (mutación: el más registrado de todos para el 1RM, o dibujar un fijo sin sesiones)', () => {
   const lista = ENTRENADOR.ejercicios;
   const primero = P.ejercicioResuelto({ kind: 'MOST_RECORDED', rank: 1 }, lista, false);
   assert.equal(primero.exerciseKey, `e:${REMO_A_MANO}`);
   assert.equal(primero.unidad, 'kg');
-  // Para el 1RM estimado, el más registrado de la lista de la v1: la sentadilla, aunque el remo tenga más sesiones.
+  // Para el 1RM estimado, el más registrado de la lista de la estimación: la sentadilla, aunque el remo tenga más sesiones.
   assert.equal(P.ejercicioResuelto({ kind: 'MOST_RECORDED', rank: 1 }, lista, true).exerciseKey, `e:${SENTADILLA}`);
   assert.equal(P.ejercicioResuelto({ kind: 'MOST_RECORDED', rank: 2 }, lista, true), 'NO_APLICA');
   assert.equal(P.ejercicioResuelto({ kind: 'MOST_RECORDED', rank: 3 }, lista, false), 'NO_APLICA');
@@ -138,7 +138,7 @@ test('TEST-GRF-095 · el ejercicio de un gráfico guardado: «el más registrado
 test('TEST-GRF-096 · los sugeridos, «Ver la relación» y «Agregar un gráfico» con esta persona (mutación: ofrecer un cruce sin las dos áreas propias, o sugerir lo que ya está)', () => {
   const delEntrenador = P.sugeridosConEstaPersona(ENTRENADOR, REGISTRO_DE_GRAFICOS).map((g) => g.chartId);
   assert.deepEqual(delEntrenador, ['entrenamiento.fuerza-estimada', 'entrenamiento.carga-repeticiones-y-rir', 'entrenamiento.rir-indicado-y-registrado']);
-  // Sin un ejercicio de la lista de la v1, GR-02 no se sugiere.
+  // Sin un ejercicio de la lista de la estimación, GR-02 no se sugiere.
   const sinV1 = { ...ENTRENADOR, ejercicios: [ejercicio(REMO_A_MANO, 12, 'Remo con mancuerna')] };
   assert.ok(!P.sugeridosConEstaPersona(sinV1, REGISTRO_DE_GRAFICOS).some((g) => g.chartId === 'entrenamiento.fuerza-estimada'));
   // El entrenador no tiene «Ver la relación»: el caso negado no se ofrece.

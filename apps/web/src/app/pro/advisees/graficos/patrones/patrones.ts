@@ -109,14 +109,14 @@ const unidadDe = (e: Pick<EjercicioDelPeriodo, 'loadUnits'>): 'kg' | 'lb' | null
 
 /**
  * GR-T08: uno fijo del catálogo (si tiene sesiones en el período) o «el más registrado» del período, del 1.º al 3.º.
- * Para un gráfico que pide la lista de la v1 (el 1RM estimado), «el más registrado» se cuenta entre los de esa lista
+ * Para un gráfico que pide la lista de la estimación (el 1RM estimado), «el más registrado» se cuenta entre los de esa lista
  * (GR-VE03): así un enfoque «Foco en fuerza» sirve con cualquier persona que haga alguno.
  */
 export function ejercicioResuelto(e: EjercicioDelGrafico | null, ejercicios: readonly EjercicioDelPeriodo[] | null, soloListaV1: boolean, soloConCarga = false, preferido: string | null = null): EjercicioResuelto {
   if (e === null) return null;
   const candidatos = soloListaV1 ? ejerciciosDeLaListaV1(ejercicios) : [...(ejercicios ?? [])].filter((x) => x.sessions > 0).sort((a, b) => b.sessions - a.sessions);
   // GPF-08: «el más registrado» (el 1.º) es el ejercicio que eligió el profesional en «Patrones», si el gráfico lo admite
-  // (con carga, si dibuja la carga; de la lista de la v1, si es el 1RM estimado). Uno fijo del enfoque se respeta.
+  // (con carga, si dibuja la carga; de la lista de la estimación, si es el 1RM estimado). Uno fijo del enfoque se respeta.
   if (e.kind === 'MOST_RECORDED' && e.rank === 1 && preferido) {
     const x = candidatos.find((c) => c.exerciseKey.toLowerCase() === preferido.toLowerCase() && (!soloConCarga || c.loadUnits.length > 0));
     if (x) return { exerciseKey: x.exerciseKey, nombre: x.name, unidad: unidadDe(x), serie: null };
@@ -141,7 +141,7 @@ export const ejerciciosParaElegir = (ejercicios: readonly EjercicioDelPeriodo[] 
   [...(ejercicios ?? [])].filter((x) => x.sessions > 0).sort((a, b) => b.sessions - a.sessions || a.name.localeCompare(b.name, 'es'));
 
 /**
- * GPF-08 (GPF-D08): el ejercicio con que abre «Patrones»: el básico (de la lista de la v1: sentadilla, press de banca,
+ * GPF-08 (GPF-D08): el ejercicio con que abre «Patrones»: el básico (de la lista de la estimación: sentadilla, press de banca,
  * peso muerto…) con más sesiones en el período; si no hay ninguno, el de más sesiones. Antes era siempre el de más
  * sesiones, y salían accesorios.
  */

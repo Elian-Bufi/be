@@ -3,7 +3,7 @@
  * dibujar. Es puro: lo prueba `apps/web/test/graficos-cruces.test.mjs` (TEST-GRF-060 a 079).
  *
  * - **Qué se ofrece:** las series del catálogo que el PDP deja leer con esta persona (`seriesOfrecidas`), agrupadas por
- *   área y con las de los sugeridos primero. El 1RM estimado, solo con un ejercicio de la lista de la v1. Lo que no se
+ *   área y con las de los sugeridos primero. El 1RM estimado, solo con un ejercicio de la lista de la estimación. Lo que no se
  *   ofrece no aparece, ni en gris ni con candado.
  * - **Los modos** se llaman como los dijo Dirección: «Alineadas» (una arriba de la otra, por defecto) y «Superpuestas»
  *   (en el mismo gráfico). En la URL y en las vistas guardadas siguen `PANELS` y `OVERLAY` (GR-T05).
@@ -329,7 +329,7 @@ export function seriesParaElegir(acceso: AccesoDeLaPersona): Readonly<Record<Are
 /** El ejercicio del catálogo de una clave del período (`e:<id>`); `null` si es una versión sin ejercicio conocido (`v:`). */
 export const ejercicioDeLaClave = (exerciseKey: string): string | null => (exerciseKey.startsWith('e:') ? exerciseKey.slice(2) : null);
 
-/** Las series de Entrenamiento que se pueden elegir con un ejercicio: el 1RM estimado, solo en la lista de la v1 (RM-16). */
+/** Las series de Entrenamiento que se pueden elegir con un ejercicio: el 1RM estimado, solo en la lista de la estimación (RM-16). */
 export function seriesDelEjercicio(deEntrenamiento: readonly SerieDisponible[], exerciseKey: string | null): SerieDisponible[] {
   const ejercicio = exerciseKey ? ejercicioDeLaClave(exerciseKey) : null;
   return deEntrenamiento.filter((s) => !s.requiere.listaV1 || (ejercicio !== null && entraEnLaEstimacion(ejercicio)));

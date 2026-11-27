@@ -427,14 +427,14 @@ export function EjercicioDelEditor({
   const plegado = ejercicioPlegadoDelEditor(p, problemas, notacionDelPlan);
   // DL-199 (ET3-13 a ET3-15): un ejercicio de cardio se planifica con su duración, su distancia y su intensidad.
   const cardio = cardioDe(p);
-  // ED-75: el detalle con la fuerza estimada, solo en los ejercicios de la lista de la v1 (RM-16).
+  // ED-75: el detalle con la fuerza estimada, solo en los ejercicios de la lista de la estimación (RM-16).
   const conFuerza = exerciseId !== null && entraEnLaEstimacion(exerciseId);
   // ED-76 (EDT-56): las series elegidas en la planilla para las que se calcula la carga; `null`, la fila general.
   const [seriesDeLaCarga, setSeriesDeLaCarga] = useState<readonly number[] | null>(null);
   const [detalle, setDetalle] = useState(false);
-  // GR-01 (WP-GRAFICOS, fase 1): «La vez pasada» de un ejercicio fuera de la lista de la v1, en su propio cuadro lateral,
+  // GR-01 (WP-GRAFICOS, fase 1): «La vez pasada» de un ejercicio fuera de la lista de la estimación, en su propio cuadro lateral,
   // sin la fuerza estimada. Los de la lista la ven dentro del detalle (ED-75): DL-174 abre el cuadro para todos, y la
-  // fuerza estimada sigue solo en la lista de la v1 (GR-T70).
+  // fuerza estimada sigue solo en la lista de la estimación (GR-T70).
   const conLaVezPasada = !conFuerza && exerciseId !== null;
   const [vezPasada, setVezPasada] = useState(false);
   // DL-197 (F16): uno de los tres cuadros del ejercicio abierto: las aproximaciones, todas las series o «Más opciones».
@@ -1480,7 +1480,7 @@ function EditarTodasLasSeries({
   criterio: Criterio | null;
   onCambiar: (c: Partial<PrescripcionE>) => void;
   onCerrar: () => void;
-  /** ED-76 (EDT-56): la carga de las elegidas desde la fuerza estimada; `null` fuera de la lista de la v1. */
+  /** ED-76 (EDT-56): la carga de las elegidas desde la fuerza estimada; `null` fuera de la lista de la estimación. */
   onCalcularLaCarga?: ((elegidas: readonly number[]) => void) | null;
   /** Si hay algo escrito sin aplicar: el cuadro pregunta antes de cerrarse (ET1-D05). Al cerrarse, vuelve a `false`. */
   onConCambios?: (conCambios: boolean) => void;

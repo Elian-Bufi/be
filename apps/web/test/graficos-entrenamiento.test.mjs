@@ -311,8 +311,8 @@ test('TEST-GRF-024 · GR-02: el eje del 1RM estimado abarca 10 kg (22 lb) como m
   const carril = FE.carrilDeLaFuerza(puntos, tres, 'kg');
   assert.equal(carril.escala.rangoMinimo, 10);
   assert.equal(FE.rangoMinimoDeLaFuerza('lb'), 22);
-  assert.equal(carril.metodo, 'Epley v1');
-  assert.equal(carril.nombre, '1RM estimado (Epley v1)');
+  assert.equal(carril.metodo, 'Epley');
+  assert.equal(carril.nombre, '1RM estimado (Epley)');
   const g = CA.geometriaDelCarril(carril, escala(), 140);
   assert.ok(g.extremos.arriba - g.extremos.abajo >= 10, `${g.extremos.abajo} a ${g.extremos.arriba}`);
   assert.ok(seEscribeTalCual(g), JSON.stringify(g.marcasY));
@@ -524,7 +524,7 @@ test('TEST-GRF-031 · GR-06: solo las series que escribió la persona, con RIR d
   assert.equal(PE.unidadMasReciente(obs), 'kg');
 });
 
-test('TEST-GRF-032 · GR-06: las curvas de igual 1RM estimado son de la fórmula de Epley v1, rotuladas así, hasta 12 repeticiones equivalentes y solo en la lista de la v1 (mutación: curvas sin rótulo)', () => {
+test('TEST-GRF-032 · GR-06: las curvas de igual 1RM estimado son de la fórmula de Epley, rotuladas así, hasta 12 repeticiones equivalentes y solo en la lista de la estimación (mutación: curvas sin rótulo)', () => {
   const puntos = [
     { equivalentes: 6, carga: 80 },
     { equivalentes: 4, carga: 85 },
@@ -587,7 +587,7 @@ test('TEST-GRF-034 · el cuadro se abre con el historial para todos los ejercici
   assert.doesNotMatch(cuadro, /TarjetaDeFuerza/);
   const editor = leer('training/ejercicio-del-editor.tsx');
   assert.match(editor, /const conFuerza = exerciseId !== null && entraEnLaEstimacion\(exerciseId\);/);
-  // En el historial, GR-02 solo con un ejercicio de la lista de la v1, y el gráfico mismo no se dibuja fuera de ella.
+  // En el historial, GR-02 solo con un ejercicio de la lista de la estimación, y el gráfico mismo no se dibuja fuera de ella.
   const historial = leer('graficos/entrenamiento/historial-del-ejercicio.tsx');
   assert.match(historial, /const enLaLista = entraEnLaEstimacion\(exerciseId\);/);
   assert.match(historial, /\{enLaLista \? \(\n\s*<div className="historial-del-ejercicio__grafico">\n\s*<FuerzaEstimada /);
@@ -684,7 +684,7 @@ test('TEST-GRF-037 · lo cargado en un día posterior se marca, en el día de la
   assert.equal(CO.mediana([]), null);
 });
 
-test('TEST-GRF-038 · el registro ofrece GR-02 solo con un ejercicio de la lista de la v1, y nada sin el alcance de Entrenamiento (mutación: ofrecer GR-02 sin un ejercicio de la lista)', () => {
+test('TEST-GRF-038 · el registro ofrece GR-02 solo con un ejercicio de la lista de la estimación, y nada sin el alcance de Entrenamiento (mutación: ofrecer GR-02 sin un ejercicio de la lista)', () => {
   assert.deepEqual(
     GRAFICOS_DE_ENTRENAMIENTO.map((g) => [g.codigo, g.id, g.ubicacion]),
     [

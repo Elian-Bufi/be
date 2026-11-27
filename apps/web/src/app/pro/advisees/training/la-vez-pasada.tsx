@@ -29,9 +29,9 @@
  * - **La línea de arriba dice que es lo registrado** («Lo registrado por Diego Sosa en tus planes, desde el …»): las fichas
  *   tienen el formato de una prescripción y «En tus planes» solo podía leerse como lo indicado.
  *
- * Los ejercicios de la lista de la v1 (RM-16) la ven dentro de «Detalle y fuerza estimada» (ED-75); los demás, en
+ * Los ejercicios de la lista de la estimación (RM-16) la ven dentro de «Detalle y fuerza estimada» (ED-75); los demás, en
  * `CuadroDeLaVezPasada`, el mismo cuadro lateral sin la fuerza estimada: DL-174 abre el cuadro para todos los ejercicios, y
- * la fuerza estimada sigue solo en la lista de la v1 (GR-T70).
+ * la fuerza estimada sigue solo en la lista de la estimación (GR-T70).
  */
 import { COPY_LA_VEZ_PASADA, COPY_NOTACION_DEL_ESFUERZO, fechaEnPocasPalabras, loQueSeHizo, marcaDelPlan, textoDeLaSerie, VECES_EN_EL_EDITOR, vecesPasadas, type SerieDeLaVezPasada, type VezPasada } from '@be/domain';
 import { useCallback, useEffect, useId, useState, type ReactNode } from 'react';
@@ -274,11 +274,11 @@ export function LaVezPasada({ lectura, recargar, nombre }: { lectura: LecturaDeL
 }
 
 /**
- * El cuadro lateral de un ejercicio que no está en la lista de la v1 (RM-16): «Lo que indica el plan» arriba y «La vez
+ * El cuadro lateral de un ejercicio que no está en la lista de la estimación (RM-16): «Lo que indica el plan» arriba y «La vez
  * pasada» abajo, el mismo diseño que el detalle con la fuerza estimada, sin la fuerza. Abrirlo no cambia nada del plan.
  *
  * WP-GRAFICOS fase 2, rama B (DL-174): debajo, «En el tiempo» abre en el mismo cuadro, con «Atrás», el historial del
- * ejercicio (GR-03 y GR-05; sin GR-02, que es de la lista de la v1) y su perfil (GR-06).
+ * ejercicio (GR-03 y GR-05; sin GR-02, que es de la lista de la estimación) y su perfil (GR-06).
  */
 export function CuadroDeLaVezPasada({
   abierto,

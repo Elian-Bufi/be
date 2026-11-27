@@ -2,7 +2,7 @@
 
 /**
  * SP-01 en pantalla (WP-GRAFICOS fase 2, DL-174): los carbohidratos registrados, las calorías al lado y el 1RM estimado
- * (Epley v1) de un ejercicio de la lista de la v1, en paneles alineados por fecha; las dos etapas del objetivo de fondo;
+ * (Epley) de un ejercicio de la lista de la estimación, en paneles alineados por fecha; las dos etapas del objetivo de fondo;
  * «Dos etapas» de los carbohidratos y del 1RM estimado; y la lectura del cruce (`lectura-del-cruce.tsx`).
  *
  * **Solo en el caso 1.** El registro no lo ofrece sin las dos áreas con planes propios (`caso-de-acceso.ts`), y si un
@@ -163,7 +163,7 @@ export default function CarbohidratosYFuerza({ lectura, periodo, densidad, ejerc
       {etapas ? (
         <div className="cruce__etapas">
           <DosEtapasEnPantalla titulo="Carbohidratos registrados en las dos etapas del objetivo" detalle={`${e.carbohidratos.unit} · por día`} d={etapas.carbohidratos} decimales={0} indice={0} densidad={densidad} />
-          <DosEtapasEnPantalla titulo={`1RM estimado (Epley v1) de ${e.ejercicio} en las dos etapas`} detalle={`${e.unidad} · cada sesión · Epley v1`} d={etapas.fuerza} decimales={1} indice={2} densidad={densidad} />
+          <DosEtapasEnPantalla titulo={`1RM estimado (Epley) de ${e.ejercicio} en las dos etapas`} detalle={`${e.unidad} · cada sesión · Epley`} d={etapas.fuerza} decimales={1} indice={2} densidad={densidad} />
         </div>
       ) : null}
     </section>

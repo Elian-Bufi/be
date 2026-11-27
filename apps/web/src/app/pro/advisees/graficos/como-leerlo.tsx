@@ -3,7 +3,7 @@
 /**
  * «Cómo leerlo» (WP-GRAFICOS, pasada visual del 15/11; DISENO-VISUAL §1, principio 2): el método y las aclaraciones de
  * un gráfico, a un toque. Es un `<details>` cerrado de entrada, con su ícono «i»: se abre con el teclado (Enter o
- * Espacio sobre su resumen) y el lector de pantalla dice si está abierto o cerrado. Ahí van el método (Epley v1), por qué
+ * Espacio sobre su resumen) y el lector de pantalla dice si está abierto o cerrado. Ahí van el método (Epley), por qué
  * una diferencia de RIR mueve la estimación, qué cuenta como subtotal y qué no entra.
  *
  * Siempre a la vista, afuera de «Cómo leerlo»: la frase fija de los cruces (`FraseDeLaCoincidencia`) y la marca de lo

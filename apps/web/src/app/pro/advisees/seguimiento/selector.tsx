@@ -9,7 +9,7 @@
  *   pregunta y pasa a ser un análisis personalizado.
  * - **GR-26 (WP-GRAFICOS fase 2, DL-174): el catálogo de series.** Se ofrece lo que el PDP deja leer con esta persona
  *   (`seriesParaElegir`, sobre `seriesOfrecidas`), por área y con las de los gráficos sugeridos primero. Las series
- *   nuevas aparecen cuando están ofrecidas: el 1RM estimado (Epley v1), solo con un ejercicio de la lista de la v1 y con
+ *   nuevas aparecen cuando están ofrecidas: el 1RM estimado (Epley), solo con un ejercicio de la lista de la estimación y con
  *   su unidad; el RIR indicado y los g/kg, cuando sus ramas los ofrezcan. Lo que no se ofrece no aparece, ni en gris ni
  *   con candado.
  */
@@ -99,7 +99,7 @@ export function SelectorDeMetricas({
   }, [ej, serie, unidad]);
   const codigo = antropometrica || disponibles.antropometria?.[0]?.metricCode || '';
   const nutricionalElegida = porArea.NUTRICION.find((s) => s.id === nutricional) ?? porArea.NUTRICION[0] ?? null;
-  // El 1RM estimado se ofrece solo con un ejercicio de la lista de la v1 (RM-16).
+  // El 1RM estimado se ofrece solo con un ejercicio de la lista de la estimación (RM-16).
   const medidasDelEjercicio = seriesDelEjercicio(porArea.ENTRENAMIENTO, ej?.exerciseKey ?? null);
   const medidaElegida = medidasDelEjercicio.find((s) => s.id === medida) ?? medidasDelEjercicio[0] ?? null;
 

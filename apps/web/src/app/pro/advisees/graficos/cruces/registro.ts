@@ -6,7 +6,7 @@
  *   ella: en Entrenamiento, un ejercicio con sesiones. Sin ejercicio compara las calorías, solo con Nutrición propia
  *   (`referenciaDeLaComparacion`): no pide un área sin acceso. «Patrones» le pasa el `acceso` con que lo ofreció.
  * - **SP-01 y SP-02** se ofrecen solo en el caso 1 (`caso-de-acceso.ts`): las dos áreas permitidas y con planes o tomas
- *   propios en las dos. SP-01 pide además un ejercicio de la lista de la v1 con sesiones en el período; SP-02, tomas de
+ *   propios en las dos. SP-01 pide además un ejercicio de la lista de la estimación con sesiones en el período; SP-02, tomas de
  *   peso. Si no, no aparecen: ni en gris ni con candado.
  *
  * Los componentes se cargan a pedido (`React.lazy`, con su propio `Suspense`): así este registro sigue siendo un módulo
@@ -34,7 +34,7 @@ function aPedido(cargar: () => Promise<{ default: ComponentType<PropsDelGrafico>
   return GraficoAPedido;
 }
 
-/** Si el ejercicio de una clave del período (`e:<id>`) está en la lista de la v1 del 1RM estimado. */
+/** Si el ejercicio de una clave del período (`e:<id>`) está en la lista de la estimación del 1RM estimado. */
 const deLaListaV1 = (exerciseKey: string): boolean => exerciseKey.startsWith('e:') && entraEnLaEstimacion(exerciseKey.slice(2));
 
 const requisitos = (id: string): GraficoRegistrado['requiere'] => graficoSugerido(id)?.requiere ?? { ejercicio: false, listaV1: false, medida: false };

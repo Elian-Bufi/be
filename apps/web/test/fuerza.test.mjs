@@ -74,14 +74,14 @@ test('ED-72 · el cuadro estima en vivo y dice por qué no, sin guardar lo que n
   assert.equal(F.serieObservadaEnVivo({ ...base, carga: '80', repeticiones: '5,5', rir: 1 }).tipo, 'incompleta');
   // La carga con coma, como se escribe.
   assert.equal(F.serieObservadaEnVivo({ ...base, carga: '82,5', repeticiones: '4', rir: 1 }).carga, 82.5);
-  // Fuera de la lista de la v1, tampoco (RM-16).
+  // Fuera de la lista de la estimación, tampoco (RM-16).
   assert.equal(F.serieObservadaEnVivo({ ...base, exerciseId: '00000000-0000-4000-8000-000000000000', carga: '85', repeticiones: '5', rir: 1 }).tipo, 'no-se-estima');
 });
 
 test('ED-76 · con % RM se escriben la carga, el % y la referencia con el método y la fecha, nunca el valor (RM-40)', () => {
   const p = { intensity: { criterion: 'PERCENT_RM', target: { value: 75, reference: null } }, suggestedLoad: null };
   const c = F.loQueSeEscribeEnLaFilaGeneral(p, { value: 72.5, unit: 'kg' }, 75, '2026-12-18');
-  assert.deepEqual(c, { suggestedLoad: { value: 72.5, unit: 'kg' }, intensity: { criterion: 'PERCENT_RM', target: { value: 75, reference: { description: '1RM estimado · Epley v1 · 18/12/2026' } } } });
+  assert.deepEqual(c, { suggestedLoad: { value: 72.5, unit: 'kg' }, intensity: { criterion: 'PERCENT_RM', target: { value: 75, reference: { description: '1RM estimado · Epley · 18/12/2026' } } } });
   assert.doesNotMatch(JSON.stringify(c.intensity), /98/);
   // La prescripción de entrada no cambia.
   assert.equal(p.suggestedLoad, null);

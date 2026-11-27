@@ -65,7 +65,7 @@ export function ejerciciosDeLaListaV1(ejercicios: readonly EjercicioDelPeriodo[]
   return (ejercicios ?? []).filter((e) => e.sessions > 0 && e.exerciseKey.startsWith('e:') && entraEnLaEstimacion(e.exerciseKey.slice(2)));
 }
 
-/** El ejercicio de SP-01, como lo recibe un gráfico del registro: el elegido o, si no, el más registrado de la lista de la v1. */
+/** El ejercicio de SP-01, como lo recibe un gráfico del registro: el elegido o, si no, el más registrado de la lista de la estimación. */
 export function ejercicioDelCruce(ejercicios: readonly EjercicioDelPeriodo[] | null, elegido: string | null): EjercicioDelGraficoElegido | null {
   const v1 = ejerciciosDeLaListaV1(ejercicios);
   const e = v1.find((x) => x.exerciseKey === elegido) ?? v1[0];

@@ -1,5 +1,5 @@
 /**
- * GR-02 · El 1RM estimado (Epley v1), sesión a sesión, con las versiones del plan de fondo (WP-GRAFICOS fase 2, rama B;
+ * GR-02 · El 1RM estimado (Epley), sesión a sesión, con las versiones del plan de fondo (WP-GRAFICOS fase 2, rama B;
  * DL-174 y DL-171). Lo puro: el carril, la lectura de cada versión (la mediana del RIR registrado, las repeticiones de la
  * serie usada y el ruido propio) y la línea de validez y ruido que va a la vista.
  *

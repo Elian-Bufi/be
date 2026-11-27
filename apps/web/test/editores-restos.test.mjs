@@ -116,7 +116,7 @@ test('ED-76 · las elegidas en palabras, el principal, y una serie quitada con e
 });
 
 test('ED-76 · en las elegidas con % RM, la estimación tiene que ser la de la referencia; si no, no se escribe (EDT-56)', () => {
-  const conRef = { intensity: { criterion: 'PERCENT_RM', target: { value: 75, reference: { description: '1RM estimado · Epley v1 · 01/10/2026' } } } };
+  const conRef = { intensity: { criterion: 'PERCENT_RM', target: { value: 75, reference: { description: '1RM estimado · Epley · 01/10/2026' } } } };
   assert.equal(F.procedenciaEnLasSeries(conRef, '2026-10-01'), null);
   // La del 11/11 con la referencia del 01/10: los kilos saldrían de otra estimación que la que dice el plan.
   assert.equal(F.procedenciaEnLasSeries(conRef, '2026-11-11'), 'otra-referencia');
