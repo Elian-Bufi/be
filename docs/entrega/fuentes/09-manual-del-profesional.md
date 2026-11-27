@@ -12,13 +12,13 @@
 
 **Entregable:** 09 · Manual del profesional  
 **Fecha:** Noviembre de 2026  
-**Lo acompaña:** El manual de la persona y el de Administración, en sus archivos. Las cuentas de evaluación y el recorrido completo, en «Cómo probar BE».
+**Lo acompaña:** Las cuentas de evaluación y el recorrido completo, también el de la app de la persona y el de Administración, en «Cómo probar BE».
 
 # Resumen
 
 *El website del profesional: qué te toca, quién es la persona y qué hacés en tu área, con toda su historia a mano.*
 
-Este manual es para el profesional de **Nutrición, Entrenamiento o Antropometría** que acompaña personas con BE. El profesional trabaja en el **website**, en la computadora: arma los planes, ve lo que la persona registra en su teléfono, carga las tomas, registra las revisiones y lee la historia en el tiempo. La persona usa la app, y Administración habilita a cada profesional por área; cada uno tiene su manual.
+Este manual es para el profesional de **Nutrición, Entrenamiento o Antropometría** que acompaña personas con BE. El profesional trabaja en el **website**, en la computadora: arma los planes, ve lo que la persona registra en su teléfono, carga las tomas, registra las revisiones y lee la historia en el tiempo. La persona usa la app, y Administración habilita a cada profesional por área; lo que hace cada uno se recorre en «Cómo probar BE».
 
 Los ejemplos son los de la historia sintética de la demostración. **Diego Sosa** tiene 36 años y lleva tres en BE: la **Lic. Sofía Paz** lo acompaña en Nutrición y Antropometría, y el **Prof. Martín Acosta**, en Entrenamiento. La **Prof. Lucía Benítez**, de Antropometría, es la profesional que lo empieza a acompañar. Ninguno es una persona real.
 
@@ -52,7 +52,7 @@ Cada tarea responde lo mismo, en el mismo orden: **para qué** sirve; **quién**
 | «La ficha de la persona» | Ver a la persona completa y escribir tus notas propias |
 | «La evaluación y el objetivo» | Asentar de dónde parte y adónde quiere llegar |
 | «Armar el plan de nutrición» | Indicar qué comer, con opciones y totales |
-| «Armar las sesiones de entrenamiento» | Indicar qué entrenar, en RIR o en RPE, con «Con historial» y «La vez pasada» |
+| «Armar las sesiones de entrenamiento» | Indicar qué entrenar por fases, con la intensidad del plan, el 1RM de referencia, las progresiones y «La vez pasada» |
 | «Revisar y activar el plan» | Que el plan le llegue como una versión que no cambia |
 | «Dar el plan en PDF, con el QR para bajar la app» | Darle el plan en papel, con el QR de la app |
 | «El contexto de la persona mientras planificás» | Ver lo importante de la persona sin salir del editor |
@@ -249,35 +249,56 @@ Cada tarea responde lo mismo, en el mismo orden: **para qué** sirve; **quién**
 
 ## 2.4 Armar las sesiones de entrenamiento
 
-**Para qué.** Indicarle a la persona qué entrenar en cada sesión y en cada serie, con lo que ya hizo a la vista mientras se elige.
+**Para qué.** Indicarle a la persona qué entrenar en cada fase, en cada sesión y en cada serie, con las fechas del plan a la vista y lo que ya hizo al lado mientras se elige.
 
 **Quién puede.** El profesional de Entrenamiento, con el vínculo y el permiso del área y un objetivo vigente.
 
+**Cómo está armada la pantalla.** Dos columnas. En el centro, el plan: arriba, la barra **«Fases del plan»**, una pestaña por fase con su color y sus semanas; debajo, las sesiones de la fase elegida, como tarjetas. A la derecha, el panel, que muestra la herramienta de lo que se está editando: el plan, una fase, una sesión o un ejercicio. Los cuadros configuran; el panel es para mirar. Arriba, en la barra del editor, «Ver el recorrido», «Deshacer», «Antes de activar» y «Revisar y activar…».
+
 **Los pasos.**
 
-1. En «Plan», empezar la versión: «Crear plan», «Armar con el asistente» (siete pasos, de «Punto de partida» a «Activar») o, sobre el plan vigente, «Ajustar el plan» desde la ficha.
-2. A la izquierda, la estructura: la «Fase» con su «Propósito», sus semanas y sus «Sesiones», con los días al lado de cada sesión. «+ Sesión» suma una, y «Sesiones vacías» arma A, B y C de una vez. Dentro de una sesión, un «Bloque» opcional agrupa ejercicios «Seguido» o «En vueltas», con las vueltas y el descanso.
-3. Sumar ejercicios con «Agregar ejercicio»: «Buscar en el catálogo BE» y filtrar por zona; los elegidos quedan a la vista. Los que la persona ya hizo en tus planes llevan la marca **«Con historial»**, con cuántas sesiones y cuándo fue la última. Marcar uno o varios, escribir si se quiere una «Prescripción para todos (opcional)» y «Agregar». Si no está, «Crear un ejercicio propio» o «Importar desde wger».
-4. Escribir la prescripción en una línea, por ejemplo «4×8-12 RIR 2 · 60 kg · 90 s», y «Aplicar»; o serie por serie en la planilla: «Repeticiones», «Carga sugerida», el esfuerzo, «Descanso» y «Nota». Las series de calentamiento llevan la marca «C», van arriba de las efectivas y no entran en ninguna cuenta. Cada valor dice si es común, propio o «Sin indicar». Las repeticiones, el descanso y la carga tienen su mínimo, su máximo y su paso: con ↑ y ↓ suman o restan una repetición, 15 segundos o 2,5 kg. Lo que no se entiende se marca en su celda y un renglón debajo de la tabla dice qué corregir. «Presets» aplica una prescripción lista a la sesión. Cómo se lee la tabla va detrás del «?».
-5. Al pie de las sesiones, «Cómo se escribe el esfuerzo»: «RIR (repeticiones en reserva)» o «RPE (esfuerzo de 6 a 10)». Es la misma medida escrita de dos formas (RPE = 10 − RIR); la persona responde y ve todo así, y BE guarda siempre el RIR.
-6. En «Días de entrenamiento», «Elegir los días» de cada sesión.
+1. **Empezar la versión.** En «Plan», «Crear plan» o «Empezar desde una plantilla», con dos pestañas: «Mis plantillas» y «Plantillas de BE» (planes completos de cuerpo completo, torso y pierna, empuje, tracción y pierna, y por grupo muscular, con sus fases y su progresión). Sobre el plan vigente, «Ajustar el plan» desde la ficha. La primera vez, el editor muestra su recorrido guiado: oscurece todo menos la zona que explica, con «Omitir», «Anterior» y «Siguiente»; «Ver el recorrido» lo vuelve a mostrar.
+2. **«Configurar plan».** El «Inicio» y la «Duración» en semanas (el fin sale de los dos), el «Objetivo del plan» y las «Anotaciones», que solo ve el profesional. Ahí se elige una vez la **«Intensidad del plan»**: «RIR» (repeticiones en reserva), «RPE» (esfuerzo percibido de 6 a 10; RPE 8 equivale a 2 en reserva), «% RM» (una parte de la carga máxima para una repetición) o «Solo carga y repeticiones». Cada ejercicio nuevo la hereda; uno puede tener otra en su «Más opciones». Si se cambia la intensidad del plan, BE ofrece pasar los ejercicios que quedarían sin objetivo («Pasar los N ejercicios a…»); entre RIR y RPE pasa solo, porque es la misma medida. También se elige **«Redondear las cargas a»** (automático, 1, 2,5 o 5 kg; 2,5 por omisión), con su excepción por ejercicio, y si se quiere **«Pedir el esfuerzo de la sesión al terminar»**.
+3. **Las fases.** «Agregar fase» suma una al final y «Copiar la fase anterior» la repite, con la opción de arrancar donde terminó. «Editar fase» abre su cuadro: el «Nombre», las «Semanas», el «Objetivo de la fase» (la persona lo ve con su plan) y las «Anotaciones»; desde ahí, «Duplicar fase» y «Quitar fase». En «Días de la semana», qué sesión va cada día. Cada fase toma sus fechas del inicio del plan y de las semanas de las anteriores.
+4. **Las sesiones.** «Nueva sesión» suma una tarjeta a la fase, en blanco o desde una sesión habitual; «Sesiones vacías» arma A, B y C de una vez. Dentro de una sesión, un «Bloque» agrupa ejercicios «Seguido» (de a uno) o «En vueltas» (se alternan, con un descanso al terminar cada vuelta).
+5. **«Agregar ejercicios».** Abre todo el catálogo, los ejercicios de BE y los propios, con «Favoritos» y filtros por «Grupo muscular», «Equipamiento» y «Patrón». Los que la persona ya hizo en tus planes llevan la marca **«Con historial»**, con cuántas sesiones y cuándo fue la última. Se eligen varios y «Agregar a la sesión», con una prescripción para todos si se escribe. Si no está, «Crear un ejercicio propio» o «Importar desde wger». Un ejercicio de cardio se planifica con su duración, la distancia si importa y una intensidad (una zona, un esfuerzo de 0 a 10 o en palabras), en lugar de series, repeticiones y carga: se lee «30 min · 5 km · zona 2».
+6. **Las series.** Se escriben en una línea, por ejemplo «4×8-12 RIR 2 · 60 kg · 90 s», y «Aplicar»; o en la planilla, serie por serie: repeticiones, carga, el esfuerzo y el descanso. La fila «Común» vale para las series sin un valor propio, y cada valor dice si es «común», «propio» o «Sin indicar». Las acciones rápidas suman o restan carga y descanso sin sacar el foco del campo, y los tiempos se escriben como mm:ss («130» es 01:30). Para cambiar varias series a la vez, se tildan y se escribe el valor una vez.
+7. **Las aproximaciones.** Van arriba de las efectivas, en un tono más suave (A1, A2…), sin RIR y con su descanso. «Por porcentaje»: BE calcula cada una como una parte de la carga de trabajo (por ejemplo, 40, 60 y 80 % de la carga de trabajo, con 8, 5 y 3 repeticiones) y la redondea al paso elegido, sin decimales raros; ninguna repite la carga anterior ni llega a la de trabajo. «A mano»: se escriben en la tabla. No entran en ninguna cuenta.
+8. **El 1RM de referencia y el % RM.** En un plan en % RM, cada ejercicio con carga externa muestra su «1RM de referencia» y de dónde sale: la **«Calibración»** (el profesional anota una serie que vio, con la carga, las repeticiones y el RIR, y BE calcula el 1RM con la fórmula de Epley: carga × (1 + (repeticiones + RIR) / 30); por ejemplo, 30 kg × 8 a RIR 1 da 39 kg), el **«Último registro»** de la persona en rango (de 8 a 12 repeticiones a RIR 0 a 2, escrito por ella en la app) o lo **«Declarado»**, escrito a mano. BE usa el más reciente de los tres y, si un registro nuevo se aleja más del 10 % del guardado, lo avisa sin cambiar nada solo. El % RM y la carga van atados: escribir el % da la carga (el 1RM × el %, redondeada) y escribir la carga da el % (redondeado a 0,5 % RM). Si el 1RM cambia mientras el plan es borrador, BE recalcula todas las cargas en % RM, también las de los ejercicios plegados, y lo dice («Se recalcularon N cargas con el 1RM nuevo»), con «Deshacer».
+9. **La progresión y la descarga.** En la fase, «Progresión…» abre el cuadro «Progresión y descarga»: «Lineal», «Doble progresión» u «Ondulante», a «Toda la fase» o a «Los ejercicios elegidos», y una «Semana de descarga» opcional, más liviana, después de la cual la progresión sigue donde quedó. La «Vista previa» muestra, antes de aplicar, el gráfico y la tabla semana por ejercicio con las cargas ya redondeadas; «Aplicar a la fase» la guarda como regla de la fase, y la persona recibe en su app la carga de cada semana. En el panel de un ejercicio, la «Sugerencia de BE» propone, desde lo que hizo la persona, el próximo paso de la doble progresión, con «Aplicar» o «Descartar»: decide el profesional.
+10. **Ordenar y corregir.** Los ejercicios y las sesiones se reordenan arrastrando el asa o con Alt+↑ y Alt+↓. «Deshacer» (o Ctrl+Z) vuelve atrás el último cambio, con un aviso de unos segundos que lo ofrece.
 
-![Figura 8: «Agregar ejercicio» en el plan de Diego Sosa: arriba, qué cuenta la marca; la sentadilla, «Con historial», con 47 sesiones y la última el 9 de noviembre. Captura del website, vista por el Prof. Martín Acosta](pendiente)
+**El panel de la derecha.** Según lo que se edita:
 
-7. En cada ejercicio, «Detalle y fuerza estimada» (o «La vez pasada»): arriba, «Lo que indica el plan»; debajo, **«La vez pasada»**, lo que la persona registró las últimas veces.
+- **«Almanaque»:** el mes de lunes a domingo, cada semana del color de su fase y cada día de sesión con su letra; tocar un día lleva a la sesión. «Abrir grande» muestra tres meses.
+- **«Distribución»:** las series por semana de cada músculo, sobre la silueta y en una lista: cuenta 1 por serie efectiva si el músculo es principal en el ejercicio y ½ si es secundario; las aproximaciones no cuentan. Ubica, no califica: no hay umbrales ni colores de juicio.
+- **«Progresión»:** la carga de cada semana de la fase, con la descarga marcada.
+- **En un ejercicio:** «La carga en el tiempo» (lo planificado punteado, lo realizado lleno y el máximo estimado), la «Carga para N repeticiones» con su cuenta y, debajo, **«La vez pasada»**: lo que la persona registró de ese ejercicio en tus planes en los últimos tres meses, serie por serie, sin mezclarse con lo indicado. Cada valor dice si lo escribió la persona; con el plan en RPE, se lee en RPE.
+- **«Favoritos»:** los gráficos que marcaste con la estrella en este plan y, debajo, el enfoque de gráficos de la persona elegido para el plan.
+- Abajo, «Otras áreas» (si la persona comparte algo) y «Patrones», a pedido.
 
-**Lo que se ve.** «La vez pasada» muestra lo que la persona registró de ese ejercicio en tus planes en los últimos tres meses, serie por serie, y no se mezcla con lo indicado. Cada valor dice si lo escribió la persona («Escrita por la persona») o si cargó los valores del plan; una sesión cargada otro día o corregida, lo dice. Con el plan en RPE, «La vez pasada» se lee en RPE. Debajo, «En el tiempo» abre el historial del ejercicio («El historial del ejercicio y el 1RM estimado»).
+**Antes de activar.** El botón de la barra dice cuántas cosas lo impiden («3 cosas impiden activar ›»), «Revisando lo guardado…» o «Nada impide activar». Al tocarlo, la lista: cada cosa con su «Ir a…». Si las fases suman más semanas que el plan, no se activa, y la lista ofrece las dos salidas: «Llevar el plan a N semanas» o «Recortar la última fase». Lo que queda sin completar y no impide va aparte.
 
 La versión en preparación se guarda sola y la persona no la ve hasta que se activa.
 
-![Figura 9b: «Cómo se escribe el esfuerzo» con RPE elegido, y la tabla de series con sus límites. Captura del website](pendiente)
+![Figura 8: «Agregar ejercicios» en el plan de una persona: todo el catálogo con sus filtros, la selección de varios y la marca «Con historial» con sus sesiones y la última fecha. Captura del website](pendiente)
 
-![Figura 9: El cuadro de la sentadilla, desde «Detalle y fuerza estimada»: «La vez pasada» de Diego Sosa, sesión por sesión, en kg × repeticiones · RIR, y «En el tiempo». Captura del website, vista por el Prof. Martín Acosta](pendiente)
+[Figura a recapturar: la figura 8 tiene que mostrar el cuadro nuevo «Agregar ejercicios», con los filtros «Grupo muscular», «Equipamiento» y «Patrón», «Favoritos», dos ejercicios elegidos y uno «Con historial».]
+
+![Figura 9b: «Configurar plan» con la intensidad del plan en % RM y «Redondear las cargas a», y la barra «Fases del plan» con tres fases. Captura del website](pendiente)
+
+[Figura a recapturar: la figura 9b tiene que mostrar el cuadro «Configurar plan» con la intensidad elegida y el redondeo, y detrás la barra «Fases del plan» y el «Almanaque» en el panel.]
+
+![Figura 9: Un ejercicio abierto en el editor: su 1RM de referencia con el origen, las aproximaciones por porcentaje arriba de las efectivas y, en el panel, «La carga en el tiempo» y «La vez pasada». Captura del website](pendiente)
+
+[Figura a recapturar: la figura 9 tiene que mostrar la sentadilla de una persona de la muestra en un plan en % RM: el 1RM de referencia («Calibración», con su fecha), A1 a A3 «Por porcentaje», las series efectivas en % RM con su carga y, en el panel, «La carga en el tiempo» y «La vez pasada».]
 
 | Si pasa esto | Qué hacer |
 | --- | --- |
 | «La vez pasada» dice «Sin sesiones registradas con este ejercicio en tus planes desde el …» | La persona no lo hizo en tus planes en ese tiempo: no es un cero. |
-| Un ejercicio no tiene «Detalle y fuerza estimada» | La estimación es para los ejercicios principales con barra: en los demás, el menú ofrece «La vez pasada». |
+| Un ejercicio en % RM dice «Sin 1RM todavía» | Definir el 1RM: «Calibrar» con una serie que viste, «Usar el registro» si la persona tiene uno en rango, o «Escribirlo». |
+| «El 1RM está en otra unidad que el ejercicio: BE no convierte.» | Escribir el 1RM en la unidad del ejercicio, o cambiar la unidad del ejercicio. |
+| «Las fases suman N semanas: M más que el plan. Así no se activa.» | Elegir «Llevar el plan a N semanas» o «Recortar la última fase». |
 | «Este borrador cambió en otra pestaña o en otro equipo.» | Igual que en Nutrición: copiar lo necesario y «Cargar la versión guardada». |
 
 ## 2.5 Revisar y activar el plan
@@ -291,11 +312,13 @@ La versión en preparación se guarda sola y la persona no la ve hasta que se ac
 **Los pasos.**
 
 1. En el editor, «Revisar y activar…».
-2. «Lo que impide activar»: cada problema con «Ir a corregir»; lo que queda sin completar y no impide, aparte, con «Ir». Leer «Lo que cambia frente a la versión …» (también si cambió cómo se escribe el esfuerzo: «Cómo se escribe el esfuerzo: RIR → RPE») y «Lo que va a ver …».
+2. «Lo que impide activar»: cada problema con «Ir a corregir»; lo que queda sin completar y no impide, aparte, con «Ir». Es la misma lista de «Antes de activar», en la barra del editor. Leer «Lo que cambia frente a la versión …» (también si cambió cómo se escribe el esfuerzo: «Cómo se escribe el esfuerzo: RIR → RPE») y «Lo que va a ver …».
 3. «¿Cuándo la revisás?»: «En 1 semana», «En 2 semanas», «En 4 semanas», «Elegir una fecha» o «Sin fecha por ahora».
 4. «Activar la versión … de …», o «Volver al plan» sin activar.
 
 **Lo que se ve.** «Versión … vigente desde hoy», con «Ver lo que recibe». La anterior queda en el historial con lo que se registró mientras rigió; la persona recibe el plan nuevo en su app, y la revisión acordada aparece en «Tu semana».
+
+**El 1RM queda congelado al activar.** En Entrenamiento, la versión activada guarda el 1RM de referencia de cada ejercicio en % RM con su origen y su fecha, y sus cargas no cambian después: un 1RM posterior no las tapa, y la versión lo dice («1RM 101,5 kg · el de la activación (26 nov)»). El 1RM nuevo rige para la versión siguiente: al empezarla, el borrador toma el vigente, recalcula las cargas y avisa qué cambió («El 1RM de la sentadilla cambió de 100 a 105 kg: las cargas se recalcularon»).
 
 | Si pasa esto | Qué hacer |
 | --- | --- |
@@ -454,20 +477,24 @@ En Entrenamiento, una progresión que conserva la estructura se registra como «
 3. En «Qué vas a calcular», «Elegir métodos»: uno o varios, o un conjunto de un toque («Kerr (1988), cinco componentes» o «Somatotipo de Heath y Carter»). La figura y la lista marcan solo lo que piden, más peso, talla y edad; vienen elegidos los de tu última toma, «+ Otra medición» suma un punto suelto y lo que ya tiene dato nunca se esconde. Al elegir Jackson y Pollock, BE dice dónde se toma el suprailíaco.
 4. Cargar los valores en «Medidas en la figura», con «Perímetros» y «Pliegues» sobre la figura del cuerpo. Lo que el protocolo no declara va en «Fuera de la figura», con «Agregar medición». Mientras se carga, la toma se guarda sola.
 5. «Registrar toma» y, en el cuadro que lo explica, «Registrar esta toma».
-6. En el detalle de la toma, «Calcular con un método»: elegir uno de «Se pueden calcular con esta toma», mirar lo que «Pide» y lo que «Da», y tocar «Calcular».
-7. Bajar hasta «Desde el inicio y desde la anterior».
+6. En el detalle de la toma, los resultados ya están: cada método elegido da todo lo suyo, sin tildar nada. Arriba, el resumen (por ejemplo, «% de grasa 12,0 % del peso corporal · masa grasa 9,3 kg · masa libre de grasa 67,7 kg · suma de 7 pliegues 82,0 mm»), cada valor con su cambio desde la toma anterior. Debajo, cada método en su desplegable, en el orden en que se lee una evaluación: lo medido, la ecuación (la densidad), la conversión, las masas y, si se pidió, el fraccionamiento en cuatro componentes. Las ecuaciones de «Hombres» o «Mujeres» y la conversión («Siri» o «Brožek») se eligen una vez por toma, arriba, y los números cambian en su lugar.
+7. En cada paso, el «?» de la esquina muestra la fórmula, la cuenta hecha con los números de la toma y su fuente. Lo que falta para un paso se dice en ese paso («Para la masa ósea (Rocha) faltan el diámetro biestiloideo (muñeca) y el diámetro bicondíleo del fémur (rodilla)»).
+8. Al registrar la toma, BE guarda en la historia lo que tiene método en el catálogo (por ejemplo, la suma de 7 pliegues y el % de grasa con Siri): eso entra en «Evolución» y en la app de la persona. Desde cada método, «Guardar en la historia» suma lo que falte; lo guardado va plegado al final, en «Guardados en la historia». Para un método que no se eligió antes de medir, «Calcular con un método».
+9. Bajar hasta «Desde el inicio y desde la anterior».
 
 ![Figura 15: «Desde el inicio y desde la anterior», al final de la toma más reciente de Diego Sosa: cada diferencia es una resta, con su signo, su unidad y los días entre fechas. Captura del website](pendiente)
 
-**Lo que se ve.** «Toma registrada. Ya forma parte de la evolución.». La tabla compara solo tomas con el mismo protocolo, método y unidad, con las «Mediciones» y los «Resultados calculados», cada uno con su método y su versión. En «Evolución», cada medida en el tiempo, «Por medida», «Por sitio» (dos tomas, sitio por sitio) o «Por método» (la masa grasa según cada método, en un eje común). Con Kerr, un cuadro con el peso de la balanza, las cinco masas, el «Peso estructurado» (su suma) y la diferencia con el peso medido, en kg y en % del peso medido.
+**Lo que se ve.** «Toma registrada. Ya forma parte de la evolución.». La tabla compara solo tomas con el mismo protocolo, método y unidad, con las «Mediciones» y los «Resultados calculados», cada uno con su método y su versión. En «Evolución», cada medida en el tiempo, «Por medida», «Por sitio» (dos tomas, sitio por sitio) o «Por método» (la masa grasa según cada método, en un eje común). Kerr es un método más, en su desplegable: las cinco masas, el «Peso estructurado» (su suma) y la diferencia con el peso de la balanza, en kg y en % del peso medido.
 
-![Figura 15b: «Qué vas a calcular» y el cuadro de Kerr con el «Peso estructurado». Captura del website](pendiente)
+![Figura 15b: Los resultados de una toma: el resumen arriba y Jackson y Pollock de 7 pliegues abierto, de la suma a la densidad, el % de grasa sobre el peso corporal y las masas, con el «?» de un paso. Captura del website](pendiente)
+
+[Figura a recapturar: la figura 15b tiene que mostrar los resultados encadenados de una toma de la muestra, con el resumen, un método abierto paso por paso y el «?» de la densidad con su cuenta.]
 
 | Si pasa esto | Qué hacer |
 | --- | --- |
 | «Antes de guardar, revisá estas mediciones. Cada una lleva a su campo:» | Completar lo que falta en cada fila: la métrica, el valor o la unidad. |
 | «Esta toma ya se registró: no se edita. Para cambiar una medición, corregila o anulala desde «Tomas».» | Una toma registrada es historia: la medición se corrige o se anula, y queda constancia. |
-| «Las mediciones de esta toma no alcanzan para este método: «Pide» dice qué le falta. No se calculó nada.» | Elegir otro método o completar la medición que falta en una toma nueva. |
+| Un paso de un método dice qué le falta («Para la masa ósea (Rocha) faltan …») | Los pasos anteriores valen igual. Para completar ese paso, medir lo que falta en una toma nueva. |
 
 # 4. La historia en el tiempo
 
@@ -666,7 +693,7 @@ En Entrenamiento, una progresión que conserva la estructura se registra como «
 
 ## 6.1 Plantillas, recetas y ejercicios propios
 
-**Para qué.** No empezar cada plan desde cero: preparar plantillas, aun sin una persona, guardar lo que funciona como habitual, armar recetas propias o usar las del Recetario de BE como opción de una comida, y sumar ejercicios que no están en el catálogo.
+**Para qué.** No empezar cada plan desde cero: preparar plantillas, aun sin una persona, o partir de una Plantilla de BE, guardar lo que funciona como habitual, armar recetas propias o usar las del Recetario de BE como opción de una comida, y sumar ejercicios que no están en el catálogo.
 
 **Quién puede.** Cada profesional, con lo suyo: las recetas, con el área de Nutrición; los ejercicios propios, con la de Entrenamiento. Nada de esto lleva datos de una persona.
 
@@ -675,6 +702,7 @@ En Entrenamiento, una progresión que conserva la estructura se registra como «
 | Dónde | Qué se hace |
 | --- | --- |
 | «Plantillas y habituales» | «Plantillas de entrenamiento», «Plantillas de comidas», «Habituales de entrenamiento» y «Habituales de nutrición». Se guardan desde un plan, con «Guardar como plantilla» o «Guardar como habitual»; acá se ven, se renombran, se archivan y se quitan. Una plantilla de entrenamiento también se prepara sin una persona: «Nueva plantilla» (en blanco o desde otra), «Editar» o «Crear otra desde esta», en el mismo editor de los planes; «Revisar» y «Guardar plantilla» o «Guardar nueva versión». Editarla no toca los planes que salieron de ella, y cada plan dice qué versión se aplicó. |
+| «Plantillas de BE», en «Empezar desde una plantilla» | Planes completos que ofrece BE: «Cuerpo completo · 3 días», «Torso y pierna · 4 días», «Empuje, tracción y pierna · 3 o 6 días» y «Por grupo muscular · 5 días», cada uno con su división, sus fases con su propósito y su progresión, y sus sesiones con los ejercicios («3 × 10 · 65 % RM»). Se miran antes de usarlas; al usar una, BE crea el borrador de la persona con las cargas resueltas con su 1RM de referencia y dice qué ejercicio no tiene 1RM, para completarlo. Nada de la persona vuelve a la plantilla. Administración decide cuáles se ofrecen. |
 | «Mis recetas» | Dos pestañas: «Mis recetas» («Nueva receta»: el nombre, los ingredientes con su cantidad, las porciones y su imagen; «Guardar receta») y el «Recetario de BE», recetas para todos los profesionales de Nutrición que se usan tal cual como opción o se copian con «Copiar a Mis recetas». Una receta propia se puede «Proponer al Recetario de BE»: si tiene foto, «Leí y acepto la cesión de la foto»; Administración la suma o no. En el plan, una receta entra como opción de una comida. |
 | «Mis ejercicios» | «Crear ejercicio» con su «Nombre del ejercicio», y «Agregar una imagen». Solo los ve el profesional y, cuando forman parte de un plan activado, la persona a la que se lo indicó. |
 | «Presets», en el editor de Entrenamiento | Prescripciones listas para una sesión: «De BE · punto de partida» (Hipertrofia, Fuerza, Resistencia, Técnica) y las «Tuyos». «Usar» las escribe en el borrador. |
