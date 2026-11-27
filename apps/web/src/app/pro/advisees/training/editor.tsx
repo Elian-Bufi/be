@@ -321,11 +321,15 @@ const cuerpoGuardado = (v: PlanConObjetivos): CuerpoDelGuardado => ({ estructura
  * así lo mandado y lo guardado se comparan bien después de un guardado sin respuesta (ED-61).
  */
 function planificacionQueViaja(p: PlanificacionDelPlan | null, bloques: Bloques): PlanificacionDelPlan | null {
-  const sesiones = bloques.flatMap((b) => [...(b.sessions ?? []), ...(b.microcycles ?? []).flatMap((m) => m.sessions)]);
+  const sesionesDe = (b: Bloques[number]) => [...(b.sessions ?? []), ...(b.microcycles ?? []).flatMap((m) => m.sessions)];
+  const sesiones = bloques.flatMap(sesionesDe);
+  // DL-201 (PE-D16): cada ejercicio con la fase donde está, para que la regla propia quede solo con los de su fase.
+  const faseDe = new Map(bloques.flatMap((b) => (b.blockId ? sesionesDe(b).flatMap((s) => s.prescriptions.flatMap((x) => (x.prescriptionId ? [[x.prescriptionId, b.blockId!] as const] : []))) : [])));
   return planificacionPodada(
     p,
     bloques.flatMap((b) => (b.blockId ? [b.blockId] : [])),
     sesiones.flatMap((s) => s.prescriptions.flatMap((x) => (x.prescriptionId ? [x.prescriptionId] : []))),
+    faseDe,
   );
 }
 

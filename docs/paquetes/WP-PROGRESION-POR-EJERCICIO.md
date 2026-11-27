@@ -1,7 +1,7 @@
 # WP-PROGRESION-POR-EJERCICIO · La progresión por ejercicio, en un cuadro ancho (DL-201)
 
 **Estado:** PROGRAMADO en `entrenamiento/progresion-por-ejercicio`, desde `main` (3d3b7e06). PR en borrador, sin
-integrar. Las decisiones PE-D01 a PE-D15 están **a ratificar** por Dirección. Registro: **DL-201** en
+integrar. Las decisiones PE-D01 a PE-D16 están **a ratificar** por Dirección. Registro: **DL-201** en
 `docs/DEUDA_LEGAJO.md`.
 
 **Origen.** El pedido de Dirección del 2026-11-26: «Progresión…» se abría en el panel lateral angosto, con
@@ -52,6 +52,7 @@ el editor, el ejercicio plegado dice su regla («↑ +5 kg/sem») y la fase dice
 | PE-D13 | Al editar una propia, el pie ofrece **«Usar la de la fase»**: el ejercicio deja la suya y vuelve a heredar. Se deshace con Ctrl+Z. | La salida simple, sin pasar por «Sin progresión». |
 | PE-D14 | El **cardio** no ofrece «Progresión…» en su «Más». | La regla mueve carga, repeticiones y series; el cardio no las tiene. |
 | PE-D15 | La aclaración del pie dice «Se guarda como regla: la persona ve la carga de cada semana.» | Con la API resolviendo la carga por ejercicio (§3), ya es cierto. |
+| PE-D16 | **La regla propia vive con su fase.** Un ejercicio que termina en otra fase deja la suya en la vieja: al guardar (la API y la web, `planificacionPodada` con la fase de cada ejercicio) se le quita; no se lleva a la nueva ni pasa a valer para toda la fase vieja. El que se quita del plan pierde la suya igual (ya pasaba). «Duplicar fase» sigue con PE-D08: la copia apunta a los ejercicios nuevos. Si algún día el editor deja mover un ejercicio de fase, avisa con `COPY_PROGRESIONES.propiaQuitadaAlMover` («La progresión propia de … quedó en «…»; se quitó. Podés armarle una en «…».»), breve, sin bloquear y con «Deshacer», a partir de `reglasPropiasQueQuedaronAtras`. | La fase nueva tiene sus semanas y su regla: llevarla sola cambiaría la carga sin que el profesional lo vea. Hoy el editor no mueve ejercicios entre fases (subir, bajar, arrastrar y Alt+↑/↓ son dentro de la sesión; copiar crea ejercicios nuevos), así que la poda es la red, no un camino de todos los días. |
 
 ## 3. Compatibilidad y la APK
 
@@ -69,14 +70,14 @@ el editor, el ejercicio plegado dice su regla («↑ +5 kg/sem») y la fase dice
 - **Dominio** (`packages/domain/src/progresion-por-ejercicio.test.ts`): TEST-PE-01 la precedencia; TEST-PE-02 el contrato
   rechaza que se pisen (dos de la fase, un ejercicio en dos propias, repetido) y acepta hasta 200; TEST-PE-03 aplicar y
   quitar sin pisarse; TEST-PE-04 la carga de la semana por ejercicio; TEST-PE-05 la descarga de la sesión; TEST-PE-06
-  «Duplicar fase» y las plantillas; TEST-PE-07 las palabras.
+  «Duplicar fase» y las plantillas; TEST-PE-07 las palabras; TEST-PE-08 la regla propia que queda atrás (PE-D16).
 - **Web** (`apps/web/test/progresion-por-ejercicio.test.mjs`): TEST-PE-10 a 14 (el cuadro ancho, las dos columnas, «Se
   aplica a» por sesión, el «Más» del ejercicio, «Deshacer» y «Duplicar fase»).
 - Las guardias de siempre: `scripts/contraste.test.cjs`, `scripts/acciones-y-ayudas.test.cjs` y el vocabulario visible.
 
 ## 5. Lo que queda
 
-- Ratificar PE-D01 a PE-D15.
+- Ratificar PE-D01 a PE-D16.
 - Mirarlo en pantalla con Dirección a 1280 × 720 (con una fase de muchos ejercicios, la lista elegida se desplaza sola).
-- Un ejercicio que se mueve a otra fase deja su regla propia en la de antes (no rige en la nueva; no traba el guardado).
-  Si Dirección quiere que viaje con él, va en otro paquete.
+- Un ejercicio que pasa a otra fase pierde su regla propia de la vieja al guardar (PE-D16). Si Dirección quiere que viaje
+  con él, va en otro paquete.

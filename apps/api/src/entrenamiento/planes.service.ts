@@ -110,7 +110,9 @@ function planificacionDelBorrador(
   if (pedida === null) return null;
   const bloques = estructura.blocks.map((b) => b.blockId);
   const prescripciones = prescripcionesDelPlan(estructura).map((p) => p.prescripcion.prescriptionId);
-  return planificacionPodada(pedida === undefined ? anterior : pedida, bloques, prescripciones);
+  // DL-201 (PE-D16): la regla propia queda solo con los ejercicios que siguen en su fase.
+  const faseDe = new Map(sesionesDelPlan(estructura).flatMap((s) => s.sesion.prescriptions.map((p) => [p.prescriptionId, s.bloque.blockId] as const)));
+  return planificacionPodada(pedida === undefined ? anterior : pedida, bloques, prescripciones, faseDe);
 }
 
 const noEditable = () =>

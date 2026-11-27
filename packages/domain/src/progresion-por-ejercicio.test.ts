@@ -1,7 +1,7 @@
 /**
  * DL-201 (WP-PROGRESION-POR-EJERCICIO) · la progresión por ejercicio, con el patrón de la intensidad (ET1-D11): la regla de
  * la fase la hereda cada ejercicio; una regla propia la pisa; un ejercicio lleva como mucho una propia. TEST-PE-01 a
- * TEST-PE-07.
+ * TEST-PE-08.
  */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -10,6 +10,7 @@ import { terminosProhibidosDeEntrenamientoEn } from './copy-entrenamiento';
 import { MAXIMO_DE_PROGRESIONES, PlanificacionDelPlanSchema, type PlanificacionDelPlan, type ProgresionDeLaFase } from './contratos-entrenamiento';
 import { PlanificacionDeLaPlantillaSchema } from './contratos-plantillas';
 import { planificacionDesdeLaPlantilla, planificacionParaLaPlantilla } from './planificacion-de-la-plantilla';
+import { planificacionPodada } from './planificacion-del-plan';
 import {
   cambiaAlgo,
   conProgresion,
@@ -20,6 +21,7 @@ import {
   reglaPropiaDe,
   reglasPropias,
   reglasPropiasParaLaCopia,
+  reglasPropiasQueQuedaronAtras,
   sinLaProgresion,
   sinReglaPropia,
 } from './progresiones';
@@ -178,4 +180,46 @@ test('TEST-PE-07 · en pocas palabras, para el ejercicio plegado y la fase', () 
     assert.deepEqual(terminosProhibidosDeEntrenamientoEn(t), [], t);
   }
   assert.equal(COPY_PROGRESIONES.aplicarA(1), 'Aplicar a 1 ejercicio');
+});
+
+test('TEST-PE-08 · PE-D16: el ejercicio que pasa a otra fase deja su regla propia en la vieja; se quita, no se lleva', () => {
+  const plan: PlanificacionDelPlan = {
+    ...base,
+    phases: [
+      { blockId: 'f1', weeks: 4 },
+      { blockId: 'f2', weeks: 4 },
+    ],
+    progressions: [regla({}), regla({ loadStep: 5, prescriptionIds: ['banca', 'remo'] }), sinModelo(['curl']), regla({ blockId: 'f2', prescriptionIds: ['dominada'] })],
+  };
+  // «banca» pasó a la fase 2; «curl» se quitó del plan; «remo» y «dominada» siguen donde estaban.
+  const faseDe = new Map([
+    ['banca', 'f2'],
+    ['remo', 'f1'],
+    ['dominada', 'f2'],
+  ]);
+  assert.deepEqual(reglasPropiasQueQuedaronAtras(plan, faseDe), [
+    { prescriptionId: 'banca', desde: 'f1', hacia: 'f2' },
+    { prescriptionId: 'curl', desde: 'f1', hacia: null },
+  ]);
+  const podada = planificacionPodada(plan, ['f1', 'f2'], ['banca', 'remo', 'dominada'], faseDe)!;
+  assert.deepEqual(
+    podada.progressions?.map((r) => [r.blockId, r.prescriptionIds]),
+    [
+      ['f1', null],
+      ['f1', ['remo']],
+      ['f2', ['dominada']],
+    ],
+    'la propia de «banca» no la sigue a la fase 2 ni pasa a valer para toda la fase 1',
+  );
+  // En la fase 2 no tiene regla propia ni hay regla de la fase: queda sin progresión hasta que se le arme una.
+  assert.equal(reglaPropiaDe(podada, 'f2', 'banca'), null);
+  assert.equal(progresionDelEjercicio(podada, 'f2', 'banca').origen, 'NINGUNA');
+  assert.deepEqual(reglasPropiasQueQuedaronAtras(podada, faseDe), []);
+  assert.ok(PlanificacionDelPlanSchema.safeParse(podada).success);
+  // Sin el mapa (las plantillas), alcanza con que siga en el plan: como antes.
+  assert.deepEqual(planificacionPodada(plan, ['f1', 'f2'], ['banca', 'remo', 'dominada'])!.progressions?.[1]?.prescriptionIds, ['banca', 'remo']);
+  // El aviso, breve y en criollo.
+  const aviso = COPY_PROGRESIONES.propiaQuitadaAlMover('Press de banca', 'Fase 1', 'Fase 2');
+  assert.equal(aviso, 'La progresión propia de Press de banca quedó en «Fase 1»; se quitó. Podés armarle una en «Fase 2».');
+  assert.deepEqual(terminosProhibidosDeEntrenamientoEn(aviso), []);
 });

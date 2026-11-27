@@ -239,6 +239,23 @@ export function reglasPropiasParaLaCopia(p: PlanificacionDelPlan | null | undefi
   });
 }
 
+/** DL-201 (PE-D16) · un ejercicio con regla propia en una fase que ya no lo tiene: `hacia`, la fase donde está ahora, o `null` si se quitó. */
+export interface ReglaPropiaQueQuedoAtras {
+  readonly prescriptionId: string;
+  readonly desde: string;
+  readonly hacia: string | null;
+}
+
+/**
+ * DL-201 (PE-D16) · los ejercicios cuya regla propia quedó en una fase donde ya no están (`faseDe`: cada ejercicio → su
+ * fase). La poda del guardado (`planificacionPodada` con `faseDe`) se los quita; esto dice cuáles, para avisarlo.
+ */
+export function reglasPropiasQueQuedaronAtras(p: PlanificacionDelPlan | null | undefined, faseDe: ReadonlyMap<string, string>): ReglaPropiaQueQuedoAtras[] {
+  return (p?.progressions ?? []).flatMap((r) =>
+    (r.prescriptionIds ?? []).flatMap((id) => (faseDe.get(id) === r.blockId ? [] : [{ prescriptionId: id, desde: r.blockId, hacia: faseDe.get(id) ?? null }])),
+  );
+}
+
 // ─── En palabras ─────────────────────────────────────────────────────────────────────────────
 
 export const COPY_PROGRESIONES = {
@@ -271,6 +288,8 @@ export const COPY_PROGRESIONES = {
   conPropias: (n: number) => (n === 1 ? '1 ejercicio con progresión propia' : `${n} ejercicios con progresión propia`),
   aplicarA: (n: number) => (n === 1 ? 'Aplicar a 1 ejercicio' : `Aplicar a ${n} ejercicios`),
   usarLaDeLaFase: 'Usar la de la fase',
+  /** DL-201 (PE-D16): el aviso breve, no bloqueante, cuando un ejercicio con regla propia pasa a otra fase. */
+  propiaQuitadaAlMover: (ejercicio: string, vieja: string, nueva: string) => `La progresión propia de ${ejercicio} quedó en «${vieja}»; se quitó. Podés armarle una en «${nueva}».`,
   volvieronALaFase: (n: number) => (n === 1 ? 'El ejercicio vuelve a seguir la regla de la fase.' : `Los ${n} ejercicios vuelven a seguir la regla de la fase.`),
   aplicadaA: (n: number) => (n === 1 ? 'La progresión quedó en 1 ejercicio.' : `La progresión quedó en ${n} ejercicios.`),
   ejemploDeMuestra: 'Ejercicio de muestra',
