@@ -48,6 +48,7 @@ import {
   type SesionDeOcurrencia,
   cuentaDeSeries,
   numerosEfectivos,
+  seMuestraElEsfuerzoDeLaSerie,
   tipoDeSerie,
   type TipoDeSerie,
 } from '@be/domain';
@@ -390,8 +391,22 @@ export function origenesDeLaSerie(origenes: Partial<Record<CampoConOrigen, Orige
  *
  * Un rango de repeticiones (10–12) no se convierte en un número: queda sin informar. Sin carga ni repeticiones, ni
  * escritas ni planificadas, no hay serie: el dominio exige una de las dos (`SET_WITHOUT_DATA`), y nunca se fabrica.
+ *
+ * DL-202 (EP-D03, EP-D04): si la fila no muestra el campo del esfuerzo (`conEsfuerzo: false`: el plan no lo pide, o es
+ * una aproximación; lo decide `seMuestraElEsfuerzoDeLaSerie`), se registra sin esfuerzo: ni lo escrito antes ni el del
+ * plan. Lo que no se preguntó no se registra.
  */
-export function serieAlTildar(f: FilaEscrita, objetivo: ObjetivoDeSerie | null, setIndex: number, unidad: Unidad, tipo: TipoDeSerie = 'WORKING', notacion: NotacionDelEsfuerzo = 'RIR'): LecturaDeFila {
+export function serieAlTildar(
+  fila: FilaEscrita,
+  objetivo: ObjetivoDeSerie | null,
+  setIndex: number,
+  unidad: Unidad,
+  tipo: TipoDeSerie = 'WORKING',
+  notacion: NotacionDelEsfuerzo = 'RIR',
+  /** DL-202: si esta fila muestra el campo del esfuerzo; sin decirlo, sí, como hasta ahora. */
+  conEsfuerzo = true,
+): LecturaDeFila {
+  const f: FilaEscrita = conEsfuerzo || fila.rir === '' ? fila : { ...fila, rir: '' };
   const { carga, repeticiones, rir, errores } = leerCampos(f, notacion);
   const tiempo = leerTiempo(f.tiempo ?? '');
   if (!tiempo.ok) errores.tiempo = tiempo.error;
@@ -403,7 +418,7 @@ export function serieAlTildar(f: FilaEscrita, objetivo: ObjetivoDeSerie | null, 
     const rango = f.repeticiones.trim() === '' && objetivo?.repetitions && 'min' in objetivo.repetitions ? objetivo.repetitions : null;
     return { ok: false, errores: { fila: rango ? TEXTOS_DE_LA_SESION.repeticionesEnRango(`${numero(rango.min, 0)}–${numero(rango.max, 0)}`) : COPY_ENTRENAMIENTO_POR_SERIE.faltaUnDato } };
   }
-  const rirDeLaSerie = rir ?? plan.rir;
+  const rirDeLaSerie = conEsfuerzo ? (rir ?? plan.rir) : null;
   const escrita = hayValoresEscritos(f);
   // Lo escrito es de la persona; lo que quedó vacío y se completó, del plan; lo que no tiene valor no lleva clave. Lo que
   // volvió de una serie sin procedencia y sigue igual, tampoco: no se sabe quién lo escribió. Una carga con el mismo
@@ -458,10 +473,12 @@ export function alTerminarLaSerie(
   numeroEfectivo: number | null = setIndex,
   /** DL-192: la notación del plan, para leer el esfuerzo escrito. */
   notacion: NotacionDelEsfuerzo = 'RIR',
+  /** DL-202: si la fila muestra el campo del esfuerzo. */
+  conEsfuerzo = true,
 ): AlTerminarLaSerie {
   if (msMedidos !== null && Math.round(msMedidos / 1000) > MAXIMO_DE_SEGUNDOS) return { tipo: 'medicion-larga', anuncio: TEXTOS_DE_LA_SESION.medicionLarga(laSerieOElCalentamiento(numeroEfectivo)) };
   const conTiempo = msMedidos === null ? f : { ...f, tiempo: textoDeTiempo(Math.max(0, Math.round(msMedidos / 1000))) };
-  const lectura = serieAlTildar(conTiempo, objetivo, setIndex, unidad, 'WORKING', notacion);
+  const lectura = serieAlTildar(conTiempo, objetivo, setIndex, unidad, 'WORKING', notacion, conEsfuerzo);
   if (lectura.ok) return { tipo: 'registrar' };
   return { tipo: 'falta-un-dato', errores: lectura.errores, anuncio: anuncioParaRegistrar(f, objetivo, setIndex, lectura.errores, numeroEfectivo) };
 }
@@ -793,6 +810,8 @@ export function pendientesDeRegistrar(
   escritas: EscritasDeLaSesion,
   /** DL-192: la notación del plan, para leer el esfuerzo escrito como al tildar. */
   notacion: NotacionDelEsfuerzo = 'RIR',
+  /** DL-202: si el plan pide el esfuerzo de cada serie, como al tildar. */
+  pideElEsfuerzo: boolean | null = true,
 ): PendienteDeRegistrar[] {
   return sesion.prescriptions.flatMap((p) => {
     const delEjercicio = escritasDelEjercicio(escritas, p.prescriptionId);
@@ -801,7 +820,7 @@ export function pendientesDeRegistrar(
     return filas.flatMap((f): PendienteDeRegistrar[] => {
       const escrita = delEjercicio.get(f.setIndex);
       if (f.estado !== 'sin-registrar' || !escrita || !hayAlgoEscrito(escrita)) return [];
-      return [{ prescriptionId: p.prescriptionId, nombre: p.exerciseName, setIndex: f.setIndex, planificada: f.planificada, lectura: serieAlTildar(escrita, f.objetivo, f.setIndex, escrita.unidad, f.tipo, notacion) }];
+      return [{ prescriptionId: p.prescriptionId, nombre: p.exerciseName, setIndex: f.setIndex, planificada: f.planificada, lectura: serieAlTildar(escrita, f.objetivo, f.setIndex, escrita.unidad, f.tipo, notacion, seMuestraElEsfuerzoDeLaSerie(pideElEsfuerzo, f.tipo)) }];
     });
   });
 }
