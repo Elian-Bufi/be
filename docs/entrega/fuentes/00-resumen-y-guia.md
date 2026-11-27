@@ -212,6 +212,8 @@ El detalle está en el modelo de datos (14), las clases (15), la arquitectura (1
 
 Hoy las áreas son Nutrición, Entrenamiento y Antropometría, lo más físico y visible del cambio. La misma forma de trabajar (planes con versiones, registros aparte, tomas con su método y un mismo eje del tiempo) admite sumar otras áreas de la salud: el sueño, los hábitos o el ciclo menstrual, cada una con su autorización. También está prevista la versión para iPhone.
 
+La demostración usa datos de prueba. La plataforma está construida y lista; para operar con datos reales falta lo legal y el entorno de empresa.
+
 **Lo que viene en la planificación.** Sobre la misma base de planes con versiones y registros aparte, estas son las próximas líneas de trabajo:
 
 - **El carrito de compras familiar.** Un centro familiar donde, si varios integrantes comparten comidas, BE calcula la porción de cada uno con los mismos alimentos de la receta, según el plan de cada persona, y arma el carrito con lo que hace falta. Permite trabajar con familias, desde una pareja hasta familias con varios planes distintos, sin que nadie vea lo que no le corresponde: cada integrante da su propio consentimiento.

@@ -1,6 +1,6 @@
-# Consentimiento informado para usar BE
+# Consentimiento informado para usar BE: condiciones para operar con datos reales
 
-*El texto para que cada persona que hoy usa BE sepa qué datos suyos se guardan, para qué, quién los ve y cómo los retira, y dé su consentimiento expreso y separado para los datos de salud. Con una versión corta para WhatsApp o correo y otra en papel para firmar a mano.*
+*El texto para que cada persona que use BE con sus datos reales sepa qué datos suyos se guardan, para qué, quién los ve y cómo los retira, y dé su consentimiento expreso y separado para los datos de salud. Con una versión corta para WhatsApp o correo y otra en papel para firmar a mano.*
 
 > Un consentimiento vale si la persona entiende qué acepta, lo acepta aparte de todo lo demás y lo puede retirar cuando quiera.
 
@@ -9,7 +9,7 @@
 **Fecha:** 19 de noviembre de 2026
 **Versión:** Borrador 1
 
-> **Resumen.** BE ya trata datos de salud de personas reales en su etapa de prueba, pero los textos que muestra la app son de demostración. Este consentimiento cubre esa etapa con lo que pide la Ley 25.326 (arts. 5, 6, 7 y 14 a 16) y dice solo lo que el sistema hace de verdad. Lo que falta decidir está marcado [A COMPLETAR], y lo dudoso, [A CONFIRMAR CON ABOGADO].
+> **Resumen.** La demostración usa datos de prueba. La plataforma está construida y lista; para operar con datos reales falta lo legal y el entorno de empresa. Este consentimiento es una de esas condiciones: cubre la primera etapa con datos reales con lo que pide la Ley 25.326 (arts. 5, 6, 7 y 14 a 16) y dice solo lo que el sistema hace de verdad. Lo que falta decidir está marcado [A COMPLETAR], y lo dudoso, [A CONFIRMAR CON ABOGADO].
 
 **Versión:** Borrador 1 · 19 de noviembre de 2026
 
@@ -21,8 +21,8 @@
 
 ### Para qué sirve
 
-- **Para las personas que ya usan BE**, sean conocidos, familia o casos reales, mientras dura la etapa de prueba y la tesis.
-- **Cubre un hueco:** hoy la app y la web muestran textos marcados como «de demostración», y los textos para el uso real están escritos pero sin publicar hasta que un abogado los valide (DL-028 y DL-169). Mientras tanto, **este consentimiento es el que vale** para las personas reales, y lo que la persona acepta en la app es la parte técnica: qué comparte, con quién y desde cuándo.
+- **Para las primeras personas que usen BE con sus datos reales**, antes de cargarlos, durante la etapa de prueba y la tesis.
+- **Cubre un hueco:** hoy la app y la web muestran textos marcados como «de demostración», y los textos para el uso real están escritos pero sin publicar hasta que un abogado los valide (DL-028 y DL-169). Mientras tanto, **este consentimiento es el que vale** para quien use BE con sus datos reales, y lo que la persona acepta en la app es la parte técnica: qué comparte, con quién y desde cuándo.
 - **No reemplaza** al consentimiento por área de la app: lo complementa. La persona sigue eligiendo en la app qué ve cada profesional, y lo retira en «Quién ve qué».
 
 ### Las tres versiones

@@ -8,7 +8,7 @@
 **Carrera:** Analista de Sistemas, Escuela Da Vinci  
 **Fecha:** Noviembre de 2026
 
-> **Resumen.** BE puede arrancar chico: está construido, se verifica en cada cambio y su infraestructura base cuesta unos USD 14 por mes. Para operar con datos reales a escala suma un ambiente de producción y la revisión legal. El precio se fija en el piloto con profesionales.
+> **Resumen.** BE puede arrancar chico: está construido, se verifica en cada cambio y su infraestructura base cuesta unos USD 14 por mes. Para operar con datos reales suma un ambiente de producción y la revisión legal. El precio se fija en el piloto con profesionales.
 
 **Entregable:** 24 · Análisis de viabilidad  
 **Fecha:** Noviembre de 2026
@@ -32,7 +32,7 @@
 > - **Legal**¿Se puede operar con datos de salud?
 > - Controles en el producto; se completa con asesoramiento legal
 
-> **La idea clave.** BE **puede arrancar chico**. Para operar con datos reales a escala suma dos condiciones: un ambiente de producción separado y la revisión legal.
+> **La idea clave.** BE **puede arrancar chico**. Para operar con datos reales suma dos condiciones: un ambiente de producción separado y la revisión legal.
 
 # 1. Viabilidad técnica
 
@@ -78,9 +78,9 @@ El website se publica como sitio estático en el mismo proveedor. Cada cambio pa
 
 Una sola aplicación de servidor, dividida en módulos por dominio. Se eligió por el tamaño del equipo (una persona), la escala esperada y la necesidad de operaciones atómicas entre áreas: activar un plan, registrar y revisar tocan varias tablas que tienen que cambiar juntas o no cambiar. Si esas condiciones cambian, los módulos se pueden separar en servicios. Antes de crecer, la capacidad se mide con una prueba de carga.
 
-## 1.3 Para operar a escala
+## 1.3 Para operar con datos reales
 
-**Tabla 1.** Lo que suma la viabilidad técnica para operar con datos reales a escala.
+**Tabla 1.** Lo que suma la viabilidad técnica para operar con datos reales.
 
 | Qué | Por qué importa |
 | --- | --- |
@@ -207,7 +207,7 @@ La demostración usa datos sintéticos; los datos reales van en el ambiente de p
 
 **Las licencias.** El código de BE es propio, con todos los derechos reservados (Ley 11.723 de Propiedad Intelectual). Los datos de terceros conservan sus licencias: Open Food Facts (ODbL) y wger (CC BY-SA) piden atribución y que lo derivado se comparta igual, y los de USDA son de dominio público. BE muestra la fuente de cada alimento y de cada ejercicio importados.
 
-*Figura 6: Lo que tiene que pasar, en orden, antes de abrir BE a datos reales a escala.*
+*Figura 6: Lo que tiene que pasar, en orden, antes de abrir BE a datos reales.*
 
 Cada paso habilita al siguiente: no tiene sentido abrir un ambiente de producción sin los textos legales cerrados. A esto se suman las reglas propias de Google Play para apps que tratan datos de salud, que se revisan al publicar la app en la tienda.
 

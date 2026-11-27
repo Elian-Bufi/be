@@ -1,8 +1,10 @@
-# Cómo BE se vuelve una empresa legal en Argentina
+# Cómo BE se vuelve una empresa legal en Argentina: condiciones para operar con datos reales
 
 *Qué exige la ley argentina a una plataforma que trata datos de salud, cómo se inscribe ante la AAIP, cómo se pasa de proyecto a empresa, cómo se protege el software y cómo lo resuelven las empresas del rubro, con un plan en cuatro etapas.*
 
 > Esto no es asesoramiento legal ni contable: es el mapa para llegar a la reunión con el abogado y el contador sabiendo qué preguntar.
+
+La demostración usa datos de prueba. La plataforma está construida y lista; para operar con datos reales falta lo legal y el entorno de empresa. Este documento reúne esas condiciones.
 
 **Autor:** Elián Bufi  
 **Carrera:** Analista de Sistemas, Escuela Da Vinci  
@@ -57,9 +59,9 @@
 - **Lo de una vez:** marca, unos $150.000 por cuatro clases **[secundaria]**; DNDA, arancel bajo **[a confirmar]**; SAS en CABA, unos $180.000 a $190.000 de tasa más honorarios **[a confirmar]**.
 - **Por cobro:** Mercado Pago, de 1,49 % a 6,99 % más IVA; Google Play, 15 % de las suscripciones.
 
-> **Los tres riesgos mayores de hoy.** 1. **Datos de salud reales sin responsable, sin textos validados y sin base inscripta:** leve por no inscribir; muy grave si el consentimiento no vale (Res. AAIP 126/2024).
-> 2. **El código público:** con la licencia de todos los derechos reservados, pero sin secreto comercial y copiable de hecho.
-> 3. **Todo depende de una persona:** dominio, cuentas y llave de firma de la APK, sin titular empresa ni respaldo documentado.
+> **Lo que hay que tener antes de operar con datos reales.** 1. **Un responsable, los textos validados y la base inscripta:** sin eso no se tratan datos de salud reales; no inscribir la base es leve, y un consentimiento que no vale es muy grave (Res. AAIP 126/2024).
+> 2. **El código protegido:** además de la licencia de todos los derechos reservados, el repositorio privado, porque público es copiable de hecho.
+> 3. **Los activos a nombre de la empresa:** dominio, cuentas y llave de firma de la APK con titular empresa y respaldo documentado, para que no dependan de una persona.
 
 # 1. Los requisitos legales de BE
 
@@ -69,7 +71,7 @@
 
 ## 1.1 La tabla de requisitos
 
-Prioridad: **Alta** = antes de sumar a una sola persona más fuera del círculo de prueba; **Media** = antes de cobrar o de abrir a desconocidos; **Baja** = antes de vender a empresas o cuando crezca.
+Prioridad: **Alta** = antes del primer dato real; **Media** = antes de cobrar o de abrir a desconocidos; **Baja** = antes de vender a empresas o cuando crezca.
 
 **Tabla 1.** Los requisitos legales de BE, lo que ya cumple y lo que falta.
 
@@ -589,9 +591,9 @@ Qué pasa con los datos de la persona **cuando el profesional se va**; la **devo
 
 *Cuatro etapas, cada una con sus tareas, quién las hace y los documentos.*
 
-> **La idea clave.** La etapa de hoy no es «sin reglas» por ser una tesis: **ya hay datos de salud de personas reales** (los conocidos y los casos reales de Elián como profesional). Lo mínimo de la primera etapa se hace ahora.
+> **La idea clave.** Ser una tesis no habilita una etapa «sin reglas»: **lo mínimo de la primera etapa tiene que estar hecho antes del primer dato real**.
 
-## 9.1 Etapa 1 · Hoy: la tesis y la prueba con conocidos
+## 9.1 Etapa 1 · Antes del primer dato real
 
 **Tabla 13.** Etapa 1: tareas, responsables y documentos.
 
@@ -600,7 +602,7 @@ Qué pasa con los datos de la persona **cuando el profesional se va**; la **devo
 | Pasar el repositorio a privado y agregar un `LICENSE` «todos los derechos reservados» | Elián | — |
 | Revisar el historial público por datos sensibles o secretos | Elián | — |
 | Darse de alta en el monotributo (si no lo está) para tener CUIT como responsable | Elián + contador | Constancia de inscripción |
-| Consentimiento escrito y específico de cada conocido y de cada caso real, con su retiro y el borrado al terminar la prueba | Elián | **Consentimiento de prueba** (una página) |
+| Consentimiento escrito y específico de cada persona antes de cargar sus datos, con su retiro y el borrado | Elián | **Consentimiento de BE** |
 | Congelar la evidencia de autoría (repositorio con historial y hash) y escribir la declaración de autoría | Elián | Declaración de autoría |
 | Depositar el software como inédito en la DNDA | Elián | Formulario DNDA |
 | Respaldar la keystore en dos lugares cifrados | Elián | Inventario de activos |
@@ -696,7 +698,7 @@ Qué pasa con los datos de la persona **cuando el profesional se va**; la **devo
 4. La transferencia internacional y su mecanismo.
 5. La casilla de aceptación **sin marcar**, con la versión y la fecha guardadas.
 
-El texto completo para las personas que hoy usan BE, con estos cinco puntos, una versión para WhatsApp y otra en papel, está en el documento aparte «Consentimiento de BE» (19/11/2026).
+El texto completo para las personas, antes de operar con datos reales, con estos cinco puntos, una versión para WhatsApp y otra en papel, está en el documento aparte «Consentimiento de BE» (19/11/2026).
 
 ## 10.4 Contrato de encargado del tratamiento (para clientes empresa)
 
@@ -780,7 +782,7 @@ La **Ley 25.506** reconoce las dos y les da efectos distintos ([texto actualizad
 | Que no se alteró | Registros solo de agregado; cada versión apunta a la anterior; revocar emite una versión nueva | Respaldos probados y su conservación por escrito |
 
 - **El punto débil es la identidad, no la firma:** una cuenta creada con un correo que nadie verificó prueba poco sobre quién la usa. Con el correo de BE activo, **verificar el correo al crear la cuenta** cierra ese hueco y responde a la Res. 4/2019.
-- **Mientras dure la prueba**, el consentimiento por WhatsApp o en papel del documento «Consentimiento de BE» suma una segunda prueba: la respuesta desde el número conocido de la persona, o su firma manuscrita.
+- **Al empezar con datos reales**, el consentimiento por WhatsApp o en papel del documento «Consentimiento de BE» suma una segunda prueba: la respuesta desde el número conocido de la persona, o su firma manuscrita.
 
 ## 11.5 Para qué sí le conviene la firma digital a BE
 
@@ -837,7 +839,7 @@ La **Ley 25.506** reconoce las dos y les da efectos distintos ([texto actualizad
 3. ¿Las notas de un nutricionista en BE son historia clínica según la Ley 26.529? ¿Cómo lo resolvemos en los términos?
 4. **La transferencia internacional:** con Render en Frankfurt, ¿alcanza? ¿Cómo cubrimos Google y Expo (EE. UU.): cláusulas de la Res. 198/2023, consentimiento expreso o ambos?
 5. **La inscripción en la AAIP:** ¿una base o dos? ¿Qué nombre y qué finalidades, sabiendo que no se pueden cambiar?
-6. Los **datos de los conocidos** que ya están en el entorno de prueba: ¿qué consentimiento hace falta y cómo regularizamos lo anterior?
+6. Los **datos de las primeras personas**: ¿qué consentimiento hace falta antes de cargarlos y cómo se documenta?
 7. **La edad mínima:** ¿alcanza la declaración de 18 años?
 8. **Consumidor:** ¿cómo implementamos el botón de arrepentimiento y el de baja (Disp. 954/2025) en una app con suscripción, y qué cláusulas de responsabilidad son válidas?
 9. **La marca:** ¿«BE» sola es defendible? ¿Mixta, denominativa con una palabra más, y en qué clases?

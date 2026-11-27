@@ -46,7 +46,7 @@ Este FODA mira a BE como producto. Adentro (fortalezas y debilidades) va lo que 
 
 *Figura 1: BE en cuatro cuadrantes. Cada punto se desarrolla en su capítulo.*
 
-> **La idea clave.** El FODA termina en un orden: **primero el piloto con profesionales**, después el precio, y con eso la operación con datos reales a escala.
+> **La idea clave.** El FODA termina en un orden: **primero el piloto con profesionales**, después el precio, y con eso la operación con datos reales.
 
 # 1. El punto de partida
 
@@ -135,7 +135,7 @@ Quedó afuera lo que cualquier producto del rubro tiene (una app para la persona
 | D2 | Un solo autor | Construir, sostener, dar soporte y vender depende de una persona. Para crecer hace falta sumar a alguien al equipo. |
 | D3 | El alta del profesional pasa por Administración | El profesional no se registra solo: Administración verifica la matrícula fuera de BE y lo da de alta con su fundamento. Es más seguro con datos de salud, pero cada alta es trabajo manual. |
 | D4 | Solo Android | No hay versión para iPhone. Toda persona con iPhone queda afuera y, con ella, su profesional, que no va a usar dos sistemas. |
-| D5 | Operar a escala pide condiciones propias | Con datos reales a escala hacen falta la revisión legal, un ambiente de producción separado y una restauración de la base probada. |
+| D5 | Operar con datos reales pide condiciones propias | Con datos reales hacen falta la revisión legal, un ambiente de producción separado y una restauración de la base probada. |
 | D6 | Presencia mínima | Sin publicación en Google Play: la app se instala desde un archivo descargado. |
 | D7 | Menos funciones comerciales que la competencia | Sin turnos, cobros, videollamada, chat ni conexión con relojes. Es una decisión de alcance, pero en una comparación de listas de funciones BE pierde. |
 
@@ -153,7 +153,7 @@ Para ordenarlas, cada una se ubica en dos ejes: cuánto frena a BE como producto
 > - CUÁNTO FRENA HOY →
 > - **D1**Precio y adopción, en el piloto
 > - **D3**Alta por Administración
-> - **D5**Condiciones para operar a escala
+> - **D5**Condiciones para operar con datos reales
 > - **D2**Un solo autor
 > - **D4**Solo Android
 > - **D6**Presencia mínima
@@ -197,7 +197,7 @@ D1 se resuelve en semanas con el piloto y ordena todo lo demás: es el primer pa
 
 *Seis riesgos de afuera. Para cada uno, desde cuándo pesa y qué se hace.*
 
-> **La idea clave.** La amenaza más cara no es un competidor: es **un incidente con datos de salud**. Por eso BE opera a escala con datos reales solo con la revisión legal y un ambiente de producción separado.
+> **La idea clave.** La amenaza más cara no es un competidor: es **un incidente con datos de salud**. Por eso BE opera con datos reales solo con la revisión legal y un ambiente de producción separado.
 
 ## 5.1 Las seis
 
@@ -208,7 +208,7 @@ D1 se resuelve en semanas con el piloto y ordena todo lo demás: es el primer pa
 | A1 | Competidores maduros | Desde el primer día | Tienen años de producto y planes gratis para empezar (ABC Trainerize, Everfit, Practice Better y MediFlow). BE no compite por cantidad de funciones sino por la historia de la persona entre áreas, con el porqué de cada cambio. |
 | A2 | La costumbre | Desde el primer día | Mensajería, planilla y PDF no cuestan nada y todos los saben usar. BE baja el costo de empezar: invitación con un link, un QR o un código, y registro en pocos toques para la persona. |
 | A3 | Costos en dólares, ingresos en pesos | Al cobrar | La infraestructura se paga en dólares; con ingresos en pesos, el tipo de cambio mueve el margen. El costo de la infraestructura es chico y se revisa en cada cambio de precio. |
-| A4 | Un incidente con datos de salud | Con datos reales | Permiso por área en cada operación, registro de quién hizo qué y segundo factor para Administración; el profesional entra con su contraseña o con Google, con límite de intentos. Para operar a escala: la revisión legal y un ambiente de producción separado. |
+| A4 | Un incidente con datos de salud | Con datos reales | Permiso por área en cada operación, registro de quién hizo qué y segundo factor para Administración; el profesional entra con su contraseña o con Google, con límite de intentos. Para operar con datos reales: la revisión legal y un ambiente de producción separado. |
 | A5 | Dependencia de proveedores | Desde el primer día | BE depende de Render (servidor y base), de Google (acceso con la cuenta y la tienda) y de Expo (avisos al teléfono). Cambiar de proveedor es posible pero lleva trabajo; se revisa cuando cambian sus precios o sus políticas. |
 | A6 | Planes automáticos con IA | Al crecer | Si se instala la idea de que el profesional sobra, BE compite cuesta arriba. La respuesta es la propuesta misma: BE no decide por el profesional, le ordena la información. |
 
@@ -226,7 +226,7 @@ D1 se resuelve en semanas con el piloto y ordena todo lo demás: es el primer pa
 > - Al salir a competir
 > - A6
 > - La comparación con los planes automáticos pesa cuando BE salga al mercado.
-> - Con datos reales a escala
+> - Con datos reales
 > - A4
 > - El riesgo de un incidente es el más caro: por eso va último y con condiciones.
 
@@ -259,7 +259,7 @@ D1 se resuelve en semanas con el piloto y ordena todo lo demás: es el primer pa
 > - F1F2F5A1A6
 > - Cuidarse · DA
 > - Crecer con datos reales con sus condiciones
-> - La revisión legal y un ambiente de producción separado, antes de operar a escala.
+> - La revisión legal y un ambiente de producción separado, antes de operar con datos reales.
 > - D5A4
 
 ## 6.2 El orden
@@ -267,7 +267,7 @@ D1 se resuelve en semanas con el piloto y ordena todo lo demás: es el primer pa
 1. **El piloto**: Cinco a ocho profesionales con sus personas, para confirmar el uso y el rango de precio (D1).
 2. **Precio y modelo**: Con las respuestas, elegir suscripción, tramos o un monto por persona (O3).
 3. **Duplas**: Presentar BE a duplas que ya comparten personas (F1 y O4).
-4. **Datos reales a escala**: Revisión legal y ambiente de producción separado (A4 y D5).
+4. **Datos reales**: Revisión legal y ambiente de producción separado (A4 y D5).
 
 *Figura 7: Qué va primero: cada paso habilita al siguiente.*
 

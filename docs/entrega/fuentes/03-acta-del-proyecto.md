@@ -236,6 +236,8 @@ BE tiene tres roles y dos canales. La persona usa la app para Android. El profes
 
 **Canales.** La app es para Android (versión 7 o posterior); la versión para iPhone está en la proyección. El website está pensado para la computadora, de 1024 a 1920 de ancho; se recomienda 1280 o más.
 
+**Los datos.** La demostración usa datos de prueba. La plataforma está construida y lista; para operar con datos reales falta lo legal y el entorno de empresa.
+
 # 7. Tecnologías utilizadas
 
 *TypeScript en las tres piezas, una sola API y una base que hace respetar las reglas.*
