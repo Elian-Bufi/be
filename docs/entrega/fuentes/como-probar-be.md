@@ -122,9 +122,10 @@ Con la cuenta de Carolina R. en el teléfono. La barra de abajo tiene cinco dest
 | 2 | En «Las personas que acompañás», tocar a una persona. | Su ficha, con «Resumen», «Patrones», «Línea de tiempo» y «Analizar». Arriba, «Acceso actual» dice qué áreas puede ver hoy. |
 | 3 | Abrir un área («Abrir Nutrición», «Abrir Entrenamiento» o «Abrir Antropometría»). | Una franja arriba: la vuelta a la ficha, el área, la persona y su acceso. Debajo, «Resumen», «Plan», «Registros» y «Revisiones», o las tomas en Antropometría. |
 | 4 | En «Plan» de Nutrición, abrir la versión en preparación, o empezar una con «Nueva versión del plan». | El editor: el «Reparto por comida» de cada día tipo, la franja de cada comida con el promedio de sus opciones y «Rangos y totales» al costado. Si hay un objetivo más nuevo, «Usarla ahora». |
-| 5 | En «Plan» de Entrenamiento, abrir el editor y, al pie de las sesiones, mirar «Cómo se escribe el esfuerzo». | RIR o RPE: la misma medida escrita de dos formas. Si se elige RPE y se activa, la app pregunta el esfuerzo así. |
-| 6 | En el menú de arriba, «Mis recetas». | Dos pestañas: «Mis recetas» y el «Recetario de BE», con «Copiar a Mis recetas». Una receta propia ofrece «Proponer al Recetario de BE». |
-| 7 | En «Plantillas y habituales», mirar las plantillas. | Las plantillas de entrenamiento, con sus versiones; «Nueva plantilla» prepara una sin elegir a ninguna persona. |
+| 5 | En «Plan» de Entrenamiento, abrir el editor. La primera vez aparece el recorrido guiado: seguirlo con «Siguiente» o tocar «Omitir»; «Ver el recorrido» lo vuelve a mostrar. | Arriba, la barra «Fases del plan»; debajo, las sesiones de la fase como tarjetas; a la derecha, el «Almanaque» con cada semana del color de su fase. En «Configurar plan», la «Intensidad del plan» (RIR, RPE, % RM o solo carga), «Redondear las cargas a» y «Pedir el esfuerzo de la sesión al terminar». |
+| 6 | En el editor, abrir un ejercicio de una sesión y mirar el panel de la derecha; después, «Agregar ejercicios». | En el panel, «La carga en el tiempo» y «La vez pasada», lo que la persona registró serie por serie. En «Agregar ejercicios», todo el catálogo con filtros por grupo muscular, equipamiento y patrón, y la marca «Con historial». |
+| 7 | En el menú de arriba, «Mis recetas». | Dos pestañas: «Mis recetas» y el «Recetario de BE», con «Copiar a Mis recetas». Una receta propia ofrece «Proponer al Recetario de BE». |
+| 8 | En «Plantillas y habituales», mirar las plantillas. | Las plantillas de entrenamiento, con sus versiones; «Nueva plantilla» prepara una sin elegir a ninguna persona. Al empezar un plan, «Empezar desde una plantilla» ofrece también las «Plantillas de BE». |
 
 # 4. Cinco personas, cinco historias
 
@@ -185,17 +186,17 @@ El recorrido **va y vuelve** entre la computadora y el teléfono. Para preparars
 
 ## 6.2 Activar un plan
 
-**La profesional**, en el website: en la ficha de Carolina, en el «Resumen», la tarjeta de Entrenamiento ofrece «Ajustar el plan» (o «Seguir el borrador», si ya hay uno). Al pie de las sesiones, en «Cómo se escribe el esfuerzo», elegir «RPE (esfuerzo de 6 a 10)». Cambiar algo, por ejemplo la carga de una serie, esperar «Guardado» y tocar «Revisar y activar…».
+**La profesional**, en el website: en la ficha de Carolina, en el «Resumen», la tarjeta de Entrenamiento ofrece «Ajustar el plan» (o «Seguir el borrador», si ya hay uno). En «Configurar plan», elegir el «Inicio» y la «Duración», la «Intensidad del plan» en «RPE» y marcar «Pedir el esfuerzo de la sesión al terminar»; «Guardar». En una fase, «Editar fase» para ver sus semanas y sus días; en el «Almanaque» del panel, cada semana toma el color de su fase. Abrir un ejercicio con barra y cambiar algo, por ejemplo la carga de una serie; probar «Deshacer» y volver a hacerlo. Esperar «Guardado», mirar «Antes de activar» en la barra y tocar «Revisar y activar…».
 
-**Qué se tiene que ver:** «Antes de activar la versión» con su número: lo que impide activar, si hay algo; lo que cambia frente a la versión vigente, con «Cómo se escribe el esfuerzo: RIR → RPE»; lo que va a ver Carolina, y «¿Cuándo la revisás?». «Activar la versión…» la activa, y la anterior se conserva.
+**Qué se tiene que ver:** «Antes de activar» dice cuántas cosas impiden activar, o «Nada impide activar», y cada una lleva a su lugar con «Ir a…». En «Revisar y activar…», «Antes de activar la versión» con su número: lo que impide activar, si hay algo; lo que cambia frente a la versión vigente, con «Cómo se escribe el esfuerzo: RIR → RPE»; lo que va a ver Carolina, y «¿Cuándo la revisás?». «Activar la versión…» la activa, y la anterior se conserva.
 
 **Carolina**, en la app: la campana avisa el plan nuevo de Entrenamiento, y Entrenamiento ya lo muestra.
 
 ## 6.3 Registrar
 
-**Carolina**, en la app, en Entrenamiento: «Empezar» la sesión; en cada serie, el esfuerzo se elige de una lista (de 10 a 6,5 y «6 o menos»). En Nutrición, abrir una comida, pasar sus opciones con las flechas o deslizando y tocar «Comí esta opción».
+**Carolina**, en la app, en Entrenamiento: «Empezar» la sesión; en cada serie, el esfuerzo se elige de una lista (de 10 a 6,5 y «6 o menos»). Al tocar «Finalizar entrenamiento», la app pregunta «¿Qué tan duro fue el entrenamiento, en general?», de 0 a 10, con los minutos del cronómetro; responder y «Guardar» (o «Ahora no»). En Nutrición, abrir una comida, pasar sus opciones con las flechas o deslizando y tocar «Comí esta opción».
 
-**Qué se tiene que ver:** en Inicio, la sesión y la comida registradas. Lo registrado queda aparte de lo indicado: BE guarda las dos cosas, y ninguna pisa a la otra. Lo que se guarda del esfuerzo es siempre el RIR, así que la historia no cambia.
+**Qué se tiene que ver:** en Inicio, la sesión y la comida registradas. Lo registrado queda aparte de lo indicado: BE guarda las dos cosas, y ninguna pisa a la otra. Lo que se guarda del esfuerzo de cada serie es siempre el RIR, así que la historia no cambia. El esfuerzo de la sesión queda aparte («Gracias: quedó guardado.») y la profesional lo ve con la carga de la sesión: el esfuerzo por los minutos.
 
 ## 6.4 Revisar
 
@@ -211,7 +212,9 @@ El recorrido **va y vuelve** entre la computadora y el teléfono. Para preparars
 - **«En el tiempo» → «Historial»:** el 1RM estimado, una estimación por sesión con las versiones del plan de fondo, y cada estimación dice con qué serie salió («estimado con 5 reps a RPE 8 · 100 kg»).
 - **«Abrir en Analizar»** lleva el ejercicio a «Analizar». Ahí las métricas se ven «Alineadas» o «Superpuestas», y «Armá tu gráfico» junta hasta tres series de distintas áreas. Cuando se superponen dos áreas, el gráfico lo dice: «Coinciden en el tiempo; esto no prueba que una cosa cause la otra.»
 
-![Figura 5: El editor de Entrenamiento con la tabla de series, sus límites y «Cómo se escribe el esfuerzo». Captura del website](pendiente)
+![Figura 5: El editor de Entrenamiento de Carolina R.: la barra «Fases del plan», un ejercicio abierto con sus series y, en el panel, «La vez pasada». Captura del website](pendiente)
+
+[Figura a recapturar: la figura 5 tiene que mostrar el editor nuevo sobre el plan de Carolina R., con la barra de fases, el «Almanaque» o «La vez pasada» en el panel y «Antes de activar» en la barra.]
 
 ## 6.6 Retirar algo en «Quién ve qué»
 
