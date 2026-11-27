@@ -38,6 +38,8 @@ Los ejemplos son los de la historia sintética de la demostración. **Diego Sosa
 
 Cada tarea responde lo mismo, en el mismo orden: **para qué** sirve; **quién** puede hacerla; los **pasos**, con los nombres que se leen en la pantalla; la **imagen** de esa pantalla; **lo que se ve** al terminar, y **si algo falla**, con el texto del aviso y qué hacer. Los nombres de botones, pestañas y avisos van entre comillas, tal como aparecen. La ayuda de cada sección está en el «?» de su esquina superior derecha: lo que explica flota sin correr lo que se está editando, y se cierra con Escape.
 
+> **Sobre las imágenes.** Estamos terminando los últimos detalles: algunas imágenes son representativas y, donde falta una, queda el texto de lo que va a mostrar.
+
 > **Lo que hace falta.** Una computadora con un navegador de escritorio, de 1024 a 1920 de ancho; se recomienda 1280 o más. Una cuenta con contraseña o con Google. Y la habilitación de Administración en el área en que se trabaja.
 
 ### Las tareas
@@ -339,7 +341,7 @@ La versión en preparación se guarda sola y la persona no la ve hasta que se ac
 
 **Lo que se ve.** La hoja lleva «BE · Better Everyday» y «Plan de Nutrición» (o de Entrenamiento); la «Persona», el «Profesional», la «Versión», «Vale desde» y la «Próxima revisión»; los días tipo con sus comidas y opciones, o las sesiones con sus series. Al pie, el código QR con «Escaneá para bajar BE» y el enlace «Bajar BE», que bajan la app para Android, y la aclaración de que, si el profesional cambia el plan, lo vigente está en la app.
 
-*Maqueta*
+*Esquema*
 
 ![Figura 11: La hoja del plan de Nutrición de Diego Sosa, con los textos y el código QR del website](pendiente)
 
@@ -626,7 +628,7 @@ En Entrenamiento, una progresión que conserva la estructura se registra como «
 2. Leer «Planes», «Lo registrado», «Tomas» y «Decisiones de las revisiones».
 3. Recorrerla por tramos con «Tramo anterior» y «Tramo siguiente».
 
-*Maqueta*
+*Esquema*
 
 ![Figura 22: La historia anterior de Diego Sosa en Antropometría, con los textos del website](pendiente)
 
@@ -741,7 +743,7 @@ En Entrenamiento, una progresión que conserva la estructura se registra como «
 
 | Lo que pasa | Qué hacer |
 | --- | --- |
-| Al recargar aparece «Recuperando tu sesión…» | Es normal: la sesión vuelve sola. Vence a las 12 horas; después, se entra de nuevo con el código. |
+| Al recargar aparece «Recuperando tu sesión…» | Es normal: la sesión vuelve sola. Vence a las 12 horas; después, se entra de nuevo. |
 | Al entrar con otra cuenta, las otras pestañas se recargaron | Es a propósito, para no mostrar los datos de otra cuenta. Una segunda cuenta va en una ventana privada. |
 | Un aviso dice que algo cambió en otra pestaña o en otro equipo | BE no pisa lo del otro ni guarda a medias. Lo tuyo sigue en pantalla: copiar lo necesario, «Cargar la versión guardada» y repetir. |
 | Lo que hizo la persona no aparece | Al volver a la pestaña, BE se fija solo si hay algo nuevo: «Hay datos nuevos · Ver». |

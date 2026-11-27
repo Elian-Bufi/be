@@ -215,3 +215,4 @@ Cómo se dibuja cada gráfico para que diga solo lo que los datos permiten decir
 | Los recorridos guiados (DL-195) | En el 00, el 03, el 09 y el 17, sin ID propio: es una ayuda de la pantalla, sin datos de salud | **Ratificar** |
 | El 1RM estimado de «Analizar» | Los documentos lo describen con la fórmula de Epley, sin versión; la pantalla todavía dice «1RM estimado (Epley v1)» | **Ratificar con cambio:** sacar «v1» del rótulo en la pantalla en la próxima tanda, para que la pantalla y la entrega digan lo mismo |
 | ET2-D19 | «Pasar los N ejercicios a…» viene marcada al cambiar la intensidad del plan; el 09 lo describe así | **Ratificar** |
+| La meta de la TVCC-30 | El 03 la nombra como indicador del objetivo, con «su meta se fija con el piloto»: no hay una meta decidida | **Decidís vos.** Fijarla con los primeros datos del piloto (por ejemplo, la parte de los planes activados que llegan a su revisión dentro de los 30 días) y escribirla en el 03 |

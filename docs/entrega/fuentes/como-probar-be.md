@@ -31,6 +31,8 @@ La muestra es la cartera de la **Lic. Julieta Arce**, licenciada en Nutrición, 
 | Administración | El website, en su propia entrada | Habilitar a cada profesional por área, con su fundamento, sin ver datos de salud | «Administración, en el website» |
 | Los dos canales | La app y el website | El ciclo completo, de un plan nuevo a la revisión | «El recorrido completo» |
 
+> **Sobre las imágenes.** Estamos terminando los últimos detalles: algunas imágenes son representativas y, donde falta una, queda el texto de lo que va a mostrar.
+
 # 1. Antes de empezar
 
 *Un teléfono, una computadora y una cuenta por rol, con datos sintéticos.*
@@ -38,7 +40,7 @@ La muestra es la cartera de la **Lic. Julieta Arce**, licenciada en Nutrición, 
 ## 1.1 Qué hace falta
 
 - **Persona · Un teléfono Android.** Android 7 o posterior, para la app de la persona. Se instala desde un enlace, fuera de la tienda.
-- **Profesional · Una computadora.** Con un navegador de escritorio y una pantalla de 1280 de ancho o más, para el website.
+- **Profesional · Una computadora.** Con un navegador de escritorio, de 1024 a 1920 de ancho; se recomienda 1280 o más, para el website.
 - **Administración · La misma computadora.** Administración entra por su propia puerta y, además de la contraseña, escribe el código de una app de códigos, como Google Authenticator.
 
 ## 1.2 Los enlaces
@@ -136,7 +138,7 @@ Con la cuenta de Carolina R. en el teléfono. La barra de abajo tiene cinco dest
 | Persona | Qué muestra | Dónde mirarlo |
 | --- | --- | --- |
 | **Tomás M.**, 31 años | El progreso: fases de adaptación, hipertrofia, fuerza y descarga, con el objetivo de Nutrición ajustado en el camino. | En la ficha, «Analizar» → «¿Cómo viene progresando este ejercicio?»: el 1RM estimado de la sentadilla, sesión por sesión, con las versiones del plan de fondo. En el editor de Entrenamiento, «Con historial» y «La vez pasada». |
-| **Valeria Q.**, 38 años | El estancamiento y la descarga, y la historia anterior: viene de otro entrenador, y lo autorizó a la profesional. | En «Más» → «Historia anterior», lo que pasó con el entrenador anterior, en solo lectura y marcado como de otro profesional. En «Analizar», el press que no cambió durante diez semanas y la descarga que siguió. En el editor, el panel «Contexto de…» muestra su medicación. |
+| **Valeria Q.**, 38 años | El estancamiento y la descarga, y la historia anterior: viene de otro entrenador, y lo autorizó a la profesional. | En «Más» → «Historia anterior», lo que pasó con el entrenador anterior, en solo lectura y marcado como de otro profesional. En «Analizar», el press que no cambió durante diez semanas y la descarga que siguió. En el editor, el panel «Contexto de…» muestra el contexto que declaró. BE guarda lo que la persona declara como contexto, medicación incluida, pero no lo interpreta ni lo trata. |
 | **Gustavo P.**, 47 años | La vuelta después de una pausa por una mudanza, con un déficit moderado y un plan simplificado con medidas caseras. | En la «Línea de tiempo», las semanas sin registro, que dicen «Sin registro» y no un cero, y la vuelta con cargas más bajas. En el plan de Nutrición, las medidas caseras. |
 | **Carolina R.**, 34 años | La composición corporal: dos déficits con un mantenimiento en el medio, con un plan sin carne ni pescado. Es la cuenta de la app. | En Antropometría, la evolución «Por medida» y «Por método»; en «Patrones», el peso y la energía en el mismo tiempo, sin afirmar causas. |
 | **Silvia D.**, 58 años | La que recién empieza, por indicación médica: su plan siguiente en preparación, un pedido de información sin responder, y Nutrición con otra colega, la Lic. Natalia Y. | En el «Espacio profesional», su plan siguiente con «Seguir el borrador», y el pedido de información que todavía no respondió. En la ficha, lo que Silvia comparte de Nutrición y las notas de coordinación con la colega. |
@@ -182,7 +184,7 @@ El recorrido **va y vuelve** entre la computadora y el teléfono. Para preparars
 
 **La profesional**, en el website: en el «Espacio profesional», «Invitar a alguien nuevo» (enlace, QR o código); elegir el área y tocar «Crear invitación».
 
-**Qué se tiene que ver:** «La invitación está lista», con el «Enlace», el «Código QR» y el «Código», y «Copiar enlace» y «Compartir por WhatsApp». El enlace y el código se muestran solo ahora; la invitación es para una sola persona y vence a los 7 días. Quien la acepta decide, en una sola pantalla y con todo marcado, qué comparte: «Aceptar y compartir», «Elegir qué compartir» o «Ahora no».
+**Qué se tiene que ver:** «La invitación está lista», con el «Enlace», el «Código QR» y el «Código», y «Copiar enlace» y «Compartir por WhatsApp». El enlace y el código se muestran solo ahora; la invitación es para una sola persona y vence a los 7 días. Quien la acepta ve, en una sola pantalla, qué se propone compartir y para qué, cosa por cosa, y decide con un toque: «Aceptar y compartir»; «Elegir qué compartir», que muestra un interruptor por cosa, o «Ahora no», que no registra nada. Si deja sin marcar el tratamiento de sus datos de salud, la pantalla lo dice al lado: «Sin esto, ningún profesional ve tus datos de salud.»
 
 ## 6.2 Activar un plan
 

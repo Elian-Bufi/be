@@ -77,7 +77,7 @@ Una persona que quiere mejorar cómo come, cómo entrena y cómo cambia su cuerp
 
 - **05 · No empezar de cero.** Si la persona cambia de profesional, su historia sigue con ella, y el nuevo la ve si ella lo autoriza.
 
-- **06 · Más datos, mejores decisiones.** Cuanto más se usa, más contexto tiene el profesional: la información se acumula y se puede interpretar.
+- **06 · Más datos, más contexto.** Cuanto más se usa, más contexto tiene el profesional: la información se acumula y se puede interpretar. Que eso mejore las decisiones es una hipótesis que el piloto va a comprobar.
 
 *Figura 3: Lo que BE le aporta al profesional y a la persona.*
 
@@ -108,7 +108,7 @@ Un plan activado no se modifica: el siguiente es otra versión, y la anterior qu
 Los gráficos de BE ponen todas las áreas sobre un mismo eje de fechas, con las versiones de cada plan de fondo. Aparecen donde el profesional decide:
 
 - **Al planificar.** Al elegir un ejercicio, el buscador avisa si la persona ya lo hizo, y el editor muestra «La vez pasada»: qué hizo serie por serie, con qué carga y con cuántas repeticiones en reserva.
-- **En cada área.** La evolución del 1RM estimado de cada ejercicio (con la fórmula de Epley, desde una serie: carga × (1 + (repeticiones + RIR) / 30)), lo registrado en la alimentación con el objetivo de cada período de fondo, y cada toma antropométrica frente a la primera y a la anterior.
+- **En cada área.** La evolución del 1RM estimado de cada ejercicio, lo registrado en la alimentación con el objetivo de cada período de fondo, y cada toma antropométrica frente a la primera y a la anterior.
 - **Entre áreas.** En «Analizar», «Armá tu gráfico» pone dos o tres series alineadas, una debajo de la otra, o superpuestas en el mismo gráfico cuando comparten el eje. Por ejemplo, los carbohidratos de un período y el 1RM estimado de esas mismas semanas.
 - **Para seguir un tema.** La cinta del tiempo marca, arriba de todos los gráficos, los cambios de plan, las tomas, las revisiones y las notas. Cada profesional guarda sus «Enfoques»: los gráficos que quiere seguir para una persona o para un plan.
 
@@ -160,7 +160,7 @@ BE no diagnostica ni califica, y no decide por el profesional: muestra qué se i
 
 1. **Habilita** (Administración): Habilita al profesional en un área, con un fundamento que queda registrado.
 2. **Invita** (Profesional): Con un link, un QR o un código de un solo uso.
-3. **Acepta y autoriza** (Persona): El vínculo y el permiso del área, dos actos distintos; en una sola pantalla, con todo marcado y retirable, decide qué comparte.
+3. **Acepta y autoriza** (Persona): Acepta el vínculo y, aparte, decide qué comparte: «Aceptar y compartir», «Elegir qué compartir» o «Ahora no». Lo retira cuando quiera.
 4. **Pide información** (Profesional): Un formulario de inicio; la persona elige quién ve sus hábitos.
 5. **Evalúa y planifica** (Profesional): La evaluación, el objetivo y el plan, en un borrador que se guarda solo.
 6. **Activa** (Profesional): «Revisar y activar…»: la versión queda fija y la persona recibe el aviso.
@@ -177,9 +177,11 @@ Cada paso tiene su tarea en el manual del profesional (09) o en «Cómo probar B
 
 *Una app, un website, una sola API y una base de datos que hace respetar las reglas.*
 
-La persona usa una app para Android, hecha con React Native y Expo. Los profesionales y Administración usan un website pensado para la computadora, hecho con Next.js. Las dos hablan con una sola API, en NestJS, que autoriza cada pedido, escribe y deja la auditoría en la misma transacción, sobre una base PostgreSQL. Todo corre en la nube, en Render, y un paquete compartido define los contratos y los textos que usan las tres piezas.
+La persona usa una app para Android, hecha con React Native y Expo. Los profesionales y Administración usan un website pensado para la computadora (de 1024 a 1920 de ancho; se recomienda 1280 o más), hecho con Next.js. Las dos hablan con una sola API, en NestJS, que autoriza cada pedido, escribe y deja la auditoría en la misma transacción, sobre una base PostgreSQL. Todo corre en la nube, en Render, y un paquete compartido define los contratos y los textos que usan las tres piezas.
 
-En cifras: la API es un monolito de **35 módulos** con **346 operaciones** publicadas en su especificación; la base tiene **168 tablas**, **115 conjuntos de valores** y **107 migraciones**. La especificación funcional reúne **57 casos de uso**, **66 requisitos funcionales** (57 del website y 31 de la app, algunos compartidos) y **100 casos de prueba**.
+En cifras: la API es un monolito de **35 módulos** con **346 operaciones** publicadas en su especificación; la base tiene **168 tablas**, **115 conjuntos de valores** y **107 migraciones**. La especificación funcional reúne **57 casos de uso**, **66 requisitos funcionales** (57 del website y 31 de la app, 22 comunes a los dos) y **100 casos de prueba**.
+
+> **Lo que ya está comprobado.** En cada cambio, cinco trabajos de integración continua corren las pruebas automáticas contra un PostgreSQL real y en un navegador. En la corrida de la rama principal del 23 de noviembre de 2026 corrieron y pasaron **4.881 casos automáticos, sin fallas**. Además, los **100 casos de prueba** de la especificación están documentados, cada uno con su resultado y su fuente (archivo 11).
 
 1. **Llega el pedido** (Sistema): Con la sesión, que se valida, y una clave contra duplicados.
 2. **Valida el contrato** (Sistema): Si el pedido no tiene la forma acordada, se rechaza ahí.
@@ -270,3 +272,24 @@ Los apartados 01 a 08 del instructivo (los integrantes y los enlaces a la docume
 > - Repositorio
 > - [github.com/Elian-Bufi/be](https://github.com/Elian-Bufi/be)
 > - El código de la app, del website y de la API, en un solo repositorio.
+
+# Glosario
+
+*Los términos de las áreas que aparecen en la entrega, en pocas palabras.*
+
+**Tabla 3.** Los términos de la entrega.
+
+| Término | Qué quiere decir |
+| --- | --- |
+| 1RM | El peso máximo con el que una persona puede hacer una sola repetición de un ejercicio. BE lo estima a partir de una serie, sin pedir que se levante ese máximo. |
+| RIR | «Repeticiones en reserva»: cuántas repeticiones más podría haber hecho la persona al terminar una serie. RIR 2 quiere decir que le quedaban dos. |
+| RPE | El esfuerzo percibido, en una escala de 6 a 10, donde 10 es no poder hacer ni una repetición más. RPE 8 equivale a RIR 2. |
+| % RM | Una parte del 1RM de la persona en ese ejercicio: una serie al 70 % RM se hace con el 70 % de su peso máximo. |
+| Descarga | Una semana más liviana dentro del plan de entrenamiento, para que el cuerpo se recupere; después, la progresión sigue donde quedó. |
+| Presets | Prescripciones listas para cargar en una sesión de entrenamiento con un toque, por ejemplo «Hipertrofia» o «Fuerza»: las de BE y las del profesional. |
+| Día tipo | Un modelo de día del plan de Nutrición, con sus comidas y las opciones de cada una; por ejemplo, un día con entrenamiento y otro de descanso. |
+| Toma | Una sesión de mediciones de Antropometría en una fecha: peso, talla, perímetros y pliegues, con el protocolo con que se midieron. |
+| Pliegue | El grosor de un pellizco de piel y grasa en un punto del cuerpo, medido en milímetros con un calibre. Con varios pliegues se estima la grasa corporal. |
+| Kerr | Un método de Antropometría (Kerr, 1988) que divide el peso del cuerpo en cinco partes: piel, grasa, músculo, hueso y el resto. |
+| Versión del plan | Cada plan activado queda fijo. Un cambio crea una versión nueva, y la anterior se conserva unida a lo que la persona registró mientras rigió. |
+| Consentimiento por área | La autorización que la persona da a cada profesional para cada área (Nutrición, Entrenamiento o Antropometría). Se retira cuando quiera, desde «Quién ve qué». |

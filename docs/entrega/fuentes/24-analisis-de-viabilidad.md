@@ -43,9 +43,9 @@
 ## 1.1 Qué hay construido
 
 - **168** tablas: en PostgreSQL
-- **82** migraciones: del esquema, en orden
-- **272** operaciones: de la API
-- **27** módulos: de un monolito modular
+- **107** migraciones: del esquema, en orden
+- **346** operaciones: de la API
+- **35** módulos: de un monolito modular
 
 *Fuente: El repositorio de BE: prisma/schema.prisma, prisma/migrations y docs/api/openapi.json.*
 

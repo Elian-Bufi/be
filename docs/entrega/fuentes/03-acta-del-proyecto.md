@@ -36,7 +36,7 @@ La persona ve lo que tiene para hoy, registra y sigue su evolución desde la app
 
 - **05 · No empezar de cero.** Si la persona cambia de profesional, su historia sigue con ella, y el nuevo la ve si ella lo autoriza.
 
-- **06 · Más datos, mejores decisiones.** Cuanto más se usa, más contexto tiene el profesional: la información se acumula y se puede interpretar.
+- **06 · Más datos, más contexto.** Cuanto más se usa, más contexto tiene el profesional: la información se acumula y se puede interpretar. Que eso mejore las decisiones es una hipótesis que el piloto va a comprobar.
 
 *Figura 1: Lo que BE le aporta al profesional y a la persona.*
 
@@ -79,7 +79,7 @@ Un plan activado no se modifica: el siguiente es otra versión, y la anterior qu
 Los gráficos de BE ponen todas las áreas sobre un mismo eje de fechas, con las versiones de cada plan de fondo, y aparecen donde el profesional decide:
 
 - **Al planificar.** Al elegir un ejercicio, el buscador avisa si la persona ya lo hizo, y el editor muestra «La vez pasada»: qué hizo serie por serie, con qué carga y con cuántas repeticiones en reserva.
-- **En cada área.** La evolución del 1RM estimado de cada ejercicio (con la fórmula de Epley, desde una serie: carga × (1 + (repeticiones + RIR) / 30)), lo registrado en la alimentación con el objetivo de cada período de fondo, y cada toma antropométrica frente a la primera y a la anterior.
+- **En cada área.** La evolución del 1RM estimado de cada ejercicio, lo registrado en la alimentación con el objetivo de cada período de fondo, y cada toma antropométrica frente a la primera y a la anterior.
 - **Entre áreas.** En «Analizar», «Armá tu gráfico» pone dos o tres series alineadas, una debajo de la otra, o superpuestas en el mismo gráfico cuando comparten el eje. Por ejemplo, los carbohidratos de un período y el 1RM estimado de esas mismas semanas.
 - **Para seguir un tema.** La cinta del tiempo marca, arriba de todos los gráficos, los cambios de plan, las tomas, las revisiones y las notas. Cada profesional guarda sus «Enfoques»: los gráficos que quiere seguir para una persona o para un plan.
 
@@ -131,12 +131,12 @@ BE tiene dos usuarios que se necesitan entre sí. **La profesional o el profesio
 > - Elige y paga
 > - La profesional
 > - Independiente, acompaña a personas en el tiempo y hoy hace el seguimiento con mensajería y planillas. Trabaja en el website.
-> - **Su primera revisión** define si se queda: abre la ficha y ve lo indicado, lo registrado y las tomas en una pantalla.
+> - **Su primera revisión** define si se queda (una hipótesis que el piloto va a comprobar): abre la ficha y ve lo indicado, lo registrado y las tomas en una pantalla.
 > - se sostienen
 > - Usa todos los días
 > - La persona
 > - No paga. Sigue su plan y registra desde el teléfono. Sin sus registros, la profesional no tiene nada que revisar.
-> - **Su primera semana** define si vuelve: sabe qué le toca hoy y registra en un toque.
+> - **Su primera semana** define si vuelve (también, a comprobar en el piloto): sabe qué le toca hoy y registra en un toque.
 
 **Tabla 2.** Los perfiles de BE.
 
@@ -184,7 +184,7 @@ BE sirve tanto para un acompañamiento presencial como en línea: la consulta se
 5. Que la persona controle quién ve cada área y pueda llevar su historia a un profesional nuevo.
 6. Que la persona registre desde su teléfono en pocos toques y sepa siempre qué le toca hoy.
 
-**Cómo se reconoce.** Un profesional prepara la consulta de una persona sin salir de su ficha: ve qué se indicó, qué registró la persona y qué cambió desde la última revisión, y deja la decisión escrita. BE mide además, de forma reproducible, la tasa de ciclos de seguimiento que se cierran en 30 días (TVCC-30): cuántas veces un plan activado llega a su revisión.
+**Cómo se reconoce.** Un profesional prepara la consulta de una persona sin salir de su ficha: ve qué se indicó, qué registró la persona y qué cambió desde la última revisión, y deja la decisión escrita. BE mide además, de forma reproducible, la tasa de ciclos de seguimiento que se cierran en 30 días (TVCC-30): cuántas veces un plan activado llega a su revisión. Es el indicador del objetivo; su meta se fija con el piloto.
 
 # 5. Alcance
 
@@ -198,7 +198,7 @@ BE tiene tres roles y dos canales. La persona usa la app para Android. El profes
 | --- | --- | --- |
 | Cuenta y acceso | Cuenta con correo o con Google; segundo factor para Administración; recuperar el acceso | App y website |
 | Vínculo e invitación | El profesional invita con un enlace, un QR o un código; la persona acepta o rechaza | El website invita; la app acepta |
-| Consentimiento y permisos | La persona autoriza cada área, ve qué ve cada profesional y quién miró lo que compartió, y retira un permiso cuando quiere; al aceptar, una sola pantalla con todo marcado, y un interruptor por cosa en «Quién ve qué» | App |
+| Consentimiento y permisos | La persona autoriza cada área, ve qué ve cada profesional y quién miró lo que compartió, y retira un permiso cuando quiere; al aceptar el vínculo, una sola pantalla con lo que se propone compartir, donde la persona toca «Aceptar y compartir», elige cosa por cosa con «Elegir qué compartir» o dice «Ahora no»; después, un interruptor por cosa en «Quién ve qué» | App |
 | Evaluación y objetivo | La evaluación inicial en tres bloques, con los formularios que respondió la persona vinculados y las «Anotaciones» privadas del profesional, y el objetivo de cada área, con sus versiones; en Nutrición, «Calcular» propone el objetivo con un método publicado y una toma de Antropometría, y el profesional decide | Website |
 | Pedidos de información | Formularios de inicio y pedidos puntuales; la persona elige con quién comparte sus hábitos | El website pide; la app responde |
 | Plan de nutrición | Un editor por días tipo, con comidas, opciones y recetas, en un borrador que se guarda solo. Lo que aporta cada alimento mientras se escriben los gramos o una medida casera; el reparto por comida con el rango de cada una, también en g/kg con el último peso; la franja de cada comida con el promedio de sus opciones frente a su rango, y «Rangos y totales» del día y de cada comida. Duplicar o copiar comidas y opciones, guardar una opción como receta, y partir de una plantilla de comidas o de una comida habitual. Al activarse, una versión fija | El website arma; la app lo muestra |
@@ -229,7 +229,7 @@ BE tiene tres roles y dos canales. La persona usa la app para Android. El profes
 | Diagnostica ni califica | Ubica: muestra qué se indicó, qué pasó y la diferencia, en las unidades de cada cosa, sin calificaciones ni juicios |
 | Decide por el profesional | Los métodos de cálculo los elige el profesional, y una revisión siempre es una decisión suya, con fundamento |
 | Afirma causas | Los cruces entre áreas muestran coincidencias en el tiempo, con la frase que lo dice y lo que también cambió |
-| Reemplaza la historia clínica | No trata diagnósticos, análisis clínicos ni medicación |
+| Reemplaza la historia clínica | No diagnostica ni hace análisis clínicos. BE guarda lo que la persona declara como contexto, medicación incluida, pero no lo interpreta ni lo trata. |
 | Comparte sin permiso | Cada área se autoriza por separado, y un área sin permiso no aparece |
 | Usa inteligencia artificial sobre datos de salud | Ningún dato de una persona pasa por un modelo |
 | Es un mercado de profesionales ni un chat | Es una herramienta de trabajo: las notas quedan registradas en la historia, no se pierden en una conversación |
@@ -273,6 +273,8 @@ flowchart LR
 | Infraestructura | Render, región Frankfurt: el website, la API, la base de datos y una tarea programada de recordatorios |
 | Integración continua | GitHub Actions: tipos, pruebas unitarias y de integración, recorridos en el navegador e imagen de la API en cada cambio |
 | Servicios externos | Catálogos de alimentos y ejercicios (Open Food Facts, USDA y wger) y avisos al teléfono por Expo Push |
+
+> **Lo que ya está comprobado.** En cada cambio, cinco trabajos de integración continua corren las pruebas automáticas contra un PostgreSQL real y en un navegador. En la corrida de la rama principal del 23 de noviembre de 2026 corrieron y pasaron **4.881 casos automáticos, sin fallas**. Además, los **100 casos de prueba** de la especificación están documentados, cada uno con su resultado y su fuente (archivo 11).
 
 - **UN SOLO LENGUAJE.** Los contratos, los textos y las reglas puras se escriben una vez en un paquete compartido. Una regla no puede decir una cosa en el teléfono y otra en el servidor.
 
