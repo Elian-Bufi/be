@@ -162,6 +162,121 @@ Lo comprueban las pruebas de `test/integration/consentimiento.int-spec.ts` (reti
 
 Retirar una sola cosa (lo de otra área, la historia anterior) sin cortar el área entera pasa por `CompartirService` (API-CMP-03), desde los interruptores de «Quién ve qué»: escribe con `EjecutorDeCompartir` y deja la misma auditoría.
 
+# 5. El plan de entrenamiento: su forma y su vida
+
+*Cómo está armado un plan de entrenamiento por dentro y por qué estados pasa cada versión, de borrador a reemplazada.*
+
+## 5.1 La jerarquía del plan
+
+Un plan de entrenamiento tiene versiones, y cada versión guarda su estructura en un solo contenido JSON (`version_de_plan_de_entrenamiento.contenido`), validado por su esquema estricto (`contratos-entrenamiento.ts`). Adentro, el plan se ordena en **fases**; una fase organiza sus **sesiones** directamente o bajo **microciclos**, nunca las dos cosas a la vez. Cada sesión tiene sus **ejercicios** (las prescripciones), que pueden agruparse en **bloques** «Seguido» o «En vueltas», y cada ejercicio, sus **series**: las de aproximación (`WARM_UP`) arriba y las efectivas (`WORKING`) debajo. La **planificación** de la versión pone las fechas (el inicio, las semanas del plan y de cada fase), la intensidad del plan, el redondeo de las cargas, las aproximaciones por porcentaje y la **progresión, que es una regla de la fase**: no se copia en cada serie, se aplica al leer la carga de cada semana.
+
+```mermaid
+classDiagram
+  direction TB
+  class PlanDeEntrenamiento {
+    <<persistencia>>
+    versionEfectivaId
+  }
+  class VersionDelPlan {
+    <<persistencia>>
+    estado
+    contenido JSON
+    proximaRevision
+  }
+  class Planificacion {
+    <<contenido · planning>>
+    startDate · weeks
+    intensity · loadRounding
+    askSessionEffort
+    oneRepMaxAtActivation
+  }
+  class Fase {
+    <<contenido · blocks>>
+    label · purpose
+    semanas, en la planificación
+  }
+  class Progresion {
+    <<regla de la fase>>
+    Lineal · Doble · Ondulante
+    semana de descarga
+  }
+  class Microciclo {
+    <<opcional>>
+    label · purpose
+  }
+  class Sesion {
+    label · instructions
+    días de la semana
+  }
+  class Bloque {
+    <<exerciseGroups>>
+    Seguido · En vueltas
+  }
+  class Ejercicio {
+    <<prescriptions>>
+    exerciseId · intensity
+    restSeconds · loadBasis
+  }
+  class Serie {
+    setKind
+    repeticiones · carga · esfuerzo
+  }
+  class Aproximacion {
+    <<WARM_UP>>
+    % de la carga de trabajo
+  }
+  class SerieEfectiva {
+    <<WORKING>>
+  }
+  PlanDeEntrenamiento "1" --> "1..*" VersionDelPlan : versiones
+  VersionDelPlan "1" --> "0..1" Planificacion
+  VersionDelPlan "1" --> "1..12" Fase
+  Planificacion "1" --> "0..*" Progresion : una por fase
+  Progresion ..> Fase : se aplica a
+  Fase "1" --> "0..*" Microciclo
+  Fase "1" --> "0..*" Sesion
+  Microciclo "1" --> "1..*" Sesion
+  Sesion "1" --> "0..*" Bloque
+  Sesion "1" --> "0..*" Ejercicio
+  Ejercicio "0..*" --> "0..1" Bloque : va en
+  Ejercicio "1" --> "1..*" Serie
+  Serie <|-- Aproximacion
+  Serie <|-- SerieEfectiva
+```
+
+*Figura 5b: La jerarquía de un plan de entrenamiento, del plan a la serie. Fuente: packages/domain/src/contratos-entrenamiento.ts y prisma/schema.prisma.*
+
+## 5.2 Los estados de una versión del plan
+
+La versión del plan tiene tres estados en la base (`EstadoDeVersionDePlan`): `BORRADOR`, `ACTIVADA` y `DESCARTADA`. Mientras es borrador, se guarda sola y recalcula sus cargas en % RM cada vez que cambia el 1RM de referencia. «Revisar y activar…» la valida: lo que impide activar la frena (por ejemplo, fases que suman más semanas que el plan, o un ejercicio sin su objetivo de intensidad). Al activarse, queda inmutable: su instantánea guarda el contenido con el 1RM congelado de cada ejercicio, y el plan apunta a ella como su única versión vigente. Cuando una revisión decide «Ajustar» o «Sustituir», o el profesional ajusta el plan, nace un borrador sucesor; al activarlo, la anterior deja de ser la vigente, sin cambiar: sigue unida a lo que la persona registró mientras rigió.
+
+```mermaid
+stateDiagram-v2
+  direction LR
+  [*] --> BORRADOR : «Crear plan» · «Empezar desde una plantilla» · «Ajustar el plan»
+  state BORRADOR {
+    direction TB
+    Editando : se guarda solo
+    Recalculo : el 1RM cambió · se recalculan las cargas en % RM
+    Editando --> Recalculo
+    Recalculo --> Editando
+  }
+  state Revision <<choice>>
+  BORRADOR --> Revision : «Revisar y activar…»
+  Revision --> BORRADOR : algo impide activar · («Ir a corregir»)
+  Revision --> ACTIVADA : «Activar la versión … de …» · instantánea con el 1RM congelado
+  BORRADOR --> DESCARTADA : «Descartar la versión en preparación»
+  state ACTIVADA {
+    direction TB
+    Vigente : inmutable · la persona la recibe
+    Reemplazada : sigue unida a lo registrado
+    Vigente --> Reemplazada : se activa una sucesora · (revisión «Ajustar» o «Sustituir»)
+  }
+  DESCARTADA --> [*]
+```
+
+*Figura 5c: Los estados de una versión del plan de entrenamiento. La base rechaza cualquier cambio de una versión activada y cualquier vigencia que no pase a la sucesora activada de la anterior. Fuente: prisma/schema.prisma (`EstadoDeVersionDePlan`) y apps/api/src/entrenamiento/planes.service.ts.*
+
 # Anexo A. La persistencia, módulo por módulo
 
 *Las 168 clases de persistencia en los mismos trece módulos que el DER, con sus atributos propios y sus 334 asociaciones. Es el inventario generado del esquema.*

@@ -311,6 +311,55 @@ Después de confirmar, el aviso al teléfono sale por Expo Push, lo mejor posibl
 
 *Figura 5: El recorrido de una escritura, por ejemplo activar un plan o registrar una comida. Fuente: apps/api/src/plataforma/ejecutor.ts; el código del diagrama está en las fuentes de esta entrega.*
 
+## 4.1 Activar un plan de entrenamiento, en secuencia
+
+El mismo camino, con los nombres reales de una operación: el profesional activa la versión en preparación del plan de Entrenamiento de una persona (`POST /training/plans/{planId}/activate`, API-TRN-12). Todo lo que está entre la apertura y el COMMIT pasa entero o no pasa; el aviso al teléfono sale después.
+
+```mermaid
+sequenceDiagram
+  autonumber
+  actor P as Profesional
+  participant W as Website
+  participant C as EntrenamientoController
+  participant E as EjecutorDeEntrenamiento
+  participant S as PlanesDeEntrenamientoService
+  participant PDP as PdpService
+  participant R as UnoRMService
+  participant DB as PostgreSQL
+  participant App as App de la persona
+  P->>W: «Activar la versión … de …»
+  W->>C: POST /training/plans/{planId}/activate<br/>versión esperada + Idempotency-Key
+  C->>C: SesionGuard: sesión activa y no revocada
+  C->>E: escribirIdempotente(API-TRN-12)
+  E->>E: valida el cuerpo contra el contrato
+  E->>DB: BEGIN · la clave ya usada devuelve la respuesta guardada
+  E->>S: efecto(tx)
+  S->>PDP: decidir(vínculo, consentimiento, habilitación, área)
+  PDP->>DB: decision_de_acceso
+  alt sin permiso
+    PDP-->>E: denegada
+    E->>DB: ROLLBACK, se registra el rechazo
+    E-->>W: 404, el mismo que lo inexistente
+  else permitido
+    S->>DB: la versión esperada y el borrador nacido de la vigente
+    S->>DB: bloqueo por persona · ningún plan vigente con otro profesional
+    S->>S: valida el borrador (lo que impide activar)
+    S->>R: vigentesDe(ejercicios en % RM)
+    R->>DB: uno_rm_de_referencia
+    S->>DB: instantanea_de_plan_de_entrenamiento, con el 1RM congelado y su huella SHA-256
+    S->>DB: la versión pasa a ACTIVADA y su evento
+    S->>DB: plan_de_entrenamiento.version_efectiva_id → la versión nueva
+    S->>DB: proceso_operativo abierto o continuado y la próxima revisión
+    S->>DB: novedad PLAN_ACTIVADO para la persona
+    E->>DB: registro_de_auditoria y registro_de_idempotencia
+    E->>DB: COMMIT
+    E-->>W: 200 · versión vigente, huella de la instantánea
+    E-)App: aviso por Expo Push, sin datos de salud
+  end
+```
+
+*Figura 5b: La activación de un plan de entrenamiento, de la pantalla a la base y al teléfono. Fuente: apps/api/src/entrenamiento/planes.service.ts (`activar`) y apps/api/src/plataforma/ejecutor.ts.*
+
 # 5. Decisiones de arquitectura
 
 *Cada decisión tiene un motivo y un costo. Quedan explícitos porque son los que hay que revisar si BE cambia de escala.*
