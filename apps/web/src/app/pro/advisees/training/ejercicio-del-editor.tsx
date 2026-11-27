@@ -316,6 +316,8 @@ const ConAccionesRapidas = ({ children, acciones }: { children: ReactNode; accio
 const unidadDe = (p: PrescripcionE): 'kg' | 'lb' => p.suggestedLoad?.unit ?? p.sets.find((x) => x.suggestedLoad)?.suggestedLoad?.unit ?? 'kg';
 
 const noSeEntiendenLasReps = (r: Repeticiones): boolean => !!r && ('value' in r ? Number.isNaN(r.value) : Number.isNaN(r.min) || Number.isNaN(r.max));
+/** DL-201: «Progresión…» en el «Más» del ejercicio. */
+const COPY_PROGRESION_DEL_EJERCICIO = 'Progresión…';
 const reps = (r: Repeticiones): string => (!r || noSeEntiendenLasReps(r) ? '' : 'value' in r ? String(r.value) : `${r.min}-${r.max}`);
 // Vacío: sin repeticiones fijadas. Un número o un rango «8-12». Otra cosa no se guarda como si no hubiera nada; un rango
 // al revés («12-8») tampoco (`leerRepeticiones`, en la planilla: la usan la celda y la edición conjunta).
@@ -356,7 +358,12 @@ export function EjercicioDelEditor({
   onRedondeo,
   onUnoRMCambiado,
   arrastre = null,
+  progresionPropia = null,
+  onProgresion,
 }: {
+  /** DL-201: su progresión propia en pocas palabras (plegado), si tiene; y abrir «Progresión…» con este ejercicio elegido. */
+  progresionPropia?: string | null;
+  onProgresion?: () => void;
   /** ET2-D18: se guardó un 1RM nuevo de este ejercicio: el editor recalcula las cargas de todo el borrador. */
   onUnoRMCambiado?: () => void;
   /** ET2-D18: a qué se redondean las cargas del % RM en este ejercicio (su excepción o la del plan). */
@@ -489,6 +496,12 @@ export function EjercicioDelEditor({
               <span className="comida-del-plan__cuenta" data-resumen>
                 <EnPartes texto={abierto ? (cardio ? COPY_CARDIO.titulo : cuentaDeSeries(p.sets)) : plegado.resumen} />
               </span>
+              {/* DL-201: plegado, la progresión propia del ejercicio («↑ +2,5 kg/sem»). */}
+              {!abierto && progresionPropia ? (
+                <span className="etiqueta-de-dato ejercicio-del-editor__progresion" data-progresion-propia>
+                  {progresionPropia}
+                </span>
+              ) : null}
               {revisar ? (
                 <span className="etiqueta-de-dato ejercicio-del-editor__revisar" data-carga-a-revisar>
                   <Icono nombre="aviso" tamano={15} />
@@ -536,6 +549,8 @@ export function EjercicioDelEditor({
                 ...(conFuerza ? [{ clave: 'detalle', texto: COPY_DETALLE_DEL_EJERCICIO.abrir, alElegir: () => setDetalle(true) }] : []),
                 ...(conLaVezPasada ? [{ clave: 'la-vez-pasada', texto: COPY_LA_VEZ_PASADA_EN_EL_EDITOR.abrir, alElegir: () => setVezPasada(true) }] : []),
                 ...(notasPropias && exerciseId !== null ? [{ clave: 'anotar', texto: COPY_NOTAS_PROPIAS.anotarSobreElEjercicio, alElegir: () => notasPropias.anotar({ tipo: 'EXERCISE', exerciseId, nombre }) }] : []),
+                // DL-201: la progresión de este ejercicio (la suya, o «Sin progresión» aunque la fase tenga una).
+                ...(onProgresion ? [{ clave: 'progresion', texto: COPY_PROGRESION_DEL_EJERCICIO, alElegir: onProgresion }] : []),
                 // DL-197 (F9): subir y bajar, en «Más»: la cabecera queda con el nombre, «Copiar», «Más» y el chevrón.
                 { clave: 'subir', texto: EDICION.subir, alElegir: onSubir, noSePuede: esElPrimero ? E9.yaEsElPrimero : null },
                 { clave: 'bajar', texto: EDICION.bajar, alElegir: onBajar, noSePuede: esElUltimo ? E9.yaEsElUltimo : null },

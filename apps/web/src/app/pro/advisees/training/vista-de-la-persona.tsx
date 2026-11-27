@@ -26,7 +26,7 @@ import {
   inicioDeLaSemana,
   numero,
   objetivosEfectivos,
-  progresionDeLaFase,
+  reglasDeLaFase,
   rotulosDeLasSeries,
   semanaEnPalabras,
   semanasDeLaFase,
@@ -106,8 +106,9 @@ export function VistaDeLaPersona({
     // Solo al abrir.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [abierto]);
-  const progresion = progresionDeLaFase(planificacion, bloque.blockId);
-  const laSemana: SemanaDeLaFase | null = progresion ? { progresion, semana: Math.min(semana, semanas), semanas } : null;
+  // DL-201: la regla de la fase y las propias de sus ejercicios; cada ejercicio, con la que lo rige.
+  const progresion = bloque.blockId ? reglasDeLaFase(planificacion, bloque.blockId) : null;
+  const laSemana: SemanaDeLaFase | null = progresion ? { ...progresion, semana: Math.min(semana, semanas), semanas } : null;
   const fase = bloque.blockId ? (fechasDeLasFases(planificacion, bloques).find((f) => f?.blockId === bloque.blockId) ?? null) : null;
   const elegida = sesiones[sesion] ?? null;
   const enLaSemana = elegida ? sesionDeLaSemana(elegida, laSemana, planificacion, nombreDe) : null;
@@ -156,7 +157,7 @@ export function VistaDeLaPersona({
                 <select id={`${id}-semana`} value={semana} onChange={(e) => setSemana(Number(e.target.value))} data-vista-semana>
                   {Array.from({ length: semanas }, (_, n) => n + 1).map((n) => (
                     <option key={n} value={n}>
-                      {semanaEnPalabras({ semana: n, semanas, descarga: !!progresion && esSemanaDeDescarga({ progresion, semana: n, semanas }) })}
+                      {semanaEnPalabras({ semana: n, semanas, descarga: !!progresion && esSemanaDeDescarga({ ...progresion, semana: n, semanas }, elegida?.prescriptions.map((q) => q.prescriptionId)) })}
                       {fase ? ` · ${diaDeLaEstimacion(inicioDeLaSemana(fase, n))}` : ''}
                     </option>
                   ))}
@@ -170,7 +171,7 @@ export function VistaDeLaPersona({
             <div className="telefono-de-muestra" role="group" aria-label={`${T.titulo}: ${elegida?.label ?? ''}`}>
               <div className="telefono-de-muestra__pantalla">
                 <p className="telefono-de-muestra__sobretitulo">
-                  {laSemana ? semanaEnPalabras({ semana: laSemana.semana, semanas, descarga: esSemanaDeDescarga(laSemana) }) : bloque.label}
+                  {laSemana ? semanaEnPalabras({ semana: laSemana.semana, semanas, descarga: esSemanaDeDescarga(laSemana, elegida?.prescriptions.map((q) => q.prescriptionId)) }) : bloque.label}
                 </p>
                 <h3 className="telefono-de-muestra__titulo">{elegida?.label || `Sesión ${sesion + 1}`}</h3>
                 {enLaSemana && enLaSemana.prescriptions.length > 0 ? (

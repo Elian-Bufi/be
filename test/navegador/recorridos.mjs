@@ -2522,7 +2522,7 @@ async function editorDeEntrenamiento({ p, d, salida }) {
   await clic(p, '[data-editar-fase]');
   await dialogoAbierto(p, 'Editar fase');
   await clic(p, 'dialog[open] [data-duplicar-fase]');
-  await dialogoAbierto(p, 'Progresión y descarga');
+  await dialogoAbierto(p, 'Progresión ·');
   await elemento(p, '[data-asistente-de-progresion] [data-desde-la-copia]');
   await captura(p, salida, 'copia-con-progresion');
   await p.keyboard.press('Escape');
@@ -2703,7 +2703,7 @@ async function progresionYDistribucion({ p, d, salida }) {
   await dialogoCerrado(p);
   // El asistente: lineal de entrada, con la vista previa a la vista.
   await clic(p, '[data-abrir-progresion]');
-  await dialogoAbierto(p, 'Progresión y descarga');
+  await dialogoAbierto(p, 'Progresión ·');
   await elemento(p, '[data-asistente-de-progresion] [data-tabla-de-la-progresion]');
   // La descarga en la semana 4: la franja del escalón en el gráfico y la semana marcada en la tabla.
   await clic(p, '[data-asistente-de-progresion] [data-descarga]');

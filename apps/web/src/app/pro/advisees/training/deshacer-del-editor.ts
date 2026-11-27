@@ -79,6 +79,10 @@ export const COPY_DESHACER = {
   quitasteLaSemana: (nombre: string) => `Quitaste «${nombre}».`,
   pasasteALaIntensidad: (cuantos: number) => (cuantos === 1 ? 'Pasaste 1 ejercicio a la intensidad del plan.' : `Pasaste ${cuantos} ejercicios a la intensidad del plan.`),
   aplicasteLaProgresion: (fase: string) => `Aplicaste la progresión en «${fase}».`,
+  // DL-201: la progresión propia de los ejercicios, y quitarla.
+  aplicasteLaProgresionA: (n: number) => (n === 1 ? 'Aplicaste una progresión propia a 1 ejercicio.' : `Aplicaste una progresión propia a ${n} ejercicios.`),
+  quitasteLaProgresion: (fase: string) => `Quitaste la progresión de «${fase}».`,
+  volvisteALaDeLaFase: (n: number) => (n === 1 ? 'Volviste un ejercicio a la progresión de su fase.' : `Volviste ${n} ejercicios a la progresión de su fase.`),
   deshecho: (grande: string | null) => (grande ? `Se deshizo: ${grande.charAt(0).toLowerCase()}${grande.slice(1)}` : 'Se deshizo el último cambio.'),
   nadaParaDeshacer: 'No hay cambios para deshacer.',
   ayudaDelAtajo: 'Ctrl+Z deshace el último cambio (fuera de un campo de texto).',

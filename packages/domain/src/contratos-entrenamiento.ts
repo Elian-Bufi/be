@@ -444,8 +444,14 @@ export type AproximacionesDelEjercicio = z.infer<typeof AproximacionesDelEjercic
  *   (`waves`, en % de la carga de trabajo de la sesión);
  * - `null`: sin modelo, solo la descarga.
  * La descarga (`deload`) va en una semana elegida de la fase: la carga baja a `workingLoadShare` % de la carga de trabajo
- * de la semana anterior (`LOAD`) o se hacen `setsRemoved` series efectivas menos con la misma carga (`SETS`). Se aplica a
- * toda la fase (`prescriptionIds` en `null`) o a los ejercicios elegidos.
+ * de la semana anterior (`LOAD`) o se hacen `setsRemoved` series efectivas menos con la misma carga (`SETS`).
+ *
+ * DL-201 (PE-D01 a PE-D03) · **por ejercicio, con el mismo patrón que la intensidad (ET1-D11):**
+ * - `prescriptionIds` en `null`: la **regla de la fase**, que hereda cada ejercicio. Una por fase, como mucho;
+ * - con ejercicios: una **regla propia** de esos ejercicios, que pisa la de la fase. Puede haber varias por fase, sin pisarse:
+ *   un ejercicio tiene como mucho una regla propia (`ProgresionesDelPlanSchema`). Una propia sin modelo y sin descarga es
+ *   «Sin progresión» para ese ejercicio, aunque la fase tenga una.
+ * Precedencia: la propia del ejercicio; si no, la de la fase; si no, ninguna (`progresionDelEjercicio`).
  */
 export const ProgresionDeLaFaseSchema = z.strictObject({
   blockId: IdDeNodoSchema,
@@ -468,6 +474,38 @@ export const ProgresionDeLaFaseSchema = z.strictObject({
   prescriptionIds: z.array(IdDeNodoSchema).min(1).max(60).nullable(),
 });
 export type ProgresionDeLaFase = z.infer<typeof ProgresionDeLaFaseSchema>;
+
+/** DL-201 (PE-D04): hasta 200 reglas por plan (las de las fases y las propias de los ejercicios). */
+export const MAXIMO_DE_PROGRESIONES = 200;
+
+/**
+ * DL-201 (PE-D02) · las progresiones de un plan, sin pisarse: una sola regla de la fase por fase y, por ejercicio, como
+ * mucho una regla propia en su fase (ni repetido dentro de la misma regla). La clave es la fase y el ejercicio: una regla
+ * que quedó en la fase de antes al mover el ejercicio no traba el guardado. Va como refinamiento del arreglo, y no del
+ * objeto, para que la planificación de la plantilla lo siga tomando con `pick`.
+ */
+export const ProgresionesDelPlanSchema = z
+  .array(ProgresionDeLaFaseSchema)
+  .max(MAXIMO_DE_PROGRESIONES)
+  .superRefine((lista, ctx) => {
+    const deLaFase = new Set<string>();
+    const propias = new Set<string>();
+    lista.forEach((p, n) => {
+      if (p.prescriptionIds === null) {
+        if (deLaFase.has(p.blockId)) {
+          ctx.addIssue({ code: 'custom', path: [n, 'prescriptionIds'], message: 'La fase ya tiene su regla: cada fase lleva una sola regla general; lo distinto va como regla propia de cada ejercicio.' });
+        }
+        deLaFase.add(p.blockId);
+        return;
+      }
+      p.prescriptionIds.forEach((id, k) => {
+        if (propias.has(`${p.blockId}|${id}`)) {
+          ctx.addIssue({ code: 'custom', path: [n, 'prescriptionIds', k], message: 'Ese ejercicio ya tiene una progresión propia: un ejercicio lleva como mucho una. Quitalo de la otra antes de sumarlo a esta.' });
+        }
+        propias.add(`${p.blockId}|${id}`);
+      });
+    });
+  });
 
 /**
  * DL-196 parte B (EE-D38, GR-27) · un gráfico del editor marcado como favorito de esta planificación: la carga por semana
@@ -525,8 +563,9 @@ export const PlanificacionDelPlanSchema = z.strictObject({
   goal: TextoOpcional(1000).optional(),
   phases: z.array(z.strictObject({ blockId: IdDeNodoSchema, weeks: z.number().int().min(1).max(52).nullable() })).max(12),
   warmUps: z.array(AproximacionesDelEjercicioSchema).max(400).optional(),
-  /** DL-196 parte B: la progresión de cada fase, como regla (EE-D30). Una por fase. */
-  progressions: z.array(ProgresionDeLaFaseSchema).max(12).optional(),
+  /** DL-196 parte B: la progresión de cada fase, como regla (EE-D30). */
+  /** DL-201: también las reglas propias de los ejercicios, que pisan la de su fase (PE-D01). */
+  progressions: ProgresionesDelPlanSchema.optional(),
   /** DL-196 parte B (GR-27): los gráficos del editor marcados como favoritos de esta planificación. */
   favoriteCharts: z.array(GraficoFavoritoDelPlanSchema).max(30).optional(),
   /**

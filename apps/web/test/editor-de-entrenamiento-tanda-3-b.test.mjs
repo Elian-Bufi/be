@@ -24,7 +24,9 @@ test('TEST-ET3-40 · la sugerencia sale de la lectura de «La vez pasada» y va 
   assert.match(PANEL, /\{sugerencia \? sugerencia\(lectura\.tipo === 'lista' \? lectura\.veces : null\) : null\}/);
   assert.match(EDITOR, /<SugerenciaDeProgresionEnElPanel\n/);
   // Con una progresión en la fase no se sugiere (ET3-D12); el cardio no la lleva; una plantilla no tiene persona.
-  assert.match(EDITOR, /conProgresionDeLaFase=\{!!regla && regla\.model !== null && seAplicaA\(regla, ejercicioEnFoco\.prescriptionId\)\}/);
+  // DL-201: la regla que rige para el ejercicio (la propia; si no, la de la fase).
+  assert.match(EDITOR, /const regla = bloque \? progresionDelEjercicio\(plan, bloque\.blockId, ejercicioEnFoco\.prescriptionId\)\.regla : null;/);
+  assert.match(EDITOR, /conProgresionDeLaFase=\{!!regla && regla\.model !== null\}/);
   assert.match(EDITOR, /plantilla \|\| foco\.tipo !== 'ejercicio' \|\| cardioDe\(ejercicioEnFoco\)/);
 });
 
