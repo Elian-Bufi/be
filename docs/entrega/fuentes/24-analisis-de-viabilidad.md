@@ -42,7 +42,7 @@
 
 ## 1.1 Qué hay construido
 
-- **139** tablas: en PostgreSQL
+- **168** tablas: en PostgreSQL
 - **82** migraciones: del esquema, en orden
 - **272** operaciones: de la API
 - **27** módulos: de un monolito modular
@@ -223,7 +223,7 @@ Cada paso habilita al siguiente: no tiene sentido abrir un ambiente de producci�
 
 | Dimensión | Respuesta | Por qué |
 | --- | --- | --- |
-| Técnica | Viable | Está construido y verificado: 139 tablas, 272 operaciones y verificación automática de cada cambio. |
+| Técnica | Viable | Está construido y verificado: 168 tablas, 346 operaciones y verificación automática de cada cambio. |
 | Económica | Viable en costos | La infraestructura base cuesta unos USD 14 por mes, y la de producción, unos USD 28,50; el ingreso lo fija el piloto. |
 | Operativa | Viable para pocos profesionales | Depende de una sola persona; para crecer hay que repartir el soporte y la habilitación. |
 | Legal | Viable con condiciones | Los controles técnicos están en el producto; se completa con asesoramiento legal antes de operar con datos reales. |

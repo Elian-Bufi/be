@@ -4,7 +4,7 @@
 
 Project BE {
   database_type: 'PostgreSQL'
-  Note: 'Modelo de datos de BE: 163 tablas, 326 claves foráneas y 108 conjuntos de valores, en 13 módulos. Ninguna clave foránea borra en cascada: todas son restrict.'
+  Note: 'Modelo de datos de BE: 168 tablas, 334 claves foráneas y 115 conjuntos de valores, en 13 módulos. Ninguna clave foránea borra en cascada: todas son restrict.'
 }
 
 // ─── Identidad y acceso ───────────────────────────────────────────────────────────────────────────
@@ -271,7 +271,7 @@ Table codigo_de_incorporacion [headercolor: #5A4E8C] {
 
 Table factor_totp [headercolor: #5A4E8C] {
   id uuid [pk, default: `gen_random_uuid()`, note: 'Identificador único de la fila.']
-  identidad_id uuid [not null, note: 'La cuenta (de Administración o de un profesional).']
+  identidad_id uuid [not null, note: 'La cuenta de Administración.']
   estado EstadoDeFactorTotp [not null, default: 'PENDIENTE', note: 'Pendiente, activo, reemplazado, revocado o descartado.']
   secreto_cifrado text [not null, note: 'El secreto del autenticador, cifrado con AES-256-GCM.']
   ultimo_paso bigint [note: 'El último paso de tiempo aceptado; impide reutilizar un código.']
@@ -287,12 +287,12 @@ Table factor_totp [headercolor: #5A4E8C] {
     (identidad_id, estado)
   }
 
-  Note: 'El autenticador (código de una aplicación) de una cuenta de Administración o de un profesional, con el secreto cifrado y los intentos fallidos.'
+  Note: 'El autenticador (código de una aplicación) de una cuenta de Administración, con el secreto cifrado y los intentos fallidos. La tabla admite el de un profesional, que hoy no se pide.'
 }
 
 Table codigo_de_recuperacion [headercolor: #5A4E8C] {
   id uuid [pk, default: `gen_random_uuid()`, note: 'Identificador único de la fila.']
-  identidad_id uuid [not null, note: 'La cuenta (de Administración o de un profesional).']
+  identidad_id uuid [not null, note: 'La cuenta de Administración.']
   lote_id uuid [not null, note: 'El lote al que pertenece; un lote nuevo invalida el anterior.']
   huella text [not null, unique, note: 'HMAC-SHA-256 del código, con una clave del servidor; el código no se guarda.']
   momento_de_uso timestamptz(3) [note: 'Cuándo se usó.']
@@ -320,7 +320,7 @@ Table segundo_factor_de_sesion [headercolor: #5A4E8C] {
     identidad_id
   }
 
-  Note: 'El estado del segundo factor en cada sesión que lo exige (Administración o profesional): cuándo se verificó y la última actividad.'
+  Note: 'El estado del segundo factor en cada sesión que lo exige (hoy, solo la de Administración): cuándo se verificó y la última actividad.'
 }
 
 Table restablecimiento_de_segundo_factor [headercolor: #5A4E8C] {
@@ -337,7 +337,7 @@ Table restablecimiento_de_segundo_factor [headercolor: #5A4E8C] {
     administrador_id
   }
 
-  Note: 'Cada vez que Administración restablece el segundo factor de un profesional, con su fundamento.'
+  Note: 'Cada vez que Administración restablece un segundo factor ya configurado, con su fundamento. El profesional hoy entra sin segundo factor.'
 }
 
 Table pedido_de_derecho [headercolor: #5A4E8C] {
@@ -532,6 +532,22 @@ Table cambio_de_incidencia [headercolor: #5A4E8C] {
   }
 
   Note: 'Cada cambio de estado de una incidencia: el motivo, la respuesta para quien la reportó y la cuenta de Administración que lo registró. Solo se agrega.'
+}
+
+Table decision_sobre_plantilla_de_be [headercolor: #5A4E8C] {
+  id uuid [pk, default: `gen_random_uuid()`, note: 'Identificador único de la fila.']
+  clave text [not null, note: 'La clave de idempotencia que mandó el cliente.']
+  estado EstadoDePlantillaDeBe [not null, note: 'Borrador, activada o descartada.']
+  motivo text [note: 'Motivo declarado.']
+  administrador_id uuid [not null, note: 'La cuenta de Administración.']
+  procedencia jsonb [not null, note: 'De dónde vino la fila: la fuente, la superficie (app o website), la operación, el caso de uso y el pedido que la produjo.']
+  momento_de_registro timestamptz(3) [not null, default: `now()`, note: 'Cuándo BE guardó la fila.']
+
+  indexes {
+    (clave, momento_de_registro)
+  }
+
+  Note: 'Lo que decide Administración sobre una Plantilla de BE de Entrenamiento: ofrecerla o retirarla. Las plantillas son datos versionados de BE (`packages/domain/src/plantillas-de-be.ts`); esta tabla solo guarda su estado, por clave. La vigente es la última decisión; sin ninguna, se ofrece (la semilla es una propuesta publicada, a validar por Dirección). Historia por adición: ni UPDATE, ni DELETE, ni TRUNCATE; la decide un administrador con su rol vigente.'
 }
 
 // ─── Profesionales, vínculos y consentimiento ─────────────────────────────────────────────────────
@@ -1969,6 +1985,47 @@ Table serie_observada [headercolor: #B0413E] {
   Note: 'Cada serie que el profesional observó en un ejercicio de la persona (carga, repeticiones y RIR), con la fuerza estimada por Epley guardada como hecho. Corregir o anular agrega una fila que sucede a la anterior. La persona no la recibe.'
 }
 
+Table uno_rm_de_referencia [headercolor: #B0413E] {
+  id uuid [pk, default: `gen_random_uuid()`, note: 'Identificador único de la fila.']
+  profesional_id uuid [not null, note: 'El profesional.']
+  asesorado_id uuid [not null, note: 'La persona.']
+  ejercicio_id uuid [not null, note: 'El ejercicio.']
+  origen OrigenDelUnoRM [not null, note: 'De dónde salió: del proveedor o de un profesional.']
+  valor "double precision" [not null, note: 'Valor numérico.']
+  unidad text [not null, note: 'Unidad del valor.']
+  fecha_local date [not null, note: 'El día, según la zona horaria de la persona.']
+  serie jsonb [note: 'La serie de la calibración o del registro: `{ load, completedRepetitions, rir }`; nula en lo declarado.']
+  metodo jsonb [note: '`{ specification, version, method }` (BE-E1RM v2, EPLEY_V2); nulo en lo declarado.']
+  banda text [note: '`CORE` o `ORIENTATIVE`; nula en lo declarado.']
+  registro jsonb [note: 'En un `RECORD`: `{ executionId, prescriptionId, setIndex }`.']
+  nota text [note: 'Lo que escribió la persona, si escribió algo.']
+  procedencia jsonb [not null, note: 'De dónde vino la fila: la fuente, la superficie (app o website), la operación, el caso de uso y el pedido que la produjo.']
+  momento_de_registro timestamptz(3) [not null, default: `now()`, note: 'Cuándo BE guardó la fila.']
+
+  indexes {
+    (asesorado_id, profesional_id, ejercicio_id, fecha_local)
+  }
+
+  Note: 'el 1RM de referencia de una persona en un ejercicio, con el que BE calcula las cargas en % RM. De solo agregar (ni UPDATE, ni DELETE, ni TRUNCATE): cada valor nuevo es una fila, con su origen, su fecha y su autor; el que usa BE es el más reciente (o el último registro en rango, que se calcula al leer, ET2-D03). - `CALIBRATION`: la serie que vio el profesional y la cuenta de Epley (`serie`, `metodo`); - `DECLARED`: el valor escrito a mano (sin serie ni método); - `RECORD`: un registro de la persona que el profesional eligió usar (`registro`: la ejecución, la prescripción y la serie). Cada profesional ve y suma lo propio con la persona (DL-057, como las series observadas).'
+}
+
+Table esfuerzo_de_sesion_de_entrenamiento [headercolor: #B0413E] {
+  id uuid [pk, default: `gen_random_uuid()`, note: 'Identificador único de la fila.']
+  ejecucion_id uuid [not null, unique, note: 'La sesión registrada o el cálculo al que pertenece.']
+  asesorado_id uuid [not null, note: 'La persona.']
+  valor integer [not null, note: 'Valor numérico.']
+  minutos integer
+  origen_de_minutos text
+  procedencia jsonb [not null, note: 'De dónde vino la fila: la fuente, la superficie (app o website), la operación, el caso de uso y el pedido que la produjo.']
+  momento_de_registro timestamptz(3) [not null, default: `now()`, note: 'Cuándo BE guardó la fila.']
+
+  indexes {
+    asesorado_id
+  }
+
+  Note: 'el esfuerzo de la sesión (Foster, de 0 a 10) que la persona respondió al terminar, aparte del RIR de cada serie. Una fila por sesión registrada, de solo agregar: la ejecución registrada no cambia (REG-06-116). `minutos` con su origen (el cronómetro de la sesión o escrito por la persona), o nulos si no los dio.'
+}
+
 // ─── Catálogos e importación ──────────────────────────────────────────────────────────────────────
 
 Table candidato_de_importacion [headercolor: #456B7F] {
@@ -2215,6 +2272,24 @@ Table revision_administrativa_de_alimento [headercolor: #456B7F] {
   }
 
   Note: 'Cada decisión de Administración sobre un alimento cargado a mano, contra la versión que vio: certificarlo con su fuente o marcar su equivalente verificado. La vigente es la de mayor número.'
+}
+
+Table clasificacion_de_ejercicio [headercolor: #456B7F] {
+  id uuid [pk, default: `gen_random_uuid()`, note: 'Identificador único de la fila.']
+  ejercicio_id uuid [not null, note: 'El ejercicio.']
+  numero integer [not null, note: 'Número correlativo dentro de su serie; la fila vigente es la de mayor número.']
+  grupo_muscular GrupoMuscularDeEjercicio
+  equipamiento "EquipamientoDeEjercicio[]" [not null]
+  patron PatronDeMovimiento
+  articulaciones ArticulacionesDeEjercicio
+  procedencia jsonb [not null, note: 'De dónde vino la fila: la fuente, la superficie (app o website), la operación, el caso de uso y el pedido que la produjo.']
+  momento_de_registro timestamptz(3) [not null, default: `now()`, note: 'Cuándo BE guardó la fila.']
+
+  indexes {
+    (ejercicio_id, numero) [unique]
+  }
+
+  Note: 'La clasificación de un ejercicio, para los filtros de «Agregar ejercicios»: grupo muscular, equipamiento, patrón y articulaciones, cada dato opcional. Historia por adición, como las zonas (DL-081): cambiarla es sumar una de número siguiente; la vigente es la más alta. Los 186 del catálogo base la reciben de la siembra (20261125120000), con la propuesta de BE a validar por Dirección.'
 }
 
 // ─── Formularios y hábitos ────────────────────────────────────────────────────────────────────────
@@ -2620,6 +2695,7 @@ Table version_de_plantilla_de_plan_de_entrenamiento [headercolor: #3B6E8F] {
   plantilla_id uuid [not null, note: 'La plantilla.']
   numero integer [not null, note: 'Número correlativo dentro de su serie; la fila vigente es la de mayor número.']
   estructura jsonb [not null, note: 'La estructura del molde (días, comidas o sesiones), sin datos de ninguna persona.']
+  planificacion jsonb [note: 'la planificación de la versión (semanas, aproximaciones, progresiones, intensidad), sin nada de una persona.']
   cargas CargasDePlantilla [not null, default: 'NO_COPIADAS', note: 'Si el molde copió las cargas o las deja para cada persona.']
   origen jsonb [note: 'El plan del que se armó, si salió de uno.']
   autor_id uuid [not null, note: 'Quién hizo el cambio.']
@@ -2810,6 +2886,7 @@ Table preparacion_de_plantilla_de_entrenamiento [headercolor: #3B6E8F] {
   nombre text [note: 'Nombre visible.']
   descripcion text [note: 'Descripción, si la hay.']
   estructura jsonb [not null, note: 'La estructura del molde (días, comidas o sesiones), sin datos de ninguna persona.']
+  planificacion jsonb [note: 'la planificación en preparación; va a la versión al guardarla.']
   cargas CargasDePlantilla [not null, default: 'NO_COPIADAS', note: 'Si el molde copió las cargas o las deja para cada persona.']
   version integer [not null, default: 1, note: 'Número de versión, correlativo dentro de su serie.']
   procedencia jsonb [not null, note: 'De dónde vino la fila: la fuente, la superficie (app o website), la operación, el caso de uso y el pedido que la produjo.']
@@ -2859,6 +2936,20 @@ Table eleccion_de_conjunto_de_graficos [headercolor: #3B6E8F] {
   }
 
   Note: 'El enfoque que el profesional eligió para una persona o para uno de sus planes con ella. Queda hasta que se cambie.'
+}
+
+Table recorrido_guiado_visto [headercolor: #3B6E8F] {
+  identidad_id uuid [note: 'La cuenta.']
+  recorrido text [note: 'El identificador del recorrido, el de la ruta (`training-plan-editor`); la API acepta solo los de @be/domain.']
+  estado EstadoDelRecorridoGuiado [not null, note: 'Borrador, activada o descartada.']
+  procedencia jsonb [not null, note: 'De dónde vino la fila: la fuente, la superficie (app o website), la operación, el caso de uso y el pedido que la produjo.']
+  momento_de_actualizacion timestamptz(3) [not null, default: `now()`, note: 'Última modificación de la fila.']
+
+  indexes {
+    (identidad_id, recorrido) [pk]
+  }
+
+  Note: 'Los recorridos guiados que vio u omitió cada usuario: una fila por recorrido. Es una preferencia de la pantalla, sin datos de salud, y se recuerda por usuario (no por navegador). Sin fila, no lo vio. Mutable: volver a verlo y terminarlo cambia el estado; cada cambio queda en la auditoría.'
 }
 
 // ─── Novedades y avisos ───────────────────────────────────────────────────────────────────────────
@@ -2943,7 +3034,7 @@ Table preferencia_de_recordatorio [headercolor: #4F6B3A] {
   Note: 'Si la persona quiere los recordatorios diarios de registro, por tipo.'
 }
 
-// ─── Relaciones: una por clave foránea (326) ─────────────────────────────────────────────
+// ─── Relaciones: una por clave foránea (334) ─────────────────────────────────────────────
 
 Ref: perfil_propio.identidad_id - identidad.id [delete: restrict]
 Ref: perfil_propio.version_efectiva_id - version_de_perfil_propio.id [delete: restrict]
@@ -2988,6 +3079,7 @@ Ref: incidencia.reportante_id > identidad.id [delete: restrict]
 Ref: incidencia.responsable_id > identidad.id [delete: restrict]
 Ref: cambio_de_incidencia.incidencia_id > incidencia.id [delete: restrict]
 Ref: cambio_de_incidencia.administrador_id > identidad.id [delete: restrict]
+Ref: decision_sobre_plantilla_de_be.administrador_id > identidad.id [delete: restrict]
 Ref: perfil_profesional.identidad_id - identidad.id [delete: restrict]
 Ref: cambio_de_nombre_profesional.identidad_id > identidad.id [delete: restrict]
 Ref: cambio_de_nombre_profesional.administrador_id > identidad.id [delete: restrict]
@@ -3155,6 +3247,11 @@ Ref: serie_observada.profesional_id > identidad.id [delete: restrict]
 Ref: serie_observada.asesorado_id > identidad.id [delete: restrict]
 Ref: serie_observada.ejercicio_id > ejercicio_de_catalogo.id [delete: restrict]
 Ref: serie_observada.predecesora_id - serie_observada.id [delete: restrict]
+Ref: uno_rm_de_referencia.profesional_id > identidad.id [delete: restrict]
+Ref: uno_rm_de_referencia.asesorado_id > identidad.id [delete: restrict]
+Ref: uno_rm_de_referencia.ejercicio_id > ejercicio_de_catalogo.id [delete: restrict]
+Ref: esfuerzo_de_sesion_de_entrenamiento.ejecucion_id - ejecucion_de_entrenamiento.id [delete: restrict]
+Ref: esfuerzo_de_sesion_de_entrenamiento.asesorado_id > identidad.id [delete: restrict]
 Ref: candidato_de_importacion.profesional_id > identidad.id [delete: restrict]
 Ref: resolucion_de_candidato.candidato_id - candidato_de_importacion.id [delete: restrict]
 Ref: resolucion_de_candidato.autor_id > identidad.id [delete: restrict]
@@ -3190,6 +3287,7 @@ Ref: revision_administrativa_de_alimento.elemento_id > elemento_de_catalogo_nutr
 Ref: revision_administrativa_de_alimento.version_id > version_de_elemento_nutricional.id [delete: restrict]
 Ref: revision_administrativa_de_alimento.equivalente_id > elemento_de_catalogo_nutricional.id [delete: restrict]
 Ref: revision_administrativa_de_alimento.administrador_id > identidad.id [delete: restrict]
+Ref: clasificacion_de_ejercicio.ejercicio_id > ejercicio_de_catalogo.id [delete: restrict]
 Ref: version_de_plantilla_de_formulario.plantilla_id > plantilla_de_formulario.id [delete: restrict]
 Ref: version_de_plantilla_de_formulario.predecesora_id - version_de_plantilla_de_formulario.id [delete: restrict]
 Ref: solicitud_de_formulario.profesional_id > identidad.id [delete: restrict]
@@ -3264,6 +3362,7 @@ Ref: eleccion_de_conjunto_de_graficos.asesorado_id > identidad.id [delete: restr
 Ref: eleccion_de_conjunto_de_graficos.plan_de_entrenamiento_id > plan_de_entrenamiento.id [delete: restrict]
 Ref: eleccion_de_conjunto_de_graficos.plan_nutricional_id > plan_nutricional.id [delete: restrict]
 Ref: eleccion_de_conjunto_de_graficos.conjunto_id > conjunto_de_graficos.id [delete: restrict]
+Ref: recorrido_guiado_visto.identidad_id > identidad.id [delete: restrict]
 Ref: novedad.destinatario_id > identidad.id [delete: restrict]
 Ref: novedad.fuente_id > identidad.id [delete: restrict]
 Ref: lectura_de_novedad.novedad_id - novedad.id [delete: restrict]
@@ -3272,7 +3371,7 @@ Ref: aviso_push.novedad_id > novedad.id [delete: restrict]
 Ref: aviso_push.suscripcion_id > suscripcion_push.id [delete: restrict]
 Ref: preferencia_de_recordatorio.identidad_id > identidad.id [delete: restrict]
 
-// ─── Conjuntos de valores (108) ─────────────────────────────────────────────
+// ─── Conjuntos de valores (115) ─────────────────────────────────────────────
 
 Enum EstadoOperativoDeCuenta {
   OPERATIVA
@@ -3598,6 +3697,7 @@ Enum TipoDeEventoDeEntrenamiento {
   SerieObservadaSucedida
   PrescripcionHabitualGuardada
   PrescripcionHabitualQuitada
+  UnoRMDeReferenciaSumado
 }
 Enum TipoDeEventoDeFormulario {
   SolicitudDeFormularioCreada
@@ -3629,6 +3729,46 @@ Enum EstadoDePropuestaDeRespuesta {
   CONFIRMADA
   RECHAZADA
   RETIRADA
+}
+Enum GrupoMuscularDeEjercicio {
+  CHEST
+  BACK
+  LEGS
+  SHOULDERS
+  ARMS
+  ABS
+  CALVES
+  CARDIO
+}
+Enum EquipamientoDeEjercicio {
+  BARBELL
+  EZ_BAR
+  DUMBBELL
+  KETTLEBELL
+  CABLE
+  MACHINE
+  BENCH
+  INCLINE_BENCH
+  PULL_UP_BAR
+  BAND
+  MAT
+  SWISS_BALL
+  BODYWEIGHT
+  OTHER
+}
+Enum PatronDeMovimiento {
+  PUSH
+  PULL
+  SQUAT
+  HINGE
+  LUNGE
+  CORE
+  CARDIO
+  OTHER
+}
+Enum ArticulacionesDeEjercicio {
+  SINGLE
+  MULTI
 }
 Enum OrigenDeHabitos {
   FORMULARIO
@@ -3706,6 +3846,10 @@ Enum EstadoDePlantilla {
 Enum CargasDePlantilla {
   NO_COPIADAS
   COPIADAS
+}
+Enum EstadoDePlantillaDeBe {
+  PUBLICADA
+  RETIRADA
 }
 Enum CantidadesDePlantilla {
   NO_COPIADAS
@@ -3838,6 +3982,10 @@ Enum EstadoDePreferencia {
   ACTIVA
   INACTIVA
 }
+Enum EstadoDelRecorridoGuiado {
+  VISTO
+  OMITIDO
+}
 Enum EstadoDeResultadoTvcc30 {
   CALCULADO
   SIN_VALOR
@@ -3900,6 +4048,11 @@ Enum TipoDeSerieObservada {
   OBSERVADA
   ANULACION
 }
+Enum OrigenDelUnoRM {
+  CALIBRATION
+  RECORD
+  DECLARED
+}
 Enum CategoriaDeIncidencia {
   ACCESO
   PERFIL
@@ -3961,6 +4114,7 @@ TableGroup "Administración, derechos y auditoría" [color: #5A4E8C] {
   registro_de_supresion
   incidencia
   cambio_de_incidencia
+  decision_sobre_plantilla_de_be
 }
 
 TableGroup "Profesionales, vínculos y consentimiento" [color: #1F7A70] {
@@ -4057,6 +4211,8 @@ TableGroup "Entrenamiento" [color: #B0413E] {
   aplicacion_de_revision_de_entrenamiento
   evento_de_entrenamiento
   serie_observada
+  uno_rm_de_referencia
+  esfuerzo_de_sesion_de_entrenamiento
 }
 
 TableGroup "Catálogos e importación" [color: #456B7F] {
@@ -4076,6 +4232,7 @@ TableGroup "Catálogos e importación" [color: #456B7F] {
   alimento_del_canon
   medidas_caseras_de_alimento
   revision_administrativa_de_alimento
+  clasificacion_de_ejercicio
 }
 
 TableGroup "Formularios y hábitos" [color: #6B5B2E] {
@@ -4119,6 +4276,7 @@ TableGroup "Herramientas del profesional" [color: #3B6E8F] {
   preparacion_de_plantilla_de_entrenamiento
   conjunto_de_graficos
   eleccion_de_conjunto_de_graficos
+  recorrido_guiado_visto
 }
 
 TableGroup "Novedades y avisos" [color: #4F6B3A] {

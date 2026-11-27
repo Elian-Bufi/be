@@ -53,6 +53,10 @@ const MODULO_NUEVO = {
   propuesta_al_recetario: 'Recetas, fotos y registro de comidas', receta_del_recetario: 'Recetas, fotos y registro de comidas',
   variante_de_medio: 'Recetas, fotos y registro de comidas',
   vinculo_de_formulario_en_evaluacion: 'Formularios y hábitos',
+  // Las del editor de Entrenamiento (DL-195 a DL-199, integradas en main).
+  clasificacion_de_ejercicio: 'Catálogos e importación', decision_sobre_plantilla_de_be: 'Administración, derechos y auditoría',
+  esfuerzo_de_sesion_de_entrenamiento: 'Entrenamiento', uno_rm_de_referencia: 'Entrenamiento',
+  recorrido_guiado_visto: 'Herramientas del profesional',
 };
 
 // ---------- Esquema de Prisma ----------

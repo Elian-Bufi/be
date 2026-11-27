@@ -201,3 +201,17 @@ Cómo se dibuja cada gráfico para que diga solo lo que los datos permiten decir
 | GR-VD08 | Una pregunta abierta por un enlace, sin nada que mostrar, vuelve a «Analizar» sin decir nada | **Ratificar con cambio:** un estado vacío neutro con su título, para que la pantalla no cambie sin decir por qué |
 | GR-VB02 a VB07 · VC03 · VC07 · VC10 · VD06 · VD07 | Medidas y ubicación de los dibujos: tamaños, ejes, alturas, números a la vista, leyendas y fechas | **Ratificar** |
 | GR-VD03 · VD09 | Técnicas, sin efecto en pantalla (2) | **Ratificar** |
+
+# La entrega del 27/11
+
+> Lo que la actualización de los documentos del 27/11 escribió como refinamiento de un ID que ya existe, en vez de crear uno nuevo. Si preferís un ID propio, la fila dice cuál sería el cambio.
+
+| Tema | Cómo quedó escrito | Mi recomendación |
+|---|---|---|
+| El editor nuevo de Entrenamiento (DL-196 a DL-199): fases con almanaque, intensidad del plan, 1RM de referencia, % RM con la carga, aproximaciones, progresiones y descargas, cardio, reordenar y deshacer | Refinamiento de RF-039, RF-040 y RF-041 (12) y de UC-P15 y UC-P16 (10) | **Ratificar.** La alternativa es un RF propio para el 1RM de referencia y otro para las progresiones; habría que sumarles casos de prueba en el 11 |
+| Las Plantillas de BE (DL-199) | Para el profesional, refinamiento de RF-039 y UC-P15; para Administración, de RF-072 y UC-P36 (paso 5) | **Decidís vos.** Recomiendo dejarlo así, como se hizo con el Recetario de BE; la alternativa es un RF y un UC de Administración propios |
+| El esfuerzo de la sesión (DL-198) | Refinamiento de RF-043 (13) y de UC-P17 (10) | **Ratificar** |
+| El resultado completo de cada método de Antropometría (DL-200) | Refinamiento de RF-048 (12) y de §3.4 del 09 | **Ratificar** |
+| Los recorridos guiados (DL-195) | En el 00, el 03, el 09 y el 17, sin ID propio: es una ayuda de la pantalla, sin datos de salud | **Ratificar** |
+| El 1RM estimado de «Analizar» | Los documentos lo describen con la fórmula de Epley, sin versión; la pantalla todavía dice «1RM estimado (Epley v1)» | **Ratificar con cambio:** sacar «v1» del rótulo en la pantalla en la próxima tanda, para que la pantalla y la entrega digan lo mismo |
+| ET2-D19 | «Pasar los N ejercicios a…» viene marcada al cambiar la intensidad del plan; el 09 lo describe así | **Ratificar** |

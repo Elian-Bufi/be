@@ -21,8 +21,8 @@
 BE son tres aplicaciones que comparten un solo servidor: la app de la persona, el website del profesional y de Administración, y la API, que es la única que toca la base de datos. Importa porque BE guarda datos de salud: cada escritura tiene que pasar por el mismo control de permiso y dejar la misma auditoría, sin excepciones, y eso es más fácil de garantizar con una sola puerta.
 
 - **3** aplicaciones: app, website y API
-- **34** módulos: de un monolito modular
-- **335** operaciones: en la especificación OpenAPI
+- **35** módulos: de un monolito modular
+- **346** operaciones: en la especificación OpenAPI
 - **1** nube: Render, región Frankfurt
 
 *Fuente: El repositorio: apps/api/src (módulos y controladores), docs/api/openapi.json y prisma/schema.prisma.*
@@ -100,8 +100,8 @@ Hacia afuera, BE manda lo mínimo. Ningún servicio externo recibe datos de salu
 | --- | --- | --- |
 | App de la persona | Android · React Native y Expo | Cinco pestañas: Inicio, Nutrición, Entrenamiento, Evolución y Perfil. Guarda la sesión en el almacenamiento seguro del teléfono. |
 | Website | Next.js · exportación estática | Escritorio del profesional y Administración. No tiene servidor propio: es un sitio estático que pide todo a la API. |
-| API | NestJS · TypeScript | Monolito modular de 34 módulos. Autoriza cada operación, aplica las reglas de cada área y audita en la misma transacción. |
-| Base de datos | PostgreSQL 16 · Prisma | 163 tablas. Además de guardar, rechaza por sí misma las escrituras que romperían la historia. |
+| API | NestJS · TypeScript | Monolito modular de 35 módulos. Autoriza cada operación, aplica las reglas de cada área y audita en la misma transacción. |
+| Base de datos | PostgreSQL 16 · Prisma | 168 tablas. Además de guardar, rechaza por sí misma las escrituras que romperían la historia. |
 | Recordatorios | Tarea programada | Tres veces por día le pide a la API que envíe los recordatorios del día. |
 | @be/domain | Paquete TypeScript | Contratos de cada operación, textos y reglas puras. Lo compilan la app, el website y la API; de él sale la especificación OpenAPI. |
 
@@ -125,10 +125,10 @@ Escritorio del profesional y Administración. Reanuda la sesión con una cookie 
 Tres veces por día pide a la API los recordatorios del día`"]
     API["`**API**
 [NestJS · TypeScript · monolito modular]
-34 módulos por dominio. Autoriza cada operación, aplica las reglas y audita en la misma transacción`"]
+35 módulos por dominio. Autoriza cada operación, aplica las reglas y audita en la misma transacción`"]
     DB["`**Base de datos**
 [PostgreSQL 16 · Prisma]
-163 tablas, 102 migraciones. Rechaza por sí misma lo que rompería la historia`"]
+168 tablas, 107 migraciones. Rechaza por sí misma lo que rompería la historia`"]
   end
   EXP["`**Expo Push**`"]
   OFF["`**Open Food Facts · USDA · wger**`"]
@@ -310,6 +310,55 @@ Después de confirmar, el aviso al teléfono sale por Expo Push, lo mejor posibl
 ```
 
 *Figura 5: El recorrido de una escritura, por ejemplo activar un plan o registrar una comida. Fuente: apps/api/src/plataforma/ejecutor.ts; el código del diagrama está en las fuentes de esta entrega.*
+
+## 4.1 Activar un plan de entrenamiento, en secuencia
+
+El mismo camino, con los nombres reales de una operación: el profesional activa la versión en preparación del plan de Entrenamiento de una persona (`POST /training/plans/{planId}/activate`, API-TRN-12). Todo lo que está entre la apertura y el COMMIT pasa entero o no pasa; el aviso al teléfono sale después.
+
+```mermaid
+sequenceDiagram
+  autonumber
+  actor P as Profesional
+  participant W as Website
+  participant C as EntrenamientoController
+  participant E as EjecutorDeEntrenamiento
+  participant S as PlanesDeEntrenamientoService
+  participant PDP as PdpService
+  participant R as UnoRMService
+  participant DB as PostgreSQL
+  participant App as App de la persona
+  P->>W: «Activar la versión … de …»
+  W->>C: POST /training/plans/{planId}/activate<br/>versión esperada + Idempotency-Key
+  C->>C: SesionGuard: sesión activa y no revocada
+  C->>E: escribirIdempotente(API-TRN-12)
+  E->>E: valida el cuerpo contra el contrato
+  E->>DB: BEGIN · la clave ya usada devuelve la respuesta guardada
+  E->>S: efecto(tx)
+  S->>PDP: decidir(vínculo, consentimiento, habilitación, área)
+  PDP->>DB: decision_de_acceso
+  alt sin permiso
+    PDP-->>E: denegada
+    E->>DB: ROLLBACK, se registra el rechazo
+    E-->>W: 404, el mismo que lo inexistente
+  else permitido
+    S->>DB: la versión esperada y el borrador nacido de la vigente
+    S->>DB: bloqueo por persona · ningún plan vigente con otro profesional
+    S->>S: valida el borrador (lo que impide activar)
+    S->>R: vigentesDe(ejercicios en % RM)
+    R->>DB: uno_rm_de_referencia
+    S->>DB: instantanea_de_plan_de_entrenamiento, con el 1RM congelado y su huella SHA-256
+    S->>DB: la versión pasa a ACTIVADA y su evento
+    S->>DB: plan_de_entrenamiento.version_efectiva_id → la versión nueva
+    S->>DB: proceso_operativo abierto o continuado y la próxima revisión
+    S->>DB: novedad PLAN_ACTIVADO para la persona
+    E->>DB: registro_de_auditoria y registro_de_idempotencia
+    E->>DB: COMMIT
+    E-->>W: 200 · versión vigente, huella de la instantánea
+    E-)App: aviso por Expo Push, sin datos de salud
+  end
+```
+
+*Figura 5b: La activación de un plan de entrenamiento, de la pantalla a la base y al teléfono. Fuente: apps/api/src/entrenamiento/planes.service.ts (`activar`) y apps/api/src/plataforma/ejecutor.ts.*
 
 # 5. Decisiones de arquitectura
 
