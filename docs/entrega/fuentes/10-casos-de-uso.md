@@ -435,7 +435,7 @@ Es donde la historia se convierte en una decisión. Cada revisión deja escrito 
 | E3 | Al aplicar, ya estaba aplicada, o no se puede aplicar ahora (por ejemplo, porque ya hay un borrador abierto). | Lo dice y no aplica dos veces. |
 | E4 | La persona retiró el permiso. | Responde igual que si no existiera, sin revelar la causa. |
 
-En **Entrenamiento (UC-P18)**, el recorrido es el mismo, con «Preparar la revisión de Entrenamiento» y «Aplicar próxima acción»; el período se compara serie por serie y, en «Analizar», con el 1RM estimado (Epley v1). No hay un séptimo resultado: la progresión es ajustar o sustituir.
+En **Entrenamiento (UC-P18)**, el recorrido es el mismo, con «Preparar la revisión de Entrenamiento» y «Aplicar próxima acción»; el período se compara serie por serie y, en «Analizar», con el 1RM estimado con la fórmula de Epley. No hay un séptimo resultado: la progresión es ajustar o sustituir.
 
 # 5. Los casos, módulo por módulo
 
@@ -874,7 +874,7 @@ El circuito completo de un área: la evaluación y el objetivo, el plan en borra
 
 ## 5.5 Entrenamiento
 
-El mismo circuito, con la prescripción serie por serie, la sesión guiada en el teléfono y la historia de cada ejercicio a la vista mientras se planifica: «La vez pasada», el historial y el 1RM estimado (Epley, versión 1).
+El mismo circuito, con la prescripción serie por serie, la sesión guiada en el teléfono y la historia de cada ejercicio a la vista mientras se planifica: «La vez pasada», el historial y el 1RM estimado con la fórmula de Epley.
 
 ![Figura 13: Casos de uso de Entrenamiento](pendiente)
 
@@ -903,7 +903,7 @@ El mismo circuito, con la prescripción serie por serie, la sesión guiada en el
 >
 > 1. Crea el borrador en blanco o desde una plantilla, y ordena las fases y las sesiones, con sus días; dentro de una sesión puede agrupar ejercicios en un bloque «Seguido» o «En vueltas»
 > 2. Busca los ejercicios en el catálogo, con su imagen y sus zonas musculares; el buscador marca «Con historial» los que ya estuvieron en sesiones registradas de la persona en el último año, con cuántas y la fecha de la última
-> 3. En el cuadro de cada ejercicio ve «La vez pasada» (las últimas tres veces, serie por serie: carga, repeticiones y RIR) y su historial en paneles alineados: carga, repeticiones y RIR de la misma serie, el RIR indicado frente al registrado y, en los ejercicios con método aprobado, el 1RM estimado (Epley v1) sesión a sesión, con las versiones del plan de fondo
+> 3. En el cuadro de cada ejercicio ve «La vez pasada» (las últimas tres veces, serie por serie: carga, repeticiones y RIR) y su historial en paneles alineados: carga, repeticiones y RIR de la misma serie, el RIR indicado frente al registrado y, en los ejercicios con método aprobado, el 1RM estimado con la fórmula de Epley sesión a sesión, con las versiones del plan de fondo
 > 4. Elige cómo se escribe el esfuerzo: RIR o RPE
 > 5. Indica las series de calentamiento y las efectivas, y de cada serie las repeticiones, la carga, el esfuerzo y el descanso, también con la escritura rápida y «Aplicar»; puede calcular la carga desde la estimación, y la confirma él
 > 6. Mientras planifica, el panel «Contexto de…» le muestra lo de la persona; si un ejercicio no está, lo busca en un catálogo externo o crea uno propio
@@ -977,7 +977,7 @@ El mismo circuito, con la prescripción serie por serie, la sesión guiada en el
 > **Recorrido.**
 >
 > 1. Toca «Preparar la revisión de Entrenamiento»
-> 2. Compara lo planificado con lo registrado; en «Analizar», el 1RM estimado (Epley v1) con la serie de origen y «Cómo se calculó», y dos etapas lado a lado con todas las observaciones
+> 2. Compara lo planificado con lo registrado; en «Analizar», el 1RM estimado con la fórmula de Epley con la serie de origen y «Cómo se calculó», y dos etapas lado a lado con todas las observaciones
 > 3. Escribe lo que observó y elige el resultado: mantener, ajustar, sustituir, reprogramar la revisión, cambiar el objetivo o finalizar
 > 4. Registra la revisión y aplica la próxima acción
 >

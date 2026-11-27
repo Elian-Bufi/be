@@ -213,6 +213,6 @@ Las dos descartadas también dicen algo. Que una IA arme el plan y vender datos 
 
 > **La proyección.** Turnos y cobros, registrar otro deporte con el RPE de la sesión y, como «Combinar», el carrito de compras familiar (los planes de varias personas en una sola compra), entran en el orden que marque el piloto con profesionales (FODA, 19, y buyer persona, 21).
 
-> **Fuentes.** 1. La estimación de fuerza de BE: la fórmula de Epley, versión 1, con «Cómo se calculó».
+> **Fuentes.** 1. La estimación de fuerza de BE: la fórmula de Epley, con «Cómo se calculó».
 > 2. Benchmarking (22), de esta misma entrega.
 > 3. Eberle, B. *SCAMPER: Games for Imagination Development*. D.O.K. Publishers, 1971. Sobre la lista de preguntas de Osborn, A. F. *Applied Imagination*. Scribner, 1953.

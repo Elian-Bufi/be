@@ -262,7 +262,7 @@ Los gráficos ponen la historia de la persona sobre un mismo eje del tiempo, en 
 > **Texto de la figura:**
 > - Lo que ve el profesional
 > - en el website
-> - «La vez pasada»«Con historial» en el buscador«Desde el inicio y desde la anterior»El historial del ejercicio, con el 1RM estimado (Epley v1)La alimentación y el cuerpo en el tiempo«Armá tu gráfico»: alineadas o superpuestasLa cinta del tiempo«Patrones»Los enfoques
+> - «La vez pasada»«Con historial» en el buscador«Desde el inicio y desde la anterior»El historial del ejercicio, con el 1RM estimado con la fórmula de EpleyLa alimentación y el cuerpo en el tiempo«Armá tu gráfico»: alineadas o superpuestasLa cinta del tiempo«Patrones»Los enfoques
 > - Las piezas comunes
 > - website, una sola vez para todos los gráficos
 > - El eje de fechas comúnLos paneles alineadosEl cursor compartidoLa tabla equivalente de cada gráficoLos estados: cargando, sin datos, poca historia y errorEl registro de los gráficos de cada área

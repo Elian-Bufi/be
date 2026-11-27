@@ -475,7 +475,7 @@ En Entrenamiento, una progresión que conserva la estructura se registra como «
 
 ## 4.1 El historial del ejercicio y el 1RM estimado
 
-**Para qué.** Ver cómo evolucionó un ejercicio sesión a sesión mientras se arma la versión siguiente del plan, sin salir del editor: el «1RM estimado (Epley v1)», la carga, las repeticiones y el RIR, con las versiones del plan de fondo.
+**Para qué.** Ver cómo evolucionó un ejercicio sesión a sesión mientras se arma la versión siguiente del plan, sin salir del editor: el «1RM estimado», la carga, las repeticiones y el RIR, con las versiones del plan de fondo.
 
 **Quién puede.** El profesional de Entrenamiento, en el editor del plan de una persona que acompaña. El 1RM estimado se calcula en los ejercicios principales con barra, como la sentadilla; en los demás, el cuadro muestra «La vez pasada» y el historial de la carga.
 
@@ -483,13 +483,13 @@ En Entrenamiento, una progresión que conserva la estructura se registra como «
 
 1. En «Plan», en el ejercicio, «Detalle y fuerza estimada».
 2. En «En el tiempo», «Historial». Elegir el «Período» («12 semanas», «6 meses» o «Desde que la acompañás») y la «Serie».
-3. Leer los tres gráficos: «1RM estimado (Epley v1)»; «Carga, repeticiones y RIR de la serie 1», y «RIR indicado y registrado en la serie 1». Debajo, «Lo que pasó en el período» («La cinta del tiempo»).
+3. Leer los tres gráficos: «1RM estimado»; «Carga, repeticiones y RIR de la serie 1», y «RIR indicado y registrado en la serie 1». Debajo, «Lo que pasó en el período» («La cinta del tiempo»).
 4. «Perfil de carga y repeticiones» muestra la carga frente a las repeticiones.
 5. «Abrir en Analizar» lleva el gráfico a la ficha («Analizar la historia de la persona»).
 
 **Lo que se ve.** Una estimación por sesión, nunca una medición. BE estima solo con series efectivas de RIR 0 a 2 (RPE 8 a 10), y cada estimación dice con qué serie salió: «estimado con 5 reps a RPE 8 · 100 kg». Lo dice también así: «Solo lo ves vos: la persona no ve estimaciones.». Desde la tarjeta de la fuerza, «Registrar una serie observada» suma una serie medida por el profesional, y «Calcular la carga desde la estimación…» propone una carga: «Nada se escribe hasta que confirmes.».
 
-![Figura 16: «1RM estimado (Epley v1)» de la sentadilla de Diego Sosa: una estimación por sesión, con la versión del plan arriba (v8). Captura del website](pendiente)
+![Figura 16: «1RM estimado» de la sentadilla de Diego Sosa: una estimación por sesión, con la versión del plan arriba (v8). Captura del website](pendiente)
 
 ![Figura 17: «Carga, repeticiones y RIR de la serie 1»: tres paneles con el mismo eje de fechas, lo registrado lleno y lo indicado hueco. Captura del website](pendiente)
 
