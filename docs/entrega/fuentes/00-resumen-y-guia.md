@@ -224,9 +224,9 @@ La demostración usa datos de prueba. La plataforma está construida y lista; pa
 - **«Ver como la persona».** Desde el editor, ver el plan en preparación tal como lo va a ver la persona en su teléfono, antes de activarlo.
 - **El RPE de la sesión para otros deportes.** Registrar una actividad que no está en el plan (correr, nadar, un partido) con su duración y el esfuerzo percibido de la sesión, para sumarla a la historia del entrenamiento.
 
-Cuanto más se usa BE, más historia hay para leer. Hoy el límite es cuántos datos puede interpretar un profesional. A futuro, con el consentimiento de las personas y sobre datos agregados, el análisis de grandes volúmenes y herramientas de inteligencia artificial supervisadas por el profesional podrían encontrar patrones que hoy no se ven: qué cambios funcionan mejor, para qué personas y en qué contexto. Es una línea de investigación, no una función de BE: hoy ningún dato de salud pasa por un modelo, y cualquier paso en esa dirección necesita su validación y su encuadre legal.
+**A futuro.** Con muchas historias, agregadas y despersonalizadas (desvinculadas del perfil de cada persona y dentro de la Ley 25.326), BE podría alimentar el estudio de patrones comunes entre somatotipos, hábitos alimentarios y entrenamiento, con herramientas de inteligencia artificial que sirvan de ayuda al profesional, nunca en su lugar. La persona podría ofrecer, con un permiso aparte y opcional, sus datos no identificatorios para investigación. Es una posibilidad a definir, con su validación y su encuadre legal.
 
-> **La idea de fondo.** Cuanto más se usa, **mejor se entiende a la persona**: la historia crece y cada decisión tiene más contexto.
+> **La idea de fondo.** La persona, con **toda su historia en un solo lugar**, vista por sus profesionales: cuanto más crece esa historia, más contexto tiene cada decisión.
 
 # 6. Cómo leer esta entrega
 

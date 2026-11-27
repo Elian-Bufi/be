@@ -728,7 +728,7 @@ Cómo empieza, se autoriza, cambia y termina una relación. Aceptar un vínculo 
 > **Recorrido.**
 >
 > 1. Autoriza el tratamiento de sus datos de salud, como un acto separado de crear la cuenta
-> 2. Al aceptar un vínculo, lee el texto del permiso de esa área y, en una sola pantalla con todo marcado, decide qué comparte: «Aceptar y compartir», «Elegir qué compartir» o «Ahora no»; BE guarda la versión, la fecha y el autor
+> 2. Al aceptar un vínculo, lee el texto del permiso de esa área y, en una sola pantalla con lo que se propone compartir, decide con un toque: «Aceptar y compartir»; «Elegir qué compartir», con un interruptor por cosa que arranca encendido, o «Ahora no», que no registra nada; BE guarda la versión, la fecha y el autor
 > 3. Autoriza aparte las fotos de sus comidas para su profesional de Nutrición, y decide con quiénes comparte «Mis hábitos»
 > 4. En «Quién ve qué» ve, por profesional, lo que autorizó y desde cuándo, con un interruptor por cosa: el área, lo de otras áreas y la historia anterior (UC-P34)
 >

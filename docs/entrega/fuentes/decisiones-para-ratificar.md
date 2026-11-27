@@ -158,11 +158,11 @@ Si la persona cambia de profesional, el nuevo ve lo que pasó antes en su área,
 
 ## Compartir casi por omisión (DL-176)
 
-Conectar con el profesional es el único paso aparte; después, una sola pantalla con todo marcado y un toque, y cada cosa se retira cuando la persona quiera. Las dudas legales de lo preseleccionado siguen yendo a la validación jurídica.
+Conectar con el profesional es el único paso aparte; después, una sola pantalla con lo que se propone compartir y tres botones («Aceptar y compartir»; «Elegir qué compartir», con los interruptores encendidos, o «Ahora no», que no registra nada), y cada cosa se retira cuando la persona quiera. Las dudas legales de lo preseleccionado siguen yendo a la validación jurídica.
 
 | ID | La decisión | Mi recomendación |
 |---|---|---|
-| Opción A · CMP-D1 | El vínculo se acepta aparte y enseguida aparece la pantalla única, con todo marcado y «Aceptar y compartir» | **Ratificar** (opción A) |
+| Opción A · CMP-D1 | El vínculo se acepta aparte y enseguida aparece la pantalla única, con lo que se propone compartir y «Aceptar y compartir», «Elegir qué compartir» o «Ahora no» | **Ratificar** (opción A) |
 | CMP-D2 · D4 | Trae marcado el permiso de su área, el consentimiento de datos de salud si falta, lo de las otras áreas en los dos sentidos, la historia anterior y los hábitos si corresponde | **Ratificar** |
 | CMP-D3 | Lo que la persona retiró antes no vuelve marcado: «casi por omisión» no pisa una decisión suya | **Ratificar** |
 | CMP-D8 | La pantalla dice cada cosa en una línea y deja los textos completos plegados; «Ahora no» es un enlace chico | **Ratificar con cambio:** «Elegir qué compartir» y «Ahora no», como botones a la vista; el consentimiento tiene que ser libre (art. 5) |

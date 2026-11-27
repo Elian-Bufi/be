@@ -406,7 +406,9 @@ El desarrollo se apoyó en asistentes de inteligencia artificial para programar,
 - **«Ver como la persona».** Desde el editor, ver el plan en preparación tal como lo va a ver la persona en su teléfono, antes de activarlo.
 - **El RPE de la sesión para otros deportes.** Registrar una actividad que no está en el plan (correr, nadar, un partido) con su duración y el esfuerzo percibido de la sesión, para sumarla a la historia del entrenamiento.
 
-**Leer más datos.** Cuanto más se usa BE, más historia hay para leer, y hoy el límite es cuántos datos puede interpretar un profesional. A futuro, con el consentimiento de las personas y sobre datos agregados, el análisis de grandes volúmenes y herramientas de inteligencia artificial supervisadas por el profesional podrían encontrar patrones que hoy no se ven: qué cambios funcionan mejor, para qué personas y en qué contexto. Es una línea de investigación, no una función de BE, y cada paso en esa dirección necesita su validación y su encuadre legal.
+**A futuro.** Con muchas historias, agregadas y despersonalizadas (desvinculadas del perfil de cada persona y dentro de la Ley 25.326), BE podría alimentar el estudio de patrones comunes entre somatotipos, hábitos alimentarios y entrenamiento, con herramientas de inteligencia artificial que sirvan de ayuda al profesional, nunca en su lugar. La persona podría ofrecer, con un permiso aparte y opcional, sus datos no identificatorios para investigación. Es una posibilidad a definir, con su validación y su encuadre legal.
+
+> **La idea de fondo.** La persona, con **toda su historia en un solo lugar**, vista por sus profesionales: cuanto más crece esa historia, más contexto tiene cada decisión.
 
 > **Referencias.** 1. Barbero L. y otros. Censo Nacional de Profesionales en Nutrición. Resultados de 2023. *Diaeta* (B. Aires) 2025;43:e25043011. https://diaeta.aalen.org.ar/index.php/2022/article/view/101
 > 2. INDEC y Secretaría de Gobierno de Salud. *4.° Encuesta Nacional de Factores de Riesgo. Resultados definitivos*, octubre de 2019. https://www.indec.gob.ar/ftp/cuadros/publicaciones/enfr_2018_resultados_definitivos.pdf

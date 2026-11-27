@@ -182,6 +182,8 @@ El recorrido **va y vuelve** entre la computadora y el teléfono. Para preparars
 
 ## 6.1 Invitar
 
+Este paso es optativo. Si querés, invitá con la misma cuenta de persona que vas a usar en la prueba; si no, salteá este paso y seguí con el resto.
+
 **La profesional**, en el website: en el «Espacio profesional», «Invitar a alguien nuevo» (enlace, QR o código); elegir el área y tocar «Crear invitación».
 
 **Qué se tiene que ver:** «La invitación está lista», con el «Enlace», el «Código QR» y el «Código», y «Copiar enlace» y «Compartir por WhatsApp». El enlace y el código se muestran solo ahora; la invitación es para una sola persona y vence a los 7 días. Quien la acepta ve, en una sola pantalla, qué se propone compartir y para qué, cosa por cosa, y decide con un toque: «Aceptar y compartir»; «Elegir qué compartir», que muestra un interruptor por cosa, o «Ahora no», que no registra nada. Si deja sin marcar el tratamiento de sus datos de salud, la pantalla lo dice al lado: «Sin esto, ningún profesional ve tus datos de salud.»
