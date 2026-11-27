@@ -11,6 +11,9 @@ export const RAIZ = resolve(dirname(fileURLToPath(import.meta.url)), '..', '..',
 const leer = (...partes) => fs.readFileSync(join(RAIZ, ...partes), 'utf8');
 
 const alimentos = JSON.parse(leer('prisma', 'datos', 'catalogo-base', 'alimentos.json'));
+// Los alimentos que sumó el recetario del 2026-11-26 (migración 20261126130000), con la misma forma que los del catálogo base.
+const delRecetario = JSON.parse(leer('prisma', 'datos', 'catalogo-base', 'alimentos-del-recetario.json'));
+alimentos.alimentos.push(...delRecetario.alimentos);
 const correcciones = JSON.parse(leer('prisma', 'datos', 'catalogo-base', 'correcciones.json'));
 const BASE = new Map(alimentos.alimentos.map((a) => [a.fdcId, a]));
 const CORREGIDOS = new Map(correcciones.cortes.map((c) => [c.fdcId, c]));

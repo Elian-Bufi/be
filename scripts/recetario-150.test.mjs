@@ -100,3 +100,16 @@ test('el manifiesto es exactamente el que sale de la fuente (armar.mjs --verific
   const r = spawnSync(process.execPath, [join(CARPETA, 'armar.mjs'), '--verificar'], { encoding: 'utf8' });
   assert.equal(r.status, 0, r.stderr);
 });
+
+test('las recetas usan el alimento real y no un reemplazo: locro con maíz blanco y chorizo, queso fresco y albahaca', () => {
+  const fdcs = (c) => nuevo.recetas.find((r) => r.codigo === c).ingredientes.map((i) => i.fdcId);
+  // R137 Locro: maíz blanco en grano (168920) y chorizo (173859), sin choclo.
+  assert.ok(fdcs('R137').includes('168920') && fdcs('R137').includes('173859'));
+  assert.ok(!fdcs('R137').includes('169999'));
+  // R133: queso fresco (172223), no port salut (170849). El dulce de membrillo no tiene registro en SR Legacy: sigue la mermelada.
+  assert.ok(fdcs('R133').includes('172223') && !fdcs('R133').includes('170849'));
+  // R135: albahaca fresca (172232), no perejil (170416).
+  assert.ok(fdcs('R135').includes('172232') && !fdcs('R135').includes('170416'));
+  // Ninguna receta dice que le falte un alimento que ya está.
+  for (const r of nuevo.recetas) assert.ok(!r.adaptaciones.some((a) => /no tiene (maíz|chorizo|albahaca|queso fresco)/i.test(a)), r.codigo);
+});

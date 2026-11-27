@@ -1461,7 +1461,7 @@
      },
      "estado": "AS_PURCHASED",
      "etiqueta": "queso",
-     "decision": "Se usa «Queso port salut» del catálogo; hay otros alimentos posibles para «queso» (15 coincidencias)."
+     "decision": "Se usa «Queso port salut» del catálogo; hay otros alimentos posibles para «queso» (16 coincidencias)."
     },
     {
      "fuente": "CATALOGO_BASE",
@@ -12965,18 +12965,18 @@
    "ingredientes": [
     {
      "fuente": "CATALOGO_BASE",
-     "fdcId": "170849",
-     "nombre": "Queso port salut",
+     "fdcId": "172223",
+     "nombre": "Queso fresco",
      "preparacionDeLaFuente": "listo para consumir",
-     "catalogItemId": "2b28093e-7109-5466-b272-649d8c032a4b",
-     "catalogItemVersionId": "aa3b1752-0bec-5626-bfca-20a39bf58fcc",
+     "catalogItemId": "a475aa8b-887a-5a5d-ba87-551ed45e273e",
+     "catalogItemVersionId": "eb15a265-e9ad-54b2-8073-11c9a33cfbcb",
      "cantidad": {
       "valor": 80,
       "unidad": "g"
      },
      "estado": "AS_PURCHASED",
-     "etiqueta": "queso",
-     "decision": "Se usa «Queso port salut» del catálogo; hay otros alimentos posibles para «queso» (15 coincidencias)."
+     "etiqueta": "queso fresco",
+     "decision": "Se usa «Queso fresco» del catálogo; hay otros alimentos posibles para «queso fresco» (2 coincidencias)."
     },
     {
      "fuente": "CATALOGO_BASE",
@@ -13014,7 +13014,7 @@
     "Servir sobre las galletas, o al costado."
    ],
    "adaptaciones": [
-    "El catálogo no tiene dulce de membrillo ni queso fresco: se calculan con «Mermelada de frutas» y con queso port salut, los más cercanos."
+    "El catálogo no tiene dulce de membrillo: se calcula con «Mermelada de frutas», la más cercana. El queso fresco es el de USDA FoodData Central."
    ],
    "nota": null,
    "foto": {
@@ -13031,17 +13031,17 @@
    "composicion": {
     "metodo": "Gramos ÷ 100 × el valor cada 100 g del catálogo, sumado (SUM_SOURCE_PER_100G_V1)",
     "total": {
-     "energyKcal": 508.9,
-     "carbohydrateG": 52.45,
-     "fatG": 23.428,
-     "proteinG": 21.632,
+     "energyKcal": 466.5,
+     "carbohydrateG": 54.378,
+     "fatG": 19.924,
+     "proteinG": 17.08,
      "fiberG": 1.7
     },
     "porPorcion": {
-     "energyKcal": 508.9,
-     "carbohydrateG": 52.45,
-     "fatG": 23.428,
-     "proteinG": 21.632,
+     "energyKcal": 466.5,
+     "carbohydrateG": 54.378,
+     "fatG": 19.924,
+     "proteinG": 17.08,
      "fiberG": 1.7
     }
    }
@@ -13271,17 +13271,17 @@
     },
     {
      "fuente": "CATALOGO_BASE",
-     "fdcId": "170416",
-     "nombre": "Perejil fresco",
-     "preparacionDeLaFuente": "fresco",
-     "catalogItemId": "91f2854a-a583-59f8-b953-9468f3b09cc5",
-     "catalogItemVersionId": "7bd0fcae-542f-5167-95d6-4857f167c1c2",
+     "fdcId": "172232",
+     "nombre": "Albahaca fresca",
+     "preparacionDeLaFuente": "fresca",
+     "catalogItemId": "7f7715e2-6cad-560e-8b77-f405efda66f3",
+     "catalogItemVersionId": "4d81d84e-2ec4-5f05-84ba-cf030e61d452",
      "cantidad": {
       "valor": 5,
       "unidad": "g"
      },
      "estado": "RAW",
-     "etiqueta": "perejil",
+     "etiqueta": "albahaca",
      "decision": null
     },
     {
@@ -13335,9 +13335,7 @@
     "Calentar las tortillas 20 segundos de cada lado en una sartén seca.",
     "Untar con la ricota, acomodar el tomate y la albahaca fresca. Enrollar apretado y cortar al medio."
    ],
-   "adaptaciones": [
-    "El catálogo no tiene albahaca: se calcula con perejil fresco, el más cercano, en una cantidad sin incidencia (5 g)."
-   ],
+   "adaptaciones": [],
    "nota": null,
    "foto": {
     "archivo": "R135-wrap-de-ricota-tomate-y-albahaca.jpg",
@@ -13353,18 +13351,18 @@
    "composicion": {
     "metodo": "Gramos ÷ 100 × el valor cada 100 g del catálogo, sumado (SUM_SOURCE_PER_100G_V1)",
     "total": {
-     "energyKcal": 806.975,
-     "carbohydrateG": 86.27225,
-     "fatG": 35.3818,
-     "proteinG": 35.86845,
-     "fiberG": 7.1115
+     "energyKcal": 806.325,
+     "carbohydrateG": 86.08825,
+     "fatG": 35.3743,
+     "proteinG": 35.87745,
+     "fiberG": 7.0265
     },
     "porPorcion": {
-     "energyKcal": 403.4875,
-     "carbohydrateG": 43.136125,
-     "fatG": 17.6909,
-     "proteinG": 17.934225,
-     "fiberG": 3.55575
+     "energyKcal": 403.1625,
+     "carbohydrateG": 43.044125,
+     "fatG": 17.68715,
+     "proteinG": 17.938725,
+     "fiberG": 3.51325
     }
    }
   },
@@ -13608,18 +13606,18 @@
    "ingredientes": [
     {
      "fuente": "CATALOGO_BASE",
-     "fdcId": "169999",
-     "nombre": "Choclo amarillo hervido, sin sal",
-     "preparacionDeLaFuente": "hervido y escurrido, sin sal",
-     "catalogItemId": "bcf7dce7-ff65-5258-a04c-69983dda1059",
-     "catalogItemVersionId": "4daa3c04-c8b0-5286-a6fd-7f0d473000bf",
+     "fdcId": "168920",
+     "nombre": "Maíz blanco en grano, seco",
+     "preparacionDeLaFuente": "crudo, seco, sin cocinar",
+     "catalogItemId": "2ac0d3d4-bb97-50ba-970f-f0241c581a93",
+     "catalogItemVersionId": "292094cf-b400-5178-b77b-5fb7cbb1b238",
      "cantidad": {
-      "valor": 400,
+      "valor": 250,
       "unidad": "g"
      },
-     "estado": "COOKED",
-     "etiqueta": "choclo",
-     "decision": "Se usa «Choclo amarillo hervido, sin sal» del catálogo; hay otros alimentos posibles para «choclo» (4 coincidencias)."
+     "estado": "RAW",
+     "etiqueta": "maíz blanco partido",
+     "decision": "Se usa «Maíz blanco en grano, seco» del catálogo; hay otros alimentos posibles para «maíz blanco partido» (0 coincidencias)."
     },
     {
      "fuente": "CATALOGO_BASE",
@@ -13680,6 +13678,21 @@
      "estado": "AS_PURCHASED",
      "etiqueta": "panceta",
      "decision": null
+    },
+    {
+     "fuente": "CATALOGO_BASE",
+     "fdcId": "173859",
+     "nombre": "Chorizo de cerdo, crudo",
+     "preparacionDeLaFuente": "crudo, en tripa o picado",
+     "catalogItemId": "7183f127-4acd-5b9b-9bcd-5fa2c2158e87",
+     "catalogItemVersionId": "787e156a-2d21-5ee1-9412-282370af61be",
+     "cantidad": {
+      "valor": 200,
+      "unidad": "g"
+     },
+     "estado": "RAW",
+     "etiqueta": "chorizo",
+     "decision": "Se usa «Chorizo de cerdo, crudo» del catálogo; hay otros alimentos posibles para «chorizo» (3 coincidencias)."
     },
     {
      "fuente": "CATALOGO_BASE",
@@ -13773,21 +13786,20 @@
     }
    ],
    "pasos": [
-    "Remojar los porotos la noche anterior y hervirlos hasta que estén tiernos. Cortar la carne y la panceta en cubos.",
+    "Remojar el maíz blanco partido y los porotos la noche anterior y escurrirlos. Cortar la carne y la panceta en cubos y el chorizo en rodajas.",
     "En una olla grande, dorar la panceta y la carne 8 minutos. Sumar la cebolla y el ajo picados y cocinar 5 minutos; agregar el pimentón y el comino.",
-    "Cubrir con agua, sumar el choclo, los porotos y el zapallo en cubos y cocinar a fuego muy bajo, tapado, unas 2 horas, revolviendo, hasta que espese. Salar al final.",
+    "Cubrir con agua, sumar el maíz, los porotos y el zapallo en cubos y cocinar a fuego muy bajo, tapado, unas 2 horas, revolviendo, hasta que espese. Agregar el chorizo los últimos 30 minutos. Salar al final.",
     "Servir con el verdeo picado por encima."
    ],
    "adaptaciones": [
-    "El catálogo no tiene maíz blanco partido ni chorizo: se calcula con choclo hervido y sin chorizo (la carne y la panceta aportan la proteína)."
+    "El maíz blanco partido se calcula con el maíz blanco en grano seco de USDA (sin fibra informada en la fuente: la fibra de la receta queda sin calcular) y el chorizo con el chorizo de cerdo crudo de USDA."
    ],
    "nota": null,
    "foto": {
     "archivo": "R137-locro.jpg",
     "recipiente": "hondo",
-    "presentacion": "Un plato hondo de locro espeso, anaranjado, con granos, porotos, zapallo y trozos de carne, con verdeo picado.",
+    "presentacion": "Un plato hondo de locro espeso, anaranjado, con granos de maíz blanco, porotos, zapallo, trozos de carne y rodajas de chorizo, con verdeo picado.",
     "noDebe": [
-     "chorizo",
      "salsa picante",
      "pan",
      "huevo"
@@ -13796,18 +13808,18 @@
    "composicion": {
     "metodo": "Gramos ÷ 100 × el valor cada 100 g del catálogo, sumado (SUM_SOURCE_PER_100G_V1)",
     "total": {
-     "energyKcal": 1973.31,
-     "carbohydrateG": 228.9791,
-     "fatG": 62.5176,
-     "proteinG": 151.1107,
-     "fiberG": 42.494
+     "energyKcal": 3093.81,
+     "carbohydrateG": 338.2691,
+     "fatG": 118.5676,
+     "proteinG": 188.2807,
+     "fiberG": null
     },
     "porPorcion": {
-     "energyKcal": 328.885,
-     "carbohydrateG": 38.163183,
-     "fatG": 10.4196,
-     "proteinG": 25.185117,
-     "fiberG": 7.082333
+     "energyKcal": 515.635,
+     "carbohydrateG": 56.378183,
+     "fatG": 19.761267,
+     "proteinG": 31.380117,
+     "fiberG": null
     }
    }
   },
@@ -15685,7 +15697,7 @@
      },
      "estado": "AS_PURCHASED",
      "etiqueta": "queso",
-     "decision": "Se usa «Queso port salut» del catálogo; hay otros alimentos posibles para «queso» (15 coincidencias)."
+     "decision": "Se usa «Queso port salut» del catálogo; hay otros alimentos posibles para «queso» (16 coincidencias)."
     },
     {
      "fuente": "CATALOGO_BASE",

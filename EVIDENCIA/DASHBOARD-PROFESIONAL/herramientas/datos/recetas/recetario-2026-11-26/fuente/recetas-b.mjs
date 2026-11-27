@@ -173,10 +173,10 @@ export const RECETAS_B = [
   {
     codigo: 'R133', nombre: 'Queso fresco con membrillo y galletas de arroz', momento: MERIENDA, porciones: 1,
     rendimiento: '1 plato de queso con membrillo y galletas.', porcion: 'El plato entero.',
-    ingredientes: [['portSalut', 80], ['mermelada', 40], ['galletasDeArroz', 30]],
+    ingredientes: [['quesoFresco', 80], ['mermelada', 40], ['galletasDeArroz', 30]],
     pasos: ['Cortar el queso en cuadrados o rectángulos y el membrillo en laminitas del mismo tamaño.', 'Servir sobre las galletas, o al costado.'],
     foto: ['plato', 'Rectángulos de queso blanco con laminitas de dulce de membrillo, junto a galletas de arroz.', ['frutas', 'nueces', 'miel', 'pan']],
-    adaptaciones: ['El catálogo no tiene dulce de membrillo ni queso fresco: se calculan con «Mermelada de frutas» y con queso port salut, los más cercanos.'],
+    adaptaciones: ['El catálogo no tiene dulce de membrillo: se calcula con «Mermelada de frutas», la más cercana. El queso fresco es el de USDA FoodData Central.'],
   },
   {
     codigo: 'R134', nombre: 'Peceto con papas', momento: ALM, porciones: 4,
@@ -188,10 +188,9 @@ export const RECETAS_B = [
   {
     codigo: 'R135', nombre: 'Wrap de ricota, tomate y albahaca', momento: 'Almuerzo o cena, para llevar o comer al paso', porciones: 2,
     rendimiento: '2 wraps rellenos.', porcion: 'Un wrap.',
-    ingredientes: [['tortilla', 140], ['ricota', 200], ['tomate', 160], ['perejil', 5], ['oliva', 8], ['sal', 2], ['pimienta', 0.5]],
+    ingredientes: [['tortilla', 140], ['ricota', 200], ['tomate', 160], ['albahaca', 5], ['oliva', 8], ['sal', 2], ['pimienta', 0.5]],
     pasos: ['Mezclar la ricota con el aceite de oliva, la sal y la pimienta. Cortar el tomate en rodajas finas.', 'Calentar las tortillas 20 segundos de cada lado en una sartén seca.', 'Untar con la ricota, acomodar el tomate y la albahaca fresca. Enrollar apretado y cortar al medio.'],
     foto: ['plato', 'Un wrap enrollado y cortado al medio, con el corte a la vista: ricota, rodajas de tomate y hojas de albahaca.', ['jamón', 'queso', 'lechuga', 'salsa']],
-    adaptaciones: ['El catálogo no tiene albahaca: se calcula con perejil fresco, el más cercano, en una cantidad sin incidencia (5 g).'],
   },
   {
     codigo: 'R136', nombre: 'Ensalada César de pollo', momento: ALM, porciones: 4,
@@ -203,10 +202,10 @@ export const RECETAS_B = [
   {
     codigo: 'R137', nombre: 'Locro', momento: ALM, porciones: 6,
     rendimiento: '6 porciones de locro.', porcion: 'Un plato hondo de locro.',
-    ingredientes: [['choclo', 400], ['pBlancos', 300], ['zapalloAnco', 400], ['paleta', 400], ['panceta', 100], ['cebolla', 150], ['verdeo', 50], ['ajo', 4], ['pimenton', 5], ['comino', 3], ['sal', 6]],
-    pasos: ['Remojar los porotos la noche anterior y hervirlos hasta que estén tiernos. Cortar la carne y la panceta en cubos.', 'En una olla grande, dorar la panceta y la carne 8 minutos. Sumar la cebolla y el ajo picados y cocinar 5 minutos; agregar el pimentón y el comino.', 'Cubrir con agua, sumar el choclo, los porotos y el zapallo en cubos y cocinar a fuego muy bajo, tapado, unas 2 horas, revolviendo, hasta que espese. Salar al final.', 'Servir con el verdeo picado por encima.'],
-    foto: ['hondo', 'Un plato hondo de locro espeso, anaranjado, con granos, porotos, zapallo y trozos de carne, con verdeo picado.', ['chorizo', 'salsa picante', 'pan', 'huevo']],
-    adaptaciones: ['El catálogo no tiene maíz blanco partido ni chorizo: se calcula con choclo hervido y sin chorizo (la carne y la panceta aportan la proteína).'],
+    ingredientes: [['maizBlanco', 250], ['pBlancos', 300], ['zapalloAnco', 400], ['paleta', 400], ['panceta', 100], ['chorizo', 200], ['cebolla', 150], ['verdeo', 50], ['ajo', 4], ['pimenton', 5], ['comino', 3], ['sal', 6]],
+    pasos: ['Remojar el maíz blanco partido y los porotos la noche anterior y escurrirlos. Cortar la carne y la panceta en cubos y el chorizo en rodajas.', 'En una olla grande, dorar la panceta y la carne 8 minutos. Sumar la cebolla y el ajo picados y cocinar 5 minutos; agregar el pimentón y el comino.', 'Cubrir con agua, sumar el maíz, los porotos y el zapallo en cubos y cocinar a fuego muy bajo, tapado, unas 2 horas, revolviendo, hasta que espese. Agregar el chorizo los últimos 30 minutos. Salar al final.', 'Servir con el verdeo picado por encima.'],
+    foto: ['hondo', 'Un plato hondo de locro espeso, anaranjado, con granos de maíz blanco, porotos, zapallo, trozos de carne y rodajas de chorizo, con verdeo picado.', ['salsa picante', 'pan', 'huevo']],
+    adaptaciones: ['El maíz blanco partido se calcula con el maíz blanco en grano seco de USDA (sin fibra informada en la fuente: la fibra de la receta queda sin calcular) y el chorizo con el chorizo de cerdo crudo de USDA.'],
   },
   {
     codigo: 'R138', nombre: 'Ñoquis de papa con salsa blanca y espinaca', momento: ALM, porciones: 4,
