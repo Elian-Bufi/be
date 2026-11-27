@@ -1,6 +1,6 @@
 # 14 · DER
 
-*El modelo de datos de BE: las 163 tablas en trece módulos, cada relación dibujada y explicada.*
+*El modelo de datos de BE: las 168 tablas en trece módulos, cada relación dibujada y explicada.*
 
 > La historia de la persona se agrega, no se reescribe: por eso se puede leer en el tiempo.
 
@@ -8,7 +8,7 @@
 **Carrera:** Analista de Sistemas, Escuela Da Vinci  
 **Fecha:** Noviembre de 2026
 
-> **Resumen.** La base de datos de BE, leída del mismo archivo con el que se crean las migraciones: 163 tablas, 1.490 columnas y 326 claves foráneas, todas dibujadas. De lo macro a lo micro: por qué el modelo guarda la historia de la persona, cómo se relacionan sus módulos y cada tabla con sus campos.
+> **Resumen.** La base de datos de BE, leída del mismo archivo con el que se crean las migraciones: 168 tablas, 1.536 columnas y 334 claves foráneas, todas dibujadas. De lo macro a lo micro: por qué el modelo guarda la historia de la persona, cómo se relacionan sus módulos y cada tabla con sus campos.
 
 **Entregable:** 14 · DER · Diagrama entidad-relación  
 **Fecha:** Noviembre de 2026  
@@ -24,21 +24,21 @@ El modelo está hecho para que esa historia se pueda leer después. Un plan acti
 
 Los permisos son la condición legal para todo eso: un profesional no ve nada de una persona sin un vínculo por área y su consentimiento, y la base guarda la cadena de filas que lo prueba.
 
-- **163** tablas en trece módulos
-- **326** relaciones, todas dibujadas
+- **168** tablas en trece módulos
+- **334** relaciones, todas dibujadas
 - **0** borrados en cascada
-- **102** migraciones del esquema
+- **107** migraciones del esquema
 
 *Fuente: El esquema de la base, prisma/schema.prisma, y sus migraciones. Se recuentan con el procedimiento del anexo C.*
 
-![Figura 1: Los trece módulos, en cuatro franjas, con el color que llevan en las láminas. Todo cuelga de una cuenta: **123 de las 181 claves que cruzan de un módulo a otro llegan a Identidad y acceso.**](pendiente)
+![Figura 1: Los trece módulos, en cuatro franjas, con el color que llevan en las láminas. Todo cuelga de una cuenta: **128 de las 187 claves que cruzan de un módulo a otro llegan a Identidad y acceso.**](pendiente)
 
 > **Texto de la figura:**
 > - La cuenta y la seguridad
 > - 01. Identidad y acceso
 > - **14** tablas
 > - 02. Administración, derechos y auditoría
-> - **16** tablas
+> - **17** tablas
 > - La relación con la persona
 > - 03. Profesionales, vínculos y consentimiento
 > - **14** tablas
@@ -54,14 +54,14 @@ Los permisos son la condición legal para todo eso: un profesional no ve nada de
 > - 06. Recetas, fotos y registro de comidas
 > - **13** tablas
 > - 08. Entrenamiento
-> - **18** tablas
+> - **20** tablas
 > - 07. Antropometría
 > - **11** tablas
 > - Lo que las sostiene
 > - 09. Catálogos e importación
-> - **16** tablas
+> - **17** tablas
 > - 12. Herramientas del profesional
-> - **14** tablas
+> - **15** tablas
 > - 13. Novedades y avisos
 > - **5** tablas
 
@@ -124,9 +124,9 @@ El para qué es leer a la persona en el tiempo. Como cada registro apunta a la v
 > - Todas las claves foráneas son restrictivas: no se puede borrar una fila de la que dependen otras. Cerrar una cuenta suprime lo que corresponde, con fundamento, y deja constancia en `registro_de_supresion`.
 > - 28. Cadenas dentro de una tabla
 > - Relaciones de una tabla consigo misma: versiones que apuntan a su predecesora y correcciones que apuntan a la previa.
-> - 108. Los estados tienen nombre
+> - 115. Los estados tienen nombre
 > - Estados y tipos son conjuntos cerrados de valores, nunca un verdadero o falso (anexo B). Las transiciones las controla el dominio y, en las máquinas centrales (planes, sesiones, vínculos, consentimientos y procesos), también la base.
-> - 177. Lo estructurado, en JSON validado
+> - 187. Lo estructurado, en JSON validado
 > - El contenido de un plan, una respuesta o una estimación tiene forma de árbol: va en columnas `jsonb`, con un esquema estricto que se valida antes de escribir (ver «Los contenidos JSONB»).
 
 # 3. Dónde se cumplen las reglas
@@ -145,7 +145,7 @@ El para qué es leer a la persona en el tiempo. Como cada registro apunta a la v
 
 ## 3.1 Los contenidos JSONB: dónde se validan y cómo se versionan
 
-Las 177 columnas `jsonb` guardan lo que tiene forma de árbol: la estructura de un plan, las respuestas de un formulario, la configuración de un gráfico guardado, una estimación de fuerza o la procedencia de cada fila. Se validan antes de escribir y la base controla su forma; se versionan de dos maneras: por la fila o por una marca adentro del contenido.
+Las 187 columnas `jsonb` guardan lo que tiene forma de árbol: la estructura de un plan, las respuestas de un formulario, la configuración de un gráfico guardado, una estimación de fuerza o la procedencia de cada fila. Se validan antes de escribir y la base controla su forma; se versionan de dos maneras: por la fila o por una marca adentro del contenido.
 
 **Tabla 3.** Dónde se valida un contenido JSONB y cómo se sabe con qué forma se escribió.
 
@@ -155,7 +155,7 @@ Las 177 columnas `jsonb` guardan lo que tiene forma de árbol: la estructura de 
 | Un gráfico guardado (`vista_de_analisis.configuracion`) | `ConfiguracionDeAnalisisSchema` (`contratos-analisis.ts`), estricto; la de los indicadores del resumen, `ConfiguracionDeIndicadoresSchema`. | `CHECK (jsonb_typeof("configuracion") = 'object')`. | **Por una marca adentro:** `schemaVersion: 1`. Al leerla, `vistas.service.ts` la vuelve a validar con el esquema de su uso antes de responder. |
 | La estimación de fuerza (`serie_observada.estimacion`) | `MetodoDeLaEstimacionSchema` (`contratos-fuerza.ts`): la especificación, su versión y el método. | En cada observación, un `CHECK` exige carga en kg o lb, repeticiones, RIR dentro de lo estimable (hasta 12 repeticiones equivalentes) y la estimación como objeto. | **Por una marca adentro:** `BE-E1RM`, versión 1, `EPLEY_V1`. Si el método cambia, una estimación vieja sigue diciendo con qué se calculó. |
 | Los hábitos de la persona (`habitos_de_la_persona.contenido`) | El pedido se valida con `RegistrarHabitosRequestSchema` (`contratos-habitos-de-la-persona.ts`), y la API escribe `{ format: 2, answers: […] }`. | Un `CHECK` exige un objeto con `format` igual a 2 y una lista de respuestas. | **Por una marca adentro:** `format: 2`. Los formularios usan la misma marca, y al leer, la API distingue el formato por ella. |
-| La procedencia de una fila (`procedencia`) | La arma la API (`procedenciaDe`): la fuente, la superficie (app o website), la operación, el caso de uso y el pedido. | Obligatoria en las 113 tablas que la guardan; en 49 de ellas, además, `CHECK (jsonb_typeof("procedencia") = 'object')`. | Se escribe con la fila. En las tablas de solo agregar queda fija; en las que se actualizan, como una vista guardada, describe la última escritura. |
+| La procedencia de una fila (`procedencia`) | La arma la API (`procedenciaDe`): la fuente, la superficie (app o website), la operación, el caso de uso y el pedido. | Obligatoria en las 118 tablas que la guardan; en 50 de ellas, además, `CHECK (jsonb_typeof("procedencia") = 'object')`. | Se escribe con la fila. En las tablas de solo agregar queda fija; en las que se actualizan, como una vista guardada, describe la última escritura. |
 
 # 4. Cómo se relacionan los módulos
 
@@ -164,22 +164,22 @@ Las 177 columnas `jsonb` guardan lo que tiene forma de árbol: la estructura de 
 | De \ A | 01 | 02 | 03 | 04 | 05 | 06 | 07 | 08 | 09 | 10 | 11 | 12 | 13 |
 | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | 01 Identidad y acceso | **20** | · | 1 | · | · | · | · | · | · | · | · | · | · |
-| 02 Administración, derechos y auditoría | 18 | **1** | 3 | · | · | · | · | · | · | · | · | · | · |
+| 02 Administración, derechos y auditoría | 19 | **1** | 3 | · | · | · | · | · | · | · | · | · | · |
 | 03 Profesionales, vínculos y consentimiento | 17 | · | **13** | · | · | · | · | · | · | · | · | · | · |
 | 04 Proceso de acompañamiento | 5 | · | · | **5** | 4 | · | · | 5 | · | · | · | · | · |
 | 05 Nutrición | 7 | · | · | 2 | **19** | 1 | 1 | · | · | 2 | · | · | · |
 | 06 Recetas, fotos y registro de comidas | 5 | · | · | · | 3 | **16** | · | · | · | · | · | · | · |
 | 07 Antropometría | 7 | · | · | · | · | · | **15** | · | · | · | · | · | · |
-| 08 Entrenamiento | 13 | · | · | 2 | · | · | · | **23** | · | 2 | · | · | · |
-| 09 Catálogos e importación | 11 | · | · | · | 11 | 1 | · | 7 | **5** | · | · | · | · |
+| 08 Entrenamiento | 16 | · | · | 2 | · | · | · | **25** | · | 2 | · | · | · |
+| 09 Catálogos e importación | 11 | · | · | · | 11 | 1 | · | 8 | **5** | · | · | · | · |
 | 10 Formularios y hábitos | 10 | · | 3 | · | 1 | · | · | 1 | · | **13** | · | · | · |
 | 11 Lo que se comparte entre áreas | 11 | · | 4 | · | · | · | · | · | · | · | **7** | · | · |
-| 12 Herramientas del profesional | 15 | · | · | · | 2 | · | · | 2 | · | · | · | **5** | · |
+| 12 Herramientas del profesional | 16 | · | · | · | 2 | · | · | 2 | · | · | · | **5** | · |
 | 13 Novedades y avisos | 4 | · | · | · | · | · | · | · | · | · | · | · | **3** |
 
-*Figura 4: La matriz de módulos: las 326 claves foráneas del modelo, agrupadas por el módulo de cada extremo. Cuanto más oscura la casilla, más claves. En negrita, la diagonal: las relaciones internas de cada módulo.*
+*Figura 4: La matriz de módulos: las 334 claves foráneas del modelo, agrupadas por el módulo de cada extremo. Cuanto más oscura la casilla, más claves. En negrita, la diagonal: las relaciones internas de cada módulo.*
 
-Tres cosas se leen de un vistazo. La primera columna concentra casi todo: 123 claves llegan a Identidad y acceso desde los demás módulos, porque casi todo dato guarda quién es el profesional, quién es la persona o quién hizo el cambio. La segunda: Nutrición (05) y Entrenamiento (08) no se apuntan entre sí; se encuentran en el Proceso de acompañamiento (04), que apunta a las dos, y sobre la misma persona. La tercera: seis columnas quedan vacías. Administración, Antropometría, Catálogos, Lo que se comparte, Herramientas y Novedades se apoyan en los demás, pero ninguna tabla de otro módulo se apoya en ellos.
+Tres cosas se leen de un vistazo. La primera columna concentra casi todo: 128 claves llegan a Identidad y acceso desde los demás módulos, porque casi todo dato guarda quién es el profesional, quién es la persona o quién hizo el cambio. La segunda: Nutrición (05) y Entrenamiento (08) no se apuntan entre sí; se encuentran en el Proceso de acompañamiento (04), que apunta a las dos, y sobre la misma persona. La tercera: seis columnas quedan vacías. Administración, Antropometría, Catálogos, Lo que se comparte, Herramientas y Novedades se apoyan en los demás, pero ninguna tabla de otro módulo se apoya en ellos.
 
 # 5. Un recorrido por la base
 
@@ -202,7 +202,7 @@ Cada paso deja filas, y lo que después se lee en la ficha de la persona, en los
 
 *La cuenta es la raíz del modelo: todo lo demás cuelga de una fila de identidad.*
 
-`identidad` tiene una fila por cuenta, de una persona o de un profesional, y casi nada más: un estado y su procedencia. El nombre vive en el perfil y el correo en el método de acceso. Por eso es tan estable, y por eso al módulo le llegan 123 de las 181 claves que cruzan de un módulo a otro.
+`identidad` tiene una fila por cuenta, de una persona o de un profesional, y casi nada más: un estado y su procedencia. El nombre vive en el perfil y el correo en el método de acceso. Por eso es tan estable, y por eso al módulo le llegan 128 de las 187 claves que cruzan de un módulo a otro.
 
 **El par «versión vigente / historia».** `perfil_propio` tiene muchas `version_de_perfil_propio` (`perfil_propio_id`) y, a la vez, apunta a una sola, la vigente (`version_efectiva_id`, cero o una). Son dos líneas entre las mismas tablas: una para la historia y otra para lo que vale hoy. El mismo par aparece en planes, objetivos y recetas.
 
@@ -213,7 +213,7 @@ Cada paso deja filas, y lo que después se lee en la ficha de la persona, en los
 - **14** tablas
 - **20** relaciones internas
 - **1** claves hacia otros módulos
-- **123** claves que llegan de otros
+- **128** claves que llegan de otros
 
 ```mermaid
 erDiagram
@@ -409,19 +409,21 @@ erDiagram
 
 *Lo que no es de ningún área pero las sostiene a todas: Administración, segundo factor, derechos de la persona, decisión de acceso, auditoría e incidencias.*
 
-Casi no tiene relaciones internas: de sus 16 tablas, solo `cambio_de_incidencia` apunta a otra del módulo. Las demás cuelgan de una cuenta, de una pieza de otro módulo o, como la auditoría, de nada.
+Casi no tiene relaciones internas: de sus 17 tablas, solo `cambio_de_incidencia` apunta a otra del módulo. Las demás cuelgan de una cuenta, de una pieza de otro módulo o, como la auditoría, de nada.
 
 **La decisión de acceso deja rastro del permiso exacto.** `decision_de_acceso` apunta al `alcance_de_vinculo`, al `consentimiento` y a la `version_de_consentimiento` que estaban vigentes cuando se decidió (módulo 03). Así se puede reconstruir por qué una operación se permitió o se negó.
 
 **La auditoría no depende de nada.** `registro_de_auditoria` no tiene claves foráneas: guarda quién, sobre quién y qué como identificadores sueltos. Si una fila desapareciera, la auditoría seguiría en pie.
 
-**El segundo factor vive en la sesión.** `segundo_factor_de_sesion` es uno a uno con `sesion` (módulo 01): el factor se verifica por sesión, no por cuenta.
+**El segundo factor vive en la sesión.** `segundo_factor_de_sesion` es uno a uno con `sesion` (módulo 01): el factor se verifica por sesión, no por cuenta. Hoy lo exige solo la sesión de Administración: el profesional entra con su contraseña o con Google.
+
+**Las Plantillas de BE.** Las plantillas de Entrenamiento que ofrece BE son datos del sistema, no filas: `decision_sobre_plantilla_de_be` guarda solo lo que decidió Administración sobre cada una, ofrecerla o retirarla, con quién lo decidió y su fundamento. La vigente es la última decisión; la tabla solo agrega.
 
 **Las incidencias tienen historia.** Lo que reporta una persona o un profesional es una `incidencia`, con una descripción que no cambia. Administración la atiende con `cambio_de_incidencia`: el estado anterior y el nuevo, el motivo y la respuesta.
 
-- **16** tablas
+- **17** tablas
 - **1** relaciones internas
-- **21** claves hacia otros módulos
+- **22** claves hacia otros módulos
 - **0** claves que llegan de otros
 
 ```mermaid
@@ -620,6 +622,15 @@ erDiagram
     jsonb procedencia
     timestamptz_3 momento_de_registro
   }
+  decision_sobre_plantilla_de_be {
+    uuid id PK
+    text clave
+    EstadoDePlantillaDeBe estado
+    text motivo
+    uuid administrador_id FK
+    jsonb procedencia
+    timestamptz_3 momento_de_registro
+  }
   rol_administrativo }|--|| identidad : "identidad_id"
   codigo_de_incorporacion }|--|| identidad : "identidad_id"
   factor_totp }|--|| identidad : "identidad_id"
@@ -642,6 +653,7 @@ erDiagram
   incidencia }o--o| identidad : "responsable_id"
   cambio_de_incidencia }|--|| incidencia : "incidencia_id"
   cambio_de_incidencia }|--|| identidad : "administrador_id"
+  decision_sobre_plantilla_de_be }|--|| identidad : "administrador_id"
 ```
 
 *Figuras 14 y 15: Administración, derechos y auditoría: las tablas del módulo con sus campos y sus relaciones. Las tablas sin campos son de otro módulo. Generado del esquema; se dibuja igual en dbdiagram.io con `14-der-fuente.dbml`.*
@@ -652,10 +664,10 @@ erDiagram
 | --- | --- | --- | --- |
 | `rol_administrativo` | El rol de Administración de una cuenta, con quién lo asignó, por qué y, si corresponde, su retiro. | 12 | 1 |
 | `codigo_de_incorporacion` | El código de un solo uso para configurar el segundo factor de Administración. Se guarda solo su huella. | 11 | 1 |
-| `factor_totp` | El autenticador (código de una aplicación) de una cuenta de Administración o de un profesional, con el secreto cifrado y los intentos fallidos. | 12 | 1 |
+| `factor_totp` | El autenticador (código de una aplicación) de una cuenta de Administración, con el secreto cifrado y los intentos fallidos. La tabla admite el de un profesional, que hoy no se pide. | 12 | 1 |
 | `codigo_de_recuperacion` | Los códigos de recuperación del segundo factor, de un solo uso. Cada lote nuevo invalida el anterior. | 8 | 1 |
-| `segundo_factor_de_sesion` | El estado del segundo factor en cada sesión que lo exige (Administración o profesional): cuándo se verificó y la última actividad. | 7 | 1 |
-| `restablecimiento_de_segundo_factor` | Cada vez que Administración restablece el segundo factor de un profesional, con su fundamento. | 7 | 2 |
+| `segundo_factor_de_sesion` | El estado del segundo factor en cada sesión que lo exige (hoy, solo la de Administración): cuándo se verificó y la última actividad. | 7 | 1 |
+| `restablecimiento_de_segundo_factor` | Cada vez que Administración restablece un segundo factor ya configurado, con su fundamento. El profesional hoy entra sin segundo factor. | 7 | 2 |
 | `pedido_de_derecho` | Un pedido de la persona sobre sus datos (acceso, rectificación o supresión), con su plazo y la respuesta de Administración. | 13 | 2 |
 | `exportacion_propia` | Cada descarga de sus propios datos que pide la persona: qué dominios incluye y hasta cuándo vale el enlace. | 6 | 1 |
 | `decision_de_acceso` | Cada decisión del punto único de autorización sobre una operación protegida: quién, sobre quién, qué y por qué. | 19 | 5 |
@@ -666,6 +678,7 @@ erDiagram
 | `registro_de_supresion` | Lo que se suprimió de verdad (por ejemplo, una contraseña al cerrar la cuenta), con su fundamento. | 7 | 0 |
 | `incidencia` | Una incidencia que reportó una persona o un profesional. La descripción y la categoría no cambian; el estado y quién la tiene a cargo cambian solo con un cambio registrado. | 10 | 2 |
 | `cambio_de_incidencia` | Cada cambio de estado de una incidencia: el motivo, la respuesta para quien la reportó y la cuenta de Administración que lo registró. Solo se agrega. | 10 | 2 |
+| `decision_sobre_plantilla_de_be` | Lo que decide Administración sobre una Plantilla de BE de Entrenamiento: ofrecerla o retirarla. Las plantillas son datos versionados de BE (`packages/domain/src/plantillas-de-be.ts`); esta tabla solo guarda su estado, por clave. La vigente es la última decisión; sin ninguna, se ofrece (la semilla es una propuesta publicada, a validar por Dirección). Historia por adición: ni UPDATE, ni DELETE, ni TRUNCATE; la decide un administrador con su rol vigente. | 7 | 1 |
 
 ![Figura 16: Administración, derechos y auditoría (1 de 9): `rol_administrativo`, `codigo_de_incorporacion`](pendiente)
 
@@ -1785,14 +1798,16 @@ erDiagram
 
 **La sesión en curso.** La persona carga un `borrador_de_ejecucion_de_entrenamiento` sobre una versión del plan, con sus `evento_de_tiempo_de_entrenamiento`. Al confirmarlo se convierte en una `ejecucion_de_entrenamiento` (uno a uno con el borrador), que ya no se edita: se corrige con `correccion_de_ejecucion_de_entrenamiento`. Después, la persona puede dejarle a su profesional una `nota_de_ejecucion` sobre esa sesión, que va aparte: la sesión registrada no cambia.
 
-**La fuerza estimada.** `serie_observada` guarda cada serie que el profesional observó en un `ejercicio_de_catalogo` de una persona, con el 1RM estimado (Epley, versión 1) guardado como hecho. Corregirla o anularla agrega una fila que sucede a la anterior (`predecesora_id`, una sola sucesora).
+**La fuerza estimada.** `serie_observada` guarda cada serie que el profesional observó en un `ejercicio_de_catalogo` de una persona, con el 1RM estimado con la fórmula de Epley guardado como hecho. Corregirla o anularla agrega una fila que sucede a la anterior (`predecesora_id`, una sola sucesora).
+
+**El 1RM de referencia y el esfuerzo de la sesión.** `uno_rm_de_referencia` guarda, por persona y ejercicio, la carga para una repetición con la que el editor resuelve las cargas en % RM: calculada en una calibración, tomada del último registro en rango o declarada, siempre con su origen. Solo agrega: un valor nuevo es otra fila, y la versión activada guarda en su instantánea el 1RM que regía al activarla, así que un 1RM posterior no cambia sus cargas. `esfuerzo_de_sesion_de_entrenamiento` guarda la respuesta de la persona al terminar una sesión (de 0 a 10) y, si los dio, los minutos, sin tocar la sesión registrada.
 
 **La notación del esfuerzo.** El contenido de `version_de_plan_de_entrenamiento` puede declarar que el plan se escribe en RPE, y se congela con la instantánea al activar. Lo guardado en cada serie es siempre el RIR, así que cambiar la notación nunca reescribe la historia. Las series de calentamiento y los bloques dentro de la sesión también viven en ese contenido.
 
-- **18** tablas
-- **23** relaciones internas
-- **17** claves hacia otros módulos
-- **15** claves que llegan de otros
+- **20** tablas
+- **25** relaciones internas
+- **20** claves hacia otros módulos
+- **16** claves que llegan de otros
 
 ```mermaid
 erDiagram
@@ -2011,6 +2026,33 @@ erDiagram
     jsonb procedencia
     timestamptz_3 momento_de_registro
   }
+  uno_rm_de_referencia {
+    uuid id PK
+    uuid profesional_id FK
+    uuid asesorado_id FK
+    uuid ejercicio_id FK
+    OrigenDelUnoRM origen
+    double_precision valor
+    text unidad
+    date fecha_local
+    jsonb serie
+    jsonb metodo
+    text banda
+    jsonb registro
+    text nota
+    jsonb procedencia
+    timestamptz_3 momento_de_registro
+  }
+  esfuerzo_de_sesion_de_entrenamiento {
+    uuid id PK
+    uuid ejecucion_id FK, UK
+    uuid asesorado_id FK
+    integer valor
+    integer minutos
+    text origen_de_minutos
+    jsonb procedencia
+    timestamptz_3 momento_de_registro
+  }
   ejercicio_de_catalogo }o--o| identidad : "creado_por_id"
   version_de_ejercicio }|--|| ejercicio_de_catalogo : "ejercicio_id"
   version_de_ejercicio |o--o| version_de_ejercicio : "predecesora_id"
@@ -2051,6 +2093,11 @@ erDiagram
   serie_observada }|--|| identidad : "asesorado_id"
   serie_observada }|--|| ejercicio_de_catalogo : "ejercicio_id"
   serie_observada |o--o| serie_observada : "predecesora_id"
+  uno_rm_de_referencia }|--|| identidad : "profesional_id"
+  uno_rm_de_referencia }|--|| identidad : "asesorado_id"
+  uno_rm_de_referencia }|--|| ejercicio_de_catalogo : "ejercicio_id"
+  esfuerzo_de_sesion_de_entrenamiento ||--|| ejecucion_de_entrenamiento : "ejecucion_id"
+  esfuerzo_de_sesion_de_entrenamiento }|--|| identidad : "asesorado_id"
 ```
 
 *Figuras 63 y 64: Entrenamiento: las tablas del módulo con sus campos y sus relaciones. Las tablas sin campos son de otro módulo. Generado del esquema; se dibuja igual en dbdiagram.io con `14-der-fuente.dbml`.*
@@ -2077,6 +2124,8 @@ erDiagram
 | `aplicacion_de_revision_de_entrenamiento` | Lo que se hizo con una revisión de entrenamiento: seguir, ajustar, sustituir o cerrar. | 8 | 2 |
 | `evento_de_entrenamiento` | Los hechos del área de Entrenamiento, en orden. | 13 | 0 |
 | `serie_observada` | Cada serie que el profesional observó en un ejercicio de la persona (carga, repeticiones y RIR), con la fuerza estimada por Epley guardada como hecho. Corregir o anular agrega una fila que sucede a la anterior. La persona no la recibe. | 18 | 4 |
+| `uno_rm_de_referencia` | el 1RM de referencia de una persona en un ejercicio, con el que BE calcula las cargas en % RM. De solo agregar (ni UPDATE, ni DELETE, ni TRUNCATE): cada valor nuevo es una fila, con su origen, su fecha y su autor; el que usa BE es el más reciente (o el último registro en rango, que se calcula al leer, ET2-D03). - `CALIBRATION`: la serie que vio el profesional y la cuenta de Epley (`serie`, `metodo`); - `DECLARED`: el valor escrito a mano (sin serie ni método); - `RECORD`: un registro de la persona que el profesional eligió usar (`registro`: la ejecución, la prescripción y la serie). Cada profesional ve y suma lo propio con la persona (DL-057, como las series observadas). | 15 | 3 |
+| `esfuerzo_de_sesion_de_entrenamiento` | el esfuerzo de la sesión (Foster, de 0 a 10) que la persona respondió al terminar, aparte del RIR de cada serie. Una fila por sesión registrada, de solo agregar: la ejecución registrada no cambia (REG-06-116). `minutos` con su origen (el cronómetro de la sesión o escrito por la persona), o nulos si no los dio. | 8 | 2 |
 
 ![Figura 65: Entrenamiento (1 de 11): `ejercicio_de_catalogo`, `version_de_ejercicio`](pendiente)
 
@@ -2108,13 +2157,13 @@ erDiagram
 
 **Buscar por otros nombres.** `nombre_alternativo_de_alimento` y `nombre_alternativo_de_ejercicio` cuelgan del catálogo; retirarlos agrega un retiro, uno por nombre.
 
-**La figura del cuerpo.** `zona_de_ejercicio` es la tabla intermedia entre la asignación de un ejercicio y las zonas de `zona_muscular`.
+**La figura del cuerpo.** `zona_de_ejercicio` es la tabla intermedia entre la asignación de un ejercicio y las zonas de `zona_muscular`. `clasificacion_de_ejercicio` ordena el catálogo para buscar (grupo muscular, equipamiento, patrón y articulaciones, cada dato opcional): cambiarla agrega una fila con el número siguiente, y no entra en ninguna cuenta.
 
 **Lo cargado a mano y el catálogo verificado.** Un alimento cargado a mano es de quien lo cargó. `grupo_de_alimento` y `medidas_caseras_de_alimento` cuelgan del alimento sin crear versiones del alimento: cambiar el grupo o las medidas no toca planes, recetas ni registros. `revision_administrativa_de_alimento` guarda cada decisión de Administración contra la versión que vio, y `alimento_del_canon`, el alimento que sumó al catálogo verificado con su fuente. `alimento_compartido` queda como historia: ya no se escribe.
 
-- **16** tablas
+- **17** tablas
 - **5** relaciones internas
-- **30** claves hacia otros módulos
+- **31** claves hacia otros módulos
 - **0** claves que llegan de otros
 
 ```mermaid
@@ -2272,6 +2321,17 @@ erDiagram
     jsonb procedencia
     timestamptz_3 momento_de_registro
   }
+  clasificacion_de_ejercicio {
+    uuid id PK
+    uuid ejercicio_id FK
+    integer numero
+    GrupoMuscularDeEjercicio grupo_muscular
+    EquipamientoDeEjercicio equipamiento
+    PatronDeMovimiento patron
+    ArticulacionesDeEjercicio articulaciones
+    jsonb procedencia
+    timestamptz_3 momento_de_registro
+  }
   candidato_de_importacion }|--|| identidad : "profesional_id"
   resolucion_de_candidato ||--|| candidato_de_importacion : "candidato_id"
   resolucion_de_candidato }|--|| identidad : "autor_id"
@@ -2307,6 +2367,7 @@ erDiagram
   revision_administrativa_de_alimento }|--|| version_de_elemento_nutricional : "version_id"
   revision_administrativa_de_alimento }o--o| elemento_de_catalogo_nutricional : "equivalente_id"
   revision_administrativa_de_alimento }|--|| identidad : "administrador_id"
+  clasificacion_de_ejercicio }|--|| ejercicio_de_catalogo : "ejercicio_id"
 ```
 
 *Figura 76: Catálogos e importación: las tablas del módulo con sus campos y sus relaciones. Las tablas sin campos son de otro módulo. Generado del esquema; se dibuja igual en dbdiagram.io con `14-der-fuente.dbml`.*
@@ -2331,6 +2392,7 @@ erDiagram
 | `alimento_del_canon` | Un alimento que Administración sumó al catálogo verificado («Sumar al canon»), con su fuente y, si salió de una carga a mano, la carga de la que partió. | 6 | 3 |
 | `medidas_caseras_de_alimento` | Las medidas caseras de un alimento (la unidad, la cucharada, la taza y la porción), cada una con su equivalencia en gramos. Cada cambio es una versión nueva. | 7 | 2 |
 | `revision_administrativa_de_alimento` | Cada decisión de Administración sobre un alimento cargado a mano, contra la versión que vio: certificarlo con su fuente o marcar su equivalente verificado. La vigente es la de mayor número. | 10 | 4 |
+| `clasificacion_de_ejercicio` | La clasificación de un ejercicio, para los filtros de «Agregar ejercicios»: grupo muscular, equipamiento, patrón y articulaciones, cada dato opcional. Historia por adición, como las zonas (DL-081): cambiarla es sumar una de número siguiente; la vigente es la más alta. Los 186 del catálogo base la reciben de la siembra (20261125120000), con la propuesta de BE a validar por Dirección. | 9 | 1 |
 
 ![Figura 77: Catálogos e importación (1 de 4): `candidato_de_importacion`, `resolucion_de_candidato`](pendiente)
 
@@ -2707,11 +2769,11 @@ Son moldes y elementos habituales: plantillas de planes (con versiones), ejercic
 
 Hacia afuera, casi todas cuelgan solo de la cuenta del profesional. Las dos excepciones apuntan al catálogo: `ejercicio_habitual` al ejercicio y `alimento_habitual` al alimento. Ninguna tabla de este módulo apunta a una persona: aplicar un molde escribe valores en el borrador, como cualquier otro.
 
-**Plantillas sin persona y enfoques.** `preparacion_de_plantilla_de_entrenamiento` es el trabajo en curso de una plantilla, privado y sin persona, que se guarda solo; guardar la plantilla crea su versión nueva. `conjunto_de_graficos` es un enfoque (hasta seis gráficos con nombre) y `eleccion_de_conjunto_de_graficos`, el enfoque elegido para una persona o para uno de sus planes: guardan solo referencias, nunca datos de una persona.
+**Plantillas sin persona y enfoques.** `preparacion_de_plantilla_de_entrenamiento` es el trabajo en curso de una plantilla, privado y sin persona, que se guarda solo; guardar la plantilla crea su versión nueva. `conjunto_de_graficos` es un enfoque (hasta seis gráficos con nombre) y `eleccion_de_conjunto_de_graficos`, el enfoque elegido para una persona o para uno de sus planes: guardan solo referencias, nunca datos de una persona. `recorrido_guiado_visto` recuerda, por usuario, qué recorrido guiado de un editor vio u omitió: es una preferencia de la pantalla, sin datos de salud.
 
-- **14** tablas
+- **15** tablas
 - **5** relaciones internas
-- **19** claves hacia otros módulos
+- **20** claves hacia otros módulos
 - **0** claves que llegan de otros
 
 ```mermaid
@@ -2732,6 +2794,7 @@ erDiagram
     uuid plantilla_id FK
     integer numero
     jsonb estructura
+    jsonb planificacion
     CargasDePlantilla cargas
     jsonb origen
     uuid autor_id FK
@@ -2845,6 +2908,7 @@ erDiagram
     text nombre
     text descripcion
     jsonb estructura
+    jsonb planificacion
     CargasDePlantilla cargas
     integer version
     jsonb procedencia
@@ -2874,6 +2938,13 @@ erDiagram
     timestamptz_3 momento_de_registro
     timestamptz_3 momento_de_actualizacion
   }
+  recorrido_guiado_visto {
+    uuid identidad_id PK, FK
+    text recorrido PK
+    EstadoDelRecorridoGuiado estado
+    jsonb procedencia
+    timestamptz_3 momento_de_actualizacion
+  }
   plantilla_de_plan_de_entrenamiento }|--|| identidad : "profesional_id"
   version_de_plantilla_de_plan_de_entrenamiento }|--|| plantilla_de_plan_de_entrenamiento : "plantilla_id"
   version_de_plantilla_de_plan_de_entrenamiento }|--|| identidad : "autor_id"
@@ -2898,6 +2969,7 @@ erDiagram
   eleccion_de_conjunto_de_graficos }o--o| plan_de_entrenamiento : "plan_de_entrenamiento_id"
   eleccion_de_conjunto_de_graficos }o--o| plan_nutricional : "plan_nutricional_id"
   eleccion_de_conjunto_de_graficos }|--|| conjunto_de_graficos : "conjunto_id"
+  recorrido_guiado_visto }|--|| identidad : "identidad_id"
 ```
 
 *Figuras 93 y 94: Herramientas del profesional: las tablas del módulo con sus campos y sus relaciones. Las tablas sin campos son de otro módulo. Generado del esquema; se dibuja igual en dbdiagram.io con `14-der-fuente.dbml`.*
@@ -2907,7 +2979,7 @@ erDiagram
 | Tabla | Para qué | Campos | FK |
 | --- | --- | --- | --- |
 | `plantilla_de_plan_de_entrenamiento` | Un molde de plan de entrenamiento del profesional, sin datos de ninguna persona. | 9 | 1 |
-| `version_de_plantilla_de_plan_de_entrenamiento` | Cada versión de un molde de plan de entrenamiento. | 9 | 2 |
+| `version_de_plantilla_de_plan_de_entrenamiento` | Cada versión de un molde de plan de entrenamiento. | 10 | 2 |
 | `plantilla_de_plan_nutricional` | Un molde de plan de comidas del profesional, sin datos de ninguna persona. | 9 | 1 |
 | `version_de_plantilla_de_plan_nutricional` | Cada versión de un molde de plan de comidas. | 9 | 2 |
 | `ejercicio_habitual` | Un ejercicio que el profesional marcó como habitual, para tenerlo a mano. | 6 | 2 |
@@ -2917,9 +2989,10 @@ erDiagram
 | `vista_de_analisis` | Una vista guardada de «Analizar» o del resumen del profesional. Es solo configuración. | 9 | 1 |
 | `prescripcion_habitual` | Una prescripción que el profesional guarda para reutilizar («Mi fuerza 5×3 · RIR 1»): series, intensidad, descanso y bases, sin ejercicio ni cargas. La ve solo él; guardarla con el mismo nombre la reemplaza. | 10 | 1 |
 | `reparto_habitual` | Un reparto de macronutrientes en gramos por día que el profesional guarda para reutilizar. Lo ve solo él; aplicarlo escribe los gramos en el objetivo. | 10 | 1 |
-| `preparacion_de_plantilla_de_entrenamiento` | El trabajo en curso de una plantilla de entrenamiento, privado y sin persona, que se guarda solo. Guardar la plantilla crea una versión nueva. | 12 | 3 |
+| `preparacion_de_plantilla_de_entrenamiento` | El trabajo en curso de una plantilla de entrenamiento, privado y sin persona, que se guarda solo. Guardar la plantilla crea una versión nueva. | 13 | 3 |
 | `conjunto_de_graficos` | Un enfoque: un conjunto de hasta seis gráficos con nombre, propio del profesional y reutilizable con cualquier persona. Guarda solo referencias, nunca datos de una persona. | 8 | 1 |
 | `eleccion_de_conjunto_de_graficos` | El enfoque que el profesional eligió para una persona o para uno de sus planes con ella. Queda hasta que se cambie. | 11 | 5 |
+| `recorrido_guiado_visto` | Los recorridos guiados que vio u omitió cada usuario: una fila por recorrido. Es una preferencia de la pantalla, sin datos de salud, y se recuerda por usuario (no por navegador). Sin fila, no lo vio. Mutable: volver a verlo y terminarlo cambia el estado; cada cambio queda en la auditoría. | 5 | 1 |
 
 ![Figura 95: Herramientas del profesional (1 de 4): `plantilla_de_plan_de_entrenamiento`, `version_de_plantilla_de_plan_de_entrenamiento`, `plantilla_de_plan_nutricional`, `version_de_plantilla_de_plan_nutricional`](pendiente)
 
@@ -3017,7 +3090,7 @@ erDiagram
 
 # Anexo A. Diccionario de datos
 
-*Cada tabla con todos sus campos, en el orden de la base: 1.490 columnas en 163 tablas. «Nulo: sí» quiere decir que el campo admite vacío.*
+*Cada tabla con todos sus campos, en el orden de la base: 1.536 columnas en 168 tablas. «Nulo: sí» quiere decir que el campo admite vacío.*
 
 **Tabla 17.** Diccionario de 01 · Identidad y acceso.
 
@@ -3156,7 +3229,7 @@ erDiagram
 |   | `procedencia` | jsonb |   |   | De dónde vino la fila: la fuente, la superficie (app o website), la operación, el caso de uso y el pedido que la produjo. |
 |   | `momento_de_registro` | timestamptz(3) |   |   | Cuándo BE guardó la fila. |
 | **`factor_totp`** | `id` | uuid | PK |   | Identificador único de la fila. |
-|   | `identidad_id` | uuid | FK |   | La cuenta (de Administración o de un profesional). |
+|   | `identidad_id` | uuid | FK |   | La cuenta de Administración. |
 |   | `estado` | EstadoDeFactorTotp |   |   | Pendiente, activo, reemplazado, revocado o descartado. |
 |   | `secreto_cifrado` | text |   |   | El secreto del autenticador, cifrado con AES-256-GCM. |
 |   | `ultimo_paso` | bigint |   | sí | El último paso de tiempo aceptado; impide reutilizar un código. |
@@ -3168,7 +3241,7 @@ erDiagram
 |   | `procedencia` | jsonb |   |   | De dónde vino la fila: la fuente, la superficie (app o website), la operación, el caso de uso y el pedido que la produjo. |
 |   | `momento_de_registro` | timestamptz(3) |   |   | Cuándo BE guardó la fila. |
 | **`codigo_de_recuperacion`** | `id` | uuid | PK |   | Identificador único de la fila. |
-|   | `identidad_id` | uuid | FK |   | La cuenta (de Administración o de un profesional). |
+|   | `identidad_id` | uuid | FK |   | La cuenta de Administración. |
 |   | `lote_id` | uuid |   |   | El lote al que pertenece; un lote nuevo invalida el anterior. |
 |   | `huella` | text | UK |   | HMAC-SHA-256 del código, con una clave del servidor; el código no se guarda. |
 |   | `momento_de_uso` | timestamptz(3) |   | sí | Cuándo se usó. |
@@ -3291,6 +3364,13 @@ erDiagram
 |   | `estado_nuevo` | EstadoDeIncidencia |   |   | El estado después del cambio. |
 |   | `motivo` | text |   |   | Por qué cambió; lo ve Administración. |
 |   | `respuesta` | text |   | sí | Lo que se le responde a quien la reportó; obligatoria al resolverla. |
+|   | `administrador_id` | uuid | FK |   | La cuenta de Administración. |
+|   | `procedencia` | jsonb |   |   | De dónde vino la fila: la fuente, la superficie (app o website), la operación, el caso de uso y el pedido que la produjo. |
+|   | `momento_de_registro` | timestamptz(3) |   |   | Cuándo BE guardó la fila. |
+| **`decision_sobre_plantilla_de_be`** | `id` | uuid | PK |   | Identificador único de la fila. |
+|   | `clave` | text |   |   | La clave de idempotencia que mandó el cliente. |
+|   | `estado` | EstadoDePlantillaDeBe |   |   | Borrador, activada o descartada. |
+|   | `motivo` | text |   | sí | Motivo declarado. |
 |   | `administrador_id` | uuid | FK |   | La cuenta de Administración. |
 |   | `procedencia` | jsonb |   |   | De dónde vino la fila: la fuente, la superficie (app o website), la operación, el caso de uso y el pedido que la produjo. |
 |   | `momento_de_registro` | timestamptz(3) |   |   | Cuándo BE guardó la fila. |
@@ -4082,6 +4162,29 @@ erDiagram
 |   | `posicion` | integer |   |   | Lugar de la fila en su cadena de sucesiones; sirve de versión para detectar escrituras simultáneas. |
 |   | `procedencia` | jsonb |   |   | De dónde vino la fila: la fuente, la superficie (app o website), la operación, el caso de uso y el pedido que la produjo. |
 |   | `momento_de_registro` | timestamptz(3) |   |   | Cuándo BE guardó la fila. |
+| **`uno_rm_de_referencia`** | `id` | uuid | PK |   | Identificador único de la fila. |
+|   | `profesional_id` | uuid | FK |   | El profesional. |
+|   | `asesorado_id` | uuid | FK |   | La persona. |
+|   | `ejercicio_id` | uuid | FK |   | El ejercicio. |
+|   | `origen` | OrigenDelUnoRM |   |   | De dónde salió: del proveedor o de un profesional. |
+|   | `valor` | double precision |   |   | Valor numérico. |
+|   | `unidad` | text |   |   | Unidad del valor. |
+|   | `fecha_local` | date |   |   | El día, según la zona horaria de la persona. |
+|   | `serie` | jsonb |   | sí | La serie de la calibración o del registro: `{ load, completedRepetitions, rir }`; nula en lo declarado. |
+|   | `metodo` | jsonb |   | sí | `{ specification, version, method }` (BE-E1RM v2, EPLEY_V2); nulo en lo declarado. |
+|   | `banda` | text |   | sí | `CORE` o `ORIENTATIVE`; nula en lo declarado. |
+|   | `registro` | jsonb |   | sí | En un `RECORD`: `{ executionId, prescriptionId, setIndex }`. |
+|   | `nota` | text |   | sí | Lo que escribió la persona, si escribió algo. |
+|   | `procedencia` | jsonb |   |   | De dónde vino la fila: la fuente, la superficie (app o website), la operación, el caso de uso y el pedido que la produjo. |
+|   | `momento_de_registro` | timestamptz(3) |   |   | Cuándo BE guardó la fila. |
+| **`esfuerzo_de_sesion_de_entrenamiento`** | `id` | uuid | PK |   | Identificador único de la fila. |
+|   | `ejecucion_id` | uuid | FK UK |   | La sesión registrada o el cálculo al que pertenece. |
+|   | `asesorado_id` | uuid | FK |   | La persona. |
+|   | `valor` | integer |   |   | Valor numérico. |
+|   | `minutos` | integer |   | sí |   |
+|   | `origen_de_minutos` | text |   | sí |   |
+|   | `procedencia` | jsonb |   |   | De dónde vino la fila: la fuente, la superficie (app o website), la operación, el caso de uso y el pedido que la produjo. |
+|   | `momento_de_registro` | timestamptz(3) |   |   | Cuándo BE guardó la fila. |
 
 **Tabla 25.** Diccionario de 09 · Catálogos e importación.
 
@@ -4206,6 +4309,15 @@ erDiagram
 |   | `fuente` | text |   | sí | La fuente citada: solo y siempre en CERTIFICADO. |
 |   | `equivalente_id` | uuid | FK | sí | El alimento verificado equivalente: solo y siempre en EQUIVALENTE. |
 |   | `administrador_id` | uuid | FK |   | La cuenta de Administración. |
+|   | `procedencia` | jsonb |   |   | De dónde vino la fila: la fuente, la superficie (app o website), la operación, el caso de uso y el pedido que la produjo. |
+|   | `momento_de_registro` | timestamptz(3) |   |   | Cuándo BE guardó la fila. |
+| **`clasificacion_de_ejercicio`** | `id` | uuid | PK |   | Identificador único de la fila. |
+|   | `ejercicio_id` | uuid | FK |   | El ejercicio. |
+|   | `numero` | integer |   |   | Número correlativo dentro de su serie; la fila vigente es la de mayor número. |
+|   | `grupo_muscular` | GrupoMuscularDeEjercicio |   | sí |   |
+|   | `equipamiento` | EquipamientoDeEjercicio[] |   |   |   |
+|   | `patron` | PatronDeMovimiento |   | sí |   |
+|   | `articulaciones` | ArticulacionesDeEjercicio |   | sí |   |
 |   | `procedencia` | jsonb |   |   | De dónde vino la fila: la fuente, la superficie (app o website), la operación, el caso de uso y el pedido que la produjo. |
 |   | `momento_de_registro` | timestamptz(3) |   |   | Cuándo BE guardó la fila. |
 
@@ -4413,6 +4525,7 @@ erDiagram
 |   | `plantilla_id` | uuid | FK |   | La plantilla. |
 |   | `numero` | integer |   |   | Número correlativo dentro de su serie; la fila vigente es la de mayor número. |
 |   | `estructura` | jsonb |   |   | La estructura del molde (días, comidas o sesiones), sin datos de ninguna persona. |
+|   | `planificacion` | jsonb |   | sí | la planificación de la versión (semanas, aproximaciones, progresiones, intensidad), sin nada de una persona. |
 |   | `cargas` | CargasDePlantilla |   |   | Si el molde copió las cargas o las deja para cada persona. |
 |   | `origen` | jsonb |   | sí | El plan del que se armó, si salió de uno. |
 |   | `autor_id` | uuid | FK |   | Quién hizo el cambio. |
@@ -4506,6 +4619,7 @@ erDiagram
 |   | `nombre` | text |   | sí | Nombre visible. |
 |   | `descripcion` | text |   | sí | Descripción, si la hay. |
 |   | `estructura` | jsonb |   |   | La estructura del molde (días, comidas o sesiones), sin datos de ninguna persona. |
+|   | `planificacion` | jsonb |   | sí | la planificación en preparación; va a la versión al guardarla. |
 |   | `cargas` | CargasDePlantilla |   |   | Si el molde copió las cargas o las deja para cada persona. |
 |   | `version` | integer |   |   | Número de versión, correlativo dentro de su serie. |
 |   | `procedencia` | jsonb |   |   | De dónde vino la fila: la fuente, la superficie (app o website), la operación, el caso de uso y el pedido que la produjo. |
@@ -4529,6 +4643,11 @@ erDiagram
 |   | `version` | integer |   |   | Número de versión, correlativo dentro de su serie. |
 |   | `procedencia` | jsonb |   |   | De dónde vino la fila: la fuente, la superficie (app o website), la operación, el caso de uso y el pedido que la produjo. |
 |   | `momento_de_registro` | timestamptz(3) |   |   | Cuándo BE guardó la fila. |
+|   | `momento_de_actualizacion` | timestamptz(3) |   |   | Última modificación de la fila. |
+| **`recorrido_guiado_visto`** | `identidad_id` | uuid | PK FK |   | La cuenta. |
+|   | `recorrido` | text | PK |   | El identificador del recorrido, el de la ruta (`training-plan-editor`); la API acepta solo los de @be/domain. |
+|   | `estado` | EstadoDelRecorridoGuiado |   |   | Borrador, activada o descartada. |
+|   | `procedencia` | jsonb |   |   | De dónde vino la fila: la fuente, la superficie (app o website), la operación, el caso de uso y el pedido que la produjo. |
 |   | `momento_de_actualizacion` | timestamptz(3) |   |   | Última modificación de la fila. |
 
 **Tabla 29.** Diccionario de 13 · Novedades y avisos.
@@ -4576,9 +4695,9 @@ erDiagram
 
 # Anexo B. Conjuntos de valores
 
-*Los 108 conjuntos de valores de la base, con sus valores en el orden en que se declaran y las columnas que los usan. Los valores que dicen ASESORADO se refieren a la persona.*
+*Los 115 conjuntos de valores de la base, con sus valores en el orden en que se declaran y las columnas que los usan. Los valores que dicen ASESORADO se refieren a la persona.*
 
-**Tabla 30.** Los 108 conjuntos de valores.
+**Tabla 30.** Los 115 conjuntos de valores.
 
 | Conjunto | Valores | Dónde se usa |
 | --- | --- | --- |
@@ -4630,9 +4749,13 @@ erDiagram
 | `TipoDeEventoDeAntropometria` | EvaluacionAntropometricaRegistrada · MedicionCorregida · MedicionAnulada · CalculoEjecutado · ReferenciaDeCalculoAdoptada | `evento_de_antropometria.tipo` |
 | `CondicionDeSesion` | REALIZADA · REALIZADA_CON_DESVIO · NO_REALIZADA | `borrador_de_ejecucion_de_entrenamiento.condicion`, `ejecucion_de_entrenamiento.condicion` |
 | `GranularidadDeRegistro` | SERIE · EJERCICIO_O_SESION | `borrador_de_ejecucion_de_entrenamiento.granularidad`, `ejecucion_de_entrenamiento.granularidad` |
-| `TipoDeEventoDeEntrenamiento` | EjercicioDeCatalogoCreado · EvaluacionDeEntrenamientoRegistrada · VersionDeObjetivoDeEntrenamientoEmitida · BorradorDePlanDeEntrenamientoCreado · BorradorDePlanDeEntrenamientoGuardado · VersionDePlanDeEntrenamientoActivada · BorradorDeEjecucionCreado · BorradorDeEjecucionGuardado · EjecucionRegistrada · EjecucionCorregida · RevisionDeEntrenamientoRegistrada · PlantillaDePlanCreada · PlantillaDePlanVersionada · PlantillaDePlanEditada · EjercicioHabitualMarcado · EjercicioHabitualQuitado · SesionHabitualGuardada · SesionHabitualEditada · BorradorDePlanDeEntrenamientoDescartado · SerieObservadaRegistrada · SerieObservadaSucedida · PrescripcionHabitualGuardada · PrescripcionHabitualQuitada | `evento_de_entrenamiento.tipo` |
+| `TipoDeEventoDeEntrenamiento` | EjercicioDeCatalogoCreado · EvaluacionDeEntrenamientoRegistrada · VersionDeObjetivoDeEntrenamientoEmitida · BorradorDePlanDeEntrenamientoCreado · BorradorDePlanDeEntrenamientoGuardado · VersionDePlanDeEntrenamientoActivada · BorradorDeEjecucionCreado · BorradorDeEjecucionGuardado · EjecucionRegistrada · EjecucionCorregida · RevisionDeEntrenamientoRegistrada · PlantillaDePlanCreada · PlantillaDePlanVersionada · PlantillaDePlanEditada · EjercicioHabitualMarcado · EjercicioHabitualQuitado · SesionHabitualGuardada · SesionHabitualEditada · BorradorDePlanDeEntrenamientoDescartado · SerieObservadaRegistrada · SerieObservadaSucedida · PrescripcionHabitualGuardada · PrescripcionHabitualQuitada · UnoRMDeReferenciaSumado | `evento_de_entrenamiento.tipo` |
 | `TipoDeEventoDeFormulario` | SolicitudDeFormularioCreada · RespuestaDeFormularioRegistrada · RespuestaDeFormularioRectificada · PropuestaDeRespuestaCargada · PropuestaDeRespuestaReemplazada · PropuestaDeRespuestaRetirada · PropuestaDeRespuestaRechazada · PropuestaDeRespuestaConfirmada · VersionDeHabitosRegistrada · AutorizacionDeHabitosActivada · AutorizacionDeHabitosModificada · AutorizacionDeHabitosRetirada · PedidoDeAccesoAHabitosHecho · PedidoDeAccesoAHabitosReemplazado · PedidoDeAccesoAHabitosAceptado · PedidoDeAccesoAHabitosNoPorAhora · AutorizacionDeResumenesActivada · AutorizacionDeResumenesModificada · AutorizacionDeResumenesRetirada · PedidoDeAccesoAPlanHecho · PedidoDeAccesoAPlanReemplazado · PedidoDeAccesoAPlanAceptado · PedidoDeAccesoAPlanNoPorAhora | `evento_de_formulario.tipo` |
 | `EstadoDePropuestaDeRespuesta` | PENDIENTE · CONFIRMADA · RECHAZADA · RETIRADA | `propuesta_de_respuesta_de_formulario.estado` |
+| `GrupoMuscularDeEjercicio` | CHEST · BACK · LEGS · SHOULDERS · ARMS · ABS · CALVES · CARDIO | `clasificacion_de_ejercicio.grupo_muscular` |
+| `EquipamientoDeEjercicio` | BARBELL · EZ_BAR · DUMBBELL · KETTLEBELL · CABLE · MACHINE · BENCH · INCLINE_BENCH · PULL_UP_BAR · BAND · MAT · SWISS_BALL · BODYWEIGHT · OTHER | `clasificacion_de_ejercicio.equipamiento` |
+| `PatronDeMovimiento` | PUSH · PULL · SQUAT · HINGE · LUNGE · CORE · CARDIO · OTHER | `clasificacion_de_ejercicio.patron` |
+| `ArticulacionesDeEjercicio` | SINGLE · MULTI | `clasificacion_de_ejercicio.articulaciones` |
 | `OrigenDeHabitos` | FORMULARIO · MIS_HABITOS | `habitos_de_la_persona.origen` |
 | `EstadoDeAutorizacionDeHabitos` | ACTIVA · RETIRADA | `autorizacion_de_habitos.estado` |
 | `EstadoDeDestinatarioDeHabitos` | LOS_RECIBE · NO_LOS_RECIBE | `destinatario_de_habitos.estado` |
@@ -4648,6 +4771,7 @@ erDiagram
 | `ResultadoDeRevisionDeAlimento` | CERTIFICADO · EQUIVALENTE · QUITADA | `revision_administrativa_de_alimento.resultado` |
 | `EstadoDePlantilla` | ACTIVA · ARCHIVADA | `plantilla_de_plan_de_entrenamiento.estado`, `plantilla_de_plan_nutricional.estado` |
 | `CargasDePlantilla` | NO_COPIADAS · COPIADAS | `version_de_plantilla_de_plan_de_entrenamiento.cargas`, `sesion_habitual.cargas`, `preparacion_de_plantilla_de_entrenamiento.cargas` |
+| `EstadoDePlantillaDeBe` | PUBLICADA · RETIRADA | `decision_sobre_plantilla_de_be.estado` |
 | `CantidadesDePlantilla` | NO_COPIADAS · COPIADAS | `version_de_plantilla_de_plan_nutricional.cantidades`, `comida_habitual.cantidades` |
 | `EstadoDeHabitual` | ACTIVO · QUITADO | `ejercicio_habitual.estado`, `sesion_habitual.estado`, `alimento_habitual.estado`, `comida_habitual.estado`, `prescripcion_habitual.estado`, `reparto_habitual.estado` |
 | `MetodoDeCalculoNutricional` | SUM_SOURCE_PER_100G_V1 | `version_de_receta.metodo_de_calculo` |
@@ -4672,6 +4796,7 @@ erDiagram
 | `EstadoDeAvisoPush` | EN_CURSO · ENVIADO · RECHAZADO · SIN_RESPUESTA · AGRUPADO | `aviso_push.estado` |
 | `TipoDeRecordatorio` | COMIDAS · ENTRENAMIENTO | `preferencia_de_recordatorio.tipo` |
 | `EstadoDePreferencia` | ACTIVA · INACTIVA | `preferencia_de_recordatorio.estado` |
+| `EstadoDelRecorridoGuiado` | VISTO · OMITIDO | `recorrido_guiado_visto.estado` |
 | `EstadoDeResultadoTvcc30` | CALCULADO · SIN_VALOR | `resultado_tvcc30.estado` |
 | `TipoDeResolucionDeInvitacion` | USADA · REVOCADA | `resolucion_de_invitacion.tipo` |
 | `FinalidadDeNotaDeCoordinacion` | CONTEXTO_PARA_TU_AREA · CAMBIO_EN_MI_AREA · PEDIDO_DE_COORDINACION | `nota_de_coordinacion.finalidad` |
@@ -4685,6 +4810,7 @@ erDiagram
 | `EstadoDePedidoDeDerecho` | RECIBIDO · RESUELTO · RECHAZADO | `pedido_de_derecho.estado` |
 | `OrigenDeRecuperacionDeAcceso` | PEDIDO · ASISTIDA | `recuperacion_de_acceso.origen` |
 | `TipoDeSerieObservada` | OBSERVADA · ANULACION | `serie_observada.tipo` |
+| `OrigenDelUnoRM` | CALIBRATION · RECORD · DECLARED | `uno_rm_de_referencia.origen` |
 | `CategoriaDeIncidencia` | ACCESO · PERFIL · VINCULO · INTEGRIDAD_DE_DATOS · FUNCIONAMIENTO | `incidencia.categoria` |
 | `EstadoDeIncidencia` | ABIERTA · EN_CURSO · RESUELTA | `incidencia.estado`, `cambio_de_incidencia.estado_anterior`, `cambio_de_incidencia.estado_nuevo` |
 | `AccionSobreMetodoDeAcceso` | RETIRO · REASOCIACION | `cambio_de_metodo_de_acceso.accion` |
@@ -4699,17 +4825,17 @@ erDiagram
 
 | Cifra | Valor | Cómo se cuenta |
 | --- | --- | --- |
-| Tablas | 163 | Bloques `model` de `prisma/schema.prisma`. |
-| Columnas | 1.490 | Campos escalares de esos modelos (sin las listas de relaciones). |
-| Claves foráneas | 326 | Atributos `@relation(fields: …)`; todas con `onDelete: Restrict`. |
-| Entre módulos | 181 | Claves cuya tabla y cuya referencia están en módulos distintos. |
-| Llegan a Identidad y acceso | 123 | Claves entre módulos cuya referencia es una tabla del módulo 01. |
-| Relaciones uno a uno | 66 | Claves cuya columna es única. |
+| Tablas | 168 | Bloques `model` de `prisma/schema.prisma`. |
+| Columnas | 1.536 | Campos escalares de esos modelos (sin las listas de relaciones). |
+| Claves foráneas | 334 | Atributos `@relation(fields: …)`; todas con `onDelete: Restrict`. |
+| Entre módulos | 187 | Claves cuya tabla y cuya referencia están en módulos distintos. |
+| Llegan a Identidad y acceso | 128 | Claves entre módulos cuya referencia es una tabla del módulo 01. |
+| Relaciones uno a uno | 67 | Claves cuya columna es única. |
 | Cadenas dentro de una tabla | 28 | Claves que apuntan a la misma tabla. |
-| Conjuntos de valores | 108 | Bloques `enum` del esquema. |
-| Columnas jsonb | 177 | Campos `Json`. |
-| Tablas con procedencia en jsonb | 113 | Modelos con el campo `procedencia Json`; 49 de ellos con el `CHECK` de objeto en sus migraciones. |
-| Migraciones | 102 | Carpetas de `prisma/migrations/`. |
+| Conjuntos de valores | 115 | Bloques `enum` del esquema. |
+| Columnas jsonb | 187 | Campos `Json`. |
+| Tablas con procedencia en jsonb | 118 | Modelos con el campo `procedencia Json`; 50 de ellos con el `CHECK` de objeto en sus migraciones. |
+| Migraciones | 107 | Carpetas de `prisma/migrations/`. |
 
 Las cifras, las láminas y el DBML se recalculan del esquema cada vez que se genera este documento. La agrupación en trece módulos es para leer el modelo por partes: en la base, todas las tablas conviven en un mismo esquema.
 

@@ -8,7 +8,7 @@
 **Carrera:** Analista de Sistemas, Escuela Da Vinci  
 **Fecha:** Noviembre de 2026
 
-> **Resumen.** Dos capas que se distinguen en cada vista: 163 clases de persistencia (los modelos de Prisma) con sus 326 asociaciones, y 119 clases inyectables y 47 controladores en la API. Primero, la persistencia de un vistazo, la forma común de toda escritura de un dato de salud y tres operaciones centrales, clase por clase; al final, el inventario completo, como anexo.
+> **Resumen.** Dos capas que se distinguen en cada vista: 168 clases de persistencia (los modelos de Prisma) con sus 334 asociaciones, y 123 clases inyectables y 50 controladores en la API. Primero, la persistencia de un vistazo, la forma común de toda escritura de un dato de salud y tres operaciones centrales, clase por clase; al final, el inventario completo, como anexo.
 
 **Entregable:** 15 · Diagrama de clases  
 **Fecha:** Noviembre de 2026  
@@ -20,8 +20,8 @@
 
 El DER (14) muestra cómo se guardan los datos. Este documento muestra las clases que los guardan y las que trabajan con ellos, en dos capas que se distinguen en cada vista:
 
-- **La persistencia:** los 163 modelos de Prisma, uno por tabla, en los mismos trece módulos que el DER. Guardan la historia de la persona: cada plan como una sucesión de versiones, cada comida y cada sesión unidas a la versión del plan que regía cuando pasaron, cada toma con su protocolo y cada cálculo con su método, y cada corrección como un registro nuevo que no pisa al anterior. Por eso se puede ver qué se indicó, qué pasó y cómo cada cambio del plan fue afectando a la persona.
-- **La API:** las 119 clases inyectables (servicios, ejecutores, guards, interceptores y adaptadores), con sus métodos públicos, y los 47 controladores, que son la puerta HTTP: 335 operaciones del contrato. Deciden quién puede hacer qué, escriben y auditan.
+- **La persistencia:** los 168 modelos de Prisma, uno por tabla, en los mismos trece módulos que el DER. Guardan la historia de la persona: cada plan como una sucesión de versiones, cada comida y cada sesión unidas a la versión del plan que regía cuando pasaron, cada toma con su protocolo y cada cálculo con su método, y cada corrección como un registro nuevo que no pisa al anterior. Por eso se puede ver qué se indicó, qué pasó y cómo cada cambio del plan fue afectando a la persona.
+- **La API:** las 123 clases inyectables (servicios, ejecutores, guards, interceptores y adaptadores), con sus métodos públicos, y los 50 controladores, que son la puerta HTTP: 346 operaciones del contrato. Deciden quién puede hacer qué, escriben y auditan.
 
 La decisión de diseño más importante une las dos capas: toda escritura de un dato de salud pasa por una sola clase abstracta, `EjecutorDeDominio`, que decide el permiso, escribe y deja la auditoría en la misma transacción. Ninguna escritura ocurre sin autorización ni auditoría, porque no depende de que cada servicio se acuerde.
 
@@ -164,7 +164,7 @@ Retirar una sola cosa (lo de otra área, la historia anterior) sin cortar el ár
 
 # Anexo A. La persistencia, módulo por módulo
 
-*Las 163 clases de persistencia en los mismos trece módulos que el DER, con sus atributos propios y sus 326 asociaciones. Es el inventario generado del esquema.*
+*Las 168 clases de persistencia en los mismos trece módulos que el DER, con sus atributos propios y sus 334 asociaciones. Es el inventario generado del esquema.*
 
 Cada módulo tiene su diagrama, con sus clases de persistencia y sus atributos propios. Una clase de otro módulo aparece sin atributos, solo para ubicar la asociación. Cada asociación se dibuja una vez, desde la clase que tiene la columna, con su multiplicidad.
 
@@ -173,17 +173,17 @@ Cada módulo tiene su diagrama, con sus clases de persistencia y sus atributos p
 | Módulo | Qué guarda | Clases | Asociaciones |
 | --- | --- | --- | --- |
 | P01 Identidad y acceso | La identidad, raíz del modelo: el perfil propio con sus versiones, los métodos de acceso, las sesiones y la recuperación del acceso. | 14 | 21 |
-| P02 Administración, derechos y auditoría | La seguridad y la historia: el rol de Administración, el segundo factor, los derechos de la persona, la decisión de acceso, la auditoría, la idempotencia y las incidencias. | 16 | 22 |
+| P02 Administración, derechos y auditoría | La seguridad y la historia: el rol de Administración, el segundo factor, los derechos de la persona, la decisión de acceso, la auditoría, la idempotencia y las incidencias. | 17 | 23 |
 | P03 Profesionales, vínculos y consentimiento | El profesional y su relación con la persona: el vínculo, un alcance por área y su consentimiento, con versiones. | 14 | 30 |
 | P04 Proceso de acompañamiento | El seguimiento de un área con una persona en el tiempo: sus eventos, la próxima revisión y el cálculo de los ciclos de seguimiento cerrados en 30 días; y las notas propias del profesional, que solo lee su autor. | 6 | 19 |
 | P05 Nutrición | El catálogo de alimentos, la evaluación, el objetivo y el plan en versiones, la comida registrada y la revisión. | 16 | 32 |
 | P06 Recetas, fotos y registro de comidas | Las recetas, las fotos privadas y lo que completa el registro de comidas. | 13 | 24 |
 | P07 Antropometría | Lo medido separado de lo calculado, con las entradas exactas de cada cálculo. | 11 | 22 |
-| P08 Entrenamiento | El catálogo de ejercicios, la evaluación, el objetivo, el plan en versiones, la sesión en curso, la sesión registrada con su nota, la revisión y la fuerza estimada. | 18 | 40 |
-| P09 Catálogos e importación | Lo que llega de un proveedor externo, que pasa por un candidato y una resolución antes de entrar al catálogo. | 16 | 35 |
+| P08 Entrenamiento | El catálogo de ejercicios, la evaluación, el objetivo, el plan en versiones, la sesión en curso, la sesión registrada con su nota, la revisión y la fuerza estimada. | 20 | 45 |
+| P09 Catálogos e importación | Lo que llega de un proveedor externo, que pasa por un candidato y una resolución antes de entrar al catálogo. | 17 | 36 |
 | P10 Formularios y hábitos | Los formularios (pedido, propuesta, respuesta y rectificación) y los hábitos, que son de la persona. | 12 | 28 |
 | P11 Lo que se comparte entre áreas | Lo que la persona decide compartir entre áreas y las notas de coordinación entre sus profesionales. | 8 | 22 |
-| P12 Herramientas del profesional | Las herramientas del profesional: moldes y elementos habituales y las vistas de análisis que guarda, sin datos de ninguna persona. | 14 | 24 |
+| P12 Herramientas del profesional | Las herramientas del profesional: moldes y elementos habituales y las vistas de análisis que guarda, sin datos de ninguna persona. | 15 | 25 |
 | P13 Novedades y avisos | Las novedades y los avisos al teléfono. | 5 | 7 |
 
 ### P01 Identidad y acceso
@@ -534,6 +534,15 @@ classDiagram
     +Json procedencia
     +DateTime momentoDeRegistro
   }
+  class DecisionSobrePlantillaDeBe {
+    <<persistencia>>
+    +String id
+    +String clave
+    +EstadoDePlantillaDeBe estado
+    +String? motivo
+    +Json procedencia
+    +DateTime momentoDeRegistro
+  }
   RolAdministrativo "*" --> "1" Identidad : identidadId
   CodigoDeIncorporacion "*" --> "1" Identidad : identidadId
   FactorTotp "*" --> "1" Identidad : identidadId
@@ -556,6 +565,7 @@ classDiagram
   Incidencia "*" --> "0..1" Identidad : responsableId
   CambioDeIncidencia "*" --> "1" Incidencia : incidenciaId
   CambioDeIncidencia "*" --> "1" Identidad : administradorId
+  DecisionSobrePlantillaDeBe "*" --> "1" Identidad : administradorId
 ```
 
 *Figuras 13 a 19: P02 Administración, derechos y auditoría, sus clases de persistencia con sus atributos propios y sus asociaciones. Las clases sin recuadro son de otro módulo. Generado del esquema.*
@@ -1562,6 +1572,30 @@ classDiagram
     +Json procedencia
     +DateTime momentoDeRegistro
   }
+  class UnoRMDeReferencia {
+    <<persistencia>>
+    +String id
+    +OrigenDelUnoRM origen
+    +Float valor
+    +String unidad
+    +DateTime fechaLocal
+    +Json? serie
+    +Json? metodo
+    +String? banda
+    +Json? registro
+    +String? nota
+    +Json procedencia
+    +DateTime momentoDeRegistro
+  }
+  class EsfuerzoDeSesionDeEntrenamiento {
+    <<persistencia>>
+    +String id
+    +Int valor
+    +Int? minutos
+    +String? origenDeMinutos
+    +Json procedencia
+    +DateTime momentoDeRegistro
+  }
   EjercicioDeCatalogo "*" --> "0..1" Identidad : creadoPorId
   VersionDeEjercicio "*" --> "1" EjercicioDeCatalogo : ejercicioId
   VersionDeEjercicio "0..1" --> "0..1" VersionDeEjercicio : predecesoraId
@@ -1602,6 +1636,11 @@ classDiagram
   SerieObservada "*" --> "1" Identidad : asesoradoId
   SerieObservada "*" --> "1" EjercicioDeCatalogo : ejercicioId
   SerieObservada "0..1" --> "0..1" SerieObservada : predecesoraId
+  UnoRMDeReferencia "*" --> "1" Identidad : profesionalId
+  UnoRMDeReferencia "*" --> "1" Identidad : asesoradoId
+  UnoRMDeReferencia "*" --> "1" EjercicioDeCatalogo : ejercicioId
+  EsfuerzoDeSesionDeEntrenamiento "1" --> "1" EjecucionDeEntrenamiento : ejecucionId
+  EsfuerzoDeSesionDeEntrenamiento "*" --> "1" Identidad : asesoradoId
 ```
 
 *Figuras 44 a 51: P08 Entrenamiento, sus clases de persistencia con sus atributos propios y sus asociaciones. Las clases sin recuadro son de otro módulo. Generado del esquema.*
@@ -1745,6 +1784,17 @@ classDiagram
     +Json procedencia
     +DateTime momentoDeRegistro
   }
+  class ClasificacionDeEjercicio {
+    <<persistencia>>
+    +String id
+    +Int numero
+    +GrupoMuscularDeEjercicio? grupoMuscular
+    +EquipamientoDeEjercicio equipamiento
+    +PatronDeMovimiento? patron
+    +ArticulacionesDeEjercicio? articulaciones
+    +Json procedencia
+    +DateTime momentoDeRegistro
+  }
   CandidatoDeImportacion "*" --> "1" Identidad : profesionalId
   ResolucionDeCandidato "1" --> "1" CandidatoDeImportacion : candidatoId
   ResolucionDeCandidato "*" --> "1" Identidad : autorId
@@ -1780,6 +1830,7 @@ classDiagram
   RevisionAdministrativaDeAlimento "*" --> "1" VersionDeElementoNutricional : versionId
   RevisionAdministrativaDeAlimento "*" --> "0..1" ElementoDeCatalogoNutricional : equivalenteId
   RevisionAdministrativaDeAlimento "*" --> "1" Identidad : administradorId
+  ClasificacionDeEjercicio "*" --> "1" EjercicioDeCatalogo : ejercicioId
 ```
 
 *Figuras 52 a 55: P09 Catálogos e importación, sus clases de persistencia con sus atributos propios y sus asociaciones. Las clases sin recuadro son de otro módulo. Generado del esquema.*
@@ -2060,6 +2111,7 @@ classDiagram
     +String id
     +Int numero
     +Json estructura
+    +Json? planificacion
     +CargasDePlantilla cargas
     +Json? origen
     +Json procedencia
@@ -2167,6 +2219,7 @@ classDiagram
     +String? nombre
     +String? descripcion
     +Json estructura
+    +Json? planificacion
     +CargasDePlantilla cargas
     +Int version
     +Json procedencia
@@ -2190,6 +2243,13 @@ classDiagram
     +Int version
     +Json procedencia
     +DateTime momentoDeRegistro
+    +DateTime momentoDeActualizacion
+  }
+  class RecorridoGuiadoVisto {
+    <<persistencia>>
+    +String recorrido
+    +EstadoDelRecorridoGuiado estado
+    +Json procedencia
     +DateTime momentoDeActualizacion
   }
   PlantillaDePlanDeEntrenamiento "*" --> "1" Identidad : profesionalId
@@ -2216,6 +2276,7 @@ classDiagram
   EleccionDeConjuntoDeGraficos "*" --> "0..1" PlanDeEntrenamiento : planDeEntrenamientoId
   EleccionDeConjuntoDeGraficos "*" --> "0..1" PlanNutricional : planNutricionalId
   EleccionDeConjuntoDeGraficos "*" --> "1" ConjuntoDeGraficos : conjuntoId
+  RecorridoGuiadoVisto "*" --> "1" Identidad : identidadId
 ```
 
 *Figuras 63 a 65: P12 Herramientas del profesional, sus clases de persistencia con sus atributos propios y sus asociaciones. Las clases sin recuadro son de otro módulo. Generado del esquema.*
@@ -2284,7 +2345,7 @@ classDiagram
 
 # Anexo B. Las clases de la API, módulo por módulo
 
-*Los 47 controladores y las 119 clases inyectables de la API, cada uno como una caja UML: su estereotipo, sus métodos públicos y con quién colabora. Es el inventario generado del código.*
+*Los 50 controladores y las 123 clases inyectables de la API, cada uno como una caja UML: su estereotipo, sus métodos públicos y con quién colabora. Es el inventario generado del código.*
 
 Cada ficha tiene tres partes, como una clase en UML: arriba, el estereotipo (controlador, servicio, ejecutor, guard o adaptador) y el nombre; en el medio, los métodos públicos (en un controlador, cuántas operaciones HTTP atiende); abajo, con quién colabora. **Recibe** son las clases inyectables que le llegan por el constructor; **Persistencia**, las clases de persistencia que su archivo lee o escribe; **Le delegan**, los controladores que la llaman. Los ejecutores no tienen métodos propios: heredan los de `EjecutorDeDominio`.
 
@@ -2299,7 +2360,7 @@ Cada controlador dice qué guards lo protegen, contados operación por operació
 | Identidad | 2 | 6 | 8 |
 | Recuperación del acceso | 1 | 1 | 2 |
 | Derechos de la persona | 1 | 2 | 6 |
-| Administración | 1 | 4 | 29 |
+| Administración | 1 | 5 | 31 |
 | Incidencias | 1 | 1 | 2 |
 | Profesional | 0 | 2 | 0 |
 | Vínculo | 2 | 3 | 14 |
@@ -2309,7 +2370,7 @@ Cada controlador dice qué guards lo protegen, contados operación por operació
 | Prisma | 0 | 1 | 0 |
 | Proceso | 0 | 1 | 0 |
 | Nutrición | 6 | 16 | 69 |
-| Entrenamiento | 5 | 16 | 75 |
+| Entrenamiento | 7 | 18 | 82 |
 | Antropometría | 1 | 7 | 20 |
 | Formularios | 3 | 8 | 25 |
 | Medios | 2 | 3 | 5 |
@@ -2329,9 +2390,10 @@ Cada controlador dice qué guards lo protegen, contados operación por operació
 | Gráficos (enfoques) | 1 | 2 | 7 |
 | Historia anterior | 1 | 2 | 4 |
 | HTTP (global) | 0 | 2 | 0 |
-| **Total** | **47** | **119** | **339** |
+| Recorridos guiados | 1 | 1 | 2 |
+| **Total** | **50** | **123** | **350** |
 
-Las rutas son los decoradores HTTP de los controladores: 339, con las de salud del servicio. El contrato publicado (`docs/api/openapi.json`) tiene 335 operaciones.
+Las rutas son los decoradores HTTP de los controladores: 350, con las de salud del servicio. El contrato publicado (`docs/api/openapi.json`) tiene 346 operaciones.
 
 Cartera y el tablero resuelven sus lecturas con funciones, sin clases inyectables propias, y Contacto solo expone un controlador. Profesional, Autorización (PDP), Plataforma, Prisma, Proceso y Integraciones no tienen operaciones HTTP propias: sus clases las usan los demás módulos. `SolicitudesService` existe dos veces, en Vínculo y en Formularios: son clases distintas con el mismo nombre.
 
@@ -2553,14 +2615,14 @@ Cartera y el tablero resuelven sus lecturas con funciones, sin clases inyectable
 - +firmar()
 - +verificar()
 
-### Administración · 1 controlador · 4 clases inyectables
+### Administración · 1 controlador · 5 clases inyectables
 
 #### AdministracionController «controlador · Administración»
 
-- 22 operaciones HTTP
-- SesionAdministrativaGuard en 19 de 22; SegundoFactorGuard en 14 de 22
+- 31 operaciones HTTP
+- SesionAdministrativaGuard en 28 de 31; SegundoFactorGuard en 23 de 31
 
-- **Delega en:** AccesoAdministrativoService, AdministracionService, DerechosService, RecuperacionService, IncidenciasService
+- **Delega en:** AccesoAdministrativoService, AdministracionService, DerechosService, RecuperacionService, IncidenciasService, PlantillasDeBeAdminService
 
 #### AccesoAdministrativoService «servicio · Administración»
 
@@ -2590,6 +2652,15 @@ Cartera y el tablero resuelven sus lecturas con funciones, sin clases inyectable
 
 - **Recibe:** PrismaService, VerificacionService, PublicadorDeNovedades, IdempotenciaService, AuditoriaService, LimitadorService
 - **Persistencia:** AlcanceDeVinculo, CambioDeNombreProfesional, CodigoDeRecuperacion, EventoDeVerificacion, FactorTotp, Habilitacion, Identidad, MetodoDeAcceso, PerfilProfesional, RestablecimientoDeSegundoFactor, RolAdministrativo, VerificacionProfesional, Vinculo
+- **Le delegan:** AdministracionController
+
+#### PlantillasDeBeAdminService «servicio · Administración»
+
+- +consultar()
+- +decidir()
+
+- **Recibe:** PrismaService, IdempotenciaService, AuditoriaService
+- **Persistencia:** DecisionSobrePlantillaDeBe
 - **Le delegan:** AdministracionController
 
 #### SegundoFactorGuard «guard · Administración»
@@ -3099,7 +3170,7 @@ Cartera y el tablero resuelven sus lecturas con funciones, sin clases inyectable
 - **Persistencia:** AlimentoDelCanon, ElementoDeCatalogoNutricional, GrupoDeAlimentoAsignado, RevisionAdministrativaDeAlimento, VersionDeElementoNutricional
 - **Le delegan:** AdministracionController
 
-### Entrenamiento · 5 controladores · 16 clases inyectables
+### Entrenamiento · 7 controladores · 18 clases inyectables
 
 #### EntrenamientoController «controlador · Entrenamiento»
 
@@ -3335,6 +3406,47 @@ Cartera y el tablero resuelven sus lecturas con funciones, sin clases inyectable
 - **Recibe:** EjecutorDeEntrenamiento, CatalogoDeEjerciciosService, PlantillasDeEntrenamientoService
 - **Persistencia:** PlantillaDePlanDeEntrenamiento, PreparacionDePlantillaDeEntrenamiento, VersionDePlantillaDePlanDeEntrenamiento
 - **Le delegan:** EntrenamientoController
+
+#### PlantillasDeBeController «controlador · Entrenamiento»
+
+- 2 operaciones HTTP: leer las Plantillas de BE y crear el borrador de una persona desde una de ellas
+- SesionGuard en 2 de 2
+
+- **Delega en:** PlantillasDeBeService, PlanesDeEntrenamientoService
+
+#### EditorDeEntrenamientoTanda2Controller «controlador · Entrenamiento»
+
+- 4 operaciones HTTP: leer y sumar el 1RM de referencia, registrar el esfuerzo de la sesión y leer los esfuerzos de una persona
+- SesionGuard en 4 de 4
+
+- **Delega en:** UnoRMService, EsfuerzoDeLaSesionService
+
+#### PlantillasDeBeService «servicio · Entrenamiento»
+
+- +listar()
+
+- **Recibe:** EjecutorDeEntrenamiento
+- **Persistencia:** DecisionSobrePlantillaDeBe (la oferta vigente de cada plantilla)
+- **Le delegan:** PlantillasDeBeController
+
+#### UnoRMService «servicio · Entrenamiento»
+
+- +listar()
+- +sumar()
+- +vigentesDe()
+
+- **Recibe:** EjecutorDeEntrenamiento, PdpService, EjecucionesDeEntrenamientoService
+- **Persistencia:** UnoRMDeReferencia, EjercicioDeCatalogo
+- **Le delegan:** EditorDeEntrenamientoTanda2Controller; PlanesDeEntrenamientoService, al resolver las cargas en % RM y al congelar el 1RM en la activación
+
+#### EsfuerzoDeLaSesionService «servicio · Entrenamiento»
+
+- +registrar()
+- +delProfesional()
+
+- **Recibe:** EjecutorDeEntrenamiento, PdpService, EjecucionesDeEntrenamientoService
+- **Persistencia:** EsfuerzoDeSesionDeEntrenamiento, CorreccionDeEjecucionDeEntrenamiento
+- **Le delegan:** EditorDeEntrenamientoTanda2Controller
 
 ### Antropometría · 1 controlador · 7 clases inyectables
 
@@ -3920,6 +4032,24 @@ Cartera y el tablero resuelven sus lecturas con funciones, sin clases inyectable
 #### SinTipoDeSerieInterceptor «interceptor · HTTP (global)»
 
 - +intercept()
+
+### Recorridos guiados · 1 controlador · 1 clase inyectable
+
+#### RecorridosController «controlador · Recorridos guiados»
+
+- 2 operaciones HTTP: leer los recorridos que vio el usuario y marcar uno como visto u omitido
+- SesionGuard en 2 de 2
+
+- **Delega en:** RecorridosService
+
+#### RecorridosService «servicio · Recorridos guiados»
+
+- +listar()
+- +marcar()
+
+- **Recibe:** PrismaService, AuditoriaService
+- **Persistencia:** RecorridoGuiadoVisto
+- **Le delegan:** RecorridosController
 
 ### El dominio compartido · las reglas puras
 
