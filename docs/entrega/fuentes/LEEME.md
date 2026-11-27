@@ -2,7 +2,7 @@
 
 Los documentos de la entrega existían solo como PDF y como HTML intermedio en
 `BE-para-ChatGPT/entrega-tutor-final/` (y su carpeta `_trabajo/`): las fuentes del generador se perdieron con la carpeta
-temporal. Acá queda una fuente en Markdown de cada uno, **ya actualizada con los repasos del 19, el 20 y el 23/11**, para
+temporal. Acá queda una fuente en Markdown de cada uno, **ya actualizada con los repasos del 19, el 20 y el 23/11 y con la actualización del 27/11**, para
 pasarlas a Claude Docs y editarlas cuando algo cambie.
 
 - **Las imágenes no se copian.** En su lugar queda `![Figura N: descripción](pendiente)`. Cuando la figura era un esquema
@@ -47,7 +47,48 @@ pasarlas a Claude Docs y editarlas cuando algo cambie.
 Los tres últimos documentos de trabajo («Consentimiento de BE», «BE como empresa legal» y «Decisiones para ratificar»)
 no son entregables de Da Vinci: quedan como estaban, salvo la licencia en «BE como empresa legal».
 
-## Qué se actualizó
+## Qué se actualizó el 27/11
+
+Sobre `main` en b96b3e0c: lo integrado del 23 al 26/11 (DL-195 a DL-200, del #320 al #329). Las cifras se contaron de nuevo
+desde el código y son las mismas en todos los documentos.
+
+**Las cifras.** 168 tablas, 1.536 columnas, 334 claves foráneas (187 entre módulos, 128 llegan a Identidad y acceso), 115
+conjuntos de valores, 187 columnas jsonb y 107 migraciones (`prisma/schema.prisma` y `prisma/migrations`); 35 módulos de
+la API, 50 controladores, 123 clases inyectables, 350 rutas y 346 operaciones publicadas (`apps/api/src` y
+`docs/api/openapi.json`); 108 operaciones que lee la app (`packages/domain/fixtures/lecturas-de-la-apk/`); 39 páginas del
+website; 57 casos de uso, 66 RF (57 del website y 31 de la app, algunos compartidos), 32 y 33 RNF y 100 casos de prueba.
+
+| Documento | Lo que se aplicó |
+| --- | --- |
+| 00 | Las cifras en «Cómo está construido»; el editor de Entrenamiento por fases, el 1RM de referencia, las Plantillas de BE, el cardio, el esfuerzo de la sesión, los recorridos guiados y el resultado encadenado de Antropometría (§2.1); «período» en lugar de «temporada» y Epley sin versión (§2.3); §6 sin los manuales de la persona y de Administración ni el video, que no están, y dónde van los apartados 01 a 08. |
+| 03 | El alcance (Tabla 3): el plan de entrenamiento con el editor nuevo, el registro con la carga de la semana y el esfuerzo de la sesión, Antropometría con el resultado completo de cada método, los recorridos guiados y las Plantillas de BE en Administración; las cifras en las tecnologías; «período» y Epley sin versión. |
+| 09 | §2.4 reescrita sobre el editor nuevo; §2.5 con el 1RM congelado al activar (ET2-D18); §3.4 con los resultados encadenados (DL-200); §6.1 con las Plantillas de BE; sin las referencias a los manuales que no están. Las figuras 8, 9, 9b y 15b llevan «[Figura a recapturar: …]» con lo que tienen que mostrar. |
+| 10 | UC-P15 (el editor nuevo), UC-P16 (el 1RM congelado), UC-P17 (la carga de la semana y el esfuerzo de la sesión) y UC-P36 (las Plantillas de BE en Administración, paso 5). |
+| 11 | Epley sin versión. |
+| 12 | RF-039, RF-040, RF-041 (el editor nuevo y la activación con el 1RM), RF-048 (los resultados encadenados) y RF-072 (las Plantillas de BE en Administración); el segundo factor, solo de Administración; Epley sin versión; las cifras. |
+| 13 | RF-042 (la carga de la semana) y RF-043 (el esfuerzo de la sesión); el segundo factor, solo de Administración; las cifras. |
+| 14 | El DBML y las piezas regenerados con `herramientas/generar-der.mjs` (las cinco tablas nuevas, con su módulo en el generador); las cifras; los párrafos de las tablas nuevas en sus módulos (02, 08, 09 y 12); el segundo factor, hoy solo de Administración. |
+| 15 | Los diagramas por módulo regenerados; las cifras de la API; las fichas nuevas (PlantillasDeBeAdminService, PlantillasDeBeController, EditorDeEntrenamientoTanda2Controller, PlantillasDeBeService, UnoRMService, EsfuerzoDeLaSesionService y el módulo Recorridos guiados); la sección 5 nueva, con dos Mermaid: la jerarquía del plan y los estados de una versión. |
+| 16 | Las cifras; §4.1 nueva, la activación de un plan de entrenamiento en un diagrama de secuencia Mermaid. |
+| 17 | Las cifras; las 39 páginas (con `/admin/training-templates`); Entrenamiento y Administración en la Tabla 1, y la fila de Recorridos guiados. |
+| 23, 24 | Epley sin versión (23); las cifras (24). |
+| Cómo probar BE | El editor nuevo en el recorrido corto de la profesional (pasos 5 y 6) y en «Activar un plan», con «Pedir el esfuerzo de la sesión al terminar»; la pregunta del esfuerzo en «Registrar». La figura 5, a recapturar. |
+| Decisiones para ratificar | Sección nueva, «La entrega del 27/11»: lo que se escribió como refinamiento de un ID que ya existe. |
+
+**Para regenerar el DBML y las piezas del 14 y el 15:**
+`node docs/entrega/fuentes/herramientas/generar-der.mjs prisma/schema.prisma docs/entrega/fuentes/14-der-fuente.dbml docs/entrega/REPASO-DE-LA-ENTREGA-2026-11-23.md prisma/migrations <carpeta fuera del repo>`.
+Una tabla nueva necesita su módulo en `MODULO_NUEVO`; después, `14-der-fuente.dbml` se copia y las piezas (`<!-- TABLA nn -->`,
+`<!-- MERMAID nn -->`, `<!-- DICCIONARIO nn -->`, `<!-- CLASES nn -->`, la matriz y los conjuntos) reemplazan las del 14 y el 15.
+
+**Los PDF.** Estas fuentes no tienen un generador de PDF: el que armó los PDF y el HTML de `entrega-tutor-final` se perdió
+(ver arriba). Los PDF se rehacen desde Claude Docs, donde se pegan estas fuentes.
+
+**Lo que no entra todavía.** DL-201 a DL-204 y el recetario de 150 recetas están en PR sin integrar. Si se integran, hay
+que sumar: las tablas o migraciones nuevas que traigan (regenerar el 14 y el 15 y volver a contar las cifras de esta
+sección en el 00, 03, 12, 13, 14, 15, 16, 17 y 24), su lugar en el alcance del 00 y el 03, la tarea del 09 que cambie, los
+UC y RF que refinen (o sus IDs nuevos, en «Decisiones para ratificar»), y en el 03 y el 09 el Recetario con 150 recetas.
+
+## Qué se actualizó hasta el 23/11
 
 | Documento | Lo que se aplicó |
 | --- | --- |
@@ -81,7 +122,7 @@ no son entregables de Da Vinci: quedan como estaban, salvo la licencia en «BE c
 
 Todas las imágenes están como `(pendiente)`. Las capturas que el repaso del 23/11 pide rehacer (§5) tienen ya el epígrafe
 nuevo: en el 09, las figuras 6, 6b, 6c, 7, 8, 9, 9b, 10, 15, 15b, 16 y 26b; en el 12, las figuras 3 y 5; en «Cómo probar
-BE», las figuras 2, 3 y 5, sobre la muestra del tutor. El manual de la persona y el de Administración todavía no existen.
+BE», las figuras 2, 3 y 5, sobre la muestra del tutor. El manual de la persona y el de Administración todavía no existen. El 27/11 suman recaptura, con su texto «[Figura a recapturar: …]»: en el 09, las figuras 8, 9, 9b y 15b; en «Cómo probar BE», la figura 5.
 
 | Documento | Imágenes pendientes | Qué son |
 | --- | --: | --- |
