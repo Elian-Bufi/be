@@ -417,7 +417,7 @@ Casi no tiene relaciones internas: de sus 17 tablas, solo `cambio_de_incidencia`
 
 **El segundo factor vive en la sesión.** `segundo_factor_de_sesion` es uno a uno con `sesion` (módulo 01): el factor se verifica por sesión, no por cuenta. Hoy lo exige solo la sesión de Administración: el profesional entra con su contraseña o con Google.
 
-**Las Plantillas de BE.** Las plantillas de Entrenamiento que ofrece BE son datos del sistema, no filas: `decision_sobre_plantilla_de_be` guarda solo lo que decidió Administración sobre cada una, ofrecerla o retirarla, con quién lo decidió y su fundamento. La vigente es la última decisión; la tabla solo agrega.
+**Las Plantillas de BE.** Las plantillas de Entrenamiento que ofrece BE son datos del sistema, no filas: `decision_sobre_plantilla_de_be` guarda solo lo que decidió Administración sobre cada una, ofrecerla o retirarla, con quién lo decidió y, si lo dio, el motivo. La vigente es la última decisión; la tabla solo agrega.
 
 **Las incidencias tienen historia.** Lo que reporta una persona o un profesional es una `incidencia`, con una descripción que no cambia. Administración la atiende con `cambio_de_incidencia`: el estado anterior y el nuevo, el motivo y la respuesta.
 

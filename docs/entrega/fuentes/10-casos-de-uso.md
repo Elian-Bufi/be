@@ -656,8 +656,9 @@ Quién trabaja como profesional en BE y en qué área. El profesional no se decl
 > 2. Revisa una carga en la versión que ve: la certifica con su fuente, marca su equivalente verificado o suma un alimento al catálogo verificado
 > 3. En «Propuestas al Recetario de BE» mira cada receta que propuso un profesional, con su autor, la cesión de la foto y las «Parecidas»
 > 4. Elige «Sumar al Recetario de BE» o «No sumarla», con un motivo opcional que ve quien la propuso
+> 5. En «Plantillas de BE» mira cada plan de Entrenamiento que BE ofrece, con sus fases, sus sesiones y lo decidido antes, y elige «Retirar» (con un motivo opcional) o «Volver a ofrecer»
 >
-> **Resultado.** Cada decisión con su versión, su fuente y su autor. El buscador de quien cargó el alimento le sugiere el verificado, y una receta sumada queda para todos los profesionales de Nutrición. Administración ve quién cargó o propuso, nunca a qué persona se le indicó.
+> **Resultado.** Cada decisión con su versión, su fuente y su autor. El buscador de quien cargó el alimento le sugiere el verificado, y una receta sumada queda para todos los profesionales de Nutrición; una Plantilla de BE retirada deja de aparecer en «Empezar desde una plantilla», sin tocar los planes que ya salieron de ella. Administración ve quién cargó o propuso, nunca a qué persona se le indicó.
 >
 > **Relaciones.** Incluye UC-I02 y UC-I03.
 >
@@ -897,16 +898,18 @@ El mismo circuito, con la prescripción serie por serie, la sesión guiada en el
 
 > **UC-P15 · Diseñar el plan de entrenamiento.** Principal · Profesional de Entrenamiento · Website
 >
-> **Objetivo.** Armar fases, sesiones y la prescripción serie por serie, viendo lo que la persona ya hizo.
+> **Objetivo.** Armar el plan por fases sobre sus fechas, con sus sesiones y la prescripción serie por serie, viendo lo que la persona ya hizo.
 >
 > **Recorrido.**
 >
-> 1. Crea el borrador en blanco o desde una plantilla, y ordena las fases y las sesiones, con sus días; dentro de una sesión puede agrupar ejercicios en un bloque «Seguido» o «En vueltas»
-> 2. Busca los ejercicios en el catálogo, con su imagen y sus zonas musculares; el buscador marca «Con historial» los que ya estuvieron en sesiones registradas de la persona en el último año, con cuántas y la fecha de la última
-> 3. En el cuadro de cada ejercicio ve «La vez pasada» (las últimas tres veces, serie por serie: carga, repeticiones y RIR) y su historial en paneles alineados: carga, repeticiones y RIR de la misma serie, el RIR indicado frente al registrado y, en los ejercicios con método aprobado, el 1RM estimado con la fórmula de Epley sesión a sesión, con las versiones del plan de fondo
-> 4. Elige cómo se escribe el esfuerzo: RIR o RPE
-> 5. Indica las series de calentamiento y las efectivas, y de cada serie las repeticiones, la carga, el esfuerzo y el descanso, también con la escritura rápida y «Aplicar»; puede calcular la carga desde la estimación, y la confirma él
-> 6. Mientras planifica, el panel «Contexto de…» le muestra lo de la persona; si un ejercicio no está, lo busca en un catálogo externo o crea uno propio
+> 1. Crea el borrador en blanco, desde una plantilla propia o desde una Plantilla de BE; en «Configurar plan» fija el inicio, la duración, la intensidad del plan (RIR, RPE, % RM o solo carga), el redondeo de las cargas y si la app pide el esfuerzo de la sesión al terminar
+> 2. En la barra «Fases del plan» arma las fases, con sus semanas, su objetivo y sus días, y las sesiones de cada una; dentro de una sesión puede agrupar ejercicios en un bloque «Seguido» o «En vueltas». El almanaque del panel muestra cada semana con el color de su fase
+> 3. Con «Agregar ejercicios», busca en todo el catálogo, con filtros por grupo muscular, equipamiento y patrón; el buscador marca «Con historial» los que ya estuvieron en sesiones registradas de la persona en el último año, con cuántas y la fecha de la última
+> 4. En el cuadro de cada ejercicio ve «La vez pasada» (las últimas tres veces, serie por serie: carga, repeticiones y RIR) y su historial en paneles alineados: carga, repeticiones y RIR de la misma serie, el RIR indicado frente al registrado y, en los ejercicios con método aprobado, el 1RM estimado con la fórmula de Epley sesión a sesión, con las versiones del plan de fondo
+> 5. Indica las series de aproximación (por porcentaje de la carga de trabajo o a mano) y las efectivas, y de cada serie las repeticiones, la carga, el esfuerzo y el descanso, también con la escritura rápida y «Aplicar»; en un ejercicio de cardio, la duración, la distancia y la intensidad
+> 6. En % RM, define el 1RM de referencia de cada ejercicio (calibración, último registro o declarado): el % y la carga van atados y se redondean; si el 1RM cambia en el borrador, BE recalcula las cargas y lo avisa
+> 7. Aplica a la fase una progresión (lineal, doble u ondulante) y una semana de descarga, con su vista previa; acepta o descarta la sugerencia de progresión que BE arma desde lo que hizo la persona; reordena y deshace
+> 8. Mientras planifica, el panel «Contexto de…» le muestra lo de la persona; si un ejercicio no está, lo busca en un catálogo externo o crea uno propio
 >
 > **Resultado.** Un borrador completo que la persona todavía no ve.
 >
@@ -925,9 +928,9 @@ El mismo circuito, con la prescripción serie por serie, la sesión guiada en el
 > 1. Toca «Revisar y activar…»
 > 2. Lee lo que impide activar, lo que cambia frente a la versión vigente y lo que va a ver la persona
 > 3. Elige cuándo la revisa y activa
-> 4. BE valida y crea la versión vigente, sin vigencias superpuestas
+> 4. BE valida y crea la versión vigente, sin vigencias superpuestas; la instantánea guarda el 1RM de referencia de cada ejercicio en % RM, que queda congelado para esa versión
 >
-> **Resultado.** La persona ve la versión activada, sesión por sesión y serie por serie.
+> **Resultado.** La persona ve la versión activada, sesión por sesión y serie por serie, con la carga de cada semana.
 >
 > **Relaciones.** Incluye UC-I02, UC-I03, UC-I04 y UC-I10.
 >
@@ -942,9 +945,9 @@ El mismo circuito, con la prescripción serie por serie, la sesión guiada en el
 > **Recorrido.**
 >
 > 1. Abre «Hoy» y toca «Iniciar entrenamiento»
-> 2. Ve un ejercicio a la vez, bajo su bloque, con «La vez pasada» y lo planificado de cada serie en gris
+> 2. Ve un ejercicio a la vez, bajo su bloque, con «La vez pasada» y lo planificado de cada serie en gris, con la carga de la semana de la fase en que está
 > 3. Registra cada serie con lo que hizo o con un toque, y responde el esfuerzo en la notación del plan (RIR o RPE); las series de calentamiento se registran y no cuentan; el descanso arranca solo
-> 4. Toca «Finalizar entrenamiento» y confirma; si quiere, le deja una nota a su profe
+> 4. Toca «Finalizar entrenamiento» y confirma; si el plan lo pide, responde «¿Qué tan duro fue el entrenamiento, en general?», de 0 a 10, o «Ahora no»; si quiere, le deja una nota a su profe
 >
 > **Resultado.** Una sesión registrada aparte de lo planificado, unida a la versión que regía ese día.
 >
