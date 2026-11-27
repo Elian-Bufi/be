@@ -264,14 +264,22 @@ function sinRepetir(nuevo: unknown, h: Hueco, todas: readonly Hueco[] = [h]): un
   return nuevo;
 }
 
-/** Lo que ya trae el cuerpo armado: cada texto repetido entre listas del mismo esquema pasa al siguiente libre. */
-function desrepetir(todas: readonly Hueco[]): void {
-  for (const h of todas)
+/**
+ * Cada texto repetido entre listas del mismo esquema pasa al siguiente libre: lo que ya trae el cuerpo armado y lo que
+ * trae cada elemento nuevo adentro (una regla nueva llega con su ejercicio mínimo, el mismo que la anterior). Mira solo
+ * `revisar` (por defecto, todas) y devuelve los bytes que sumó.
+ */
+function desrepetir(todas: readonly Hueco[], revisar: readonly Hueco[] = todas): number {
+  let suma = 0;
+  for (const h of revisar)
     h.lista.forEach((v, i) => {
       if (typeof v !== 'string') return;
       h.lista[i] = undefined;
-      h.lista[i] = sinRepetir(v, h, todas);
+      const u = sinRepetir(v, h, todas);
+      h.lista[i] = u;
+      suma += bytes(u) - bytes(v);
     });
+  return suma;
 }
 
 /** Una lista del cuerpo que todavía puede crecer, con el esquema de sus elementos. */
@@ -338,7 +346,16 @@ function densificar(cuerpo: unknown, s: Esquema, objetivo: number, o: Opciones, 
     }
     tam += delta;
     h.lista.push(nuevo);
+    const desde = abiertos.length;
     huecos(nuevo, h.elemento, abiertos);
+    const extra = desrepetir(abiertos, abiertos.slice(desde));
+    if (extra && tam + extra > objetivo) {
+      // Con los textos ya cambiados no entra: se saca el elemento con sus listas, y se terminó.
+      h.lista.pop();
+      abiertos.length = desde;
+      return;
+    }
+    tam += extra;
   }
 }
 
@@ -385,10 +402,16 @@ function densificarPorPaquetes(cuerpo: unknown, s: Esquema, objetivo: number, o:
       const costo = bytes(nuevo) + (h.lista.length ? 1 : 0);
       if (costo > restante) return;
       h.lista.push(nuevo);
-      restante -= costo;
       const hijos: Hueco[] = [];
       huecos(nuevo, h.elemento, hijos);
       todas.push(...hijos);
+      const extra = desrepetir(todas, hijos);
+      if (costo + extra > restante) {
+        h.lista.pop();
+        todas.length -= hijos.length;
+        return;
+      }
+      restante -= costo + extra;
       for (const hijo of hijos.filter((x) => p.llenar.has(x.elemento)).sort((a, b) => paquete(a.elemento).bytes / paquete(a.elemento).elementos - paquete(b.elemento).bytes / paquete(b.elemento).elementos)) llenarLista(hijo);
     }
   };
