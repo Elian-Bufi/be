@@ -9733,6 +9733,14 @@ encima de la sesión, como en DL-196 (EE-D30), y la intensidad ya tenía este pa
 - **PE-05 · Las copias:** «Duplicar fase» y las Plantillas de BE llevan las reglas propias, con los ejercicios nuevos.
 - Pruebas: TEST-PE-01 a 07 (dominio) y TEST-PE-10 a 14 (web).
 
+**Al integrar (2026-11-26): el techo de elementos.** Con las 200 reglas de progresión (PE-D04), la cota de elementos de
+un cuerpo válido de 16 KB de EditarPlanDeEntrenamientoRequestSchema y de las tres escrituras de plantillas sube a 6.461,
+por encima del techo de 6.000 de la API (`MAXIMO_DE_ELEMENTOS`, `apps/api/src/http/validacion.ts`). El techo pasa a
+7.000: una suba chica, con el mismo margen que antes sobre la cota más alta, como cuando llegaron los formularios V2
+(DL-164). La alternativa era bajar PE-D04 a 60 reglas (la cota queda en 5.244, sin tocar el techo); se descartó porque
+cambia una decisión de producto que todavía está a ratificar. Si al ratificar PE-D04 se baja el tope, el techo puede
+volver a 6.000.
+
 **Lo que queda.** Ratificar PE-D01 a PE-D15; mirarlo en pantalla con Dirección a 1280 × 720. Detalle:
 `docs/paquetes/WP-PROGRESION-POR-EJERCICIO.md`.
 
