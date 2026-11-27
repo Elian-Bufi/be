@@ -247,64 +247,16 @@ function valor(s: Esquema, o: Opciones): unknown {
 }
 
 /**
- * DL-201 (PE-D02): un identificador no se repite ni en su lista ni en las otras listas del mismo esquema (un ejercicio
- * lleva como mucho una progresión propia: dos reglas no comparten ejercicio, y la validación lo rechaza). El texto mínimo
- * repetido se cambia por el siguiente válido que no esté usado. `todas`: las listas del cuerpo conocidas hasta ahora.
- * Lo usado se lleva en un registro por esquema (y el próximo sufijo por texto), para no recorrer todas las listas en cada
- * elemento: recorrerlas llevó la corrida a más de una hora. Lo que se anota y después no entra queda anotado: solo vuelve
- * más estricta la regla.
+ * DL-201 (PE-D02): una lista de identificadores no repite (un ejercicio lleva como mucho una progresión propia, y la
+ * validación lo rechaza). El texto mínimo repetido se cambia por el siguiente válido que no esté en la lista.
  */
-interface Registro {
-  readonly usados: Map<Esquema, Set<string>>;
-  readonly siguiente: Map<string, number>;
-}
-const registros = new WeakMap<readonly Hueco[], Registro>();
-function registroDe(todas: readonly Hueco[]): Registro {
-  let r = registros.get(todas);
-  if (!r) {
-    r = { usados: new Map(), siguiente: new Map() };
-    registros.set(todas, r);
-  }
-  return r;
-}
-function sinRepetir(nuevo: unknown, h: Hueco, todas: readonly Hueco[] = [h]): unknown {
-  if (typeof nuevo !== 'string') return nuevo;
-  const r = registroDe(todas);
-  let usados = r.usados.get(h.elemento);
-  if (!usados) {
-    usados = new Set();
-    r.usados.set(h.elemento, usados);
-  }
-  if (!usados.has(nuevo)) {
-    usados.add(nuevo);
-    return nuevo;
-  }
-  for (let k = r.siguiente.get(nuevo) ?? 1; k < 1_000_000; k++) {
+function sinRepetir(nuevo: unknown, h: Hueco): unknown {
+  if (typeof nuevo !== 'string' || !h.lista.includes(nuevo)) return nuevo;
+  for (let k = 1; k < 100_000; k++) {
     const v = `${nuevo}${k}`;
-    if (!usados.has(v) && h.elemento.safeParse(v).success) {
-      r.siguiente.set(nuevo, k + 1);
-      usados.add(v);
-      return v;
-    }
+    if (!h.lista.includes(v) && h.elemento.safeParse(v).success) return v;
   }
   return nuevo;
-}
-
-/**
- * Cada texto repetido entre listas del mismo esquema pasa al siguiente libre: lo que ya trae el cuerpo armado y lo que
- * trae cada elemento nuevo adentro (una regla nueva llega con su ejercicio mínimo, el mismo que la anterior). Mira solo
- * `revisar` (por defecto, todas; la primera vez, siempre todas, para armar el registro) y devuelve los bytes que sumó.
- */
-function desrepetir(todas: readonly Hueco[], revisar: readonly Hueco[] = todas): number {
-  let suma = 0;
-  for (const h of revisar)
-    h.lista.forEach((v, i) => {
-      if (typeof v !== 'string') return;
-      const u = sinRepetir(v, h, todas);
-      h.lista[i] = u;
-      suma += bytes(u) - bytes(v);
-    });
-  return suma;
 }
 
 /**
@@ -373,8 +325,6 @@ function densificar(cuerpo: unknown, s: Esquema, objetivo: number, o: Opciones, 
   let tam = bytes(cuerpo);
   const abiertos: Hueco[] = [];
   huecos(cuerpo, s, abiertos);
-  desrepetir(abiertos);
-  tam = bytes(cuerpo);
   const minimos = new Map<Esquema, { valor: unknown; bytes: number }>();
   const minimoDe = (e: Esquema): { valor: unknown; bytes: number } => {
     let m = minimos.get(e);
@@ -401,7 +351,7 @@ function densificar(cuerpo: unknown, s: Esquema, objetivo: number, o: Opciones, 
       if (tam + delta > objetivo) return;
       nuevo = structuredClone(minimoDe(h.elemento).valor);
     }
-    const unico = sinRepetir(nuevo, h, abiertos);
+    const unico = sinRepetir(nuevo, h);
     if (unico !== nuevo) {
       delta += bytes(unico) - bytes(nuevo);
       if (tam + delta > objetivo) return;
@@ -409,16 +359,7 @@ function densificar(cuerpo: unknown, s: Esquema, objetivo: number, o: Opciones, 
     }
     tam += delta;
     h.lista.push(nuevo);
-    const desde = abiertos.length;
     huecos(nuevo, h.elemento, abiertos);
-    const extra = desrepetir(abiertos, abiertos.slice(desde));
-    if (extra && tam + extra > objetivo) {
-      // Con los textos ya cambiados no entra: se saca el elemento con sus listas, y se terminó.
-      h.lista.pop();
-      abiertos.length = desde;
-      return;
-    }
-    tam += extra;
   }
 }
 
@@ -461,28 +402,18 @@ function densificarPorPaquetes(cuerpo: unknown, s: Esquema, objetivo: number, o:
   const llenarLista = (h: Hueco): void => {
     const p = paquete(h.elemento);
     while (h.lista.length < h.tope) {
-      const nuevo = sinRepetir(minimoDe(h.elemento), h, todas);
+      const nuevo = sinRepetir(minimoDe(h.elemento), h);
       const costo = bytes(nuevo) + (h.lista.length ? 1 : 0);
       if (costo > restante) return;
       h.lista.push(nuevo);
+      restante -= costo;
       const hijos: Hueco[] = [];
       huecos(nuevo, h.elemento, hijos);
-      todas.push(...hijos);
-      const extra = desrepetir(todas, hijos);
-      if (costo + extra > restante) {
-        h.lista.pop();
-        todas.length -= hijos.length;
-        return;
-      }
-      restante -= costo + extra;
       for (const hijo of hijos.filter((x) => p.llenar.has(x.elemento)).sort((a, b) => paquete(a.elemento).bytes / paquete(a.elemento).elementos - paquete(b.elemento).bytes / paquete(b.elemento).elementos)) llenarLista(hijo);
     }
   };
   const raices: Hueco[] = [];
   huecos(cuerpo, s, raices);
-  const todas: Hueco[] = [...raices];
-  desrepetir(todas);
-  restante = objetivo - bytes(cuerpo);
   for (const h of raices.sort((a, b) => paquete(a.elemento).bytes / paquete(a.elemento).elementos - paquete(b.elemento).bytes / paquete(b.elemento).elementos)) llenarLista(h);
   // Lo que sobra, con el elemento más barato que entre.
   densificar(cuerpo, s, objetivo, o, 'barato');
