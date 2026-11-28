@@ -98,10 +98,18 @@ const FUERA: readonly RelacionConElObjetivo[] = ['DEBAJO', 'ENCIMA'];
  * Una serie registrada frente a su objetivo. De las repeticiones y del RIR dice lo que no quedó dentro de lo indicado,
  * dato por dato. Lo de la carga va aparte, y dice contra qué se compara: la sugerida no es una obligación. DL-192: la
  * comparación es la del RIR guardado; en un plan en RPE se dice en RPE, con el sentido al revés.
+ *
+ * DL-202 (EP-D07): con `pideElEsfuerzo: false` (el plan no le pregunta a la persona el esfuerzo de cada serie), un RIR
+ * sin registrar no es un dato que falta: no se compara ni se dice. Uno que sí se registró se compara como siempre.
  */
-export function relacionDeUnaSerie(objetivo: Pick<ObjetivoDeSerie, 'repetitions' | 'rir' | 'suggestedLoad'>, s: SerieEjecutadaApi, notacion: NotacionDelEsfuerzo = 'RIR'): RelacionDeUnaSerie {
+export function relacionDeUnaSerie(
+  objetivo: Pick<ObjetivoDeSerie, 'repetitions' | 'rir' | 'suggestedLoad'>,
+  s: SerieEjecutadaApi,
+  notacion: NotacionDelEsfuerzo = 'RIR',
+  pideElEsfuerzo = true,
+): RelacionDeUnaSerie {
   const reps = relacionDeRepeticiones(objetivo.repetitions, s.completedRepetitions);
-  const rir = rirEnLaNotacion(relacionDeRir(objetivo.rir, s.rir), objetivo.rir, s.rir, notacion);
+  const rir = !pideElEsfuerzo && s.rir === null ? 'SIN_OBJETIVO' : rirEnLaNotacion(relacionDeRir(objetivo.rir, s.rir), objetivo.rir, s.rir, notacion);
   const carga = relacionDeCarga(objetivo.suggestedLoad, s.load);
   const partes: string[] = [];
   const esfuerzo = COPY_NOTACION_DEL_ESFUERZO.etiqueta[notacion];
@@ -185,7 +193,7 @@ const NO_SE_COMPARA_POR_IDENTIDAD: Readonly<Partial<Record<IdentidadDelRegistro,
   desconocida: `No se compara: ${COPY_COMPARACION.noSeSabeSiEsElMismo}`,
 };
 
-function serieDeSesion(c: ComparacionDeEjercicio, f: FilaDeSerie, seLeyoLoIndicado: boolean, notacion: NotacionDelEsfuerzo): SerieDeSesion {
+function serieDeSesion(c: ComparacionDeEjercicio, f: FilaDeSerie, seLeyoLoIndicado: boolean, notacion: NotacionDelEsfuerzo, pideElEsfuerzo: boolean): SerieDeSesion {
   const planificada = f.planificada.tipo === 'planificada' ? f.planificada : null;
   const objetivo = planificada?.objetivo ?? null;
   const serie = f.registrada.tipo === 'registrada' ? f.registrada.serie : null;
@@ -218,7 +226,7 @@ function serieDeSesion(c: ComparacionDeEjercicio, f: FilaDeSerie, seLeyoLoIndica
   if (seCargoComoElPlan(serie)) return { ...base, indicado, registrado, frente: COPY_REGISTRO_POR_NIVELES.noSeComparaTildada, ...sinComparar };
   if (!esElMismoEjercicio(c.identidad)) return { ...base, indicado, registrado, frente: NO_SE_COMPARA_POR_IDENTIDAD[c.identidad] ?? 'No se compara', ...sinComparar };
   if (!seLeyoLoIndicado) return { ...base, indicado, registrado, frente: 'No se pudo leer lo indicado', ...sinComparar };
-  const r = relacionDeUnaSerie({ repetitions: planificada.repeticiones, rir: objetivo?.rir ?? null, suggestedLoad: objetivo?.carga ?? null }, serie, notacion);
+  const r = relacionDeUnaSerie({ repetitions: planificada.repeticiones, rir: objetivo?.rir ?? null, suggestedLoad: objetivo?.carga ?? null }, serie, notacion, pideElEsfuerzo);
   return { ...base, indicado, registrado, frente: r.texto, frenteDeLaCarga: r.carga, conDiferencia: r.conDiferencia, conDatoSinRegistrar: r.conDatoSinRegistrar, comparada: !r.sinObjetivo };
 }
 
@@ -231,8 +239,8 @@ const deCalentamiento = (c: ComparacionDeEjercicio): string => {
 };
 const adicionales = (n: number): string => (n === 0 ? '' : ` · ${numero(n)} ${n === 1 ? 'adicional' : 'adicionales'}`);
 
-function ejercicioDeSesion(c: ComparacionDeEjercicio, seLeyoLoIndicado: boolean, notacion: NotacionDelEsfuerzo): EjercicioDeSesion {
-  const series = c.filas.map((f) => serieDeSesion(c, f, seLeyoLoIndicado, notacion));
+function ejercicioDeSesion(c: ComparacionDeEjercicio, seLeyoLoIndicado: boolean, notacion: NotacionDelEsfuerzo, pideElEsfuerzo: boolean): EjercicioDeSesion {
+  const series = c.filas.map((f) => serieDeSesion(c, f, seLeyoLoIndicado, notacion, pideElEsfuerzo));
   const esfuerzo = COPY_NOTACION_DEL_ESFUERZO.etiqueta[notacion];
   const planificadas = c.filas.filter((f) => f.planificada.tipo === 'planificada').length;
   const registradas = series.filter((s) => s.estado === 'REGISTRADA').length;
@@ -306,8 +314,16 @@ const todasLasSeries = (ejercicios: readonly EjercicioDeSesion[]): SerieDeSesion
 /**
  * Una sesión registrada, con lo que dice su fila y su detalle. `objetivos`: los de su versión del plan, o `null` si no se
  * pudieron leer. DL-192: `notacion`, la del plan de la persona (`notacionDeLasVersiones`): todo el historial se lee en ella.
+ * DL-202 (EP-D07): `pideElEsfuerzo`, si su versión le pregunta el esfuerzo de cada serie; sin eso, un RIR sin registrar
+ * no se cuenta como un dato que falta.
  */
-export function filaDeLaSesion(x: EjecucionDeEntrenamiento, objetivos: ObjetivosDeLaVersion | null, versiones = identidadDeVersiones([x]), notacion: NotacionDelEsfuerzo = 'RIR'): FilaDeSesion {
+export function filaDeLaSesion(
+  x: EjecucionDeEntrenamiento,
+  objetivos: ObjetivosDeLaVersion | null,
+  versiones = identidadDeVersiones([x]),
+  notacion: NotacionDelEsfuerzo = 'RIR',
+  pideElEsfuerzo = true,
+): FilaDeSesion {
   const comparaciones = compararEjecucion(x, versiones, objetivos ?? undefined);
   const fuente: FuenteDelRegistro = comparaciones[0]?.fuente ?? (x.effectiveView.kind === 'NOT_RESOLVABLE' ? { tipo: 'no-resoluble' } : { tipo: 'original', registradoEl: x.recordedAt });
   const rige = fuente.tipo === 'no-resoluble' ? null : registroVigente(x);
@@ -335,7 +351,7 @@ export function filaDeLaSesion(x: EjecucionDeEntrenamiento, objetivos: Objetivos
   const sinContar = { registradas: null, planificadas: null, sinRegistrar: 0, conDiferencias: seLeyoLoIndicado ? 0 : null };
   if (clase === 'SIN_REGISTRO_VIGENTE') return { ...base, ...sinContar, series: 'El registro vigente no se puede determinar', frente: 'No se compara', ejercicios: [] };
   if (clase === 'NO_REALIZADA') return { ...base, ...sinContar, series: 'Sin series: la sesión se registró así', frente: 'No hay series que comparar', ejercicios: [] };
-  const ejercicios = comparaciones.map((c) => ejercicioDeSesion(c, seLeyoLoIndicado, notacion));
+  const ejercicios = comparaciones.map((c) => ejercicioDeSesion(c, seLeyoLoIndicado, notacion, pideElEsfuerzo));
   if (clase === 'RESUMIDA') return { ...base, ...sinContar, series: 'Registro resumido: sin series', frente: 'No se compara serie por serie', ejercicios };
 
   const series = todasLasSeries(ejercicios);
@@ -373,16 +389,18 @@ export function filaDeLaSesion(x: EjecucionDeEntrenamiento, objetivos: Objetivos
 /**
  * Las sesiones registradas del período, de la más nueva a la más vieja. `objetivosPorVersion`: los objetivos por serie
  * de cada versión del plan que aparece en el período; una versión que falta, o con `null`, no se pudo leer. DL-192:
- * `notacion`, la del plan de la persona; ausente, RIR.
+ * `notacion`, la del plan de la persona; ausente, RIR. DL-202 (EP-D07): `sinEsfuerzoPorSerie`, las versiones que no le
+ * preguntan a la persona el esfuerzo de cada serie (`askSetEffort: false` de API-SER-01).
  */
 export function componerLasSesiones(
   ejecuciones: readonly EjecucionDeEntrenamiento[],
   objetivosPorVersion: ReadonlyMap<string, ObjetivosDeLaVersion | null>,
   notacion: NotacionDelEsfuerzo = 'RIR',
+  sinEsfuerzoPorSerie: ReadonlySet<string> = new Set(),
 ): FilaDeSesion[] {
   const versiones = identidadDeVersiones(ejecuciones);
   return ejecuciones
-    .map((x) => filaDeLaSesion(x, objetivosPorVersion.get(x.planId) ?? null, versiones, notacion))
+    .map((x) => filaDeLaSesion(x, objetivosPorVersion.get(x.planId) ?? null, versiones, notacion, !sinEsfuerzoPorSerie.has(x.planId)))
     .sort((a, b) => b.ocurrio.localeCompare(a.ocurrio) || b.registradoEl.localeCompare(a.registradoEl) || b.id.localeCompare(a.id));
 }
 

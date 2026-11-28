@@ -30,6 +30,8 @@ describe('ED-13 · la prescripción habitual (API-HAB-06 a 08)', () => {
     const c = await circuitoDeEntrenamiento(app, `presets-trn-${++contador}`);
     const pro = conSesion(app, c.pro.token);
     const guardada = PrescripcionHabitualResponseSchema.parse((await pro.post('/api/v1/training/prescription-presets').send({ name: 'Mi fuerza 5×3 · RIR 1', prescription: fuerza() }).expect(201)).body).data;
+    // DL-203: la respuesta es una unión por `kind`; la que se guardó sin `kind` es de series.
+    if (guardada.kind !== 'SERIES') throw new Error(`se esperaba un preset de series y llegó ${guardada.kind}`);
     expect([guardada.version, guardada.prescription.sets.length, guardada.prescription.restSeconds]).toEqual(['v1', 5, 180]);
     // El mismo nombre, sin señalar a cuál reemplaza: 409; señalándola con su versión, la reemplaza.
     expect((await pro.post('/api/v1/training/prescription-presets').send({ name: 'mi fuerza 5×3 · rir 1', prescription: fuerza(2) })).status).toBe(409);

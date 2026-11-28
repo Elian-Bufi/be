@@ -241,7 +241,7 @@ test('TB-48 · los editores duplican y mueven con el módulo, y lo abierto sigue
 test('TB-48 · los textos de duplicar y reordenar pasan las listas de términos', () => {
   const C = X.COPY_DE_LOS_EDITORES;
   const textos = Object.values(C).map((t) => (typeof t === 'function' ? t(2, 3) : t));
-  for (const t of [...textos, X.loQuePasaConLasSesiones(1), X.loQuePasaConLasSesiones(3)]) {
+  for (const t of textos) {
     assert.deepEqual(d.terminosProhibidosEn(t), [], t);
     assert.deepEqual(d.terminosProhibidosDeEntrenamientoEn(t), [], t);
     assert.doesNotMatch(t, /cumplimiento|adherencia|racha|px/i, t);
@@ -261,22 +261,23 @@ test('TB-48 · se quita cualquier serie, también una del medio, y las demás co
   assert.doesNotMatch(ejercicio, /Quitar la última serie|slice\(0, -1\)/);
 });
 
-test('TB-48 · el microciclo se ofrece también con sesiones sueltas, que pasan a la «Semana 1» con sus identificadores', () => {
-  const bloque = { blockId: ID(30), label: 'Fuerza', purpose: 'Base', sessions: [sesionConIds(), { ...sesionConIds(), sessionId: ID(40), prescriptions: [] }] };
-  const organizado = X.organizadoEnMicrociclos(structuredClone(bloque));
-  assert.equal('sessions' in organizado, false, 'un bloque usa microciclos o sesiones sueltas, nunca las dos');
-  assert.deepEqual(organizado.microcycles.map((m) => [m.label, m.sessions.map((s) => s.sessionId)]), [['Semana 1', [ID(20), ID(40)]]]);
-  assert.deepEqual([organizado.blockId, organizado.label, organizado.purpose], [ID(30), 'Fuerza', 'Base']);
-  // La API lo acepta: no hay sesiones y microciclos juntos ni identificadores repetidos.
-  assert.equal(normalizarEntrenamiento({ blocks: [organizado] }).ok, true);
-  assert.equal(normalizarEntrenamiento({ blocks: [{ ...organizado, sessions: bloque.sessions }] }).ok, false, 'mutación: las sesiones quedan también en el bloque');
-  assert.deepEqual(X.organizadoEnMicrociclos({ label: 'Vacío', sessions: [] }).microcycles, [{ label: 'Semana 1', purpose: null, sessions: [] }]);
-  assert.equal(X.loQuePasaConLasSesiones(0), null);
-  assert.equal(X.loQuePasaConLasSesiones(3), 'Las 3 sesiones de la fase pasan a «Semana 1».');
+test('DL-203 (PN-D01) · el editor ya no crea microciclos, pero un plan que los tiene se sigue leyendo y editando', () => {
   const entrenamiento = leer('training/editor.tsx');
-  assert.match(entrenamiento, /cambiar\(\(x\) => \(\(x\[i\] = organizadoEnMicrociclos\(x\[i\]!\)\), x\)\)/);
-  assert.match(entrenamiento, /detalle: loQuePasaConLasSesiones\(sesiones\.length\),\s+noSePuede: sesiones\.length > TOPES_DE_ENTRENAMIENTO\.sesionesDelMicrociclo/);
-  assert.doesNotMatch(entrenamiento, /Solo mientras el bloque no tiene sesiones/);
+  // Sin crear: ni «Organizar por microciclos» ni «Agregar microciclo».
+  assert.doesNotMatch(entrenamiento, /texto: 'Organizar por microciclos'|organizadoEnMicrociclos\(|agregarMicrociclo|data-agregar-microciclo/);
+  assert.equal('organizadoEnMicrociclos' in X, false, 'mutación: vuelve la función que armaba la «Semana 1»');
+  assert.equal('loQuePasaConLasSesiones' in X, false);
+  // Un plan viejo: se elige la semana, se le cambia el nombre, se quita, y sus sesiones se editan.
+  assert.match(entrenamiento, /nivel="microciclo"/);
+  assert.match(entrenamiento, /\{ clave: 'nombre', texto: 'Cambiar el nombre', alElegir: \(\) => setTexto\(\{ de: 'nombre-del-microciclo', \.\.\.delMicrociclo \}\) \}/);
+  assert.match(entrenamiento, /\{ clave: 'quitar', texto: 'Quitar este microciclo', alElegir: quitarMicrociclo \}/);
+  assert.match(entrenamiento, /const lasSesiones = \(x: Bloques\): SesionE\[\] => \(j !== null \? x\[i\]!\.microcycles!\[j\]!\.sessions : \(x\[i\]!\.sessions \?\?= \[\]\)\);/);
+  // Al quitar la última semana, la fase queda con sus sesiones sueltas y no con una lista vacía de microciclos.
+  assert.match(entrenamiento, /x\[i\]!\.microcycles!\.length === 0 && delete x\[i\]!\.microcycles/);
+  // El contrato sigue aceptando un plan con microciclos (los planes viejos no se rompen).
+  const viejo = { blockId: ID(30), label: 'Fuerza', purpose: 'Base', microcycles: [{ label: 'Semana 1', purpose: null, sessions: [sesionConIds()] }] };
+  assert.equal(normalizarEntrenamiento({ blocks: [viejo] }).ok, true);
+  assert.equal(normalizarEntrenamiento({ blocks: [{ ...viejo, sessions: [{ ...sesionConIds(), sessionId: ID(40) }] }] }).ok, false, 'mutación: sesiones y microciclos juntos');
 });
 
 // ─── «Revisar el plan» (`advisees/revisar-el-plan.ts`) ──────────────────────────────────────────────────────────────

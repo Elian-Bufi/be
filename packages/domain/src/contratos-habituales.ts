@@ -12,12 +12,18 @@
 import { z } from 'zod';
 import { IdOpaco, Instante } from './contratos';
 import {
+  AproximacionesDelEjercicioSchema,
   BaseDeCargaSchema,
   BaseDeRepeticionesSchema,
+  BloqueDeLaSesionEntradaSchema,
   DescansoRecomendadoSchema,
+  DiaDeLaSemanaSchema,
   EjercicioDeCatalogoSchema,
+  IdDeNodoSchema,
   IntensidadEntradaSchema,
   ParametroProfesionalSchema,
+  PrescripcionEntradaSchema,
+  ProgresionDeLaFaseSchema,
   SeriePrescriptaEntradaSchema,
   SesionEntradaSchema,
 } from './contratos-entrenamiento';
@@ -136,28 +142,95 @@ export const PrescripcionHabitualContenidoSchema = z.strictObject({
 });
 export type PrescripcionHabitualContenido = z.infer<typeof PrescripcionHabitualContenidoSchema>;
 
+// ─── DL-203 (WP-PRESETS-POR-NIVEL) · los presets de sesión y de fase del profesional ──────────────────────────────
+/**
+ * Los presets propios en tres niveles, con el mismo mecanismo de API-HAB-06 a 08 (PN-D07): `SERIES` (la prescripción
+ * habitual de siempre), `SESION` y `FASE`. El tipo viaja en el contenido guardado (la columna JSON de siempre: sin
+ * migración, PN-D08); lo guardado antes, sin tipo, es `SERIES`. Lo que guardan:
+ * - **los ejercicios sí,** porque los eligió el profesional;
+ * - **nunca cargas absolutas** (el esquema es estricto: una carga es un 400): son de cada persona. Con el criterio
+ *   PERCENT_RM se guarda el porcentaje y la carga se recalcula con el 1RM de quien lo recibe;
+ * - **nunca las notas del ejercicio ni de sus series,** ni las anotaciones privadas de la fase, ni la referencia del
+ *   criterio PERCENT_RM: pueden nombrar a la persona. Los nombres, el objetivo de la fase y las indicaciones de la sesión sí se guardan (son
+ *   parte del armado), y el website los muestra antes de guardar para revisarlos;
+ * - **los identificadores son claves locales** del preset (`IdDeNodoSchema`): al aplicarlo, el editor los cambia por
+ *   nuevos, y con ellos los días, las aproximaciones y la progresión que los citan.
+ * Los topes son los del plan (40 ejercicios por sesión, 20 series, 30 sesiones por fase, 400 aproximaciones).
+ */
+export const TipoDePresetPropioSchema = z.enum(['SERIES', 'SESION', 'FASE']);
+export type TipoDePresetPropio = z.infer<typeof TipoDePresetPropioSchema>;
+
+/** Una serie del preset: sin carga ni nota. */
+const SerieDelPresetSchema = SeriePrescriptaEntradaSchema.omit({ suggestedLoad: true, note: true });
+/** Un ejercicio del preset: el del catálogo, sus series y lo general, sin carga, sin nota y con su clave local. */
+export const EjercicioDelPresetSchema = PrescripcionEntradaSchema.omit({ suggestedLoad: true, note: true }).extend({
+  prescriptionId: IdDeNodoSchema,
+  sets: z.array(SerieDelPresetSchema).max(20),
+});
+export type EjercicioDelPreset = z.infer<typeof EjercicioDelPresetSchema>;
+/** Una sesión del preset, con su clave local (para sus días, en un preset de fase). */
+export const SesionDelPresetSchema = z.strictObject({
+  sessionId: IdDeNodoSchema,
+  label: Texto(120),
+  instructions: z.string().trim().max(2000).nullable().optional(),
+  prescriptions: z.array(EjercicioDelPresetSchema).max(40),
+  exerciseGroups: z.array(BloqueDeLaSesionEntradaSchema).max(20).optional(),
+});
+export type SesionDelPreset = z.infer<typeof SesionDelPresetSchema>;
+
+/** «Preset de sesión»: la sesión entera, con sus ejercicios, sus series y sus aproximaciones. */
+export const PresetDeSesionContenidoSchema = z.strictObject({
+  session: SesionDelPresetSchema,
+  warmUps: z.array(AproximacionesDelEjercicioSchema).max(40).optional(),
+});
+export type PresetDeSesionContenido = z.infer<typeof PresetDeSesionContenidoSchema>;
+
+/** «Preset de fase»: la fase entera, con sus semanas, sus sesiones y sus días, su progresión y las aproximaciones. */
+export const PresetDeFaseContenidoSchema = z.strictObject({
+  label: Texto(120),
+  purpose: z.string().trim().max(1000).nullable().optional(),
+  weeks: z.number().int().min(1).max(52).nullable(),
+  sessions: z.array(SesionDelPresetSchema).max(30),
+  /** Los días de la semana de cada sesión (la semana tipo), por la clave local de la sesión. */
+  days: z.array(z.strictObject({ sessionId: IdDeNodoSchema, weekdays: z.array(DiaDeLaSemanaSchema).min(1).max(7) })).max(30).optional(),
+  /** La progresión de la fase (EE-D30), sin su bloque; `prescriptionIds` cita claves locales (la progresión por ejercicio). */
+  progression: ProgresionDeLaFaseSchema.omit({ blockId: true }).nullable().optional(),
+  warmUps: z.array(AproximacionesDelEjercicioSchema).max(400).optional(),
+});
+export type PresetDeFaseContenido = z.infer<typeof PresetDeFaseContenidoSchema>;
+
+const Reemplazo = { replaces: IdOpaco.optional(), expectedVersion: TokenDeVersionSchema.optional() };
+
 /**
  * API-HAB-07: guardar o reemplazar por nombre. Un nombre en uso por otra activa sin `replaces` que la señale es 409
  * PRESET_NAME_TAKEN, como las sesiones habituales; con `replaces` (propia y activa), la reemplaza si su versión es
- * `expectedVersion`.
+ * `expectedVersion`. DL-203: `kind` dice el nivel; sin `kind`, `SERIES`, como hasta ahora. El nombre es único entre todos
+ * los presets propios de entrenamiento, de cualquier nivel (PN-D09).
  */
 export const GuardarPrescripcionHabitualRequestSchema = z
-  .strictObject({ name: Texto(120), prescription: PrescripcionHabitualContenidoSchema, replaces: IdOpaco.optional(), expectedVersion: TokenDeVersionSchema.optional() })
+  .union([
+    z.strictObject({ name: Texto(120), kind: z.literal('SERIES').optional(), prescription: PrescripcionHabitualContenidoSchema, ...Reemplazo }),
+    z.strictObject({ name: Texto(120), kind: z.literal('SESION'), session: PresetDeSesionContenidoSchema, ...Reemplazo }),
+    z.strictObject({ name: Texto(120), kind: z.literal('FASE'), phase: PresetDeFaseContenidoSchema, ...Reemplazo }),
+  ])
   .refine((p) => (p.replaces === undefined) === (p.expectedVersion === undefined), { message: 'Reemplazar pide la versión esperada', path: ['expectedVersion'] });
 export type GuardarPrescripcionHabitualRequest = z.infer<typeof GuardarPrescripcionHabitualRequestSchema>;
 
-export const PrescripcionHabitualSchema = z.strictObject({
-  presetId: IdOpaco,
-  version: TokenDeVersionSchema,
-  name: z.string(),
-  prescription: PrescripcionHabitualContenidoSchema,
-  createdAt: Instante,
-  updatedAt: Instante,
-});
+const DelPreset = { presetId: IdOpaco, version: TokenDeVersionSchema, name: z.string(), createdAt: Instante, updatedAt: Instante };
+
+export const PrescripcionHabitualSchema = z.strictObject({ ...DelPreset, kind: z.literal('SERIES'), prescription: PrescripcionHabitualContenidoSchema });
 export type PrescripcionHabitual = z.infer<typeof PrescripcionHabitualSchema>;
-export const PrescripcionHabitualResponseSchema = z.strictObject({ data: PrescripcionHabitualSchema });
-/** API-HAB-06: las propias y activas, la guardada más recientemente primero; hasta 200, sin paginar. */
-export const ListaDePrescripcionesHabitualesResponseSchema = z.strictObject({ data: z.array(PrescripcionHabitualSchema) });
+/** DL-203: un preset de sesión, con el nombre vigente de cada ejercicio (por `exerciseVersionId`), como las sesiones habituales. */
+export const PresetDeSesionPropioSchema = z.strictObject({ ...DelPreset, kind: z.literal('SESION'), session: PresetDeSesionContenidoSchema, exercises: z.record(IdOpaco, EjercicioDeHabitualSchema) });
+export type PresetDeSesionPropio = z.infer<typeof PresetDeSesionPropioSchema>;
+/** DL-203: un preset de fase, con el nombre vigente de cada ejercicio. */
+export const PresetDeFasePropioSchema = z.strictObject({ ...DelPreset, kind: z.literal('FASE'), phase: PresetDeFaseContenidoSchema, exercises: z.record(IdOpaco, EjercicioDeHabitualSchema) });
+export type PresetDeFasePropio = z.infer<typeof PresetDeFasePropioSchema>;
+export const PresetPropioDeEntrenamientoSchema = z.discriminatedUnion('kind', [PrescripcionHabitualSchema, PresetDeSesionPropioSchema, PresetDeFasePropioSchema]);
+export type PresetPropioDeEntrenamiento = z.infer<typeof PresetPropioDeEntrenamientoSchema>;
+export const PrescripcionHabitualResponseSchema = z.strictObject({ data: PresetPropioDeEntrenamientoSchema });
+/** API-HAB-06: los propios y activos de los tres niveles, el guardado más recientemente primero; hasta 200, sin paginar. */
+export const ListaDePrescripcionesHabitualesResponseSchema = z.strictObject({ data: z.array(PresetPropioDeEntrenamientoSchema) });
 
 /** Gramos por día de un macro: el reparto habitual se escribe en gramos (DJ-7: nunca en proporciones antes del 25/11). */
 const GramosPorDiaSchema = z.strictObject({ value: z.number().nonnegative().finite().max(2000), unit: z.literal('g/day') });

@@ -95,7 +95,8 @@ export const COPY_ESTACION = {
   laSesionComoHabitual: 'Esta sesión, como sesión habitual',
   lasSeriesComoPrescripcion: 'Estas series, como prescripción habitual',
   sinSeriesParaPrescripcion: 'Esta sesión todavía no tiene un ejercicio con series.',
-  galeriaDeEstructura: 'Presets de estructura',
+  // DL-203: la galería única, desde el «⋯» de la versión, se abre en la pestaña «Plan».
+  galeriaDeEstructura: 'Presets: plan, fase, sesión y series',
   rehacerConElAsistente: 'Rehacer con el asistente',
 } as const;
 

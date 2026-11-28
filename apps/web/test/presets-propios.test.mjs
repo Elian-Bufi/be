@@ -40,13 +40,13 @@ test('DJ-7 · el reparto habitual se lee y se guarda en gramos por día, sin por
   assert.doesNotMatch(fuente, /%/);
 });
 
-test('ED-11 · las plantillas son una pestaña de la galería de estructura: se leen al abrirla, y reemplazar descarta antes de crear', () => {
-  const galeria = readFileSync(new URL('../src/app/pro/advisees/galeria-de-presets.tsx', import.meta.url), 'utf8');
+test('ED-11 · las plantillas son la pestaña «Plan» de la galería: se leen al abrirla, y reemplazar descarta antes de crear', () => {
+  const galeria = readFileSync(new URL('../src/app/pro/advisees/galeria-de-presets.tsx', import.meta.url), 'utf8').replace(/\r\n/g, '\n');
   const editor = readFileSync(new URL('../src/app/pro/advisees/training/editor.tsx', import.meta.url), 'utf8');
   const plan = readFileSync(new URL('../src/app/pro/advisees/training/plan.tsx', import.meta.url), 'utf8');
-  // Solo en la galería de estructura, y la lista se pide al abrir la pestaña.
-  assert.match(galeria, /\{tarea === 'estructura' && plantillas && paso === 'elegir' \? \(/);
-  assert.match(galeria, /if \(abierto && pestana === 'plantillas'\) void leerPlantillas\(\);/);
+  // DL-203: la pestaña «Plan» de la galería única; la lista se pide al abrir la pestaña.
+  assert.match(galeria, /\) : paso === 'elegir' && pestana === 'plan' \? \(|\{paso === 'elegir' && pestana === 'plan' \? \(/);
+  assert.match(galeria, /if \(abierto && pestana === 'plan'\) void leerPlantillas\(\);/);
   // Nada viene elegido al cambiar de pestaña (TEST-EDP-014).
   assert.match(galeria, /setPestana\(p\);\n\s*setElegido\(null\);/);
   // El editor descarta con la versión que muestra y solo si se hizo le pide al plan el borrador nuevo desde la plantilla.

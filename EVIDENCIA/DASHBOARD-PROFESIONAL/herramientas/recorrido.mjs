@@ -12181,8 +12181,8 @@ async function planesDeEntrenamiento() {
     await tocarNivelDelEditor('bloque', `${nombreAntes}${AJUSTE}`);
     comprobar(
       'F-108',
-      'Los nombres se cambian a pedido. El menú del bloque ofrece «Cambiar el nombre», «Organizar por microciclos» —apagada, y dice por qué: el bloque ya tiene sesiones— y «Quitar este bloque». «Cambiar el nombre» abre el campo en el lugar, con el foco y el nombre seleccionado; Enter lo cierra, el foco vuelve al botón del menú y el bloque se llama como se escribió. El menú de la sesión: «Cambiar el nombre», «Guardar como habitual» y «Quitar esta sesión»; el del microciclo: «Cambiar el nombre» y «Quitar este microciclo»; en un bloque que ya usa microciclos, el menú no ofrece organizarlo por microciclos. La versión queda con «Cambios sin guardar»',
-      igual(menuDelBloque, [sinMotivo('Cambiar el nombre'), { texto: 'Organizar por microciclos', apagada: true, motivo: 'Solo mientras el bloque no tiene sesiones: con microciclos, las sesiones van dentro de ellos.' }, sinMotivo('Quitar este bloque')]) &&
+      'Los nombres se cambian a pedido. El menú del bloque ofrece «Cambiar el nombre» y «Quitar este bloque»: desde DL-203 ya no ofrece «Organizar por microciclos». «Cambiar el nombre» abre el campo en el lugar, con el foco y el nombre seleccionado; Enter lo cierra, el foco vuelve al botón del menú y el bloque se llama como se escribió. El menú de la sesión: «Cambiar el nombre», «Guardar como habitual» y «Quitar esta sesión»; el del microciclo: «Cambiar el nombre» y «Quitar este microciclo»; un plan que ya usa microciclos los conserva y se edita igual. La versión queda con «Cambios sin guardar»',
+      igual(menuDelBloque, [sinMotivo('Cambiar el nombre'), sinMotivo('Quitar este bloque')]) &&
         conElNombreAbierto?.nombreAbierto?.id === 'b0-nombre' &&
         conElNombreAbierto.nombreAbierto.conFoco &&
         conElNombreAbierto.nombreAbierto.seleccionado &&

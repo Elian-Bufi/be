@@ -91,7 +91,8 @@ test('TEST-RPE-043 · el editor guarda la notación con el borrador, la provee a
 
 test('TEST-RPE-044 · lo registrado y la fuerza se leen en la notación del plan de la persona', () => {
   assert.match(leer('training/entrenamiento.tsx'), /<ConLaNotacionDeLaPersona token=\{contexto\.token\} asesoradoId=\{contexto\.asesoradoId\} clave=\{vista\}>/);
-  assert.match(leer('training/ejecuciones.tsx'), /componerLasSesiones\(ejecuciones, objetivosPorVersion, notacion\)/);
+  // DL-202: con las versiones que no piden el esfuerzo de cada serie, después de la notación.
+  assert.match(leer('training/ejecuciones.tsx'), /componerLasSesiones\(ejecuciones, objetivosPorVersion, notacion(, sinEsfuerzoPorSerie)?\)/);
   assert.match(leer('fuerza/fuerza-en-analizar.tsx'), /<ConLaNotacionDeLaPersona token=\{token\} asesoradoId=\{asesoradoId\}>/);
   assert.match(leer('fuerza/tarjeta.tsx'), /conQueSeEstimoElPunto\(p, notacion\)/);
   assert.match(leer('notacion-del-esfuerzo.tsx'), /notacionDeLasVersiones\(r\.datos\.data\)/);

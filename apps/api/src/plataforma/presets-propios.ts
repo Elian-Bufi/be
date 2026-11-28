@@ -58,6 +58,13 @@ export interface DefinicionDePresets<S extends EsquemaDeContrato> {
   readonly contenidoVerificado: (tx: Tx, profesionalId: string, pedido: SalidaDe<S>) => Promise<unknown>;
   readonly evento: (tx: Tx, tipo: 'GUARDADO' | 'QUITADO', actorId: string, recurso: { tipo: string; id: string }, estadoPrevio: string | null, estadoPosterior: string, procedencia: unknown, momento: Date) => Promise<void>;
   readonly nombreTomado: string;
+  /**
+   * DL-203: cómo va en la API lo guardado en la columna. Sin esto, `{ [clave]: contenido }`. Las prescripciones habituales
+   * lo usan para los tres niveles (`kind` y `prescription`, `session` o `phase`).
+   */
+  readonly contenidoEnLaApi?: (guardado: unknown) => Record<string, unknown>;
+  /** DL-203: lo que se suma a cada uno al leerlo (el nombre vigente de los ejercicios que cita), en una sola consulta. */
+  readonly completar?: (tx: Tx, profesionalId: string, datos: Record<string, unknown>[]) => Promise<Record<string, unknown>[]>;
 }
 
 const TOPE = 200;
@@ -68,7 +75,14 @@ export class PresetsPropios<S extends EsquemaDeContrato> {
 
   /** La forma de la API: el identificador, la versión, el nombre, el contenido y las fechas. */
   aApi(f: FilaDePreset): Record<string, unknown> {
-    return { presetId: f.id, version: token(f.version), name: f.nombre, [this.d.clave]: f[this.d.columna], createdAt: f.momentoDeRegistro.toISOString(), updatedAt: f.momentoDeActualizacion.toISOString() };
+    const contenido = this.d.contenidoEnLaApi ? this.d.contenidoEnLaApi(f[this.d.columna]) : { [this.d.clave]: f[this.d.columna] };
+    return { presetId: f.id, version: token(f.version), name: f.nombre, ...contenido, createdAt: f.momentoDeRegistro.toISOString(), updatedAt: f.momentoDeActualizacion.toISOString() };
+  }
+
+  /** Las filas como API, completadas si la definición lo pide. */
+  private async enLaApi(tx: Tx, profesionalId: string, filas: readonly FilaDePreset[]): Promise<Record<string, unknown>[]> {
+    const datos = filas.map((f) => this.aApi(f));
+    return this.d.completar ? this.d.completar(tx, profesionalId, datos) : datos;
   }
 
   listar(actor: ActorAutenticado, ctx: ContextoDeSolicitud): Promise<{ data: Record<string, unknown>[] }> {
@@ -81,7 +95,7 @@ export class PresetsPropios<S extends EsquemaDeContrato> {
       lectura: async (tx) => {
         await this.d.exigirProfesional(tx, actor.identidadId);
         const filas = await this.d.delegado(tx).findMany({ where: { profesionalId: actor.identidadId, estado: 'ACTIVO' }, orderBy: [{ momentoDeActualizacion: 'desc' }, { id: 'desc' }], take: TOPE });
-        return { data: filas.map((f) => this.aApi(f)) };
+        return { data: await this.enLaApi(tx, actor.identidadId, filas) };
       },
     });
   }
@@ -124,7 +138,7 @@ export class PresetsPropios<S extends EsquemaDeContrato> {
         }
         const recurso = { tipo: this.d.recurso, id: fila.id };
         await this.d.evento(tx, 'GUARDADO', actor.identidadId, recurso, destino?.estado ?? null, 'ACTIVO', procedencia, momento);
-        return { estadoHttp: 201, cuerpo: { data: this.aApi(fila) }, sujetoId: null, recurso };
+        return { estadoHttp: 201, cuerpo: { data: (await this.enLaApi(tx, actor.identidadId, [fila]))[0] }, sujetoId: null, recurso };
       },
     });
   }
@@ -165,7 +179,7 @@ export class PresetsPropios<S extends EsquemaDeContrato> {
         if (r.count === 0) throw errores.conflictoDeVersion();
         await this.d.evento(tx, quitar ? 'QUITADO' : 'GUARDADO', actor.identidadId, recurso, fila.estado, quitar ? 'QUITADO' : fila.estado, procedencia, momento);
         const despues = (await delegado.findUnique({ where: { id: fila.id } })) as FilaDePreset;
-        return { estadoHttp: 200, cuerpo: { data: this.aApi(despues) }, sujetoId: null, recurso };
+        return { estadoHttp: 200, cuerpo: { data: (await this.enLaApi(tx, actor.identidadId, [despues]))[0] }, sujetoId: null, recurso };
       },
     });
   }
