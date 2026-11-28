@@ -11,6 +11,7 @@ import {
   conQueSeEstimo,
   copyDeLaEstimacion,
   diaDeLaEstimacion,
+  esLaReferenciaDeLaEstimacion,
   estimarLaSerie,
   leerNumero,
   motivoEnLaNotacion,
@@ -428,7 +429,7 @@ export function procedenciaEnLasSeries(p: PrescripcionParaLaCarga, fechaDeLaEleg
   if (p.intensity?.criterion !== 'PERCENT_RM') return null;
   const ref = p.intensity.target.reference?.description?.trim();
   if (!ref) return 'sin-referencia';
-  return ref === referenciaDeLaEstimacion(fechaDeLaElegida) ? null : 'otra-referencia';
+  return esLaReferenciaDeLaEstimacion(ref, fechaDeLaElegida) ? null : 'otra-referencia';
 }
 
 /** Las elegidas que todavía existen: si se quitó una serie con el cuadro abierto, no se escribe en una que no está. */

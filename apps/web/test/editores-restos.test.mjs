@@ -120,6 +120,10 @@ test('ED-76 · en las elegidas con % RM, la estimación tiene que ser la de la r
   assert.equal(F.procedenciaEnLasSeries(conRef, '2026-10-01'), null);
   // La del 11/11 con la referencia del 01/10: los kilos saldrían de otra estimación que la que dice el plan.
   assert.equal(F.procedenciaEnLasSeries(conRef, '2026-11-11'), 'otra-referencia');
+  // Un plan guardado antes del 28/11 dice «Epley v1»: es la misma estimación, y se sigue reconociendo.
+  const conRefVieja = { intensity: { criterion: 'PERCENT_RM', target: { value: 75, reference: { description: '1RM estimado · Epley v1 · 01/10/2026' } } } };
+  assert.equal(F.procedenciaEnLasSeries(conRefVieja, '2026-10-01'), null);
+  assert.equal(F.procedenciaEnLasSeries(conRefVieja, '2026-11-11'), 'otra-referencia');
   assert.equal(F.procedenciaEnLasSeries({ intensity: { criterion: 'PERCENT_RM', target: { value: 75 } } }, '2026-11-11'), 'sin-referencia');
   assert.equal(F.procedenciaEnLasSeries({ intensity: { criterion: 'PERCENT_RM', target: { value: 75, reference: { description: '  ' } } } }, '2026-11-11'), 'sin-referencia');
   // Con RIR, o sin criterio, no hay referencia que cuidar.

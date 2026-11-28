@@ -82,7 +82,7 @@ const UNO_RM_ESTIMADO: SerieDisponible = (() => {
   const definicion: DefinicionDeMetrica = {
     id: 'entrenamiento.1rm-estimado',
     area: 'ENTRENAMIENTO',
-    nombre: '1RM estimado (Epley v1)',
+    nombre: '1RM estimado (Epley)',
     nombreCorto: '1RM estimado',
     unidad: 'kg',
     escala: 'RATIO',
@@ -98,7 +98,7 @@ const UNO_RM_ESTIMADO: SerieDisponible = (() => {
     cambioRelativo: false,
     decimales: 1,
     resumenDePeriodo: 'MEDIANA',
-    explicacion: 'La estimación del 1RM con la fórmula de Epley (v1), sesión a sesión, con la serie que elige la regla de la sesión.',
+    explicacion: 'La estimación del 1RM con la fórmula de Epley, sesión a sesión, con la serie que elige la regla de la sesión.',
     comoSeCalcula:
       'Con la carga, las repeticiones y el RIR de la serie elegida (RIR de 0 a 2). Hasta 10 repeticiones equivalentes la marca va llena; de 10 a 12, hueca. Solo entra lo que escribió la persona; lo observado por el profesional va con un rombo.',
     ausencias: 'Una sesión sin una serie que entre en la estimación no es un punto: «Cómo se calculó» dice por qué.',
@@ -112,7 +112,7 @@ const UNO_RM_ESTIMADO: SerieDisponible = (() => {
     unirPuntos: true,
     fuente: { tipo: 'PROYECCION', operacion: 'API-PRJ-01', clave: 'TRAINING_STRENGTH_ESTIMATE_BY_EXERCISE', parametro: null },
     acceso: { alcances: ['ENTRENAMIENTO'], caso: 'PLANES_PROPIOS', soloProfesional: true },
-    metodo: { nombre: 'Epley v1', rotulo: '1RM estimado (Epley v1)' },
+    metodo: { nombre: 'Epley', rotulo: '1RM estimado (Epley)' },
     marca: 'REGISTRADO',
     requiere: { ejercicio: true, serie: false, listaV1: true },
     rangoMinimoDelEje: { kg: 10, lb: 22 },

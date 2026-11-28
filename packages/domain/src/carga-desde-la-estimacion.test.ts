@@ -5,7 +5,7 @@
  */
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { PASOS_DEL_REDONDEO, cargaDesdeLaEstimacion, referenciaDeLaEstimacion } from './carga-desde-la-estimacion';
+import { PASOS_DEL_REDONDEO, cargaDesdeLaEstimacion, esLaReferenciaDeLaEstimacion, referenciaDeLaEstimacion } from './carga-desde-la-estimacion';
 import { terminosProhibidosDeFuerzaEn } from './estimacion-de-fuerza';
 
 /** 70 kg × 12 con RIR 0: 70 × (1 + 12/30) = 98,0 kg (RM-02). */
@@ -51,9 +51,16 @@ test('ED-76 · un % sin sentido no da carga: el cuadro no escribe nada', () => {
 
 test('RM-40 · la referencia lleva el método y la fecha, nunca el valor', () => {
   const r = referenciaDeLaEstimacion('2026-11-11');
-  assert.equal(r, '1RM estimado · Epley v1 · 11/11/2026');
+  assert.equal(r, '1RM estimado · Epley · 11/11/2026');
   assert.doesNotMatch(r, /98|kg|lb/);
   assert.deepEqual(terminosProhibidosDeFuerzaEn(r), []);
+});
+
+test('RM-40 · la referencia que se escribía antes, con «v1», sigue siendo la de esa estimación', () => {
+  assert.equal(esLaReferenciaDeLaEstimacion('1RM estimado · Epley · 11/11/2026', '2026-11-11'), true);
+  assert.equal(esLaReferenciaDeLaEstimacion('1RM estimado · Epley v1 · 11/11/2026', '2026-11-11'), true);
+  assert.equal(esLaReferenciaDeLaEstimacion('1RM estimado · Epley v1 · 01/10/2026', '2026-11-11'), false);
+  assert.equal(esLaReferenciaDeLaEstimacion('1RM estimado · Epley v2 · 11/11/2026', '2026-11-11'), false);
 });
 
 test('ED-76 (revisión del 13/11) · hacia abajo, el bruto a la vista va truncado: la cuenta no muestra un múltiplo que después «baja»', () => {

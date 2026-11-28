@@ -359,8 +359,8 @@ export function motivoEnPalabras(r: Extract<ResultadoDeLaSerie, { entra: false }
  */
 export const COPY_FUERZA = {
   titulo: 'Fuerza estimada',
-  nombreDeLaMetrica: '1RM estimado (Epley v1)',
-  metodo: 'Epley v1',
+  nombreDeLaMetrica: '1RM estimado (Epley)',
+  metodo: 'Epley',
   estimacion: 'estimación',
   estimacionOrientativa: 'estimación orientativa',
   queEs: 'Una estimación de la carga para una repetición, hecha con una serie. No es una repetición máxima medida.',

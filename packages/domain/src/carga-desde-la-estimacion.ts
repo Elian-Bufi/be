@@ -68,12 +68,22 @@ export function cargaDesdeLaEstimacion(
 }
 
 /**
- * La referencia del % RM que se escribe en el plan (RM-40): «1RM estimado · Epley v1 · 11/11/2026». El método y la
- * fecha civil de la estimación, nunca el valor.
+ * La referencia del % RM que se escribe en el plan (RM-40): «1RM estimado · Epley · 11/11/2026». El método y la
+ * fecha civil de la estimación, nunca el valor. Hasta el 28/11/2026 se escribía «Epley v1»: los planes guardados antes
+ * la conservan, y {@link esLaReferenciaDeLaEstimacion} la sigue reconociendo.
  */
 export function referenciaDeLaEstimacion(fechaCivil: string): string {
   const [anio, mes, dia] = fechaCivil.split('-');
-  return `1RM estimado · Epley v1 · ${dia}/${mes}/${anio}`;
+  return `1RM estimado · Epley · ${dia}/${mes}/${anio}`;
+}
+
+/**
+ * Si la referencia guardada en el plan es la de la estimación de esa fecha civil: la de hoy («Epley») o la que se
+ * escribía antes («Epley v1»), que nombran la misma cuenta.
+ */
+export function esLaReferenciaDeLaEstimacion(descripcion: string, fechaCivil: string): boolean {
+  const actual = referenciaDeLaEstimacion(fechaCivil);
+  return descripcion === actual || descripcion === actual.replace(' · Epley · ', ' · Epley v1 · ');
 }
 
 // ─── DL-196 parte B (E7, E18; EE-D36) · la carga para N repeticiones a un esfuerzo dado ──────────────────────────────
