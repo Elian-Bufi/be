@@ -1,0 +1,110 @@
+{
+  "catalogo": "alimentos",
+  "descripcion": "Cinco alimentos que el Recetario de BE (R067 a R151) necesita y el catálogo base no tenía, aprobados por Dirección el 2026-11-26. Mismo formato, misma fuente y misma forma de citar que alimentos.json (DL-141): USDA FoodData Central · SR Legacy, composición cada 100 g tal cual la fuente. Van en una migración nueva (20261126130000_alimentos_del_recetario): la migración del catálogo base ya está aplicada y no se regenera. SR Legacy no tiene dulce de membrillo (no hay registro razonable), así que ese no está.",
+  "siembra": "WP-RECETARIO · alimentos del recetario del 2026-11-26",
+  "fuente": {
+    "nombre": "USDA FoodData Central · SR Legacy",
+    "editor": "U.S. Department of Agriculture, Agricultural Research Service",
+    "cita": "U.S. Department of Agriculture, Agricultural Research Service. FoodData Central: SR Legacy (abril de 2018). https://fdc.nal.usda.gov/",
+    "descarga": "https://fdc.nal.usda.gov/fdc-datasets/FoodData_Central_sr_legacy_food_csv_2018-04.zip",
+    "sha256": "b80817294b8850530aaedf2e515c02593b1824f763a0ff356e5c2081643e6fd0",
+    "descargadoEl": "2026-11-26",
+    "licencia": {
+      "id": "CC0-1.0",
+      "label": "CC0 1.0 Universal (dominio público)",
+      "url": "https://creativecommons.org/publicdomain/zero/1.0/",
+      "attribution": "USDA Agricultural Research Service"
+    }
+  },
+  "alimentos": [
+    {
+      "fdcId": "168920",
+      "nombre": "Maíz blanco en grano, seco",
+      "grupo": "Cereales, harinas y panificados",
+      "preparacion": "crudo, seco, sin cocinar",
+      "nombresAlternativos": [
+        {
+          "nombre": "Maíz blanco partido",
+          "idioma": "ES",
+          "region": "AR"
+        }
+      ],
+      "usda": {
+        "ndbNumber": "20314",
+        "descripcion": "Corn grain, white",
+        "publicacion": "2019-04-01",
+        "categoria": "Cereal Grains and Pasta"
+      },
+      "composicion": {
+        "referenceAmount": "100g",
+        "energyKcal": 365,
+        "proteinG": 9.42,
+        "carbohydrateG": 74.26,
+        "fatG": 4.74
+      }
+    },
+    {
+      "fdcId": "173859",
+      "nombre": "Chorizo de cerdo, crudo",
+      "grupo": "Cerdo y fiambres",
+      "preparacion": "crudo, en tripa o picado",
+      "nombresAlternativos": [],
+      "usda": {
+        "ndbNumber": "7019",
+        "descripcion": "Sausage, pork, chorizo, link or ground, raw",
+        "publicacion": "2019-04-01",
+        "categoria": "Sausages and Luncheon Meats"
+      },
+      "composicion": {
+        "referenceAmount": "100g",
+        "energyKcal": 296,
+        "proteinG": 13.63,
+        "carbohydrateG": 3.78,
+        "fatG": 25.1,
+        "fiberG": 0
+      }
+    },
+    {
+      "fdcId": "172223",
+      "nombre": "Queso fresco",
+      "grupo": "Quesos",
+      "preparacion": "listo para consumir",
+      "nombresAlternativos": [],
+      "usda": {
+        "ndbNumber": "1228",
+        "descripcion": "Cheese, fresh, queso fresco",
+        "publicacion": "2019-04-01",
+        "categoria": "Dairy and Egg Products"
+      },
+      "composicion": {
+        "referenceAmount": "100g",
+        "energyKcal": 299,
+        "proteinG": 18.09,
+        "carbohydrateG": 2.98,
+        "fatG": 23.82,
+        "fiberG": 0
+      }
+    },
+    {
+      "fdcId": "172232",
+      "nombre": "Albahaca fresca",
+      "grupo": "Verduras y hortalizas",
+      "preparacion": "fresca",
+      "nombresAlternativos": [],
+      "usda": {
+        "ndbNumber": "2044",
+        "descripcion": "Basil, fresh",
+        "publicacion": "2019-04-01",
+        "categoria": "Spices and Herbs"
+      },
+      "composicion": {
+        "referenceAmount": "100g",
+        "energyKcal": 23,
+        "proteinG": 3.15,
+        "carbohydrateG": 2.65,
+        "fatG": 0.64,
+        "fiberG": 1.6
+      }
+    }
+  ]
+}
