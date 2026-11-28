@@ -1,11 +1,11 @@
 'use client';
 
 /**
- * GR-02 en pantalla · El 1RM estimado (Epley v1), sesión a sesión, con las versiones del plan de fondo (WP-GRAFICOS fase
- * 2, rama B; DL-174 y DL-171). Solo para los ejercicios de la lista de la v1 (RM-16); fuera de la lista no dibuja nada.
+ * GR-02 en pantalla · El 1RM estimado (Epley), sesión a sesión, con las versiones del plan de fondo (WP-GRAFICOS fase
+ * 2, rama B; DL-174 y DL-171). Solo para los ejercicios de la lista de la estimación (RM-16); fuera de la lista no dibuja nada.
  *
  * Con la pasada visual (DISENO-VISUAL §1 y §2 «B · Entrenamiento»; §5 manda), de arriba abajo:
- * - **el título** «1RM estimado (Epley v1)» y la línea tenue con la unidad, qué es cada punto, el período y el método;
+ * - **el título** «1RM estimado (Epley)» y la línea tenue con la unidad, qué es cada punto, el período y el método;
  * - **la leyenda** como fichas, solo con lo que se ve: lleno hasta 10 repeticiones equivalentes, hueco de más de 10 a 12
  *   (con «Incluir…» encendido), rombo para lo observado y la tira de cada sesión;
  * - **el gráfico** (240 px) con los puntos que dice la leyenda (`porSesion`: se ven sobre la línea también en un año), un

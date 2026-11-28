@@ -271,7 +271,7 @@ test('TEST-GPF-011 · «Armá tu gráfico» ofrece lo indicado y lo hecho, sin l
 
 test('TEST-GPF-012 · «Patrones»: el ejercicio elegido y, por defecto, el básico con más sesiones (mutación: siempre el más registrado)', () => {
   const ej = (exerciseKey, name, sessions, loadUnits = ['kg']) => ({ exerciseKey, name, sessions, setNumbers: [1], loadUnits });
-  // Sin ningún básico (de la lista de la v1) con sesiones, el de más sesiones.
+  // Sin ningún básico (de la lista de la estimación) con sesiones, el de más sesiones.
   const lista = [ej('e:00000000-0000-4000-8000-0000000000aa', 'Curl femoral', 12), ej('e:00000000-0000-4000-8000-0000000000bb', 'Plancha', 9, [])];
   assert.equal(P.ejercicioPorDefectoDePatrones(lista), 'e:00000000-0000-4000-8000-0000000000aa');
   assert.deepEqual(P.ejerciciosParaElegir(lista).map((x) => x.name), ['Curl femoral', 'Plancha']);

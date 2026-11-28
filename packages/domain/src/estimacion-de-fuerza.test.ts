@@ -103,7 +103,7 @@ test('RM-02 · 70 × 12 con RIR 0, escrita por la persona: 98,0 kg (n_eq 12), or
   assert.equal(e.banda, 'ORIENTATIVA');
   assert.equal(e.fechaCivil, '2026-11-11');
   assert.equal(estimacionALaVista(e), '≈ 98 kg');
-  assert.equal(rotuloDeLaEstimacion(e.banda), 'estimación orientativa · Epley v1');
+  assert.equal(rotuloDeLaEstimacion(e.banda), 'estimación orientativa · Epley');
 });
 
 test('RM-03 · 80 × 6 con RIR 2: 101,33 (n_eq 8), núcleo; a la vista «≈ 101,5 kg» y la décima solo en la cuenta', () => {
@@ -143,7 +143,7 @@ test('RM-07 · 100 × 1 con RIR 2: 110,0 kg (n_eq 3), núcleo: «estimación», 
   const e = valor(escrita(100, 1, 2));
   casi(e.valor, 110);
   assert.equal(e.banda, 'NUCLEO');
-  assert.equal(rotuloDeLaEstimacion(e.banda), 'estimación · Epley v1');
+  assert.equal(rotuloDeLaEstimacion(e.banda), 'estimación · Epley');
   assert.doesNotMatch(rotuloDeLaEstimacion(e.banda), /orientativa/);
 });
 
@@ -229,7 +229,7 @@ test('RM-14 · cada valor dice la especificación, la versión y el método', ()
   const e = valor(escrita(80, 8, 2));
   assert.deepEqual([e.especificacion, e.version, e.metodo], ['BE-E1RM', 1, 'EPLEY_V1']);
   assert.deepEqual(ESPECIFICACION_DE_LA_ESTIMACION, { especificacion: 'BE-E1RM', version: 1, metodo: 'EPLEY_V1' });
-  assert.match(rotuloDeLaEstimacion(e.banda), /Epley v1$/);
+  assert.match(rotuloDeLaEstimacion(e.banda), /· Epley$/);
 });
 
 test('RM-15 · la fecha del valor es la civil de la ejecución, nunca la de UTC ni la de una zona fija', () => {

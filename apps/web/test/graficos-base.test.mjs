@@ -695,7 +695,7 @@ test('TEST-GRF-011 (b) · el 1RM estimado por carrilDeSerie: lo observado por el
     estimate: { band: extra.banda ?? 'CORE', load: { value: 80, unit: 'kg' }, completedRepetitions: 5, rir: 1, equivalentRepetitions: 6, value: valor },
   });
   const s = A.serieDeLaFuerza({ estimate: { unit: 'kg', points: [fuerza('p1', '2026-11-02', 96), fuerza('p2', '2026-11-04', 97, { banda: 'ORIENTATIVE' }), fuerza('p3', '2026-11-05', 99, { observada: true })] } });
-  const opciones = { id: 'f', nombre: '1RM estimado (Epley v1)', indice: 0, metodo: 'Epley v1', escala: { enteros: false }, descripcion: '', lectura: (p) => `${p.value} kg` };
+  const opciones = { id: 'f', nombre: '1RM estimado (Epley)', indice: 0, metodo: 'Epley', escala: { enteros: false }, descripcion: '', lectura: (p) => `${p.value} kg` };
   const c = A.carrilDeSerie(s, serieDisponible('entrenamiento.1rm-estimado'), opciones);
   assert.deepEqual(
     c.puntos.map((p) => [p.clave, p.marca]),
@@ -711,7 +711,7 @@ test('TEST-GRF-011 (b) · el 1RM estimado por carrilDeSerie: lo observado por el
   const carga = A.carrilDeSerie({ ...s, points: s.points.map((p) => ({ ...p, segment: 'observada:x' })) }, serieDisponible('entrenamiento.carga', 'kg'), opciones);
   assert.ok(!carga.puntos.some((p) => p.marca === 'ROMBO'));
   assert.equal(carga.escala.rangoMinimo, undefined);
-  // Solo un ejercicio del catálogo de la lista de la v1 tiene estimación: una versión suelta u otro ejercicio no se piden.
+  // Solo un ejercicio del catálogo de la lista de la estimación tiene estimación: una versión suelta u otro ejercicio no se piden.
   const deLaLista = EJERCICIOS_DE_LA_ESTIMACION_V1[0].exerciseId;
   assert.equal(A.ejercicioDeLaEstimacion(`e:${deLaLista}`), deLaLista);
   assert.equal(A.ejercicioDeLaEstimacion(`v:${deLaLista}`), null);

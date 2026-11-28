@@ -4,7 +4,7 @@
  * DL-196 parte B · las herramientas nuevas del panel contextual del editor de Entrenamiento (`panel-contextual.ts`):
  *
  * - **La carga por semana de un ejercicio** (E7, E18): lo planificado (punteado, con la progresión de su fase y el escalón
- *   de la descarga) contra lo realizado (lleno, lo más alto de cada semana de la fase) y el máximo estimado (Epley v1 de
+ *   de la descarga) contra lo realizado (lleno, lo más alto de cada semana de la fase) y el máximo estimado (Epley de
  *   DL-171, solo en los ejercicios de su lista, con la banda orientativa en rombos huecos).
  * - **La carga para N repeticiones** a un RIR (o RPE) dado, con la cuenta a la vista y los límites del método.
  * - **La distribución de la fase** (E13, E20): la silueta como mapa de calor de series por semana, la frecuencia, los
@@ -141,7 +141,7 @@ export function CargaPorSemana({
         acciones={acciones}
         // DL-199 (ET3, E5): a la vista, solo lo que cambia la lectura (la fase sin fechas); el método, en el «?» del gráfico.
         pie={!fase ? <p className="nota">La fase no tiene fechas: lo realizado no se ubica en sus semanas.</p> : null}
-        ayuda={conEstimacion ? <p>El máximo estimado es Epley v1: solo series de hasta {TOPE_DE_LA_ESTIMACION} repeticiones equivalentes con RIR de hasta 2; de más de {TOPE_DEL_NUCLEO}, orientativo (rombo hueco).</p> : null}
+        ayuda={conEstimacion ? <p>El máximo estimado es Epley: solo series de hasta {TOPE_DE_LA_ESTIMACION} repeticiones equivalentes con RIR de hasta 2; de más de {TOPE_DEL_NUCLEO}, orientativo (rombo hueco).</p> : null}
       />
     </div>
   );

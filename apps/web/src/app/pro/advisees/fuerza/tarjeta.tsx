@@ -3,7 +3,7 @@
 /**
  * ED-75 · La tarjeta de fuerza en el detalle del ejercicio (WP-EDITORES-PROFESIONAL §5.8; V3 E-03; maqueta 14). Va
  * bajo «Lo registrado», aparte de lo que indica el plan y nunca mezclada con la prescripción: lee lo registrado y lo
- * observado (ED-74 y ED-72), nunca el plan (TEST-EDP-065). Solo en los ejercicios de la lista de la v1.
+ * observado (ED-74 y ED-72), nunca el plan (TEST-EDP-065). Solo en los ejercicios de la lista de la estimación.
  *
  * Qué serie muestra (ratificado el 12/11): la regla por sesión con el interruptor apagado, sobre la última sesión con
  * series que entran; si esa sesión solo tiene orientativas, la de mayor carga de ellas, como «estimación orientativa»
@@ -44,7 +44,7 @@ export function TarjetaDeFuerza({
   onRegistrar,
 }: {
   lectura: LecturaDeFuerza;
-  /** El nombre del catálogo, el de la lista de la v1. */
+  /** El nombre del catálogo, el de la lista de la estimación. */
   nombre: string;
   /** El nombre de la persona, como la ve este profesional. */
   persona: string;

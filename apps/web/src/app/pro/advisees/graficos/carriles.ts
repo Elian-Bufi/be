@@ -82,7 +82,7 @@ export interface CarrilDePuntos {
   /** «Carga registrada en la serie 1». */
   readonly nombre: string;
   readonly unidad: string;
-  /** «Epley v1». */
+  /** «Epley». */
   readonly metodo: string | null;
   /** El color (`ESTILOS`), de 0 a 2. */
   readonly indice: number;

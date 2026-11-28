@@ -4,7 +4,7 @@
  * GR-06 en pantalla · El perfil carga-repeticiones de la persona en el ejercicio (WP-GRAFICOS fase 2, rama B; DL-174).
  * Una dispersión en SVG propio: en X, las repeticiones equivalentes (repeticiones + RIR); en Y, la carga. Las series de
  * las últimas 4 semanas, en punto lleno; las anteriores, en cruz y con otro color: la forma lo dice además del color. En
- * los ejercicios de la lista de la v1, las curvas de igual 1RM estimado (Epley v1), rotuladas «de la fórmula».
+ * los ejercicios de la lista de la estimación, las curvas de igual 1RM estimado (Epley), rotuladas «de la fórmula».
  *
  * Con la pasada visual (DISENO-VISUAL §1 y §2 «B · Entrenamiento»; §5 manda):
  * - **arriba,** el título (16 px) y, tenue, la unidad, qué es cada marca y el período; la leyenda como fichas en una

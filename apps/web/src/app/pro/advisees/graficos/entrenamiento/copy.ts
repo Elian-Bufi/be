@@ -42,7 +42,7 @@ export const COPY_DEL_HISTORIAL = {
   sesiones,
 } as const;
 
-/** GR-02: el 1RM estimado (Epley v1) con las versiones de fondo, la lectura de cada versión y el ruido propio. */
+/** GR-02: el 1RM estimado (Epley) con las versiones de fondo, la lectura de cada versión y el ruido propio. */
 export const COPY_FUERZA_ESTIMADA = {
   titulo: COPY_FUERZA.nombreDeLaMetrica,
   carril: COPY_FUERZA.nombreDeLaMetrica,
@@ -190,11 +190,11 @@ export const COPY_PERFIL = {
   leyendaCorta: { recientes: 'Últimas 4 semanas', anteriores: 'Antes', curva: 'Igual 1RM estimado, de la fórmula' },
   recientesCorto: 'últimas 4 semanas',
   anterioresCorto: 'antes',
-  curva: 'Curva de igual 1RM estimado (Epley v1), de la fórmula: línea cortada',
+  curva: 'Curva de igual 1RM estimado (Epley), de la fórmula: línea cortada',
   rotuloDeLaCurva: (valor: string) => `≈ ${valor} · de la fórmula`,
-  mostrarCurvas: 'Mostrar las curvas de la fórmula (Epley v1)',
-  queSonLasCurvas: 'Las curvas son de la fórmula de Epley v1, no de la persona: cada una une las cargas que darían la misma estimación. Solo llegan hasta 12 repeticiones equivalentes.',
-  sinCurvas: 'Este ejercicio no está en la lista de la estimación (Epley v1): van solo los puntos, sin las curvas de la fórmula.',
+  mostrarCurvas: 'Mostrar las curvas de la fórmula (Epley)',
+  queSonLasCurvas: 'Las curvas son de la fórmula de Epley, no de la persona: cada una une las cargas que darían la misma estimación. Solo llegan hasta 12 repeticiones equivalentes.',
+  sinCurvas: 'Este ejercicio no está en la lista de la estimación (Epley): van solo los puntos, sin las curvas de la fórmula.',
   queEntra: 'Entran solo las series que escribió la persona con RIR de 0 a 2: lo tildado sin escribir (carga rápida), lo que vino del plan y lo que no dice quién lo escribió quedan afuera.',
   /** Lo que entra, en una línea a la vista (§5.6: el rango de validez a la vista); el detalle, en «Cómo leerlo». */
   validez: 'Solo las series que escribió la persona, con RIR de 0 a 2.',

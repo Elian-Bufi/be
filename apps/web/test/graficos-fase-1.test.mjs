@@ -48,7 +48,7 @@ test('TEST-GR-004 · cada resultado del buscador lleva la marca del índice de A
   assert.match(b, /onClick=\{releerElHistorial\}/);
 });
 
-test('TEST-GR-001 · «La vez pasada» va debajo de «Lo que indica el plan»; fuera de la lista de la v1, en su propio cuadro', () => {
+test('TEST-GR-001 · «La vez pasada» va debajo de «Lo que indica el plan»; fuera de la lista de la estimación, en su propio cuadro', () => {
   const detalle = leer('fuerza/detalle-del-ejercicio.tsx');
   const plan = detalle.indexOf('<section className="detalle-del-ejercicio__plan"');
   const vez = detalle.indexOf('<LaVezPasada lectura={vezPasada}');
@@ -156,11 +156,11 @@ test('TEST-GRV-012 · la fuerza estimada en «Analizar»: sin flecha en la lectu
   const grafico = fuente.slice(fuente.indexOf('function Grafico('), fuente.indexOf('function Globo('));
   assert.match(grafico, /data-ruido-y-validez>\n\s*\{COPY_DEL_RUIDO\.validez\(conOrientativas\)\}\n\s*\{ruido \? ` \$\{COPY_DEL_RUIDO\.ruido\(ruido\)\}` : ''\}/);
   assert.doesNotMatch(fuente, /enElPeriodo|function LineaDelPeriodo|<LineaDelPeriodo/, 'sin «la más baja… la más alta…», que se leía como primero → último');
-  // «Lo que no entra» y la fórmula, en «Cómo leerlo»; el título dice «1RM estimado (Epley v1)».
+  // «Lo que no entra» y la fórmula, en «Cómo leerlo»; el título dice «1RM estimado (Epley)».
   const como = fuente.slice(fuente.indexOf('function ComoLeerLaFuerza('), fuente.indexOf('function TablaDeOrigen('));
   assert.match(como, /<ComoLeerlo className="fuerza-en-analizar__como-leerlo">/);
   assert.match(como, /data-no-entra-por-fecha/);
-  assert.match(fuente, /titulo: '1RM estimado \(Epley v1\)'/);
+  assert.match(fuente, /titulo: '1RM estimado \(Epley\)'/);
   // Sin un número en cada punto: los rótulos salen de `puntosConRotulo` y `rotulosSinPisarse`.
   assert.match(fuente, /const claves = puntosConRotulo\(conValor, elegido\?\.pointId \?\? null\);/);
   assert.match(fuente, /const rotulos = rotulosSinPisarse\(/);

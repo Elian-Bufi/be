@@ -123,7 +123,7 @@ function diasEntre(desde: string, hasta: string): string[] {
 }
 
 /**
- * El `exerciseId` de una clave `e:` de la lista de la v1 de la estimación, o `null` si no es una de ellas: una versión
+ * El `exerciseId` de una clave `e:` de la lista de la estimación de la estimación, o `null` si no es una de ellas: una versión
  * suelta (`v:`) u otro ejercicio no tienen estimación (RM-16, DL-171), y no se piden.
  */
 export function ejercicioDeLaEstimacion(exerciseKey: string | null): string | null {
@@ -144,7 +144,7 @@ export function serieDeLaFuerza(r: ResultadoDeEstimacionDeFuerza): SerieAnalitic
   const puntos = linea.points.filter((p) => p.estimate.load.unit === linea.unit);
   return {
     metricId: 'entrenamiento.1rm-estimado',
-    label: '1RM estimado (Epley v1)',
+    label: '1RM estimado (Epley)',
     unit: linea.unit,
     scale: 'RATIO',
     grain: 'ORIGINAL',
@@ -172,7 +172,7 @@ export function serieDeLaFuerza(r: ResultadoDeEstimacionDeFuerza): SerieAnalitic
       }),
     ),
     gaps: [],
-    segments: [{ segment: 'estimacion', label: 'Epley v1', breakReason: null }],
+    segments: [{ segment: 'estimacion', label: 'Epley', breakReason: null }],
     notes: [],
   };
 }

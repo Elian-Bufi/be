@@ -213,7 +213,7 @@ test('TEST-ET1-19 · F6, F7 y F8: el panel sin desbordes, la carga para N en un 
   assert.match(PANEL, /<div className="marco-del-panel__abrir">/);
   assert.match(CSS, /\.panel-del-editor \.almanaque__sesion \{\n\s*width: min\(2\.25rem, 100%\);/);
   assert.match(PARTE_B, /data-carga-para-repeticiones="no-aplica"/);
-  assert.equal((PARTE_B.match(/El máximo estimado \(Epley v1\) es solo/g) ?? []).length, 0, 'ya no se repite');
+  assert.equal((PARTE_B.match(/El máximo estimado \(Epley\) es solo/g) ?? []).length, 0, 'ya no se repite');
   assert.match(GRAFICO, /marcasDelEje\(0, Math\.max\(\.\.\.todos\)\)/);
   assert.match(PANEL, /const min = 0;/);
 });

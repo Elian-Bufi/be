@@ -58,7 +58,7 @@ test('TEST-GRF-001 · cada serie del catálogo tiene su área, su eje X, una fue
   }
   // La fuerza dice su método en pantalla, y solo la ve el profesional (DL-171).
   const fuerza = serie('entrenamiento.1rm-estimado');
-  assert.equal(fuerza.metodo?.rotulo, '1RM estimado (Epley v1)');
+  assert.equal(fuerza.metodo?.rotulo, '1RM estimado (Epley)');
   assert.equal(fuerza.acceso.soloProfesional, true);
   assert.deepEqual(fuerza.rangoMinimoDelEje, { kg: 10, lb: 22 });
   assert.equal(fuerza.definicion.cambioRelativo, false);

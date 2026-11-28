@@ -93,7 +93,7 @@ export function DetalleDelEjercicio({
   token: string;
   asesoradoId: string;
   sesionPerdida: (r: Resultado<unknown>) => boolean;
-  /** El ejercicio del catálogo, de la lista de la v1. */
+  /** El ejercicio del catálogo, de la lista de la estimación. */
   exerciseId: string;
   nombre: string;
   /** La unidad de la prescripción: la del cuadro de la carga (sin convertir, RM-39). */

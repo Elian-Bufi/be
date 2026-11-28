@@ -1,5 +1,5 @@
 /**
- * SP-01 · Carbohidratos registrados × 1RM estimado (Epley v1), el ejemplo de Dirección (WP-GRAFICOS fase 2, DL-174).
+ * SP-01 · Carbohidratos registrados × 1RM estimado (Epley), el ejemplo de Dirección (WP-GRAFICOS fase 2, DL-174).
  * Solo en el caso 1: el mismo profesional con Nutrición y Entrenamiento y planes propios en las dos (`caso-de-acceso.ts`).
  *
  * - **Tres carriles alineados por fecha:** los carbohidratos por día (con lo que se sabe de cada día y el objetivo en
@@ -117,7 +117,7 @@ function fuerzaDeLaEtapa(puntos: readonly PuntoDeFuerza[], e: EtapaDelObjetivo) 
 
 const aLaVista = (p: PuntoDeFuerza): string => estimacionALaVista({ carga: p.estimate.load.value, repeticiones: p.estimate.completedRepetitions, rir: p.estimate.rir, unidad: p.estimate.load.unit });
 
-/** «En Sentadilla, el 1RM estimado (Epley v1) estuvo entre ≈ 98 y ≈ 102 kg en 7 sesiones, con RIR registrado de mediana 1 y series de 5 a 6 repeticiones». */
+/** «En Sentadilla, el 1RM estimado (Epley) estuvo entre ≈ 98 y ≈ 102 kg en 7 sesiones, con RIR registrado de mediana 1 y series de 5 a 6 repeticiones». */
 function fuerzaEnPalabras(ejercicio: string, letra: string, f: ReturnType<typeof fuerzaDeLaEtapa>): string {
   if (f.nucleo.length === 0) return `En ${ejercicio}, la etapa ${letra} no tiene sesiones con una estimación del núcleo (hasta 10 repeticiones equivalentes).`;
   const ordenados = [...f.nucleo].sort((a, b) => a.estimate.value - b.estimate.value);
@@ -133,7 +133,7 @@ function fuerzaEnPalabras(ejercicio: string, letra: string, f: ReturnType<typeof
       : f.orientativas === 1
         ? '; 1 sesión orientativa (de más de 10 a 12 repeticiones equivalentes) se ve hueca y no entra'
         : `; ${numero(f.orientativas, 0)} sesiones orientativas (de más de 10 a 12 repeticiones equivalentes) se ven huecas y no entran`;
-  return `En ${ejercicio}, en la etapa ${letra}, el 1RM estimado (Epley v1) estuvo ${valor} en ${sesiones}${rir}${reps}${orientativas}.`;
+  return `En ${ejercicio}, en la etapa ${letra}, el 1RM estimado (Epley) estuvo ${valor} en ${sesiones}${rir}${reps}${orientativas}.`;
 }
 
 /** La lectura de SP-01: la ventana, lo que dice cada etapa, el ruido, lo que también cambió y la frase. */

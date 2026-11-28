@@ -69,7 +69,7 @@ export function GraficosEnAnalizar({ tituloId, pregunta }: { tituloId: string; p
         <div className="graficos-en-analizar__lista">
           {graficos.map((g) => (
             <article key={g.id} className="tarjeta graficos-en-analizar__grafico" data-grafico={g.id} aria-label={g.titulo}>
-              {/* SP-01 pide un ejercicio de la lista de la v1: el más registrado, y los otros a elegir. */}
+              {/* SP-01 pide un ejercicio de la lista de la estimación: el más registrado, y los otros a elegir. */}
               {g.requiere.listaV1 && v1.length > 1 ? (
                 <label className="campo campo--en-linea graficos-en-analizar__ejercicio">
                   <span>Ejercicio</span>

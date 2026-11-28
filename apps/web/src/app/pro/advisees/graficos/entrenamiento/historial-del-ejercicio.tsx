@@ -2,12 +2,12 @@
 
 /**
  * El historial del ejercicio en el cuadro de la estación (WP-GRAFICOS fase 2, rama B; DL-174): los pasos «Historial»
- * (GR-02 si el ejercicio es de la lista de la v1, GR-03 y GR-05 alineados, con un solo cursor para los tres) y «Perfil»
+ * (GR-02 si el ejercicio es de la lista de la estimación, GR-03 y GR-05 alineados, con un solo cursor para los tres) y «Perfil»
  * (GR-06), que se abren en el mismo cuadro con «Atrás» (ED-10). Arriba, el período (12 semanas, 6 meses o desde que la
  * acompañás) y, si hace falta, la serie y la unidad; cada gráfico, con «Abrir en Analizar» y lo elegido. Nada de esto
  * escribe en el plan.
  *
- * El cuadro se abre para todos los ejercicios (GR-T30): los de la lista de la v1, desde «Detalle y fuerza estimada»
+ * El cuadro se abre para todos los ejercicios (GR-T30): los de la lista de la estimación, desde «Detalle y fuerza estimada»
  * (ED-75); los demás, desde «La vez pasada» (GR-01). La tarjeta de fuerza sigue solo en la v1.
  *
  * Con la pasada visual del 15/11: las versiones del plan llegan a los tres gráficos con lo que cambió en lo indicado al

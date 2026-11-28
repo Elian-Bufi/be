@@ -25,7 +25,7 @@ export type LecturaDeLaFuerza =
   | { readonly tipo: 'cargando' }
   | { readonly tipo: 'error'; readonly motivo: MotivoDeFalla };
 
-/** El 1RM estimado de un ejercicio de la lista de la v1, en una unidad, con sus puntos y las versiones del plan. */
+/** El 1RM estimado de un ejercicio de la lista de la estimación, en una unidad, con sus puntos y las versiones del plan. */
 export async function leerLaFuerza(p: ParametrosDeLectura, exerciseId: string, unidad: 'kg' | 'lb', incluirOrientativas: boolean): Promise<LecturaDeLaFuerza> {
   const r = await limitarLectura(() =>
     api.proyeccion(p.token, p.asesoradoId, 'TRAINING_STRENGTH_ESTIMATE_BY_EXERCISE', {

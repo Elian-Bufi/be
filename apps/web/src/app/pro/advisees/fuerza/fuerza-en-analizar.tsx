@@ -2,7 +2,7 @@
 
 /**
  * ED-74 · La evolución de fuerza por ejercicio en «Analizar» (WP-EDITORES-PROFESIONAL §5.8; V3 F-01; maqueta 15). La
- * métrica «1RM estimado (Epley v1)», de la familia «estimación» y no de «carga», por ejercicio y por unidad: se abre ya
+ * métrica «1RM estimado (Epley)», de la familia «estimación» y no de «carga», por ejercicio y por unidad: se abre ya
  * filtrada desde la tarjeta del ejercicio (`pregunta=fuerza-estimada&ejercicio=…&unidad=…`).
  * - El punto lleno, hasta 10 repeticiones equivalentes; hueco, de más de 10 a 12, con «Incluir…» apagado de entrada; la
  *   observación del profesional, un rombo, con su leyenda.
@@ -17,7 +17,7 @@
  * - La columna «Sesión» de la maqueta espera que la clave traiga el nombre de la sesión (EDT-55).
  *
  * La pasada visual (WP-GRAFICOS, 15/11; DISENO-VISUAL §1 y §2): es la pieza que también usan GR-02 y GR-26.
- * - **Arriba,** «1RM estimado (Epley v1)» y, tenue, la unidad y el período; la leyenda como fichas, solo con las marcas
+ * - **Arriba,** «1RM estimado (Epley)» y, tenue, la unidad y el período; la leyenda como fichas, solo con las marcas
  *   que se ven.
  * - **Sin rótulo en cada punto:** el número va en el último, el elegido, el máximo y el mínimo, sin pisarse; el resto,
  *   al pasar el mouse, con el teclado o en la lectura del costado.
@@ -89,13 +89,13 @@ import { ConLaNotacionDeLaPersona, useNotacionDelEsfuerzo } from '../notacion-de
 
 export const LA_PREGUNTA_DE_LA_FUERZA = {
   pregunta: '¿Cómo evolucionó la fuerza estimada en un ejercicio?',
-  muestra: '1RM estimado (Epley v1), una estimación por sesión hecha con una serie, y las series que observaste vos.',
-  subtitulo: '1RM estimado (Epley v1): una estimación hecha con una serie, que solo ves vos.',
+  muestra: '1RM estimado (Epley), una estimación por sesión hecha con una serie, y las series que observaste vos.',
+  subtitulo: '1RM estimado (Epley): una estimación hecha con una serie, que solo ves vos.',
   ejercicio: 'Ejercicio',
   unidad: 'Unidad',
   orientativas: 'Incluir las de más de 10 a 12 repeticiones equivalentes',
   leyenda: { nucleo: 'Hasta 10 rep. equivalentes', orientativa: 'De más de 10 a 12', observada: 'Observada por vos', sinEstimacion: 'Sin estimación', hoy: 'Hoy' },
-  elegirEjercicio: 'Elegí un ejercicio de la lista de Epley v1.',
+  elegirEjercicio: 'Elegí un ejercicio de la lista de Epley.',
   sinNada: 'En este período no hay series de los ejercicios de la lista que permitan estimar.',
   sinPuntos: 'En este período no hay estimaciones de este ejercicio en esta unidad.',
   soloOrientativas: 'Hay sesiones con solo series de más de 10 a 12 repeticiones equivalentes: encendé «Incluir las de más de 10 a 12» para verlas.',
@@ -117,9 +117,9 @@ export const LA_PREGUNTA_DE_LA_FUERZA = {
   antes: 'Lo que la persona registró antes de la app nueva no dice quién escribió cada valor: no entra. Lo que observaste vos entra si se puede estimar; las de más de 10 a 12, con el interruptor encendido.',
   limite: 'Una estimación con una serie no es una repetición máxima medida, y no es una indicación de carga.',
   /** La pasada visual (15/11): el título del gráfico lleva la marca de lo estimado; la línea tenue, la unidad y el período. */
-  titulo: '1RM estimado (Epley v1)',
+  titulo: '1RM estimado (Epley)',
   detalle: (unidad: string, desde: string, hasta: string | null) => `${unidad} · una estimación por sesión · del ${desde} ${hasta === null ? 'a hoy' : `al ${hasta}`}`,
-  metodo: 'Epley v1 estima la repetición máxima con una serie: la carga × (1 + repeticiones equivalentes / 30), donde las repeticiones equivalentes son las hechas más el RIR. Se usa solo con series de RIR 0 a 2 y hasta 12 repeticiones equivalentes.',
+  metodo: 'Epley estima la repetición máxima con una serie: la carga × (1 + repeticiones equivalentes / 30), donde las repeticiones equivalentes son las hechas más el RIR. Se usa solo con series de RIR 0 a 2 y hasta 12 repeticiones equivalentes.',
   versiones:
     'El fondo alterna con cada versión del plan; la línea fina marca el cambio. Si cambió lo indicado (el RIR o las repeticiones), lo dice el rótulo de la línea o, si no entra, la línea de debajo del gráfico: la estimación puede cambiar aunque la fuerza no cambie.',
   /** La fila que avisa que entre las recientes y la elegida hay filas que no se ven. */

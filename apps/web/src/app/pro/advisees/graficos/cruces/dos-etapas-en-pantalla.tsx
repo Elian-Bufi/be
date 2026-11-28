@@ -7,7 +7,7 @@
  * Con menos de 5 de un lado no dibuja: dice cuánto hay. La tabla tiene las mismas observaciones que el dibujo.
  *
  * `GraficoDeDosEtapas` es el gráfico registrado (para «Patrones»): compara la versión vigente del plan con la anterior.
- * Con un ejercicio, en Entrenamiento (el 1RM estimado si está en la lista de la v1; si no, la carga de la serie); sin
+ * Con un ejercicio, en Entrenamiento (el 1RM estimado si está en la lista de la estimación; si no, la carga de la serie); sin
  * ejercicio, en Nutrición, con las calorías registradas (GR-T56).
  *
  * Accesibilidad: el dibujo no se lee (`aria-hidden`); el grupo tiene nombre y su descripción es el resumen en texto, y

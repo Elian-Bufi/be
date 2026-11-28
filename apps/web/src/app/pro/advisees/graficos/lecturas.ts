@@ -359,7 +359,7 @@ export async function leerSerieDelCatalogo(p: ParametrosDeLectura, ref: Referenc
   if (serie.fuente.tipo === 'DERIVADA') return leerSeriePorKilo(p, serie);
   if (serie.fuente.tipo !== 'PROYECCION') return { tipo: 'sin-especificacion' };
   if (serie.fuente.clave === 'TRAINING_STRENGTH_ESTIMATE_BY_EXERCISE') {
-    // La serie pide un ejercicio del catálogo (`e:`) de la lista de la v1 (RM-16, DL-171): una versión suelta (`v:`) o
+    // La serie pide un ejercicio del catálogo (`e:`) de la lista de la estimación (RM-16, DL-171): una versión suelta (`v:`) o
     // otro ejercicio no tienen estimación, y no se piden.
     const exerciseId = ejercicioDeLaEstimacion(ref.exerciseKey);
     if (ref.exerciseKey === null) return { tipo: 'error', motivo: 'OTRO' };
