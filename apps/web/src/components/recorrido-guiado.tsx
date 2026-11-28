@@ -165,11 +165,13 @@ export function useRecorridoGuiado(recorrido: IdDelRecorrido, listo: boolean): {
 }
 
 /** «Ver el recorrido»: discreto y sin subrayado, en un lugar fijo de la interfaz (GUI-10). */
-export function BotonVerElRecorrido({ alTocar }: { alTocar: () => void }) {
+export function BotonVerElRecorrido({ alTocar, conPalabraCorta }: { alTocar: () => void; conPalabraCorta?: boolean }) {
+  // Con `conPalabraCorta` (la barra de Entrenamiento, que es de un solo renglón) se ve «Recorrido»; el nombre accesible sigue
+  // siendo «Ver el recorrido».
   return (
-    <button type="button" className="boton boton--discreto recorrido__ver" data-ver-recorrido onClick={alTocar}>
+    <button type="button" className="boton boton--discreto recorrido__ver" data-ver-recorrido aria-label={conPalabraCorta ? C.verElRecorrido : undefined} title={conPalabraCorta ? C.verElRecorrido : undefined} onClick={alTocar}>
       <Icono nombre="info" tamano={18} />
-      {C.verElRecorrido}
+      {conPalabraCorta ? <span className="recorrido__palabra" aria-hidden="true">{C.recorridoCorto}</span> : C.verElRecorrido}
     </button>
   );
 }

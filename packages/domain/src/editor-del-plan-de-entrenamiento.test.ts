@@ -14,7 +14,9 @@ import {
   PROBLEMA_DEL_EDITOR_DE_ENTRENAMIENTO,
   avisoDeLoQueNoDejaGuardarElEntrenamiento,
   celdaDeObjetivoDelEditor,
+  conElComunDeLasSeries,
   ejercicioPlegadoDelEditor,
+  lasSeriesEfectivasTienenSuRir,
   ejerciciosAbiertosEnElEditor,
   esLoQueTieneLaCelda,
   leerDescanso,
@@ -338,4 +340,30 @@ test('los textos que arma el editor describen: no usan una palabra de la lista d
     loQueEntraAlActivarElEntrenamiento(BLOQUES),
   ];
   assert.deepEqual(textos.flatMap((t) => terminosProhibidosDeEntrenamientoEn(t).map((p) => `${p} en «${t}»`)), []);
+});
+
+test('Falta el objetivo de intensidad solo si alguna serie efectiva no tiene intensidad, ni propia ni del «Común» (Prensa de piernas)', () => {
+  const N = PROBLEMA_DEL_EDITOR_DE_ENTRENAMIENTO;
+  const comunVacio = { criterion: 'RIR', target: { value: Number.NaN } };
+  const prensa = { intensity: comunVacio, sets: [{ repetitions: { value: 10 }, rir: 2 }, { repetitions: { value: 10 }, rir: 2 }] };
+  // El «Común» vacío, pero las dos series con su RIR propio: no falta nada.
+  assert.equal(loQueNoDejaGuardarDelEjercicio(prensa, 'e').some((x) => x.code === N.faltaElObjetivo), false);
+  assert.equal(lasSeriesEfectivasTienenSuRir(prensa), true);
+  assert.deepEqual(ejercicioPlegadoDelEditor(prensa, 0).avisos, []);
+  // Una serie sin RIR propio: falta.
+  const unaSin = { ...prensa, sets: [prensa.sets[0]!, { repetitions: { value: 10 } }] };
+  assert.equal(loQueNoDejaGuardarDelEjercicio(unaSin, 'e').some((x) => x.code === N.faltaElObjetivo), true);
+  assert.deepEqual(ejercicioPlegadoDelEditor(unaSin, 0).avisos, ['Falta el objetivo de intensidad']);
+  // Una aproximación sin RIR no cuenta: solo importan las efectivas.
+  const conAproximacion = { ...prensa, sets: [{ repetitions: { value: 12 }, setKind: 'WARM_UP' as const }, ...prensa.sets] };
+  assert.equal(loQueNoDejaGuardarDelEjercicio(conAproximacion, 'e').some((x) => x.code === N.faltaElObjetivo), false);
+  // El % RM no tiene RIR por serie: el «Común» vacío siempre falta.
+  assert.equal(loQueNoDejaGuardarDelEjercicio({ ...prensa, intensity: { criterion: 'PERCENT_RM', target: { value: Number.NaN } } }, 'e').some((x) => x.code === N.faltaElObjetivo), true);
+  // Al mandar, el contrato pide el «Común»: queda el RIR de la primera serie efectiva, y ninguna serie cambia su objetivo.
+  const [enviado] = conElComunDeLasSeries([{ label: 'B', sessions: [{ label: 'S', prescriptions: [prensa] }] }]);
+  assert.equal(enviado!.sessions![0]!.prescriptions[0]!.intensity!.target.value, 2);
+  assert.deepEqual(enviado!.sessions![0]!.prescriptions[0]!.sets, prensa.sets);
+  // Lo que no es ese caso viaja tal cual.
+  const [igual] = conElComunDeLasSeries([{ label: 'B', sessions: [{ label: 'S', prescriptions: [unaSin] }] }]);
+  assert.ok(Number.isNaN(igual!.sessions![0]!.prescriptions[0]!.intensity!.target.value));
 });

@@ -43,7 +43,7 @@ export const AYUDAS_DEL_EDITOR = {
   },
   intensidad: {
     nombre: 'Qué es la intensidad del plan',
-    definicion: 'Cómo se indica qué tan exigente es cada serie. RIR: las repeticiones en reserva. RPE: el esfuerzo percibido, del 1 al 10 (BE guarda el RIR: RPE = 10 − RIR). % RM: una parte de la carga máxima para una repetición. «Solo carga y repeticiones»: sin criterio de intensidad.',
+    definicion: 'Cómo se indica qué tan exigente es cada serie. RIR: las repeticiones en reserva. RPE: el esfuerzo percibido, de 6 a 10 (equivale a RIR: RPE 8 = 2 en reserva). % RM: una parte de la carga máxima para una repetición. «Solo carga y repeticiones»: sin criterio de intensidad.',
     ejemplo: 'Ejemplo: 4 × 8 con 60 kg y RIR 2 quiere decir que en cada serie quedan 2 repeticiones más posibles; en RPE se escribe «RPE 8», y es lo mismo. En % RM, con un 1RM de 100 kg, 75 % RM son 75 kg.',
   },
   aproximaciones: {
@@ -56,6 +56,14 @@ export const AYUDAS_DEL_EDITOR = {
     nombre: 'Qué es una progresión',
     definicion: 'Una regla que cambia la carga, las repeticiones o las series de una semana a la otra dentro de la fase. No crea series nuevas: se lee encima de lo que escribiste.',
     ejemplo: 'Ejemplo: lineal de +2,5 kg por semana desde 60 kg: semana 1, 60; semana 2, 62,5; semana 3, 65; con descarga en la semana 4 al 60 % de la carga de trabajo, esa semana va con 39 kg (redondeado al paso).',
+  },
+  presets: {
+    nombre: 'Qué es un preset',
+    definicion:
+      'Un preset es algo armado que se reutiliza y se ajusta después: un plan entero (una plantilla), una fase, una sesión o unas series. Los de BE son un punto de partida, sin ejercicios ni cargas; los tuyos son los que guardaste con «Guardar como preset», sin cargas ni notas. Los de series se leen en la intensidad del plan, o en la del ejercicio si tiene otra.',
+    pasos: ['Elegí la pestaña: plan, fase, sesión o series.', 'Tocá un preset para ver qué trae, al costado.', '«Usar» lo aplica. Si pisa algo, primero muestra qué cambia; Ctrl+Z lo deshace.'],
+    ejemplo:
+      'Ejemplo: «Hipertrofia» en un plan en RPE escribe 4 × 8-12 con RPE 8 y 90 s de descanso. En un plan en % RM escribe 70 % RM: con un 1RM de 100 kg y el redondeo de 2,5, la carga queda en 70 kg.',
   },
   cargaParaRepeticiones: {
     nombre: 'Qué es la carga para N repeticiones',

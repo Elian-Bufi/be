@@ -129,7 +129,6 @@ export const COPY_ENTRENAMIENTO = {
   microciclo: 'Microciclo',
   /** ENP-D15: cada «Agregar» dice qué agrega. */
   agregarBloque: 'Agregar fase',
-  agregarMicrociclo: 'Agregar microciclo',
   agregarSesion: 'Agregar sesión',
   agregarEjercicio: 'Agregar ejercicios',
   proposito: 'Propósito profesional',

@@ -17,7 +17,7 @@
  */
 import type { AproximacionesDelEjercicio, PlanificacionDelPlan, ProgresionDeLaFase } from './contratos-entrenamiento';
 import { fechasDeLasFases, implementoDelEjercicio, pasoPorOmision, redondearAlPaso, aproximacionesAjustadas, type FaseEnElCalendario, type FaseParaPlanificar } from './planificacion-del-plan';
-import { progresionDeLaFase, semanaDeLaFecha, semanasDelEjercicio, seAplicaA, type BaseDelEjercicio, type SemanaDeLaProgresion } from './progresiones';
+import { progresionDeLaFase, reglasPropias, semanaDeLaFecha, semanasDelEjercicio, seAplicaA, type BaseDelEjercicio, type SemanaDeLaProgresion } from './progresiones';
 
 type Unidad = 'kg' | 'lb';
 type Carga = { readonly value: number; readonly unit: Unidad };
@@ -72,7 +72,10 @@ export function semanaQueRige(fase: FaseEnElCalendario, fecha: string): number {
 
 /** Una fase con su progresión y la semana que rige. `null`: la fase no tiene fechas, o no tiene progresión. */
 export interface SemanaDeLaFase {
-  readonly progresion: ProgresionDeLaFase;
+  /** La regla de la fase, que hereda cada ejercicio; `null` si solo tiene reglas propias (DL-201). */
+  readonly progresion: ProgresionDeLaFase | null;
+  /** DL-201 (PE-D03): las reglas propias de los ejercicios de la fase, que pisan la de la fase. Ausente: ninguna. */
+  readonly propias?: readonly ProgresionDeLaFase[];
   readonly semana: number;
   readonly semanas: number;
   /**
@@ -84,12 +87,27 @@ export interface SemanaDeLaFase {
 
 /** La semana de la fase `blockId` en esa fecha, con su progresión, si la tiene. */
 export function semanaDeLaFase(planificacion: PlanificacionDelPlan | null | undefined, fases: readonly FaseParaPlanificar[], blockId: string, fecha: string): SemanaDeLaFase | null {
-  const progresion = progresionDeLaFase(planificacion, blockId);
-  if (!progresion) return null;
+  const reglas = reglasDeLaFase(planificacion, blockId);
+  if (!reglas) return null;
   const fase = fechasDeLasFases(planificacion, fases).find((f) => f?.blockId === blockId) ?? null;
   if (!fase) return null;
   // Una fase cortada por el fin del plan (ET1-D03) tiene sus semanas enteras para la regla: la descarga sigue en la suya.
-  return { progresion, semana: semanaQueRige(fase, fecha), semanas: fase.semanas, semanasQueEntran: Math.max(1, fase.semanas - (fase.semanasFuera ?? 0)) };
+  return { ...reglas, semana: semanaQueRige(fase, fecha), semanas: fase.semanas, semanasQueEntran: Math.max(1, fase.semanas - (fase.semanasFuera ?? 0)) };
+}
+
+/** DL-201: las reglas de una fase (la de la fase y las propias de sus ejercicios), o `null` si no tiene ninguna. */
+export function reglasDeLaFase(planificacion: PlanificacionDelPlan | null | undefined, blockId: string): Pick<SemanaDeLaFase, 'progresion' | 'propias'> | null {
+  const progresion = progresionDeLaFase(planificacion, blockId);
+  const propias = reglasPropias(planificacion, blockId);
+  if (!progresion && propias.length === 0) return null;
+  return { progresion, ...(propias.length > 0 ? { propias } : {}) };
+}
+
+/** DL-201 (PE-D03): la regla que rige para un ejercicio en esa semana: la propia; si no, la de la fase; si no, ninguna. */
+export function reglaQueRige(s: Pick<SemanaDeLaFase, 'progresion' | 'propias'>, prescriptionId: string | null | undefined): ProgresionDeLaFase | null {
+  const propia = prescriptionId ? s.propias?.find((r) => r.prescriptionIds?.includes(prescriptionId)) : undefined;
+  if (propia) return propia;
+  return s.progresion && seAplicaA(s.progresion, prescriptionId) ? s.progresion : null;
 }
 
 const conCarga = <S extends SerieDeLaSemana>(s: S, carga: Carga | null): S => ({ ...s, suggestedLoad: carga });
@@ -104,9 +122,10 @@ export function prescripcionDeLaSemana<S extends SerieDeLaSemana, P extends Pres
   nombre: string,
   aproximaciones: AproximacionesDelEjercicio | null,
 ): P {
-  if (!seAplicaA(s.progresion, p.prescriptionId)) return p;
+  const regla = reglaQueRige(s, p.prescriptionId);
+  if (!regla) return p;
   const base = baseDeLaPrescripcion(p, nombre, aproximaciones);
-  const filas = semanasDelEjercicio(s.progresion, base, s.semanas);
+  const filas = semanasDelEjercicio(regla, base, s.semanas);
   const fila: SemanaDeLaProgresion | undefined = filas[s.semana - 1];
   if (!fila) return p;
   const mismaCarga = fila.carga === base.carga;
@@ -115,7 +134,7 @@ export function prescripcionDeLaSemana<S extends SerieDeLaSemana, P extends Pres
   if (mismaCarga && mismasReps && mismasSeries) return p;
 
   // Cómo se lleva la carga de trabajo a la de la semana: lo mismo (lineal y doble) o por la misma parte (ondulante y descarga).
-  const porParte = s.progresion.model === 'UNDULATING' || (fila.descarga && s.progresion.deload?.mode === 'LOAD');
+  const porParte = regla.model === 'UNDULATING' || (fila.descarga && regla.deload?.mode === 'LOAD');
   const llevar = (c: Carga | null | undefined): Carga | null | undefined => {
     if (!c || mismaCarga || base.carga === null || fila.carga === null) return c;
     if (porParte) return { ...c, value: Math.max(base.paso, redondearAlPaso((c.value * fila.carga) / base.carga, base.paso)) };
@@ -202,5 +221,12 @@ export function semanaEnPalabras(s: { readonly semana: number; readonly semanas:
   return `Semana ${s.semana} de ${s.semanas}${s.descarga ? ' · descarga' : ''}`;
 }
 
-/** Si en esa semana toca la descarga. */
-export const esSemanaDeDescarga = (s: SemanaDeLaFase): boolean => !!s.progresion.deload && s.progresion.deload.week === s.semana && s.progresion.deload.week <= s.semanas;
+/**
+ * Si en esa semana toca la descarga. DL-201 (PE-D06): con `prescriptionIds` (los ejercicios de la sesión), si a alguno de
+ * ellos le toca por la regla que lo rige; sin ellos, si alguna regla de la fase la pone en esa semana.
+ */
+export function esSemanaDeDescarga(s: SemanaDeLaFase, prescriptionIds?: readonly (string | null | undefined)[]): boolean {
+  const toca = (r: ProgresionDeLaFase | null | undefined): boolean => !!r?.deload && r.deload.week === s.semana && r.deload.week <= s.semanas;
+  if (prescriptionIds) return prescriptionIds.some((id) => toca(reglaQueRige(s, id)));
+  return toca(s.progresion) || (s.propias ?? []).some(toca);
+}

@@ -18,8 +18,10 @@ import {
   evaluarTransicionDePlanDeEntrenamiento,
   normalizarEstructuraDeEntrenamiento,
   agendaPodada,
+  conElUnoRMDeLaActivacion,
   conLaNotacion,
   notacionDe,
+  unoRMDeLaActivacion,
   notacionInicial,
   planificacionPodada,
   prescripcionesDelPlan,
@@ -554,12 +556,17 @@ export class PlanesDeEntrenamientoService {
         if (issues.length > 0) throw noLista(issues);
         // DL-196 (punto 5): la versión de la app del titular ya no traba la activación (antes, un 409
         // CLIENT_CAPABILITY_REQUIRED para los objetivos por serie y el calentamiento). Todos usan la última APK.
+        // ET2-D18 (ratificada): el 1RM de cada ejercicio en % RM queda congelado en la instantánea, con su origen y su fecha,
+        // como los nombres de los ejercicios: activar no cambia el contenido validado (la base lo exige, REG-06-104); lo que
+        // se lee de la versión activa, y de lo que parte la siguiente, es la instantánea. Un 1RM posterior no cambia las
+        // cargas de esta versión ni su vista; rige para la siguiente.
+        const momento = await momentoDeLaBase(tx);
+        const contenido = await this.conElUnoRMCongelado(tx, v, catalogo, fechaLocalEn(momento, ZONA_POR_DEFECTO));
         // 6. Preservar la instantánea ANTES de la vigencia (REG-06-104).
-        const instantanea = construirInstantaneaDeEntrenamiento(v.contenido, catalogo);
+        const instantanea = construirInstantaneaDeEntrenamiento(contenido, catalogo);
         const evaluacion = evaluarTransicionDePlanDeEntrenamiento(v.estado, { transicion: 'ActivarVersion', borradorValido: true, instantaneaPreservable: instantanea !== null });
         if (!evaluacion.permitida || !instantanea) throw noLista([{ code: 'SNAPSHOT_NOT_PRESERVABLE', path: 'blocks' }]);
         const huella = createHash('sha256').update(serializacionCanonica(instantanea)).digest('hex');
-        const momento = await momentoDeLaBase(tx);
         await tx.instantaneaDePlanDeEntrenamiento.create({ data: { versionDePlanId: v.id, contenido: instantanea as unknown as Prisma.InputJsonValue, huella } });
         // 7. Conmutar la vigencia única: la versión se vuelve inmutable y el plan apunta a ella (INV-06-110).
         await tx.versionDePlanDeEntrenamiento.update({ where: { id: v.id }, data: { estado: 'ACTIVADA', version: v.version + 1, momentoDeActivacion: momento } });
@@ -750,6 +757,25 @@ export class PlanesDeEntrenamientoService {
     const referencias = problemasDeReferencias(r.contenido, aCitables(catalogo));
     if (referencias.length > 0) throw new ErrorDeApi(422, CodigoDeError.EXERCISE_REFERENCE_INVALID, 'Hay ejercicios que no se pueden usar en el plan.', { issues: referencias });
     return r.contenido;
+  }
+
+  /**
+   * ET2-D18: el contenido con el 1RM vigente de cada ejercicio en % RM, congelado en la planificación de la versión. Sin
+   * ejercicios en % RM con 1RM, el contenido tal cual (sin el 1RM que pudo traer de la versión anterior).
+   */
+  private async conElUnoRMCongelado(tx: Tx, v: VersionBloqueada, catalogo: Map<string, EjercicioCitable>, hoy: string): Promise<ContenidoDePlanDeEntrenamiento> {
+    const ejercicioDe = (versionId: string): string | null => catalogo.get(versionId)?.ejercicioId ?? null;
+    const enPorcentaje = prescripcionesDelPlan(v.contenido)
+      .map((x) => x.prescripcion)
+      .filter((x) => x.intensity?.criterion === 'PERCENT_RM');
+    const anterior = v.contenido.planning?.oneRepMaxAtActivation;
+    if (enPorcentaje.length === 0 && !anterior) return v.contenido;
+    const ids = [...new Set(enPorcentaje.map((x) => ejercicioDe(x.exerciseVersionId)).filter((x): x is string => x !== null))];
+    const vigentes = await this.unoRM.vigentesDe(tx, v.profesionalId, v.asesoradoId, ids);
+    const congelados = unoRMDeLaActivacion(v.contenido.blocks, ejercicioDe, vigentes, hoy);
+    const planning = conElUnoRMDeLaActivacion(v.contenido.planning, congelados);
+    const { planning: _antes, ...sin } = v.contenido;
+    return planning ? { ...sin, planning } : sin;
   }
 
   private async problemasParaActivar(tx: Tx, v: VersionBloqueada): Promise<{ issues: ValidationIssue[]; catalogo: Map<string, EjercicioCitable> }> {

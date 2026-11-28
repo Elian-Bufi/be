@@ -13,8 +13,12 @@
  *
  * **La composición (WP-ESCRITORIO-AREAS, parte 8; maqueta 28).** Se mira una sesión por vez —la del bloque y, si el
  * bloque los usa, del microciclo elegidos—, con sus ejercicios plegados: cada uno dice en un renglón lo que piden sus
- * series, con lo escrito y todavía sin guardar. Lo que se usa de vez en cuando (cambiar un nombre, quitar, organizar por
- * microciclos, guardar como plantilla o como habitual) va en un menú. Hace lo mismo que antes:
+ * series, con lo escrito y todavía sin guardar. Lo que se usa de vez en cuando (cambiar un nombre, quitar, guardar como
+ * plantilla, como habitual o como preset) va en un menú. Hace lo mismo que antes:
+ * - **Sin microciclos nuevos (DL-203, PN-D01; Dirección, 26/11):** el editor ya no organiza una fase por microciclos ni
+ *   agrega semanas: las fases de N semanas con su semana tipo, la progresión, la descarga y «Duplicar la fase» lo
+ *   cubren. Un plan que ya los tiene se lee y se edita igual (elegir la semana, cambiarle el nombre o quitarla, y sus
+ *   sesiones), pero no se crea ninguno.
  * - **Lo que se mira vive en la dirección,** por su posición: `bloque`, `micro`, `sesion` y los ejercicios abiertos
  *   (`ejercicios`). «Actualizar» y volver atrás lo conservan. Al entrar no hay ningún ejercicio abierto.
  * - **Lo que no deja guardar se lista con su lugar,** antes de pedirle nada a la API: un nombre vacío, el objetivo de
@@ -57,6 +61,22 @@ import {
   estructuraConObjetivosComoEntrada,
   falloDeGuardado,
   loQueNoDejaGuardarElEntrenamiento,
+  conElComunDeLasSeries,
+  redondeoDelEjercicio,
+  cambiosDesdeLaActivacion,
+  cargasConElUnoRM,
+  intensidadParaElPreset,
+  COPY_PRESETS_POR_NIVEL,
+  faseDelPreset,
+  presetDeFaseDe,
+  presetDeSesionDe,
+  sesionDelPreset,
+  type PresetDeFasePropio,
+  type PresetDeSesionPropio,
+  COPY_UNO_RM_DE_LA_ACTIVACION,
+  implementoDelEjercicio as implementoDelEjercicioDelBorrador,
+  sinElUnoRMDeLaActivacion,
+  type UnoRMVigente,
   loQueSeMiraEnElEditor,
   lugarDelProblemaDeEntrenamiento,
   motivoSinGuardarAhora,
@@ -74,8 +94,13 @@ import {
   CARDIO_SIN_INDICAR,
   esDeCardioPorLaClasificacion,
   progresionParaOtraFase,
-  seAplicaA,
-  sinProgresion,
+  cambiaAlgo,
+  progresionCorta,
+  progresionDelEjercicio,
+  reglaPropiaDe,
+  reglasPropias,
+  sinLaProgresion,
+  sinReglaPropia,
   zonasACuidar as zonasACuidarDelFormulario,
   type ZonasACuidar,
   type VezPasada,
@@ -115,10 +140,11 @@ import {
 import { BotonVerElRecorrido, RecorridoGuiado, useRecorridoGuiado } from '../../../../components/recorrido-guiado';
 import { Almanaque, type SesionDelAlmanaque } from './almanaque';
 import { letraDeLaSesion } from './letra-de-la-sesion';
-import { COPY_VISTA_DE_LA_PERSONA, VistaDeLaPersona } from './vista-de-la-persona';
+import { COPY_VISTA_DE_LA_PERSONA, MOSTRAR_VISTA_DE_LA_PERSONA, VistaDeLaPersona } from './vista-de-la-persona';
 import { BarraDeFases } from './barra-de-fases-en-pantalla';
 import { COPY_BARRA_DE_FASES, diasEnCorto, faseConLaTecla, rangoDeLaBarra, tarjetasDeLaBarra } from './barra-de-fases';
 import { criterioDeLaIntensidad, CuadroConfigurarPlan, CuadroDiasDeLaSemana, CuadroEditarFase, type IntensidadElegida } from './cuadros-del-plan';
+import { intensidadElegida } from './intensidad-del-plan';
 import { AYUDAS_DEL_EDITOR, ContenidoDeLaAyuda } from './ayudas-del-editor';
 import { MarcoDelPanel, PanelDelEjercicio, PatronesAPedido } from './panel-del-editor';
 import { SugerenciaDeProgresionEnElPanel } from './sugerencia-de-progresion';
@@ -139,6 +165,7 @@ import {
   sesionesParaDistribuir,
   unidadDeLaFase,
   vistaPrevia,
+  vistaPreviaDeLaFase,
 } from './progresion-del-editor';
 import { LoQueImpideActivar } from './lo-que-impide-activar';
 import {
@@ -168,6 +195,7 @@ import { Icono } from '../../../../components/icono';
 import { MenuDeAcciones } from '../../../../components/menu-de-acciones';
 import { TextoAPedido } from '../../../../components/texto-a-pedido';
 import { api, type Resultado } from '../../../../lib/api';
+import { vigenteDeLosDatos } from './uno-rm-del-ejercicio';
 import { EstadoDeGuardado } from '../../../../components/estado-de-guardado';
 import { useAutoguardado } from '../../../../lib/autoguardado';
 import { diaEnUnaFrase, horaDelDia, rangoCivil } from '../../../../lib/formato';
@@ -178,7 +206,7 @@ import { conLasDeLaPosicion, type AlcanceDelPreset } from '../alcance-del-preset
 import { copiarElEjercicio, copiarLaSesion, copiarSobre, COPY_COPIAR, destinosDeLaSesion, loQueSeReemplaza, sesionesDelPlan, vistaPreviaDeLaSesion } from './copiar-a';
 import { CuadroDeCopiar } from './cuadro-de-copiar';
 import { alternarDia, COPY_ESTACION as CE, DIA_CORTO, DIA_LARGO, diasCompartidos, nombreDelChip, PRIMER_USO_DE_LA_ESTACION, ponerDias, sinDias, tiraDeLaSemana } from '../estacion/estacion';
-import { GaleriaDePresets } from '../galeria-de-presets';
+import { GaleriaDePresets, type PestanaDeLaGaleria } from '../galeria-de-presets';
 import { OtrasAreas } from '../seguimiento/otras-areas-en-pantalla';
 import { PatronesDelPlan } from '../graficos/patrones/patrones-del-plan-en-pantalla';
 import { PrimerUso } from '../../../../components/primer-uso';
@@ -218,9 +246,7 @@ import {
   copiaDeLaSesion,
   copiaDelEjercicio,
   duplicarEn,
-  loQuePasaConLasSesiones,
   mover,
-  organizadoEnMicrociclos,
   posicionesTrasInsertar,
   posicionesTrasMover,
   posicionesTrasQuitar,
@@ -279,6 +305,7 @@ import { DialogoGuardarSesionHabitual, InsertarSesionHabitual, nombresDeHabitual
 import { DialogoGuardarPlantilla, NotaDeOrigen } from './plantillas';
 import type { PlantillaParaEmpezar } from '../empezar-desde-plantilla';
 import { COPY_PRESCRIPCION_HABITUAL, DialogoGuardarPrescripcionHabitual, usePrescripcionesHabituales } from './prescripcion-habitual';
+import { COPY_GUARDAR_COMO_PRESET, COPY_PRESETS_EN_EL_EDITOR, DialogoGuardarComoPreset, type QueSeGuardaComoPreset } from './guardar-como-preset';
 import { COPY_DUPLICAR_EL_DIA as DD, diasDeDestino, duplicarElDia, sesionesDelDia } from '../estacion/duplicar-el-dia';
 
 type MicrocicloE = NonNullable<BloqueE['microcycles']>[number];
@@ -498,6 +525,8 @@ export function EditorDePlan({
   const [distribucionGrande, setDistribucionGrande] = useState(false);
   const [progresionAbierta, setProgresionAbierta] = useState<{
     readonly blockId: string;
+    /** DL-201: abierto desde «Más» de un ejercicio, con ese ejercicio elegido. */
+    readonly prescriptionId?: string | null;
     readonly copia: { readonly original: string; readonly originalId: string | null; readonly prescripciones: ReadonlyMap<string, string> } | null;
   } | null>(null);
   const [aCuidar, setACuidar] = useState<ZonasACuidar | null>(null);
@@ -595,7 +624,12 @@ export function EditorDePlan({
   const [diasDelPreset, setDiasDelPreset] = useState<Readonly<Record<string, readonly DiaDeLaSemana[]>>>({});
 
   // ED-11: la galería de presets, abierta desde la sesión (prescripción) o desde la estructura.
-  const [galeria, setGaleria] = useState<{ readonly tarea: 'prescripcion' | 'estructura'; readonly ejercicio: number | null } | null>(null);
+  // DL-203: la galería se abre con la pestaña del lugar desde donde se pide (plan, fase, sesión o series).
+  const [galeria, setGaleria] = useState<{ readonly pestana: PestanaDeLaGaleria; readonly ejercicio: number | null } | null>(null);
+  /** DL-203: los ejercicios (del catálogo) que un preset dejó en % RM, a los que les falta la carga que sale del 1RM. */
+  const [cargasPorCalcular, setCargasPorCalcular] = useState<ReadonlySet<string>>(new Set());
+  /** DL-203: lo que se guarda como preset desde el «⋯» de la sesión o de la fase, ya armado; `null`, cerrado. */
+  const [guardarComoPreset, setGuardarComoPreset] = useState<QueSeGuardaComoPreset | null>(null);
   // ED-11 (DJ-8): «Deshacer» de la última aplicación, con las prescripciones de antes por posición. Es la operación
   // inversa, que se autoguarda como cualquier cambio; otro cambio cualquiera la retira, para que devuelva exacto.
   const [deshacer, setDeshacer] = useState<{ readonly texto: string; readonly lugar: Lugar & { readonly k: number }; readonly antes: ReadonlyMap<number, PrescripcionE>; readonly firmas: ReadonlySet<string> } | null>(null);
@@ -625,7 +659,7 @@ export function EditorDePlan({
   const presetPedido = parametros.get('preset');
   useEffect(() => {
     if (!version || presetPedido !== 'estructura') return;
-    setGaleria({ tarea: 'estructura', ejercicio: null });
+    setGaleria({ pestana: 'fase', ejercicio: null });
     ir({ preset: null });
   }, [version, presetPedido, ir]);
 
@@ -779,7 +813,7 @@ export function EditorDePlan({
     if (version && !esDelPlan(version)) return guardarLaPreparacion(automatico, version);
     const base = reenvio?.base ?? version;
     if (!base) return null;
-    const bloquesEnviados = reenvio?.bloques ?? bloques;
+    const bloquesEnviados = conElComunDeLasSeries(reenvio?.bloques ?? bloques);
     // Un nombre vacío o un dato que no se entiende pueden estar en otro bloque, en otra sesión o en un ejercicio
     // plegado: se listan, y cada uno lleva a su lugar. Nada de eso viaja: un dato mal escrito se guardaría como «nada».
     const impide = loQueNoDejaGuardar(bloquesEnviados);
@@ -933,6 +967,22 @@ export function EditorDePlan({
   const puedeGuardar = loQueNoDejaGuardar(bloques).length === 0;
   // ED-03: por qué «Guardar ahora» está apagado, o `null`.
   const sinGuardarAhora = motivoSinGuardarAhora({ guardando, sucio, conflicto });
+  // Ctrl+S (Cmd+S) guarda ya, sin esperar la pausa del autoguardado; si no hay nada que guardar, no hace nada y el navegador
+  // no abre su cuadro de «Guardar página».
+  const guardarYaRef = useRef<() => void>(() => undefined);
+  guardarYaRef.current = () => {
+    if (!sinGuardarAhora) void guardar();
+  };
+  useEffect(() => {
+    const alTocar = (e: KeyboardEvent) => {
+      if (e.defaultPrevented || !(e.ctrlKey || e.metaKey) || e.altKey || e.shiftKey || e.key.toLowerCase() !== 's') return;
+      if (document.querySelector('dialog[open]')) return;
+      e.preventDefault();
+      guardarYaRef.current();
+    };
+    window.addEventListener('keydown', alTocar);
+    return () => window.removeEventListener('keydown', alTocar);
+  }, []);
   const cambiosParaGuardar = useMemo(() => [bloques, agenda, proximaRevision, metadatos, notacion, planificacion], [bloques, agenda, proximaRevision, metadatos, notacion, planificacion]);
   const autoguardado = useAutoguardado({
     habilitado: !!version && sucio && puedeGuardar && !guardando && !conflicto && !confirmar && !activando && !guardarPlantilla && !descartar,
@@ -1193,7 +1243,7 @@ export function EditorDePlan({
    * viaja; un 409 después de un guardado sin respuesta se compara con lo mandado (ED-61) antes de decir «conflicto».
    */
   async function guardarLaPreparacion(automatico: boolean, base: GuardadoDeLaPlantilla, reenvio: { readonly bloques: Bloques; readonly ediciones: number } | null = null): Promise<LoGuardado | null> {
-    const bloquesEnviados = reenvio?.bloques ?? bloques;
+    const bloquesEnviados = conElComunDeLasSeries(reenvio?.bloques ?? bloques);
     const impide = loQueNoDejaGuardar(bloquesEnviados);
     if (impide.length > 0) {
       if (automatico) return null;
@@ -1329,6 +1379,99 @@ export function EditorDePlan({
   // DL-195 (GUI-08): el recorrido guiado aparece solo la primera vez que el profesional abre el editor de una versión del
   // plan (no en la plantilla ni en el asistente).
   const recorrido = useRecorridoGuiado('training-plan-editor', version !== null && !plantilla && esDelPlan(version) && pasoPedido(parametros.get('asistente')) === null);
+
+  // ── ET2-D18 (ratificada el 2026-11-26): en el borrador, las cargas en % RM siguen al 1RM ─────────────────────────
+  // El 1RM de todos los ejercicios en % RM del borrador, también los plegados. Si cambia (o cambia el redondeo), se
+  // recalculan todas las cargas en un solo cambio que se deshace, con su aviso. Al abrir no se toca nada, salvo que el
+  // borrador parta de una versión activada con otro 1RM: ahí se recalcula y se dice qué cambió.
+  const planDelUnoRM = planificacionParaEditar(planificacion);
+  const idsEnPorcentaje = plantilla || asesoradoId === null
+    ? ''
+    : [...new Set(bloques.flatMap((b) => [...(b.sessions ?? []), ...(b.microcycles ?? []).flatMap((m) => m.sessions)]).flatMap((x) => x.prescriptions).filter((q) => q.intensity?.criterion === 'PERCENT_RM').map((q) => ejercicios[q.exerciseVersionId]).filter((x): x is string => !!x))]
+        .sort()
+        .join(',');
+  const [vigentesDelBorrador, setVigentesDelBorrador] = useState<{ readonly mapa: ReadonlyMap<string, UnoRMVigente | null>; readonly vez: number } | null>(null);
+  const [lecturaDelUnoRM, setLecturaDelUnoRM] = useState(0);
+  useEffect(() => {
+    if (!idsEnPorcentaje || asesoradoId === null) return;
+    let vigente = true;
+    void (async () => {
+      const r = await api.unoRMDeLaPersona(token, asesoradoId, idsEnPorcentaje.split(','));
+      if (!vigente || sesionPerdida(r) || !r.ok) return;
+      setVigentesDelBorrador({ mapa: new Map(r.datos.data.map((d) => [d.exerciseId, vigenteDeLosDatos(d)])), vez: Date.now() });
+    })();
+    return () => {
+      vigente = false;
+    };
+  }, [idsEnPorcentaje, lecturaDelUnoRM, token, asesoradoId, sesionPerdida]);
+  const firmaDelRedondeo = JSON.stringify([planDelUnoRM.loadRounding ?? null, planDelUnoRM.loadRoundingByExercise ?? []]);
+  const anteriorDelUnoRM = useRef<{ readonly mapa: ReadonlyMap<string, UnoRMVigente | null>; readonly redondeo: string } | null>(null);
+  useEffect(() => {
+    if (!vigentesDelBorrador) return;
+    const antes = anteriorDelUnoRM.current;
+    anteriorDelUnoRM.current = { mapa: vigentesDelBorrador.mapa, redondeo: firmaDelRedondeo };
+    const recalcular = () =>
+      cargasConElUnoRM(
+        bloques,
+        (q) => {
+          const e = ejercicios[q.exerciseVersionId];
+          const v = e ? (vigentesDelBorrador.mapa.get(e) ?? null) : null;
+          return v ? v.valor : null;
+        },
+        (q) => implementoDelEjercicioDelBorrador(nombres[q.exerciseVersionId] ?? '', q.loadBasis ?? null),
+        (q) => redondeoDelEjercicio(planDelUnoRM, q.prescriptionId),
+      );
+    if (antes === null) {
+      // Al abrir: solo si parte de una versión activada con otro 1RM (la versión nueva toma el vigente y lo dice).
+      const congelados = planDelUnoRM.oneRepMaxAtActivation;
+      if (!congelados) return;
+      const cambios = cambiosDesdeLaActivacion(congelados, vigentesDelBorrador.mapa);
+      // Con el mismo 1RM no se toca nada (al activar, la API vuelve a congelar el vigente).
+      if (cambios.length === 0) return;
+      const r = recalcular();
+      const nombreDe = (exerciseId: string) => nombres[Object.keys(ejercicios).find((k) => ejercicios[k] === exerciseId) ?? ''] ?? 'Ejercicio';
+      const texto = cambios.length === 1 ? COPY_UNO_RM_DE_LA_ACTIVACION.cambio(nombreDe(cambios[0]!.exerciseId), cambios[0]!) : COPY_UNO_RM_DE_LA_ACTIVACION.varios(cambios.length);
+      recordar(texto);
+      if (r.cuantas > 0) setBloques(r.bloques);
+      setPlanificacion(sinElUnoRMDeLaActivacion(planDelUnoRM));
+      setSucio(true);
+      return;
+    }
+    const cambioElUnoRM = [...vigentesDelBorrador.mapa].some(([e, v]) => antes.mapa.has(e) && (antes.mapa.get(e)?.valor.value ?? null) !== (v?.valor.value ?? null));
+    if (!cambioElUnoRM && antes.redondeo === firmaDelRedondeo) return;
+    const r = recalcular();
+    if (r.cuantas === 0) return;
+    recordar(COPY_UNO_RM_DE_LA_ACTIVACION.recalculadas(r.cuantas));
+    setBloques(r.bloques);
+    setSucio(true);
+    // Solo cuando cambia el 1RM leído o el redondeo: lo demás lo cambia quien escribe.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [vigentesDelBorrador, firmaDelRedondeo]);
+  // DL-203 (PN-D05): un preset que deja ejercicios en % RM (de BE, de sesión o de fase) no trae cargas: salen del 1RM de
+  // esta persona con el redondeo del plan, en cuanto se lee. No se apila aparte: Ctrl+Z vuelve a antes del preset.
+  useEffect(() => {
+    if (cargasPorCalcular.size === 0) return;
+    if (plantilla || asesoradoId === null) return setCargasPorCalcular(new Set());
+    if (!vigentesDelBorrador) return;
+    const listos = new Set([...cargasPorCalcular].filter((e) => vigentesDelBorrador.mapa.has(e)));
+    if (listos.size === 0) return;
+    const r = cargasConElUnoRM(
+      bloques,
+      (q) => {
+        const e = ejercicios[q.exerciseVersionId];
+        return e && listos.has(e) ? (vigentesDelBorrador.mapa.get(e)?.valor ?? null) : null;
+      },
+      (q) => implementoDelEjercicioDelBorrador(nombres[q.exerciseVersionId] ?? '', q.loadBasis ?? null),
+      (q) => redondeoDelEjercicio(planDelUnoRM, q.prescriptionId),
+    );
+    if (r.cuantas > 0) {
+      setBloques(r.bloques);
+      setSucio(true);
+    }
+    setCargasPorCalcular((s) => new Set([...s].filter((e) => !listos.has(e))));
+    // Solo cuando llega un 1RM o se pide calcular: lo demás lo cambia quien escribe.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [vigentesDelBorrador, cargasPorCalcular]);
 
   if (error === 'no-disponible' && plantilla) return <PreparacionQueYaNoEsta volver={plantilla.volver} />;
   if (error === 'no-disponible') return <NoDisponible />;
@@ -1614,9 +1757,9 @@ export function EditorDePlan({
     const copia = progresionAbierta?.copia ?? null;
     if (a.arrancarDondeTermino && copia?.originalId) {
       const original = bloques.find((b) => b.blockId === copia.originalId);
-      const regla = progresionDeLaFase(plan, copia.originalId);
-      if (original && regla) {
-        const ultimas = cargasDeLaUltimaSemana(vistaPrevia(regla, ejerciciosDeUnaFase(original), semanasDeLaFase(plan, copia.originalId) ?? 4, aproximacionesDeId));
+      if (original) {
+        // DL-201: cada ejercicio de la original con la regla que lo rige (la propia, si no la de la fase).
+        const ultimas = cargasDeLaUltimaSemana(vistaPreviaDeLaFase(plan, copia.originalId, ejerciciosDeUnaFase(original), semanasDeLaFase(plan, copia.originalId) ?? 4, aproximacionesDeId));
         const nuevas = new Map([...copia.prescripciones].flatMap(([o, c]) => (ultimas.has(o) ? [[c, ultimas.get(o)!] as const] : [])));
         if (nuevas.size > 0) {
           cambiar((x) => {
@@ -1629,10 +1772,35 @@ export function EditorDePlan({
         }
       }
     }
-    p = a.progresion ? conProgresion(p, a.progresion) : sinProgresion(p, blockId);
-    cambiarPlanificacion(p, a.progresion ? COPY_DESHACER.aplicasteLaProgresion(nombre) : null);
+    // DL-201: la regla de la fase (o quitarla), o la propia de los ejercicios elegidos. Una propia «Sin progresión» solo
+    // tiene sentido si la fase tiene una: si no, los ejercicios simplemente quedan sin regla propia.
+    const deLaFase = progresionDeLaFase(p, blockId);
+    const elegidos = a.progresion?.prescriptionIds ?? null;
+    let deshacer: string;
+    let aviso: string;
+    if (a.progresion && elegidos) {
+      if (cambiaAlgo(a.progresion) || deLaFase) p = conProgresion(p, a.progresion, a.reemplaza);
+      else p = sinReglaPropia(a.reemplaza ? sinLaProgresion(p, a.reemplaza) : p, elegidos);
+      deshacer = COPY_DESHACER.aplicasteLaProgresionA(elegidos.length);
+      aviso = COPY_PROGRESIONES.aplicadaA(elegidos.length);
+    } else if (a.progresion) {
+      p = conProgresion(p, a.progresion);
+      deshacer = COPY_DESHACER.aplicasteLaProgresion(nombre);
+      aviso = COPY_PROGRESIONES.aplicada(nombre);
+    } else {
+      p = deLaFase ? sinLaProgresion(p, deLaFase) : p;
+      deshacer = COPY_DESHACER.quitasteLaProgresion(nombre);
+      aviso = COPY_PROGRESIONES.quitada(nombre);
+    }
+    cambiarPlanificacion(p, deshacer);
     setProgresionAbierta(null);
-    setMensaje({ tipo: 'exito', texto: a.progresion ? COPY_PROGRESIONES.aplicada(nombre) : COPY_PROGRESIONES.quitada(nombre) });
+    setMensaje({ tipo: 'exito', texto: aviso });
+  };
+  /** DL-201: «Usar la de la fase»: los ejercicios dejan su regla propia y vuelven a heredar la de su fase. */
+  const usarLaDeLaFase = (ids: readonly string[]) => {
+    cambiarPlanificacion(sinReglaPropia(plan, ids), COPY_DESHACER.volvisteALaDeLaFase(ids.length));
+    setProgresionAbierta(null);
+    setMensaje({ tipo: 'exito', texto: COPY_PROGRESIONES.volvieronALaFase(ids.length) });
   };
   /** DL-197 (ET1-D10): cuántos ejercicios del plan tienen un criterio propio distinto del de esta intensidad. */
   const conOtraIntensidad = (i2: IntensidadElegida): number => {
@@ -1663,21 +1831,12 @@ export function EditorDePlan({
     cambiar((x) => (x.splice(i, 1), x), COPY_DESHACER.quitasteLaFase(bloque?.label || `Fase ${i + 1}`));
     elegirBloque(Math.max(0, i - 1));
   };
-  /** TB-48: también con sesiones sueltas, que pasan a la «Semana 1» con sus identificadores (la agenda no pierde sus días). */
-  const organizarPorMicrociclos = () => {
-    cambiar((x) => ((x[i] = organizadoEnMicrociclos(x[i]!)), x));
-    elegirMicrociclo(0);
-    setTexto({ de: 'nombre-del-microciclo', i, j: 0, k: null });
-  };
-  const agregarMicrociclo = () => {
-    const n = bloque?.microcycles?.length ?? 0;
-    cambiar((x) => ((x[i]!.microcycles ??= []).push({ label: `Semana ${n + 1}`, purpose: null, sessions: [] }), x));
-    elegirMicrociclo(n);
-    setTexto({ de: 'nombre-del-microciclo', i, j: n, k: null });
-  };
+  // DL-203 (PN-D01): ni «Organizar por microciclos» ni «Agregar microciclo». Un plan viejo con semanas las conserva:
+  // se eligen, se renombran, se quitan y sus sesiones se editan; no nace ninguna nueva.
   const quitarMicrociclo = () => {
     if (j === null) return;
-    cambiar((x) => (x[i]!.microcycles!.splice(j, 1), x), COPY_DESHACER.quitasteLaSemana(bloque?.microcycles?.[j]?.label || `Semana ${j + 1}`));
+    // Al quitar la última semana, la fase vuelve a tener sus sesiones directamente (DL-203): no queda una lista vacía.
+    cambiar((x) => (x[i]!.microcycles!.splice(j, 1), x[i]!.microcycles!.length === 0 && delete x[i]!.microcycles, x), COPY_DESHACER.quitasteLaSemana(bloque?.microcycles?.[j]?.label || `Semana ${j + 1}`));
     elegirMicrociclo(Math.max(0, j - 1));
   };
   const agregarSesion = () => {
@@ -1728,6 +1887,60 @@ export function EditorDePlan({
     setMensaje({ tipo: 'exito', texto: COPY_HABITUALES.insertadaSesion });
     document.getElementById('agregar-sesion')?.focus();
   };
+  /** DL-203: los nombres y los ejercicios del catálogo que trae un preset de sesión o de fase, para el editor y el 1RM. */
+  const conLosEjerciciosDelPreset = (p: PresetDeSesionPropio | PresetDeFasePropio): Record<string, string> => {
+    const delPreset = Object.fromEntries(Object.entries(p.exercises).map(([v, e]) => [v, e.exerciseId]));
+    setNombres((x) => ({ ...x, ...Object.fromEntries(Object.entries(p.exercises).map(([v, e]) => [v, e.exerciseName])) }));
+    setEjercicios((x) => ({ ...x, ...delPreset }));
+    return { ...ejercicios, ...delPreset };
+  };
+  /**
+   * DL-203: un preset de sesión en la sesión vacía que se mira (conserva su identificador: sus días no se pierden) o como
+   * sesión nueva al final de la fase. Un solo cambio con su «Deshacer»: la estructura y las aproximaciones juntas.
+   */
+  const aplicarPresetDeSesion = (p: PresetDeSesionPropio, destino: 'esta' | 'nueva') => {
+    const a = sesionDelPreset(p.session, () => crypto.randomUUID());
+    const versiones = conLosEjerciciosDelPreset(p);
+    const n = destino === 'esta' ? k : sesiones.length;
+    cambiar((x) => {
+      const ss = lasSesiones(x);
+      if (destino === 'esta' && ss[k]) ss[k] = { ...a.sesion, sessionId: ss[k]!.sessionId ?? a.sesion.sessionId };
+      else ss.push(a.sesion);
+      return x;
+    }, COPY_DESHACER.aplicasteElPreset(p.name));
+    // Lo que va en la planificación entra en el mismo cambio: la instantánea de arriba ya la tiene.
+    if (a.aproximaciones.length > 0) setPlanificacion(a.aproximaciones.reduce((q, w) => conAproximaciones(q, w), plan));
+    calcularLasCargasDe(a.sesion.prescriptions, versiones);
+    elegirSesion(n);
+    setMensaje({ tipo: 'exito', texto: COPY_PRESETS_EN_EL_EDITOR.sesionAplicada(p.name, destino === 'esta' ? nombreDeLaSesion(sesiones[k]!, k) : null) });
+  };
+  /**
+   * DL-203: un preset de fase, como fase nueva después de la que se mira, con sus semanas, sus sesiones, su progresión y
+   * sus aproximaciones. Los días de sus sesiones, como al duplicar una fase (DL-196), solo si la fase nueva tiene fechas.
+   */
+  const aplicarPresetDeFase = (p: PresetDeFasePropio) => {
+    if (bloques.length >= TOPES_DE_ENTRENAMIENTO.bloques) return;
+    const n = bloque ? i + 1 : bloques.length;
+    const f = faseDelPreset(p.phase, p.phase.label, () => crypto.randomUUID());
+    const versiones = conLosEjerciciosDelPreset(p);
+    cambiar((x) => (x.splice(n, 0, f.bloque), x), COPY_DESHACER.aplicasteElPreset(p.name));
+    let q = conSemanasDeLaFase(plan, f.bloque.blockId, f.semanas);
+    if (f.progresion) q = conProgresion(q, f.progresion);
+    q = f.aproximaciones.reduce((r, w) => conAproximaciones(r, w), q);
+    setPlanificacion(q);
+    const nuevos = [...bloques.slice(0, n), f.bloque, ...bloques.slice(n)];
+    const conFechas = !plantilla && (fechasDeLasFases({ ...q, weeks: null }, nuevos)[n] ?? null) !== null;
+    if (conFechas && f.dias.length > 0) {
+      const base = agendaVisible ?? { startDate: inicioDeLaAgenda, sessions: [], moves: [] };
+      setAgenda({ ...base, sessions: [...base.sessions, ...f.dias.map((d) => ({ sessionId: d.sessionId, weekdays: [...d.weekdays] }))] });
+    }
+    calcularLasCargasDe(sesionesDeLaFase(f.bloque).flatMap((s) => s.prescriptions), versiones);
+    elegirBloque(n);
+    setFoco({ tipo: 'fase' });
+    setMensaje({ tipo: 'exito', texto: COPY_PRESETS_EN_EL_EDITOR.faseAplicada(p.name, f.dias.length > 0 && !conFechas && !plantilla) });
+  };
+  /** DL-203: arma lo que se guarda como preset de la fase que se mira (o dice por qué no se puede). */
+  const presetDeEstaFase = bloque ? presetDeFaseDe(bloque, plan, agendaVisible) : null;
   const cambiarEjercicio = (l: number, c: Partial<PrescripcionE>) =>
     cambiar((x) => {
       const s = lasSesiones(x)[k]!;
@@ -1849,6 +2062,31 @@ export function EditorDePlan({
           if (!p.prescriptionId) cambiarEjercicio(l, { prescriptionId: id });
           const otros = (plan.withoutIntensity ?? []).filter((x) => x !== id);
           cambiarPlanificacion({ ...plan, withoutIntensity: sin ? [...otros, id] : otros });
+        }}
+        // DL-201: su progresión propia, plegado, y «Progresión…» en su «Más», con el ejercicio ya elegido.
+        progresionPropia={(() => {
+          const propia = bloque ? reglaPropiaDe(plan, bloque.blockId, p.prescriptionId) : null;
+          return propia ? progresionCorta(propia, baseDelEjercicio(p, nombre, null).unidad) : null;
+        })()}
+        onProgresion={
+          cardioDe(p)
+            ? undefined
+            : () => {
+                const id = p.prescriptionId ?? crypto.randomUUID();
+                if (!p.prescriptionId) cambiarEjercicio(l, { prescriptionId: id });
+                conIdDeLaFase((fase) => setProgresionAbierta({ blockId: fase, prescriptionId: id, copia: null }));
+              }
+        }
+        // ET2-D18: el redondeo de las cargas del % RM, el del plan o la excepción del ejercicio (en la planificación).
+        redondeo={redondeoDelEjercicio(plan, p.prescriptionId)}
+        redondeoPropio={(p.prescriptionId ? plan.loadRoundingByExercise?.find((r) => r.prescriptionId === p.prescriptionId)?.step : undefined) ?? null}
+        // ET2-D18: un 1RM nuevo en este ejercicio se vuelve a leer para todo el borrador (también los plegados).
+        onUnoRMCambiado={() => setLecturaDelUnoRM((n) => n + 1)}
+        onRedondeo={(r) => {
+          const id = p.prescriptionId ?? crypto.randomUUID();
+          if (!p.prescriptionId) cambiarEjercicio(l, { prescriptionId: id });
+          const otros = (plan.loadRoundingByExercise ?? []).filter((x) => x.prescriptionId !== id);
+          cambiarPlanificacion({ ...plan, loadRoundingByExercise: r === null ? otros : [...otros, { prescriptionId: id, step: r }] });
         }}
         // PLT (DL-182): sin persona, sin la fuerza estimada ni «La vez pasada»: el ejercicio del catálogo no se pasa.
         exerciseId={asesoradoId === null ? null : (ejercicios[p.exerciseVersionId] ?? null)}
@@ -2144,6 +2382,11 @@ export function EditorDePlan({
 
   // ── ED-11: aplicar un preset y deshacerlo ────────────────────────────────────────────────────────────────────
   /** DJ-8: escribe las prescripciones nuevas en la sesión que se mira; «Deshacer» guarda las de antes. */
+  /** DL-203: pide la carga del 1RM para los ejercicios que quedaron en % RM (sin persona, como en una plantilla, no hay). */
+  const calcularLasCargasDe = (ps: readonly PrescripcionE[], versiones: Readonly<Record<string, string>> = ejercicios) => {
+    const ids = ps.filter((q) => q.intensity?.criterion === 'PERCENT_RM').map((q) => versiones[q.exerciseVersionId]).filter((e): e is string => !!e);
+    if (ids.length > 0 && !plantilla && asesoradoId !== null) setCargasPorCalcular((s) => new Set([...s, ...ids]));
+  };
   const aplicarElPreset = (a: AlcanceDelPreset, nombre: string) => {
     const lugar = { i, j, k };
     cambiar((x) => {
@@ -2151,6 +2394,7 @@ export function EditorDePlan({
       s.prescriptions = conLasDeLaPosicion(s.prescriptions, a.nuevas);
       return x;
     });
+    calcularLasCargasDe([...a.nuevas.values()]);
     const filas = a.filas.map((f) => ({ p: a.nuevas.get(f.posicion)!, texto: f.cambio.carga.revisar }));
     marcarCargas(claveDeLaSesion(lugar, k), filas);
     setDeshacer({ texto: `«${nombre}»: ${COPY_PRESETS.aplicado(a.filas.length)}`, lugar, antes: a.antes, firmas: new Set(filas.map((f) => firmaDeLaCarga(f.p))) });
@@ -2310,7 +2554,7 @@ export function EditorDePlan({
                       data-asistente-preset-de-estructura
                       onClick={() => {
                         if (conVariosGrupos) mirarLaSesion(g, 0);
-                        setGaleria({ tarea: 'estructura', ejercicio: null });
+                        setGaleria({ pestana: 'fase', ejercicio: null });
                       }}
                     >
                       <Icono nombre="plantillas" tamano={18} />
@@ -2424,7 +2668,7 @@ export function EditorDePlan({
                     className="boton boton--quieto"
                     onClick={() => {
                       mirarLaSesion(g, n);
-                      setGaleria({ tarea: 'prescripcion', ejercicio: null });
+                      setGaleria({ pestana: 'series', ejercicio: null });
                     }}
                   >
                     <Icono nombre="plantillas" tamano={18} />
@@ -2626,9 +2870,10 @@ export function EditorDePlan({
   const planDelEjercicio = (b: BloqueE, q: PrescripcionE) => {
     const nombre = nombres[q.exerciseVersionId] ?? 'Ejercicio';
     const semanas = semanasDeLaFase(plan, b.blockId) ?? 4;
-    const regla = progresionDeLaFase(plan, b.blockId);
+    // DL-201: la regla que rige para este ejercicio (la propia; si no, la de la fase).
+    const { regla } = progresionDelEjercicio(plan, b.blockId, q.prescriptionId);
     const base = baseDelEjercicio(q, nombre, aproximacionesDeId(q.prescriptionId ?? null));
-    const filas = regla && seAplicaA(regla, q.prescriptionId) ? vistaPrevia(regla, [{ prescriptionId: q.prescriptionId ?? null, nombre, sesion: '', prescripcion: q }], semanas, aproximacionesDeId)[0]?.semanas : null;
+    const filas = cambiaAlgo(regla) ? vistaPrevia(regla, [{ prescriptionId: q.prescriptionId ?? null, nombre, sesion: '', prescripcion: q }], semanas, aproximacionesDeId)[0]?.semanas : null;
     return {
       nombre,
       unidad: base.unidad,
@@ -2665,18 +2910,22 @@ export function EditorDePlan({
       armar={(zonasDe) => sesionesParaDistribuir(b, agendaVisible, (q) => zonasDe(ejercicios[q.exerciseVersionId] ?? null))}
       aCuidar={aCuidar}
       chica={chica}
-      onVerEstructuras={chica ? null : () => setGaleria({ tarea: 'estructura', ejercicio: null })}
+      onVerEstructuras={chica ? null : () => setGaleria({ pestana: 'fase', ejercicio: null })}
     />
   );
   /** La progresión de una fase en el panel: la regla en palabras y su curva en el primer ejercicio con carga. */
   const progresionDe = (b: BloqueE, n: number) => {
     const regla = progresionDeLaFase(plan, b.blockId);
+    const propias = reglasPropias(plan, b.blockId).reduce((t, r) => t + (r.prescriptionIds?.length ?? 0), 0);
     const semanas = semanasDeLaFase(plan, b.blockId) ?? 4;
-    const filas = regla ? vistaPrevia(regla, ejerciciosDeUnaFase(b), semanas, aproximacionesDeId) : [];
+    const filas = b.blockId ? vistaPreviaDeLaFase(plan, b.blockId, ejerciciosDeUnaFase(b), semanas, aproximacionesDeId) : [];
     const conCarga = filas.find((f) => f.semanas.some((x) => x.carga !== null)) ?? null;
     return (
-      <div className="progresion-en-el-panel" data-progresion-en-el-panel={regla ? 'con-regla' : 'sin-regla'}>
-        <p className="nota">{regla ? progresionEnPalabras(regla, conCarga?.unidad ?? 'kg') : `${nombreDelBloque(b, n)} no tiene progresión: la carga de trabajo queda igual todas las semanas.`}</p>
+      <div className="progresion-en-el-panel" data-progresion-en-el-panel={regla || propias > 0 ? 'con-regla' : 'sin-regla'}>
+        <p className="nota">
+          {regla ? progresionEnPalabras(regla, conCarga?.unidad ?? 'kg') : propias > 0 ? `${nombreDelBloque(b, n)} no tiene regla de la fase.` : `${nombreDelBloque(b, n)} no tiene progresión: la carga de trabajo queda igual todas las semanas.`}
+          {propias > 0 ? ` · ${COPY_PROGRESIONES.conPropias(propias)}` : null}
+        </p>
         {conCarga ? (
           <GraficoDeSemanas
             titulo={`${conCarga.nombre}: la carga planificada por semana`}
@@ -2797,7 +3046,7 @@ export function EditorDePlan({
             ? null
             : (veces) => {
                 const l = foco.l;
-                const regla = bloque ? progresionDeLaFase(plan, bloque.blockId) : null;
+                const regla = bloque ? progresionDelEjercicio(plan, bloque.blockId, ejercicioEnFoco.prescriptionId).regla : null;
                 return (
                   <SugerenciaDeProgresionEnElPanel
                     veces={veces}
@@ -2805,7 +3054,7 @@ export function EditorDePlan({
                     prescripcion={ejercicioEnFoco}
                     nombre={nombres[ejercicioEnFoco.exerciseVersionId] ?? ''}
                     notacion={notacion}
-                    conProgresionDeLaFase={!!regla && regla.model !== null && seAplicaA(regla, ejercicioEnFoco.prescriptionId)}
+                    conProgresionDeLaFase={!!regla && regla.model !== null}
                     onAplicar={(sugerida) => cambiarEjercicio(l, conLaCargaSubida(ejercicioEnFoco, sugerida))}
                   />
                 );
@@ -2832,13 +3081,11 @@ export function EditorDePlan({
         {selectorDeVistas}
         <div id="vista-del-panel" role={vistas.length > 1 ? 'tabpanel' : undefined} aria-labelledby={vistas.length > 1 ? `vista-del-panel-${vista}` : undefined} data-vista-del-panel={vista}>
           {vista === 'distribucion' && bloque ? (
-            <MarcoDelPanel id="panel-de-la-distribucion" deQue={deQueEsLaFase} titulo={NOMBRE_DE_LA_VISTA.distribucion} onAbrirGrande={() => setDistribucionGrande(true)}>
-              <div className="marco-del-panel__acciones">{estrella('PHASE_DISTRIBUTION', bloque.blockId, `la distribución de ${deQueEsLaFase}`)}</div>
+            <MarcoDelPanel id="panel-de-la-distribucion" deQue={deQueEsLaFase} titulo={NOMBRE_DE_LA_VISTA.distribucion} onAbrirGrande={() => setDistribucionGrande(true)} acciones={estrella('PHASE_DISTRIBUTION', bloque.blockId, `la distribución de ${deQueEsLaFase}`)}>
               {distribucionDe(bloque, false)}
             </MarcoDelPanel>
           ) : vista === 'progresion' && bloque ? (
-            <MarcoDelPanel id="panel-de-la-progresion" deQue={deQueEsLaFase} titulo={COPY_PROGRESIONES.titulo} onAbrirGrande={null}>
-              <div className="marco-del-panel__acciones">{estrella('PHASE_PROGRESSION', bloque.blockId, `la progresión de ${deQueEsLaFase}`)}</div>
+            <MarcoDelPanel id="panel-de-la-progresion" deQue={deQueEsLaFase} titulo={COPY_PROGRESIONES.titulo} onAbrirGrande={null} acciones={estrella('PHASE_PROGRESSION', bloque.blockId, `la progresión de ${deQueEsLaFase}`)}>
               {progresionDe(bloque, i)}
             </MarcoDelPanel>
           ) : vista === 'favoritos' ? (
@@ -2860,7 +3107,7 @@ export function EditorDePlan({
       </>
     );
   /** «Antes de activar» (o «Antes de guardar», en una plantilla): lo que impide y lo que queda sin completar, cada cosa con su «Ir a…». */
-  const listaAntesDeActivar = (
+  const loQueImpide = (
     <>
       {/* DL-199 (ET3, E5): cómo se actualiza esta lista va en el «?» de su esquina, no en un párrafo al pie. */}
       <div className="encabezado-con-ayuda">
@@ -2883,6 +3130,11 @@ export function EditorDePlan({
       </div>
       {/* ENP-D13: el estado de la revisión, siempre dicho; nunca «nada impide» antes de que responda la API. */}
       {revisionEnElPanel}
+    </>
+  );
+  /** Lo que queda sin completar NO impide activar: no entra en «N cosas impiden activar» ni en su lista. */
+  const loQueQuedaSinCompletar = (
+    <>
       <h3>
         {CE.quedaSinCompletar} <span className="nota">· {CE.noImpide}</span>
       </h3>
@@ -2898,6 +3150,13 @@ export function EditorDePlan({
           ))}
         </ul>
       )}
+    </>
+  );
+  /** La edición de una plantilla muestra las dos cosas juntas en su panel; «Antes de activar» solo lo que impide. */
+  const listaAntesDeActivar = (
+    <>
+      {loQueImpide}
+      {loQueQuedaSinCompletar}
     </>
   );
 
@@ -2924,7 +3183,7 @@ export function EditorDePlan({
         </h2>
         <div className="editor-del-plan__acciones">
           {/* DL-195 (GUI-10): «Ver el recorrido», el primero de la barra: un lugar fijo, que no se mueve con el estado. */}
-          {pasoDelAsistente ? null : <BotonVerElRecorrido alTocar={recorrido.abrir} />}
+          {pasoDelAsistente ? null : <BotonVerElRecorrido alTocar={recorrido.abrir} conPalabraCorta />}
           <EstadoDeGuardado
             className="editor-del-plan__estado"
             guardando={guardando}
@@ -2936,26 +3195,8 @@ export function EditorDePlan({
             detalle={detalle}
             onReintentar={() => void guardar()}
           />
-          {/* ED-03 (DJ-6): «Guardar ahora», fijo y secundario junto al estado: guarda sin esperar la pausa. Apagado (con
-              `aria-disabled`, que conserva el foco), dice por qué. */}
-          <button
-            type="button"
-            className="boton boton--secundario"
-            data-guardar-ahora
-            aria-disabled={sinGuardarAhora ? true : undefined}
-            aria-describedby={sinGuardarAhora ? 'motivo-sin-guardar-ahora' : undefined}
-            onClick={() => {
-              if (!sinGuardarAhora) void guardar();
-            }}
-          >
-            <Icono nombre="guardar" tamano={18} />
-            {COPY_GUARDADO.guardarAhora}
-          </button>
-          {sinGuardarAhora ? (
-            <span id="motivo-sin-guardar-ahora" className="visualmente-oculto">
-              {sinGuardarAhora}
-            </span>
-          ) : null}
+          {/* El guardado es automático y el estado lo dice («Guardando…», «Guardado», «No se guardó · Reintentar»). «Guardar ahora»
+              queda en el «…» y con Ctrl+S: la barra es de un solo renglón y no tiene lugar para un botón más (RP-19). */}
           {/* ED-07 (DJ-6): «Revisar y activar…», la única entrada a activar, fija y llena (el único botón lleno de la
               barra). Abre «Antes de activar» siempre, también con algo por corregir o sin guardar, y no cambia de nombre
               ni de lugar mientras se escribe. */}
@@ -2964,7 +3205,7 @@ export function EditorDePlan({
               impiden activar, y despliega la lista. */}
           {pasoDelAsistente ? null : (
             <LoQueImpideActivar cuantos={cuantosImpiden} estado={estadoDeLaRevision} delEditor={delEditor.length} abierto={impideAbierto} onAbrir={setImpideAbierto}>
-              {listaAntesDeActivar}
+              {loQueImpide}
             </LoQueImpideActivar>
           )}
           {pasoDelAsistente ? null : (
@@ -2973,12 +3214,14 @@ export function EditorDePlan({
               {COPY_ANTES_DE_ACTIVAR.revisarYActivar}
             </button>
           )}
-          {!pasoDelAsistente && ofreceDescartar(version) ? (
+          {!pasoDelAsistente ? (
             <MenuDeAcciones
               id="mas-de-la-version"
               rotulo={CE.masDeLaVersion}
               acciones={[
-                { clave: 'estructura', texto: CE.galeriaDeEstructura, alElegir: () => setGaleria({ tarea: 'estructura', ejercicio: null }) },
+                { clave: 'guardar-ahora', texto: COPY_GUARDADO.guardarAhora, alElegir: () => void guardar(), noSePuede: sinGuardarAhora },
+                ...(!ofreceDescartar(version) ? [] : [
+                { clave: 'estructura', texto: CE.galeriaDeEstructura, alElegir: () => setGaleria({ pestana: 'plan', ejercicio: null }) },
                 { clave: 'plantilla', texto: `${CE.guardarComoPreset}: ${CE.elPlanComoPlantilla}`, alElegir: () => setGuardarPlantilla(true), noSePuede: antesHayQueCorregir },
                 {
                   clave: 'sesion-habitual',
@@ -3000,6 +3243,7 @@ export function EditorDePlan({
                     setDescartar(true);
                   },
                 },
+                ]),
               ]}
             />
           ) : null}
@@ -3219,20 +3463,18 @@ export function EditorDePlan({
                           id="menu-del-bloque"
                           rotulo={`más acciones de la fase ${nombreDelBloque(bloque, i)}`}
                           acciones={[
-                            // Un bloque organiza sus sesiones bajo microciclos o directamente, nunca las dos cosas (09v10:281-283).
-                            ...(mira.conMicrociclos
-                              ? []
-                              : [
-                                  {
-                                    clave: 'microciclos',
-                                    texto: 'Organizar por microciclos',
-                                    alElegir: organizarPorMicrociclos,
-                                    // TB-48: se ofrece siempre; si el bloque ya tiene sesiones, dice adónde van.
-                                    detalle: loQuePasaConLasSesiones(sesiones.length),
-                                    noSePuede: sesiones.length > TOPES_DE_ENTRENAMIENTO.sesionesDelMicrociclo ? E.topeDelMicrociclo(TOPES_DE_ENTRENAMIENTO.sesionesDelMicrociclo, sesiones.length) : null,
-                                  },
-                                ]),
+                            // DL-203 (PN-D01): sin «Organizar por microciclos»; la fase de N semanas con su semana tipo lo cubre.
                             { clave: 'duplicar', texto: 'Duplicar la fase', alElegir: () => duplicarLaFase(i) },
+                            // DL-203: la fase como preset, para reutilizarla en otro plan; y una fase nueva desde un preset.
+                            {
+                              clave: 'preset',
+                              texto: COPY_GUARDAR_COMO_PRESET.accion,
+                              alElegir: () => {
+                                if (presetDeEstaFase && 'contenido' in presetDeEstaFase) setGuardarComoPreset({ tipo: 'FASE', de: nombreDelBloque(bloque, i), armado: presetDeEstaFase });
+                              },
+                              noSePuede: antesHayQueCorregir ?? (presetDeEstaFase && 'noSePuede' in presetDeEstaFase ? presetDeEstaFase.noSePuede : sesiones.length === 0 ? COPY_PRESETS_POR_NIVEL.sinSesiones : null),
+                            },
+                            { clave: 'desde-preset', texto: COPY_PRESETS_EN_EL_EDITOR.agregarFaseDesdePreset, alElegir: () => setGaleria({ pestana: 'fase', ejercicio: null }) },
                             { clave: 'quitar', texto: 'Quitar esta fase', alElegir: quitarBloque, noSePuede: bloques.length <= 1 ? 'Es la única fase de la versión.' : null },
                           ]}
                         />
@@ -3252,7 +3494,11 @@ export function EditorDePlan({
                                 <Icono nombre="sube" tamano={18} />
                                 {COPY_PROGRESIONES.abrir}
                               </button>
-                              <span className="nota">{progresionDeLaFase(plan, bloque.blockId) ? progresionEnPalabras(progresionDeLaFase(plan, bloque.blockId)!, unidadDeLaFase(ejerciciosDeUnaFase(bloque))) : COPY_PROGRESIONES.sinModelo}</span>
+                              <span className="nota" data-reglas-propias={reglasPropias(plan, bloque.blockId).reduce((t, r) => t + (r.prescriptionIds?.length ?? 0), 0) || undefined}>
+                                {progresionDeLaFase(plan, bloque.blockId) ? progresionEnPalabras(progresionDeLaFase(plan, bloque.blockId)!, unidadDeLaFase(ejerciciosDeUnaFase(bloque))) : COPY_PROGRESIONES.sinModelo}
+                                {/* DL-201: cuántos ejercicios tienen la suya. */}
+                                {reglasPropias(plan, bloque.blockId).length > 0 ? ` · ${COPY_PROGRESIONES.conPropias(reglasPropias(plan, bloque.blockId).reduce((t, r) => t + (r.prescriptionIds?.length ?? 0), 0))}` : null}
+                              </span>
                             </div>
                           {microciclo && j !== null ? (
                             <div className="plan__niveles niveles-del-editor">
@@ -3263,10 +3509,6 @@ export function EditorDePlan({
                                 elegido={{ order: j + 1, label: nombreDelMicrociclo(microciclo, j) }}
                                 onElegir={(o) => elegirMicrociclo(o - 1)}
                               >
-                                <button type="button" className="boton boton--quieto boton--compacto" data-agregar-microciclo onClick={agregarMicrociclo}>
-                                  <Icono nombre="mas" tamano={18} />
-                                  {COPY_ENTRENAMIENTO.agregarMicrociclo}
-                                </button>
                                 <MenuDeAcciones
                                   id="menu-del-microciclo"
                                   rotulo={`más acciones del microciclo ${nombreDelMicrociclo(microciclo, j)}`}
@@ -3397,10 +3639,12 @@ export function EditorDePlan({
                                   </span>
                                   {nombreDeLaSesion(sesion, k)}
                                 </h4>
-                                <button type="button" className="boton boton--quieto boton--compacto sesion-elegida__ver-como" onClick={() => setVistaDeLaPersona(true)} data-ver-como-la-persona>
-                                  <Icono nombre="ver" tamano={18} />
-                                  {COPY_VISTA_DE_LA_PERSONA.abrir}
-                                </button>
+                                {MOSTRAR_VISTA_DE_LA_PERSONA ? (
+                                  <button type="button" className="boton boton--quieto boton--compacto sesion-elegida__ver-como" onClick={() => setVistaDeLaPersona(true)} data-ver-como-la-persona>
+                                    <Icono nombre="ver" tamano={18} />
+                                    {COPY_VISTA_DE_LA_PERSONA.abrir}
+                                  </button>
+                                ) : null}
                                 <MenuDeAcciones
                                   id="menu-de-la-sesion"
                                   rotulo={`más acciones de la sesión ${nombreDeLaSesion(sesion, k)}`}
@@ -3415,6 +3659,14 @@ export function EditorDePlan({
                                     { clave: 'antes', texto: E.moverAntes, alElegir: () => moverSesion(k - 1), noSePuede: k === 0 ? E.yaEsElPrimero : null },
                                     { clave: 'despues', texto: E.moverDespues, alElegir: () => moverSesion(k + 1), noSePuede: k === sesiones.length - 1 ? E.yaEsElUltimo : null },
                                     { clave: 'habitual', texto: COPY_HABITUALES.guardarComoHabitual, alElegir: () => setSesionHabitual(structuredClone(sesion)), noSePuede: antesHayQueCorregir },
+                                    // DL-203: la sesión como preset (sin cargas ni notas), y un preset de sesión en esta o en una nueva.
+                                    {
+                                      clave: 'preset',
+                                      texto: COPY_GUARDAR_COMO_PRESET.accion,
+                                      alElegir: () => setGuardarComoPreset({ tipo: 'SESION', de: nombreDeLaSesion(sesion, k), armado: presetDeSesionDe(sesion, plan) }),
+                                      noSePuede: antesHayQueCorregir ?? (sesion.prescriptions.length === 0 ? COPY_PRESETS_POR_NIVEL.sinEjercicios : null),
+                                    },
+                                    { clave: 'usar-preset', texto: COPY_PRESETS_EN_EL_EDITOR.usarPresetDeSesion, alElegir: () => setGaleria({ pestana: 'sesion', ejercicio: null }) },
                                     { clave: 'quitar', texto: 'Quitar esta sesión', alElegir: quitarSesion },
                                   ]}
                                 />
@@ -3496,7 +3748,7 @@ export function EditorDePlan({
                           {sesion ? (
                             <div className="estacion__acciones-de-la-sesion">
                               {/* ED-11: la galería de presets de prescripción, para la sesión que se mira. ENP-D10: con la sesión vacía, también. */}
-                              <button type="button" className="boton boton--quieto boton--compacto" data-galeria-de-prescripcion onClick={() => setGaleria({ tarea: 'prescripcion', ejercicio: null })}>
+                              <button type="button" className="boton boton--quieto boton--compacto" data-galeria-de-prescripcion onClick={() => setGaleria({ pestana: 'series', ejercicio: null })}>
                                 <Icono nombre="plantillas" tamano={18} />
                                 {CE.presets}
                               </button>
@@ -3700,7 +3952,7 @@ export function EditorDePlan({
 
       <GaleriaDePresets
         abierto={galeria !== null}
-        tarea={galeria?.tarea ?? 'prescripcion'}
+        pestana={galeria?.pestana ?? 'series'}
         persona={persona}
         sesion={sesion ?? null}
         nombreDeLaSesion={sesion ? nombreDeLaSesion(sesion, k) : ''}
@@ -3714,6 +3966,9 @@ export function EditorDePlan({
             ? { leer: leerPlantillas, borrador: `versión ${numero} en preparación`, reemplazando, error: falloAlReemplazar, noSePuede: plantillasNoSePueden, onReemplazar: (id) => void reemplazarConPlantilla(id) }
             : null
         }
+        // DL-203: los presets de series se leen en la intensidad del plan, o en la del ejercicio si tiene otra.
+        intensidad={intensidadElegida(plan, notacion)}
+        intensidadDe={(p) => intensidadParaElPreset(p, intensidadElegida(plan, notacion), !!p.prescriptionId && (plan.withoutIntensity ?? []).includes(p.prescriptionId))}
         onAplicarPrescripcion={aplicarElPreset}
         onElegirParaLaSesionVacia={(nombre, aplicar) => {
           if (!sesion) return;
@@ -3725,7 +3980,29 @@ export function EditorDePlan({
         }}
         onAplicarEstructura={aplicarLaEstructura}
         onInsertarHabitual={insertarSesion}
+        // DL-203: los presets de sesión y de fase del profesional.
+        presetsDeSesion={prescripcionesHabituales.sesiones}
+        presetsDeFase={prescripcionesHabituales.fases}
+        faseActual={bloque ? nombreDelBloque(bloque, i) : null}
+        noSePuedeAgregarFase={bloques.length >= TOPES_DE_ENTRENAMIENTO.bloques ? COPY_PRESETS_EN_EL_EDITOR.topeDeFases(TOPES_DE_ENTRENAMIENTO.bloques) : null}
+        noSePuedeAgregarSesion={!bloque ? C.sinBloques : sesiones.length >= topeDeSesiones ? COPY_PRESETS_EN_EL_EDITOR.topeDeSesiones(topeDeSesiones) : null}
+        onAplicarPresetDeSesion={aplicarPresetDeSesion}
+        onAplicarPresetDeFase={aplicarPresetDeFase}
         onCerrar={() => setGaleria(null)}
+      />
+
+      {/* DL-203: «Guardar como preset» desde el «⋯» de la sesión o de la fase. */}
+      <DialogoGuardarComoPreset
+        token={token}
+        que={guardarComoPreset}
+        existentes={prescripcionesHabituales.todos}
+        onCerrar={() => setGuardarComoPreset(null)}
+        onGuardado={(p) => {
+          const tipo = guardarComoPreset?.tipo ?? 'SESION';
+          setGuardarComoPreset(null);
+          setMensaje({ tipo: 'exito', texto: COPY_GUARDAR_COMO_PRESET.guardado(p.name, tipo) });
+          void prescripcionesHabituales.recargar();
+        }}
       />
 
       {/* DL-196 parte B (E12, E19): el asistente de la progresión de una fase, o de la copia recién hecha. */}
@@ -3740,14 +4017,17 @@ export function EditorDePlan({
             const reglaOriginal = copia?.originalId ? progresionDeLaFase(plan, copia.originalId) : null;
             return (
               <AsistenteDeProgresion
+                key={`${id}-${progresionAbierta.prescriptionId ?? 'fase'}`}
                 abierto
+                plan={plan}
+                desdeElEjercicio={progresionAbierta.prescriptionId ?? null}
+                onUsarLaDeLaFase={usarLaDeLaFase}
                 persona={persona}
                 fase={nombreDelBloque(b, n)}
                 blockId={id}
                 semanasDeLaFase={semanasDeLaFase(plan, id)}
                 ejercicios={ejerciciosDeUnaFase(b)}
                 aproximacionesDe={aproximacionesDeId}
-                actual={progresionDeLaFase(plan, id)}
                 otras={bloques.flatMap((x, m) => {
                   const r = x.blockId && x.blockId !== id ? progresionDeLaFase(plan, x.blockId) : null;
                   return r ? [{ fase: nombreDelBloque(x, m), progresion: r }] : [];
@@ -3872,7 +4152,7 @@ export function EditorDePlan({
       <RecorridoGuiado definicion={RECORRIDO_DEL_EDITOR_DE_ENTRENAMIENTO} abierto={recorrido.abierto} alCerrar={recorrido.cerrar} />
 
       {/* DL-198 (ET2-12): «Ver como la persona». */}
-      {bloque ? (
+      {MOSTRAR_VISTA_DE_LA_PERSONA && bloque ? (
         <VistaDeLaPersona
           abierto={vistaDeLaPersona}
           onCerrar={() => setVistaDeLaPersona(false)}
@@ -3897,6 +4177,7 @@ export function EditorDePlan({
           notacion={notacion}
           semanasDeLasFases={semanasQueSumanLasFases(plan, bloques)}
           conOtraIntensidad={conOtraIntensidad}
+          pedidoPorLosRegistros={!!version && 'askSetEffort' in version && version.askSetEffort === true}
           onGuardar={(c) => {
             alCambiarElPlan(c.planificacion);
             if (c.notacion !== notacion) setNotacion(c.notacion);
@@ -3975,6 +4256,8 @@ export function EditorDePlan({
         onAgregar={(marcados, prescripcion) => {
           if (!sesion) return;
           setNombres((n) => ({ ...n, ...Object.fromEntries(marcados.map((e) => [e.versionId, e.name])) }));
+          // DL-203: el ejercicio del catálogo de cada versión, para leer su 1RM (las cargas del % RM).
+          setEjercicios((x) => ({ ...x, ...Object.fromEntries(marcados.map((e) => [e.versionId, e.exerciseId])) }));
           // ED-21: entran juntos, en el orden marcado; sin prescripción para todos, cada uno con una serie para completar.
           // ENP-D10: sin una escrita en el cajón, con la de la sesión, si se eligió. DL-181: al bloque desde cuyo pie se abrió.
           // DL-199 (ET3-13): los de cardio por su clasificación entran como cardio, con la duración sin indicar.
@@ -3982,6 +4265,8 @@ export function EditorDePlan({
             esDeCardioPorLaClasificacion(marcados[n] as { classification?: { muscleGroup?: string | null } | null }) ? conElCardio(x, CARDIO_SIN_INDICAR) : !prescripcion && prescripcionDeEstaSesion ? prescripcionDeEstaSesion.aplicar(x) : x,
           );
           aplicarReordenada(agregarEjercicios(sesion, nuevas, agregandoEn));
+          // DL-203: con la prescripción de la sesión en % RM, la carga sale del 1RM de la persona.
+          if (!prescripcion && prescripcionDeEstaSesion) calcularLasCargasDe(nuevas, { ...ejercicios, ...Object.fromEntries(marcados.map((e) => [e.versionId, e.exerciseId])) });
         }}
         onCerrar={() => {
           setAgregando(false);

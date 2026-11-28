@@ -444,8 +444,14 @@ export type AproximacionesDelEjercicio = z.infer<typeof AproximacionesDelEjercic
  *   (`waves`, en % de la carga de trabajo de la sesión);
  * - `null`: sin modelo, solo la descarga.
  * La descarga (`deload`) va en una semana elegida de la fase: la carga baja a `workingLoadShare` % de la carga de trabajo
- * de la semana anterior (`LOAD`) o se hacen `setsRemoved` series efectivas menos con la misma carga (`SETS`). Se aplica a
- * toda la fase (`prescriptionIds` en `null`) o a los ejercicios elegidos.
+ * de la semana anterior (`LOAD`) o se hacen `setsRemoved` series efectivas menos con la misma carga (`SETS`).
+ *
+ * DL-201 (PE-D01 a PE-D03) · **por ejercicio, con el mismo patrón que la intensidad (ET1-D11):**
+ * - `prescriptionIds` en `null`: la **regla de la fase**, que hereda cada ejercicio. Una por fase, como mucho;
+ * - con ejercicios: una **regla propia** de esos ejercicios, que pisa la de la fase. Puede haber varias por fase, sin pisarse:
+ *   un ejercicio tiene como mucho una regla propia (`ProgresionesDelPlanSchema`). Una propia sin modelo y sin descarga es
+ *   «Sin progresión» para ese ejercicio, aunque la fase tenga una.
+ * Precedencia: la propia del ejercicio; si no, la de la fase; si no, ninguna (`progresionDelEjercicio`).
  */
 export const ProgresionDeLaFaseSchema = z.strictObject({
   blockId: IdDeNodoSchema,
@@ -468,6 +474,38 @@ export const ProgresionDeLaFaseSchema = z.strictObject({
   prescriptionIds: z.array(IdDeNodoSchema).min(1).max(60).nullable(),
 });
 export type ProgresionDeLaFase = z.infer<typeof ProgresionDeLaFaseSchema>;
+
+/** DL-201 (PE-D04): hasta 200 reglas por plan (las de las fases y las propias de los ejercicios). */
+export const MAXIMO_DE_PROGRESIONES = 200;
+
+/**
+ * DL-201 (PE-D02) · las progresiones de un plan, sin pisarse: una sola regla de la fase por fase y, por ejercicio, como
+ * mucho una regla propia en su fase (ni repetido dentro de la misma regla). La clave es la fase y el ejercicio: una regla
+ * que quedó en la fase de antes al mover el ejercicio no traba el guardado. Va como refinamiento del arreglo, y no del
+ * objeto, para que la planificación de la plantilla lo siga tomando con `pick`.
+ */
+export const ProgresionesDelPlanSchema = z
+  .array(ProgresionDeLaFaseSchema)
+  .max(MAXIMO_DE_PROGRESIONES)
+  .superRefine((lista, ctx) => {
+    const deLaFase = new Set<string>();
+    const propias = new Set<string>();
+    lista.forEach((p, n) => {
+      if (p.prescriptionIds === null) {
+        if (deLaFase.has(p.blockId)) {
+          ctx.addIssue({ code: 'custom', path: [n, 'prescriptionIds'], message: 'La fase ya tiene su regla: cada fase lleva una sola regla general; lo distinto va como regla propia de cada ejercicio.' });
+        }
+        deLaFase.add(p.blockId);
+        return;
+      }
+      p.prescriptionIds.forEach((id, k) => {
+        if (propias.has(`${p.blockId}|${id}`)) {
+          ctx.addIssue({ code: 'custom', path: [n, 'prescriptionIds', k], message: 'Ese ejercicio ya tiene una progresión propia: un ejercicio lleva como mucho una. Quitalo de la otra antes de sumarlo a esta.' });
+        }
+        propias.add(`${p.blockId}|${id}`);
+      });
+    });
+  });
 
 /**
  * DL-196 parte B (EE-D38, GR-27) · un gráfico del editor marcado como favorito de esta planificación: la carga por semana
@@ -495,14 +533,39 @@ export type GraficoFavoritoDelPlan = z.infer<typeof GraficoFavoritoDelPlanSchema
 export const IntensidadDelPlanSchema = z.enum(['RIR', 'PERCENT_RM', 'NONE']);
 export type IntensidadDelPlan = z.infer<typeof IntensidadDelPlanSchema>;
 
+/**
+ * ET2-D18 (a ratificar) · a qué carga lógica de gimnasio se redondean las cargas que salen del % RM y del 1RM: `AUTO`, el
+ * paso del implemento (ET1-D06: máquina 5, barra 2,5, mancuernas livianas 1 y, por debajo de 40 kg, 1); o 1, 2,5 o 5, ese paso
+ * siempre. Ausente en el plan: 2,5. Va en la planificación (no en las series): la app de la persona no lo lee.
+ */
+export const RedondeoDeLasCargasSchema = z.union([z.literal('AUTO'), z.literal(1), z.literal(2.5), z.literal(5)]);
+export type RedondeoDeLasCargas = z.infer<typeof RedondeoDeLasCargasSchema>;
+
+/**
+ * ET2-D18 (ratificada el 2026-11-26 con un matiz) · el 1RM con el que se calcularon las cargas de un ejercicio en % RM,
+ * congelado al activar la versión: la API lo completa en API-TRN-12 con el 1RM vigente de cada ejercicio, con su origen, su
+ * fecha y el día de la activación. Un 1RM posterior no cambia las cargas de la versión activa ni su vista; rige para la
+ * versión siguiente. La app de la persona no lo lee (lee las cargas ya calculadas).
+ */
+export const UnoRMDeLaActivacionSchema = z.strictObject({
+  prescriptionId: IdDeNodoSchema,
+  exerciseId: z.string().min(1),
+  value: z.strictObject({ value: z.number().positive().finite(), unit: UnidadDeCargaSchema }),
+  origin: z.enum(['CALIBRATION', 'RECORD', 'DECLARED']),
+  localDate: FechaLocalSchema,
+  activatedOn: FechaLocalSchema,
+});
+export type UnoRMDeLaActivacion = z.infer<typeof UnoRMDeLaActivacionSchema>;
+
 export const PlanificacionDelPlanSchema = z.strictObject({
   startDate: FechaLocalSchema.nullable(),
   weeks: z.number().int().min(1).max(104).nullable(),
   goal: TextoOpcional(1000).optional(),
   phases: z.array(z.strictObject({ blockId: IdDeNodoSchema, weeks: z.number().int().min(1).max(52).nullable() })).max(12),
   warmUps: z.array(AproximacionesDelEjercicioSchema).max(400).optional(),
-  /** DL-196 parte B: la progresión de cada fase, como regla (EE-D30). Una por fase. */
-  progressions: z.array(ProgresionDeLaFaseSchema).max(12).optional(),
+  /** DL-196 parte B: la progresión de cada fase, como regla (EE-D30). */
+  /** DL-201: también las reglas propias de los ejercicios, que pisan la de su fase (PE-D01). */
+  progressions: ProgresionesDelPlanSchema.optional(),
   /** DL-196 parte B (GR-27): los gráficos del editor marcados como favoritos de esta planificación. */
   favoriteCharts: z.array(GraficoFavoritoDelPlanSchema).max(30).optional(),
   /**
@@ -521,6 +584,19 @@ export const PlanificacionDelPlanSchema = z.strictObject({
    * pide. A la app le llega como `askSessionEffort` en API-SER-02, si declara `training-session-effort-1`.
    */
   askSessionEffort: z.literal(true).optional(),
+  /**
+   * DL-202 (EP-D01, EP-D02): «Pedir el esfuerzo de cada serie» (el RIR o el RPE de cada serie efectiva, según
+   * `effortNotation`; nunca el de las aproximaciones). Se escribe `true` o `false` cuando el profesional toca la casilla.
+   * Ausente (un plan de antes, o uno nuevo sin tocarla): se pide solo si la persona ya declaró el esfuerzo de alguna serie
+   * en ese plan (`pideElEsfuerzoDeCadaSerie`). A la app le llega resuelto como `askSetEffort` en API-SER-02.
+   */
+  askSetEffort: z.boolean().optional(),
+  /** ET2-D18: «Redondear las cargas a», del plan («Configurar plan»). Ausente: 2,5. */
+  loadRounding: RedondeoDeLasCargasSchema.optional(),
+  /** ET2-D18: la excepción de un ejercicio («Más opciones»), por ejemplo una máquina de a 5. */
+  loadRoundingByExercise: z.array(z.strictObject({ prescriptionId: IdDeNodoSchema, step: RedondeoDeLasCargasSchema })).max(400).optional(),
+  /** ET2-D18: el 1RM congelado al activar, por ejercicio en % RM (`UnoRMDeLaActivacionSchema`). Lo pone la API. */
+  oneRepMaxAtActivation: z.array(UnoRMDeLaActivacionSchema).max(400).optional(),
   privateNotes: z
     .strictObject({
       plan: TextoOpcional(4000),

@@ -216,6 +216,11 @@ export const PlanConObjetivosSchema = VersionDePlanDeEntrenamientoSchema.omit({ 
    * distintos se sigan entendiendo.
    */
   planning: PlanificacionDelPlanSchema.nullable().optional(),
+  /**
+   * DL-202 (EP-D02): si el plan pide el esfuerzo de cada serie, resuelto como lo recibe la app: lo escrito en
+   * `planning.askSetEffort` o, ausente, si la persona ya declaró esfuerzos en este plan. Opcional, como `planning`.
+   */
+  askSetEffort: z.boolean().optional(),
 });
 export type PlanConObjetivos = z.infer<typeof PlanConObjetivosSchema>;
 export const PlanConObjetivosResponseSchema = z.strictObject({ data: PlanConObjetivosSchema });
@@ -244,6 +249,11 @@ export const SesionParaRegistrarSchema = z.strictObject({
   week: z.strictObject({ phaseWeek: z.number().int().positive(), phaseWeeks: z.number().int().positive(), deload: z.boolean() }).optional(),
   /** DL-198 (ET2-07): la app pregunta el esfuerzo de la sesión al terminar. Solo `true` y solo para `training-session-effort-1`. */
   askSessionEffort: z.literal(true).optional(),
+  /**
+   * DL-202 (EP-D02): si la app le pregunta el esfuerzo de cada serie efectiva, ya resuelto para los planes de antes. La API
+   * lo manda siempre; ausente (una API anterior), la app lo pregunta como hasta ahora. Las aproximaciones nunca lo piden.
+   */
+  askSetEffort: z.boolean().optional(),
 });
 export type SesionParaRegistrar = z.infer<typeof SesionParaRegistrarSchema>;
 export const SesionParaRegistrarResponseSchema = z.strictObject({ data: SesionParaRegistrarSchema });

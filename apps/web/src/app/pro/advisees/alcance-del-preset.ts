@@ -6,7 +6,19 @@
  * - **Con vista previa, si pisa algo:** a qué se aplica, qué cambia fila por fila y lo que se pierde.
  * - **«Deshacer» es la operación inversa:** las prescripciones de antes, por posición, que el editor vuelve a escribir.
  */
-import { aplicarPrescripcion, aplicarPrescripcionHabitual, COPY_PRESETS as C, type CambioDelEjercicio, type ContenidoDePrescripcionHabitual, type EstructuraDePlanDeEntrenamientoEntrada, type PrescripcionLeida } from '@be/domain';
+import {
+  aplicarPrescripcion,
+  aplicarPrescripcionHabitual,
+  aplicarPresetDeBe,
+  COPY_PRESETS as C,
+  prescripcionDelPreset,
+  type CambioDelEjercicio,
+  type ContenidoDePrescripcionHabitual,
+  type EstructuraDePlanDeEntrenamientoEntrada,
+  type IntensidadDelPreset,
+  type PrescripcionLeida,
+  type PresetDePrescripcion,
+} from '@be/domain';
 
 type PrescripcionE = NonNullable<EstructuraDePlanDeEntrenamientoEntrada['blocks'][number]['sessions']>[number]['prescriptions'][number];
 
@@ -37,6 +49,21 @@ export const estaVacio = (p: PrescripcionE): boolean =>
 
 export function alcanceDelPreset(prescripciones: readonly PrescripcionE[], posiciones: readonly number[], leida: PrescripcionLeida, nombreDe: (p: PrescripcionE) => string, sesion: string): AlcanceDelPreset {
   return alcanceCon(prescripciones, posiciones, (p) => aplicarPrescripcion(p, leida), leida.series, nombreDe, sesion);
+}
+
+/**
+ * DL-203: un preset de BE en la intensidad de cada ejercicio (la del plan, o la suya si la cambia): RIR, RPE, % RM o sin
+ * esfuerzo. En % RM la carga no queda para revisar: el editor la recalcula con el 1RM de la persona.
+ */
+export function alcanceDelPresetDeBe(
+  prescripciones: readonly PrescripcionE[],
+  posiciones: readonly number[],
+  preset: PresetDePrescripcion,
+  intensidadDe: (p: PrescripcionE) => IntensidadDelPreset,
+  nombreDe: (p: PrescripcionE) => string,
+  sesion: string,
+): AlcanceDelPreset {
+  return alcanceCon(prescripciones, posiciones, (p) => aplicarPresetDeBe(p, preset, intensidadDe(p)), prescripcionDelPreset(preset).series, nombreDe, sesion);
 }
 
 /** ED-13: lo mismo con una prescripción habitual del profesional, con sus series y sus objetivos por serie. */

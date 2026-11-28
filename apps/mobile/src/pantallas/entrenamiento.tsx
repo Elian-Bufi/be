@@ -58,6 +58,7 @@ import {
   rotuloPorIndice,
   type TipoDeSerie,
   seriesEfectivas,
+  seMuestraElEsfuerzoDeLaSerie,
 } from '@be/domain';
 import { useCallback, useEffect, useRef, useState, useSyncExternalStore, type ReactNode } from 'react';
 import { AccessibilityInfo, Alert, Text, useWindowDimensions, Vibration, View } from 'react-native';
@@ -1083,7 +1084,8 @@ export function PantallaDeSesion({
     const s = await api.sesionParaRegistrar(token, ocurrencia);
     if (sesionPerdida(s)) return;
     // DL-192: con la notación del esfuerzo del plan, que la API manda porque esta APK declara la capacidad.
-    if (s.ok) entrenamientoLocal.fijarSesionDelPlan(draftId, s.datos.data.session, false, notacionDeLaLectura(s.datos.data));
+    // DL-202: y con si el plan pide el esfuerzo de cada serie (`askSetEffort`); ausente, como hasta ahora.
+    if (s.ok) entrenamientoLocal.fijarSesionDelPlan(draftId, s.datos.data.session, false, notacionDeLaLectura(s.datos.data), s.datos.data.askSetEffort);
     // DL-198: la semana y la pregunta del esfuerzo, que la API manda porque esta APK declara sus capacidades.
     if (s.ok) setDelPlan({ week: s.datos.data.week ?? null, askSessionEffort: s.datos.data.askSessionEffort ?? null });
     if (modo === 'en-vivo') {
@@ -1141,6 +1143,8 @@ export function PantallaDeSesion({
   const sesionDelPlan = local?.sesion ?? null;
   // DL-192: cómo se pregunta y se muestra el esfuerzo (RIR o RPE). Lo que se manda es siempre el RIR.
   const notacion = local?.notacion ?? 'RIR';
+  // DL-202: si se pregunta el esfuerzo de cada serie efectiva. Lo que no se pregunta no se registra (EP-D03).
+  const pideElEsfuerzo = local?.pideElEsfuerzo !== false;
   const prescripciones = sesionDelPlan?.prescriptions ?? [];
   const nombreDe = (id: string) => prescripciones.find((x) => x.prescriptionId === id)?.exerciseName ?? 'Ejercicio';
   const recomendadoDe = (id: string, setIndex: number) => prescripciones.find((x) => x.prescriptionId === id)?.sets.find((s) => s.setIndex === setIndex)?.target.restSeconds ?? null;
@@ -1286,7 +1290,7 @@ export function PantallaDeSesion({
         if (cronometrandose) {
           const ahora = entrenamientoLocal.sesion(draftId);
           const ms = ahora ? (enVivoDeLaCorrida(ahora.corrida, almacen.reloj)?.medicionAbierta?.ms ?? null) : null;
-          const plan = alTerminarLaSerie(escrita, f.objetivo, f.setIndex, unidadDeLaFila, ms, f.numero, notacion);
+          const plan = alTerminarLaSerie(escrita, f.objetivo, f.setIndex, unidadDeLaFila, ms, f.numero, notacion, seMuestraElEsfuerzoDeLaSerie(pideElEsfuerzo, f.tipo));
           if (plan.tipo === 'medicion-larga') {
             // No se escribe en la fila: se resuelve como la medición que quedó abierta, y después se registra.
             const serie = { prescriptionId: p.prescriptionId, setIndex: f.setIndex };
@@ -1318,7 +1322,7 @@ export function PantallaDeSesion({
           descansoEmpezado = descansoAuto !== null && medidos !== null;
           if (medidos !== null) escrita = { ...escrita, tiempo: textoDeTiempo(medidos) };
         }
-        const lectura = serieAlTildar(escrita, f.objetivo, f.setIndex, unidadDeLaFila, f.tipo, notacion);
+        const lectura = serieAlTildar(escrita, f.objetivo, f.setIndex, unidadDeLaFila, f.tipo, notacion, seMuestraElEsfuerzoDeLaSerie(pideElEsfuerzo, f.tipo));
         if (!lectura.ok) {
           const anuncio = anuncioParaRegistrar(escrita, f.objetivo, f.setIndex, lectura.errores, f.numero);
           enfocar(f.setIndex);
@@ -1488,7 +1492,7 @@ export function PantallaDeSesion({
   /** Lo escrito sin registrar de toda la sesión, en el teléfono ahora (PA-01). */
   function pendientesAhora() {
     const s = entrenamientoLocal.sesion(draftId);
-    return s?.sesion ? pendientesDeRegistrar(s.sesion, s.borrador, s.series, s.quitadas, s.escritas, s.notacion) : [];
+    return s?.sesion ? pendientesDeRegistrar(s.sesion, s.borrador, s.series, s.quitadas, s.escritas, s.notacion, s.pideElEsfuerzo !== false) : [];
   }
 
   /**
@@ -1798,7 +1802,7 @@ export function PantallaDeSesion({
     // finalizar todavía o qué falló; el detalle (las series y los tiempos), plegado.
     const C = TEXTOS_DEL_CIERRE;
     const deHoy = borrador ? borrador.date === hoyEn(borrador.timeZone) : true;
-    const pendientes = pendientesDeRegistrar(s, borrador, local.series, quitadas, escritasDeLaSesion, notacion);
+    const pendientes = pendientesDeRegistrar(s, borrador, local.series, quitadas, escritasDeLaSesion, notacion, pideElEsfuerzo);
     const porEjercicio = s.prescriptions.flatMap((x) => {
       // DL-178: se nombran como en la tabla: las efectivas con su número efectivo, y el calentamiento por su nombre.
       const numeros = new Map(filasDe(x).map((f) => [f.setIndex, f.numero] as const));
@@ -2012,9 +2016,10 @@ export function PantallaDeSesion({
         deshabilitado={ocupado}
       />
       {/* La ayuda por defecto, plegada junto al encabezado de la tabla, con el ícono de ayuda (PA-02). */}
-      <AyudaDeLaTabla notacion={notacion} />
+      <AyudaDeLaTabla notacion={notacion} pideElEsfuerzo={pideElEsfuerzo} />
       <TablaDeSeries
         notacion={notacion}
+        pideElEsfuerzo={pideElEsfuerzo}
         filas={filas}
         activa={filaActiva?.setIndex ?? 0}
         unidad={unidad}

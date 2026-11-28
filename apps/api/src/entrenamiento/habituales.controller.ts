@@ -46,14 +46,14 @@ export class HabitualesDeEntrenamientoController {
     return responder(res, await this.habituales.guardarSesion(actorDe(req), cuerpo, clave, contextoDe(req)));
   }
 
-  /** API-HAB-06 (ED-13): mis prescripciones habituales. */
+  /** API-HAB-06 (ED-13): mis presets propios de los tres niveles (DL-203: series, sesión y fase). */
   @Get('training/prescription-presets')
   listarPrescripciones(@Query() query: Record<string, unknown>, @Req() req: Solicitud): Promise<unknown> {
     sinParametrosDeQuery(query);
     return this.habituales.prescripciones.listar(actorDe(req), contextoDe(req));
   }
 
-  /** API-HAB-07 (ED-13): guardar o reemplazar una prescripción habitual. */
+  /** API-HAB-07: guardar o reemplazar un preset propio (ED-13; DL-203: de series, de sesión o de fase). */
   @Post('training/prescription-presets')
   async guardarPrescripcion(@Body() cuerpo: unknown, @Headers(HEADER_IDEMPOTENCY_KEY) clave: string | undefined, @Query() query: Record<string, unknown>, @Req() req: Solicitud, @Res({ passthrough: true }) res: Response): Promise<unknown> {
     sinParametrosDeQuery(query);

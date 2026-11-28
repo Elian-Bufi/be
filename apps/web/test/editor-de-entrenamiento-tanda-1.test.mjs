@@ -236,8 +236,12 @@ test('TEST-ET1-21 · revisión adversaria: heredar sin objetivo se dice, vaciar 
   assert.deepEqual(R.loQueQuedaSinCompletarEnEntrenamiento(bloques), []);
   assert.ok(R.TEXTO_DE_LO_INCOMPLETO[R.INCOMPLETO.sinIntensidad]);
   assert.match(EDITOR, /loQueQuedaSinCompletarEnEntrenamiento\(bloques, herenciaDeLaIntensidad\), enElPanel\)/);
-  // Plegado, el que hereda sin objetivo lo dice.
-  assert.match(EJERCICIO, /const avisosDelPlegado = !p\.intensity && criterioEfectivo !== null \? \[E9\.faltaElObjetivoHeredado/);
+  // Con el RIR propio en cada serie efectiva, heredar sin objetivo no es una falta (Prensa de piernas, tanda 4).
+  const conSuRir = [{ sessions: [{ prescriptions: [{ prescriptionId: 'prensa', intensity: null, sets: [{ repetitions: { value: 10 }, rir: 2 }, { repetitions: { value: 10 }, rir: 2 }] }] }] }];
+  assert.deepEqual(R.loQueQuedaSinCompletarEnEntrenamiento(conSuRir, { criterio: 'RIR', sinIntensidad: [] }), []);
+  assert.equal(R.loQueQuedaSinCompletarEnEntrenamiento(conSuRir, { criterio: 'PERCENT_RM', sinIntensidad: [] }).length, 1, 'el % RM no tiene RIR por serie');
+  // Plegado, el que hereda sin objetivo lo dice (salvo que cada serie efectiva tenga su RIR).
+  assert.match(EJERCICIO, /const avisosDelPlegado = !p\.intensity && criterioEfectivo !== null && !\(criterioEfectivo === 'RIR' && lasSeriesEfectivasTienenSuRir\(p\)\) \? \[E9\.faltaElObjetivoHeredado/);
   // Vaciar el objetivo común con un RIR escrito en alguna serie deja el criterio sin objetivo (no un RIR por serie sin
   // criterio, que el contrato rechaza); sin RIR escrito, se va el criterio con las claves `rir`.
   assert.match(EJERCICIO, /const conRirEscrito = p\.sets\.some\(\(x\) => typeof x\.rir === 'number'\);/);

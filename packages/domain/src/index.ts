@@ -164,12 +164,14 @@ export * from './clasificacion-de-ejercicios';
 export * from './progresiones';
 // DL-198 (WP-EDITOR-ENTRENAMIENTO-TANDA-2): el 1RM de referencia, la carga de cada semana, el esfuerzo de la sesión y la planificación de las plantillas.
 export * from './repeticion-maxima';
+export * from './uno-rm-de-la-activacion';
 export * from './contratos-repeticion-maxima';
 // DL-199 (WP-EDITOR-ENTRENAMIENTO-TANDA-3): las Plantillas de BE de Entrenamiento.
 export * from './plantillas-de-be';
 export * from './contratos-plantillas-de-be';
 export * from './carga-de-la-semana';
 export * from './esfuerzo-de-la-sesion';
+export * from './esfuerzo-de-cada-serie';
 export * from './planificacion-de-la-plantilla';
 export * from './distribucion-por-musculo';
 export * from './copy-agenda-de-entrenamiento';
@@ -220,6 +222,8 @@ export * from './carga-desde-la-estimacion';
 export * from './descripciones-de-plantillas';
 export * from './prescripcion-rapida';
 export * from './presets-de-be';
+// DL-203 (WP-PRESETS-POR-NIVEL): los presets de sesión y de fase del profesional.
+export * from './presets-por-nivel';
 // WP-GRAFICOS (DL-174), fase 1: «La vez pasada» (GR-01, la misma pieza que PG-11), la marca «Con historial» del buscador
 // (GR-04) y la tabla «Desde el inicio y desde la anterior» de cada toma (GR-16).
 export * from './la-vez-pasada';

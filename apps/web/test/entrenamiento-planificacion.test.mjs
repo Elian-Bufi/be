@@ -172,7 +172,8 @@ test('ENP-D16 · «Copiar» a la vista y la edición conjunta de series, con las
 
 test('ENP-D10 · con la sesión vacía, el preset se puede usar y queda para los ejercicios que se agreguen', () => {
   assert.match(GALERIA, /sinEjercicios && !onElegirParaLaSesionVacia/);
-  assert.match(GALERIA, /onElegirParaLaSesionVacia\(elegido\.preset\.nombre, \(x\) => aplicarPrescripcion\(x, leida\)\.prescripcion as PrescripcionE\)/);
+  // DL-203: en la intensidad de cada ejercicio que se agregue.
+  assert.match(GALERIA, /onElegirParaLaSesionVacia\(preset\.nombre, \(x\) => aplicarPresetDeBe\(x, preset, intensidadDe\(x\)\)\.prescripcion as PrescripcionE\)/);
   assert.match(EDITOR, /!prescripcion && prescripcionDeEstaSesion \? prescripcionDeEstaSesion\.aplicar\(x\) : x/);
   // Aplicado a una serie vacía, el preset de BE escribe sus series.
   const preset = d.PRESETS_DE_PRESCRIPCION[0];

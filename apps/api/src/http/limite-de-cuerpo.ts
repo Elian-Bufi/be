@@ -24,7 +24,7 @@ import type { IncomingMessage } from 'node:http';
  *
  * Lo que no cambia:
  * - la validación del contrato, con sus topes por lista (7 días tipo, 12 comidas, 40 ítems…);
- * - la cota de elementos de `validacion.ts`, con el mismo techo para todas las rutas: un cuerpo con más de 6.000
+ * - la cota de elementos de `validacion.ts`, con el mismo techo para todas las rutas: un cuerpo con más de 7.000
  *   elementos de listas se rechaza con TOO_BIG sin recorrerlo. Así el trabajo de zod por pedido no crece con el límite.
  *   Un plan real queda muy lejos: el de Nutrición más grande tiene 288 elementos; el de Entrenamiento de 12 semanas,
  *   unos 2.900.
@@ -41,10 +41,11 @@ export interface RutaConLimiteMayor {
 }
 
 /**
- * Las quince escrituras con el límite de planes y recetas: los borradores de planes, las plantillas, las recetas y, desde
+ * Las dieciséis escrituras con el límite de planes y recetas: los borradores de planes, las plantillas, las recetas y, desde
  * ED-64 (WP-EDITORES-PROFESIONAL, DL-167), los habituales: una sesión de 8 ejercicios × 6 series con notas pasa los 16 KB. Las
  * demás de esas familias (validar, activar, descartar, cambiar el nombre o el estado de una plantilla, el cálculo de una
- * receta, su imagen) siguen con 16 KB: sus cuerpos son chicos.
+ * receta, su imagen) siguen con 16 KB: sus cuerpos son chicos. Desde DL-203, también API-HAB-07: un preset de fase lleva sus
+ * sesiones enteras (hasta 30, con 40 ejercicios cada una).
  */
 export const RUTAS_DE_PLANES_Y_RECETAS: readonly RutaConLimiteMayor[] = [
   { operacion: 'API-NUT-07', metodo: 'POST', patron: /^\/api\/v1\/advisees\/[^/]+\/nutrition\/plans\/?$/i },
@@ -60,11 +61,13 @@ export const RUTAS_DE_PLANES_Y_RECETAS: readonly RutaConLimiteMayor[] = [
   { operacion: 'API-REC-04', metodo: 'PATCH', patron: /^\/api\/v1\/nutrition\/recipes\/[^/]+\/?$/i },
   { operacion: 'API-HAB-04', metodo: 'POST', patron: /^\/api\/v1\/training\/session-presets\/?$/i },
   { operacion: 'API-HAB-05', metodo: 'PATCH', patron: /^\/api\/v1\/training\/session-presets\/[^/]+\/?$/i },
+  // DL-203: un preset de fase lleva la fase entera, como un plan.
+  { operacion: 'API-HAB-07', metodo: 'POST', patron: /^\/api\/v1\/training\/prescription-presets\/?$/i },
   { operacion: 'API-HAN-04', metodo: 'POST', patron: /^\/api\/v1\/nutrition\/meal-presets\/?$/i },
   { operacion: 'API-HAN-05', metodo: 'PATCH', patron: /^\/api\/v1\/nutrition\/meal-presets\/[^/]+\/?$/i },
 ];
 
-/** Si el pedido es una de esas quince escrituras, por su método y su ruta (sin la consulta). */
+/** Si el pedido es una de esas dieciséis escrituras, por su método y su ruta (sin la consulta). */
 export function esEscrituraDePlanOReceta(req: Pick<IncomingMessage, 'method' | 'url'>): boolean {
   const ruta = (req.url ?? '').split('?')[0] ?? '';
   return RUTAS_DE_PLANES_Y_RECETAS.some((r) => r.metodo === req.method && r.patron.test(ruta));
@@ -72,7 +75,7 @@ export function esEscrituraDePlanOReceta(req: Pick<IncomingMessage, 'method' | '
 
 /**
  * El `type` del parser de planes y recetas (bootstrap.ts): un cuerpo JSON, como el que lee el parser general, en una de
- * las quince rutas. Lo que no cumple las dos cosas lo lee el general, con sus 16 KB.
+ * las dieciséis rutas. Lo que no cumple las dos cosas lo lee el general, con sus 16 KB.
  */
 export function esJsonDePlanOReceta(req: IncomingMessage): boolean {
   const tipo = String(req.headers['content-type'] ?? '')
