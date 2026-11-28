@@ -151,7 +151,7 @@ export interface CambioDelEjercicio {
   readonly intensidad: { readonly antes: string | null; readonly despues: string | null };
   readonly descanso: { readonly antes: number | null; readonly despues: number | null };
   /** La carga general, que se conserva; `revisar`: cambiaron las repeticiones y queda marcada. */
-  readonly carga: { readonly texto: string | null; readonly revisar: string | null };
+  readonly carga: { readonly texto: string | null; readonly revisar: string | null; readonly delUnoRm?: boolean };
   /** Lo que se pierde, en palabras («Quitar la serie 4: se pierde su RIR (1) y su carga (82,5 kg)»). */
   readonly sePierde: readonly string[];
 }
@@ -160,8 +160,17 @@ const repsDelEjercicio = (p: PrescripcionEntrada): string | null => {
   const distintas = [...new Set(p.sets.map((s) => (s.repetitions ? textoDeReps(s.repetitions) : '')))];
   return distintas.length === 1 && distintas[0] !== '' ? distintas[0]! : distintas.filter(Boolean).join(', ') || null;
 };
-const intensidadDe = (i: PrescripcionEntrada['intensity']): string | null =>
-  !i ? null : i.criterion === 'RIR' ? `RIR ${numero(i.target.value)}` : i.criterion === 'PERCENT_RM' ? `${numero(i.target.value)} % RM` : null;
+const intensidadDe = (i: PrescripcionEntrada['intensity']): string | null => intensidadEnPalabras(i, 'RIR');
+
+/**
+ * El criterio de intensidad en palabras: «RIR 2», «RPE 8» (DL-192: RPE = 10 − RIR, con el mismo valor guardado) o
+ * «75 % RM». `notacion` es la del plan: solo cambia cómo se escribe un criterio RIR.
+ */
+export function intensidadEnPalabras(i: PrescripcionEntrada['intensity'], notacion: 'RIR' | 'RPE'): string | null {
+  if (!i) return null;
+  if (i.criterion === 'RIR') return notacion === 'RPE' ? `RPE ${numero(10 - i.target.value)}` : `RIR ${numero(i.target.value)}`;
+  return i.criterion === 'PERCENT_RM' ? `${numero(i.target.value)} % RM` : null;
+}
 
 /** Los valores propios de una serie, en palabras: «su RIR (1) y su carga (82,5 kg)». */
 export function valoresPropiosDeLaSerie(s: SerieEntrada): string | null {

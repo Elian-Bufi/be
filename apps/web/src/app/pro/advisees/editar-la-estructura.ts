@@ -9,8 +9,8 @@
  *   cita cada sesión por el suyo, no se pierde.
  * - **Lo abierto sigue a su elemento:** las comidas y los ejercicios abiertos se guardan por su posición en la
  *   dirección, y al mover, copiar o quitar uno cada posición se corrige.
- * - **El microciclo, también con sesiones sueltas:** organizar un bloque por microciclos pasa sus sesiones a la
- *   «Semana 1», con sus identificadores y sus días.
+ * - **Sin microciclos nuevos (DL-203):** «Organizar por microciclos» salió del editor; los planes que ya los tienen se
+ *   siguen editando.
  * Vive en el website hasta TB-20 (§8.2 del paquete), como `topes-del-plan.ts`. Sin React, para las pruebas.
  */
 import { sinIdentificadoresDeComida, sinIdentificadoresDeSesion, type ComidaEntrada, type SesionEntrada } from '@be/domain';
@@ -113,24 +113,9 @@ export function duplicarEn<T>(lista: T[], n: number, copia: T): T[] {
 export const sinLaSerie = <S>(series: readonly S[], n: number): S[] => series.filter((_, m) => m !== n);
 
 // ─── El microciclo ───────────────────────────────────────────────────────────────────────────────────────────────
-
-/** El nombre del primer microciclo, el que recibe las sesiones sueltas. */
-export const PRIMER_MICROCICLO = 'Semana 1';
-
-/**
- * Organiza un bloque por microciclos: un bloque usa microciclos o sesiones sueltas, nunca las dos (09v10:281-283), así
- * que sus sesiones, si tiene, pasan a la «Semana 1», con sus identificadores (la agenda no pierde sus días).
- */
-export function organizadoEnMicrociclos<B extends { sessions?: SesionEntrada[]; microcycles?: { label: string; purpose?: string | null; sessions: SesionEntrada[] }[] }>(b: B): B {
-  const { sessions: sueltas, ...resto } = b;
-  return { ...resto, microcycles: [{ label: PRIMER_MICROCICLO, purpose: null, sessions: sueltas ?? [] }] } as B;
-}
-
-/** Lo que dice «Organizar por microciclos» de las sesiones que ya tiene el bloque. */
-export function loQuePasaConLasSesiones(n: number): string | null {
-  if (n === 0) return null;
-  return n === 1 ? `La sesión de la fase pasa a «${PRIMER_MICROCICLO}».` : `Las ${n} sesiones de la fase pasan a «${PRIMER_MICROCICLO}».`;
-}
+// DL-203 (PN-D01; Dirección, 26/11): el editor ya no organiza una fase por microciclos ni agrega semanas. Las fases de N
+// semanas con su semana tipo, la progresión, la descarga y «Duplicar la fase» lo cubren. Un plan que ya tiene
+// microciclos se sigue leyendo y editando: el contrato, la API, la app y el lector del plan compartido no cambian.
 
 // ─── Los textos ──────────────────────────────────────────────────────────────────────────────────────────────────
 
@@ -150,5 +135,4 @@ export const COPY_DE_LOS_EDITORES = {
   quitarLaSerie: (n: number): string => `Quitar la serie ${n + 1}`,
   duplicado: 'Se duplicó. La copia está justo después.',
   topeDeDiasTipo: (n: number): string => `Un plan lleva hasta ${n} días tipo.`,
-  topeDelMicrociclo: (tope: number, n: number): string => `Un microciclo lleva hasta ${tope} sesiones, y esta fase tiene ${n}.`,
 } as const;

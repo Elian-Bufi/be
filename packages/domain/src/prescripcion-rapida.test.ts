@@ -1,8 +1,20 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { aplicarPrescripcion, aplicarPrescripcionHabitual, escribirPrescripcion, leerPrescripcion, loQueSePierdeAlQuitarSeries, prescripcionHabitualDe, vistaPreviaDePrescripcion, type PrescripcionLeida } from './prescripcion-rapida';
-import { COPY_PRESETS, PRESETS_DE_BE, PRESETS_DE_PRESCRIPCION, VERSION_DE_LOS_PRESETS_DE_BE, prescripcionDelPreset } from './presets-de-be';
-import { terminosProhibidosEn } from './index';
+import {
+  aplicarPresetDeBe,
+  COPY_PRESETS,
+  detalleDelPreset,
+  esfuerzoDelPreset,
+  intensidadParaElPreset,
+  lineaDelPreset,
+  PORCENTAJE_RM_DE_LOS_PRESETS,
+  PRESETS_DE_BE,
+  PRESETS_DE_PRESCRIPCION,
+  VERSION_DE_LOS_PRESETS_DE_BE,
+  prescripcionDelPreset,
+} from './presets-de-be';
+import { terminosProhibidosDeEntrenamientoEn, terminosProhibidosEn } from './index';
 
 const leida = (t: string): PrescripcionLeida => {
   const l = leerPrescripcion(t);
@@ -58,7 +70,7 @@ test('TEST-EDP-023 · aplicada, el ejercicio queda con esos valores generales y 
 // ── ED-11 · Aplicar un preset (TEST-EDP-012 y 013, con DJ-8) ────────────────────────────────────────────────────
 
 test('TEST-EDP-012 · un preset de BE nunca trae ejercicio, alimento ni carga; su versión queda en el contenido', () => {
-  assert.equal(VERSION_DE_LOS_PRESETS_DE_BE, 2);
+  assert.equal(VERSION_DE_LOS_PRESETS_DE_BE, 3);
   assert.equal(PRESETS_DE_BE.length, 8);
   for (const p of PRESETS_DE_BE) {
     assert.doesNotMatch(JSON.stringify(p), /exercise|food|alimento|kg|lb\b|suggestedLoad/i, p.clave);
@@ -223,4 +235,60 @@ test('ED-13 (revisión del 13/11) · aplicada, la referencia del % RM es la del 
   // Si el destino no es % RM, la referencia de la habitual no viaja.
   const rir = aplicarPrescripcionHabitual({ ...destino, intensity: { criterion: 'RIR', target: { value: 2, reference: null } } }, h);
   assert.equal(rir.prescripcion.intensity?.target.reference, null);
+});
+
+// ── DL-203 (PN-D03 a PN-D05) · el preset de BE en la intensidad del plan o del ejercicio ─────────────────────────────
+
+const preset = (clave: string) => PRESETS_DE_PRESCRIPCION.find((p) => p.clave === clave)!;
+
+test('DL-203 · el preset se lee en la intensidad del plan: RIR, RPE (10 − RIR), % RM por objetivo o sin esfuerzo', () => {
+  const h = preset('HIPERTROFIA');
+  assert.equal(lineaDelPreset(h, 'RIR'), '4×8-12 RIR 2 · 90 s');
+  assert.equal(lineaDelPreset(h, 'RPE'), '4×8-12 RPE 8 · 90 s');
+  assert.equal(lineaDelPreset(h, 'PERCENT_RM'), '4×8-12 70 % RM · 90 s');
+  assert.equal(lineaDelPreset(h, 'NONE'), '4×8-12 · 90 s');
+  assert.equal(detalleDelPreset(h, 'RPE'), '4×8-12 · RPE 8 · 90 s · sin cargas');
+  assert.equal(detalleDelPreset(h, 'PERCENT_RM'), '4×8-12 · 70 % RM · 90 s · la carga sale del 1RM');
+  assert.equal(detalleDelPreset(preset('TECNICA'), 'NONE'), '3×8 · sin esfuerzo · sin cargas');
+  assert.equal(detalleDelPreset(h, 'RIR'), h.detalle, 'en RIR, el de siempre');
+  // Los % ratificados por Dirección; Técnica, a ratificar.
+  assert.deepEqual(PORCENTAJE_RM_DE_LOS_PRESETS, { HIPERTROFIA: 70, FUERZA: 85, RESISTENCIA: 60, TECNICA: 50 });
+  assert.deepEqual(PRESETS_DE_PRESCRIPCION.map((p) => esfuerzoDelPreset(p, 'RPE')), ['RPE 8', 'RPE 8', 'RPE 7', 'RPE 6']);
+  assert.deepEqual(PRESETS_DE_PRESCRIPCION.map((p) => esfuerzoDelPreset(p, 'PERCENT_RM')), ['70 % RM', '85 % RM', '60 % RM', '50 % RM']);
+  for (const p of PRESETS_DE_PRESCRIPCION) for (const i of ['RIR', 'RPE', 'PERCENT_RM', 'NONE'] as const) assert.deepEqual(terminosProhibidosDeEntrenamientoEn(detalleDelPreset(p, i)), []);
+});
+
+test('DL-203 · la intensidad del ejercicio manda sobre la del plan', () => {
+  assert.equal(intensidadParaElPreset({ intensity: null }, 'RPE', false), 'RPE', 'sin criterio propio, la del plan');
+  assert.equal(intensidadParaElPreset({ intensity: { criterion: 'PERCENT_RM', target: { value: 75 } } }, 'RIR', false), 'PERCENT_RM');
+  assert.equal(intensidadParaElPreset({ intensity: { criterion: 'RIR', target: { value: 2 } } }, 'RPE', false), 'RPE', 'un RIR propio se escribe en la notación del plan');
+  assert.equal(intensidadParaElPreset({ intensity: { criterion: 'RIR', target: { value: 2 } } }, 'PERCENT_RM', false), 'RIR');
+  assert.equal(intensidadParaElPreset({ intensity: null }, 'RIR', true), 'NONE', '«Sin criterio de intensidad» por excepción');
+});
+
+test('DL-203 · aplicar en RPE guarda RIR 2 y lo dice como RPE 8; en % RM, el % y sin RIR en las series; sin esfuerzo, sin criterio', () => {
+  const h = preset('HIPERTROFIA');
+  const base = { exerciseVersionId: 'e', sets: [{ repetitions: { value: 10 }, rir: 1 }], intensity: { criterion: 'RIR', target: { value: 1, reference: null } }, suggestedLoad: { value: 60, unit: 'kg' as const } };
+  const rpe = aplicarPresetDeBe(structuredClone(base), h, 'RPE');
+  assert.deepEqual(rpe.prescripcion.intensity, { criterion: 'RIR', target: { value: 2, reference: null } }, 'RPE = 10 − RIR: el valor guardado es el RIR');
+  assert.deepEqual(rpe.cambio.intensidad, { antes: 'RPE 9', despues: 'RPE 8' });
+  assert.equal(rpe.prescripcion.sets.length, 4);
+
+  const pct = aplicarPresetDeBe(structuredClone(base), h, 'PERCENT_RM');
+  assert.deepEqual(pct.prescripcion.intensity, { criterion: 'PERCENT_RM', target: { value: 70, reference: null } });
+  assert.ok(pct.prescripcion.sets.every((s) => s.rir === undefined), 'en % RM la serie no lleva RIR');
+  assert.deepEqual(pct.prescripcion.suggestedLoad, { value: 60, unit: 'kg' }, 'sin 1RM la carga se conserva; con 1RM la recalcula el editor');
+  assert.deepEqual(pct.cambio.carga, { texto: '60 kg', revisar: null, delUnoRm: true });
+  assert.match(pct.cambio.sePierde[0]!, /^Su criterio RIR 1 pasa a ser 70 % RM$/);
+  assert.ok(pct.cambio.sePierde.some((t) => /Serie 1: su RIR propio \(1\) se quita/.test(t)));
+  // La referencia del % RM es la del ejercicio de destino.
+  const conReferencia = { ...base, intensity: { criterion: 'PERCENT_RM', target: { value: 80, reference: { description: '1RM estimado' } } } };
+  assert.deepEqual(aplicarPresetDeBe(conReferencia, h, 'PERCENT_RM').prescripcion.intensity?.target.reference, { description: '1RM estimado' });
+
+  const sin = aplicarPresetDeBe(structuredClone(base), h, 'NONE');
+  assert.equal(sin.prescripcion.intensity, null);
+  assert.ok(sin.prescripcion.sets.every((s) => s.rir === undefined));
+  assert.equal(sin.cambio.intensidad.despues, null);
+  // Mutación: sin la intensidad, el preset volvería a decir RIR 2.
+  assert.notDeepEqual(aplicarPresetDeBe(structuredClone(base), h, 'RIR').prescripcion.intensity, pct.prescripcion.intensity);
 });

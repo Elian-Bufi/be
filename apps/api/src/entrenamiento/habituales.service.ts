@@ -6,16 +6,23 @@ import {
   GuardarPrescripcionHabitualRequestSchema,
   GuardarSesionHabitualRequestSchema,
   MarcarHabitualRequestSchema,
+  ejerciciosDelPreset,
+  estructuraDelPreset,
   nombreNormalizadoDeHabitual,
   normalizarEstructuraDeEntrenamiento,
+  presetPropioEnLaApi,
+  presetPropioParaGuardar,
   problemasDeReferencias,
   referenciasDeEjercicio,
+  referenciasDelPresetInexistentes,
   sinCargasDeLaSesion,
   sinIdentificadoresDeSesion,
   type EjercicioCitable,
   type EjercicioDeCatalogo,
   type EstadoDeMarca,
   type EstructuraDePlanDeEntrenamientoEntrada,
+  type PresetDeFaseContenido,
+  type PresetDeSesionContenido,
   type SesionEntrada,
   type SesionHabitual,
   type ValidationIssue,
@@ -85,7 +92,12 @@ export class HabitualesDeEntrenamientoService {
     delegado: (tx) => tx.prescripcionHabitual as never,
     ejecutor: () => this.ejecutor,
     exigirProfesional: (tx, id) => this.exigirProfesional(tx, id),
-    contenidoVerificado: async (_tx, _profesionalId, pedido) => {
+    contenidoVerificado: async (tx, profesionalId, pedido) => {
+      // DL-203: los presets de sesión y de fase se validan como parte de un plan, con sus ejercicios del catálogo.
+      if (pedido.kind === 'SESION' || pedido.kind === 'FASE') {
+        await this.presetVerificado(tx, profesionalId, pedido.kind === 'SESION' ? pedido.session : pedido.phase, pedido.kind === 'SESION' ? 'session' : 'phase');
+        return presetPropioParaGuardar(pedido);
+      }
       const envoltura: EstructuraDePlanDeEntrenamientoEntrada = { blocks: [{ label: 'Habitual', sessions: [{ label: 'Habitual', prescriptions: [{ ...pedido.prescription, exerciseVersionId: EJERCICIO_MARCADOR }] }] }] };
       const r = normalizarEstructuraDeEntrenamiento(envoltura, randomUUID);
       if (!r.ok) {
@@ -93,12 +105,53 @@ export class HabitualesDeEntrenamientoService {
         const issues = r.issues.map((i) => ({ ...i, path: ['prescription', i.path.replace(PREFIJO_DE_LA_PRESCRIPCION, '')].filter(Boolean).join('.') }));
         throw new ErrorDeApi(422, codigo, 'Hay valores de la prescripción que no se pueden guardar.', { issues });
       }
+      // Como antes de DL-203: la prescripción tal cual, sin `kind` (lo guardado antes se sigue leyendo igual).
       return pedido.prescription;
     },
+    contenidoEnLaApi: (guardado) => presetPropioEnLaApi(guardado),
+    completar: (tx, profesionalId, datos) => this.conEjerciciosDelPreset(tx, profesionalId, datos),
     evento: (tx, tipo, actorId, recurso, previo, posterior, procedencia, momento) =>
       this.evento(tx, tipo === 'QUITADO' ? 'PrescripcionHabitualQuitada' : 'PrescripcionHabitualGuardada', actorId, recurso, previo as EstadoDeHabitual | null, posterior as EstadoDeHabitual, procedencia, momento),
-    nombreTomado: 'Ya tenés una prescripción habitual con ese nombre.',
+    nombreTomado: 'Ya tenés un preset de entrenamiento con ese nombre.',
   });
+
+  /**
+   * DL-203: un preset de sesión o de fase se valida como parte de un plan (forma, criterios de intensidad y ejercicios del
+   * catálogo disponibles para este profesional), y lo que cita (días, aproximaciones, progresión) tiene que existir en él.
+   * Las cargas y las notas ya las rechazó el esquema (400). Las rutas de los problemas son las del pedido.
+   */
+  private async presetVerificado(tx: Tx, profesionalId: string, contenido: PresetDeSesionContenido | PresetDeFaseContenido, raiz: 'session' | 'phase'): Promise<void> {
+    const rutaDe = (ruta: string): string =>
+      raiz === 'session' ? ['session.session', ruta.replace(PREFIJO_DE_ENVOLTURA, '')].filter(Boolean).join('.') : `phase.${ruta.replace(/^blocks\[0\]\./, '')}`;
+    const r = normalizarEstructuraDeEntrenamiento(estructuraDelPreset(contenido), randomUUID);
+    if (!r.ok) {
+      const codigo = r.tipo === 'ESTRUCTURA' ? CodigoDeError.TRAINING_PLAN_STRUCTURE_INVALID : CodigoDeError.INTENSITY_CRITERION_INVALID;
+      throw new ErrorDeApi(422, codigo, 'Hay elementos del preset que no se pueden guardar.', { issues: r.issues.map((i) => ({ ...i, path: rutaDe(i.path) })) });
+    }
+    const citas = referenciasDelPresetInexistentes(contenido);
+    if (citas.length > 0) throw new ErrorDeApi(422, CodigoDeError.TRAINING_PLAN_STRUCTURE_INVALID, 'El preset cita algo que no tiene.', { issues: citas.map((i) => ({ ...i, path: `${raiz}.${i.path}` })) });
+    const catalogo = await this.catalogo.citables(tx, profesionalId, 'PROFESIONAL', referenciasDeEjercicio(r.contenido));
+    const referencias = problemasDeReferencias(r.contenido, aCitables(catalogo));
+    if (referencias.length > 0) throw new ErrorDeApi(422, CodigoDeError.EXERCISE_REFERENCE_INVALID, 'Hay ejercicios que no se pueden usar en el preset.', { issues: referencias.map((i) => ({ ...i, path: rutaDe(i.path) })) });
+  }
+
+  /** DL-203: el nombre vigente de cada ejercicio que citan los presets de sesión y de fase (una sola consulta al catálogo). */
+  private async conEjerciciosDelPreset(tx: Tx, profesionalId: string, datos: Record<string, unknown>[]): Promise<Record<string, unknown>[]> {
+    const contenidoDe = (x: Record<string, unknown>): PresetDeSesionContenido | PresetDeFaseContenido | null =>
+      x.kind === 'SESION' ? (x.session as PresetDeSesionContenido) : x.kind === 'FASE' ? (x.phase as PresetDeFaseContenido) : null;
+    const referencias = [...new Set(datos.flatMap((x) => (contenidoDe(x) ? ejerciciosDelPreset(contenidoDe(x)!) : [])))];
+    const citables = referencias.length > 0 ? await this.catalogo.citables(tx, profesionalId, 'PROFESIONAL', referencias) : new Map<string, FilaDeEjercicio>();
+    return datos.map((x) => {
+      const c = contenidoDe(x);
+      if (!c) return x;
+      const exercises: SesionHabitual['exercises'] = {};
+      for (const v of ejerciciosDelPreset(c)) {
+        const e = citables.get(v);
+        if (e) exercises[v] = { exerciseId: e.ejercicioId, exerciseName: e.nombre, available: e.disponible };
+      }
+      return { ...x, exercises };
+    });
+  }
 
   // ─── API-HAB-01 ──────────────────────────────────────────────────────────
   listarEjercicios(actor: ActorAutenticado, ctx: ContextoDeSolicitud): Promise<{ data: EjercicioDeCatalogo[] }> {

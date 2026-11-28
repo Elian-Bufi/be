@@ -201,6 +201,7 @@
 | DL-200 | Pedido de Dirección · 2026-11-25 («hay que tildar casilleros para tener más de un resultado… no es práctico»; WP-ANTROPOMETRIA-RESULTADOS) | DL-111 · DL-112 · DL-190 · REG-06-156/157/158 · REG-06-203/204/205 · RF-048 · RF-049 · TEST-PRJ-009 | Cada resultado era una corrida aparte, elegida en una lista y calculada de a una; «Qué vas a calcular» se tildaba por métrica; la densidad no se veía; las masas, el fraccionamiento y lo retirado por DL-112 no estaban; Kerr iba aparte; los resultados no decían su cambio; doce acciones subrayadas | **PROGRAMADA en `wp-antropometria-resultados` (PR en borrador, sin integrar) · AR-D01 a AR-D16 a ratificar**: la cadena de derivaciones del dominio (lo medido, la ecuación, la conversión con Siri y Brožek, las masas y el fraccionamiento en cuatro componentes con Rocha y Würch) para 20 métodos, con las mismas reglas publicadas; la toma con el resumen arriba y cada método en su desplegable, cada valor con su origen, su «?» con la cuenta y lo que le falta, y su cambio desde la anterior; «Qué vas a calcular» por método; guardar en la historia al registrar y desde la toma. Sin API ni migración; la APK 0.32 no cambia. Detalle: `docs/paquetes/WP-ANTROPOMETRIA-RESULTADOS.md` |
 | DL-201 | Pedido de Dirección · 2026-11-26 («Progresión…» en un cuadro ancho y por ejercicio, con el patrón de la intensidad; WP-PROGRESION-POR-EJERCICIO) | DL-196 parte B (EE-D30) · DL-197 (ET1-D11, ET1-D17, ET1-D20) · DL-199 · B10-06 | «Progresión…» se abría en el panel lateral angosto, con desplazamiento; la regla era una por fase y «Los ejercicios elegidos» dejaba a los demás sin regla: no se podía dar a un ejercicio una progresión distinta de la de su fase ni dejarlo quieto | **PROGRAMADA en `entrenamiento/progresion-por-ejercicio` (PR en borrador, sin integrar) · PE-D01 a PE-D15 a ratificar:** un cuadro ancho en dos columnas (la configuración y la vista previa en vivo), con el «?» pegado al título; la regla de la fase (`prescriptionIds` en `null`) la hereda cada ejercicio y una regla propia la pisa, o lo deja «Sin progresión»; como mucho una propia por ejercicio, validado en el contrato; hasta 200 reglas; se abre también desde el «Más» del ejercicio; «Deshacer», «Duplicar fase» y las Plantillas de BE las llevan. Sin migración; la APK no cambia. Detalle: `docs/paquetes/WP-PROGRESION-POR-EJERCICIO.md` |
 | DL-202 | Decisión de Dirección · 2026-11-26 («Pedir el esfuerzo de cada serie»; WP-ESFUERZO-POR-SERIE) | DL-192 · DL-196 · DL-198 · DL-178 · DL-161 · DL-171 · REG-06-129 · INV-06-152 | La app preguntaba siempre el esfuerzo de cada serie, también de las aproximaciones y a quien no lo usa; el plan no tenía cómo decir que no; Registros decía «RIR: sin dato» en cada serie de quien no lo escribe | **PROGRAMADA en `entrenamiento/esfuerzo-por-serie` (PR en borrador, sin integrar) · EP-D01 a EP-D09 a ratificar:** la casilla en «Configurar plan», apagada por defecto, con el texto en la notación del plan (`planning.askSetEffort`); los planes de antes, encendidos solo si la persona ya declaró esfuerzos en ese plan (lo resuelve la API en API-SER-01 y API-SER-02); la app sin el campo apagada (la sesión, «Ya la hice», la corrección sin esfuerzos registrados), las aproximaciones nunca, y lo que no se pregunta no se registra; la capacidad `training-set-effort-1`; Registros sin el RIR vacío. Sin migración; la APK no se construyó. Detalle: `docs/paquetes/WP-ESFUERZO-POR-SERIE.md` |
+| DL-203 | Decisiones y pedido de Dirección · 2026-11-26 (sacar los microciclos; arreglar la galería de presets; «reutilizar patrones en cada nivel y adaptarlos después»; WP-PRESETS-POR-NIVEL) | DL-109 · DL-167 (ED-11, ED-13) · DL-192 · DL-196 · DL-198 (ET2-D05, ET2-D18) · DL-199 · ED-D2 · B10-06 · 09v10:281-283 | Los microciclos se armaban desde cero, semana por semana; los presets de BE decían «RIR 2» en un plan en RPE o en % RM; «Elegí un preset» repetido y el «?» sin ejemplo; solo se reutilizaban un plan entero y unas series, no una fase ni una sesión | **PROGRAMADA en `entrenamiento/presets-por-nivel` (PR en borrador sobre #329, sin integrar) · PN-D01 a PN-D17 a ratificar**: sin microciclos nuevos (los viejos se leen y se editan); los presets de BE en la intensidad del plan o del ejercicio, con la carga del 1RM en % RM; los presets de fase y de sesión del profesional, sin cargas ni notas, con una sola galería por niveles (Plan, Fase, Sesión, Series) y un solo «Deshacer». API-HAB-06 a 08 con `kind`, sin migración. Detalle: `docs/paquetes/WP-PRESETS-POR-NIVEL.md` |
 
 ---
 
@@ -9777,3 +9778,42 @@ si se pregunta es una opción de prescripción, como la del esfuerzo de la sesi�
 registra el RIR del plan; EP-D04, las aproximaciones dejan de mostrar el campo); construir y publicar la APK (hasta
 entonces, la instalada sigue preguntando el esfuerzo de todas las series); mirarlo en pantalla con Dirección. Detalle:
 `docs/paquetes/WP-ESFUERZO-POR-SERIE.md`.
+
+---
+
+## DL-203 — Los presets en todos los niveles: plan, fase, sesión y series; sin microciclos nuevos
+
+**Prioridad:** alta (Dirección, 2026-11-26: «poder reutilizar patrones en cada nivel y adaptarlos después») · DL-109 ·
+DL-167 (ED-11, ED-13) · DL-192 · DL-196 · DL-197 · DL-198 (ET2-D05, ET2-D18) · DL-199 · ED-D2 · B10-06 · 09v10:281-283 ·
+**Estado:** PEDIDA por Dirección el 2026-11-26 · PROGRAMADA en `entrenamiento/presets-por-nivel` (desde
+`ux/zoom-escritorio`, #329, sin integrar); PR en borrador, sin integrar · PN-D01 a PN-D17, **a ratificar** salvo lo que
+fijó Dirección (sacar los microciclos, el nombre «Presets» y los % de Hipertrofia, Fuerza y Resistencia). Si al integrar
+el número choca con otro paquete, se renumera.
+
+**Qué pidió Dirección.** Tres cosas del mismo día: sacar del editor la organización por microciclos, porque las fases de N
+semanas con su semana tipo, la progresión, la descarga y «Duplicar la fase» la cubren; arreglar la galería de presets de
+prescripción (decían «RIR 2» en cualquier plan, «Elegí un preset para ver qué trae» aparecía dos veces y el «?» no tenía
+ejemplo); y poder guardar y reutilizar una fase y una sesión enteras, con una sola galería por niveles.
+
+**Qué dice el legajo.** Nada en contra. El microciclo es opcional (09v10:281-283, B10-06:275-281): dejar de crearlo no
+cambia el contrato y los planes que lo tienen se siguen leyendo. Los presets propios siguen las reglas de DL-109 y DL-167:
+solo los ve su profesional, sin cargas ni notas (ED-D2, A05), nombre único con reemplazo explícito. BE sigue sin elegir
+ejercicios (ED-D2): no hay presets de BE de fase ni de sesión. No se edita el legajo.
+
+**Lo programado.**
+- **Parte 1 · Sin microciclos nuevos:** fuera «Organizar por microciclos» y «Agregar microciclo»; un plan viejo se elige,
+  se renombra, se quita y se edita por semana; quitar la última semana deja la fase con sus sesiones.
+- **Parte 2 · La galería de series:** los presets de BE en la intensidad del plan o del ejercicio (RIR; RPE = 10 − RIR;
+  % RM con Hipertrofia 70, Fuerza 85, Resistencia 60 y Técnica 50, a ratificar; sin esfuerzo), con la carga del 1RM y el
+  redondeo del plan; `VERSION_DE_LOS_PRESETS_DE_BE` = 3; un solo «Elegí un preset»; el «?» con un ejemplo resuelto.
+- **Parte 3 · Presets por nivel:** «Guardar como preset» en el «⋯» de la fase y de la sesión; la galería con las pestañas
+  Plan, Fase, Sesión y Series, cada una con «De BE» y «Tuyos», abierta en la del lugar; aplicar con «antes → después» si
+  pisa algo y un solo «Deshacer». API-HAB-06 a 08 con `kind` (`SERIES`, `SESION`, `FASE`), sin migración (el nivel va en
+  el JSON guardado), con el límite de 700 KB en API-HAB-07 y la validación como parte de un plan.
+- Pruebas: dominio (`presets-por-nivel.test.ts`, `prescripcion-rapida.test.ts`), web (`presets-por-nivel.test.mjs`,
+  `editores.test.mjs`) y API (`limite-de-cuerpo.spec.ts`).
+
+**Lo que queda.** Ratificar PN-D01 a PN-D17 (sobre todo PN-D04, el % de Técnica; PN-D09, el nombre único entre niveles;
+PN-D10, que las indicaciones y el objetivo de la fase viajen; PN-D14, unificar las sesiones habituales); la prueba de
+integración de los tres niveles contra PostgreSQL; renombrar y quitar estos presets desde «Plantillas y habituales»;
+mirarlo en pantalla con Dirección. Detalle: `docs/paquetes/WP-PRESETS-POR-NIVEL.md`.
