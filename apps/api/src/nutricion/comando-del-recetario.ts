@@ -5,7 +5,7 @@
  *   node apps/api/dist/nutricion/comando-del-recetario.js revisar
  *   node apps/api/dist/nutricion/comando-del-recetario.js sembrar --confirmo-escritura --operador "<quién lo corre>"
  *
- * - `revisar` no toca la base: lee las 66 recetas de los manifiestos y dice cuántas hay y si tienen la forma esperada.
+ * - `revisar` no toca la base: lee las 150 recetas de los manifiestos y dice cuántas hay y si tienen la forma esperada.
  * - `sembrar` escribe lo que falta (idempotente: otra corrida no cambia nada) y dice qué creó, qué ya estaba y qué no
  *   entró porque un alimento del catálogo no está disponible. Lee `DATABASE_URL` y `APP_ENV`.
  * - **Solo una base local** (localhost, 127.0.0.1 o ::1). Contra otra base pide además `--base-remota-autorizada`: cargar
@@ -17,7 +17,7 @@ import { leerSemillaDelRecetario, sembrarRecetario } from './semilla-del-recetar
 
 const AYUDA = [
   'Uso (desde la raíz del repositorio, después de npm run build:api):',
-  '  revisar                                               lee las 66 recetas sin tocar la base',
+  '  revisar                                               lee las 150 recetas sin tocar la base',
   '  sembrar --confirmo-escritura --operador "<quién>"     escribe lo que falta en la base de DATABASE_URL',
   'Contra una base que no es local, además: --base-remota-autorizada (lo decide Dirección).',
 ].join('\n');

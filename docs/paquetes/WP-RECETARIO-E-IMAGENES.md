@@ -19,7 +19,7 @@ foto de 4000 px del teléfono sube como una de 1600 px. Las fotos que ya estaban
 publicada; su miniatura y su grande se arman la primera vez que alguien las pide. Si un profesional sube dos veces la
 misma foto, BE guarda una sola.
 
-El **Recetario de BE** es una segunda pestaña en «Recetas»: las 66 recetas de cocina familiar del repertorio, para todos los
+El **Recetario de BE** es una segunda pestaña en «Recetas»: las 150 recetas de cocina familiar del repertorio (66 del 2026-10-28 y 84 del 2026-11-26), para todos los
 profesionales de Nutrición, de solo lectura. Se usan tal cual como opción del plan o se copian a «Mis recetas» para
 adaptarlas; la copia usa la misma foto, sin duplicarla. Un profesional puede **proponer** una receta suya: si tiene foto,
 lee y acepta la cesión de la foto, y BE registra qué texto aceptó y cuándo. Administración la ve en /admin, con quién la
@@ -41,7 +41,7 @@ todos. Las fotos de una comida que manda la persona no cambian: siguen privadas,
 | REC-06 | «Copiar a Mis recetas» (API-RCT-02): una receta propia con el mismo contenido, recalculada, que dice de cuál salió, con el mismo medio de la imagen | `recetas.service.ts`, `recetario-de-be.tsx`, `receta-en-el-cajon.tsx` |
 | REC-07 | Proponer al recetario (API-RCT-03), con la cesión de la foto versionada y registrada (REC-D08) | `contratos-recetario.ts`, `recetas.service.ts`, `proponer-al-recetario.tsx` |
 | REC-08 | Administración: las propuestas con su autor, la receta, la cesión y las parecidas (API-RCT-04), y sumarlas o no (API-RCT-05) | `propuestas-al-recetario.service.ts`, `administracion.controller.ts`, `cliente-administrativo.ts`, `/admin/recipes` |
-| REC-09 | La semilla: las 66 recetas del repertorio del 2026-10-28, con un comando idempotente, sin foto | `semilla-del-recetario.ts`, `comando-del-recetario.ts` |
+| REC-09 | La semilla: las 150 recetas del repertorio (las 66 del 2026-10-28 y las 84 del 2026-11-26, R067 a R151 sin R150), con un comando idempotente, sin foto | `semilla-del-recetario.ts`, `comando-del-recetario.ts` |
 | REC-10 | Cargar la imagen donde se agrega una receta: el cajón «Agregar receta como opción» del editor del plan (la receta nueva desde el plan ya la tenía, NUA-06) | `receta-en-el-cajon.tsx`, `editor.tsx` |
 | REC-11 | Compatibilidad: los medios de antes y la APK publicada | §4 |
 
@@ -108,7 +108,7 @@ Cambian, sin romper a nadie:
   firmadas: no hace falta un acceso (ni una fila de auditoría) por cada miniatura. El acceso uno por uno (API-MED-03) sigue
   auditado como siempre, y lo privado sigue igual: 15 minutos, sin caché y una fila por acceso (08 §21).
 - **REC-D11 · La semilla es un comando, no una migración.** `node apps/api/dist/nutricion/comando-del-recetario.js
-  sembrar --confirmo-escritura --operador "<quién>"`, idempotente por el código editorial (R001 a R066). Escribe sin más
+  sembrar --confirmo-escritura --operador "<quién>"`, idempotente por el código editorial (R001 a R151, sin R150). Escribe sin más
   solo en una base local; contra otra pide `--base-remota-autorizada`. **No se corrió contra test:** lo decide Dirección.
   La CI la corre en sus bases efímeras (la prueba de integración y los recorridos).
 - **REC-D12 · Sin procedencia nueva.** «Aportada por una persona» (`PERSON_PROVIDED`) ya dice que no la generó una IA, y
