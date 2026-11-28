@@ -145,11 +145,16 @@ export function ventanasDeLasSesiones(planificacion: PlanificacionDelPlan | null
 /**
  * La planificación que queda después de cambiar la estructura: sin las fases ni las anotaciones de bloques que ya no
  * están, ni las aproximaciones de ejercicios que ya no están. Si no queda nada que decir, `null`.
+ *
+ * DL-201 (PE-D16): con `faseDe` (cada ejercicio → la fase donde está), la regla propia de una fase se queda solo con los
+ * ejercicios que siguen en esa fase: la de uno que pasó a otra fase se quita (no lo sigue, ni pasa a valer para toda la
+ * fase). Sin `faseDe`, alcanza con que el ejercicio siga en el plan (las plantillas).
  */
 export function planificacionPodada(
   planificacion: PlanificacionDelPlan | null | undefined,
   bloques: readonly string[],
   prescripciones: readonly string[],
+  faseDe?: ReadonlyMap<string, string>,
 ): PlanificacionDelPlan | null {
   if (!planificacion) return null;
   const hayBloque = new Set(bloques);
@@ -163,7 +168,7 @@ export function planificacionPodada(
   const progressions = (planificacion.progressions ?? []).flatMap((p) => {
     if (!hayBloque.has(p.blockId)) return [];
     if (p.prescriptionIds === null) return [p];
-    const siguen = p.prescriptionIds.filter((id) => hayPrescripcion.has(id));
+    const siguen = p.prescriptionIds.filter((id) => hayPrescripcion.has(id) && (!faseDe || faseDe.get(id) === p.blockId));
     return siguen.length > 0 ? [{ ...p, prescriptionIds: siguen }] : [];
   });
   const sinIntensidad = [...new Set((planificacion.withoutIntensity ?? []).filter((id) => hayPrescripcion.has(id)))];
