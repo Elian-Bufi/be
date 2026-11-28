@@ -1,0 +1,100 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="728pt" height="448pt" viewBox="0 0 728 448" data-lamina="CU-04">
+<title>Casos de uso · Nutrición</title>
+<desc>Del registro de la evaluación a la revisión con decisión de continuidad: arriba el trabajo del profesional, abajo el registro de la persona. · Fuente: 05 v0.15 §7 y su índice de relaciones · datos/estado.json · Versión: 0fb1bff (2026-10-20) · Estado: implementado</desc>
+<rect x="0" y="0" width="728" height="448" fill="#FFFFFF"/>
+<rect x="122" y="6" width="474" height="404" rx="8" fill="#F4F7FC" stroke="#566881" stroke-width="1"/>
+<text x="132" y="22" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44">BE</text>
+<text x="151.28" y="22" font-family="Inter" font-size="10" font-weight="500" fill="#566881">[límite del sistema]</text>
+<rect x="6" y="418" width="716" height="27" rx="5" fill="#FFFFFF" stroke="#DCE6F4" stroke-width="1"/>
+<path d="M 16 430.5 L 45 430.5" stroke="#33475F" stroke-width="1.1" fill="none"/>
+<text x="54" y="434.5" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">asociación (actor principal)</text>
+<path d="M 256.47 430.5 L 285.47 430.5" stroke="#33475F" stroke-width="1.1" fill="none" stroke-dasharray="4.5 3"/><path d="M 279.47 433.86 L 286.47 430.5 L 279.47 427.14" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<text x="294.47" y="434.5" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">«include»</text>
+<rect x="414.45" y="424" width="30" height="13" rx="3" fill="#F7F9FC" stroke="#9AA8BC" stroke-width="1.2"/>
+<text x="452.45" y="434.5" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">UC-I02, UC-I03 y UC-I11, en cada ficha</text>
+<path d="M 64.37 140.42 L 148 52" fill="none" stroke="#33475F" stroke-width="1.1"/>
+<path d="M 69.6 149.74 L 148 133" fill="none" stroke="#33475F" stroke-width="1.1"/>
+<path d="M 67.23 163.1 L 148 214" fill="none" stroke="#33475F" stroke-width="1.1"/>
+<path d="M 62.11 168.4 L 148 295" fill="none" stroke="#33475F" stroke-width="1.1"/>
+<path d="M 69.62 359.67 L 148 376" fill="none" stroke="#33475F" stroke-width="1.1"/>
+<path d="M 658.03 128.02 L 570 133" fill="none" stroke="#33475F" stroke-width="1.1"/>
+<path d="M 300 52 L 418 52" fill="none" stroke="#33475F" stroke-width="1.1" stroke-dasharray="4.5 3"/>
+<path d="M 411 55.36 L 418 52 L 411 48.64" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 294.47 125.09 L 418 133" fill="none" stroke="#33475F" stroke-width="1.1" stroke-dasharray="4.5 3"/>
+<path d="M 410.8 135.91 L 418 133 L 411.23 129.2" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 294.47 140.91 L 418 181" fill="none" stroke="#33475F" stroke-width="1.1" stroke-dasharray="4.5 3"/>
+<path d="M 410.3 182.04 L 418 181 L 412.38 175.64" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 294.47 205.67 L 418 229" fill="none" stroke="#33475F" stroke-width="1.1" stroke-dasharray="4.5 3"/>
+<path d="M 410.5 231 L 418 229 L 411.75 224.4" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 294.47 222.33 L 418 277" fill="none" stroke="#33475F" stroke-width="1.1" stroke-dasharray="4.5 3"/>
+<path d="M 410.24 277.24 L 418 277 L 412.96 271.09" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 294.47 287.09 L 418 325" fill="none" stroke="#33475F" stroke-width="1.1" stroke-dasharray="4.5 3"/>
+<path d="M 410.32 326.16 L 418 325 L 412.29 319.73" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 294.47 302.91 L 418 373" fill="none" stroke="#33475F" stroke-width="1.1" stroke-dasharray="4.5 3"/>
+<path d="M 410.25 372.47 L 418 373 L 413.57 366.62" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<ellipse cx="224" cy="52" rx="76" ry="22.49" fill="#EEF4FE" stroke="#1453C9" stroke-width="1.2"/>
+<text x="224" y="49.4" font-family="JetBrains Mono" font-size="10" font-weight="600" fill="#1453C9" text-anchor="middle">UC-P09</text>
+<text x="224" y="61.69" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">Evaluación y objetivo</text>
+<ellipse cx="224" cy="133" rx="76" ry="21.11" fill="#EEF4FE" stroke="#1453C9" stroke-width="1.2"/>
+<text x="224" y="130.4" font-family="JetBrains Mono" font-size="10" font-weight="600" fill="#1453C9" text-anchor="middle">UC-P10</text>
+<text x="224" y="142.69" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">Diseñar plan</text>
+<ellipse cx="224" cy="214" rx="76" ry="22.25" fill="#EEF4FE" stroke="#1453C9" stroke-width="1.2"/>
+<text x="224" y="211.4" font-family="JetBrains Mono" font-size="10" font-weight="600" fill="#1453C9" text-anchor="middle">UC-P11</text>
+<text x="224" y="223.69" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">Validar y activar plan</text>
+<ellipse cx="224" cy="295" rx="76" ry="21.11" fill="#EEF4FE" stroke="#1453C9" stroke-width="1.2"/>
+<text x="224" y="292.4" font-family="JetBrains Mono" font-size="10" font-weight="600" fill="#1453C9" text-anchor="middle">UC-P13</text>
+<text x="224" y="304.69" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">Revisar y decidir</text>
+<ellipse cx="224" cy="376" rx="76" ry="21.77" fill="#EEF4FE" stroke="#1453C9" stroke-width="1.2"/>
+<text x="224" y="373.4" font-family="JetBrains Mono" font-size="10" font-weight="600" fill="#1453C9" text-anchor="middle">UC-P12</text>
+<text x="224" y="385.69" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">Consultar y registrar</text>
+<ellipse cx="494" cy="52" rx="76" ry="22.09" fill="#EEF4FE" stroke="#1453C9" stroke-width="1.2"/>
+<text x="494" y="49.4" font-family="JetBrains Mono" font-size="10" font-weight="600" fill="#1453C9" text-anchor="middle">UC-I13</text>
+<text x="494" y="61.69" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">Cálculo reproducible</text>
+<ellipse cx="494" cy="133" rx="76" ry="21.11" fill="#EEF4FE" stroke="#1453C9" stroke-width="1.2"/>
+<text x="494" y="130.4" font-family="JetBrains Mono" font-size="10" font-weight="600" fill="#1453C9" text-anchor="middle">UC-I07</text>
+<text x="494" y="142.69" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">Importar y revisar</text>
+<ellipse cx="494" cy="181" rx="76" ry="21.11" fill="#EEF4FE" stroke="#1453C9" stroke-width="1.2"/>
+<text x="494" y="178.4" font-family="JetBrains Mono" font-size="10" font-weight="600" fill="#1453C9" text-anchor="middle">UC-I08</text>
+<text x="494" y="190.69" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">Respaldo manual</text>
+<ellipse cx="494" cy="229" rx="76" ry="21.11" fill="#EEF4FE" stroke="#1453C9" stroke-width="1.2"/>
+<text x="494" y="226.4" font-family="JetBrains Mono" font-size="10" font-weight="600" fill="#1453C9" text-anchor="middle">UC-I04</text>
+<text x="494" y="238.69" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">Validar y versionar</text>
+<ellipse cx="494" cy="277" rx="76" ry="21.81" fill="#EEF4FE" stroke="#1453C9" stroke-width="1.2"/>
+<text x="494" y="274.4" font-family="JetBrains Mono" font-size="10" font-weight="600" fill="#1453C9" text-anchor="middle">UC-I10</text>
+<text x="494" y="286.69" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">Verificar habilitación</text>
+<ellipse cx="494" cy="325" rx="76" ry="21.11" fill="#EEF4FE" stroke="#1453C9" stroke-width="1.2"/>
+<text x="494" y="322.4" font-family="JetBrains Mono" font-size="10" font-weight="600" fill="#1453C9" text-anchor="middle">UC-I05</text>
+<text x="494" y="334.69" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">Revisión válida</text>
+<ellipse cx="494" cy="373" rx="76" ry="21.66" fill="#EEF4FE" stroke="#1453C9" stroke-width="1.2"/>
+<text x="494" y="370.4" font-family="JetBrains Mono" font-size="10" font-weight="600" fill="#1453C9" text-anchor="middle">UC-I06</text>
+<text x="494" y="382.69" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">Continuidad o cierre</text>
+<circle cx="52" cy="136.5" r="7" fill="#E7F9FD" stroke="#0E7490" stroke-width="1.6"/>
+<path d="M 52 143.5 L 52 163.5 M 40 150.5 L 64 150.5 M 52 163.5 L 42 177.5 M 52 163.5 L 62 177.5" stroke="#0E7490" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+<circle cx="52" cy="339" r="7" fill="#E7F9FD" stroke="#0E7490" stroke-width="1.6"/>
+<path d="M 52 346 L 52 366 M 40 353 L 64 353 M 52 366 L 42 380 M 52 366 L 62 380" stroke="#0E7490" stroke-width="1.6" fill="none" stroke-linecap="round"/>
+<circle cx="676" cy="110" r="7" fill="#FFFFFF" stroke="#5B6B80" stroke-width="1.6" stroke-dasharray="4.5 3"/>
+<path d="M 676 117 L 676 137 M 664 124 L 688 124 M 676 137 L 666 151 M 676 137 L 686 151" stroke="#5B6B80" stroke-width="1.6" fill="none" stroke-linecap="round" stroke-dasharray="4.5 3"/>
+<rect x="334.01" y="33.2" width="49.98" height="14.8" fill="#FFFFFF" opacity="0.94"/>
+<text x="359" y="43.89" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">«include»</text>
+<rect x="332.07" y="108.69" width="49.98" height="14.8" fill="#FFFFFF" opacity="0.94"/>
+<text x="357.06" y="119.38" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">«include»</text>
+<rect x="337.03" y="135.72" width="49.98" height="14.8" fill="#FFFFFF" opacity="0.94"/>
+<text x="362.02" y="146.4" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">«include»</text>
+<rect x="334.2" y="194.3" width="49.98" height="14.8" fill="#FFFFFF" opacity="0.94"/>
+<text x="359.19" y="204.99" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">«include»</text>
+<rect x="322.79" y="261.36" width="49.98" height="14.8" fill="#FFFFFF" opacity="0.94"/>
+<text x="347.78" y="272.05" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">«include»</text>
+<rect x="336.64" y="281.05" width="49.98" height="14.8" fill="#FFFFFF" opacity="0.94"/>
+<text x="361.63" y="291.74" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">«include»</text>
+<rect x="320.01" y="350.36" width="49.98" height="14.8" fill="#FFFFFF" opacity="0.94"/>
+<text x="345" y="361.04" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">«include»</text>
+<rect x="521.78" y="247.19" width="42.22" height="16" rx="8" fill="#FFFFFF" stroke="#B45309" stroke-width="1"/>
+<text x="542.89" y="258.79" font-family="Inter" font-size="10" font-weight="500" fill="#7C2D12" text-anchor="middle">parcial</text>
+<rect x="10.69" y="180.84" width="82.62" height="31.39" rx="2" fill="#FFFFFF"/>
+<text x="52" y="193.5" font-family="Inter" font-size="11" font-weight="600" fill="#0A1F44" text-anchor="middle">Profesional de</text>
+<text x="52" y="207.58" font-family="Inter" font-size="11" font-weight="600" fill="#0A1F44" text-anchor="middle">Nutrición</text>
+<rect x="20.23" y="383.34" width="63.54" height="17.31" rx="2" fill="#FFFFFF"/>
+<text x="52" y="396" font-family="Inter" font-size="11" font-weight="600" fill="#0A1F44" text-anchor="middle">Asesorado</text>
+<rect x="628.03" y="154.34" width="95.94" height="17.31" rx="2" fill="#FFFFFF"/>
+<text x="676" y="167" font-family="Inter" font-size="11" font-weight="600" fill="#0A1F44" text-anchor="middle">Open Food Facts</text>
+</svg>

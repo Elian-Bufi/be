@@ -1,0 +1,252 @@
+{
+ "_que_es": "Verificación de solo lectura de las cuentas sintéticas en test (entrar, /me, /me/relationships, cerrar sesión). Sin correos ni claves.",
+ "fecha": "2026-10-20T08:02:17.083Z",
+ "api": {
+  "commit": "0fb1bff",
+  "aplicacion": "0.11.1",
+  "construidoEn": "2026-10-20T05:33:38.336Z"
+ },
+ "resultados": [
+  {
+   "cuenta": "Lic. Sofía Paz",
+   "rol": "Profesional",
+   "origen": "cohorte",
+   "entra": true,
+   "estadoDeCuenta": "OPERATIVA",
+   "intencionDeRegistro": "PROFESSIONAL",
+   "capacidades": [
+    "PROFESSIONAL_WORKSPACE"
+   ],
+   "vinculos": 11,
+   "alcances": {
+    "NUTRICION FINALIZADO ACTIVE": 1,
+    "ANTROPOMETRIA ACEPTADO ACTIVE": 5,
+    "NUTRICION ACEPTADO ACTIVE": 5
+   },
+   "lecturaDeVinculos": 200,
+   "cierreDeSesion": 204
+  },
+  {
+   "cuenta": "Prof. Martín Acosta",
+   "rol": "Profesional",
+   "origen": "cohorte",
+   "entra": true,
+   "estadoDeCuenta": "OPERATIVA",
+   "intencionDeRegistro": "PROFESSIONAL",
+   "capacidades": [
+    "PROFESSIONAL_WORKSPACE"
+   ],
+   "vinculos": 5,
+   "alcances": {
+    "ENTRENAMIENTO ACEPTADO ACTIVE": 5
+   },
+   "lecturaDeVinculos": 200,
+   "cierreDeSesion": 204
+  },
+  {
+   "cuenta": "Prof. Lucía Benítez",
+   "rol": "Profesional",
+   "origen": "cohorte",
+   "entra": true,
+   "estadoDeCuenta": "OPERATIVA",
+   "intencionDeRegistro": "PROFESSIONAL",
+   "capacidades": [
+    "PROFESSIONAL_WORKSPACE"
+   ],
+   "vinculos": 1,
+   "alcances": {
+    "ANTROPOMETRIA ACEPTADO ACTIVE": 1
+   },
+   "lecturaDeVinculos": 200,
+   "cierreDeSesion": 204
+  },
+  {
+   "cuenta": "Diego Sosa",
+   "rol": "Asesorado",
+   "origen": "cohorte",
+   "entra": true,
+   "estadoDeCuenta": "OPERATIVA",
+   "intencionDeRegistro": "ADVISEE",
+   "capacidades": [],
+   "vinculos": 3,
+   "alcances": {
+    "NUTRICION ACEPTADO ACTIVE": 1,
+    "ENTRENAMIENTO ACEPTADO ACTIVE": 1,
+    "ANTROPOMETRIA ACEPTADO ACTIVE": 1
+   },
+   "lecturaDeVinculos": 200,
+   "cierreDeSesion": 204
+  },
+  {
+   "cuenta": "Camila Ortiz",
+   "rol": "Asesorado",
+   "origen": "cohorte",
+   "entra": true,
+   "estadoDeCuenta": "OPERATIVA",
+   "intencionDeRegistro": "ADVISEE",
+   "capacidades": [],
+   "vinculos": 2,
+   "alcances": {
+    "ANTROPOMETRIA ACEPTADO ACTIVE": 1,
+    "ENTRENAMIENTO ACEPTADO ACTIVE": 1
+   },
+   "lecturaDeVinculos": 200,
+   "cierreDeSesion": 204
+  },
+  {
+   "cuenta": "Federico Álvarez",
+   "rol": "Asesorado",
+   "origen": "cohorte",
+   "entra": true,
+   "estadoDeCuenta": "OPERATIVA",
+   "intencionDeRegistro": "ADVISEE",
+   "capacidades": [],
+   "vinculos": 3,
+   "alcances": {
+    "NUTRICION ACEPTADO ACTIVE": 1,
+    "ANTROPOMETRIA ACEPTADO ACTIVE": 1,
+    "ENTRENAMIENTO ACEPTADO ACTIVE": 1
+   },
+   "lecturaDeVinculos": 200,
+   "cierreDeSesion": 204
+  },
+  {
+   "cuenta": "Norma Castro",
+   "rol": "Asesorado",
+   "origen": "cohorte",
+   "entra": true,
+   "estadoDeCuenta": "OPERATIVA",
+   "intencionDeRegistro": "ADVISEE",
+   "capacidades": [],
+   "vinculos": 3,
+   "alcances": {
+    "ANTROPOMETRIA ACEPTADO ACTIVE": 1,
+    "NUTRICION ACEPTADO ACTIVE": 1,
+    "ENTRENAMIENTO ACEPTADO ACTIVE": 1
+   },
+   "lecturaDeVinculos": 200,
+   "cierreDeSesion": 204
+  },
+  {
+   "cuenta": "Héctor Funes",
+   "rol": "Asesorado",
+   "origen": "cohorte",
+   "entra": true,
+   "estadoDeCuenta": "OPERATIVA",
+   "intencionDeRegistro": "ADVISEE",
+   "capacidades": [],
+   "vinculos": 2,
+   "alcances": {
+    "NUTRICION ACEPTADO ACTIVE": 1,
+    "ANTROPOMETRIA ACEPTADO ACTIVE": 1
+   },
+   "lecturaDeVinculos": 200,
+   "cierreDeSesion": 204
+  },
+  {
+   "cuenta": "Agustina Ledesma",
+   "rol": "Asesorado",
+   "origen": "cohorte",
+   "entra": true,
+   "estadoDeCuenta": "OPERATIVA",
+   "intencionDeRegistro": "ADVISEE",
+   "capacidades": [],
+   "vinculos": 3,
+   "alcances": {
+    "ANTROPOMETRIA ACEPTADO ACTIVE": 1,
+    "ENTRENAMIENTO ACEPTADO ACTIVE": 1,
+    "NUTRICION ACEPTADO ACTIVE": 1
+   },
+   "lecturaDeVinculos": 200,
+   "cierreDeSesion": 204
+  },
+  {
+   "cuenta": "DEMO-PN",
+   "rol": "Profesional",
+   "origen": "demostración (WP-03)",
+   "entra": true,
+   "estadoDeCuenta": "OPERATIVA",
+   "intencionDeRegistro": "ADVISEE",
+   "capacidades": [
+    "PROFESSIONAL_WORKSPACE"
+   ],
+   "vinculos": 23,
+   "alcances": {
+    "ANTROPOMETRIA ACEPTADO ACTIVE": 2,
+    "ANTROPOMETRIA FINALIZADO ACTIVE": 4,
+    "NUTRICION ACEPTADO ACTIVE": 3,
+    "NUTRICION FINALIZADO ACTIVE": 2,
+    "NUTRICION FINALIZADO REQUIRED": 1,
+    "NUTRICION FINALIZADO REVOKED": 11
+   },
+   "lecturaDeVinculos": 200,
+   "cierreDeSesion": 204
+  },
+  {
+   "cuenta": "DEMO-PT",
+   "rol": "Profesional",
+   "origen": "demostración (WP-03)",
+   "entra": true,
+   "estadoDeCuenta": "OPERATIVA",
+   "intencionDeRegistro": "ADVISEE",
+   "capacidades": [
+    "PROFESSIONAL_WORKSPACE"
+   ],
+   "vinculos": 13,
+   "alcances": {
+    "ENTRENAMIENTO ACEPTADO ACTIVE": 10,
+    "ENTRENAMIENTO FINALIZADO ACTIVE": 3
+   },
+   "lecturaDeVinculos": 200,
+   "cierreDeSesion": 204
+  },
+  {
+   "cuenta": "DEMO-PA",
+   "rol": "Profesional",
+   "origen": "demostración (WP-05)",
+   "entra": true,
+   "estadoDeCuenta": "OPERATIVA",
+   "intencionDeRegistro": "PROFESSIONAL",
+   "capacidades": [
+    "PROFESSIONAL_WORKSPACE"
+   ],
+   "vinculos": 18,
+   "alcances": {
+    "ANTROPOMETRIA FINALIZADO ACTIVE": 4,
+    "ANTROPOMETRIA ACEPTADO ACTIVE": 14
+   },
+   "lecturaDeVinculos": 200,
+   "cierreDeSesion": 204
+  },
+  {
+   "cuenta": "DEMO-A01",
+   "rol": "Asesorado",
+   "origen": "demostración (WP-02)",
+   "entra": true,
+   "estadoDeCuenta": "OPERATIVA",
+   "intencionDeRegistro": "ADVISEE",
+   "capacidades": [],
+   "vinculos": 3,
+   "alcances": {
+    "ANTROPOMETRIA ACEPTADO ACTIVE": 1,
+    "NUTRICION ACEPTADO ACTIVE": 1,
+    "ENTRENAMIENTO ACEPTADO ACTIVE": 1
+   },
+   "lecturaDeVinculos": 200,
+   "cierreDeSesion": 204
+  },
+  {
+   "cuenta": "DEMO-A02",
+   "rol": "Asesorado",
+   "origen": "demostración (WP-02)",
+   "entra": true,
+   "estadoDeCuenta": "OPERATIVA",
+   "intencionDeRegistro": "ADVISEE",
+   "capacidades": [],
+   "vinculos": 0,
+   "alcances": {},
+   "lecturaDeVinculos": 200,
+   "cierreDeSesion": 204
+  }
+ ]
+}

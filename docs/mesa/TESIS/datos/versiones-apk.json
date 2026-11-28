@@ -1,0 +1,173 @@
+{
+ "_que_es": "Releases de la APK en GitHub (gh release list), de la más vieja a la más nueva.",
+ "versiones": [
+  {
+   "version": "0.1.0",
+   "nombre": "APK BE 0.1.0 — WP-01",
+   "publicada": "2026-09-18",
+   "prerelease": false
+  },
+  {
+   "version": "0.2.0",
+   "nombre": "APK BE 0.2.0 — WP-02 Identidad y sesiones",
+   "publicada": "2026-09-19",
+   "prerelease": false
+  },
+  {
+   "version": "0.3.0",
+   "nombre": "APK BE 0.3.0 (WP-03, test)",
+   "publicada": "2026-09-19",
+   "prerelease": false
+  },
+  {
+   "version": "0.4.0",
+   "nombre": "APK BE 0.4.0 (WP-04, test)",
+   "publicada": "2026-09-19",
+   "prerelease": false
+  },
+  {
+   "version": "0.5.0",
+   "nombre": "APK 0.5.0 — WP-05 antropometría",
+   "publicada": "2026-09-20",
+   "prerelease": false
+  },
+  {
+   "version": "0.5.1",
+   "nombre": "APK 0.5.1 — WP-05 con el contrato del 09",
+   "publicada": "2026-09-20",
+   "prerelease": false
+  },
+  {
+   "version": "0.6.0",
+   "nombre": "APK 0.6.0 — WP-06 circuito de entrenamiento",
+   "publicada": "2026-09-21",
+   "prerelease": false
+  },
+  {
+   "version": "0.7.0",
+   "nombre": "APK 0.7.0 — WP-07 información profesional pertinente",
+   "publicada": "2026-09-22",
+   "prerelease": false
+  },
+  {
+   "version": "0.9.0",
+   "nombre": "APK 0.9.0 — identidad visual y accesibilidad",
+   "publicada": "2026-09-24",
+   "prerelease": false
+  },
+  {
+   "version": "0.9.1",
+   "nombre": "APK 0.9.1 — Formularios: Sí/No se elige, no se escribe",
+   "publicada": "2026-09-25",
+   "prerelease": false
+  },
+  {
+   "version": "0.10.0",
+   "nombre": "APK 0.10.0 — WP-08 Integraciones (Open Food Facts y wger)",
+   "publicada": "2026-09-25",
+   "prerelease": false
+  },
+  {
+   "version": "0.11.0",
+   "nombre": "APK 0.11.0 — Tu historial de entrenamiento (DL-096)",
+   "publicada": "2026-09-26",
+   "prerelease": false
+  },
+  {
+   "version": "0.11.1",
+   "nombre": "APK 0.11.1 — Tu historial: volver, fecha civil y área inferior (DL-096)",
+   "publicada": "2026-09-26",
+   "prerelease": false
+  },
+  {
+   "version": "0.11.2",
+   "nombre": "APK 0.11.2 — Tu historial: el período se calcula en Buenos Aires (DL-096)",
+   "publicada": "2026-09-27",
+   "prerelease": false
+  },
+  {
+   "version": "0.11.3",
+   "nombre": "APK 0.11.3 — el teclado deja de tapar los campos (DL-096)",
+   "publicada": "2026-09-27",
+   "prerelease": false
+  },
+  {
+   "version": "0.12.0",
+   "nombre": "APK 0.12.0 — lo planificado completo (PF-03) y errores por campo en formularios (DL-104)",
+   "publicada": "2026-09-28",
+   "prerelease": false
+  },
+  {
+   "version": "0.12.1",
+   "nombre": "APK 0.12.1 — temas Azul noche y Claro, formularios acotados y series por número",
+   "publicada": "2026-10-01",
+   "prerelease": false
+  },
+  {
+   "version": "0.12.2",
+   "nombre": "APK 0.12.2 — evolución física: figura de la lámina y resultados de las fórmulas",
+   "publicada": "2026-10-01",
+   "prerelease": false
+  },
+  {
+   "version": "0.13.0",
+   "nombre": "BE APK 0.13.0 (test): barra inferior, figura en SVG y menos texto",
+   "publicada": "2026-10-02",
+   "prerelease": false
+  },
+  {
+   "version": "0.13.1",
+   "nombre": "BE APK 0.13.1 (test): «Mi evolución» más clara y los puntos de la figura en su lugar",
+   "publicada": "2026-10-02",
+   "prerelease": false
+  },
+  {
+   "version": "0.13.2",
+   "nombre": "BE APK 0.13.2 (test): la sesión guardada, «Mi evolución» por tareas y objetivos de 48 dp",
+   "publicada": "2026-10-03",
+   "prerelease": false
+  },
+  {
+   "version": "0.14.0-candidata.1",
+   "nombre": "BE APK 0.14.0-candidata.1 (test): candidata de Inicio y navegación, pendiente de validación en el teléfono",
+   "publicada": "2026-10-05",
+   "prerelease": true
+  },
+  {
+   "version": "0.14.0-candidata.2",
+   "nombre": "BE APK 0.14.0-candidata.2 (test): Mi evolución en tres vistas, pendiente de validación en el teléfono",
+   "publicada": "2026-10-05",
+   "prerelease": true
+  },
+  {
+   "version": "0.15.0-candidata.1",
+   "nombre": "BE APK 0.15.0-candidata.1 (test): Antropometría, Nutrición y Entrenamiento para probar en el teléfono",
+   "publicada": "2026-10-06",
+   "prerelease": true
+  },
+  {
+   "version": "0.16.0-candidata.1",
+   "nombre": "BE APK 0.16.0-candidata.1 (test): novedades, tus revisiones, tu nombre y los arreglos del teléfono",
+   "publicada": "2026-10-16",
+   "prerelease": true
+  },
+  {
+   "version": "0.17.0-candidata.1",
+   "nombre": "BE APK 0.17.0-candidata.1 (test): la invitación, los días de entrenamiento y el alta con mayoría de edad",
+   "publicada": "2026-10-17",
+   "prerelease": true
+  },
+  {
+   "version": "0.17.0-candidata.2",
+   "nombre": "BE APK 0.17.0-candidata.2 (test): con avisos push y «Continuar con Google»",
+   "publicada": "2026-10-17",
+   "prerelease": true
+  },
+  {
+   "version": "0.17.0-candidata.3",
+   "nombre": "BE 0.17.0-candidata.3",
+   "publicada": "2026-10-19",
+   "prerelease": true
+  }
+ ]
+}

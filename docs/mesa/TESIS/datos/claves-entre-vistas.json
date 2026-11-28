@@ -1,0 +1,379 @@
+{
+ "_que_es": "Claves foráneas que cruzan de una vista del DER a otra (sin las que van a Identidad), de datos/esquema.json.",
+ "claves": [
+  {
+   "de": "DER-04",
+   "desde": "ActoRegistrable",
+   "campos": [
+    "alcanceDeVinculoId"
+   ],
+   "hacia": "AlcanceDeVinculo",
+   "a": "DER-03",
+   "hija": "0..N",
+   "padre": "0..1"
+  },
+  {
+   "de": "DER-04",
+   "desde": "Consentimiento",
+   "campos": [
+    "alcanceDeVinculoId"
+   ],
+   "hacia": "AlcanceDeVinculo",
+   "a": "DER-03",
+   "hija": "0..N",
+   "padre": "1"
+  },
+  {
+   "de": "DER-04",
+   "desde": "EventoDeVinculo",
+   "campos": [
+    "solicitudDeVinculoId"
+   ],
+   "hacia": "SolicitudDeVinculo",
+   "a": "DER-03",
+   "hija": "0..N",
+   "padre": "0..1"
+  },
+  {
+   "de": "DER-04",
+   "desde": "EventoDeVinculo",
+   "campos": [
+    "alcanceDeVinculoId"
+   ],
+   "hacia": "AlcanceDeVinculo",
+   "a": "DER-03",
+   "hija": "0..N",
+   "padre": "0..1"
+  },
+  {
+   "de": "DER-04",
+   "desde": "DecisionDeAcceso",
+   "campos": [
+    "alcanceDeVinculoId"
+   ],
+   "hacia": "AlcanceDeVinculo",
+   "a": "DER-03",
+   "hija": "0..N",
+   "padre": "0..1"
+  },
+  {
+   "de": "DER-01",
+   "desde": "SolicitudDeCierreDeCuenta",
+   "campos": [
+    "versionDeConsecuenciasId"
+   ],
+   "hacia": "VersionDeTexto",
+   "a": "DER-04",
+   "hija": "0..N",
+   "padre": "1"
+  },
+  {
+   "de": "DER-02",
+   "desde": "ProcesoOperativo",
+   "campos": [
+    "versionDeAperturaId"
+   ],
+   "hacia": "VersionDePlanNutricional",
+   "a": "DER-06",
+   "hija": "0..1",
+   "padre": "0..1"
+  },
+  {
+   "de": "DER-02",
+   "desde": "ProcesoOperativo",
+   "campos": [
+    "versionDeAperturaEntrenamientoId"
+   ],
+   "hacia": "VersionDePlanDeEntrenamiento",
+   "a": "DER-09",
+   "hija": "0..1",
+   "padre": "0..1"
+  },
+  {
+   "de": "DER-02",
+   "desde": "EventoDeProceso",
+   "campos": [
+    "revisionId"
+   ],
+   "hacia": "RevisionNutricional",
+   "a": "DER-07",
+   "hija": "0..N",
+   "padre": "0..1"
+  },
+  {
+   "de": "DER-02",
+   "desde": "EventoDeProceso",
+   "campos": [
+    "revisionDeEntrenamientoId"
+   ],
+   "hacia": "RevisionDeEntrenamiento",
+   "a": "DER-10",
+   "hija": "0..N",
+   "padre": "0..1"
+  },
+  {
+   "de": "DER-02",
+   "desde": "ProximaRevision",
+   "campos": [
+    "versionDePlanId"
+   ],
+   "hacia": "VersionDePlanNutricional",
+   "a": "DER-06",
+   "hija": "0..N",
+   "padre": "0..1"
+  },
+  {
+   "de": "DER-02",
+   "desde": "ProximaRevision",
+   "campos": [
+    "revisionId"
+   ],
+   "hacia": "RevisionNutricional",
+   "a": "DER-07",
+   "hija": "0..N",
+   "padre": "0..1"
+  },
+  {
+   "de": "DER-02",
+   "desde": "ProximaRevision",
+   "campos": [
+    "versionDePlanDeEntrenamientoId"
+   ],
+   "hacia": "VersionDePlanDeEntrenamiento",
+   "a": "DER-09",
+   "hija": "0..N",
+   "padre": "0..1"
+  },
+  {
+   "de": "DER-02",
+   "desde": "ProximaRevision",
+   "campos": [
+    "revisionDeEntrenamientoId"
+   ],
+   "hacia": "RevisionDeEntrenamiento",
+   "a": "DER-10",
+   "hija": "0..N",
+   "padre": "0..1"
+  },
+  {
+   "de": "DER-06",
+   "desde": "VersionDeObjetivoNutricional",
+   "campos": [
+    "revisionDeOrigenId"
+   ],
+   "hacia": "RevisionNutricional",
+   "a": "DER-07",
+   "hija": "0..N",
+   "padre": "0..1"
+  },
+  {
+   "de": "DER-06",
+   "desde": "VersionDePlanNutricional",
+   "campos": [
+    "revisionDeOrigenId"
+   ],
+   "hacia": "RevisionNutricional",
+   "a": "DER-07",
+   "hija": "0..N",
+   "padre": "0..1"
+  },
+  {
+   "de": "DER-07",
+   "desde": "IngestaNutricional",
+   "campos": [
+    "versionDePlanId"
+   ],
+   "hacia": "VersionDePlanNutricional",
+   "a": "DER-06",
+   "hija": "0..N",
+   "padre": "1"
+  },
+  {
+   "de": "DER-07",
+   "desde": "IngestaNutricional",
+   "campos": [
+    "versionDeRecetaId"
+   ],
+   "hacia": "VersionDeReceta",
+   "a": "DER-05",
+   "hija": "0..N",
+   "padre": "0..1"
+  },
+  {
+   "de": "DER-07",
+   "desde": "RevisionNutricional",
+   "campos": [
+    "procesoId"
+   ],
+   "hacia": "ProcesoOperativo",
+   "a": "DER-02",
+   "hija": "0..N",
+   "padre": "1"
+  },
+  {
+   "de": "DER-07",
+   "desde": "AplicacionDeRevision",
+   "campos": [
+    "eventoId"
+   ],
+   "hacia": "EventoDeProceso",
+   "a": "DER-02",
+   "hija": "0..1",
+   "padre": "1"
+  },
+  {
+   "de": "DER-09",
+   "desde": "CitaDeRespuestaEnEvaluacionDeEntrenamiento",
+   "campos": [
+    "respuestaId"
+   ],
+   "hacia": "RespuestaDeFormulario",
+   "a": "DER-12",
+   "hija": "0..N",
+   "padre": "1"
+  },
+  {
+   "de": "DER-09",
+   "desde": "CitaDeRespuestaEnEvaluacionDeEntrenamiento",
+   "campos": [
+    "rectificacionId"
+   ],
+   "hacia": "RectificacionDeRespuestaDeFormulario",
+   "a": "DER-12",
+   "hija": "0..N",
+   "padre": "0..1"
+  },
+  {
+   "de": "DER-09",
+   "desde": "VersionDeObjetivoDeEntrenamiento",
+   "campos": [
+    "revisionDeOrigenId"
+   ],
+   "hacia": "RevisionDeEntrenamiento",
+   "a": "DER-10",
+   "hija": "0..N",
+   "padre": "0..1"
+  },
+  {
+   "de": "DER-09",
+   "desde": "VersionDePlanDeEntrenamiento",
+   "campos": [
+    "revisionDeOrigenId"
+   ],
+   "hacia": "RevisionDeEntrenamiento",
+   "a": "DER-10",
+   "hija": "0..N",
+   "padre": "0..1"
+  },
+  {
+   "de": "DER-10",
+   "desde": "BorradorDeEjecucionDeEntrenamiento",
+   "campos": [
+    "versionDePlanId"
+   ],
+   "hacia": "VersionDePlanDeEntrenamiento",
+   "a": "DER-09",
+   "hija": "0..N",
+   "padre": "1"
+  },
+  {
+   "de": "DER-10",
+   "desde": "EjecucionDeEntrenamiento",
+   "campos": [
+    "versionDePlanId"
+   ],
+   "hacia": "VersionDePlanDeEntrenamiento",
+   "a": "DER-09",
+   "hija": "0..N",
+   "padre": "1"
+  },
+  {
+   "de": "DER-10",
+   "desde": "RevisionDeEntrenamiento",
+   "campos": [
+    "procesoId"
+   ],
+   "hacia": "ProcesoOperativo",
+   "a": "DER-02",
+   "hija": "0..N",
+   "padre": "1"
+  },
+  {
+   "de": "DER-10",
+   "desde": "AplicacionDeRevisionDeEntrenamiento",
+   "campos": [
+    "eventoId"
+   ],
+   "hacia": "EventoDeProceso",
+   "a": "DER-02",
+   "hija": "0..1",
+   "padre": "1"
+  },
+  {
+   "de": "DER-12",
+   "desde": "SolicitudDeFormulario",
+   "campos": [
+    "vinculoId"
+   ],
+   "hacia": "Vinculo",
+   "a": "DER-03",
+   "hija": "0..N",
+   "padre": "1"
+  },
+  {
+   "de": "DER-05",
+   "desde": "ResolucionDeCandidato",
+   "campos": [
+    "ejercicioId"
+   ],
+   "hacia": "EjercicioDeCatalogo",
+   "a": "DER-08",
+   "hija": "0..N",
+   "padre": "0..1"
+  },
+  {
+   "de": "DER-05",
+   "desde": "ItemExternoDeCatalogo",
+   "campos": [
+    "ejercicioId"
+   ],
+   "hacia": "EjercicioDeCatalogo",
+   "a": "DER-08",
+   "hija": "0..1",
+   "padre": "0..1"
+  },
+  {
+   "de": "DER-05",
+   "desde": "AsociacionDeImagenDeReceta",
+   "campos": [
+    "medioId"
+   ],
+   "hacia": "Medio",
+   "a": "DER-14",
+   "hija": "0..N",
+   "padre": "0..1"
+  },
+  {
+   "de": "DER-07",
+   "desde": "EvidenciaVisualDeIngesta",
+   "campos": [
+    "medioId"
+   ],
+   "hacia": "Medio",
+   "a": "DER-14",
+   "hija": "0..1",
+   "padre": "1"
+  },
+  {
+   "de": "DER-08",
+   "desde": "AsociacionDeImagenDeEjercicio",
+   "campos": [
+    "medioId"
+   ],
+   "hacia": "Medio",
+   "a": "DER-14",
+   "hija": "0..N",
+   "padre": "0..1"
+  }
+ ]
+}

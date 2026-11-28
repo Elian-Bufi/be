@@ -1,0 +1,53 @@
+#import "../plantilla.typ": *
+
+= Glosario
+
+#let G = (
+  ("A1, A2 y A3", [Los actos de la persona al crear su cuenta y después: términos (A1), privacidad (A2) y datos de salud (A3). Se registran con la versión exacta del texto aceptado.]),
+  ("Acceso contextual", [El modo en que un profesional ve los datos de una persona: solo los de su área, mientras el vínculo esté aceptado y el consentimiento vigente.]),
+  ("Alcance", [El área de un vínculo: Nutrición, Entrenamiento o Antropometría. Cada alcance tiene su estado y su consentimiento.]),
+  ("Anular", [Dejar sin efecto un registro sin borrarlo: queda en la historia, marcado como anulado.]),
+  ("APK", [La aplicación para Android de la persona asesorada.]),
+  ("Asesorado", [La persona que recibe seguimiento profesional. Es la titular de sus datos.]),
+  ("Auditoría", [El registro de cada operación, en la misma transacción que la operación: si no se puede auditar, la operación no ocurre.]),
+  ("B2", [El consentimiento específico de una finalidad dentro de un vínculo. Aceptar un vínculo no lo concede.]),
+  ("Borrador", [Una versión de un plan que todavía se edita. Se guarda sola y dice si está guardada en el servidor o pendiente.]),
+  ("Cartera", [La lista de personas de un profesional, con lo que tiene pendiente con cada una.]),
+  ("CI", [La integración continua: las pruebas que corren en GitHub Actions en cada cambio y bloquean la integración si algo falla.]),
+  ("Cohorte", [Las seis personas sintéticas con historia (de seis meses a tres años) que se usan para demostrar BE.]),
+  ("Consentimiento", [La autorización de la persona para que un profesional trate sus datos en un alcance y con una finalidad (B2). Se otorga y se revoca; la revocación corta hacia adelante. Es distinto de aceptar el vínculo y del permiso general de datos de salud (A3).]),
+  ("Corrección", [Un registro nuevo que reemplaza a otro en la vista vigente sin borrarlo; la cadena de correcciones queda en la historia.]),
+  ("Dirección", [El rol que dirige el proyecto (apartado 2.10): define el alcance, aprueba los paquetes de trabajo, decide las DL y prueba la APK en su teléfono.]),
+  ("DL", [Una decisión registrada en `docs/DEUDA_LEGAJO.md`: qué dice el legajo, qué se encontró, las opciones y lo que decidió Dirección.]),
+  ("Evaluación", [El registro con el que el profesional valora a la persona en nutrición o en entrenamiento. Cada versión del objetivo se apoya en una evaluación.]),
+  ("Ficha", [La vista del profesional sobre una persona: Resumen, Línea de tiempo y Analizar.]),
+  ("Finalidad", [Para qué se usan los datos en un alcance (por ejemplo, acompañamiento nutricional). Cada alcance tiene una sola.]),
+  ("Idempotencia", [Que repetir el mismo pedido no duplique su efecto. BE lo garantiza con una clave por pedido.]),
+  ("Instantánea", [Lo que se emitió al activar una versión de un plan, con su huella: permite reconstruir exactamente lo que vio la persona.]),
+  ("Legajo", [Los documentos canónicos del proyecto (`docs/legajo`): visión, requisitos, casos de uso, dominio, arquitectura, seguridad, contratos, pruebas y trazabilidad.]),
+  ("Línea de tiempo", [Los hechos de una persona, de todas las áreas que el profesional puede ver, ordenados por la fecha en que ocurrieron.]),
+  ("Mesa", [En la defensa, la mesa examinadora. En el repositorio, `docs/mesa` guarda el trabajo de las mesas de trabajo que derivaron los entregables del legajo (MESA_01 y MESA_02) y esta tesis.]),
+  ("Novedad", [Un aviso interno en BE (por ejemplo, «se activó tu plan»). El aviso al teléfono solo dice que hay una novedad.]),
+  ("PDP", [El punto único de decisión de autorización: la regla que decide, en cada operación protegida, si el actor puede hacerla, con el vínculo, el consentimiento y la situación vigentes.]),
+  ("Plan", [Lo que el profesional indica: en nutrición, comidas y opciones; en entrenamiento, bloques, sesiones y series. Se activa como versión.]),
+  ("Procedencia", [De dónde viene un dato: informado por la persona, observado, calculado, importado de un catálogo o sintético.]),
+  ("Proceso operativo", [El trabajo de un profesional con una persona en un área, con su cadena de próximas revisiones.]),
+  ("Profesional", [Quien acompaña a la persona en Nutrición, Entrenamiento o Antropometría, habilitado para su área.]),
+  ("Recorrido", [Una prueba que maneja el website en un navegador real, como lo haría una persona.]),
+  ("Revisión", [El análisis que hace el profesional de lo registrado en un período, con uno de seis resultados: mantener, ajustar, sustituir, reprogramar la revisión, cambiar el objetivo o finalizar. Solo finalizar cierra el proceso operativo.]),
+  ("RF y RNF", [Requisito funcional y requisito no funcional del documento 04 del legajo.]),
+  ("RIR", [Repeticiones en reserva: cuántas repeticiones más podría haber hecho la persona al terminar una serie. Se registra junto con la carga, las repeticiones y el esfuerzo, todos opcionales.]),
+  ("Sintético", [Dato creado para probar o demostrar; ninguna persona es real.]),
+  ("Test (ambiente)", [El único ambiente desplegado, en Render (Frankfurt), con datos sintéticos.]),
+  ("Toma", [Una evaluación antropométrica: un conjunto de mediciones con su protocolo y sus cálculos.]),
+  ("TVCC-30", [La métrica principal de la tesis: de los ciclos de seguimiento que vencieron en una ventana de 30 días, cuántos se cerraron con una revisión aplicada.]),
+  ("UC", [Caso de uso del documento 05 del legajo.]),
+  ("Versión de referencia", [El commit del producto que describe este documento: #id("0fb1bff").]),
+  ("Vínculo", [La relación entre un profesional y una persona. Agrupa uno o más alcances.]),
+)
+
+#table(
+  columns: (36mm, 1fr),
+  table.header([Término], [Significado en BE]),
+  ..G.map(((t, d)) => (text(weight: 600, t), d)).flatten(),
+)

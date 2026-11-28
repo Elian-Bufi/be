@@ -1,0 +1,130 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="750pt" height="456pt" viewBox="0 0 750 456" data-lamina="E-01">
+<title>Secuencia · activar un plan (API-NUT-12)</title>
+<desc>Las llamadas reales entre clases, con la idempotencia, la decisión del PDP y la auditoría en una transacción. · Fuente: apps/api/src (nutricion/planes.service.ts, plataforma/ejecutor.ts e idempotencia.service.ts, autorizacion/pdp.service.ts, novedades) · Versión: 0fb1bff (2026-10-20) · Estado: implementado</desc>
+<rect x="0" y="0" width="750" height="456" fill="#FFFFFF"/>
+<path d="M 46 44 L 46 420" stroke="#566881" stroke-width="1" stroke-dasharray="4.5 3" fill="none"/>
+<path d="M 151 44 L 151 420" stroke="#566881" stroke-width="1" stroke-dasharray="4.5 3" fill="none"/>
+<path d="M 239 44 L 239 420" stroke="#566881" stroke-width="1" stroke-dasharray="4.5 3" fill="none"/>
+<path d="M 327 44 L 327 420" stroke="#566881" stroke-width="1" stroke-dasharray="4.5 3" fill="none"/>
+<path d="M 415 44 L 415 420" stroke="#566881" stroke-width="1" stroke-dasharray="4.5 3" fill="none"/>
+<path d="M 524 44 L 524 420" stroke="#566881" stroke-width="1" stroke-dasharray="4.5 3" fill="none"/>
+<path d="M 612 44 L 612 420" stroke="#566881" stroke-width="1" stroke-dasharray="4.5 3" fill="none"/>
+<path d="M 706 44 L 706 420" stroke="#566881" stroke-width="1" stroke-dasharray="4.5 3" fill="none"/>
+<rect x="147" y="60" width="8" height="340" fill="#FFFFFF" stroke="#566881" stroke-width="1"/>
+<rect x="235" y="80" width="8" height="246" fill="#FFFFFF" stroke="#566881" stroke-width="1"/>
+<rect x="323" y="100" width="8" height="284" fill="#FFFFFF" stroke="#566881" stroke-width="1"/>
+<rect x="411" y="194" width="8" height="42" fill="#FFFFFF" stroke="#566881" stroke-width="1"/>
+<rect x="608" y="274" width="8" height="16" fill="#FFFFFF" stroke="#566881" stroke-width="1"/>
+<rect x="608" y="404" width="8" height="14" fill="#FFFFFF" stroke="#566881" stroke-width="1"/>
+<rect x="96" y="132" width="562" height="230" fill="none" stroke="#566881" stroke-width="1"/>
+<path d="M 96 147 L 121.89 147 L 127.89 141 L 127.89 132" fill="#F4F7FC" stroke="#566881" stroke-width="1"/>
+<text x="102" y="143.5" font-family="Inter" font-size="10" font-weight="600" fill="#0A1F44">alt</text>
+<rect x="131.89" y="133.5" width="139.88" height="13.5" fill="#FFFFFF"/>
+<text x="133.89" y="143.5" font-family="Inter" font-size="10" font-weight="500" fill="#566881">[primera vez con esta clave]</text>
+<path d="M 96 330 L 658 330" stroke="#566881" stroke-width="1" stroke-dasharray="4.5 3"/>
+<rect x="102" y="333" width="148.01" height="13.5" fill="#FFFFFF"/>
+<text x="104" y="343" font-family="Inter" font-size="10" font-weight="500" fill="#566881">[reintento con la misma clave]</text>
+<rect x="0" y="428" width="750" height="27" rx="5" fill="#FFFFFF" stroke="#DCE6F4" stroke-width="1"/>
+<path d="M 10 440.5 L 39 440.5" stroke="#33475F" stroke-width="1.1" fill="none"/><path d="M 40 440.5 L 32 444.1 L 32 436.9 Z" fill="#33475F"/>
+<text x="48" y="444.5" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">llamada</text>
+<path d="M 147.7 440.5 L 176.7 440.5" stroke="#33475F" stroke-width="1.1" fill="none" stroke-dasharray="4.5 3"/><path d="M 170.7 443.86 L 177.7 440.5 L 170.7 437.14" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<text x="185.7" y="444.5" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">respuesta</text>
+<path d="M 295.73 440.5 L 324.73 440.5" stroke="#33475F" stroke-width="1.1" fill="none"/><path d="M 318.73 443.86 L 325.73 440.5 L 318.73 437.14" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<text x="333.73" y="444.5" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">asíncrono, después</text>
+<rect x="489.53" y="434" width="30" height="13" fill="none" stroke="#566881" stroke-width="1"/><path d="M 489.53 441 L 500.53 441 L 503.53 438 L 503.53 434" fill="#F4F7FC" stroke="#566881" stroke-width="1"/>
+<text x="527.53" y="444.5" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">alt: alternativas con su [guarda]</text>
+<path d="M 50 62 L 141 62" fill="none" stroke="#33475F" stroke-width="1.1"/>
+<path d="M 147 62 L 139 65.6 L 139 58.4 Z" fill="#33475F"/>
+<path d="M 155 82 L 229 82" fill="none" stroke="#33475F" stroke-width="1.1"/>
+<path d="M 235 82 L 227 85.6 L 227 78.4 Z" fill="#33475F"/>
+<path d="M 243 102 L 317 102" fill="none" stroke="#33475F" stroke-width="1.1"/>
+<path d="M 323 102 L 315 105.6 L 315 98.4 Z" fill="#33475F"/>
+<path d="M 331 122 L 514 122" fill="none" stroke="#33475F" stroke-width="1.1"/>
+<path d="M 520 122 L 512 125.6 L 512 118.4 Z" fill="#33475F"/>
+<path d="M 323 164 L 249 164" fill="none" stroke="#33475F" stroke-width="1.1"/>
+<path d="M 243 164 L 251 160.4 L 251 167.6 Z" fill="#33475F"/>
+<path d="M 235 180 L 161 180" fill="none" stroke="#33475F" stroke-width="1.1"/>
+<path d="M 155 180 L 163 176.4 L 163 183.6 Z" fill="#33475F"/>
+<path d="M 155 200 L 405 200" fill="none" stroke="#33475F" stroke-width="1.1"/>
+<path d="M 411 200 L 403 203.6 L 403 196.4 Z" fill="#33475F"/>
+<path d="M 419 220 L 514 220" fill="none" stroke="#33475F" stroke-width="1.1"/>
+<path d="M 520 220 L 512 223.6 L 512 216.4 Z" fill="#33475F"/>
+<path d="M 411 240 L 155 240" fill="none" stroke="#33475F" stroke-width="1.1" stroke-dasharray="4.5 3"/>
+<path d="M 162 236.64 L 155 240 L 162 243.36" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 155 260 L 514 260" fill="none" stroke="#33475F" stroke-width="1.1"/>
+<path d="M 520 260 L 512 263.6 L 512 256.4 Z" fill="#33475F"/>
+<path d="M 155 280 L 608 280" fill="none" stroke="#33475F" stroke-width="1.1"/>
+<path d="M 601 283.36 L 608 280 L 601 276.64" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 155 300 L 235 300" fill="none" stroke="#33475F" stroke-width="1.1" stroke-dasharray="4.5 3"/>
+<path d="M 228 303.36 L 235 300 L 228 296.64" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 243 320 L 514 320" fill="none" stroke="#33475F" stroke-width="1.1"/>
+<path d="M 520 320 L 512 323.6 L 512 316.4 Z" fill="#33475F"/>
+<path d="M 331 356 L 405 356" fill="none" stroke="#33475F" stroke-width="1.1"/>
+<path d="M 411 356 L 403 359.6 L 403 352.4 Z" fill="#33475F"/>
+<path d="M 331 380 L 514 380" fill="none" stroke="#33475F" stroke-width="1.1"/>
+<path d="M 520 380 L 512 383.6 L 512 376.4 Z" fill="#33475F"/>
+<path d="M 147 400 L 50 400" fill="none" stroke="#33475F" stroke-width="1.1" stroke-dasharray="4.5 3"/>
+<path d="M 57 396.64 L 50 400 L 57 403.36" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 616 412 L 702 412" fill="none" stroke="#33475F" stroke-width="1.1"/>
+<path d="M 695 415.36 L 702 412 L 695 408.64" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<rect x="4" y="4" width="84" height="40" rx="3" fill="#EEF4FE" stroke="#1453C9" stroke-width="1.2"/>
+<text x="46" y="21.05" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">website</text>
+<text x="46" y="34.01" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">profesional</text>
+<rect x="109" y="4" width="84" height="40" rx="3" fill="#EEF4FE" stroke="#1453C9" stroke-width="1.2"/>
+<text x="151" y="20.73" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">Planes</text>
+<text x="151" y="34.17" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">Service</text>
+<rect x="197" y="4" width="84" height="40" rx="3" fill="#EEF4FE" stroke="#1453C9" stroke-width="1.2"/>
+<text x="239" y="20.73" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">Ejecutor</text>
+<text x="239" y="34.17" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">Nutricional</text>
+<rect x="285" y="4" width="84" height="40" rx="3" fill="#EEF4FE" stroke="#1453C9" stroke-width="1.2"/>
+<text x="327" y="20.73" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">Idempotencia</text>
+<text x="327" y="34.17" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">Service</text>
+<rect x="373" y="4" width="84" height="40" rx="3" fill="#EEF4FE" stroke="#1453C9" stroke-width="1.2"/>
+<text x="415" y="27.45" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">PdpService</text>
+<rect x="482" y="4" width="84" height="40" rx="3" fill="#EEF4FE" stroke="#1453C9" stroke-width="1.2"/>
+<text x="524" y="27.45" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">PostgreSQL</text>
+<rect x="570" y="4" width="84" height="40" rx="3" fill="#EEF4FE" stroke="#1453C9" stroke-width="1.2"/>
+<text x="612" y="20.73" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">Despachador</text>
+<text x="612" y="34.17" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">DeAvisos</text>
+<rect x="664" y="4" width="84" height="40" rx="3" fill="#F3F5F8" stroke="#5B6B80" stroke-width="1.2" stroke-dasharray="4.5 3"/>
+<text x="706" y="27.45" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">Expo Push</text>
+<rect x="68.12" y="47" width="60.77" height="13.5" fill="#FFFFFF" opacity="0.94"/>
+<text x="98.5" y="57" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">API-NUT-12</text>
+<rect x="175.34" y="53.5" width="39.32" height="13.5" fill="#FFFFFF" opacity="0.94"/>
+<text x="195" y="63.5" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">escribir</text>
+<rect x="159.54" y="67" width="70.92" height="13.5" fill="#FFFFFF" opacity="0.94"/>
+<text x="195" y="77" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">Idempotente()</text>
+<rect x="258.17" y="87" width="49.65" height="13.5" fill="#FFFFFF" opacity="0.94"/>
+<text x="283" y="97" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">ejecutar()</text>
+<rect x="367.03" y="107" width="116.95" height="13.5" fill="#FFFFFF" opacity="0.94"/>
+<text x="425.5" y="117" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">BEGIN; bloquea la clave</text>
+<rect x="268.18" y="149" width="29.63" height="13.5" fill="#FFFFFF" opacity="0.94"/>
+<text x="283" y="159" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">fn(tx)</text>
+<rect x="169.82" y="165" width="50.37" height="13.5" fill="#FFFFFF" opacity="0.94"/>
+<text x="195" y="175" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">efecto(tx)</text>
+<rect x="226" y="185" width="114" height="13.5" fill="#FFFFFF" opacity="0.94"/>
+<text x="283" y="195" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">decidirEnTransaccion()</text>
+<rect x="448.67" y="191.5" width="41.66" height="13.5" fill="#FFFFFF" opacity="0.94"/>
+<text x="469.5" y="201.5" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">hechos;</text>
+<rect x="424.24" y="205" width="90.52" height="13.5" fill="#FFFFFF" opacity="0.94"/>
+<text x="469.5" y="215" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">guarda la decisión</text>
+<rect x="258.83" y="225" width="48.33" height="13.5" fill="#FFFFFF" opacity="0.94"/>
+<text x="283" y="235" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">permitida</text>
+<rect x="234.05" y="245" width="206.9" height="13.5" fill="#FFFFFF" opacity="0.94"/>
+<text x="337.5" y="255" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">instantánea, ACTIVADA, proceso, novedad</text>
+<rect x="351.08" y="265" width="60.83" height="13.5" fill="#FFFFFF" opacity="0.94"/>
+<text x="381.5" y="275" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">programar()</text>
+<rect x="170.89" y="285" width="48.21" height="13.5" fill="#FFFFFF" opacity="0.94"/>
+<text x="195" y="295" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">resultado</text>
+<rect x="338.65" y="305" width="85.7" height="13.5" fill="#FFFFFF" opacity="0.94"/>
+<text x="381.5" y="315" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">auditoría de éxito</text>
+<rect x="339.61" y="341" width="62.77" height="13.5" fill="#FFFFFF" opacity="0.94"/>
+<text x="371" y="351" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">reautorizar()</text>
+<rect x="352.64" y="365" width="145.72" height="13.5" fill="#FFFFFF" opacity="0.94"/>
+<text x="425.5" y="375" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">guarda la respuesta; COMMIT</text>
+<rect x="54.48" y="385" width="88.05" height="13.5" fill="#FFFFFF" opacity="0.94"/>
+<text x="98.5" y="395" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">200 · ACTIVATED</text>
+<rect x="621.78" y="397" width="74.45" height="13.5" fill="#FFFFFF" opacity="0.94"/>
+<text x="659" y="407" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">aviso sin datos</text>
+<text x="604" y="402" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="end">2 s después</text>
+</svg>

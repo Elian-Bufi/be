@@ -1,0 +1,1186 @@
+{
+ "fuente": "apps/api/src",
+ "carpetas": [
+  {
+   "carpeta": "acceso-google",
+   "ubicacion": "apps/api/src/acceso-google",
+   "archivos": 4,
+   "modulo": "AccesoGoogleModule",
+   "global": false,
+   "controladores": [
+    {
+     "archivo": "acceso-google.controller.ts",
+     "clase": "AccesoGoogleController",
+     "operaciones": [
+      "API-GOO-01",
+      "API-GOO-02",
+      "API-GOO-03"
+     ],
+     "rutas": 3
+    }
+   ],
+   "servicios": [
+    {
+     "archivo": "acceso-google.service.ts",
+     "clase": "AccesoGoogleService"
+    }
+   ],
+   "importaDe": {
+    "http": 5,
+    "sesion": 3,
+    "identidad": 3,
+    "plataforma": 3,
+    "prisma": 2,
+    "config": 2,
+    "integraciones": 1
+   },
+   "usaDominio": true,
+   "usaPrisma": true,
+   "importaModulos": [
+    "SesionModule",
+    "IdentidadModule"
+   ]
+  },
+  {
+   "carpeta": "analisis",
+   "ubicacion": "apps/api/src/analisis",
+   "archivos": 9,
+   "modulo": "AnalisisModule",
+   "global": false,
+   "controladores": [
+    {
+     "archivo": "analisis.controller.ts",
+     "clase": "AnalisisController",
+     "operaciones": [
+      "API-DSH-04",
+      "API-DSH-04-BUSQUEDA",
+      "API-PRJ-01",
+      "API-DSH-03",
+      "API-ANT-06"
+     ],
+     "rutas": 3
+    },
+    {
+     "archivo": "vistas.controller.ts",
+     "clase": "VistasDeAnalisisController",
+     "operaciones": [
+      "API-VAN-01",
+      "API-VAN-02",
+      "API-VAN-03",
+      "API-VAN-04"
+     ],
+     "rutas": 4
+    }
+   ],
+   "servicios": [
+    {
+     "archivo": "vistas.service.ts",
+     "clase": "VistasDeAnalisisService"
+    }
+   ],
+   "importaDe": {
+    "autorizacion": 2,
+    "antropometria": 2,
+    "entrenamiento": 4,
+    "nutricion": 6,
+    "prisma": 5,
+    "sesion": 4,
+    "vinculo": 2,
+    "http": 6,
+    "plataforma": 5,
+    "coordinacion": 1
+   },
+   "usaDominio": true,
+   "usaPrisma": true,
+   "importaModulos": [
+    "SesionModule",
+    "PrismaModule",
+    "EntrenamientoModule"
+   ]
+  },
+  {
+   "carpeta": "analitica",
+   "ubicacion": "apps/api/src/analitica",
+   "archivos": 2,
+   "modulo": null,
+   "global": false,
+   "controladores": [],
+   "servicios": [],
+   "importaDe": {},
+   "usaDominio": true,
+   "usaPrisma": true
+  },
+  {
+   "carpeta": "antropometria",
+   "ubicacion": "apps/api/src/antropometria",
+   "archivos": 14,
+   "modulo": "AntropometriaModule",
+   "global": false,
+   "controladores": [
+    {
+     "archivo": "antropometria.controller.ts",
+     "clase": "AntropometriaController",
+     "operaciones": [
+      "API-DSH-03",
+      "API-ANT-01",
+      "API-ANT-02",
+      "API-ANT-07",
+      "API-ANT-08",
+      "API-ANT-03",
+      "API-ANT-04",
+      "API-ANT-09",
+      "API-ANT-10",
+      "API-ANT-11",
+      "API-ANT-05",
+      "API-ANT-12",
+      "API-ANT-06",
+      "API-MTH-01",
+      "API-MTH-02",
+      "API-CAL-01",
+      "API-CAL-02",
+      "API-CAL-03",
+      "API-CAL-04"
+     ],
+     "rutas": 19
+    }
+   ],
+   "servicios": [
+    {
+     "archivo": "calculos.service.ts",
+     "clase": "CalculosService"
+    },
+    {
+     "archivo": "especificaciones.service.ts",
+     "clase": "EspecificacionesService"
+    },
+    {
+     "archivo": "evaluaciones.service.ts",
+     "clase": "EvaluacionesAntropometricasService"
+    },
+    {
+     "archivo": "evolucion.service.ts",
+     "clase": "EvolucionService"
+    },
+    {
+     "archivo": "mediciones.service.ts",
+     "clase": "MedicionesService"
+    },
+    {
+     "archivo": "metodos.service.ts",
+     "clase": "MetodosService"
+    }
+   ],
+   "importaDe": {
+    "http": 19,
+    "plataforma": 9,
+    "sesion": 8,
+    "autorizacion": 5,
+    "prisma": 4,
+    "vinculo": 2,
+    "consentimiento": 1,
+    "nutricion": 1
+   },
+   "usaDominio": true,
+   "usaPrisma": true,
+   "importaModulos": [
+    "SesionModule"
+   ]
+  },
+  {
+   "carpeta": "autorizacion",
+   "ubicacion": "apps/api/src/autorizacion",
+   "archivos": 3,
+   "modulo": "AutorizacionModule",
+   "global": true,
+   "controladores": [],
+   "servicios": [
+    {
+     "archivo": "pdp.service.ts",
+     "clase": "DenegacionDelPdp"
+    }
+   ],
+   "importaDe": {
+    "sesion": 2,
+    "http": 4,
+    "plataforma": 1,
+    "prisma": 2
+   },
+   "usaDominio": true,
+   "usaPrisma": true,
+   "importaModulos": [
+    "SesionModule"
+   ]
+  },
+  {
+   "carpeta": "cartera",
+   "ubicacion": "apps/api/src/cartera",
+   "archivos": 3,
+   "modulo": "CarteraModule",
+   "global": false,
+   "controladores": [
+    {
+     "archivo": "cartera.controller.ts",
+     "clase": "CarteraController",
+     "operaciones": [
+      "API-CAR-01",
+      "API-DSH-04",
+      "API-DSH-03",
+      "API-ANT-06",
+      "API-TRN-21"
+     ],
+     "rutas": 1
+    }
+   ],
+   "servicios": [],
+   "importaDe": {
+    "autorizacion": 2,
+    "http": 5,
+    "plataforma": 1,
+    "prisma": 3,
+    "proceso": 2,
+    "sesion": 2,
+    "nutricion": 1,
+    "vinculo": 1
+   },
+   "usaDominio": true,
+   "usaPrisma": true,
+   "importaModulos": [
+    "SesionModule",
+    "PrismaModule"
+   ]
+  },
+  {
+   "carpeta": "config",
+   "ubicacion": "apps/api/src/config",
+   "archivos": 3,
+   "modulo": null,
+   "global": false,
+   "controladores": [],
+   "servicios": [],
+   "importaDe": {},
+   "usaDominio": true,
+   "usaPrisma": false
+  },
+  {
+   "carpeta": "consentimiento",
+   "ubicacion": "apps/api/src/consentimiento",
+   "archivos": 9,
+   "modulo": "ConsentimientoModule",
+   "global": false,
+   "controladores": [
+    {
+     "archivo": "consentimiento.controller.ts",
+     "clase": "ConsentimientoController",
+     "operaciones": [
+      "API-CON-05"
+     ],
+     "rutas": 1
+    },
+    {
+     "archivo": "consentimientos.controller.ts",
+     "clase": "ConsentimientosController",
+     "operaciones": [
+      "API-CON-01",
+      "API-CON-02",
+      "API-CON-03",
+      "API-CON-04",
+      "API-CON-06",
+      "API-CON-07",
+      "API-CON-08",
+      "API-EVI-01",
+      "API-EVI-02",
+      "API-EVI-03",
+      "API-EVI-04"
+     ],
+     "rutas": 11
+    }
+   ],
+   "servicios": [
+    {
+     "archivo": "consentimiento-de-salud.service.ts",
+     "clase": "ConsentimientoDeSaludService"
+    },
+    {
+     "archivo": "consentimiento-profesional.service.ts",
+     "clase": "ConsentimientoProfesionalService"
+    },
+    {
+     "archivo": "consentimiento.service.ts",
+     "clase": "ConsentimientoService"
+    },
+    {
+     "archivo": "evidencia-visual.service.ts",
+     "clase": "EvidenciaVisualService"
+    }
+   ],
+   "importaDe": {
+    "http": 17,
+    "plataforma": 9,
+    "prisma": 7,
+    "sesion": 7,
+    "novedades": 1,
+    "autorizacion": 1,
+    "vinculo": 2,
+    "config": 2
+   },
+   "usaDominio": true,
+   "usaPrisma": true,
+   "importaModulos": [
+    "SesionModule"
+   ]
+  },
+  {
+   "carpeta": "coordinacion",
+   "ubicacion": "apps/api/src/coordinacion",
+   "archivos": 5,
+   "modulo": "CoordinacionModule",
+   "global": false,
+   "controladores": [
+    {
+     "archivo": "notas.controller.ts",
+     "clase": "NotasDeCoordinacionController",
+     "operaciones": [
+      "API-CRD-01",
+      "API-CRD-01-LISTA",
+      "API-CRD-01-PROPIA"
+     ],
+     "rutas": 3
+    }
+   ],
+   "servicios": [
+    {
+     "archivo": "notas.service.ts",
+     "clase": "NotasDeCoordinacionService"
+    }
+   ],
+   "importaDe": {
+    "sesion": 3,
+    "autorizacion": 4,
+    "plataforma": 7,
+    "prisma": 3,
+    "nutricion": 1,
+    "vinculo": 2,
+    "http": 5,
+    "consentimiento": 1,
+    "novedades": 1
+   },
+   "usaDominio": true,
+   "usaPrisma": true,
+   "importaModulos": [
+    "SesionModule"
+   ]
+  },
+  {
+   "carpeta": "dashboard",
+   "ubicacion": "apps/api/src/dashboard",
+   "archivos": 3,
+   "modulo": "DashboardModule",
+   "global": false,
+   "controladores": [
+    {
+     "archivo": "dashboard.controller.ts",
+     "clase": "DashboardController",
+     "operaciones": [
+      "API-DSH-03"
+     ],
+     "rutas": 1
+    }
+   ],
+   "servicios": [],
+   "importaDe": {
+    "autorizacion": 1,
+    "http": 1,
+    "prisma": 2,
+    "proceso": 2,
+    "sesion": 2,
+    "vinculo": 1,
+    "entrenamiento": 1
+   },
+   "usaDominio": true,
+   "usaPrisma": true,
+   "importaModulos": [
+    "SesionModule",
+    "PrismaModule"
+   ]
+  },
+  {
+   "carpeta": "entrenamiento",
+   "ubicacion": "apps/api/src/entrenamiento",
+   "archivos": 23,
+   "modulo": "EntrenamientoModule",
+   "global": false,
+   "controladores": [
+    {
+     "archivo": "entrenamiento-por-serie.controller.ts",
+     "clase": "EntrenamientoPorSerieController",
+     "operaciones": [
+      "API-SER-01",
+      "API-SER-02",
+      "API-TIE-01",
+      "API-TIE-02",
+      "API-TIE-03",
+      "API-TIE-04",
+      "API-EJE-01",
+      "API-EJE-02",
+      "API-EJE-03",
+      "API-DSH-03"
+     ],
+     "rutas": 9
+    },
+    {
+     "archivo": "entrenamiento.controller.ts",
+     "clase": "EntrenamientoController",
+     "operaciones": [
+      "API-INT-TRN-01",
+      "API-TRN-01",
+      "API-TRN-02",
+      "API-TRN-03",
+      "API-TRN-04",
+      "API-TRN-06",
+      "API-TRN-05",
+      "API-TRN-07",
+      "API-TRN-08",
+      "API-TRN-09",
+      "API-TRN-10",
+      "API-TRN-11",
+      "API-TRN-12",
+      "API-TRN-13",
+      "API-TRN-13-BUSQUEDA",
+      "API-TPL-01",
+      "API-TPL-02",
+      "API-TPL-03",
+      "API-TPL-04",
+      "API-TPL-05",
+      "API-INT-TRN-02",
+      "API-INT-TRN-03",
+      "API-TRN-14",
+      "API-AGE-01",
+      "API-TRN-19-LISTA",
+      "API-TRN-15",
+      "API-TRN-16",
+      "API-TRN-17",
+      "API-TRN-18",
+      "API-TRN-19",
+      "API-TRN-20",
+      "API-TRN-21",
+      "API-TRN-22",
+      "API-TRN-23",
+      "API-TRN-23-LISTA",
+      "API-TRN-23-PROPIA",
+      "API-TRN-24",
+      "API-DSH-03"
+     ],
+     "rutas": 38
+    },
+    {
+     "archivo": "habituales.controller.ts",
+     "clase": "HabitualesDeEntrenamientoController",
+     "operaciones": [
+      "API-HAB-01",
+      "API-HAB-02",
+      "API-HAB-03",
+      "API-HAB-04",
+      "API-HAB-05"
+     ],
+     "rutas": 5
+    }
+   ],
+   "servicios": [
+    {
+     "archivo": "catalogo.service.ts",
+     "clase": "CatalogoDeEjerciciosService"
+    },
+    {
+     "archivo": "ejecuciones.service.ts",
+     "clase": "EjecucionesDeEntrenamientoService"
+    },
+    {
+     "archivo": "evaluaciones.service.ts",
+     "clase": "EvaluacionesDeEntrenamientoService"
+    },
+    {
+     "archivo": "habituales.service.ts",
+     "clase": "HabitualesDeEntrenamientoService"
+    },
+    {
+     "archivo": "imagenes.service.ts",
+     "clase": "ImagenesDeEjercicioService"
+    },
+    {
+     "archivo": "importacion.service.ts",
+     "clase": "ImportacionDeEjerciciosService"
+    },
+    {
+     "archivo": "planes.service.ts",
+     "clase": "PlanesDeEntrenamientoService"
+    },
+    {
+     "archivo": "plantillas.service.ts",
+     "clase": "PlantillasDeEntrenamientoService"
+    },
+    {
+     "archivo": "revisiones.service.ts",
+     "clase": "RevisionesDeEntrenamientoService"
+    },
+    {
+     "archivo": "series.service.ts",
+     "clase": "ObjetivosPorSerieService"
+    },
+    {
+     "archivo": "tiempos.service.ts",
+     "clase": "TiemposDeSesionService"
+    }
+   ],
+   "importaDe": {
+    "nutricion": 4,
+    "autorizacion": 7,
+    "http": 44,
+    "integraciones": 6,
+    "plataforma": 21,
+    "prisma": 14,
+    "sesion": 15,
+    "formularios": 1,
+    "vinculo": 4,
+    "consentimiento": 3,
+    "medios": 3,
+    "novedades": 2,
+    "proceso": 2
+   },
+   "usaDominio": true,
+   "usaPrisma": true,
+   "importaModulos": [
+    "SesionModule",
+    "IntegracionesModule",
+    "MediosModule"
+   ]
+  },
+  {
+   "carpeta": "formularios",
+   "ubicacion": "apps/api/src/formularios",
+   "archivos": 8,
+   "modulo": "FormulariosModule",
+   "global": false,
+   "controladores": [
+    {
+     "archivo": "formularios.controller.ts",
+     "clase": "FormulariosController",
+     "operaciones": [
+      "API-FRM-01",
+      "API-FRM-02",
+      "API-FRM-03",
+      "API-FRM-04",
+      "API-FRM-05",
+      "API-FRM-06",
+      "API-FRM-07",
+      "API-FRM-08",
+      "API-DSH-03"
+     ],
+     "rutas": 8
+    }
+   ],
+   "servicios": [
+    {
+     "archivo": "plantillas.service.ts",
+     "clase": "PlantillasService"
+    },
+    {
+     "archivo": "respuestas.service.ts",
+     "clase": "RespuestasService"
+    },
+    {
+     "archivo": "solicitudes.service.ts",
+     "clase": "SolicitudesService"
+    }
+   ],
+   "importaDe": {
+    "autorizacion": 3,
+    "plataforma": 8,
+    "prisma": 3,
+    "http": 10,
+    "sesion": 5,
+    "consentimiento": 2,
+    "vinculo": 1
+   },
+   "usaDominio": true,
+   "usaPrisma": true,
+   "importaModulos": [
+    "SesionModule"
+   ]
+  },
+  {
+   "carpeta": "health",
+   "ubicacion": "apps/api/src/health",
+   "archivos": 3,
+   "modulo": "HealthModule",
+   "global": false,
+   "controladores": [
+    {
+     "archivo": "health.controller.ts",
+     "clase": "HealthController",
+     "operaciones": [],
+     "rutas": 3
+    }
+   ],
+   "servicios": [
+    {
+     "archivo": "health.service.ts",
+     "clase": "HealthService"
+    }
+   ],
+   "importaDe": {
+    "config": 3,
+    "prisma": 1
+   },
+   "usaDominio": false,
+   "usaPrisma": true,
+   "importaModulos": []
+  },
+  {
+   "carpeta": "http",
+   "ubicacion": "apps/api/src/http",
+   "archivos": 7,
+   "modulo": null,
+   "global": false,
+   "controladores": [],
+   "servicios": [],
+   "importaDe": {
+    "prisma": 1
+   },
+   "usaDominio": true,
+   "usaPrisma": true
+  },
+  {
+   "carpeta": "identidad",
+   "ubicacion": "apps/api/src/identidad",
+   "archivos": 8,
+   "modulo": "IdentidadModule",
+   "global": false,
+   "controladores": [
+    {
+     "archivo": "identidad.controller.ts",
+     "clase": "IdentidadController",
+     "operaciones": [
+      "API-ACC-01",
+      "API-ACC-05",
+      "API-ACC-06-PROPIA",
+      "API-ACC-06",
+      "API-ACC-P1-03"
+     ],
+     "rutas": 5
+    }
+   ],
+   "servicios": [
+    {
+     "archivo": "cierre.service.ts",
+     "clase": "CierreService"
+    },
+    {
+     "archivo": "cuenta-propia.service.ts",
+     "clase": "CuentaPropiaService"
+    },
+    {
+     "archivo": "estado-de-cuenta.service.ts",
+     "clase": "EstadoDeCuentaService"
+    },
+    {
+     "archivo": "perfil-propio.service.ts",
+     "clase": "EjecutorDePerfilPropio"
+    },
+    {
+     "archivo": "registro.service.ts",
+     "clase": "RegistroService"
+    }
+   ],
+   "importaDe": {
+    "http": 12,
+    "prisma": 4,
+    "plataforma": 11,
+    "sesion": 7,
+    "vinculo": 4,
+    "autorizacion": 1
+   },
+   "usaDominio": true,
+   "usaPrisma": true,
+   "importaModulos": [
+    "SesionModule",
+    "VinculoModule"
+   ]
+  },
+  {
+   "carpeta": "integraciones",
+   "ubicacion": "apps/api/src/integraciones",
+   "archivos": 6,
+   "modulo": "IntegracionesModule",
+   "global": false,
+   "controladores": [],
+   "servicios": [],
+   "importaDe": {
+    "plataforma": 1,
+    "http": 1,
+    "config": 4
+   },
+   "usaDominio": true,
+   "usaPrisma": true,
+   "importaModulos": []
+  },
+  {
+   "carpeta": "medios",
+   "ubicacion": "apps/api/src/medios",
+   "archivos": 8,
+   "modulo": "MediosModule",
+   "global": false,
+   "controladores": [
+    {
+     "archivo": "medios.controller.ts",
+     "clase": "MediosController",
+     "operaciones": [
+      "API-MED-01",
+      "API-MED-03",
+      "API-MED-05",
+      "API-MED-02",
+      "API-MED-04"
+     ],
+     "rutas": 5
+    }
+   ],
+   "servicios": [
+    {
+     "archivo": "medios.service.ts",
+     "clase": "MediosService"
+    }
+   ],
+   "importaDe": {
+    "config": 7,
+    "autorizacion": 2,
+    "plataforma": 8,
+    "prisma": 3,
+    "http": 6,
+    "sesion": 3,
+    "consentimiento": 2,
+    "entrenamiento": 1,
+    "nutricion": 1
+   },
+   "usaDominio": true,
+   "usaPrisma": true,
+   "importaModulos": [
+    "SesionModule"
+   ]
+  },
+  {
+   "carpeta": "novedades",
+   "ubicacion": "apps/api/src/novedades",
+   "archivos": 9,
+   "modulo": "NovedadesModule",
+   "global": true,
+   "controladores": [
+    {
+     "archivo": "novedades.controller.ts",
+     "clase": "NovedadesController",
+     "operaciones": [
+      "API-NOV-01",
+      "API-NOV-02",
+      "API-NOV-03",
+      "API-NOV-04",
+      "API-NOV-05",
+      "API-NOV-06"
+     ],
+     "rutas": 6
+    },
+    {
+     "archivo": "tareas.controller.ts",
+     "clase": "TareasController",
+     "operaciones": [],
+     "rutas": 1
+    }
+   ],
+   "servicios": [
+    {
+     "archivo": "novedades.service.ts",
+     "clase": "NovedadesService"
+    },
+    {
+     "archivo": "recordatorios.service.ts",
+     "clase": "RecordatoriosService"
+    }
+   ],
+   "importaDe": {
+    "config": 4,
+    "integraciones": 1,
+    "prisma": 5,
+    "http": 11,
+    "plataforma": 3,
+    "sesion": 3,
+    "vinculo": 1,
+    "autorizacion": 1,
+    "entrenamiento": 1,
+    "nutricion": 1
+   },
+   "usaDominio": true,
+   "usaPrisma": true,
+   "importaModulos": [
+    "SesionModule"
+   ]
+  },
+  {
+   "carpeta": "nutricion",
+   "ubicacion": "apps/api/src/nutricion",
+   "archivos": 24,
+   "modulo": "NutricionModule",
+   "global": false,
+   "controladores": [
+    {
+     "archivo": "habituales.controller.ts",
+     "clase": "HabitualesNutricionalesController",
+     "operaciones": [
+      "API-HAN-01",
+      "API-HAN-02",
+      "API-HAN-03",
+      "API-HAN-04",
+      "API-HAN-05"
+     ],
+     "rutas": 5
+    },
+    {
+     "archivo": "nutricion.controller.ts",
+     "clase": "NutricionController",
+     "operaciones": [
+      "API-INT-NUT-01",
+      "API-DSH-03",
+      "API-NUT-01",
+      "API-NUT-02",
+      "API-NUT-03",
+      "API-NUT-04",
+      "API-NUT-06",
+      "API-NUT-05",
+      "API-NUT-07",
+      "API-NUT-08",
+      "API-NUT-09",
+      "API-NUT-10",
+      "API-NUT-11",
+      "API-NUT-12",
+      "API-NUT-13",
+      "API-NUT-13-BUSQUEDA",
+      "API-TPN-01",
+      "API-TPN-02",
+      "API-TPN-03",
+      "API-TPN-04",
+      "API-TPN-05",
+      "API-INT-NUT-02",
+      "API-INT-NUT-03",
+      "API-NUT-14",
+      "API-NUT-15",
+      "API-NUT-16",
+      "API-NUT-21",
+      "API-NUT-17",
+      "API-NUT-18",
+      "API-NUT-19",
+      "API-NUT-19-LISTA",
+      "API-NUT-19-PROPIA",
+      "API-NUT-20"
+     ],
+     "rutas": 33
+    },
+    {
+     "archivo": "recetas.controller.ts",
+     "clase": "RecetasController",
+     "operaciones": [
+      "API-REC-01",
+      "API-REC-02",
+      "API-REC-03",
+      "API-REC-04",
+      "API-REC-05",
+      "API-REC-06",
+      "API-REC-07"
+     ],
+     "rutas": 7
+    },
+    {
+     "archivo": "registro-de-comidas.controller.ts",
+     "clase": "RegistroDeComidasController",
+     "operaciones": [
+      "API-ING-01",
+      "API-ING-02",
+      "API-ING-04",
+      "API-ING-03",
+      "API-ING-05",
+      "API-ING-06"
+     ],
+     "rutas": 6
+    }
+   ],
+   "servicios": [
+    {
+     "archivo": "catalogo.service.ts",
+     "clase": "CatalogoService"
+    },
+    {
+     "archivo": "evaluaciones.service.ts",
+     "clase": "EvaluacionesService"
+    },
+    {
+     "archivo": "habituales.service.ts",
+     "clase": "HabitualesNutricionalesService"
+    },
+    {
+     "archivo": "importacion.service.ts",
+     "clase": "ImportacionNutricionalService"
+    },
+    {
+     "archivo": "ingestas.service.ts",
+     "clase": "IngestasService"
+    },
+    {
+     "archivo": "planes.service.ts",
+     "clase": "PlanesService"
+    },
+    {
+     "archivo": "plantillas.service.ts",
+     "clase": "PlantillasNutricionalesService"
+    },
+    {
+     "archivo": "recetas.service.ts",
+     "clase": "RecetasService"
+    },
+    {
+     "archivo": "registro-de-comidas.service.ts",
+     "clase": "RegistroDeComidasService"
+    },
+    {
+     "archivo": "revisiones.service.ts",
+     "clase": "RevisionesService"
+    }
+   ],
+   "importaDe": {
+    "http": 46,
+    "integraciones": 6,
+    "plataforma": 20,
+    "prisma": 13,
+    "sesion": 15,
+    "autorizacion": 6,
+    "consentimiento": 3,
+    "vinculo": 7,
+    "medios": 4,
+    "novedades": 2,
+    "proceso": 2
+   },
+   "usaDominio": true,
+   "usaPrisma": true,
+   "importaModulos": [
+    "SesionModule",
+    "IntegracionesModule",
+    "MediosModule"
+   ]
+  },
+  {
+   "carpeta": "plataforma",
+   "ubicacion": "apps/api/src/plataforma",
+   "archivos": 6,
+   "modulo": "PlataformaModule",
+   "global": true,
+   "controladores": [],
+   "servicios": [
+    {
+     "archivo": "auditoria.service.ts",
+     "clase": "AuditoriaService"
+    },
+    {
+     "archivo": "credenciales.service.ts",
+     "clase": "CredencialesService"
+    },
+    {
+     "archivo": "idempotencia.service.ts",
+     "clase": "IdempotenciaService"
+    },
+    {
+     "archivo": "limitador.service.ts",
+     "clase": "LimitadorService"
+    }
+   ],
+   "importaDe": {
+    "prisma": 6,
+    "config": 4,
+    "autorizacion": 1,
+    "http": 5,
+    "sesion": 1
+   },
+   "usaDominio": true,
+   "usaPrisma": true,
+   "importaModulos": []
+  },
+  {
+   "carpeta": "prisma",
+   "ubicacion": "apps/api/src/prisma",
+   "archivos": 3,
+   "modulo": "PrismaModule",
+   "global": true,
+   "controladores": [],
+   "servicios": [
+    {
+     "archivo": "prisma.service.ts",
+     "clase": "PrismaService"
+    }
+   ],
+   "importaDe": {
+    "http": 1
+   },
+   "usaDominio": false,
+   "usaPrisma": true,
+   "importaModulos": []
+  },
+  {
+   "carpeta": "proceso",
+   "ubicacion": "apps/api/src/proceso",
+   "archivos": 2,
+   "modulo": "ProcesoModule",
+   "global": true,
+   "controladores": [],
+   "servicios": [
+    {
+     "archivo": "proceso.service.ts",
+     "clase": "ProcesoService"
+    }
+   ],
+   "importaDe": {
+    "http": 1
+   },
+   "usaDominio": true,
+   "usaPrisma": true,
+   "importaModulos": []
+  },
+  {
+   "carpeta": "profesional",
+   "ubicacion": "apps/api/src/profesional",
+   "archivos": 3,
+   "modulo": "ProfesionalModule",
+   "global": false,
+   "controladores": [],
+   "servicios": [
+    {
+     "archivo": "siembra-demo.service.ts",
+     "clase": "SiembraDemoService"
+    },
+    {
+     "archivo": "verificacion.service.ts",
+     "clase": "VerificacionService"
+    }
+   ],
+   "importaDe": {
+    "config": 2,
+    "prisma": 1,
+    "http": 1
+   },
+   "usaDominio": true,
+   "usaPrisma": true,
+   "importaModulos": []
+  },
+  {
+   "carpeta": "sesion",
+   "ubicacion": "apps/api/src/sesion",
+   "archivos": 6,
+   "modulo": "SesionModule",
+   "global": false,
+   "controladores": [
+    {
+     "archivo": "sesiones.controller.ts",
+     "clase": "SesionesController",
+     "operaciones": [
+      "API-ACC-02",
+      "API-ACC-02-REANUDACION",
+      "API-ACC-03",
+      "API-ACC-04"
+     ],
+     "rutas": 4
+    }
+   ],
+   "servicios": [
+    {
+     "archivo": "reanudacion.service.ts",
+     "clase": "ReanudacionService"
+    },
+    {
+     "archivo": "sesion.service.ts",
+     "clase": "SesionService"
+    },
+    {
+     "archivo": "tokens.service.ts",
+     "clase": "TokensService"
+    }
+   ],
+   "importaDe": {
+    "config": 4,
+    "http": 9,
+    "plataforma": 5,
+    "prisma": 3
+   },
+   "usaDominio": true,
+   "usaPrisma": true,
+   "importaModulos": []
+  },
+  {
+   "carpeta": "vinculo",
+   "ubicacion": "apps/api/src/vinculo",
+   "archivos": 7,
+   "modulo": "VinculoModule",
+   "global": false,
+   "controladores": [
+    {
+     "archivo": "invitaciones.controller.ts",
+     "clase": "InvitacionesController",
+     "operaciones": [
+      "API-INV-01",
+      "API-INV-02",
+      "API-INV-04",
+      "API-INV-05",
+      "API-INV-03"
+     ],
+     "rutas": 5
+    },
+    {
+     "archivo": "vinculo.controller.ts",
+     "clase": "VinculoController",
+     "operaciones": [
+      "API-REL-01",
+      "API-REL-02",
+      "API-REL-03",
+      "API-REL-04",
+      "API-REL-05",
+      "API-REL-06",
+      "API-REL-07",
+      "API-REL-08",
+      "API-REL-09"
+     ],
+     "rutas": 9
+    }
+   ],
+   "servicios": [
+    {
+     "archivo": "invitaciones.service.ts",
+     "clase": "InvitacionesService"
+    },
+    {
+     "archivo": "solicitudes.service.ts",
+     "clase": "SolicitudesService"
+    },
+    {
+     "archivo": "vinculos.service.ts",
+     "clase": "VinculosService"
+    }
+   ],
+   "importaDe": {
+    "http": 16,
+    "plataforma": 10,
+    "sesion": 6,
+    "config": 4,
+    "prisma": 6,
+    "autorizacion": 2,
+    "novedades": 2,
+    "proceso": 1
+   },
+   "usaDominio": true,
+   "usaPrisma": true,
+   "importaModulos": [
+    "SesionModule"
+   ]
+  }
+ ]
+}

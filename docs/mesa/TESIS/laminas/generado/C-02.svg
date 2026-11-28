@@ -1,0 +1,137 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="750pt" height="456pt" viewBox="0 0 750 456" data-lamina="C-02">
+<title>Flujo de entrenamiento</title>
+<desc>Del plan a la revisión: agenda, sesión con borrador en el servidor, registro por serie y ejecución confirmada. · Fuente: apps/api/src/entrenamiento · packages/domain/src (contratos-entrenamiento, agenda-de-entrenamiento) · prisma/schema.prisma · Versión: 0fb1bff (2026-10-20) · Estado: implementado; la sustitución en la sesión, pendiente (DL-151)</desc>
+<rect x="0" y="0" width="750" height="456" fill="#FFFFFF"/>
+<rect x="0" y="0" width="750" height="120" fill="#FFFFFF" stroke="#566881" stroke-width="1"/>
+<rect x="0" y="0" width="74" height="120" fill="#DCE8FC" stroke="#566881" stroke-width="1"/>
+<text x="37" y="56.05" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">Profesional</text>
+<text x="37" y="71.01" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">website</text>
+<rect x="0" y="120" width="750" height="132" fill="#FFFFFF" stroke="#566881" stroke-width="1"/>
+<rect x="0" y="120" width="74" height="132" fill="#DCE8FC" stroke="#566881" stroke-width="1"/>
+<text x="37" y="182.05" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">BE</text>
+<text x="37" y="197.01" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">API y base</text>
+<rect x="0" y="252" width="750" height="160" fill="#FFFFFF" stroke="#566881" stroke-width="1"/>
+<rect x="0" y="252" width="74" height="160" fill="#DCE8FC" stroke="#566881" stroke-width="1"/>
+<text x="37" y="328.05" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">Asesorado</text>
+<text x="37" y="343.01" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">APK</text>
+<rect x="0" y="420" width="750" height="27" rx="5" fill="#FFFFFF" stroke="#DCE6F4" stroke-width="1"/>
+<circle cx="25" cy="432.5" r="6" fill="#0A1F44"/>
+<text x="48" y="436.5" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">inicio</text>
+<rect x="84.73" y="426" width="30" height="13" rx="6" fill="#E7F9FD" stroke="#0E7490" stroke-width="1.2"/>
+<text x="122.73" y="436.5" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">acción de una persona</text>
+<rect x="242.28" y="426" width="30" height="13" rx="6" fill="#EEF4FE" stroke="#1453C9" stroke-width="1.2"/>
+<text x="280.28" y="436.5" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">acción de BE</text>
+<path d="M 368.62 425 L 377.62 432.5 L 368.62 440 L 359.62 432.5 Z" fill="#FFFFFF" stroke="#0A1F44" stroke-width="1.2"/>
+<text x="391.62" y="436.5" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">decisión o fusión</text>
+<circle cx="499" cy="432.5" r="6.5" fill="#FFFFFF" stroke="#0A1F44" stroke-width="1.3"/><circle cx="499" cy="432.5" r="3.5" fill="#0A1F44"/>
+<text x="522" y="436.5" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">fin</text>
+<path d="M 545.87 432.5 L 574.87 432.5" stroke="#33475F" stroke-width="1.1" fill="none"/><path d="M 568.87 435.86 L 575.87 432.5 L 568.87 429.14" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<text x="583.87" y="436.5" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44">flujo; [guarda] entre corchetes</text>
+<path d="M 93 60 L 100 60 Q 100.5 60 100.5 60.5 L 100.5 60.5 Q 100.5 61 101 61 L 108 61" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 101 64.36 L 108 61 L 101 57.64" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 192 61 L 197.5 61 Q 198 61 198 60.5 L 198 60.5 Q 198 60 198.5 60 L 204 60" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 197 63.36 L 204 60 L 197 56.64" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 242 80.44 L 242 133.56" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 238.64 126.56 L 242 133.56 L 245.36 126.56" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 242 240.44 L 242 292.36" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 238.64 285.36 L 242 292.36 L 245.36 285.36" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 284 333 L 288.5 333 Q 289 333 289 332.5 L 289 332.5 Q 289 332 289.5 332 L 294 332" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 287 335.36 L 294 332 L 287 328.64" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 334 311.56 L 334 240.44" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 337.36 247.44 L 334 240.44 L 330.64 247.44" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 376 187 L 431 187 Q 436 187 436 192 L 436 292.36" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 432.64 285.36 L 436 292.36 L 439.36 285.36" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 488 333 L 493 333 Q 493.5 333 493.5 332.5 L 493.5 332.5 Q 493.5 332 494 332 L 499 332" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 492 335.36 L 499 332 L 492 328.64" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 512 345 L 512 393 Q 512 398 507 398 L 441 398 Q 436 398 436 393 L 436 373.64" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 439.36 380.64 L 436 373.64 L 432.64 380.64" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 525 332 L 541 332 Q 541.5 332 541.5 332.5 L 541.5 332.5 Q 541.5 333 542 333 L 558 333" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 551 336.36 L 558 333 L 551 329.64" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 604 292.36 L 604 227.64" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 607.36 234.64 L 604 227.64 L 600.64 234.64" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 604 146.36 L 604 101.64" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 607.36 108.64 L 604 101.64 L 600.64 108.64" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 649 61 L 695 61 Q 700 61 700 66 L 700 159.16" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 696.64 152.16 L 700 159.16 L 703.36 152.16" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<path d="M 700 214.84 L 700 229" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round"/>
+<path d="M 696.64 222 L 700 229 L 703.36 222" fill="none" stroke="#33475F" stroke-width="1.1" stroke-linejoin="round" stroke-linecap="round"/>
+<circle cx="86" cy="60" r="7" fill="#0A1F44"/>
+<rect x="108" y="27.08" width="84" height="67.84" rx="10" fill="#E7F9FD" stroke="#0E7490" stroke-width="1.2"/>
+<text x="150" y="44.25" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">Arma el plan</text>
+<text x="150" y="59.21" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">sesiones,</text>
+<text x="150" y="72.01" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">ejercicios y</text>
+<text x="150" y="84.81" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">series</text>
+<rect x="204" y="39.56" width="76" height="40.88" rx="10" fill="#E7F9FD" stroke="#0E7490" stroke-width="1.2"/>
+<text x="242" y="56.73" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">Valida y</text>
+<text x="242" y="70.17" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">activa</text>
+<rect x="200" y="133.56" width="84" height="106.88" rx="10" fill="#EEF4FE" stroke="#1453C9" stroke-width="1.2"/>
+<text x="242" y="150.73" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">Activa el</text>
+<text x="242" y="164.17" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">plan</text>
+<text x="242" y="179.13" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">congela la</text>
+<text x="242" y="191.93" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">instantánea,</text>
+<text x="242" y="204.73" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">abre el</text>
+<text x="242" y="217.53" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">proceso y</text>
+<text x="242" y="230.33" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">avisa</text>
+<rect x="200" y="292.36" width="84" height="81.28" rx="10" fill="#E7F9FD" stroke="#0E7490" stroke-width="1.2"/>
+<text x="242" y="309.53" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">Ve su</text>
+<text x="242" y="322.97" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">agenda</text>
+<text x="242" y="337.93" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">la sesión de</text>
+<text x="242" y="350.73" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">hoy y las</text>
+<text x="242" y="363.53" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">próximas</text>
+<rect x="294" y="311.56" width="80" height="40.88" rx="10" fill="#E7F9FD" stroke="#0E7490" stroke-width="1.2"/>
+<text x="334" y="328.73" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">Inicia la</text>
+<text x="334" y="342.17" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">sesión</text>
+<rect x="292" y="133.56" width="84" height="106.88" rx="10" fill="#EEF4FE" stroke="#1453C9" stroke-width="1.2"/>
+<text x="334" y="150.73" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">Abre el</text>
+<text x="334" y="164.17" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">borrador</text>
+<text x="334" y="179.13" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">uno por</text>
+<text x="334" y="191.93" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">sesión y</text>
+<text x="334" y="204.73" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">fecha; se</text>
+<text x="334" y="217.53" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">retoma si se</text>
+<text x="334" y="230.33" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">corta</text>
+<rect x="384" y="292.36" width="104" height="81.28" rx="10" fill="#E7F9FD" stroke="#0E7490" stroke-width="1.2"/>
+<text x="436" y="309.53" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">Registra cada</text>
+<text x="436" y="322.97" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">serie</text>
+<text x="436" y="337.93" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">carga,</text>
+<text x="436" y="350.73" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">repeticiones, RIR</text>
+<text x="436" y="363.53" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">y esfuerzo</text>
+<path d="M 512 319 L 525 332 L 512 345 L 499 332 Z" fill="#FFFFFF" stroke="#0A1F44" stroke-width="1.3"/>
+<rect x="558" y="292.36" width="92" height="81.28" rx="10" fill="#E7F9FD" stroke="#0E7490" stroke-width="1.2"/>
+<text x="604" y="309.53" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">Confirma la</text>
+<text x="604" y="322.97" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">sesión</text>
+<text x="604" y="337.93" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">realizada, con</text>
+<text x="604" y="350.73" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">desvío o no</text>
+<text x="604" y="363.53" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">realizada</text>
+<rect x="559" y="146.36" width="90" height="81.28" rx="10" fill="#EEF4FE" stroke="#1453C9" stroke-width="1.2"/>
+<text x="604" y="163.53" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">Registra la</text>
+<text x="604" y="176.97" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">ejecución</text>
+<text x="604" y="191.93" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">inmutable;</text>
+<text x="604" y="204.73" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">corregir</text>
+<text x="604" y="217.53" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">agrega otra</text>
+<rect x="559" y="20.36" width="90" height="81.28" rx="10" fill="#E7F9FD" stroke="#0E7490" stroke-width="1.2"/>
+<text x="604" y="37.53" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">Revisa y</text>
+<text x="604" y="50.97" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">decide</text>
+<text x="604" y="65.93" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">series y</text>
+<text x="604" y="78.73" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">tiempos de</text>
+<text x="604" y="91.53" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">cada sesión</text>
+<rect x="656" y="159.16" width="88" height="55.68" rx="10" fill="#EEF4FE" stroke="#1453C9" stroke-width="1.2"/>
+<text x="700" y="176.33" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">Aplica la</text>
+<text x="700" y="189.77" font-family="Inter" font-size="10.5" font-weight="600" fill="#0A1F44" text-anchor="middle">revisión</text>
+<text x="700" y="204.73" font-family="Inter" font-size="10" font-weight="500" fill="#566881" text-anchor="middle">como en B-01</text>
+<circle cx="700" cy="238" r="9" fill="#FFFFFF" stroke="#0A1F44" stroke-width="1.4"/>
+<circle cx="700" cy="238" r="5" fill="#0A1F44"/>
+<path d="M 294 14 L 521 14 L 530 23 L 530 92 L 294 92 Z" fill="#F7F9FC" stroke="#9AA8BC" stroke-width="1"/>
+<path d="M 521 14 L 521 23 L 530 23" fill="none" stroke="#9AA8BC" stroke-width="1"/>
+<text x="303" y="30.69" font-family="Inter" font-size="10" font-weight="600" fill="#0A1F44">Pendiente (DL-151)</text>
+<text x="303" y="43.49" font-family="Inter" font-size="10" font-weight="400" fill="#566881">Sustituir un ejercicio durante la sesión: la API</text>
+<text x="303" y="56.29" font-family="Inter" font-size="10" font-weight="400" fill="#566881">lo admite y la APK 0.13.2 lo ofrecía; la</text>
+<text x="303" y="69.09" font-family="Inter" font-size="10" font-weight="400" fill="#566881">candidata 0.17.0 todavía no (PR #195, en</text>
+<text x="303" y="81.89" font-family="Inter" font-size="10" font-weight="400" fill="#566881">borrador).</text>
+<rect x="246" y="256.75" width="54.97" height="27.6" fill="#FFFFFF" opacity="0.94"/>
+<text x="273.49" y="267.44" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">agenda y</text>
+<text x="273.49" y="280.24" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">aviso push</text>
+<rect x="516" y="376.82" width="78.02" height="14.8" fill="#FFFFFF" opacity="0.94"/>
+<text x="555.01" y="387.51" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">[quedan series]</text>
+<rect x="517.91" y="313.2" width="30.68" height="14.8" fill="#FFFFFF" opacity="0.94"/>
+<text x="533.25" y="323.89" font-family="Inter" font-size="10" font-weight="400" fill="#0A1F44" text-anchor="middle">[listo]</text>
+</svg>

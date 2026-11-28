@@ -1,0 +1,102 @@
+{
+ "web": "https://be-web-1ngj.onrender.com",
+ "apiCommit": "0fb1bffdc2a7b2824db424febd18e94621fa33cf",
+ "comienzo": "2026-10-20T09:30:40.601Z",
+ "capturas": [
+  {
+   "archivo": "01-espacio-profesional.png",
+   "rol": "Profesional de nutrición",
+   "pantalla": "espacio-profesional",
+   "ruta": "/pro",
+   "momento": "2026-10-20T09:30:52.296Z"
+  },
+  {
+   "archivo": "02-ficha-resumen.png",
+   "rol": "Profesional de nutrición",
+   "pantalla": "ficha-resumen",
+   "ruta": "/pro/advisees?id={diego}&vista=resumen",
+   "momento": "2026-10-20T09:31:01.771Z"
+  },
+  {
+   "archivo": "03-ficha-linea-de-tiempo.png",
+   "rol": "Profesional de nutrición",
+   "pantalla": "ficha-linea-de-tiempo",
+   "ruta": "/pro/advisees?id={diego}&vista=linea",
+   "momento": "2026-10-20T09:31:10.274Z"
+  },
+  {
+   "archivo": "04-ficha-analizar.png",
+   "rol": "Profesional de nutrición",
+   "pantalla": "ficha-analizar",
+   "ruta": "/pro/advisees?id={diego}&vista=analizar&p=365",
+   "momento": "2026-10-20T09:31:19.285Z"
+  },
+  {
+   "archivo": "05-nutricion-plan.png",
+   "rol": "Profesional de nutrición",
+   "pantalla": "nutricion-plan",
+   "ruta": "/pro/advisees/nutrition?id={diego}&vista=plan",
+   "momento": "2026-10-20T09:31:26.169Z"
+  },
+  {
+   "archivo": "06-nutricion-registros.png",
+   "rol": "Profesional de nutrición",
+   "pantalla": "nutricion-registros",
+   "ruta": "/pro/advisees/nutrition?id={diego}&vista=registros",
+   "momento": "2026-10-20T09:31:32.373Z"
+  },
+  {
+   "archivo": "07-nutricion-revisiones.png",
+   "rol": "Profesional de nutrición",
+   "pantalla": "nutricion-revisiones",
+   "ruta": "/pro/advisees/nutrition?id={diego}&vista=revisiones",
+   "momento": "2026-10-20T09:31:39.033Z"
+  },
+  {
+   "archivo": "08-antropometria-tomas.png",
+   "rol": "Profesional de nutrición",
+   "pantalla": "antropometria-tomas",
+   "ruta": "/pro/advisees/anthropometry?id={diego}&vista=evaluaciones",
+   "momento": "2026-10-20T09:31:50.771Z"
+  },
+  {
+   "archivo": "09-antropometria-evolucion.png",
+   "rol": "Profesional de nutrición",
+   "pantalla": "antropometria-evolucion",
+   "ruta": "/pro/advisees/anthropometry?id={diego}&vista=evolucion",
+   "momento": "2026-10-20T09:31:59.456Z"
+  },
+  {
+   "archivo": "10-entrenamiento.png",
+   "rol": "Profesional de entrenamiento",
+   "pantalla": "entrenamiento",
+   "ruta": "/pro/advisees/training?id={diego}",
+   "momento": "2026-10-20T09:32:12.099Z"
+  },
+  {
+   "archivo": "11-asesorado-cuenta.png",
+   "rol": "Asesorado (website)",
+   "pantalla": "asesorado-cuenta",
+   "ruta": "/account",
+   "momento": "2026-10-20T09:32:24.421Z",
+   "versionada": false,
+   "motivo": "muestra el identificador BE completo de la cuenta de Diego; se conserva fuera del repositorio"
+  },
+  {
+   "archivo": "12-asesorado-vinculos.png",
+   "rol": "Asesorado (website)",
+   "pantalla": "asesorado-vinculos",
+   "ruta": "/account/relationships",
+   "momento": "2026-10-20T09:32:31.576Z"
+  },
+  {
+   "archivo": "13-asesorado-novedades.png",
+   "rol": "Asesorado (website)",
+   "pantalla": "asesorado-novedades",
+   "ruta": "/account/news",
+   "momento": "2026-10-20T09:32:37.902Z"
+  }
+ ],
+ "errores": [],
+ "fin": "2026-10-20T09:32:39.934Z"
+}

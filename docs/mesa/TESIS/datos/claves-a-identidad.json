@@ -1,0 +1,68 @@
+{
+ "_que_es": "Por vista, los nombres de las claves foráneas que apuntan a Identidad.",
+ "vistas": {
+  "DER-04": [
+   "identidadId",
+   "profesionalId",
+   "asesoradoId",
+   "actorId",
+   "sujetoId"
+  ],
+  "DER-02": [
+   "identidadId",
+   "profesionalId",
+   "asesoradoId"
+  ],
+  "DER-03": [
+   "profesionalId",
+   "asesoradoId",
+   "actorId"
+  ],
+  "DER-14": [
+   "identidadId",
+   "propietarioId"
+  ],
+  "DER-06": [
+   "profesionalId",
+   "asesoradoId",
+   "autorId"
+  ],
+  "DER-07": [
+   "asesoradoId"
+  ],
+  "DER-11": [
+   "profesionalId",
+   "asesoradoId",
+   "autorId"
+  ],
+  "DER-08": [
+   "creadoPorId",
+   "profesionalId",
+   "autorId"
+  ],
+  "DER-09": [
+   "profesionalId",
+   "asesoradoId"
+  ],
+  "DER-10": [
+   "asesoradoId",
+   "autorId"
+  ],
+  "DER-12": [
+   "profesionalId",
+   "asesoradoId"
+  ],
+  "DER-05": [
+   "profesionalId",
+   "autorId"
+  ],
+  "DER-13": [
+   "profesionalId",
+   "destinatarioId",
+   "fuenteId",
+   "identidadId",
+   "autorId",
+   "asesoradoId"
+  ]
+ }
+}

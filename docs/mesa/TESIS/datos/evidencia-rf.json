@@ -1,0 +1,4011 @@
+{
+ "generado": "2026-10-20T05:16:20.378Z",
+ "requisitos": [
+  {
+   "ucs": [
+    "UC-P25"
+   ],
+   "rutasDelContrato": [
+    "POST /registrations",
+    "GET /me",
+    "PATCH /me/profile"
+   ],
+   "operacionesDelContrato": [
+    "API-ACC-01",
+    "API-ACC-05",
+    "API-ACC-06"
+   ],
+   "rutasSinOperacion": [],
+   "pruebasPorOperacion": [
+    "test/integration/perfil-propio.int-spec.ts",
+    "test/integration/registro.int-spec.ts",
+    "packages/domain/src/acceso-google.test.ts",
+    "scripts/sesion-persistente.test.mjs"
+   ],
+   "pruebasPorUC": [
+    "test/integration/acceso-google.int-spec.ts",
+    "test/integration/registro.int-spec.ts"
+   ],
+   "id": "RF-001",
+   "titulo": "Registrar una identidad BE",
+   "grupo": "Identidad, perfiles y acceso",
+   "linea04": 90,
+   "actor": "Profesional o asesorado",
+   "prioridad": "P0 — Núcleo no recortable",
+   "obligacion": "BE deberá permitir crear una cuenta propia mediante autenticación local, asociada a una identidad única e independiente del profesional, especialidad o paquete comercial.",
+   "aceptacion": "Con datos válidos se crea una sola identidad; un correo ya asociado no produce una segunda cuenta; el alta no verifica especialidades ni concede acceso a datos de terceros.",
+   "derivacion": "05 define variantes y errores; 08 controles de identidad; 09 contrato; 10 formularios; 11A pruebas.",
+   "fuente": "BE-LEG-02 §§6, 10–11; BE-LEG-03 §§2, 4 y 10.",
+   "canal": "TRANSVERSAL",
+   "ucDV03": "UC-P25",
+   "familias": [
+    "ACC"
+   ],
+   "uc12": "UC-P25",
+   "contrato12": "`ACC` · POST /registrations · GET /me · PATCH /me/profile",
+   "prueba11A": "TEST-RF-001",
+   "operacionesDeLaFamilia": [
+    "API-ACC-01 POST /registrations",
+    "API-ACC-02 POST /auth/sessions",
+    "API-ACC-04 DELETE /auth/sessions",
+    "API-ACC-02-REANUDACION POST /auth/sessions/resume",
+    "API-ACC-03 DELETE /auth/sessions/current",
+    "API-ACC-05 GET /me",
+    "API-ACC-06 PATCH /me/profile",
+    "API-ACC-06-PROPIA GET /me/profile"
+   ],
+   "pruebasQueLoCitan": [
+    "test/integration/acceso-google.int-spec.ts",
+    "test/integration/registro.int-spec.ts"
+   ],
+   "dl": [
+    {
+     "id": "DL-023",
+     "tema": "Alta por invitación y declaración de mayoría de edad",
+     "estado": "**IMPLEMENTADA** 2026-10-16 · la invitación (DL-136) y la declaración de mayoría de edad en toda alta (DL-138), con su casilla en la web y la APK (`wp-acceso-google`, sin integrar); falta el procedimiento ante un menor descubierto (08 §24.7 c)"
+    },
+    {
+     "id": "DL-138",
+     "tema": "Entrar con Google verificado por la API (la familia GOO), vincular solo con la contraseña, y la declaración de mayoría de edad en toda alta",
+     "estado": "**IMPLEMENTADA** 2026-10-16 (API, web y APK en `wp-acceso-google`, sin integrar); faltan los client IDs de Google y probarlo en el teléfono"
+    }
+   ],
+   "paquetes": [
+    "WP-02.md"
+   ]
+  },
+  {
+   "ucs": [
+    "UC-P26"
+   ],
+   "rutasDelContrato": [
+    "POST /auth/sessions",
+    "GET /me"
+   ],
+   "operacionesDelContrato": [
+    "API-ACC-02",
+    "API-ACC-05"
+   ],
+   "rutasSinOperacion": [],
+   "pruebasPorOperacion": [
+    "test/integration/acceso-google.int-spec.ts",
+    "test/integration/concurrencia.int-spec.ts",
+    "test/integration/reanudacion-de-sesion.int-spec.ts",
+    "test/integration/sesiones.int-spec.ts",
+    "scripts/sesion-persistente.test.mjs"
+   ],
+   "pruebasPorUC": [
+    "test/integration/acceso-google.int-spec.ts",
+    "test/integration/sesiones.int-spec.ts"
+   ],
+   "id": "RF-002",
+   "titulo": "Autenticar y finalizar una sesión local",
+   "grupo": "Identidad, perfiles y acceso",
+   "linea04": 99,
+   "actor": "Profesional, asesorado o administrador",
+   "prioridad": "P0 — Núcleo no recortable",
+   "obligacion": "BE deberá permitir iniciar y finalizar una sesión mediante credenciales locales y bloquear el acceso cuando la cuenta no esté habilitada.",
+   "aceptacion": "Las credenciales válidas habilitan la superficie correspondiente; las inválidas o una cuenta suspendida no crean sesión; el cierre impide continuar usando la sesión finalizada.",
+   "derivacion": "08 define controles y revocación; 09 contratos; 10 experiencia; 07 mecanismo de sesión.",
+   "fuente": "BE-LEG-02 §11; BE-LEG-03 §2.",
+   "canal": "TRANSVERSAL",
+   "ucDV03": "UC-P26",
+   "familias": [
+    "ACC"
+   ],
+   "uc12": "UC-P26",
+   "contrato12": "`ACC` · POST /auth/sessions · DELETE session(s) · GET /me",
+   "prueba11A": "TEST-RF-002",
+   "operacionesDeLaFamilia": [
+    "API-ACC-01 POST /registrations",
+    "API-ACC-02 POST /auth/sessions",
+    "API-ACC-04 DELETE /auth/sessions",
+    "API-ACC-02-REANUDACION POST /auth/sessions/resume",
+    "API-ACC-03 DELETE /auth/sessions/current",
+    "API-ACC-05 GET /me",
+    "API-ACC-06 PATCH /me/profile",
+    "API-ACC-06-PROPIA GET /me/profile"
+   ],
+   "pruebasQueLoCitan": [
+    "test/integration/concurrencia.int-spec.ts",
+    "test/integration/sesiones.int-spec.ts"
+   ],
+   "dl": [
+    {
+     "id": "DL-027",
+     "tema": "Oráculos de prueba ausentes en 11A y traza de UC-P26",
+     "estado": "ABIERTA"
+    }
+   ],
+   "paquetes": [
+    "WP-02.md"
+   ]
+  },
+  {
+   "ucs": [
+    "UC-E05"
+   ],
+   "rutasDelContrato": [],
+   "operacionesDelContrato": [],
+   "rutasSinOperacion": [],
+   "pruebasPorOperacion": [],
+   "pruebasPorUC": [
+    "test/integration/acceso-google.int-spec.ts",
+    "packages/domain/src/acceso-google.test.ts"
+   ],
+   "id": "RF-003",
+   "titulo": "Acceder mediante Google sin duplicar identidad",
+   "grupo": "Identidad, perfiles y acceso",
+   "linea04": 108,
+   "actor": "Profesional o asesorado",
+   "prioridad": "P1 — Alta prioridad",
+   "obligacion": "BE deberá admitir Google como método federado adicional, manteniendo a BE como fuente de identidad, roles, especialidades y habilitaciones.",
+   "aceptacion": "Una cuenta vinculada accede al mismo historial por ambos métodos; Google no concede roles ni verificaciones; la indisponibilidad del proveedor no impide el acceso local.",
+   "derivacion": "08 política de vinculación; 07 adaptador; 09 contrato; 10 experiencia.",
+   "fuente": "BE-LEG-02 §§10–13; REV-002 RES-15.",
+   "canal": "TRANSVERSAL",
+   "ucDV03": "UC-E05",
+   "familias": [],
+   "uc12": "UC-E05",
+   "contrato12": "`ACC-P1` · Google federated authorize/complete — P1",
+   "prueba11A": "TEST-RF-003",
+   "operacionesDeLaFamilia": [],
+   "pruebasQueLoCitan": [
+    "test/integration/acceso-google.int-spec.ts"
+   ],
+   "dl": [
+    {
+     "id": "DL-138",
+     "tema": "Entrar con Google verificado por la API (la familia GOO), vincular solo con la contraseña, y la declaración de mayoría de edad en toda alta",
+     "estado": "**IMPLEMENTADA** 2026-10-16 (API, web y APK en `wp-acceso-google`, sin integrar); faltan los client IDs de Google y probarlo en el teléfono"
+    }
+   ],
+   "paquetes": [
+    "WP-02.md",
+    "WP-CONSOLIDACION.md"
+   ]
+  },
+  {
+   "ucs": [
+    "UC-E06"
+   ],
+   "rutasDelContrato": [
+    "DELETE /me/access-methods"
+   ],
+   "operacionesDelContrato": [],
+   "rutasSinOperacion": [
+    "DELETE /me/access-methods"
+   ],
+   "pruebasPorOperacion": [],
+   "pruebasPorUC": [],
+   "id": "RF-004",
+   "titulo": "Administrar métodos de acceso de una misma identidad",
+   "grupo": "Identidad, perfiles y acceso",
+   "linea04": 117,
+   "actor": "Profesional o asesorado",
+   "prioridad": "P2 — Condicionado / recortable",
+   "obligacion": "BE podrá permitir asociar o retirar métodos de acceso sin fragmentar la identidad longitudinal.",
+   "aceptacion": "Agregar o retirar un método no altera vínculos ni historial; no se permite dejar la cuenta sin un método utilizable; los cambios sensibles quedan trazables.",
+   "derivacion": "08 y 09 fijan seguridad y contrato; 10 define la interacción. Es una de las funciones recortables antes que el núcleo.",
+   "fuente": "BE-LEG-02 §§11 y 20.",
+   "canal": "TRANSVERSAL",
+   "ucDV03": "UC-E06",
+   "familias": [],
+   "uc12": "UC-E06",
+   "contrato12": "`ACC-P2` · GET/POST/DELETE /me/access-methods — P2",
+   "prueba11A": "TEST-RF-004",
+   "operacionesDeLaFamilia": [],
+   "pruebasQueLoCitan": [],
+   "dl": [],
+   "paquetes": [
+    "WP-02.md"
+   ]
+  },
+  {
+   "ucs": [
+    "UC-E09",
+    "UC-P26"
+   ],
+   "rutasDelContrato": [
+    "POST /auth/recovery-requests"
+   ],
+   "operacionesDelContrato": [],
+   "rutasSinOperacion": [
+    "POST /auth/recovery-requests"
+   ],
+   "pruebasPorOperacion": [],
+   "pruebasPorUC": [
+    "test/integration/acceso-google.int-spec.ts",
+    "test/integration/sesiones.int-spec.ts"
+   ],
+   "id": "RF-005",
+   "titulo": "Recuperar el acceso local",
+   "grupo": "Identidad, perfiles y acceso",
+   "linea04": 126,
+   "actor": "Profesional, asesorado o administrador",
+   "prioridad": "P1 — Alta prioridad",
+   "obligacion": "BE deberá ofrecer un recorrido de recuperación de credencial local que preserve la identidad y no revele indebidamente la existencia de cuentas.",
+   "aceptacion": "Una recuperación válida permite establecer una nueva credencial sin crear otra identidad; solicitudes inválidas o vencidas no modifican el acceso; la respuesta inicial es neutra.",
+   "derivacion": "08 fija controles y vigencias; 09 el contrato; 10 el recorrido.",
+   "fuente": "Derivado de identidad persistente y operación segura de BE-LEG-02 §§6, 11 y 15.",
+   "canal": "TRANSVERSAL",
+   "ucDV03": "UC-E09 → extiende UC-P26",
+   "familias": [],
+   "uc12": "UC-E09 → UC-P26",
+   "contrato12": "`ACC-P1` · POST /auth/recovery-requests · complete — P1",
+   "prueba11A": "TEST-RF-005",
+   "operacionesDeLaFamilia": [],
+   "pruebasQueLoCitan": [],
+   "dl": [],
+   "paquetes": [
+    "WP-02.md"
+   ]
+  },
+  {
+   "ucs": [
+    "UC-P25",
+    "UC-P26"
+   ],
+   "rutasDelContrato": [
+    "GET /me"
+   ],
+   "operacionesDelContrato": [
+    "API-ACC-05"
+   ],
+   "rutasSinOperacion": [],
+   "pruebasPorOperacion": [
+    "scripts/sesion-persistente.test.mjs"
+   ],
+   "pruebasPorUC": [
+    "test/integration/acceso-google.int-spec.ts",
+    "test/integration/registro.int-spec.ts",
+    "test/integration/sesiones.int-spec.ts"
+   ],
+   "id": "RF-006",
+   "titulo": "Consultar el estado de la cuenta y del perfil",
+   "grupo": "Identidad, perfiles y acceso",
+   "linea04": 135,
+   "actor": "Profesional o asesorado",
+   "prioridad": "P0 — Núcleo no recortable",
+   "obligacion": "BE deberá informar el estado operativo de la cuenta y los pasos pendientes para poder utilizar cada capacidad.",
+   "aceptacion": "El usuario distingue cuenta, perfil, especialidad verificada, habilitación y vínculo; un estado incompleto no se presenta como habilitado.",
+   "derivacion": "06 define estados; 08 efectos de seguridad; 10 presentación.",
+   "fuente": "BE-LEG-03 §4; REV-003 desacoplamiento comercial.",
+   "canal": "TRANSVERSAL",
+   "ucDV03": "UC-P25 / UC-P26",
+   "familias": [
+    "ACC"
+   ],
+   "uc12": "UC-P25 / UC-P26",
+   "contrato12": "`ACC` · GET /me + session/account state",
+   "prueba11A": "TEST-RF-006",
+   "operacionesDeLaFamilia": [
+    "API-ACC-01 POST /registrations",
+    "API-ACC-02 POST /auth/sessions",
+    "API-ACC-04 DELETE /auth/sessions",
+    "API-ACC-02-REANUDACION POST /auth/sessions/resume",
+    "API-ACC-03 DELETE /auth/sessions/current",
+    "API-ACC-05 GET /me",
+    "API-ACC-06 PATCH /me/profile",
+    "API-ACC-06-PROPIA GET /me/profile"
+   ],
+   "pruebasQueLoCitan": [],
+   "dl": [
+    {
+     "id": "DL-014",
+     "tema": "Neutralidad del login: tolerancia de tiempo y cuentas no operativas",
+     "estado": "ABIERTA"
+    }
+   ],
+   "paquetes": [
+    "WP-02.md"
+   ]
+  },
+  {
+   "ucs": [
+    "UC-I11"
+   ],
+   "rutasDelContrato": [],
+   "operacionesDelContrato": [],
+   "rutasSinOperacion": [],
+   "pruebasPorOperacion": [],
+   "pruebasPorUC": [],
+   "id": "RF-007",
+   "titulo": "Acceder a las capacidades por la superficie prevista",
+   "grupo": "Identidad, perfiles y acceso",
+   "linea04": 144,
+   "actor": "Profesional, asesorado o administrador",
+   "prioridad": "P0 — Núcleo no recortable",
+   "obligacion": "Cada actor deberá poder llegar a las funciones que le corresponden desde el Website o la APK sin conocer rutas internas.",
+   "aceptacion": "El administrador y el profesional operan en Website; el asesorado accede a Hoy y sus funciones desde la APK; la visibilidad no reemplaza la autorización.",
+   "derivacion": "10 define navegación y shells después de G4; 08 autoriza; 05 define recorridos.",
+   "fuente": "BE-LEG-02 §§5, 11 y 15; Q-000.",
+   "canal": "TRANSVERSAL",
+   "ucDV03": "UC-I11",
+   "familias": [
+    "ACC",
+    "SYS"
+   ],
+   "uc12": "UC-I11",
+   "contrato12": "`ACC/SYS` · Contrato first-party común; navegación concreta → 10",
+   "prueba11A": "TEST-RF-007",
+   "operacionesDeLaFamilia": [
+    "API-ACC-01 POST /registrations",
+    "API-ACC-02 POST /auth/sessions",
+    "API-ACC-04 DELETE /auth/sessions",
+    "API-ACC-02-REANUDACION POST /auth/sessions/resume",
+    "API-ACC-03 DELETE /auth/sessions/current",
+    "API-ACC-05 GET /me",
+    "API-ACC-06 PATCH /me/profile",
+    "API-ACC-06-PROPIA GET /me/profile"
+   ],
+   "pruebasQueLoCitan": [],
+   "dl": [],
+   "paquetes": [
+    "WP-02.md"
+   ]
+  },
+  {
+   "ucs": [
+    "UC-P27"
+   ],
+   "rutasDelContrato": [],
+   "operacionesDelContrato": [],
+   "rutasSinOperacion": [],
+   "pruebasPorOperacion": [],
+   "pruebasPorUC": [
+    "test/integration/cierre.int-spec.ts"
+   ],
+   "id": "RF-069",
+   "titulo": "Solicitar el cierre de la propia cuenta",
+   "grupo": "Identidad, perfiles y acceso",
+   "linea04": 153,
+   "actor": "Profesional o asesorado",
+   "prioridad": "P1 — Alta prioridad",
+   "obligacion": "BE deberá permitir al titular solicitar el cierre de su propia cuenta mediante una acción autenticada y trazable, sin eliminar silenciosamente vínculos, decisiones ni evidencia histórica.",
+   "aceptacion": "La solicitud identifica actor y fecha; una cuenta cerrada no inicia nuevas sesiones; los efectos sobre vínculos, procesos, conservación y eventual reversibilidad se aplican según las políticas aprobadas; el cierre no se presenta como borrado inmediato de toda la información.",
+   "derivacion": "05 define el recorrido; 06 estados y efectos operativos; 08 retención, derechos y verificación de identidad; 10 interacción.",
+   "fuente": "BE-LEG-02 §§6 y 11; BE-LEG-03 §§4 y 10; ciclo de vida de identidad y separación entre cuenta e historia longitudinal.",
+   "canal": "TRANSVERSAL",
+   "ucDV03": "UC-P27",
+   "familias": [],
+   "uc12": "UC-P27",
+   "contrato12": "`ACC-P1` · account-closure requests — P1; sessions invalidated",
+   "prueba11A": "TEST-RF-069",
+   "operacionesDeLaFamilia": [],
+   "pruebasQueLoCitan": [
+    "test/integration/cierre.int-spec.ts",
+    "test/integration/concurrencia-wp03.int-spec.ts",
+    "test/integration/concurrencia.int-spec.ts"
+   ],
+   "dl": [],
+   "paquetes": [
+    "WP-02.md",
+    "WP-03.md"
+   ]
+  },
+  {
+   "ucs": [
+    "UC-P01"
+   ],
+   "rutasDelContrato": [],
+   "operacionesDelContrato": [],
+   "rutasSinOperacion": [],
+   "pruebasPorOperacion": [],
+   "pruebasPorUC": [],
+   "id": "RF-008",
+   "titulo": "Crear y mantener un perfil profesional",
+   "grupo": "Alta profesional y administración mínima",
+   "linea04": 164,
+   "actor": "Profesional",
+   "prioridad": "P0 — Núcleo no recortable",
+   "obligacion": "BE deberá permitir completar un perfil profesional sin confundirlo con una especialidad verificada ni con autorización sobre asesorados.",
+   "aceptacion": "El perfil puede guardarse incompleto; su existencia no habilita planes ni acceso a datos; los cambios relevantes conservan autoría y fecha.",
+   "derivacion": "06 define estructura y estados; 08 visibilidad; 10 formulario.",
+   "fuente": "BE-LEG-02 §§6 y 11; BE-LEG-03 §§4 y 10.",
+   "canal": "WEBSITE",
+   "ucDV03": "UC-P01",
+   "familias": [
+    "PRO"
+   ],
+   "uc12": "UC-P01",
+   "contrato12": "`PRO` · GET/PATCH professional-profile",
+   "prueba11A": "TEST-RF-008",
+   "operacionesDeLaFamilia": [],
+   "pruebasQueLoCitan": [],
+   "dl": [],
+   "paquetes": [
+    "WP-02.md",
+    "WP-03.md"
+   ]
+  },
+  {
+   "ucs": [
+    "UC-P01",
+    "UC-I01"
+   ],
+   "rutasDelContrato": [
+    "PUT /me/professional-scopes"
+   ],
+   "operacionesDelContrato": [],
+   "rutasSinOperacion": [
+    "PUT /me/professional-scopes"
+   ],
+   "pruebasPorOperacion": [],
+   "pruebasPorUC": [],
+   "id": "RF-009",
+   "titulo": "Declarar especialidades y aportar evidencia",
+   "grupo": "Alta profesional y administración mínima",
+   "linea04": 173,
+   "actor": "Profesional",
+   "prioridad": "P0 — Núcleo no recortable",
+   "obligacion": "BE deberá permitir solicitar Nutrición, Entrenamiento o ambas, aportando evidencia separada para cada especialidad; la antropometría se tratará como capacidad transversal sujeta a política específica.",
+   "aceptacion": "Cada especialidad se evalúa de forma independiente; declarar una no verifica la otra; la carga de evidencia no equivale a aprobación.",
+   "derivacion": "06 modela especialidades y estados; 08 gobierna evidencia; 10 carga.",
+   "fuente": "BE-LEG-02 §§6 y 11; DEC-013; BE-LEG-03 §10.",
+   "canal": "WEBSITE",
+   "ucDV03": "UC-P01 / UC-I01",
+   "familias": [
+    "PRO"
+   ],
+   "uc12": "UC-P01 / UC-I01",
+   "contrato12": "`PRO` · PUT /me/professional-scopes + evidence",
+   "prueba11A": "TEST-RF-009",
+   "operacionesDeLaFamilia": [],
+   "pruebasQueLoCitan": [],
+   "dl": [],
+   "paquetes": [
+    "WP-05.md"
+   ]
+  },
+  {
+   "ucs": [
+    "UC-P01"
+   ],
+   "rutasDelContrato": [],
+   "operacionesDelContrato": [],
+   "rutasSinOperacion": [],
+   "pruebasPorOperacion": [],
+   "pruebasPorUC": [],
+   "id": "RF-010",
+   "titulo": "Presentar una solicitud de verificación",
+   "grupo": "Alta profesional y administración mínima",
+   "linea04": 182,
+   "actor": "Profesional",
+   "prioridad": "P0 — Núcleo no recortable",
+   "obligacion": "BE deberá permitir enviar a revisión administrativa la evidencia de una especialidad o de la capacidad antropométrica cuando el conjunto mínimo requerido esté completo.",
+   "aceptacion": "La versión presentada queda identificada; el profesional conoce fecha y estado; no puede operar esa especialidad o capacidad mientras no alcance el estado habilitante definido.",
+   "derivacion": "DEC-042 aprobada provisionalmente define el recorrido; 05 define flujo; 06 estados; 08 controles.",
+   "fuente": "Q-002; DEC-004, DEC-005 y DEC-041.",
+   "canal": "WEBSITE",
+   "ucDV03": "UC-P01",
+   "familias": [
+    "PRO"
+   ],
+   "uc12": "UC-P01",
+   "contrato12": "`PRO` · verification submissions + submit",
+   "prueba11A": "TEST-RF-010",
+   "operacionesDeLaFamilia": [],
+   "pruebasQueLoCitan": [],
+   "dl": [],
+   "paquetes": []
+  },
+  {
+   "ucs": [
+    "UC-P02"
+   ],
+   "rutasDelContrato": [],
+   "operacionesDelContrato": [],
+   "rutasSinOperacion": [],
+   "pruebasPorOperacion": [],
+   "pruebasPorUC": [],
+   "id": "RF-011",
+   "titulo": "Revisar una solicitud profesional",
+   "grupo": "Alta profesional y administración mínima",
+   "linea04": 191,
+   "actor": "Administrador",
+   "prioridad": "P0 — Núcleo no recortable",
+   "obligacion": "El administrador deberá consultar la evidencia presentada, verificar completitud y registrar observaciones o una resolución trazable por especialidad o capacidad transversal.",
+   "aceptacion": "La revisión identifica administrador, fecha, versión y fundamento; no modifica otra especialidad ni capacidad; no se presenta como certificación oficial.",
+   "derivacion": "06 define resultados y estados; 08 acceso/auditoría; 10 consola.",
+   "fuente": "BE-LEG-02 §§6 y 11; BE-LEG-03 §10; REV-003 verificación profesional.",
+   "canal": "WEBSITE",
+   "ucDV03": "UC-P02",
+   "familias": [
+    "PRO-ADM"
+   ],
+   "uc12": "UC-P02",
+   "contrato12": "`PRO-ADM` · admin verification list/detail",
+   "prueba11A": "TEST-RF-011",
+   "operacionesDeLaFamilia": [],
+   "pruebasQueLoCitan": [],
+   "dl": [],
+   "paquetes": []
+  },
+  {
+   "ucs": [
+    "UC-P02",
+    "UC-P03"
+   ],
+   "rutasDelContrato": [],
+   "operacionesDelContrato": [],
+   "rutasSinOperacion": [],
+   "pruebasPorOperacion": [],
+   "pruebasPorUC": [],
+   "id": "RF-012",
+   "titulo": "Resolver la verificación por especialidad o capacidad transversal",
+   "grupo": "Alta profesional y administración mínima",
+   "linea04": 200,
+   "actor": "Administrador",
+   "prioridad": "P0 — Núcleo no recortable",
+   "obligacion": "BE deberá permitir aprobar, rechazar o suspender la operación de una especialidad o capacidad transversal con motivo y trazabilidad, respetando como mínimo los estados aprobados por DEC-005.",
+   "aceptacion": "La resolución afecta solo la especialidad o capacidad seleccionada; una suspensión corta nuevas operaciones del alcance; el historial permanece consultable según política.",
+   "derivacion": "06 fija la máquina de estados; 08 efectos y auditoría; 05 escenarios.",
+   "fuente": "DEC-004, DEC-005 y DEC-041.",
+   "canal": "WEBSITE",
+   "ucDV03": "UC-P02 / UC-P03",
+   "familias": [
+    "PRO-ADM"
+   ],
+   "uc12": "UC-P02 / UC-P03",
+   "contrato12": "`PRO-ADM` · resolve + suspend/reinstate",
+   "prueba11A": "TEST-RF-012",
+   "operacionesDeLaFamilia": [],
+   "pruebasQueLoCitan": [],
+   "dl": [],
+   "paquetes": []
+  },
+  {
+   "ucs": [
+    "UC-E01"
+   ],
+   "rutasDelContrato": [],
+   "operacionesDelContrato": [],
+   "rutasSinOperacion": [],
+   "pruebasPorOperacion": [],
+   "pruebasPorUC": [],
+   "id": "RF-013",
+   "titulo": "Responder observaciones y volver a presentar evidencia",
+   "grupo": "Alta profesional y administración mínima",
+   "linea04": 209,
+   "actor": "Profesional",
+   "prioridad": "P0 — Núcleo no recortable",
+   "obligacion": "BE deberá permitir corregir una solicitud no aprobada cuando la resolución admita subsanación, sin sobrescribir la evidencia revisada.",
+   "aceptacion": "La nueva presentación conserva relación con la anterior; el profesional conoce qué debe corregir; el reenvío no se interpreta como aprobación.",
+   "derivacion": "05 define variantes; 06 versionado; 08 evidencia.",
+   "fuente": "Q-002; DEC-042 aprobada con vigencia provisional para G2.",
+   "canal": "WEBSITE",
+   "ucDV03": "UC-E01",
+   "familias": [
+    "PRO"
+   ],
+   "uc12": "UC-E01",
+   "contrato12": "`PRO` · new evidence/submission version + resubmit",
+   "prueba11A": "TEST-RF-013",
+   "operacionesDeLaFamilia": [],
+   "pruebasQueLoCitan": [],
+   "dl": [],
+   "paquetes": []
+  },
+  {
+   "ucs": [
+    "UC-P03"
+   ],
+   "rutasDelContrato": [],
+   "operacionesDelContrato": [],
+   "rutasSinOperacion": [],
+   "pruebasPorOperacion": [],
+   "pruebasPorUC": [],
+   "id": "RF-014",
+   "titulo": "Suspender y rehabilitar una capacidad profesional",
+   "grupo": "Alta profesional y administración mínima",
+   "linea04": 218,
+   "actor": "Administrador",
+   "prioridad": "P0 — Núcleo no recortable",
+   "obligacion": "BE deberá permitir suspender y, cuando corresponda, rehabilitar la operación profesional con motivo, alcance y autoría.",
+   "aceptacion": "La suspensión impide nuevas acciones del dominio sin eliminar registros; la rehabilitación requiere una resolución explícita; los efectos sobre vínculos activos se especifican en 06 y 08.",
+   "derivacion": "06 estados; 08 autorización y auditoría; 05 escenarios de incidencia.",
+   "fuente": "BE-LEG-02 §11; DEC-004 y DEC-005.",
+   "canal": "WEBSITE",
+   "ucDV03": "UC-P03",
+   "familias": [
+    "PRO-ADM"
+   ],
+   "uc12": "UC-P03",
+   "contrato12": "`PRO-ADM` · suspend / reinstate professional scope",
+   "prueba11A": "TEST-RF-014",
+   "operacionesDeLaFamilia": [],
+   "pruebasQueLoCitan": [],
+   "dl": [],
+   "paquetes": [
+    "WP-03.md"
+   ]
+  },
+  {
+   "ucs": [
+    "UC-P04",
+    "UC-P05"
+   ],
+   "rutasDelContrato": [],
+   "operacionesDelContrato": [],
+   "rutasSinOperacion": [],
+   "pruebasPorOperacion": [],
+   "pruebasPorUC": [
+    "test/integration/invitaciones.int-spec.ts",
+    "test/integration/vinculo.int-spec.ts"
+   ],
+   "id": "RF-015",
+   "titulo": "Mantener separadas verificación, habilitación y autorización",
+   "grupo": "Alta profesional y administración mínima",
+   "linea04": 227,
+   "actor": "Sistema BE",
+   "prioridad": "P0 — Núcleo no recortable",
+   "obligacion": "BE deberá evaluar de forma independiente identidad, especialidad verificada, habilitación comercial o académica, vínculo, consentimiento y autorización de datos.",
+   "aceptacion": "Cambiar paquete o capacidad no concede especialidad ni acceso a datos; una especialidad verificada no autoriza por sí sola a consultar un asesorado; cada denegación puede atribuirse a la condición faltante.",
+   "derivacion": "06 modela conceptos; 08 calcula autorización; 03 conserva la separación económica.",
+   "fuente": "BE-LEG-03 §4 y REV-003 desacoplamiento comercial.",
+   "canal": "TRANSVERSAL",
+   "ucDV03": "TR-01 / UC-P04 / UC-P05",
+   "familias": [
+    "REL",
+    "CON",
+    "SYS"
+   ],
+   "uc12": "TR-01 / UC-P04 / UC-P05",
+   "contrato12": "`REL/CON/SYS` · Separación + PDP; no endpoint autónomo",
+   "prueba11A": "TEST-RF-015",
+   "operacionesDeLaFamilia": [
+    "API-CON-05 GET /me/health-data-consent-requirement",
+    "API-REL-01 POST /relationship-requests",
+    "API-REL-02 GET /me/relationship-requests",
+    "API-REL-03 POST /relationship-requests/{requestId}/accept",
+    "API-REL-04 POST /relationship-requests/{requestId}/reject",
+    "API-REL-05 GET /me/relationships",
+    "API-REL-06 GET /relationships/{relationshipId}",
+    "API-REL-07 POST /relationships/{relationshipId}/pause",
+    "API-REL-08 POST /relationships/{relationshipId}/resume",
+    "API-REL-09 POST /relationships/{relationshipId}/finalize",
+    "API-CON-01 GET /relationships/{relationshipId}/consent-requirements",
+    "API-CON-02 POST /relationships/{relationshipId}/consents",
+    "API-CON-03 GET /me/consents",
+    "API-CON-04 POST /me/consents/{consentId}/revoke",
+    "API-CON-06 POST /me/health-data-consents",
+    "API-CON-07 GET /me/health-data-consents",
+    "API-CON-08 POST /me/health-data-consents/{consentId}/revoke"
+   ],
+   "pruebasQueLoCitan": [
+    "test/integration/pdp.int-spec.ts"
+   ],
+   "dl": [
+    {
+     "id": "DL-032",
+     "tema": "Las siete dimensiones del PDP y el lugar de A3",
+     "estado": "**DECIDIDA** 2026-09-19 · Dirección aceptó el provisorio (opción A)"
+    }
+   ],
+   "paquetes": [
+    "WP-02.md",
+    "WP-03.md",
+    "WP-05.md"
+   ]
+  },
+  {
+   "ucs": [
+    "UC-P01",
+    "UC-I01"
+   ],
+   "rutasDelContrato": [],
+   "operacionesDelContrato": [],
+   "rutasSinOperacion": [],
+   "pruebasPorOperacion": [],
+   "pruebasPorUC": [],
+   "id": "RF-067",
+   "titulo": "Declarar la capacidad antropométrica transversal y aportar evidencia",
+   "grupo": "Alta profesional y administración mínima",
+   "linea04": 236,
+   "actor": "Profesional",
+   "prioridad": "P0 — Núcleo no recortable",
+   "obligacion": "BE deberá permitir declarar una capacidad antropométrica transversal y aportar evidencia propia, independiente de las especialidades de Nutrición y Entrenamiento.",
+   "aceptacion": "La declaración y su evidencia quedan identificadas por separado; cargar evidencia no equivale a aprobación; sin resolución habilitante no se registran evaluaciones ni se publica el servicio; declarar esta capacidad no modifica automáticamente las especialidades.",
+   "derivacion": "DEC-042 v0.4 aporta el pipeline administrativo; 05 define el flujo; 06 estados y relaciones; 08 evidencia, acceso y efectos; 10 superficies.",
+   "fuente": "BE-LEG-02 §§6, 11–12; BE-LEG-03 §11; RF-047 y RF-051.",
+   "canal": "WEBSITE",
+   "ucDV03": "UC-P01 / UC-I01",
+   "familias": [
+    "PRO"
+   ],
+   "uc12": "UC-P01 / UC-I01",
+   "contrato12": "`PRO` · same evidence pipeline; scope/capability independent",
+   "prueba11A": "TEST-RF-067",
+   "operacionesDeLaFamilia": [],
+   "pruebasQueLoCitan": [],
+   "dl": [],
+   "paquetes": [
+    "WP-05.md"
+   ]
+  },
+  {
+   "ucs": [
+    "UC-P28"
+   ],
+   "rutasDelContrato": [],
+   "operacionesDelContrato": [],
+   "rutasSinOperacion": [],
+   "pruebasPorOperacion": [],
+   "pruebasPorUC": [],
+   "id": "RF-068",
+   "titulo": "Registrar y gestionar incidencias administrativas mínimas",
+   "grupo": "Alta profesional y administración mínima",
+   "linea04": 245,
+   "actor": "Profesional, asesorado o administrador",
+   "prioridad": "P1 — Alta prioridad",
+   "obligacion": "BE deberá permitir reportar y gestionar incidencias operativas vinculadas con acceso, perfiles, vínculos, integridad de información o funcionamiento de los recorridos, sin convertir el MVP en una plataforma general de soporte.",
+   "aceptacion": "La incidencia conserva reportante, categoría, fecha, estado, responsable y resolución; el administrador consulta y actualiza únicamente las incidencias autorizadas; el historial no se sobrescribe y el reportante puede conocer el estado de su caso.",
+   "derivacion": "05 define escenarios; 06 ciclo de vida mínimo; 08 acceso y auditoría; 10 consulta y comunicación.",
+   "fuente": "BE-LEG-02 §§6 y 11; responsabilidad administrativa de gestionar incidencias.",
+   "canal": "TRANSVERSAL",
+   "ucDV03": "UC-P28",
+   "familias": [],
+   "uc12": "UC-P28",
+   "contrato12": "`ADM-P1` · incidents minimal — P1",
+   "prueba11A": "TEST-RF-068",
+   "operacionesDeLaFamilia": [],
+   "pruebasQueLoCitan": [],
+   "dl": [],
+   "paquetes": []
+  },
+  {
+   "ucs": [
+    "UC-I13",
+    "UC-P09",
+    "UC-P14",
+    "UC-I09"
+   ],
+   "rutasDelContrato": [],
+   "operacionesDelContrato": [],
+   "rutasSinOperacion": [],
+   "pruebasPorOperacion": [],
+   "pruebasPorUC": [
+    "test/integration/entrenamiento.int-spec.ts",
+    "test/integration/nutricion.int-spec.ts"
+   ],
+   "id": "RF-070",
+   "titulo": "Utilizar métodos profesionales de cálculo reproducible",
+   "grupo": "Capacidades transversales de soporte profesional",
+   "linea04": 256,
+   "actor": "Profesional autorizado",
+   "prioridad": "P0 — Núcleo no recortable",
+   "obligacion": "BE deberá permitir al profesional autorizado consultar y ejecutar métodos de cálculo habilitados y versionados para una finalidad pertinente, conservando requisitos de entrada, versión del método, inputs efectivos, procedencia y resultado, sin convertir el cálculo ni una eventual sugerencia en una decisión profesional automática.",
+   "aceptacion": "El profesional puede identificar qué método y versión ejecuta y qué datos requiere; un método no se ejecuta si faltan inputs obligatorios o si su procedencia no es admisible; varias ejecuciones pueden coexistir sin promediarse ni sobrescribirse; una sugerencia, selección, ejecución o referencia adoptada permanece distinguible de la decisión profesional final; el resultado no modifica automáticamente requerimiento, objetivo, evaluación, prescripción ni plan; BE no impone una fórmula propia ni genera autónomamente el requerimiento/objetivo, preservando `DEC-046 §4.4/§4.9` e `INV-06-133`.",
+   "derivacion": "05 define el patrón observable transversal y sus especializaciones; 06 parte de `T-06-N12` y define método/versionado, admisibilidad, ejecuciones y referencia profesional; 08 autorización, pertinencia y reutilización cross-domain; 09 contratos; 10 interacción; 11A pruebas; 12 trazabilidad.",
+   "fuente": "`ACTA-DIR-021` (`TX-01`, `TX-03`, `TX-05`); `DEC-046 §4.4/§4.9`; Auditoría de Impacto Transversal v0.2.1.",
+   "canal": "WEBSITE",
+   "ucDV03": "UC-I13; invocado por UC-P09, UC-P14 y especializado por UC-I09",
+   "familias": [
+    "MTH",
+    "CAL"
+   ],
+   "uc12": "UC-I13 / UC-P09 / UC-P14 / UC-I09",
+   "contrato12": "`MTH/CAL` · MTH-01/02 + CAL-01…04",
+   "prueba11A": "TEST-RF-070",
+   "operacionesDeLaFamilia": [
+    "API-MTH-01 GET /professional-methods",
+    "API-MTH-02 GET /professional-methods/{methodId}/versions/{versionId}",
+    "API-CAL-01 POST /advisees/{adviseeId}/calculations",
+    "API-CAL-02 GET /advisees/{adviseeId}/calculations",
+    "API-CAL-03 GET /calculations/{runId}",
+    "API-CAL-04 PUT /advisees/{adviseeId}/calculation-references/{purpose}"
+   ],
+   "pruebasQueLoCitan": [],
+   "dl": [],
+   "paquetes": [
+    "WP-04.md",
+    "WP-06.md",
+    "WP-07.md"
+   ]
+  },
+  {
+   "ucs": [
+    "UC-P32",
+    "UC-P33",
+    "UC-I02",
+    "UC-I03"
+   ],
+   "rutasDelContrato": [],
+   "operacionesDelContrato": [],
+   "rutasSinOperacion": [],
+   "pruebasPorOperacion": [],
+   "pruebasPorUC": [
+    "test/integration/formularios-alcance.int-spec.ts",
+    "test/integration/notas-de-coordinacion.int-spec.ts",
+    "test/integration/pdp.int-spec.ts",
+    "packages/domain/src/dominio-wp03.test.ts"
+   ],
+   "id": "RF-071",
+   "titulo": "Solicitar y completar información profesional pertinente",
+   "grupo": "Capacidades transversales de soporte profesional",
+   "linea04": 266,
+   "actor": "Profesional autorizado y asesorado",
+   "prioridad": "P0 — Núcleo no recortable",
+   "obligacion": "BE deberá permitir que un profesional autorizado solicite al asesorado información estructurada pertinente para una finalidad y alcance determinados, y que el asesorado la complete conservando solicitante, finalidad, versión de la estructura, estado y procedencia de la respuesta.",
+   "aceptacion": "La solicitud identifica quién pide la información, para qué y dentro de qué alcance; solo utiliza categorías/campos permitidos y distingue datos requeridos de opcionales cuando corresponda; la respuesta queda identificada como `self-reported` y no se convierte en medición profesional, diagnóstico ni autorización; una solicitud no amplía vínculo, consentimiento o acceso; una corrección/actualización posterior preserva historia; un dato preexistente del perfil puede reutilizarse o confirmarse sin perder su procedencia ni duplicarse silenciosamente como un origen indistinguible.",
+   "derivacion": "05 define solicitar/completar y relación con perfil propio; 06 plantillas versionadas, solicitud, respuesta e historia; 08 minimización, categorías, B2/PDP, acceso y gobierno; 09 contratos; 10 formularios y copy; 11A pruebas; 12 trazabilidad.",
+   "fuente": "`ACTA-DIR-021` (`TX-02`, `TX-04`); Auditoría de Impacto Transversal v0.2.1.",
+   "canal": "TRANSVERSAL",
+   "ucDV03": "UC-P32 / UC-P33 / UC-I02 / UC-I03",
+   "familias": [
+    "FRM"
+   ],
+   "uc12": "UC-P32 / UC-P33",
+   "contrato12": "`FRM` · FRM-01…08",
+   "prueba11A": "TEST-RF-071",
+   "operacionesDeLaFamilia": [
+    "API-FRM-01 GET /form-templates",
+    "API-FRM-02 GET /form-templates/{templateId}/versions/{versionId}",
+    "API-FRM-03 POST /advisees/{adviseeId}/form-requests",
+    "API-FRM-04 GET /advisees/{adviseeId}/form-requests",
+    "API-FRM-05 GET /form-requests/{formRequestId}",
+    "API-FRM-06 GET /me/form-requests",
+    "API-FRM-07 POST /me/form-requests/{formRequestId}/responses",
+    "API-FRM-08 POST /me/form-responses/{formResponseId}/rectifications"
+   ],
+   "pruebasQueLoCitan": [],
+   "dl": [
+    {
+     "id": "DL-086",
+     "tema": "wger, Open Food Facts y el compromiso de dos APIs externas",
+     "estado": "**CERRADA** 2026-09-25 · el compromiso se cumplió con WP-08: Open Food Facts y wger, integrados en `main` con #72 (`e83245d`) después de que Dirección confirmara la cobertura del acta, y en la APK 0.10.0 (ver el cierre en la entrada)"
+    },
+    {
+     "id": "DL-090",
+     "tema": "RF-071 es P0 y ningún paquete lo tenía",
+     "estado": "**CERRADA** 2026-09-22 · WP-07 (PRs #58 a #65)"
+    },
+    {
+     "id": "DL-092",
+     "tema": "El núcleo operable de RF-071 vive en seis documentos «NO APROBADO»",
+     "estado": "**DECIDIDA** 2026-09-21 · opción A"
+    },
+    {
+     "id": "DL-094",
+     "tema": "Los siete TEST-FRM eran títulos de una línea",
+     "estado": "**CERRADA** 2026-09-22 · escritos en `docs/paquetes/WP-07-ORACULOS.md`"
+    },
+    {
+     "id": "DL-100",
+     "tema": "Plantilla «Antecedentes para entrenamiento» con seis conceptos",
+     "estado": "**DECIDIDA** 2026-09-27 · ratificada tal cual"
+    },
+    {
+     "id": "DL-144",
+     "tema": "Dirección propuso un formulario base que la persona complete sin que el profesional se lo mande; hoy los formularios base (Salud, Hábitos, Antecedentes para entrenamiento) se mandan a mano",
+     "estado": "**PROPUESTA** 2026-10-18: opción A recomendada (BE los pide al aceptar el vínculo), para después de la entrega; a decidir"
+    }
+   ],
+   "paquetes": [
+    "WP-05.md",
+    "WP-06.md",
+    "WP-07.md"
+   ]
+  },
+  {
+   "ucs": [
+    "UC-P25"
+   ],
+   "rutasDelContrato": [],
+   "operacionesDelContrato": [],
+   "rutasSinOperacion": [],
+   "pruebasPorOperacion": [],
+   "pruebasPorUC": [
+    "test/integration/acceso-google.int-spec.ts",
+    "test/integration/registro.int-spec.ts"
+   ],
+   "id": "RF-017",
+   "titulo": "Crear y mantener un perfil de asesorado",
+   "grupo": "Asesorado, vínculos, consentimiento y autorización",
+   "linea04": 277,
+   "actor": "Asesorado",
+   "prioridad": "P0 — Núcleo no recortable",
+   "obligacion": "BE deberá permitir a una persona adulta crear y mantener un perfil propio, gratuito y persistente, aun sin vínculo activo.",
+   "aceptacion": "El perfil no pertenece a un profesional; completar datos no concede acceso a terceros; menores quedan fuera del MVP.",
+   "derivacion": "06 define datos; 08 minimización; 10 experiencia.",
+   "fuente": "BE-LEG-02 §6; BE-LEG-03 §§2 y 10.",
+   "canal": "APK",
+   "ucDV03": "UC-P25",
+   "familias": [
+    "ACC"
+   ],
+   "uc12": "UC-P25",
+   "contrato12": "`ACC` · registration + own profile",
+   "prueba11A": "TEST-RF-017",
+   "operacionesDeLaFamilia": [
+    "API-ACC-01 POST /registrations",
+    "API-ACC-02 POST /auth/sessions",
+    "API-ACC-04 DELETE /auth/sessions",
+    "API-ACC-02-REANUDACION POST /auth/sessions/resume",
+    "API-ACC-03 DELETE /auth/sessions/current",
+    "API-ACC-05 GET /me",
+    "API-ACC-06 PATCH /me/profile",
+    "API-ACC-06-PROPIA GET /me/profile"
+   ],
+   "pruebasQueLoCitan": [],
+   "dl": [],
+   "paquetes": [
+    "WP-02.md",
+    "WP-03.md"
+   ]
+  },
+  {
+   "ucs": [
+    "UC-P04"
+   ],
+   "rutasDelContrato": [
+    "POST /relationship-requests"
+   ],
+   "operacionesDelContrato": [
+    "API-REL-01"
+   ],
+   "rutasSinOperacion": [],
+   "pruebasPorOperacion": [
+    "test/integration/concurrencia-wp03.int-spec.ts",
+    "test/integration/vinculo.int-spec.ts"
+   ],
+   "pruebasPorUC": [
+    "test/integration/invitaciones.int-spec.ts",
+    "test/integration/vinculo.int-spec.ts"
+   ],
+   "id": "RF-018",
+   "titulo": "Solicitar o invitar a un vínculo",
+   "grupo": "Asesorado, vínculos, consentimiento y autorización",
+   "linea04": 286,
+   "actor": "Profesional o asesorado",
+   "prioridad": "P0 — Núcleo no recortable",
+   "obligacion": "BE deberá permitir iniciar una solicitud de vínculo que identifique profesional, asesorado, especialidad y finalidad.",
+   "aceptacion": "La solicitud queda pendiente y no habilita acceso; el destinatario conoce quién solicita y para qué; no se crean duplicados equivalentes vigentes.",
+   "derivacion": "05 flujo; 06 estados; 08 datos visibles; 09 contrato.",
+   "fuente": "BE-LEG-02 §11; DEC-003; Q-000.",
+   "canal": "TRANSVERSAL",
+   "ucDV03": "UC-P04",
+   "familias": [
+    "REL"
+   ],
+   "uc12": "UC-P04",
+   "contrato12": "`REL` · POST /relationship-requests",
+   "prueba11A": "TEST-RF-018",
+   "operacionesDeLaFamilia": [
+    "API-REL-01 POST /relationship-requests",
+    "API-REL-02 GET /me/relationship-requests",
+    "API-REL-03 POST /relationship-requests/{requestId}/accept",
+    "API-REL-04 POST /relationship-requests/{requestId}/reject",
+    "API-REL-05 GET /me/relationships",
+    "API-REL-06 GET /relationships/{relationshipId}",
+    "API-REL-07 POST /relationships/{relationshipId}/pause",
+    "API-REL-08 POST /relationships/{relationshipId}/resume",
+    "API-REL-09 POST /relationships/{relationshipId}/finalize"
+   ],
+   "pruebasQueLoCitan": [
+    "test/integration/pdp.int-spec.ts",
+    "test/integration/vinculo.int-spec.ts"
+   ],
+   "dl": [
+    {
+     "id": "DL-040",
+     "tema": "Nombre visible de las partes sin campos de perfil aprobados",
+     "estado": "**DECIDIDA E IMPLEMENTADA** 2026-10-15 · el profesional ve el nombre visible del asesorado mientras el vínculo está vigente; si no, la referencia neutral (#159, sin integrar)"
+    }
+   ],
+   "paquetes": [
+    "WP-02.md",
+    "WP-03.md"
+   ]
+  },
+  {
+   "ucs": [
+    "UC-P05"
+   ],
+   "rutasDelContrato": [],
+   "operacionesDelContrato": [],
+   "rutasSinOperacion": [],
+   "pruebasPorOperacion": [],
+   "pruebasPorUC": [
+    "test/integration/invitaciones.int-spec.ts",
+    "test/integration/vinculo.int-spec.ts"
+   ],
+   "id": "RF-019",
+   "titulo": "Aceptar o rechazar un vínculo",
+   "grupo": "Asesorado, vínculos, consentimiento y autorización",
+   "linea04": 295,
+   "actor": "Asesorado",
+   "prioridad": "P0 — Núcleo no recortable",
+   "obligacion": "El asesorado deberá aceptar o rechazar expresamente la solicitud antes de que el vínculo pueda habilitar operación profesional.",
+   "aceptacion": "Antes de la aceptación no existe acceso profesional; el rechazo queda trazable; aceptar no equivale a consentir todos los dominios.",
+   "derivacion": "05 variantes; 06 estados; 08 consentimiento y autorización.",
+   "fuente": "DEC-003; BE-LEG-02 §§6 y 11; Q-000.",
+   "canal": "APK",
+   "ucDV03": "UC-P05",
+   "familias": [
+    "REL"
+   ],
+   "uc12": "UC-P05",
+   "contrato12": "`REL` · list own requests + accept/reject",
+   "prueba11A": "TEST-RF-019",
+   "operacionesDeLaFamilia": [
+    "API-REL-01 POST /relationship-requests",
+    "API-REL-02 GET /me/relationship-requests",
+    "API-REL-03 POST /relationship-requests/{requestId}/accept",
+    "API-REL-04 POST /relationship-requests/{requestId}/reject",
+    "API-REL-05 GET /me/relationships",
+    "API-REL-06 GET /relationships/{relationshipId}",
+    "API-REL-07 POST /relationships/{relationshipId}/pause",
+    "API-REL-08 POST /relationships/{relationshipId}/resume",
+    "API-REL-09 POST /relationships/{relationshipId}/finalize"
+   ],
+   "pruebasQueLoCitan": [
+    "test/integration/pdp.int-spec.ts",
+    "test/integration/vinculo.int-spec.ts"
+   ],
+   "dl": [],
+   "paquetes": [
+    "WP-03.md"
+   ]
+  },
+  {
+   "ucs": [
+    "UC-P07"
+   ],
+   "rutasDelContrato": [],
+   "operacionesDelContrato": [],
+   "rutasSinOperacion": [],
+   "pruebasPorOperacion": [],
+   "pruebasPorUC": [
+    "test/integration/consentimiento.int-spec.ts",
+    "test/integration/evidencia-visual.int-spec.ts"
+   ],
+   "id": "RF-020",
+   "titulo": "Otorgar consentimiento específico y versionado",
+   "grupo": "Asesorado, vínculos, consentimiento y autorización",
+   "linea04": 304,
+   "actor": "Asesorado",
+   "prioridad": "P0 — Núcleo no recortable",
+   "obligacion": "BE deberá permitir otorgar consentimiento informado, específico, versionado y revocable para los datos, dominios y finalidades aplicables.",
+   "aceptacion": "No se habilita acceso protegido sin consentimiento vigente; el sistema conserva evidencia de versión, actor y fecha; el alcance no se amplía de forma implícita; un vínculo aceptado solo se considera operativo para un propósito cuando concurren los consentimientos aplicables.",
+   "derivacion": "08 es propietario de taxonomía, texto, vigencia y retención; 06 referencia el consentimiento; 05 flujo.",
+   "fuente": "BE-LEG-02 §§9, 11 y 15; DEC-006; Q-003.",
+   "canal": "APK",
+   "ucDV03": "UC-P07",
+   "familias": [
+    "CON"
+   ],
+   "uc12": "UC-P07",
+   "contrato12": "`CON` · consent-requirements + grant + own list",
+   "prueba11A": "TEST-RF-020",
+   "operacionesDeLaFamilia": [
+    "API-CON-05 GET /me/health-data-consent-requirement",
+    "API-CON-01 GET /relationships/{relationshipId}/consent-requirements",
+    "API-CON-02 POST /relationships/{relationshipId}/consents",
+    "API-CON-03 GET /me/consents",
+    "API-CON-04 POST /me/consents/{consentId}/revoke",
+    "API-CON-06 POST /me/health-data-consents",
+    "API-CON-07 GET /me/health-data-consents",
+    "API-CON-08 POST /me/health-data-consents/{consentId}/revoke"
+   ],
+   "pruebasQueLoCitan": [
+    "test/integration/consentimiento.int-spec.ts"
+   ],
+   "dl": [],
+   "paquetes": [
+    "WP-02.md",
+    "WP-03.md"
+   ]
+  },
+  {
+   "ucs": [
+    "UC-I02"
+   ],
+   "rutasDelContrato": [],
+   "operacionesDelContrato": [],
+   "rutasSinOperacion": [],
+   "pruebasPorOperacion": [],
+   "pruebasPorUC": [
+    "test/integration/notas-de-coordinacion.int-spec.ts",
+    "test/integration/pdp.int-spec.ts",
+    "packages/domain/src/dominio-wp03.test.ts"
+   ],
+   "id": "RF-021",
+   "titulo": "Evaluar la autorización contextual en cada operación protegida",
+   "grupo": "Asesorado, vínculos, consentimiento y autorización",
+   "linea04": 313,
+   "actor": "Sistema BE",
+   "prioridad": "P0 — Núcleo no recortable",
+   "obligacion": "BE deberá permitir o denegar cada operación considerando rol, especialidad, estado, vínculo, consentimiento, finalidad y alcance vigentes.",
+   "aceptacion": "Una condición faltante impide la operación; la decisión se aplica en todas las superficies; la interfaz no puede otorgar permisos por sí misma.",
+   "derivacion": "08 define la política; 06 aporta estados; 09 traduce resultados; 11A prueba casos positivos y negativos.",
+   "fuente": "BE-LEG-02 §§11 y 15; DEC-006.",
+   "canal": "TRANSVERSAL",
+   "ucDV03": "UC-I02 / TR-02",
+   "familias": [
+    "SYS",
+    "PDP"
+   ],
+   "uc12": "UC-I02 / TR-02",
+   "contrato12": "`SYS/PDP` · server-side PDP en toda operación protegida",
+   "prueba11A": "TEST-RF-021",
+   "operacionesDeLaFamilia": [],
+   "pruebasQueLoCitan": [
+    "test/integration/pdp.int-spec.ts",
+    "test/integration/schema.int-spec.ts",
+    "packages/domain/src/dominio-wp03.test.ts"
+   ],
+   "dl": [
+    {
+     "id": "DL-031",
+     "tema": "Recurso protegido para demostrar el acceso sin dominios de salud",
+     "estado": "**CERRADA** 2026-09-24 · opción A · condición de cierre cumplida en la consolidación (PR #70)"
+    },
+    {
+     "id": "DL-032",
+     "tema": "Las siete dimensiones del PDP y el lugar de A3",
+     "estado": "**DECIDIDA** 2026-09-19 · Dirección aceptó el provisorio (opción A)"
+    },
+    {
+     "id": "DL-143",
+     "tema": "Una persona aceptó el vínculo y autorizó al profesional, pero sin el tratamiento de datos de salud (A3) el acceso no era efectivo: la APK decía «Activo» y el profesional, «Acceso no disponible»",
+     "estado": "**INTEGRADO** 2026-10-17 (#181): el último paso A3 en el mismo recorrido, el recordatorio en Inicio y una pista general para el profesional; **Dirección eligió A** el 2026-10-18"
+    }
+   ],
+   "paquetes": [
+    "WP-02.md",
+    "WP-03.md"
+   ]
+  },
+  {
+   "ucs": [
+    "UC-P08"
+   ],
+   "rutasDelContrato": [
+    "POST /me/consents/{}/revoke"
+   ],
+   "operacionesDelContrato": [
+    "API-CON-04"
+   ],
+   "rutasSinOperacion": [],
+   "pruebasPorOperacion": [
+    "test/integration/concurrencia-wp03.int-spec.ts",
+    "test/integration/consentimiento.int-spec.ts",
+    "packages/domain/src/evidencia-visual.test.ts"
+   ],
+   "pruebasPorUC": [
+    "test/integration/consentimiento.int-spec.ts"
+   ],
+   "id": "RF-022",
+   "titulo": "Revocar consentimiento y cortar accesos futuros",
+   "grupo": "Asesorado, vínculos, consentimiento y autorización",
+   "linea04": 322,
+   "actor": "Asesorado",
+   "prioridad": "P0 — Núcleo no recortable",
+   "obligacion": "BE deberá permitir revocar un consentimiento y hacer efectiva la pérdida de autorización para operaciones futuras del alcance revocado.",
+   "aceptacion": "Tras la revocación, un profesional ya no realiza nuevas lecturas o escrituras protegidas del alcance; la evidencia histórica no se elimina silenciosamente; el efecto queda auditado.",
+   "derivacion": "08 define retención y plazo efectivo; 06 estados; 05 escenarios.",
+   "fuente": "BE-LEG-02 §§11 y 15; Q-003 y Q-004; DEC-006.",
+   "canal": "APK",
+   "ucDV03": "UC-P08 / TR-05",
+   "familias": [
+    "CON"
+   ],
+   "uc12": "UC-P08 / TR-05",
+   "contrato12": "`CON` · POST /me/consents/{id}/revoke",
+   "prueba11A": "TEST-RF-022",
+   "operacionesDeLaFamilia": [
+    "API-CON-05 GET /me/health-data-consent-requirement",
+    "API-CON-01 GET /relationships/{relationshipId}/consent-requirements",
+    "API-CON-02 POST /relationships/{relationshipId}/consents",
+    "API-CON-03 GET /me/consents",
+    "API-CON-04 POST /me/consents/{consentId}/revoke",
+    "API-CON-06 POST /me/health-data-consents",
+    "API-CON-07 GET /me/health-data-consents",
+    "API-CON-08 POST /me/health-data-consents/{consentId}/revoke"
+   ],
+   "pruebasQueLoCitan": [
+    "test/integration/consentimiento.int-spec.ts",
+    "packages/domain/src/dominio-wp03.test.ts"
+   ],
+   "dl": [],
+   "paquetes": [
+    "WP-03.md"
+   ]
+  },
+  {
+   "ucs": [
+    "UC-P06",
+    "UC-P07",
+    "UC-P05"
+   ],
+   "rutasDelContrato": [],
+   "operacionesDelContrato": [],
+   "rutasSinOperacion": [],
+   "pruebasPorOperacion": [],
+   "pruebasPorUC": [
+    "test/integration/consentimiento.int-spec.ts",
+    "test/integration/evidencia-visual.int-spec.ts",
+    "test/integration/invitaciones.int-spec.ts",
+    "test/integration/vinculo.int-spec.ts"
+   ],
+   "id": "RF-023",
+   "titulo": "Consultar vínculos y consentimientos propios",
+   "grupo": "Asesorado, vínculos, consentimiento y autorización",
+   "linea04": 331,
+   "actor": "Profesional o asesorado",
+   "prioridad": "P0 — Núcleo no recortable",
+   "obligacion": "Cada actor deberá consultar sus relaciones, especialidades, finalidades, estados y consentimientos relevantes.",
+   "aceptacion": "El asesorado identifica quién tiene acceso y con qué alcance; el profesional solo ve relaciones propias; la información coincide con la autorización efectiva.",
+   "derivacion": "08 define visibilidad; 10 presentación; 06 estados.",
+   "fuente": "BE-LEG-02 §§6, 9 y 11.",
+   "canal": "TRANSVERSAL",
+   "ucDV03": "UC-P06 / UC-P07 / UC-P05",
+   "familias": [
+    "REL",
+    "CON"
+   ],
+   "uc12": "UC-P06 / UC-P07 / UC-P05",
+   "contrato12": "`REL/CON` · own relationships + own consents + own requests",
+   "prueba11A": "TEST-RF-023",
+   "operacionesDeLaFamilia": [
+    "API-CON-05 GET /me/health-data-consent-requirement",
+    "API-REL-01 POST /relationship-requests",
+    "API-REL-02 GET /me/relationship-requests",
+    "API-REL-03 POST /relationship-requests/{requestId}/accept",
+    "API-REL-04 POST /relationship-requests/{requestId}/reject",
+    "API-REL-05 GET /me/relationships",
+    "API-REL-06 GET /relationships/{relationshipId}",
+    "API-REL-07 POST /relationships/{relationshipId}/pause",
+    "API-REL-08 POST /relationships/{relationshipId}/resume",
+    "API-REL-09 POST /relationships/{relationshipId}/finalize",
+    "API-CON-01 GET /relationships/{relationshipId}/consent-requirements",
+    "API-CON-02 POST /relationships/{relationshipId}/consents",
+    "API-CON-03 GET /me/consents",
+    "API-CON-04 POST /me/consents/{consentId}/revoke",
+    "API-CON-06 POST /me/health-data-consents",
+    "API-CON-07 GET /me/health-data-consents",
+    "API-CON-08 POST /me/health-data-consents/{consentId}/revoke"
+   ],
+   "pruebasQueLoCitan": [
+    "test/integration/vinculo.int-spec.ts"
+   ],
+   "dl": [
+    {
+     "id": "DL-143",
+     "tema": "Una persona aceptó el vínculo y autorizó al profesional, pero sin el tratamiento de datos de salud (A3) el acceso no era efectivo: la APK decía «Activo» y el profesional, «Acceso no disponible»",
+     "estado": "**INTEGRADO** 2026-10-17 (#181): el último paso A3 en el mismo recorrido, el recordatorio en Inicio y una pista general para el profesional; **Dirección eligió A** el 2026-10-18"
+    }
+   ],
+   "paquetes": [
+    "WP-03.md"
+   ]
+  },
+  {
+   "ucs": [
+    "UC-P06"
+   ],
+   "rutasDelContrato": [],
+   "operacionesDelContrato": [],
+   "rutasSinOperacion": [],
+   "pruebasPorOperacion": [],
+   "pruebasPorUC": [
+    "test/integration/vinculo.int-spec.ts"
+   ],
+   "id": "RF-024",
+   "titulo": "Pausar o finalizar un vínculo",
+   "grupo": "Asesorado, vínculos, consentimiento y autorización",
+   "linea04": 340,
+   "actor": "Profesional o asesorado según política",
+   "prioridad": "P0 — Núcleo no recortable",
+   "obligacion": "BE deberá permitir pausar o finalizar un vínculo sin borrar la identidad ni la historia del proceso.",
+   "aceptacion": "La acción impide nuevas operaciones incompatibles con el estado; conserva autoría, fecha y motivo; la lectura posterior queda pendiente de Q-005 y Documento 08.",
+   "derivacion": "06 define estados y transiciones; 08 lectura residual y retención; 05 casos.",
+   "fuente": "BE-LEG-02 §11; Q-005 y Q-007.",
+   "canal": "TRANSVERSAL",
+   "ucDV03": "UC-P06",
+   "familias": [
+    "REL"
+   ],
+   "uc12": "UC-P06",
+   "contrato12": "`REL` · pause · resume · finalize",
+   "prueba11A": "TEST-RF-024",
+   "operacionesDeLaFamilia": [
+    "API-REL-01 POST /relationship-requests",
+    "API-REL-02 GET /me/relationship-requests",
+    "API-REL-03 POST /relationship-requests/{requestId}/accept",
+    "API-REL-04 POST /relationship-requests/{requestId}/reject",
+    "API-REL-05 GET /me/relationships",
+    "API-REL-06 GET /relationships/{relationshipId}",
+    "API-REL-07 POST /relationships/{relationshipId}/pause",
+    "API-REL-08 POST /relationships/{relationshipId}/resume",
+    "API-REL-09 POST /relationships/{relationshipId}/finalize"
+   ],
+   "pruebasQueLoCitan": [
+    "test/integration/vinculo.int-spec.ts"
+   ],
+   "dl": [
+    {
+     "id": "DL-033",
+     "tema": "Máquinas del §7: actor habilitado, motivo y eventos",
+     "estado": "**DECIDIDA** 2026-09-19 · Dirección aceptó el provisorio (opción A)"
+    }
+   ],
+   "paquetes": [
+    "WP-03.md"
+   ]
+  },
+  {
+   "ucs": [
+    "UC-I03"
+   ],
+   "rutasDelContrato": [],
+   "operacionesDelContrato": [],
+   "rutasSinOperacion": [],
+   "pruebasPorOperacion": [],
+   "pruebasPorUC": [],
+   "id": "RF-025",
+   "titulo": "Preservar identidad e historia al cambiar de profesional",
+   "grupo": "Asesorado, vínculos, consentimiento y autorización",
+   "linea04": 349,
+   "actor": "Asesorado",
+   "prioridad": "P0 — Núcleo no recortable",
+   "obligacion": "BE deberá conservar la identidad longitudinal y la procedencia de los registros cuando un vínculo cambie o finalice, sin transferir acceso automáticamente a otro profesional.",
+   "aceptacion": "El nuevo vínculo no altera autoría histórica; cada profesional solo consulta lo autorizado; el asesorado mantiene su cuenta y evolución.",
+   "derivacion": "06 modelo longitudinal; 08 acceso histórico; 10 consulta.",
+   "fuente": "BE-LEG-02 §§3, 5, 9 y 11; BE-LEG-03 §§4 y 10.",
+   "canal": "TRANSVERSAL",
+   "ucDV03": "UC-I03 / TR-03",
+   "familias": [
+    "SYS",
+    "DSH"
+   ],
+   "uc12": "UC-I03 / TR-03",
+   "contrato12": "`SYS/DSH` · audit/history + timeline; no overwrite",
+   "prueba11A": "TEST-RF-025",
+   "operacionesDeLaFamilia": [
+    "API-DSH-03 GET /advisees/{adviseeId}/dashboard",
+    "API-DSH-04 GET /advisees/{adviseeId}/timeline",
+    "API-DSH-04-BUSQUEDA POST /advisees/{adviseeId}/timeline/search"
+   ],
+   "pruebasQueLoCitan": [
+    "test/integration/vinculo.int-spec.ts"
+   ],
+   "dl": [
+    {
+     "id": "DL-057",
+     "tema": "Datos nutricionales de otro profesional del mismo alcance",
+     "estado": "ABIERTA"
+    }
+   ],
+   "paquetes": [
+    "WP-03.md"
+   ]
+  },
+  {
+   "ucs": [
+    "UC-P09"
+   ],
+   "rutasDelContrato": [],
+   "operacionesDelContrato": [],
+   "rutasSinOperacion": [],
+   "pruebasPorOperacion": [],
+   "pruebasPorUC": [
+    "test/integration/nutricion.int-spec.ts"
+   ],
+   "id": "RF-026",
+   "titulo": "Registrar una evaluación nutricional",
+   "grupo": "Circuito nutricional",
+   "linea04": 360,
+   "actor": "Profesional de Nutrición",
+   "prioridad": "P0 — Núcleo no recortable",
+   "obligacion": "BE deberá permitir registrar una evaluación nutricional pertinente al proceso, con autoría, fecha, fuente y contexto.",
+   "aceptacion": "La evaluación queda asociada al asesorado y al vínculo autorizado; distingue datos informados, observados y calculados; puede consultarse en la historia.",
+   "derivacion": "06 define datos; 08 acceso; 05 flujo; 10 formulario.",
+   "fuente": "BE-LEG-02 §§5, 11 y 15; DEC-012.",
+   "canal": "WEBSITE",
+   "ucDV03": "UC-P09",
+   "familias": [
+    "NUT"
+   ],
+   "uc12": "UC-P09",
+   "contrato12": "`NUT` · nutrition evaluations",
+   "prueba11A": "TEST-RF-026",
+   "operacionesDeLaFamilia": [
+    "API-NUT-01 POST /advisees/{adviseeId}/nutrition/evaluations",
+    "API-NUT-02 GET /advisees/{adviseeId}/nutrition/evaluations",
+    "API-NUT-03 GET /nutrition/evaluations/{evaluationId}",
+    "API-NUT-04 POST /advisees/{adviseeId}/nutrition/objectives",
+    "API-NUT-05 GET /advisees/{adviseeId}/nutrition/objectives",
+    "API-NUT-06 GET /advisees/{adviseeId}/nutrition/objectives/effective",
+    "API-NUT-07 POST /advisees/{adviseeId}/nutrition/plans",
+    "API-NUT-08 GET /advisees/{adviseeId}/nutrition/plans",
+    "API-NUT-09 GET /nutrition/plans/{planId}",
+    "API-NUT-10 PATCH /nutrition/plans/{planId}",
+    "API-NUT-11 POST /nutrition/plans/{planId}/validate",
+    "API-NUT-12 POST /nutrition/plans/{planId}/activate",
+    "API-NUT-13 GET /nutrition/catalog-items",
+    "API-NUT-13-BUSQUEDA POST /nutrition/catalog-items/search",
+    "API-NUT-14 GET /me/nutrition/today",
+    "API-NUT-15 POST /me/nutrition/executions",
+    "API-NUT-16-LISTA GET /me/nutrition/executions",
+    "API-NUT-16 GET /nutrition/executions/{executionId}",
+    "API-NUT-17 GET /advisees/{adviseeId}/nutrition/review-context",
+    "API-NUT-18 POST /advisees/{adviseeId}/nutrition/reviews",
+    "API-NUT-19 GET /nutrition/reviews/{reviewId}",
+    "API-NUT-20 POST /nutrition/reviews/{reviewId}/apply",
+    "API-NUT-21 POST /nutrition/executions/{executionId}/corrections",
+    "API-NUT-19-LISTA GET /me/nutrition/reviews",
+    "API-NUT-19-PROPIA GET /me/nutrition/reviews/{reviewId}"
+   ],
+   "pruebasQueLoCitan": [
+    "test/integration/nutricion.int-spec.ts"
+   ],
+   "dl": [
+    {
+     "id": "DL-048",
+     "tema": "Contenido de la evaluación nutricional sin campos definidos",
+     "estado": "ABIERTA"
+    }
+   ],
+   "paquetes": [
+    "WP-02.md",
+    "WP-03.md",
+    "WP-04.md"
+   ]
+  },
+  {
+   "ucs": [
+    "UC-P10"
+   ],
+   "rutasDelContrato": [],
+   "operacionesDelContrato": [],
+   "rutasSinOperacion": [],
+   "pruebasPorOperacion": [],
+   "pruebasPorUC": [
+    "test/integration/nutricion.int-spec.ts"
+   ],
+   "id": "RF-027",
+   "titulo": "Gestionar un catálogo nutricional propio",
+   "grupo": "Circuito nutricional",
+   "linea04": 369,
+   "actor": "Profesional de Nutrición o administrador autorizado",
+   "prioridad": "P0 — Núcleo no recortable",
+   "obligacion": "BE deberá disponer de un catálogo propio de alimentos y permitir carga manual para operar sin proveedores externos.",
+   "aceptacion": "Los elementos indican procedencia y estado; el catálogo permite construir planes aun cuando Open Food Facts no esté disponible; cambios posteriores no alteran retrospectivamente planes emitidos.",
+   "derivacion": "06 estructura/versionado; 08 licencia/procedencia cuando aplique; 10 gestión.",
+   "fuente": "BE-LEG-02 §13 y fallbacks §20.",
+   "canal": "WEBSITE",
+   "ucDV03": "UC-P10",
+   "familias": [
+    "NUT",
+    "INT"
+   ],
+   "uc12": "UC-P10",
+   "contrato12": "`NUT/INT` · GET/POST catalog-items",
+   "prueba11A": "TEST-RF-027",
+   "operacionesDeLaFamilia": [
+    "API-NUT-01 POST /advisees/{adviseeId}/nutrition/evaluations",
+    "API-NUT-02 GET /advisees/{adviseeId}/nutrition/evaluations",
+    "API-NUT-03 GET /nutrition/evaluations/{evaluationId}",
+    "API-NUT-04 POST /advisees/{adviseeId}/nutrition/objectives",
+    "API-NUT-05 GET /advisees/{adviseeId}/nutrition/objectives",
+    "API-NUT-06 GET /advisees/{adviseeId}/nutrition/objectives/effective",
+    "API-NUT-07 POST /advisees/{adviseeId}/nutrition/plans",
+    "API-NUT-08 GET /advisees/{adviseeId}/nutrition/plans",
+    "API-NUT-09 GET /nutrition/plans/{planId}",
+    "API-NUT-10 PATCH /nutrition/plans/{planId}",
+    "API-NUT-11 POST /nutrition/plans/{planId}/validate",
+    "API-NUT-12 POST /nutrition/plans/{planId}/activate",
+    "API-NUT-13 GET /nutrition/catalog-items",
+    "API-NUT-13-BUSQUEDA POST /nutrition/catalog-items/search",
+    "API-NUT-14 GET /me/nutrition/today",
+    "API-NUT-15 POST /me/nutrition/executions",
+    "API-NUT-16-LISTA GET /me/nutrition/executions",
+    "API-NUT-16 GET /nutrition/executions/{executionId}",
+    "API-NUT-17 GET /advisees/{adviseeId}/nutrition/review-context",
+    "API-NUT-18 POST /advisees/{adviseeId}/nutrition/reviews",
+    "API-NUT-19 GET /nutrition/reviews/{reviewId}",
+    "API-NUT-20 POST /nutrition/reviews/{reviewId}/apply",
+    "API-NUT-21 POST /nutrition/executions/{executionId}/corrections",
+    "API-NUT-19-LISTA GET /me/nutrition/reviews",
+    "API-NUT-19-PROPIA GET /me/nutrition/reviews/{reviewId}"
+   ],
+   "pruebasQueLoCitan": [
+    "test/integration/nutricion.int-spec.ts"
+   ],
+   "dl": [
+    {
+     "id": "DL-119",
+     "tema": "Recetas como preparaciones propias del profesional, catálogo de referencia USDA y método de cálculo de energía y macros",
+     "estado": "**DECIDIDA** 2026-10-05 · familia REC, método `SUM_SOURCE_PER_100G_V1`. **IMPLEMENTADA** el 2026-10-06 en `wp-nutricion-recetas` (#147, borrador) y **probada localmente**. Sin integrar; pendiente la prueba remota (no hay despliegue) y en Android (no hay APK nueva)"
+    }
+   ],
+   "paquetes": [
+    "WP-04.md"
+   ]
+  },
+  {
+   "ucs": [
+    "UC-I07",
+    "UC-P10"
+   ],
+   "rutasDelContrato": [],
+   "operacionesDelContrato": [],
+   "rutasSinOperacion": [],
+   "pruebasPorOperacion": [],
+   "pruebasPorUC": [
+    "test/integration/integraciones.int-spec.ts",
+    "test/integration/nutricion.int-spec.ts",
+    "packages/domain/src/contratos-wp08.test.ts"
+   ],
+   "id": "RF-028",
+   "titulo": "Importar alimentos desde Open Food Facts",
+   "grupo": "Circuito nutricional",
+   "linea04": 378,
+   "actor": "Profesional de Nutrición",
+   "prioridad": "P0 — Compromiso académico de integración",
+   "obligacion": "BE deberá consultar e importar de forma controlada alimentos desde Open Food Facts, validando los datos antes de incorporarlos al catálogo BE.",
+   "aceptacion": "La importación identifica proveedor y fecha; datos insuficientes se corrigen o rechazan; una caída del proveedor permite continuar con catálogo propio y carga manual.",
+   "derivacion": "07 adaptador; 09 contrato; 06 normalización; 08 licencia/procedencia.",
+   "fuente": "BE-LEG-02 §§10, 13 y 20; REV-002 RES-02.",
+   "canal": "WEBSITE",
+   "ucDV03": "UC-I07 / UC-P10",
+   "familias": [
+    "INT-NUT"
+   ],
+   "uc12": "UC-I07 / UC-P10",
+   "contrato12": "`INT-NUT` · candidate → review/resolve Open Food Facts",
+   "prueba11A": "TEST-RF-028",
+   "operacionesDeLaFamilia": [
+    "API-INT-NUT-01 POST /nutrition/catalog-items",
+    "API-INT-NUT-02 POST /nutrition/catalog-import-candidates",
+    "API-INT-NUT-03 POST /nutrition/catalog-import-candidates/{candidateId}/resolve"
+   ],
+   "pruebasQueLoCitan": [
+    "test/integration/integraciones.int-spec.ts",
+    "packages/domain/src/contratos-wp08.test.ts"
+   ],
+   "dl": [
+    {
+     "id": "DL-056",
+     "tema": "RF-028 (Open Food Facts), P0 de compromiso académico, sin paquete asignado",
+     "estado": "**CERRADA** 2026-09-25 · opción A cumplida: RF-028 quedó en WP-08, integrado en `main` con #72 (`e83245d`); la búsqueda por texto sigue en DL-098"
+    },
+    {
+     "id": "DL-062",
+     "tema": "`preparationReference` obligatorio en la importación, sin entidad ni API",
+     "estado": "**DECIDIDA** 2026-09-20 · opción A · el flujo va al paquete de integraciones"
+    },
+    {
+     "id": "DL-086",
+     "tema": "wger, Open Food Facts y el compromiso de dos APIs externas",
+     "estado": "**CERRADA** 2026-09-25 · el compromiso se cumplió con WP-08: Open Food Facts y wger, integrados en `main` con #72 (`e83245d`) después de que Dirección confirmara la cobertura del acta, y en la APK 0.10.0 (ver el cierre en la entrada)"
+    }
+   ],
+   "paquetes": [
+    "WP-04.md",
+    "WP-06.md",
+    "WP-08-ORACULOS.md",
+    "WP-08.md"
+   ]
+  },
+  {
+   "ucs": [
+    "UC-P09"
+   ],
+   "rutasDelContrato": [],
+   "operacionesDelContrato": [],
+   "rutasSinOperacion": [],
+   "pruebasPorOperacion": [],
+   "pruebasPorUC": [
+    "test/integration/nutricion.int-spec.ts"
+   ],
+   "id": "RF-029",
+   "titulo": "Definir un objetivo nutricional vigente",
+   "grupo": "Circuito nutricional",
+   "linea04": 387,
+   "actor": "Profesional de Nutrición",
+   "prioridad": "P0 — Núcleo no recortable",
+   "obligacion": "BE deberá permitir acordar y registrar un objetivo nutricional con vigencia, responsable y relación con la evaluación.",
+   "aceptacion": "Existe un objetivo identificable para el plan; los cambios no reescriben silenciosamente el anterior; el asesorado puede consultar la formulación autorizada.",
+   "derivacion": "06 define ciclo de vida; 05 flujo; 10 presentación.",
+   "fuente": "BE-LEG-02 §§7–9 y 11.",
+   "canal": "WEBSITE",
+   "ucDV03": "UC-P09",
+   "familias": [
+    "NUT"
+   ],
+   "uc12": "UC-P09",
+   "contrato12": "`NUT` · nutrition objectives versioned",
+   "prueba11A": "TEST-RF-029",
+   "operacionesDeLaFamilia": [
+    "API-NUT-01 POST /advisees/{adviseeId}/nutrition/evaluations",
+    "API-NUT-02 GET /advisees/{adviseeId}/nutrition/evaluations",
+    "API-NUT-03 GET /nutrition/evaluations/{evaluationId}",
+    "API-NUT-04 POST /advisees/{adviseeId}/nutrition/objectives",
+    "API-NUT-05 GET /advisees/{adviseeId}/nutrition/objectives",
+    "API-NUT-06 GET /advisees/{adviseeId}/nutrition/objectives/effective",
+    "API-NUT-07 POST /advisees/{adviseeId}/nutrition/plans",
+    "API-NUT-08 GET /advisees/{adviseeId}/nutrition/plans",
+    "API-NUT-09 GET /nutrition/plans/{planId}",
+    "API-NUT-10 PATCH /nutrition/plans/{planId}",
+    "API-NUT-11 POST /nutrition/plans/{planId}/validate",
+    "API-NUT-12 POST /nutrition/plans/{planId}/activate",
+    "API-NUT-13 GET /nutrition/catalog-items",
+    "API-NUT-13-BUSQUEDA POST /nutrition/catalog-items/search",
+    "API-NUT-14 GET /me/nutrition/today",
+    "API-NUT-15 POST /me/nutrition/executions",
+    "API-NUT-16-LISTA GET /me/nutrition/executions",
+    "API-NUT-16 GET /nutrition/executions/{executionId}",
+    "API-NUT-17 GET /advisees/{adviseeId}/nutrition/review-context",
+    "API-NUT-18 POST /advisees/{adviseeId}/nutrition/reviews",
+    "API-NUT-19 GET /nutrition/reviews/{reviewId}",
+    "API-NUT-20 POST /nutrition/reviews/{reviewId}/apply",
+    "API-NUT-21 POST /nutrition/executions/{executionId}/corrections",
+    "API-NUT-19-LISTA GET /me/nutrition/reviews",
+    "API-NUT-19-PROPIA GET /me/nutrition/reviews/{reviewId}"
+   ],
+   "pruebasQueLoCitan": [
+    "test/integration/nutricion.int-spec.ts"
+   ],
+   "dl": [],
+   "paquetes": [
+    "WP-04.md"
+   ]
+  },
+  {
+   "ucs": [
+    "UC-P10"
+   ],
+   "rutasDelContrato": [],
+   "operacionesDelContrato": [],
+   "rutasSinOperacion": [],
+   "pruebasPorOperacion": [],
+   "pruebasPorUC": [
+    "test/integration/nutricion.int-spec.ts"
+   ],
+   "id": "RF-030",
+   "titulo": "Crear y editar un plan nutricional en borrador",
+   "grupo": "Circuito nutricional",
+   "linea04": 396,
+   "actor": "Profesional de Nutrición",
+   "prioridad": "P0 — Núcleo no recortable",
+   "obligacion": "BE deberá permitir construir un plan nutricional con estructura suficiente para indicar comidas, alternativas, cantidades, objetivos y observaciones antes de activarlo.",
+   "aceptacion": "El borrador puede guardarse y retomarse; no es visible como plan vigente del asesorado; las inconsistencias relevantes se informan antes de activar.",
+   "derivacion": "06 define agregado e invariantes; 09 contratos; 10 editor; 05 flujo.",
+   "fuente": "BE-LEG-02 §11; DEC-012.",
+   "canal": "WEBSITE",
+   "ucDV03": "UC-P10",
+   "familias": [
+    "NUT"
+   ],
+   "uc12": "UC-P10",
+   "contrato12": "`NUT` · plan draft list/detail/edit",
+   "prueba11A": "TEST-RF-030",
+   "operacionesDeLaFamilia": [
+    "API-NUT-01 POST /advisees/{adviseeId}/nutrition/evaluations",
+    "API-NUT-02 GET /advisees/{adviseeId}/nutrition/evaluations",
+    "API-NUT-03 GET /nutrition/evaluations/{evaluationId}",
+    "API-NUT-04 POST /advisees/{adviseeId}/nutrition/objectives",
+    "API-NUT-05 GET /advisees/{adviseeId}/nutrition/objectives",
+    "API-NUT-06 GET /advisees/{adviseeId}/nutrition/objectives/effective",
+    "API-NUT-07 POST /advisees/{adviseeId}/nutrition/plans",
+    "API-NUT-08 GET /advisees/{adviseeId}/nutrition/plans",
+    "API-NUT-09 GET /nutrition/plans/{planId}",
+    "API-NUT-10 PATCH /nutrition/plans/{planId}",
+    "API-NUT-11 POST /nutrition/plans/{planId}/validate",
+    "API-NUT-12 POST /nutrition/plans/{planId}/activate",
+    "API-NUT-13 GET /nutrition/catalog-items",
+    "API-NUT-13-BUSQUEDA POST /nutrition/catalog-items/search",
+    "API-NUT-14 GET /me/nutrition/today",
+    "API-NUT-15 POST /me/nutrition/executions",
+    "API-NUT-16-LISTA GET /me/nutrition/executions",
+    "API-NUT-16 GET /nutrition/executions/{executionId}",
+    "API-NUT-17 GET /advisees/{adviseeId}/nutrition/review-context",
+    "API-NUT-18 POST /advisees/{adviseeId}/nutrition/reviews",
+    "API-NUT-19 GET /nutrition/reviews/{reviewId}",
+    "API-NUT-20 POST /nutrition/reviews/{reviewId}/apply",
+    "API-NUT-21 POST /nutrition/executions/{executionId}/corrections",
+    "API-NUT-19-LISTA GET /me/nutrition/reviews",
+    "API-NUT-19-PROPIA GET /me/nutrition/reviews/{reviewId}"
+   ],
+   "pruebasQueLoCitan": [
+    "test/integration/nutricion.int-spec.ts",
+    "packages/domain/src/dominio-wp04.test.ts"
+   ],
+   "dl": [],
+   "paquetes": [
+    "WP-04.md"
+   ]
+  },
+  {
+   "ucs": [
+    "UC-P11",
+    "UC-I04",
+    "UC-I10"
+   ],
+   "rutasDelContrato": [],
+   "operacionesDelContrato": [],
+   "rutasSinOperacion": [],
+   "pruebasPorOperacion": [],
+   "pruebasPorUC": [],
+   "id": "RF-031",
+   "titulo": "Validar, versionar y activar un plan nutricional",
+   "grupo": "Circuito nutricional",
+   "linea04": 405,
+   "actor": "Profesional de Nutrición",
+   "prioridad": "P0 — Núcleo no recortable",
+   "obligacion": "BE deberá impedir la activación de un plan inválido y, al activarlo, conservar una versión reproducible y claramente vigente.",
+   "aceptacion": "El asesorado consulta exactamente la versión activada; una modificación posterior produce continuidad trazable y no altera el histórico emitido; no existen vigencias contradictorias; la activación de un proceso nuevo se rechaza cuando excede la capacidad configurada en RF-066, sin interrumpir procesos vigentes.",
+   "derivacion": "06 estados, versiones e invariantes; 08 autorización; 09 contrato.",
+   "fuente": "BE-LEG-02 §§11 y 15; Q-000.",
+   "canal": "WEBSITE",
+   "ucDV03": "UC-P11 / UC-I04 / UC-I10",
+   "familias": [
+    "NUT"
+   ],
+   "uc12": "UC-P11 / UC-I04 / UC-I10",
+   "contrato12": "`NUT` · validate + activate, revalidation atomic",
+   "prueba11A": "TEST-RF-031",
+   "operacionesDeLaFamilia": [
+    "API-NUT-01 POST /advisees/{adviseeId}/nutrition/evaluations",
+    "API-NUT-02 GET /advisees/{adviseeId}/nutrition/evaluations",
+    "API-NUT-03 GET /nutrition/evaluations/{evaluationId}",
+    "API-NUT-04 POST /advisees/{adviseeId}/nutrition/objectives",
+    "API-NUT-05 GET /advisees/{adviseeId}/nutrition/objectives",
+    "API-NUT-06 GET /advisees/{adviseeId}/nutrition/objectives/effective",
+    "API-NUT-07 POST /advisees/{adviseeId}/nutrition/plans",
+    "API-NUT-08 GET /advisees/{adviseeId}/nutrition/plans",
+    "API-NUT-09 GET /nutrition/plans/{planId}",
+    "API-NUT-10 PATCH /nutrition/plans/{planId}",
+    "API-NUT-11 POST /nutrition/plans/{planId}/validate",
+    "API-NUT-12 POST /nutrition/plans/{planId}/activate",
+    "API-NUT-13 GET /nutrition/catalog-items",
+    "API-NUT-13-BUSQUEDA POST /nutrition/catalog-items/search",
+    "API-NUT-14 GET /me/nutrition/today",
+    "API-NUT-15 POST /me/nutrition/executions",
+    "API-NUT-16-LISTA GET /me/nutrition/executions",
+    "API-NUT-16 GET /nutrition/executions/{executionId}",
+    "API-NUT-17 GET /advisees/{adviseeId}/nutrition/review-context",
+    "API-NUT-18 POST /advisees/{adviseeId}/nutrition/reviews",
+    "API-NUT-19 GET /nutrition/reviews/{reviewId}",
+    "API-NUT-20 POST /nutrition/reviews/{reviewId}/apply",
+    "API-NUT-21 POST /nutrition/executions/{executionId}/corrections",
+    "API-NUT-19-LISTA GET /me/nutrition/reviews",
+    "API-NUT-19-PROPIA GET /me/nutrition/reviews/{reviewId}"
+   ],
+   "pruebasQueLoCitan": [
+    "test/integration/nutricion.int-spec.ts"
+   ],
+   "dl": [
+    {
+     "id": "DL-051",
+     "tema": "Capacidad sin actor que la configure",
+     "estado": "ABIERTA"
+    },
+    {
+     "id": "DL-057",
+     "tema": "Datos nutricionales de otro profesional del mismo alcance",
+     "estado": "ABIERTA"
+    }
+   ],
+   "paquetes": [
+    "WP-04.md"
+   ]
+  },
+  {
+   "ucs": [
+    "UC-P12"
+   ],
+   "rutasDelContrato": [
+    "GET /me/nutrition/today"
+   ],
+   "operacionesDelContrato": [
+    "API-NUT-14"
+   ],
+   "rutasSinOperacion": [],
+   "pruebasPorOperacion": [
+    "test/integration/a3-del-titular.int-spec.ts",
+    "test/integration/registro-de-comidas.int-spec.ts",
+    "packages/domain/src/recetas-y-registro.test.ts"
+   ],
+   "pruebasPorUC": [
+    "test/integration/entrenamiento-por-serie.int-spec.ts",
+    "test/integration/entrenamiento.int-spec.ts",
+    "test/integration/nutricion.int-spec.ts"
+   ],
+   "id": "RF-032",
+   "titulo": "Consultar el plan nutricional del día en la APK",
+   "grupo": "Circuito nutricional",
+   "linea04": 414,
+   "actor": "Asesorado",
+   "prioridad": "P0 — Núcleo no recortable",
+   "obligacion": "El asesorado deberá consultar desde Hoy qué corresponde realizar según su plan nutricional activo.",
+   "aceptacion": "La vista muestra la versión vigente y un estado claro cuando no existe plan; es accesible sin conocer rutas internas; no expone datos administrativos.",
+   "derivacion": "10 diseña Hoy; 09 read model; 08 acceso; 05 escenarios.",
+   "fuente": "BE-LEG-02 §§11 y 15; Q-000.",
+   "canal": "APK",
+   "ucDV03": "UC-P12",
+   "familias": [
+    "NUT"
+   ],
+   "uc12": "UC-P12",
+   "contrato12": "`NUT` · GET /me/nutrition/today",
+   "prueba11A": "TEST-RF-032",
+   "operacionesDeLaFamilia": [
+    "API-NUT-01 POST /advisees/{adviseeId}/nutrition/evaluations",
+    "API-NUT-02 GET /advisees/{adviseeId}/nutrition/evaluations",
+    "API-NUT-03 GET /nutrition/evaluations/{evaluationId}",
+    "API-NUT-04 POST /advisees/{adviseeId}/nutrition/objectives",
+    "API-NUT-05 GET /advisees/{adviseeId}/nutrition/objectives",
+    "API-NUT-06 GET /advisees/{adviseeId}/nutrition/objectives/effective",
+    "API-NUT-07 POST /advisees/{adviseeId}/nutrition/plans",
+    "API-NUT-08 GET /advisees/{adviseeId}/nutrition/plans",
+    "API-NUT-09 GET /nutrition/plans/{planId}",
+    "API-NUT-10 PATCH /nutrition/plans/{planId}",
+    "API-NUT-11 POST /nutrition/plans/{planId}/validate",
+    "API-NUT-12 POST /nutrition/plans/{planId}/activate",
+    "API-NUT-13 GET /nutrition/catalog-items",
+    "API-NUT-13-BUSQUEDA POST /nutrition/catalog-items/search",
+    "API-NUT-14 GET /me/nutrition/today",
+    "API-NUT-15 POST /me/nutrition/executions",
+    "API-NUT-16-LISTA GET /me/nutrition/executions",
+    "API-NUT-16 GET /nutrition/executions/{executionId}",
+    "API-NUT-17 GET /advisees/{adviseeId}/nutrition/review-context",
+    "API-NUT-18 POST /advisees/{adviseeId}/nutrition/reviews",
+    "API-NUT-19 GET /nutrition/reviews/{reviewId}",
+    "API-NUT-20 POST /nutrition/reviews/{reviewId}/apply",
+    "API-NUT-21 POST /nutrition/executions/{executionId}/corrections",
+    "API-NUT-19-LISTA GET /me/nutrition/reviews",
+    "API-NUT-19-PROPIA GET /me/nutrition/reviews/{reviewId}"
+   ],
+   "pruebasQueLoCitan": [
+    "test/integration/nutricion.int-spec.ts"
+   ],
+   "dl": [],
+   "paquetes": [
+    "WP-04.md"
+   ]
+  },
+  {
+   "ucs": [
+    "UC-P12"
+   ],
+   "rutasDelContrato": [
+    "POST /me/nutrition/executions"
+   ],
+   "operacionesDelContrato": [
+    "API-NUT-15"
+   ],
+   "rutasSinOperacion": [],
+   "pruebasPorOperacion": [
+    "apps/api/src/nutricion/cantidades-consumidas.spec.ts",
+    "packages/domain/src/recetas-y-registro.test.ts"
+   ],
+   "pruebasPorUC": [
+    "test/integration/entrenamiento-por-serie.int-spec.ts",
+    "test/integration/entrenamiento.int-spec.ts",
+    "test/integration/nutricion.int-spec.ts"
+   ],
+   "id": "RF-033",
+   "titulo": "Registrar adherencia o ejecución nutricional",
+   "grupo": "Circuito nutricional",
+   "linea04": 423,
+   "actor": "Asesorado",
+   "prioridad": "P0 — Núcleo no recortable",
+   "obligacion": "BE deberá permitir registrar evidencia simple de cumplimiento o ejecución del plan nutricional con fecha y observación opcional.",
+   "aceptacion": "El registro queda asociado al plan vigente y al asesorado; un reintento no genera hechos duplicados; el profesional autorizado puede consultarlo.",
+   "derivacion": "06 define dato y unicidad; 09 contrato; 10 interacción; 11A concurrencia.",
+   "fuente": "BE-LEG-02 §§11 y 15; Q-000.",
+   "canal": "APK",
+   "ucDV03": "UC-P12",
+   "familias": [
+    "NUT"
+   ],
+   "uc12": "UC-P12",
+   "contrato12": "`NUT` · POST /me/nutrition/executions",
+   "prueba11A": "TEST-RF-033",
+   "operacionesDeLaFamilia": [
+    "API-NUT-01 POST /advisees/{adviseeId}/nutrition/evaluations",
+    "API-NUT-02 GET /advisees/{adviseeId}/nutrition/evaluations",
+    "API-NUT-03 GET /nutrition/evaluations/{evaluationId}",
+    "API-NUT-04 POST /advisees/{adviseeId}/nutrition/objectives",
+    "API-NUT-05 GET /advisees/{adviseeId}/nutrition/objectives",
+    "API-NUT-06 GET /advisees/{adviseeId}/nutrition/objectives/effective",
+    "API-NUT-07 POST /advisees/{adviseeId}/nutrition/plans",
+    "API-NUT-08 GET /advisees/{adviseeId}/nutrition/plans",
+    "API-NUT-09 GET /nutrition/plans/{planId}",
+    "API-NUT-10 PATCH /nutrition/plans/{planId}",
+    "API-NUT-11 POST /nutrition/plans/{planId}/validate",
+    "API-NUT-12 POST /nutrition/plans/{planId}/activate",
+    "API-NUT-13 GET /nutrition/catalog-items",
+    "API-NUT-13-BUSQUEDA POST /nutrition/catalog-items/search",
+    "API-NUT-14 GET /me/nutrition/today",
+    "API-NUT-15 POST /me/nutrition/executions",
+    "API-NUT-16-LISTA GET /me/nutrition/executions",
+    "API-NUT-16 GET /nutrition/executions/{executionId}",
+    "API-NUT-17 GET /advisees/{adviseeId}/nutrition/review-context",
+    "API-NUT-18 POST /advisees/{adviseeId}/nutrition/reviews",
+    "API-NUT-19 GET /nutrition/reviews/{reviewId}",
+    "API-NUT-20 POST /nutrition/reviews/{reviewId}/apply",
+    "API-NUT-21 POST /nutrition/executions/{executionId}/corrections",
+    "API-NUT-19-LISTA GET /me/nutrition/reviews",
+    "API-NUT-19-PROPIA GET /me/nutrition/reviews/{reviewId}"
+   ],
+   "pruebasQueLoCitan": [
+    "test/integration/nutricion.int-spec.ts"
+   ],
+   "dl": [],
+   "paquetes": [
+    "WP-04.md"
+   ]
+  },
+  {
+   "ucs": [
+    "UC-P13"
+   ],
+   "rutasDelContrato": [],
+   "operacionesDelContrato": [],
+   "rutasSinOperacion": [],
+   "pruebasPorOperacion": [],
+   "pruebasPorUC": [
+    "packages/domain/src/dominio-wp04.test.ts"
+   ],
+   "id": "RF-034",
+   "titulo": "Analizar evidencia nutricional para una revisión",
+   "grupo": "Circuito nutricional",
+   "linea04": 432,
+   "actor": "Profesional de Nutrición",
+   "prioridad": "P0 — Núcleo no recortable",
+   "obligacion": "BE deberá permitir examinar en conjunto evaluación, objetivo, plan, ejecución y evolución nutricional antes de decidir continuidad.",
+   "aceptacion": "El profesional puede identificar el período y la evidencia relevante, comparar lo planificado con lo ejecutado y pasar al registro común de revisión de RF-056; abrir la pantalla no cuenta como revisión.",
+   "derivacion": "DEC-043 aprobada provisionalmente; 05 flujo; 06 read model; 08 acceso; 10 experiencia.",
+   "fuente": "BE-LEG-02 §§15–16; BE-LEG-03 §§2 y 13; Q-006.",
+   "canal": "WEBSITE",
+   "ucDV03": "UC-P13",
+   "familias": [
+    "NUT"
+   ],
+   "uc12": "UC-P13",
+   "contrato12": "`NUT` · review-context + reviews",
+   "prueba11A": "TEST-RF-034",
+   "operacionesDeLaFamilia": [
+    "API-NUT-01 POST /advisees/{adviseeId}/nutrition/evaluations",
+    "API-NUT-02 GET /advisees/{adviseeId}/nutrition/evaluations",
+    "API-NUT-03 GET /nutrition/evaluations/{evaluationId}",
+    "API-NUT-04 POST /advisees/{adviseeId}/nutrition/objectives",
+    "API-NUT-05 GET /advisees/{adviseeId}/nutrition/objectives",
+    "API-NUT-06 GET /advisees/{adviseeId}/nutrition/objectives/effective",
+    "API-NUT-07 POST /advisees/{adviseeId}/nutrition/plans",
+    "API-NUT-08 GET /advisees/{adviseeId}/nutrition/plans",
+    "API-NUT-09 GET /nutrition/plans/{planId}",
+    "API-NUT-10 PATCH /nutrition/plans/{planId}",
+    "API-NUT-11 POST /nutrition/plans/{planId}/validate",
+    "API-NUT-12 POST /nutrition/plans/{planId}/activate",
+    "API-NUT-13 GET /nutrition/catalog-items",
+    "API-NUT-13-BUSQUEDA POST /nutrition/catalog-items/search",
+    "API-NUT-14 GET /me/nutrition/today",
+    "API-NUT-15 POST /me/nutrition/executions",
+    "API-NUT-16-LISTA GET /me/nutrition/executions",
+    "API-NUT-16 GET /nutrition/executions/{executionId}",
+    "API-NUT-17 GET /advisees/{adviseeId}/nutrition/review-context",
+    "API-NUT-18 POST /advisees/{adviseeId}/nutrition/reviews",
+    "API-NUT-19 GET /nutrition/reviews/{reviewId}",
+    "API-NUT-20 POST /nutrition/reviews/{reviewId}/apply",
+    "API-NUT-21 POST /nutrition/executions/{executionId}/corrections",
+    "API-NUT-19-LISTA GET /me/nutrition/reviews",
+    "API-NUT-19-PROPIA GET /me/nutrition/reviews/{reviewId}"
+   ],
+   "pruebasQueLoCitan": [
+    "test/integration/nutricion.int-spec.ts",
+    "packages/domain/src/dominio-wp04.test.ts"
+   ],
+   "dl": [],
+   "paquetes": [
+    "WP-04.md",
+    "WP-DASHBOARD-PROFESIONAL.md",
+    "WP-ESCRITORIO-AMABLE.md"
+   ]
+  },
+  {
+   "ucs": [
+    "UC-P13",
+    "UC-I06"
+   ],
+   "rutasDelContrato": [],
+   "operacionesDelContrato": [],
+   "rutasSinOperacion": [],
+   "pruebasPorOperacion": [],
+   "pruebasPorUC": [
+    "test/integration/contrato.int-spec.ts",
+    "test/integration/nutricion.int-spec.ts",
+    "packages/domain/src/dominio-wp04.test.ts"
+   ],
+   "id": "RF-035",
+   "titulo": "Dar continuidad o cerrar el proceso nutricional",
+   "grupo": "Circuito nutricional",
+   "linea04": 441,
+   "actor": "Profesional de Nutrición",
+   "prioridad": "P0 — Núcleo no recortable",
+   "obligacion": "Después de una revisión, BE deberá permitir mantener, ajustar, sustituir o cerrar correctamente el plan o proceso nutricional.",
+   "aceptacion": "La acción queda vinculada con la revisión; el asesorado recibe la situación vigente; la historia anterior se conserva; el cierre cumple la definición que resuelva Q-007.",
+   "derivacion": "06 define transiciones; 05 escenarios; 08 efectos de acceso.",
+   "fuente": "BE-LEG-02 §§15–16; Q-000 y Q-007.",
+   "canal": "WEBSITE",
+   "ucDV03": "UC-P13 / UC-I06",
+   "familias": [
+    "NUT"
+   ],
+   "uc12": "UC-P13 / UC-I06",
+   "contrato12": "`NUT` · POST review/{id}/apply",
+   "prueba11A": "TEST-RF-035",
+   "operacionesDeLaFamilia": [
+    "API-NUT-01 POST /advisees/{adviseeId}/nutrition/evaluations",
+    "API-NUT-02 GET /advisees/{adviseeId}/nutrition/evaluations",
+    "API-NUT-03 GET /nutrition/evaluations/{evaluationId}",
+    "API-NUT-04 POST /advisees/{adviseeId}/nutrition/objectives",
+    "API-NUT-05 GET /advisees/{adviseeId}/nutrition/objectives",
+    "API-NUT-06 GET /advisees/{adviseeId}/nutrition/objectives/effective",
+    "API-NUT-07 POST /advisees/{adviseeId}/nutrition/plans",
+    "API-NUT-08 GET /advisees/{adviseeId}/nutrition/plans",
+    "API-NUT-09 GET /nutrition/plans/{planId}",
+    "API-NUT-10 PATCH /nutrition/plans/{planId}",
+    "API-NUT-11 POST /nutrition/plans/{planId}/validate",
+    "API-NUT-12 POST /nutrition/plans/{planId}/activate",
+    "API-NUT-13 GET /nutrition/catalog-items",
+    "API-NUT-13-BUSQUEDA POST /nutrition/catalog-items/search",
+    "API-NUT-14 GET /me/nutrition/today",
+    "API-NUT-15 POST /me/nutrition/executions",
+    "API-NUT-16-LISTA GET /me/nutrition/executions",
+    "API-NUT-16 GET /nutrition/executions/{executionId}",
+    "API-NUT-17 GET /advisees/{adviseeId}/nutrition/review-context",
+    "API-NUT-18 POST /advisees/{adviseeId}/nutrition/reviews",
+    "API-NUT-19 GET /nutrition/reviews/{reviewId}",
+    "API-NUT-20 POST /nutrition/reviews/{reviewId}/apply",
+    "API-NUT-21 POST /nutrition/executions/{executionId}/corrections",
+    "API-NUT-19-LISTA GET /me/nutrition/reviews",
+    "API-NUT-19-PROPIA GET /me/nutrition/reviews/{reviewId}"
+   ],
+   "pruebasQueLoCitan": [
+    "test/integration/nutricion.int-spec.ts"
+   ],
+   "dl": [
+    {
+     "id": "DL-053",
+     "tema": "Q-007: abierta en el 04 y el 11A, resuelta en el 06",
+     "estado": "ABIERTA"
+    },
+    {
+     "id": "DL-134",
+     "tema": "La persona lee las revisiones que sus profesionales registraron sobre ella",
+     "estado": "**IMPLEMENTADA** 2026-10-16 con las opciones A; a ratificar"
+    }
+   ],
+   "paquetes": [
+    "WP-04.md"
+   ]
+  },
+  {
+   "ucs": [
+    "UC-P14"
+   ],
+   "rutasDelContrato": [],
+   "operacionesDelContrato": [],
+   "rutasSinOperacion": [],
+   "pruebasPorOperacion": [],
+   "pruebasPorUC": [
+    "test/integration/entrenamiento.int-spec.ts"
+   ],
+   "id": "RF-036",
+   "titulo": "Registrar una evaluación de entrenamiento",
+   "grupo": "Circuito de entrenamiento",
+   "linea04": 452,
+   "actor": "Profesional de Entrenamiento",
+   "prioridad": "P0 — Núcleo no recortable",
+   "obligacion": "BE deberá permitir registrar la evaluación necesaria para planificar entrenamiento, con autoría, fecha, contexto y fuentes.",
+   "aceptacion": "La evaluación es consultable en la historia y se distingue de la ejecución posterior; solo acceden actores autorizados.",
+   "derivacion": "06 define datos; 08 acceso; 05 flujo; 10 captura.",
+   "fuente": "BE-LEG-02 §§5, 11 y 15; DEC-013.",
+   "canal": "WEBSITE",
+   "ucDV03": "UC-P14",
+   "familias": [
+    "TRN"
+   ],
+   "uc12": "UC-P14",
+   "contrato12": "`TRN` · training evaluations",
+   "prueba11A": "TEST-RF-036",
+   "operacionesDeLaFamilia": [
+    "API-TRN-01 POST /advisees/{adviseeId}/training/evaluations",
+    "API-TRN-02 GET /advisees/{adviseeId}/training/evaluations",
+    "API-TRN-03 GET /training/evaluations/{evaluationId}",
+    "API-TRN-04 POST /advisees/{adviseeId}/training/objectives",
+    "API-TRN-05 GET /advisees/{adviseeId}/training/objectives",
+    "API-TRN-06 GET /advisees/{adviseeId}/training/objectives/effective",
+    "API-TRN-07 POST /advisees/{adviseeId}/training/plans",
+    "API-TRN-08 GET /advisees/{adviseeId}/training/plans",
+    "API-TRN-09 GET /training/plans/{planId}",
+    "API-TRN-10 PATCH /training/plans/{planId}",
+    "API-TRN-11 POST /training/plans/{planId}/validate",
+    "API-TRN-12 POST /training/plans/{planId}/activate",
+    "API-TRN-13 GET /training/exercises",
+    "API-TRN-13-BUSQUEDA POST /training/exercises/search",
+    "API-TRN-14 GET /me/training/today",
+    "API-TRN-14-PERIODO GET /me/training/occurrences",
+    "API-TRN-19-LISTA GET /me/training/executions",
+    "API-TRN-15 PUT /training/occurrences/{occurrenceId}/execution-draft",
+    "API-TRN-16 GET /training/execution-drafts/{draftId}",
+    "API-TRN-17 PATCH /training/execution-drafts/{draftId}",
+    "API-TRN-18 POST /training/execution-drafts/{draftId}/confirm",
+    "API-TRN-19 GET /training/executions/{executionId}",
+    "API-TRN-20 POST /training/executions/{executionId}/corrections",
+    "API-TRN-21 GET /advisees/{adviseeId}/training/review-context",
+    "API-TRN-22 POST /advisees/{adviseeId}/training/reviews",
+    "API-TRN-23 GET /training/reviews/{reviewId}",
+    "API-TRN-24 POST /training/reviews/{reviewId}/apply",
+    "API-TRN-23-LISTA GET /me/training/reviews",
+    "API-TRN-23-PROPIA GET /me/training/reviews/{reviewId}"
+   ],
+   "pruebasQueLoCitan": [
+    "test/integration/entrenamiento.int-spec.ts"
+   ],
+   "dl": [],
+   "paquetes": [
+    "WP-04.md",
+    "WP-06.md"
+   ]
+  },
+  {
+   "ucs": [
+    "UC-P14"
+   ],
+   "rutasDelContrato": [],
+   "operacionesDelContrato": [],
+   "rutasSinOperacion": [],
+   "pruebasPorOperacion": [],
+   "pruebasPorUC": [
+    "test/integration/entrenamiento.int-spec.ts"
+   ],
+   "id": "RF-064",
+   "titulo": "Definir un objetivo de entrenamiento vigente",
+   "grupo": "Circuito de entrenamiento",
+   "linea04": 461,
+   "actor": "Profesional de Entrenamiento",
+   "prioridad": "P0 — Núcleo no recortable",
+   "obligacion": "BE deberá permitir registrar un objetivo de entrenamiento vigente y relacionarlo con la evaluación y la planificación.",
+   "aceptacion": "El objetivo identifica período y responsable; los cambios conservan historial; el asesorado consulta el objetivo autorizado.",
+   "derivacion": "06 define vigencia; 05 flujo; 10 presentación.",
+   "fuente": "BE-LEG-02 §§7–9 y circuito de entrenamiento §11. Omisión detectada en v0.1.",
+   "canal": "WEBSITE",
+   "ucDV03": "UC-P14",
+   "familias": [
+    "TRN"
+   ],
+   "uc12": "UC-P14",
+   "contrato12": "`TRN` · training objectives versioned",
+   "prueba11A": "TEST-RF-064",
+   "operacionesDeLaFamilia": [
+    "API-TRN-01 POST /advisees/{adviseeId}/training/evaluations",
+    "API-TRN-02 GET /advisees/{adviseeId}/training/evaluations",
+    "API-TRN-03 GET /training/evaluations/{evaluationId}",
+    "API-TRN-04 POST /advisees/{adviseeId}/training/objectives",
+    "API-TRN-05 GET /advisees/{adviseeId}/training/objectives",
+    "API-TRN-06 GET /advisees/{adviseeId}/training/objectives/effective",
+    "API-TRN-07 POST /advisees/{adviseeId}/training/plans",
+    "API-TRN-08 GET /advisees/{adviseeId}/training/plans",
+    "API-TRN-09 GET /training/plans/{planId}",
+    "API-TRN-10 PATCH /training/plans/{planId}",
+    "API-TRN-11 POST /training/plans/{planId}/validate",
+    "API-TRN-12 POST /training/plans/{planId}/activate",
+    "API-TRN-13 GET /training/exercises",
+    "API-TRN-13-BUSQUEDA POST /training/exercises/search",
+    "API-TRN-14 GET /me/training/today",
+    "API-TRN-14-PERIODO GET /me/training/occurrences",
+    "API-TRN-19-LISTA GET /me/training/executions",
+    "API-TRN-15 PUT /training/occurrences/{occurrenceId}/execution-draft",
+    "API-TRN-16 GET /training/execution-drafts/{draftId}",
+    "API-TRN-17 PATCH /training/execution-drafts/{draftId}",
+    "API-TRN-18 POST /training/execution-drafts/{draftId}/confirm",
+    "API-TRN-19 GET /training/executions/{executionId}",
+    "API-TRN-20 POST /training/executions/{executionId}/corrections",
+    "API-TRN-21 GET /advisees/{adviseeId}/training/review-context",
+    "API-TRN-22 POST /advisees/{adviseeId}/training/reviews",
+    "API-TRN-23 GET /training/reviews/{reviewId}",
+    "API-TRN-24 POST /training/reviews/{reviewId}/apply",
+    "API-TRN-23-LISTA GET /me/training/reviews",
+    "API-TRN-23-PROPIA GET /me/training/reviews/{reviewId}"
+   ],
+   "pruebasQueLoCitan": [
+    "test/integration/entrenamiento.int-spec.ts"
+   ],
+   "dl": [],
+   "paquetes": [
+    "WP-06.md"
+   ]
+  },
+  {
+   "ucs": [
+    "UC-P15"
+   ],
+   "rutasDelContrato": [],
+   "operacionesDelContrato": [],
+   "rutasSinOperacion": [],
+   "pruebasPorOperacion": [],
+   "pruebasPorUC": [
+    "test/integration/entrenamiento.int-spec.ts"
+   ],
+   "id": "RF-037",
+   "titulo": "Gestionar un catálogo propio de ejercicios",
+   "grupo": "Circuito de entrenamiento",
+   "linea04": 470,
+   "actor": "Profesional de Entrenamiento o administrador autorizado",
+   "prioridad": "P0 — Núcleo no recortable",
+   "obligacion": "BE deberá mantener un catálogo propio de ejercicios y permitir carga manual para operar sin wger.",
+   "aceptacion": "Los ejercicios tienen procedencia y datos mínimos; el profesional puede planificar durante una caída externa; cambios del catálogo no reescriben sesiones ya prescriptas.",
+   "derivacion": "06 estructura/versionado; 10 gestión; 07 almacenamiento.",
+   "fuente": "BE-LEG-02 §13 y fallbacks §20.",
+   "canal": "WEBSITE",
+   "ucDV03": "UC-P15",
+   "familias": [
+    "TRN",
+    "INT"
+   ],
+   "uc12": "UC-P15",
+   "contrato12": "`TRN/INT` · GET/POST training exercises",
+   "prueba11A": "TEST-RF-037",
+   "operacionesDeLaFamilia": [
+    "API-TRN-01 POST /advisees/{adviseeId}/training/evaluations",
+    "API-TRN-02 GET /advisees/{adviseeId}/training/evaluations",
+    "API-TRN-03 GET /training/evaluations/{evaluationId}",
+    "API-TRN-04 POST /advisees/{adviseeId}/training/objectives",
+    "API-TRN-05 GET /advisees/{adviseeId}/training/objectives",
+    "API-TRN-06 GET /advisees/{adviseeId}/training/objectives/effective",
+    "API-TRN-07 POST /advisees/{adviseeId}/training/plans",
+    "API-TRN-08 GET /advisees/{adviseeId}/training/plans",
+    "API-TRN-09 GET /training/plans/{planId}",
+    "API-TRN-10 PATCH /training/plans/{planId}",
+    "API-TRN-11 POST /training/plans/{planId}/validate",
+    "API-TRN-12 POST /training/plans/{planId}/activate",
+    "API-TRN-13 GET /training/exercises",
+    "API-TRN-13-BUSQUEDA POST /training/exercises/search",
+    "API-TRN-14 GET /me/training/today",
+    "API-TRN-14-PERIODO GET /me/training/occurrences",
+    "API-TRN-19-LISTA GET /me/training/executions",
+    "API-TRN-15 PUT /training/occurrences/{occurrenceId}/execution-draft",
+    "API-TRN-16 GET /training/execution-drafts/{draftId}",
+    "API-TRN-17 PATCH /training/execution-drafts/{draftId}",
+    "API-TRN-18 POST /training/execution-drafts/{draftId}/confirm",
+    "API-TRN-19 GET /training/executions/{executionId}",
+    "API-TRN-20 POST /training/executions/{executionId}/corrections",
+    "API-TRN-21 GET /advisees/{adviseeId}/training/review-context",
+    "API-TRN-22 POST /advisees/{adviseeId}/training/reviews",
+    "API-TRN-23 GET /training/reviews/{reviewId}",
+    "API-TRN-24 POST /training/reviews/{reviewId}/apply",
+    "API-TRN-23-LISTA GET /me/training/reviews",
+    "API-TRN-23-PROPIA GET /me/training/reviews/{reviewId}"
+   ],
+   "pruebasQueLoCitan": [
+    "test/integration/entrenamiento.int-spec.ts"
+   ],
+   "dl": [],
+   "paquetes": [
+    "WP-06.md"
+   ]
+  },
+  {
+   "ucs": [
+    "UC-I07",
+    "UC-P15"
+   ],
+   "rutasDelContrato": [],
+   "operacionesDelContrato": [],
+   "rutasSinOperacion": [],
+   "pruebasPorOperacion": [],
+   "pruebasPorUC": [
+    "test/integration/entrenamiento.int-spec.ts",
+    "test/integration/integraciones.int-spec.ts",
+    "packages/domain/src/contratos-wp08.test.ts"
+   ],
+   "id": "RF-038",
+   "titulo": "Importar ejercicios desde wger",
+   "grupo": "Circuito de entrenamiento",
+   "linea04": 479,
+   "actor": "Profesional de Entrenamiento",
+   "prioridad": "P0 — Compromiso académico de integración",
+   "obligacion": "BE deberá consultar e importar ejercicios desde wger mediante un proceso controlado y trazable.",
+   "aceptacion": "Los datos se validan antes de incorporarse; la fuente queda identificada; la caída del proveedor habilita catálogo BE y carga manual.",
+   "derivacion": "07 adaptador; 09 contrato; 06 normalización.",
+   "fuente": "BE-LEG-02 §§10, 13 y 20; REV-002 RES-02.",
+   "canal": "WEBSITE",
+   "ucDV03": "UC-I07 / UC-P15",
+   "familias": [
+    "INT-TRN"
+   ],
+   "uc12": "UC-I07 / UC-P15",
+   "contrato12": "`INT-TRN` · candidate → review/resolve wger",
+   "prueba11A": "TEST-RF-038",
+   "operacionesDeLaFamilia": [
+    "API-INT-TRN-01 POST /training/exercises",
+    "API-INT-TRN-02 POST /training/catalog-import-candidates",
+    "API-INT-TRN-03 POST /training/catalog-import-candidates/{candidateId}/resolve"
+   ],
+   "pruebasQueLoCitan": [
+    "test/integration/integraciones.int-spec.ts"
+   ],
+   "dl": [
+    {
+     "id": "DL-086",
+     "tema": "wger, Open Food Facts y el compromiso de dos APIs externas",
+     "estado": "**CERRADA** 2026-09-25 · el compromiso se cumplió con WP-08: Open Food Facts y wger, integrados en `main` con #72 (`e83245d`) después de que Dirección confirmara la cobertura del acta, y en la APK 0.10.0 (ver el cierre en la entrada)"
+    }
+   ],
+   "paquetes": [
+    "WP-06.md",
+    "WP-08-ORACULOS.md",
+    "WP-08.md"
+   ]
+  },
+  {
+   "ucs": [
+    "UC-P15"
+   ],
+   "rutasDelContrato": [],
+   "operacionesDelContrato": [],
+   "rutasSinOperacion": [],
+   "pruebasPorOperacion": [],
+   "pruebasPorUC": [
+    "test/integration/entrenamiento.int-spec.ts"
+   ],
+   "id": "RF-039",
+   "titulo": "Crear un plan de entrenamiento por bloques y sesiones",
+   "grupo": "Circuito de entrenamiento",
+   "linea04": 488,
+   "actor": "Profesional de Entrenamiento",
+   "prioridad": "P0 — Núcleo no recortable",
+   "obligacion": "BE deberá permitir estructurar una planificación por períodos, bloques y sesiones antes de activarla.",
+   "aceptacion": "El borrador conserva orden, vigencia y objetivo; no se presenta como plan activo; puede retomarse y validarse.",
+   "derivacion": "06 agregado y estados; 09 contratos; 10 editor; 05 flujo.",
+   "fuente": "BE-LEG-02 §11.",
+   "canal": "WEBSITE",
+   "ucDV03": "UC-P15",
+   "familias": [
+    "TRN"
+   ],
+   "uc12": "UC-P15",
+   "contrato12": "`TRN` · training plan draft",
+   "prueba11A": "TEST-RF-039",
+   "operacionesDeLaFamilia": [
+    "API-TRN-01 POST /advisees/{adviseeId}/training/evaluations",
+    "API-TRN-02 GET /advisees/{adviseeId}/training/evaluations",
+    "API-TRN-03 GET /training/evaluations/{evaluationId}",
+    "API-TRN-04 POST /advisees/{adviseeId}/training/objectives",
+    "API-TRN-05 GET /advisees/{adviseeId}/training/objectives",
+    "API-TRN-06 GET /advisees/{adviseeId}/training/objectives/effective",
+    "API-TRN-07 POST /advisees/{adviseeId}/training/plans",
+    "API-TRN-08 GET /advisees/{adviseeId}/training/plans",
+    "API-TRN-09 GET /training/plans/{planId}",
+    "API-TRN-10 PATCH /training/plans/{planId}",
+    "API-TRN-11 POST /training/plans/{planId}/validate",
+    "API-TRN-12 POST /training/plans/{planId}/activate",
+    "API-TRN-13 GET /training/exercises",
+    "API-TRN-13-BUSQUEDA POST /training/exercises/search",
+    "API-TRN-14 GET /me/training/today",
+    "API-TRN-14-PERIODO GET /me/training/occurrences",
+    "API-TRN-19-LISTA GET /me/training/executions",
+    "API-TRN-15 PUT /training/occurrences/{occurrenceId}/execution-draft",
+    "API-TRN-16 GET /training/execution-drafts/{draftId}",
+    "API-TRN-17 PATCH /training/execution-drafts/{draftId}",
+    "API-TRN-18 POST /training/execution-drafts/{draftId}/confirm",
+    "API-TRN-19 GET /training/executions/{executionId}",
+    "API-TRN-20 POST /training/executions/{executionId}/corrections",
+    "API-TRN-21 GET /advisees/{adviseeId}/training/review-context",
+    "API-TRN-22 POST /advisees/{adviseeId}/training/reviews",
+    "API-TRN-23 GET /training/reviews/{reviewId}",
+    "API-TRN-24 POST /training/reviews/{reviewId}/apply",
+    "API-TRN-23-LISTA GET /me/training/reviews",
+    "API-TRN-23-PROPIA GET /me/training/reviews/{reviewId}"
+   ],
+   "pruebasQueLoCitan": [
+    "test/integration/entrenamiento.int-spec.ts"
+   ],
+   "dl": [],
+   "paquetes": [
+    "WP-06.md"
+   ]
+  },
+  {
+   "ucs": [
+    "UC-P15"
+   ],
+   "rutasDelContrato": [],
+   "operacionesDelContrato": [],
+   "rutasSinOperacion": [],
+   "pruebasPorOperacion": [],
+   "pruebasPorUC": [
+    "test/integration/entrenamiento.int-spec.ts"
+   ],
+   "id": "RF-040",
+   "titulo": "Prescribir ejercicios, series y parámetros",
+   "grupo": "Circuito de entrenamiento",
+   "linea04": 497,
+   "actor": "Profesional de Entrenamiento",
+   "prioridad": "P0 — Núcleo no recortable",
+   "obligacion": "Dentro del plan, BE deberá permitir prescribir ejercicios y parámetros necesarios para que el asesorado sepa qué ejecutar.",
+   "aceptacion": "Cada sesión activa contiene información suficiente y ordenada; unidades y parámetros son interpretables; los cambios posteriores conservan la versión emitida.",
+   "derivacion": "06 estructura/unidades; 09 contrato; 10 editor y Hoy.",
+   "fuente": "BE-LEG-02 §11.",
+   "canal": "WEBSITE",
+   "ucDV03": "UC-P15",
+   "familias": [
+    "TRN"
+   ],
+   "uc12": "UC-P15",
+   "contrato12": "`TRN` · PATCH plan with blocks/sessions/prescriptions",
+   "prueba11A": "TEST-RF-040",
+   "operacionesDeLaFamilia": [
+    "API-TRN-01 POST /advisees/{adviseeId}/training/evaluations",
+    "API-TRN-02 GET /advisees/{adviseeId}/training/evaluations",
+    "API-TRN-03 GET /training/evaluations/{evaluationId}",
+    "API-TRN-04 POST /advisees/{adviseeId}/training/objectives",
+    "API-TRN-05 GET /advisees/{adviseeId}/training/objectives",
+    "API-TRN-06 GET /advisees/{adviseeId}/training/objectives/effective",
+    "API-TRN-07 POST /advisees/{adviseeId}/training/plans",
+    "API-TRN-08 GET /advisees/{adviseeId}/training/plans",
+    "API-TRN-09 GET /training/plans/{planId}",
+    "API-TRN-10 PATCH /training/plans/{planId}",
+    "API-TRN-11 POST /training/plans/{planId}/validate",
+    "API-TRN-12 POST /training/plans/{planId}/activate",
+    "API-TRN-13 GET /training/exercises",
+    "API-TRN-13-BUSQUEDA POST /training/exercises/search",
+    "API-TRN-14 GET /me/training/today",
+    "API-TRN-14-PERIODO GET /me/training/occurrences",
+    "API-TRN-19-LISTA GET /me/training/executions",
+    "API-TRN-15 PUT /training/occurrences/{occurrenceId}/execution-draft",
+    "API-TRN-16 GET /training/execution-drafts/{draftId}",
+    "API-TRN-17 PATCH /training/execution-drafts/{draftId}",
+    "API-TRN-18 POST /training/execution-drafts/{draftId}/confirm",
+    "API-TRN-19 GET /training/executions/{executionId}",
+    "API-TRN-20 POST /training/executions/{executionId}/corrections",
+    "API-TRN-21 GET /advisees/{adviseeId}/training/review-context",
+    "API-TRN-22 POST /advisees/{adviseeId}/training/reviews",
+    "API-TRN-23 GET /training/reviews/{reviewId}",
+    "API-TRN-24 POST /training/reviews/{reviewId}/apply",
+    "API-TRN-23-LISTA GET /me/training/reviews",
+    "API-TRN-23-PROPIA GET /me/training/reviews/{reviewId}"
+   ],
+   "pruebasQueLoCitan": [
+    "test/integration/entrenamiento.int-spec.ts"
+   ],
+   "dl": [
+    {
+     "id": "DL-105",
+     "tema": "La APK no muestra lo que el profesional planificó, y la web no lo compara con lo registrado",
+     "estado": "**DECIDIDA** 2026-09-28 · incremento 1 «Lo planificado, visible y comparable», con el contrato actual"
+    }
+   ],
+   "paquetes": [
+    "WP-06.md"
+   ]
+  },
+  {
+   "ucs": [
+    "UC-P16",
+    "UC-I04",
+    "UC-I10"
+   ],
+   "rutasDelContrato": [],
+   "operacionesDelContrato": [],
+   "rutasSinOperacion": [],
+   "pruebasPorOperacion": [],
+   "pruebasPorUC": [
+    "test/integration/entrenamiento.int-spec.ts"
+   ],
+   "id": "RF-041",
+   "titulo": "Validar, versionar y activar un plan de entrenamiento",
+   "grupo": "Circuito de entrenamiento",
+   "linea04": 506,
+   "actor": "Profesional de Entrenamiento",
+   "prioridad": "P0 — Núcleo no recortable",
+   "obligacion": "BE deberá impedir activar una planificación incompleta y conservar una versión vigente y reproducible al activarla.",
+   "aceptacion": "El asesorado consulta la versión activada; no existen vigencias contradictorias; una sustitución queda relacionada con la anterior; la activación de un proceso nuevo se rechaza cuando excede la capacidad configurada en RF-066, sin interrumpir procesos vigentes.",
+   "derivacion": "06 estados/invariantes; 08 autorización; 09 contrato.",
+   "fuente": "BE-LEG-02 §§11 y 15.",
+   "canal": "WEBSITE",
+   "ucDV03": "UC-P16 / UC-I04 / UC-I10",
+   "familias": [
+    "TRN"
+   ],
+   "uc12": "UC-P16 / UC-I04 / UC-I10",
+   "contrato12": "`TRN` · validate + activate, atomic",
+   "prueba11A": "TEST-RF-041",
+   "operacionesDeLaFamilia": [
+    "API-TRN-01 POST /advisees/{adviseeId}/training/evaluations",
+    "API-TRN-02 GET /advisees/{adviseeId}/training/evaluations",
+    "API-TRN-03 GET /training/evaluations/{evaluationId}",
+    "API-TRN-04 POST /advisees/{adviseeId}/training/objectives",
+    "API-TRN-05 GET /advisees/{adviseeId}/training/objectives",
+    "API-TRN-06 GET /advisees/{adviseeId}/training/objectives/effective",
+    "API-TRN-07 POST /advisees/{adviseeId}/training/plans",
+    "API-TRN-08 GET /advisees/{adviseeId}/training/plans",
+    "API-TRN-09 GET /training/plans/{planId}",
+    "API-TRN-10 PATCH /training/plans/{planId}",
+    "API-TRN-11 POST /training/plans/{planId}/validate",
+    "API-TRN-12 POST /training/plans/{planId}/activate",
+    "API-TRN-13 GET /training/exercises",
+    "API-TRN-13-BUSQUEDA POST /training/exercises/search",
+    "API-TRN-14 GET /me/training/today",
+    "API-TRN-14-PERIODO GET /me/training/occurrences",
+    "API-TRN-19-LISTA GET /me/training/executions",
+    "API-TRN-15 PUT /training/occurrences/{occurrenceId}/execution-draft",
+    "API-TRN-16 GET /training/execution-drafts/{draftId}",
+    "API-TRN-17 PATCH /training/execution-drafts/{draftId}",
+    "API-TRN-18 POST /training/execution-drafts/{draftId}/confirm",
+    "API-TRN-19 GET /training/executions/{executionId}",
+    "API-TRN-20 POST /training/executions/{executionId}/corrections",
+    "API-TRN-21 GET /advisees/{adviseeId}/training/review-context",
+    "API-TRN-22 POST /advisees/{adviseeId}/training/reviews",
+    "API-TRN-23 GET /training/reviews/{reviewId}",
+    "API-TRN-24 POST /training/reviews/{reviewId}/apply",
+    "API-TRN-23-LISTA GET /me/training/reviews",
+    "API-TRN-23-PROPIA GET /me/training/reviews/{reviewId}"
+   ],
+   "pruebasQueLoCitan": [
+    "test/integration/entrenamiento.int-spec.ts"
+   ],
+   "dl": [
+    {
+     "id": "DL-084",
+     "tema": "Las variantes de entrenamiento de los adversariales 7 y 8 no tienen ID de test y nunca se ejecutaron",
+     "estado": "**RESUELTA** 2026-09-21 con el provisorio (opción A) · las variantes de entrenamiento del 7 y del 8 pasan en CI y en vivo contra `test` (API 0.6.0, `c50fdd9`; evidencia en #56)"
+    },
+    {
+     "id": "DL-087",
+     "tema": "RF-041 es P0 y su criterio de aceptación depende de RF-066, que es P1",
+     "estado": "ABIERTA"
+    }
+   ],
+   "paquetes": [
+    "WP-06.md"
+   ]
+  },
+  {
+   "ucs": [
+    "UC-P17"
+   ],
+   "rutasDelContrato": [
+    "GET /me/training/today"
+   ],
+   "operacionesDelContrato": [
+    "API-TRN-14"
+   ],
+   "rutasSinOperacion": [],
+   "pruebasPorOperacion": [
+    "test/integration/agenda-de-entrenamiento.int-spec.ts",
+    "test/integration/compatibilidad-de-clientes.int-spec.ts",
+    "test/integration/entrenamiento-por-serie.int-spec.ts",
+    "test/integration/entrenamiento.int-spec.ts",
+    "packages/domain/src/entrenamiento-por-serie.test.ts",
+    "scripts/compatibilidad-en-el-telefono.test.mjs"
+   ],
+   "pruebasPorUC": [
+    "test/integration/entrenamiento.int-spec.ts"
+   ],
+   "id": "RF-042",
+   "titulo": "Consultar el entrenamiento del día en la APK",
+   "grupo": "Circuito de entrenamiento",
+   "linea04": 515,
+   "actor": "Asesorado",
+   "prioridad": "P0 — Núcleo no recortable",
+   "obligacion": "El asesorado deberá consultar desde Hoy la sesión planificada vigente y sus indicaciones.",
+   "aceptacion": "La pantalla distingue ausencia de sesión, sesión pendiente y ejecución registrada; no requiere rutas internas; solo muestra datos autorizados.",
+   "derivacion": "10 Hoy; 09 read model; 08 acceso; 05 escenarios.",
+   "fuente": "BE-LEG-02 §§11 y 15.",
+   "canal": "APK",
+   "ucDV03": "UC-P17",
+   "familias": [
+    "TRN"
+   ],
+   "uc12": "UC-P17",
+   "contrato12": "`TRN` · GET /me/training/today",
+   "prueba11A": "TEST-RF-042",
+   "operacionesDeLaFamilia": [
+    "API-TRN-01 POST /advisees/{adviseeId}/training/evaluations",
+    "API-TRN-02 GET /advisees/{adviseeId}/training/evaluations",
+    "API-TRN-03 GET /training/evaluations/{evaluationId}",
+    "API-TRN-04 POST /advisees/{adviseeId}/training/objectives",
+    "API-TRN-05 GET /advisees/{adviseeId}/training/objectives",
+    "API-TRN-06 GET /advisees/{adviseeId}/training/objectives/effective",
+    "API-TRN-07 POST /advisees/{adviseeId}/training/plans",
+    "API-TRN-08 GET /advisees/{adviseeId}/training/plans",
+    "API-TRN-09 GET /training/plans/{planId}",
+    "API-TRN-10 PATCH /training/plans/{planId}",
+    "API-TRN-11 POST /training/plans/{planId}/validate",
+    "API-TRN-12 POST /training/plans/{planId}/activate",
+    "API-TRN-13 GET /training/exercises",
+    "API-TRN-13-BUSQUEDA POST /training/exercises/search",
+    "API-TRN-14 GET /me/training/today",
+    "API-TRN-14-PERIODO GET /me/training/occurrences",
+    "API-TRN-19-LISTA GET /me/training/executions",
+    "API-TRN-15 PUT /training/occurrences/{occurrenceId}/execution-draft",
+    "API-TRN-16 GET /training/execution-drafts/{draftId}",
+    "API-TRN-17 PATCH /training/execution-drafts/{draftId}",
+    "API-TRN-18 POST /training/execution-drafts/{draftId}/confirm",
+    "API-TRN-19 GET /training/executions/{executionId}",
+    "API-TRN-20 POST /training/executions/{executionId}/corrections",
+    "API-TRN-21 GET /advisees/{adviseeId}/training/review-context",
+    "API-TRN-22 POST /advisees/{adviseeId}/training/reviews",
+    "API-TRN-23 GET /training/reviews/{reviewId}",
+    "API-TRN-24 POST /training/reviews/{reviewId}/apply",
+    "API-TRN-23-LISTA GET /me/training/reviews",
+    "API-TRN-23-PROPIA GET /me/training/reviews/{reviewId}"
+   ],
+   "pruebasQueLoCitan": [
+    "test/integration/entrenamiento.int-spec.ts"
+   ],
+   "dl": [
+    {
+     "id": "DL-105",
+     "tema": "La APK no muestra lo que el profesional planificó, y la web no lo compara con lo registrado",
+     "estado": "**DECIDIDA** 2026-09-28 · incremento 1 «Lo planificado, visible y comparable», con el contrato actual"
+    }
+   ],
+   "paquetes": [
+    "WP-06.md"
+   ]
+  },
+  {
+   "ucs": [
+    "UC-P17"
+   ],
+   "rutasDelContrato": [],
+   "operacionesDelContrato": [],
+   "rutasSinOperacion": [],
+   "pruebasPorOperacion": [],
+   "pruebasPorUC": [
+    "test/integration/entrenamiento.int-spec.ts"
+   ],
+   "id": "RF-043",
+   "titulo": "Registrar sesión y series ejecutadas",
+   "grupo": "Circuito de entrenamiento",
+   "linea04": 524,
+   "actor": "Asesorado",
+   "prioridad": "P0 — Núcleo no recortable",
+   "obligacion": "BE deberá permitir registrar la ejecución real de una sesión, diferenciándola de la planificación.",
+   "aceptacion": "La ejecución conserva fecha, relación con la sesión planificada y datos ingresados; un reintento no duplica la sesión; el profesional autorizado la consulta.",
+   "derivacion": "06 modelo de ejecución; 09 contrato; 10 captura; 11A concurrencia.",
+   "fuente": "BE-LEG-02 §§9, 11 y 15.",
+   "canal": "APK",
+   "ucDV03": "UC-P17",
+   "familias": [
+    "TRN"
+   ],
+   "uc12": "UC-P17",
+   "contrato12": "`TRN` · execution-draft → update → confirm",
+   "prueba11A": "TEST-RF-043",
+   "operacionesDeLaFamilia": [
+    "API-TRN-01 POST /advisees/{adviseeId}/training/evaluations",
+    "API-TRN-02 GET /advisees/{adviseeId}/training/evaluations",
+    "API-TRN-03 GET /training/evaluations/{evaluationId}",
+    "API-TRN-04 POST /advisees/{adviseeId}/training/objectives",
+    "API-TRN-05 GET /advisees/{adviseeId}/training/objectives",
+    "API-TRN-06 GET /advisees/{adviseeId}/training/objectives/effective",
+    "API-TRN-07 POST /advisees/{adviseeId}/training/plans",
+    "API-TRN-08 GET /advisees/{adviseeId}/training/plans",
+    "API-TRN-09 GET /training/plans/{planId}",
+    "API-TRN-10 PATCH /training/plans/{planId}",
+    "API-TRN-11 POST /training/plans/{planId}/validate",
+    "API-TRN-12 POST /training/plans/{planId}/activate",
+    "API-TRN-13 GET /training/exercises",
+    "API-TRN-13-BUSQUEDA POST /training/exercises/search",
+    "API-TRN-14 GET /me/training/today",
+    "API-TRN-14-PERIODO GET /me/training/occurrences",
+    "API-TRN-19-LISTA GET /me/training/executions",
+    "API-TRN-15 PUT /training/occurrences/{occurrenceId}/execution-draft",
+    "API-TRN-16 GET /training/execution-drafts/{draftId}",
+    "API-TRN-17 PATCH /training/execution-drafts/{draftId}",
+    "API-TRN-18 POST /training/execution-drafts/{draftId}/confirm",
+    "API-TRN-19 GET /training/executions/{executionId}",
+    "API-TRN-20 POST /training/executions/{executionId}/corrections",
+    "API-TRN-21 GET /advisees/{adviseeId}/training/review-context",
+    "API-TRN-22 POST /advisees/{adviseeId}/training/reviews",
+    "API-TRN-23 GET /training/reviews/{reviewId}",
+    "API-TRN-24 POST /training/reviews/{reviewId}/apply",
+    "API-TRN-23-LISTA GET /me/training/reviews",
+    "API-TRN-23-PROPIA GET /me/training/reviews/{reviewId}"
+   ],
+   "pruebasQueLoCitan": [
+    "test/integration/entrenamiento.int-spec.ts"
+   ],
+   "dl": [],
+   "paquetes": [
+    "WP-06.md"
+   ]
+  },
+  {
+   "ucs": [
+    "UC-E02",
+    "UC-I12",
+    "UC-I03"
+   ],
+   "rutasDelContrato": [],
+   "operacionesDelContrato": [],
+   "rutasSinOperacion": [],
+   "pruebasPorOperacion": [],
+   "pruebasPorUC": [
+    "test/integration/entrenamiento.int-spec.ts"
+   ],
+   "id": "RF-044",
+   "titulo": "Corregir una ejecución de forma trazable",
+   "grupo": "Circuito de entrenamiento",
+   "linea04": 533,
+   "actor": "Asesorado o profesional autorizado según política",
+   "prioridad": "P0 — Núcleo no recortable",
+   "obligacion": "BE deberá permitir corregir un registro de ejecución sin ocultar el valor original ni su autoría.",
+   "aceptacion": "La corrección identifica motivo, actor y relación con el registro previo; los análisis usan la versión vigente sin perder el histórico.",
+   "derivacion": "06 define corrección/versionado; 08 permisos; 05 escenarios.",
+   "fuente": "Principios de trazabilidad de BE-LEG-02 §§9 y 15.",
+   "canal": "TRANSVERSAL",
+   "ucDV03": "UC-E02 / UC-I12 / UC-I03",
+   "familias": [
+    "TRN"
+   ],
+   "uc12": "UC-E02 / UC-I12 / UC-I03",
+   "contrato12": "`TRN` · POST execution/{id}/corrections",
+   "prueba11A": "TEST-RF-044",
+   "operacionesDeLaFamilia": [
+    "API-TRN-01 POST /advisees/{adviseeId}/training/evaluations",
+    "API-TRN-02 GET /advisees/{adviseeId}/training/evaluations",
+    "API-TRN-03 GET /training/evaluations/{evaluationId}",
+    "API-TRN-04 POST /advisees/{adviseeId}/training/objectives",
+    "API-TRN-05 GET /advisees/{adviseeId}/training/objectives",
+    "API-TRN-06 GET /advisees/{adviseeId}/training/objectives/effective",
+    "API-TRN-07 POST /advisees/{adviseeId}/training/plans",
+    "API-TRN-08 GET /advisees/{adviseeId}/training/plans",
+    "API-TRN-09 GET /training/plans/{planId}",
+    "API-TRN-10 PATCH /training/plans/{planId}",
+    "API-TRN-11 POST /training/plans/{planId}/validate",
+    "API-TRN-12 POST /training/plans/{planId}/activate",
+    "API-TRN-13 GET /training/exercises",
+    "API-TRN-13-BUSQUEDA POST /training/exercises/search",
+    "API-TRN-14 GET /me/training/today",
+    "API-TRN-14-PERIODO GET /me/training/occurrences",
+    "API-TRN-19-LISTA GET /me/training/executions",
+    "API-TRN-15 PUT /training/occurrences/{occurrenceId}/execution-draft",
+    "API-TRN-16 GET /training/execution-drafts/{draftId}",
+    "API-TRN-17 PATCH /training/execution-drafts/{draftId}",
+    "API-TRN-18 POST /training/execution-drafts/{draftId}/confirm",
+    "API-TRN-19 GET /training/executions/{executionId}",
+    "API-TRN-20 POST /training/executions/{executionId}/corrections",
+    "API-TRN-21 GET /advisees/{adviseeId}/training/review-context",
+    "API-TRN-22 POST /advisees/{adviseeId}/training/reviews",
+    "API-TRN-23 GET /training/reviews/{reviewId}",
+    "API-TRN-24 POST /training/reviews/{reviewId}/apply",
+    "API-TRN-23-LISTA GET /me/training/reviews",
+    "API-TRN-23-PROPIA GET /me/training/reviews/{reviewId}"
+   ],
+   "pruebasQueLoCitan": [
+    "test/integration/entrenamiento.int-spec.ts"
+   ],
+   "dl": [],
+   "paquetes": [
+    "WP-06.md"
+   ]
+  },
+  {
+   "ucs": [
+    "UC-P18"
+   ],
+   "rutasDelContrato": [],
+   "operacionesDelContrato": [],
+   "rutasSinOperacion": [],
+   "pruebasPorOperacion": [],
+   "pruebasPorUC": [
+    "test/integration/entrenamiento.int-spec.ts",
+    "packages/domain/src/dominio-wp06.test.ts"
+   ],
+   "id": "RF-045",
+   "titulo": "Analizar evidencia de entrenamiento para una revisión",
+   "grupo": "Circuito de entrenamiento",
+   "linea04": 542,
+   "actor": "Profesional de Entrenamiento",
+   "prioridad": "P0 — Núcleo no recortable",
+   "obligacion": "BE deberá permitir comparar evaluación, objetivo, planificación, ejecución y evolución antes de decidir progresión o continuidad.",
+   "aceptacion": "El profesional identifica período y evidencia relevante, compara lo planificado con lo ejecutado y pasa al registro común de revisión de RF-056; una visualización aislada no cuenta como revisión.",
+   "derivacion": "DEC-043 aprobada provisionalmente; 05 flujo; 06 read model; 08 acceso; 10 experiencia.",
+   "fuente": "BE-LEG-02 §§15–16; BE-LEG-03 §§2 y 13; Q-006.",
+   "canal": "WEBSITE",
+   "ucDV03": "UC-P18",
+   "familias": [
+    "TRN"
+   ],
+   "uc12": "UC-P18",
+   "contrato12": "`TRN` · review-context + reviews",
+   "prueba11A": "TEST-RF-045",
+   "operacionesDeLaFamilia": [
+    "API-TRN-01 POST /advisees/{adviseeId}/training/evaluations",
+    "API-TRN-02 GET /advisees/{adviseeId}/training/evaluations",
+    "API-TRN-03 GET /training/evaluations/{evaluationId}",
+    "API-TRN-04 POST /advisees/{adviseeId}/training/objectives",
+    "API-TRN-05 GET /advisees/{adviseeId}/training/objectives",
+    "API-TRN-06 GET /advisees/{adviseeId}/training/objectives/effective",
+    "API-TRN-07 POST /advisees/{adviseeId}/training/plans",
+    "API-TRN-08 GET /advisees/{adviseeId}/training/plans",
+    "API-TRN-09 GET /training/plans/{planId}",
+    "API-TRN-10 PATCH /training/plans/{planId}",
+    "API-TRN-11 POST /training/plans/{planId}/validate",
+    "API-TRN-12 POST /training/plans/{planId}/activate",
+    "API-TRN-13 GET /training/exercises",
+    "API-TRN-13-BUSQUEDA POST /training/exercises/search",
+    "API-TRN-14 GET /me/training/today",
+    "API-TRN-14-PERIODO GET /me/training/occurrences",
+    "API-TRN-19-LISTA GET /me/training/executions",
+    "API-TRN-15 PUT /training/occurrences/{occurrenceId}/execution-draft",
+    "API-TRN-16 GET /training/execution-drafts/{draftId}",
+    "API-TRN-17 PATCH /training/execution-drafts/{draftId}",
+    "API-TRN-18 POST /training/execution-drafts/{draftId}/confirm",
+    "API-TRN-19 GET /training/executions/{executionId}",
+    "API-TRN-20 POST /training/executions/{executionId}/corrections",
+    "API-TRN-21 GET /advisees/{adviseeId}/training/review-context",
+    "API-TRN-22 POST /advisees/{adviseeId}/training/reviews",
+    "API-TRN-23 GET /training/reviews/{reviewId}",
+    "API-TRN-24 POST /training/reviews/{reviewId}/apply",
+    "API-TRN-23-LISTA GET /me/training/reviews",
+    "API-TRN-23-PROPIA GET /me/training/reviews/{reviewId}"
+   ],
+   "pruebasQueLoCitan": [
+    "test/integration/entrenamiento.int-spec.ts"
+   ],
+   "dl": [
+    {
+     "id": "DL-084",
+     "tema": "Las variantes de entrenamiento de los adversariales 7 y 8 no tienen ID de test y nunca se ejecutaron",
+     "estado": "**RESUELTA** 2026-09-21 con el provisorio (opción A) · las variantes de entrenamiento del 7 y del 8 pasan en CI y en vivo contra `test` (API 0.6.0, `c50fdd9`; evidencia en #56)"
+    },
+    {
+     "id": "DL-105",
+     "tema": "La APK no muestra lo que el profesional planificó, y la web no lo compara con lo registrado",
+     "estado": "**DECIDIDA** 2026-09-28 · incremento 1 «Lo planificado, visible y comparable», con el contrato actual"
+    }
+   ],
+   "paquetes": [
+    "WP-06-ORACULOS.md",
+    "WP-06.md"
+   ]
+  },
+  {
+   "ucs": [
+    "UC-P18",
+    "UC-I06"
+   ],
+   "rutasDelContrato": [],
+   "operacionesDelContrato": [],
+   "rutasSinOperacion": [],
+   "pruebasPorOperacion": [],
+   "pruebasPorUC": [
+    "test/integration/contrato.int-spec.ts",
+    "test/integration/entrenamiento.int-spec.ts",
+    "test/integration/nutricion.int-spec.ts",
+    "packages/domain/src/dominio-wp06.test.ts"
+   ],
+   "id": "RF-046",
+   "titulo": "Progresar, sustituir o cerrar el plan de entrenamiento",
+   "grupo": "Circuito de entrenamiento",
+   "linea04": 551,
+   "actor": "Profesional de Entrenamiento",
+   "prioridad": "P0 — Núcleo no recortable",
+   "obligacion": "Después de una revisión, BE deberá permitir mantener, progresar, reprogramar, sustituir o cerrar correctamente el plan o bloque.",
+   "aceptacion": "La acción se vincula con la revisión y la siguiente planificación; el asesorado ve la situación vigente; la historia anterior permanece; “progresar” e “iniciar un nuevo bloque” se registran como especializaciones de ajustar o sustituir según su efecto sobre la versión, sin crear una taxonomía paralela a DEC-043.",
+   "derivacion": "DEC-043 v0.4 fija la semántica común; 06 define taxonomía y transiciones; 05 escenarios; 08 efectos.",
+   "fuente": "BE-LEG-02 §§15–16; Q-007.",
+   "canal": "WEBSITE",
+   "ucDV03": "UC-P18 / UC-I06",
+   "familias": [
+    "TRN"
+   ],
+   "uc12": "UC-P18 / UC-I06",
+   "contrato12": "`TRN` · POST review/{id}/apply",
+   "prueba11A": "TEST-RF-046",
+   "operacionesDeLaFamilia": [
+    "API-TRN-01 POST /advisees/{adviseeId}/training/evaluations",
+    "API-TRN-02 GET /advisees/{adviseeId}/training/evaluations",
+    "API-TRN-03 GET /training/evaluations/{evaluationId}",
+    "API-TRN-04 POST /advisees/{adviseeId}/training/objectives",
+    "API-TRN-05 GET /advisees/{adviseeId}/training/objectives",
+    "API-TRN-06 GET /advisees/{adviseeId}/training/objectives/effective",
+    "API-TRN-07 POST /advisees/{adviseeId}/training/plans",
+    "API-TRN-08 GET /advisees/{adviseeId}/training/plans",
+    "API-TRN-09 GET /training/plans/{planId}",
+    "API-TRN-10 PATCH /training/plans/{planId}",
+    "API-TRN-11 POST /training/plans/{planId}/validate",
+    "API-TRN-12 POST /training/plans/{planId}/activate",
+    "API-TRN-13 GET /training/exercises",
+    "API-TRN-13-BUSQUEDA POST /training/exercises/search",
+    "API-TRN-14 GET /me/training/today",
+    "API-TRN-14-PERIODO GET /me/training/occurrences",
+    "API-TRN-19-LISTA GET /me/training/executions",
+    "API-TRN-15 PUT /training/occurrences/{occurrenceId}/execution-draft",
+    "API-TRN-16 GET /training/execution-drafts/{draftId}",
+    "API-TRN-17 PATCH /training/execution-drafts/{draftId}",
+    "API-TRN-18 POST /training/execution-drafts/{draftId}/confirm",
+    "API-TRN-19 GET /training/executions/{executionId}",
+    "API-TRN-20 POST /training/executions/{executionId}/corrections",
+    "API-TRN-21 GET /advisees/{adviseeId}/training/review-context",
+    "API-TRN-22 POST /advisees/{adviseeId}/training/reviews",
+    "API-TRN-23 GET /training/reviews/{reviewId}",
+    "API-TRN-24 POST /training/reviews/{reviewId}/apply",
+    "API-TRN-23-LISTA GET /me/training/reviews",
+    "API-TRN-23-PROPIA GET /me/training/reviews/{reviewId}"
+   ],
+   "pruebasQueLoCitan": [
+    "test/integration/entrenamiento.int-spec.ts"
+   ],
+   "dl": [
+    {
+     "id": "DL-134",
+     "tema": "La persona lee las revisiones que sus profesionales registraron sobre ella",
+     "estado": "**IMPLEMENTADA** 2026-10-16 con las opciones A; a ratificar"
+    }
+   ],
+   "paquetes": [
+    "WP-06.md"
+   ]
+  },
+  {
+   "ucs": [
+    "UC-P19"
+   ],
+   "rutasDelContrato": [],
+   "operacionesDelContrato": [],
+   "rutasSinOperacion": [],
+   "pruebasPorOperacion": [],
+   "pruebasPorUC": [
+    "test/integration/antropometria.int-spec.ts"
+   ],
+   "id": "RF-047",
+   "titulo": "Registrar una evaluación antropométrica autorizada",
+   "grupo": "Antropometría transversal",
+   "linea04": 562,
+   "actor": "Profesional con capacidad antropométrica",
+   "prioridad": "P0 — Núcleo no recortable",
+   "obligacion": "BE deberá permitir registrar mediciones antropométricas directas con protocolo, unidades, fecha, autor y contexto.",
+   "aceptacion": "Las mediciones quedan diferenciadas de cálculos; se valida la capacidad, vínculo y consentimiento; la evaluación integra la historia autorizada.",
+   "derivacion": "06 modelo y unidades; 08 capacidad/acceso; 10 captura.",
+   "fuente": "BE-LEG-02 §§6, 11 y 15; BE-LEG-03 §11.",
+   "canal": "WEBSITE",
+   "ucDV03": "UC-P19",
+   "familias": [
+    "ANT"
+   ],
+   "uc12": "UC-P19",
+   "contrato12": "`ANT` · POST anthropometry evaluation",
+   "prueba11A": "TEST-RF-047",
+   "operacionesDeLaFamilia": [
+    "API-ANT-01 GET /anthropometry/specifications",
+    "API-ANT-02 POST /advisees/{adviseeId}/anthropometry/evaluations",
+    "API-ANT-03 GET /advisees/{adviseeId}/anthropometry/evaluations",
+    "API-ANT-07 POST /advisees/{adviseeId}/anthropometry/evaluation-drafts",
+    "API-ANT-08 GET /advisees/{adviseeId}/anthropometry/evaluation-drafts",
+    "API-ANT-04 GET /anthropometry/evaluations/{evaluationId}",
+    "API-ANT-09 GET /anthropometry/evaluation-drafts/{evaluationId}",
+    "API-ANT-10 PUT /anthropometry/evaluation-drafts/{evaluationId}",
+    "API-ANT-11 POST /anthropometry/evaluation-drafts/{evaluationId}/register",
+    "API-ANT-05 POST /anthropometry/evaluations/{evaluationId}/corrections",
+    "API-ANT-12 POST /anthropometry/measurements/{measurementId}/annulments",
+    "API-ANT-06 GET /advisees/{adviseeId}/anthropometry/progress",
+    "API-ANT-06-PROPIA GET /me/anthropometry/progress"
+   ],
+   "pruebasQueLoCitan": [
+    "test/integration/antropometria.int-spec.ts"
+   ],
+   "dl": [],
+   "paquetes": [
+    "WP-05.md",
+    "WP-07.md"
+   ]
+  },
+  {
+   "ucs": [
+    "UC-I09",
+    "UC-P19",
+    "UC-E03"
+   ],
+   "rutasDelContrato": [],
+   "operacionesDelContrato": [],
+   "rutasSinOperacion": [],
+   "pruebasPorOperacion": [],
+   "pruebasPorUC": [
+    "test/integration/antropometria.int-spec.ts"
+   ],
+   "id": "RF-048",
+   "titulo": "Emitir cálculos antropométricos reproducibles",
+   "grupo": "Antropometría transversal",
+   "linea04": 571,
+   "actor": "Sistema BE y profesional responsable",
+   "prioridad": "P0 — Núcleo no recortable",
+   "obligacion": "BE deberá calcular resultados derivados sin confundirlos con mediciones directas y conservando método, entradas y versión.",
+   "aceptacion": "Un resultado histórico puede reproducirse; el método y responsable son identificables; no se presenta como diagnóstico ni causalidad.",
+   "derivacion": "06 fórmulas/datos; 08 límites; 10 visualización; 11A pruebas.",
+   "fuente": "BE-LEG-02 §§9, 11 y 14.",
+   "canal": "TRANSVERSAL",
+   "ucDV03": "UC-I09 / UC-P19 / UC-E03",
+   "familias": [
+    "ANT"
+   ],
+   "uc12": "UC-I09 / UC-P19 / UC-E03",
+   "contrato12": "`ANT` · derived results inside evaluation/recalculation",
+   "prueba11A": "TEST-RF-048",
+   "operacionesDeLaFamilia": [
+    "API-ANT-01 GET /anthropometry/specifications",
+    "API-ANT-02 POST /advisees/{adviseeId}/anthropometry/evaluations",
+    "API-ANT-03 GET /advisees/{adviseeId}/anthropometry/evaluations",
+    "API-ANT-07 POST /advisees/{adviseeId}/anthropometry/evaluation-drafts",
+    "API-ANT-08 GET /advisees/{adviseeId}/anthropometry/evaluation-drafts",
+    "API-ANT-04 GET /anthropometry/evaluations/{evaluationId}",
+    "API-ANT-09 GET /anthropometry/evaluation-drafts/{evaluationId}",
+    "API-ANT-10 PUT /anthropometry/evaluation-drafts/{evaluationId}",
+    "API-ANT-11 POST /anthropometry/evaluation-drafts/{evaluationId}/register",
+    "API-ANT-05 POST /anthropometry/evaluations/{evaluationId}/corrections",
+    "API-ANT-12 POST /anthropometry/measurements/{measurementId}/annulments",
+    "API-ANT-06 GET /advisees/{adviseeId}/anthropometry/progress",
+    "API-ANT-06-PROPIA GET /me/anthropometry/progress"
+   ],
+   "pruebasQueLoCitan": [
+    "test/integration/calculos.int-spec.ts",
+    "packages/domain/src/dominio-wp05.test.ts",
+    "scripts/copy-pantallas.test.cjs"
+   ],
+   "dl": [
+    {
+     "id": "DL-073",
+     "tema": "El 10 declara la carga en formulario y Dirección pide la carga sobre la figura",
+     "estado": "**CERRADA** 2026-09-24 · opción A, en el tramo D de `docs/paquetes/WP-IDENTIDAD-VISUAL.md`"
+    },
+    {
+     "id": "DL-111",
+     "tema": "El catálogo antropométrico real (perfil completo y 40 fórmulas con fuente), la lámina del compositor en el website y la figura con los resultados en la APK",
+     "estado": "**IMPLEMENTADA, A RATIFICAR** 2026-10-01 · decisiones del ejecutor: sitios de la ficha, métodos por sexo, edad como dato de la toma, una métrica por familia, resultados en la evolución sin cambiar su forma"
+    },
+    {
+     "id": "DL-112",
+     "tema": "El catálogo ofrece demasiados métodos para elegir: 40 métodos, 28 resultados",
+     "estado": "**DECIDIDA** 2026-10-01 (la purga) · la lista la armó el ejecutor, A RATIFICAR · 21 vigentes, 23 retirados y 4 nuevos; lo calculado sigue en la historia"
+    }
+   ],
+   "paquetes": [
+    "WP-05.md"
+   ]
+  },
+  {
+   "ucs": [
+    "UC-P20"
+   ],
+   "rutasDelContrato": [],
+   "operacionesDelContrato": [],
+   "rutasSinOperacion": [],
+   "pruebasPorOperacion": [],
+   "pruebasPorUC": [
+    "test/integration/antropometria.int-spec.ts"
+   ],
+   "id": "RF-049",
+   "titulo": "Consultar evolución antropométrica",
+   "grupo": "Antropometría transversal",
+   "linea04": 580,
+   "actor": "Profesional autorizado o asesorado",
+   "prioridad": "P0 — Núcleo no recortable",
+   "obligacion": "BE deberá permitir comparar evaluaciones antropométricas en el tiempo con período, unidad y procedencia visibles.",
+   "aceptacion": "La comparación usa mediciones compatibles o explicita diferencias; el acceso respeta alcance; no produce un score global de salud.",
+   "derivacion": "06 compatibilidad; 08 acceso; 10 gráficos.",
+   "fuente": "BE-LEG-02 §§11 y 15.",
+   "canal": "TRANSVERSAL",
+   "ucDV03": "UC-P20",
+   "familias": [
+    "ANT",
+    "PRJ"
+   ],
+   "uc12": "UC-P20",
+   "contrato12": "`ANT/PRJ` · GET anthropometry/progress",
+   "prueba11A": "TEST-RF-049",
+   "operacionesDeLaFamilia": [
+    "API-ANT-01 GET /anthropometry/specifications",
+    "API-ANT-02 POST /advisees/{adviseeId}/anthropometry/evaluations",
+    "API-ANT-03 GET /advisees/{adviseeId}/anthropometry/evaluations",
+    "API-ANT-07 POST /advisees/{adviseeId}/anthropometry/evaluation-drafts",
+    "API-ANT-08 GET /advisees/{adviseeId}/anthropometry/evaluation-drafts",
+    "API-ANT-04 GET /anthropometry/evaluations/{evaluationId}",
+    "API-ANT-09 GET /anthropometry/evaluation-drafts/{evaluationId}",
+    "API-ANT-10 PUT /anthropometry/evaluation-drafts/{evaluationId}",
+    "API-ANT-11 POST /anthropometry/evaluation-drafts/{evaluationId}/register",
+    "API-ANT-05 POST /anthropometry/evaluations/{evaluationId}/corrections",
+    "API-ANT-12 POST /anthropometry/measurements/{measurementId}/annulments",
+    "API-ANT-06 GET /advisees/{adviseeId}/anthropometry/progress",
+    "API-ANT-06-PROPIA GET /me/anthropometry/progress",
+    "API-PRJ-01 GET /advisees/{adviseeId}/projections/{projectionKey}"
+   ],
+   "pruebasQueLoCitan": [
+    "test/integration/antropometria.int-spec.ts",
+    "test/integration/evolucion-antropometrica.int-spec.ts"
+   ],
+   "dl": [
+    {
+     "id": "DL-070",
+     "tema": "La evolución devuelve un bloque por métrica y el 09 declara una métrica por respuesta",
+     "estado": "**DECIDIDA** 2026-09-20 · opción A · se mantiene el array de métricas"
+    },
+    {
+     "id": "DL-111",
+     "tema": "El catálogo antropométrico real (perfil completo y 40 fórmulas con fuente), la lámina del compositor en el website y la figura con los resultados en la APK",
+     "estado": "**IMPLEMENTADA, A RATIFICAR** 2026-10-01 · decisiones del ejecutor: sitios de la ficha, métodos por sexo, edad como dato de la toma, una métrica por familia, resultados en la evolución sin cambiar su forma"
+    }
+   ],
+   "paquetes": [
+    "WP-05-ORACULOS.md",
+    "WP-05.md"
+   ]
+  },
+  {
+   "ucs": [
+    "UC-E03",
+    "UC-I12",
+    "UC-I03",
+    "UC-I09"
+   ],
+   "rutasDelContrato": [],
+   "operacionesDelContrato": [],
+   "rutasSinOperacion": [],
+   "pruebasPorOperacion": [],
+   "pruebasPorUC": [
+    "test/integration/antropometria.int-spec.ts"
+   ],
+   "id": "RF-050",
+   "titulo": "Corregir una medición antropométrica con trazabilidad",
+   "grupo": "Antropometría transversal",
+   "linea04": 589,
+   "actor": "Profesional autorizado",
+   "prioridad": "P0 — Núcleo no recortable",
+   "obligacion": "BE deberá permitir corregir o anular una medición preservando el registro original y el motivo.",
+   "aceptacion": "La corrección identifica actor y fecha; los cálculos afectados quedan relacionados o recalculados según política; no existe sobrescritura silenciosa.",
+   "derivacion": "06 correcciones y derivados; 08 autorización; 05 escenarios.",
+   "fuente": "BE-LEG-02 §11.",
+   "canal": "WEBSITE",
+   "ucDV03": "UC-E03 / UC-I12 / UC-I03 / UC-I09",
+   "familias": [
+    "ANT"
+   ],
+   "uc12": "UC-E03 / UC-I12 / UC-I03 / UC-I09",
+   "contrato12": "`ANT` · POST evaluation/{id}/corrections",
+   "prueba11A": "TEST-RF-050",
+   "operacionesDeLaFamilia": [
+    "API-ANT-01 GET /anthropometry/specifications",
+    "API-ANT-02 POST /advisees/{adviseeId}/anthropometry/evaluations",
+    "API-ANT-03 GET /advisees/{adviseeId}/anthropometry/evaluations",
+    "API-ANT-07 POST /advisees/{adviseeId}/anthropometry/evaluation-drafts",
+    "API-ANT-08 GET /advisees/{adviseeId}/anthropometry/evaluation-drafts",
+    "API-ANT-04 GET /anthropometry/evaluations/{evaluationId}",
+    "API-ANT-09 GET /anthropometry/evaluation-drafts/{evaluationId}",
+    "API-ANT-10 PUT /anthropometry/evaluation-drafts/{evaluationId}",
+    "API-ANT-11 POST /anthropometry/evaluation-drafts/{evaluationId}/register",
+    "API-ANT-05 POST /anthropometry/evaluations/{evaluationId}/corrections",
+    "API-ANT-12 POST /anthropometry/measurements/{measurementId}/annulments",
+    "API-ANT-06 GET /advisees/{adviseeId}/anthropometry/progress",
+    "API-ANT-06-PROPIA GET /me/anthropometry/progress"
+   ],
+   "pruebasQueLoCitan": [
+    "test/integration/antropometria.int-spec.ts"
+   ],
+   "dl": [
+    {
+     "id": "DL-058",
+     "tema": "El núcleo operable de antropometría vive en material declarado «NO APROBADO»",
+     "estado": "**DECIDIDA** 2026-09-20 · opción A, por delegación de Dirección en el ejecutor"
+    }
+   ],
+   "paquetes": [
+    "WP-05-ORACULOS.md",
+    "WP-05.md",
+    "WP-07.md"
+   ]
+  },
+  {
+   "ucs": [
+    "UC-P21",
+    "UC-P22",
+    "UC-E04",
+    "UC-P04",
+    "UC-P05"
+   ],
+   "rutasDelContrato": [],
+   "operacionesDelContrato": [],
+   "rutasSinOperacion": [],
+   "pruebasPorOperacion": [],
+   "pruebasPorUC": [
+    "test/integration/invitaciones.int-spec.ts",
+    "test/integration/vinculo.int-spec.ts"
+   ],
+   "id": "RF-051",
+   "titulo": "Publicar y descubrir servicios antropométricos de forma limitada",
+   "grupo": "Antropometría transversal",
+   "linea04": 598,
+   "actor": "Profesional autorizado y asesorado",
+   "prioridad": "P1 — Alta prioridad",
+   "obligacion": "BE deberá permitir publicar un servicio antropométrico y descubrirlo en lista y, cuando esté disponible, mapa, para consultar perfil y solicitar vínculo.",
+   "aceptacion": "La fuente de elegibilidad es BE; Google Maps solo representa ubicación; ante caída se mantiene lista y ubicación textual; no hay reservas, pagos, ranking ni reputación.",
+   "derivacion": "06 datos de servicio; 08 visibilidad; 07 Maps; 09 contrato; 10 lista/mapa.",
+   "fuente": "BE-LEG-02 §§10, 12–14 y 20; BE-LEG-03 §11.",
+   "canal": "WEBSITE",
+   "ucDV03": "UC-P21 / UC-P22 / UC-E04 / UC-P04 / UC-P05",
+   "familias": [],
+   "uc12": "UC-P21 / UC-P22 / UC-E04 / UC-P04 / UC-P05",
+   "contrato12": "`ANT-P1` · publish/search/detail limited — P1; descubrimiento desemboca en solicitud de vínculo",
+   "prueba11A": "TEST-RF-051",
+   "operacionesDeLaFamilia": [],
+   "pruebasQueLoCitan": [],
+   "dl": [
+    {
+     "id": "DL-035",
+     "tema": "Cómo identifica el profesional al asesorado",
+     "estado": "ABIERTA"
+    }
+   ],
+   "paquetes": [
+    "WP-03.md",
+    "WP-05.md",
+    "WP-CONSOLIDACION.md"
+   ]
+  },
+  {
+   "ucs": [
+    "UC-P23",
+    "UC-I02"
+   ],
+   "rutasDelContrato": [
+    "GET /me/caseload"
+   ],
+   "operacionesDelContrato": [],
+   "rutasSinOperacion": [
+    "GET /me/caseload"
+   ],
+   "pruebasPorOperacion": [],
+   "pruebasPorUC": [
+    "test/integration/notas-de-coordinacion.int-spec.ts",
+    "test/integration/pdp.int-spec.ts",
+    "packages/domain/src/dominio-wp03.test.ts"
+   ],
+   "id": "RF-052",
+   "titulo": "Consultar la cartera operativa profesional",
+   "grupo": "Dashboard, evolución, coordinación y negocio académico",
+   "linea04": 609,
+   "actor": "Profesional",
+   "prioridad": "P0 — Núcleo no recortable",
+   "obligacion": "BE deberá mostrar los asesorados y procesos propios con estado operativo suficiente para identificar qué requiere acción.",
+   "aceptacion": "La cartera excluye relaciones ajenas; distingue pendientes, activos y cerrados según política; permite llegar al perfil autorizado.",
+   "derivacion": "06 define estado; 08 filtra acceso; 10 vista; 09 read model.",
+   "fuente": "BE-LEG-02 §§9, 11 y 15.",
+   "canal": "WEBSITE",
+   "ucDV03": "UC-P23 / UC-I02",
+   "familias": [
+    "DSH"
+   ],
+   "uc12": "UC-P23 / UC-I02",
+   "contrato12": "`DSH` · GET /me/caseload",
+   "prueba11A": "TEST-RF-052",
+   "operacionesDeLaFamilia": [
+    "API-DSH-03 GET /advisees/{adviseeId}/dashboard",
+    "API-DSH-04 GET /advisees/{adviseeId}/timeline",
+    "API-DSH-04-BUSQUEDA POST /advisees/{adviseeId}/timeline/search"
+   ],
+   "pruebasQueLoCitan": [],
+   "dl": [
+    {
+     "id": "DL-041",
+     "tema": "El profesional sin Cartera",
+     "estado": "ABIERTA"
+    }
+   ],
+   "paquetes": [
+    "WP-03.md",
+    "WP-04.md",
+    "WP-05.md"
+   ]
+  },
+  {
+   "ucs": [
+    "UC-P24",
+    "UC-I02"
+   ],
+   "rutasDelContrato": [
+    "GET /advisees/{}/dashboard"
+   ],
+   "operacionesDelContrato": [
+    "API-DSH-03"
+   ],
+   "rutasSinOperacion": [],
+   "pruebasPorOperacion": [
+    "test/integration/analisis.int-spec.ts",
+    "test/integration/comprension.int-spec.ts",
+    "test/integration/dashboard.int-spec.ts",
+    "test/integration/maquinas-wp03.int-spec.ts",
+    "test/integration/pdp.int-spec.ts",
+    "packages/domain/src/contratos-wp07.test.ts"
+   ],
+   "pruebasPorUC": [
+    "test/integration/notas-de-coordinacion.int-spec.ts",
+    "test/integration/pdp.int-spec.ts",
+    "packages/domain/src/dominio-wp03.test.ts"
+   ],
+   "id": "RF-053",
+   "titulo": "Consultar un dashboard interdisciplinario autorizado",
+   "grupo": "Dashboard, evolución, coordinación y negocio académico",
+   "linea04": 618,
+   "actor": "Profesional",
+   "prioridad": "P0 — Núcleo no recortable",
+   "obligacion": "BE deberá ofrecer una síntesis del proceso del asesorado que combine estado de Nutrición, Entrenamiento, Antropometría, vínculos, consentimientos, revisiones, decisiones y próxima acción.",
+   "aceptacion": "Cada dato conserva dominio y procedencia; el profesional solo ve contexto autorizado; no existe score global de salud; los faltantes se muestran como tales.",
+   "derivacion": "06 read models; 08 visibilidad; 09 contrato; 10 jerarquía.",
+   "fuente": "BE-LEG-02 §§9, 11 y 15; DEC-014.",
+   "canal": "WEBSITE",
+   "ucDV03": "UC-P24 / UC-I02",
+   "familias": [
+    "DSH"
+   ],
+   "uc12": "UC-P24 / UC-I02",
+   "contrato12": "`DSH` · GET /advisees/{id}/dashboard",
+   "prueba11A": "TEST-RF-053",
+   "operacionesDeLaFamilia": [
+    "API-DSH-03 GET /advisees/{adviseeId}/dashboard",
+    "API-DSH-04 GET /advisees/{adviseeId}/timeline",
+    "API-DSH-04-BUSQUEDA POST /advisees/{adviseeId}/timeline/search"
+   ],
+   "pruebasQueLoCitan": [
+    "test/integration/dashboard.int-spec.ts",
+    "packages/domain/src/contratos-wp07.test.ts"
+   ],
+   "dl": [
+    {
+     "id": "DL-031",
+     "tema": "Recurso protegido para demostrar el acceso sin dominios de salud",
+     "estado": "**CERRADA** 2026-09-24 · opción A · condición de cierre cumplida en la consolidación (PR #70)"
+    }
+   ],
+   "paquetes": [
+    "WP-03.md",
+    "WP-05.md",
+    "WP-CONSOLIDACION.md",
+    "WP-DASHBOARD-PROFESIONAL.md",
+    "WP-ESCRITORIO-AMABLE.md"
+   ]
+  },
+  {
+   "ucs": [
+    "UC-P24",
+    "UC-P31",
+    "UC-I03"
+   ],
+   "rutasDelContrato": [],
+   "operacionesDelContrato": [],
+   "rutasSinOperacion": [],
+   "pruebasPorOperacion": [],
+   "pruebasPorUC": [],
+   "id": "RF-054",
+   "titulo": "Consultar una línea temporal integrada",
+   "grupo": "Dashboard, evolución, coordinación y negocio académico",
+   "linea04": 627,
+   "actor": "Profesional autorizado o asesorado",
+   "prioridad": "P0 — Núcleo no recortable",
+   "obligacion": "BE deberá reconstruir cronológicamente evaluaciones, planes, ejecuciones, revisiones, decisiones, cambios de vínculo y consentimientos según permisos.",
+   "aceptacion": "Cada evento identifica fecha, dominio, autor y procedencia; la línea temporal no mezcla planificado con ejecutado; el acceso depende del actor.",
+   "derivacion": "06 índice longitudinal; 08 visibilidad; 09/10 consulta.",
+   "fuente": "BE-LEG-02 §§3, 9, 11 y 15.",
+   "canal": "TRANSVERSAL",
+   "ucDV03": "UC-P24 / UC-P31 / UC-I03",
+   "familias": [
+    "DSH"
+   ],
+   "uc12": "UC-P24 / UC-P31 / UC-I03",
+   "contrato12": "`DSH` · timeline + own progress",
+   "prueba11A": "TEST-RF-054",
+   "operacionesDeLaFamilia": [
+    "API-DSH-03 GET /advisees/{adviseeId}/dashboard",
+    "API-DSH-04 GET /advisees/{adviseeId}/timeline",
+    "API-DSH-04-BUSQUEDA POST /advisees/{adviseeId}/timeline/search"
+   ],
+   "pruebasQueLoCitan": [],
+   "dl": [
+    {
+     "id": "DL-116",
+     "tema": "`openapi.ts` usa API-DSH-04 para «Pendientes» (`GET /me/portfolio`), y en el 09 ese ID es la línea temporal, que no está implementada",
+     "estado": "**ABIERTA** 2026-10-02 · severidad media (trazabilidad) · espera la decisión de Dirección"
+    }
+   ],
+   "paquetes": [
+    "WP-03.md",
+    "WP-05.md",
+    "WP-DASHBOARD-PROFESIONAL.md",
+    "WP-ESCRITORIO-AMABLE.md"
+   ]
+  },
+  {
+   "ucs": [
+    "UC-P23",
+    "UC-I05"
+   ],
+   "rutasDelContrato": [
+    "GET /me/review-queue"
+   ],
+   "operacionesDelContrato": [],
+   "rutasSinOperacion": [
+    "GET /me/review-queue"
+   ],
+   "pruebasPorOperacion": [],
+   "pruebasPorUC": [],
+   "id": "RF-055",
+   "titulo": "Identificar revisiones pendientes",
+   "grupo": "Dashboard, evolución, coordinación y negocio académico",
+   "linea04": 636,
+   "actor": "Profesional",
+   "prioridad": "P0 — Núcleo no recortable",
+   "obligacion": "BE deberá señalar procesos que requieren revisión por evidencia nueva, fecha acordada, ausencia de continuidad o condición definida.",
+   "aceptacion": "La señal explica por qué requiere atención y no se presenta como alerta clínica; puede abrir la evidencia correspondiente.",
+   "derivacion": "06 reglas de pendiente; 10 lenguaje; 09 read model.",
+   "fuente": "BE-LEG-02 §§9, 11 y 15.",
+   "canal": "WEBSITE",
+   "ucDV03": "UC-P23 / UC-I05",
+   "familias": [
+    "DSH"
+   ],
+   "uc12": "UC-P23 / UC-I05",
+   "contrato12": "`DSH` · GET /me/review-queue",
+   "prueba11A": "TEST-RF-055",
+   "operacionesDeLaFamilia": [
+    "API-DSH-03 GET /advisees/{adviseeId}/dashboard",
+    "API-DSH-04 GET /advisees/{adviseeId}/timeline",
+    "API-DSH-04-BUSQUEDA POST /advisees/{adviseeId}/timeline/search"
+   ],
+   "pruebasQueLoCitan": [],
+   "dl": [],
+   "paquetes": [
+    "WP-DASHBOARD-PROFESIONAL.md"
+   ]
+  },
+  {
+   "ucs": [
+    "UC-I05",
+    "UC-P13",
+    "UC-P18"
+   ],
+   "rutasDelContrato": [],
+   "operacionesDelContrato": [],
+   "rutasSinOperacion": [],
+   "pruebasPorOperacion": [],
+   "pruebasPorUC": [
+    "test/integration/entrenamiento.int-spec.ts",
+    "packages/domain/src/dominio-wp04.test.ts",
+    "packages/domain/src/dominio-wp06.test.ts"
+   ],
+   "id": "RF-056",
+   "titulo": "Registrar revisión, decisión y próxima acción",
+   "grupo": "Dashboard, evolución, coordinación y negocio académico",
+   "linea04": 645,
+   "actor": "Profesional autorizado",
+   "prioridad": "P0 — Núcleo no recortable",
+   "obligacion": "BE deberá registrar de forma trazable una revisión válida y su próxima acción dentro del dominio correspondiente.",
+   "aceptacion": "El registro cumple DEC-043 durante su vigencia provisional; identifica evidencia, dominio, período, autor, fundamento y resultado; alimenta continuidad y TVCC-30.",
+   "derivacion": "06 define entidad/estados; 05 flujo; 08 autoría; 10 captura.",
+   "fuente": "BE-LEG-02 §§15–16; BE-LEG-03 §§2 y 13; Q-006.",
+   "canal": "WEBSITE",
+   "ucDV03": "UC-I05; invocado por UC-P13 y UC-P18",
+   "familias": [
+    "NUT",
+    "TRN"
+   ],
+   "uc12": "UC-I05 → UC-P13 / UC-P18",
+   "contrato12": "`NUT/TRN` · common review semantics in both verticals",
+   "prueba11A": "TEST-RF-056",
+   "operacionesDeLaFamilia": [
+    "API-NUT-01 POST /advisees/{adviseeId}/nutrition/evaluations",
+    "API-NUT-02 GET /advisees/{adviseeId}/nutrition/evaluations",
+    "API-NUT-03 GET /nutrition/evaluations/{evaluationId}",
+    "API-NUT-04 POST /advisees/{adviseeId}/nutrition/objectives",
+    "API-NUT-05 GET /advisees/{adviseeId}/nutrition/objectives",
+    "API-NUT-06 GET /advisees/{adviseeId}/nutrition/objectives/effective",
+    "API-NUT-07 POST /advisees/{adviseeId}/nutrition/plans",
+    "API-NUT-08 GET /advisees/{adviseeId}/nutrition/plans",
+    "API-NUT-09 GET /nutrition/plans/{planId}",
+    "API-NUT-10 PATCH /nutrition/plans/{planId}",
+    "API-NUT-11 POST /nutrition/plans/{planId}/validate",
+    "API-NUT-12 POST /nutrition/plans/{planId}/activate",
+    "API-NUT-13 GET /nutrition/catalog-items",
+    "API-NUT-13-BUSQUEDA POST /nutrition/catalog-items/search",
+    "API-NUT-14 GET /me/nutrition/today",
+    "API-NUT-15 POST /me/nutrition/executions",
+    "API-NUT-16-LISTA GET /me/nutrition/executions",
+    "API-NUT-16 GET /nutrition/executions/{executionId}",
+    "API-NUT-17 GET /advisees/{adviseeId}/nutrition/review-context",
+    "API-NUT-18 POST /advisees/{adviseeId}/nutrition/reviews",
+    "API-NUT-19 GET /nutrition/reviews/{reviewId}",
+    "API-NUT-20 POST /nutrition/reviews/{reviewId}/apply",
+    "API-NUT-21 POST /nutrition/executions/{executionId}/corrections",
+    "API-TRN-01 POST /advisees/{adviseeId}/training/evaluations",
+    "API-TRN-02 GET /advisees/{adviseeId}/training/evaluations",
+    "API-TRN-03 GET /training/evaluations/{evaluationId}",
+    "API-TRN-04 POST /advisees/{adviseeId}/training/objectives",
+    "API-TRN-05 GET /advisees/{adviseeId}/training/objectives",
+    "API-TRN-06 GET /advisees/{adviseeId}/training/objectives/effective",
+    "API-TRN-07 POST /advisees/{adviseeId}/training/plans",
+    "API-TRN-08 GET /advisees/{adviseeId}/training/plans",
+    "API-TRN-09 GET /training/plans/{planId}",
+    "API-TRN-10 PATCH /training/plans/{planId}",
+    "API-TRN-11 POST /training/plans/{planId}/validate",
+    "API-TRN-12 POST /training/plans/{planId}/activate",
+    "API-TRN-13 GET /training/exercises",
+    "API-TRN-13-BUSQUEDA POST /training/exercises/search",
+    "API-TRN-14 GET /me/training/today",
+    "API-TRN-14-PERIODO GET /me/training/occurrences",
+    "API-TRN-19-LISTA GET /me/training/executions",
+    "API-TRN-15 PUT /training/occurrences/{occurrenceId}/execution-draft",
+    "API-TRN-16 GET /training/execution-drafts/{draftId}",
+    "API-TRN-17 PATCH /training/execution-drafts/{draftId}",
+    "API-TRN-18 POST /training/execution-drafts/{draftId}/confirm",
+    "API-TRN-19 GET /training/executions/{executionId}",
+    "API-TRN-20 POST /training/executions/{executionId}/corrections",
+    "API-TRN-21 GET /advisees/{adviseeId}/training/review-context",
+    "API-TRN-22 POST /advisees/{adviseeId}/training/reviews",
+    "API-TRN-23 GET /training/reviews/{reviewId}",
+    "API-TRN-24 POST /training/reviews/{reviewId}/apply",
+    "API-NUT-19-LISTA GET /me/nutrition/reviews",
+    "API-NUT-19-PROPIA GET /me/nutrition/reviews/{reviewId}",
+    "API-TRN-23-LISTA GET /me/training/reviews",
+    "API-TRN-23-PROPIA GET /me/training/reviews/{reviewId}"
+   ],
+   "pruebasQueLoCitan": [
+    "test/integration/entrenamiento.int-spec.ts"
+   ],
+   "dl": [],
+   "paquetes": [
+    "WP-04.md"
+   ]
+  },
+  {
+   "ucs": [
+    "UC-E07",
+    "UC-I02",
+    "UC-I03"
+   ],
+   "rutasDelContrato": [
+    "POST /advisees/{}/coordination-notes"
+   ],
+   "operacionesDelContrato": [
+    "API-CRD-01"
+   ],
+   "rutasSinOperacion": [],
+   "pruebasPorOperacion": [
+    "test/integration/contrato.int-spec.ts",
+    "test/integration/notas-de-coordinacion.int-spec.ts",
+    "packages/domain/src/notas-de-coordinacion.test.ts",
+    "scripts/trazabilidad-de-operaciones.test.cjs"
+   ],
+   "pruebasPorUC": [
+    "test/integration/notas-de-coordinacion.int-spec.ts",
+    "test/integration/pdp.int-spec.ts",
+    "packages/domain/src/dominio-wp03.test.ts",
+    "packages/domain/src/notas-de-coordinacion.test.ts"
+   ],
+   "id": "RF-057",
+   "titulo": "Registrar notas de coordinación autorizadas",
+   "grupo": "Dashboard, evolución, coordinación y negocio académico",
+   "linea04": 654,
+   "actor": "Profesional",
+   "prioridad": "P0 — Núcleo no recortable",
+   "obligacion": "BE deberá permitir documentar contexto de coordinación sin transferir responsabilidad ni facultades entre especialidades.",
+   "aceptacion": "La nota conserva autor, destinatarios/alcance y dominio; no modifica planes ajenos; solo la consultan actores autorizados.",
+   "derivacion": "06 modelo; 08 visibilidad; 05 escenarios; 10 experiencia.",
+   "fuente": "BE-LEG-02 §§3, 5, 9 y 11.",
+   "canal": "WEBSITE",
+   "ucDV03": "UC-E07 / UC-I02 / UC-I03",
+   "familias": [
+    "CRD"
+   ],
+   "uc12": "UC-E07 / UC-I02 / UC-I03",
+   "contrato12": "`CRD` · API-CRD-01 · POST /advisees/{id}/coordination-notes; lectura autorizada por timeline/dashboard",
+   "prueba11A": "TEST-RF-057",
+   "operacionesDeLaFamilia": [
+    "API-CRD-01 POST /advisees/{adviseeId}/coordination-notes",
+    "API-CRD-01-LISTA GET /advisees/{adviseeId}/coordination-notes/recipients",
+    "API-CRD-01-PROPIA GET /me/coordination-notes"
+   ],
+   "pruebasQueLoCitan": [
+    "test/integration/notas-de-coordinacion.int-spec.ts"
+   ],
+   "dl": [
+    {
+     "id": "DL-140",
+     "tema": "La nota de coordinación entre los profesionales de una persona: quién la recibe, quién la lee, el texto libre acotado, lo citado y que solo se agrega",
+     "estado": "**IMPLEMENTADA** 2026-10-17 con las opciones recomendadas CRD-D1 a CRD-D8 (API, web y APK en `wp-notas-de-coordinacion`, sin integrar); E-1 a E-11 a ratificar; falta la APK en el teléfono"
+    }
+   ],
+   "paquetes": [
+    "WP-03.md",
+    "WP-NOTAS-DE-COORDINACION.md"
+   ]
+  },
+  {
+   "ucs": [
+    "UC-S01",
+    "UC-P13",
+    "UC-P18",
+    "UC-I05",
+    "UC-I06"
+   ],
+   "rutasDelContrato": [],
+   "operacionesDelContrato": [],
+   "rutasSinOperacion": [],
+   "pruebasPorOperacion": [],
+   "pruebasPorUC": [
+    "test/integration/contrato.int-spec.ts",
+    "test/integration/entrenamiento.int-spec.ts",
+    "test/integration/nutricion.int-spec.ts",
+    "test/integration/tvcc30.int-spec.ts",
+    "packages/domain/src/dominio-wp04.test.ts",
+    "packages/domain/src/dominio-wp06.test.ts"
+   ],
+   "id": "RF-058",
+   "titulo": "Obtener TVCC-30 de manera reproducible",
+   "grupo": "Dashboard, evolución, coordinación y negocio académico",
+   "linea04": 663,
+   "actor": "Sistema BE o responsable de validación",
+   "prioridad": "P1 — Alta prioridad",
+   "obligacion": "BE deberá producir los datos necesarios para calcular TVCC-30 con vínculos elegibles, ciclo cerrado y siguiente acción válida en el período.",
+   "aceptacion": "El numerador y denominador pueden auditarse; un ciclo cerrado requiere una revisión válida de RF-056 y una próxima acción semánticamente admitida por DEC-043; se excluyen cuentas demo y vínculos no elegibles; la ventana usa la zona aprobada; continuidad no se confunde con retención, adherencia o resultado corporal.",
+   "derivacion": "04 fija estos elementos mínimos; 06 define eventos, elegibilidad fina y versionado; 09 consulta/exportación si aplica; 11A valida cálculo; 12 evidencia.",
+   "fuente": "BE-LEG-02 §16; DEC-016.",
+   "canal": "TRANSVERSAL",
+   "ucDV03": "UC-S01; productores UC-P13 / UC-P18 mediante UC-I05 / UC-I06",
+   "familias": [],
+   "uc12": "UC-S01 / UC-P13 / UC-P18 vía UC-I05 / UC-I06",
+   "contrato12": "`ANA-P1` · internal/reproducible; HTTP only when 12 closes spec — P1",
+   "prueba11A": "TEST-RF-058",
+   "operacionesDeLaFamilia": [],
+   "pruebasQueLoCitan": [
+    "test/integration/tvcc30.int-spec.ts"
+   ],
+   "dl": [
+    {
+     "id": "DL-135",
+     "tema": "TVCC-30: qué es un ciclo en BE, su ancla, las cuentas demo, la corrida interna y la conservación del resultado",
+     "estado": "**IMPLEMENTADA** 2026-10-16; D-1 a D-9 a ratificar"
+    }
+   ],
+   "paquetes": [
+    "WP-04.md",
+    "WP-06.md",
+    "WP-TVCC-30.md"
+   ]
+  },
+  {
+   "ucs": [
+    "UC-P31",
+    "UC-I02"
+   ],
+   "rutasDelContrato": [
+    "GET /me/progress"
+   ],
+   "operacionesDelContrato": [],
+   "rutasSinOperacion": [
+    "GET /me/progress"
+   ],
+   "pruebasPorOperacion": [],
+   "pruebasPorUC": [
+    "test/integration/notas-de-coordinacion.int-spec.ts",
+    "test/integration/pdp.int-spec.ts",
+    "packages/domain/src/dominio-wp03.test.ts"
+   ],
+   "id": "RF-065",
+   "titulo": "Consultar progreso longitudinal en la APK",
+   "grupo": "Dashboard, evolución, coordinación y negocio académico",
+   "linea04": 672,
+   "actor": "Asesorado",
+   "prioridad": "P0 — Núcleo no recortable",
+   "obligacion": "La APK deberá permitir al asesorado consultar una síntesis comprensible de su evolución autorizada en Nutrición, Entrenamiento y Antropometría.",
+   "aceptacion": "La síntesis distingue dominios, períodos y límites; no atribuye causalidad ni emite diagnóstico; permite acceder a datos de origen relevantes.",
+   "derivacion": "06 datos; 08 visibilidad; 09 read models; 10 diseño.",
+   "fuente": "BE-LEG-02 §§6, 9, 11 y 15. Omisión detectada en v0.1.",
+   "canal": "APK",
+   "ucDV03": "UC-P31 / UC-I02",
+   "familias": [
+    "DSH"
+   ],
+   "uc12": "UC-P31 / UC-I02",
+   "contrato12": "`DSH` · GET /me/progress",
+   "prueba11A": "TEST-RF-065",
+   "operacionesDeLaFamilia": [
+    "API-DSH-03 GET /advisees/{adviseeId}/dashboard",
+    "API-DSH-04 GET /advisees/{adviseeId}/timeline",
+    "API-DSH-04-BUSQUEDA POST /advisees/{adviseeId}/timeline/search"
+   ],
+   "pruebasQueLoCitan": [],
+   "dl": [],
+   "paquetes": [
+    "WP-03.md",
+    "WP-05.md"
+   ]
+  },
+  {
+   "ucs": [
+    "UC-P29",
+    "UC-I10",
+    "UC-P11",
+    "UC-P16",
+    "UC-P19",
+    "UC-P21"
+   ],
+   "rutasDelContrato": [],
+   "operacionesDelContrato": [],
+   "rutasSinOperacion": [],
+   "pruebasPorOperacion": [],
+   "pruebasPorUC": [
+    "test/integration/antropometria.int-spec.ts",
+    "test/integration/entrenamiento.int-spec.ts"
+   ],
+   "id": "RF-066",
+   "titulo": "Representar habilitaciones y capacidad sin cobro real",
+   "grupo": "Dashboard, evolución, coordinación y negocio académico",
+   "linea04": 681,
+   "actor": "Administrador y sistema BE",
+   "prioridad": "P1 — Alta prioridad",
+   "obligacion": "El MVP académico deberá poder configurar o simular habilitaciones y banda de capacidad profesional sin implementar cobros, facturación ni renovación.",
+   "aceptacion": "Un asesorado cuenta una vez por profesional; alcanzar el límite no elimina datos ni interrumpe procesos vigentes, pero impide activar nuevos procesos según la regla aprobada; cambiar paquete no altera permisos de datos.",
+   "derivacion": "06 modela la configuración; 08 separa autorización; 10 consola mínima; pagos quedan fuera.",
+   "fuente": "BE-LEG-03 §§3, 8–10; REV-003 capacidad y plano académico.",
+   "canal": "WEBSITE",
+   "ucDV03": "UC-P29 / UC-I10 / UC-P11 / UC-P16 / UC-P19 / UC-P21",
+   "familias": [
+    "SYS"
+   ],
+   "uc12": "UC-P29 / UC-I10 / UC-P11 / UC-P16 / UC-P19 / UC-P21",
+   "contrato12": "`ADM-P1 + SYS` · admin settings P1; P0 gate consumed by activation/evaluation",
+   "prueba11A": "TEST-RF-066",
+   "operacionesDeLaFamilia": [],
+   "pruebasQueLoCitan": [],
+   "dl": [
+    {
+     "id": "DL-036",
+     "tema": "Verificación y habilitación mínimas sin operación viable",
+     "estado": "ABIERTA"
+    },
+    {
+     "id": "DL-051",
+     "tema": "Capacidad sin actor que la configure",
+     "estado": "ABIERTA"
+    },
+    {
+     "id": "DL-087",
+     "tema": "RF-041 es P0 y su criterio de aceptación depende de RF-066, que es P1",
+     "estado": "ABIERTA"
+    }
+   ],
+   "paquetes": [
+    "WP-03.md",
+    "WP-04.md",
+    "WP-06.md"
+   ]
+  },
+  {
+   "ucs": [
+    "UC-I08",
+    "UC-P10",
+    "UC-P15",
+    "UC-P22"
+   ],
+   "rutasDelContrato": [],
+   "operacionesDelContrato": [],
+   "rutasSinOperacion": [],
+   "pruebasPorOperacion": [],
+   "pruebasPorUC": [
+    "test/integration/entrenamiento.int-spec.ts",
+    "test/integration/nutricion.int-spec.ts"
+   ],
+   "id": "RF-059",
+   "titulo": "Continuar el núcleo ante fallas de terceros",
+   "grupo": "Integraciones y comunicaciones condicionadas",
+   "linea04": 692,
+   "actor": "Sistema BE",
+   "prioridad": "P0 — Núcleo no recortable",
+   "obligacion": "Las funciones núcleo deberán continuar mediante fuente propia o carga manual cuando un proveedor externo no esté disponible.",
+   "aceptacion": "La caída de Google, Open Food Facts, wger, Maps o Push no impide crear, consultar, ejecutar o revisar un plan; el usuario conoce el estado y la alternativa.",
+   "derivacion": "07 estrategia de resiliencia; 09 errores; 10 mensajes; 11A pruebas de caída.",
+   "fuente": "BE-LEG-02 §§13 y 20.",
+   "canal": "TRANSVERSAL",
+   "ucDV03": "UC-I08 / TR-04 / UC-P10 / UC-P15 / UC-P22",
+   "familias": [
+    "INT",
+    "SYS"
+   ],
+   "uc12": "UC-I08 / TR-04 / UC-P10 / UC-P15 / UC-P22",
+   "contrato12": "`INT/SYS` · local catalog/manual fallback; no false success",
+   "prueba11A": "TEST-RF-059",
+   "operacionesDeLaFamilia": [],
+   "pruebasQueLoCitan": [],
+   "dl": [],
+   "paquetes": [
+    "WP-04.md"
+   ]
+  },
+  {
+   "ucs": [
+    "UC-I08",
+    "UC-P10",
+    "UC-P15"
+   ],
+   "rutasDelContrato": [],
+   "operacionesDelContrato": [],
+   "rutasSinOperacion": [],
+   "pruebasPorOperacion": [],
+   "pruebasPorUC": [
+    "test/integration/entrenamiento.int-spec.ts",
+    "test/integration/nutricion.int-spec.ts"
+   ],
+   "id": "RF-060",
+   "titulo": "Consultar la procedencia de datos externos",
+   "grupo": "Integraciones y comunicaciones condicionadas",
+   "linea04": 701,
+   "actor": "Profesional, asesorado o administrador según autorización",
+   "prioridad": "P0 — Núcleo no recortable",
+   "obligacion": "BE deberá permitir identificar proveedor, fecha y referencia suficiente de un dato externo en los contextos donde se utiliza.",
+   "aceptacion": "La procedencia es visible en operaciones relevantes; una importación no se presenta como dato verificado por BE; el histórico no pierde su fuente.",
+   "derivacion": "06 modelo; 08 licencias/privacidad; 09 contratos.",
+   "fuente": "BE-LEG-02 §§9, 13 y 15.",
+   "canal": "TRANSVERSAL",
+   "ucDV03": "UC-I08 / TR-04 / UC-P10 / UC-P15",
+   "familias": [
+    "INT",
+    "SYS"
+   ],
+   "uc12": "UC-I08 / TR-04 / UC-P10 / UC-P15",
+   "contrato12": "`INT/SYS` · provenance in imported/catalog data",
+   "prueba11A": "TEST-RF-060",
+   "operacionesDeLaFamilia": [],
+   "pruebasQueLoCitan": [
+    "test/integration/entrenamiento.int-spec.ts",
+    "packages/domain/src/contratos-wp08.test.ts"
+   ],
+   "dl": [
+    {
+     "id": "DL-097",
+     "tema": "Las formas de la importación controlada que el 09 no fija",
+     "estado": "ABIERTA (hallada al implementar)"
+    },
+    {
+     "id": "DL-099",
+     "tema": "La procedencia externa llega hasta la elección, no hasta el ítem del plan",
+     "estado": "ABIERTA (hallada en la revisión de calidad)"
+    },
+    {
+     "id": "DL-108",
+     "tema": "Todo plan empieza en blanco o desde el plan anterior de la misma persona: no hay reutilización entre asesorados",
+     "estado": "**DECIDIDA** 2026-09-30 (D-1, D-2, D-3, D-5) · implementada en #121 (entrenamiento y comidas), **integrada** en `main` el 2026-09-30 (`d2405ce`) y desplegada en `test`"
+    },
+    {
+     "id": "DL-141",
+     "tema": "Lo importado de wger y de Open Food Facts lo veía solo quien lo importó, y se repetía; no había nombres alternativos («bench press», «aguacate»); faltaba un catálogo base de fuentes libres",
+     "estado": "**INTEGRADO el tramo 1** 2026-10-17 (#180): lo importado es de todos, uno por ítem externo (D-1), y los nombres alternativos con el buscador (D-2); siguen el catálogo de wger y el de USDA; D-1 y D-2 a ratificar"
+    }
+   ],
+   "paquetes": [
+    "WP-08.md",
+    "WP-CATALOGO-BASE.md"
+   ]
+  },
+  {
+   "ucs": [
+    "UC-P30"
+   ],
+   "rutasDelContrato": [
+    "GET /me/news..."
+   ],
+   "operacionesDelContrato": [],
+   "rutasSinOperacion": [
+    "GET /me/news..."
+   ],
+   "pruebasPorOperacion": [],
+   "pruebasPorUC": [
+    "test/integration/novedades.int-spec.ts"
+   ],
+   "id": "RF-061",
+   "titulo": "Consultar novedades internas",
+   "grupo": "Integraciones y comunicaciones condicionadas",
+   "linea04": 710,
+   "actor": "Profesional o asesorado",
+   "prioridad": "P1 — Alta prioridad",
+   "obligacion": "BE deberá disponer de un centro interno donde mostrar novedades operativas relevantes para el actor.",
+   "aceptacion": "Las novedades pueden consultarse aunque Push no esté disponible; respetan el alcance del actor; no se presentan como alertas clínicas.",
+   "derivacion": "06 modelo; 08 visibilidad; 09 contrato; 10 experiencia.",
+   "fuente": "BE-LEG-02 §§11, 13 y 20.",
+   "canal": "TRANSVERSAL",
+   "ucDV03": "UC-P30",
+   "familias": [],
+   "uc12": "UC-P30",
+   "contrato12": "`COM-P1` · GET /me/news... — P1",
+   "prueba11A": "TEST-RF-061",
+   "operacionesDeLaFamilia": [],
+   "pruebasQueLoCitan": [
+    "test/integration/novedades.int-spec.ts"
+   ],
+   "dl": [
+    {
+     "id": "DL-133",
+     "tema": "Novedades y avisos: la familia NOV, el envío después de confirmar, el cron de la plataforma y los recordatorios diarios de registro",
+     "estado": "**DECIDIDA** 2026-10-16 (Expo Push y recordatorios); D-1 a D-10 a ratificar · implementada en #163"
+    }
+   ],
+   "paquetes": [
+    "WP-CONSOLIDACION.md",
+    "WP-NOVEDADES-Y-AVISOS.md"
+   ]
+  },
+  {
+   "ucs": [
+    "UC-E08"
+   ],
+   "rutasDelContrato": [],
+   "operacionesDelContrato": [],
+   "rutasSinOperacion": [],
+   "pruebasPorOperacion": [],
+   "pruebasPorUC": [
+    "test/integration/novedades.int-spec.ts",
+    "packages/domain/src/novedades.test.ts"
+   ],
+   "id": "RF-062",
+   "titulo": "Recibir notificaciones push",
+   "grupo": "Integraciones y comunicaciones condicionadas",
+   "linea04": 719,
+   "actor": "Asesorado o profesional",
+   "prioridad": "P2 — Condicionado / recortable",
+   "obligacion": "BE podrá enviar notificaciones push para novedades seleccionadas, sin convertirlas en única vía de información.",
+   "aceptacion": "El contenido sensible se minimiza; el usuario conserva acceso desde el centro interno; una falla de Expo Push no bloquea ninguna operación núcleo.",
+   "derivacion": "08 privacidad; 07 proveedor; 09 contrato; 10 preferencias.",
+   "fuente": "BE-LEG-02 §§10, 13 y 20.",
+   "canal": "TRANSVERSAL",
+   "ucDV03": "UC-E08",
+   "familias": [],
+   "uc12": "UC-E08",
+   "contrato12": "`COM-P2` · push subscription/delivery minimal, no C4 — P2",
+   "prueba11A": "TEST-RF-062",
+   "operacionesDeLaFamilia": [],
+   "pruebasQueLoCitan": [
+    "test/integration/novedades.int-spec.ts"
+   ],
+   "dl": [
+    {
+     "id": "DL-133",
+     "tema": "Novedades y avisos: la familia NOV, el envío después de confirmar, el cron de la plataforma y los recordatorios diarios de registro",
+     "estado": "**DECIDIDA** 2026-10-16 (Expo Push y recordatorios); D-1 a D-10 a ratificar · implementada en #163"
+    }
+   ],
+   "paquetes": [
+    "WP-06.md",
+    "WP-CONSOLIDACION.md",
+    "WP-NOVEDADES-Y-AVISOS.md"
+   ]
+  }
+ ]
+}
