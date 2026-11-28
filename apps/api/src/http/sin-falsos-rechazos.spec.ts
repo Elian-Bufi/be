@@ -259,6 +259,44 @@ function sinRepetir(nuevo: unknown, h: Hueco): unknown {
   return nuevo;
 }
 
+/**
+ * DL-201 (PE-D02) · las progresiones de un plan no se pisan: una sola regla general por fase y, por fase, cada ejercicio
+ * en una sola regla propia. Es una regla entre elementos de la lista, que el generador (elemento por elemento) no ve:
+ * se sacan las reglas y los ejercicios que la rompen, en cualquier `progressions` del cuerpo. Solo achica el cuerpo: el
+ * resultado sigue siendo válido y de hasta 16 KB si el original lo era.
+ */
+function sinProgresionesPisadas(v: unknown): void {
+  if (Array.isArray(v)) {
+    v.forEach(sinProgresionesPisadas);
+    return;
+  }
+  if (v === null || typeof v !== 'object') return;
+  const o = v as Record<string, unknown>;
+  if (Array.isArray(o.progressions)) {
+    const deLaFase = new Set<unknown>();
+    const propias = new Set<string>();
+    o.progressions = (o.progressions as Record<string, unknown>[]).filter((p) => {
+      if (p === null || typeof p !== 'object') return true;
+      if (p.prescriptionIds === null || p.prescriptionIds === undefined) {
+        if (deLaFase.has(p.blockId)) return false;
+        deLaFase.add(p.blockId);
+        return true;
+      }
+      const ids: unknown = p.prescriptionIds;
+      if (!Array.isArray(ids)) return true;
+      const quedan = ids.filter((id: unknown) => {
+        const clave = `${String(p.blockId)}|${String(id)}`;
+        if (propias.has(clave)) return false;
+        propias.add(clave);
+        return true;
+      });
+      p.prescriptionIds = quedan;
+      return quedan.length > 0;
+    });
+  }
+  Object.values(o).forEach(sinProgresionesPisadas);
+}
+
 /** Una lista del cuerpo que todavía puede crecer, con el esquema de sus elementos. */
 interface Hueco {
   readonly lista: unknown[];
@@ -538,6 +576,7 @@ describe('#206 · la cota de elementos no rechaza ningún cuerpo válido de hast
     const schema = (dominio as unknown as Record<string, Esquema>)[nombre];
     const r: Resumen = { cuerpos: 0, fueraDelLimite: 0, cercaDelLimite: 0, justo: 0, maxElementos: 0, menorMargen: Infinity };
     for (const { nombre: caso, cuerpo } of casos(schema, 7919 * (i + 1))) {
+      sinProgresionesPisadas(cuerpo);
       const parseado = schema.safeParse(cuerpo);
       // Tiene que ser un cuerpo que el contrato acepta: si no, el generador está mal.
       expect([caso, parseado.success, parseado.success ? '' : JSON.stringify(parseado.error.issues.slice(0, 2))]).toEqual([caso, true, '']);
