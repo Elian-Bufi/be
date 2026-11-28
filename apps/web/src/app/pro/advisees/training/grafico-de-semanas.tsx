@@ -6,6 +6,8 @@
  *
  * - **La forma distingue, no solo el color** (TB-03): lo planificado va punteado con puntos huecos; lo realizado, lleno;
  *   el máximo estimado, rombos (huecos si son de la banda orientativa). La descarga es un escalón con su franja de fondo.
+ *   DL-204 (GE-D04): lo realizado va en puntos llenos, sin una línea que los una; lo planificado antes del inicio, punteado
+ *   y tenue; el inicio de la fase, una línea vertical con su rótulo.
  * - **Se lee con el teclado:** el gráfico recibe el foco; ← y → pasan de semana y la lectura de esa semana se dice en el
  *   renglón de abajo, que tiene su lugar reservado (RP-19: nada se corre). Con el puntero, lo mismo.
  * - **Tiene su tabla:** «Ver la tabla» la abre debajo, con todos los valores; el dibujo tiene su texto alternativo.
@@ -22,15 +24,18 @@ import { ExplicacionAPedido } from '../../../../components/explicacion-a-pedido'
 export const COPY_GRAFICO_DE_SEMANAS = {
   comoSeLee: 'Cómo se lee el gráfico',
   indicacion: 'Pasá el puntero, o enfocá el gráfico y usá ← y →, para leer cada semana.',
-  formas: 'Lo planificado va punteado, con puntos huecos; lo realizado, lleno; el máximo estimado, con rombos. La franja de fondo marca la descarga.',
+  formas: 'Lo planificado va punteado, con puntos huecos; lo realizado, en puntos llenos; el máximo estimado, con rombos. La franja de fondo marca la descarga.',
   ejemplo: 'Ejemplo: con el foco en el gráfico, → tres veces lleva a la semana 3 y abajo se lee «Semana 3: Planificado 65 kg · Realizado 62,5 kg».',
 } as const;
 
 export interface SerieDeSemanas {
   readonly clave: string;
   readonly nombre: string;
-  /** `plan`: punteado y hueco. `hecho`: lleno. `estimado`: rombos, en el segundo color. */
-  readonly forma: 'plan' | 'hecho' | 'estimado';
+  /**
+   * `plan`: punteado y hueco. `hecho`: puntos llenos, sin línea (DL-204). `estimado`: rombos, en el segundo color.
+   * `antes` (DL-204): lo planificado antes del inicio, punteado y tenue.
+   */
+  readonly forma: 'plan' | 'hecho' | 'estimado' | 'antes';
   /** Un valor por semana (la 1 primero); `null` si esa semana no tiene. */
   readonly valores: readonly (number | null)[];
   /** Para `estimado`: las semanas cuyo valor es de la banda orientativa (rombo hueco). */
@@ -63,6 +68,8 @@ export function GraficoDeSemanas({
   pie = null,
   acciones = null,
   ayuda = null,
+  separador = null,
+  nombreDeColumna,
 }: {
   titulo: string;
   semanas: number;
@@ -77,6 +84,10 @@ export function GraficoDeSemanas({
   acciones?: ReactNode;
   /** Lo que se suma al «?» del gráfico (el método de lo dibujado, por ejemplo). */
   ayuda?: ReactNode;
+  /** DL-204: una línea vertical antes de la columna `columna` (1 es la primera), con su rótulo: el inicio de la fase. */
+  separador?: { readonly columna: number; readonly rotulo: string } | null;
+  /** DL-204: cómo se nombra cada columna en la lectura y en la tabla; por omisión, «Semana N». */
+  nombreDeColumna?: (n: number) => string;
 }) {
   const id = useId();
   const [cursor, setCursor] = useState<number | null>(null);
@@ -93,8 +104,9 @@ export function GraficoDeSemanas({
   const x = (semana: number) => M.izq + columna * (semana - 0.5);
   const y = (v: number) => M.arr + alto - ((v - yMin) / (yMax - yMin || 1)) * alto;
   const valor = (v: number | null) => (v === null ? '—' : `${numero(v, 2)} ${unidad}`);
+  const nombreDe = nombreDeColumna ?? ((s: number) => rotuloDeSemana(s).replace(/^S/, 'Semana '));
   const lecturaDe = (s: number) =>
-    `${rotuloDeSemana(s).replace(/^S/, 'Semana ')}${descargas.includes(s) ? ' (descarga)' : ''}: ${series.map((x) => `${x.nombre} ${valor(x.valores[s - 1] ?? null)}`).join(' · ')}`;
+    `${nombreDe(s)}${descargas.includes(s) ? ' (descarga)' : ''}: ${series.map((x) => `${x.nombre} ${valor(x.valores[s - 1] ?? null)}`).join(' · ')}`;
   const alTeclado = (e: KeyboardEvent<SVGSVGElement>) => {
     if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
       e.preventDefault();
@@ -111,6 +123,8 @@ export function GraficoDeSemanas({
   };
   // Una etiqueta de semana cada tanto, para que no se encimen.
   const cadaCuanto = n <= 8 ? 1 : n <= 16 ? 2 : 4;
+  // DL-204: con semanas de antes, las etiquetas se cuentan desde el inicio, para que la primera de la fase siempre se lea.
+  const desdeLaColumna = separador?.columna ?? 1;
   const resumen = `${titulo}. ${n} ${n === 1 ? 'semana' : 'semanas'}, de ${numero(yMin, 2)} a ${numero(yMax, 2)} ${unidad}. ${series.map((s) => s.nombre).join(', ')}.`;
 
   return (
@@ -135,7 +149,7 @@ export function GraficoDeSemanas({
         {series.map((s) => (
           <li key={s.clave}>
             <svg width="22" height="10" viewBox="0 0 22 10">
-              <line x1="1" x2="21" y1="5" y2="5" className={`grafico-de-semanas__linea grafico-de-semanas__linea--${s.forma}`} />
+              {s.forma === 'hecho' ? null : <line x1="1" x2="21" y1="5" y2="5" className={`grafico-de-semanas__linea grafico-de-semanas__linea--${s.forma}`} />}
               {s.forma === 'estimado' ? <path d="M11 1 L15 5 L11 9 L7 5 Z" className="grafico-de-semanas__rombo" /> : <circle cx="11" cy="5" r="3" className={`grafico-de-semanas__punto grafico-de-semanas__punto--${s.forma}`} />}
             </svg>
             {s.nombre}
@@ -178,12 +192,20 @@ export function GraficoDeSemanas({
           {unidad}
         </text>
         {Array.from({ length: n }, (_, k) => k + 1)
-          .filter((s) => (s - 1) % cadaCuanto === 0 || s === n)
+          .filter((s) => Math.abs(s - desdeLaColumna) % cadaCuanto === 0 || s === n)
           .map((s) => (
             <text key={s} x={x(s)} y={ALTO - 6} className="grafico-de-semanas__eje grafico-de-semanas__eje--x">
               {rotuloDeSemana(s)}
             </text>
           ))}
+        {separador && separador.columna > 1 && separador.columna <= n ? (
+          <g className="grafico-de-semanas__separador" data-separador>
+            <line x1={x(separador.columna) - columna / 2} x2={x(separador.columna) - columna / 2} y1={M.arr} y2={M.arr + alto} />
+            <text x={x(separador.columna) - columna / 2 + 3} y={M.arr + 1} className="grafico-de-semanas__eje grafico-de-semanas__eje--separador">
+              {separador.rotulo}
+            </text>
+          </g>
+        ) : null}
         {cursor !== null ? <line x1={x(cursor)} x2={x(cursor)} y1={M.arr} y2={M.arr + alto} className="grafico-de-semanas__cursor" /> : null}
         {series.map((s) => {
           // Los tramos se cortan donde falta un valor: una semana sin dato no se une con la siguiente.
@@ -194,8 +216,9 @@ export function GraficoDeSemanas({
           });
           return (
             <g key={s.clave} data-serie={s.clave}>
+              {/* DL-204 (GE-D04): lo realizado no se une con una línea; son puntos. */}
               {tramos
-                .filter((t) => t.length > 1)
+                .filter((t) => t.length > 1 && s.forma !== 'hecho')
                 .map((t, k) => (
                   <polyline key={k} points={t.join(' ')} className={`grafico-de-semanas__linea grafico-de-semanas__linea--${s.forma}`} fill="none" />
                 ))}
@@ -240,7 +263,7 @@ export function GraficoDeSemanas({
               {Array.from({ length: n }, (_, k) => k + 1).map((s) => (
                 <tr key={s} data-descarga={descargas.includes(s) ? '' : undefined}>
                   <th scope="row">
-                    {s}
+                    {nombreDeColumna ? nombreDeColumna(s) : s}
                     {descargas.includes(s) ? ' · descarga' : ''}
                   </th>
                   {series.map((x) => (

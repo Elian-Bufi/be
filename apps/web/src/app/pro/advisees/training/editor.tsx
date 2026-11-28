@@ -96,13 +96,17 @@ import {
   progresionParaOtraFase,
   cambiaAlgo,
   progresionCorta,
+  origenEnPalabras,
   progresionDelEjercicio,
+  reglaEnPalabras,
   reglaPropiaDe,
+  reglasDeLaFase,
   reglasPropias,
   sinLaProgresion,
   sinReglaPropia,
   zonasACuidar as zonasACuidarDelFormulario,
   type ZonasACuidar,
+  type EjecucionDeEntrenamiento,
   type VezPasada,
   nombreDeLaFase,
   nombreDelBloqueDeLaSesion,
@@ -152,6 +156,7 @@ import { FOCO_DE_ENTRADA, focoDelElemento, mismoFoco, NOMBRE_DE_LA_VISTA, VISTAS
 import { AsistenteDeProgresion, type AplicacionDeLaProgresion } from './asistente-de-progresion';
 import { GraficoDeSemanas } from './grafico-de-semanas';
 import { AvisoDeZonaACuidar, CargaParaRepeticiones, CargaPorSemana, DistribucionConFichas, EstrellaDeFavorito } from './panel-de-la-parte-b';
+import { SeriePorSerie } from './serie-por-serie';
 import {
   baseDelEjercicio,
   cargasDeLaUltimaSemana,
@@ -2871,34 +2876,64 @@ export function EditorDePlan({
     const nombre = nombres[q.exerciseVersionId] ?? 'Ejercicio';
     const semanas = semanasDeLaFase(plan, b.blockId) ?? 4;
     // DL-201: la regla que rige para este ejercicio (la propia; si no, la de la fase).
-    const { regla } = progresionDelEjercicio(plan, b.blockId, q.prescriptionId);
+    const { regla, origen } = progresionDelEjercicio(plan, b.blockId, q.prescriptionId);
     const base = baseDelEjercicio(q, nombre, aproximacionesDeId(q.prescriptionId ?? null));
     const filas = cambiaAlgo(regla) ? vistaPrevia(regla, [{ prescriptionId: q.prescriptionId ?? null, nombre, sesion: '', prescripcion: q }], semanas, aproximacionesDeId)[0]?.semanas : null;
     return {
       nombre,
       unidad: base.unidad,
+      semanas,
+      // DL-204 (GE-01): la regla que rige, en palabras, con su origen; arriba del gráfico.
+      regla: { texto: reglaEnPalabras(cambiaAlgo(regla) ? regla : null, base.unidad), origen: cambiaAlgo(regla) ? origenEnPalabras(origen) : null },
       plan: filas ? filas.map((f) => ({ carga: f.carga, descarga: f.descarga })) : Array.from({ length: semanas }, () => ({ carga: base.carga, descarga: false })),
     };
   };
-  /** La carga por semana de un ejercicio, con lo registrado, dentro del panel de «La vez pasada». */
-  const cargaPorSemanaDe = (n: number, q: PrescripcionE, exerciseId: string) => {
+  /**
+   * La carga por semana de un ejercicio, con lo registrado, dentro del panel de «La vez pasada». DL-204: con
+   * `abrirProgresion` (el panel del ejercicio abierto), la regla arriba con «Cambiar progresión…» y, debajo, «Serie por
+   * serie» (el cardio no la lleva); sin eso (los favoritos del plan), solo el gráfico.
+   */
+  const cargaPorSemanaDe = (n: number, q: PrescripcionE, exerciseId: string, abrirProgresion: (() => void) | null = null) => {
     const b = bloques[n];
     if (!b || asesoradoId === null) return null;
     const d = planDelEjercicio(b, q);
     const conAsesorado = asesoradoId;
-    return (veces: readonly VezPasada[] | null) => (
-      <CargaPorSemana
-        token={token}
-        asesoradoId={conAsesorado}
-        sesionPerdida={sesionPerdida}
-        exerciseId={exerciseId}
-        nombre={d.nombre}
-        unidad={d.unidad}
-        fase={fechasDeFases[n] ?? null}
-        plan={d.plan}
-        veces={veces}
-        acciones={estrella('EXERCISE_LOAD', q.prescriptionId, `la carga por semana de ${d.nombre}`)}
-      />
+    const fase = fechasDeFases[n] ?? null;
+    return (veces: readonly VezPasada[] | null, ejecuciones: readonly EjecucionDeEntrenamiento[] | null) => (
+      <>
+        <CargaPorSemana
+          token={token}
+          asesoradoId={conAsesorado}
+          sesionPerdida={sesionPerdida}
+          exerciseId={exerciseId}
+          nombre={d.nombre}
+          unidad={d.unidad}
+          fase={fase}
+          plan={d.plan}
+          veces={veces}
+          ejecuciones={ejecuciones}
+          regla={abrirProgresion ? d.regla : null}
+          onCambiarProgresion={abrirProgresion}
+          acciones={estrella('EXERCISE_LOAD', q.prescriptionId, `la carga por semana de ${d.nombre}`)}
+        />
+        {abrirProgresion && !cardioDe(q) ? (
+          <SeriePorSerie
+            token={token}
+            asesoradoId={conAsesorado}
+            sesionPerdida={sesionPerdida}
+            exerciseId={exerciseId}
+            nombre={d.nombre}
+            unidad={d.unidad}
+            prescripcion={{ ...q, intensity: q.intensity ?? null }}
+            aproximaciones={aproximacionesDeId(q.prescriptionId ?? null)}
+            reglas={b.blockId ? reglasDeLaFase(plan, b.blockId) : null}
+            semanas={d.semanas}
+            descargas={d.plan.flatMap((p, k) => (p.descarga ? [k + 1] : []))}
+            fase={fase}
+            veces={veces}
+          />
+        ) : null}
+      </>
     );
   };
   /** La distribución de una fase, con las zonas de sus ejercicios. */
@@ -3060,7 +3095,24 @@ export function EditorDePlan({
                 );
               }
         }
-        cargaPorSemana={plantilla ? null : cargaPorSemanaDe(i, ejercicioEnFoco, ejercicioDelCatalogo)}
+        cargaPorSemana={
+          plantilla
+            ? null
+            : cargaPorSemanaDe(
+                i,
+                ejercicioEnFoco,
+                ejercicioDelCatalogo,
+                // DL-204 (GE-02): «Cambiar progresión…» abre el cuadro ancho de DL-201 con este ejercicio ya elegido.
+                foco.tipo === 'ejercicio' && !cardioDe(ejercicioEnFoco)
+                  ? () => {
+                      const l = foco.l;
+                      const id = ejercicioEnFoco.prescriptionId ?? crypto.randomUUID();
+                      if (!ejercicioEnFoco.prescriptionId) cambiarEjercicio(l, { prescriptionId: id });
+                      conIdDeLaFase((fase) => setProgresionAbierta({ blockId: fase, prescriptionId: id, copia: null }));
+                    }
+                  : null,
+              )
+        }
         despues={
           plantilla ? null : (
             <CargaParaRepeticiones

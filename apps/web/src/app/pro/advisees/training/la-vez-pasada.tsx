@@ -33,7 +33,7 @@
  * `CuadroDeLaVezPasada`, el mismo cuadro lateral sin la fuerza estimada: DL-174 abre el cuadro para todos los ejercicios, y
  * la fuerza estimada sigue solo en la lista de la v1 (GR-T70).
  */
-import { COPY_LA_VEZ_PASADA, COPY_NOTACION_DEL_ESFUERZO, fechaEnPocasPalabras, loQueSeHizo, marcaDelPlan, textoDeLaSerie, VECES_EN_EL_EDITOR, vecesPasadas, type SerieDeLaVezPasada, type VezPasada } from '@be/domain';
+import { COPY_LA_VEZ_PASADA, COPY_NOTACION_DEL_ESFUERZO, fechaEnPocasPalabras, loQueSeHizo, marcaDelPlan, textoDeLaSerie, VECES_EN_EL_EDITOR, vecesPasadas, type EjecucionDeEntrenamiento, type SerieDeLaVezPasada, type VezPasada } from '@be/domain';
 import { useCallback, useEffect, useId, useState, type ReactNode } from 'react';
 import { CuadroEnfocado } from '../../../../components/cuadro-enfocado';
 import { BloqueDeEstado } from '../../../../components/estados';
@@ -82,7 +82,14 @@ export type LecturaDeLaVezPasada =
   | { readonly tipo: 'cargando' }
   | { readonly tipo: 'no-disponible' }
   | { readonly tipo: 'error'; readonly motivo: MotivoDeFalla }
-  | { readonly tipo: 'lista'; readonly veces: readonly VezPasada[]; readonly hoy: string; readonly desde: string };
+  | {
+      readonly tipo: 'lista';
+      readonly veces: readonly VezPasada[];
+      readonly hoy: string;
+      readonly desde: string;
+      /** DL-204 (GE-D02): las sesiones leídas, con lo que indicaba el plan ese día (para «Planificado antes»). */
+      readonly ejecuciones: readonly EjecucionDeEntrenamiento[];
+    };
 
 /**
  * Lee las sesiones registradas de los últimos días (API-TRN-21) y arma las últimas veces del ejercicio. `undefined` en
@@ -105,7 +112,7 @@ export function useLaVezPasada(
       if (!vigente || sesionPerdida(r)) return;
       if (!r.ok) return setLectura(r.tipo === 'API' && r.codigo === 'RESOURCE_NOT_FOUND' ? { tipo: 'no-disponible' } : { tipo: 'error', motivo: motivoDeFalla(r) });
       const d = r.datos.data;
-      setLectura({ tipo: 'lista', veces: vecesPasadas(d.registeredExecutions, exerciseId, { cuantas: TODAS_LAS_VECES }), hoy: d.period.end, desde: d.period.start });
+      setLectura({ tipo: 'lista', veces: vecesPasadas(d.registeredExecutions, exerciseId, { cuantas: TODAS_LAS_VECES }), hoy: d.period.end, desde: d.period.start, ejecuciones: d.registeredExecutions });
     });
     return () => {
       vigente = false;

@@ -9,11 +9,17 @@
  * - **La carga para N repeticiones** a un RIR (o RPE) dado, con la cuenta a la vista y los límites del método.
  * - **La distribución de la fase** (E13, E20): la silueta como mapa de calor de series por semana, la frecuencia, los
  *   equilibrios, las zonas a cuidar y el acceso a las estructuras de la galería de presets.
+ * - DL-204: la regla que rige al ejercicio y «Cambiar progresión…» arriba, y hacia atrás lo planificado antes y lo
+ *   realizado de las semanas anteriores al inicio (`graficos-del-ejercicio.ts`); debajo, «Serie por serie».
  * - **La estrella de favoritos** (GR-27): marca el gráfico en la planificación de la versión.
  * Nada de lo que hay acá escribe en el plan, salvo la estrella (con el clic del profesional).
  */
 import {
   cargaParaRepeticiones,
+  cargasPlanificadasDelEjercicio,
+  cargasRealizadas,
+  COPY_GRAFICOS_DEL_EJERCICIO,
+  historiaAntesDelInicio,
   COPY_DISTRIBUCION as D,
   distribucionPorMusculo,
   entraEnLaEstimacion,
@@ -31,6 +37,7 @@ import {
   zonaEnPalabras,
   zonasDelEjercicioACuidar,
   type DistribucionDeLaFase,
+  type EjecucionDeEntrenamiento,
   type FaseEnElCalendario,
   type NotacionDelEsfuerzo,
   type SesionParaDistribuir,
@@ -68,15 +75,19 @@ export interface PlanDeLaSemana {
   readonly descarga: boolean;
 }
 
-/** Lo más alto registrado de cada vez, en la unidad pedida. */
-function cargasRegistradas(veces: readonly VezPasada[], unidad: 'kg' | 'lb'): { readonly fecha: string; readonly valor: number }[] {
-  return veces.flatMap((v) => {
-    if (v.como.tipo !== 'series') return [];
-    const cargas = v.como.series.flatMap((s) => (s.carga && s.carga.unit === unidad ? [s.carga.value] : []));
-    return cargas.length > 0 ? [{ fecha: v.fecha, valor: Math.max(...cargas) }] : [];
-  });
+/** DL-204: la regla que rige al ejercicio, en palabras, con su origen («la de la fase», «propia»). */
+export interface ReglaDelEjercicio {
+  readonly texto: string;
+  readonly origen: string | null;
 }
 
+const vacias = (k: number): null[] => Array.from({ length: Math.max(0, k) }, () => null);
+
+/**
+ * DL-204 (GE-01 a GE-04): «<Ejercicio>: la carga por semana», con la regla que lo rige arriba y «Cambiar progresión…», y
+ * hacia atrás, hasta 12 semanas antes del inicio de la fase, lo planificado antes (lo que indicaba el plan ese día) y lo
+ * realizado (lo más alto de cada semana). Después de la línea «Inicio», este plan con su progresión. Solo muestra.
+ */
 export function CargaPorSemana({
   token,
   asesoradoId,
@@ -87,6 +98,9 @@ export function CargaPorSemana({
   fase,
   plan,
   veces,
+  ejecuciones = null,
+  regla = null,
+  onCambiarProgresion = null,
   acciones = null,
 }: {
   token: string;
@@ -97,51 +111,103 @@ export function CargaPorSemana({
   unidad: 'kg' | 'lb';
   /** La fase con sus fechas; sin fechas, lo realizado no se ubica en sus semanas. */
   fase: FaseEnElCalendario | null;
-  /** Lo planificado de cada semana (con la progresión de la fase, si tiene). */
+  /** Lo planificado de cada semana (con la progresión que rige al ejercicio, si tiene). */
   plan: readonly PlanDeLaSemana[];
   veces: readonly VezPasada[] | null;
+  /** DL-204: las sesiones leídas para «La vez pasada», con lo que indicaba el plan ese día; `null` mientras se leen. */
+  ejecuciones?: readonly EjecucionDeEntrenamiento[] | null;
+  /** DL-204: la regla que rige, arriba del gráfico; `null`, sin el renglón (los favoritos del plan). */
+  regla?: ReglaDelEjercicio | null;
+  /** DL-204: abre el cuadro ancho de «Progresión…» con este ejercicio elegido; `null`, sin el botón. */
+  onCambiarProgresion?: (() => void) | null;
   acciones?: ReactNode;
 }) {
+  const C = COPY_GRAFICOS_DEL_EJERCICIO;
   const conEstimacion = entraEnLaEstimacion(exerciseId);
   const { lectura } = useLecturaDeFuerza(token, asesoradoId, conEstimacion ? exerciseId : undefined, { unidad, sesionPerdida });
-  const semanas = fase?.semanas ?? plan.length;
-  const series: SerieDeSemanas[] = [{ clave: 'plan', nombre: 'Planificado', forma: 'plan', valores: plan.map((p) => p.carga) }];
-  if (fase && veces) {
-    const hecho = maximoPorSemana(fase, cargasRegistradas(veces, unidad));
-    if (hecho.some((v) => v !== null)) series.push({ clave: 'hecho', nombre: 'Realizado', forma: 'hecho', valores: hecho });
-  }
+  const semanas = Math.max(1, fase?.semanas ?? plan.length);
+  const realizados = veces ? cargasRealizadas(veces, unidad) : [];
+  // Hacia atrás, solo con la fase en el calendario: sin fechas, nada se ubica.
+  const historia = fase && veces ? historiaAntesDelInicio(fase.desde, ejecuciones ? cargasPlanificadasDelEjercicio(ejecuciones, exerciseId, unidad) : [], realizados) : null;
+  const antes = historia?.semanas ?? 0;
+  const hechoEnLaFase = fase && veces ? maximoPorSemana(fase, realizados) : vacias(semanas);
+  // GE-D05: las tres series van siempre, para que la leyenda no cambie al llegar los registros (RP-19).
+  const series: SerieDeSemanas[] = [
+    { clave: 'antes', nombre: C.planificadoAntes, forma: 'antes', valores: [...(historia?.planificadoAntes ?? []), ...vacias(semanas)] },
+    { clave: 'plan', nombre: C.estePlan, forma: 'plan', valores: [...vacias(antes), ...plan.map((p) => p.carga)] },
+    { clave: 'hecho', nombre: C.realizado, forma: 'hecho', valores: [...(historia?.realizado ?? []), ...hechoEnLaFase] },
+  ];
   if (fase && lectura.tipo === 'lista' && lectura.encendido && lectura.encendido.unidad === unidad) {
     // El más alto de cada semana, y si ese es de la banda orientativa (rombo hueco).
     const porSemana: ({ readonly valor: number; readonly orientativa: boolean } | null)[] = Array.from({ length: fase.semanas }, () => null);
     for (const p of lectura.encendido.puntos) {
       const s = semanaDeLaFecha(fase, p.date);
       if (s === null || s > fase.semanas) continue;
-      const antes = porSemana[s - 1];
-      if (!antes || p.estimate.value > antes.valor) porSemana[s - 1] = { valor: p.estimate.value, orientativa: p.estimate.band === 'ORIENTATIVE' };
+      const previo = porSemana[s - 1];
+      if (!previo || p.estimate.value > previo.valor) porSemana[s - 1] = { valor: p.estimate.value, orientativa: p.estimate.band === 'ORIENTATIVE' };
     }
     if (porSemana.some((v) => v !== null)) {
-      series.push({ clave: 'estimado', nombre: 'Máximo estimado', forma: 'estimado', valores: porSemana.map((v) => v?.valor ?? null), orientativas: porSemana.map((v) => v?.orientativa ?? false) });
+      series.push({
+        clave: 'estimado',
+        nombre: 'Máximo estimado',
+        forma: 'estimado',
+        valores: [...vacias(antes), ...porSemana.map((v) => v?.valor ?? null)],
+        orientativas: [...vacias(antes).map(() => false), ...porSemana.map((v) => v?.orientativa ?? false)],
+      });
     }
   }
-  if (!plan.some((p) => p.carga !== null) && series.length === 1) {
-    return (
-      <p className="nota carga-por-semana__vacia" data-carga-por-semana="sin-datos">
-        «{nombre}» no tiene carga de trabajo escrita ni registros en esta fase: no hay nada que dibujar todavía.
+  const hayAlgo = series.some((s) => s.valores.some((v) => v !== null));
+  const hayRegistros = series.some((s) => s.clave === 'hecho' && s.valores.some((v) => v !== null));
+  const cabecera = regla ? (
+    <div className="carga-por-semana__regla" data-regla-del-ejercicio>
+      <p className="carga-por-semana__regla-texto">
+        <span className="carga-por-semana__regla-rotulo">{C.rigeLaRegla}:</span> <strong>{regla.texto}</strong>
+        {regla.origen ? <span className="nota"> ({regla.origen})</span> : null}
       </p>
+      {onCambiarProgresion ? (
+        <button type="button" className="boton boton--discreto boton--compacto" onClick={onCambiarProgresion} data-cambiar-progresion>
+          {C.cambiarProgresion}
+        </button>
+      ) : null}
+    </div>
+  ) : null;
+  if (!hayAlgo) {
+    return (
+      <div className="carga-por-semana" data-carga-por-semana="sin-datos">
+        {cabecera}
+        <p className="nota carga-por-semana__vacia">«{nombre}» no tiene carga de trabajo escrita ni registros en esta fase: no hay nada que dibujar todavía.</p>
+      </div>
     );
   }
+  // El rótulo de cada columna: «−3» las de antes (semanas antes del inicio), «S1»… las de la fase.
+  const rotulo = (n: number) => (n <= antes ? `−${antes - n + 1}` : `S${n - antes}`);
+  const nombreDeColumna = (n: number) => (n <= antes ? C.semanasAntes(antes - n + 1) : `Semana ${n - antes}`);
   return (
     <div className="carga-por-semana" data-carga-por-semana={series.map((s) => s.clave).join(' ')}>
+      {cabecera}
       <GraficoDeSemanas
         titulo={`${nombre}: la carga por semana`}
-        semanas={Math.max(1, semanas)}
+        semanas={antes + semanas}
         unidad={unidad}
         series={series}
-        descargas={plan.flatMap((p, k) => (p.descarga ? [k + 1] : []))}
+        descargas={plan.flatMap((p, k) => (p.descarga ? [antes + k + 1] : []))}
         acciones={acciones}
+        rotuloDeSemana={rotulo}
+        nombreDeColumna={nombreDeColumna}
+        separador={antes > 0 && fase ? { columna: antes + 1, rotulo: fase.posicion === 0 ? C.inicioDelPlan : C.inicioDeLaFase } : null}
         // DL-199 (ET3, E5): a la vista, solo lo que cambia la lectura (la fase sin fechas); el método, en el «?» del gráfico.
-        pie={!fase ? <p className="nota">La fase no tiene fechas: lo realizado no se ubica en sus semanas.</p> : null}
-        ayuda={conEstimacion ? <p>El máximo estimado es Epley v1: solo series de hasta {TOPE_DE_LA_ESTIMACION} repeticiones equivalentes con RIR de hasta 2; de más de {TOPE_DEL_NUCLEO}, orientativo (rombo hueco).</p> : null}
+        // DL-204 (RP-19): el renglón de los registros está siempre; cambia de texto sin mover nada.
+        pie={
+          <p className="nota carga-por-semana__registros" aria-live="polite" data-registros={veces === null ? 'leyendo' : hayRegistros ? 'hay' : 'sin-registros'}>
+            {!fase ? 'La fase no tiene fechas: lo realizado no se ubica en sus semanas.' : veces === null ? C.leyendo : hayRegistros ? '\u00a0' : C.sinRegistros}
+          </p>
+        }
+        ayuda={
+          <>
+            <p>{C.formasDeLaHistoria}</p>
+            {conEstimacion ? <p>El máximo estimado es Epley v1: solo series de hasta {TOPE_DE_LA_ESTIMACION} repeticiones equivalentes con RIR de hasta 2; de más de {TOPE_DEL_NUCLEO}, orientativo (rombo hueco).</p> : null}
+          </>
+        }
       />
     </div>
   );
