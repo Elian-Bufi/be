@@ -19766,6 +19766,14 @@ p.cifra-del-espacio__desglose {
   margin: 0;
 }
 
+/* DL-203 · lo que trae un preset de sesión o de fase, en la vista previa: un renglón por sesión o por ejercicio. */
+.galeria__lista-del-preset {
+  display: grid;
+  gap: 0.2rem;
+  margin: 0.4rem 0;
+  padding-inline-start: 1.1rem;
+}
+
 /* ═══ ED-14 y ED-20 · El asistente (`asistente/asistente.tsx`): los siete pasos a la vista, una decisión por paso y una
    sola acción principal abajo. Es una vista de la página (EDT-11): la página se desplaza, no las zonas. */
 .estacion[data-en-el-asistente] {
@@ -26148,6 +26156,11 @@ html:has(.estacion:not([data-en-el-asistente])) {
 
 .esfuerzo-de-la-sesion-del-plan .nota {
   margin: 0 0 0 1.7rem;
+}
+
+/* DL-202 · «Pedir el esfuerzo de cada serie», en el mismo bloque, debajo del esfuerzo de la sesión. */
+.esfuerzo-de-la-sesion-del-plan .esfuerzo-de-cada-serie-del-plan {
+  margin-top: 0.5rem;
 }
 
 /* ET2-01 a ET2-04 · el 1RM de referencia en el ejercicio abierto: el valor con su origen y la base del % RM. */

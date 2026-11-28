@@ -2,7 +2,9 @@ import {
   bloquesComoSalen,
   calcularTiempos,
   codificarOcurrencia,
+  hayEsfuerzoDeclarado,
   objetivosEfectivos,
+  pideElEsfuerzoDeCadaSerie,
   sesionesDelPlan,
   tipoDeSerie,
   type BaseDelRelojApi,
@@ -13,6 +15,7 @@ import {
   type ImagenDeEjercicio,
   type InstantaneaDeEntrenamiento,
   type LicenciaDeImagen,
+  type PlanificacionDelPlan,
   type PrescripcionConObjetivos,
   type PrescripcionGuardada,
   type RevisionTecnica,
@@ -292,4 +295,25 @@ export function tiemposDeSesionApi(
     executionId,
     events: filas.map((f, i) => ({ event: eventos[i]!, receivedAt: f.momentoDeRecepcion.toISOString() })),
   };
+}
+
+/**
+ * DL-202 (EP-D02) · si el plan pide el esfuerzo de cada serie. Lo escrito en la planificación manda; ausente (un plan de
+ * antes, o uno nuevo sin tocar la casilla), se pide solo si la persona ya declaró el esfuerzo de alguna serie efectiva en
+ * alguna versión de este plan, en lo registrado o en una corrección. Solo entonces se leen las ejecuciones: con el valor
+ * escrito, ninguna lectura de más.
+ */
+export async function pideElEsfuerzoDeCadaSerieDelPlan(
+  tx: Pick<Tx, 'ejecucionDeEntrenamiento'>,
+  planificacion: Pick<PlanificacionDelPlan, 'askSetEffort'> | null | undefined,
+  asesoradoId: string,
+  planId: string,
+): Promise<boolean> {
+  if (typeof planificacion?.askSetEffort === 'boolean') return planificacion.askSetEffort;
+  const ejecuciones = await tx.ejecucionDeEntrenamiento.findMany({
+    where: { asesoradoId, versionDePlan: { planId } },
+    select: { contenido: true, correcciones: { select: { contenido: true } } },
+  });
+  const registros = ejecuciones.flatMap((e) => [e.contenido, ...e.correcciones.map((c) => c.contenido)]) as unknown as Parameters<typeof hayEsfuerzoDeclarado>[0];
+  return pideElEsfuerzoDeCadaSerie(planificacion, hayEsfuerzoDeclarado(registros));
 }

@@ -416,6 +416,7 @@ export function ComparacionPorSerie({
   prescriptionId: inicial,
   identidad,
   objetivos,
+  pideElEsfuerzo = true,
 }: {
   ejecucion: EjecucionDeEntrenamiento;
   prescriptionId?: string;
@@ -423,6 +424,8 @@ export function ComparacionPorSerie({
   identidad: IdentidadDeVersiones;
   /** DL-122: los objetivos por serie de la versión que rigió (API-SER-01). Sin ellos, el RIR y la carga son los de la prescripción. */
   objetivos?: ObjetivosDeLaVersion;
+  /** DL-202 (EP-D07): sin pedirle el esfuerzo de cada serie a la persona, el RIR solo se ofrece si se registró alguno. */
+  pideElEsfuerzo?: boolean;
 }) {
   const id = useId();
   const comparaciones = useMemo(() => compararEjecucion(ejecucion, identidad, objetivos), [ejecucion, identidad, objetivos]);
@@ -432,7 +435,7 @@ export function ComparacionPorSerie({
   const [elegida, setElegida] = useState<number | null>(null);
   const c = comparaciones.find((x) => x.prescriptionId === prescriptionId) ?? comparaciones[0];
   if (!c) return <p>{COPY_ENTRENAMIENTO.sinPrescripciones}</p>;
-  const medidas = medidasDisponibles([c]);
+  const medidas = medidasDisponibles([c], pideElEsfuerzo);
   const medida = medidaElegida(medidas, claveMedida);
   const series = seriesParaGraficar(c, medida);
   const s = elegida !== null ? series[elegida] : undefined;

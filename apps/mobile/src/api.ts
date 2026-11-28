@@ -2,7 +2,7 @@
  * Cliente de la API para el APK: base absoluta del perfil de build (API_BASE_URL, eas.json) y superficie APK.
  * La APK va directo a la API por HTTPS, sin CORS (07:645, 790). La definición del cliente es única: @be/domain.
  */
-import { CAPACIDAD_BLOQUES_DE_LA_SESION, CAPACIDAD_ESFUERZO_DE_LA_SESION, CAPACIDAD_FORMULARIOS_FORMATO_3, CAPACIDAD_NOTACION_DEL_ESFUERZO, CAPACIDAD_OBJETIVOS_POR_SERIE, CAPACIDAD_SEMANA_DE_LA_FASE, CAPACIDAD_TEXTOS_VIGENTES, CAPACIDAD_TIPOS_DE_SERIE, crearClienteBe } from '@be/domain';
+import { CAPACIDAD_BLOQUES_DE_LA_SESION, CAPACIDAD_ESFUERZO_DE_CADA_SERIE, CAPACIDAD_ESFUERZO_DE_LA_SESION, CAPACIDAD_FORMULARIOS_FORMATO_3, CAPACIDAD_NOTACION_DEL_ESFUERZO, CAPACIDAD_OBJETIVOS_POR_SERIE, CAPACIDAD_SEMANA_DE_LA_FASE, CAPACIDAD_TEXTOS_VIGENTES, CAPACIDAD_TIPOS_DE_SERIE, crearClienteBe } from '@be/domain';
 import Constants from 'expo-constants';
 import { randomUUID } from 'expo-crypto';
 import { memoria } from './lecturas';
@@ -56,6 +56,8 @@ const fetchQueOlvidaAlEscribir: typeof fetch = async (entrada, init) => {
 // DL-198: la semana de la fase (`training-week-load-1`: API-SER-02 manda `week`, el rótulo «Semana 3 de 6»; las cargas ya
 // llegan con la de esa semana para todos) y el esfuerzo de la sesión (`training-session-effort-1`: `askSessionEffort`, y la
 // pregunta al terminar, que se manda con API-ESF-01). Ver `esfuerzo-de-la-sesion.ts`.
+// DL-202: el esfuerzo de cada serie (`training-set-effort-1`: API-SER-02 manda `askSetEffort`; con `false`, la sesión no
+// muestra el campo del esfuerzo de las series). Ver `esfuerzo-de-cada-serie.ts` del dominio.
 const CAPACIDADES = [
   CAPACIDAD_OBJETIVOS_POR_SERIE,
   CAPACIDAD_FORMULARIOS_FORMATO_3,
@@ -65,6 +67,7 @@ const CAPACIDADES = [
   CAPACIDAD_NOTACION_DEL_ESFUERZO,
   CAPACIDAD_SEMANA_DE_LA_FASE,
   CAPACIDAD_ESFUERZO_DE_LA_SESION,
+  CAPACIDAD_ESFUERZO_DE_CADA_SERIE,
 ] as const;
 
 export const api = crearClienteBe({ baseUrl: `${extra.apiBaseUrl ?? ''}/api/v1`, superficie: 'APK', capacidades: CAPACIDADES, fetch: fetchQueOlvidaAlEscribir });

@@ -79,6 +79,8 @@ export const COPY_DESHACER = {
   quitasteLaSemana: (nombre: string) => `Quitaste «${nombre}».`,
   pasasteALaIntensidad: (cuantos: number) => (cuantos === 1 ? 'Pasaste 1 ejercicio a la intensidad del plan.' : `Pasaste ${cuantos} ejercicios a la intensidad del plan.`),
   aplicasteLaProgresion: (fase: string) => `Aplicaste la progresión en «${fase}».`,
+  // DL-203: aplicar un preset de sesión o de fase es un cambio grande, con su «Deshacer».
+  aplicasteElPreset: (nombre: string) => `Aplicaste el preset «${nombre}».`,
   // DL-201: la progresión propia de los ejercicios, y quitarla.
   aplicasteLaProgresionA: (n: number) => (n === 1 ? 'Aplicaste una progresión propia a 1 ejercicio.' : `Aplicaste una progresión propia a ${n} ejercicios.`),
   quitasteLaProgresion: (fase: string) => `Quitaste la progresión de «${fase}».`,

@@ -69,6 +69,11 @@ export interface FilaEnCorreccion {
   readonly tipo?: TipoDeSerie;
   /** DL-192: la notación del esfuerzo del plan; el RIR se escribe y se lee así. Ausente: RIR. */
   readonly notacion?: NotacionDelEsfuerzo;
+  /**
+   * DL-202 (EP-D05): el ejercicio no muestra el campo del esfuerzo: el plan no lo pide y ninguna de sus series lo tiene
+   * registrado. Lo que se suma así va sin esfuerzo. Ausente: con el campo, como siempre.
+   */
+  readonly sinEsfuerzo?: true;
 }
 
 export interface EjercicioEnCorreccion {
@@ -240,8 +245,15 @@ const unidadDe = (u: string | undefined, porDefecto: Unidad): Unidad => (u === '
 /**
  * El estado con el que abre la corrección: lo que rige, más lo planificado que no se registró. `sesion` es la de
  * API-SER-02 (con el objetivo de cada serie) o, si no se pudo leer, la de la ocurrencia (`sesionDesdeLaOcurrencia`).
+ * DL-202 (EP-D05): `pideElEsfuerzo`, el `askSetEffort` de API-SER-02. Sin pedirlo, un ejercicio con algún esfuerzo
+ * registrado lo sigue mostrando (se corrige lo que hay); uno sin ninguno, no.
  */
-export function estadoInicial(x: Pick<EjecucionDeEntrenamiento, 'original' | 'corrections' | 'effectiveView'>, sesion: SesionConObjetivos, notacion: NotacionDelEsfuerzo = 'RIR'): EstadoDeCorreccion {
+export function estadoInicial(
+  x: Pick<EjecucionDeEntrenamiento, 'original' | 'corrections' | 'effectiveView'>,
+  sesion: SesionConObjetivos,
+  notacion: NotacionDelEsfuerzo = 'RIR',
+  pideElEsfuerzo = true,
+): EstadoDeCorreccion {
   // DL-192: cada fila lleva la notación del plan solo si es RPE; en RIR, la forma de siempre.
   const conNotacion = notacion === 'RPE' ? { notacion } : {};
   const base = registroVigente(x);
@@ -288,11 +300,14 @@ export function estadoInicial(x: Pick<EjecucionDeEntrenamiento, 'original' | 'co
       resumen: forma === 'EXERCISE_OR_SESSION' ? '' : null,
     });
   }
+  // DL-202: sin pedir el esfuerzo de cada serie, el ejercicio sin ningún esfuerzo registrado no muestra el campo.
+  const conElCampo = (ej: EjercicioEnCorreccion): EjercicioEnCorreccion =>
+    pideElEsfuerzo || ej.filas.some((f) => f.antes?.rir !== null && f.antes?.rir !== undefined) ? ej : { ...ej, filas: ej.filas.map((f) => ({ ...f, sinEsfuerzo: true as const })) };
   return {
     condicion: base.sessionCondition,
     comentario: base.reason ?? '',
     forma,
-    ejercicios,
+    ejercicios: ejercicios.map(conElCampo),
     resumenDeSesion: base.sessionSummary?.description ?? '',
     sinDatosAntes: base.sessionCondition === 'NOT_COMPLETED',
     motivo: null,
@@ -352,7 +367,7 @@ export function corregir(e: EstadoDeCorreccion, a: AccionDeCorreccion): EstadoDe
         if (siguiente > MAXIMO_DE_SERIES) return ej;
         const unidad = unidadDelEjercicioEnCorreccion(ej) ?? ej.filas[0]?.unidad ?? 'kg';
         // DL-192: la fila nueva lleva la notación del plan, como las demás: en RPE se elige el RPE y se lee como su RIR.
-        return { ...ej, filas: [...ej.filas, { setIndex: siguiente, origen: 'nueva', escrita: FILA_VACIA, unidad, quitada: false, tildada: false, antes: null, objetivo: null, ...(e.notacion === 'RPE' ? { notacion: e.notacion } : {}) }] };
+        return { ...ej, filas: [...ej.filas, { setIndex: siguiente, origen: 'nueva', escrita: FILA_VACIA, unidad, quitada: false, tildada: false, antes: null, objetivo: null, ...(e.notacion === 'RPE' ? { notacion: e.notacion } : {}), ...(ej.filas[0]?.sinEsfuerzo ? { sinEsfuerzo: true as const } : {}) }] };
       });
     case 'resumen':
       return cambiarEjercicio(e, a.prescriptionId, (ej) => ({ ...ej, resumen: a.texto }));
@@ -429,7 +444,7 @@ function serieDeLaFila(f: FilaEnCorreccion): { readonly serie: SerieEjecutadaApi
   if (f.quitada) return { serie: null, errores: null };
   if (f.origen !== 'registrada') {
     if (!hayAlgoEscrito(f.escrita) && !f.tildada) return { serie: null, errores: null };
-    const alTildar = serieAlTildar(f.escrita, f.objetivo, f.setIndex, f.unidad, f.tipo, f.notacion);
+    const alTildar = serieAlTildar(f.escrita, f.objetivo, f.setIndex, f.unidad, f.tipo, f.notacion, !f.sinEsfuerzo);
     return alTildar.ok ? { serie: alTildar.serie, errores: null } : { serie: null, errores: alTildar.errores };
   }
   const lectura = leerFila(f.escrita, f.setIndex, f.unidad, f.notacion);
@@ -611,7 +626,7 @@ export function alTocarLaCasilla(f: FilaEnCorreccion): { readonly accion: 'quita
   if (filaTildada(f)) return { accion: 'quitar' };
   if (f.origen === 'registrada') return { accion: 'deshacer' };
   if (hayAlgoEscrito(f.escrita)) return { accion: 'deshacer' };
-  const comoElPlan = serieAlTildar(f.escrita, f.objetivo, f.setIndex, f.unidad, 'WORKING', f.notacion);
+  const comoElPlan = serieAlTildar(f.escrita, f.objetivo, f.setIndex, f.unidad, 'WORKING', f.notacion, !f.sinEsfuerzo);
   return comoElPlan.ok ? { accion: 'tildar' } : { errores: comoElPlan.errores };
 }
 
